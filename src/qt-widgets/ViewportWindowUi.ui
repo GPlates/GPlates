@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>780</width>
-     <height>25</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -43,6 +43,7 @@
     <addaction name="action_View_Online_Documentation"/>
     <addaction name="separator"/>
     <addaction name="action_About"/>
+    <addaction name="action_About_GPlates_Dataset"/>
    </widget>
    <widget class="QMenu" name="menu_File">
     <property name="title">
@@ -195,6 +196,7 @@
      <string>&amp;Utilities</string>
     </property>
     <addaction name="action_Calculate_Reconstruction_Pole"/>
+    <addaction name="action_Finite_Rotation_Calculator"/>
     <addaction name="separator"/>
     <addaction name="action_Open_Python_Console"/>
     <addaction name="action_Open_Hellinger_Fitting_Tool"/>
@@ -1095,6 +1097,11 @@
     <string>Lo&amp;g</string>
    </property>
   </action>
+  <action name="action_Finite_Rotation_Calculator">
+   <property name="text">
+    <string>Calculate Finite Rotation...</string>
+   </property>
+  </action>
   <action name="action_Generate_Terra_Velocity_Domain">
    <property name="text">
     <string>&amp;Terra...</string>
@@ -1111,6 +1118,18 @@
    </property>
    <property name="shortcut">
     <string>F10</string>
+   </property>
+  </action>
+  <action name="action_About_GPlates_Dataset">
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/human_gtk_about_16.png</normaloff>:/human_gtk_about_16.png</iconset>
+   </property>
+   <property name="text">
+    <string>About Data Sources</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::ApplicationSpecificRole</enum>
    </property>
   </action>
  </widget>

@@ -37,17 +37,27 @@ GPlatesOpenGL::GLIntersect::Plane::Plane(
 		const GPlatesMaths::Vector3D &normal,
 		const GPlatesMaths::Vector3D &point_on_plane) :
 	d_normal(normal),
-	d_signed_distance_to_origin(-dot(point_on_plane, normal))
+	d_signed_distance_to_origin_unnormalised(-dot(point_on_plane, normal))
+{
+}
+
+
+GPlatesOpenGL::GLIntersect::Plane::Plane(
+		const GPlatesMaths::UnitVector3D &normal,
+		const GPlatesMaths::Vector3D &point_on_plane) :
+	d_normal(normal),
+	d_signed_distance_to_origin_unnormalised(-dot(point_on_plane, normal)),
+	d_inv_magnitude_normal(1.0) // Because 'normal' is a unit vector.
 {
 }
 
 
 GPlatesOpenGL::GLIntersect::Plane::HalfSpaceType
 GPlatesOpenGL::GLIntersect::Plane::classify_point(
-		const GPlatesMaths::Vector3D& point) const
+		const GPlatesMaths::Vector3D &point) const
 {
 	const GPlatesMaths::real_t d =
-			dot(point, d_normal) + d_signed_distance_to_origin;
+			dot(point, d_normal) + d_signed_distance_to_origin_unnormalised;
 
 	if (is_strictly_positive(d))
 	{
@@ -65,10 +75,10 @@ GPlatesOpenGL::GLIntersect::Plane::classify_point(
 
 GPlatesOpenGL::GLIntersect::Plane::HalfSpaceType
 GPlatesOpenGL::GLIntersect::Plane::classify_point(
-		const GPlatesMaths::UnitVector3D& point) const
+		const GPlatesMaths::UnitVector3D &point) const
 {
 	const GPlatesMaths::real_t d =
-			dot(point, d_normal) + d_signed_distance_to_origin;
+			dot(point, d_normal) + d_signed_distance_to_origin_unnormalised;
 
 	if (is_strictly_positive(d))
 	{

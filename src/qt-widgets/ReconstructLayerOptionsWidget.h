@@ -45,6 +45,7 @@ namespace GPlatesQtWidgets
 {
 	// Forward declaration.
 	class SetVGPVisibilityDialog;
+	class SetDeformationParametersDialog;
 	class DrawStyleDialog;
 	class ViewportWindow;
 
@@ -68,6 +69,8 @@ namespace GPlatesQtWidgets
 				ViewportWindow *viewport_window,
 				QWidget *parent_);
 
+		~ReconstructLayerOptionsWidget();
+
 		virtual
 		void
 		set_data(
@@ -77,18 +80,30 @@ namespace GPlatesQtWidgets
 		const QString &
 		get_title();
 
-		~ReconstructLayerOptionsWidget();
-
 	private Q_SLOTS:
 
 		void
 		open_vgp_visibility_dialog();
 
 		void
+		open_deformation_parameters_dialog();
+
+		void
 		open_draw_style_setting_dlg();
-		
+
 		void
 		handle_fill_polygons_clicked();
+
+		void
+		handle_fill_polylines_clicked();
+
+		void
+		handle_fill_opacity_spinbox_changed(
+				double value);
+
+		void
+		handle_fill_intensity_spinbox_changed(
+				double value);
 
 	private:
 
@@ -101,7 +116,8 @@ namespace GPlatesQtWidgets
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		ViewportWindow *d_viewport_window;
 		SetVGPVisibilityDialog *d_set_vgp_visibility_dialog;
-		DrawStyleDialog		   *d_draw_style_dialog_ptr;
+		SetDeformationParametersDialog *d_set_deformation_parameters_dialog;
+		DrawStyleDialog *d_draw_style_dialog_ptr;
 
 		/**
 		 * The visual layer for which we are currently displaying options.

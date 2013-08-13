@@ -32,7 +32,10 @@
 
 #include "ReconstructHandle.h"
 #include "ReconstructionGeometry.h"
+#include "ReconstructionTree.h"
+#include "ReconstructionTreeCreator.h"
 #include "ReconstructMethodFiniteRotation.h"
+#include "ReconstructMethodType.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -73,9 +76,6 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Used to obtain a resolved geometry and its finite rotation transform (reconstruction).
-		 *
-		 * The finite rotation is currently used when visualising @a ReconstructedFeatureGeometry
-		 * objects in the globe view - the finite rotation transform is performed by the graphics hardware.
 		 */
 		class FiniteRotationReconstruction
 		{
@@ -141,9 +141,11 @@ namespace GPlatesAppLogic
 		const non_null_ptr_type
 		create(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+				const ReconstructionTreeCreator &reconstruction_tree_creator_,
 				GPlatesModel::FeatureHandle &feature_handle_,
 				const GPlatesModel::FeatureHandle::iterator &property_iterator_,
 				const geometry_ptr_type &reconstructed_geometry_,
+				boost::optional<ReconstructMethod::Type> reconstruct_method_type_ = boost::none,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_ = boost::none,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
@@ -151,9 +153,11 @@ namespace GPlatesAppLogic
 			return non_null_ptr_type(
 					new ReconstructedFeatureGeometry(
 							reconstruction_tree_,
+							reconstruction_tree_creator_,
 							feature_handle_,
 							property_iterator_,
 							reconstructed_geometry_,
+							reconstruct_method_type_,
 							reconstruction_plate_id_,
 							time_of_formation_,
 							reconstruct_handle_));
@@ -165,12 +169,11 @@ namespace GPlatesAppLogic
 		 * a reconstruction transform (specific to the particular reconstruct method).
 		 * And an optional time of formation.
 		 *
-		 * This is useful for delaying reconstruction until it's actually need - which is if
-		 * the @a reconstructed_geometry method is called. It is also useful for transforming
-		 * the geometry on the graphics hardware (where it's much faster) if the reconstruction
-		 * transform is a finite rotation - note that only applies to the globe view (not map views).
-		 * In the case of transforming on the graphics hardware only the resolved geometry and
-		 * the finite rotation are required (the final reconstructed geometry is not required).
+		 * This is useful for delaying reconstruction until it's actually needed - which it isn't
+		 * unless @a reconstructed_geometry is called. It is also useful for reconstructing
+		 * rasters with static polygons, which relys on the fact that static polygons don't change
+		 * over time and hence we can create a present-day mesh of the polygons and simply rotate
+		 * them on the graphics hardware.
 		 *
 		 * @a resolved_geometry_ the unreconstructed but time-resolved if geometry is
 		 * time-dependent. This is the geometry of the feature property at the reconstruction time
@@ -182,11 +185,13 @@ namespace GPlatesAppLogic
 		const non_null_ptr_type
 		create(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+				const ReconstructionTreeCreator &reconstruction_tree_creator_,
 				GPlatesModel::FeatureHandle &feature_handle_,
 				const GPlatesModel::FeatureHandle::iterator &property_iterator_,
 				// NOTE: This is the *unreconstructed* geometry...
 				const geometry_ptr_type &resolved_geometry_,
 				const ReconstructMethodFiniteRotation::non_null_ptr_to_const_type &reconstruct_method_transform_,
+				boost::optional<ReconstructMethod::Type> reconstruct_method_type_ = boost::none,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_ = boost::none,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
@@ -194,10 +199,12 @@ namespace GPlatesAppLogic
 			return non_null_ptr_type(
 					new ReconstructedFeatureGeometry(
 							reconstruction_tree_,
+							reconstruction_tree_creator_,
 							feature_handle_,
 							property_iterator_,
 							resolved_geometry_,
 							reconstruct_method_transform_,
+							reconstruct_method_type_,
 							reconstruction_plate_id_,
 							time_of_formation_,
 							reconstruct_handle_));
@@ -234,6 +241,25 @@ namespace GPlatesAppLogic
 		get_non_null_pointer()
 		{
 			return GPlatesUtils::get_non_null_pointer(this);
+		}
+
+		/**
+		 * Access the ReconstructionTree that was used to reconstruct this ReconstructionGeometry.
+		 */
+		ReconstructionTree::non_null_ptr_to_const_type
+		get_reconstruction_tree() const
+		{
+			return d_reconstruction_tree;
+		}
+
+		/**
+		 * Gets the reconstruction tree creator that uses the same anchor plate and reconstruction
+		 * features as used to create the tree returned by @a get_reconstruction_tree.
+		 */
+		ReconstructionTreeCreator
+		get_reconstruction_tree_creator() const
+		{
+			return d_reconstruction_tree_creator;
 		}
 
 		/**
@@ -292,28 +318,24 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the reconstructed geometry - WARNING - only call if necessary - see comment below.
-		 *
-		 * NOTE: Do not call this method unless you need the reconstructed geometry for
-		 * some calculation or inspection - this is because visualisation of reconstructed
-		 * geometries attempts to bypass transforming (reconstructing) geometries on the CPU
-		 * and instead perform them on the GPU (graphics hardware) where the transformation
-		 * is *much* faster (in the globe view anyway). So any unnecessary calls to this method
-		 * will effectively cancel that gain. This is especially the case for large geometries
-		 * containing hundreds or thousands of vertices.
-		 * Of course, there will be situations where calling this method is necessary such
-		 * as reconstructing topological sections so that dynamic plate polygons can be resolved, or
-		 * displaying the geometry in a GUI table, or projecting geometry into a map view.
+		 * Returns the reconstructed geometry.
 		 */
 		const geometry_ptr_type &
 		reconstructed_geometry() const;
 
 
 		/**
+		 * The reconstruct method type used to generate this RFG.
+		 */
+		boost::optional<ReconstructMethod::Type>
+		get_reconstruct_method_type() const
+		{
+			return d_reconstruct_method_type;
+		}
+
+
+		/**
 		 * Returns the information to perform the reconstruction as a finite rotation if applicable.
-		 *
-		 * It is currently used when visualising @a ReconstructedFeatureGeometry objects in
-		 * the globe view - the finite rotation transform is performed by the graphics hardware.
 		 *
 		 * Returns false if 'this' @a ReconstructedFeatureGeometry was created directly
 		 * with a reconstructed geometry (instead of a resolved geometry and a finite rotation).
@@ -378,27 +400,44 @@ namespace GPlatesAppLogic
 				GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor);
 
 	protected:
+
 		ReconstructedFeatureGeometry(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+				const ReconstructionTreeCreator &reconstruction_tree_creator_,
 				GPlatesModel::FeatureHandle &feature_handle_,
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				const geometry_ptr_type &reconstructed_geometry_,
+				boost::optional<ReconstructMethod::Type> reconstruct_method_type_,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_ = boost::none,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none);
 
 		ReconstructedFeatureGeometry(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+				const ReconstructionTreeCreator &reconstruction_tree_creator_,
 				GPlatesModel::FeatureHandle &feature_handle_,
 				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				// NOTE: This is the *unreconstructed* geometry...
 				const geometry_ptr_type &resolved_geometry_,
 				const ReconstructMethodFiniteRotation::non_null_ptr_to_const_type &reconstruct_method_transform_,
+				boost::optional<ReconstructMethod::Type> reconstruct_method_type_,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_ = boost::none,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
 				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none);
 
 	private:
+
+		/**
+		 * The reconstruction tree used to reconstruct us.
+		 */
+		ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
+
+		/**
+		 * Used to create reconstruction trees similar that the tree used to reconstruction 'this'
+		 * reconstruction geometry (the only difference being the reconstruction time).
+		 */
+		ReconstructionTreeCreator d_reconstruction_tree_creator;
+
 		/**
 		 * This is an iterator to the (geometry-valued) property from which this RFG was
 		 * derived.
@@ -411,9 +450,6 @@ namespace GPlatesAppLogic
 		 * If the reconstructed geometry can be generated by transforming
 		 * resolved geometry using a finite transform then we don't need to
 		 * transform it until a client requests it.
-		 *
-		 * This also makes rendering a lot faster because the graphics card (in globe view anyway)
-		 * can do the transformation saving us having to do it on the CPU.
 		 */
 		mutable boost::optional<geometry_ptr_type> d_reconstructed_geometry;
 
@@ -424,6 +460,11 @@ namespace GPlatesAppLogic
 		 * if this @a ReconstructedFeatureGeometry was not created with one.
 		 */
 		boost::optional<FiniteRotationReconstruction> d_finite_rotation_reconstruction;
+
+		/**
+		 * The reconstruct method type used to generate this RFG.
+		 */
+		boost::optional<ReconstructMethod::Type> d_reconstruct_method_type;
 
 		/**
 		 * The cached reconstruction plate ID, if it exists.

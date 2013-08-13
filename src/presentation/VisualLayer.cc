@@ -50,14 +50,8 @@ GPlatesPresentation::VisualLayer::VisualLayer(
 	d_layer(layer),
 	// Create a child rendered geometry layer in the main RECONSTRUCTION layer.
 	d_rendered_geometry_layer_index(
-			// If the layer represents velocity then make sure the rendered velocity arrows
-			// are not clumped together (for high-resolution grids)...
-			(layer.get_type() == GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
-					? rendered_geometry_collection.create_child_rendered_layer(
-							GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER,
-							0.175f /* FIXME: This can be made a user-adjustable parameter */)
-					: rendered_geometry_collection.create_child_rendered_layer(
-							GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)),
+			rendered_geometry_collection.create_child_rendered_layer(
+					GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)),
 	d_rendered_geometry_layer(
 			rendered_geometry_collection.transfer_ownership_of_child_rendered_layer(
 					d_rendered_geometry_layer_index,
@@ -131,15 +125,22 @@ GPlatesPresentation::VisualLayer::create_rendered_geometries(
 		return;
 	}
 
+	// Get the draw style adapter if there is one.
+	boost::optional<const GPlatesGui::StyleAdapter &> draw_style_adapter;
+	if (d_visual_layer_params->style_adapter())
+	{
+		draw_style_adapter = *d_visual_layer_params->style_adapter();
+	}
+
 	// This creates the RenderedGeometry's from the ReconstructionGeometry's.
 	ReconstructionGeometryRenderer::RenderParamsPopulator render_params_populator;
 	d_visual_layer_params->accept_visitor(render_params_populator);
 	ReconstructionGeometryRenderer reconstruction_geometry_renderer(
 			render_params_populator.get_render_params(),
-			boost::none,
-            boost::none,
+			boost::none, // colour 
+            boost::none, // rotation adjustment
 			feature_type_symbol_map,
-			d_visual_layer_params->style_adapter());
+			draw_style_adapter);
 
 	// Visit the layer output in order to render it.
 	// We wrap the ReconstructionGeometryRenderer with a LayerOutputRenderer.

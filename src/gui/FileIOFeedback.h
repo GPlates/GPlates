@@ -40,6 +40,7 @@
 
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionFileFormatConfiguration.h"
+#include "file-io/File.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -219,6 +220,21 @@ namespace GPlatesGui
 		save_all(
 				bool include_unnamed_files,
 				bool only_unsaved_changes);
+
+
+		/**
+		 * Creates, and saves, a file named @a filename and saves @a feature_collection to the file,
+		 * handling any exceptions thrown by popping up appropriate error dialogs (and returning false).
+		 *
+		 * This method is useful when you want to save a feature collection that was not
+		 * originally loaded from a file.
+		 *
+		 * NOTE: This should not be used for a file with an empty filename since it cannot be saved
+		 * to the file system - use 'FeatureCollectionFileIO::create_empty_file()' for that instead.
+		 */
+		bool
+		create_file(
+				const GPlatesFileIO::File::non_null_ptr_type &file);
 
 	public Q_SLOTS:
 

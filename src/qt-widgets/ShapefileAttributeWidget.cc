@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2008, 2010 Geological Survey of Norway
+ * Copyright (C) 2008, 2010, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -67,8 +67,6 @@ namespace
 		{
 			default_fields.insert(i,ShapefileAttributes::default_attribute_field_names[i]);
 		}
-		default_fields.insert(ShapefileAttributes::CONJUGATE_PLATE_ID,
-							  ShapefileAttributes::default_attribute_field_names[ShapefileAttributes::CONJUGATE_PLATE_ID]);
 	}
 
 	/**
@@ -152,7 +150,6 @@ GPlatesQtWidgets::ShapefileAttributeWidget::ShapefileAttributeWidget(
 	{
 		// The map does provide us with default fields for the combo boxes. Use these where we can. 
 		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names);
-		fill_fields_from_qmap(d_default_fields,d_model_to_attribute_map,d_field_names);		
 	}
 
 	setup();
@@ -175,6 +172,9 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 	combo_description->addItem(QString(QObject::tr("<none>")));
 	combo_feature_id->addItem(QString(QObject::tr("<none>")));
 	combo_conjugate->addItem(QString(QObject::tr("<none>")));
+	combo_recon_method->addItem(QString(QObject::tr("<none>")));
+	combo_left->addItem(QString(QObject::tr("<none>")));
+	combo_right->addItem(QString(QObject::tr("<none>")));
 
 	// Fill the remaining fields from the QStringList d_field_names.
 	combo_plateID->addItems(d_field_names);
@@ -185,6 +185,9 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 	combo_description->addItems(d_field_names);
 	combo_feature_id->addItems(d_field_names);
 	combo_conjugate->addItems(d_field_names);
+	combo_recon_method->addItems(d_field_names);
+	combo_left->addItems(d_field_names);
+	combo_right->addItems(d_field_names);
 
 	// Check for any of the default field names. If we find any, set the combo box to the default.
 	// 1 is added to the index to account for the <none> item, which is 0th in each combo box. 
@@ -194,7 +197,16 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 		combo_plateID->setCurrentIndex(index + 1);
 	}
 
+	// For feature type, the default attribute name is GPGIM_TYPE. If we don't find this,
+	// we will look for TYPE. This is a hard-coded hack. I don't currently have any kind of
+	// "backup" default names to check through. We could do this by having the default_attribute_field_names
+	// defined in PropertyMapper.h contain QStringLists instead of QStrings, where additional members
+	// in each QStringList would represent fallback default names.
 	if ( (index = d_field_names.indexOf(d_default_fields[ShapefileAttributes::FEATURE_TYPE])) != -1) {	
+		combo_feature_type->setCurrentIndex(index + 1);
+	}
+	else if (( index = d_field_names.indexOf("TYPE")) != -1)
+	{
 		combo_feature_type->setCurrentIndex(index + 1);
 	}
 
@@ -222,6 +234,18 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 		combo_conjugate->setCurrentIndex(index + 1);		
 	}	
 
+	if ( (index = d_field_names.indexOf(d_default_fields[ShapefileAttributes::RECONSTRUCTION_METHOD])) != -1) {
+		combo_recon_method->setCurrentIndex(index + 1);
+	}
+
+	if ( (index = d_field_names.indexOf(d_default_fields[ShapefileAttributes::LEFT_PLATE])) != -1) {
+		combo_left->setCurrentIndex(index + 1);
+	}
+
+	if ( (index = d_field_names.indexOf(d_default_fields[ShapefileAttributes::RIGHT_PLATE])) != -1) {
+		combo_right->setCurrentIndex(index + 1);
+	}
+
 
 // save the state of the combo boxes so that we can reset them.
 	d_combo_reset_map.clear();
@@ -233,6 +257,9 @@ GPlatesQtWidgets::ShapefileAttributeWidget::setup()
 	d_combo_reset_map.push_back(combo_description->currentIndex());
 	d_combo_reset_map.push_back(combo_feature_id->currentIndex());
 	d_combo_reset_map.push_back(combo_conjugate->currentIndex());
+	d_combo_reset_map.push_back(combo_recon_method->currentIndex());
+	d_combo_reset_map.push_back(combo_left->currentIndex());
+	d_combo_reset_map.push_back(combo_right->currentIndex());
 	
 }
 
@@ -249,6 +276,9 @@ GPlatesQtWidgets::ShapefileAttributeWidget::reset_fields()
 	combo_description->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::DESCRIPTION]);
 	combo_feature_id->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::FEATURE_ID]);
 	combo_conjugate->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::CONJUGATE_PLATE_ID]);
+	combo_recon_method->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::RECONSTRUCTION_METHOD]);
+	combo_left->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::LEFT_PLATE]);
+	combo_right->setCurrentIndex(d_combo_reset_map[ShapefileAttributes::RIGHT_PLATE]);
 	
 }
 
@@ -310,5 +340,22 @@ GPlatesQtWidgets::ShapefileAttributeWidget::accept_fields()
 					d_field_names[combo_conjugate->currentIndex()-1]);
 		}			
 
+		if (combo_recon_method->currentIndex() != 0){
+			d_model_to_attribute_map.insert(
+				ShapefileAttributes::model_properties[ShapefileAttributes::RECONSTRUCTION_METHOD],
+					d_field_names[combo_recon_method->currentIndex()-1]);
+		}
+
+		if (combo_left->currentIndex() != 0){
+			d_model_to_attribute_map.insert(
+				ShapefileAttributes::model_properties[ShapefileAttributes::LEFT_PLATE],
+					d_field_names[combo_left->currentIndex()-1]);
+		}
+
+		if (combo_right->currentIndex() != 0){
+			d_model_to_attribute_map.insert(
+						ShapefileAttributes::model_properties[ShapefileAttributes::RIGHT_PLATE],
+					d_field_names[combo_right->currentIndex()-1]);
+		}
 }
 

@@ -28,20 +28,21 @@
 #ifndef GPLATES_GUI_MAPCANVASPAINTER_H
 #define GPLATES_GUI_MAPCANVASPAINTER_H
 
-#include <proj_api.h>
+#include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
+#include <proj_api.h>
 
 #include "Colour.h"
 #include "ColourScheme.h"
 #include "LayerPainter.h"
-#include "TextRenderer.h"
 #include "RenderSettings.h"
 
 #include "maths/DateLineWrapper.h"
 #include "maths/LatLonPoint.h"
 
+#include "opengl/GLFilledPolygonsMapView.h"
 #include "opengl/GLVisualLayers.h"
 
 #include "presentation/VisualLayers.h"
@@ -86,8 +87,7 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const double &inverse_viewport_zoom_factor,
-				GPlatesGui::RenderSettings &render_settings,
-				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
+				const GPlatesGui::RenderSettings &render_settings,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
 
@@ -158,7 +158,17 @@ namespace GPlatesGui
 
 		virtual
 		void
-		visit_resolved_raster(
+		visit_rendered_coloured_edge_surface_mesh(
+			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh &rendered_coloured_edge_surface_mesh);
+
+		virtual
+		void
+		visit_rendered_coloured_triangle_surface_mesh(
+				const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh &rendered_coloured_triangle_surface_mesh);
+
+		virtual
+		void
+		visit_rendered_resolved_raster(
 				const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster);
 
 		virtual
@@ -191,6 +201,76 @@ namespace GPlatesGui
 		visit_rendered_triangle_symbol(
 				const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol);
 
+	private:
+
+		/**
+		 * Contains the results of dateline wrapping and map projecting a polyline or polygon.
+		 */
+		class DatelineWrappedProjectedLineGeometry
+		{
+		public:
+
+			void
+			add_vertex(
+					const QPointF &vertex)
+			{
+				d_vertices.push_back(vertex);
+			}
+
+			//! Call this *after* adding the great circle arc's vertices.
+			void
+			add_great_circle_arc()
+			{
+				d_great_circle_arcs.push_back(d_vertices.size());
+			}
+
+			//! Call this *after* adding the geometry's great circle arcs.
+			void
+			add_geometry()
+			{
+				d_geometries.push_back(d_great_circle_arcs.size());
+			}
+
+
+			/**
+			 * Returns vertices in all geometries (and in all great circle arcs).
+			 *
+			 * These are indexed by the indices returned in @a get_great_circle_arcs.
+			 */
+			const std::vector<QPointF> &
+			get_vertices() const
+			{
+				return d_vertices;
+			}
+
+			/**
+			 * Returns a vertex index (into @a get_vertices) for each great circle arc (in all geometries)
+			 * that represents 'one past' the last vertex in that great circle arc.
+			 *
+			 * These are indexed by the indices returned in @a get_geometries.
+			 */
+			const std::vector<unsigned int> &
+			get_great_circle_arcs()
+			{
+				return d_great_circle_arcs;
+			}
+
+			/**
+			 * Returns a great circle arc index (into @a get_great_circle_arcs) for each geometry
+			 * that represents 'one past' the last great circle arc in that geometry.
+			 */
+			const std::vector<unsigned int> &
+			get_geometries()
+			{
+				return d_geometries;
+			}
+
+		private:
+
+			std::vector<QPointF> d_vertices;
+			std::vector<unsigned int> d_great_circle_arcs;
+			std::vector<unsigned int> d_geometries;
+		};
 
 		//! Typedef for a vertex element (index).
 		typedef LayerPainter::vertex_element_type vertex_element_type;
@@ -224,10 +304,7 @@ namespace GPlatesGui
 		const double d_inverse_zoom_factor;
 
 		//! Rendering flags for determining what gets shown
-		RenderSettings &d_render_settings;
-
-		//! For rendering text
-		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
+		const RenderSettings &d_render_settings;
 
 		//! For assigning colours to RenderedGeometry
 		ColourScheme::non_null_ptr_type d_colour_scheme;
@@ -278,7 +355,46 @@ namespace GPlatesGui
 				const T &geom);
 
 		/**
-		 * Paints line geometries (polylines and polygons).
+		 * Dateline wraps and map projects line geometries (polylines and polygons).
+		 */
+		template <typename LineGeometryType>
+		void
+		dateline_wrap_and_project_line_geometry(
+				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+				const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry);
+
+		/**
+		 * Project and tessellate *wrapped* line geometries (polylines and polygons).
+		 */
+		template <typename LatLonPointForwardIter>
+		void
+		project_and_tessellate_wrapped_line_geometry(
+				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+				const LatLonPointForwardIter &begin_lat_lon_points,
+				const LatLonPointForwardIter &end_lat_lon_points);
+
+		/**
+		 * Project and tessellate great circle arcs of *unwrapped* polylines and polygons.
+		 */
+		template <typename GreatCircleArcForwardIter>
+		void
+		project_and_tessellate_unwrapped_line_geometry(
+				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+				const GreatCircleArcForwardIter &begin_arcs,
+				const GreatCircleArcForwardIter &end_arcs);
+
+		/**
+		 * Paints a *filled* line geometry (polyline or polygon) as a filled polygon.
+		 */
+		template <typename LineGeometryType>
+		void
+		paint_fill_geometry(
+				GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type &filled_polygons,
+				const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry,
+				const Colour &colour);
+
+		/**
+		 * Paints a line geometry (polyline or polygon).
 		 */
 		template <typename LineGeometryType>
 		void
@@ -287,30 +403,6 @@ namespace GPlatesGui
 				const Colour &colour,
 				stream_primitives_type &lines_stream,
 				boost::optional<double> arrow_head_size = boost::none);
-
-		/**
-		 * Paints *wrapped* line geometries (polylines and polygons).
-		 */
-		template <typename LatLonPointForwardIter>
-		void
-		paint_wrapped_line_geometry(
-				const LatLonPointForwardIter &begin_lat_lon_points,
-				const LatLonPointForwardIter &end_lat_lon_points,
-				const Colour &colour,
-				stream_primitives_type &lines_stream,
-				boost::optional<double> arrow_head_size);
-
-		/**
-		 * Paints great circle arcs of *unwrapped* polylines and polygons.
-		 */
-		template <typename GreatCircleArcForwardIter>
-		void
-		paint_unwrapped_line_geometry(
-				const GreatCircleArcForwardIter &begin_arcs,
-				const GreatCircleArcForwardIter &end_arcs,
-				const Colour &colour,
-				stream_primitives_type &lines_stream,
-				boost::optional<double> arrow_head_size);
 
 		void
 		paint_arrow_head(

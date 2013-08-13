@@ -30,11 +30,11 @@
 #include "canvas-tools/GeometryOperationState.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
+#include "maths/GeometryType.h"
 #include "maths/MathsUtils.h"
 #include "maths/SphericalArea.h"
 
 #include "view-operations/GeometryBuilder.h"
-#include "view-operations/GeometryType.h"
 #include "view-operations/RenderedGeometryLayer.h"
 
 
@@ -340,8 +340,8 @@ GPlatesCanvasTools::MeasureDistanceState::process_geometry_builder(
 				geometry_builder->get_num_geometries() &&
 				geometry_builder->get_num_points_in_current_geometry() &&
 					// we treat a geometry builder with fewer than two points as no selection
-				(geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYLINE ||
-				 geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYGON))
+				(geometry_builder->get_geometry_build_type() == GPlatesMaths::GeometryType::POLYLINE ||
+				 geometry_builder->get_geometry_build_type() == GPlatesMaths::GeometryType::POLYGON))
 					// we do not measure distances between a set of points
 		{
 			if (geometry_builder->get_num_points_in_current_geometry() > 1)
@@ -366,7 +366,7 @@ GPlatesCanvasTools::MeasureDistanceState::process_geometry_builder(
 				}
 
 				// if polygon, add distance between first and last points
-				if (geometry_builder->get_geometry_build_type() == GPlatesViewOperations::GeometryType::POLYGON)
+				if (geometry_builder->get_geometry_build_type() == GPlatesMaths::GeometryType::POLYGON)
 				{
 					total_distance += calculate_distance_on_surface_of_sphere(
 							*previous,

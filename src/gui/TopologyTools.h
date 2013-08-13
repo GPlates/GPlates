@@ -717,6 +717,10 @@ namespace GPlatesGui
 		bool
 		can_insert_focused_feature_into_topology();
 
+		//! Returns true if the focused feature can be removed from the topology.
+		bool
+		can_remove_focused_feature_from_topology();
+
 		void
 		create_child_rendered_layers();
 

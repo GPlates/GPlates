@@ -30,6 +30,7 @@ set(srcs
     ColourNameSet.h
     ColourPalette.h
     ColourPaletteAdapter.h
+    ColourPaletteRangeRemapper.h
     ColourPaletteVisitor.h
     ColourProxy.cc
     ColourProxy.h
@@ -111,6 +112,8 @@ set(srcs
     FeatureTableModel.h
     FeatureTypeColourPalette.cc
     FeatureTypeColourPalette.h
+    FeedbackOpenGLToQPainter.cc
+    FeedbackOpenGLToQPainter.h
     FileIOFeedback.cc
     FileIOFeedback.h
     FullScreenMode.cc
@@ -149,6 +152,8 @@ set(srcs
     LogFilterModel.h
     Map.cc
     Map.h
+    MapBackground.cc
+    MapBackground.h
     MapCanvasTool.cc
     MapCanvasTool.h
     MapCanvasToolAdapter.cc
@@ -180,13 +185,8 @@ set(srcs
     PythonConsoleHistory.h
     PythonManager.cc
     PythonManager.h
-    QGLWidgetTextRenderer.cc
-    QGLWidgetTextRenderer.h
-    QPainterTextRenderer.cc
-    QPainterTextRenderer.h
     RasterColourPalette.cc
     RasterColourPalette.h
-    ReconstructionGeometrySequence.h
     RenderSettings.h
     SceneLightingParameters.h
     SessionMenu.cc
@@ -201,16 +201,12 @@ set(srcs
     SphericalGrid.h
     Stars.cc
     Stars.h
-    SvgExport.cc
-    SvgExport.h
     Symbol.cc
     Symbol.h
     TextOverlay.cc
     TextOverlay.h
     TextOverlaySettings.cc
     TextOverlaySettings.h
-    TextRenderer.cc
-    TextRenderer.h
     TopologyCanvasToolWorkflow.cc
     TopologyCanvasToolWorkflow.h
     TopologySectionsContainer.cc

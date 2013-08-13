@@ -24,7 +24,7 @@
 */
 #ifndef GPLATES_UNIT_TEST_MAINTESTSUITE_H
 #define GPLATES_UNIT_TEST_MAINTESTSUITE_H
-
+#include <iostream>
 #include <boost/test/unit_test.hpp>
 
 #include "unit-test/GPlatesTestSuite.h"

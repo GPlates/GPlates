@@ -1,34 +1,35 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>ShapefileAttributeMapper</class>
- <widget class="QDialog" name="ShapefileAttributeMapper" >
-  <property name="windowModality" >
+ <widget class="QDialog" name="ShapefileAttributeMapper">
+  <property name="windowModality">
    <enum>Qt::WindowModal</enum>
   </property>
-  <property name="geometry" >
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>500</width>
-    <height>420</height>
+    <height>550</height>
    </rect>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>Map Shapefile Attributes</string>
   </property>
-  <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >
+  <property name="windowIcon">
+   <iconset resource="../qt-resources/qt_widgets.qrc">
     <normaloff>:/gnome_document_properties_22.png</normaloff>:/gnome_document_properties_22.png</iconset>
   </property>
-  <layout class="QGridLayout" >
-   <item row="0" column="0" >
-    <widget class="QWidget" native="1" name="widget_shapefile_attribute" />
+  <layout class="QGridLayout">
+   <item row="0" column="0">
+    <widget class="QWidget" name="widget_shapefile_attribute" native="true"/>
    </item>
-   <item row="1" column="0" >
-    <spacer name="verticalSpacer" >
-     <property name="orientation" >
+   <item row="1" column="0">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
-     <property name="sizeHint" stdset="0" >
+     <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
        <height>40</height>
@@ -36,9 +37,9 @@
      </property>
     </spacer>
    </item>
-   <item row="2" column="0" >
-    <widget class="QDialogButtonBox" name="main_buttonbox" >
-     <property name="standardButtons" >
+   <item row="2" column="0">
+    <widget class="QDialogButtonBox" name="main_buttonbox">
+     <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok|QDialogButtonBox::Reset</set>
      </property>
     </widget>
@@ -46,8 +47,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
  <connections/>
 </ui>

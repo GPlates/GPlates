@@ -1,3 +1,28 @@
+/* $Id$ */
+
+/**
+ * \file 
+ * $Revision$
+ * $Date$
+ * 
+ * Copyright (C) 2013 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
 /*
  * Fragment shader source code to render a source raster as either a floating-point raster or
  * a normal-map raster.
@@ -12,12 +37,12 @@ void main (void)
 {
 #ifdef SOURCE_RASTER_IS_FLOATING_POINT
 	// Just return the source raster.
-   gl_FragColor = texture2D(raster_texture_sampler, gl_TexCoord[0].st);
+	gl_FragColor = texture2D(raster_texture_sampler, gl_TexCoord[0].st);
 #endif
 
 #ifdef SURFACE_NORMALS
 	// Sample the tangent-space normal in the source raster.
-   vec3 tangent_space_normal = texture2D(raster_texture_sampler, gl_TexCoord[0].st).xyz;
+	vec3 tangent_space_normal = texture2D(raster_texture_sampler, gl_TexCoord[0].st).xyz;
 	// Need to convert the x and y components from unsigned to signed ([0,1] -> [-1,1]).
 	// The z component is always positive (in range [0,1]) so does not need conversion.
 	tangent_space_normal.xy = 2 * tangent_space_normal.xy - 1;

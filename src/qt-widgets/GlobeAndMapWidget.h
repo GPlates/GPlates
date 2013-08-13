@@ -129,9 +129,13 @@ namespace GPlatesQtWidgets
 		QSize
 		sizeHint() const;
 
-		//! Gets the framebuffer for the active view.
+		/**
+		 * Renders the scene to a QImage of the dimensions specified by @a image_size
+		 * (or dimensions @a get_viewport_size, if @a image_size is boost::none).
+		 */
 		QImage
-		grab_frame_buffer();
+		render_to_qimage(
+				boost::optional<QSize> image_size = boost::none);
 
 		/**
 		 * Returns the OpenGL context for the active view.
@@ -145,9 +149,6 @@ namespace GPlatesQtWidgets
 
 		void
 		update_canvas();
-
-		void
-		repaint_canvas();
 
 		virtual
 		double
@@ -168,7 +169,8 @@ namespace GPlatesQtWidgets
 				int new_width, int new_height);
 
 		void
-		repainted(bool mouse_down);
+		repainted(
+				bool mouse_down);
 
 	protected:
 

@@ -134,9 +134,21 @@ GPlatesAppLogic::ReconstructGraphImpl::Data::disconnect_output_connections()
 	}
 
 	// Our 'd_output_connections' sequence should now be empty.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-		d_output_connections.empty(),
-		GPLATES_ASSERTION_SOURCE);
+	//
+	// The only case when it might not be empty is if 'this' Data has an outputting layer
+	// (ie, 'this' Data is the output of a layer) *and* that layer is currently in the process
+	// of being destroyed (ie, we've been called from within its destructor).
+	if (!d_output_connections.empty())
+	{
+		// Iterate over the remaining connections and verify that their parent layer weak reference
+		// is no longer valid (which is why those connections still exist).
+		BOOST_FOREACH(LayerInputConnection *output_connection, d_output_connections)
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				output_connection->get_layer_receiving_input().expired(),
+				GPLATES_ASSERTION_SOURCE);
+		}
+	}
 }
 
 
@@ -164,8 +176,7 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::LayerInputConnectio
 	d_input_data(input_data),
 	d_layer_receiving_input(layer_receiving_input),
 	d_layer_input_channel_name(layer_input_channel_name),
-	d_is_input_layer_active(is_input_layer_active),
-	d_can_access_layer_receiving_input(true)
+	d_is_input_layer_active(is_input_layer_active)
 {
 	// Input data should be non-NULL.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -222,11 +233,12 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::LayerInputConnectio
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::~LayerInputConnection()
 {
 	//
-	// Notify the layer task of the layer receiving input from this connection
+	// Notify the layer task (of the layer receiving input from this connection)
 	// that the connection is being removed.
 	//
 
-	if (d_can_access_layer_receiving_input)
+	// Cannot access parent layer if it is currently being destroyed.
+	if (!d_layer_receiving_input.expired())
 	{
 		const boost::shared_ptr<Layer> layer_receiving_input_shared_ptr(d_layer_receiving_input);
 		if (layer_receiving_input_shared_ptr)
@@ -284,10 +296,20 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::~LayerInputConnecti
 void
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::disconnect_from_parent_layer()
 {
-	// Calling this will effectively destroy 'this' since our parent layer has the only
-	// owning reference to 'this'.
-	boost::shared_ptr<Layer>(d_layer_receiving_input)
-			->get_input_connections().remove_input_connection(d_layer_input_channel_name, this);
+	// If 'this' layer input connection is such that it connects its parent layer (receiving input)
+	// to its parent layer output, in other words the parent layer connects to its own output, then
+	// it's possible that the parent layer is currently being destroyed and hence our weak reference
+	// to it is no longer valid.
+	// If the weak reference to the parent layer is not valid then we don't need to remove 'this'
+	// input connection from the parent layer (because the parent layer will do that when it
+	// continues its destruction process - which we are currently in the middle of).
+	if (!d_layer_receiving_input.expired())
+	{
+		// Calling this will effectively destroy 'this' since our parent layer has the only
+		// owning reference to 'this'.
+		boost::shared_ptr<Layer>(d_layer_receiving_input)
+				->get_input_connections().remove_input_connection(d_layer_input_channel_name, this);
+	}
 }
 
 
@@ -303,7 +325,8 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::input_layer_activat
 
 	d_is_input_layer_active = active;
 
-	if (d_can_access_layer_receiving_input)
+	// Cannot access parent layer if it is currently being destroyed.
+	if (!d_layer_receiving_input.expired())
 	{
 		const boost::shared_ptr<Layer> layer_receiving_input_shared_ptr(d_layer_receiving_input);
 		if (layer_receiving_input_shared_ptr)
@@ -340,15 +363,6 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::input_layer_activat
 
 
 void
-GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::layer_receiving_input_is_being_destroyed()
-{
-	// We can no longer access the layer receiving with our weak_ptr because it is being
-	// destroyed and hence a shared_ptr to it could be in a partially invalid state.
-	d_can_access_layer_receiving_input = false;
-}
-
-
-void
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::modified_input_feature_collection()
 {
 	//
@@ -356,7 +370,8 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::modified_input_feat
 	// that the input file (feature collection) has been modified.
 	//
 
-	if (d_can_access_layer_receiving_input)
+	// Cannot access parent layer if it is currently being destroyed.
+	if (!d_layer_receiving_input.expired())
 	{
 		const boost::shared_ptr<Layer> layer_receiving_input_shared_ptr(d_layer_receiving_input);
 		if (layer_receiving_input_shared_ptr)
@@ -470,20 +485,11 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::Layer(
 GPlatesAppLogic::ReconstructGraphImpl::Layer::~Layer()
 {
 	// Get our output data to disconnect from its output connections.
+	//
+	// We need to do this because the output data object ownership is shared with input connections
+	// to other layers - if we don't disconnect it then those other layers will still reference
+	// the output of 'this' layer.
 	d_output_data->disconnect_output_connections();
-
-	// Iterate over the input connections and tell them not to reference us via their weak_ptr
-	// because we are being destroyed and the shared_ptr to us could be in a partially invalid state.
-	const LayerInputConnections::connection_seq_type input_layer_connections =
-			d_input_data.get_input_connections();
-
-	// Iterate over the input connections of 'input_layer'.
-	BOOST_FOREACH(
-			const boost::shared_ptr<LayerInputConnection> &input_layer_connection,
-			input_layer_connections)
-	{
-		input_layer_connection->layer_receiving_input_is_being_destroyed();
-	}
 }
 
 

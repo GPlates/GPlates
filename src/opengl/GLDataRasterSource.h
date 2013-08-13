@@ -182,6 +182,11 @@ namespace GPlatesOpenGL
 		unsigned int d_raster_height;
 
 		/**
+		 * Texture internal format of tile textures.
+		 */
+		GLint d_tile_texture_internal_format;
+
+		/**
 		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
 		 */
 		unsigned int d_tile_texel_dimension;
@@ -204,6 +209,7 @@ namespace GPlatesOpenGL
 
 
 		GLDataRasterSource(
+				GLRenderer &renderer,
 				const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &
 						proxy_raster_resolver,
 				unsigned int raster_width,
@@ -235,7 +241,8 @@ namespace GPlatesOpenGL
 				const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster_region,
 				const GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type &raster_coverage,
 				unsigned int texel_width,
-				unsigned int texel_height);
+				unsigned int texel_height,
+				GLRenderer &renderer);
 
 
 		/**
@@ -247,7 +254,8 @@ namespace GPlatesOpenGL
 				const RealType *const region_data,
 				const float *const coverage_data,
 				unsigned int texel_width,
-				unsigned int texel_height);
+				unsigned int texel_height,
+				GLRenderer &renderer);
 	};
 }
 

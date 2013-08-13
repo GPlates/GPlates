@@ -26,6 +26,7 @@
 #ifndef GPLATES_OPENGL_GLBUFFER_H
 #define GPLATES_OPENGL_GLBUFFER_H
 
+#include <bitset>
 #include <memory> // For std::auto_ptr
 #include <vector>
 #include <boost/enable_shared_from_this.hpp>
@@ -67,6 +68,29 @@ namespace GPlatesOpenGL
 		typedef boost::weak_ptr<const GLBuffer> weak_ptr_to_const_type;
 
 
+		/**
+		 * The buffer types that a buffer can be used for.
+		 */
+		enum BufferType
+		{
+			VERTEX_BUFFER, // Vertex array and vertex element array targets.
+			PIXEL_BUFFER,  // Pixel pack and unpack targets.
+
+			NUM_BUFFER_TYPES // Must be the last enum.
+		};
+
+		/**
+		 * A std::bitset for setting which buffer types a buffer will be used for.
+		 */
+		typedef std::bitset<NUM_BUFFER_TYPES> buffers_type;
+
+		//
+		// The supported buffer types.
+		//
+		static const buffers_type BUFFER_TYPE_VERTEX;
+		static const buffers_type BUFFER_TYPE_PIXEL;
+
+
 		//! Typedef for a target of this buffer.
 		typedef unsigned int target_type;
 
@@ -75,8 +99,8 @@ namespace GPlatesOpenGL
 		//
 		static const target_type TARGET_ARRAY_BUFFER;          // When reading/writing vertex attribute data (vertices).
 		static const target_type TARGET_ELEMENT_ARRAY_BUFFER;  // When reading/writing vertex element data (indices).
-		static const target_type TARGET_PIXEL_UNPACK_BUFFER;   // When reading pixel data.
-		static const target_type TARGET_PIXEL_PACK_BUFFER;     // When writing pixel data.
+		static const target_type TARGET_PIXEL_UNPACK_BUFFER;   // When writing pixel data.
+		static const target_type TARGET_PIXEL_PACK_BUFFER;     // When reading pixel data.
 
 
 		//! Typedef for the usage of the buffer.
@@ -116,13 +140,23 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Creates a @a GLBuffer object with no array data.
+		 *
+		 * @a buffer_types specifies the types of buffer that will be used.
+		 * For example, it is possible to read frame buffer pixels into a buffer and then
+		 * use that buffer as vertices (render-to-vertex-buffer).
+		 * In this case both @a BUFFER_TYPE_VERTEX and @a BUFFER_TYPE_PIXEL would be specified as in
+		 * 'create(BUFFER_TYPE_VERTEX & BUFFER_TYPE_PIXEL)'.
+		 * This is mainly used to determine whether to create a buffer object or use client-side
+		 * memory arrays - it's possible that 'GL_ARB_vertex_buffer_object' is supported but not
+		 * 'GL_ARB_pixel_buffer_object' in which case (slower) client-side memory arrays must be used.
 		 */
 		static
 		shared_ptr_type
 		create(
-				GLRenderer &renderer)
+				GLRenderer &renderer,
+				const buffers_type &buffer_types)
 		{
-			return shared_ptr_type(create_as_auto_ptr(renderer).release());
+			return shared_ptr_type(create_as_auto_ptr(renderer, buffer_types).release());
 		}
 
 		/**
@@ -131,7 +165,8 @@ namespace GPlatesOpenGL
 		static
 		std::auto_ptr<GLBuffer>
 		create_as_auto_ptr(
-				GLRenderer &renderer);
+				GLRenderer &renderer,
+				const buffers_type &buffer_types);
 
 
 		virtual
@@ -553,6 +588,7 @@ namespace GPlatesOpenGL
 	private:
 		//! Typedef for a subject of buffer allocations.
 		typedef GPlatesUtils::SubjectToken buffer_allocation_subject_type;
+
 
 		//! Keeps track of buffer allocations (ie, calls to 'gl_buffer_data').
 		buffer_allocation_subject_type d_buffer_allocation_subject;

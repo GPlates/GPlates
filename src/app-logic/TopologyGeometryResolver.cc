@@ -62,11 +62,13 @@ GPlatesAppLogic::TopologyGeometryResolver::TopologyGeometryResolver(
 		std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &resolved_topological_geometries,
 		const resolve_geometry_flags_type &resolve_geometry_flags,
 		ReconstructHandle::type reconstruct_handle,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles) :
 	d_resolved_topological_geometries(resolved_topological_geometries),
 	d_resolve_geometry_flags(resolve_geometry_flags),
 	d_reconstruct_handle(reconstruct_handle),
+	d_reconstruction_tree_creator(reconstruction_tree_creator),
 	d_reconstruction_tree(reconstruction_tree),
 	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles),
 	d_reconstruction_params(reconstruction_tree->get_reconstruction_time())
@@ -661,6 +663,7 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 		// creating the resolved topological geometry.
 		const ResolvedTopologicalGeometrySubSegment output_subsegment(
 				section.d_final_segment_unreversed_geom.get(),
+				section.d_source_rg,
 				subsegment_feature_const_ref,
 				section.d_use_reverse);
 		output_subsegments.push_back(output_subsegment);
@@ -696,6 +699,7 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 	ResolvedTopologicalGeometry::non_null_ptr_type rtb_ptr =
 		ResolvedTopologicalGeometry::create(
 			d_reconstruction_tree,
+			d_reconstruction_tree_creator,
 			*plate_polygon,
 			*(current_top_level_propiter()->handle_weak_ref()),
 			*(current_top_level_propiter()),
@@ -753,6 +757,7 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_line()
 		// creating the resolved topological geometry.
 		const ResolvedTopologicalGeometrySubSegment output_subsegment(
 				section.d_final_segment_unreversed_geom.get(),
+				section.d_source_rg,
 				subsegment_feature_const_ref,
 				section.d_use_reverse);
 		output_subsegments.push_back(output_subsegment);
@@ -788,6 +793,7 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_line()
 	ResolvedTopologicalGeometry::non_null_ptr_type rtl_ptr =
 		ResolvedTopologicalGeometry::create(
 			d_reconstruction_tree,
+			d_reconstruction_tree_creator,
 			*resolved_line_geometry,
 			*(current_top_level_propiter()->handle_weak_ref()),
 			*(current_top_level_propiter()),

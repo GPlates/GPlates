@@ -40,12 +40,15 @@
 
 
 GPlatesOpenGL::GLVertexElementBufferImpl::GLVertexElementBufferImpl(
+		GLRenderer &renderer,
 		const GLBufferImpl::shared_ptr_type &buffer) :
 	d_buffer(buffer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// We should only get here if the vertex buffer object extension is *not* supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_buffer_object),
+			!capabilities.buffer.gl_ARB_vertex_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 }
 

@@ -33,6 +33,7 @@
 #include <QString>
 
 #include "property-values/GpmlKeyValueDictionary.h"
+#include "PropertyMapper.h"
 #include "ReconstructionGeometryExportImpl.h"
 
 namespace GPlatesFileIO
@@ -136,6 +137,13 @@ namespace GPlatesFileIO
 		get_type_qstring_from_qvariant(
 			const QVariant &variant);
 
+		/**
+		 * Returns true if the attribute field name for feature type in the
+		 * @a model_to_attribute_map is "GPGIM_TYPE", otherwise returns false.
+		 */
+		bool
+		feature_type_field_is_gpgim_type(
+				const model_to_attribute_map_type &model_to_attribute_map);
 
 		/**
 		* Given a filename in the form <name>.<ext> , this will produce a filename of the form
@@ -210,6 +218,21 @@ namespace GPlatesFileIO
 			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
 
+
+		void
+		add_left_plate_to_kvd(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
+
+		void
+		add_right_plate_to_kvd(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
+
+		void
+		add_reconstruction_method_to_kvd(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
 }
 
 

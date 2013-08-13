@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 Geological Survey of Norway
+ * Copyright (C) 2008, 2009, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -79,6 +79,9 @@ GPlatesFileIO::ShapefileXmlWriter::write_file(
 						"Name .................... The name of the feature (gml:name). \n"
 						"Description ............. A description of the feature (gml:description). \n"
 						"ConjugatePlateId......... The conjugate plate id. \n"
+						"ReconstructionMethod......The type of reconstruction method used. \n"
+						"LeftPlate.................The left plate id used for half-stage reconstructions. \n"
+						"RightPlate................The right plate id used for half-stage reconstructions. \n"
 						"\n"
 						"On loading a shapefile, GPlates will use the mapping stored in this file, if it exists. \n"
 						"If no such file exists, GPlates will generate a file according to the mapping \n"

@@ -28,6 +28,8 @@
 
 #include <vector>
 
+#include "ReconstructionGeometry.h"
+
 #include "maths/GeometryOnSphere.h"
 
 #include "model/FeatureHandle.h"
@@ -38,6 +40,8 @@ namespace GPlatesAppLogic
 	/**
 	 * Records the reconstructed geometry, and any other relevant information, of a subsegment.
 	 *
+	 * A subsegment can come from a reconstructed feature geometry or a resolved topological *line*.
+	 *
 	 * A subsegment is the subset of a reconstructed topological section's
 	 * vertices that are used to form part of the geometry of a resolved topological polygon/polyline
 	 * or boundary of a topological network.
@@ -47,9 +51,11 @@ namespace GPlatesAppLogic
 	public:
 		ResolvedTopologicalGeometrySubSegment(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &sub_segment_geometry,
+				const ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry,
 				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
 				bool use_reverse) :
 			d_sub_segment_geometry(sub_segment_geometry),
+			d_reconstruction_geometry(reconstruction_geometry),
 			d_feature_ref(feature_ref),
 			d_use_reverse(use_reverse)
 		{  }
@@ -57,13 +63,26 @@ namespace GPlatesAppLogic
 		/**
 		 * The subset of vertices of topological section used in resolved topology geometry.
 		 *
-		 * NOTE: The vertices have already been reversed if this subsegment is reversed
-		 * (as determined by @a get_use_reverse).
+		 * NOTE: These are the un-reversed vertices of the original geometry that contributed this
+		 * sub-segment - the actual order of vertices (as contributed to the final resolved
+		 * topological geometry along with other sub-segments) depends on this un-reversed geometry
+		 * and the reversal flag returned by @a get_use_reverse.
 		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		get_geometry() const
 		{
 			return d_sub_segment_geometry;
+		}
+
+		/**
+		 * The reconstruction geometry that the sub-segment was obtained from.
+		 *
+		 * This can be either a reconstructed feature geometry or a resolved topological *line*.
+		 */
+		const ReconstructionGeometry::non_null_ptr_to_const_type &
+		get_reconstruction_geometry() const
+		{
+			return d_reconstruction_geometry;
 		}
 
 		//! Reference to the feature referenced by the topological section.
@@ -73,6 +92,10 @@ namespace GPlatesAppLogic
 			return d_feature_ref;
 		}
 
+		/**
+		 * If true then the geometry returned by @a get_geometry had its points reversed in order
+		 * before contributing to the final resolved topological geometry.
+		 */
 		bool
 		get_use_reverse() const
 		{
@@ -82,6 +105,13 @@ namespace GPlatesAppLogic
 	private:
 		//! The subsegment geometry.
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_sub_segment_geometry;
+
+		/**
+		 * The subsegment reconstruction geometry.
+		 *
+		 * This is either a reconstructed feature geometry or a resolved topological *line*.
+		 */
+		ReconstructionGeometry::non_null_ptr_to_const_type d_reconstruction_geometry;
 
 		//! Reference to the source feature handle of the topological section.
 		GPlatesModel::FeatureHandle::const_weak_ref d_feature_ref;

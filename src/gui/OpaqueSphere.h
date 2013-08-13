@@ -39,6 +39,11 @@
 #include "opengl/GLVertexArray.h"
 
 
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
+}
+
 namespace GPlatesPresentation
 {
 	class ViewState;

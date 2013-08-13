@@ -215,9 +215,6 @@ namespace GPlatesAppLogic
 		 * other than @a reconstruction_time.
 		 * This is useful for reconstructing flowlines since the function might be hooked up
 		 * to a reconstruction tree cache.
-		 * NOTE: Calling 'set_default_reconstruction_time()' or 'set_default_anchor_plate_id'
-		 * can result in a thrown exception. These defaults are managed by the caller and
-		 * should not be altered.
 		 */
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		reconstruct_geometry(
@@ -225,6 +222,7 @@ namespace GPlatesAppLogic
 				const ReconstructMethodRegistry &reconstruct_method_registry,
 				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const ReconstructParams &reconstruct_params,
 				const double &reconstruction_time,
 				bool reverse_reconstruct = false);
 
@@ -240,6 +238,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+				const ReconstructParams &reconstruct_params,
 				bool reverse_reconstruct = false,
 				unsigned int reconstruction_tree_cache_size = 1);
 
@@ -253,6 +252,7 @@ namespace GPlatesAppLogic
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
 				const ReconstructionTree &reconstruction_tree,
+				const ReconstructParams &reconstruct_params,
 				bool reverse_reconstruct = false);
 
 
@@ -321,7 +321,15 @@ namespace GPlatesAppLogic
 				bool reverse_reconstruct = false);
 
 
-		boost::optional<GPlatesMaths::FiniteRotation>
+		/**
+		 * Returns the half-stage rotation between @a left_plate_id and @a right_plate_id at the
+		 * reconstruction time of the specified reconstruction tree.
+		 *
+		 * NOTE: Since this method does not know when sea-floor spreading begins it assumes that
+		 * the relative rotation between the left and right plates is the identity rotation when
+		 * seafloor spreading is *not* occurring.
+		 */
+		GPlatesMaths::FiniteRotation
 		get_half_stage_rotation(
 				const ReconstructionTree &reconstruction_tree,
 				GPlatesModel::integer_plate_id_type left_plate_id,
@@ -381,22 +389,17 @@ namespace GPlatesAppLogic
 		{
 			// Get the composed absolute rotation needed to bring a thing on that plate
 			// in the present day to this time.
-			boost::optional<GPlatesMaths::FiniteRotation> rotation =
+			GPlatesMaths::FiniteRotation rotation =
 				get_half_stage_rotation(reconstruction_tree,left_plate_id,right_plate_id);
-
-			if (!rotation)
-			{
-				return geometry;
-			}
 
 			// Are we reversing reconstruction back to present day ?
 			if (reverse_reconstruct)
 			{
-				*rotation = GPlatesMaths::get_reverse(*rotation);
+				rotation = GPlatesMaths::get_reverse(rotation);
 			}
 
 			// Apply the rotation.
-			return (*rotation) * geometry;
+			return rotation * geometry;
 		}
 
 	}

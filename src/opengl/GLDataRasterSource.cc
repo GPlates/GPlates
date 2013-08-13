@@ -35,6 +35,7 @@
 
 #include "GLDataRasterSource.h"
 #include "GLContext.h"
+#include "GLRenderer.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
 
@@ -60,6 +61,8 @@ GPlatesOpenGL::GLDataRasterSource::is_supported(
 	{
 		tested_for_support = true;
 
+		const GLCapabilities &capabilities = renderer.get_capabilities();
+
 		// Need floating-point texture support.
 		// Also need vertex/fragment shader support in various other classes to render floating-point rasters.
 		//
@@ -72,14 +75,14 @@ GPlatesOpenGL::GLDataRasterSource::is_supported(
 		// 'GL_ARB_color_buffer_float' extension (which means we could use the fixed-function pipeline
 		// always) but that extension is not available on Mac OSX 10.5 (Leopard) on any hardware
 		// (rectified in 10.6) so instead we'll just use the programmable pipeline whenever it's available.
-		if (!GLContext::get_parameters().texture.gl_ARB_texture_float ||
-			!GLContext::get_parameters().shader.gl_ARB_vertex_shader ||
-			!GLContext::get_parameters().shader.gl_ARB_fragment_shader)
+		if (!capabilities.texture.gl_ARB_texture_float ||
+			!capabilities.shader.gl_ARB_vertex_shader ||
+			!capabilities.shader.gl_ARB_fragment_shader)
 		{
 			// Any system with floating-point textures will typically also have shaders so only
 			// need to mention lack of floating-point texture support.
-			qDebug() <<
-					"GLDataRasterSource: Disabling floating-point texture support in OpenGL - requires 'GL_ARB_texture_float'.";
+			qWarning() <<
+					"GLDataRasterSource: Floating-point OpenGL texture support 'GL_ARB_texture_float' is required.\n";
 			return false;
 		}
 
@@ -97,6 +100,8 @@ GPlatesOpenGL::GLDataRasterSource::create(
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &data_raster,
 		unsigned int tile_texel_dimension)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	if (!is_supported(renderer))
 	{
 		return boost::none;
@@ -129,9 +134,9 @@ GPlatesOpenGL::GLDataRasterSource::create(
 	const unsigned int raster_height = raster_dimensions->second;
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (tile_texel_dimension > capabilities.texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
+		tile_texel_dimension = capabilities.texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.
@@ -139,15 +144,18 @@ GPlatesOpenGL::GLDataRasterSource::create(
 			tile_texel_dimension > 0 && GPlatesUtils::Base2::is_power_of_two(tile_texel_dimension),
 			GPLATES_ASSERTION_SOURCE);
 
-	return non_null_ptr_type(new GLDataRasterSource(
-			proxy_resolver_opt.get(),
-			raster_width,
-			raster_height,
-			tile_texel_dimension));
+	return non_null_ptr_type(
+			new GLDataRasterSource(
+					renderer,
+					proxy_resolver_opt.get(),
+					raster_width,
+					raster_height,
+					tile_texel_dimension));
 }
 
 
 GPlatesOpenGL::GLDataRasterSource::GLDataRasterSource(
+		GLRenderer &renderer,
 		const GPlatesGlobal::PointerTraits<GPlatesPropertyValues::ProxiedRasterResolver>::non_null_ptr_type &
 				proxy_raster_resolver,
 		unsigned int raster_width,
@@ -156,17 +164,23 @@ GPlatesOpenGL::GLDataRasterSource::GLDataRasterSource(
 	d_proxied_raster_resolver(proxy_raster_resolver),
 	d_raster_width(raster_width),
 	d_raster_height(raster_height),
+	d_tile_texture_internal_format(
+			// We use RG format where possible since it saves memory.
+			// NOTE: Otherwise we use RGBA (instead of RGB) because hardware typically uses
+			// four channels for RGB formats anyway and uploading to the hardware should be faster
+			// since driver doesn't need to be involved (consuming CPU cycles to convert RGB to RGBA).
+			renderer.get_capabilities().texture.gl_ARB_texture_rg ? GL_RG32F : GL_RGBA32F_ARB),
 	d_tile_texel_dimension(tile_texel_dimension),
 	d_tile_pack_working_space(
 			new float[
-					GPLATES_OPENGL_BOOL(GLEW_ARB_texture_rg)
+					renderer.get_capabilities().texture.gl_ARB_texture_rg
 					// RG format...
 					? 2 * tile_texel_dimension * tile_texel_dimension
 					// RGBA format...
 					: 4 * tile_texel_dimension * tile_texel_dimension]),
 	d_tile_edge_working_space(
 			new float[
-					GPLATES_OPENGL_BOOL(GLEW_ARB_texture_rg)
+					renderer.get_capabilities().texture.gl_ARB_texture_rg
 					// RG format...
 					? 2 * tile_texel_dimension
 					// RGBA format...
@@ -218,11 +232,7 @@ GPlatesOpenGL::GLDataRasterSource::change_raster(
 GLint
 GPlatesOpenGL::GLDataRasterSource::get_target_texture_internal_format() const
 {
-	// We use RG format where possible since it saves memory.
-	// NOTE: Otherwise we use RGBA (instead of RGB) because hardware typically uses
-	// four channels for RGB formats anyway and uploading to the hardware should be faster
-	// since driver doesn't need to be involved (consuming CPU cycles to convert RGB to RGBA).
-	return GPLATES_OPENGL_BOOL(GLEW_ARB_texture_rg) ? GL_RG32F : GL_RGBA32F_ARB;
+	return d_tile_texture_internal_format;
 }
 
 
@@ -236,6 +246,8 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 		const GLTexture::shared_ptr_type &target_texture,
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	PROFILE_BEGIN(profile_proxy_raster_data, "GLDataRasterSource: get_region_from_level");
 	// Get the region of the raster covered by this tile at the level-of-detail of this tile.
 	boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> raster_region_opt =
@@ -280,7 +292,8 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 			raster_region_opt.get(),
 			raster_coverage_opt.get(),
 			texel_width,
-			texel_height))
+			texel_height,
+			renderer))
 	{
 		handle_error_loading_source_raster(
 				level,
@@ -296,7 +309,7 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 	}
 
 	// Load the packed data into the texture.
-	if (GLEW_ARB_texture_rg)
+	if (capabilities.texture.gl_ARB_texture_rg)
 	{
 		// Use RG-only format to pack raster data/coverage values.
 		GLTextureUtils::load_image_into_texture_2D(
@@ -332,7 +345,7 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 	// in the graphics hardware and nearest neighbour filtering could sample a garbage texel.
 	if (texel_width < d_tile_texel_dimension)
 	{
-		const unsigned int texel_size_in_floats = GPLATES_OPENGL_BOOL(GLEW_ARB_texture_rg) ? 2 : 4;
+		const unsigned int texel_size_in_floats = capabilities.texture.gl_ARB_texture_rg ? 2 : 4;
 		// Copy the right edge of the region into the working space.
 		float *working_space = d_tile_edge_working_space.get();
 		// The last pixel in the first row of the region.
@@ -352,7 +365,7 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 				renderer,
 				target_texture,
 				d_tile_edge_working_space.get(),
-				GPLATES_OPENGL_BOOL(GLEW_ARB_texture_rg) ? GL_RG : GL_RGBA,
+				capabilities.texture.gl_ARB_texture_rg ? GL_RG : GL_RGBA,
 				GL_FLOAT,
 				1/*image_width*/,
 				texel_height,
@@ -363,7 +376,7 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 	// integer multiple of the tile texel dimension).
 	if (texel_height < d_tile_texel_dimension)
 	{
-		const unsigned int texel_size_in_floats = GPLATES_OPENGL_BOOL(GLEW_ARB_texture_rg) ? 2 : 4;
+		const unsigned int texel_size_in_floats = capabilities.texture.gl_ARB_texture_rg ? 2 : 4;
 		// Copy the bottom edge of the region into the working space.
 		float *working_space = d_tile_edge_working_space.get();
 		// The first pixel in the last row of the region.
@@ -384,7 +397,7 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 				renderer,
 				target_texture,
 				d_tile_edge_working_space.get(),
-				GPLATES_OPENGL_BOOL(GLEW_ARB_texture_rg) ? GL_RG : GL_RGBA,
+				capabilities.texture.gl_ARB_texture_rg ? GL_RG : GL_RGBA,
 				GL_FLOAT,
 				texel_width,
 				1/*image_height*/,
@@ -407,6 +420,8 @@ GPlatesOpenGL::GLDataRasterSource::handle_error_loading_source_raster(
 		const GLTexture::shared_ptr_type &target_texture,
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	if (!d_logged_tile_load_failure_warning)
 	{
 		qWarning() << "Unable to load floating-point data/coverage data into raster tile:";
@@ -422,7 +437,7 @@ GPlatesOpenGL::GLDataRasterSource::handle_error_loading_source_raster(
 	}
 
 	// Set the data/coverage values to zero for all pixels.
-	if (GLEW_ARB_texture_rg)
+	if (capabilities.texture.gl_ARB_texture_rg)
 	{
 		// Use RG-only format.
 		GLTextureUtils::fill_float_texture_2D(
@@ -443,12 +458,15 @@ GPlatesOpenGL::GLDataRasterSource::pack_raster_data_into_tile_working_space(
 		const RealType *const region_data,
 		const float *const coverage_data,
 		unsigned int texel_width,
-		unsigned int texel_height)
+		unsigned int texel_height,
+		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	float *tile_pack_working_space = d_tile_pack_working_space.get();
 	const unsigned int num_texels = texel_width * texel_height;
 
-	if (GLEW_ARB_texture_rg)
+	if (capabilities.texture.gl_ARB_texture_rg)
 	{
 		// Use RG-only format to pack raster data/coverage values.
 		for (unsigned int texel = 0; texel < num_texels; ++texel)
@@ -496,7 +514,8 @@ GPlatesOpenGL::GLDataRasterSource::pack_raster_data_into_tile_working_space(
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &raster_region,
 		const GPlatesPropertyValues::CoverageRawRaster::non_null_ptr_type &raster_coverage,
 		unsigned int texel_width,
-		unsigned int texel_height)
+		unsigned int texel_height,
+		GLRenderer &renderer)
 {
 	boost::optional<GPlatesPropertyValues::FloatRawRaster::non_null_ptr_type> float_region_tile =
 			GPlatesPropertyValues::RawRasterUtils::try_raster_cast<
@@ -507,7 +526,8 @@ GPlatesOpenGL::GLDataRasterSource::pack_raster_data_into_tile_working_space(
 				float_region_tile.get()->data(),
 				raster_coverage->data(),
 				texel_width,
-				texel_height);
+				texel_height,
+				renderer);
 
 		return true;
 	}
@@ -521,7 +541,8 @@ GPlatesOpenGL::GLDataRasterSource::pack_raster_data_into_tile_working_space(
 				double_region_tile.get()->data(),
 				raster_coverage->data(),
 				texel_width,
-				texel_height);
+				texel_height,
+				renderer);
 
 		return true;
 	}
@@ -535,7 +556,8 @@ GPlatesOpenGL::GLDataRasterSource::pack_raster_data_into_tile_working_space(
 				int8_region_tile.get()->data(),
 				raster_coverage->data(),
 				texel_width,
-				texel_height);
+				texel_height,
+				renderer);
 
 		return true;
 	}
@@ -549,7 +571,8 @@ GPlatesOpenGL::GLDataRasterSource::pack_raster_data_into_tile_working_space(
 				uint8_region_tile.get()->data(),
 				raster_coverage->data(),
 				texel_width,
-				texel_height);
+				texel_height,
+				renderer);
 
 		return true;
 	}
@@ -563,7 +586,8 @@ GPlatesOpenGL::GLDataRasterSource::pack_raster_data_into_tile_working_space(
 				int16_region_tile.get()->data(),
 				raster_coverage->data(),
 				texel_width,
-				texel_height);
+				texel_height,
+				renderer);
 
 		return true;
 	}
@@ -577,7 +601,8 @@ GPlatesOpenGL::GLDataRasterSource::pack_raster_data_into_tile_working_space(
 				uint16_region_tile.get()->data(),
 				raster_coverage->data(),
 				texel_width,
-				texel_height);
+				texel_height,
+				renderer);
 
 		return true;
 	}
@@ -591,7 +616,8 @@ GPlatesOpenGL::GLDataRasterSource::pack_raster_data_into_tile_working_space(
 				int32_region_tile.get()->data(),
 				raster_coverage->data(),
 				texel_width,
-				texel_height);
+				texel_height,
+				renderer);
 
 		return true;
 	}
@@ -605,7 +631,8 @@ GPlatesOpenGL::GLDataRasterSource::pack_raster_data_into_tile_working_space(
 				uint32_region_tile.get()->data(),
 				raster_coverage->data(),
 				texel_width,
-				texel_height);
+				texel_height,
+				renderer);
 
 		return true;
 	}

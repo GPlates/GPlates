@@ -457,15 +457,10 @@ GPlatesGui::GetAssociationDataCommand::execute(
 	// Make sure the context is currently active.
 	gl_context->make_current();
 
-	const GPlatesOpenGL::GLViewport viewport(
-		0, 0,
-		GPlatesPresentation::Application::instance().get_view_state().get_main_viewport_dimensions().first/*width*/,
-		GPlatesPresentation::Application::instance().get_view_state().get_main_viewport_dimensions().second/*height*/);
-
 	// Start a begin_render/end_render scope.
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = gl_context->create_renderer();
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, viewport);
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
 	try{
 		boost::optional<GPlatesAppLogic::CoRegistrationData::non_null_ptr_type> coregistration_data = 
 			get_coreg_proxy(d_layer_name)->get_coregistration_data(*renderer, d_time);

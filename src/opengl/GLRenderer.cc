@@ -25,7 +25,10 @@
 
 #include <exception>
 #include <iostream>
+#include <map>
+#include <boost/cast.hpp>
 #include <boost/foreach.hpp>
+#include <boost/utility/in_place_factory.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
@@ -33,6 +36,7 @@
  */
 #include <GL/glew.h>
 #include <QDebug>
+#include <QPaintDevice>
 #include <QPaintEngine>
 
 #include "GLRenderer.h"
@@ -59,8 +63,8 @@ const GLenum GPlatesOpenGL::GLRenderer::DEFAULT_BLEND_EQUATION = GL_FUNC_ADD_EXT
 GPlatesOpenGL::GLRenderer::GLRenderer(
 		const GLContext::non_null_ptr_type &context,
 		const GLStateStore::shared_ptr_type &state_store) :
-	d_qpainter(NULL),
 	d_context(context),
+	d_main_frame_buffer_dimensions(0, 0),
 	d_state_store(state_store),
 	d_default_state(d_state_store->allocate_state()),
 	d_last_applied_state(d_state_store->allocate_state()),
@@ -70,8 +74,7 @@ GPlatesOpenGL::GLRenderer::GLRenderer(
 
 
 void
-GPlatesOpenGL::GLRenderer::begin_render(
-		const GLViewport &default_viewport)
+GPlatesOpenGL::GLRenderer::begin_render()
 {
 	// Start a rendering frame.
 	d_context->begin_render();
@@ -82,10 +85,13 @@ GPlatesOpenGL::GLRenderer::begin_render(
 			GPLATES_ASSERTION_SOURCE,
 			GLRendererAPIError::SHOULD_HAVE_NO_RENDER_TARGET_BLOCKS);
 
+	// Record the main frame buffer dimensions.
+	d_main_frame_buffer_dimensions = std::make_pair(d_context->get_width(), d_context->get_height());
+
 	// The viewport of the window currently attached to the OpenGL context.
-	d_default_viewport = default_viewport;
-	d_default_state->set_viewport(default_viewport, default_viewport);
-	d_default_state->set_scissor(default_viewport, default_viewport);
+	d_default_viewport = GLViewport(0, 0, d_main_frame_buffer_dimensions.first, d_main_frame_buffer_dimensions.second);
+	d_default_state->set_viewport(get_capabilities(), d_default_viewport.get(), d_default_viewport.get());
+	d_default_state->set_scissor(get_capabilities(), d_default_viewport.get(), d_default_viewport.get());
 
 	// Start a new render target block with its first state block set to the default state.
 	// This render target block represents the main framebuffer.
@@ -100,14 +106,8 @@ GPlatesOpenGL::GLRenderer::begin_render(
 	// filter out a subsequent viewport setting if the viewport rectangle is the same.
 	// If we didn't call 'glViewport' here then OpenGL would be left with the viewport of the last
 	// window that the current OpenGL context was attached to (which is different than the current window).
-	glViewport(default_viewport.x(), default_viewport.y(), default_viewport.width(), default_viewport.height());
-	glScissor(default_viewport.x(), default_viewport.y(), default_viewport.width(), default_viewport.height());
-
-	// Use the GL_EXT_framebuffer_object extension for render targets if it's available.
-	if (GLContext::get_parameters().framebuffer.gl_EXT_framebuffer_object)
-	{
-		d_framebuffer_object = d_context->get_non_shared_state()->acquire_frame_buffer_object(*this);
-	}
+	glViewport(d_default_viewport->x(), d_default_viewport->y(), d_default_viewport->width(), d_default_viewport->height());
+	glScissor(d_default_viewport->x(), d_default_viewport->y(), d_default_viewport->width(), d_default_viewport->height());
 
 	// Apply the default vertex array state to the default vertex array object (resource handle zero).
 	// Since we haven't bound any vertex array objects yet then the default object (zero) is currently bound.
@@ -124,48 +124,32 @@ GPlatesOpenGL::GLRenderer::begin_render(
 
 void
 GPlatesOpenGL::GLRenderer::begin_render(
-		QPainter *opengl_qpainter)
+		QPainter &qpainter,
+		bool paint_device_is_framebuffer)
 {
 	GPlatesGlobal::Assert<GLRendererAPIError>(
-			!d_qpainter,
+			!d_qpainter_info,
 			GPLATES_ASSERTION_SOURCE,
 			GLRendererAPIError::SHOULD_HAVE_NO_ACTIVE_QPAINTER);
 
-	d_qpainter = opengl_qpainter;
+	d_qpainter_info = boost::in_place(boost::ref(qpainter), paint_device_is_framebuffer);
 
-	// The QPainter should currently be active and it should use an OpenGL paint engine.
-	const QPaintEngine::Type paint_engine_type = d_qpainter->paintEngine()->type();
+	// The QPainter should currently be active.
 	GPlatesGlobal::Assert<GLRendererAPIError>(
-			d_qpainter->isActive() &&
-				(paint_engine_type == QPaintEngine::OpenGL
-#if QT_VERSION >= 0x040600 // QPaintEngine::OpenGL2 only available starting with Qt 4.6...
-				|| paint_engine_type == QPaintEngine::OpenGL2
-#endif
-				),
+			d_qpainter_info->qpainter.isActive(),
 			GPLATES_ASSERTION_SOURCE,
-			GLRendererAPIError::SHOULD_HAVE_ACTIVE_OPENGL_QPAINTER);
-
-	// The viewport and modelview/projection matrices set by QPainter.
-	GLViewport qpainter_viewport;
-	GLMatrix qpainter_model_view_matrix;
-	GLMatrix qpainter_projection_matrix;
+			GLRendererAPIError::SHOULD_HAVE_ACTIVE_QPAINTER);
 
 	// Suspend the QPainter so we can start making calls directly to OpenGL without interfering with
-	// the QPainter's OpenGL state.
-	suspend_qpainter(qpainter_viewport, qpainter_model_view_matrix, qpainter_projection_matrix);
+	// the QPainter's OpenGL state (if it uses an OpenGL paint engine).
+	suspend_qpainter();
 
-	begin_render(qpainter_viewport);
-
-	// We're not really in the default OpenGL state so we need to track the current
-	// modelview and projection matrices set by QPainter.
-	// Easiest way to do that is simply to load them.
-	gl_load_matrix(GL_MODELVIEW, qpainter_model_view_matrix);
-	gl_load_matrix(GL_PROJECTION, qpainter_projection_matrix);
+	begin_render();
 
 	// This is one of the rare cases where we need to apply the OpenGL state encapsulated in
 	// GLRenderer directly to OpenGL - in this case we need to make sure our last applied state
 	// actually represents the state of OpenGL - which it may not because QPainter may have
-	// changed the model-view and projection matrices.
+	// changed the model-view and projection matrices (if it uses an OpenGL paint engine).
 	apply_current_state_to_opengl();
 }
 
@@ -185,13 +169,13 @@ GPlatesOpenGL::GLRenderer::end_render()
 	// We no longer have a default viewport.
 	d_default_viewport = boost::none;
 
-	// No longer need a framebuffer object for render targets.
-	d_framebuffer_object = boost::none;
-
 	// We should be at the default OpenGL state but it has not necessarily been applied
 	// directly to OpenGL yet. So we do this now.
 	// This is because we're finished rendering and should leave OpenGL in the default state.
-	d_default_state->apply_state(*d_last_applied_state);
+	d_default_state->apply_state(get_capabilities(), *d_last_applied_state);
+
+	// Set main frame buffer dimensions to zero.
+	d_main_frame_buffer_dimensions = std::make_pair(0, 0);
 
 	// End a rendering frame.
 	d_context->end_render();
@@ -199,36 +183,118 @@ GPlatesOpenGL::GLRenderer::end_render()
 	// If a QPainter (using OpenGL) was specified in 'begin_render' then resume it so the
 	// client can continue using the QPainter for rendering.
 	// NOTE: We are currently in the default OpenGL state which is required before we can resume the QPainter.
-	if (d_qpainter)
+	if (d_qpainter_info)
 	{
 		// The QPainter should currently be active - it should not have become inactive between
 		// 'begin_render' and 'end_render' or switched paint engines.
-		const QPaintEngine::Type paint_engine_type = d_qpainter->paintEngine()->type();
 		GPlatesGlobal::Assert<GLRendererAPIError>(
-				d_qpainter->isActive() &&
-					(paint_engine_type == QPaintEngine::OpenGL
-#if QT_VERSION >= 0x040600 // QPaintEngine::OpenGL2 only available starting with Qt 4.6...
-					|| paint_engine_type == QPaintEngine::OpenGL2
-#endif
-					),
+				d_qpainter_info->qpainter.isActive(),
 				GPLATES_ASSERTION_SOURCE,
-				GLRendererAPIError::SHOULD_HAVE_ACTIVE_OPENGL_QPAINTER);
+				GLRendererAPIError::SHOULD_HAVE_ACTIVE_QPAINTER);
 
 		// NOTE: We don't need to reset to the default state (and apply it) because that was just
 		// done above (that's the state we leave OpenGL in when we're finished rendering).
 		resume_qpainter();
 
-		d_qpainter = NULL;
+		d_qpainter_info = boost::none;
 	}
 }
 
 
-QPainter *
+bool
+GPlatesOpenGL::GLRenderer::rendering_to_context_framebuffer() const
+{
+	// Should be between 'begin_render()' and 'end_render()' - should have a render target block.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			!d_render_target_block_stack.empty(),
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TARGET_BLOCK);
+
+	return d_qpainter_info ? d_qpainter_info->paint_device_is_framebuffer : true;
+}
+
+
+std::pair<unsigned int/*width*/, unsigned int/*height*/>
+GPlatesOpenGL::GLRenderer::get_current_frame_buffer_dimensions() const
+{
+	// Should be between 'begin_render()' and 'end_render()' - should have a render target block.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			!d_render_target_block_stack.empty(),
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TARGET_BLOCK);
+
+	// First see if we have a bound frame buffer object.
+	const boost::optional<GLFrameBufferObject::shared_ptr_to_const_type> frame_buffer_object =
+			gl_get_bind_frame_buffer();
+	if (frame_buffer_object)
+	{
+		const boost::optional< std::pair<GLuint, GLuint> > frame_buffer_object_dimensions =
+				frame_buffer_object.get()->get_frame_buffer_dimensions();
+
+		// The frame buffer object should have been set up properly with allocated texture
+		// or render buffer storage.
+		GPlatesGlobal::Assert<OpenGLException>(
+				frame_buffer_object_dimensions,
+				GPLATES_ASSERTION_SOURCE,
+				"GLRenderer::get_current_frame_buffer_dimensions: unable to retrieve frame buffer object dimensions.");
+
+		return frame_buffer_object_dimensions.get();
+	}
+
+	return d_main_frame_buffer_dimensions;
+}
+
+
+boost::optional< std::pair<unsigned int/*width*/, unsigned int/*height*/> >
+GPlatesOpenGL::GLRenderer::get_qpainter_device_dimensions() const
+{
+	// Should be between 'begin_render()' and 'end_render()' - should have a render target block.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			!d_render_target_block_stack.empty(),
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TARGET_BLOCK);
+
+	// If there's no QPainter attached to this renderer.
+	if (!d_qpainter_info)
+	{
+		return boost::none;
+	}
+
+	// The QPainter's paint device.
+	QPaintDevice *qpaint_device = d_qpainter_info->qpainter.device();
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			qpaint_device,
+			GPLATES_ASSERTION_SOURCE);
+
+	return std::make_pair(
+			boost::numeric_cast<unsigned int>(qpaint_device->width()),
+			boost::numeric_cast<unsigned int>(qpaint_device->height()));
+}
+
+
+boost::optional<QPainter &>
 GPlatesOpenGL::GLRenderer::begin_qpainter_block()
 {
-	if (d_qpainter)
+	if (d_qpainter_info)
 	{
-		// Reset to the default OpenGL state as that's what QPainter expects when it resumes painting.
+		// Get the currently active frame buffer.
+		d_qpainter_info->frame_buffer = gl_get_bind_frame_buffer();
+
+		// If a frame buffer object is currently bound and the QPainter targets the main framebuffer
+		// then the frame buffer object dimensions must match those of the main frame buffer.
+		// This ensures that QPainter text rendering works properly (QPainter sets up text rendering
+		// based on the main frame buffer dimensions).
+		if (d_qpainter_info->frame_buffer &&
+			d_qpainter_info->paint_device_is_framebuffer)
+		{
+			GPlatesGlobal::Assert<GLRendererAPIError>(
+					d_main_frame_buffer_dimensions == get_current_frame_buffer_dimensions(),
+					GPLATES_ASSERTION_SOURCE,
+					GLRendererAPIError::FRAME_BUFFER_DIMENSIONS_DO_NOT_MATCH_QPAINTER_DEVICE_TARGETING_MAIN_FRAME_BUFFER);
+		}
+
+		// Reset to the default OpenGL state as that's what QPainter expects when it resumes painting
+		// (if it uses an OpenGL paint engine).
 		begin_state_block(true/*reset_to_default_state*/);
 
 		// This is one of the rare cases where we need to apply the OpenGL state encapsulated in
@@ -237,39 +303,54 @@ GPlatesOpenGL::GLRenderer::begin_qpainter_block()
 		apply_current_state_to_opengl();
 
 		resume_qpainter();
+
+		// If a frame buffer object was active when we entered the QPainter scope then
+		// keep it active during the scope (the state was reset to default OpenGL state above).
+		if (d_qpainter_info->frame_buffer)
+		{
+			gl_bind_frame_buffer(d_qpainter_info->frame_buffer.get());
+
+			// Need to apply the state directly to OpenGL so the QPainter rendering is affected by it.
+			apply_current_state_to_opengl();
+		}
+
+		return d_qpainter_info->qpainter;
 	}
 
-	return d_qpainter;
+	return boost::none;
 }
 
 
 void
 GPlatesOpenGL::GLRenderer::end_qpainter_block()
 {
-	if (d_qpainter)
+	if (d_qpainter_info)
 	{
-		// The viewport and modelview/projection matrices set by QPainter.
-		GLViewport qpainter_viewport;
-		GLMatrix qpainter_model_view_matrix;
-		GLMatrix qpainter_projection_matrix;
+		// If a frame buffer object was active during the QPainter scope then return to the
+		// default OpenGL state (the state just before 'resume_qpainter()' was called).
+		// For the frame buffer object this means unbinding (returning to the main frame buffer).
+		if (d_qpainter_info->frame_buffer)
+		{
+			gl_unbind_frame_buffer();
+
+			// Apply the state directly to OpenGL so sees the default OpenGL state before it saves
+			// its state (in 'suspend_qpainter()') in preparation for our native OpenGL painting.
+			apply_current_state_to_opengl();
+
+			d_qpainter_info->frame_buffer = boost::none;
+		}
 
 		// Suspend the QPainter so we can start making calls directly to OpenGL without
-		// interfering with the QPainter's OpenGL state.
-		suspend_qpainter(qpainter_viewport, qpainter_model_view_matrix, qpainter_projection_matrix);
+		// interfering with the QPainter's OpenGL state (if it uses an OpenGL paint engine).
+		suspend_qpainter();
 
 		// Restore the OpenGL state to what it was before 'begin_qpainter_block' was called.
 		end_state_block();
 
-		// While the QPainter was used it may have altered its transform so we should update
-		// the modelview and projection matrices set by QPainter.
-		// Easiest way to do that is simply to load them.
-		gl_load_matrix(GL_MODELVIEW, qpainter_model_view_matrix);
-		gl_load_matrix(GL_PROJECTION, qpainter_projection_matrix);
-
 		// This is one of the rare cases where we need to apply the OpenGL state encapsulated in
 		// GLRenderer directly to OpenGL - in this case we need to make sure our last applied state
 		// actually represents the state of OpenGL - which it may not because QPainter may have
-		// changed the model-view and projection matrices.
+		// changed the model-view and projection matrices (if it uses an OpenGL paint engine).
 		apply_current_state_to_opengl();
 	}
 }
@@ -285,24 +366,84 @@ GPlatesOpenGL::GLRenderer::QPainterBlockScope::QPainterBlockScope(
 
 GPlatesOpenGL::GLRenderer::QPainterBlockScope::~QPainterBlockScope()
 {
-	d_renderer.end_qpainter_block();
+	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+	// But we log the exception and the location it was emitted.
+	try
+	{
+		d_renderer.end_qpainter_block();
+	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "GLRenderer: exception thrown during QPainter block scope: " << exc.what();
+	}
+	catch (...)
+	{
+		qWarning() << "GLRenderer: exception thrown during QPainter block scope: Unknown error";
+	}
 }
 
 
 bool
-GPlatesOpenGL::GLRenderer::supports_arbitrary_colour_format_render_targets() const
+GPlatesOpenGL::GLRenderer::supports_floating_point_render_target_2D() const
 {
-	// Can only render to non-RGBA8 formats if there's support for native framebuffer objects.
-	return GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object);
+	// We need framebuffer object support otherwise we would end up rendering to the main
+	// framebuffer but it is a fixed-point target.
+	return get_capabilities().framebuffer.gl_EXT_framebuffer_object;
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::get_max_dimensions_untiled_render_target_2D(
+		unsigned int &max_untiled_render_target_width,
+		unsigned int &max_untiled_render_target_height) const
+{
+	const GLCapabilities &capabilities = get_capabilities();
+
+	// If using framebuffer objects for render-targets...
+	if (capabilities.framebuffer.gl_EXT_framebuffer_object)
+	{
+		// The minimum of the maximum texture width and maximum viewport width.
+		max_untiled_render_target_width = capabilities.texture.gl_max_texture_size;
+		if (max_untiled_render_target_width > capabilities.viewport.gl_max_viewport_width)
+		{
+			max_untiled_render_target_width = capabilities.viewport.gl_max_viewport_width;
+		}
+		// Should already be a power-of-two - but just in case.
+		max_untiled_render_target_width = GPlatesUtils::Base2::previous_power_of_two(max_untiled_render_target_width);
+
+		// The minimum of the maximum texture height and maximum viewport height.
+		max_untiled_render_target_height = capabilities.texture.gl_max_texture_size;
+		if (max_untiled_render_target_height > capabilities.viewport.gl_max_viewport_height)
+		{
+			max_untiled_render_target_height = capabilities.viewport.gl_max_viewport_height;
+		}
+		// Should already be a power-of-two - but just in case.
+		max_untiled_render_target_height = GPlatesUtils::Base2::previous_power_of_two(max_untiled_render_target_height);
+	}
+	else // ...using main framebuffer as a render-target...
+	{
+		GPlatesGlobal::Assert<OpenGLException>(
+				d_default_viewport,
+				GPLATES_ASSERTION_SOURCE,
+				"Must call 'GLRenderer::get_max_dimensions_render_target_2D' between begin_render/end_render.");
+
+		// Round down to the nearest power-of-two.
+		// This is because the client will be using power-of-two texture dimensions.
+		max_untiled_render_target_width = GPlatesUtils::Base2::previous_power_of_two(d_default_viewport->width());
+		max_untiled_render_target_height = GPlatesUtils::Base2::previous_power_of_two(d_default_viewport->height());
+	}
 }
 
 
 void
 GPlatesOpenGL::GLRenderer::begin_render_target_2D(
 		const GLTexture::shared_ptr_to_const_type &texture,
-		boost::optional<GLViewport> render_target_viewport,
+		boost::optional<GLViewport> render_texture_viewport,
+		const double &max_point_size_and_line_width,
 		GLint level,
-		bool reset_to_default_state)
+		bool reset_to_default_state,
+		bool depth_buffer,
+		bool stencil_buffer)
 {
 	//PROFILE_FUNC();
 
@@ -314,11 +455,11 @@ GPlatesOpenGL::GLRenderer::begin_render_target_2D(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Set the default render-target viewport if it wasn't specified.
-	if (!render_target_viewport)
+	if (!render_texture_viewport)
 	{
 		// The default is the entire texture.
 		// Note that the texture width is for level 0 so we need to adjust if not level 0.
-		render_target_viewport = GLViewport(
+		render_texture_viewport = GLViewport(
 				0, 0,
 				texture->get_width().get() >> level,
 				texture->get_height().get() >> level);
@@ -327,7 +468,7 @@ GPlatesOpenGL::GLRenderer::begin_render_target_2D(
 	// Push a new render target block.
 	begin_render_target_block_internal(
 			reset_to_default_state,
-			RenderTextureTarget(render_target_viewport.get(), texture, level));
+			RenderTextureTarget(render_texture_viewport.get(), texture, level, depth_buffer, stencil_buffer));
 
 	// The current render texture target.
 	// NOTE: This must reference directly into the structure stored on the render target block stack
@@ -335,46 +476,104 @@ GPlatesOpenGL::GLRenderer::begin_render_target_2D(
 	RenderTextureTarget &render_texture_target =
 			get_current_render_target_block().render_texture_target.get();
 
-	// Mask off rendering outside the render target dimensions otherwise it's possible for
-	// the client to overwrite part of the main framebuffer that we're not saving.
-	// This includes a 'gl_clear()' calls which clear the entire main framebuffer.
-	// So set the scissor rectangle to match the render target dimensions.
-	//
-	// This isn't really needed for framebuffer objects but we specify it anyway in case the client
-	// requested a subsection of the render-texture instead of the entire render-texture.
-	gl_enable(GL_SCISSOR_TEST);
-	gl_scissor(
-			0, 0,
-			render_texture_target.texture_viewport.width(),
-			render_texture_target.texture_viewport.height());
-	gl_viewport(
-			0, 0,
-			render_texture_target.texture_viewport.width(),
-			render_texture_target.texture_viewport.height());
-
-	// Disable depth writing for render targets.
-	// If using framebuffer objects (as render targets) then it doesn't really matter but if using
-	// the main framebuffer then its depth buffer would get corrupted if depth writes were enabled.
-	gl_depth_mask(GL_FALSE);
+	// Prevent depth/stencil testing/writes if depth/stencil buffering not specified.
+	// Since we're in a state block these will get restored at the end of the render target block.
+	if (!render_texture_target.depth_buffer)
+	{
+		gl_enable(GL_DEPTH_TEST, false);
+		gl_depth_mask(GL_FALSE);
+	}
+	if (!render_texture_target.stencil_buffer)
+	{
+		gl_enable(GL_STENCIL_TEST, false);
+		gl_stencil_mask(0);
+	}
 
 	// Begin the current render texture target.
-	if (d_framebuffer_object)
+	// If using framebuffer objects for render-targets...
+	if (get_capabilities().framebuffer.gl_EXT_framebuffer_object)
 	{
-		// Use framebuffer object for rendering to texture unless the driver is not supported
+		// Use framebuffer object for rendering to texture unless the driver is not supporting
 		// the configuration for some reason.
 		if (!begin_framebuffer_object_2D(render_texture_target))
 		{
-			// Return the framebuffer object to the cache it was acquired from.
-			d_framebuffer_object = boost::none;
-
 			// Start using the main framebuffer instead (for rendering to texture).
-			begin_rgba8_main_framebuffer_2D(render_texture_target);
+			begin_rgba8_main_framebuffer_2D(render_texture_target, max_point_size_and_line_width);
 		}
 	}
 	else
 	{
-		begin_rgba8_main_framebuffer_2D(render_texture_target);
+		begin_rgba8_main_framebuffer_2D(render_texture_target, max_point_size_and_line_width);
 	}
+}
+
+
+GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
+GPlatesOpenGL::GLRenderer::begin_tile_render_target_2D(
+		bool save_restore_state,
+		GLViewport *tile_render_target_viewport,
+		GLViewport *tile_render_target_scissor_rect)
+{
+	// The current render texture target.
+	boost::optional<RenderTextureTarget> &render_texture_target =
+			get_current_render_target_block().render_texture_target;
+
+	// Should always have a render texture target when tiling a render target 2D.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_TARGET);
+
+	// Save the current OpenGL state if requested.
+	if (save_restore_state)
+	{
+		begin_state_block(false/*reset_to_default_state*/);
+	}
+	render_texture_target->tile_save_restore_state = save_restore_state;
+
+	if (render_texture_target->main_frame_buffer)
+	{
+		return begin_tile_rgba8_main_framebuffer_2D(
+				render_texture_target.get(),
+				tile_render_target_viewport,
+				tile_render_target_scissor_rect);
+	}
+	else
+	{
+		return begin_tile_framebuffer_object_2D(
+				render_texture_target.get(),
+				tile_render_target_viewport,
+				tile_render_target_scissor_rect);
+	}
+}
+
+
+bool
+GPlatesOpenGL::GLRenderer::end_tile_render_target_2D()
+{
+	// The current render texture target.
+	boost::optional<RenderTextureTarget> &render_texture_target =
+			get_current_render_target_block().render_texture_target;
+
+	// Should always have a render texture target when tiling a render target 2D.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_TARGET);
+
+	// End the current tile.
+	const bool continue_to_next_tile = render_texture_target->main_frame_buffer
+			? end_tile_rgba8_main_framebuffer_2D(render_texture_target.get())
+			: end_tile_framebuffer_object_2D(render_texture_target.get());
+
+	// Restore the OpenGL state if requested.
+	if (render_texture_target->tile_save_restore_state)
+	{
+		end_state_block();
+	}
+	render_texture_target->tile_save_restore_state = false;
+
+	return continue_to_next_tile;
 }
 
 
@@ -383,83 +582,28 @@ GPlatesOpenGL::GLRenderer::end_render_target_2D()
 {
 	//PROFILE_FUNC();
 
+	// The current render texture target.
+	boost::optional<RenderTextureTarget> &render_texture_target =
+			get_current_render_target_block().render_texture_target;
+
+	// Should always have a render texture target when tiling a render target 2D.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_TARGET);
+
 	// End the current render texture target.
-	if (d_framebuffer_object)
+	if (render_texture_target->main_frame_buffer)
 	{
-		// End the current render target block.
-		//
-		// FIXME: This is risky because we are implicitly ending a stack block here
-		// before calling 'end_framebuffer_object_2D()' which could itself set some state.
-		// We really want to end the render target block last so it restores all state.
-		// Right now we get away with it because 'end_framebuffer_object_2D()' doesn't
-		// set any global state (it only modifies the framebuffer object's state - ie, local state).
-		// To fix: change std::stack to something where can access second from top element (not just top).
-		end_render_target_block_internal();
-
-		// Is there a parent render texture target (ie, not back to the main framebuffer yet).
-		const boost::optional<RenderTextureTarget> parent_render_texture_target =
-				get_current_render_target_block().render_texture_target;
-
-		end_framebuffer_object_2D(parent_render_texture_target);
+		end_rgba8_main_framebuffer_2D(render_texture_target.get());
 	}
 	else
 	{
-		// The current render texture target.
-		const boost::optional<RenderTextureTarget> render_texture_target =
-				get_current_render_target_block().render_texture_target;
-
-		// Should always have a render texture target when ending a render target 2D.
-		GPlatesGlobal::Assert<GLRendererAPIError>(
-				render_texture_target,
-				GPLATES_ASSERTION_SOURCE,
-				GLRendererAPIError::SHOULD_HAVE_A_RENDER_TARGET_BLOCK);
-
-		end_rgba8_main_framebuffer_2D(render_texture_target.get());
-
-		// End the current render target block.
-		end_render_target_block_internal();
+		end_framebuffer_object_2D(render_texture_target.get());
 	}
-}
 
-
-void
-GPlatesOpenGL::GLRenderer::get_max_render_target_dimensions(
-		unsigned int &max_render_target_width,
-		unsigned int &max_render_target_height) const
-{
-	// If using framebuffer objects for render-targets...
-	if (d_framebuffer_object)
-	{
-		// The minimum of the maximum texture width and maximum viewport width.
-		max_render_target_width = GLContext::get_parameters().texture.gl_max_texture_size;
-		if (max_render_target_width > GLContext::get_parameters().viewport.gl_max_viewport_width)
-		{
-			max_render_target_width = GLContext::get_parameters().viewport.gl_max_viewport_width;
-		}
-		// Should already be a power-of-two - but just in case.
-		max_render_target_width = GPlatesUtils::Base2::previous_power_of_two(max_render_target_width);
-
-		// The minimum of the maximum texture height and maximum viewport height.
-		max_render_target_height = GLContext::get_parameters().texture.gl_max_texture_size;
-		if (max_render_target_height > GLContext::get_parameters().viewport.gl_max_viewport_height)
-		{
-			max_render_target_height = GLContext::get_parameters().viewport.gl_max_viewport_height;
-		}
-		// Should already be a power-of-two - but just in case.
-		max_render_target_height = GPlatesUtils::Base2::previous_power_of_two(max_render_target_height);
-	}
-	else // ...using main framebuffer as a render-target...
-	{
-		GPlatesGlobal::Assert<OpenGLException>(
-				d_default_viewport,
-				GPLATES_ASSERTION_SOURCE,
-				"Must call 'GLRenderer::get_max_render_target_dimensions' between begin_render/end_render.");
-
-		// Round down to the nearest power-of-two.
-		// This is because the client will be using power-of-two texture dimensions.
-		max_render_target_width = GPlatesUtils::Base2::previous_power_of_two(d_default_viewport->width());
-		max_render_target_height = GPlatesUtils::Base2::previous_power_of_two(d_default_viewport->height());
-	}
+	// End the current render target block.
+	end_render_target_block_internal();
 }
 
 
@@ -729,11 +873,12 @@ GPlatesOpenGL::GLRenderer::gl_clear(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply only the subset of state needed by 'glClear'.
-			state_to_apply.apply_state_used_by_gl_clear(last_applied_state);
+			state_to_apply.apply_state_used_by_gl_clear(capabilities, last_applied_state);
 
 			glClear(clear_mask);
 		}
@@ -775,11 +920,12 @@ GPlatesOpenGL::GLRenderer::gl_draw_elements(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply all state - not just a subset.
-			state_to_apply.apply_state(last_applied_state);
+			state_to_apply.apply_state(capabilities, last_applied_state);
 
 			glDrawElements(mode, count, type, GPLATES_OPENGL_BUFFER_OFFSET(indices_offset));
 		}
@@ -827,11 +973,12 @@ GPlatesOpenGL::GLRenderer::gl_draw_elements(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply all state - not just a subset.
-			state_to_apply.apply_state(last_applied_state);
+			state_to_apply.apply_state(capabilities, last_applied_state);
 
 			// The client memory indices pointer.
 			// NOTE: By getting the indices resource pointer here (at the OpenGL draw call) we allow
@@ -889,11 +1036,12 @@ GPlatesOpenGL::GLRenderer::gl_draw_range_elements(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply all state - not just a subset.
-			state_to_apply.apply_state(last_applied_state);
+			state_to_apply.apply_state(capabilities, last_applied_state);
 
 			// NOTE: When using gDEBugger you'll need to change this to 'glDrawRangeElements' if you
 			// want to break on it since it doesn't allow you to break on 'glDrawRangeElementsEXT'.
@@ -908,8 +1056,10 @@ GPlatesOpenGL::GLRenderer::gl_draw_range_elements(
 		GLint indices_offset;
 	};
 
+	const GLCapabilities &capabilities = get_capabilities();
+
 	// Requires GL_EXT_draw_range_elements extension.
-	if (!GLEW_EXT_draw_range_elements)
+	if (!capabilities.vertex.gl_EXT_draw_range_elements)
 	{
 		// Revert to glDrawElements if extension not present.
 		gl_draw_elements(mode, count, type, indices_offset);
@@ -959,11 +1109,12 @@ GPlatesOpenGL::GLRenderer::gl_draw_range_elements(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply all state - not just a subset.
-			state_to_apply.apply_state(last_applied_state);
+			state_to_apply.apply_state(capabilities, last_applied_state);
 
 			// The client memory indices pointer.
 			// NOTE: By getting the indices resource pointer here (at the OpenGL draw call) we allow
@@ -985,8 +1136,10 @@ GPlatesOpenGL::GLRenderer::gl_draw_range_elements(
 		GLBufferImpl::shared_ptr_to_const_type vertex_element_buffer_impl;
 	};
 
+	const GLCapabilities &capabilities = get_capabilities();
+
 	// Requires GL_EXT_draw_range_elements extension.
-	if (!GLEW_EXT_draw_range_elements)
+	if (!capabilities.vertex.gl_EXT_draw_range_elements)
 	{
 		// Revert to glDrawElements if extension not present.
 		gl_draw_elements(mode, count, type, indices_offset, vertex_element_buffer_impl);
@@ -1012,9 +1165,11 @@ GPlatesOpenGL::GLRenderer::gl_read_pixels(
 		GLenum type,
 		GLint offset)
 {
+	const GLCapabilities &gl_capabilities = get_capabilities();
+
 	// We're using pixel buffers objects in this version of 'gl_read_pixels'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_pixel_buffer_object),
+			gl_capabilities.buffer.gl_ARB_pixel_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Wrap up the read pixels call in case it gets added to a render queue.
@@ -1041,11 +1196,12 @@ GPlatesOpenGL::GLRenderer::gl_read_pixels(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply only the subset of state needed by 'glReadPixels'.
-			state_to_apply.apply_state_used_by_gl_read_pixels(last_applied_state);
+			state_to_apply.apply_state_used_by_gl_read_pixels(capabilities, last_applied_state);
 
 			glReadPixels(x, y, width, height, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
 		}
@@ -1105,11 +1261,12 @@ GPlatesOpenGL::GLRenderer::gl_read_pixels(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply only the subset of state needed by 'glReadPixels'.
-			state_to_apply.apply_state_used_by_gl_read_pixels(last_applied_state);
+			state_to_apply.apply_state_used_by_gl_read_pixels(capabilities, last_applied_state);
 
 			// The client memory pixel data pointer.
 			// NOTE: By getting the pixel data resource pointer here (at the OpenGL read pixels call)
@@ -1137,6 +1294,244 @@ GPlatesOpenGL::GLRenderer::gl_read_pixels(
 	// NOTE: The cloning of the current state is necessary so that when we render the drawable
 	// later it doesn't apply state that's been modified between now and then.
 	draw(RenderOperation(clone_current_state(), drawable));
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::gl_draw_pixels(
+		GLint x,
+		GLint y,
+		GLsizei width,
+		GLsizei height,
+		GLenum format,
+		GLenum type,
+		GLint offset)
+{
+	const GLCapabilities &gl_capabilities = get_capabilities();
+
+	// We're using pixel buffers objects in this version of 'gl_draw_pixels'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			gl_capabilities.buffer.gl_ARB_pixel_buffer_object,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Wrap up the draw pixels call in case it gets added to a render queue.
+	struct DrawPixelsDrawable :
+			public Drawable
+	{
+		DrawPixelsDrawable(
+				GLint x_,
+				GLint y_,
+				GLsizei width_,
+				GLsizei height_,
+				GLenum format_,
+				GLenum type_,
+				GLint offset_) :
+			x(x_),
+			y(y_),
+			width(width_),
+			height(height_),
+			format(format_),
+			type(type_),
+			offset(offset_)
+		{  }
+
+		virtual
+		void
+		draw(
+				const GLCapabilities &capabilities,
+				const GLState &state_to_apply,
+				GLState &last_applied_state) const
+		{
+			// Apply all state - not just a subset - since colour and depth data (but maybe
+			// not stencil) passes through texture mapping and all fragment operations.
+			// Also, if using glRasterPos2i, then we need to apply the changes to model-view
+			// and projection matrices so that 'glRasterPos2i' generates the correct x and y
+			// pixel offset in the frame buffer.
+			state_to_apply.apply_state(capabilities, last_applied_state);
+
+			if (capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
+			{
+				// Set the raster position directly in window coordinates (bypassing the
+				// model-view/projection transforms and the viewport-to-window transform).
+				glWindowPos2i(x, y);
+			}
+			else // using 'glRasterPos2i' ...
+			{
+				// Set the raster position - the final window coordinates depend on the current
+				// model-view/projection transforms and the viewport-to-window transform applied above.
+				glRasterPos2i(x, y);
+			}
+
+			glDrawPixels(width, height, format, type, GPLATES_OPENGL_BUFFER_OFFSET(offset));
+
+			// Restore raster position to default value since calling OpenGL directly instead of using GLRenderer state.
+			//
+			// FIXME: Shouldn't really be making direct calls to OpenGL - transfer to GLRenderer.
+			if (capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
+			{
+				glWindowPos2i(0, 0);
+			}
+			else // using 'glRasterPos2i' ...
+			{
+				glRasterPos2i(0, 0);
+			}
+		}
+
+		GLint x;
+		GLint y;
+		GLsizei width;
+		GLsizei height;
+		GLenum format;
+		GLenum type;
+		GLint offset;
+	};
+
+	const Drawable::non_null_ptr_to_const_type drawable(
+			new DrawPixelsDrawable(x, y, width, height, format, type, offset));
+
+	// NOTE: The cloning of the current state is necessary so that when we render the drawable
+	// later it doesn't apply state that's been modified between now and then.
+	if (gl_capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
+	{
+		draw(RenderOperation(clone_current_state(), drawable));
+	}
+	else // using 'glRasterPos2i' ...
+	{
+		// Temporarily change the OpenGL state for the draw command and restore afterwards.
+		GLRenderer::StateBlockScope save_restore_state(*this);
+
+		// Set up model-view/projection transforms and viewport-to-window transform for 2D rendering.
+		// This ensures 'glRasterPos2i' will set the correct x and y pixel offset in frame buffer.
+		GLMatrix projection_matrix;
+		projection_matrix.glu_ortho_2D(0, width, 0, height);
+		gl_load_matrix(GL_PROJECTION, projection_matrix);
+		gl_load_matrix(GL_MODELVIEW, GLMatrix::IDENTITY);
+		gl_viewport(0, 0, width, height);
+
+		draw(RenderOperation(clone_current_state(), drawable));
+	}
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::gl_draw_pixels(
+		GLint x,
+		GLint y,
+		GLsizei width,
+		GLsizei height,
+		GLenum format,
+		GLenum type,
+		GLint offset,
+		const GLBufferImpl::shared_ptr_type &pixel_buffer_impl)
+{
+	// Wrap up the draw pixels call in case it gets added to a render queue.
+	struct DrawPixelsDrawable :
+			public Drawable
+	{
+		DrawPixelsDrawable(
+				GLint x_,
+				GLint y_,
+				GLsizei width_,
+				GLsizei height_,
+				GLenum format_,
+				GLenum type_,
+				GLint offset_,
+				const GLBufferImpl::shared_ptr_type &pixel_buffer_impl_) :
+			x(x_),
+			y(y_),
+			width(width_),
+			height(height_),
+			format(format_),
+			type(type_),
+			offset(offset_),
+			pixel_buffer_impl(pixel_buffer_impl_)
+		{  }
+
+		virtual
+		void
+		draw(
+				const GLCapabilities &capabilities,
+				const GLState &state_to_apply,
+				GLState &last_applied_state) const
+		{
+			// Apply all state - not just a subset - since colour and depth data (but maybe
+			// not stencil) passes through texture mapping and all fragment operations.
+			// Also, if using glRasterPos2i, then we need to apply the changes to model-view
+			// and projection matrices so that 'glRasterPos2i' generates the correct x and y
+			// pixel offset in the frame buffer.
+			state_to_apply.apply_state(capabilities, last_applied_state);
+
+			if (capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
+			{
+				// Set the raster position directly in window coordinates (bypassing the
+				// model-view/projection transforms and the viewport-to-window transform).
+				glWindowPos2i(x, y);
+			}
+			else // using 'glRasterPos2i' ...
+			{
+				// Set the raster position - the final window coordinates depend on the current
+				// model-view/projection transforms and the viewport-to-window transform applied above.
+				glRasterPos2i(x, y);
+			}
+
+			// The client memory pixel data pointer.
+			// NOTE: By getting the pixel data resource pointer here (at the OpenGL draw pixels call)
+			// we allow the buffer to be updated *after* the draw pixels call is submitted
+			// (eg, a compiled draw state).
+			// This emulates how buffer objects work.
+			GLvoid *pixels = pixel_buffer_impl->get_buffer_resource() + offset;
+
+			glDrawPixels(width, height, format, type, pixels);
+
+			// Restore raster position to default value since calling OpenGL directly instead of using GLRenderer state.
+			//
+			// FIXME: Shouldn't really be making direct calls to OpenGL - transfer to GLRenderer.
+			if (capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
+			{
+				glWindowPos2i(0, 0);
+			}
+			else // using 'glRasterPos2i' ...
+			{
+				glRasterPos2i(0, 0);
+			}
+		}
+
+		GLint x;
+		GLint y;
+		GLsizei width;
+		GLsizei height;
+		GLenum format;
+		GLenum type;
+		GLint offset;
+		GLBufferImpl::shared_ptr_type pixel_buffer_impl;
+	};
+
+	const GLCapabilities &gl_capabilities = get_capabilities();
+
+	const Drawable::non_null_ptr_to_const_type drawable(
+			new DrawPixelsDrawable(x, y, width, height, format, type, offset, pixel_buffer_impl));
+
+	// NOTE: The cloning of the current state is necessary so that when we render the drawable
+	// later it doesn't apply state that's been modified between now and then.
+	if (gl_capabilities.gl_version_1_4) // 'glWindowPos2i' only available in 1.4 or above
+	{
+		draw(RenderOperation(clone_current_state(), drawable));
+	}
+	else // using 'glRasterPos2i' ...
+	{
+		// Temporarily change the OpenGL state for the draw command and restore afterwards.
+		GLRenderer::StateBlockScope save_restore_state(*this);
+
+		// Set up model-view/projection transforms and viewport-to-window transform for 2D rendering.
+		// This ensures 'glRasterPos2i' will set the correct x and y pixel offset in frame buffer.
+		GLMatrix projection_matrix;
+		projection_matrix.glu_ortho_2D(0, width, 0, height);
+		gl_load_matrix(GL_PROJECTION, projection_matrix);
+		gl_load_matrix(GL_MODELVIEW, GLMatrix::IDENTITY);
+		gl_viewport(0, 0, width, height);
+
+		draw(RenderOperation(clone_current_state(), drawable));
+	}
 }
 
 
@@ -1172,11 +1567,12 @@ GPlatesOpenGL::GLRenderer::gl_copy_tex_sub_image_1D(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply all state - not just a subset.
-			state_to_apply.apply_state(last_applied_state);
+			state_to_apply.apply_state(capabilities, last_applied_state);
 
 			glCopyTexSubImage1D(texture_target, level, xoffset, x, y, width);
 		}
@@ -1241,11 +1637,12 @@ GPlatesOpenGL::GLRenderer::gl_copy_tex_sub_image_2D(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply all state - not just a subset.
-			state_to_apply.apply_state(last_applied_state);
+			state_to_apply.apply_state(capabilities, last_applied_state);
 
 			glCopyTexSubImage2D(texture_target, level, xoffset, yoffset, x, y, width, height);
 		}
@@ -1315,11 +1712,12 @@ GPlatesOpenGL::GLRenderer::gl_copy_tex_sub_image_3D(
 		virtual
 		void
 		draw(
+				const GLCapabilities &capabilities,
 				const GLState &state_to_apply,
 				GLState &last_applied_state) const
 		{
 			// Apply all state - not just a subset.
-			state_to_apply.apply_state(last_applied_state);
+			state_to_apply.apply_state(capabilities, last_applied_state);
 
 			glCopyTexSubImage3D(texture_target, level, xoffset, yoffset, zoffset, x, y, width, height);
 		}
@@ -1335,10 +1733,12 @@ GPlatesOpenGL::GLRenderer::gl_copy_tex_sub_image_3D(
 		GLsizei height;
 	};
 
+	const GLCapabilities &gl_capabilities = get_capabilities();
+
 	// Previously we checked for the GL_EXT_copy_texture extension but on MacOS this is not exposed
 	// so we use the core OpenGL 1.2 function instead.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_VERSION_1_2),
+			gl_capabilities.gl_version_1_2,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Set the active texture unit - glCopyTexSubImage2D targets the texture bound to it.
@@ -1389,7 +1789,7 @@ GPlatesOpenGL::GLRenderer::gl_get_viewport(
 {
 	// Get the current viewport at index 'viewport_index'.
 	const boost::optional<const GLViewport &> current_viewport =
-			get_current_state()->get_viewport(viewport_index);
+			get_current_state()->get_viewport(get_capabilities(), viewport_index);
 
 	// If we're between 'begin_render' and 'end_render' then should have a valid viewport.
 	GPlatesGlobal::Assert<GLRendererAPIError>(
@@ -1398,6 +1798,24 @@ GPlatesOpenGL::GLRenderer::gl_get_viewport(
 			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TARGET_BLOCK);
 
 	return current_viewport.get();
+}
+
+
+const GPlatesOpenGL::GLViewport &
+GPlatesOpenGL::GLRenderer::gl_get_scissor(
+		unsigned int viewport_index) const
+{
+	// Get the current scissor rectangle at index 'viewport_index'.
+	const boost::optional<const GLViewport &> current_scissor =
+			get_current_state()->get_scissor(get_capabilities(), viewport_index);
+
+	// If we're between 'begin_render' and 'end_render' then should have a valid viewport.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			current_scissor,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TARGET_BLOCK);
+
+	return current_scissor.get();
 }
 
 
@@ -1430,7 +1848,9 @@ GPlatesOpenGL::GLRenderer::gl_get_texture_matrix(
 void
 GPlatesOpenGL::GLRenderer::apply_current_state_to_opengl()
 {
-	get_current_state_block().get_state_to_apply()->apply_state(*d_last_applied_state);
+	get_current_state_block().get_state_to_apply()->apply_state(
+			get_capabilities(),
+			*d_last_applied_state);
 }
 
 
@@ -1475,6 +1895,7 @@ GPlatesOpenGL::GLRenderer::gl_bind_vertex_array_object_and_apply(
 
 	// Bind the native vertex array object resource.
 	get_current_state()->set_bind_vertex_array_object_and_apply(
+			get_capabilities(),
 			resource_handle,
 			current_resource_state,
 			target_resource_state,
@@ -1500,19 +1921,26 @@ GPlatesOpenGL::GLRenderer::draw(
 	}
 	// Otherwise just render the drawable now...
 
-	// If we're in a render texture target then we can't have depth/stencil tests enabled
-	// because we either don't have a depth/stencil buffer FBO attachment or
-	// don't want to overwrite the depth/stencil buffer of the main framebuffer.
-	// We also disallow depth writes in case the main framebuffer is being used as a render target
-	// otherwise its depth buffer would get corrupted.
+	// If we're in a render texture target with no depth/stencil buffer then
+	// depth/stencil tests and writes should be disabled.
 	if (current_render_target_block.render_texture_target)
 	{
-		GPlatesGlobal::Assert<GLRendererAPIError>(
-				!render_operation.state->get_depth_mask() &&
-					!render_operation.state->get_enable(GL_DEPTH_TEST) &&
-					!render_operation.state->get_enable(GL_STENCIL_TEST),
-				GPLATES_ASSERTION_SOURCE,
-				GLRendererAPIError::CANNOT_ENABLE_DEPTH_STENCIL_TEST_IN_RGBA8_RENDER_TARGETS);
+		if (!current_render_target_block.render_texture_target->depth_buffer)
+		{
+			GPlatesGlobal::Assert<GLRendererAPIError>(
+					!render_operation.state->get_depth_mask() &&
+						!render_operation.state->get_enable(GL_DEPTH_TEST),
+					GPLATES_ASSERTION_SOURCE,
+					GLRendererAPIError::CANNOT_ENABLE_DEPTH_TEST_OR_WRITES_IN_RENDER_TARGET_WITHOUT_DEPTH_BUFFER);
+		}
+		if (!current_render_target_block.render_texture_target->stencil_buffer)
+		{
+			GPlatesGlobal::Assert<GLRendererAPIError>(
+					render_operation.state->get_stencil_mask() == 0 &&
+						!render_operation.state->get_enable(GL_STENCIL_TEST),
+					GPLATES_ASSERTION_SOURCE,
+					GLRendererAPIError::CANNOT_ENABLE_STENCIL_TEST_OR_WRITES_IN_RENDER_TARGET_WITHOUT_STENCIL_BUFFER);
+		}
 	}
 
 	// Shouldn't be able to get here if we're currently compiling draw state because
@@ -1531,7 +1959,7 @@ GPlatesOpenGL::GLRenderer::draw(
 	// redundant state changes made between draw calls.
 	//
 	// Render the drawable.
-	render_operation.drawable->draw(*render_operation.state, *d_last_applied_state);
+	render_operation.drawable->draw(get_capabilities(), *render_operation.state, *d_last_applied_state);
 
 	// If the draw operation modifies the framebuffer then increment the draw count.
 	//
@@ -1545,95 +1973,42 @@ GPlatesOpenGL::GLRenderer::draw(
 
 
 void
-GPlatesOpenGL::GLRenderer::suspend_qpainter(
-		GLViewport &qpainter_viewport,
-		GLMatrix &qpainter_model_view_matrix,
-		GLMatrix &qpainter_projection_matrix)
+GPlatesOpenGL::GLRenderer::suspend_qpainter()
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_qpainter,
+			d_qpainter_info,
 			GPLATES_ASSERTION_SOURCE);
 
 #if QT_VERSION >= 0x040600
-	// From Qt 4.6, the default paint engine is QPaintEngine::OpenGL2.
+	// From Qt 4.6, the default OpenGL paint engine is QPaintEngine::OpenGL2.
 	// And it needs protection if we're mixing painter calls with our own native OpenGL calls.
 	//
-	// Get the paint engine to reset to the default OpenGL state.
-	// Actually it still sets the modelview and projection matrices as if you were using
-	// the 1.x paint engine (so it's not exactly the default OpenGL state).
-	d_qpainter->beginNativePainting();
-#else
-	// Our GLRender assumes it's entered in the default OpenGL state and when it exits it leaves
-	// OpenGL in the default state.
-	// However QPainter using the OpenGL version 1 paint engine (QPaintEngine::OpenGL) expects
-	// us to restore the modelview (and projection?) matrices if we've modified them.
-	// So we push the modelview and projection matrices onto the OpenGL matrix stack so that we
-	// modify copies of them and we restore the originals when resuming the QPainter later.
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glMatrixMode(GL_MODELVIEW); // The default matrix mode.
+	// NOTE: This is a no-operation if the paint engine does not use OpenGL.
+	d_qpainter_info->qpainter.beginNativePainting();
 #endif
 
-	//
-	// Retrieve the viewport, set by QPainter, from OpenGL.
-	//
-	// NOTE: It is *not* a good idea to retrieve state *from* OpenGL because, in the worst case,
-	// this has the potential to stall the graphics pipeline - and in general it's not recommended.
-	//
-#if 0
-	GLint viewport[4];
-	glGetIntegerv(GL_VIEWPORT, viewport);
+	const QPaintEngine::Type paint_engine_type = d_qpainter_info->qpainter.paintEngine()->type();
+	if (paint_engine_type == QPaintEngine::OpenGL
+#if QT_VERSION >= 0x040600
+		// Actually the OpenGL2 engine still sets the modelview and projection matrices as if you
+		// were using the 1.x paint engine (so it's not exactly the default OpenGL state).
+		// So we make it the default by pushing identity matrices...
+		|| paint_engine_type == QPaintEngine::OpenGL2
 #endif
-
-	// The QPainter's paint device.
-	QPaintDevice *qpaint_device = d_qpainter->device();
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			qpaint_device,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Get the viewport from the QPainter.
-	const QRect viewport = d_qpainter->viewport();
-	// Return to the caller.
-	qpainter_viewport.set_viewport(
-			viewport.x(),
-			// Qt and OpenGL have inverted 'y' viewport components relative to each other...
-			qpaint_device->height() - viewport.y() - viewport.height(),
-			viewport.width(),
-			viewport.height());
-
-	//
-	// Retrieve the current modelview/projection matrices from QPainter.
-	//
-	// NOTE: It is *not* a good idea to retrieve state *from* OpenGL because, in the worst case,
-	// this has the potential to stall the graphics pipeline - and in general it's not recommended.
-	// Profiling revealed 300msec (ie, huge!) for "glGetDoublev(GL_MODELVIEW_MATRIX, ...)" when
-	// rendering rasters with age grid smoothing (ie, a deep GPU pipeline to stall).
-	//
-#if 0
-	GLMatrix mvm, pm;
-	glGetDoublev(GL_MODELVIEW_MATRIX, mvm.get_matrix());
-	glGetDoublev(GL_PROJECTION_MATRIX, pm.get_matrix());
-#endif
-
-	// The reason for retrieving this is we track the OpenGL state and we normally assume it starts
-	// out in the default state (which is the case if QPainter isn't used) but is not the case here.
-
-	// The model-view matrix.
-    const QTransform &model_view_transform = d_qpainter->worldTransform();
-	const GLdouble model_view_matrix[16] =
+		)
 	{
-        model_view_transform.m11(), model_view_transform.m12(),         0, model_view_transform.m13(),
-        model_view_transform.m21(), model_view_transform.m22(),         0, model_view_transform.m23(),
-		                         0,                          0,         1,                          0,
-         model_view_transform.dx(),  model_view_transform.dy(),         0, model_view_transform.m33()
-    };
-	qpainter_model_view_matrix.gl_load_matrix(model_view_matrix);
-
-	// The projection matrix.
-	qpainter_projection_matrix.gl_load_identity();
-	qpainter_projection_matrix.gl_ortho(0, qpaint_device->width(), qpaint_device->height(), 0, -999999, 999999);
+		// Our GLRenderer assumes it's entered in the default OpenGL state and when it exits it leaves
+		// OpenGL in the default state.
+		// However QPainter using the OpenGL version 1 paint engine (QPaintEngine::OpenGL) expects
+		// us to restore the modelview (and projection?) matrices if we've modified them.
+		// So we push the modelview and projection matrices onto the OpenGL matrix stack so that we
+		// modify copies of them and we restore the originals when resuming the QPainter later.
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glMatrixMode(GL_MODELVIEW); // The default matrix mode.
+	}
 }
 
 
@@ -1641,110 +2016,158 @@ void
 GPlatesOpenGL::GLRenderer::resume_qpainter()
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_qpainter,
+			d_qpainter_info,
 			GPLATES_ASSERTION_SOURCE);
 
+	const QPaintEngine::Type paint_engine_type = d_qpainter_info->qpainter.paintEngine()->type();
+	if (paint_engine_type == QPaintEngine::OpenGL
 #if QT_VERSION >= 0x040600
-	// From Qt 4.6, the default paint engine is QPaintEngine::OpenGL2.
+		// Actually the OpenGL2 engine still sets the modelview and projection matrices as if you
+		// were using the 1.x paint engine (so it's not exactly the default OpenGL state).
+		// So we make it the default by pushing identity matrices...
+		|| paint_engine_type == QPaintEngine::OpenGL2
+#endif
+		)
+	{
+		// We are now in the default OpenGL state but we need to return the QPainter to the state it was in.
+		// For the QPainter OpenGL2 paint engine this is not necessary but it is for the OpenGL1 paint engine.
+		// So we pop the modelview and projection matrices that we pushed onto the OpenGL matrix stack.
+		glMatrixMode(GL_MODELVIEW);
+		glPopMatrix();
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW); // The default matrix mode.
+	}
+
+#if QT_VERSION >= 0x040600
+	// From Qt 4.6, the default OpenGL paint engine is QPaintEngine::OpenGL2.
 	// And it needs protection if we're mixing painter calls with our own native OpenGL calls.
+	//
+	// Get the paint engine to restore its OpenGL state (to what it was before 'beginNativePainting').
+	//
+	// NOTE: This is a no-operation if the paint engine does not use OpenGL.
+	d_qpainter_info->qpainter.endNativePainting();
+#endif
+
 	//
 	// NOTE: At this point we must have restored the OpenGL state to the default state !
 	// Otherwise we will stuff up the painter's OpenGL state - this is because the painter only
 	// restores the state that it sets - any other state it assumes is in the default state.
-	//
-	// Get the paint engine to restore its OpenGL state (to what it was before 'beginNativePainting').
-	d_qpainter->endNativePainting();
-#else
-	// We are now in the default OpenGL state but we need to return the QPainter to the state it was in.
-	// For the QPainter OpenGL2 paint engine this is not necessary but it is for the OpenGL1 paint engine.
-	// So we pop the modelview and projection matrices that we pushed onto the OpenGL matrix stack.
-	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode(GL_MODELVIEW); // The default matrix mode.
-#endif
 }
 
 
 void
 GPlatesOpenGL::GLRenderer::begin_rgba8_main_framebuffer_2D(
+		RenderTextureTarget &render_texture_target,
+		const double &max_point_size_and_line_width)
+{
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			!render_texture_target.main_frame_buffer,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_NO_RENDER_TEXTURE_MAIN_FRAME_BUFFERS);
+
+	// Set up for tiling into the main framebuffer.
+	const GLTileRender tile_render(
+			d_default_viewport->width()/*render_target_width*/,
+			d_default_viewport->height()/*render_target_height*/,
+			render_texture_target.texture_viewport/*destination_viewport*/,
+			// The border is half the point size or line width, rounded up to nearest pixel.
+			// NOTE: It is important that 'max_point_size_and_line_width = 0' maps to 'border = 0'...
+			static_cast<unsigned int>(0.5 * max_point_size_and_line_width + 1-1e-5));
+
+	// Keep track of the save restore texture and tiling state.
+	render_texture_target.main_frame_buffer = boost::in_place(
+			get_capabilities(),
+			tile_render,
+			render_texture_target.depth_buffer,
+			render_texture_target.stencil_buffer);
+
+	// Save the portion of the main framebuffer used as a render target so we can restore it later.
+	render_texture_target.main_frame_buffer->save_restore_frame_buffer.save(*this);
+
+	// Start at the first tile.
+	render_texture_target.main_frame_buffer->tile_render.first_tile();
+}
+
+
+GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
+GPlatesOpenGL::GLRenderer::begin_tile_rgba8_main_framebuffer_2D(
+		RenderTextureTarget &render_texture_target,
+		GLViewport *tile_render_target_viewport,
+		GLViewport *tile_render_target_scissor_rect)
+{
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target.main_frame_buffer,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_MAIN_FRAME_BUFFER);
+
+	GLViewport current_tile_render_target_viewport;
+	render_texture_target.main_frame_buffer->tile_render.get_tile_render_target_viewport(
+			current_tile_render_target_viewport);
+
+	GLViewport current_tile_render_target_scissor_rect;
+	render_texture_target.main_frame_buffer->tile_render.get_tile_render_target_scissor_rectangle(
+			current_tile_render_target_scissor_rect);
+
+	// Mask off rendering outside the current tile region in case the tile is smaller than the
+	// render target. Note that the tile's viewport is slightly larger than the tile itself
+	// (the scissor rectangle) in order that fat points and wide lines just outside the tile
+	// have pixels rasterised inside the tile (the projection transform has also been expanded slightly).
+	//
+	// This includes 'gl_clear()' calls which clear the entire main framebuffer.
+	gl_enable(GL_SCISSOR_TEST);
+	gl_scissor(
+			current_tile_render_target_scissor_rect.x(),
+			current_tile_render_target_scissor_rect.y(),
+			current_tile_render_target_scissor_rect.width(),
+			current_tile_render_target_scissor_rect.height());
+	gl_viewport(
+			current_tile_render_target_viewport.x(),
+			current_tile_render_target_viewport.y(),
+			current_tile_render_target_viewport.width(),
+			current_tile_render_target_viewport.height());
+
+	// If caller requested the tile render target viewport.
+	if (tile_render_target_viewport)
+	{
+		*tile_render_target_viewport = current_tile_render_target_viewport;
+	}
+	// If caller requested the tile render target scissor rectangle.
+	if (tile_render_target_scissor_rect)
+	{
+		*tile_render_target_scissor_rect = current_tile_render_target_scissor_rect;
+	}
+
+	// Return the projection transform for the current tile.
+	return render_texture_target.main_frame_buffer->tile_render.get_tile_projection_transform();
+}
+
+
+bool
+GPlatesOpenGL::GLRenderer::end_tile_rgba8_main_framebuffer_2D(
 		RenderTextureTarget &render_texture_target)
 {
-	// Acquire a cached texture for saving the main framebuffer to.
-	// It'll get returned to its cache when we no longer reference it.
-	const GLTexture::shared_ptr_type save_restore_texture =
-			d_context->get_shared_state()->acquire_texture(
-					*this,
-					GL_TEXTURE_2D,
-					GL_RGBA8,
-					// The texture dimensions used to save restore the render target portion of the
-					// main framebuffer. The dimensions are expanded from the client-specified
-					// viewport width/height as necessary to match a power-of-two save/restore texture.
-					GPlatesUtils::Base2::next_power_of_two(render_texture_target.texture_viewport.width()),
-					GPlatesUtils::Base2::next_power_of_two(render_texture_target.texture_viewport.height()));
-
-	// 'acquire_texture' initialises the texture memory (to empty) but does not set the filtering
-	// state when it creates a new texture.
-	// Also even if the texture was cached it might have been used by another client that specified
-	// different filtering settings for it.
-	// So we set the filtering settings each time we acquire.
-	save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	// Turn off anisotropic filtering (don't need it).
-	if (GLEW_EXT_texture_filter_anisotropic)
-	{
-		save_restore_texture->gl_tex_parameterf(*this, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
-	}
-	// Clamp texture coordinates to centre of edge texels -
-	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
-	{
-		save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	}
-	else
-	{
-		save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		save_restore_texture->gl_tex_parameteri(*this, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	}
-
-	// Record the save/restore texture so we can restore the main framebuffer later.
-	render_texture_target.save_restore_texture = save_restore_texture;
-
 	//
-	// Save the portion of the main framebuffer used as a render target so we can restore it later.
+	// Copy the main framebuffer (the part used for render tile) to the render target texture
+	// (the part where the tile slots in).
 	//
+
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target.main_frame_buffer,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_MAIN_FRAME_BUFFER);
+
+	GLViewport tile_source_viewport;
+	render_texture_target.main_frame_buffer->tile_render.get_tile_source_viewport(tile_source_viewport);
+
+	GLViewport tile_destination_viewport;
+	render_texture_target.main_frame_buffer->tile_render.get_tile_destination_viewport(tile_destination_viewport);
 
 	// We don't want any state changes made here to interfere with the client's state changes.
 	// So save the current state and revert back to it at the end of this scope.
 	// We don't need to reset to the default OpenGL state because very little state
 	// affects glCopyTexSubImage2D so it doesn't matter what the current OpenGL state is.
 	StateBlockScope save_restore_state(*this);
-
-	gl_bind_texture(save_restore_texture, GL_TEXTURE0, GL_TEXTURE_2D);
-
-	// Copy the portion of the main framebuffer used as a render target to the backup texture.
-	gl_copy_tex_sub_image_2D(
-			GL_TEXTURE0,
-			GL_TEXTURE_2D,
-			0/*level*/,
-			0, 0,
-			0, 0,
-			render_texture_target.save_restore_texture.get()->get_width().get(),
-			render_texture_target.save_restore_texture.get()->get_height().get());
-}
-
-
-void
-GPlatesOpenGL::GLRenderer::end_rgba8_main_framebuffer_2D(
-		const RenderTextureTarget &render_texture_target)
-{
-	//
-	// Copy the main framebuffer (the part used for render target) to the render target texture.
-	//
-	// NOTE: We don't need to save/restore state because when we return the current state block will be popped.
-	//
 
 	// Bind the render-target texture so we can copy the main framebuffer to it.
 	gl_bind_texture(render_texture_target.texture, GL_TEXTURE0, GL_TEXTURE_2D);
@@ -1754,53 +2177,30 @@ GPlatesOpenGL::GLRenderer::end_rgba8_main_framebuffer_2D(
 			GL_TEXTURE0,
 			GL_TEXTURE_2D,
 			render_texture_target.level,
-			render_texture_target.texture_viewport.x(),
-			render_texture_target.texture_viewport.y(),
-			0, 0,
-			render_texture_target.texture_viewport.width(),
-			render_texture_target.texture_viewport.height());
+			tile_destination_viewport.x(),
+			tile_destination_viewport.y(),
+			tile_source_viewport.x(),
+			tile_source_viewport.y(),
+			tile_source_viewport.width(),
+			tile_source_viewport.height());
 
-	// NOTE: We (temporarily) reset to the default OpenGL state since we need to draw a
-	// render-target size quad into the framebuffer with the save/restore texture applied.
-	// And we don't know what state has already been set.
-	StateBlockScope save_restore_state(*this, true/*reset_to_default_state*/);
+	// Proceed to the next tile (if any).
+	render_texture_target.main_frame_buffer->tile_render.next_tile();
+	return !render_texture_target.main_frame_buffer->tile_render.finished();
+}
 
-	// Disable depth writing for render targets otherwise the main framebuffer's depth buffer would get corrupted.
-	gl_depth_mask(GL_FALSE);
 
-	//
+void
+GPlatesOpenGL::GLRenderer::end_rgba8_main_framebuffer_2D(
+		RenderTextureTarget &render_texture_target)
+{
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target.main_frame_buffer,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_MAIN_FRAME_BUFFER);
+
 	// Restore the portion of the main framebuffer used as a render target.
-	//
-
-	// Bind the save restore texture to use for rendering.
-	gl_bind_texture(render_texture_target.save_restore_texture.get(), GL_TEXTURE0, GL_TEXTURE_2D);
-
-	// Set up to render using the texture.
-	gl_enable_texture(GL_TEXTURE0, GL_TEXTURE_2D);
-	gl_tex_env(GL_TEXTURE0, GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-
-	//
-	// Draw a render-target sized quad into the (main) framebuffer.
-	// This restores that part of the framebuffer used to generate render-textures.
-	//
-
-	// Get the full-screen quad.
-	const GLCompiledDrawState::non_null_ptr_to_const_type full_screen_quad =
-			get_context().get_shared_state()->get_full_screen_2D_textured_quad(*this);
-
-	// We only want to draw the full-screen quad into a render-texture sized subsection.
-	// The remaining area of the main framebuffer should not be touched.
-	// NOTE: The viewport does *not* always clip (eg, fat points whose centre is inside the viewport
-	// can be rendered outside the viewport bounds due to the fatness) but in our case we're only
-	// copying a texture so we don't need to worry - if we did need to worry then we would specify
-	// a scissor rectangle also.
-	gl_viewport(
-			0, 0,
-			render_texture_target.save_restore_texture.get()->get_width().get(),
-			render_texture_target.save_restore_texture.get()->get_height().get());
-
-	// Draw the full-screen quad into the render-texture sized viewport.
-	apply_compiled_draw_state(*full_screen_quad);
+	render_texture_target.main_frame_buffer->save_restore_frame_buffer.restore(*this);
 }
 
 
@@ -1808,105 +2208,209 @@ bool
 GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 		RenderTextureTarget &render_texture_target)
 {
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			!render_texture_target.frame_buffer_object,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_NO_RENDER_TEXTURE_FRAME_BUFFER_OBJECTS);
+
+	// The texture (mipmap) dimensions.
+	const GLuint texture_level_width =
+			render_texture_target.texture->get_width().get() >> render_texture_target.level;
+	const GLuint texture_level_height =
+			render_texture_target.texture->get_height().get() >> render_texture_target.level;
+
+	// Acquire a depth/stencil buffer (if needed).
+	boost::optional<GLRenderBufferObject::shared_ptr_type> depth_render_buffer;
+	boost::optional<GLRenderBufferObject::shared_ptr_type> stencil_render_buffer;
+	if (render_texture_target.stencil_buffer)
+	{
+		// We need support for GL_EXT_packed_depth_stencil because, for the most part, consumer
+		// hardware only supports stencil for FBOs if it's packed in with depth.
+		if (!get_capabilities().framebuffer.gl_EXT_packed_depth_stencil)
+		{
+			// Fall back to using the main frame buffer.
+			return false;
+		}
+
+		stencil_render_buffer = get_context().get_shared_state()->acquire_render_buffer_object(
+					*this,
+					GL_DEPTH_STENCIL_EXT,
+					texture_level_width,
+					texture_level_height);
+
+		// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
+		if (render_texture_target.depth_buffer)
+		{
+			depth_render_buffer = stencil_render_buffer;
+		}
+	}
+	else if (render_texture_target.depth_buffer)
+	{
+		depth_render_buffer = get_context().get_shared_state()->acquire_render_buffer_object(
+					*this,
+					// To improve render buffer re-use we use packed depth/stencil (if supported)
+					// even if only depth is requested...
+					get_capabilities().framebuffer.gl_EXT_packed_depth_stencil
+							? GL_DEPTH_STENCIL_EXT
+							: GL_DEPTH_COMPONENT,
+					texture_level_width,
+					texture_level_height);
+	}
+
+	// Classify our frame buffer object according to texture (mipmap level) format/dimensions, etc.
+	GLFrameBufferObject::Classification frame_buffer_object_classification;
+	frame_buffer_object_classification.set_dimensions(texture_level_width, texture_level_height);
+	frame_buffer_object_classification.set_texture_internal_format(
+			render_texture_target.texture->get_internal_format().get());
+	if (depth_render_buffer)
+	{
+		frame_buffer_object_classification.set_depth_buffer_internal_format(
+				depth_render_buffer.get()->get_internal_format().get());
+	}
+	if (stencil_render_buffer)
+	{
+		frame_buffer_object_classification.set_stencil_buffer_internal_format(
+				stencil_render_buffer.get()->get_internal_format().get());
+	}
+
+	// Acquire a frame buffer object.
+	GLFrameBufferObject::shared_ptr_type frame_buffer_object =
+			get_context().get_non_shared_state()->acquire_frame_buffer_object(
+					*this,
+					frame_buffer_object_classification);
+
 	// Attach the texture to the framebuffer object.
-	d_framebuffer_object.get()->gl_attach_texture_2D(
+	frame_buffer_object->gl_attach_texture_2D(
 			*this,
 			GL_TEXTURE_2D,
 			render_texture_target.texture,
 			render_texture_target.level,
 			GL_COLOR_ATTACHMENT0_EXT);
 
-	// Checking the framebuffer status can sometimes be expensive even if called once per frame.
-	// One profile measured 142msec for a single check - not sure if that was due to the check
-	// or somehow the driver needed to wait for some reason and happened at that call.
-	// In any case we only enable checking for debug builds.
-#ifdef GPLATES_DEBUG
-	// Revert to using the main framebuffer as a render-target if the framebuffer object status is invalid.
-	if (!check_framebuffer_object_2D_completeness(render_texture_target))
+	// Attach the depth buffer to the framebuffer object if requested.
+	if (depth_render_buffer)
 	{
-		// Only emit one warning to avoid spamming the log.
-		static bool warning_emitted = false;
-		if (!warning_emitted)
-		{
-			qWarning() << "Unable to render using framebuffer object due to unsupported setup -"
-					" using main framebuffer instead";
-			warning_emitted = true;
-		}
+		frame_buffer_object->gl_attach_render_buffer(
+				*this,
+				depth_render_buffer.get(),
+				GL_DEPTH_ATTACHMENT_EXT);
+	}
+	// Attach the stencil buffer to the framebuffer object if requested.
+	if (stencil_render_buffer)
+	{
+		frame_buffer_object->gl_attach_render_buffer(
+				*this,
+				stencil_render_buffer.get(),
+				GL_STENCIL_ATTACHMENT_EXT);
+	}
 
-		// Detach the texture from the framebuffer object before we return it to the framebuffer object cache.
-		d_framebuffer_object.get()->gl_detach(*this, GL_COLOR_ATTACHMENT0_EXT);
+	// Now that we've attached the texture (and optional depth/stencil buffer) to the framebuffer
+	// object we need to check for framebuffer completeness.
+	//
+	// Revert to using the main framebuffer as a render-target if the framebuffer object status is invalid.
+	if (!get_context().get_non_shared_state()->check_framebuffer_object_completeness(
+			*this,
+			frame_buffer_object,
+			frame_buffer_object_classification))
+	{
+		// Detach from the framebuffer object before we return it to the framebuffer object cache.
+		frame_buffer_object->gl_detach_all(*this);
 
+		// Fall back to using the main frame buffer.
 		return false;
 	}
-#endif
 
 	// Bind the framebuffer object to make it the active framebuffer.
-	gl_bind_frame_buffer(d_framebuffer_object.get());
+	gl_bind_frame_buffer(frame_buffer_object);
+
+	// Keep track of the frame buffer object.
+	// NOTE: Do this last, once we passed all tests (otherwise it should remain as boost::none).
+	render_texture_target.frame_buffer_object = boost::in_place(
+			frame_buffer_object,
+			depth_render_buffer,
+			stencil_render_buffer);
 
 	return true;
 }
 
 
-void
-GPlatesOpenGL::GLRenderer::end_framebuffer_object_2D(
-		const boost::optional<RenderTextureTarget> &parent_render_texture_target)
+GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
+GPlatesOpenGL::GLRenderer::begin_tile_framebuffer_object_2D(
+		RenderTextureTarget &render_texture_target,
+		GLViewport *tile_render_target_viewport,
+		GLViewport *tile_render_target_scissor_rect)
 {
-	// If there's no parent then we've returned to rendering to the *main* framebuffer.
-	if (!parent_render_texture_target)
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target.frame_buffer_object,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_FRAME_BUFFER_OBJECT);
+
+	// Mask off rendering outside the render target viewport (eg, due to wide lines and fat points)
+	// in case the viewport specified is smaller than the render target.
+	// This includes 'gl_clear()' calls which clear the entire framebuffer.
+	// So set the scissor rectangle to match the render target viewport.
+	gl_enable(GL_SCISSOR_TEST);
+	gl_scissor(
+			render_texture_target.texture_viewport.x(),
+			render_texture_target.texture_viewport.y(),
+			render_texture_target.texture_viewport.width(),
+			render_texture_target.texture_viewport.height());
+	gl_viewport(
+			render_texture_target.texture_viewport.x(),
+			render_texture_target.texture_viewport.y(),
+			render_texture_target.texture_viewport.width(),
+			render_texture_target.texture_viewport.height());
+
+	// If caller requested the tile render target viewport.
+	if (tile_render_target_viewport)
 	{
-		// Detach the texture from the current framebuffer object.
-		// We're finished using the framebuffer object for now so it's good to leave it in a default
-		// state so it doesn't prevent us releasing the texture resource if we need to.
-		d_framebuffer_object.get()->gl_detach(*this, GL_COLOR_ATTACHMENT0_EXT);
-
-		// We don't need to bind the *main* framebuffer because the end of the current render target
-		// block also ends an implicit state block which will revert the bind state for us.
-
-		return;
+		*tile_render_target_viewport = render_texture_target.texture_viewport;
+	}
+	// If caller requested the tile render target scissor rectangle.
+	if (tile_render_target_scissor_rect)
+	{
+		*tile_render_target_scissor_rect = render_texture_target.texture_viewport;
 	}
 
-	// The parent render target is now the active render target.
-	// Attach the texture, of the parent render target, to the framebuffer object.
-	d_framebuffer_object.get()->gl_attach_texture_2D(
-			*this,
-			GL_TEXTURE_2D,
-			parent_render_texture_target->texture,
-			parent_render_texture_target->level,
-			GL_COLOR_ATTACHMENT0_EXT);
-
-	// We don't need to bind the framebuffer object because the end of the current render target
-	// block also ends an implicit state block which will revert the bind state for us.
-	// Doesn't really matter though because we only use the one framebuffer object.
+	// Return the identity projection transform.
+	// There's only one tile covering the entire destination viewport.
+	return GLTransform::create();
 }
 
 
 bool
-GPlatesOpenGL::GLRenderer::check_framebuffer_object_2D_completeness(
-		const RenderTextureTarget &render_texture_target)
+GPlatesOpenGL::GLRenderer::end_tile_framebuffer_object_2D(
+		RenderTextureTarget &render_texture_target)
 {
-	//
-	// Now that we've attached the texture to the framebuffer object we need to check for
-	// framebuffer completeness.
-	//
-	const FrameBufferState frame_buffer_state(
-			render_texture_target.level,
-			render_texture_target.texture->get_width().get(),
-			render_texture_target.texture->get_height().get(),
-			render_texture_target.texture->get_internal_format().get());
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target.frame_buffer_object,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_FRAME_BUFFER_OBJECT);
 
-	// See if we've already cached the framebuffer completeness status for the current FBO configuration.
-	frame_buffer_state_to_status_map_type::iterator framebuffer_status_iter =		
-			d_rgba8_framebuffer_object_status_map.find(frame_buffer_state);
-	if (framebuffer_status_iter == d_rgba8_framebuffer_object_status_map.end())
-	{
-		const bool framebuffer_status = d_framebuffer_object.get()->gl_check_frame_buffer_status(*this);
+	// There's only one tile covering the entire destination viewport - so we're finished.
+	return false;
+}
 
-		d_rgba8_framebuffer_object_status_map[frame_buffer_state] = framebuffer_status;
 
-		return framebuffer_status;
-	}
+void
+GPlatesOpenGL::GLRenderer::end_framebuffer_object_2D(
+		RenderTextureTarget &render_texture_target)
+{
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			render_texture_target.frame_buffer_object,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_A_RENDER_TEXTURE_FRAME_BUFFER_OBJECT);
 
-	return framebuffer_status_iter->second;
+	// Detach from the current framebuffer object.
+	// We're finished using the framebuffer object for now so it's good to leave it in a default
+	// state so it doesn't prevent us releasing the texture resource if we need to.
+	// Also we want any acquired depth/stencil render buffers to be released for re-use and that
+	// can't happen if they are still attached to the frame buffer object.
+	render_texture_target.frame_buffer_object->frame_buffer_object->gl_detach_all(*this);
+
+	// We don't need to bind the parent framebuffer object (or main frame buffer) because the end
+	// of the current render target block also ends an implicit state block which will revert
+	// the bind state for us.
 }
 
 
@@ -2035,22 +2539,22 @@ GPlatesOpenGL::GLRenderer::end_render_queue_block_internal()
 
 
 GPlatesOpenGL::GLRenderer::RenderScope::RenderScope(
-		GLRenderer &renderer,
-		const GLViewport &default_viewport) :
+		GLRenderer &renderer) :
 	d_renderer(renderer),
 	d_called_end_render(false)
 {
-	d_renderer.begin_render(default_viewport);
+	d_renderer.begin_render();
 }
 
 
 GPlatesOpenGL::GLRenderer::RenderScope::RenderScope(
 		GLRenderer &renderer,
-		QPainter *opengl_qpainter) :
+		QPainter &qpainter,
+		bool paint_device_is_framebuffer) :
 	d_renderer(renderer),
 	d_called_end_render(false)
 {
-	d_renderer.begin_render(opengl_qpainter);
+	d_renderer.begin_render(qpainter, paint_device_is_framebuffer);
 }
 
 
@@ -2091,37 +2595,88 @@ GPlatesOpenGL::GLRenderer::RenderTarget2DScope::RenderTarget2DScope(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_to_const_type &texture,
 		boost::optional<GLViewport> render_target_viewport,
+		const double &max_point_size_and_line_width,
 		GLint level,
-		bool reset_to_default_state) :
-	d_renderer(renderer)
+		bool reset_to_default_state,
+		bool depth_buffer,
+		bool stencil_buffer) :
+	d_renderer(renderer),
+	d_called_end_tile(true),
+	d_called_end_render(false)
 {
-	d_renderer.begin_render_target_2D(texture, render_target_viewport, level, reset_to_default_state);
+	d_renderer.begin_render_target_2D(
+			texture,
+			render_target_viewport,
+			max_point_size_and_line_width,
+			level,
+			reset_to_default_state,
+			depth_buffer,
+			stencil_buffer);
 }
 
 
 GPlatesOpenGL::GLRenderer::RenderTarget2DScope::~RenderTarget2DScope()
 {
-	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
-	// But we log the exception and the location it was emitted.
-	try
+	if (!d_called_end_render)
 	{
-		d_renderer.end_render_target_2D();
+		// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+		// But we log the exception and the location it was emitted.
+		try
+		{
+			end_render();
+		}
+		catch (std::exception &exc)
+		{
+			qWarning() << "GLRenderer: exception thrown during render target scope: " << exc.what();
+		}
+		catch (...)
+		{
+			qWarning() << "GLRenderer: exception thrown during render target scope: Unknown error";
+		}
 	}
-	catch (std::exception &exc)
+}
+
+
+GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type
+GPlatesOpenGL::GLRenderer::RenderTarget2DScope::begin_tile(
+		bool save_restore_state,
+		GLViewport *tile_render_target_viewport,
+		GLViewport *tile_render_target_scissor_rect)
+{
+	d_called_end_tile = false;
+	return d_renderer.begin_tile_render_target_2D(
+			save_restore_state,
+			tile_render_target_viewport,
+			tile_render_target_scissor_rect);
+}
+
+
+bool
+GPlatesOpenGL::GLRenderer::RenderTarget2DScope::end_tile()
+{
+	d_called_end_tile = true;
+	return d_renderer.end_tile_render_target_2D();
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::RenderTarget2DScope::end_render()
+{
+	if (!d_called_end_tile)
 	{
-		qWarning() << "GLRenderer: exception thrown during render target scope: " << exc.what();
+		end_tile();
 	}
-	catch (...)
-	{
-		qWarning() << "GLRenderer: exception thrown during render target scope: Unknown error";
-	}
+
+	d_renderer.end_render_target_2D();
+	d_called_end_render = true;
 }
 
 
 GPlatesOpenGL::GLRenderer::StateBlockScope::StateBlockScope(
 		GLRenderer &renderer,
 		bool reset_to_default_state) :
-	d_renderer(renderer)
+	d_renderer(renderer),
+	d_called_end_state_block(false)
 {
 	d_renderer.begin_state_block(reset_to_default_state);
 }
@@ -2129,19 +2684,33 @@ GPlatesOpenGL::GLRenderer::StateBlockScope::StateBlockScope(
 
 GPlatesOpenGL::GLRenderer::StateBlockScope::~StateBlockScope()
 {
-	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
-	// But we log the exception and the location it was emitted.
-	try
+	if (!d_called_end_state_block)
+	{
+		// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
+		// But we log the exception and the location it was emitted.
+		try
+		{
+			d_renderer.end_state_block();
+		}
+		catch (std::exception &exc)
+		{
+			qWarning() << "GLRenderer: exception thrown during state block scope: " << exc.what();
+		}
+		catch (...)
+		{
+			qWarning() << "GLRenderer: exception thrown during state block scope: Unknown error";
+		}
+	}
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::StateBlockScope::end_state_block()
+{
+	if (!d_called_end_state_block)
 	{
 		d_renderer.end_state_block();
-	}
-	catch (std::exception &exc)
-	{
-		qWarning() << "GLRenderer: exception thrown during state block scope: " << exc.what();
-	}
-	catch (...)
-	{
-		qWarning() << "GLRenderer: exception thrown during state block scope: Unknown error";
+		d_called_end_state_block = true;
 	}
 }
 
@@ -2241,8 +2810,11 @@ GPlatesOpenGL::GLRenderer::GLRendererAPIError::write_message(
 	case SHOULD_HAVE_NO_ACTIVE_QPAINTER:
 		os << "expected no active QPainter";
 		break;
-	case SHOULD_HAVE_ACTIVE_OPENGL_QPAINTER:
-		os << "expected an active OpenGL QPainter";
+	case SHOULD_HAVE_ACTIVE_QPAINTER:
+		os << "expected an active QPainter";
+		break;
+	case FRAME_BUFFER_DIMENSIONS_DO_NOT_MATCH_QPAINTER_DEVICE_TARGETING_MAIN_FRAME_BUFFER:
+		os << "frame buffer dimensions must match QPainter device if device targets main frame buffer";
 		break;
 	case SHOULD_HAVE_NO_STATE_BLOCKS:
 		os << "expected no state blocks";
@@ -2256,6 +2828,24 @@ GPlatesOpenGL::GLRenderer::GLRendererAPIError::write_message(
 	case SHOULD_HAVE_A_RENDER_TARGET_BLOCK:
 		os << "expected a render-target block";
 		break;
+	case SHOULD_HAVE_NO_RENDER_TEXTURE_TARGETS:
+		os << "expected no render-texture targets";
+		break;
+	case SHOULD_HAVE_A_RENDER_TEXTURE_TARGET:
+		os << "expected a render-texture target";
+		break;
+	case SHOULD_HAVE_NO_RENDER_TEXTURE_MAIN_FRAME_BUFFERS:
+		os << "expected no render-texture main frame buffers";
+		break;
+	case SHOULD_HAVE_A_RENDER_TEXTURE_MAIN_FRAME_BUFFER:
+		os << "expected a render-texture main frame buffer";
+		break;
+	case SHOULD_HAVE_NO_RENDER_TEXTURE_FRAME_BUFFER_OBJECTS:
+		os << "expected no render-texture frame buffer objects";
+		break;
+	case SHOULD_HAVE_A_RENDER_TEXTURE_FRAME_BUFFER_OBJECT:
+		os << "expected a render-texture frame buffer object";
+		break;
 	case SHOULD_HAVE_NO_RENDER_QUEUE_BLOCKS:
 		os << "expected no render-queue blocks";
 		break;
@@ -2268,8 +2858,11 @@ GPlatesOpenGL::GLRenderer::GLRendererAPIError::write_message(
 	case SHOULD_HAVE_A_COMPILE_DRAW_STATE_BLOCK:
 		os << "expected a compile draw state block";
 		break;
-	case CANNOT_ENABLE_DEPTH_STENCIL_TEST_IN_RGBA8_RENDER_TARGETS:
-		os << "cannot enable depth or stencil tests when using render targets";
+	case CANNOT_ENABLE_DEPTH_TEST_OR_WRITES_IN_RENDER_TARGET_WITHOUT_DEPTH_BUFFER:
+		os << "cannot enable depth test or writes when using render targets without a depth buffer";
+		break;
+	case CANNOT_ENABLE_STENCIL_TEST_OR_WRITES_IN_RENDER_TARGET_WITHOUT_STENCIL_BUFFER:
+		os << "cannot enable stencil test or writes when using render targets without a stencil buffer";
 		break;
 	default:
 		os << "unspecified error";

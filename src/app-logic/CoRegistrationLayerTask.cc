@@ -56,11 +56,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::get_input_channel_types() const
 {
 	std::vector<LayerInputChannelType> input_channel_types;
 
-	// Channel definition for the reconstruction tree.
-	input_channel_types.push_back(
-			LayerInputChannelType(
-					get_reconstruction_tree_channel_name(),
-					LayerInputChannelType::ONE_DATA_IN_CHANNEL));
+	// NOTE: There's no channel definition for a reconstruction tree - a rotation layer is not needed.
 
 	input_channel_types.push_back(
 			LayerInputChannelType(
@@ -125,21 +121,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::add_input_layer_proxy_connection(
 		const QString &input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == get_reconstruction_tree_channel_name())
-	{
-		// Make sure the input layer proxy is a reconstruction layer proxy.
-		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
-				LayerProxyUtils::get_layer_proxy_derived_type<ReconstructionLayerProxy>(layer_proxy);
-		if (reconstruction_layer_proxy)
-		{
-			// Stop using the default reconstruction layer proxy.
-			d_using_default_reconstruction_layer_proxy = false;
-
-			d_coregistration_layer_proxy->set_current_reconstruction_layer_proxy(
-					GPlatesUtils::get_non_null_pointer(reconstruction_layer_proxy.get()));
-		}
-	}
-	else if (input_channel_name == CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME)
+	if (input_channel_name == CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME)
 	{
 		// The seed geometries layer proxy.
 		boost::optional<ReconstructLayerProxy *> reconstructed_seed_geometries_layer_proxy =
@@ -178,22 +160,7 @@ GPlatesAppLogic::CoRegistrationLayerTask::remove_input_layer_proxy_connection(
 		const QString &input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == get_reconstruction_tree_channel_name())
-	{
-		// Make sure the input layer proxy is a reconstruction layer proxy.
-		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
-				LayerProxyUtils::get_layer_proxy_derived_type<
-						ReconstructionLayerProxy>(layer_proxy);
-		if (reconstruction_layer_proxy)
-		{
-			// Start using the default reconstruction layer proxy.
-			d_using_default_reconstruction_layer_proxy = true;
-
-			d_coregistration_layer_proxy->set_current_reconstruction_layer_proxy(
-					d_default_reconstruction_layer_proxy);
-		}
-	}
-	else if (input_channel_name == CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME)
+	if (input_channel_name == CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME)
 	{
 		// The seed geometries layer proxy.
 		boost::optional<ReconstructLayerProxy *> reconstructed_seed_geometries_layer_proxy =
@@ -242,21 +209,6 @@ GPlatesAppLogic::CoRegistrationLayerTask::update(
 
 		d_layer_task_params.d_set_cfg_table_called = false;
 	}
-
-	// If our layer proxy is currently using the default reconstruction layer proxy then
-	// tell our layer proxy about the new default reconstruction layer proxy.
-	if (d_using_default_reconstruction_layer_proxy)
-	{
-		// Avoid setting it every update unless it's actually a different layer.
-		if (reconstruction->get_default_reconstruction_layer_output() != d_default_reconstruction_layer_proxy)
-		{
-			d_coregistration_layer_proxy->set_current_reconstruction_layer_proxy(
-					reconstruction->get_default_reconstruction_layer_output());
-		}
-	}
-
-	d_default_reconstruction_layer_proxy = reconstruction->get_default_reconstruction_layer_output();
-
 
 	// NOTE: Clients of co-registration (eg, the co-registration results dialog or co-registration
 	// export) are expected to query the layer proxy to process/get co-registration results.

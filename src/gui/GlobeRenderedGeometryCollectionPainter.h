@@ -35,7 +35,6 @@
 #include "GlobeVisibilityTester.h"
 #include "LayerPainter.h"
 #include "RenderSettings.h"
-#include "TextRenderer.h"
 
 #include "opengl/GLContext.h"
 #include "opengl/GLTexture.h"
@@ -79,8 +78,7 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				RenderSettings &render_settings,
-				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
+				const RenderSettings &render_settings,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
@@ -92,12 +90,16 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderer &renderer);
 
 		/**
-		 * Returns true if any rendered layer has sub-surface geometries.
+		 * Returns true if any rendered layer has sub-surface geometries that can be rendered.
+		 *
+		 * It's possible that a sub-surface geometry cannot be rendered, for example, if
+		 * the runtime system does not support OpenGL 3 (for 3D scalar fields).
 		 *
 		 * These are painted using @a paint_sub_surface.
 		 */
 		bool
-		has_sub_surface_geometries() const;
+		has_renderable_sub_surface_geometries(
+				GPlatesOpenGL::GLRenderer &renderer) const;
 
 		/**
 		 * Draw the rendered geometries on the surface of the globe.
@@ -119,12 +121,15 @@ namespace GPlatesGui
 		 * @param viewport_zoom_factor is used for rendering view-dependent geometries.
 		 * @param surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
 		 * of the surface geometries/rasters on the *front* of the globe.
+		 * @param improve_performance_reduce_quality_hint a hint to improve performance by presumably
+		 * reducing quality - this is a temporary hint usually during globe rotation mouse drag.
 		 */
 		cache_handle_type
 		paint_sub_surface(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &viewport_zoom_factor,
-				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture);
+				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture,
+				bool improve_performance_reduce_quality_hint = false);
 
 		void
 		set_scale(
@@ -140,13 +145,26 @@ namespace GPlatesGui
 				bool reversed);
 
 	private:
+
+		virtual
+		bool
+		visit_main_rendered_layer(
+				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type);
+
 		virtual
 		bool
 		visit_rendered_geometry_layer(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer);
 
+
+		//! Typedef for the base class.
+		typedef GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<
+				GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type> base_type;
+
+
 		/**
-		 * Parameters that are only available when @a paint_surface is called.
+		 * Parameters that are only available when @a paint_surface or @a paint_sub_surface is called.
 		 */
 		struct PaintParams
 		{
@@ -155,19 +173,24 @@ namespace GPlatesGui
 					const double &viewport_zoom_factor,
 					GlobeRenderedGeometryLayerPainter::PaintRegionType paint_region,
 					boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type>
-							surface_occlusion_texture = boost::none);
+							surface_occlusion_texture = boost::none,
+					bool improve_performance_reduce_quality_hint = false);
 
 			GPlatesOpenGL::GLRenderer *d_renderer;
 			double d_inverse_viewport_zoom_factor;
 			GlobeRenderedGeometryLayerPainter::PaintRegionType d_paint_region;
 			boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> d_surface_occlusion_texture;
+			bool d_improve_performance_reduce_quality_hint;
 
 			// Cache of rendered geometry layers.
 			boost::shared_ptr<std::vector<cache_handle_type> > d_cache_handle;
+
+			// The layer type of the main rendered layer currently being rendered.
+			GPlatesViewOperations::RenderedGeometryCollection::MainLayerType d_main_rendered_layer_type;
 		};
 
 
-		//! Parameters that are only available when @a paint_surface is called.
+		//! Parameters that are only available when @a paint_surface or @a paint_sub_surface is called.
 		boost::optional<PaintParams> d_paint_params;
 
 		const GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
@@ -180,10 +203,7 @@ namespace GPlatesGui
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
 		//! Rendering flags to determine what gets shown
-		RenderSettings &d_render_settings;
-
-		//! Used for rendering text on an OpenGL canvas
-		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
+		const RenderSettings &d_render_settings;
 
 		//! Used to paint the layers.
 		LayerPainter d_layer_painter;

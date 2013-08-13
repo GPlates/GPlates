@@ -32,6 +32,7 @@
 #include <boost/function.hpp>
 
 #include <QString>
+#include <QBuffer>
 #include <QByteArray>
 #include <QVariant>
 #include <QXmlStreamReader>

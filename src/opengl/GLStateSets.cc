@@ -32,7 +32,7 @@
 
 #include "GLStateSets.h"
 
-#include "GLContext.h"
+#include "GLCapabilities.h"
 #include "GLState.h"
 #include "OpenGLException.h"
 
@@ -40,9 +40,6 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
 
 namespace GPlatesOpenGL
 {
@@ -73,6 +70,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_active_texture(
+				const GLCapabilities &capabilities,
 				GLenum texture_unit,
 				GLState &last_applied_state)
 		{
@@ -80,13 +78,13 @@ namespace GPlatesOpenGL
 			if (last_applied_state.get_active_texture() != texture_unit)
 			{
 				// GL_ARB_multitexture not required if texture_unit is zero (so we test instead of assert)...
-				if (GLEW_ARB_multitexture)
+				if (capabilities.texture.gl_ARB_multitexture)
 				{
 					// Apply the change to OpenGL.
 					glActiveTextureARB(texture_unit);
 
 					// And record the change we've made.
-					last_applied_state.set_active_texture(texture_unit);
+					last_applied_state.set_active_texture(capabilities, texture_unit);
 				}
 			}
 		}
@@ -97,6 +95,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_client_active_texture(
+				const GLCapabilities &capabilities,
 				GLenum texture_unit,
 				GLState &last_applied_state)
 		{
@@ -104,13 +103,13 @@ namespace GPlatesOpenGL
 			if (last_applied_state.get_client_active_texture() != texture_unit)
 			{
 				// GL_ARB_multitexture not required if texture_unit is zero (so we test instead of assert)...
-				if (GLEW_ARB_multitexture)
+				if (capabilities.texture.gl_ARB_multitexture)
 				{
 					// Apply the change to OpenGL.
 					glClientActiveTextureARB(texture_unit);
 
 					// And record the change we've made.
-					last_applied_state.set_client_active_texture(texture_unit);
+					last_applied_state.set_client_active_texture(capabilities, texture_unit);
 				}
 			}
 		}
@@ -121,6 +120,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		bind_buffer_object(
+				const GLCapabilities &capabilities,
 				GLBufferObject::resource_handle_type buffer_object_resource,
 				const GLBufferObject::shared_ptr_to_const_type &buffer_object,
 				GLenum target,
@@ -130,7 +130,7 @@ namespace GPlatesOpenGL
 			if (last_applied_state.get_bind_buffer_object_resource(target) != buffer_object_resource)
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_buffer_object),
+						capabilities.buffer.gl_ARB_vertex_buffer_object,
 						GPLATES_ASSERTION_SOURCE);
 
 				// Bind the buffer object.
@@ -147,6 +147,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		unbind_buffer_object(
+				const GLCapabilities &capabilities,
 				GLenum target,
 				GLState &last_applied_state)
 		{
@@ -154,7 +155,7 @@ namespace GPlatesOpenGL
 			if (last_applied_state.get_bind_buffer_object_resource(target))
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_buffer_object),
+						capabilities.buffer.gl_ARB_vertex_buffer_object,
 						GPLATES_ASSERTION_SOURCE);
 
 				// No buffer object - back to client memory arrays.
@@ -521,6 +522,7 @@ GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::has_changed_to_default_s
 
 void
 GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::bind_buffer(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Determine if we're using a vertex buffer object or client memory.
@@ -530,7 +532,10 @@ GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::bind_buffer(
 	if (buffer_impl) // using client memory...
 	{
 		// Make sure we're using client memory by unbinding any currently bound buffer object.
-		unbind_buffer_object(GLVertexBufferObject::get_target_type(), last_applied_state);
+		unbind_buffer_object(
+				capabilities,
+				GLVertexBufferObject::get_target_type(),
+				last_applied_state);
 	}
 	else // using buffer object...
 	{
@@ -539,6 +544,7 @@ GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::bind_buffer(
 
 		// Bind the buffer object.
 		bind_buffer_object(
+				capabilities,
 				buffer_object->get_buffer_resource_handle(),
 				buffer_object,
 				GLVertexBufferObject::get_target_type(),
@@ -549,26 +555,32 @@ GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::bind_buffer(
 
 void
 GPlatesOpenGL::Implementation::GLVertexAttributeBuffer::unbind_buffer(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Make sure we're using client memory by unbinding any currently bound buffer object.
-	unbind_buffer_object(GLVertexBufferObject::get_target_type(), last_applied_state);
+	unbind_buffer_object(
+			capabilities,
+			GLVertexBufferObject::get_target_type(),
+			last_applied_state);
 }
 
 
 GPlatesOpenGL::GLActiveTextureStateSet::GLActiveTextureStateSet(
+		const GLCapabilities &capabilities,
 		GLenum active_texture) :
 	d_active_texture(active_texture)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			active_texture >= GL_TEXTURE0 &&
-					active_texture < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_image_units,
+					active_texture < GL_TEXTURE0 + capabilities.texture.gl_max_texture_image_units,
 			GPLATES_ASSERTION_SOURCE);
 }
 
 
 void
 GPlatesOpenGL::GLActiveTextureStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -580,7 +592,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_state(
 		return;
 	}
 
-	if (GLEW_ARB_multitexture)
+	if (capabilities.texture.gl_ARB_multitexture)
 	{
 		glActiveTextureARB(d_active_texture);
 	}
@@ -589,6 +601,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLActiveTextureStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -597,7 +610,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_from_default_state(
 		return;
 	}
 
-	if (GLEW_ARB_multitexture)
+	if (capabilities.texture.gl_ARB_multitexture)
 	{
 		glActiveTextureARB(d_active_texture);
 	}
@@ -606,6 +619,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLActiveTextureStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -614,7 +628,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_to_default_state(
 		return;
 	}
 
-	if (GLEW_ARB_multitexture)
+	if (capabilities.texture.gl_ARB_multitexture)
 	{
 		// Texture unit 0.
 		glActiveTextureARB(GL_TEXTURE0);
@@ -625,6 +639,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLAlphaFuncStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -643,6 +658,7 @@ GPlatesOpenGL::GLAlphaFuncStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLAlphaFuncStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -657,6 +673,7 @@ GPlatesOpenGL::GLAlphaFuncStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLAlphaFuncStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -672,6 +689,7 @@ GPlatesOpenGL::GLAlphaFuncStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLBindBufferObjectStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -684,7 +702,7 @@ GPlatesOpenGL::GLBindBufferObjectStateSet::apply_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_buffer_object),
+			capabilities.buffer.gl_ARB_vertex_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	if (d_buffer_object_resource)
@@ -701,6 +719,7 @@ GPlatesOpenGL::GLBindBufferObjectStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLBindBufferObjectStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -710,7 +729,7 @@ GPlatesOpenGL::GLBindBufferObjectStateSet::apply_from_default_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_buffer_object),
+			capabilities.buffer.gl_ARB_vertex_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind the buffer object.
@@ -719,6 +738,7 @@ GPlatesOpenGL::GLBindBufferObjectStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLBindBufferObjectStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -728,7 +748,7 @@ GPlatesOpenGL::GLBindBufferObjectStateSet::apply_to_default_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_buffer_object),
+			capabilities.buffer.gl_ARB_vertex_buffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// The default is zero (no buffer object - back to client memory arrays).
@@ -738,6 +758,7 @@ GPlatesOpenGL::GLBindBufferObjectStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -750,7 +771,7 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	if (d_frame_buffer_object)
@@ -767,6 +788,7 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -776,7 +798,7 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_from_default_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind the frame buffer object.
@@ -785,6 +807,7 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -794,7 +817,7 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_to_default_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// The default is zero (the main framebuffer).
@@ -804,6 +827,7 @@ GPlatesOpenGL::GLBindFrameBufferObjectStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLBindProgramObjectStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -816,7 +840,7 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_shader_objects),
+			capabilities.shader.gl_ARB_shader_objects,
 			GPLATES_ASSERTION_SOURCE);
 
 	if (d_program_object)
@@ -833,6 +857,7 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLBindProgramObjectStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -842,7 +867,7 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_from_default_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_shader_objects),
+			capabilities.shader.gl_ARB_shader_objects,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind the shader program object.
@@ -851,6 +876,7 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLBindProgramObjectStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -860,7 +886,7 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_to_default_state(
 	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_shader_objects),
+			capabilities.shader.gl_ARB_shader_objects,
 			GPLATES_ASSERTION_SOURCE);
 
 	// The default is zero (the fixed-function pipeline).
@@ -869,6 +895,7 @@ GPlatesOpenGL::GLBindProgramObjectStateSet::apply_to_default_state(
 
 
 GPlatesOpenGL::GLBindTextureStateSet::GLBindTextureStateSet(
+		const GLCapabilities &capabilities,
 		const GLTexture::shared_ptr_to_const_type &texture_object,
 		GLenum texture_unit,
 		GLenum texture_target) :
@@ -878,11 +905,12 @@ GPlatesOpenGL::GLBindTextureStateSet::GLBindTextureStateSet(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_image_units,
+					texture_unit < GL_TEXTURE0 + capabilities.texture.gl_max_texture_image_units,
 			GPLATES_ASSERTION_SOURCE);
 }
 
 GPlatesOpenGL::GLBindTextureStateSet::GLBindTextureStateSet(
+		const GLCapabilities &capabilities,
 		GLenum texture_unit,
 		GLenum texture_target) :
 	d_texture_unit(texture_unit),
@@ -890,12 +918,13 @@ GPlatesOpenGL::GLBindTextureStateSet::GLBindTextureStateSet(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_image_units,
+					texture_unit < GL_TEXTURE0 + capabilities.texture.gl_max_texture_image_units,
 			GPLATES_ASSERTION_SOURCE);
 }
 
 void
 GPlatesOpenGL::GLBindTextureStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -912,7 +941,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	if (d_texture_object)
 	{
@@ -928,6 +957,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -937,7 +967,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	// Bind the texture.
 	glBindTexture(d_texture_target, d_texture_object.get()->get_texture_resource_handle());
@@ -945,6 +975,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLBindTextureStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -954,7 +985,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_to_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	// Bind the default unnamed texture 0.
 	glBindTexture(d_texture_target, 0);
@@ -963,6 +994,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -976,7 +1008,7 @@ GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_state(
 
 #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_array_object),
+			capabilities.buffer.gl_ARB_vertex_array_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	if (d_resource_handle)
@@ -1006,6 +1038,7 @@ GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1016,7 +1049,7 @@ GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_from_default_state(
 
 #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_array_object),
+			capabilities.buffer.gl_ARB_vertex_array_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind the vertex array object.
@@ -1038,6 +1071,7 @@ GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1048,7 +1082,7 @@ GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_to_default_state(
 
 #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_array_object),
+			capabilities.buffer.gl_ARB_vertex_array_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// The default is zero (no vertex array object - back to managing individual vertex attribute arrays).
@@ -1063,6 +1097,7 @@ GPlatesOpenGL::GLBindVertexArrayObjectStateSet::apply_to_default_state(
 
 
 GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
+		const GLCapabilities &capabilities,
 		GLenum mode) :
 	d_mode_RGB(mode),
 	d_mode_A(mode),
@@ -1070,12 +1105,13 @@ GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
 {
 	//! The GL_EXT_blend_minmax extension exposes 'glBlendEquationEXT()'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_blend_minmax),
+			capabilities.framebuffer.gl_EXT_blend_minmax,
 			GPLATES_ASSERTION_SOURCE);
 }
 
 
 GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
+		const GLCapabilities &capabilities,
 		GLenum modeRGB,
 		GLenum modeAlpha) :
 	d_mode_RGB(modeRGB),
@@ -1083,13 +1119,14 @@ GPlatesOpenGL::GLBlendEquationStateSet::GLBlendEquationStateSet(
 	d_separate_equations(true)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_blend_equation_separate),
+			capabilities.framebuffer.gl_EXT_blend_equation_separate,
 			GPLATES_ASSERTION_SOURCE);
 }
 
 
 void
 GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1116,6 +1153,7 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLBlendEquationStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1138,6 +1176,7 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLBlendEquationStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1153,6 +1192,7 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_to_default_state(
 
 
 GPlatesOpenGL::GLBlendFuncStateSet::GLBlendFuncStateSet(
+		const GLCapabilities &capabilities,
 		GLenum sfactorRGB,
 		GLenum dfactorRGB,
 		GLenum sfactorAlpha,
@@ -1164,13 +1204,14 @@ GPlatesOpenGL::GLBlendFuncStateSet::GLBlendFuncStateSet(
 	d_separate_factors(true)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_blend_func_separate),
+			capabilities.framebuffer.gl_EXT_blend_func_separate,
 			GPLATES_ASSERTION_SOURCE);
 }
 
 
 void
 GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1199,6 +1240,7 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLBlendFuncStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1223,6 +1265,7 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLBlendFuncStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1241,6 +1284,7 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLClearColorStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1266,6 +1310,7 @@ GPlatesOpenGL::GLClearColorStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLClearColorStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1284,6 +1329,7 @@ GPlatesOpenGL::GLClearColorStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLClearColorStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1299,6 +1345,7 @@ GPlatesOpenGL::GLClearColorStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLClearDepthStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1317,6 +1364,7 @@ GPlatesOpenGL::GLClearDepthStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLClearDepthStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1331,6 +1379,7 @@ GPlatesOpenGL::GLClearDepthStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLClearDepthStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1346,6 +1395,7 @@ GPlatesOpenGL::GLClearDepthStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLClearStencilStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1364,6 +1414,7 @@ GPlatesOpenGL::GLClearStencilStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLClearStencilStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1378,6 +1429,7 @@ GPlatesOpenGL::GLClearStencilStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLClearStencilStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1392,18 +1444,20 @@ GPlatesOpenGL::GLClearStencilStateSet::apply_to_default_state(
 
 
 GPlatesOpenGL::GLClientActiveTextureStateSet::GLClientActiveTextureStateSet(
+		const GLCapabilities &capabilities,
 		GLenum client_active_texture) :
 	d_client_active_texture(client_active_texture)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			client_active_texture >= GL_TEXTURE0 &&
-					client_active_texture < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_coords,
+					client_active_texture < GL_TEXTURE0 + capabilities.texture.gl_max_texture_coords,
 			GPLATES_ASSERTION_SOURCE);
 }
 
 
 void
 GPlatesOpenGL::GLClientActiveTextureStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1415,7 +1469,7 @@ GPlatesOpenGL::GLClientActiveTextureStateSet::apply_state(
 		return;
 	}
 
-	if (GLEW_ARB_multitexture)
+	if (capabilities.texture.gl_ARB_multitexture)
 	{
 		glClientActiveTextureARB(d_client_active_texture);
 	}
@@ -1424,6 +1478,7 @@ GPlatesOpenGL::GLClientActiveTextureStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLClientActiveTextureStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1432,7 +1487,7 @@ GPlatesOpenGL::GLClientActiveTextureStateSet::apply_from_default_state(
 		return;
 	}
 
-	if (GLEW_ARB_multitexture)
+	if (capabilities.texture.gl_ARB_multitexture)
 	{
 		glClientActiveTextureARB(d_client_active_texture);
 	}
@@ -1441,6 +1496,7 @@ GPlatesOpenGL::GLClientActiveTextureStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLClientActiveTextureStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1449,7 +1505,7 @@ GPlatesOpenGL::GLClientActiveTextureStateSet::apply_to_default_state(
 		return;
 	}
 
-	if (GLEW_ARB_multitexture)
+	if (capabilities.texture.gl_ARB_multitexture)
 	{
 		// Texture unit 0.
 		glClientActiveTextureARB(GL_TEXTURE0);
@@ -1460,6 +1516,7 @@ GPlatesOpenGL::GLClientActiveTextureStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLColorMaskStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1480,6 +1537,7 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLColorMaskStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1493,6 +1551,7 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLColorMaskStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1507,6 +1566,7 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLColorPointerStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1523,7 +1583,7 @@ GPlatesOpenGL::GLColorPointerStateSet::apply_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_COLOR_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	glColorPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
@@ -1532,6 +1592,7 @@ GPlatesOpenGL::GLColorPointerStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLColorPointerStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1544,7 +1605,7 @@ GPlatesOpenGL::GLColorPointerStateSet::apply_from_default_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_COLOR_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	glColorPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
@@ -1553,6 +1614,7 @@ GPlatesOpenGL::GLColorPointerStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLColorPointerStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1565,7 +1627,7 @@ GPlatesOpenGL::GLColorPointerStateSet::apply_to_default_state(
 	}
 
 	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(last_applied_state);
+	d_buffer.unbind_buffer(capabilities, last_applied_state);
 
 	// These are the default parameters.
 	glColorPointer(4, GL_FLOAT, 0, NULL);
@@ -1577,6 +1639,7 @@ GPlatesOpenGL::GLColorPointerStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLCullFaceStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1594,6 +1657,7 @@ GPlatesOpenGL::GLCullFaceStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLCullFaceStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1607,6 +1671,7 @@ GPlatesOpenGL::GLCullFaceStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLCullFaceStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1621,6 +1686,7 @@ GPlatesOpenGL::GLCullFaceStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLDepthFuncStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1638,6 +1704,7 @@ GPlatesOpenGL::GLDepthFuncStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLDepthFuncStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1651,6 +1718,7 @@ GPlatesOpenGL::GLDepthFuncStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLDepthFuncStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1665,6 +1733,7 @@ GPlatesOpenGL::GLDepthFuncStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLDepthMaskStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1682,6 +1751,7 @@ GPlatesOpenGL::GLDepthMaskStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLDepthMaskStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1695,6 +1765,7 @@ GPlatesOpenGL::GLDepthMaskStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLDepthMaskStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1709,6 +1780,7 @@ GPlatesOpenGL::GLDepthMaskStateSet::apply_to_default_state(
 GPlatesOpenGL::GLDepthRange GPlatesOpenGL::GLDepthRangeStateSet::DEFAULT_DEPTH_RANGE;
 
 GPlatesOpenGL::GLDepthRangeStateSet::GLDepthRangeStateSet(
+		const GLCapabilities &capabilities,
 		const GLDepthRange &all_depth_ranges) :
 	d_depth_ranges(1, all_depth_ranges), // Just store one viewport (no need to duplicate).
 	d_all_depth_ranges_are_the_same(true)
@@ -1716,18 +1788,20 @@ GPlatesOpenGL::GLDepthRangeStateSet::GLDepthRangeStateSet(
 }
 
 GPlatesOpenGL::GLDepthRangeStateSet::GLDepthRangeStateSet(
+		const GLCapabilities &capabilities,
 		const depth_range_seq_type &all_depth_ranges) :
 	d_depth_ranges(all_depth_ranges),
 	d_all_depth_ranges_are_the_same(false)
 {
 	// The client is required to set all available depth ranges.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			all_depth_ranges.size() == GLContext::get_parameters().viewport.gl_max_viewports,
+			all_depth_ranges.size() == capabilities.viewport.gl_max_viewports,
 			GPLATES_ASSERTION_SOURCE);
 }
 
 void
 GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1744,11 +1818,12 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
 		}
 	}
 
-	apply_state();
+	apply_state(capabilities);
 }
 
 void
 GPlatesOpenGL::GLDepthRangeStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1761,11 +1836,12 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_from_default_state(
 		}
 	}
 
-	apply_state();
+	apply_state(capabilities);
 }
 
 void
 GPlatesOpenGL::GLDepthRangeStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1783,7 +1859,8 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_to_default_state(
 }
 
 void
-GPlatesOpenGL::GLDepthRangeStateSet::apply_state() const
+GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
+		const GLCapabilities &capabilities) const
 {
 	if (d_all_depth_ranges_are_the_same || (d_depth_ranges.size() == 1))
 	{
@@ -1796,7 +1873,7 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_state() const
 	}
 
 #ifdef GL_ARB_viewport_array // In case old 'glew.h' header
-	if (GLEW_ARB_viewport_array)
+	if (capabilities.viewport.gl_ARB_viewport_array)
 	{
 		// Put the depth range parameters into one array so can call 'glDepthRangeArrayv' once
 		// rather than call 'glDepthRangeIndexed' multiple times.
@@ -1819,6 +1896,7 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_state() const
 
 void
 GPlatesOpenGL::GLEnableClientStateStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1842,6 +1920,7 @@ GPlatesOpenGL::GLEnableClientStateStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLEnableClientStateStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1855,6 +1934,7 @@ GPlatesOpenGL::GLEnableClientStateStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLEnableClientStateStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1869,6 +1949,7 @@ GPlatesOpenGL::GLEnableClientStateStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLEnableClientTextureStateStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1881,7 +1962,7 @@ GPlatesOpenGL::GLEnableClientTextureStateStateSet::apply_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_client_active_texture(d_texture_unit, last_applied_state);
+	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	if (d_enable)
 	{
@@ -1895,6 +1976,7 @@ GPlatesOpenGL::GLEnableClientTextureStateStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLEnableClientTextureStateStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1904,13 +1986,14 @@ GPlatesOpenGL::GLEnableClientTextureStateStateSet::apply_from_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_client_active_texture(d_texture_unit, last_applied_state);
+	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
 void
 GPlatesOpenGL::GLEnableClientTextureStateStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -1920,7 +2003,7 @@ GPlatesOpenGL::GLEnableClientTextureStateStateSet::apply_to_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_client_active_texture(d_texture_unit, last_applied_state);
+	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
@@ -1928,6 +2011,7 @@ GPlatesOpenGL::GLEnableClientTextureStateStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLEnableStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -1951,6 +2035,7 @@ GPlatesOpenGL::GLEnableStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLEnableStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	const bool enable_default = get_default(d_cap);
@@ -1973,6 +2058,7 @@ GPlatesOpenGL::GLEnableStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLEnableStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	const bool enable_default = get_default(d_cap);
@@ -2005,6 +2091,7 @@ GPlatesOpenGL::GLEnableStateSet::get_default(
 
 void
 GPlatesOpenGL::GLEnableTextureStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2017,7 +2104,7 @@ GPlatesOpenGL::GLEnableTextureStateSet::apply_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	if (d_enable)
 	{
@@ -2031,6 +2118,7 @@ GPlatesOpenGL::GLEnableTextureStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLEnableTextureStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2040,13 +2128,14 @@ GPlatesOpenGL::GLEnableTextureStateSet::apply_from_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	glEnable(d_texture_target);
 }
 
 void
 GPlatesOpenGL::GLEnableTextureStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2056,7 +2145,7 @@ GPlatesOpenGL::GLEnableTextureStateSet::apply_to_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	glDisable(d_texture_target);
 }
@@ -2064,6 +2153,7 @@ GPlatesOpenGL::GLEnableTextureStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLEnableVertexAttribArrayStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2087,6 +2177,7 @@ GPlatesOpenGL::GLEnableVertexAttribArrayStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLEnableVertexAttribArrayStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2100,6 +2191,7 @@ GPlatesOpenGL::GLEnableVertexAttribArrayStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLEnableVertexAttribArrayStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2114,6 +2206,7 @@ GPlatesOpenGL::GLEnableVertexAttribArrayStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLFrontFaceStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2129,6 +2222,7 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLFrontFaceStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2142,6 +2236,7 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLFrontFaceStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2156,6 +2251,7 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLHintStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2171,6 +2267,7 @@ GPlatesOpenGL::GLHintStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLHintStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2184,6 +2281,7 @@ GPlatesOpenGL::GLHintStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLHintStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2198,6 +2296,7 @@ GPlatesOpenGL::GLHintStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLLineWidthStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2214,6 +2313,7 @@ GPlatesOpenGL::GLLineWidthStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLLineWidthStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2228,6 +2328,7 @@ GPlatesOpenGL::GLLineWidthStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLLineWidthStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2243,6 +2344,7 @@ GPlatesOpenGL::GLLineWidthStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLLoadMatrixStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2260,6 +2362,7 @@ GPlatesOpenGL::GLLoadMatrixStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLLoadMatrixStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2276,6 +2379,7 @@ GPlatesOpenGL::GLLoadMatrixStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLLoadMatrixStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2293,6 +2397,7 @@ GPlatesOpenGL::GLLoadMatrixStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2303,7 +2408,7 @@ GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	// Make sure the correct matrix mode is set.
 	set_matrix_mode(GL_TEXTURE, last_applied_state);
@@ -2313,6 +2418,7 @@ GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2322,7 +2428,7 @@ GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_from_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	// Make sure the correct matrix mode is set.
 	set_matrix_mode(GL_TEXTURE, last_applied_state);
@@ -2332,6 +2438,7 @@ GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2341,7 +2448,7 @@ GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_to_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	// Make sure the correct matrix mode is set.
 	set_matrix_mode(GL_TEXTURE, last_applied_state);
@@ -2352,6 +2459,7 @@ GPlatesOpenGL::GLLoadTextureMatrixStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLMatrixModeStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2368,6 +2476,7 @@ GPlatesOpenGL::GLMatrixModeStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLMatrixModeStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2381,6 +2490,7 @@ GPlatesOpenGL::GLMatrixModeStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLMatrixModeStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2395,6 +2505,7 @@ GPlatesOpenGL::GLMatrixModeStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLNormalPointerStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2410,7 +2521,7 @@ GPlatesOpenGL::GLNormalPointerStateSet::apply_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_NORMAL_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	glNormalPointer(d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
@@ -2419,6 +2530,7 @@ GPlatesOpenGL::GLNormalPointerStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLNormalPointerStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2430,7 +2542,7 @@ GPlatesOpenGL::GLNormalPointerStateSet::apply_from_default_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_NORMAL_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	glNormalPointer(d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
@@ -2439,6 +2551,7 @@ GPlatesOpenGL::GLNormalPointerStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLNormalPointerStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2450,7 +2563,7 @@ GPlatesOpenGL::GLNormalPointerStateSet::apply_to_default_state(
 	}
 
 	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(last_applied_state);
+	d_buffer.unbind_buffer(capabilities, last_applied_state);
 
 	// These are the default parameters.
 	glNormalPointer(GL_FLOAT, 0, NULL);
@@ -2462,6 +2575,7 @@ GPlatesOpenGL::GLNormalPointerStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLPointSizeStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2478,6 +2592,7 @@ GPlatesOpenGL::GLPointSizeStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLPointSizeStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2492,6 +2607,7 @@ GPlatesOpenGL::GLPointSizeStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLPointSizeStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2507,6 +2623,7 @@ GPlatesOpenGL::GLPointSizeStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLPolygonModeStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2522,6 +2639,7 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLPolygonModeStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2535,6 +2653,7 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLPolygonModeStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2550,6 +2669,7 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLPolygonOffsetStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2568,6 +2688,7 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLPolygonOffsetStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2582,6 +2703,7 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLPolygonOffsetStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2596,6 +2718,7 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_to_default_state(
 
 
 GPlatesOpenGL::GLScissorStateSet::GLScissorStateSet(
+		const GLCapabilities &capabilities,
 		const GLViewport &all_scissor_rectangles,
 		const GLViewport &default_viewport) :
 	d_scissor_rectangles(1, all_scissor_rectangles), // Just store one viewport (no need to duplicate).
@@ -2605,6 +2728,7 @@ GPlatesOpenGL::GLScissorStateSet::GLScissorStateSet(
 }
 
 GPlatesOpenGL::GLScissorStateSet::GLScissorStateSet(
+		const GLCapabilities &capabilities,
 		const scissor_rectangle_seq_type &all_scissor_rectangles,
 		const GLViewport &default_viewport) :
 	d_scissor_rectangles(all_scissor_rectangles),
@@ -2613,12 +2737,13 @@ GPlatesOpenGL::GLScissorStateSet::GLScissorStateSet(
 {
 	// The client is required to set all available scissor rectangles.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			all_scissor_rectangles.size() == GLContext::get_parameters().viewport.gl_max_viewports,
+			all_scissor_rectangles.size() == capabilities.viewport.gl_max_viewports,
 			GPLATES_ASSERTION_SOURCE);
 }
 
 void
 GPlatesOpenGL::GLScissorStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2635,11 +2760,12 @@ GPlatesOpenGL::GLScissorStateSet::apply_state(
 		}
 	}
 
-	apply_state();
+	apply_state(capabilities);
 }
 
 void
 GPlatesOpenGL::GLScissorStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2652,11 +2778,12 @@ GPlatesOpenGL::GLScissorStateSet::apply_from_default_state(
 		}
 	}
 
-	apply_state();
+	apply_state(capabilities);
 }
 
 void
 GPlatesOpenGL::GLScissorStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2673,8 +2800,21 @@ GPlatesOpenGL::GLScissorStateSet::apply_to_default_state(
 	glScissor(d_default_viewport.x(), d_default_viewport.y(), d_default_viewport.width(), d_default_viewport.height());
 }
 
+const GPlatesOpenGL::GLViewport &
+GPlatesOpenGL::GLScissorStateSet::get_scissor(
+		const GLCapabilities &capabilities,
+		unsigned int viewport_index) const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			viewport_index < capabilities.viewport.gl_max_viewports,
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_scissor_rectangles[viewport_index];
+}
+
 void
-GPlatesOpenGL::GLScissorStateSet::apply_state() const
+GPlatesOpenGL::GLScissorStateSet::apply_state(
+		const GLCapabilities &capabilities) const
 {
 	if (d_all_scissor_rectangles_are_the_same || (d_scissor_rectangles.size() == 1))
 	{
@@ -2687,7 +2827,7 @@ GPlatesOpenGL::GLScissorStateSet::apply_state() const
 	}
 
 #ifdef GL_ARB_viewport_array // In case old 'glew.h' header
-	if (GLEW_ARB_viewport_array)
+	if (capabilities.viewport.gl_ARB_viewport_array)
 	{
 		// Put the scissor rectangle parameters into one array so can call 'glScissorArrayv' once
 		// rather than call 'glScissorIndexed' multiple times.
@@ -2711,7 +2851,61 @@ GPlatesOpenGL::GLScissorStateSet::apply_state() const
 
 
 void
+GPlatesOpenGL::GLStencilFuncStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &last_applied_state_set,
+		GLState &last_applied_state) const
+{
+	// Throws exception if downcast fails...
+	const GLStencilFuncStateSet &last_applied = dynamic_cast<const GLStencilFuncStateSet &>(last_applied_state_set);
+
+	// Return early if no state change...
+	if (d_func == last_applied.d_func &&
+		d_ref == last_applied.d_ref &&
+		d_mask == last_applied.d_mask)
+	{
+		return;
+	}
+
+	glStencilFunc(d_func, d_ref, d_mask);
+}
+
+void
+GPlatesOpenGL::GLStencilFuncStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		GLState &last_applied_state) const
+{
+	// Return early if no state change...
+	if (d_func == GL_ALWAYS &&
+		d_ref == 0 &&
+		d_mask == ~GLuint(0))
+	{
+		return;
+	}
+
+	glStencilFunc(d_func, d_ref, d_mask);
+}
+
+void
+GPlatesOpenGL::GLStencilFuncStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		GLState &last_applied_state) const
+{
+	// Return early if no state change...
+	if (d_func == GL_ALWAYS &&
+		d_ref == 0 &&
+		d_mask == ~GLuint(0))
+	{
+		return;
+	}
+
+	glStencilFunc(GL_ALWAYS, 0, ~GLuint(0));
+}
+
+
+void
 GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2729,6 +2923,7 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLStencilMaskStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2742,6 +2937,7 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLStencilMaskStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2755,7 +2951,61 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_to_default_state(
 
 
 void
+GPlatesOpenGL::GLStencilOpStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &last_applied_state_set,
+		GLState &last_applied_state) const
+{
+	// Throws exception if downcast fails...
+	const GLStencilOpStateSet &last_applied = dynamic_cast<const GLStencilOpStateSet &>(last_applied_state_set);
+
+	// Return early if no state change...
+	if (d_fail == last_applied.d_fail &&
+		d_zfail == last_applied.d_zfail &&
+		d_zpass == last_applied.d_zpass)
+	{
+		return;
+	}
+
+	glStencilOp(d_fail, d_zfail, d_zpass);
+}
+
+void
+GPlatesOpenGL::GLStencilOpStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		GLState &last_applied_state) const
+{
+	// Return early if no state change...
+	if (d_fail == GL_KEEP &&
+		d_zfail == GL_KEEP &&
+		d_zpass == GL_KEEP)
+	{
+		return;
+	}
+
+	glStencilOp(d_fail, d_zfail, d_zpass);
+}
+
+void
+GPlatesOpenGL::GLStencilOpStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		GLState &last_applied_state) const
+{
+	// Return early if no state change...
+	if (d_fail == GL_KEEP &&
+		d_zfail == GL_KEEP &&
+		d_zpass == GL_KEEP)
+	{
+		return;
+	}
+
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+}
+
+
+void
 GPlatesOpenGL::GLTexCoordPointerStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2773,10 +3023,10 @@ GPlatesOpenGL::GLTexCoordPointerStateSet::apply_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// Make sure the correct texture unit is currently active.
-	set_client_active_texture(d_texture_unit, last_applied_state);
+	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	// GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	glTexCoordPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
@@ -2785,6 +3035,7 @@ GPlatesOpenGL::GLTexCoordPointerStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLTexCoordPointerStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2798,10 +3049,10 @@ GPlatesOpenGL::GLTexCoordPointerStateSet::apply_from_default_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// Make sure the correct texture unit is currently active.
-	set_client_active_texture(d_texture_unit, last_applied_state);
+	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	// GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	glTexCoordPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
@@ -2810,6 +3061,7 @@ GPlatesOpenGL::GLTexCoordPointerStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLTexCoordPointerStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -2823,10 +3075,10 @@ GPlatesOpenGL::GLTexCoordPointerStateSet::apply_to_default_state(
 	}
 
 	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(last_applied_state);
+	d_buffer.unbind_buffer(capabilities, last_applied_state);
 
 	// Make sure the correct texture unit is currently active.
-	set_client_active_texture(d_texture_unit, last_applied_state);
+	set_client_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	// These are the default parameters.
 	glTexCoordPointer(4, GL_FLOAT, 0, NULL);
@@ -2863,6 +3115,7 @@ GPlatesOpenGL::GLTexGenStateSet::initialise_plane(
 
 void
 GPlatesOpenGL::GLTexGenStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2877,7 +3130,7 @@ GPlatesOpenGL::GLTexGenStateSet::apply_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	// Set the texture coordinate generation state depending on the type of parameter being set.
 	boost::apply_visitor(TexGenVisitor(d_coord, d_pname), d_param);
@@ -2885,6 +3138,7 @@ GPlatesOpenGL::GLTexGenStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLTexGenStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	const param_type default_param = get_default_param();
@@ -2897,7 +3151,7 @@ GPlatesOpenGL::GLTexGenStateSet::apply_from_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	// Set the texture coordinate generation state depending on the type of parameter being set.
 	boost::apply_visitor(TexGenVisitor(d_coord, d_pname), d_param);
@@ -2905,6 +3159,7 @@ GPlatesOpenGL::GLTexGenStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLTexGenStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	const param_type default_param = get_default_param();
@@ -2917,7 +3172,7 @@ GPlatesOpenGL::GLTexGenStateSet::apply_to_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	// Set the texture coordinate generation state depending on the type of parameter being set.
 	boost::apply_visitor(TexGenVisitor(d_coord, d_pname), default_param);
@@ -2964,6 +3219,7 @@ GPlatesOpenGL::GLTexGenStateSet::get_default_param() const
 
 void
 GPlatesOpenGL::GLTexEnvStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -2978,7 +3234,7 @@ GPlatesOpenGL::GLTexEnvStateSet::apply_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	// Set the texture environment state depending on the type of parameter being set.
 	boost::apply_visitor(TexEnvVisitor(d_target, d_pname), d_param);
@@ -2986,6 +3242,7 @@ GPlatesOpenGL::GLTexEnvStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLTexEnvStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	const param_type default_param = get_default_param();
@@ -2998,7 +3255,7 @@ GPlatesOpenGL::GLTexEnvStateSet::apply_from_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	// Set the texture environment state depending on the type of parameter being set.
 	boost::apply_visitor(TexEnvVisitor(d_target, d_pname), d_param);
@@ -3006,6 +3263,7 @@ GPlatesOpenGL::GLTexEnvStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLTexEnvStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	const param_type default_param = get_default_param();
@@ -3018,7 +3276,7 @@ GPlatesOpenGL::GLTexEnvStateSet::apply_to_default_state(
 	}
 
 	// Make sure the correct texture unit is currently active.
-	set_active_texture(d_texture_unit, last_applied_state);
+	set_active_texture(capabilities, d_texture_unit, last_applied_state);
 
 	// Set the texture environment state depending on the type of parameter being set.
 	boost::apply_visitor(TexEnvVisitor(d_target, d_pname), default_param);
@@ -3092,6 +3350,7 @@ GPlatesOpenGL::GLTexEnvStateSet::get_default_param() const
 
 
 GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
+		const GLCapabilities &capabilities,
 		GLuint attribute_index,
 		VertexAttribAPIType vertex_attrib_api,
 		GLint size,
@@ -3113,30 +3372,22 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
 	{
 	case VERTEX_ATTRIB_POINTER:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_shader) && normalized,
+				capabilities.shader.gl_ARB_vertex_shader && normalized,
 				GPLATES_ASSERTION_SOURCE);
 		break;
 
 	case VERTEX_ATTRIB_I_POINTER:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GLEW_ARB_vertex_shader &&
-#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
-					GLEW_EXT_gpu_shader4 &&
-#else
-					false &&
-#endif
+				capabilities.shader.gl_ARB_vertex_shader &&
+					capabilities.shader.gl_EXT_gpu_shader4 &&
 					!normalized,
 				GPLATES_ASSERTION_SOURCE);
 		break;
 
 	case VERTEX_ATTRIB_L_POINTER:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GLEW_ARB_vertex_shader &&
-#ifdef GL_ARB_vertex_attrib_64bit // In case old 'glew.h' (since extension added relatively recently).
-					GLEW_ARB_vertex_attrib_64bit &&
-#else
-					false &&
-#endif
+				capabilities.shader.gl_ARB_vertex_shader &&
+					capabilities.shader.gl_ARB_vertex_attrib_64bit &&
 					!normalized,
 				GPLATES_ASSERTION_SOURCE);
 		break;
@@ -3148,6 +3399,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
 }
 
 GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
+		const GLCapabilities &capabilities,
 		GLuint attribute_index,
 		VertexAttribAPIType vertex_attrib_api,
 		GLint size,
@@ -3169,30 +3421,22 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
 	{
 	case VERTEX_ATTRIB_POINTER:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GPLATES_OPENGL_BOOL(GLEW_ARB_vertex_shader) && normalized,
+				capabilities.shader.gl_ARB_vertex_shader && normalized,
 				GPLATES_ASSERTION_SOURCE);
 		break;
 
 	case VERTEX_ATTRIB_I_POINTER:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GLEW_ARB_vertex_shader &&
-#ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
-					GLEW_EXT_gpu_shader4 &&
-#else
-					false &&
-#endif
+				capabilities.shader.gl_ARB_vertex_shader &&
+					capabilities.shader.gl_EXT_gpu_shader4 &&
 					!normalized,
 				GPLATES_ASSERTION_SOURCE);
 		break;
 
 	case VERTEX_ATTRIB_L_POINTER:
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				GLEW_ARB_vertex_shader &&
-#ifdef GL_ARB_vertex_attrib_64bit // In case old 'glew.h' (since extension added relatively recently).
-					GLEW_ARB_vertex_attrib_64bit &&
-#else
-					false &&
-#endif
+				capabilities.shader.gl_ARB_vertex_shader &&
+					capabilities.shader.gl_ARB_vertex_attrib_64bit &&
 					!normalized,
 				GPLATES_ASSERTION_SOURCE);
 		break;
@@ -3206,6 +3450,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::GLVertexAttribPointerStateSet(
 
 void
 GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -3225,7 +3470,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	switch (d_vertex_attrib_api)
@@ -3255,6 +3500,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -3271,7 +3517,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_from_default_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	switch (d_vertex_attrib_api)
@@ -3301,6 +3547,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -3317,7 +3564,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_to_default_state(
 	}
 
 	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(last_applied_state);
+	d_buffer.unbind_buffer(capabilities, last_applied_state);
 
 	// These are the default parameters.
 	// Note that for the default state we arbitrarily chose the 'glVertexAttribPointer' API.
@@ -3330,6 +3577,7 @@ GPlatesOpenGL::GLVertexAttribPointerStateSet::apply_to_default_state(
 
 void
 GPlatesOpenGL::GLVertexPointerStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -3346,7 +3594,7 @@ GPlatesOpenGL::GLVertexPointerStateSet::apply_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_VERTEX_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	glVertexPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
@@ -3355,6 +3603,7 @@ GPlatesOpenGL::GLVertexPointerStateSet::apply_state(
 
 void
 GPlatesOpenGL::GLVertexPointerStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -3367,7 +3616,7 @@ GPlatesOpenGL::GLVertexPointerStateSet::apply_from_default_state(
 	}
 
 	// Ensure the buffer is bound.
-	d_buffer.bind_buffer(last_applied_state);
+	d_buffer.bind_buffer(capabilities, last_applied_state);
 
 	// GL_VERTEX_ARRAY_BUFFER_BINDING now captures the vertex buffer object binding (if any).
 	glVertexPointer(d_size, d_type, d_stride, d_buffer.get_buffer_pointer_to_apply());
@@ -3376,6 +3625,7 @@ GPlatesOpenGL::GLVertexPointerStateSet::apply_from_default_state(
 
 void
 GPlatesOpenGL::GLVertexPointerStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -3388,7 +3638,7 @@ GPlatesOpenGL::GLVertexPointerStateSet::apply_to_default_state(
 	}
 
 	// Ensure the buffer is unbound.
-	d_buffer.unbind_buffer(last_applied_state);
+	d_buffer.unbind_buffer(capabilities, last_applied_state);
 
 	// These are the default parameters.
 	glVertexPointer(4, GL_FLOAT, 0, NULL);
@@ -3399,6 +3649,7 @@ GPlatesOpenGL::GLVertexPointerStateSet::apply_to_default_state(
 
 
 GPlatesOpenGL::GLViewportStateSet::GLViewportStateSet(
+		const GLCapabilities &capabilities,
 		const GLViewport &all_viewports,
 		const GLViewport &default_viewport) :
 	d_viewports(1, all_viewports), // Just store one viewport (no need to duplicate).
@@ -3408,6 +3659,7 @@ GPlatesOpenGL::GLViewportStateSet::GLViewportStateSet(
 }
 
 GPlatesOpenGL::GLViewportStateSet::GLViewportStateSet(
+		const GLCapabilities &capabilities,
 		const viewport_seq_type &all_viewports,
 		const GLViewport &default_viewport) :
 	d_viewports(all_viewports),
@@ -3416,12 +3668,13 @@ GPlatesOpenGL::GLViewportStateSet::GLViewportStateSet(
 {
 	// The client is required to set all available viewports.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			all_viewports.size() == GLContext::get_parameters().viewport.gl_max_viewports,
+			all_viewports.size() == capabilities.viewport.gl_max_viewports,
 			GPLATES_ASSERTION_SOURCE);
 }
 
 void
 GPlatesOpenGL::GLViewportStateSet::apply_state(
+		const GLCapabilities &capabilities,
 		const GLStateSet &last_applied_state_set,
 		GLState &last_applied_state) const
 {
@@ -3438,11 +3691,12 @@ GPlatesOpenGL::GLViewportStateSet::apply_state(
 		}
 	}
 
-	apply_state();
+	apply_state(capabilities);
 }
 
 void
 GPlatesOpenGL::GLViewportStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -3455,11 +3709,12 @@ GPlatesOpenGL::GLViewportStateSet::apply_from_default_state(
 		}
 	}
 
-	apply_state();
+	apply_state(capabilities);
 }
 
 void
 GPlatesOpenGL::GLViewportStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// Return early if no state change...
@@ -3477,7 +3732,8 @@ GPlatesOpenGL::GLViewportStateSet::apply_to_default_state(
 }
 
 void
-GPlatesOpenGL::GLViewportStateSet::apply_state() const
+GPlatesOpenGL::GLViewportStateSet::apply_state(
+		const GLCapabilities &capabilities) const
 {
 	if (d_all_viewports_are_the_same || (d_viewports.size() == 1))
 	{
@@ -3490,7 +3746,7 @@ GPlatesOpenGL::GLViewportStateSet::apply_state() const
 	}
 
 #ifdef GL_ARB_viewport_array // In case old 'glew.h' header
-	if (GLEW_ARB_viewport_array)
+	if (capabilities.viewport.gl_ARB_viewport_array)
 	{
 		// Put the viewport parameters into one array so can call 'glViewportArrayv' once
 		// rather than call 'glViewportIndexedf' multiple times.
@@ -3516,13 +3772,12 @@ GPlatesOpenGL::GLViewportStateSet::apply_state() const
 
 const GPlatesOpenGL::GLViewport &
 GPlatesOpenGL::GLViewportStateSet::get_viewport(
+		const GLCapabilities &capabilities,
 		unsigned int viewport_index) const
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			viewport_index < GLContext::get_parameters().viewport.gl_max_viewports,
+			viewport_index < capabilities.viewport.gl_max_viewports,
 			GPLATES_ASSERTION_SOURCE);
 
 	return d_viewports[viewport_index];
 }
-
-ENABLE_GCC_WARNING("-Wold-style-cast")

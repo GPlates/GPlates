@@ -101,6 +101,7 @@ namespace GPlatesAppLogic
 				std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &resolved_topological_geometries,
 				const resolve_geometry_flags_type &resolve_geometry_flags,
 				ReconstructHandle::type reconstruct_handle,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles);
 
@@ -224,6 +225,11 @@ namespace GPlatesAppLogic
 		 * The reconstruction identifier placed in all resolved topological geometries.
 		 */
 		ReconstructHandle::type d_reconstruct_handle;
+
+		/**
+		 * The reconstruction tree creator associated with the resolved topological geometries.
+		 */
+		const ReconstructionTreeCreator d_reconstruction_tree_creator;
 
 		/**
 		 * The reconstruction tree associated with the resolved topological geometries being generated.

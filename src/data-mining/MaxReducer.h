@@ -30,7 +30,7 @@
 #include <QDebug>
 
 #include "CoRegReducer.h"
-
+#include "DataMiningUtils.h"
 namespace GPlatesDataMining
 {
 	class MaxReducer : public CoRegReducer

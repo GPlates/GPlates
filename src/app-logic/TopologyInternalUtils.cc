@@ -28,6 +28,7 @@
 #include <cmath>
 #include <deque>
 #include <vector>
+#include <boost/foreach.hpp>
 #include <boost/none.hpp>
 #include <boost/optional.hpp>
 #include <QDebug>
@@ -499,19 +500,19 @@ namespace
 
 	boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>
 	find_topological_section_reconstruction_geometry(
-			const GPlatesAppLogic::ReconstructionGeometryFinder &rg_finder,
-			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+			const std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> &found_rgs,
+			const std::vector<GPlatesModel::FeatureHandle::weak_ref> &feature_refs,
 			const GPlatesModel::PropertyName &property_name,
 			const double &reconstruction_time)
 	{
 		// FIXME: MULTIPLE GEOM
 
-		if (rg_finder.num_rgs_found() == 0)
+		if (found_rgs.empty())
 		{
 			// If we found no RFG that is reconstructed from 'geometry_property' then it probably means
 			// the reconstruction time is outside the age range of the feature containing 'geometry_property'.
 			// This is ok - it's not necessarily an error.
-			// In fact we only report an error if the referenced feature exists at the current
+			// In fact we only report an error if any of the referenced features exist at the current
 			// reconstruction time because, with the addition of resolved *line* topologies, one use
 			// case is emulating a time-dependent section list by using a single list where a subset
 			// of the resolved line's sections emulate one physical section over time (because each section
@@ -519,47 +520,94 @@ namespace
 			// not overlap) - as the time changes one section will disappear at the same time another
 			// will appear to take its place - and in this case, at any particular time, not all sections
 			// in the list will actually exist and we don't want to report this as an error.
-			GPlatesAppLogic::ReconstructionFeatureProperties visitor;
-			visitor.visit_feature(feature_ref);
-			if (visitor.is_feature_defined_at_recon_time())
+			BOOST_FOREACH(const GPlatesModel::FeatureHandle::weak_ref &feature_ref, feature_refs)
 			{
-				qWarning() << "No topological sections were found at " << reconstruction_time << "Ma for:";
+				GPlatesAppLogic::ReconstructionFeatureProperties visitor;
+				visitor.visit_feature(feature_ref);
+				if (visitor.is_feature_defined_at_recon_time())
+				{
+					qWarning() << "No topological sections were found at " << reconstruction_time << "Ma for:";
+					qWarning() << "  feature id =" 
+						<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+					static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
+					const GPlatesPropertyValues::XsString *name;
+					if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) )
+					{
+						qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name->value() );
+					}
+					else
+					{
+						qWarning() << "  feature name = UNKNOWN";
+					}
+					qWarning() << "  property name =" << property_name.get_name().qstring();
+					qWarning() << "  Unable to use any topological section.";
+
+					break;
+				}
+			}
+
+			return boost::none;
+		}
+		else if (found_rgs.size() > 1)
+		{
+			// See if the same feature id is used by multiple features that generated found
+			// reconstruction geometries. We allowed multiple features with same feature id up
+			// until now on the chance that the found recon geoms would only come from one of the
+			// features (thus making the search non-ambiguous). But if this is not the case then
+			// we'll emit a warning and return no reconstruction geometries, thus forcing the user
+			// to either avoid loading multiple features with the same feature id into GPlates or
+			// suitably restrict the found reconstruction geometries (using reconstruct handles
+			// that limit to a specific layer or file) such that the search ambiguity is removed.
+			boost::optional<GPlatesModel::FeatureHandle::weak_ref> found_feature_ref;
+			BOOST_FOREACH(const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type &found_rg, found_rgs)
+			{
+				boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+						GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(found_rg);
+				if (!feature_ref)
+				{
+					continue;
+				}
+
+				// Find the feature ref of the first recon geom.
+				if (!found_feature_ref)
+				{
+					found_feature_ref = feature_ref.get();
+					continue;
+				}
+
+				// All reconstruction geometries should refer to the same feature.
+				if (feature_ref.get() != found_feature_ref.get())
+				{
+					qWarning() 
+						<< "Multiple features for feature-id = "
+						<< GPlatesUtils::make_qstring_from_icu_string(
+								feature_ref.get()->feature_id().get() );
+					return boost::none;
+				}
+			}
+
+			if (found_feature_ref)
+			{
+				// We should only return boost::none for the case == 0, as above.
+				// For the case >1 we return first RG found as normally.
+				int num = found_rgs.size();
+				qWarning() << num << "Topological sections found for:";
 				qWarning() << "  feature id =" 
-					<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
+					<< GPlatesUtils::make_qstring_from_icu_string( found_feature_ref.get()->feature_id().get() );
 				static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
 				const GPlatesPropertyValues::XsString *name;
-				if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
+				if ( GPlatesFeatureVisitors::get_property_value(found_feature_ref.get(), prop, name) ) {
 					qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name->value() );
 				} else {
 					qWarning() << "  feature name = UNKNOWN";
 				}
 				qWarning() << "  property name =" << property_name.get_name().qstring();
-				qWarning() << "  Unable to use any topological section.";
+				qWarning() << "  Using the first topological section found.";
 			}
-
-			return boost::none;
-		}
-		else if (rg_finder.num_rgs_found() > 1)
-		{
-			// We should only return boost::none for the case == 0, as above.
-			// For the case >1 we return the rg_finder.found_rgs_begin() as normally
-			int num = rg_finder.num_rgs_found();
-			qWarning() << num << "Topological sections found for:";
-			qWarning() << "  feature id =" 
-				<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
-			static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
-			const GPlatesPropertyValues::XsString *name;
-			if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
-				qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name->value() );
-			} else {
-				qWarning() << "  feature name = UNKNOWN";
-			}
-			qWarning() << "  property name =" << property_name.get_name().qstring();
-			qWarning() << "  Using the first topological section found.";
 		}
 
 		// Return the first RG found.
-		return *rg_finder.found_rgs_begin();
+		return found_rgs.front();
 	}
 
 
@@ -911,11 +959,31 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 		const double &reconstruction_time,
 		boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
-	const GPlatesModel::FeatureHandle::weak_ref feature_ref = resolve_feature_id(
-			geometry_delegate.feature_id());
+	// Find all features with the feature id specified by the geometry delegate.
+	// Typically there should be only one feature since it's not generally a good idea to
+	// load multiple features with the same feature id into GPlates because both features
+	// will get found and it'll be ambiguous as to which one to use.
+	//
+	// However there are situations where this is can happen such as loading two different
+	// topology datasets that happen to have the same feature ids (presumably because one GPML
+	// file was copied to another and the second one modified to be different than the first).
+	// In this case the user might load both files (creating two separate layers) and compare them.
+	// Then if the user restricts the topological sections for each layer then, although two
+	// features will be found with the same feature id (one from each layer), only one reconstruction
+	// geometry will get found after restricting the topological sections using the reconstruct handles.
+	//
+	std::vector<GPlatesModel::FeatureHandle::weak_ref> resolved_features;
+	geometry_delegate.feature_id().find_back_ref_targets(
+			GPlatesModel::append_as_weak_refs(resolved_features));
 
-	if (!feature_ref.is_valid())
+	// We didn't get exactly one feature with the feature id so something is
+	// not right (user loaded same file twice or didn't load at all)
+	// so print debug message and return null feature reference.
+	if (resolved_features.empty())
 	{
+		qWarning() 
+			<< "Missing feature for feature-id = "
+			<< GPlatesUtils::make_qstring_from_icu_string(geometry_delegate.feature_id().get());
 		return boost::none;
 	}
 
@@ -925,16 +993,23 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 	const GPlatesModel::PropertyName property_name = GPlatesModel::PropertyName::create_gpml(
 			property_name_qstring);
 
-	// Find the reconstruction geometries for the feature ref and target property.
-	ReconstructionGeometryFinder rg_finder(
-			property_name,
-			boost::none/*reconstruction_tree_to_match*/,
-			reconstruct_handles); 
-	rg_finder.find_rgs_of_feature(feature_ref);
+	// Find all the reconstruction geometries that reference the resolved features, and that
+	// are restricted by the reconstruct handles.
+	std::vector<ReconstructionGeometry::non_null_ptr_type> found_rgs;
+	BOOST_FOREACH(const GPlatesModel::FeatureHandle::weak_ref &resolved_feature, resolved_features)
+	{
+		// Find the reconstruction geometries for the feature ref and target property.
+		ReconstructionGeometryFinder rg_finder(
+				property_name,
+				reconstruct_handles); 
+		rg_finder.find_rgs_of_feature(resolved_feature);
+
+		found_rgs.insert(found_rgs.end(), rg_finder.found_rgs_begin(), rg_finder.found_rgs_end());
+	}
 
 	return ::find_topological_section_reconstruction_geometry(
-			rg_finder,
-			feature_ref,
+			found_rgs,
+			resolved_features,
 			property_name,
 			reconstruction_time);
 }
@@ -959,13 +1034,14 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 	// and geometry property.
 	ReconstructionGeometryFinder rg_finder(
 			geometry_property,
-			boost::none/*reconstruction_tree_to_match*/,
 			reconstruct_handles); 
 	rg_finder.find_rgs_of_feature(feature_ref);
 
 	return ::find_topological_section_reconstruction_geometry(
-			rg_finder,
-			feature_ref,
+			std::vector<ReconstructionGeometry::non_null_ptr_type>(
+					rg_finder.found_rgs_begin(),
+					rg_finder.found_rgs_end()),
+			std::vector<GPlatesModel::FeatureHandle::weak_ref>(1, feature_ref),
 			(*geometry_property)->property_name(),
 			reconstruction_time);
 }
@@ -985,17 +1061,19 @@ GPlatesAppLogic::TopologyInternalUtils::get_finite_rotation(
 	static const GPlatesModel::PropertyName plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
+	// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
+	// which can still give a non-identity rotation if the anchor plate id is non-zero.
+	GPlatesModel::integer_plate_id_type reconstruction_plate_id = 0;
 	const GPlatesPropertyValues::GpmlPlateId *recon_plate_id = NULL;
-	if ( !GPlatesFeatureVisitors::get_property_value(
+	if ( GPlatesFeatureVisitors::get_property_value(
 		reconstruction_plateid_feature, plate_id_property_name, recon_plate_id ) )
 	{
-		// There's no reconstruction plate id so return the unrotated point.
-		return boost::none;
+		reconstruction_plate_id = recon_plate_id->value();
 	}
 
 	// The feature has a reconstruction plate ID.
 	// Return the rotation.
-	return reconstruction_tree.get_composed_absolute_rotation(recon_plate_id->value()).first;
+	return reconstruction_tree.get_composed_absolute_rotation(reconstruction_plate_id).first;
 }
 
 
@@ -1723,8 +1801,38 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_line_topological_sec
 		const ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom)
 {
 	// We only return true if the reconstruction geometry is a reconstructed feature geometry.
-	return ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-			const ReconstructedFeatureGeometry>(recon_geom);
+	boost::optional<const ReconstructedFeatureGeometry *> rfg =
+			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const ReconstructedFeatureGeometry>(recon_geom);
+	if (!rfg)
+	{
+		return false;
+	}
+
+	// TODO: Filter out reconstructed geometries that have been deformed by topological network layers.
+	// These reconstructed geometries cannot supply topological sections (to topological network layers)
+	// because these reconstructed geometries are deformed by the topological networks which in turn
+	// would use the reconstructed geometries to build the topological networks - thus creating a
+	// cyclic dependency (so the layer system excludes those reconstruct layers that are deformed).
+	// Note that these reconstructed geometries also cannot supply topological sections to
+	// topological 'geometry' layers, eg containing topological lines, because those resolved
+	// topological lines can, in turn, be used as topological sections by topological networks -
+	// so there's still a cyclic dependency (it's just a more round-about or indirect dependency).
+	//
+	// This is a bit tricky because it's not easy to find the layer than reconstructed the RFG
+	// (so that we can query whether it's connected to topological layers) because RFGs should
+	// not know which layer they were generated from because they might not have been generated from
+	// a layer (eg, if generated by GPlates command-line tool) or simply just not created from a layer.
+	//
+	// It's not so bad though because even if we could detect this it would not prevent the
+	// user from building a topology using an RFG and then subsequently connecting that RFG's layer
+	// to a topology layer (to deform it). In this situation the RFG would disappear from the
+	// topology's boundary (or interior) as soon as its layer was connected a topology layer.
+	//
+	// In any case it'll be up to the topology builder user to not used deformed geometries as
+	// topological sections.
+
+	return true;
 }
 
 
@@ -1732,9 +1840,8 @@ bool
 GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_boundary_topological_section(
 		const ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom)
 {
-	// Return true if an RFG.
-	if (ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-		const ReconstructedFeatureGeometry>(recon_geom))
+	// If can use as a topological section for a resolved line then can also use for resolved boundary.
+	if (can_use_as_resolved_line_topological_section(recon_geom))
 	{
 		return true;
 	}
@@ -1748,6 +1855,10 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_boundary_topological
 		// Return true if an RTG with a polyline geometry (a resolved topological line).
 		if (resolved_topological_geometry.get()->resolved_topology_line())
 		{
+			// NOTE: We don't need to check that the resolved line was not formed from
+			// RFGs that were deformed - see 'can_use_as_resolved_line_topological_section()' -
+			// because the layer system prevents layers containing deformed RFGs from being searched
+			// for topological sections (hence the resolved lines won't find them).
 			return true;
 		}
 	}

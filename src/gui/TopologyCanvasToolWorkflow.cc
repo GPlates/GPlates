@@ -34,11 +34,13 @@
 #include "canvas-tools/BuildTopology.h"
 #include "canvas-tools/CanvasToolAdapterForGlobe.h"
 #include "canvas-tools/CanvasToolAdapterForMap.h"
+#include "canvas-tools/ClickGeometry.h"
 #include "canvas-tools/EditTopology.h"
 
 #include "global/GPlatesAssert.h"
 
 #include "gui/CanvasToolWorkflows.h"
+#include "gui/GeometryFocusHighlight.h"
 
 #include "presentation/ViewState.h"
 
@@ -91,7 +93,8 @@ GPlatesGui::TopologyCanvasToolWorkflow::TopologyCanvasToolWorkflow(
 			CanvasToolWorkflows::TOOL_BUILD_BOUNDARY_TOPOLOGY),
 	d_canvas_tool_workflows(canvas_tool_workflows),
 	d_feature_focus(view_state.get_feature_focus()),
-	d_rendered_geom_collection(view_state.get_rendered_geometry_collection())
+	d_rendered_geom_collection(view_state.get_rendered_geometry_collection()),
+	d_symbol_map(view_state.get_feature_type_symbol_map())
 {
 	create_canvas_tools(
 			canvas_tool_workflows,
@@ -105,8 +108,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::TopologyCanvasToolWorkflow(
 		SIGNAL(focus_changed(
 				GPlatesGui::FeatureFocus &)),
 		this,
-		SLOT(feature_focus_changed(
-				GPlatesGui::FeatureFocus &)));
+		SLOT(update_enable_state()));
 
 	// Listen for changes to the canvas tool selection.
 	QObject::connect(
@@ -128,6 +130,35 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ViewportWindow &viewport_window)
 {
+	//
+	// Click geometry canvas tool.
+	//
+
+	GPlatesCanvasTools::ClickGeometry::non_null_ptr_type click_geometry_tool =
+			GPlatesCanvasTools::ClickGeometry::create(
+					status_bar_callback,
+					view_state.get_focused_feature_geometry_builder(),
+					view_state.get_rendered_geometry_collection(),
+					WORKFLOW_RENDER_LAYER,
+					viewport_window,
+					view_state.get_feature_table_model(),
+					viewport_window.dialogs().feature_properties_dialog(),
+					view_state.get_feature_focus(),
+					view_state.get_application_state());
+	// For the globe view.
+	d_globe_click_geometry_tool.reset(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+					click_geometry_tool,
+					viewport_window.globe_canvas().globe(),
+					viewport_window.globe_canvas()));
+	// For the map view.
+	d_map_click_geometry_tool.reset(
+			new GPlatesCanvasTools::CanvasToolAdapterForMap(
+					click_geometry_tool,
+					viewport_window.map_view().map_canvas(),
+					viewport_window.map_view(),
+					view_state.get_map_transform()));
+
 	//
 	// Build line topology canvas tool.
 	//
@@ -246,6 +277,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::initialise()
 	//
 	// NOTE: If you are updating the tool in 'update_enable_state()' then you
 	// don't need to enable/disable it here.
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_CLICK_GEOMETRY, true);
 
 	update_enable_state();
 }
@@ -256,6 +288,21 @@ GPlatesGui::TopologyCanvasToolWorkflow::activate_workflow()
 {
 	// Activate the main rendered layer.
 	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, true/*active*/);
+
+	// Draw the focused feature when it changes feature or is modified.
+	QObject::connect(
+			&d_feature_focus,
+			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+	QObject::connect(
+			&d_feature_focus,
+			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+
+	// Draw the focused feature (or draw nothing) in case the focused feature changed while we were inactive.
+	draw_feature_focus(d_feature_focus);
 }
 
 
@@ -264,6 +311,18 @@ GPlatesGui::TopologyCanvasToolWorkflow::deactivate_workflow()
 {
 	// Deactivate the main rendered layer.
 	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, false/*active*/);
+
+	// Don't draw the focused feature anymore.
+	QObject::disconnect(
+			&d_feature_focus,
+			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+	QObject::disconnect(
+			&d_feature_focus,
+			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
 }
 
 
@@ -273,6 +332,9 @@ GPlatesGui::TopologyCanvasToolWorkflow::get_selected_globe_and_map_canvas_tools(
 {
 	switch (selected_tool)
 	{
+	case CanvasToolWorkflows::TOOL_CLICK_GEOMETRY:
+		return std::make_pair(d_globe_click_geometry_tool.get(), d_map_click_geometry_tool.get());
+
 	case CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY:
 		return std::make_pair(d_globe_build_line_topology_tool.get(), d_map_build_line_topology_tool.get());
 
@@ -294,19 +356,23 @@ GPlatesGui::TopologyCanvasToolWorkflow::get_selected_globe_and_map_canvas_tools(
 
 
 void
-GPlatesGui::TopologyCanvasToolWorkflow::feature_focus_changed(
-		GPlatesGui::FeatureFocus &feature_focus)
+GPlatesGui::TopologyCanvasToolWorkflow::handle_canvas_tool_activated(
+		GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
+		GPlatesGui::CanvasToolWorkflows::ToolType tool)
 {
 	update_enable_state();
 }
 
 
 void
-GPlatesGui::TopologyCanvasToolWorkflow::handle_canvas_tool_activated(
-		GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
-		GPlatesGui::CanvasToolWorkflows::ToolType tool)
+GPlatesGui::TopologyCanvasToolWorkflow::draw_feature_focus(
+		GPlatesGui::FeatureFocus &feature_focus)
 {
-	update_enable_state();
+	GeometryFocusHighlight::draw_focused_geometry(
+			feature_focus,
+			*d_rendered_geom_collection.get_main_rendered_layer(WORKFLOW_RENDER_LAYER),
+			d_rendered_geom_collection,
+			d_symbol_map);
 }
 
 

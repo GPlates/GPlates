@@ -54,6 +54,7 @@ namespace GPlatesQtWidgets
 		ExportOptionsWidget *
 		create(
 				QWidget *parent,
+				GPlatesGui::ExportAnimationContext &export_animation_context,
 				const GPlatesGui::ExportVelocityAnimationStrategy::const_configuration_ptr &export_configuration)
 		{
 			return new ExportVelocityOptionsWidget(parent, export_configuration);

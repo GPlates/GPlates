@@ -812,7 +812,6 @@ GPlatesGui::FeatureTableModel::handle_rendered_geometry_collection_update()
 	geometry_sequence_type::iterator end = d_sequence.end();
 	for ( ; it != end; ++it, ++row)
 	{
-#if 1
 		// Find the new ReconstructionGeometry, if any, from inside the current Reconstruction
 		// that corresponds to the current ReconstructionGeometry.
 		const GPlatesAppLogic::ReconstructionGeometry &old_rg = *it->reconstruction_geometry;
@@ -832,54 +831,14 @@ GPlatesGui::FeatureTableModel::handle_rendered_geometry_collection_update()
 		}
 
 		// Change the reconstruction geometry for the current row.
+		//
 		// If there was more than one match then pick the first found.
+		// NOTE: We can get more than one match if the same feature is reconstructed in two different
+		// layers - each layer will produce a different ReconstructionGeometry.
+		// Since we're arbitrarily picking the first match we might not pick the one associated with
+		// the original ReconstructionGeometry. To fix this will require a way to identify which
+		// layer the original ReconstructionGeometry came from.
 		it->reconstruction_geometry = reconstruction_geometries_observing_feature.front();
-#else
-		const boost::optional<GPlatesAppLogic::Layer> &recon_tree_layer =
-				it->reconstruction_tree_layer;
-
-		// If the reconstruction tree layer has since been destroyed then
-		// record this row for later removal.
-		if (!recon_tree_layer)
-		{
-			rows_to_remove.push_back(row);
-			continue;
-		}
-
-		// Get the reconstruction tree output of the current reconstruction tree layer.
-		const boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type>
-				reconstruction_tree = recon_tree_layer->get_output_data<
-						GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type>();
-
-		// If the reconstruction tree layer has since changed its output data type
-		// for some reason then record this row for later removal.
-		if (!reconstruction_tree)
-		{
-			rows_to_remove.push_back(row);
-			continue;
-		}
-
-		// Find the new ReconstructionGeometry, if any, from inside the current Reconstruction
-		// that corresponds to the current ReconstructionGeometry.
-		const GPlatesAppLogic::ReconstructionGeometry &old_rg = *it->reconstruction_geometry;
-		boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> new_rg =
-				GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometry(
-						old_rg,
-						*reconstruction_tree.get());
-
-		// If no new reconstruction geometry could be found then it's possible the
-		// current reconstruction time is outside the begin/end valid time range of the
-		// current feature in which case we'll just leave it in case the time changes back again
-		// in which case the reconstruction geometry will become highlighted again.
-		if (!new_rg)
-		{
-			//rows_to_remove.push_back(row);
-			continue;
-		}
-
-		// Change the reconstruction geometry for the current row.
-		it->reconstruction_geometry = new_rg.get();
-#endif
 	}
 
 	if (row > 0)

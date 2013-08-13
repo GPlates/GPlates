@@ -735,7 +735,7 @@ GPlatesQtWidgets::ColouringDialog::handle_repaint(
 	colour_schemes_list->item(d_next_icon_to_render)->setIcon(
 			QIcon(
 				QPixmap::fromImage(
-					d_globe_and_map_widget_ptr->grab_frame_buffer())));
+					d_globe_and_map_widget_ptr->render_to_qimage())));
 	++d_next_icon_to_render;
 
 	if (d_next_icon_to_render < colour_schemes_list->count())

@@ -24,6 +24,7 @@
  */
 
 #include <cstring> // for memcpy
+#include <set>
 #include <sstream>
 
 #include <boost/scoped_array.hpp>
@@ -35,6 +36,7 @@
 #include <GL/glew.h>
 #include <opengl/OpenGL.h>
 #include <QDebug>
+#include <QString>
 
 #include "GLProgramObject.h"
 
@@ -54,11 +56,12 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 
 
 GPlatesOpenGL::GLProgramObject::resource_handle_type
-GPlatesOpenGL::GLProgramObject::Allocator::allocate()
+GPlatesOpenGL::GLProgramObject::Allocator::allocate(
+		const GLCapabilities &capabilities)
 {
 	// We should only get here if the shader objects extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_shader_objects),
+			capabilities.shader.gl_ARB_shader_objects,
 			GPLATES_ASSERTION_SOURCE);
 
 	const resource_handle_type program_object = glCreateProgramObjectARB();
@@ -76,11 +79,6 @@ void
 GPlatesOpenGL::GLProgramObject::Allocator::deallocate(
 		resource_handle_type program_object)
 {
-	// We should only get here if the shader objects extension is supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_shader_objects),
-			GPLATES_ASSERTION_SOURCE);
-
 	glDeleteObjectARB(program_object);
 }
 
@@ -89,7 +87,10 @@ bool
 GPlatesOpenGL::GLProgramObject::is_supported(
 		GLRenderer &renderer)
 {
-	return GLEW_ARB_shader_objects && GLEW_ARB_vertex_shader;
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
+	return capabilities.shader.gl_ARB_shader_objects &&
+		capabilities.shader.gl_ARB_vertex_shader;
 }
 
 
@@ -97,11 +98,14 @@ GPlatesOpenGL::GLProgramObject::GLProgramObject(
 		GLRenderer &renderer) :
 	d_resource(
 			resource_type::create(
-					renderer.get_context().get_shared_state()->get_program_object_resource_manager()))
+					renderer.get_capabilities(),
+					renderer.get_context().get_shared_state()->get_program_object_resource_manager(renderer)))
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// We should only get here if the shader objects extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_shader_objects),
+			capabilities.shader.gl_ARB_shader_objects,
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -109,18 +113,22 @@ GPlatesOpenGL::GLProgramObject::GLProgramObject(
 void
 GPlatesOpenGL::GLProgramObject::gl_attach_shader(
 		GLRenderer &renderer,
-		const GLShaderObject &shader)
+		const GLShaderObject::shared_ptr_to_const_type &shader)
 {
-	glAttachObjectARB(get_program_resource_handle(), shader.get_shader_resource_handle());
+	d_shader_objects.insert(shader);
+
+	glAttachObjectARB(get_program_resource_handle(), shader->get_shader_resource_handle());
 }
 
 
 void
 GPlatesOpenGL::GLProgramObject::gl_detach_shader(
 		GLRenderer &renderer,
-		const GLShaderObject &shader)
+		const GLShaderObject::shared_ptr_to_const_type &shader)
 {
-	glDetachObjectARB(get_program_resource_handle(), shader.get_shader_resource_handle());
+	glDetachObjectARB(get_program_resource_handle(), shader->get_shader_resource_handle());
+
+	d_shader_objects.erase(shader);
 }
 
 
@@ -135,14 +143,17 @@ GPlatesOpenGL::GLProgramObject::gl_bind_attrib_location(
 
 void
 GPlatesOpenGL::GLProgramObject::gl_program_parameteri(
+		GLRenderer &renderer,
 		GLenum pname,
 		GLint value)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 // In case old 'glew.h' (since extension added relatively recently).
 #if defined(GL_EXT_geometry_shader4)
 	// We should only get here if the 'GL_EXT_geometry_shader4' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_geometry_shader4),
+			capabilities.shader.gl_EXT_geometry_shader4,
 			GPLATES_ASSERTION_SOURCE);
 
 	glProgramParameteriEXT(get_program_resource_handle(), pname, value);
@@ -173,18 +184,9 @@ GPlatesOpenGL::GLProgramObject::gl_link_program(
 	// Log a link diagnostic message if compilation was unsuccessful.
 	if (!link_status)
 	{
-		// Determine the length of the info log message.
-		GLint info_log_length;
-		glGetObjectParameterivARB(program_resource_handle, GL_OBJECT_INFO_LOG_LENGTH_ARB, &info_log_length);
-
-		// Allocate and read the info log message.
-		boost::scoped_array<GLcharARB> info_log(new GLcharARB[info_log_length]);
-		glGetInfoLogARB(program_resource_handle, info_log_length, NULL, info_log.get());
-		// ...the returned string is null-terminated.
-
 		// Log the program info log.
 		qDebug() << "Unable to link OpenGL program: ";
-		qDebug() << info_log.get();
+		output_info_log();
 
 		return false;
 	}
@@ -207,22 +209,12 @@ GPlatesOpenGL::GLProgramObject::gl_validate_program(
 
 	// Log the validate diagnostic message.
 	// We do this on success *or* failure since this method is really meant for use during development.
-
-	// Determine the length of the info log message.
-	GLint info_log_length;
-	glGetObjectParameterivARB(program_resource_handle, GL_OBJECT_INFO_LOG_LENGTH_ARB, &info_log_length);
-
-	// Allocate and read the info log message.
-	boost::scoped_array<GLcharARB> info_log(new GLcharARB[info_log_length]);
-	glGetInfoLogARB(program_resource_handle, info_log_length, NULL, info_log.get());
-	// ...the returned string is null-terminated.
-
-	// Log the program info log.
 	qDebug() <<
 			(validate_status
 					? "Validation of OpenGL program succeeded: "
 					: "Validation of OpenGL program failed: ");
-	qDebug() << info_log.get();
+	// Log the program info log.
+	output_info_log();
 
 	return validate_status;
 }
@@ -341,7 +333,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform1d)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -376,7 +368,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform1dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -405,10 +397,12 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1ui(
 		const char *name,
 		GLuint v0)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 #ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
 	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			capabilities.shader.gl_EXT_gpu_shader4,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -438,10 +432,12 @@ GPlatesOpenGL::GLProgramObject::gl_uniform1ui(
 		const GLuint *value,
 		unsigned int count)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 #ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
 	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			capabilities.shader.gl_EXT_gpu_shader4,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -572,7 +568,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform2d)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -607,7 +603,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform2dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -637,10 +633,12 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2ui(
 		GLuint v0,
 		GLuint v1)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 #ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
 	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			capabilities.shader.gl_EXT_gpu_shader4,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -670,10 +668,12 @@ GPlatesOpenGL::GLProgramObject::gl_uniform2ui(
 		const GLuint *value,
 		unsigned int count)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 #ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
 	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			capabilities.shader.gl_EXT_gpu_shader4,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -807,7 +807,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform3d)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -842,7 +842,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform3dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -873,10 +873,12 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3ui(
 		GLuint v1,
 		GLuint v2)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 #ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
 	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			capabilities.shader.gl_EXT_gpu_shader4,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -906,10 +908,12 @@ GPlatesOpenGL::GLProgramObject::gl_uniform3ui(
 		const GLuint *value,
 		unsigned int count)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 #ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
 	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			capabilities.shader.gl_EXT_gpu_shader4,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1046,7 +1050,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform4d)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1081,7 +1085,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniform4dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1113,10 +1117,12 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4ui(
 		GLuint v2,
 		GLuint v3)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 #ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
 	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			capabilities.shader.gl_EXT_gpu_shader4,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1146,10 +1152,12 @@ GPlatesOpenGL::GLProgramObject::gl_uniform4ui(
 		const GLuint *value,
 		unsigned int count)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 #ifdef GL_EXT_gpu_shader4 // In case old 'glew.h' (since extension added relatively recently).
 	// We should only get here if the 'GL_EXT_gpu_shader4' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_gpu_shader4),
+			capabilities.shader.gl_EXT_gpu_shader4,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1210,7 +1218,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix2x2d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix2dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1271,7 +1279,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix3x3d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix3dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1332,7 +1340,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix4dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1399,7 +1407,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix4dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1474,7 +1482,7 @@ GPlatesOpenGL::GLProgramObject::gl_uniform_matrix4x4d(
 #if defined(GL_ARB_gpu_shader_fp64) && defined(glUniformMatrix4dv)
 	// We should only get here if the 'GL_ARB_gpu_shader_fp64' extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GLContext::get_parameters().shader.gl_ARB_gpu_shader_fp64,
+			renderer.get_capabilities().shader.gl_ARB_gpu_shader_fp64,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Bind this program object glUniform applies to it.
@@ -1534,4 +1542,63 @@ GPlatesOpenGL::GLProgramObject::get_uniform_location(
 	}
 
 	return uniform_insert_result.first->second;
+}
+
+
+void
+GPlatesOpenGL::GLProgramObject::output_info_log()
+{
+	std::set<QString> shader_filenames;
+
+	// Get a list of unique shader code segments filenames for all shader objects linked.
+	shader_object_seq_type::const_iterator shader_objects_iter = d_shader_objects.begin();
+	shader_object_seq_type::const_iterator shader_objects_end = d_shader_objects.end();
+	for ( ; shader_objects_iter != shader_objects_end; ++shader_objects_iter)
+	{
+		const GLShaderObject &shader_object = **shader_objects_iter;
+
+		// Get the file source code segments of the current shader.
+		const std::vector<GLShaderObject::FileCodeSegment> file_code_segments =
+				shader_object.get_file_code_segments();
+
+		for (unsigned int n = 0; n < file_code_segments.size(); ++n)
+		{
+			shader_filenames.insert(file_code_segments[n].filename);
+		}
+	}
+
+	// Log the shader info log.
+
+	const resource_handle_type program_resource_handle = get_program_resource_handle();
+
+	// Determine the length of the info log message.
+	GLint info_log_length;
+	glGetObjectParameterivARB(program_resource_handle, GL_OBJECT_INFO_LOG_LENGTH_ARB, &info_log_length);
+
+	// Allocate and read the info log message.
+	boost::scoped_array<GLcharARB> info_log(new GLcharARB[info_log_length]);
+	glGetInfoLogARB(program_resource_handle, info_log_length, NULL, info_log.get());
+	// ...the returned string is null-terminated.
+
+	// If some of the shader code segments came from files then print that information since
+	// it's useful to help locate which compiled shader files were linked.
+	if (!shader_filenames.empty())
+	{
+		qDebug() << " The following compiled OpenGL file shader source code segments were linked: ";
+
+		std::set<QString>::const_iterator shader_filenames_iter = shader_filenames.begin();
+		std::set<QString>::const_iterator shader_filenames_end = shader_filenames.end();
+		for ( ; shader_filenames_iter != shader_filenames_end; ++shader_filenames_iter)
+		{
+			const QString shader_filename = *shader_filenames_iter;
+
+			qDebug() << "  '" << shader_filename << "'";
+		}
+	}
+	else
+	{
+		qDebug() << " (all compiled OpenGL shader source code consisted of string literals)";
+	}
+
+	qDebug() << endl << info_log.get() << endl;
 }

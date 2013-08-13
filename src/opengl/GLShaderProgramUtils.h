@@ -26,14 +26,11 @@
 #ifndef GPLATES_OPENGL_GLSHADERPROGRAMUTILS_H
 #define GPLATES_OPENGL_GLSHADERPROGRAMUTILS_H
 
-#include <string>
-#include <vector>
 #include <boost/optional.hpp>
-#include <QByteArray>
-#include <QFile>
 
 #include "GLProgramObject.h"
 #include "GLShaderObject.h"
+#include "GLShaderSource.h"
 
 
 namespace GPlatesOpenGL
@@ -42,106 +39,6 @@ namespace GPlatesOpenGL
 
 	namespace GLShaderProgramUtils
 	{
-		/**
-		 * A convenience class to handle shader source code segments.
-		 *
-		 * One or more shader source code segments can be grouped together before they are compiled.
-		 */
-		class ShaderSource
-		{
-		public:
-
-			/**
-			 * Creates a @a ShaderSource object when only a single shader source, from a file, is required.
-			 */
-			static
-			ShaderSource
-			create_shader_source_from_file(
-					const QString& shader_source_file_name,
-					GLShaderObject::ShaderVersion shader_version = GLShaderObject::DEFAULT_SHADER_VERSION)
-			{
-				return ShaderSource(
-						get_shader_source_from_file(shader_source_file_name),
-						shader_version);
-			}
-
-
-			//! Default constructor contains no shader source.
-			explicit
-			ShaderSource(
-					GLShaderObject::ShaderVersion shader_version = GLShaderObject::DEFAULT_SHADER_VERSION) :
-				d_shader_version(shader_version)
-			{  }
-
-			/**
-			 * Implicit converting constructor when only a single shader source is required.
-			 *
-			 * NOTE: The char array pointed by @a shader_source must remain in existence after this call.
-			 */
-			ShaderSource(
-					const char *shader_source,
-					GLShaderObject::ShaderVersion shader_version = GLShaderObject::DEFAULT_SHADER_VERSION);
-
-			//! Implicit converting constructor when only a single shader source is required.
-			ShaderSource(
-					const QByteArray &shader_source,
-					GLShaderObject::ShaderVersion shader_version = GLShaderObject::DEFAULT_SHADER_VERSION);
-
-			/**
-			 * Adds a shader source code segment.
-			 *
-			 * NOTE: The char array pointed by @a shader_source must remain in existence after this call.
-			 */
-			void
-			add_shader_source(
-					const char *shader_source)
-			{
-				add_shader_source(QByteArray::fromRawData(shader_source, qstrlen(shader_source)));
-			}
-
-			//! Adds a shader source code segment.
-			void
-			add_shader_source(
-					const QByteArray &shader_source)
-			{
-				d_shader_source.push_back(shader_source);
-			}
-
-			//! Adds a shader source code segment from a file.
-			void
-			add_shader_source_from_file(
-					const QString& shader_source_file_name)
-			{
-				add_shader_source(get_shader_source_from_file(shader_source_file_name));
-			}
-
-
-			//! Returns all shader source code segments.
-			const std::vector<QByteArray> &
-			get_shader_source() const
-			{
-				return d_shader_source;
-			}
-
-			//! Returns the shader version.
-			GLShaderObject::ShaderVersion
-			get_shader_version() const
-			{
-				return d_shader_version;
-			}
-
-		private:
-			GLShaderObject::ShaderVersion d_shader_version;
-			std::vector<QByteArray> d_shader_source;
-
-			//! Extracts shader source code from a file.
-			static
-			QByteArray
-			get_shader_source_from_file(
-					const QString& shader_source_file_name);
-		};
-
-
 		/**
 		 * Shader program parameters required to be set before a geometry shader can be linked.
 		 *
@@ -181,7 +78,7 @@ namespace GPlatesOpenGL
 		boost::optional<GLShaderObject::shared_ptr_type>
 		compile_fragment_shader(
 				GLRenderer &renderer,
-				const ShaderSource &fragment_shader_source);
+				const GLShaderSource &fragment_shader_source);
 
 
 		/**
@@ -194,7 +91,7 @@ namespace GPlatesOpenGL
 		boost::optional<GLShaderObject::shared_ptr_type>
 		compile_vertex_shader(
 				GLRenderer &renderer,
-				const ShaderSource &vertex_shader_source);
+				const GLShaderSource &vertex_shader_source);
 
 
 		/**
@@ -207,7 +104,7 @@ namespace GPlatesOpenGL
 		boost::optional<GLShaderObject::shared_ptr_type>
 		compile_geometry_shader(
 				GLRenderer &renderer,
-				const ShaderSource &geometry_shader_source);
+				const GLShaderSource &geometry_shader_source);
 
 
 		/**
@@ -219,7 +116,7 @@ namespace GPlatesOpenGL
 		boost::optional<GLProgramObject::shared_ptr_type>
 		link_fragment_program(
 				GLRenderer &renderer,
-				const GLShaderObject &fragment_shader);
+				const GLShaderObject::shared_ptr_to_const_type &fragment_shader);
 
 
 		/**
@@ -231,8 +128,8 @@ namespace GPlatesOpenGL
 		boost::optional<GLProgramObject::shared_ptr_type>
 		link_vertex_fragment_program(
 				GLRenderer &renderer,
-				const GLShaderObject &vertex_shader,
-				const GLShaderObject &fragment_shader);
+				const GLShaderObject::shared_ptr_to_const_type &vertex_shader,
+				const GLShaderObject::shared_ptr_to_const_type &fragment_shader);
 
 
 		/**
@@ -247,9 +144,9 @@ namespace GPlatesOpenGL
 		boost::optional<GLProgramObject::shared_ptr_type>
 		link_vertex_geometry_fragment_program(
 				GLRenderer &renderer,
-				const GLShaderObject &vertex_shader,
-				const GLShaderObject &geometry_shader,
-				const GLShaderObject &fragment_shader,
+				const GLShaderObject::shared_ptr_to_const_type &vertex_shader,
+				const GLShaderObject::shared_ptr_to_const_type &geometry_shader,
+				const GLShaderObject::shared_ptr_to_const_type &fragment_shader,
 				const GeometryShaderProgramParameters &geometry_shader_program_parameters);
 
 
@@ -264,7 +161,7 @@ namespace GPlatesOpenGL
 		boost::optional<GLProgramObject::shared_ptr_type>
 		compile_and_link_fragment_program(
 				GLRenderer &renderer,
-				const ShaderSource &fragment_shader_source);
+				const GLShaderSource &fragment_shader_source);
 
 
 		/**
@@ -278,8 +175,8 @@ namespace GPlatesOpenGL
 		boost::optional<GLProgramObject::shared_ptr_type>
 		compile_and_link_vertex_fragment_program(
 				GLRenderer &renderer,
-				const ShaderSource &vertex_shader_source,
-				const ShaderSource &fragment_shader_source);
+				const GLShaderSource &vertex_shader_source,
+				const GLShaderSource &fragment_shader_source);
 
 
 		/**
@@ -296,9 +193,9 @@ namespace GPlatesOpenGL
 		boost::optional<GLProgramObject::shared_ptr_type>
 		compile_and_link_vertex_geometry_fragment_program(
 				GLRenderer &renderer,
-				const ShaderSource &vertex_shader_source,
-				const ShaderSource &geometry_shader_source,
-				const ShaderSource &fragment_shader_source,
+				const GLShaderSource &vertex_shader_source,
+				const GLShaderSource &geometry_shader_source,
+				const GLShaderSource &fragment_shader_source,
 				const GeometryShaderProgramParameters &geometry_shader_program_parameters);
 	}
 }

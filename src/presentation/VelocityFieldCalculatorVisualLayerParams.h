@@ -103,34 +103,6 @@ namespace GPlatesPresentation
 		}
 
 
-		bool
-		show_delaunay_vectors() const
-		{
-			return d_show_delaunay_vectors;
-		}
-
-		void
-		set_show_delaunay_vectors(
-				bool b)
-		{
-			d_show_delaunay_vectors = b;
-			emit_modified();
-		}
-
-		bool
-		show_constrained_vectors() const
-		{
-			return d_show_constrained_vectors;
-		}
-
-		void
-		set_show_constrained_vectors(
-				bool b)
-		{
-			d_show_constrained_vectors = b;
-			emit_modified();
-		}
-
 		virtual
 		void
 		accept_visitor(
@@ -157,9 +129,7 @@ namespace GPlatesPresentation
 			d_arrow_body_scale(GPlatesViewOperations::RenderedLayerParameters
 					::RECONSTRUCTION_RATIO_ARROW_UNIT_VECTOR_DIRECTION_TO_GLOBE_RADIUS),
 			d_arrowhead_scale(GPlatesViewOperations::RenderedLayerParameters
-					::RECONSTRUCTION_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS),
-			d_show_delaunay_vectors(true),
-			d_show_constrained_vectors(true)
+					::RECONSTRUCTION_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS)
 		{  }
 
 	private:
@@ -167,9 +137,6 @@ namespace GPlatesPresentation
 		float d_arrow_spacing;
 		float d_arrow_body_scale;
 		float d_arrowhead_scale;
-
-		bool d_show_delaunay_vectors;
-		bool d_show_constrained_vectors;
 	};
 }
 

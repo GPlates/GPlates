@@ -28,6 +28,7 @@
 
 #include <map>
 #include <memory> // For std::auto_ptr
+#include <set>
 #include <string>
 #include <vector>
 #include <boost/enable_shared_from_this.hpp>
@@ -40,6 +41,7 @@
 #include "GLObject.h"
 #include "GLObjectResource.h"
 #include "GLObjectResourceManager.h"
+#include "GLShaderObject.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -54,7 +56,6 @@
 namespace GPlatesOpenGL
 {
 	class GLRenderer;
-	class GLShaderObject;
 
 	/**
 	 * A shader program object.
@@ -94,7 +95,8 @@ namespace GPlatesOpenGL
 		{
 		public:
 			resource_handle_type
-			allocate();
+			allocate(
+					const GLCapabilities &capabilities);
 
 			void
 			deallocate(
@@ -157,7 +159,7 @@ namespace GPlatesOpenGL
 		void
 		gl_attach_shader(
 				GLRenderer &renderer,
-				const GLShaderObject &shader);
+				const GLShaderObject::shared_ptr_to_const_type &shader);
 
 
 		/**
@@ -168,7 +170,7 @@ namespace GPlatesOpenGL
 		void
 		gl_detach_shader(
 				GLRenderer &renderer,
-				const GLShaderObject &shader);
+				const GLShaderObject::shared_ptr_to_const_type &shader);
 
 
 		/**
@@ -176,7 +178,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Note that, as dictated by OpenGL, @a attribute_index must be in the half-closed range
 		 * [0, GL_MAX_VERTEX_ATTRIBS_ARB).
-		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'GLContext::get_parameters().shader.gl_max_vertex_attribs'.
+		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'context.get_capabilities().shader.gl_max_vertex_attribs'.
 		 *
 		 * NOTE: As dictated by OpenGL, generic vertex attributes won't get bound to this program object
 		 * until the next call to @a gl_link_program. So when you use a program it uses the bindings
@@ -240,6 +242,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		gl_program_parameteri(
+				GLRenderer &renderer,
 				GLenum pname,
 				GLint value);
 
@@ -912,6 +915,10 @@ namespace GPlatesOpenGL
 		}
 
 	private:
+
+		//! Typedef for a sequence of shader objects.
+		typedef std::set<GLShaderObject::shared_ptr_to_const_type> shader_object_seq_type;
+
 		//! Typedef for a name of a uniform variable.
 		typedef std::string uniform_name_type;
 
@@ -923,6 +930,8 @@ namespace GPlatesOpenGL
 
 
 		resource_type::non_null_ptr_to_const_type d_resource;
+
+		shader_object_seq_type d_shader_objects;
 
 		mutable uniform_location_map_type d_uniform_locations;
 
@@ -937,6 +946,9 @@ namespace GPlatesOpenGL
 		uniform_location_type
 		get_uniform_location(
 				const char *uniform_name) const;
+
+		void
+		output_info_log();
 	};
 }
 

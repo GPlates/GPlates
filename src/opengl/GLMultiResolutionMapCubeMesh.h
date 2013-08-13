@@ -374,14 +374,18 @@ namespace GPlatesOpenGL
 		 * The maximum depth of the meshes cube quad tree.
 		 *
 		 * If this depth is exceeded then clients will need to use the clip texture.
-		 * This only needs to be deep enough to get reasonably good view frustum culling as the view zooms in.
-		 * Too deep and it starts to use up a noticeable amount of memory.
 		 *
 		 * NOTE: (1 << MESH_CUBE_QUAD_TREE_MAXIMUM_DEPTH) must be less than or equal to
 		 * CUBE_FACE_DIMENSION because the cube quad tree depth cannot exceed
 		 * that supported by the number of vertices.
+		 *
+		 * UPDATE: This used to be 5 but was changed to 7 when the maximum zoom level was increased
+		 * from 10,000% to 100,000%. The problem with 5 was there was not enough view frustum culling
+		 * near the maximum zoom level for reconstructed rasters which caused many tiles outside
+		 * the view frustum to be generated and, in some cases, the extra memory usage caused an
+		 * out-of-memory exception.
 		 */
-		static const unsigned int MESH_CUBE_QUAD_TREE_MAXIMUM_DEPTH = 5;
+		static const unsigned int MESH_CUBE_QUAD_TREE_MAXIMUM_DEPTH = 7;
 
 		/**
 		 * The dimension of a cube face in terms of vertex spacings.

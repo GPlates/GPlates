@@ -73,6 +73,7 @@ namespace GPlatesAppLogic
 		const non_null_ptr_type
 		create(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const small_circle_centre_type &centre_ptr,
 				const double &radius,
 				GPlatesModel::FeatureHandle &feature_handle,
@@ -82,12 +83,12 @@ namespace GPlatesAppLogic
 			return non_null_ptr_type(
 					new ReconstructedSmallCircle(
 							reconstruction_tree,
+							reconstruction_tree_creator,
 							centre_ptr,
 							radius,
 							feature_handle,
 							property_iterator,
-							reconstruction_plate_id_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+							reconstruction_plate_id_));
 		}
 
 
@@ -120,12 +121,6 @@ namespace GPlatesAppLogic
 			return d_radius;
 		}
 
-        boost::optional<GPlatesModel::integer_plate_id_type>
-        plate_id () const
-        {
-                return d_reconstruction_plate_id;
-        }
-
 	private:
 		/**
 		 * Instantiate a reconstructed small circle.
@@ -135,28 +130,26 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructedSmallCircle(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
-                                const small_circle_centre_type &centre_,
-                                const double &radius_,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const small_circle_centre_type &centre_,
+				const double &radius_,
 				GPlatesModel::FeatureHandle &feature_handle,
 				GPlatesModel::FeatureHandle::iterator property_iterator,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_):
 			ReconstructedFeatureGeometry(
-				reconstruction_tree_,
-				feature_handle,
-				property_iterator,
-                                centre_,
-				reconstruction_plate_id_,
-				boost::none),
-                                d_centre(centre_),
-                d_radius(radius_),
-                d_reconstruction_plate_id(reconstruction_plate_id_)
+					reconstruction_tree_,
+					reconstruction_tree_creator,
+					feature_handle,
+					property_iterator,
+					centre_,
+					ReconstructMethod::SMALL_CIRCLE,
+					reconstruction_plate_id_),
+            d_centre(centre_),
+            d_radius(radius_)
 		{  }
 
 		small_circle_centre_type d_centre;
 		double d_radius;
-
-        boost::optional<GPlatesModel::integer_plate_id_type> d_reconstruction_plate_id;
-
 
 	};
 }

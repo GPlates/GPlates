@@ -74,6 +74,15 @@ namespace GPlatesOpenGL
 					const GPlatesMaths::Vector3D &normal,
 					const GPlatesMaths::Vector3D &point_on_plane);
 
+
+			/**
+			 * Define a plane with a normal vector and any point on the plane.
+			 */
+			Plane(
+					const GPlatesMaths::UnitVector3D &normal,
+					const GPlatesMaths::Vector3D &point_on_plane);
+
+
 			/**
 			 * Define a plane using plane coefficients (a,b,c,d).
 			 *
@@ -90,7 +99,7 @@ namespace GPlatesOpenGL
 					const double &c,
 					const double &d) :
 				d_normal(a, b, c),
-				d_signed_distance_to_origin(d)
+				d_signed_distance_to_origin_unnormalised(d)
 			{  }
 
 
@@ -99,15 +108,19 @@ namespace GPlatesOpenGL
 			 */
 			HalfSpaceType
 			classify_point(
-					const GPlatesMaths::Vector3D& point) const;
+					const GPlatesMaths::Vector3D &point) const;
 
 			/**
 			 * Same as the other overloaded method but for unit vector points.
 			 */
 			HalfSpaceType
 			classify_point(
-					const GPlatesMaths::UnitVector3D& point) const;
+					const GPlatesMaths::UnitVector3D &point) const;
 
+			//
+			// NOTE: The methods below with the suffix '_unnormalised' are more efficient and
+			// should be used when possible unless true distances are needed.
+			//
 
 			/**
 			 * Returns the signed distance of @a point to 'this' plane *multiplied*
@@ -119,10 +132,35 @@ namespace GPlatesOpenGL
 			 * otherwise it's negative.
 			 */
 			double
-			signed_distance(
-					const GPlatesMaths::Vector3D& point) const
+			signed_distance_unnormalised(
+					const GPlatesMaths::Vector3D &point) const
 			{
-				return (dot(point, d_normal) + d_signed_distance_to_origin).dval();
+				return (dot(point, d_normal) + d_signed_distance_to_origin_unnormalised).dval();
+			}
+
+			/**
+			 * Same as the other overloaded method but for unit vector points.
+			 */
+			double
+			signed_distance_unnormalised(
+					const GPlatesMaths::UnitVector3D &point) const
+			{
+				return (dot(point, d_normal) + d_signed_distance_to_origin_unnormalised).dval();
+			}
+
+
+			/**
+			 * Returns the 'true' signed distance of @a point to 'this' plane.
+			 *
+			 * Distance is positive if point is in positive half-space of this plane, otherwise it's negative.
+			 *
+			 * NOTE: This is slower than @a signed_distance_unnormalised.
+			 */
+			double
+			signed_distance(
+					const GPlatesMaths::Vector3D &point) const
+			{
+				return get_inv_magnitude_normal().dval() * signed_distance_unnormalised(point);
 			}
 
 			/**
@@ -130,20 +168,33 @@ namespace GPlatesOpenGL
 			 */
 			double
 			signed_distance(
-					const GPlatesMaths::UnitVector3D& point) const
+					const GPlatesMaths::UnitVector3D &point) const
 			{
-				return (dot(point, d_normal) + d_signed_distance_to_origin).dval();
+				return get_inv_magnitude_normal().dval() * signed_distance_unnormalised(point);
 			}
 
 
 			/**
-			 * Returns the plane normal vector.
+			 * Returns the (un-normalised) plane normal vector.
 			 */
 			const GPlatesMaths::Vector3D &
-			get_normal() const
+			get_normal_unnormalised() const
 			{
 				return d_normal;
 			}
+
+
+			/**
+			 * Returns the (normalised) plane normal vector.
+			 *
+			 * NOTE: This is slower than @a get_normal_unnormalised.
+			 */
+			const GPlatesMaths::UnitVector3D
+			get_normal() const
+			{
+				return GPlatesMaths::UnitVector3D(get_inv_magnitude_normal() * d_normal);
+			}
+
 
 			/**
 			 * Returns the signed distance of the plane *to* the origin *multiplied*
@@ -153,12 +204,25 @@ namespace GPlatesOpenGL
 			 * this method returns 'd'.
 			 */
 			const double &
+			get_signed_distance_to_origin_unnormalised() const
+			{
+				return d_signed_distance_to_origin_unnormalised.dval();
+			}
+
+
+			/**
+			 * Returns the 'true' signed distance of the plane *to* the origin.
+			 *
+			 * NOTE: This is slower than @a get_signed_distance_to_origin_unnormalised.
+			 */
+			double
 			get_signed_distance_to_origin() const
 			{
-				return d_signed_distance_to_origin.dval();
+				return get_inv_magnitude_normal().dval() * d_signed_distance_to_origin_unnormalised.dval();
 			}
 
 		private:
+
 			GPlatesMaths::Vector3D d_normal;
 
 			/**
@@ -169,7 +233,29 @@ namespace GPlatesOpenGL
 			 * - of a vector *from* any point on the plane *to* the origin, with
 			 * - the normal.
 			 */
-			GPlatesMaths::real_t d_signed_distance_to_origin;
+			GPlatesMaths::real_t d_signed_distance_to_origin_unnormalised;
+
+			/**
+			 * Inverse of the normal's magnitude.
+			 *
+			 * It's only calculated if needed since it involve an inverse sqrt root calculation.
+			 */
+			mutable boost::optional<GPlatesMaths::real_t> d_inv_magnitude_normal;
+
+
+			/**
+			 * Returns the inverse of the normal's magnitude (calculates if first time called).
+			 */
+			const GPlatesMaths::real_t &
+			get_inv_magnitude_normal() const
+			{
+				if (!d_inv_magnitude_normal)
+				{
+					d_inv_magnitude_normal = 1.0 / d_normal.magnitude();
+				}
+
+				return d_inv_magnitude_normal.get();
+			}
 		};
 
 

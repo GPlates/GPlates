@@ -58,6 +58,8 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 
 namespace GPlatesOpenGL
 {
+	class GLCapabilities;
+
 	namespace Implementation
 	{
 		/**
@@ -128,6 +130,7 @@ namespace GPlatesOpenGL
 			 */
 			void
 			bind_buffer(
+					const GLCapabilities &capabilities,
 					GLState &last_applied_state) const;
 
 			/**
@@ -138,6 +141,7 @@ namespace GPlatesOpenGL
 			 */
 			void
 			unbind_buffer(
+					const GLCapabilities &capabilities,
 					GLState &last_applied_state) const;
 
 			/**
@@ -200,22 +204,26 @@ namespace GPlatesOpenGL
 	{
 		explicit
 		GLActiveTextureStateSet(
+				const GLCapabilities &capabilities,
 				GLenum active_texture);
 
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -238,17 +246,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -281,17 +292,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -318,17 +332,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -353,17 +370,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -378,29 +398,34 @@ namespace GPlatesOpenGL
 	{
 		//! Binds a texture object.
 		GLBindTextureStateSet(
+				const GLCapabilities &capabilities,
 				const GLTexture::shared_ptr_to_const_type &texture_object,
 				GLenum texture_unit,
 				GLenum texture_target);
 
 		//! Unbinds any texture object currently bound to the specified target and texture unit.
 		GLBindTextureStateSet(
+				const GLCapabilities &capabilities,
 				GLenum texture_unit,
 				GLenum texture_target);
 
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -458,17 +483,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -511,26 +539,31 @@ namespace GPlatesOpenGL
 	{
 		explicit
 		GLBlendEquationStateSet(
+				const GLCapabilities &capabilities,
 				GLenum mode);
 
 		GLBlendEquationStateSet(
+				const GLCapabilities &capabilities,
 				GLenum modeRGB,
 				GLenum modeAlpha);
 
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -558,6 +591,7 @@ namespace GPlatesOpenGL
 		{  }
 
 		GLBlendFuncStateSet(
+				const GLCapabilities &capabilities,
 				GLenum sfactorRGB,
 				GLenum dfactorRGB,
 				GLenum sfactorAlpha,
@@ -566,17 +600,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -610,17 +647,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -645,17 +685,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -677,17 +720,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -702,22 +748,26 @@ namespace GPlatesOpenGL
 	{
 		explicit
 		GLClientActiveTextureStateSet(
+				const GLCapabilities &capabilities,
 				GLenum client_active_texture);
 
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -744,17 +794,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -799,17 +852,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -835,17 +891,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -867,17 +926,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -899,17 +961,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -928,32 +993,37 @@ namespace GPlatesOpenGL
 		//! Constructor to set all depth ranges to the same parameters.
 		explicit
 		GLDepthRangeStateSet(
+				const GLCapabilities &capabilities,
 				const GLDepthRange &depth_range);
 
 		//! Constructor to set depth ranges individually.
 		explicit
 		GLDepthRangeStateSet(
+				const GLCapabilities &capabilities,
 				const depth_range_seq_type &all_depth_ranges);
 
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
 	private:
-		//! Contains 'GLContext::Parameters::Viewport::gl_max_viewports' depth ranges.
+		//! Contains 'GLCapabilities::Viewport::gl_max_viewports' depth ranges.
 		depth_range_seq_type d_depth_ranges;
 
 		//! Is true if all depth ranges in @a d_depth_ranges are the same.
@@ -962,7 +1032,8 @@ namespace GPlatesOpenGL
 		static GLDepthRange DEFAULT_DEPTH_RANGE;
 
 		void
-		apply_state() const;
+		apply_state(
+				const GLCapabilities &capabilities) const;
 	};
 
 	/**
@@ -981,17 +1052,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1015,17 +1089,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1049,17 +1126,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		//! Utilitiy function to return the default for the specified capability.
@@ -1090,17 +1170,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1125,17 +1208,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1158,17 +1244,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1191,17 +1280,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1224,17 +1316,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1257,17 +1352,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1291,17 +1389,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1324,17 +1425,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1372,17 +1476,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1407,17 +1514,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1442,17 +1552,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1476,17 +1589,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1505,33 +1621,51 @@ namespace GPlatesOpenGL
 
 		//! Constructor to set all scissor rectangles to the same parameters.
 		GLScissorStateSet(
+				const GLCapabilities &capabilities,
 				const GLViewport &all_scissor_rectangles,
 				const GLViewport &default_viewport);
 
 		//! Constructor to set scissor rectangles individually.
 		GLScissorStateSet(
+				const GLCapabilities &capabilities,
 				const scissor_rectangle_seq_type &all_scissor_rectangles,
 				const GLViewport &default_viewport);
 
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
+		/**
+		 * Returns scissor rectangle at index @a viewport_index (default index is zero).
+		 *
+		 * If there's only one scissor rectangle set (see constructor) then all scissor rectangles
+		 * are the same and it doesn't matter which index is chosen.
+		 *
+		 * NOTE: @a viewport_index must be less than 'context.get_capabilities().viewport.gl_max_viewports'.
+		 */
+		const GLViewport &
+		get_scissor(
+				const GLCapabilities &capabilities,
+				unsigned int viewport_index = 0) const;
+
 	private:
-		//! Contains 'GLContext::Parameters::Viewport::gl_max_viewports' scissor rectangles.
+		//! Contains 'GLCapabilities::Viewport::gl_max_viewports' scissor rectangles.
 		scissor_rectangle_seq_type d_scissor_rectangles;
 
 		//! Is true if all scissor rectangles in @a d_scissor_rectangles are the same.
@@ -1541,7 +1675,49 @@ namespace GPlatesOpenGL
 		GLViewport d_default_viewport;
 
 		void
-		apply_state() const;
+		apply_state(
+				const GLCapabilities &capabilities) const;
+	};
+
+	/**
+	 * Used to set the stencil function.
+	 */
+	struct GLStencilFuncStateSet :
+			public GLStateSet
+	{
+		explicit
+		GLStencilFuncStateSet(
+				GLenum func,
+				GLint ref,
+				GLuint mask) :
+			d_func(func),
+			d_ref(ref),
+			d_mask(mask)
+		{  }
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &last_applied_state_set,
+				GLState &last_applied_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				GLState &last_applied_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				GLState &last_applied_state) const;
+
+
+		GLenum d_func;
+		GLint d_ref;
+		GLuint d_mask;
 	};
 
 	/**
@@ -1559,21 +1735,65 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
 		GLuint d_stencil;
+	};
+
+	/**
+	 * Used to set the stencil operation.
+	 */
+	struct GLStencilOpStateSet :
+			public GLStateSet
+	{
+		explicit
+		GLStencilOpStateSet(
+				GLenum fail,
+				GLenum zfail,
+				GLenum zpass) :
+			d_fail(fail),
+			d_zfail(zfail),
+			d_zpass(zpass)
+		{  }
+
+		virtual
+		void
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &last_applied_state_set,
+				GLState &last_applied_state) const;
+
+		virtual
+		void
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				GLState &last_applied_state) const;
+
+		virtual
+		void
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				GLState &last_applied_state) const;
+
+
+		GLenum d_fail;
+		GLenum d_zfail;
+		GLenum d_zpass;
 	};
 
 	/**
@@ -1615,17 +1835,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1662,17 +1885,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 	private:
@@ -1733,17 +1959,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 	private:
@@ -1779,6 +2008,7 @@ namespace GPlatesOpenGL
 
 		//! Binds to a vertex buffer object.
 		GLVertexAttribPointerStateSet(
+				const GLCapabilities &capabilities,
 				GLuint attribute_index,
 				VertexAttribAPIType vertex_attrib_api,
 				GLint size,
@@ -1791,6 +2021,7 @@ namespace GPlatesOpenGL
 
 		//! No binding to a vertex buffer object (using client memory array).
 		GLVertexAttribPointerStateSet(
+				const GLCapabilities &capabilities,
 				GLuint attribute_index,
 				VertexAttribAPIType vertex_attrib_api,
 				GLint size,
@@ -1804,17 +2035,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1865,17 +2099,20 @@ namespace GPlatesOpenGL
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 
@@ -1897,28 +2134,33 @@ namespace GPlatesOpenGL
 
 		//! Constructor to set all viewport to the same parameters.
 		GLViewportStateSet(
+				const GLCapabilities &capabilities,
 				const GLViewport &all_viewports,
 				const GLViewport &default_viewport);
 
 		//! Constructor to set viewports individually.
 		GLViewportStateSet(
+				const GLCapabilities &capabilities,
 				const viewport_seq_type &all_viewports,
 				const GLViewport &default_viewport);
 
 		virtual
 		void
 		apply_state(
+				const GLCapabilities &capabilities,
 				const GLStateSet &last_applied_state_set,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_from_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		virtual
 		void
 		apply_to_default_state(
+				const GLCapabilities &capabilities,
 				GLState &last_applied_state) const;
 
 		/**
@@ -1927,14 +2169,15 @@ namespace GPlatesOpenGL
 		 * If there's only one viewport set (see constructor) then all viewports are the same and
 		 * it doesn't matter which index is chosen.
 		 *
-		 * NOTE: @a viewport_index must be less than 'GLContext::get_parameters().viewport.gl_max_viewports'.
+		 * NOTE: @a viewport_index must be less than 'context.get_capabilities().viewport.gl_max_viewports'.
 		 */
 		const GLViewport &
 		get_viewport(
+				const GLCapabilities &capabilities,
 				unsigned int viewport_index = 0) const;
 
 	private:
-		//! Contains 'GLContext::Parameters::Viewport::gl_max_viewports' viewports.
+		//! Contains 'GLCapabilities::Viewport::gl_max_viewports' viewports.
 		viewport_seq_type d_viewports;
 
 		//! Is true if all viewports in @a viewports are the same.
@@ -1944,7 +2187,8 @@ namespace GPlatesOpenGL
 		GLViewport d_default_viewport;
 
 		void
-		apply_state() const;
+		apply_state(
+				const GLCapabilities &capabilities) const;
 	};
 }
 

@@ -32,10 +32,10 @@
 
 GPlatesViewOperations::InternalGeometryBuilder::InternalGeometryBuilder(
 		GeometryBuilder *geometry_builder,
-		GeometryType::Value geom_type):
+		GPlatesMaths::GeometryType::Value geom_type):
 	d_desired_geometry_type(geom_type),
 	d_geometry_opt_ptr(boost::none),
-	d_actual_geometry_type(GeometryType::NONE),
+	d_actual_geometry_type(GPlatesMaths::GeometryType::NONE),
 	d_update(false)
 {
 }
@@ -53,7 +53,7 @@ GPlatesViewOperations::InternalGeometryBuilder::update() const
 	// Rebuild our cached GeometryOnSphere and update the actual geometry type created.
 	//
 
-	d_actual_geometry_type = GeometryType::NONE;
+	d_actual_geometry_type = GPlatesMaths::GeometryType::NONE;
 	create_geometry_on_sphere(d_desired_geometry_type);
 
 	// Finished updating - don't need to do again until internal state is modified again.
@@ -62,60 +62,60 @@ GPlatesViewOperations::InternalGeometryBuilder::update() const
 
 void
 GPlatesViewOperations::InternalGeometryBuilder::create_geometry_on_sphere(
-		GeometryType::Value geom_type) const
+		GPlatesMaths::GeometryType::Value geom_type) const
 {
 	GPlatesUtils::GeometryConstruction::GeometryConstructionValidity validity;
 
 	switch (geom_type)
 	{
-	case GeometryType::POINT:
+	case GPlatesMaths::GeometryType::POINT:
 		d_geometry_opt_ptr = GPlatesUtils::create_point_on_sphere(d_point_seq, validity);
 		if (validity == GPlatesUtils::GeometryConstruction::VALID)
 		{
-			d_actual_geometry_type = GeometryType::POINT;
+			d_actual_geometry_type = GPlatesMaths::GeometryType::POINT;
 		}
 		break;
 
-	case GeometryType::MULTIPOINT:
+	case GPlatesMaths::GeometryType::MULTIPOINT:
 		if (d_point_seq.size() > 1)
 		{
 			d_geometry_opt_ptr = GPlatesUtils::create_multipoint_on_sphere(d_point_seq, validity);
 			if (validity == GPlatesUtils::GeometryConstruction::VALID)
 			{
-				d_actual_geometry_type = GeometryType::MULTIPOINT;
+				d_actual_geometry_type = GPlatesMaths::GeometryType::MULTIPOINT;
 			}
 			else if (validity == GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS)
 			{
-				create_geometry_on_sphere(GeometryType::POINT);
+				create_geometry_on_sphere(GPlatesMaths::GeometryType::POINT);
 			}
 		}
 		else
 		{
-			create_geometry_on_sphere(GeometryType::POINT);
+			create_geometry_on_sphere(GPlatesMaths::GeometryType::POINT);
 		}
 		break;
 
-	case GeometryType::POLYLINE:
+	case GPlatesMaths::GeometryType::POLYLINE:
 		d_geometry_opt_ptr = GPlatesUtils::create_polyline_on_sphere(d_point_seq, validity);
 		if (validity == GPlatesUtils::GeometryConstruction::VALID)
 		{
-			d_actual_geometry_type = GeometryType::POLYLINE;
+			d_actual_geometry_type = GPlatesMaths::GeometryType::POLYLINE;
 		}
 		else if (validity == GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS)
 		{
-			create_geometry_on_sphere(GeometryType::POINT);
+			create_geometry_on_sphere(GPlatesMaths::GeometryType::POINT);
 		}
 		break;
 
-	case GeometryType::POLYGON:
+	case GPlatesMaths::GeometryType::POLYGON:
 		d_geometry_opt_ptr = GPlatesUtils::create_polygon_on_sphere(d_point_seq, validity);
 		if (validity == GPlatesUtils::GeometryConstruction::VALID)
 		{
-			d_actual_geometry_type = GeometryType::POLYGON;
+			d_actual_geometry_type = GPlatesMaths::GeometryType::POLYGON;
 		}
 		else if (validity == GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS)
 		{
-			create_geometry_on_sphere(GeometryType::POLYLINE);
+			create_geometry_on_sphere(GPlatesMaths::GeometryType::POLYLINE);
 		}
 		break;
 

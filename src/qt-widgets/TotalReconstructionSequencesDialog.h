@@ -31,6 +31,7 @@
 
 #include <QDialog>
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include "TotalReconstructionSequencesDialogUi.h"
 
@@ -38,6 +39,8 @@
 
 #include "app-logic/TRSUtils.h"
 
+#include "file-io/File.h"
+#include "file-io/PlatesRotationFileProxy.h"
 #include "model/FeatureHandle.h"
 #include "model/types.h"
 
@@ -79,10 +82,12 @@ namespace GPlatesQtWidgets
 	};
 
 	typedef std::map<QTreeWidgetItem*,GPlatesModel::FeatureHandle::weak_ref> tree_item_to_feature_map_type;
+	typedef std::map<QTreeWidgetItem*,GPlatesModel::FeatureCollectionHandle::weak_ref> tree_item_to_feature_collection_map_type;
 
     class CreateTotalReconstructionSequenceDialog;
     class EditTotalReconstructionSequenceDialog;
 	class TotalReconstructionSequencesSearchIndex;
+	class MetadataDialog;
 
 	class TotalReconstructionSequencesDialog:
 		public GPlatesDialog,
@@ -91,7 +96,7 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
-		explicit
+		
 		TotalReconstructionSequencesDialog(
 				GPlatesAppLogic::FeatureCollectionFileState &file_state,
 				GPlatesPresentation::ViewState &view_state,
@@ -145,7 +150,19 @@ namespace GPlatesQtWidgets
 		void
 		delete_sequence();
 
-		/**
+		void
+		show_metadata();
+
+		void
+        disable_enable_pole();
+
+		void
+		disable_sequence();
+
+		void
+		enable_sequence();
+
+        /**
 		 * Update the tree after a TRS feature has been edited. 
 		 *
 		 * Calls update(), but also restores the state of the tree.
@@ -159,13 +176,113 @@ namespace GPlatesQtWidgets
 		void
 		handle_feature_collection_file_state_changed();
 
+
+		void
+		handle_file_reloaded()
+		{
+			update();
+		}
+
+
+		/*
+		* This function should only be used to update pole data from EditTotalReconstructionSequenceDialog.
+		* The trs data from EditTotalReconstructionSequenceDialog does not contain metadata.
+		* Preserve the original metadata as possible as we could.
+		*/
+		void
+		update_current_sequence(
+				GPlatesModel::TopLevelProperty::non_null_ptr_type moving_plate_id,
+				GPlatesModel::TopLevelProperty::non_null_ptr_type fix_plate_id,
+				GPlatesModel::TopLevelProperty::non_null_ptr_type trs);
+
+		bool
+		is_grot_sequence(
+				GPlatesModel::FeatureHandle::weak_ref);
+
+		bool
+		has_metadata(
+				GPlatesModel::FeatureCollectionHandle::weak_ref);
+
+		GPlatesModel::FeatureHandle::weak_ref
+		get_current_feature();
+
+		/*
+		* Insert the feature into rotation file proxy.
+		*/
+		void
+		insert_feature_to_proxy(
+				GPlatesModel::FeatureHandle::weak_ref,
+				GPlatesFileIO::File::Reference&);
+
+		bool
+		is_seq_disabled(
+				GPlatesModel::FeatureHandle::weak_ref);
+
+		void
+		set_seq_disabled(
+				GPlatesModel::FeatureHandle::weak_ref,
+				bool flag);
+
 	protected:
 
 		const boost::shared_ptr<PlateIdFilteringPredicate>
 		parse_plate_id_filtering_text() const;
 
-	private:
+		GPlatesFileIO::File::Reference&
+		get_current_file_ref();
 
+		GPlatesFileIO::PlatesRotationFileProxy*
+		get_current_rotation_file_proxy();
+
+		GPlatesFileIO::PlatesRotationFileProxy*
+		get_rotation_file_proxy(
+				GPlatesFileIO::File::Reference&);
+
+		/*
+		* Remove the feature from rotation file proxy.
+		* The @a keep_mprs_header is used to control if the mprs header should be kept.
+		*/
+		void
+		remove_feature_from_proxy(
+				GPlatesModel::FeatureHandle::weak_ref,
+				bool keep_mprs_header = false);
+
+		/*
+		* Insert the feature into rotation file proxy.
+		*/
+		void
+		insert_feature_to_proxy(
+				GPlatesModel::FeatureHandle::weak_ref);
+
+		void
+		insert_feature_to_proxy(
+				GPlatesModel::FeatureHandle::weak_ref,
+				GPlatesFileIO::PlatesRotationFileProxy&);
+
+		/*
+		*
+		*/
+		std::vector<GPlatesFileIO::RotationPoleData>
+		get_pole_data_from_feature(
+				GPlatesModel::FeatureHandle::weak_ref);
+
+		/*
+		*
+		*/
+		GPlatesModel::FeatureCollectionMetadata
+		get_current_fc_metadata();
+
+
+		GPlatesModel::FeatureHandle::iterator
+		get_current_metadata_property();
+
+		boost::tuple<
+				bool, 
+				GPlatesFileIO::File::Reference*>
+		get_file_ref(
+				GPlatesModel::FeatureCollectionHandle *) const;
+
+	private:
 		/**
 		 * The loaded feature collection files.
 		 */
@@ -182,7 +299,6 @@ namespace GPlatesQtWidgets
 		 * part of the model when we select a TRS tree item.
 		 */
 		tree_item_to_feature_map_type d_tree_item_to_feature_map;
-
 		/**
 		 * The currently selected item in the tree.
 		 *
@@ -227,6 +343,13 @@ namespace GPlatesQtWidgets
 		* The edit_trs dialog.
 		*/
 		boost::scoped_ptr<EditTotalReconstructionSequenceDialog> d_edit_trs_dialog_ptr;
+
+
+		/*
+		* No need to use boost::scoped_ptr. Set dialog parent properly, 
+		* the dialog will be destructed by qt automatically when destructing its parent.
+		*/
+		MetadataDialog* d_metadata_dlg;
 	};
 
 }

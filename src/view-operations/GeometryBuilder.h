@@ -345,7 +345,7 @@ namespace GPlatesViewOperations
 		 */
 		UndoOperation
 		set_geometry_type_to_build(
-				GeometryType::Value geom_type);
+				GPlatesMaths::GeometryType::Value geom_type);
 
 		/**
 		 * Clears and removes all geometry(s).
@@ -368,7 +368,7 @@ namespace GPlatesViewOperations
 		template <typename ForwardPointIter>
 		UndoOperation
 		set_geometry(
-				GeometryType::Value geom_type,
+				GPlatesMaths::GeometryType::Value geom_type,
 				ForwardPointIter geom_points_begin,
 				ForwardPointIter geom_points_end);
 
@@ -464,7 +464,7 @@ namespace GPlatesViewOperations
 		 * This is not necessarily the type of the current geometry ( see
 		 * @a set_geometry_type_to_build).
 		 */
-		GeometryType::Value
+		GPlatesMaths::GeometryType::Value
 		get_geometry_build_type() const;
 
 		/**
@@ -475,7 +475,7 @@ namespace GPlatesViewOperations
 		 * @throws PreconditionViolationError if there's currently no geometry in this builder.
 		 * Check first with @a has_geometry if you're unsure.
 		 */
-		GeometryType::Value
+		GPlatesMaths::GeometryType::Value
 		get_actual_type_of_current_geometry() const;
 
 		/**
@@ -486,7 +486,7 @@ namespace GPlatesViewOperations
 		 * @throws PreconditionViolationError if there's currently no geometry in this builder
 		 * at index @a geom_index.
 		 */
-		GeometryType::Value
+		GPlatesMaths::GeometryType::Value
 		get_actual_type_of_geometry(
 				GeometryIndex geom_index) const;
 
@@ -708,7 +708,7 @@ namespace GPlatesViewOperations
 		void
 		changed_actual_geometry_type(
 				GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index,
-				GPlatesViewOperations::GeometryType::Value geometry_type);
+				GPlatesMaths::GeometryType::Value geometry_type);
 		
 		/**
 		 * Geometry was inserted at @a geometry_index.
@@ -810,7 +810,7 @@ namespace GPlatesViewOperations
 		/**
 		 * Value of geometry we're trying to build.
 		 */
-		GeometryType::Value d_geometry_build_type;
+		GPlatesMaths::GeometryType::Value d_geometry_build_type;
 
 		/**
 		 * Sequence of geometries.
@@ -881,7 +881,7 @@ namespace GPlatesViewOperations
 	};
 
 	inline
-	GeometryType::Value
+	GPlatesMaths::GeometryType::Value
 	GeometryBuilder::get_geometry_build_type() const
 	{
 		return d_geometry_build_type;
@@ -898,7 +898,7 @@ namespace GPlatesViewOperations
 	template <typename ForwardPointIter>
 	GeometryBuilder::UndoOperation
 	GeometryBuilder::set_geometry(
-			GeometryType::Value geom_type,
+			GPlatesMaths::GeometryType::Value geom_type,
 			ForwardPointIter geom_points_begin,
 			ForwardPointIter geom_points_end)
 	{

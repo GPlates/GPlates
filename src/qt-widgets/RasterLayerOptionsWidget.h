@@ -27,6 +27,7 @@
 #define GPLATES_QTWIDGETS_RASTERLAYEROPTIONSWIDGET_H
 
 #include <vector>
+#include <QString>
 
 #include "RasterLayerOptionsWidgetUi.h"
 
@@ -94,11 +95,18 @@ namespace GPlatesQtWidgets
 		handle_use_default_palette_button_clicked();
 
 		void
+		handle_use_age_palette_button_clicked();
+
+		void
 		handle_opacity_spinbox_changed(
 				double value);
 
 		void
 		handle_intensity_spinbox_changed(
+				double value);
+
+		void
+		handle_surface_relief_scale_spinbox_changed(
 				double value);
 
 	private:
@@ -112,6 +120,11 @@ namespace GPlatesQtWidgets
 
 		void
 		make_signal_slot_connections();
+
+		void
+		set_colour_palette(
+				const QString &palette_file_name);
+
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
 		GPlatesPresentation::ViewState &d_view_state;

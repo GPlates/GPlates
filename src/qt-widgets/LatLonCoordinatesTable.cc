@@ -41,17 +41,17 @@
 
 #include "gui/Colour.h"
 
-#include "maths/InvalidLatLonException.h"
-#include "maths/InvalidLatLonCoordinateException.h"
-#include "maths/LatLonPoint.h"
 #include "maths/GeometryOnSphere.h"
+#include "maths/GeometryType.h"
+#include "maths/InvalidLatLonCoordinateException.h"
+#include "maths/InvalidLatLonException.h"
+#include "maths/LatLonPoint.h"
 #include "maths/Real.h"
 
 #include "utils/GeometryCreationUtils.h"
 #include "utils/StringFormattingUtils.h"
 
 #include "view-operations/GeometryOperation.h"
-#include "view-operations/GeometryType.h"
 
 
 namespace
@@ -203,25 +203,25 @@ namespace
 
 	QString
 	get_geometry_type_text(
-			GPlatesViewOperations::GeometryType::Value geom_type)
+			GPlatesMaths::GeometryType::Value geom_type)
 	{
 		QString label;
 
 		switch (geom_type)
 		{
-		case GPlatesViewOperations::GeometryType::POINT:
+		case GPlatesMaths::GeometryType::POINT:
 			label = "gml:Point";
 			break;
 
-		case GPlatesViewOperations::GeometryType::MULTIPOINT:
+		case GPlatesMaths::GeometryType::MULTIPOINT:
 			label = "gml:MultiPoint";
 			break;
 
-		case GPlatesViewOperations::GeometryType::POLYLINE:
+		case GPlatesMaths::GeometryType::POLYLINE:
 			label = "gml:LineString";
 			break;
 
-		case GPlatesViewOperations::GeometryType::POLYGON:
+		case GPlatesMaths::GeometryType::POLYGON:
 			label = "gml:Polygon";
 			break;
 
@@ -319,11 +319,11 @@ GPlatesQtWidgets::LatLonCoordinatesTable::connect_to_current_geometry_builder()
 			d_current_geometry_builder,
 			SIGNAL(changed_actual_geometry_type(
 					GPlatesViewOperations::GeometryBuilder::GeometryIndex,
-					GPlatesViewOperations::GeometryType::Value)),
+					GPlatesMaths::GeometryType::Value)),
 			this,
 			SLOT(change_actual_geometry_type(
 					GPlatesViewOperations::GeometryBuilder::GeometryIndex,
-					GPlatesViewOperations::GeometryType::Value)));
+					GPlatesMaths::GeometryType::Value)));
 
 	// Insert geometry into our table.
 	QObject::connect(
@@ -504,7 +504,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::unhighlight_point_in_geometry(
 void
 GPlatesQtWidgets::LatLonCoordinatesTable::change_actual_geometry_type(
 		GPlatesViewOperations::GeometryBuilder::GeometryIndex geometry_index,
-		GPlatesViewOperations::GeometryType::Value geometry_type)
+		GPlatesMaths::GeometryType::Value geometry_type)
 {
 	//If the table is invisible, we do nothing. The data will be reloaded when it becomes visible.
 	if(!d_coordinates_table->isVisible() && d_need_to_reload_data)
@@ -544,7 +544,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::insert_geometry(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Get actual type of geometry.
-	const GPlatesViewOperations::GeometryType::Value geom_type =
+	const GPlatesMaths::GeometryType::Value geom_type =
 		d_current_geometry_builder->get_actual_type_of_geometry(geometry_index);
 
 	// Get geometry type text.
@@ -669,7 +669,7 @@ GPlatesQtWidgets::LatLonCoordinatesTable::insert_point_into_geometry(
 
 	d_tree_widget_builder.insert_child(geom_item_handle, coord_item_handle, point_index);
 
-	const GPlatesViewOperations::GeometryType::Value geom_type =
+	const GPlatesMaths::GeometryType::Value geom_type =
 		d_current_geometry_builder->get_actual_type_of_current_geometry();
 	const QString label = get_geometry_type_text(geom_type);
 

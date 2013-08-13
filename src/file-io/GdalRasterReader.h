@@ -30,9 +30,10 @@
 
 #include <vector>
 #include <boost/function.hpp>
-#include <boost/shared_array.hpp>
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QString>
+#include <QtGlobal>
 
 #include "Gdal.h"
 #include "RasterBandReaderHandle.h"
@@ -131,28 +132,33 @@ namespace GPlatesFileIO
 				unsigned int band_number,
 				ReadErrorAccumulation *read_errors);
 
-		template <typename RasterElementType>
+		template <class RawRasterType>
 		void
 		write_source_raster_file_cache(
 				unsigned int band_number,
 				const QString &cache_filename,
 				ReadErrorAccumulation *read_errors);
 
-		template <typename RasterElementType>
+		template <class RawRasterType>
 		void
 		write_source_raster_file_cache_image_data(
 				unsigned int band_number,
 				QFile &cache_file,
 				QDataStream &out,
 				RasterFileCacheFormat::BlockInfos &block_infos,
-				ReadErrorAccumulation *read_errors);
+				ReadErrorAccumulation *read_errors,
+				double &raster_min,
+				double &raster_max,
+				double &raster_sum,
+				double &raster_sum_squares,
+				qint64 &num_valid_raster_samples);
 
 		/**
 		 * Traverse the Hilbert curve of blocks of the source raster using quad-tree recursion.
 		 *
 		 * The leaf nodes of the traversal correspond to the blocks in the source raster.
 		 */
-		template <typename RasterElementType>
+		template <class RawRasterType>
 		void
 		hilbert_curve_traversal(
 				unsigned int band_number,
@@ -166,22 +172,38 @@ namespace GPlatesFileIO
 				unsigned int hilbert_end_point,
 				QDataStream &out,
 				RasterFileCacheFormat::BlockInfos &block_infos,
-				boost::shared_array<RasterElementType> source_region_data,
+				boost::optional<typename RawRasterType::non_null_ptr_type> source_region_data,
 				QRect source_region,
-				ReadErrorAccumulation *read_errors);
+				ReadErrorAccumulation *read_errors,
+				double &raster_min,
+				double &raster_max,
+				double &raster_sum,
+				double &raster_sum_squares,
+				qint64 &num_valid_raster_samples);
 
 
-		// Any image bigger than this we should try to read in pieces to help avoid
-		// the possibility of a memory allocation failure.
+		// The minimum image allocation size to attempt - any image allocation lower than this size
+		// that fails will result in a thrown exception. Note that if an allocation fails then
+		// an allocation with half the dimensions will be attempted (and so on) unless the halved
+		// dimension image is less than the minimum allocation size.
 		static const int MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = 50 * 1000 * 1000;
 
+		// Currently removing this upper limit regardless of paging problems because GDAL reads
+		// each row very slowly when requesting sections compared to just reading the entire file
+		// in one go (most likely due to the file seeks required at the end of each row to seek to
+		// the next row of the sub-section - or GDAL reads the entire row of the full-size image
+		// even if a sub-section is requested).
+		//
+		// If the allocation fails we will repeatedly reduce the allocation size until
+		// it reaches @a MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT.
+#if 0
 		// The maximum memory allocation to attempt for an image.
 		// Going higher than this is likely to cause memory to start paging to disk
 		// which will just slow things down.
 		//
-		// If the allocation fails we will repeatedly reduce the allocation size until
-		// it reaches @a MIN_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT.
-		static const int MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = 500 * 1000 * 1000;
+		// The 32-bit limit is to avoid integer overflow in 32-bit programs.
+		static const quint64 MAX_IMAGE_ALLOCATION_BYTES_TO_ATTEMPT = Q_UINT64_C(0xffffffff);
+#endif
 
 
 		QString d_source_raster_filename;

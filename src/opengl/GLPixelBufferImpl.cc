@@ -43,9 +43,12 @@
 
 
 GPlatesOpenGL::GLPixelBufferImpl::GLPixelBufferImpl(
+		GLRenderer &renderer,
 		const GLBufferImpl::shared_ptr_type &buffer) :
 	d_buffer(buffer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// We should only get here if the pixel buffer object extension is *not* supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			// We also test for absence of GL_ARB_vertex_buffer_object even though
@@ -53,7 +56,7 @@ GPlatesOpenGL::GLPixelBufferImpl::GLPixelBufferImpl(
 			// sometimes GL_ARB_vertex_buffer_object is explicitly disabled - see
 			// "GLContext::disable_opengl_extensions()" - this avoids triggering this assertion
 			// failure in that debugging situation.
-			!(GLEW_ARB_pixel_buffer_object && GLEW_ARB_vertex_buffer_object),
+			!(capabilities.buffer.gl_ARB_pixel_buffer_object && capabilities.buffer.gl_ARB_vertex_buffer_object),
 			GPLATES_ASSERTION_SOURCE);
 }
 
@@ -80,6 +83,21 @@ GPlatesOpenGL::GLPixelBufferImpl::gl_bind_pack(
 {
 	// We're not using pixel buffer objects for the *pack* target so there should be none bound.
 	renderer.gl_unbind_pixel_pack_buffer_object();
+}
+
+
+void
+GPlatesOpenGL::GLPixelBufferImpl::gl_draw_pixels(
+		GLRenderer &renderer,
+		GLint x,
+		GLint y,
+		GLsizei width,
+		GLsizei height,
+		GLenum format,
+		GLenum type,
+		GLint offset)
+{
+	renderer.gl_draw_pixels(x, y, width, height, format, type, offset, d_buffer);
 }
 
 
@@ -170,6 +188,8 @@ GPlatesOpenGL::GLPixelBufferImpl::gl_tex_image_3D(
 		GLenum type,
 		const GLvoid *pixels)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
 	// Revert our texture binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
@@ -181,7 +201,7 @@ GPlatesOpenGL::GLPixelBufferImpl::gl_tex_image_3D(
 	// Previously we checked for the GL_EXT_texture3D extension but on MacOS this is not exposed
 	// so we use the core OpenGL 1.2 function instead.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_VERSION_1_2),
+			capabilities.gl_version_1_2,
 			GPLATES_ASSERTION_SOURCE);
 
 	glTexImage3D(target, level, internalformat, width, height, depth, border, format, type, pixels);
@@ -260,6 +280,8 @@ GPlatesOpenGL::GLPixelBufferImpl::gl_tex_sub_image_3D(
 		GLenum type,
 		const GLvoid *pixels)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Doesn't really matter which texture unit we bind on so choose unit zero since all hardware supports it.
 	// Revert our texture binding on return so we don't affect changes made by clients.
 	// This also makes sure the renderer applies the bind to OpenGL before we call OpenGL directly.
@@ -271,7 +293,7 @@ GPlatesOpenGL::GLPixelBufferImpl::gl_tex_sub_image_3D(
 	// Previously we checked for the GL_EXT_subtexture extension but on MacOS in particular this is
 	// not exposed so we use the core OpenGL 1.2 function instead.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			GPLATES_OPENGL_BOOL(GLEW_VERSION_1_2),
+			capabilities.gl_version_1_2,
 			GPLATES_ASSERTION_SOURCE);
 
 	glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);

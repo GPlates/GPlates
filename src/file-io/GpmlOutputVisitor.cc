@@ -73,6 +73,7 @@
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/GpmlMeasure.h"
+#include "property-values/GpmlMetadata.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlRasterBandNames.h"
@@ -86,6 +87,7 @@
 #include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
+#include "property-values/GpmlTotalReconstructionPole.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/OldVersionPropertyValue.h"
 #include "property-values/UninterpretedPropertyValue.h"
@@ -1236,6 +1238,24 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_finite_rotation(
 
 
 void
+GPlatesFileIO::GpmlOutputVisitor::visit_gpml_total_reconstruction_pole(
+		const GPlatesPropertyValues::GpmlTotalReconstructionPole &pole)
+{
+	d_output.writeStartGpmlElement("TotalReconstructionPole");
+	const std::vector<boost::shared_ptr<GPlatesModel::Metadata> >& meta_data= pole.metadata();
+	BOOST_FOREACH(boost::shared_ptr<GPlatesModel::Metadata> data, meta_data)
+	{
+		d_output.writeStartGpmlElement("meta");
+		d_output.writeAttribute("","name", data->get_name());
+		d_output.writeText(data->get_content());
+		d_output.writeEndElement();
+	}
+	visit_gpml_finite_rotation(pole);
+	d_output.writeEndElement();
+}
+
+
+void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_finite_rotation_slerp(
 		const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
 {
@@ -1440,6 +1460,14 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_measure(
 			gpml_measure.quantity_xml_attributes().begin(),
 			gpml_measure.quantity_xml_attributes().end());
 	d_output.writeDecimal(gpml_measure.quantity());
+}
+
+
+void
+GPlatesFileIO::GpmlOutputVisitor::visit_gpml_metadata(
+		const GPlatesPropertyValues::GpmlMetadata &gpml_metadata)
+{
+	gpml_metadata.serialize(d_output);
 }
 
 

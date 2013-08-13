@@ -90,21 +90,6 @@ GPlatesAppLogic::TopologicalIntersections::intersect_with_previous_section(
 	//    plate polygons that intersect like this).
 	//
 
-#define INTERSECT_WITH_PREVIOUS_SECTION( \
-		intersect_prev_section_head, \
-		intersect_this_section_head) \
-			{ \
-				boost::optional<GPlatesMaths::PointOnSphere> intersection = \
-						intersect_with_previous_section( \
-								previous_section, \
-								intersect_prev_section_head, \
-								intersect_this_section_head); \
-				if (intersection) \
-				{ \
-					return intersection; \
-				} \
-			}
-
 	if (d_head_segment)
 	{
 		// Optimisation: try to minimize the number of intersection tests
@@ -114,11 +99,21 @@ GPlatesAppLogic::TopologicalIntersections::intersect_with_previous_section(
 			// Try intersection with previous section's head segment first.
 			if (previous_section.d_head_segment)
 			{
-				INTERSECT_WITH_PREVIOUS_SECTION(true, true)
+				boost::optional<GPlatesMaths::PointOnSphere> intersection =
+						intersect_with_previous_section(previous_section, true, true);
+				if (intersection)
+				{
+					return intersection;
+				}
 			}
 			if (previous_section.d_tail_segment)
 			{
-				INTERSECT_WITH_PREVIOUS_SECTION(false, true)
+				boost::optional<GPlatesMaths::PointOnSphere> intersection =
+						intersect_with_previous_section(previous_section, false, true);
+				if (intersection)
+				{
+					return intersection;
+				}
 			}
 		}
 		else
@@ -126,11 +121,21 @@ GPlatesAppLogic::TopologicalIntersections::intersect_with_previous_section(
 			// Try intersection with previous section's tail segment first.
 			if (previous_section.d_tail_segment)
 			{
-				INTERSECT_WITH_PREVIOUS_SECTION(false, true)
+				boost::optional<GPlatesMaths::PointOnSphere> intersection =
+						intersect_with_previous_section(previous_section, false, true);
+				if (intersection)
+				{
+					return intersection;
+				}
 			}
 			if (previous_section.d_head_segment)
 			{
-				INTERSECT_WITH_PREVIOUS_SECTION(true, true)
+				boost::optional<GPlatesMaths::PointOnSphere> intersection =
+						intersect_with_previous_section(previous_section, true, true);
+				if (intersection)
+				{
+					return intersection;
+				}
 			}
 		}
 	}
@@ -144,11 +149,21 @@ GPlatesAppLogic::TopologicalIntersections::intersect_with_previous_section(
 			// Try intersection with previous section's head segment first.
 			if (previous_section.d_head_segment)
 			{
-				INTERSECT_WITH_PREVIOUS_SECTION(true, false)
+				boost::optional<GPlatesMaths::PointOnSphere> intersection =
+						intersect_with_previous_section(previous_section, true, false);
+				if (intersection)
+				{
+					return intersection;
+				}
 			}
 			if (previous_section.d_tail_segment)
 			{
-				INTERSECT_WITH_PREVIOUS_SECTION(false, false)
+				boost::optional<GPlatesMaths::PointOnSphere> intersection =
+						intersect_with_previous_section(previous_section, false, false);
+				if (intersection)
+				{
+					return intersection;
+				}
 			}
 		}
 		else
@@ -156,11 +171,21 @@ GPlatesAppLogic::TopologicalIntersections::intersect_with_previous_section(
 			// Try intersection with previous section's tail segment first.
 			if (previous_section.d_tail_segment)
 			{
-				INTERSECT_WITH_PREVIOUS_SECTION(false, false)
+				boost::optional<GPlatesMaths::PointOnSphere> intersection =
+						intersect_with_previous_section(previous_section, false, false);
+				if (intersection)
+				{
+					return intersection;
+				}
 			}
 			if (previous_section.d_head_segment)
 			{
-				INTERSECT_WITH_PREVIOUS_SECTION(true, false)
+				boost::optional<GPlatesMaths::PointOnSphere> intersection =
+						intersect_with_previous_section(previous_section, true, false);
+				if (intersection)
+				{
+					return intersection;
+				}
 			}
 		}
 	}

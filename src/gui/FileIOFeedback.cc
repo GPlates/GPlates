@@ -932,6 +932,25 @@ GPlatesGui::FileIOFeedback::save_all(
 }
 
 
+bool
+GPlatesGui::FileIOFeedback::create_file(
+		const GPlatesFileIO::File::non_null_ptr_type &file)
+{
+	const bool saved = save_file(file->get_reference());
+
+	// Add the new file to the feature collection file state.
+	// We don't save it because we've already saved it above.
+	// The reason we save above is to pop up an error dialog if saving fails -
+	// this won't happen if we save directly through 'FeatureCollectionFileIO'.
+	if (saved)
+	{
+		d_feature_collection_file_io_ptr->create_file(file, false/*save*/);
+	}
+
+	return saved;
+}
+
+
 void
 GPlatesGui::FileIOFeedback::try_catch_file_or_session_load_with_feedback(
 		boost::function<void ()> file_load_func,

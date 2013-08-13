@@ -47,7 +47,7 @@ namespace GPlatesModel
 namespace GPlatesUtils
 {
 	boost::optional<GPlatesModel::integer_plate_id_type>
-	get_int_plate_id(
+	get_recon_plate_id_as_int(
 			const GPlatesModel::FeatureHandle* feature_ptr);
 
 	boost::optional<GPlatesMaths::Real>

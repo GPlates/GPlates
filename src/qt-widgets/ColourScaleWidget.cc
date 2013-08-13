@@ -342,8 +342,24 @@ namespace
 
 			virtual
 			void
-			visit_default_normalised_raster_colour_palette(
-					GPlatesGui::DefaultNormalisedRasterColourPalette &colour_palette)
+			visit_user_colour_palette(
+					GPlatesGui::UserColourPalette &colour_palette)
+			{
+				do_visit(colour_palette);
+			}
+
+			virtual
+			void
+			visit_default_scalar_field_scalar_colour_palette(
+					GPlatesGui::DefaultScalarFieldScalarColourPalette &colour_palette)
+			{
+				do_visit(colour_palette);
+			}
+
+			virtual
+			void
+			visit_default_scalar_field_gradient_colour_palette(
+					GPlatesGui::DefaultScalarFieldGradientColourPalette &colour_palette)
 			{
 				do_visit(colour_palette);
 			}

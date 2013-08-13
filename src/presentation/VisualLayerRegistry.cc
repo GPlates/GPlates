@@ -33,7 +33,6 @@
 #include "ReconstructVisualLayerParams.h"
 #include "ScalarField3DVisualLayerParams.h"
 #include "TopologyBoundaryVisualLayerParams.h"
-
 #include "TopologyNetworkVisualLayerParams.h"
 #include "VelocityFieldCalculatorVisualLayerParams.h"
 
@@ -50,10 +49,9 @@
 #include "qt-widgets/ReconstructionLayerOptionsWidget.h"
 #include "qt-widgets/ScalarField3DLayerOptionsWidget.h"
 #include "qt-widgets/TopologyBoundaryResolverLayerOptionsWidget.h"
-
 #include "qt-widgets/TopologyNetworkResolverLayerOptionsWidget.h"
 #include "qt-widgets/VelocityFieldCalculatorLayerOptionsWidget.h"
-#include "qt-widgets/CoRegistrationOptionsWidget.h"
+
 #include "utils/ComponentManager.h"
 
 

@@ -39,10 +39,25 @@
 # * Symbol mapping is only by feature type.
 #
 MagneticAnomalyIdentification CROSS 2
-Volcano TRIANGLE 2 FILLED
+Volcano TRIANGLE 4 FILLED
 HotSpot SQUARE 3 FILLED
 Seamount CIRCLE 2 UNFILLED 
 #
-# END
+StrainMarker CROSS 50
 #
+# NAVDAT Symobols 
+#
+NavdatSampleMafic TRIANGLE 1 UNFILLED
+NavdatSampleIntermediate TRIANGLE 1 UNFILLED
+NavdatSampleFelsicLow TRIANGLE 1 UNFILLED
+NavdatSampleFelsicHigh TRIANGLE 1 UNFILLED
+#
+# Macrostrat symbols
+#
+FossilCollection_large CROSS 10 FILLED
+FossilCollection_medium CROSS 3 FILLED
+FossilCollection_small CROSS 1 FILLED
+#
+#
+
 

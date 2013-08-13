@@ -34,6 +34,7 @@
 #include "SphericalGrid.h"
 
 #include "Colour.h"
+#include "FeedbackOpenGLToQPainter.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -87,7 +88,7 @@ namespace
 		//
 		//   RGB uses (src_alpha, 1 - src_alpha)  ->  (R,G,B) = (Rs*As,Gs*As,Bs*As) + (1-As) * (Rd,Gd,Bd)
 		//     A uses (1, 1 - src_alpha)          ->        A = As + (1-As) * Ad
-		if (GPlatesOpenGL::GLContext::get_parameters().framebuffer.gl_EXT_blend_func_separate)
+		if (renderer.get_capabilities().framebuffer.gl_EXT_blend_func_separate)
 		{
 			renderer.gl_enable(GL_BLEND);
 			renderer.gl_blend_func_separate(
@@ -97,7 +98,7 @@ namespace
 		else // otherwise resort to normal blending...
 		{
 			renderer.gl_enable(GL_BLEND);
-			renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+			renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		}
 	}
 
@@ -212,6 +213,7 @@ namespace
 	compile_grid_draw_state(
 			GPlatesOpenGL::GLRenderer &renderer,
 			GPlatesOpenGL::GLVertexArray &vertex_array,
+			unsigned int &num_line_segments,
 			const GPlatesMaths::Real &delta_lat,
 			const GPlatesMaths::Real &delta_lon,
 			const GPlatesGui::rgba8_t &colour)
@@ -249,6 +251,9 @@ namespace
 
 		stream_target.stop_streaming();
 
+		// Each line segment in GL_LINES uses two vertex indices.
+		num_line_segments = vertex_elements.size() / 2;
+
 #if 0 // Update: using 32-bit indices now...
 		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
 		// Shouldn't get close really but check to be sure.
@@ -276,6 +281,7 @@ namespace
 	compile_circumference_draw_state(
 			GPlatesOpenGL::GLRenderer &renderer,
 			GPlatesOpenGL::GLVertexArray &vertex_array,
+			unsigned int &num_line_segments,
 			const GPlatesGui::rgba8_t &colour)
 	{
 		stream_primitives_type stream;
@@ -291,6 +297,9 @@ namespace
 		stream_line_of_lon(stream, -GPlatesMaths::PI / 2.0, colour);
 
 		stream_target.stop_streaming();
+
+		// Each line segment in GL_LINES uses two vertex indices.
+		num_line_segments = vertex_elements.size() / 2;
 
 #if 0 // Update: using 32-bit indices now...
 		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
@@ -321,7 +330,9 @@ GPlatesGui::SphericalGrid::SphericalGrid(
 		const GraticuleSettings &graticule_settings) :
 	d_graticule_settings(graticule_settings),
 	d_grid_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer)),
-	d_circumference_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer))
+	d_grid_num_line_segments(0),
+	d_circumference_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer)),
+	d_circumference_num_line_segments(0)
 {  }
 
 
@@ -340,13 +351,29 @@ GPlatesGui::SphericalGrid::paint(
 		d_grid_compiled_draw_state = compile_grid_draw_state(
 				renderer,
 				*d_grid_vertex_array,
+				d_grid_num_line_segments,
 				d_graticule_settings.get_delta_lat(),
 				d_graticule_settings.get_delta_lon(),
 				Colour::to_rgba8(d_graticule_settings.get_colour()));
 		d_last_seen_graticule_settings = d_graticule_settings;
 	}
 
-	renderer.apply_compiled_draw_state(*d_grid_compiled_draw_state.get());
+	// Either render directly to the framebuffer, or use OpenGL feedback to render to the
+	// QPainter's paint device.
+	if (renderer.rendering_to_context_framebuffer())
+	{
+		renderer.apply_compiled_draw_state(*d_grid_compiled_draw_state.get());
+	}
+	else
+	{
+		// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
+		// We are rendering to the QPainter attached to GLRenderer.
+		FeedbackOpenGLToQPainter feedback_opengl;
+		FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
+				feedback_opengl, renderer, 0, d_grid_num_line_segments, 0);
+
+		renderer.apply_compiled_draw_state(*d_grid_compiled_draw_state.get());
+	}
 }
 
 
@@ -367,6 +394,7 @@ GPlatesGui::SphericalGrid::paint_circumference(
 		d_circumference_compiled_draw_state = compile_circumference_draw_state(
 				renderer,
 				*d_circumference_vertex_array,
+				d_circumference_num_line_segments,
 				Colour::to_rgba8(d_graticule_settings.get_colour()));
 		d_last_seen_graticule_settings = d_graticule_settings;
 	}
@@ -376,5 +404,20 @@ GPlatesGui::SphericalGrid::paint_circumference(
 
 	renderer.gl_mult_matrix(GL_MODELVIEW, transform);
 
-	renderer.apply_compiled_draw_state(*d_circumference_compiled_draw_state.get());
+	// Either render directly to the framebuffer, or use OpenGL feedback to render to the
+	// QPainter's paint device.
+	if (renderer.rendering_to_context_framebuffer())
+	{
+		renderer.apply_compiled_draw_state(*d_circumference_compiled_draw_state.get());
+	}
+	else
+	{
+		// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
+		// We are rendering to the QPainter attached to GLRenderer.
+		FeedbackOpenGLToQPainter feedback_opengl;
+		FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
+				feedback_opengl, renderer, 0, d_circumference_num_line_segments, 0);
+
+		renderer.apply_compiled_draw_state(*d_circumference_compiled_draw_state.get());
+	}
 }

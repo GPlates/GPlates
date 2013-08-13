@@ -69,14 +69,12 @@ namespace GPlatesAppLogic
 		create(
 				GPlatesModel::FeatureHandle &feature_handle,
 				const double &reconstruction_time,
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const scalar_field_3d_layer_proxy_non_null_ptr_type &scalar_field_layer_proxy)
 		{
 			return non_null_ptr_type(
 					new ResolvedScalarField3D(
 							feature_handle,
 							reconstruction_time,
-							reconstruction_tree_,
 							scalar_field_layer_proxy));
 		}
 
@@ -133,7 +131,6 @@ namespace GPlatesAppLogic
 		ResolvedScalarField3D(
 				GPlatesModel::FeatureHandle &feature_handle,
 				const double &reconstruction_time,
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const scalar_field_3d_layer_proxy_non_null_ptr_type &scalar_field_layer_proxy);
 
 	private:

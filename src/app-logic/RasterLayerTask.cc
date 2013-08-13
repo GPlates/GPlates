@@ -44,7 +44,7 @@ const QString GPlatesAppLogic::RasterLayerTask::RECONSTRUCTED_POLYGONS_CHANNEL_N
 const QString GPlatesAppLogic::RasterLayerTask::AGE_GRID_RASTER_CHANNEL_NAME =
 		"Age grid raster";
 const QString GPlatesAppLogic::RasterLayerTask::NORMAL_MAP_RASTER_CHANNEL_NAME =
-		"Surface lighting raster";
+		"Surface relief raster";
 
 
 bool
@@ -74,6 +74,8 @@ GPlatesAppLogic::RasterLayerTask::get_input_channel_types() const
 {
 	std::vector<LayerInputChannelType> input_channel_types;
 
+	// NOTE: There's no channel definition for a reconstruction tree - a rotation layer is not needed.
+
 	// Channel definition for the raster feature.
 	input_channel_types.push_back(
 			LayerInputChannelType(
@@ -94,15 +96,12 @@ GPlatesAppLogic::RasterLayerTask::get_input_channel_types() const
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
 					LayerTaskType::RASTER));
 	
-	// Temporarily disable normal maps until lighting tool is in place...
-#if 0
 	// Channel definition for the normal map raster.
 	input_channel_types.push_back(
 			LayerInputChannelType(
 					NORMAL_MAP_RASTER_CHANNEL_NAME,
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
 					LayerTaskType::RASTER));
-#endif
 
 	return input_channel_types;
 }

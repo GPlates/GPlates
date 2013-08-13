@@ -31,20 +31,23 @@
 namespace GPlatesViewOperations
 {
 	class RenderedArrowedPolyline;
+	class RenderedCircleSymbol;
+	class RenderedColouredEdgeSurfaceMesh;
+	class RenderedColouredTriangleSurfaceMesh;
 	class RenderedCrossSymbol;
-	class RenderedEllipse;
-	class RenderedPointOnSphere;
-	class RenderedMultiPointOnSphere;
-	class RenderedPolylineOnSphere;
-	class RenderedPolygonOnSphere;
 	class RenderedDirectionArrow;
+	class RenderedEllipse;
+	class RenderedMultiPointOnSphere;
+	class RenderedPointOnSphere;
+	class RenderedPolygonOnSphere;
+	class RenderedPolylineOnSphere;
 	class RenderedReconstructionGeometry;
 	class RenderedResolvedRaster;
 	class RenderedResolvedScalarField3D;
 	class RenderedSmallCircle;
 	class RenderedSmallCircleArc;	
 	class RenderedSquareSymbol;
-	class RenderedCircleSymbol;
+	class RenderedStrainMarkerSymbol;
 	class RenderedString;
 	class RenderedTriangleSymbol;
 
@@ -70,61 +73,26 @@ namespace GPlatesViewOperations
 
 		virtual
 		void
+		visit_rendered_circle_symbol(
+			const RenderedCircleSymbol &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_coloured_edge_surface_mesh(
+			const RenderedColouredEdgeSurfaceMesh &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_coloured_triangle_surface_mesh(
+			const RenderedColouredTriangleSurfaceMesh &)
+		{  }
+
+		virtual
+		void
 		visit_rendered_cross_symbol(
 				const GPlatesViewOperations::RenderedCrossSymbol &)
-		{  }
-
-		virtual
-		void
-		visit_rendered_ellipse(
-				const GPlatesViewOperations::RenderedEllipse &)
-		{  }
-
-		virtual
-		void
-		visit_rendered_point_on_sphere(
-				const GPlatesViewOperations::RenderedPointOnSphere &)
-		{  }
-
-		virtual
-		void
-		visit_rendered_multi_point_on_sphere(
-				const RenderedMultiPointOnSphere &)
-		{  }
-
-		virtual
-		void
-		visit_rendered_polyline_on_sphere(
-				const RenderedPolylineOnSphere &)
-		{  }
-
-		virtual
-		void
-		visit_rendered_polygon_on_sphere(
-				const RenderedPolygonOnSphere &)
-		{  }
-
-		/**
-		 * This rendered geometry is a composite object as opposed to the others.
-		 *
-		 * It wraps/associates a @a GPlatesAppLogic::ReconstructionGeometry object with a rendered geometry.
-		 */
-		virtual
-		void
-		visit_rendered_reconstruction_geometry(
-				const RenderedReconstructionGeometry &)
-		{  }
-		
-		virtual
-		void
-		visit_resolved_raster(
-				const RenderedResolvedRaster &)
-		{  }
-		
-		virtual
-		void
-		visit_resolved_scalar_field_3d(
-				const RenderedResolvedScalarField3D &)
 		{  }
 
 		/**
@@ -136,6 +104,59 @@ namespace GPlatesViewOperations
 		void
 		visit_rendered_direction_arrow(
 				const RenderedDirectionArrow &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_ellipse(
+				const GPlatesViewOperations::RenderedEllipse &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_multi_point_on_sphere(
+				const RenderedMultiPointOnSphere &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_point_on_sphere(
+				const GPlatesViewOperations::RenderedPointOnSphere &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_polygon_on_sphere(
+				const RenderedPolygonOnSphere &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_polyline_on_sphere(
+				const RenderedPolylineOnSphere &)
+		{  }
+		
+		/**
+		 * This rendered geometry is a composite object as opposed to the others.
+		 *
+		 * It wraps/associates a @a GPlatesAppLogic::ReconstructionGeometry object with a rendered geometry.
+		 */
+		virtual
+		void
+		visit_rendered_reconstruction_geometry(
+				const RenderedReconstructionGeometry &)
+		{  }
+
+		virtual
+		void
+		visit_rendered_resolved_raster(
+				const RenderedResolvedRaster &)
+		{  }
+		
+		virtual
+		void
+		visit_rendered_resolved_scalar_field_3d(
+				const RenderedResolvedScalarField3D &)
 		{  }
 		
 		virtual
@@ -158,8 +179,8 @@ namespace GPlatesViewOperations
 
 		virtual
 		void
-		visit_rendered_circle_symbol(
-			const RenderedCircleSymbol &)
+		visit_rendered_strain_marker_symbol(
+				const GPlatesViewOperations::RenderedStrainMarkerSymbol &)
 		{  }
 
 		virtual

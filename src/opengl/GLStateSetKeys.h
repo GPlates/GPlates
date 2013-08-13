@@ -26,12 +26,13 @@
 #ifndef GPLATES_OPENGL_GLSTATESETKEYS_H
 #define GPLATES_OPENGL_GLSTATESETKEYS_H
 
-#include "utils/non_null_intrusive_ptr.h"
+#include <opengl/OpenGL.h>
 #include "utils/ReferenceCount.h"
-
 
 namespace GPlatesOpenGL
 {
+	class GLCapabilities;
+
 	/**
 	 * Used to assign a separate slot for each @a GLStateSet derived state.
 	 */
@@ -51,9 +52,10 @@ namespace GPlatesOpenGL
 		 */
 		static
 		non_null_ptr_to_const_type
-		create()
+		create(
+				const GLCapabilities &capabilities)
 		{
-			return non_null_ptr_type(new GLStateSetKeys());
+			return non_null_ptr_type(new GLStateSetKeys(capabilities));
 		}
 
 
@@ -123,7 +125,9 @@ namespace GPlatesOpenGL
 			KEY_POLYGON_MODE_FRONT,
 			KEY_POLYGON_OFFSET,
 			KEY_SCISSOR,
+			KEY_STENCIL_FUNC,
 			KEY_STENCIL_MASK,
+			KEY_STENCIL_OP,
 			KEY_VERTEX_ARRAY_COLOR_POINTER,
 			KEY_VERTEX_ARRAY_NORMAL_POINTER,
 			KEY_VERTEX_ARRAY_VERTEX_POINTER,
@@ -292,6 +296,8 @@ namespace GPlatesOpenGL
 			NUM_TEXTURE_COORD_KEY_OFFSETS // Must be last.
 		};
 
+		const GLCapabilities &d_capabilities;
+
 		key_type d_generic_vertex_attribute_index_zero_base_key;
 
 		key_type d_texture_image_unit_zero_base_key;
@@ -300,7 +306,8 @@ namespace GPlatesOpenGL
 		unsigned int d_num_state_set_keys;
 
 		//! Default constructor can only be called by @a create.
-		GLStateSetKeys();
+		GLStateSetKeys(
+				const GLCapabilities &capabilities);
 
 		//! Calculate a key for a texture parameter in the specified texture *image* unit.
 		key_type

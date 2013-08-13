@@ -398,16 +398,16 @@ GPlatesViewOperations::MoveVertexGeometryOperation::update_rendered_geometry(
 	// All types of geometry have the points drawn the same.
 	add_rendered_points(geom_index);
 
-	const GeometryType::Value actual_geom_type =
+	const GPlatesMaths::GeometryType::Value actual_geom_type =
 		d_geometry_builder.get_actual_type_of_geometry(geom_index);
 
 	switch (actual_geom_type)
 	{
-	case GeometryType::POLYLINE:
+	case GPlatesMaths::GeometryType::POLYLINE:
 		add_rendered_lines_for_polyline_on_sphere(geom_index);
 		break;
 
-	case GeometryType::POLYGON:
+	case GPlatesMaths::GeometryType::POLYGON:
 		add_rendered_lines_for_polygon_on_sphere(geom_index);
 		break;
 

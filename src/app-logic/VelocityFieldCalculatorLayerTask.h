@@ -60,8 +60,12 @@ namespace GPlatesAppLogic
 			//! How to calculate velocities.
 			enum SolveVelocitiesMethodType
 			{
-				SOLVE_VELOCITIES_ON_SURFACES, // Uses plate id from intersecting polygon/network surface.
-				SOLVE_VELOCITIES_BY_PLATE_ID, // Uses plate id of velocity domain feature.
+				// Intersects reconstructed domain geometry with polygon/network surface and
+				// calculates velocity of latter at the position of the former.
+				SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS,
+
+				// Calculates velocity of reconstructed domain geometry itself.
+				SOLVE_VELOCITIES_OF_DOMAIN_POINTS,
 
 				NUM_SOLVE_VELOCITY_METHODS    // This must be last.
 			};
@@ -180,8 +184,8 @@ namespace GPlatesAppLogic
 		}
 
 	private:
-		//! This is a human-readable name for the velocity domain features input channel.
-		static const QString VELOCITY_DOMAIN_FEATURES_CHANNEL_NAME;
+		//! This is a human-readable name for the velocity domain layers input channel.
+		static const QString VELOCITY_DOMAIN_LAYERS_CHANNEL_NAME;
 
 		//! This is a human-readable name for the reconstructed static/dynamic polygons/networks input channel.
 		static const QString VELOCITY_SURFACE_LAYERS_CHANNEL_NAME;
@@ -191,14 +195,6 @@ namespace GPlatesAppLogic
 		 * Parameters used when calculating velocities.
 		 */
 		Params d_layer_task_params;
-
-		/**
-		 * Keep track of the default reconstruction layer proxy.
-		 */
-		ReconstructionLayerProxy::non_null_ptr_type d_default_reconstruction_layer_proxy;
-
-		//! Are we using the default reconstruction layer proxy.
-		bool d_using_default_reconstruction_layer_proxy;
 
 		/**
 		 * Does all the velocity calculations.

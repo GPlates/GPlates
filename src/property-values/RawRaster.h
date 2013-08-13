@@ -28,6 +28,7 @@
 #ifndef GPLATES_PROPERTYVALUES_RAWRASTER_H
 #define GPLATES_PROPERTYVALUES_RAWRASTER_H
 
+#include <cstddef> // For std::size_t
 #include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
 #include <boost/scoped_array.hpp>
@@ -526,7 +527,8 @@ namespace GPlatesPropertyValues
 					unsigned int height_) :
 				d_width(width_),
 				d_height(height_),
-				d_data(new T[width_ * height_])
+				// Using std::size_t in case 64-bit compiler and array exceeds 32-bit...
+				d_data(new T[std::size_t(width_) * height_])
 			{  }
 
 			WithData(

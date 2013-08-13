@@ -32,12 +32,58 @@
 #include "model/FeatureHandle.h"
 #include "property-values/GpmlIrregularSampling.h"
 
+#include "EditTableActionWidget.h"
 #include "EditTableWidget.h"
 #include "EditTotalReconstructionSequenceWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {
 	class TotalReconstructionSequencesDialog;
+	class EditPoleActionWidget:
+		public EditTableActionWidget
+	{
+		Q_OBJECT
+	public:
+		explicit
+		EditPoleActionWidget(
+				EditTableWidget *table_widget,
+				bool enable_is_on = true,
+				QWidget *parent_ = NULL);
+
+		void
+		set_enable_flag(
+				bool flag)
+		{
+			d_enable_is_on = flag;
+			refresh_buttons();
+		}
+
+	protected:
+		void
+		refresh_buttons()
+		{
+			if(d_enable_is_on)
+			{
+				enable_button->setVisible(true);
+				disable_button->setVisible(false);
+			}
+			else
+			{
+				enable_button->setVisible(false);
+				disable_button->setVisible(true);
+			}
+		}
+	
+	private Q_SLOTS:
+		void
+		enable_pole();
+
+		void
+		disable_pole();
+	private:
+		QPushButton *disable_button, *enable_button;
+		bool d_enable_is_on;
+	};
 
 	/**
 	 * This widget displays, and allows editing of, the irregular sampling property of a TotalReconstructionSequence feature.                                                             
@@ -72,11 +118,11 @@ namespace GPlatesQtWidgets
 
 		void
 		set_moving_plate_id(
-			const GPlatesModel::integer_plate_id_type &moving_plate_id);
+				const GPlatesModel::integer_plate_id_type &moving_plate_id);
 
 		void
 		set_fixed_plate_id(
-			const GPlatesModel::integer_plate_id_type &fixed_plate_id);
+				const GPlatesModel::integer_plate_id_type &fixed_plate_id);
 
 		void
 		sort_table_by_time();
@@ -102,51 +148,55 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		set_action_widget_in_row(
-			int row);
-
-	Q_SIGNALS:
-
+				int row);
 
 		void
+		handle_disable_pole(
+				EditPoleActionWidget*,
+				bool);
+		
+	Q_SIGNALS:
+		void
 		table_validity_changed(
-			bool);
+				bool);
 
 		void
 		plate_ids_have_changed();
 
-	private:
+	protected:
+		/**
+		* Creates an irregular sampling property from the values in @a table.                                                             
+		*/
+		GPlatesModel::TopLevelProperty::non_null_ptr_type
+		make_irregular_sampling_from_table();
 
+	private:
 		virtual
 		void
 		handle_insert_row_above(
-			const EditTableActionWidget *);
+				const EditTableActionWidget *);
 
 		virtual
 		void
 		handle_insert_row_below(
-			const EditTableActionWidget *);
+				const EditTableActionWidget *);
 
 		virtual
 		void
 		handle_delete_row(
-			const EditTableActionWidget *);
-
-		
-
+				const EditTableActionWidget *);
 
 	private Q_SLOTS:
-
-
 		void
 		handle_insert_new_pole();
 
 		void
 		handle_item_changed(
-			QTableWidgetItem* item);
+				QTableWidgetItem* item);
 
 		void
 		handle_current_cell_changed(
-			int,int,int,int);
+				int,int,int,int);
 
 		/**
 		 * Handle the editFinished() signal from the spinbox in the active cell.                                                                     
@@ -161,15 +211,15 @@ namespace GPlatesQtWidgets
 
 		int
 		get_row_for_action_widget(
-			const EditTableActionWidget *);
+				const EditTableActionWidget *);
 
 		void
 		insert_blank_row(
-			int row);
+				int row);
 
 		void
 		delete_row(
-		   int row);
+			  int row);
 
 		/**
 		 * Borrowed from TopologySectionsTable - used to prevent 
@@ -187,7 +237,7 @@ namespace GPlatesQtWidgets
 
 		bool d_moving_plate_changed;
 		bool d_fixed_plate_changed;
-
+		bool d_is_grot;
 	};
 
 }

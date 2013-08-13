@@ -47,6 +47,9 @@ namespace GPlatesAppLogic
 	public:
 
 		static const double INITIAL_VGP_DELTA_T;
+		static const double INITIAL_INTERPOLATE_START_T;
+		static const double INITIAL_INTERPOLATE_FINAL_T;
+		static const double INITIAL_INTERPOLATE_DELTA_T;
 
 		enum VGPVisibilitySetting
 		{
@@ -147,6 +150,48 @@ namespace GPlatesAppLogic
 				double current_time,
 				const boost::optional<double> &age) const;
 
+
+		//! Methods for deformation params
+		double 
+		get_deformation_end_time() const
+		{
+			return d_deformation_end_time.dval();
+		}
+
+		void
+		set_deformation_end_time(
+				double deformation_end_time)
+		{
+			d_deformation_end_time = deformation_end_time;
+		}
+
+		double 
+		get_deformation_begin_time() const
+		{
+			return d_deformation_begin_time.dval();
+		}
+
+		void
+		set_deformation_begin_time(
+				double deformation_begin_time)
+		{
+			d_deformation_begin_time = deformation_begin_time;
+		}
+
+		double 
+		get_deformation_time_increment() const
+		{
+			return d_deformation_time_increment.dval();
+		}
+
+		void
+		set_deformation_time_increment(
+				double time_inc)
+		{
+			d_deformation_time_increment = time_inc;
+		}
+
+
 		//! Equality comparison operator.
 		bool
 		operator==(
@@ -182,6 +227,12 @@ namespace GPlatesAppLogic
 		 * Delta used for time window around VGP age.                                                                     
 		 */
 		GPlatesMaths::real_t d_vgp_delta_t;
+
+		// Deformation time span parameters.
+		GPlatesMaths::real_t d_deformation_end_time;
+		GPlatesMaths::real_t d_deformation_begin_time;
+		GPlatesMaths::real_t d_deformation_time_increment;
+
 	};
 }
 

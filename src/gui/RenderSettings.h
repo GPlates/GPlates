@@ -47,7 +47,6 @@ namespace GPlatesGui
 			d_show_lines(true),
 			d_show_polygons(true),
 			d_show_arrows(true),
-			d_show_topology(true),
 			d_show_strings(true)
 		{  }
 
@@ -57,14 +56,12 @@ namespace GPlatesGui
 				bool show_lines_,
 				bool show_polygons_,
 				bool show_arrows_,
-				bool show_topology_,
 				bool show_strings_) :
 			d_show_points(show_points_),
 			d_show_multipoints(show_multipoints_),
 			d_show_lines(show_lines_),
 			d_show_polygons(show_polygons_),
 			d_show_arrows(show_arrows_),
-			d_show_topology(show_topology_),
 			d_show_strings(show_strings_)
 		{  }
 
@@ -73,7 +70,6 @@ namespace GPlatesGui
 		bool show_lines() const { return d_show_lines; }
 		bool show_polygons() const { return d_show_polygons; }
 		bool show_arrows() const { return d_show_arrows; }
-		bool show_topology() const { return d_show_topology; }
 		bool show_strings() const { return d_show_strings; }
 
 		void set_show_points(bool b) { d_show_points = b; Q_EMIT settings_changed(); }
@@ -81,7 +77,6 @@ namespace GPlatesGui
 		void set_show_lines(bool b) { d_show_lines = b; Q_EMIT settings_changed(); }
 		void set_show_polygons(bool b) { d_show_polygons = b; Q_EMIT settings_changed(); }
 		void set_show_arrows(bool b) { d_show_arrows = b; Q_EMIT settings_changed(); }
-		void set_show_topology(bool b) { d_show_topology = b; Q_EMIT settings_changed(); }
 		void set_show_strings(bool b) { d_show_strings = b; Q_EMIT settings_changed(); }
 	
 	Q_SIGNALS:
@@ -96,7 +91,6 @@ namespace GPlatesGui
 		bool d_show_lines;
 		bool d_show_polygons;
 		bool d_show_arrows;
-		bool d_show_topology;
 		bool d_show_strings;
 
 	};

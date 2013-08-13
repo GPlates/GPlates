@@ -27,10 +27,12 @@
 #define GPLATES_OPENGL_GLFRAMEBUFFEROBJECT_H
 
 #include <memory> // For std::auto_ptr
+#include <utility>
 #include <vector>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL.h>
 
@@ -51,7 +53,7 @@ namespace GPlatesOpenGL
 	 * Framebuffer objects is an OpenGL extension "GL_EXT_framebuffer_object" for rendering
 	 * to off-screen framebuffers.
 	 *
-	 * Check "GLContext::get_parameters().framebuffer.gl_EXT_framebuffer_object" to see if supported.
+	 * Check "context.get_capabilities().framebuffer.gl_EXT_framebuffer_object" to see if supported.
 	 *
 	 * NOTE: There's also the more recent "GL_ARB_framebuffer_object" extension however it has extra features
 	 * (or less restrictions) but does not have the wide support that "GL_EXT_framebuffer_object" does.
@@ -82,7 +84,8 @@ namespace GPlatesOpenGL
 		{
 		public:
 			GLint
-			allocate();
+			allocate(
+					const GLCapabilities &capabilities);
 
 			void
 			deallocate(
@@ -97,6 +100,101 @@ namespace GPlatesOpenGL
 
 		//! Typedef for a resource manager.
 		typedef GLObjectResourceManager<resource_handle_type, Allocator> resource_manager_type;
+
+
+		/**
+		 * Classifies a frame buffer object to assist with frame buffer switching efficiency.
+		 *
+		 * According to Nvidia in "The OpenGL Framebuffer Object Extension" at
+		 * http://http.download.nvidia.com/developer/presentations/2005/GDC/OpenGL_Day/OpenGL_FrameBuffer_Object.pdf
+		 * ...
+		 *
+		 *   In order of increasing performance:
+		 *
+		 *	   Multiple FBOs
+		 *		   create a separate FBO for each texture you want to render to
+		 *		   switch using BindFramebuffer()
+		 *		   can be 2x faster than wglMakeCurrent() in beta NVIDIA drivers
+		 *	   Single FBO, multiple texture attachments
+		 *		   textures should have same format and dimensions
+		 *		   use FramebufferTexture() to switch between textures
+		 *	   Single FBO, multiple texture attachments
+		 *		   attach textures to different color attachments
+		 *		   use glDrawBuffer() to switch rendering to different color attachments
+		 *
+		 * ...so we can optimize for the second case above having multiple render targets with
+		 * the same texture format and dimensions by sharing a single frame buffer object.
+		 * These parameters are specified in this class (@a Classification).
+		 *
+		 */
+		class Classification
+		{
+		public:
+
+			//! Classification as a boost tuple (so can be used as a key in maps).
+			typedef boost::tuple<GLuint, GLuint, GLint, GLint, GLint> tuple_type;
+
+
+			//! Default classification represents empty (un-attached) frame buffer.
+			Classification();
+
+			//! Set dimensions of frame buffer attachable textures/render-buffers.
+			void
+			set_dimensions(
+					GLuint width,
+					GLuint height);
+
+			/**
+			 * Set texture internal format if one or more textures are to be attached.
+			 *
+			 * Note that GL_EXT_framebuffer_object requires all textures attached to colour attachments
+			 * to have the same internal format so there's no need to specify the attachment point(s).
+			 */
+			void
+			set_texture_internal_format(
+					GLint texture_internal_format);
+
+			//! Set depth buffer internal format if a depth buffer is to be attached.
+			void
+			set_depth_buffer_internal_format(
+					GLint depth_buffer_internal_format);
+
+			//! Set stencil buffer internal format if a stencil buffer is to be attached.
+			void
+			set_stencil_buffer_internal_format(
+					GLint stencil_buffer_internal_format);
+
+			//! Return this classification object as a tuple.
+			tuple_type
+			get_tuple() const;
+
+			//
+			// Queries parameters...
+			//
+
+			GLuint
+			get_width() const;
+
+			GLuint
+			get_height() const;
+
+			GLint
+			get_texture_internal_format() const;
+
+			GLint
+			get_depth_buffer_internal_format() const;
+
+			GLint
+			get_stencil_buffer_internal_format() const;
+
+		private:
+
+			GLuint d_width;
+			GLuint d_height;
+			GLint d_texture_internal_format;
+			GLint d_depth_buffer_internal_format;
+			GLint d_stencil_buffer_internal_format;
+		};
 
 
 		/**
@@ -157,7 +255,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
@@ -174,7 +272,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
@@ -193,7 +291,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
@@ -214,7 +312,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
@@ -233,7 +331,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
@@ -249,7 +347,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
@@ -264,7 +362,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a attachment is not in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...or is not GL_DEPTH_ATTACHMENT_EXT or GL_STENCIL_ATTACHMENT_EXT.
 		 */
 		void
@@ -288,7 +386,7 @@ namespace GPlatesOpenGL
 		 * framebuffer object is temporarily bound inside this method (and reverted on return).
 		 *
 		 * The default state is buffer 0 is GL_COLOR_ATTACHMENT0_EXT with buffers
-		 * [1, GLContext::get_parameters().framebuffer.gl_max_draw_buffers) being GL_NONE.
+		 * [1, context.get_capabilities().framebuffer.gl_max_draw_buffers) being GL_NONE.
 		 *
 		 * There is also a glDrawBuffer(s) state that applies to the default window-system framebuffer
 		 * but that is not dealt with here - that would go in the GLRenderer interface - currently
@@ -297,11 +395,11 @@ namespace GPlatesOpenGL
 		 * application-created framebuffer objects (ie, this interface).
 		 *
 		 * @throws PreconditionViolationError if 'bufs.size()' is not in the range:
-		 *   [1, GLContext::get_parameters().framebuffer.gl_max_draw_buffers]
+		 *   [1, context.get_capabilities().framebuffer.gl_max_draw_buffers]
 		 *
 		 * Note that if any values in @a bufs are not either GL_NONE or in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...then OpenGL will generate a GL_INVALID_OPERATION error (see 'GLUtils::assert_no_gl_errors').
 		 *
 		 * If 'bufs.size()' is greater than one then the GL_ARB_draw_buffers extension must be supported
@@ -323,7 +421,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Note that if @a mode is not either GL_NONE or in the half-open range:
 		 *   [GL_COLOR_ATTACHMENT0_EXT,
-		 *    GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments)
+		 *    GL_COLOR_ATTACHMENT0_EXT + context.get_capabilities().framebuffer.gl_max_color_attachments)
 		 * ...then OpenGL will generate a GL_INVALID_OPERATION error (see 'GLUtils::assert_no_gl_errors').
 		 *
 		 * There is also a glReadBuffer state that applies to the default window-system framebuffer
@@ -355,6 +453,20 @@ namespace GPlatesOpenGL
 		bool
 		gl_check_frame_buffer_status(
 				GLRenderer &renderer) const;
+
+
+		/**
+		 * Returns the framebuffer dimensions, or boost::none if no attachments have been specified or
+		 * if an attachment has not had its storage specified.
+		 *
+		 * NOTE: Since we're using GL_EXT_framebuffer_object (and not GL_ARB_framebuffer_object) the
+		 * dimensions of all attachment points must be the same (hence no need for client to specify
+		 * a specific attachment point for this method).
+		 *
+		 * NOTE: This is a lower-level function used to help implement the OpenGL framework.
+		 */
+		boost::optional< std::pair<GLuint/*width*/, GLuint/*height*/> >
+		get_frame_buffer_dimensions() const;
 
 
 		/**

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>469</width>
-    <height>133</height>
+    <height>141</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -230,16 +230,6 @@
         </widget>
        </item>
       </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_5"/>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="triangulation_checkbox">
-       <property name="text">
-        <string>Show Velocity interpolated from Delaunay Triangulation (in black)</string>
-       </property>
-      </widget>
      </item>
     </layout>
    </item>

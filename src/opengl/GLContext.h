@@ -35,13 +35,16 @@
 #include <boost/tuple/tuple_comparison.hpp>
 #include <opengl/OpenGL.h>
 #include <QGLFormat>
-#include <QGLWidget>
 
+#include "GLBuffer.h"
 #include "GLBufferObject.h"
+#include "GLCapabilities.h"
 #include "GLCompiledDrawState.h"
 #include "GLFrameBufferObject.h"
+#include "GLPixelBuffer.h"
 #include "GLProgramObject.h"
 #include "GLRenderBufferObject.h"
+#include "GLRenderTarget.h"
 #include "GLScreenRenderTarget.h"
 #include "GLShaderObject.h"
 #include "GLStateSetKeys.h"
@@ -91,54 +94,20 @@ namespace GPlatesOpenGL
 			void
 			make_current() = 0;
 
-			//! The width of the window currently attached to the OpenGL context.
+			//! Return the QGLFormat of the QGLContext OpenGL context.
+			virtual
+			const QGLFormat
+			get_qgl_format() const = 0;
+
+			//! The width of the frame buffer currently attached to the OpenGL context.
 			virtual
 			unsigned int
-			get_window_width() const = 0;
+			get_width() const = 0;
 
-			//! The height of the window currently attached to the OpenGL context.
+			//! The height of the frame buffer currently attached to the OpenGL context.
 			virtual
 			unsigned int
-			get_window_height() const = 0;
-		};
-
-		/**
-		 * A derivation of @a Impl for QGLWidget.
-		 */
-		class QGLWidgetImpl :
-				public Impl
-		{
-		public:
-			explicit
-			QGLWidgetImpl(
-					QGLWidget &qgl_widget) :
-				d_qgl_widget(qgl_widget)
-			{  }
-
-			virtual
-			void
-			make_current()
-			{
-				d_qgl_widget.makeCurrent();
-			}
-
-			virtual
-			unsigned int
-			get_window_width() const
-			{
-				return d_qgl_widget.width();
-			}
-
-			virtual
-			unsigned int
-			get_window_height() const
-			{
-				return d_qgl_widget.height();
-			}
-
-		private:
-			QGLWidget &d_qgl_widget;
-			friend class GLContext;
+			get_height() const = 0;
 		};
 
 
@@ -195,6 +164,7 @@ namespace GPlatesOpenGL
 			 */
 			const boost::shared_ptr<GLShaderObject::resource_manager_type> &
 			get_shader_object_resource_manager(
+					GLRenderer &renderer,
 					GLenum shader_type) const;
 
 			/**
@@ -203,7 +173,8 @@ namespace GPlatesOpenGL
 			 * Note that the 'GL_ARB_shader_objects' extension must be supported.
 			 */
 			const boost::shared_ptr<GLProgramObject::resource_manager_type> &
-			get_program_object_resource_manager() const;
+			get_program_object_resource_manager(
+					GLRenderer &renderer) const;
 
 			/**
 			 * Returns a texture, from an internal cache, that matches the specified parameters.
@@ -222,6 +193,11 @@ namespace GPlatesOpenGL
 			 * but the image data will be unspecified if it's the first time the texture object is returned.
 			 * If @a mipmapped is true then all mipmap levels will also be initialised.
 			 *
+			 * Note that, since the returned texture is non-const, it's possible to change its
+			 * dimensions, but don't do this as it will cause problems when the texture is recycled
+			 * and used by another client (in fact an exception is thrown when the next client
+			 * recycles the texture).
+			 *
 			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
 			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
 			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
@@ -236,6 +212,27 @@ namespace GPlatesOpenGL
 					boost::optional<GLsizei> depth = boost::none,  // Only used for 3D textures.
 					GLint border = 0,
 					bool mipmapped = false);
+
+			/**
+			 * Returns a pixel buffer, from an internal cache, that matches the specified parameters.
+			 *
+			 * Use this when you need a pixel buffer temporarily and want to promote
+			 * resource sharing by returning it for others to use.
+			 *
+			 * Note that, since the returned pixel buffer is non-const, it's possible to change its
+			 * size, but don't do this as it will cause problems when the pixel buffer is recycled
+			 * and used by another client (in fact an exception is thrown when the next client
+			 * recycles the pixel buffer).
+			 *
+			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
+			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
+			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
+			 */
+			GLPixelBuffer::shared_ptr_type
+			acquire_pixel_buffer(
+					GLRenderer &renderer,
+					unsigned int size,
+					GLBuffer::usage_type usage);
 
 			/**
 			 * Returns a vertex array from an internal cache.
@@ -258,30 +255,52 @@ namespace GPlatesOpenGL
 					GLRenderer &renderer);
 
 			/**
-			 * Returns a convenience object for render to a screen-size render texture with and
-			 * optional depth buffer, from an internal cache, that matches the specified parameters.
+			 * Returns a render buffer, from an internal cache, that matches the specified parameters.
 			 *
-			 * Use this when you need to render to screen-size texture temporarily and want to promote
-			 * resource sharing by returning it for others to use. This is useful when multiple clients
-			 * need to independently render to the same window (with same viewport dimensions).
+			 * Use this when you need a render buffer object temporarily and want to promote
+			 * resource sharing by returning it for others to use.
 			 *
-			 * NOTE: GLScreenRenderTarget resizes its internal texture (and depth buffer) when clients
-			 * specify the viewport dimensions they are rendering to.
-			 * So re-use is only useful when all clients render to the same viewport.
-			 * This is not currently always the case (colouring preview window uses a different size
-			 * viewport than the main window).
+			 * NOTE: The returned render buffer will have its storage allocated.
+			 *
+			 * Note that, since the returned render buffer is non-const, it's possible to change its
+			 * dimensions, but don't do this as it will cause problems when the render buffer is
+			 * recycled and used by another client (in fact an exception is thrown when the next
+			 * client recycles the render buffer).
 			 *
 			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
 			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
 			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
 			 *
-			 * Returns boost::none if 'GLScreenRenderTarget::is_supported()' returns false.
+			 * @throws PreconditionViolationError if GL_EXT_framebuffer_object not supported.
 			 */
-			boost::optional<GLScreenRenderTarget::shared_ptr_type>
-			acquire_screen_render_target(
+			GLRenderBufferObject::shared_ptr_type
+			acquire_render_buffer_object(
+					GLRenderer &renderer,
+					GLint internalformat,
+					GLsizei width,
+					GLsizei height);
+
+			/**
+			 * Returns a convenience object for rendering to a fixed-size render texture with an
+			 * optional depth/stencil buffer, from an internal cache, that matches the specified parameters.
+			 *
+			 * Use this when you need to render to a fixed-size texture temporarily and want to promote
+			 * resource sharing by returning it for others to use.
+			 *
+			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
+			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
+			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
+			 *
+			 * Returns boost::none if 'GLRenderTarget::is_supported()' returns false.
+			 */
+			boost::optional<GLRenderTarget::shared_ptr_type>
+			acquire_render_target(
 					GLRenderer &renderer,
 					GLint texture_internalformat,
-					bool include_depth_buffer);
+					bool include_depth_buffer,
+					bool include_stencil_buffer,
+					unsigned int render_target_width,
+					unsigned int render_target_height);
 
 			/**
 			 * Creates a compiled draw state that can render a full-screen textured quad.
@@ -327,15 +346,36 @@ namespace GPlatesOpenGL
 			typedef std::map<texture_key_type, texture_cache_type::shared_ptr_type> texture_cache_map_type;
 
 
-			//! Typedef for a key made up of the parameters of @a acquire_screen_render_target.
-			typedef boost::tuple<GLint, bool> screen_render_target_key_type;
+			//! Typedef for a key made up of the parameters of @a acquire_pixel_buffer.
+			typedef boost::tuple<unsigned int, GLBuffer::usage_type> pixel_buffer_key_type;
 
-			//! Typedef for a screen render target cache.
-			typedef GPlatesUtils::ObjectCache<GLScreenRenderTarget> screen_render_target_cache_type;
+			//! Typedef for a pixel buffer cache.
+			typedef GPlatesUtils::ObjectCache<GLPixelBuffer> pixel_buffer_cache_type;
 
-			//! Typedef for a mapping of screen render target parameters (key) to screen render target caches.
-			typedef std::map<screen_render_target_key_type, screen_render_target_cache_type::shared_ptr_type>
-					screen_render_target_cache_map_type;
+			//! Typedef for a mapping of pixel buffer parameters (key) to pixel buffer caches.
+			typedef std::map<pixel_buffer_key_type, pixel_buffer_cache_type::shared_ptr_type> pixel_buffer_cache_map_type;
+
+
+			//! Typedef for a key made up of the parameters of @a acquire_render_buffer_object.
+			typedef boost::tuple<GLint, GLsizei, GLsizei> render_buffer_object_key_type;
+
+			//! Typedef for a render buffer object cache.
+			typedef GPlatesUtils::ObjectCache<GLRenderBufferObject> render_buffer_object_cache_type;
+
+			//! Typedef for a mapping of render buffer object parameters (key) to render buffer object caches.
+			typedef std::map<render_buffer_object_key_type, render_buffer_object_cache_type::shared_ptr_type>
+					render_buffer_object_cache_map_type;
+
+
+			//! Typedef for a key made up of the parameters of @a acquire_render_target.
+			typedef boost::tuple<GLint, bool, bool, unsigned int, unsigned int> render_target_key_type;
+
+			//! Typedef for a render target cache.
+			typedef GPlatesUtils::ObjectCache<GLRenderTarget> render_target_cache_type;
+
+			//! Typedef for a mapping of render target parameters (key) to render target caches.
+			typedef std::map<render_target_key_type, render_target_cache_type::shared_ptr_type>
+					render_target_cache_map_type;
 
 
 			boost::shared_ptr<GLTexture::resource_manager_type> d_texture_object_resource_manager;
@@ -351,7 +391,11 @@ namespace GPlatesOpenGL
 
 			texture_cache_map_type d_texture_cache_map;
 
-			screen_render_target_cache_map_type d_screen_render_target_cache_map;
+			pixel_buffer_cache_map_type d_pixel_buffer_cache_map;
+
+			render_buffer_object_cache_map_type d_render_buffer_object_cache_map;
+
+			render_target_cache_map_type d_render_target_cache_map;
 
 			/**
 			 * Even though vertex arrays cannot be shared across OpenGL contexts, the @a GLVertexArray
@@ -391,13 +435,22 @@ namespace GPlatesOpenGL
 			get_texture_cache(
 					const texture_key_type &texture_key);
 
-			screen_render_target_cache_type::shared_ptr_type
-			get_screen_render_target_cache(
-					const screen_render_target_key_type &screen_render_target_key);
+			pixel_buffer_cache_type::shared_ptr_type
+			get_pixel_buffer_cache(
+					const pixel_buffer_key_type &pixel_buffer_key);
+
+			render_buffer_object_cache_type::shared_ptr_type
+			get_render_buffer_object_cache(
+					const render_buffer_object_key_type &render_buffer_object_key);
+
+			render_target_cache_type::shared_ptr_type
+			get_render_target_cache(
+					const render_target_key_type &render_target_key);
 
 			//! Create state store if not yet done - an OpenGL context must be valid.
 			boost::shared_ptr<GLStateStore>
-			get_state_store();
+			get_state_store(
+					const GLCapabilities &capabilities);
 		};
 
 
@@ -428,21 +481,95 @@ namespace GPlatesOpenGL
 			}
 
 			/**
-			 * Returns a framebuffer object from an internal cache.
+			 * Returns a framebuffer object from an internal cache (GL_EXT_framebuffer_object must be supported).
 			 *
 			 * Use this when you need a framebuffer object temporarily and want to promote
 			 * resource sharing by returning it for others to use.
 			 *
+			 * According to Nvidia in "The OpenGL Framebuffer Object Extension" at
+			 * http://http.download.nvidia.com/developer/presentations/2005/GDC/OpenGL_Day/OpenGL_FrameBuffer_Object.pdf
+			 * ...
+			 *
+			 *   In order of increasing performance:
+			 *
+			 *	   Multiple FBOs
+			 *		   create a separate FBO for each texture you want to render to
+			 *		   switch using BindFramebuffer()
+			 *		   can be 2x faster than wglMakeCurrent() in beta NVIDIA drivers
+			 *	   Single FBO, multiple texture attachments
+			 *		   textures should have same format and dimensions
+			 *		   use FramebufferTexture() to switch between textures
+			 *	   Single FBO, multiple texture attachments
+			 *		   attach textures to different color attachments
+			 *		   use glDrawBuffer() to switch rendering to different color attachments
+			 *
+			 * ...so we optimize for the second case above by requesting the texture internal format
+			 * and dimensions. This enables the same frame buffer object to be shared by
+			 * render targets with the same texture format and dimensions. This request is provided
+			 * by the @a classification parameter. If the default is provided then render targets with
+			 * different texture formats and dimensions could end up sharing the same framebuffer
+			 * object which is less efficient.
+			 *
 			 * NOTE: 'gl_detach_all()' is called on the returned framebuffer object (just before returning)
 			 * since the attachments made by other clients are unknown.
+			 * The default read/draw buffers are also set on the returned framebuffer object.
 			 *
 			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
 			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
 			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
+			 *
+			 * @throws PreconditionViolationError if GL_EXT_framebuffer_object not supported.
 			 */
 			GLFrameBufferObject::shared_ptr_type
 			acquire_frame_buffer_object(
-					GLRenderer &renderer);
+					GLRenderer &renderer,
+					const GLFrameBufferObject::Classification &classification = GLFrameBufferObject::Classification());
+
+
+			/**
+			 * Checks the specified frame buffer object for completeness (using 'glCheckFramebufferStatus').
+			 *
+			 * Checking the framebuffer status can sometimes be expensive even if called once per frame.
+			 * One profile measured 142msec for a single check - not sure if that was due to the check
+			 * or somehow the driver needed to wait for some reason and happened at that call.
+			 *
+			 * In any case we cache the results to ensure the same check is not repeated more than
+			 * once for this context and for a particular frame buffer object classification.
+			 */
+			bool
+			check_framebuffer_object_completeness(
+					GLRenderer &renderer,
+					const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object,
+					const GLFrameBufferObject::Classification &frame_buffer_object_classification) const;
+
+			/**
+			 * Returns a convenience object for rendering to a screen-size render texture with an
+			 * optional depth/stencil buffer, from an internal cache, that matches the specified parameters.
+			 *
+			 * Use this when you need to render to screen-size texture temporarily and want to promote
+			 * resource sharing by returning it for others to use. This is useful when multiple clients
+			 * need to independently render to the same window (with same viewport dimensions).
+			 *
+			 * NOTE: GLScreenRenderTarget resizes its internal texture (and depth/stencil buffer)
+			 * when clients specify the viewport dimensions they are rendering to.
+			 * So re-use is only useful when all clients render to the same viewport.
+			 * This is the reason why this method is in NonSharedState instead of SharedState
+			 * (where it could go) - so that each GLContext has its own cache which means
+			 * it's more likely there will be re-use of the same dimension GLScreenRenderTarget's
+			 * due to having the same viewport.
+			 *
+			 * NOTE: When all shared_ptr copies of the returned shared_ptr are released (destroyed)
+			 * then the object will be returned to the internal cache for re-use and *not* destroyed.
+			 * This is due to a custom deleter placed in boost::shared_ptr by the object cache.
+			 *
+			 * Returns boost::none if 'GLScreenRenderTarget::is_supported()' returns false.
+			 */
+			boost::optional<GLScreenRenderTarget::shared_ptr_type>
+			acquire_screen_render_target(
+					GLRenderer &renderer,
+					GLint texture_internalformat,
+					bool include_depth_buffer,
+					bool include_stencil_buffer);
 
 
 			/**
@@ -476,24 +603,64 @@ namespace GPlatesOpenGL
 			}
 
 		private:
+
+			//! Typedef for a key made up of the parameters of @a acquire_frame_buffer_object.
+			typedef GLFrameBufferObject::Classification::tuple_type frame_buffer_object_key_type;
+
+			//! Typedef for a frame buffer object cache.
+			typedef GPlatesUtils::ObjectCache<GLFrameBufferObject> frame_buffer_object_cache_type;
+
+			//! Typedef for a mapping of frame buffer object parameters (key) to frame buffer object caches.
+			typedef std::map<frame_buffer_object_key_type, frame_buffer_object_cache_type::shared_ptr_type>
+					frame_buffer_object_cache_map_type;
+
+			//! Typedef for a mapping of frame buffer object classfication to 'glCheckFramebufferStatus' result.
+			typedef std::map<GLFrameBufferObject::Classification::tuple_type, bool> frame_buffer_state_to_status_map_type;
+
+
+			//! Typedef for a key made up of the parameters of @a acquire_screen_render_target.
+			typedef boost::tuple<GLint, bool, bool> screen_render_target_key_type;
+
+			//! Typedef for a screen render target cache.
+			typedef GPlatesUtils::ObjectCache<GLScreenRenderTarget> screen_render_target_cache_type;
+
+			//! Typedef for a mapping of screen render target parameters (key) to screen render target caches.
+			typedef std::map<screen_render_target_key_type, screen_render_target_cache_type::shared_ptr_type>
+					screen_render_target_cache_map_type;
+
+
 			boost::shared_ptr<GLFrameBufferObject::resource_manager_type> d_frame_buffer_object_resource_manager;
-			GPlatesUtils::ObjectCache<GLFrameBufferObject>::shared_ptr_type d_frame_buffer_object_cache;
+			frame_buffer_object_cache_map_type d_frame_buffer_object_cache_map;
+
+			//! Cache results of 'glCheckFramebufferStatus' as an optimisation since it's expensive to call.
+			mutable frame_buffer_state_to_status_map_type d_frame_buffer_state_to_status_map;
+
+			screen_render_target_cache_map_type d_screen_render_target_cache_map;
 
 			boost::shared_ptr<GLRenderBufferObject::resource_manager_type> d_render_buffer_object_resource_manager;
 
 			boost::shared_ptr<GLVertexArrayObject::resource_manager_type> d_vertex_array_object_resource_manager;
+
+
+			screen_render_target_cache_type::shared_ptr_type
+			get_screen_render_target_cache(
+					const screen_render_target_key_type &screen_render_target_key);
+
+			frame_buffer_object_cache_type::shared_ptr_type
+			get_frame_buffer_object_cache(
+					const frame_buffer_object_key_type &frame_buffer_object_key);
 		};
 
 
 		/**
-		 * Returns the QGLFormat to use when creating a QGLWidget.
+		 * Returns the QGLFormat to use when creating a Qt OpenGL context (eg, QGLWidget).
 		 *
 		 * This sets various parameters required for OpenGL rendering in GPlates.
 		 * Such as specifying an alpha-channel.
 		 */
 		static
 		QGLFormat
-		get_qgl_format();
+		get_qgl_format_to_create_context_with();
 
 
 		/**
@@ -537,6 +704,38 @@ namespace GPlatesOpenGL
 		make_current()
 		{
 			d_context_impl->make_current();
+		}
+
+
+		/**
+		 * Returns the QGLFormat of the QGLContext OpenGL context.
+		 *
+		 * This can be used to determine the number of colour/depth/stencil bits in the frame buffer.
+		 */
+		const QGLFormat &
+		get_qgl_format() const
+		{
+			return d_qgl_format;
+		}
+
+
+		/**
+		 * The width of the frame buffer currently attached to the OpenGL context.
+		 */
+		unsigned int
+		get_width() const
+		{
+			return d_context_impl->get_width();
+		}
+
+
+		/**
+		 * The height of the frame buffer currently attached to the OpenGL context.
+		 */
+		unsigned int
+		get_height() const
+		{
+			return d_context_impl->get_height();
 		}
 
 
@@ -594,321 +793,18 @@ namespace GPlatesOpenGL
 			return d_non_shared_state;
 		}
 
-
 		/**
-		 * All implementation-dependent API parameters.
-		 */
-		struct Parameters
-		{
-			//! Parameters related to viewports.
-			struct Viewport
-			{
-				Viewport();
-
-				//! GL_MAX_VIEWPORTS query result - defaults to one.
-				GLuint gl_max_viewports;
-
-				//! Maximum supported width of viewport - is at least as large as display being renderer to.
-				GLuint gl_max_viewport_width;
-
-				//! Maximum supported height of viewport - is at least as large as display being renderer to.
-				GLuint gl_max_viewport_height;
-			};
-
-			//! Parameters related to the framebuffers.
-			struct Framebuffer
-			{
-				Framebuffer();
-
-				/**
-				 * Simply GL_COLOR_ATTACHMENT0_EXT.
-				 *
-				 * This is here solely so we can include <GL/glew.h>, which defines
-				 * GL_COLOR_ATTACHMENT0_EXT, in "GLContext.cc" and hence avoid problems caused by
-				 * including <GL/glew.h> in header files (because <GL/glew.h> must be included
-				 * before OpenGL headers which means before Qt headers which is difficult).
-				 */
-				static const GLenum gl_COLOR_ATTACHMENT0; // GL_COLOR_ATTACHMENT0
-
-				//! Is GL_EXT_framebuffer_object supported?
-				bool gl_EXT_framebuffer_object;
-
-				/**
-				 * GL_MAX_COLOR_ATTACHMENTS query result - zero if GL_EXT_framebuffer_object not supported.
-				 *
-				 * NOTE: The GL_EXT_framebuffer_object extension says it's possible for this value
-				 * to change when binding a framebuffer object or changing its attachment state
-				 * in which case it probably belongs to class @a GLFrameBufferObject but we're keeping
-				 * it here because it's unlikely to change and it's awkward from a programming perspective
-				 * to first have to set up framebuffer object attachments and then determine the
-				 * maximum allowed attachments (given the framebuffer object state).
-				 */
-				GLuint gl_max_color_attachments;
-
-				/**
-				 * GL_MAX_RENDERBUFFER_SIZE query result - zero if GL_EXT_framebuffer_object not supported.
-				 */
-				GLuint gl_max_renderbuffer_size;
-
-				//! Is GL_ARB_draw_buffers supported?
-				bool gl_ARB_draw_buffers;
-
-				/**
-				 * GL_MAX_DRAW_BUFFERS query result - one if GL_ARB_draw_buffers not supported.
-				 *
-				 * NOTE: The GL_EXT_framebuffer_object extension says it's possible for this value
-				 * to change when binding a framebuffer object or changing its attachment state
-				 * in which case it probably belongs to class @a GLFrameBufferObject but we're keeping
-				 * it here because it's unlikely to change and it's awkward from a programming perspective
-				 * to first have to set up framebuffer object attachments and then determine the
-				 * maximum allowed draw buffers (given the framebuffer object state).
-				 */
-				GLuint gl_max_draw_buffers;
-
-				//! Is GL_EXT_blend_equation_separate supported?
-				bool gl_EXT_blend_equation_separate;
-
-				//! Is GL_EXT_blend_func_separate supported?
-				bool gl_EXT_blend_func_separate;
-
-				//! Is GL_EXT_blend_minmax supported?
-				bool gl_EXT_blend_minmax;
-			};
-
-			struct Shader
-			{
-				Shader();
-
-				//! Is GL_ARB_shader_objects supported?
-				bool gl_ARB_shader_objects;
-
-				//! Is GL_ARB_vertex_shader supported?
-				bool gl_ARB_vertex_shader;
-
-				//! Is GL_ARB_fragment_shader supported?
-				bool gl_ARB_fragment_shader;
-
-				//! Is GL_EXT_geometry_shader4 supported?
-				bool gl_EXT_geometry_shader4;
-
-				// Limits related to the GL_EXT_geometry_shader4 extension...
-				// All are zero if GL_EXT_geometry_shader4 is not supported.
-				GLuint gl_max_geometry_texture_image_units; // GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS_EXT
-				GLuint gl_max_geometry_varying_components; // GL_MAX_GEOMETRY_VARYING_COMPONENTS_EXT
-				GLuint gl_max_vertex_varying_components; // GL_MAX_VERTEX_VARYING_COMPONENTS_EXT
-				GLuint gl_max_varying_components; // GL_MAX_VARYING_COMPONENTS_EXT
-				GLuint gl_max_geometry_uniform_components; // GL_MAX_GEOMETRY_UNIFORM_COMPONENTS_EXT
-				GLuint gl_max_geometry_output_vertices; // GL_MAX_GEOMETRY_OUTPUT_VERTICES_EXT
-				GLuint gl_max_geometry_total_output_components; // GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS_EXT
-
-				//! Is GL_EXT_gpu_shader4 supported?
-				bool gl_EXT_gpu_shader4;
-
-				//! Is GL_ARB_gpu_shader_fp64 supported?
-				bool gl_ARB_gpu_shader_fp64;
-
-				//! Is GL_ARB_vertex_attrib_64bit supported?
-				bool gl_ARB_vertex_attrib_64bit;
-
-				/**
-				 * The maximum number of generic vertex attributes supported by the
-				 * GL_ARB_vertex_shader extension (or zero if it's not supported).
-				 */
-				GLuint gl_max_vertex_attribs; // GL_MAX_VERTEX_ATTRIBS_ARB query result
-			};
-
-			//! Parameters related to textures.
-			struct Texture
-			{
-				Texture();
-
-				/**
-				 * Simply GL_TEXTURE0.
-				 *
-				 * This is here solely so we can include <GL/glew.h>, which defines
-				 * GL_TEXTURE0, in "GLContext.cc" and hence avoid problems caused by
-				 * including <GL/glew.h> in header files (because <GL/glew.h> must be included
-				 * before OpenGL headers which means before Qt headers which is difficult).
-				 */
-				static const GLenum gl_TEXTURE0; // GL_TEXTURE0
-
-				/**
-				 * The minimum texture size (dimension) that all OpenGL implementations
-				 * are required to support - this is without texture borders.
-				 */
-				static const GLuint gl_MIN_TEXTURE_SIZE = 64;
-
-				/**
-				 * The maximum texture size (dimension) this OpenGL implementation/driver will support.
-				 * This is without texture borders and will be a power-of-two.
-				 *
-				 * NOTE: This doesn't necessarily mean it will be hardware accelerated but
-				 * it probably will be, especially if we use standard formats like GL_RGBA8.
-				 */
-				GLuint gl_max_texture_size; // GL_MAX_TEXTURE_SIZE query result
-
-				/**
-				 * The maximum cube map texture size (dimension) this OpenGL implementation/driver will support.
-				 * This is without texture borders and will be a power-of-two.
-				 */
-				GLuint gl_max_cube_map_texture_size; // GL_MAX_CUBE_MAP_TEXTURE_SIZE query result
-
-				//! Is GL_ARB_texture_cube_map supported?
-				bool gl_ARB_texture_cube_map;
-
-				//! Is GL_ARB_texture_non_power_of_two supported?
-				bool gl_ARB_texture_non_power_of_two;
-
-				/**
-				 * The maximum number of texture units supported by the
-				 * GL_ARB_multitexture extension (or one if it's not supported).
-				 *
-				 * NOTE: This is the 'old style' number of texture units where number of texture
-				 * coordinates and number of texture images is the same.
-				 *
-				 * NOTE: This value should be used when using the fixed-function pipeline.
-				 * For fragment shaders you can use @a gl_max_texture_image_units and
-				 * @a gl_max_texture_coords which are either the same as @a gl_max_texture_units or larger.
-				 * But you can *not* use them for the fixed-function pipeline.
-				 */
-				GLuint gl_max_texture_units; // GL_MAX_TEXTURE_UNITS query result
-
-				/**
-				 * The maximum number of texture *image* units supported by the
-				 * GL_ARB_fragment_shader extension (or @a gl_max_texture_units if it's not supported).
-				 *
-				 * NOTE: This is the 'new style' number of texture units where number of texture
-				 * *image* units differs to the number of texture coordinates.
-				 *
-				 * NOTE: This can be used for fragment shaders (can also use @a gl_max_texture_units
-				 * but it's less than or equal to @a gl_max_texture_image_units).
-				 */
-				GLuint gl_max_texture_image_units; // GL_MAX_TEXTURE_IMAGE_UNITS query result
-
-				/**
-				 * The maximum number of texture coordinates supported by the
-				 * GL_ARB_fragment_shader extension (or @a gl_max_texture_units if it's not supported).
-				 *
-				 * NOTE: This is the 'new style' number of texture units where number of texture
-				 * *image* units differs to the number of texture coordinates.
-				 *
-				 * NOTE: This can be used for fragment shaders (can also use @a gl_max_texture_units
-				 * but it's less than or equal to @a gl_max_texture_coords).
-				 */
-				GLuint gl_max_texture_coords; // GL_MAX_TEXTURE_COORDS query result
-
-				/**
-				 * The maximum texture filtering anisotropy supported by the
-				 * GL_EXT_texture_filter_anisotropic extension (or 1.0 if it's not supported).
-				 */
-				GLfloat gl_texture_max_anisotropy; // GL_TEXTURE_MAX_ANISOTROPY query result
-
-				/**
-				 * Is GL_EXT_texture_edge_clamp supported?
-				 *
-				 * This is the standard texture clamping in Direct3D - it's easier for hardware to implement
-				 * since it avoids accessing the texture border colour (even in (bi)linear filtering mode).
-				 */
-				bool gl_EXT_texture_edge_clamp;
-
-				//! Is GL_SGIS_texture_edge_clamp supported? Same as GL_EXT_texture_edge_clamp extension really.
-				bool gl_SGIS_texture_edge_clamp;
-
-				//! Is GL_ARB_texture_env_combine supported?
-				bool gl_ARB_texture_env_combine;
-
-				//! Is GL_ARB_texture_env_dot3 supported?
-				bool gl_ARB_texture_env_dot3;
-
-				/**
-				 * Are 3D textures supported?
-				 *
-				 * This used to test for GL_EXT_texture3D and GL_EXT_subtexture but they are not
-				 * exposed on some systems (notably MacOS) so instead this tests for core OpenGL 1.2.
-				 */
-				bool gl_is_texture3D_supported;
-
-				//! Is GL_EXT_texture_array supported?
-				bool gl_EXT_texture_array;
-
-				//! The number of texture array layers supported - is 1 if GL_EXT_texture_array not supported.
-				GLuint gl_max_texture_array_layers;
-
-				//! Is GL_EXT_texture_buffer_object supported?
-				bool gl_EXT_texture_buffer_object;
-
-				//! Is GL_ARB_texture_float supported?
-				bool gl_ARB_texture_float;
-
-				//! Is GL_ARB_texture_rg supported?
-				bool gl_ARB_texture_rg;
-
-				/**
-				 * Is GL_ARB_color_buffer_float supported?
-				 *
-				 * This affects things other than floating-point textures (samplers or render-targets) but
-				 * we put it with the texture parameters since it's most directly related to floating-point
-				 * colour buffers (eg, floating-point textures attached to a framebuffer object).
-				 *
-				 * Unfortunately for Mac OSX 10.5 (Leopard) this is not supported.
-				 * It is supported in Snow Leopard (10.6), and above, however.
-				 */
-				bool gl_ARB_color_buffer_float;
-
-				/**
-				 * Is true if filtering of floating-point textures is supported and alpha-blending
-				 * to floating-point render targets is supported.
-				 *
-				 * NOTE: There is no OpenGL extension to query for this and no easy way to detect it.
-				 * The presence of the GL_ARB_texture_float extension does not guarantee it
-				 * (notably on OpenGL 2.0 hardware). According to...
-				 *    http://www.opengl.org/wiki/Floating_point_and_mipmapping_and_filtering
-				 * ...all OpenGL 3.0 hardware supports this. Instead of testing for GLEW_VERSION_3_0
-				 * we test for GL_EXT_texture_array (which was introduced in OpenGL 3.0) - this is
-				 * done because OpenGL 3.0 is not officially supported on MacOS Snow Leopard in that
-				 * it supports OpenGL 3.0 extensions but not the specific OpenGL 3.0 functions (according to
-				 * http://www.cultofmac.com/26065/snow-leopard-10-6-3-update-significantly-improves-opengl-3-0-support/).
-				 */
-				bool gl_supports_floating_point_filtering_and_blending;
-			};
-
-			//! Parameters related to buffer objects.
-			struct Buffer
-			{
-				Buffer();
-
-				//! Is GL_ARB_vertex_buffer_object supported?
-				bool gl_ARB_vertex_buffer_object;
-
-				//! Is GL_ARB_vertex_array_object supported?
-				bool gl_ARB_vertex_array_object;
-
-				//! Is GL_ARB_pixel_buffer_object supported?
-				bool gl_ARB_pixel_buffer_object;
-
-				//! Is GL_ARB_map_buffer_range supported?
-				bool gl_ARB_map_buffer_range;
-
-				//! Is GL_APPLE_flush_buffer_range supported?
-				bool gl_APPLE_flush_buffer_range;
-			};
-
-			Viewport viewport;
-			Framebuffer framebuffer;
-			Shader shader;
-			Texture texture;
-			Buffer buffer;
-		};
-
-		/**
-		 * Function to return implementation-dependent API parameters.
+		 * Function to return OpenGL implementation-dependent capabilities and parameters.
+		 *
+		 * NOTE: This used to be a static method (to enable global access).
+		 * However it is now non-static to force clients to access a valid GLContext object.
+		 * This ensures that the GLEW (and hence these parameters) have been initialised before access.
 		 *
 		 * @throws PreconditionViolationError if @a initialise not yet called.
 		 * This method is static only to avoid having to pass around a @a GLContext.
 		 */
-		static
-		const Parameters &
-		get_parameters();
+		const GLCapabilities &
+		get_capabilities() const;
 
 
 		/**
@@ -935,6 +831,11 @@ namespace GPlatesOpenGL
 		boost::shared_ptr<Impl> d_context_impl;
 
 		/**
+		 * The format of the OpenGL context.
+		 */
+		QGLFormat d_qgl_format;
+
+		/**
 		 * OpenGL state that can be shared with another context.
 		 */
 		boost::shared_ptr<SharedState> d_shared_state;
@@ -950,9 +851,9 @@ namespace GPlatesOpenGL
 		static bool s_initialised_GLEW;
 
 		/**
-		 * Implementation-dependent API parameters.
+		 * OpenGL implementation-dependent capabilities and parameters.
 		 */
-		static boost::optional<Parameters> s_parameters;
+		static GLCapabilities s_capabilities;
 
 
 		//! Constructor.
@@ -960,6 +861,7 @@ namespace GPlatesOpenGL
 		GLContext(
 				const boost::shared_ptr<Impl> &context_impl) :
 			d_context_impl(context_impl),
+			d_qgl_format(context_impl->get_qgl_format()),
 			d_shared_state(new SharedState()),
 			d_non_shared_state(new NonSharedState())
 		{  }
@@ -969,33 +871,10 @@ namespace GPlatesOpenGL
 				const boost::shared_ptr<Impl> &context_impl,
 				const boost::shared_ptr<SharedState> &shared_state) :
 			d_context_impl(context_impl),
+			d_qgl_format(context_impl->get_qgl_format()),
 			d_shared_state(shared_state),
 			d_non_shared_state(new NonSharedState())
 		{  }
-
-		//! Initialise implementation-dependent API parameters.
-		void
-		initialise_parameters();
-
-		void
-		initialise_viewport_parameters(
-				Parameters::Viewport &viewport_parameters);
-
-		void
-		initialise_framebuffer_parameters(
-				Parameters::Framebuffer &framebuffer_parameters);
-
-		void
-		initialise_shader_parameters(
-				Parameters::Shader &shader_parameters);
-
-		void
-		initialise_texture_parameters(
-				Parameters::Texture &texture_parameters);
-
-		void
-		initialise_buffer_parameters(
-				Parameters::Buffer &buffer_parameters);
 
 		/**
 		 * Deallocates OpenGL objects that has been released but not yet destroyed/deallocated.

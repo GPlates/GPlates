@@ -83,7 +83,8 @@ namespace GPlatesOpenGL
 		{
 		public:
 			resource_handle_type
-			allocate();
+			allocate(
+					const GLCapabilities &capabilities);
 
 			void
 			deallocate(
@@ -103,9 +104,10 @@ namespace GPlatesOpenGL
 		static
 		shared_ptr_type
 		create(
-				GLRenderer &renderer)
+				GLRenderer &renderer,
+				const buffers_type &buffer_types)
 		{
-			return shared_ptr_type(create_as_auto_ptr(renderer).release());
+			return shared_ptr_type(create_as_auto_ptr(renderer, buffer_types).release());
 		}
 
 		/**
@@ -114,9 +116,10 @@ namespace GPlatesOpenGL
 		static
 		std::auto_ptr<GLBufferObject>
 		create_as_auto_ptr(
-				GLRenderer &renderer)
+				GLRenderer &renderer,
+				const buffers_type &buffer_types)
 		{
-			return std::auto_ptr<GLBufferObject>(new GLBufferObject(renderer));
+			return std::auto_ptr<GLBufferObject>(new GLBufferObject(renderer, buffer_types));
 		}
 
 
@@ -291,11 +294,17 @@ namespace GPlatesOpenGL
 
 	protected:
 		//! Constructor.
-		explicit
 		GLBufferObject(
-				GLRenderer &renderer);
+				GLRenderer &renderer,
+				const buffers_type &buffer_types);
 
 	private:
+
+		/**
+		 * The buffer types that this buffer object is limited to targeting.
+		 */
+		buffers_type d_buffer_types;
+
 		resource_type::non_null_ptr_to_const_type d_resource;
 		unsigned int d_size;
 		boost::optional<usage_type> d_usage;
@@ -312,6 +321,18 @@ namespace GPlatesOpenGL
 		 * might currently be reading (eg, due to a previous draw call).
 		 */
 		unsigned int d_uninitialised_offset;
+
+
+		/**
+		 * Returns true if target type corresponds to one of our buffer types.
+		 *
+		 * For example, we shouldn't be using a buffer object in association with @a GLPixelBuffer
+		 * if 'GL_ARB_pixel_buffer_object' is not supported.
+		 */
+		bool
+		is_target_type_supported(
+				target_type target) const;
+
 	};
 }
 

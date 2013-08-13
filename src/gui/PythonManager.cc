@@ -345,8 +345,6 @@ GPlatesGui::PythonManager::get_scripts()
 	GPlatesAppLogic::UserPreferences& user_prefs = 
 		GPlatesPresentation::Application::instance().get_application_state().get_user_preferences();
 	QFileInfoList file_list;
-	//The ".pyc" files will be generated every time the python script is executed.
-	//And this caused duplicate menu items.
 	QStringList filters = (QStringList() << "*.py" << "*.pyc");
 
 	QDir cwd;
@@ -374,6 +372,20 @@ GPlatesGui::PythonManager::get_scripts()
 		file_list << user_scripts_dir.entryInfoList(QDir::Files, QDir::Name);
 		d_scripts_paths.push_back(user_scripts_dir);
 	}
+
+	//Try the best to find python script files at all possible locations.
+	//Always fallback to default system scripts directory. 
+	//The script files in default system scripts directory have the lowest priority.
+	//On Linux, "/usr/share/gplates/scripts"
+	//On Mac, QCoreApplication::applicationDirPath() + "/../Resources/scripts/"
+	//On Windows, QCoreApplication::applicationDirPath() + "/scripts/"
+	QDir default_system_scripts_dir(user_prefs.get_default_value("paths/python_system_script_dir").toString());
+	default_system_scripts_dir.setNameFilters(filters);
+	if (default_system_scripts_dir.exists() && default_system_scripts_dir.isReadable()) {
+		file_list << default_system_scripts_dir.entryInfoList(QDir::Files, QDir::Name);
+		d_scripts_paths.push_back(default_system_scripts_dir);
+	}
+
 	return file_list;
 }
 

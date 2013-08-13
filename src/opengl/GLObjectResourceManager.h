@@ -35,6 +35,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLCapabilities;
+
 	/**
 	 * Allocates and deallocates OpenGL object resources (such as texture objects).
 	 */
@@ -65,9 +67,10 @@ namespace GPlatesOpenGL
 		 * Allocates an OpenGL resource using the 'ResourceAllocatorType' policy.
 		 */
 		ResourceHandleType
-		allocate_resource()
+		allocate_resource(
+				const GLCapabilities &capabilities)
 		{
-			return d_resource_allocator.allocate();
+			return d_resource_allocator.allocate(capabilities);
 		}
 
 		/**

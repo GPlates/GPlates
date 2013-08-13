@@ -1,3 +1,28 @@
+/* $Id$ */
+
+/**
+ * \file 
+ * $Revision$
+ * $Date$
+ * 
+ * Copyright (C) 2013 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
 /*
  * Shader source code to bilinearly interpolate a *non-mipmapped*,
  * *non-anisotropically filtered* 2D texture.
@@ -96,7 +121,7 @@ rotate_vector_by_quaternion(
 		vec4 q,
 		vec3 v)
 {
-   return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
+	return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
 }
 
 
@@ -141,4 +166,109 @@ mix_ambient_with_diffuse_lighting(
 	// NOTE: Using float instead of integer parameters to 'mix' otherwise driver compiler
 	// crashes on some systems complaining cannot find (integer overload of) function in 'stdlib'.
 	return mix(diffuse_lighting, 1.0, light_ambient_contribution);
+}
+
+/*
+ * Colour space conversion from RGB to HSV.
+ *
+ * The hue channel of HSV is normalised to the range [0,1].
+ *
+ * References include wikipedia (http://en.wikipedia.org/wiki/HSL_and_HSV),
+ * the Nvidia shader library (http://developer.download.nvidia.com/shaderlibrary/packages/post_RGB_to_HSV.fx.zip), and
+ * http://chilliant.blogspot.com.au/2010/11/rgbhsv-in-hlsl.html
+ */
+vec3
+rgb_to_hsv(
+		vec3 rgb)
+{
+	vec3 hsv = vec3(0);
+	
+	float min_rgb_channel = min(rgb.r, min(rgb.g, rgb.b));
+	float max_rgb_channel = max(rgb.r, max(rgb.g, rgb.b));
+	float chroma = max_rgb_channel - min_rgb_channel;
+	hsv.z = max_rgb_channel; // value
+	
+	if (chroma != 0)
+	{
+		hsv.y = chroma / max_rgb_channel; // saturation
+		vec3 d = (((vec3(max_rgb_channel) - rgb) / 6.0) + vec3(chroma / 2.0)) / chroma;
+		
+		if (rgb.x == max_rgb_channel)
+		{
+			hsv.x = d.z - d.y; // hue
+		}
+		else if (rgb.y == max_rgb_channel)
+		{
+			hsv.x = (1.0 / 3.0) + d.x - d.z; // hue
+		}
+		else if (rgb.z == max_rgb_channel)
+		{
+			hsv.x = (2.0 / 3.0) + d.y - d.x; // hue
+		}
+		
+		// Handle hue wrap around.
+		if (hsv.x < 0.0)
+		{
+			hsv.x += 1.0;
+		}
+		if (hsv.x > 1.0)
+		{
+			hsv.x -= 1.0;
+		}
+	}
+
+	return hsv;
+}
+
+/*
+ * Colour space conversion from HSV to RGB.
+ *
+ * The hue channel of HSV is normalised to the range [0,1].
+ *
+ * References include wikipedia (http://en.wikipedia.org/wiki/HSL_and_HSV),
+ * the Nvidia shader library (http://developer.download.nvidia.com/shaderlibrary/packages/post_RGB_to_HSV.fx.zip), and
+ * http://chilliant.blogspot.com.au/2010/11/rgbhsv-in-hlsl.html
+ */
+vec3
+hsv_to_rgb(
+		vec3 hsv)
+{
+	vec3 rgb = vec3(hsv.z);
+	
+	if (hsv.y != 0)
+	{
+		float h = hsv.x * 6;
+		float i = floor(h);
+		
+		float var_1 = hsv.z * (1.0 - hsv.y);
+		float var_2 = hsv.z * (1.0 - hsv.y * (h - i));
+		float var_3 = hsv.z * (1.0 - hsv.y * (1 - (h - i)));
+		
+		if (i == 0)
+		{
+			rgb = vec3(hsv.z, var_3, var_1);
+		}
+		else if (i == 1)
+		{
+			rgb = vec3(var_2, hsv.z, var_1);
+		}
+		else if (i == 2)
+		{
+			rgb = vec3(var_1, hsv.z, var_3);
+		}
+		else if (i == 3)
+		{
+			rgb = vec3(var_1, var_2, hsv.z);
+		}
+		else if (i == 4)
+		{
+			rgb = vec3(var_3, var_1, hsv.z);
+		}
+		else
+		{
+			rgb = vec3(hsv.z, var_1, var_2);
+		}
+	}
+
+	return rgb;
 }

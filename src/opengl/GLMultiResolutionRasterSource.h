@@ -132,7 +132,7 @@ namespace GPlatesOpenGL
 		// filtering which will reduce any aliasing near the horizon of the globe.
 		// Turning off auto-mipmap-generation will also give us a small speed boost.
 		//
-		// if (GLEW_SGIS_generate_mipmap)
+		// if (capabilities.texture.gl_SGIS_generate_mipmap)
 		// {
 		// 	// Mipmaps will be generated automatically when the level 0 image is modified.
 		// 	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);

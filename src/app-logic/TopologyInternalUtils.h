@@ -159,9 +159,12 @@ namespace GPlatesAppLogic
 		 * types of reconstruction geometry can be used as topological sections.
 		 *
 		 * Returns false if:
-		 * - there is *not* exactly *one* feature referencing the delegate feature id
-		 *   (in this case an warning message is output to the console), or
-		 * - there are *no* RGs satisfying the specified constraints (reconstruct handles).
+		 * - there are *no* RGs satisfying the specified constraints (reconstruct handles), or
+		 * - there are multiple RGs satisfying the specified constraints (reconstruct handles)
+		 *   and they came from *different* features (it's ok to have more than one feature with
+		 *   same feature id but the constraints, reconstruct handles, must reduce the set of RGs
+		 *   such that they come from only *one* feature (in this case an warning message is
+		 *   output to the console).
 		 *
 		 * If there is no RG that is reconstructed from @a geometry_delegate, and satisfying the
 		 * other constraints, then either:
@@ -503,7 +506,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved line.
 		 *
-		 * Returns true if @a recon_geom is a @a ReconstructedFeatureGeometry.
+		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry.
 		 */
 		bool
 		can_use_as_resolved_line_topological_section(
@@ -513,7 +516,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved boundary.
 		 *
-		 * Returns true if @a recon_geom is a @a ReconstructedFeatureGeometry or a
+		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry or a
 		 * resolved topological line (@a ResolvedTopologicalGeometry with a *polyline* geometry).
 		 */
 		bool
@@ -524,7 +527,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved network.
 		 *
-		 * Returns true if @a recon_geom is a @a ReconstructedFeatureGeometry or a
+		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry or a
 		 * resolved topological line (@a ResolvedTopologicalGeometry with a *polyline* geometry).
 		 */
 		bool

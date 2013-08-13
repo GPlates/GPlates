@@ -34,7 +34,7 @@
 
 #include "GLStateSetKeys.h"
 
-#include "GLContext.h"
+#include "GLCapabilities.h"
 
 #include "global/AbortException.h"
 #include "global/AssertionFailureException.h"
@@ -42,7 +42,9 @@
 #include "global/PreconditionViolationError.h"
 
 
-GPlatesOpenGL::GLStateSetKeys::GLStateSetKeys() :
+GPlatesOpenGL::GLStateSetKeys::GLStateSetKeys(
+		const GLCapabilities &capabilities) :
+	d_capabilities(capabilities),
 	d_num_state_set_keys(NUM_ENUM_KEYS) // ...it'll get higher as we assign more keys though.
 {
 	// Start assigning keys after all the hardwired (enum) keys.
@@ -56,23 +58,23 @@ GPlatesOpenGL::GLStateSetKeys::GLStateSetKeys() :
 	d_generic_vertex_attribute_index_zero_base_key = current_key;
 	current_key +=
 			NUM_GENERIC_VERTEX_ATTRIBUTE_KEY_OFFSETS *
-			GLContext::get_parameters().shader.gl_max_vertex_attribs;
+			d_capabilities.shader.gl_max_vertex_attribs;
 
 	d_texture_image_unit_zero_base_key = current_key;
 	current_key +=
 			NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS *
-			GLContext::get_parameters().texture.gl_max_texture_image_units;
+			d_capabilities.texture.gl_max_texture_image_units;
 
 	d_texture_coord_zero_base_key = current_key;
 	current_key +=
 			NUM_TEXTURE_COORD_KEY_OFFSETS *
-			GLContext::get_parameters().texture.gl_max_texture_coords;
+			d_capabilities.texture.gl_max_texture_coords;
 
 	d_num_state_set_keys = current_key;
 
 	//qDebug() << "GLStateSetKeys: Number keys: " << d_num_state_set_keys;
-	//qDebug() << "GLStateSetKeys: gl_max_texture_image_units: " << GLContext::get_parameters().texture.gl_max_texture_image_units;
-	//qDebug() << "GLStateSetKeys: gl_max_texture_coords: " << GLContext::get_parameters().texture.gl_max_texture_coords;
+	//qDebug() << "GLStateSetKeys: gl_max_texture_image_units: " << d_capabilities.texture.gl_max_texture_image_units;
+	//qDebug() << "GLStateSetKeys: gl_max_texture_coords: " << d_capabilities.texture.gl_max_texture_coords;
 	//qDebug() << "GLStateSetKeys: NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS: " << NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS;
 	//qDebug() << "GLStateSetKeys: NUM_TEXTURE_COORD_KEY_OFFSETS: " << NUM_TEXTURE_COORD_KEY_OFFSETS;
 }
@@ -480,7 +482,7 @@ GPlatesOpenGL::GLStateSetKeys::get_enable_vertex_attrib_array_key(
 		GLuint attribute_index) const
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			attribute_index < GLContext::get_parameters().shader.gl_max_vertex_attribs,
+			attribute_index < d_capabilities.shader.gl_max_vertex_attribs,
 			GPLATES_ASSERTION_SOURCE);
 
 	return d_generic_vertex_attribute_index_zero_base_key +
@@ -494,7 +496,7 @@ GPlatesOpenGL::GLStateSetKeys::get_vertex_attrib_array_key(
 		GLuint attribute_index) const
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			attribute_index < GLContext::get_parameters().shader.gl_max_vertex_attribs,
+			attribute_index < d_capabilities.shader.gl_max_vertex_attribs,
 			GPLATES_ASSERTION_SOURCE);
 
 	return d_generic_vertex_attribute_index_zero_base_key +
@@ -536,11 +538,11 @@ GPlatesOpenGL::GLStateSetKeys::get_texture_image_unit_key_from_key_offset(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_image_units,
+					texture_unit < GL_TEXTURE0 + d_capabilities.texture.gl_max_texture_image_units,
 			GPLATES_ASSERTION_SOURCE);
 
 	return d_texture_image_unit_zero_base_key +
-		(texture_unit - GLContext::Parameters::Texture::gl_TEXTURE0) * NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS +
+		(texture_unit - GLCapabilities::Texture::gl_TEXTURE0) * NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS +
 		key_offset;
 }
 
@@ -552,10 +554,10 @@ GPlatesOpenGL::GLStateSetKeys::get_texture_coord_key_from_key_offset(
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_coords,
+					texture_unit < GL_TEXTURE0 + d_capabilities.texture.gl_max_texture_coords,
 			GPLATES_ASSERTION_SOURCE);
 
 	return d_texture_coord_zero_base_key +
-		(texture_unit - GLContext::Parameters::Texture::gl_TEXTURE0) * NUM_TEXTURE_COORD_KEY_OFFSETS +
+		(texture_unit - GLCapabilities::Texture::gl_TEXTURE0) * NUM_TEXTURE_COORD_KEY_OFFSETS +
 		key_offset;
 }

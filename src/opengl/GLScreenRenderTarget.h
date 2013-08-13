@@ -26,26 +26,20 @@
 #ifndef GPLATES_OPENGL_GLSCREENRENDERTARGET_H
 #define GPLATES_OPENGL_GLSCREENRENDERTARGET_H
 
-#include <map>
-#include <vector>
+#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
 #include <opengl/OpenGL.h>
 
-#include "GLFrameBufferObject.h"
-#include "GLRenderBufferObject.h"
-#include "GLTexture.h"
+#include "GLRenderTargetImpl.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GLContext;
 	class GLRenderer;
 
 	/**
-	 * Used to render to a screen-size RGBA8 texture (with associated hardware depth buffer).
+	 * Used to render to a screen-size texture (with optional associated hardware depth buffer).
 	 *
 	 * Your rendering is done between @a begin_render and @a end_render.
 	 *
@@ -55,7 +49,8 @@ namespace GPlatesOpenGL
 	 * So you can freely use it in different OpenGL contexts.
 	 * This enables sharing of the associated texture and renderbuffer (which are shareable across contexts).
 	 */
-	class GLScreenRenderTarget
+	class GLScreenRenderTarget :
+			private boost::noncopyable
 	{
 	public:
 
@@ -69,19 +64,30 @@ namespace GPlatesOpenGL
 		typedef boost::shared_ptr<const GLScreenRenderTarget> shared_ptr_to_const_type;
 
 
-		//! Returns true if supported by the runtime system.
+		/**
+		 * Returns true if the texture internal format and optional depth/stencil buffer combination are
+		 * supported by the runtime system (also requires support for GL_EXT_framebuffer_object).
+		 *
+		 * Also requires support for non-power-of-two textures since the screen dimensions can
+		 * change and are unlikely to be a power-of-two.
+		 *
+		 * If @a include_stencil_buffer is true then GL_EXT_packed_depth_stencil is also required
+		 * because, for the most part, consumer hardware only supports stencil for FBOs if it's
+		 * packed in with depth.
+		 */
 		static
 		bool
 		is_supported(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
-				bool include_depth_buffer);
+				bool include_depth_buffer,
+				bool include_stencil_buffer);
 
 
 		/**
 		 * Creates a shared pointer to a @a GLScreenRenderTarget object.
 		 *
-		 * Creates the texture and optional depth buffer resources but doesn't allocate them yet.
+		 * Creates the texture and optional depth/stencil buffer resources but doesn't allocate them yet.
 		 *
 		 * @a texture_internalformat is the same parameter used for 'GLTexture::gl_tex_image_2D()'.
 		 */
@@ -90,11 +96,12 @@ namespace GPlatesOpenGL
 		create(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
-				bool include_depth_buffer)
+				bool include_depth_buffer,
+				bool include_stencil_buffer)
 		{
 			return shared_ptr_type(
 					new GLScreenRenderTarget(
-							renderer, texture_internalformat, include_depth_buffer));
+							renderer, texture_internalformat, include_depth_buffer, include_stencil_buffer));
 		}
 
 		/**
@@ -105,17 +112,21 @@ namespace GPlatesOpenGL
 		create_as_auto_ptr(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
-				bool include_depth_buffer)
+				bool include_depth_buffer,
+				bool include_stencil_buffer)
 		{
 			return std::auto_ptr<GLScreenRenderTarget>(
 					new GLScreenRenderTarget(
-							renderer, texture_internalformat, include_depth_buffer));
+							renderer, texture_internalformat, include_depth_buffer, include_stencil_buffer));
 		}
 
 
 		/**
-		 * Ensures internal RGBA texture and depth render buffer have a storage allocation of the
-		 * specified dimensions and binds the internal framebuffer for rendering to them.
+		 * Ensures internal texture (and optional depth buffer) have a storage allocation of the
+		 * specified dimensions and binds the internal framebuffer object for rendering to them.
+		 *
+		 * NOTE: The framebuffer object (if any) that is currently bound will be re-bound when
+		 * @a end_render is called.
 		 */
 		void
 		begin_render(
@@ -125,17 +136,43 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns viewport-size RGBA render texture and binds to the main framebuffer.
+		 * Binds the framebuffer object that was bound when @a begin_render was called, or the main
+		 * framebuffer if no framebuffer object was bound.
 		 *
-		 * The returned texture is 'const' so that its filtering parameters, for example, cannot be modified.
+		 * The render texture can now be retrieved using @a get_texture.
 		 */
 		void
 		end_render(
 				GLRenderer &renderer);
 
+		/**
+		 * RAII class to call @a begin_render and @a end_render over a scope.
+		 */
+		class RenderScope :
+				private boost::noncopyable
+		{
+		public:
+			RenderScope(
+					GLScreenRenderTarget &screen_render_target,
+					GLRenderer &renderer,
+					unsigned int render_target_width,
+					unsigned int render_target_height);
+
+			~RenderScope();
+
+			//! Opportunity to end rendering before the scope exits (when destructor is called).
+			void
+			end_render();
+
+		private:
+			GLScreenRenderTarget &d_screen_render_target;
+			GLRenderer &d_renderer;
+			bool d_called_end_render;
+		};
+
 
 		/**
-		 * Returns the viewport-size RGBA render texture.
+		 * Returns the render texture.
 		 *
 		 * The returned texture is 'const' so that its filtering parameters, for example, cannot be modified.
 		 *
@@ -147,88 +184,17 @@ namespace GPlatesOpenGL
 
 	private:
 
-		//! Typedef for a key made up of the parameters of parameters to @a is_supported.
-		typedef boost::tuple<GLint, bool> supported_key_type;
-
-		//! Typedef for a mapping of supported parameters (key) to boolean flag indicating supported.
-		typedef std::map<supported_key_type, bool> supported_map_type;
-
 		/**
-		 * The framebuffer object state as currently set in each OpenGL context.
-		 *
-		 * Since framebuffer objects cannot be shared across OpenGL contexts, in contrast to
-		 * textures and render buffers, we create a separate framebuffer object for each context.
-		 *
-		 * This makes it much easier for clients to share a GLScreenRenderTarget across contexts without
-		 * having to worry about sharing the texture/renderbuffer and not sharing the framebuffer object.
+		 * The render target implementation.
 		 */
-		struct ContextObjectState
-		{
-			/**
-			 * Constructor creates a new framebuffer object using the specified context.
-			 */
-			ContextObjectState(
-					const GLContext &context_,
-					GLRenderer &renderer_);
-
-			/**
-			 * The OpenGL context using our framebuffer object.
-			 *
-			 * NOTE: This should *not* be a shared pointer otherwise it'll create a cyclic shared reference.
-			 */
-			const GLContext *context;
-
-			//! The framebuffer object created in a specific OpenGL context.
-			GLFrameBufferObject::shared_ptr_type framebuffer;
-
-			//! Whether the texture (and render buffer) have been attached to the framebuffer object yet.
-			bool attached_to_framebuffer;
-		};
-
-		/**
-		 * Typedef for a sequence of context object states.
-		 *
-		 * A 'vector' is fine since we're not expecting many OpenGL contexts so searches should be fast.
-		 */
-		typedef std::vector<ContextObjectState> context_object_state_seq_type;
-
-
-		/**
-		 * The vertex array object state for each context that we've encountered.
-		 */
-		context_object_state_seq_type d_context_object_states;
-
-		GLTexture::shared_ptr_type d_texture;
-		GLint d_texture_internalformat;
-		boost::optional<GLRenderBufferObject::shared_ptr_type> d_depth_buffer;
-
-		/**
-		 * Is false if we've not yet allocated storage for the texture and depth buffer.
-		 */
-		bool d_allocated_storage;
-
-		/**
-		 * Is true if we're currently between @a begin_render and @a end_render.
-		 */
-		bool d_currently_rendering;
-
+		GLRenderTargetImpl d_impl;
 
 		GLScreenRenderTarget(
 				GLRenderer &renderer,
 				GLint texture_internalformat,
-				bool include_depth_buffer);
+				bool include_depth_buffer,
+				bool include_stencil_buffer);
 
-		//! Returns the framebuffer associated with the OpenGL context used by the specified renderer.
-		GLFrameBufferObject::shared_ptr_type
-		get_frame_buffer_object(
-				GLRenderer &renderer)
-		{
-			return get_object_state_for_current_context(renderer).framebuffer;
-		}
-
-		ContextObjectState &
-		get_object_state_for_current_context(
-				GLRenderer &renderer);
 	};
 }
 

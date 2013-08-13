@@ -29,6 +29,7 @@
 #include <utility>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
+#include <QDebug>
 
 #include "PointInPolygon.h"
 
@@ -765,10 +766,10 @@ namespace GPlatesMaths
 				{  }
 
 				/**
-				 * Default constructor in case no sequences intersect spherical lune of leaf node.
+				 * Default constructor for the case where no sequences intersect spherical lune of leaf node.
 				 *
-				 * This shouldn't really happen but seems to in some situations.
-				 * FIXME: Find out why there's no intersections in some cases.
+				 * This happens when polygon centroid is outside polygon and spherical lune wedge
+				 * does not intersect polygon.
 				 */
 				LeafNode() :
 					edge_sequences_start_index(0),
@@ -1115,11 +1116,14 @@ namespace GPlatesMaths
 			// We've reached a leaf node...
 			const LeafNode &leaf_node = d_tree_data->d_leaf_nodes[child_node_index];
 
-			// FIXME: This was added because there are some situations where no intersections
-			// in spherical lune wedge of a leaf node are recorded - which shouldn't happen.
+			// If there are no intersections in the current spherical lune then it means the
+			// polygon centroid is outside the polygon (which can happen for concave polygons -
+			// picture a U-shaped polygon like a horse shoe on the surface of the globe and the
+			// spherical lune wedge with axis from antipodal centroid to centroid and its two
+			// half-planes - the U-shaped polygon does not intersect the wedge).
+			// Therefore the test point, being in the spherical lune wedge, is also outside the polygon.
 			if (!leaf_node.antipodal_centroid_bounds)
 			{
-				// We'll be conservative and assume the test point is outside the polygon.
 				// Returning zero means no edges have been crossed from the polygon centroid
 				// antipodal point (which is also outside the polygon) to the test point.
 				return 0;
@@ -1373,8 +1377,11 @@ namespace GPlatesMaths
 			InnerOuterBoundingSmallCircleBuilder leaf_node_bounds_data_builder(
 					d_polygon_centroid_antipodal);
 
-			// FIXME: It appears that there can be no intersections which shouldn't be possible
-			// so need to account for that here.
+			// If there are no intersections in the current spherical lune then it means the
+			// polygon centroid is outside the polygon (which can happen for concave polygons -
+			// picture a U-shaped polygon like a horse shoe on the surface of the globe and the
+			// spherical lune wedge with axis from antipodal centroid to centroid and its two
+			// half-planes - the U-shaped polygon does not intersect the wedge).
 			if (sub_tree_edge_sequences.empty())
 			{
 				// Just store a default-constructed LeafNode that contains no sequences of edges

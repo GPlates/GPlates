@@ -35,6 +35,7 @@
 #include "Stars.h"
 
 #include "Colour.h"
+#include "FeedbackOpenGLToQPainter.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -121,6 +122,7 @@ namespace
 	compile_stars_draw_state(
 			GPlatesOpenGL::GLRenderer &renderer,
 			GPlatesOpenGL::GLVertexArray &vertex_array,
+			unsigned int &num_points,
 			boost::function< double () > &rand,
 			const GPlatesGui::rgba8_t &colour)
 	{
@@ -156,6 +158,9 @@ namespace
 
 		stream_target.stop_streaming();
 
+		// Each point in GL_POINTS uses one vertex index (this is the total number of stars).
+		num_points = vertex_elements.size();
+
 		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
 		// Shouldn't get close really but check to be sure.
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -163,7 +168,8 @@ namespace
 				GPLATES_ASSERTION_SOURCE);
 
 		// Set up the vertex element buffer.
-		GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_element_buffer = GPlatesOpenGL::GLBuffer::create(renderer);
+		GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_element_buffer =
+				GPlatesOpenGL::GLBuffer::create(renderer, GPlatesOpenGL::GLBuffer::BUFFER_TYPE_VERTEX);
 		vertex_element_buffer->gl_buffer_data(
 				renderer,
 				GPlatesOpenGL::GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
@@ -175,7 +181,8 @@ namespace
 				GPlatesOpenGL::GLVertexElementBuffer::create(renderer, vertex_element_buffer));
 
 		// Set up the vertex buffer.
-		GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_buffer = GPlatesOpenGL::GLBuffer::create(renderer);
+		GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_buffer =
+				GPlatesOpenGL::GLBuffer::create(renderer, GPlatesOpenGL::GLBuffer::BUFFER_TYPE_VERTEX);
 		vertex_buffer->gl_buffer_data(
 				renderer,
 				GPlatesOpenGL::GLBuffer::TARGET_ARRAY_BUFFER,
@@ -191,8 +198,27 @@ namespace
 		GPlatesOpenGL::GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer);
 
 		// Set the alpha-blend state.
-		renderer.gl_enable(GL_BLEND);
-		renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		// Set up alpha blending for pre-multiplied alpha.
+		// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
+		// This is where the RGB channels have already been multiplied by the alpha channel.
+		// See class GLVisualRasterSource for why this is done.
+		//
+		// To generate pre-multiplied alpha we'll use separate alpha-blend (src,dst) factors for the alpha channel...
+		//
+		//   RGB uses (src_alpha, 1 - src_alpha)  ->  (R,G,B) = (Rs*As,Gs*As,Bs*As) + (1-As) * (Rd,Gd,Bd)
+		//     A uses (1, 1 - src_alpha)          ->        A = As + (1-As) * Ad
+		if (renderer.get_capabilities().framebuffer.gl_EXT_blend_func_separate)
+		{
+			renderer.gl_enable(GL_BLEND);
+			renderer.gl_blend_func_separate(
+					GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+					GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		}
+		else // otherwise resort to normal blending...
+		{
+			renderer.gl_enable(GL_BLEND);
+			renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		}
 
 		// Set the anti-aliased point state.
 		renderer.gl_enable(GL_POINT_SMOOTH);
@@ -238,7 +264,8 @@ GPlatesGui::Stars::Stars(
 		GPlatesPresentation::ViewState &view_state,
 		const GPlatesGui::Colour &colour) :
 	d_view_state(view_state),
-	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer))
+	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer)),
+	d_num_points(0)
 {
 	// Set up the random number generator.
 	// It generates doubles uniformly from -1.0 to 1.0 inclusive.
@@ -252,7 +279,7 @@ GPlatesGui::Stars::Stars(
 
 	rgba8_t rgba8_colour = Colour::to_rgba8(colour);
 
-	d_compiled_draw_state = compile_stars_draw_state(renderer, *d_vertex_array, rand, rgba8_colour);
+	d_compiled_draw_state = compile_stars_draw_state(renderer, *d_vertex_array, d_num_points, rand, rgba8_colour);
 }
 
 
@@ -267,7 +294,22 @@ GPlatesGui::Stars::paint(
 			// Make sure we leave the OpenGL state the way it was.
 			GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
 
-			renderer.apply_compiled_draw_state(*d_compiled_draw_state.get());
+			// Either render directly to the framebuffer, or use OpenGL feedback to render to the
+			// QPainter's paint device.
+			if (renderer.rendering_to_context_framebuffer())
+			{
+				renderer.apply_compiled_draw_state(*d_compiled_draw_state.get());
+			}
+			else
+			{
+				// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
+				// We are rendering to the QPainter attached to GLRenderer.
+				FeedbackOpenGLToQPainter feedback_opengl;
+				FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
+						feedback_opengl, renderer, d_num_points, 0, 0);
+
+				renderer.apply_compiled_draw_state(*d_compiled_draw_state.get());
+			}
 		}
 	}
 }

@@ -663,11 +663,12 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 	// since they, in turn, reference reconstructed static geometries).
 	// NOTE: ReconstructedVirtualGeomagneticPole's will also be included since they derive
 	// from ReconstructedFeatureGeometry.
-	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
-			focused_geometry ?
-			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ReconstructedFeatureGeometry>(focused_geometry) :
-			boost::none;
+	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg;
+	if (focused_geometry)
+	{
+		rfg = GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+				const GPlatesAppLogic::ReconstructedFeatureGeometry>(focused_geometry);
+	}
 
 	// Do the following if no RG or if RG is not RFG.
 	if (!rfg)
@@ -685,7 +686,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 		return;
 	}
 
-	d_reconstruction_tree = focused_geometry->reconstruction_tree();
+	d_reconstruction_tree = rfg.get()->get_reconstruction_tree();
 
 	// Nothing to do if plate ID hasn't changed.
 	if (d_plate_id != rfg.get()->reconstruction_plate_id())
@@ -706,6 +707,9 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 			// Clear the plate ID field.
 			field_moving_plate->clear();
 		}
+
+		// Since the plate id has changed the initial geometries will also have changed.
+		draw_initial_geometries();
 	}
 }
 
@@ -780,7 +784,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 
 				// Make sure the current RFG was created from the same reconstruction tree as
 				// the focused geometry.
-				if (rfg->reconstruction_tree() != *d_reconstruction_tree)
+				if (rfg->get_reconstruction_tree() != *d_reconstruction_tree)
 				{
 					continue;
 				}

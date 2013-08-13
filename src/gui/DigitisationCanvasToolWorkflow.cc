@@ -41,6 +41,8 @@
 
 #include "global/GPlatesAssert.h"
 
+#include "maths/GeometryType.h"
+
 #include "presentation/ViewState.h"
 
 #include "qt-widgets/GlobeAndMapWidget.h"
@@ -50,7 +52,6 @@
 #include "qt-widgets/ViewportWindow.h"
 
 #include "view-operations/GeometryBuilder.h"
-#include "view-operations/GeometryType.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
 
@@ -148,7 +149,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type digitise_multipoint_tool =
 			GPlatesCanvasTools::DigitiseGeometry::create(
 					status_bar_callback,
-					GPlatesViewOperations::GeometryType::MULTIPOINT,
+					GPlatesMaths::GeometryType::MULTIPOINT,
 					view_state.get_digitise_geometry_builder(),
 					geometry_operation_state,
 					view_state.get_rendered_geometry_collection(),
@@ -176,7 +177,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type digitise_polyline_tool =
 			GPlatesCanvasTools::DigitiseGeometry::create(
 					status_bar_callback,
-					GPlatesViewOperations::GeometryType::POLYLINE,
+					GPlatesMaths::GeometryType::POLYLINE,
 					view_state.get_digitise_geometry_builder(),
 					geometry_operation_state,
 					view_state.get_rendered_geometry_collection(),
@@ -204,7 +205,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type digitise_polygon_tool =
 			GPlatesCanvasTools::DigitiseGeometry::create(
 					status_bar_callback,
-					GPlatesViewOperations::GeometryType::POLYGON,
+					GPlatesMaths::GeometryType::POLYGON,
 					view_state.get_digitise_geometry_builder(),
 					geometry_operation_state,
 					view_state.get_rendered_geometry_collection(),
@@ -400,10 +401,10 @@ GPlatesGui::DigitisationCanvasToolWorkflow::geometry_builder_stopped_updating_ge
 void
 GPlatesGui::DigitisationCanvasToolWorkflow::update_enable_state()
 {
-	const std::pair<unsigned int, GPlatesViewOperations::GeometryType::Value> geometry_builder_parameters =
+	const std::pair<unsigned int, GPlatesMaths::GeometryType::Value> geometry_builder_parameters =
 			get_geometry_builder_parameters();
 	const unsigned int num_vertices = geometry_builder_parameters.first;
-	const GPlatesViewOperations::GeometryType::Value geometry_type = geometry_builder_parameters.second;
+	const GPlatesMaths::GeometryType::Value geometry_type = geometry_builder_parameters.second;
 
 	// Enable the move vertex tool if there's at least one vertex regardless of the geometry type.
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MOVE_VERTEX, num_vertices > 0);
@@ -415,9 +416,9 @@ GPlatesGui::DigitisationCanvasToolWorkflow::update_enable_state()
 	// Note that upon insertion of a new vertex a polyline stays a polyline and
 	// a polygon stays a polygon.
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_INSERT_VERTEX,
-			(geometry_type == GPlatesViewOperations::GeometryType::MULTIPOINT ||
-			geometry_type == GPlatesViewOperations::GeometryType::POLYLINE ||
-			geometry_type == GPlatesViewOperations::GeometryType::POLYGON) &&
+			(geometry_type == GPlatesMaths::GeometryType::MULTIPOINT ||
+			geometry_type == GPlatesMaths::GeometryType::POLYLINE ||
+			geometry_type == GPlatesMaths::GeometryType::POLYGON) &&
 			(num_vertices > 0));
 
 	// Enable the delete vertex tool if deleting a vertex won't change the type of
@@ -426,26 +427,26 @@ GPlatesGui::DigitisationCanvasToolWorkflow::update_enable_state()
 	//   * Geometry is a polyline with two vertices.
 	//   * Geometry is a polygon with three vertices.
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_DELETE_VERTEX,
-			(geometry_type == GPlatesViewOperations::GeometryType::MULTIPOINT && num_vertices > 1) ||
-			(geometry_type == GPlatesViewOperations::GeometryType::POLYLINE && num_vertices > 2) ||
-			(geometry_type == GPlatesViewOperations::GeometryType::POLYGON && num_vertices > 3));
+			(geometry_type == GPlatesMaths::GeometryType::MULTIPOINT && num_vertices > 1) ||
+			(geometry_type == GPlatesMaths::GeometryType::POLYLINE && num_vertices > 2) ||
+			(geometry_type == GPlatesMaths::GeometryType::POLYGON && num_vertices > 3));
 }
 
 
-std::pair<unsigned int, GPlatesViewOperations::GeometryType::Value>
+std::pair<unsigned int, GPlatesMaths::GeometryType::Value>
 GPlatesGui::DigitisationCanvasToolWorkflow::get_geometry_builder_parameters() const
 {
 	// See if the geometry builder has more than one vertex.
 	if (d_digitise_geometry_builder.get_num_geometries() == 0)
 	{
-		return std::make_pair(0, GPlatesViewOperations::GeometryType::NONE);
+		return std::make_pair(0, GPlatesMaths::GeometryType::NONE);
 	}
 
 	// We currently only support a single internal geometry so set geom index to zero.
 	const unsigned int num_vertices =
 			d_digitise_geometry_builder.get_num_points_in_geometry(0/*geom_index*/);
 
-	const GPlatesViewOperations::GeometryType::Value geometry_type =
+	const GPlatesMaths::GeometryType::Value geometry_type =
 			d_digitise_geometry_builder.get_geometry_build_type();
 
 	return std::make_pair(num_vertices, geometry_type);

@@ -28,6 +28,7 @@
 #define GPLATES_OPENGL_GLRENDERER_H
 
 #include <stack>
+#include <utility>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
@@ -39,6 +40,7 @@
 
 #include "GLBufferImpl.h"
 #include "GLBufferObject.h"
+#include "GLCapabilities.h"
 #include "GLCompiledDrawState.h"
 #include "GLContext.h"
 #include "GLDepthRange.h"
@@ -93,16 +95,24 @@ namespace GPlatesOpenGL
 			enum ErrorType
 			{
 				SHOULD_HAVE_NO_ACTIVE_QPAINTER,
-				SHOULD_HAVE_ACTIVE_OPENGL_QPAINTER,
+				SHOULD_HAVE_ACTIVE_QPAINTER,
+				FRAME_BUFFER_DIMENSIONS_DO_NOT_MATCH_QPAINTER_DEVICE_TARGETING_MAIN_FRAME_BUFFER,
 				SHOULD_HAVE_NO_STATE_BLOCKS,
 				SHOULD_HAVE_A_STATE_BLOCK,
 				SHOULD_HAVE_NO_RENDER_TARGET_BLOCKS,
 				SHOULD_HAVE_A_RENDER_TARGET_BLOCK,
+				SHOULD_HAVE_NO_RENDER_TEXTURE_TARGETS,
+				SHOULD_HAVE_A_RENDER_TEXTURE_TARGET,
+				SHOULD_HAVE_NO_RENDER_TEXTURE_MAIN_FRAME_BUFFERS,
+				SHOULD_HAVE_A_RENDER_TEXTURE_MAIN_FRAME_BUFFER,
+				SHOULD_HAVE_NO_RENDER_TEXTURE_FRAME_BUFFER_OBJECTS,
+				SHOULD_HAVE_A_RENDER_TEXTURE_FRAME_BUFFER_OBJECT,
 				SHOULD_HAVE_NO_RENDER_QUEUE_BLOCKS,
 				SHOULD_HAVE_A_RENDER_QUEUE_BLOCK,
 				SHOULD_HAVE_NO_COMPILE_DRAW_STATE_BLOCKS,
 				SHOULD_HAVE_A_COMPILE_DRAW_STATE_BLOCK,
-				CANNOT_ENABLE_DEPTH_STENCIL_TEST_IN_RGBA8_RENDER_TARGETS
+				CANNOT_ENABLE_DEPTH_TEST_OR_WRITES_IN_RENDER_TARGET_WITHOUT_DEPTH_BUFFER,
+				CANNOT_ENABLE_STENCIL_TEST_OR_WRITES_IN_RENDER_TARGET_WITHOUT_STENCIL_BUFFER
 			};
 
 			GLRendererAPIError(
@@ -155,45 +165,69 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns the OpenGL implementation-dependent capabilities and parameters.
+		 */
+		const GLCapabilities &
+		get_capabilities() const
+		{
+			return d_context->get_capabilities();
+		}
+
+
+		/**
 		 * Call this method before using 'this' renderer.
 		 * Note: This method calls GLContext::begin_render.
 		 *
 		 * NOTE: This should only be called when you know the full OpenGL state is set to the default OpenGL state.
 		 * This is the assumption that this renderer is making.
 		 *
-		 * @a default_viewport represents the viewport of the window currently attached to the OpenGL context.
-		 *
 		 * It's possible for one or more windows to share an OpenGL context.
 		 * However the window dimensions will differ and so, in a sense, the default viewport
 		 * is not really the default OpenGL state (like other default states) but is the default
 		 * for the current @a begin_render / @a end_render pair in which all rendering, in that scope,
-		 * is direct at *one* of the windows.
+		 * is directed at *one* of the windows.
 		 */
 		void
-		begin_render(
-				const GLViewport &default_viewport);
+		begin_render();
 
 
 		/**
 		 * An alternative version of @a begin_render that accepts a QPainter.
 		 *
-		 * NOTE: The QPainter must currently be active and must use an OpenGL paint engine
-		 * (ie, QPaintEngine::OpenGL or QPaintEngine::OpenGL2).
+		 * NOTE: The QPainter must currently be active and must exist until @a end_render is called.
+		 *
+		 * The QPainter is useful for rendering things like text to the framebuffer (or render target).
+		 * In this case set @a paint_device_is_framebuffer to true - subsequent calls to
+		 * @a rendering_to_context_framebuffer will then also return true.
+		 * In this case the QPainter is typically attached to the *same* framebuffer (viewport widget)
+		 * as this GLRenderer so that they both interleave drawing to the same target. In this case the
+		 * QPainter will be using an OpenGL paint engine (ie, QPaintEngine::OpenGL or QPaintEngine::OpenGL2).
 		 * An example is a QGraphicsView that has a QGLWidget viewport - here the method
 		 * QGraphicsScene::drawBackground, that you override, passes an active QPainter that uses OpenGL.
-		 * This method will get the Qt paint engine to reset to the default OpenGL state (aside from the
-		 * modelview and projection matrices which it sets according to the QPainter's current transform state).
-		 * NOTE: The specified QPainter must exist until @a end_render is called.
+		 * In this case this method assumes the Qt paint engine is in the default OpenGL state
+		 * (aside from the modelview and projection matrices).
 		 *
-		 * Upon returning the OpenGL state will be the default state except for the modelview and
-		 * projection transforms which will be set to the transform state of @a qpainter and
-		 * orthographic projection.
+		 * However it is possible for the QPainter to target a paint device that is not the OpenGL
+		 * framebuffer. In this case @a paint_device_is_framebuffer should be set to false.
+		 * In this case subsequent calls to @a rendering_to_context_framebuffer will return false.
+		 * An example of this is rendering to SVG where the client also uses OpenGL feedback to
+		 * collect projected vector primitives (and embedded raster images) to write them to SVG.
+		 * In this case the main frame buffer is not typically rendered to (because the final target
+		 * is the paint device), but it could still be used as a render target to help render
+		 * rasters to an image (which then gets drawn to the QPainter).
 		 *
-		 * The default viewport is also obtained from @a qpainter.
+		 * Upon returning, the OpenGL state will be the default state.
+		 *
+		 * NOTE: No state (such as world transform) in the QPainter is converted into internal render state.
+		 * If this is needed then it should be done explicitly by the caller.
+		 *
+		 * The default viewport is set to the main frame buffer dimensions.
 		 */
 		void
 		begin_render(
-				QPainter *opengl_qpainter);
+				QPainter &qpainter,
+				// Does the QPainter render to the framebuffer or some other paint device ? ...
+				bool paint_device_is_framebuffer = true);
 
 		/**
 		 * Call this method after using 'this' renderer and before it is destroyed.
@@ -201,8 +235,8 @@ namespace GPlatesOpenGL
 		 *
 		 * This sets the OpenGL state back to the default OpenGL state.
 		 *
-		 * NOTE: If a QPainter was specified in @a begin_render then its OpenGL paint engine will be
-		 * restored to its OpenGL state (to what it was before 'begin_render' was called).
+		 * NOTE: If a QPainter was specified in @a begin_render and it uses an OpenGL paint engine then
+		 * it will be restored to its OpenGL state (to what it was before 'begin_render' was called).
 		 *
 		 * @throws PreconditionViolationError if:
 		 *  - the number of begin calls of a particular type (such as state blocks) does not equal
@@ -219,12 +253,12 @@ namespace GPlatesOpenGL
 		{
 		public:
 			RenderScope(
-					GLRenderer &renderer,
-					const GLViewport &default_viewport);
+					GLRenderer &renderer);
 
 			RenderScope(
 					GLRenderer &renderer,
-					QPainter *opengl_qpainter);
+					QPainter &qpainter,
+					bool paint_device_is_framebuffer = true);
 
 			~RenderScope();
 
@@ -239,20 +273,65 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns true if we are rendering to the framebuffer of the OpenGL context.
+		 *
+		 * This is true unless @a begin_render was called with a QPainter and the
+		 * 'paint_device_is_framebuffer' flag was set to false (eg, if rendering to SVG).
+		 *
+		 * Note that this should be called between @a begin_render and @a end_render.
+		 */
+		bool
+		rendering_to_context_framebuffer() const;
+
+
+		/**
+		 * Returns the dimensions of the main framebuffer, or the currently bound framebuffer object
+		 * (GLFrameBufferObject - see @a gl_get_bind_frame_buffer) if any are currently bound.
+		 *
+		 * This applies to @a begin_render_target_2D if framebuffer objects are used to implement
+		 * render targets in this GLRenderer interface (otherwise render targets are emulated using
+		 * the main framebuffer and this method will return the main framebuffer's dimensions).
+		 *
+		 * If a frame buffer object (GLFrameBufferObject) is currently bound then it should be
+		 * set up properly (eg, 'gl_check_frame_buffer_status()') before calling this method.
+		 */
+		std::pair<unsigned int/*width*/, unsigned int/*height*/>
+		get_current_frame_buffer_dimensions() const;
+
+
+		/**
+		 * Returns the dimensions of the paint device of the QPainter attached in @a begin_render,
+		 * or boost::none if none attached.
+		 */
+		boost::optional< std::pair<unsigned int/*width*/, unsigned int/*height*/> >
+		get_qpainter_device_dimensions() const;
+
+
+		/**
 		 * Begins rendering to a QPainter (and suspends rendering using GLRenderer).
 		 *
-		 * The QPainter returned is the one passed into @a begin_render, or NULL if none passed.
+		 * The QPainter returned is the one passed into @a begin_render, or boost::none if none passed.
 		 * It can be used to make QPainter calls.
 		 *
-		 * @throws @a GLRendererAPIError if @a begin_render not yet called.
+		 * NOTE: The OpenGL state is set to the default OpenGL state, before resuming the QPainter,
+		 * with the exception of the currently bound frame buffer object, if any. If a frame buffer
+		 * object is currently bound then it will also be bound when the QPainter resumes - this
+		 * enables QPainter text rendering to be directed to an off-screen render target - in this
+		 * case (if the QPainter targets the main frame buffer - see @a rendering_to_context_framebuffer)
+		 * then the frame buffer object dimensions must match those of the main framebuffer.
+		 *
+		 * @throws @a GLRendererAPIError if @a begin_render not yet called or if a frame buffer object
+		 * is currently bound.
 		 */
-		QPainter *
+		boost::optional<QPainter &>
 		begin_qpainter_block();
 
 		/**
 		 * Ends the current QPainter block.
 		 *
 		 * Upon returning no further QPainter calls can be made.
+		 *
+		 * NOTE: The OpenGL state is set to what it was just before @a begin_qpainter_block was called.
 		 *
 		 * @throws @a GLRendererAPIError if there is no current QPainter block.
 		 */
@@ -272,8 +351,8 @@ namespace GPlatesOpenGL
 
 			~QPainterBlockScope();
 
-			//! Returns the QPainter passed into GLRenderer::begin_render or NULL if none passed in.
-			QPainter *
+			//! Returns the QPainter attached to GLRenderer or boost::none if none attached.
+			boost::optional<QPainter &>
 			get_qpainter() const
 			{
 				return d_qpainter;
@@ -281,7 +360,7 @@ namespace GPlatesOpenGL
 
 		private:
 			GLRenderer &d_renderer;
-			QPainter *d_qpainter;
+			boost::optional<QPainter &> d_qpainter;
 		};
 
 
@@ -291,47 +370,72 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns true if this interface supports rendering to arbitrary texture formats
-		 * such as floating-point textures.
+		 * Returns true if @a begin_render_target_2D / @a end_render_target_2D
+		 * support rendering to floating-point textures.
 		 *
-		 * If false is returned then only the fixed-point RGBA8 format can be rendered to.
+		 * If false is returned then only the fixed-point format can be rendered to.
 		 *
 		 * This is effectively a test for support of the 'GL_EXT_framebuffer_object' extension.
 		 */
 		bool
-		supports_arbitrary_colour_format_render_targets() const;
+		supports_floating_point_render_target_2D() const;
 
 
 		/**
-		 * Begin a new 2D render target to render into a texture (without using a depth/stencil buffer).
+		 * Returns the maximum (untiled) render target dimensions when using @a begin_render_target_2D /
+		 * @a end_render_target_2D (values returned as power-of-two dimensions).
 		 *
-		 * If the 'GL_EXT_framebuffer_object' extension is supported then it will be used and
-		 * either fixed-point or floating-point textures can be rendered to.
-		 * See @a supports_arbitrary_colour_format_render_targets.
-		 * However if 'GL_EXT_framebuffer_object' is not supported then only fixed-point RGBA8 textures
-		 * can be rendered to - this is because rendering to the main framebuffer is used instead.
-		 * This means there is support for rendering to fixed-point RGBA8 textures for *all*
-		 * graphics card (even those that don't support the 'GL_EXT_framebuffer_object' extension).
+		 * Render target dimensions can exceed these dimensions but in this case the render target
+		 * will be tiled (ie, more than one tile render required per render target).
+		 *
+		 * This is mainly in case the 'GL_EXT_framebuffer_object' extension is not available and
+		 * we fall back to the main framebuffer as a render-target. In which case the dimensions
+		 * of the main framebuffer become the limit (rounded down to the nearest power-of-two).
+		 *
+		 * If 'GL_EXT_framebuffer_object' is supported then this effectively becomes the minimum of
+		 * the maximum texture dimensions and maximum viewport dimensions.
+		 *
+		 * NOTE: Must be called between @a begin_render and @a end_render but not necessarily
+		 * between @a begin_render_target_2D and @a end_render_target_2D.
+		 *
+		 * NOTE: The dimensions can change from one render to the next (if main framebuffer used
+		 * as render target and the window is resized). So ideally this should be called every render.
+		 */
+		void
+		get_max_dimensions_untiled_render_target_2D(
+				unsigned int &max_untiled_render_target_width,
+				unsigned int &max_untiled_render_target_height) const;
+
+
+		/**
+		 * Begin a new 2D render target to render into a texture.
+		 *
+		 * If @a supports_floating_point_render_target_2D returns true then the target texture can
+		 * be either fixed-point or floating-point. Otherwise it must be fixed-point because then
+		 * rendering to the main framebuffer will occur and the main framebuffer is fixed-point.
 		 *
 		 * The texture should have been initialised with GLTexture::gl_tex_image_2D or GLTexture::gl_tex_image_3D.
 		 * Rendering is by default to the level 0 mipmap of the texture.
 		 *
-		 * @a render_target_viewport specifies the region of the render-texture that you will limit
-		 * rendering to - by default this is the entire texture. A stencil rectangle is specified
-		 * internally for this viewport and also 'glViewport' is set internally for this render target.
-		 * You can still change 'glScissor' and 'glViewport' if you wish but they should both be within
-		 * the bounds specified by @a render_target_viewport (this is because if the main framebuffer
-		 * is used for render-targets then only that region of the framebuffer is saved/restored).
+		 * @a max_point_size_and_line_width specifies the maximum line width and point size of any lines
+		 * and/or points to be rendered into the render target. This is only used if tiling is needed
+		 * to render to the render-texture (ie, if using main framebuffer as render-target and it is
+		 * smaller than the render-texture).
+		 * The default value of zero can be used if no points or lines are rendered.
+		 *
+		 * @a render_texture_viewport specifies the region of the render-texture that you will limit
+		 * rendering to - by default this is the entire texture..
 		 *
 		 * This uses the texture target GL_TEXTURE_2D. If you want other texture targets then use
 		 * @a GLFrameBufferObject instead (along with @a gl_bind_frame_buffer to make it active).
 		 *
-		 * NOTE: A depth/stencil buffer is not provided and so depth and stencil test must be turned off.
-		 * This is because if a framebuffer object is used internally it won't have a depth/stencil buffer.
-		 * And if the main framebuffer is used then we don't want to overwrite its depth/stencil buffer.
-		 * In general GPlates surface layer rendering does not need a depth buffer.
-		 * If you want an off-screen render target with a depth buffer then use @a GLFrameBufferObject.
-		 * And you can use @a gl_bind_frame_buffer to make it active.
+		 * NOTE: An optional depth/stencil buffer is provided if either or both @a depth_buffer and
+		 * @a stencil_buffer are specified. If depth/stencil buffering is 'false' then depth/stencil
+		 * testing and writes are turned off internally for the duration of the render target block.
+		 * If framebuffer objects are used internally then a depth/stencil buffer matching the size
+		 * of the render texture will be acquired for the duration of the render target block.
+		 * If the main framebuffer is used internally then its depth/stencil buffer is saved at the
+		 * beginning of the render target block and then restored at the end of the render target block.
 		 *
 		 * This begin / end render target block is also an implicit state block.
 		 * See @a begin_state_block / @a end_state_block (they are called internally by this render target block).
@@ -360,9 +464,62 @@ namespace GPlatesOpenGL
 		void
 		begin_render_target_2D(
 				const GLTexture::shared_ptr_to_const_type &texture,
-				boost::optional<GLViewport> render_target_viewport = boost::none,
+				boost::optional<GLViewport> render_texture_viewport = boost::none,
+				const double &max_point_size_and_line_width = 0,
 				GLint level = 0,
-				bool reset_to_default_state = true);
+				bool reset_to_default_state = true,
+				bool depth_buffer = false,
+				bool stencil_buffer = false);
+
+		/**
+		 * Begins a tile (sub-region) of the current 2D render target.
+		 *
+		 * The returned transform is an adjustment to the projection transform normally used to
+		 * render to the render target. The adjustment should be pre-multiplied with the normal
+		 * projection transform and the result used as the actual projection transform. This ensures
+		 * only the tile region of the view frustum is rendered to.
+		 *
+		 * @a tile_render_target_viewport and @a tile_render_target_scissor_rect are the rectangles
+		 * specified internally to @a gl_viewport and @a gl_scissor, respectively.
+		 * The viewport contains the tile border required to prevent clipping of wide lines and fat points.
+		 * A stencil rectangle prevents rasterization of pixels outside the actual tile region.
+		 * NOTE: You do not need to call @a gl_viewport or @a gl_scissor (they are done internally).
+		 *
+		 * If @a save_restore_state is true then this begin / end *tile* render target block is also
+		 * an implicit state block in which case all state set after @a begin_tile_render_target_2D
+		 * will be reverted when @a end_tile_render_target_2D is called.
+		 *
+		 * Note: If the 'GL_EXT_framebuffer_object' extension is supported then only one tile is
+		 * needed and it covers the entire render target. Otherwise the main framebuffer is being
+		 * used as a render target and more than one tile rendering might be needed if the framebuffer
+		 * is smaller than the render target texture. But this is all opaque in this interface.
+		 *
+		 * Must be called inside a @a begin_render_target_2D / @a end_render_target_2D pair.
+		 */
+		GLTransform::non_null_ptr_to_const_type
+		begin_tile_render_target_2D(
+				bool save_restore_state = true,
+				GLViewport *tile_render_target_viewport = NULL,
+				GLViewport *tile_render_target_scissor_rect = NULL);
+
+		/**
+		 * Ends the current tile (sub-region) of the current 2D render target.
+		 *
+		 * Returns true if another tile needs to be rendered in which case another
+		 * @a begin_tile_render_target_2D / @a end_tile_render_target_2D pair must be rendered.
+		 * For example:
+		 *    renderer.begin_render_target_2D(...);
+		 *    do
+		 *    {
+		 *        renderer.begin_tile_render_target_2D();
+		 *        ... // Render scene.
+		 *    } while (!renderer.end_tile_render_target_2D());
+		 *    renderer.end_render_target_2D();
+		 *
+		 * Must be called inside a @a begin_render_target_2D / @a end_render_target_2D pair.
+		 */
+		bool
+		end_tile_render_target_2D();
 
 		/**
 		 * Ends the current 2D render target.
@@ -378,29 +535,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the maximum render target dimensions when using @a begin_render_target_2D /
-		 * @a end_render_target_2D (values returned as power-of-two dimensions).
-		 *
-		 * This is mainly in case the 'GL_EXT_framebuffer_object' extension is not available and
-		 * we fallback to the main framebuffer as a render-target. In which case the dimensions
-		 * of the main framebuffer become the limit (rounded down to the nearest power-of-two).
-		 *
-		 * If 'GL_EXT_framebuffer_object' is supported then this effectively becomes the minimum of
-		 * the maximum texture dimensions and maximum viewport dimensions.
-		 *
-		 * NOTE: Must be called between @a begin_render and @a end_render but not necessarily
-		 * between @a begin_render_target_2D and @a end_render_target_2D.
-		 *
-		 * NOTE: The dimensions can change from one render to the next (if main framebuffer used
-		 * as render target and the window is resized). So ideally this should be called every render.
-		 */
-		void
-		get_max_render_target_dimensions(
-				unsigned int &max_render_target_width,
-				unsigned int &max_render_target_height) const;
-
-
-		/**
 		 * RAII class to call @a begin_render_target_2D and @a end_render_target_2D over a scope.
 		 */
 		class RenderTarget2DScope :
@@ -411,13 +545,39 @@ namespace GPlatesOpenGL
 					GLRenderer &renderer,
 					const GLTexture::shared_ptr_to_const_type &texture,
 					boost::optional<GLViewport> render_target_viewport = boost::none,
+					const double &max_point_size_and_line_width = 0,
 					GLint level = 0,
-					bool reset_to_default_state = true);
+					bool reset_to_default_state = true,
+					bool depth_buffer = false,
+					bool stencil_buffer = false);
 
 			~RenderTarget2DScope();
 
+			/**
+			 * Begins a tile of the current 2D render target - see 'begin_tile_render_target_2D()'.
+			 */
+			GLTransform::non_null_ptr_to_const_type
+			begin_tile(
+					bool save_restore_state = true,
+					GLViewport *tile_render_target_viewport = NULL,
+					GLViewport *tile_render_target_scissor_rect = NULL);
+
+			/**
+			 * Ends the current tile of the current 2D render target - see 'end_tile_render_target_2D()'.
+			 */
+			bool
+			end_tile();
+
+			/**
+			 * Opportunity to end the current 2D render target before the scope exits (when destructor is called).
+			 */
+			void
+			end_render();
+
 		private:
 			GLRenderer &d_renderer;
+			bool d_called_end_tile;
+			bool d_called_end_render;
 		};
 
 
@@ -471,8 +631,15 @@ namespace GPlatesOpenGL
 
 			~StateBlockScope();
 
+			/**
+			 * Opportunity to end the current state block before the scope exits (when destructor is called).
+			 */
+			void
+			end_state_block();
+
 		private:
 			GLRenderer &d_renderer;
+			bool d_called_end_state_block;
 		};
 
 
@@ -820,7 +987,8 @@ namespace GPlatesOpenGL
 				GLenum texture_unit,
 				GLenum texture_target)
 		{
-			get_current_state()->set_bind_texture(texture_object, texture_unit, texture_target);
+			get_current_state()->set_bind_texture(
+					get_capabilities(), texture_object, texture_unit, texture_target);
 		}
 
 		/**
@@ -831,7 +999,7 @@ namespace GPlatesOpenGL
 				GLenum texture_unit,
 				GLenum texture_target)
 		{
-			get_current_state()->set_unbind_texture(texture_unit, texture_target);
+			get_current_state()->set_unbind_texture(get_capabilities(), texture_unit, texture_target);
 		}
 
 
@@ -857,7 +1025,7 @@ namespace GPlatesOpenGL
 		//! Sets the OpenGL stencil mask.
 		void
 		gl_stencil_mask(
-				GLuint stencil = ~GLuint(0)/*all ones*/)
+				GLuint stencil = ~0/*all ones*/)
 		{
 			get_current_state()->set_stencil_mask(stencil);
 		}
@@ -903,24 +1071,26 @@ namespace GPlatesOpenGL
 				GLsizei width,
 				GLsizei height)
 		{
-			get_current_state()->set_scissor(GLViewport(x, y, width, height), d_default_viewport.get());
+			get_current_state()->set_scissor(
+					get_capabilities(), GLViewport(x, y, width, height), d_default_viewport.get());
 		}
 
 		/**
 		 * Sets all scissor rectangles to the parameters specified in @a all_scissor_rectangles.
 		 *
-		 * NOTE: @a all_scissor_rectangles must contain exactly 'GLContext::get_parameters().viewport.gl_max_viewports' rectangles.
+		 * NOTE: @a all_scissor_rectangles must contain exactly 'context.get_capabilities().viewport.gl_max_viewports' rectangles.
 		 *
 		 * If the GL_ARB_viewport_array extension is not available then only one scissor rectangle is available.
 		 *
 		 * @throws PreconditionViolationError if:
-		 *  all_scissor_rectangles.size() != GLContext::get_parameters().viewport.gl_max_viewports
+		 *  all_scissor_rectangles.size() != context.get_capabilities().viewport.gl_max_viewports
 		 */
 		void
 		gl_scissor_array(
 				const std::vector<GLViewport> &all_scissor_rectangles)
 		{
-			get_current_state()->set_scissor_array(all_scissor_rectangles, d_default_viewport.get());
+			get_current_state()->set_scissor_array(
+					get_capabilities(), all_scissor_rectangles, d_default_viewport.get());
 		}
 
 		/**
@@ -937,13 +1107,14 @@ namespace GPlatesOpenGL
 				GLsizei width,
 				GLsizei height)
 		{
-			get_current_state()->set_viewport(GLViewport(x, y, width, height), d_default_viewport.get());
+			get_current_state()->set_viewport(
+					get_capabilities(), GLViewport(x, y, width, height), d_default_viewport.get());
 		}
 
 		/**
 		 * Sets all viewports to the parameters specified in @a all_viewports.
 		 *
-		 * NOTE: @a all_viewports must contain exactly 'GLContext::get_parameters().viewport.gl_max_viewports' viewports.
+		 * NOTE: @a all_viewports must contain exactly 'context.get_capabilities().viewport.gl_max_viewports' viewports.
 		 *
 		 * If the GL_ARB_viewport_array extension is not available then only one viewport is available.
 		 *
@@ -951,13 +1122,14 @@ namespace GPlatesOpenGL
 		 * we keep them as integers here for simplicity (for now).
 		 *
 		 * @throws PreconditionViolationError if:
-		 *  all_viewports.size() != GLContext::get_parameters().viewport.gl_max_viewports
+		 *  all_viewports.size() != context.get_capabilities().viewport.gl_max_viewports
 		 */
 		void
 		gl_viewport_array(
 				const std::vector<GLViewport> &all_viewports)
 		{
-			get_current_state()->set_viewport_array(all_viewports, d_default_viewport.get());
+			get_current_state()->set_viewport_array(
+					get_capabilities(), all_viewports, d_default_viewport.get());
 		}
 
 		/**
@@ -972,24 +1144,48 @@ namespace GPlatesOpenGL
 				GLclampd zNear = 0.0,
 				GLclampd zFar = 1.0)
 		{
-			get_current_state()->set_depth_range(GLDepthRange(zNear, zFar));
+			get_current_state()->set_depth_range(get_capabilities(), GLDepthRange(zNear, zFar));
 		}
 
 		/**
 		 * Sets depth ranges of all viewports to the parameters specified in @a all_depth_ranges.
 		 *
-		 * NOTE: @a all_depth_ranges must contain exactly 'GLContext::get_parameters().viewport.gl_max_viewports' viewports.
+		 * NOTE: @a all_depth_ranges must contain exactly 'context.get_capabilities().viewport.gl_max_viewports' viewports.
 		 *
 		 * If the GL_ARB_viewport_array extension is not available then only one viewport/depth-range is available.
 		 *
 		 * @throws PreconditionViolationError if:
-		 *  all_depth_ranges.size() != GLContext::get_parameters().viewport.gl_max_viewports
+		 *  all_depth_ranges.size() != context.get_capabilities().viewport.gl_max_viewports
 		 */
 		void
 		gl_depth_range_array(
 				const std::vector<GLDepthRange> &all_depth_ranges)
 		{
-			get_current_state()->set_depth_range_array(all_depth_ranges);
+			get_current_state()->set_depth_range_array(get_capabilities(), all_depth_ranges);
+		}
+
+		/**
+		 * Sets the stencil function (GL_STENCIL_TEST also needs to be enabled).
+		 */
+		void
+		gl_stencil_func(
+				GLenum func = GL_ALWAYS,
+				GLint ref = GLint(0),
+				GLuint mask = ~0/*all ones*/)
+		{
+			get_current_state()->set_stencil_func(func, ref, mask);
+		}
+
+		/**
+		 * Sets the stencil operation (GL_STENCIL_TEST also needs to be enabled).
+		 */
+		void
+		gl_stencil_op(
+				GLenum fail = GL_KEEP,
+				GLenum zfail = GL_KEEP,
+				GLenum zpass = GL_KEEP)
+		{
+			get_current_state()->set_stencil_op(fail, zfail, zpass);
 		}
 
 		/**
@@ -998,7 +1194,6 @@ namespace GPlatesOpenGL
 		 * NOTE: For enabling/disabling texturing use @a gl_enable_texture instead.
 		 *
 		 * NOTE: All capabilities are disabled by default except two (GL_DITHER and GL_MULTISAMPLE).
-
 		 *
 		 * Also note that only a subset of the capabilities are currently supported in the
 		 * implementation although it is easy to add more as needed (see 'GLStateSetKeys::get_enable_key').
@@ -1111,7 +1306,7 @@ namespace GPlatesOpenGL
 		gl_blend_equation(
 				GLenum mode = DEFAULT_BLEND_EQUATION)
 		{
-			get_current_state()->set_blend_equation(mode);
+			get_current_state()->set_blend_equation(get_capabilities(), mode);
 		}
 
 		/**
@@ -1124,7 +1319,8 @@ namespace GPlatesOpenGL
 				GLenum modeRGB = DEFAULT_BLEND_EQUATION,
 				GLenum modeAlpha = DEFAULT_BLEND_EQUATION)
 		{
-			get_current_state()->set_blend_equation_separate(modeRGB, modeAlpha);
+			get_current_state()->set_blend_equation_separate(
+					get_capabilities(), modeRGB, modeAlpha);
 		}
 
 		//! Sets the alpha-blend function (NOTE: you'll also want to enable blending).
@@ -1148,7 +1344,8 @@ namespace GPlatesOpenGL
 				GLenum sfactorAlpha = GL_ONE,
 				GLenum dfactorAlpha = GL_ZERO)
 		{
-			get_current_state()->set_blend_func_separate(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
+			get_current_state()->set_blend_func_separate(
+					get_capabilities(), sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
 		}
 
 		/**
@@ -1246,15 +1443,39 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns whether the specified capability is enabled or disabled (see @a gl_enable).
+		 */
+		bool
+		gl_get_enable(
+				GLenum cap)
+		{
+			return get_current_state()->get_enable(cap);
+		}
+
+
+		/**
 		 * Returns the current viewport at index @a viewport_index (default index is zero).
 		 *
 		 * If there's only one viewport set (via @a gl_viewport) then use the default index of zero.
 		 *
-		 * NOTE: @a viewport_index must be less than 'GLContext::get_parameters().viewport.gl_max_viewports'.
+		 * NOTE: @a viewport_index must be less than 'context.get_capabilities().viewport.gl_max_viewports'.
 		 * NOTE: And must be called between @a begin_render and @a end_render as usual.
 		 */
 		const GLViewport &
 		gl_get_viewport(
+				unsigned int viewport_index = 0) const;
+
+
+		/**
+		 * Returns the current scissor rectangle at index @a viewport_index (default index is zero).
+		 *
+		 * If there's only one scissor set (via @a gl_scissor) then use the default index of zero.
+		 *
+		 * NOTE: @a viewport_index must be less than 'context.get_capabilities().viewport.gl_max_viewports'.
+		 * NOTE: And must be called between @a begin_render and @a end_render as usual.
+		 */
+		const GLViewport &
+		gl_get_scissor(
 				unsigned int viewport_index = 0) const;
 
 
@@ -1276,7 +1497,44 @@ namespace GPlatesOpenGL
 		gl_get_texture_matrix(
 				GLenum texture_unit) const;
 
+		/**
+		 * Returns the current framebuffer object, or boost::none if main framebuffer is currently bound.
+		 */
+		boost::optional<GLFrameBufferObject::shared_ptr_to_const_type>
+		gl_get_bind_frame_buffer() const
+		{
+			return get_current_state()->get_bind_frame_buffer();
+		}
+
 	private:
+
+		/**
+		 * Information about the QPainter, if any, that is active at the beginning of rendering.
+		 */
+		struct QPainterInfo
+		{
+			explicit
+			QPainterInfo(
+					QPainter &qpainter_,
+					bool paint_device_is_framebuffer_ = true) :
+				qpainter(qpainter_),
+				paint_device_is_framebuffer(paint_device_is_framebuffer_)
+			{  }
+
+			QPainter &qpainter;
+
+			//! Does the QPainter render to the framebuffer or some other paint device ?
+			const bool paint_device_is_framebuffer;
+
+			/**
+			 * The frame buffer that is active during a QPainter block scope.
+			 *
+			 * It is only valid during a QPainter block scope and if, during this scope, it is
+			 * boost::none then the main frame buffer is active.
+			 */
+			boost::optional<GLFrameBufferObject::shared_ptr_to_const_type> frame_buffer;
+		};
+
 
 		/**
 		 * The default blend equation for 'glBlendEquation()'.
@@ -1290,12 +1548,17 @@ namespace GPlatesOpenGL
 		/**
 		 * Is valid if a QPainter is active during rendering (when @a begin_render is called).
 		 */
-		QPainter *d_qpainter;
+		boost::optional<QPainterInfo> d_qpainter_info;
 
 		/**
 		 * Used to begin/end rendering and manage framebuffer objects.
 		 */
 		GLContext::non_null_ptr_type d_context;
+
+		/**
+		 * The dimensions of the main frame buffer.
+		 */
+		std::pair<unsigned int/*width*/, unsigned int/*height*/> d_main_frame_buffer_dimensions;
 
 		/**
 		 * The viewport of the window currently attached to the OpenGL context.
@@ -1332,16 +1595,6 @@ namespace GPlatesOpenGL
 		 * the main framebuffer is being used for render targets.
 		 */
 		GLRendererImpl::frame_buffer_draw_count_type d_current_frame_buffer_draw_count;
-
-		/**
-		 * The framebuffer object to use for render targets (if GL_EXT_framebuff_object supported).
-		 */
-		boost::optional<GLFrameBufferObject::shared_ptr_type> d_framebuffer_object;
-
-		/**
-		 * Used to cache results of 'glCheckFramebufferStatus' as an optimisation since it's expensive to call.
-		 */
-		GLRendererImpl::frame_buffer_state_to_status_map_type d_rgba8_framebuffer_object_status_map;
 
 		/**
 		 * Stack of currently render target blocks.
@@ -1473,10 +1726,7 @@ namespace GPlatesOpenGL
 				const GLRendererImpl::RenderOperation &render_operation);
 
 		void
-		suspend_qpainter(
-				GLViewport &qpainter_viewport,
-				GLMatrix &qpainter_model_view_matrix,
-				GLMatrix &qpainter_projection_matrix);
+		suspend_qpainter();
 
 		//! NOTE: OpenGL must be in the default state before this is called.
 		void
@@ -1484,23 +1734,40 @@ namespace GPlatesOpenGL
 
 		void
 		begin_rgba8_main_framebuffer_2D(
+				GLRendererImpl::RenderTextureTarget &render_texture_target,
+				const double &max_point_size_and_line_width);
+
+		GLTransform::non_null_ptr_to_const_type
+		begin_tile_rgba8_main_framebuffer_2D(
+				GLRendererImpl::RenderTextureTarget &render_texture_target,
+				GLViewport *tile_render_target_viewport,
+				GLViewport *tile_render_target_scissor_rect);
+
+		bool
+		end_tile_rgba8_main_framebuffer_2D(
 				GLRendererImpl::RenderTextureTarget &render_texture_target);
 
 		void
 		end_rgba8_main_framebuffer_2D(
-				const GLRendererImpl::RenderTextureTarget &render_texture_target);
+				GLRendererImpl::RenderTextureTarget &render_texture_target);
 
 		bool
 		begin_framebuffer_object_2D(
 				GLRendererImpl::RenderTextureTarget &render_texture_target);
 
-		void
-		end_framebuffer_object_2D(
-				const boost::optional<GLRendererImpl::RenderTextureTarget> &parent_render_texture_target);
+		GLTransform::non_null_ptr_to_const_type
+		begin_tile_framebuffer_object_2D(
+				GLRendererImpl::RenderTextureTarget &render_texture_target,
+				GLViewport *tile_render_target_viewport,
+				GLViewport *tile_render_target_scissor_rect);
 
 		bool
-		check_framebuffer_object_2D_completeness(
-				const GLRendererImpl::RenderTextureTarget &render_texture_target);
+		end_tile_framebuffer_object_2D(
+				GLRendererImpl::RenderTextureTarget &render_texture_target);
+
+		void
+		end_framebuffer_object_2D(
+				GLRendererImpl::RenderTextureTarget &render_texture_target);
 
 		void
 		begin_render_target_block_internal(
@@ -1644,6 +1911,49 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Performs the equivalent of the OpenGL command 'glDrawPixels' with the exception that,
+		 * to mirror 'glReadPixels', the x and y pixel offsets are also specified (internally
+		 * 'glWindowPos2i(x, y)' is called since 'glDrawPixels' does not accept x and y).
+		 *
+		 * This overload uses the bound pixel buffer object (on the *unpack* target) to write pixel data to.
+		 *
+		 * NOTE: Internally, the model-view/projection matrices and viewport might be temporarily
+		 * modified to achieve the proper @a x and @a y offsets (but scissor rectangle is left unchanged).
+		 */
+		void
+		gl_draw_pixels(
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height,
+				GLenum format,
+				GLenum type,
+				GLint offset);
+
+
+		/**
+		 * Performs the equivalent of the OpenGL command 'glDrawPixels' with the exception that,
+		 * to mirror 'glReadPixels', the x and y pixel offsets are also specified (internally
+		 * 'glWindowPos2i(x, y)' is called since 'glDrawPixels' does not accept x and y).
+		 *
+		 * This overload uses client memory (no bound objects) to write pixel data to.
+		 *
+		 * NOTE: Internally, the model-view/projection matrices and viewport might be temporarily
+		 * modified to achieve the proper @a x and @a y offsets (but scissor rectangle is left unchanged).
+		 */
+		void
+		gl_draw_pixels(
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height,
+				GLenum format,
+				GLenum type,
+				GLint offset,
+				const GLBufferImpl::shared_ptr_type &pixel_buffer_impl);
+
+
+		/**
 		 * Sets the currently active texture unit.
 		 *
 		 * NOTE: This is a detail that clients shouldn't have to worry about - in other words
@@ -1656,13 +1966,13 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a active_texture is not in the half-open range:
 		 *   [GL_TEXTURE0,
-		 *    GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units_ARB).
+		 *    GL_TEXTURE0 + context.get_capabilities().texture.gl_max_texture_units_ARB).
 		 */
 		void
 		gl_active_texture(
 				GLenum active_texture)
 		{
-			get_current_state()->set_active_texture(active_texture);
+			get_current_state()->set_active_texture(get_capabilities(), active_texture);
 		}
 
 		/**
@@ -1674,13 +1984,13 @@ namespace GPlatesOpenGL
 		 *
 		 * @throws PreconditionViolationError if @a client_active_texture is not in the half-open range:
 		 *   [GL_TEXTURE0,
-		 *    GL_TEXTURE0 + GLContext::get_parameters().texture.gl_max_texture_units_ARB).
+		 *    GL_TEXTURE0 + context.get_capabilities().texture.gl_max_texture_units_ARB).
 		 */
 		void
 		gl_client_active_texture(
 				GLenum client_active_texture)
 		{
-			get_current_state()->set_client_active_texture(client_active_texture);
+			get_current_state()->set_client_active_texture(get_capabilities(), client_active_texture);
 		}
 
 		/**
@@ -1703,7 +2013,8 @@ namespace GPlatesOpenGL
 		gl_bind_frame_buffer_and_apply(
 				const GLFrameBufferObject::shared_ptr_to_const_type &frame_buffer_object)
 		{
-			get_current_state()->set_bind_frame_buffer_and_apply(frame_buffer_object, *d_last_applied_state);
+			get_current_state()->set_bind_frame_buffer_and_apply(
+					get_capabilities(), frame_buffer_object, *d_last_applied_state);
 		}
 
 		/**
@@ -1742,7 +2053,7 @@ namespace GPlatesOpenGL
 		void
 		gl_unbind_frame_buffer_and_apply()
 		{
-			get_current_state()->set_unbind_frame_buffer_and_apply(*d_last_applied_state);
+			get_current_state()->set_unbind_frame_buffer_and_apply(get_capabilities(), *d_last_applied_state);
 		}
 
 		/**
@@ -1781,7 +2092,8 @@ namespace GPlatesOpenGL
 		gl_bind_program_object_and_apply(
 				const GLProgramObject::shared_ptr_to_const_type &program_object)
 		{
-			get_current_state()->set_bind_program_object_and_apply(program_object, *d_last_applied_state);
+			get_current_state()->set_bind_program_object_and_apply(
+					get_capabilities(), program_object, *d_last_applied_state);
 		}
 
 		/**
@@ -1816,7 +2128,7 @@ namespace GPlatesOpenGL
 		void
 		gl_unbind_program_object_and_apply()
 		{
-			get_current_state()->set_unbind_program_object_and_apply(*d_last_applied_state);
+			get_current_state()->set_unbind_program_object_and_apply(get_capabilities(), *d_last_applied_state);
 		}
 
 		/**
@@ -1859,7 +2171,8 @@ namespace GPlatesOpenGL
 				GLenum texture_unit,
 				GLenum texture_target)
 		{
-			get_current_state()->set_bind_texture_and_apply(texture_object, texture_unit, texture_target, *d_last_applied_state);
+			get_current_state()->set_bind_texture_and_apply(
+					get_capabilities(), texture_object, texture_unit, texture_target, *d_last_applied_state);
 		}
 
 		/**
@@ -1902,7 +2215,8 @@ namespace GPlatesOpenGL
 				GLenum texture_unit,
 				GLenum texture_target)
 		{
-			get_current_state()->set_unbind_texture_and_apply(texture_unit, texture_target, *d_last_applied_state);
+			get_current_state()->set_unbind_texture_and_apply(
+					get_capabilities(), texture_unit, texture_target, *d_last_applied_state);
 		}
 
 		/**
@@ -2091,7 +2405,8 @@ namespace GPlatesOpenGL
 				const GLBufferObject::shared_ptr_to_const_type &buffer_object,
 				GLenum target)
 		{
-			get_current_state()->set_bind_buffer_object_and_apply(buffer_object, target, *d_last_applied_state);
+			get_current_state()->set_bind_buffer_object_and_apply(
+					get_capabilities(), buffer_object, target, *d_last_applied_state);
 		}
 
 		/**
@@ -2140,7 +2455,8 @@ namespace GPlatesOpenGL
 		gl_unbind_buffer_object_and_apply(
 				GLenum target)
 		{
-			get_current_state()->set_unbind_buffer_object_and_apply(target, *d_last_applied_state);
+			get_current_state()->set_unbind_buffer_object_and_apply(
+					get_capabilities(), target, *d_last_applied_state);
 		}
 
 		/**
@@ -2323,7 +2639,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Note that, as dictated by OpenGL, @a attribute_index must be in the half-closed range
 		 * [0, GL_MAX_VERTEX_ATTRIBS_ARB).
-		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'GLContext::get_parameters().shader.gl_max_vertex_attribs'.
+		 * You can get GL_MAX_VERTEX_ATTRIBS_ARB from 'context.get_capabilities().shader.gl_max_vertex_attribs'.
 		 *
 		 * NOTE: The 'GL_ARB_vertex_shader' extension must be supported.
 		 */
@@ -2351,7 +2667,7 @@ namespace GPlatesOpenGL
 				GLBufferObject::shared_ptr_to_const_type vertex_buffer_object)
 		{
 			get_current_state()->set_vertex_attrib_pointer(
-					attribute_index, size, type, normalized, stride, offset, vertex_buffer_object);
+					get_capabilities(), attribute_index, size, type, normalized, stride, offset, vertex_buffer_object);
 		}
 
 		/**
@@ -2370,7 +2686,7 @@ namespace GPlatesOpenGL
 				GLBufferImpl::shared_ptr_to_const_type vertex_buffer_impl)
 		{
 			get_current_state()->set_vertex_attrib_pointer(
-					attribute_index, size, type, normalized, stride, offset, vertex_buffer_impl);
+					get_capabilities(), attribute_index, size, type, normalized, stride, offset, vertex_buffer_impl);
 		}
 
 		/**
@@ -2388,7 +2704,7 @@ namespace GPlatesOpenGL
 				GLBufferObject::shared_ptr_to_const_type vertex_buffer_object)
 		{
 			get_current_state()->set_vertex_attrib_i_pointer(
-					attribute_index, size, type, stride, offset, vertex_buffer_object);
+					get_capabilities(), attribute_index, size, type, stride, offset, vertex_buffer_object);
 		}
 
 		/**
@@ -2406,7 +2722,7 @@ namespace GPlatesOpenGL
 				GLBufferImpl::shared_ptr_to_const_type vertex_buffer_impl)
 		{
 			get_current_state()->set_vertex_attrib_i_pointer(
-					attribute_index, size, type, stride, offset, vertex_buffer_impl);
+					get_capabilities(), attribute_index, size, type, stride, offset, vertex_buffer_impl);
 		}
 
 		/**
@@ -2424,7 +2740,7 @@ namespace GPlatesOpenGL
 				GLBufferObject::shared_ptr_to_const_type vertex_buffer_object)
 		{
 			get_current_state()->set_vertex_attrib_l_pointer(
-					attribute_index, size, type, stride, offset, vertex_buffer_object);
+					get_capabilities(), attribute_index, size, type, stride, offset, vertex_buffer_object);
 		}
 
 		/**
@@ -2442,7 +2758,7 @@ namespace GPlatesOpenGL
 				GLBufferImpl::shared_ptr_to_const_type vertex_buffer_impl)
 		{
 			get_current_state()->set_vertex_attrib_l_pointer(
-					attribute_index, size, type, stride, offset, vertex_buffer_impl);
+					get_capabilities(), attribute_index, size, type, stride, offset, vertex_buffer_impl);
 		}
 	};
 

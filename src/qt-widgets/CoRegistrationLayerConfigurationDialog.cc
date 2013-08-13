@@ -183,11 +183,10 @@ bool
 GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::is_raster_co_registration_supported() const
 {
 	// We need an OpenGL renderer before we can query support.
-	GPlatesOpenGL::GLViewport viewport;
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer(viewport);
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer();
 
 	// Start a begin_render/end_render scope.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, viewport);
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
 
 	return GPlatesOpenGL::GLRasterCoRegistration::is_supported(*renderer);
 }
@@ -325,8 +324,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::does_raster_layer_cont
 
 
 GPlatesOpenGL::GLRenderer::non_null_ptr_type
-GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::create_gl_renderer(
-		GPlatesOpenGL::GLViewport &viewport) const
+GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::create_gl_renderer() const
 {
 	// Get an OpenGL context since the (raster) co-registration is accelerated with OpenGL.
 	GPlatesOpenGL::GLContext::non_null_ptr_type gl_context =
@@ -334,12 +332,6 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::create_gl_renderer(
 
 	// Make sure the context is currently active.
 	gl_context->make_current();
-
-	// Pass in the viewport of the window currently attached to the OpenGL context.
-	viewport.set_viewport(
-			0, 0,
-			d_view_state.get_main_viewport_dimensions().first/*width*/,
-			d_view_state.get_main_viewport_dimensions().second/*height*/);
 
 	// Start a begin_render/end_render scope.
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
@@ -391,12 +383,12 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::react_target_layer_sel
 		attributes_list_widget->clear();
 
 		const QString message = tr(
-				"Raster co-registration requires roughly OpenGL 2.0/3.0 compliant graphics "
+				"Raster co-registration requires roughly OpenGL 2.0/3.0 compliant graphics hardware "
 				"(specifically floating-point textures and frame buffer objects).\n\n"
 				"Please select a non-raster layer instead.");
 		QMessageBox::warning(
 				this,
-				tr("Raster co-registration not supported on this system"),
+				tr("Raster co-registration not supported on this graphics hardware"),
 				message,
 				QMessageBox::Ok,
 				QMessageBox::Ok);
@@ -930,11 +922,10 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::setup_raster_level_of_
 	}
 
 	// We need an OpenGL renderer before we can query multi-resolution rasters.
-	GPlatesOpenGL::GLViewport viewport;
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer(viewport);
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer();
 
 	// Start a begin_render/end_render scope.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, viewport);
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
 
 	// Get the multi-resolution raster from the layer proxy.
 	// The number of levels of detail should be independent of time since a time-dependent raster

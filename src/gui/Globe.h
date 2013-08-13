@@ -38,7 +38,6 @@
 #include "SphericalGrid.h"
 #include "SimpleGlobeOrientation.h"
 #include "Stars.h"
-#include "TextRenderer.h"
 #include "RenderSettings.h"
 
 #include "maths/UnitVector3D.h"
@@ -88,8 +87,7 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				RenderSettings &render_settings,
-				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
+				const RenderSettings &render_settings,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
@@ -97,7 +95,6 @@ namespace GPlatesGui
 		Globe(
 				Globe &existing_globe,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
-				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
@@ -123,9 +120,15 @@ namespace GPlatesGui
 		set_new_handle_pos(
 				const GPlatesMaths::PointOnSphere &pos);
 
+		/**
+		 * @a in_mouse_drag should be set to true when the mouse button (left) is pressed (down)
+		 * and the mouse is moving and if it is set to true then it should subsequently be set back
+		 * to false when the mouse button (left) is released (up).
+		 */
 		void
 		update_handle_pos(
-				const GPlatesMaths::PointOnSphere &pos);
+				const GPlatesMaths::PointOnSphere &pos,
+				bool in_mouse_drag = false);
 
 		const GPlatesMaths::PointOnSphere
 		orient(
@@ -152,21 +155,6 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_stars);
 
-		/*
-		 * A special version of the globe's paint() method more suitable for vector output.
-		 *
-		 * NOTE: Unlike @a paint the caller must have pushed the projection transform onto @a renderer.
-		 *
-		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
-		 *        Value should be one when earth fills viewport and proportionately greater
-		 *        than one when viewport shows only part of the globe.
-		 */
-		void
-		paint_vector_output(
-				GPlatesOpenGL::GLRenderer &renderer,
-				const double &viewport_zoom_factor,
-				float scale);
-
 	private:
 
 		GPlatesPresentation::ViewState &d_view_state;
@@ -177,7 +165,7 @@ namespace GPlatesGui
 		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
 			
 		//! Flags to determine what data to show
-		RenderSettings &d_render_settings;
+		const RenderSettings &d_render_settings;
 		
 		//! The collection of @a RenderedGeometry objects we need to paint.
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
@@ -209,6 +197,13 @@ namespace GPlatesGui
 		 * The accumulated orientation of the globe.
 		 */
 		boost::shared_ptr<SimpleGlobeOrientation> d_globe_orientation_ptr;
+
+		/**
+		 * Is true when the mouse button (left) is pressed (down) and mouse is moving.
+		 *
+		 * This is currently used to temporarily reduce the sampling rate for 3D scalar field iso-surfaces.
+		 */
+		bool d_globe_orientation_changing_during_mouse_drag;
 
 		/**
 		 * Painter used to draw @a RenderedGeometry objects on the globe.
@@ -243,7 +238,7 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderer &renderer,
 				std::vector<cache_handle_type> &cache_handle,
 				const double &viewport_zoom_factor,
-				const GPlatesOpenGL::GLMatrix &projection_transform_include_half_globe,
+				const GPlatesOpenGL::GLMatrix &projection_transform,
 				bool is_front_half_globe);
 
 		void

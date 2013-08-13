@@ -34,6 +34,7 @@ GPlatesGui::get_symbol_type_from_string(
     map[QString("SQUARE")] = Symbol::SQUARE;
     map[QString("CIRCLE")] = Symbol::CIRCLE;
     map[QString("CROSS")] = Symbol::CROSS;
+    map[QString("STRAIN_MARKER")] = Symbol::STRAIN_MARKER;
 
     GPlatesGui::symbol_text_map_type::const_iterator it = map.find(symbol_string);
     if (it == map.end())

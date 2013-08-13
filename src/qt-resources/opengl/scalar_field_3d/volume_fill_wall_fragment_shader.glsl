@@ -1,8 +1,33 @@
+/* $Id$ */
+
+/**
+ * \file 
+ * $Revision$
+ * $Date$
+ * 
+ * Copyright (C) 2013 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
 //
 // Fragment shader source code to render volume fill walls (vertically extruded quads).
 //
 
-#ifdef SURFACE_NORMALS
+#ifdef SURFACE_NORMALS_AND_DEPTH
 	// The surface fill mask texture.
 	uniform sampler2DArray surface_fill_mask_sampler;
 	uniform int surface_fill_mask_resolution;
@@ -19,7 +44,7 @@
 
 void main (void)
 {
-#ifdef SURFACE_NORMALS
+#ifdef SURFACE_NORMALS_AND_DEPTH
 	// This branches on a uniform variable and hence is efficient since all pixels follow same path.
 	if (only_show_boundary_walls)
 	{
@@ -35,7 +60,9 @@ void main (void)
 		vec2 cube_face_coordinate_uv = 0.5 * cube_face_coordinate_xy + 0.5;
 
 		// Sample the surface fill mask texture array.
-		float surface_fill_mask = sample_surface_fill_mask_texture_array(
+		// NOTE: We use the dilated version of the sampling function which averages 3x3 (bilinearly filtered) samples.
+		// This emulates a pre-processing dilation of the surface fill mask.
+		float surface_fill_mask = sample_dilated_surface_fill_mask_texture_array(
 				surface_fill_mask_sampler,
 				surface_fill_mask_resolution,
 				cube_face_index,
@@ -48,6 +75,9 @@ void main (void)
 		// NOTE: We test against 1.0 instead of 0.5 (like 'projects_into_surface_fill_mask()' does) because this
 		// contracts the surface fill mask slightly (up to a half a texel) and we don't want to discard any part
 		// of walls that form part of the surface fill mask boundary.
+		// Also note that we get a further 1.5 texel reach by using the 'dilation' version of the mask sampling above.
+		// The upside is we don't mask out parts of the boundary walls (this artifact looks obvious in some places).
+		// The downside to this is we don't trim the interior walls as well (but it's not that noticeable).
 		if (surface_fill_mask == 1.0)
 		{
 			discard;

@@ -91,6 +91,9 @@ namespace
 	{
 		// No newline is output since a GMT header may follow in which
 		// case it will use the same line.
+		// FIXME: standardize header to remove output of a final line with only the ">" character:
+		// it seems unnecessary and causes complications down the road in other workflows.
+		// see also : GPlatesFileIO::GMTHeaderPrinter::print_feature_header_lines(..) for output of ">" 
 		stream << ">";
 	}
 

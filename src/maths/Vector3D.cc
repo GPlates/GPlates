@@ -32,6 +32,8 @@
 #include "UnableToNormaliseZeroVectorException.h"
 #include "HighPrecision.h"
 
+#include "global/GPlatesAssert.h"
+
 
 GPlatesMaths::Vector3D::Vector3D(
 		const UnitVector3D &u) :
@@ -45,9 +47,12 @@ GPlatesMaths::UnitVector3D
 GPlatesMaths::Vector3D::get_normalisation() const
 {
 	real_t mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
-	if (mag_sqrd <= 0.0) {
-		throw UnableToNormaliseZeroVectorException(GPLATES_EXCEPTION_SOURCE, *this);
-	}
+
+	GPlatesGlobal::Assert<UnableToNormaliseZeroVectorException>(
+			mag_sqrd > 0.0,
+			GPLATES_EXCEPTION_SOURCE,
+			*this);
+
 	real_t scale = 1 / sqrt(mag_sqrd);
 	return UnitVector3D(d_x * scale, d_y * scale, d_z * scale);
 }

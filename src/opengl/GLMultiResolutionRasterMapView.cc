@@ -42,11 +42,13 @@
 
 #include "GLContext.h"
 #include "GLFrustum.h"
+#include "GLImageUtils.h"
 #include "GLIntersect.h"
 #include "GLMatrix.h"
 #include "GLProjectionUtils.h"
 #include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
+#include "GLShaderSource.h"
 #include "GLTextureUtils.h"
 #include "GLViewport.h"
 
@@ -96,7 +98,7 @@ namespace GPlatesOpenGL
 			const QString debug_text = QString("LOD %1").arg(level_of_detail);
 
 			// Draw text into an image.
-			const QImage debug_image = GLTextureUtils::draw_text_into_qimage(
+			const QImage debug_image = GLImageUtils::draw_text_into_qimage(
 					debug_text,
 					tile_texel_dimension, tile_texel_dimension,
 					3.0f/*text scale*/,
@@ -624,7 +626,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::set_tile_state(
 			if (!emitted_warning)
 			{
 				qWarning() <<
-						"High zoom levels of map view NOT supported by this OpenGL system - \n"
+						"High zoom levels of map view NOT supported by this graphics hardware - \n"
 						"  requires shader programs - visual results will be incorrect.\n"
 						"  Most graphics hardware supports this - software renderer fallback "
 						"  might have occurred - possibly via remote desktop software.";
@@ -713,23 +715,23 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::create_shader_programs(
 	d_render_tile_to_scene_program_object =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
-					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+					GLShaderSource::create_shader_source_from_file(
 							RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME),
-					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+					GLShaderSource::create_shader_source_from_file(
 							RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME));
 
 	// A version with clipping.
-	GLShaderProgramUtils::ShaderSource render_tile_to_scene_with_clipping_shader_source;
+	GLShaderSource render_tile_to_scene_with_clipping_shader_source;
 	// Add the '#define' first.
-	render_tile_to_scene_with_clipping_shader_source.add_shader_source("#define ENABLE_CLIPPING\n");
+	render_tile_to_scene_with_clipping_shader_source.add_code_segment("#define ENABLE_CLIPPING\n");
 	// Then add the GLSL 'main()' function.
-	render_tile_to_scene_with_clipping_shader_source.add_shader_source_from_file(
+	render_tile_to_scene_with_clipping_shader_source.add_code_segment_from_file(
 			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Create the program object.
 	d_render_tile_to_scene_with_clipping_program_object =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
-					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+					GLShaderSource::create_shader_source_from_file(
 							RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME),
 					render_tile_to_scene_with_clipping_shader_source);
 }

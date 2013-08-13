@@ -26,6 +26,7 @@
 #include <QDialogButtonBox>
 #include <QPushButton>
 #include <QStandardItemModel>
+#include <QVariant>
 
 #include "app-logic/TRSUtils.h"
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
@@ -40,10 +41,13 @@
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlTimeSample.h"
+#include "property-values/GpmlFiniteRotationSlerp.h"
 
 #include "TotalReconstructionSequencesDialog.h"
 #include "EditTableActionWidget.h"
 #include "EditTotalReconstructionSequenceWidget.h"
+
+Q_DECLARE_METATYPE( boost::optional<GPlatesPropertyValues::GpmlTimeSample> )
 
 namespace ColumnNames
 {
@@ -94,52 +98,7 @@ namespace
 		bool *d_guard_flag_ptr;
 	};
 
-	/**
-	 * Creates an irregular sampling property from the values in @a table.                                                             
-	 */
-	GPlatesModel::TopLevelProperty::non_null_ptr_type
-	make_irregular_sampling_from_table(
-		QTableWidget *table)
-	{
-		static QLocale locale_;
-
-		std::vector<GPlatesModel::ModelUtils::TotalReconstructionPole> poles_data;
-		
-		for (int i = 0; i < table->rowCount(); ++i)
-		{
-                    static QString indet_string = QObject::tr("indet");
-                        // FIXME: handle bad "ok"s
-			bool ok;
-			double time = locale_.toDouble(table->item(i,ColumnNames::TIME)->text(),&ok);
-
-                        QString lat_string = table->item(i,ColumnNames::LATITUDE)->text();
-                        QString lon_string = table->item(i,ColumnNames::LONGITUDE)->text();
-                        double lat,lon;
-                        if (lat_string == indet_string)
-                        {
-                            lat = 0.;
-                        }
-                        else
-                        {
-                            lat = locale_.toDouble(lat_string,&ok);
-                        }
-                        if (lon_string == indet_string)
-                        {
-                            lon = 0.;
-                        }
-                        else
-                        {
-                            lon = locale_.toDouble(lon_string,&ok);
-                        }
-			double angle = locale_.toDouble(table->item(i,ColumnNames::ANGLE)->text(),&ok);
-			QString comment = table->item(i,ColumnNames::COMMENT)->text();
-                        GPlatesModel::ModelUtils::TotalReconstructionPole pole_data = {
-				time,lat,lon,angle,comment};
-			poles_data.push_back(pole_data);
-		}
-
-		return GPlatesModel::ModelUtils::create_total_reconstruction_pole(poles_data);
-	}
+	
 
 	void
 	fill_table_with_comment(
@@ -272,10 +231,10 @@ namespace
 	 */
 	void
 	insert_table_row(
-		QTableWidget *table,
-		unsigned int row_count,
-		const GPlatesPropertyValues::GpmlTimeSample &time_sample,
-		const QLocale &locale_)
+			QTableWidget *table,
+			unsigned int row_count,
+			const GPlatesPropertyValues::GpmlTimeSample &time_sample,
+			const QLocale &locale_)
 	{
 		table->insertRow(row_count);
 		fill_table_with_time_instant(table,row_count,time_sample.valid_time()->time_position(),locale_);
@@ -289,39 +248,19 @@ namespace
 				time_sample.description()->value().get());
 		}
 		fill_table_with_comment(table, row_count, comment);
-
+		
+		if(time_sample.is_disabled())
+		{
+			for (int i = 0; i < table->horizontalHeader()->count()-1; i++)
+			{
+				table->item(row_count, i)->setData(Qt::BackgroundRole, Qt::gray);
+			}
+		}
+		QVariant qv;
+		qv.setValue(boost::optional<GPlatesPropertyValues::GpmlTimeSample>(time_sample));
+		table->item(row_count, ColumnNames::TIME)->setData(Qt::UserRole,qv);
 	}
 
-	GPlatesPropertyValues::GpmlTimeSample
-	create_time_sample_property_from_row(
-		double time, double lat, double lon, double angle, const QString &comment)
-	{
-		// Should we check the validity of any entered values here, or later when we try to commit to the model?
-
-		using namespace GPlatesModel;
-		using namespace GPlatesPropertyValues;
-
-		// Attempt to create a valid time
-		std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
-		XmlAttributeName xml_attribute_name = XmlAttributeName::create_gml("frame");
-		XmlAttributeValue xml_attribute_value("http://gplates.org/TRS/flat");
-		xml_attributes.insert(std::make_pair(xml_attribute_name, xml_attribute_value));
-
-		GeoTimeInstant geo_time_instant(time);
-		GmlTimeInstant::non_null_ptr_type gml_time_instant =
-			GmlTimeInstant::create(geo_time_instant, xml_attributes);
-
-
-		// Note the (lon,lat) ordering in the pair.
-		PropertyValue::non_null_ptr_type value =
-			GpmlFiniteRotation::create(std::make_pair(lon,lat),angle);
-
-		boost::intrusive_ptr<XsString> description =
-			XsString::create(GPlatesUtils::make_icu_string_from_qstring(comment)).get();
-		StructuralType value_type =
-			StructuralType::create_gpml("FiniteRotation");
-		return GpmlTimeSample(value, gml_time_instant, description, value_type);
-	}
 
 	/**
 	 * Set appropriate limits for the spinbox according to its column - e.g. -90 to 90 for latitude.                                                                     
@@ -479,10 +418,82 @@ namespace
 			set_indeterminate_fields_for_row(table,i);
 		}
 	}
-
-
+	
 }
 
+
+GPlatesQtWidgets::EditPoleActionWidget::EditPoleActionWidget(
+		EditTableWidget *table_widget,
+		bool enable_is_on,
+		QWidget *parent_ ):
+	EditTableActionWidget(table_widget,parent_),
+	d_enable_is_on(enable_is_on)
+{
+	resize(144, 34);
+	disable_button = new QPushButton(this);
+	disable_button->setObjectName(QString::fromUtf8("button_disable"));
+	QIcon icon;
+	icon.addFile(QString::fromUtf8(":/disable_22.png"), QSize(), QIcon::Normal, QIcon::Off);
+	disable_button->setIcon(icon);
+	disable_button->setIconSize(QSize(22, 22));
+	disable_button->setFlat(false);
+	hboxLayout->addWidget(disable_button);
+
+	enable_button = new QPushButton(this);
+	enable_button->setObjectName(QString::fromUtf8("button_enable"));
+	icon.addFile(QString::fromUtf8(":/enable_22.png"), QSize(), QIcon::Normal, QIcon::Off);
+	enable_button->setIcon(icon);
+	enable_button->setIconSize(QSize(22, 22));
+	enable_button->setFlat(false);
+	hboxLayout->addWidget(enable_button);
+
+	icon.addFile(QString::fromUtf8(":/gnome_edit_delete_22.png"), QSize(), QIcon::Normal, QIcon::Off);
+	button_delete->setIcon(icon);
+
+#ifndef QT_NO_TOOLTIP
+	disable_button->setToolTip(
+			QApplication::translate(
+					"EditPoleActionWidget", 
+					"Disable the pole", 
+					0, 
+					QApplication::UnicodeUTF8));
+	enable_button->setToolTip(
+			QApplication::translate(
+					"EditPoleActionWidget", 
+					"Enable the pole", 
+					0, 
+					QApplication::UnicodeUTF8));
+#endif // QT_NO_TOOLTIP
+	disable_button->setText(QString());
+	enable_button->setText(QString());
+	refresh_buttons();
+	QObject::connect(enable_button, SIGNAL(clicked()), this, SLOT(enable_pole()));
+	QObject::connect(disable_button, SIGNAL(clicked()), this, SLOT(disable_pole()));
+}
+
+
+void
+GPlatesQtWidgets::EditPoleActionWidget::enable_pole()
+{
+	EditTotalReconstructionSequenceWidget *edit_widget = 
+		dynamic_cast<EditTotalReconstructionSequenceWidget *>(d_table_widget_ptr);
+	if(edit_widget)
+	{
+		edit_widget->handle_disable_pole(this, false);
+	}
+}
+
+
+void
+GPlatesQtWidgets::EditPoleActionWidget::disable_pole()
+{
+	EditTotalReconstructionSequenceWidget *edit_widget = 
+		dynamic_cast<EditTotalReconstructionSequenceWidget *>(d_table_widget_ptr);
+	if(edit_widget)
+	{
+		edit_widget->handle_disable_pole(this, true);
+	}
+}
 
 
 GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::EditTotalReconstructionSequenceWidget(
@@ -493,12 +504,13 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::EditTotalReconstruction
 		d_spinbox_row(0),
 		d_spinbox_column(0),
 		d_moving_plate_changed(false),
-		d_fixed_plate_changed(false)
+		d_fixed_plate_changed(false),
+		d_is_grot(false)
 {
 	setupUi(this);
 
 	// For setting minimum sizes.
-	EditTableActionWidget dummy(this,NULL);
+	EditPoleActionWidget dummy(this,NULL);
 	table_sequences->horizontalHeader()->setResizeMode(ColumnNames::COMMENT,QHeaderView::Stretch);
 	table_sequences->horizontalHeader()->setResizeMode(ColumnNames::ACTIONS,QHeaderView::Fixed);
 	table_sequences->horizontalHeader()->resizeSection(ColumnNames::ACTIONS,dummy.width());
@@ -548,12 +560,24 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::update_table_widget_fro
 	// Note that this is clearContents() and not clear() - calling clear() will also clear the header text (which has
 	// been set up in QtDesigner) resulting in only numerical headers appearing. 
 	table_sequences->clearContents();
-
 	std::vector<GpmlTimeSample>::const_iterator iter =
 		irreg_sampling->time_samples().begin();
 	std::vector<GpmlTimeSample>::const_iterator end =
 		irreg_sampling->time_samples().end();
 
+	for ( ; iter != end; ++iter) 
+	{
+		if(dynamic_cast<const GpmlTotalReconstructionPole*>(iter->value().get()))
+		{
+			break;
+		}
+	}
+	if(iter != end)
+	{
+		d_is_grot = true;
+		table_sequences->hideColumn(ColumnNames::COMMENT);
+	}
+	iter = irreg_sampling->time_samples().begin();
 	table_sequences->setRowCount(0);
 	unsigned int row_count = 0;
 
@@ -616,7 +640,7 @@ GPlatesModel::TopLevelProperty::non_null_ptr_type
 GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::get_irregular_sampling_property_value_from_table_widget()
 {
 	update_table_from_last_active_cell(table_sequences);
-	return make_irregular_sampling_from_table(table_sequences);
+	return make_irregular_sampling_from_table();
 }
 
 void
@@ -625,15 +649,15 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::handle_insert_new_pole(
 	using namespace GPlatesPropertyValues;
 	using namespace GPlatesModel;
 
-    double time = spinbox_time->value();
-	double lat = spinbox_lat->value();
-	double lon = spinbox_lon->value();
-	double angle = spinbox_angle->value();
-	QString comment = lineedit_comment->text();
-
 	static QLocale locale_;
-
-	GpmlTimeSample time_sample = create_time_sample_property_from_row(time,lat,lon,angle,comment);
+	ModelUtils::TotalReconstructionPole trs_pole;
+	trs_pole.time =  spinbox_time->value();; 
+	trs_pole.lat_of_euler_pole = spinbox_lat->value();
+	trs_pole.lon_of_euler_pole = spinbox_lon->value();
+	trs_pole.rotation_angle =spinbox_angle->value();
+	trs_pole.comment = lineedit_comment->text();
+	
+	GpmlTimeSample time_sample = ModelUtils::create_gml_time_sample(trs_pole, d_is_grot); 
 
 	insert_table_row(table_sequences,table_sequences->rowCount(),time_sample,locale_);
 	if (table_sequences->rowCount() > 0)
@@ -714,7 +738,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::get_row_for_action_widg
 
 void
 GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::insert_blank_row(
-	int row)
+		int row)
 {
 	// Insert a new blank row.
 	table_sequences->insertRow(row);
@@ -726,6 +750,16 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::insert_blank_row(
 
 	// Open up an editor for the first time field.
 	QTableWidgetItem *time_item = table_sequences->item(row, ColumnNames::TIME);
+	QVariant qv;
+	GPlatesModel::ModelUtils::TotalReconstructionPole trs_pole;
+	trs_pole.time = 0; 
+	trs_pole.lat_of_euler_pole = 0; 
+	trs_pole.lon_of_euler_pole = 0; 
+	trs_pole.rotation_angle = 0;
+	qv.setValue( 
+			boost::optional<GPlatesPropertyValues::GpmlTimeSample>(
+					GPlatesModel::ModelUtils::create_gml_time_sample(trs_pole, d_is_grot)));
+	time_item->setData(Qt::UserRole, qv);
 	if (time_item != NULL) {
 		table_sequences->setCurrentItem(time_item);
 		table_sequences->editItem(time_item);
@@ -874,11 +908,12 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::initialise()
 	validate();
 }
 
+
 void
 GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::set_action_widget_in_row(
-	int row)
+		int row)
 {
-	if (row < 0)
+	if (row < 0 )
 	{
 		return;
 	}
@@ -898,7 +933,112 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::set_action_widget_in_ro
 	}
 
 	// Insert action widget in desired row.
-	GPlatesQtWidgets::EditTableActionWidget *action_widget =
-		new GPlatesQtWidgets::EditTableActionWidget(this, this);
+	bool enable_flag = false;
+	QVariant qv = table_sequences->item(row,ColumnNames::TIME)->data(Qt::UserRole);
+	using namespace GPlatesPropertyValues;
+	boost::optional<GpmlTimeSample> sample = qv.value<boost::optional<GpmlTimeSample> >();
+	if(sample && sample->is_disabled())
+	{
+		enable_flag = true;
+	}
+	EditPoleActionWidget *action_widget = new EditPoleActionWidget(this, enable_flag, this);
 	table_sequences->setCellWidget(row, ColumnNames::ACTIONS, action_widget);
 }
+
+
+void
+GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::handle_disable_pole(
+		GPlatesQtWidgets::EditPoleActionWidget* action_widget,
+		bool disable_flag)
+{
+	int row = get_row_for_action_widget(action_widget);
+	QVariant qv = table_sequences->item(row,ColumnNames::TIME)->data(Qt::UserRole);
+	using namespace GPlatesPropertyValues;
+	boost::optional<GpmlTimeSample> sample = qv.value<boost::optional<GpmlTimeSample> >();
+	if(sample)
+	{
+		sample->set_disabled(disable_flag);
+	}
+	qv.setValue(sample);
+	table_sequences->item(row,ColumnNames::TIME)->setData(Qt::UserRole, qv);
+	Qt::GlobalColor bg_color;
+	if(disable_flag)
+	{
+		bg_color = Qt::gray;
+	}
+	else
+	{
+		bg_color = Qt::white;
+	}
+	
+	table_sequences->removeCellWidget(row,ColumnNames::ACTIONS);
+	for (int i = 0; i < table_sequences->horizontalHeader()->count()-1; i++)
+	{
+		table_sequences->item(row, i)->setData(Qt::BackgroundRole, bg_color);
+	}
+}
+
+
+GPlatesModel::TopLevelProperty::non_null_ptr_type
+GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::make_irregular_sampling_from_table()
+{
+	static QLocale locale_;
+	using namespace GPlatesPropertyValues;
+	using namespace GPlatesModel;
+	std::vector<GpmlTimeSample> time_samples;
+		
+	for (int i = 0; i < table_sequences->rowCount(); ++i)
+	{
+		static QString indet_string = QObject::tr("indet");
+        // FIXME: handle bad "ok"s
+		bool ok;
+		double time = locale_.toDouble(table_sequences->item(i,ColumnNames::TIME)->text(),&ok);
+
+        QString lat_string = table_sequences->item(i,ColumnNames::LATITUDE)->text();
+        QString lon_string = table_sequences->item(i,ColumnNames::LONGITUDE)->text();
+        double lat = (lat_string == indet_string) ? 0.0 : locale_.toDouble(lat_string,&ok);
+		double lon = (lon_string == indet_string) ? 0.0 : locale_.toDouble(lon_string,&ok);  
+		double angle = locale_.toDouble(table_sequences->item(i,ColumnNames::ANGLE)->text(),&ok);
+		QString comment = table_sequences->item(i,ColumnNames::COMMENT)->text();
+        ModelUtils::TotalReconstructionPole pole_data = {time,lat,lon,angle,comment};
+		QVariant qv = table_sequences->item(i, ColumnNames::TIME)->data(Qt::UserRole);
+		boost::optional<GpmlTimeSample> original_sample = qv.value<boost::optional<GpmlTimeSample> >();
+		GpmlTimeSample new_time_sample = ModelUtils::create_gml_time_sample(pole_data, d_is_grot);
+		if(original_sample)
+		{
+			if(original_sample->is_disabled())
+			{
+				new_time_sample.set_disabled(true);
+			}
+			GpmlTotalReconstructionPole 
+				*new_pole =	dynamic_cast<GpmlTotalReconstructionPole*>(new_time_sample.value().get()),
+				*old_pole = dynamic_cast<GpmlTotalReconstructionPole*>(original_sample->value().get());			
+			if(new_pole && old_pole)
+			{
+				new_pole->metadata() = old_pole->metadata();
+			}
+		}
+		time_samples.push_back(new_time_sample);
+	}
+		
+	StructuralType value_type = d_is_grot ?
+			StructuralType::create_gpml("TotalReconstructionPole"):
+			StructuralType::create_gpml("FiniteRotation");
+
+	PropertyValue::non_null_ptr_type gpml_irregular_sampling =
+		GpmlIrregularSampling::create(
+				time_samples,
+				GPlatesUtils::get_intrusive_ptr(
+						GpmlFiniteRotationSlerp::create(value_type)), 
+				value_type);
+
+	TopLevelProperty::non_null_ptr_type top_level_property_inline =
+		TopLevelPropertyInline::create(
+				PropertyName::create_gpml("totalReconstructionPole"),
+				gpml_irregular_sampling, 
+				std::map<XmlAttributeName, XmlAttributeValue>());
+
+	return top_level_property_inline;
+}
+
+

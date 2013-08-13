@@ -30,10 +30,14 @@
 #include "LayerProxyUtils.h"
 #include "ReconstructMethodRegistry.h"
 #include "ReconstructUtils.h"
+#include "TopologyNetworkResolverLayerProxy.h"
 
 
 const QString GPlatesAppLogic::ReconstructLayerTask::RECONSTRUCTABLE_FEATURES_CHANNEL_NAME =
 		"Reconstructable features";
+
+const QString GPlatesAppLogic::ReconstructLayerTask::DEFORMATION_SURFACES_CHANNEL_NAME =
+		"Deformation surfaces (topological networks)";
 
 
 bool
@@ -56,7 +60,6 @@ GPlatesAppLogic::ReconstructLayerTask::create_layer_task(
 					application_state.get_reconstruct_method_registry()));
 }
 
-
 std::vector<GPlatesAppLogic::LayerInputChannelType>
 GPlatesAppLogic::ReconstructLayerTask::get_input_channel_types() const
 {
@@ -67,14 +70,28 @@ GPlatesAppLogic::ReconstructLayerTask::get_input_channel_types() const
 			LayerInputChannelType(
 					get_reconstruction_tree_channel_name(),
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
-					LayerTaskType::RECONSTRUCTION));
+					LayerTaskType::RECONSTRUCTION)); // rotations
 
 	// Channel definition for the reconstructable features.
 	input_channel_types.push_back(
 			LayerInputChannelType(
 					RECONSTRUCTABLE_FEATURES_CHANNEL_NAME,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL));
-	
+
+
+	// Channel definition for the surfaces on which to calculate interpolated rotations:
+	// - resolved topological networks.
+	std::vector<LayerTaskType::Type> deformation_surfaces_input_channel_types;
+	deformation_surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
+#if 0// NOTE: not sure we will need this one:
+	deformation_surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
+#endif
+	input_channel_types.push_back(
+		LayerInputChannelType(
+				DEFORMATION_SURFACES_CHANNEL_NAME,
+				LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
+				deformation_surfaces_input_channel_types));
+
 	return input_channel_types;
 }
 
@@ -90,15 +107,16 @@ void
 GPlatesAppLogic::ReconstructLayerTask::activate(
 		bool active)
 {
-	// If deactivated then specify an empty set of topological sections layer proxies.
+	// If deactivated then flush any RFGs contained in the layer proxy.
 	if (!active)
 	{
-		// This method flushes any RFGs contained in the layer proxy.
 		// This is done so that topologies will no longer find the RFGs when they lookup observers
 		// of topological section features.
-		// This issue exists because the topology layers do not restrict topological sections
-		// to their input channels (and hence have no input channels for topological sections).
-		d_reconstruct_layer_proxy->reset_reconstructed_feature_geometry_caches();
+		// This issue exists because the topology layers do not necessarily restrict topological sections
+		// to their input channels (unless topological sections input channels are connected), instead
+		// using an unrestricted global feature id lookup even though this 'reconstruct' layer has
+		// been disconnected from the topology layer in question.
+		d_reconstruct_layer_proxy->reset_reconstruction_cache();
 	}
 }
 
@@ -145,6 +163,7 @@ GPlatesAppLogic::ReconstructLayerTask::add_input_layer_proxy_connection(
 		const QString &input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
+// qDebug() << "\n\nReconstructLayerTask::add_input_layer_proxy_connection()";
 	if (input_channel_name == get_reconstruction_tree_channel_name())
 	{
 		// Make sure the input layer proxy is a reconstruction layer proxy.
@@ -158,6 +177,20 @@ GPlatesAppLogic::ReconstructLayerTask::add_input_layer_proxy_connection(
 
 			d_reconstruct_layer_proxy->set_current_reconstruction_layer_proxy(
 					GPlatesUtils::get_non_null_pointer(reconstruction_layer_proxy.get()));
+		}
+	} 
+	else if ( input_channel_name == DEFORMATION_SURFACES_CHANNEL_NAME )
+	{
+		// The input layer proxy is one of the following layer proxy types:
+		// - topological network resolver.
+		boost::optional<TopologyNetworkResolverLayerProxy *> topological_network_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<
+					TopologyNetworkResolverLayerProxy>(layer_proxy);
+
+		if (topological_network_resolver_layer_proxy)
+		{
+			d_reconstruct_layer_proxy->add_topological_network_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(topological_network_resolver_layer_proxy.get()));
 		}
 	}
 }
@@ -181,6 +214,18 @@ GPlatesAppLogic::ReconstructLayerTask::remove_input_layer_proxy_connection(
 
 			d_reconstruct_layer_proxy->set_current_reconstruction_layer_proxy(
 					d_default_reconstruction_layer_proxy);
+		}
+	}
+	else if ( input_channel_name == DEFORMATION_SURFACES_CHANNEL_NAME )
+	{
+		// The input layer proxy is one of the following layer proxy types:
+		// - topological network resolver.
+		boost::optional<TopologyNetworkResolverLayerProxy *> topological_network_resolver_layer_proxy =
+				LayerProxyUtils::get_layer_proxy_derived_type<TopologyNetworkResolverLayerProxy>(layer_proxy);
+		if (topological_network_resolver_layer_proxy)
+		{
+			d_reconstruct_layer_proxy->remove_topological_network_resolver_layer_proxy(
+					GPlatesUtils::get_non_null_pointer(topological_network_resolver_layer_proxy.get()));
 		}
 	}
 }

@@ -19,6 +19,10 @@ set(srcs
     AbstractEditWidget.h
     ActionButtonBox.cc
     ActionButtonBox.h
+    AddContributorWidgetUi.ui
+    AddCreatorWidgetUi.ui
+    AddGTSWidgetUi.ui
+    AddHellWidgetUi.ui
     AddNewLayerDialog.cc
     AddNewLayerDialog.h
     AddNewLayerDialogUi.ui
@@ -207,8 +211,13 @@ set(srcs
     ExportFileOptionsWidget.h
     ExportFileOptionsWidgetUi.ui
     ExportFlowlineOptionsWidget.h
+    ExportImageResolutionOptionsWidget.cc
+    ExportImageResolutionOptionsWidget.h
+    ExportImageResolutionOptionsWidgetUi.ui
     ExportMotionPathOptionsWidget.h
     ExportOptionsWidget.h
+    ExportRasterOptionsWidget.cc
+    ExportRasterOptionsWidget.h
     ExportReconstructedGeometryOptionsWidget.h
     ExportResolvedTopologyOptionsWidget.cc
     ExportResolvedTopologyOptionsWidget.h
@@ -218,6 +227,8 @@ set(srcs
     ExportStageRotationOnlyOptionsWidget.h
     ExportStageRotationOnlyOptionsWidgetUi.ui
     ExportStageRotationOptionsWidget.h
+    ExportSvgOptionsWidget.cc
+    ExportSvgOptionsWidget.h
     ExportTotalRotationOptionsWidget.h
     ExportVelocityOptionsWidget.cc
     ExportVelocityOptionsWidget.h
@@ -229,6 +240,9 @@ set(srcs
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
     FileDialogFilter.h
+    FiniteRotationCalculatorDialog.cc
+    FiniteRotationCalculatorDialog.h
+    FiniteRotationCalculatorDialogUi.ui
     FlowlinePropertiesWidget.cc
     FlowlinePropertiesWidget.h
     FlowlinePropertiesWidgetUi.ui
@@ -320,6 +334,9 @@ set(srcs
     MeasureDistanceWidget.cc
     MeasureDistanceWidget.h
     MeasureDistanceWidgetUi.ui
+    MetadataDialog.cc
+    MetadataDialog.h
+    MetadataDialogUi.ui
     ModifyGeometryWidget.cc
     ModifyGeometryWidget.h
     ModifyGeometryWidgetUi.ui
@@ -421,6 +438,9 @@ set(srcs
     SetCameraViewpointDialog.cc
     SetCameraViewpointDialog.h
     SetCameraViewpointDialogUi.ui
+    SetDeformationParametersDialog.cc
+    SetDeformationParametersDialog.h
+    SetDeformationParametersDialogUi.ui
     SetProjectionDialog.cc
     SetProjectionDialog.h
     SetProjectionDialogUi.ui

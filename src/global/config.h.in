@@ -1,3 +1,6 @@
+#ifndef GPLATES_GLOBAL_CONFIG_H
+#define GPLATES_GLOBAL_CONFIG_H
+
 /* src/global/config.h.in.  CMake generates src/global/config.h */
 
 /* define if we can link with the OpenGL framework */
@@ -138,9 +141,6 @@
 #cmakedefine BOOST_MATH_TOOLS_REAL_CAST_HPP_PATH "${BOOST_MATH_TOOLS_REAL_CAST_HPP_PATH}"
 #cmakedefine BOOST_CSTDINT_HPP_PATH "${BOOST_CSTDINT_HPP_PATH}"
 
-/* Whether GPlates is a public release which should hide debug messages by default */
-#cmakedefine GPLATES_PUBLIC_RELEASE
-
 /* Whether GPlates is not built with Python support */
 #cmakedefine GPLATES_NO_PYTHON
 
@@ -149,3 +149,5 @@
 
 /* Whether GPlates is not built with Symbol stuff */
 #cmakedefine GPLATES_NO_SYMBOL
+
+#endif // GPLATES_GLOBAL_CONFIG_H

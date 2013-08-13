@@ -176,14 +176,8 @@ namespace GPlatesPropertyValues
 			return d_is_disabled;
 		}
 
-		bool
-		is_disabled()
-		{
-			return d_is_disabled;
-		}
-
 		void
-		set_is_disabled(
+		set_disabled(
 				bool is_disabled_)
 		{
 			d_is_disabled = is_disabled_;

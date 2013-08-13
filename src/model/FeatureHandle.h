@@ -308,8 +308,9 @@ namespace GPlatesModel
 		 */
 		time_t d_creation_time;
 	};
-
 }
+
+
 
 // This include is not necessary for this header to function, but it would be
 // convenient if client code could include this header and be able to use

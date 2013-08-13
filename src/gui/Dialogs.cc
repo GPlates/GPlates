@@ -55,6 +55,7 @@
 #include "qt-widgets/AnimateDialog.h"
 #include "qt-widgets/AssignReconstructionPlateIdsDialog.h"
 #include "qt-widgets/CalculateReconstructionPoleDialog.h"
+#include "qt-widgets/FiniteRotationCalculatorDialog.h"
 #include "qt-widgets/ChooseFeatureCollectionDialog.h"
 #include "qt-widgets/ColouringDialog.h"
 #include "qt-widgets/ConfigureGraticulesDialog.h"
@@ -413,6 +414,30 @@ void
 GPlatesGui::Dialogs::pop_up_feature_properties_dialog()
 {
 	feature_properties_dialog().pop_up();
+}
+
+
+
+
+GPlatesQtWidgets::FiniteRotationCalculatorDialog &
+GPlatesGui::Dialogs::finite_rotation_calculator_dialog()
+{
+	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
+	const DialogType dialog_type = DIALOG_FINITE_ROTATION_CALCULATOR_DIALOG;
+	typedef GPlatesQtWidgets::FiniteRotationCalculatorDialog dialog_typename;
+
+	if (d_dialogs[dialog_type].isNull())
+	{
+		d_dialogs[dialog_type] = new dialog_typename(&viewport_window());
+	}
+
+	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
+}
+
+void
+GPlatesGui::Dialogs::pop_up_finite_rotation_calculator_dialog()
+{
+	finite_rotation_calculator_dialog().pop_up();
 }
 
 GPlatesQtWidgets::HellingerDialog &
@@ -791,7 +816,7 @@ GPlatesGui::Dialogs::velocity_domain_citcoms_dialog()
 
 	if (d_dialogs[dialog_type].isNull())
 	{
-		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
+		d_dialogs[dialog_type] = new dialog_typename(viewport_window(), &viewport_window());
 	}
 
 	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
@@ -813,7 +838,7 @@ GPlatesGui::Dialogs::velocity_domain_lat_lon_dialog()
 
 	if (d_dialogs[dialog_type].isNull())
 	{
-		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
+		d_dialogs[dialog_type] = new dialog_typename(viewport_window(), &viewport_window());
 	}
 
 	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
@@ -835,7 +860,7 @@ GPlatesGui::Dialogs::velocity_domain_terra_dialog()
 
 	if (d_dialogs[dialog_type].isNull())
 	{
-		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
+		d_dialogs[dialog_type] = new dialog_typename(viewport_window(), &viewport_window());
 	}
 
 	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);

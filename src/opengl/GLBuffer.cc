@@ -34,12 +34,16 @@
 
 #include "GLBufferImpl.h"
 #include "GLContext.h"
+#include "GLRenderer.h"
 
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
 #include "utils/Profile.h"
+
+const GPlatesOpenGL::GLBuffer::buffers_type GPlatesOpenGL::GLBuffer::BUFFER_TYPE_VERTEX(1 << GPlatesOpenGL::GLBuffer::VERTEX_BUFFER);
+const GPlatesOpenGL::GLBuffer::buffers_type GPlatesOpenGL::GLBuffer::BUFFER_TYPE_PIXEL(1 << GPlatesOpenGL::GLBuffer::PIXEL_BUFFER);
 
 const GPlatesOpenGL::GLBuffer::target_type GPlatesOpenGL::GLBuffer::TARGET_ARRAY_BUFFER = GL_ARRAY_BUFFER_ARB;
 const GPlatesOpenGL::GLBuffer::target_type GPlatesOpenGL::GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER = GL_ELEMENT_ARRAY_BUFFER_ARB;
@@ -63,17 +67,35 @@ const GPlatesOpenGL::GLBuffer::access_type GPlatesOpenGL::GLBuffer::ACCESS_READ_
 
 std::auto_ptr<GPlatesOpenGL::GLBuffer>
 GPlatesOpenGL::GLBuffer::create_as_auto_ptr(
-		GLRenderer &renderer)
+		GLRenderer &renderer,
+		const buffers_type &buffer_types)
 {
-	// Create an OpenGL buffer object if we can.
-	if (GLEW_ARB_vertex_buffer_object)
+	// Make sure at least one buffer type was specified.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			buffer_types.any(),
+			GPLATES_ASSERTION_SOURCE);
+
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
+	// Create an OpenGL buffer object that supports the specified buffer types if we can.
+	// Otherwise create a buffer that uses client-side memory arrays.
+
+	if (buffer_types.test(VERTEX_BUFFER) &&
+		!capabilities.buffer.gl_ARB_vertex_buffer_object)
 	{
 		return std::auto_ptr<GPlatesOpenGL::GLBuffer>(
-				GLBufferObject::create_as_auto_ptr(renderer));
+				GLBufferImpl::create_as_auto_ptr(renderer));
+	}
+
+	if (buffer_types.test(PIXEL_BUFFER) &&
+		!capabilities.buffer.gl_ARB_pixel_buffer_object)
+	{
+		return std::auto_ptr<GPlatesOpenGL::GLBuffer>(
+				GLBufferImpl::create_as_auto_ptr(renderer));
 	}
 
 	return std::auto_ptr<GPlatesOpenGL::GLBuffer>(
-			GLBufferImpl::create_as_auto_ptr(renderer));
+			GLBufferObject::create_as_auto_ptr(renderer, buffer_types));
 }
 
 

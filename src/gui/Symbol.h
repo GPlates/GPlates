@@ -25,6 +25,8 @@
 #define GPLATES_GUI_SYMBOL_H
 
 #include <map>
+#include <boost/optional.hpp>
+
 #include "model/FeatureType.h"
 
 namespace GPlatesGui
@@ -39,33 +41,42 @@ namespace GPlatesGui
 	    SQUARE,
 	    CIRCLE,
 	    CROSS,
+	    STRAIN_MARKER,
 	    NUM_SYMBOLS
 	};
 
-
-
 	Symbol(
-	    SymbolType symbol_type,
-	    unsigned int size,
-	    bool filled):
-	    d_symbol_type(symbol_type),
-	    d_size(size),
-	    d_filled(filled)
+	    SymbolType symbol_type = TRIANGLE,
+	    unsigned int size = 1, // FIXME: Make this floating-point.
+	    bool filled = false,
+	    boost::optional<double> s_x = boost::none,
+	    boost::optional<double> s_y = boost::none,
+	    boost::optional<double> a = boost::none):
+			d_symbol_type(symbol_type),
+			d_size(size),
+			d_filled(filled),
+			d_scale_x(s_x),
+			d_scale_y(s_y),
+			d_angle(a)
 	{ };
 
-	SymbolType d_symbol_type;
-	unsigned int d_size;
-	bool d_filled;
+		SymbolType d_symbol_type;
+		unsigned int d_size;
+		bool d_filled;
+		boost::optional<double> d_scale_x;
+		boost::optional<double> d_scale_y;
+		boost::optional<double> d_angle;
     };
 
     typedef std::pair<GPlatesModel::FeatureType,Symbol> feature_type_symbol_pair_type;
+
     typedef std::map<GPlatesModel::FeatureType,Symbol> symbol_map_type;
 
     typedef std::map<QString,Symbol::SymbolType> symbol_text_map_type;
 
     boost::optional<Symbol::SymbolType>
-    get_symbol_type_from_string(
-	const QString &symbol_string);
+    get_symbol_type_from_string( 
+		const QString &symbol_string);
 
 }
 

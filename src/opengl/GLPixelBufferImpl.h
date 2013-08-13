@@ -75,7 +75,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const GLBufferImpl::shared_ptr_type &buffer)
 		{
-			return std::auto_ptr<GLPixelBufferImpl>(new GLPixelBufferImpl(buffer));
+			return std::auto_ptr<GLPixelBufferImpl>(new GLPixelBufferImpl(renderer, buffer));
 		}
 
 
@@ -107,6 +107,28 @@ namespace GPlatesOpenGL
 		void
 		gl_bind_pack(
 				GLRenderer &renderer) const;
+
+
+		/**
+		 * Performs the equivalent of the OpenGL command 'glDrawPixels' with the exception that,
+		 * to mirror 'glReadPixels', the x and y pixel offsets are also specified (internally
+		 * 'glWindowPos2i(x, y)' is called since 'glDrawPixels' does not accept x and y).
+		 *
+		 * NOTE: You must have called @a gl_bind_unpack to bind 'this' buffer as an *unpack* target.
+		 *
+		 * @a offset is a byte offset from the start of 'this' pixel buffer to start copying pixels from.
+		 */
+		virtual
+		void
+		gl_draw_pixels(
+				GLRenderer &renderer,
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height,
+				GLenum format,
+				GLenum type,
+				GLint offset);
 
 
 		/**
@@ -431,6 +453,7 @@ namespace GPlatesOpenGL
 		//! Constructor.
 		explicit
 		GLPixelBufferImpl(
+				GLRenderer &renderer,
 				const GLBufferImpl::shared_ptr_type &buffer);
 	};
 }

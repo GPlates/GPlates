@@ -33,7 +33,6 @@
 #include "ColourScheme.h"
 #include "LayerPainter.h"
 #include "RenderSettings.h"
-#include "TextRenderer.h"
 
 #include "opengl/GLContext.h"
 #include "opengl/GLVisualLayers.h"
@@ -79,8 +78,7 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				RenderSettings &render_settings,
-				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
+				const RenderSettings &render_settings,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
 		/**
@@ -110,10 +108,23 @@ namespace GPlatesGui
 				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType parent_layer);
 
 	private:
+
+		virtual
+		bool
+		visit_main_rendered_layer(
+				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type);
+
 		virtual
 		bool
 		visit_rendered_geometry_layer(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer);
+
+
+		//! Typedef for the base class.
+		typedef GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<
+				GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type> base_type;
+
 
 		/**
 		 * Parameters that are only available when @a paint is called.
@@ -125,7 +136,9 @@ namespace GPlatesGui
 					const double &viewport_zoom_factor) :
 				d_renderer(&renderer),
 				d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
-				d_cache_handle(new std::vector<cache_handle_type>())
+				d_cache_handle(new std::vector<cache_handle_type>()),
+				// Default to RECONSTRUCTION_LAYER (we set it before visiting each layer anyway) ...
+				d_main_rendered_layer_type(GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)
 			{  }
 
 			GPlatesOpenGL::GLRenderer *d_renderer;
@@ -133,6 +146,9 @@ namespace GPlatesGui
 
 			// Cache of rendered geometry layers.
 			boost::shared_ptr<std::vector<cache_handle_type> > d_cache_handle;
+
+			// The layer type of the main rendered layer currently being rendered.
+			GPlatesViewOperations::RenderedGeometryCollection::MainLayerType d_main_rendered_layer_type;
 		};
 
 
@@ -152,10 +168,7 @@ namespace GPlatesGui
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
 		//! Rendering flags to determine what gets shown
-		RenderSettings &d_render_settings;
-
-		//! Used for rendering text on an OpenGL canvas
-		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
+		const RenderSettings &d_render_settings;
 
 		//! Used to paint the layers.
 		LayerPainter d_layer_painter;

@@ -792,9 +792,10 @@ GPlatesGui::TopologyTools::set_focus(
 {
 	if (! d_is_active ) { return; }
 
-	// If we can insert the focused feature then switch to the section tab
-	// so the user can add the focused feature to the topology.
-	if (can_insert_focused_feature_into_topology())
+	// If we can insert the focused feature (or remove it) then switch to the section tab
+	// so the user can add/remove the focused feature to/from the topology.
+	if (can_insert_focused_feature_into_topology() ||
+		can_remove_focused_feature_from_topology())
 	{
 		// Draw focused geometry.
 		draw_focused_geometry(true);
@@ -1125,6 +1126,36 @@ GPlatesGui::TopologyTools::can_insert_focused_feature_into_topology()
 	}
 
 	return true;
+}
+
+
+bool
+GPlatesGui::TopologyTools::can_remove_focused_feature_from_topology()
+{
+	// Can't remove focused feature if it's not valid.
+	if (!d_feature_focus_ptr->focused_feature().is_valid())
+	{
+		return false;
+	}
+
+    // Can't remove focused feature if it does not have an associated recon geom
+	if ( !d_feature_focus_ptr->associated_reconstruction_geometry() )
+	{
+		return false;
+	}
+
+	// Check if the focused feature is in the topology.
+	int found_sequence_num; // which sequence of sections the feature was found in
+	std::vector<int> found_indices; // indices in the sequence
+
+	find_topological_section_indices(
+			found_sequence_num,
+			found_indices, 
+			d_feature_focus_ptr->focused_feature(),
+			d_feature_focus_ptr->associated_geometry_property());
+
+	// If feature is currently in the topology then we can remove it.
+	return !found_indices.empty();
 }
 
 
@@ -1539,6 +1570,7 @@ GPlatesGui::TopologyTools::handle_remove_section()
 		}
 	}
 }
+
 
 void
 GPlatesGui::TopologyTools::synchronize_seq_num(

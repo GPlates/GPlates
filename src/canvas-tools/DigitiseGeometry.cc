@@ -33,7 +33,7 @@
 
 GPlatesCanvasTools::DigitiseGeometry::DigitiseGeometry(
 		const status_bar_callback_type &status_bar_callback,
-		GPlatesViewOperations::GeometryType::Value geom_type,
+		GPlatesMaths::GeometryType::Value geom_type,
 		GPlatesViewOperations::GeometryBuilder &geometry_builder,
 		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
@@ -74,7 +74,7 @@ GPlatesCanvasTools::DigitiseGeometry::handle_activation()
 	// and add RenderedGeometry objects to the specified main render layer.
 	d_add_point_geometry_operation->activate();
 
-	if (d_default_geom_type == GPlatesViewOperations::GeometryType::MULTIPOINT)
+	if (d_default_geom_type == GPlatesMaths::GeometryType::MULTIPOINT)
 	{
 		set_status_bar_message(QT_TR_NOOP("Click to draw a new point."));
 	}

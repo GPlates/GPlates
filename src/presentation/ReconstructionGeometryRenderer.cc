@@ -24,9 +24,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <cstddef> // For std::size_t
-
 #include <boost/foreach.hpp>
+#include <CGAL/centroid.h>
 
 #include "global/CompilerWarnings.h"
 
@@ -44,18 +45,22 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/CoRegistrationData.h"
-#include "app-logic/PropertyExtractors.h"
+#include "app-logic/DeformedFeatureGeometry.h"
+#include "app-logic/GeometryUtils.h"
 #include "app-logic/MultiPointVectorField.h"
+#include "app-logic/PlateVelocityUtils.h"
+#include "app-logic/PropertyExtractors.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedFlowline.h"
 #include "app-logic/ReconstructedMotionPath.h"
 #include "app-logic/ReconstructedSmallCircle.h"
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ResolvedRaster.h"
 #include "app-logic/ResolvedScalarField3D.h"
 #include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
-#include "app-logic/PlateVelocityUtils.h"
+#include "app-logic/ResolvedTriangulationUtils.h"
 
 #include "data-mining/DataTable.h"
 
@@ -66,14 +71,16 @@
 #include "gui/PlateIdColourPalettes.h"
 
 #include "maths/CalculateVelocity.h"
+#include "maths/Centroid.h"
 #include "maths/MathsUtils.h"
 
-#include "utils/Profile.h"
 #include "utils/ComponentManager.h"
+#include "utils/Profile.h"
 
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryParameters.h"
+
 
 namespace
 {
@@ -88,21 +95,65 @@ namespace
 	{
 	    if (symbol_map)
 	    {
-		GPlatesAppLogic::FeatureTypePropertyExtractor extractor;
-		const boost::optional<GPlatesAppLogic::FeatureTypePropertyExtractor::return_type> feature_type =
-			    extractor(*reconstruction_geometry);
+			GPlatesAppLogic::FeatureTypePropertyExtractor extractor;
+			const boost::optional<GPlatesAppLogic::FeatureTypePropertyExtractor::return_type> feature_type =
+					extractor(*reconstruction_geometry);
 
-		if (feature_type)
-		{
-		    GPlatesGui::symbol_map_type::const_iterator iter = symbol_map->find(*feature_type);
+			if (feature_type)
+			{
+				GPlatesGui::symbol_map_type::const_iterator iter = symbol_map->find(*feature_type);
 
-		    if (iter != symbol_map->end())
-		    {
-			return iter->second;
-		    }
-		}
+				if (iter != symbol_map->end())
+				{
+					return iter->second;
+				}
+			}
 	    }
+
 	    return boost::none;
+	}
+
+
+	/**
+	 * Returns a GPlatesGui::ColourProxy.
+	 */
+	GPlatesGui::ColourProxy
+	get_colour(
+			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry,
+			const boost::optional<GPlatesGui::Colour> &colour,
+			boost::optional<const GPlatesGui::StyleAdapter &> style_adapter)
+	{
+		// If on override colour has been provided then use that.
+		if (colour)
+		{
+			return GPlatesGui::ColourProxy(colour.get());
+		}
+
+		// If python colouring is enabled then use the python draw style.
+		if (GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+		{
+			GPlatesGui::DrawStyle style;
+
+			if (style_adapter)
+			{
+				boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+						GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
+								reconstruction_geometry);
+				if (feature_ref)
+				{
+					style = style_adapter->get_style(feature_ref.get());
+				}
+			}
+
+			return GPlatesGui::ColourProxy(style.colour);
+		}
+
+		// Use the old method of colouring based on hard-coded (C++) colour schemes where the
+		// colour is determined using feature properties.
+		//
+		// Note: This also used to be deferred (under actual painting) colouring but not sure
+		// if that's still the case.
+		return GPlatesGui::ColourProxy(reconstruction_geometry);
 	}
 
 
@@ -115,43 +166,24 @@ namespace
 			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry,
 			const GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams &render_params,
-			const boost::optional<GPlatesGui::Colour> &colour,
+			const GPlatesGui::ColourProxy &colour_proxy,
 			const boost::optional<GPlatesMaths::Rotation> &rotation = boost::none,
-			const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none,
-			const GPlatesGui::DrawStyle style = GPlatesGui::DrawStyle())
+			const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map = boost::none)
 	{
-
 		boost::optional<GPlatesGui::Symbol> symbol = get_symbol(
 				feature_type_symbol_map, reconstruction_geometry);
-		//symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, 10, true);
 
-		// Create a RenderedGeometry for drawing the reconstructed geometry.
-		// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
-		// using ColourProxy.
-		GPlatesViewOperations::RenderedGeometry rendered_geom;
-		if(GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
-		{
-			rendered_geom =
-					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-					rotation ? rotation.get() * geometry : geometry,
-					colour ? colour : style.colour,
-					render_params.reconstruction_point_size_hint,
-					render_params.reconstruction_line_width_hint,
-					render_params.fill_polygons,
-					symbol);
-		}
-		else
-		{
-			rendered_geom =
-					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-					rotation ? rotation.get() * geometry : geometry,
-					colour ? colour.get() : GPlatesGui::ColourProxy(reconstruction_geometry),
-					render_params.reconstruction_point_size_hint,
-					render_params.reconstruction_line_width_hint,
-					render_params.fill_polygons,
-					symbol);
-		}
-		
+		// Create a RenderedGeometry for drawing the reconstruction geometry.
+		GPlatesViewOperations::RenderedGeometry rendered_geom =
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+						rotation ? rotation.get() * geometry : geometry,
+						colour_proxy,
+						render_params.reconstruction_point_size_hint,
+						render_params.reconstruction_line_width_hint,
+						render_params.fill_polygons,
+						render_params.fill_polylines,
+						render_params.fill_modulate_colour,
+						symbol);
 
 		// Create a RenderedGeometry for storing the ReconstructionGeometry and
 		// a RenderedGeometry associated with it.
@@ -167,29 +199,40 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 		float reconstruction_line_width_hint_,
 		float reconstruction_point_size_hint_,
 		bool fill_polygons_,
+		bool fill_polylines_,
 		float ratio_zoom_dependent_bin_dimension_to_globe_radius_,
 		float ratio_arrow_unit_vector_direction_to_globe_radius_,
 		float ratio_arrowhead_size_to_globe_radius_,
+		bool show_deformed_feature_geometries_,
+		bool show_strain_accumulation_,
+		double strain_accumulation_scale_,
 		bool show_topological_network_delaunay_triangulation_,
 		bool show_topological_network_constrained_triangulation_,
 		bool show_topological_network_mesh_triangulation_,
+		bool show_topological_network_total_triangulation_,
 		bool show_topological_network_segment_velocity_,
-		bool show_velocity_field_delaunay_vectors_,
-		bool show_velocity_field_constrained_vectors_) :
+		int topological_network_color_index_) :
 	reconstruction_line_width_hint(reconstruction_line_width_hint_),
 	reconstruction_point_size_hint(reconstruction_point_size_hint_),
 	fill_polygons(fill_polygons_),
+	fill_polylines(fill_polylines_),
 	ratio_zoom_dependent_bin_dimension_to_globe_radius(ratio_zoom_dependent_bin_dimension_to_globe_radius_),
 	ratio_arrow_unit_vector_direction_to_globe_radius(ratio_arrow_unit_vector_direction_to_globe_radius_),
 	ratio_arrowhead_size_to_globe_radius(ratio_arrowhead_size_to_globe_radius_),
 	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
+	fill_modulate_colour(1, 1, 1, 1),
+	normal_map_height_field_scale_factor(1),
 	vgp_draw_circular_error(true),
-	show_topological_network_mesh_triangulation( show_topological_network_mesh_triangulation_),
+	show_deformed_feature_geometries(show_deformed_feature_geometries_),
+	show_strain_accumulation(show_strain_accumulation_),
+	strain_accumulation_scale(strain_accumulation_scale_),
 	show_topological_network_delaunay_triangulation( show_topological_network_delaunay_triangulation_),
 	show_topological_network_constrained_triangulation( show_topological_network_constrained_triangulation_),
+	show_topological_network_mesh_triangulation( show_topological_network_mesh_triangulation_),
+	show_topological_network_total_triangulation( show_topological_network_total_triangulation_),
 	show_topological_network_segment_velocity( show_topological_network_segment_velocity_),
-	show_velocity_field_delaunay_vectors( show_velocity_field_delaunay_vectors_),
-	show_velocity_field_constrained_vectors( show_velocity_field_constrained_vectors_)
+	topological_network_color_index( topological_network_color_index_),
+	user_colour_palette(GPlatesGui::UserColourPalette::create())
 {
 }
 
@@ -199,7 +242,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 		const RasterVisualLayerParams &params)
 {
 	d_render_params.raster_colour_palette = params.get_colour_palette();
-	d_render_params.raster_modulate_colour = params.get_modulate_colour();
+	d_render_params.fill_modulate_colour = params.get_modulate_colour();
+	d_render_params.normal_map_height_field_scale_factor = params.get_surface_relief_scale();
 }
 
 
@@ -209,6 +253,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 {
 	d_render_params.vgp_draw_circular_error = params.get_vgp_draw_circular_error();
 	d_render_params.fill_polygons = params.get_fill_polygons();
+	d_render_params.fill_polylines = params.get_fill_polylines();
+	d_render_params.fill_modulate_colour = params.get_fill_modulate_colour();
+	d_render_params.show_deformed_feature_geometries = params.get_show_deformed_feature_geometries();
+	d_render_params.show_strain_accumulation = params.get_show_strain_accumulation();
+	d_render_params.strain_accumulation_scale = params.get_strain_accumulation_scale();
 }
 
 
@@ -216,27 +265,7 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_scalar_field_3d_visual_layer_params(
 		const ScalarField3DVisualLayerParams &params)
 {
-	const GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters &isovalue_parameters =
-			params.get_isovalue_parameters()
-			? params.get_isovalue_parameters().get()
-			: GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters();
-
-	const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction =
-			params.get_depth_restriction()
-			? params.get_depth_restriction().get()
-			: GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction();
-
-	d_render_params.scalar_field_render_parameters =
-			GPlatesViewOperations::ScalarField3DRenderParameters(
-					params.get_render_mode(),
-					params.get_colour_mode(),
-					params.get_colour_palette(),
-					isovalue_parameters,
-					params.get_deviation_window_render_options(),
-					params.get_surface_polygons_mask(),
-					depth_restriction,
-					params.get_quality_performance(),
-					params.get_shader_test_variables());
+	d_render_params.scalar_field_render_parameters = params.get_scalar_field_3d_render_parameters();
 }
 
 
@@ -255,7 +284,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 	d_render_params.show_topological_network_delaunay_triangulation = params.show_delaunay_triangulation();
 	d_render_params.show_topological_network_constrained_triangulation = params.show_constrained_triangulation();
 	d_render_params.show_topological_network_mesh_triangulation = params.show_mesh_triangulation(); 
+	d_render_params.show_topological_network_total_triangulation = params.show_total_triangulation(); 
 	d_render_params.show_topological_network_segment_velocity = params.show_segment_velocity();
+	d_render_params.fill_polygons = params.show_fill();
+	d_render_params.topological_network_color_index = params.color_index();
+	d_render_params.raster_colour_palette = params.get_colour_palette();
 }
 
 
@@ -266,8 +299,6 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 	d_render_params.ratio_zoom_dependent_bin_dimension_to_globe_radius = params.get_arrow_spacing();
 	d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius = params.get_arrow_body_scale();
 	d_render_params.ratio_arrowhead_size_to_globe_radius = params.get_arrowhead_scale();
-	d_render_params.show_velocity_field_delaunay_vectors = params.show_delaunay_vectors();
-	d_render_params.show_velocity_field_constrained_vectors = params.show_constrained_vectors();
 }
 
 
@@ -276,12 +307,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRende
 		const boost::optional<GPlatesGui::Colour> &colour,
 		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment,
 		const boost::optional<GPlatesGui::symbol_map_type> &feature_type_symbol_map,
-		const GPlatesGui::StyleAdapter* sa) :
+		boost::optional<const GPlatesGui::StyleAdapter &> style_adaptor) :
 	d_render_params(render_params),
 	d_colour(colour),
 	d_reconstruction_adjustment(reconstruction_adjustment),
 	d_feature_type_symbol_map(feature_type_symbol_map),
-	d_style_adapter(sa)
+	d_style_adapter(style_adaptor)
 {
 }
 
@@ -291,7 +322,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::begin_render(
 		GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			!d_rendered_geometry_layer && !d_rendered_geometries_spatial_partition,
+			!d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	// We've started targeting a rendered geometry layer.
@@ -301,10 +332,6 @@ GPlatesPresentation::ReconstructionGeometryRenderer::begin_render(
 	// A value of zero will set no limits.
 	d_rendered_geometry_layer->set_ratio_zoom_dependent_bin_dimension_to_globe_radius(
 			d_render_params.ratio_zoom_dependent_bin_dimension_to_globe_radius);
-
-	// Create a new rendered geometries spatial partition.
-	d_rendered_geometries_spatial_partition =
-			rendered_geometries_spatial_partition_type::create(DEFAULT_SPATIAL_PARTITION_DEPTH);
 }
 
 
@@ -312,19 +339,8 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::end_render()
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometry_layer && d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
-
-	// Now transfer ownership of the rendered geometries spatial partition to
-	// the rendered geometry layer.
-	//
-	// NOTE: It's important to add rendered geometries as a spatial partition because it gives
-	// spatial locality to each geometry which makes some types of rendering faster such as
-	// filled polygons (which are actually rendered as multi-resolution cube rasters).
-	d_rendered_geometry_layer->add_rendered_geometries(d_rendered_geometries_spatial_partition.get());
-
-	// Release our shared reference to the spatial partition.
-	d_rendered_geometries_spatial_partition = boost::none;
 
 	// We're not targeting a rendered geometry layer anymore.
 	d_rendered_geometry_layer = boost::none;
@@ -337,7 +353,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter = mpvf->multi_point()->begin();
@@ -354,8 +370,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		const GPlatesMaths::PointOnSphere &point = *domain_iter;
 		const GPlatesAppLogic::MultiPointVectorField::CodomainElement &velocity = **codomain_iter;
 
-		if (velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InDeformationNetwork) {
-			// The point was in a deformation network.
+		if (velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InNetworkDeformingRegion) {
+			// The point was in the deforming region of a deformation network.
+			// This means it was inside the network but outside any interior rigid blocks on the network.
 			// The arrow should be rendered black.
 			const GPlatesViewOperations::RenderedGeometry rendered_arrow =
 					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
@@ -367,10 +384,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			// Render the rendered geometry.
 			render(rendered_arrow);
 
-		} else if (velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InPlateBoundary ||
+		} else if (velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InNetworkRigidBlock ||
+			velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InPlateBoundary ||
 			velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::InStaticPolygon ||
 			velocity.d_reason == GPlatesAppLogic::MultiPointVectorField::CodomainElement::ReconstructedDomainPoint) {
 			// The point was either:
+			//   - in a interior rigid block of a network, or
 			//   - in a plate boundary (or a reconstructed static polygon), or
 			//   - a reconstructed domain point that used the domain features' plate ID.
 			// Colour the arrow according to the plate ID.
@@ -415,26 +434,152 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<deformed_feature_geometry_type> &dfg)
+{
+	// Must be between 'begin_render' and 'end_render'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_rendered_geometry_layer,
+			GPLATES_ASSERTION_SOURCE);
+
+	const GPlatesGui::ColourProxy dfg_colour_proxy =  get_colour(dfg, d_colour, d_style_adapter);
+
+	if (d_render_params.show_deformed_feature_geometries)
+	{
+		GPlatesViewOperations::RenderedGeometry rendered_geometry =
+			create_rendered_reconstruction_geometry(
+					dfg->reconstructed_geometry(),
+					dfg,
+					d_render_params,
+					dfg_colour_proxy,
+					d_reconstruction_adjustment,
+					d_feature_type_symbol_map);
+
+		// The rendered geometry represents the reconstruction geometry so render to the spatial partition.
+		render_reconstruction_geometry_on_sphere(rendered_geometry);
+	}
+
+	if (d_render_params.show_strain_accumulation)
+	{
+		// Convenience typedefs.
+		typedef std::vector<GPlatesMaths::PointOnSphere> deformed_geometry_points_seq_type;
+		typedef GPlatesAppLogic::DeformedFeatureGeometry::point_deformation_info_seq_type
+				point_deformation_info_seq_type;
+
+		// Get the deformed geometry points.
+		deformed_geometry_points_seq_type deformed_geometry_points;
+		GPlatesAppLogic::GeometryUtils::get_geometry_points(
+				*dfg->reconstructed_geometry(),
+				deformed_geometry_points);
+
+		// Get the deformation information associated with each deformed geometry point.
+		const point_deformation_info_seq_type &point_deformation_information =
+				dfg->get_point_deformation_information();
+
+		// Iterate over the geometry points and generate a rendered geometry for each one.
+		deformed_geometry_points_seq_type::const_iterator deformed_geometry_points_iter =
+				deformed_geometry_points.begin();
+		deformed_geometry_points_seq_type::const_iterator deformed_geometry_points_end =
+				deformed_geometry_points.end();
+		point_deformation_info_seq_type::const_iterator point_deformation_infos_iter =
+				point_deformation_information.begin();
+		point_deformation_info_seq_type::const_iterator point_deformation_infos_end =
+				point_deformation_information.end();
+		for ( ;
+			deformed_geometry_points_iter != deformed_geometry_points_end &&
+				point_deformation_infos_iter != point_deformation_infos_end;
+			++deformed_geometry_points_iter, ++point_deformation_infos_iter)
+		{
+			const GPlatesMaths::PointOnSphere &deformed_geometry_point = *deformed_geometry_points_iter;
+			const GPlatesAppLogic::GeometryDeformation::DeformationInfo &point_deformation_info =
+					*point_deformation_infos_iter;
+
+			// Determine the strain colour.
+			boost::optional<GPlatesGui::Colour> strain_accumulation_colour = GPlatesGui::Colour::get_black();
+#if 0
+			// FIXME: find out how to allow gui selection of .cpt file 
+			// NOTE: using this type of cmd:
+			// $ makecpt -Cpolar -I -T-19/19/1 > /private/tmp/strain_test.cpt
+			boost::optional<GPlatesGui::CptPalette*> cpt_opt;
+			try
+			{
+				cpt_opt = new GPlatesGui::CptPalette("/private/tmp/strain_test.cpt");
+			}
+			catch (std::exception &exc)
+			{
+				qWarning() << "Cannot read '/private/tmp/strain_test.cpt'; Using default built-in color palette" << exc.what();
+			}
+			catch(...)
+			{
+				qWarning() << "Cannot read '/private/tmp/strain_test.cpt'; Using default built-in color palette";
+			}
+			
+			if (cpt_opt)
+			{
+				if (cpt_opt.get()->get_colour( strain ) )
+				{
+					strain_accumulation_colour = cpt_opt.get()->get_colour( strain ).get();
+				}
+			}
+#endif
+
+			const GPlatesGui::ColourProxy strain_accumulation_colour_proxy = strain_accumulation_colour
+					? GPlatesGui::ColourProxy(strain_accumulation_colour.get())
+					: dfg_colour_proxy;
+
+			GPlatesGui::Symbol strain_accumulation_symbol(
+					GPlatesGui::Symbol::STRAIN_MARKER, // type
+					1, // size
+					true, // fill
+					// Scale the strain accumulation...
+					point_deformation_info.S1 * d_render_params.strain_accumulation_scale, // scale_x
+					point_deformation_info.S2 * d_render_params.strain_accumulation_scale, // scale_y
+					point_deformation_info.S_DIR); // orientation angle
+
+			// Create a RenderedGeometry.
+			GPlatesViewOperations::RenderedGeometry strain_accumulation_rendered_geom =
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+							d_reconstruction_adjustment
+									? d_reconstruction_adjustment.get() * deformed_geometry_point.clone_as_point()
+									: deformed_geometry_point.clone_as_point(),
+							strain_accumulation_colour_proxy,
+							d_render_params.reconstruction_point_size_hint,
+							d_render_params.reconstruction_line_width_hint,
+							d_render_params.fill_polygons,
+							d_render_params.fill_polylines,
+							d_render_params.fill_modulate_colour,
+							strain_accumulation_symbol);
+
+			// Create a RenderedGeometry for storing the ReconstructionGeometry and
+			// a RenderedGeometry associated with it.
+			GPlatesViewOperations::RenderedGeometry strain_accumulation_rendered_reconstruction_geometry =
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+							dfg,
+							strain_accumulation_rendered_geom);
+
+			// The rendered geometry represents the reconstruction geometry so render to the spatial partition.
+			render_reconstruction_geometry_on_sphere(strain_accumulation_rendered_reconstruction_geometry);
+		}
+	}
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
-	
-	GPlatesGui::DrawStyle ds = d_style_adapter ? 
-		d_style_adapter->get_style(rfg->get_feature_ref()) : 
-		GPlatesGui::DrawStyle();
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
-			create_rendered_reconstruction_geometry(
-					rfg->reconstructed_geometry(),
-					rfg,
-					d_render_params,
-					d_colour,
-					d_reconstruction_adjustment,
-					d_feature_type_symbol_map,
-					ds);
+		create_rendered_reconstruction_geometry(
+				rfg->reconstructed_geometry(),
+				rfg,
+				d_render_params,
+				get_colour(rfg, d_colour, d_style_adapter),
+				d_reconstruction_adjustment,
+				d_feature_type_symbol_map);
 
 	// The rendered geometry represents the reconstruction geometry so render to the spatial partition.
 	render_reconstruction_geometry_on_sphere(rendered_geometry);
@@ -447,7 +592,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Create a RenderedGeometry for drawing the resolved raster.
@@ -455,7 +600,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 					rr,
 					d_render_params.raster_colour_palette,
-					d_render_params.raster_modulate_colour);
+					d_render_params.fill_modulate_colour,
+					d_render_params.normal_map_height_field_scale_factor);
 
 
 	// Create a RenderedGeometry for storing the ReconstructionGeometry and
@@ -476,7 +622,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Create a RenderedGeometry for drawing the scalar field.
@@ -503,13 +649,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
-	
-	GPlatesGui::DrawStyle ds = d_style_adapter ? 
-		d_style_adapter->get_style(rvgp->get_feature_ref()) : 
-		GPlatesGui::DrawStyle();
 
+	// The RVGP feature-properties-based colour.
+	const GPlatesGui::ColourProxy rvgp_colour = get_colour(rvgp, d_colour, d_style_adapter);
+	
 	if(rvgp->vgp_params().d_vgp_point)
 	{
 		GPlatesViewOperations::RenderedGeometry rendered_vgp_point =
@@ -517,13 +662,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 						*rvgp->vgp_params().d_vgp_point,
 						rvgp,
 						d_render_params,
-						d_colour,
+						rvgp_colour,
 						d_reconstruction_adjustment,
-						boost::none,
-						ds);
+						d_feature_type_symbol_map);
 
-		// Render the rendered geometry.
-		render(rendered_vgp_point);
+		// The rendered geometry represents a geometry-on-sphere so render to the spatial partition.
+		render_reconstruction_geometry_on_sphere(rendered_vgp_point);
 	}
 
 	boost::optional<GPlatesMaths::PointOnSphere> pole_point = boost::none;
@@ -552,7 +696,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 						GPlatesMaths::SmallCircle::create_colatitude(
 								pole_point->position_vector(),
 								GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_a95)),
-						ds.colour);
+						rvgp_colour);
 
 		// The circle/ellipse geometries are not (currently) queryable, so we
 		// just add the rendered geometry to the layer.
@@ -579,7 +723,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 					GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_dp),
 					GPlatesMaths::convert_deg_to_rad(*rvgp->vgp_params().d_dm),
 					great_circle,
-					ds.colour);
+					rvgp_colour);
 
 		// The circle/ellipse geometries are not (currently) queryable, so we
 		// just add the rendered geometry to the layer.
@@ -595,25 +739,18 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
-
-	GPlatesGui::DrawStyle ds = d_style_adapter ? 
-			d_style_adapter->get_style(rtg->get_feature_ref()) : 
-			GPlatesGui::DrawStyle();
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 		create_rendered_reconstruction_geometry(
 				rtg->resolved_topology_geometry(), 
 				rtg, 
 				d_render_params, 
-				d_colour,
-				boost::none,
-				boost::none,
-				ds);
+				get_colour(rtg, d_colour, d_style_adapter));
 
-	// Render the rendered geometry.
-	render(rendered_geometry);
+	// The rendered geometry represents a geometry-on-sphere so render to the spatial partition.
+	render_reconstruction_geometry_on_sphere(rendered_geometry);
 }
 
 
@@ -621,105 +758,59 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 {
+	//PROFILE_BLOCK("ReconstructionGeometryRenderer::visit(resolved_topological_network_type)");
+
+#if 0
+qDebug() << "GPlatesPresentation::ReconstructionGeometryRenderer::visit( rtn )";
+qDebug() << "GPlatesPresentation::ReconstructionGeometryRenderer::visit( rtn ): d_colour.get() =" << d_colour.get();
+#endif
+
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
-	GPlatesGui::DrawStyle ds = d_style_adapter ? 
-		d_style_adapter->get_style(rtn->get_feature_ref()) : 
-		GPlatesGui::DrawStyle();
-
-	// Check for Mesh Triangulation
+	// Check for drawing mesh of constrained delaunay triangulation.
 	if (d_render_params.show_topological_network_mesh_triangulation)
 	{
-		const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
-			mesh_geometries = rtn->resolved_topology_geometries_from_mesh();
+		// Get the colour based on the feature properties of the resolved topological network.
+		const GPlatesGui::ColourProxy rtn_colour = get_colour(rtn, d_colour, d_style_adapter);
 
-		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
-			mesh_it = mesh_geometries.begin();
-		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
-		mesh_it_end = mesh_geometries.end();
-		for(; mesh_it !=mesh_it_end; mesh_it++)
-		{
-			GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				create_rendered_reconstruction_geometry(
-						*mesh_it, 
-						rtn, 
-						d_render_params, 
-						d_colour,
-						boost::none,
-						boost::none,
-						ds);
-
-			
-			// Render the rendered geometry.
-			render(rendered_geometry);
-		}
+		render_topological_network_constrained_delaunay_triangulation(
+				rtn,
+				true/*clip_to_mesh*/,
+				rtn_colour);
 	}
-		
-	// check for drawing of 2D + C Triangulation 
+
+	// Check for drawing constrained delaunay triangulation.
 	if (d_render_params.show_topological_network_constrained_triangulation)
 	{
-		// FIXME: at some point we might want to propagate control up to something like 
-		// d_render_params.clip_constrained ... ?  for now hard code to true ...
-		bool clip_to_mesh = true; 
-		const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
-			geometries = rtn->resolved_topology_geometries_from_constrained( clip_to_mesh );
-		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
-			it = geometries.begin();
-		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
-			it_end = geometries.end();
-		for(; it !=it_end; it++)
-		{
-			GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				create_rendered_reconstruction_geometry(
-						*it, 
-						rtn, 
-						d_render_params, 
-						GPlatesGui::Colour::get_grey(),
-						boost::none,
-						boost::none);
+		bool clip_to_mesh = ! d_render_params.show_topological_network_total_triangulation;
 
-			// Add to the rendered geometry layer.
-			render(rendered_geometry);
-		}
+		render_topological_network_constrained_delaunay_triangulation(
+				rtn,
+				clip_to_mesh,
+				GPlatesGui::Colour::get_grey());
 	}
 
-	// check for drawing of 2D total triangulation
+	// Check for drawing delaunay triangulation.
 	if (d_render_params.show_topological_network_delaunay_triangulation)
 	{
-		// FIXME: at some point we might want to propagate control up to something like 
-		// d_render_params.clip_constrained ... ?  for now hard code to true ...
-		bool clip_to_mesh = true; 
+		// This was previously in...
+		//    ResolvedTopologicalNetwork::get_resolved_topology_geometries_from_triangulation_2()
+		// ...but that method has been removed and simplified inline here so this is just to keep
+		// the debugging until it's not needed anymore (at which point this method should be removed).
+		rtn->report_deformation_to_file();
 
-		const std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>& 
-			geometries = rtn->resolved_topology_geometries_from_triangulation_2( clip_to_mesh );
+		bool clip_to_mesh = ! d_render_params.show_topological_network_total_triangulation;
 
-		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
-			it = geometries.begin();
-		std::vector<resolved_topological_network_type::resolved_topology_geometry_ptr_type>::const_iterator 
-			it_end = geometries.end();
-		for(; it !=it_end; it++)
-		{
-			GPlatesViewOperations::RenderedGeometry rendered_geometry =
-				create_rendered_reconstruction_geometry(
-						*it, 
-						rtn, 
-						d_render_params, 
-						GPlatesGui::Colour::get_black(),
-						boost::none,
-						boost::none);
-
-			// Add to the rendered geometry layer.
-			render(rendered_geometry);
-		}
+		render_topological_network_delaunay_triangulation(rtn, clip_to_mesh);
 	}
 
-	// check for drawing of network segment velocity vectors 
+	// Check for drawing velocity vectors at vertices of delaunay triangulation.
 	if (d_render_params.show_topological_network_segment_velocity)
 	{
-		render_topological_network_velocities(rtn, d_render_params, d_colour);
+		render_topological_network_velocities(rtn);
 	}
 
 }
@@ -730,7 +821,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	GPlatesGui::DefaultPlateIdColourPalette::non_null_ptr_to_const_type palette =
@@ -789,7 +880,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Create a RenderedGeometry for drawing the reconstructed geometry.
@@ -816,12 +907,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-		d_rendered_geometries_spatial_partition,
+		d_rendered_geometry_layer,
 		GPLATES_ASSERTION_SOURCE);
-
-	GPlatesGui::DrawStyle ds = d_style_adapter ? 
-		d_style_adapter->get_style(rsc->get_feature_ref()) : 
-		GPlatesGui::DrawStyle();
 
 	// Create a RenderedGeometry for drawing the reconstructed geometry.
 	// Draw it in the specified colour (if specified) otherwise defer colouring to a later time
@@ -831,7 +918,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
 			GPlatesMaths::SmallCircle::create_colatitude(
 				rsc->centre()->position_vector(),rsc->radius()),
-			ds.colour);
+			get_colour(rsc, d_colour, d_style_adapter));
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
@@ -854,7 +941,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 {
 	// Must be between 'begin_render' and 'end_render'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_rendered_geometries_spatial_partition,
+			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
 
 	//TODO: 
@@ -898,49 +985,391 @@ ENABLE_GCC_WARNING("-Wshadow")
 
 
 void
-GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_velocities(
-		const GPlatesAppLogic::resolved_topological_network_non_null_ptr_to_const_type &topological_network,
-		const ReconstructionGeometryRenderer::RenderParams &render_params,
-		const boost::optional<GPlatesGui::Colour> &colour)
+GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_constrained_delaunay_triangulation(
+		const GPlatesAppLogic::resolved_topological_network_non_null_ptr_to_const_type &rtn,
+		bool clip_to_mesh,
+		const GPlatesGui::ColourProxy &colour)
 {
-	const GPlatesAppLogic::PlateVelocityUtils::TopologicalNetworkVelocities &
-			topological_network_velocities = topological_network->get_network_velocities();
+	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
+			rtn->get_triangulation_network();
 
-	if (!topological_network_velocities.contains_velocities())
+	const GPlatesMaths::ProjectionUtils::AzimuthalEqualArea &resolved_triangulation_projection =
+			resolved_triangulation_network.get_projection();
+
+	const GPlatesAppLogic::ResolvedTriangulation::ConstrainedDelaunay_2 &
+			constrained_delaunay_triangulation_2 =
+					resolved_triangulation_network.get_constrained_delaunay_2();
+
+	// Keep track of vertex indices of unique triangulation vertices referenced by the faces.
+	typedef GPlatesAppLogic::ResolvedTriangulation::VertexIndices<
+			GPlatesAppLogic::ResolvedTriangulation::ConstrainedDelaunay_2>
+					constrained_delaunay_vertex_indices_type;
+	constrained_delaunay_vertex_indices_type constrained_delaunay_vertex_indices;
+
+	// The triangle/vertices of our rendered mesh (if fill is turned on).
+	GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::triangle_seq_type rendered_triangle_mesh_triangles;
+	GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::vertex_seq_type rendered_triangle_mesh_vertices;
+
+	// The edges/vertices of our rendered mesh (if fill is turned off).
+	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::edge_seq_type rendered_edge_mesh_edges;
+	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::vertex_seq_type rendered_edge_mesh_vertices;
+
+	// Iterate over the individual faces of the constrained triangulation.
+	GPlatesAppLogic::ResolvedTriangulation::ConstrainedDelaunay_2::Finite_faces_iterator
+			constrained_finite_faces_2_iter = constrained_delaunay_triangulation_2.finite_faces_begin();
+	GPlatesAppLogic::ResolvedTriangulation::ConstrainedDelaunay_2::Finite_faces_iterator
+			constrained_finite_faces_2_end =  constrained_delaunay_triangulation_2.finite_faces_end();
+	for ( ; constrained_finite_faces_2_iter != constrained_finite_faces_2_end; ++constrained_finite_faces_2_iter)
 	{
-		return;
+		// If clipping to mesh then only draw those triangles in the interior of the meshed region.
+		// This excludes areas with seed points (also called micro blocks) and excludes regions
+		// outside the envelope of the bounded area.
+		if (clip_to_mesh && !constrained_finite_faces_2_iter->is_in_domain())
+		{
+			continue;
+		}
+
+		if (d_render_params.fill_polygons)
+		{
+			const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::Triangle rendered_mesh_triangle(
+					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(0)),
+					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(1)),
+					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(2)),
+					colour);
+			rendered_triangle_mesh_triangles.push_back(rendered_mesh_triangle);
+		}
+		else // Render mesh as edges/lines...
+		{
+			// Render the three edges of the current triangle.
+			//
+			// NOTE: Two triangles that share an edge will both draw it - so it'll get drawn twice.
+			//
+			// TODO: Only emit one rendered mesh edge per triangulation edge (perhaps by iterating
+			// over edges instead of triangles).
+
+			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge1(
+					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(0)),
+					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(1)),
+					colour);
+			rendered_edge_mesh_edges.push_back(rendered_mesh_edge1);
+
+			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge2(
+					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(1)),
+					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(2)),
+					colour);
+			rendered_edge_mesh_edges.push_back(rendered_mesh_edge2);
+
+			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge3(
+					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(2)),
+					constrained_delaunay_vertex_indices.add_vertex(constrained_finite_faces_2_iter->vertex(0)),
+					colour);
+			rendered_edge_mesh_edges.push_back(rendered_mesh_edge3);
+		}
 	}
 
-	const GPlatesGui::Colour &velocity_colour = colour
-			? colour.get()
+	// For each triangulation vertex, referenced by the rendered mesh, project the 2D vertex
+	// back onto the 3D globe.
+	const constrained_delaunay_vertex_indices_type::vertex_seq_type &mesh_vertices =
+			constrained_delaunay_vertex_indices.get_vertices();
+
+	if (d_render_params.fill_polygons)
+	{
+		rendered_triangle_mesh_vertices.reserve(mesh_vertices.size());
+	}
+	else // Render mesh as edges/lines...
+	{
+		rendered_edge_mesh_vertices.reserve(mesh_vertices.size());
+	}
+
+	// Iterate over the (referenced) constrained triangulation vertices.
+	constrained_delaunay_vertex_indices_type::vertex_seq_type::const_iterator
+			mesh_vertices_iter = mesh_vertices.begin();
+	constrained_delaunay_vertex_indices_type::vertex_seq_type::const_iterator
+			mesh_vertices_end = mesh_vertices.end();
+	for ( ; mesh_vertices_iter != mesh_vertices_end; ++mesh_vertices_iter)
+	{
+		constrained_delaunay_vertex_indices_type::triangulation_type::Vertex_handle
+				mesh_vertex = *mesh_vertices_iter;
+
+		// Un-project the 2D triangulation vertex position back onto the 3D sphere.
+		const GPlatesMaths::PointOnSphere rendered_mesh_vertex =
+				resolved_triangulation_projection.unproject_to_point_on_sphere(
+						mesh_vertex->point());
+
+		if (d_render_params.fill_polygons)
+		{
+			rendered_triangle_mesh_vertices.push_back(rendered_mesh_vertex);
+		}
+		else // Render mesh as edges/lines...
+		{
+			rendered_edge_mesh_vertices.push_back(rendered_mesh_vertex);
+		}
+	}
+
+	// Create the rendered surface mesh.
+	GPlatesViewOperations::RenderedGeometry rendered_geometry;
+	if (d_render_params.fill_polygons)
+	{
+		rendered_geometry =
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_triangle_surface_mesh(
+				rendered_triangle_mesh_triangles,
+				rendered_triangle_mesh_vertices);
+	}
+	else // Render mesh as edges/lines...
+	{
+		rendered_geometry =
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_edge_surface_mesh(
+				rendered_edge_mesh_edges,
+				rendered_edge_mesh_vertices,
+				d_render_params.reconstruction_line_width_hint);
+	}
+
+	// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
+	rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+			rtn,
+			rendered_geometry);
+
+	// The rendered geometry represents a geometry on the sphere so render to the spatial partition.
+	render_reconstruction_geometry_on_sphere(rendered_geometry);
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_delaunay_triangulation(
+		const GPlatesAppLogic::resolved_topological_network_non_null_ptr_to_const_type &rtn,
+		bool clip_to_mesh)
+{
+	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
+			rtn->get_triangulation_network();
+
+	// NOTE: We avoid retrieving the *constrained* delaunay triangulation since we don't need it
+	// and hence can improve performance by not generating it.
+	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2 &delaunay_triangulation_2 =
+			resolved_triangulation_network.get_delaunay_2();
+
+	// Keep track of vertex indices of unique triangulation vertices referenced by the faces.
+	typedef GPlatesAppLogic::ResolvedTriangulation::VertexIndices<
+			GPlatesAppLogic::ResolvedTriangulation::Delaunay_2>
+					delaunay_vertex_indices_type;
+	delaunay_vertex_indices_type delaunay_vertex_indices;
+
+	// The triangle/vertices of our rendered mesh (if fill is turned on).
+	GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::triangle_seq_type rendered_triangle_mesh_triangles;
+	GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::vertex_seq_type rendered_triangle_mesh_vertices;
+
+	// The edges/vertices of our rendered mesh (if fill is turned off).
+	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::edge_seq_type rendered_edge_mesh_edges;
+	GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::vertex_seq_type rendered_edge_mesh_vertices;
+
+	// Iterate over the individual faces of the delaunay triangulation.
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_faces_iterator
+			finite_faces_2_iter = delaunay_triangulation_2.finite_faces_begin();
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_faces_iterator
+			finite_faces_2_end = delaunay_triangulation_2.finite_faces_end();
+	for ( ; finite_faces_2_iter != finite_faces_2_end; ++finite_faces_2_iter)
+	{
+		// If clipping triangle to the mesh then only create a face polygon if its centroid is in mesh area.
+		if (clip_to_mesh)
+		{
+			const GPlatesMaths::PointOnSphere face_points[3] =
+			{
+				finite_faces_2_iter->vertex(0)->get_point_on_sphere(),
+				finite_faces_2_iter->vertex(1)->get_point_on_sphere(),
+				finite_faces_2_iter->vertex(2)->get_point_on_sphere()
+			};
+
+			// Compute centroid of face.
+			const GPlatesMaths::PointOnSphere centroid(
+					GPlatesMaths::Centroid::calculate_points_centroid(
+							face_points,
+							face_points + 3));
+
+			if (!resolved_triangulation_network.is_point_in_deforming_region(centroid))
+			{
+				continue;
+			}
+		}
+
+		// Set the render value for the triangle.
+		boost::optional<double> render_value;
+
+		if (d_render_params.topological_network_color_index != 0)
+		{
+			const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face::DeformationInfo &
+					deformation_info = finite_faces_2_iter->get_deformation_info();
+
+			if (d_render_params.topological_network_color_index == 1)
+			{
+				const double dilitation = deformation_info.dilitation;
+				const double sign = (dilitation < 0) ? -1 : 1;
+				render_value = sign * std::fabs( std::log10( std::fabs( dilitation ) ) );
+			}
+			else if (d_render_params.topological_network_color_index == 2)
+			{
+				const double second_invariant = deformation_info.second_invariant;
+				const double sign = (second_invariant < 0) ? -1 : 1;
+				render_value = sign * std::fabs( std::log10( std::fabs( second_invariant ) ) );
+			}
+		}
+
+		// The colour to use for this triangle panel.
+		boost::optional<GPlatesGui::Colour> colour;
+
+		// Check if a render_value was set for this panel.
+		if (render_value)
+		{
+			// Get the colour for this value
+			colour = GPlatesGui::RasterColourPaletteColour::get_colour(
+				*d_render_params.raster_colour_palette,
+				render_value.get());
+		}
+		// Check if a colour was passed to the ReconstructionGeometryRenderer constructor.
+		else if (d_colour)
+		{
+			colour = d_colour.get();
+		}
+		// final else ; use Grey
+		else
+		{
+			colour = GPlatesGui::Colour::get_grey();
+		}
+
+		if (d_render_params.fill_polygons)
+		{
+			const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh::Triangle rendered_mesh_triangle(
+					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(0)),
+					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(1)),
+					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(2)),
+					colour.get());
+			rendered_triangle_mesh_triangles.push_back(rendered_mesh_triangle);
+		}
+		else // Render mesh as edges/lines...
+		{
+			// Render the three edges of the current triangle.
+			//
+			// NOTE: Two triangles that share an edge will both draw it using their own colour.
+			// The one that gets drawn on top will the one belonging to the last triangle iterated.
+			//
+			// TODO: Only emit one rendered mesh edge per triangulation edge (perhaps by iterating
+			// over edges instead of triangles) and maybe use the average colour of adjacent triangles.
+
+			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge1(
+					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(0)),
+					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(1)),
+					colour.get());
+			rendered_edge_mesh_edges.push_back(rendered_mesh_edge1);
+
+			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge2(
+					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(1)),
+					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(2)),
+					colour.get());
+			rendered_edge_mesh_edges.push_back(rendered_mesh_edge2);
+
+			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh::Edge rendered_mesh_edge3(
+					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(2)),
+					delaunay_vertex_indices.add_vertex(finite_faces_2_iter->vertex(0)),
+					colour.get());
+			rendered_edge_mesh_edges.push_back(rendered_mesh_edge3);
+		}
+	}
+
+	// For each triangulation vertex, referenced by the rendered mesh, get the un-projected
+	// 2D vertex back onto the 3D globe.
+	const delaunay_vertex_indices_type::vertex_seq_type &mesh_vertices =
+			delaunay_vertex_indices.get_vertices();
+
+	if (d_render_params.fill_polygons)
+	{
+		rendered_triangle_mesh_vertices.reserve(mesh_vertices.size());
+	}
+	else // Render mesh as edges/lines...
+	{
+		rendered_edge_mesh_vertices.reserve(mesh_vertices.size());
+	}
+
+	// Iterate over the (referenced) constrained triangulation vertices.
+	delaunay_vertex_indices_type::vertex_seq_type::const_iterator
+			mesh_vertices_iter = mesh_vertices.begin();
+	delaunay_vertex_indices_type::vertex_seq_type::const_iterator
+			mesh_vertices_end = mesh_vertices.end();
+	for ( ; mesh_vertices_iter != mesh_vertices_end; ++mesh_vertices_iter)
+	{
+		delaunay_vertex_indices_type::triangulation_type::Vertex_handle mesh_vertex = *mesh_vertices_iter;
+
+		// Get the un-projected 2D triangulation vertex position back onto the 3D sphere.
+		const GPlatesMaths::PointOnSphere &rendered_mesh_vertex = mesh_vertex->get_point_on_sphere();
+
+		if (d_render_params.fill_polygons)
+		{
+			rendered_triangle_mesh_vertices.push_back(rendered_mesh_vertex);
+		}
+		else // Render mesh as edges/lines...
+		{
+			rendered_edge_mesh_vertices.push_back(rendered_mesh_vertex);
+		}
+	}
+
+	// Create the rendered surface mesh.
+	GPlatesViewOperations::RenderedGeometry rendered_geometry;
+	if (d_render_params.fill_polygons)
+	{
+		rendered_geometry =
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_triangle_surface_mesh(
+				rendered_triangle_mesh_triangles,
+				rendered_triangle_mesh_vertices);
+	}
+	else // Render mesh as edges/lines...
+	{
+		rendered_geometry =
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_edge_surface_mesh(
+				rendered_edge_mesh_edges,
+				rendered_edge_mesh_vertices,
+				d_render_params.reconstruction_line_width_hint);
+	}
+
+	// Create a RenderedGeometry for storing the ReconstructionGeometry and a RenderedGeometry associated with it.
+	rendered_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
+			rtn,
+			rendered_geometry);
+
+	// The rendered geometry represents a geometry on the sphere so render to the spatial partition.
+	render_reconstruction_geometry_on_sphere(rendered_geometry);
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_velocities(
+		const GPlatesAppLogic::resolved_topological_network_non_null_ptr_to_const_type &rtn)
+{
+	const GPlatesGui::Colour &velocity_colour = d_colour
+			? d_colour.get()
 			: GPlatesGui::Colour::get_white();
 
-	// Get the velocities at the network points.
-	std::vector<GPlatesMaths::PointOnSphere> network_points;
-	std::vector<GPlatesMaths::VectorColatitudeLongitude> network_velocities;
-	topological_network_velocities.get_network_velocities(
-			network_points, network_velocities);
+	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
+			rtn->get_triangulation_network();
 
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			network_points.size() == network_velocities.size(),
-			GPLATES_ASSERTION_SOURCE);
+	// NOTE: We avoid retrieving the *constrained* delaunay triangulation since we don't need it
+	// and hence can improve performance by not generating it.
+	const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2 &delaunay_triangulation_2 =
+			resolved_triangulation_network.get_delaunay_2();
 
-	// Render each velocity in the current network.
-	for (std::size_t velocity_index = 0;
-		velocity_index < network_velocities.size();
-		++velocity_index)
+	// Iterate over the individual vertices of the delaunay triangulation and
+	// render the velocity at each vertex in the network.
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_vertices_iterator
+			finite_vertices_2_iter = delaunay_triangulation_2.finite_vertices_begin();
+	GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_vertices_iterator
+			finite_vertices_2_end = delaunay_triangulation_2.finite_vertices_end();
+	for ( ; finite_vertices_2_iter != finite_vertices_2_end; ++finite_vertices_2_iter)
 	{
-		const GPlatesMaths::PointOnSphere &point = network_points[velocity_index];
-		const GPlatesMaths::Vector3D velocity_vector =
-				GPlatesMaths::convert_vector_from_colat_lon_to_xyz(
-						point, network_velocities[velocity_index]);
+		const GPlatesMaths::PointOnSphere &point = finite_vertices_2_iter->get_point_on_sphere();
+		const GPlatesMaths::Vector3D &velocity_vector = finite_vertices_2_iter->get_velocity_vector();
 
 		// Create a RenderedGeometry using the velocity vector.
 		const GPlatesViewOperations::RenderedGeometry rendered_vector =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
 				point,
 				velocity_vector,
-				render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
+				d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
 				velocity_colour,
 				d_render_params.ratio_arrowhead_size_to_globe_radius);
 
@@ -952,7 +1381,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 		// not do anything).
 		const GPlatesViewOperations::RenderedGeometry rendered_reconstruction_geometry =
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(
-						topological_network,
+						rtn,
 						rendered_vector);
 
 		// Render the rendered geometry.

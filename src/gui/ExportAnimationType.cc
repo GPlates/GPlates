@@ -47,8 +47,8 @@ namespace GPlatesGui
 				std::map<Type, QString> export_type_name_map;
 
 				export_type_name_map[RECONSTRUCTED_GEOMETRIES]    =QObject::tr("Reconstructed Geometries");
-				export_type_name_map[PROJECTED_GEOMETRIES]        =QObject::tr("Projected Geometries");
-				export_type_name_map[VELOCITIES]             =QObject::tr("Velocities");
+				export_type_name_map[PROJECTED_GEOMETRIES]        =QObject::tr("Projected Geometries (and Rasters)");
+				export_type_name_map[VELOCITIES]                  =QObject::tr("Velocities");
 				export_type_name_map[RESOLVED_TOPOLOGIES]         =QObject::tr("Resolved Topologies (General)");
 				export_type_name_map[RESOLVED_TOPOLOGIES_CITCOMS] =QObject::tr("Resolved Topologies (CitcomS specific)");
 				export_type_name_map[RELATIVE_TOTAL_ROTATION]     =QObject::tr("Relative Total Rotation");
@@ -72,7 +72,7 @@ namespace GPlatesGui
 				export_type_description_map[RECONSTRUCTED_GEOMETRIES] =
 						QObject::tr("Export reconstructed geometries.");
 				export_type_description_map[PROJECTED_GEOMETRIES] =
-						QObject::tr("Export projected geometries data.");
+						QObject::tr("Export projected geometries (and projected raster) data.");
 				export_type_description_map[VELOCITIES] =
 						QObject::tr("Export velocity data.");
 				export_type_description_map[RESOLVED_TOPOLOGIES] = 

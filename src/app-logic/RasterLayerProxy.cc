@@ -104,8 +104,6 @@ GPlatesAppLogic::RasterLayerProxy::get_resolved_raster(
 	return ResolvedRaster::create(
 			*d_current_raster_feature.get().handle_ptr(),
 			reconstruction_time,
-			// FIXME: Dodgy - need to remove requirement of providing a reconstruction tree...
-			create_reconstruction_tree(reconstruction_time, 0),
 			GPlatesUtils::get_non_null_pointer(this),
 			d_current_reconstructed_polygons_layer_proxy.get_optional_input_layer_proxy(),
 			d_current_age_grid_raster_layer_proxy.get_optional_input_layer_proxy(),
@@ -141,7 +139,7 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 	if (!GPlatesOpenGL::GLDataRasterSource::is_supported(renderer))
 	{
 		qWarning() << "RasterLayerProxy::get_multi_resolution_data_raster: "
-			"Floating-point textures not supported on this OpenGL system.";
+			"Floating-point textures not supported on this graphics hardware.";
 		return boost::none;
 	}
 
@@ -243,8 +241,11 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 		d_cached_multi_resolution_data_raster.cached_data_raster = multi_resolution_raster;
 	}
 
-	// If we are not currently connected to reconstructed polygons then just return the *unreconstructed* raster.
-	if (!d_current_reconstructed_polygons_layer_proxy)
+	// If we are not currently connected to reconstructed polygons *and* we are not using an age grid
+	// then just return the *unreconstructed* raster.
+	// Note that we don't require reconstructed polygon to continue past this point.
+	if (!d_current_reconstructed_polygons_layer_proxy &&
+		!d_current_age_grid_raster_layer_proxy)
 	{
 		return GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type(
 			d_cached_multi_resolution_data_raster.cached_data_raster.get());
@@ -284,12 +285,27 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 			d_cached_multi_resolution_data_raster.cached_age_grid_mask_cube_raster;
 
 	// Get the reconstructed polygon meshes from the layer containing the reconstructed polygons.
-	const GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type reconstructed_polygon_meshes =
-			d_current_reconstructed_polygons_layer_proxy.get_input_layer_proxy()
-					->get_reconstructed_static_polygon_meshes(
-							renderer,
-							reconstructing_with_age_grid,
-							reconstruction_time);
+	boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type> reconstructed_polygon_meshes;
+	if (d_current_reconstructed_polygons_layer_proxy)
+	{
+		GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type reconstructed_polygon_meshes_ptr =
+				d_current_reconstructed_polygons_layer_proxy.get_input_layer_proxy()
+						->get_reconstructed_static_polygon_meshes(
+								renderer,
+								reconstructing_with_age_grid,
+								reconstruction_time);
+		reconstructed_polygon_meshes = reconstructed_polygon_meshes_ptr;
+	}
+	else // *not* reconstructing raster, but still using age grid...
+	{
+		// Ensure the constant multi-resolution cube mesh has been created since we might be
+		// accessing it below to create the reconstructed raster.
+		if (!d_cached_multi_resolution_data_raster.cached_multi_resolution_cube_mesh)
+		{
+			d_cached_multi_resolution_data_raster.cached_multi_resolution_cube_mesh =
+					GPlatesOpenGL::GLMultiResolutionCubeMesh::create(renderer);
+		}
+	}
 
 	// If reconstructed polygon meshes is a different object then it must have been rebuilt by
 	// the reconstructed polygons layer since last we accessed it.
@@ -326,35 +342,32 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 
 	if (!d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster)
 	{
-		// We can only reconstruct with an age grid if we have the age grid mask raster.
-		if (d_cached_multi_resolution_data_raster.cached_age_grid_mask_cube_raster)
-		{
-			//qDebug() << "RasterLayerProxy: Rebuilding GLMultiResolutionStaticPolygonReconstructedRaster with age grid.";
+		//qDebug() << "RasterLayerProxy: Rebuilding GLMultiResolutionStaticPolygonReconstructedRaster "
+		//	<< (d_cached_multi_resolution_data_raster.cached_age_grid_mask_cube_raster ? "with" : "without")
+		//	<< " an age grid.";
 
-			// Create a reconstructed raster with the age grid.
-			GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type reconstructed_raster =
-					GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create(
-							renderer,
-							d_cached_multi_resolution_data_raster.cached_data_cube_raster.get(),
-							d_cached_multi_resolution_data_raster.cached_reconstructed_polygon_meshes.get(),
-							d_cached_multi_resolution_data_raster.cached_age_grid_mask_cube_raster.get());
+		// This handles both with and without an age grid mask raster depending on whether
+		// the age grid raster is boost::none or not.
+		GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type reconstructed_raster =
+				d_cached_multi_resolution_data_raster.cached_reconstructed_polygon_meshes
+				? GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create(
+						renderer,
+						reconstruction_time,
+						d_cached_multi_resolution_data_raster.cached_data_cube_raster.get(),
+						d_cached_multi_resolution_data_raster.cached_reconstructed_polygon_meshes.get(),
+						d_cached_multi_resolution_data_raster.cached_age_grid_mask_cube_raster)
+				: GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create(
+						renderer,
+						reconstruction_time,
+						d_cached_multi_resolution_data_raster.cached_data_cube_raster.get(),
+						d_cached_multi_resolution_data_raster.cached_multi_resolution_cube_mesh.get(),
+						d_cached_multi_resolution_data_raster.cached_age_grid_mask_cube_raster);
 
-			d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster = reconstructed_raster;
-		}
-		else
-		{
-			//qDebug() << "RasterLayerProxy: Rebuilding GLMultiResolutionStaticPolygonReconstructedRaster with no age grid.";
-
-			// Create a reconstructed raster without the age grid.
-			GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type reconstructed_raster =
-					GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create(
-							renderer,
-							d_cached_multi_resolution_data_raster.cached_data_cube_raster.get(),
-							d_cached_multi_resolution_data_raster.cached_reconstructed_polygon_meshes.get());
-
-			d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster = reconstructed_raster;
-		}
+		d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster = reconstructed_raster;
 	}
+
+	// Notify the reconstructed raster of the current reconstruction time.
+	d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster.get()->update(reconstruction_time);
 
 	// Return the *reconstructed* raster.
 	return GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type(
@@ -519,23 +532,33 @@ GPlatesAppLogic::RasterLayerProxy::get_subject_token()
 	}
 
 	// See if the age grid raster layer proxy has changed.
-	if (!d_current_age_grid_raster_layer_proxy.is_up_to_date())
+	if (d_current_age_grid_raster_layer_proxy &&
+		// Avoid cyclic dependency is age grid layer is this layer...
+		d_current_age_grid_raster_layer_proxy.get_input_layer_proxy().get() != this)
 	{
-		// This raster layer proxy is now invalid.
-		d_subject_token.invalidate();
+		if (!d_current_age_grid_raster_layer_proxy.is_up_to_date())
+		{
+			// This raster layer proxy is now invalid.
+			d_subject_token.invalidate();
 
-		// We're now up-to-date with the age grid raster layer proxy.
-		d_current_age_grid_raster_layer_proxy.set_up_to_date();
+			// We're now up-to-date with the age grid raster layer proxy.
+			d_current_age_grid_raster_layer_proxy.set_up_to_date();
+		}
 	}
 
 	// See if the normal map raster layer proxy has changed.
-	if (!d_current_normal_map_raster_layer_proxy.is_up_to_date())
+	if (d_current_normal_map_raster_layer_proxy &&
+		// Avoid cyclic dependency is normal map layer is this layer...
+		d_current_normal_map_raster_layer_proxy.get_input_layer_proxy().get() != this)
 	{
-		// This raster layer proxy is now invalid.
-		d_subject_token.invalidate();
+		if (!d_current_normal_map_raster_layer_proxy.is_up_to_date())
+		{
+			// This raster layer proxy is now invalid.
+			d_subject_token.invalidate();
 
-		// We're now up-to-date with the normal map raster layer proxy.
-		d_current_normal_map_raster_layer_proxy.set_up_to_date();
+			// We're now up-to-date with the normal map raster layer proxy.
+			d_current_normal_map_raster_layer_proxy.set_up_to_date();
+		}
 	}
 
 	return d_subject_token;

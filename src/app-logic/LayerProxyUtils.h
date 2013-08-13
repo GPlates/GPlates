@@ -38,6 +38,7 @@
 #include "ReconstructHandle.h"
 
 #include "global/GPlatesAssert.h"
+#include "global/PointerTraits.h"
 #include "global/PreconditionViolationError.h"
 
 #include "model/FeatureHandle.h"
@@ -169,7 +170,7 @@ namespace GPlatesAppLogic
 
 			explicit
 			InputLayerProxy(
-					const typename LayerProxyType::non_null_ptr_type &input_layer_proxy,
+					const typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type &input_layer_proxy,
 					const subject_token_method_type &subject_token_method = &LayerProxyType::get_subject_token) :
 				d_input_layer_proxy(input_layer_proxy),
 				d_subject_token_method(subject_token_method)
@@ -179,7 +180,7 @@ namespace GPlatesAppLogic
 			/**
 			 * Returns the input layer proxy wrapped by this object.
 			 */
-			const typename LayerProxyType::non_null_ptr_type &
+			const typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type &
 			get_input_layer_proxy() const
 			{
 				return d_input_layer_proxy;
@@ -193,7 +194,7 @@ namespace GPlatesAppLogic
 			 */
 			void
 			set_input_layer_proxy(
-					const typename LayerProxyType::non_null_ptr_type &input_layer_proxy)
+					const typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type &input_layer_proxy)
 			{
 				d_input_layer_proxy = input_layer_proxy;
 				d_input_layer_proxy_observer_token.reset();
@@ -231,7 +232,7 @@ namespace GPlatesAppLogic
 			}
 
 		private:
-			typename LayerProxyType::non_null_ptr_type d_input_layer_proxy;
+			typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type d_input_layer_proxy;
 			subject_token_method_type d_subject_token_method;
 			GPlatesUtils::ObserverToken d_input_layer_proxy_observer_token;
 		};
@@ -254,7 +255,7 @@ namespace GPlatesAppLogic
 			//! Constructor to store an input layer proxy.
 			explicit
 			OptionalInputLayerProxy(
-					const typename LayerProxyType::non_null_ptr_type &input_layer_proxy) :
+					const typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type &input_layer_proxy) :
 				d_optional_input_layer_proxy(input_layer_proxy),
 				d_is_none_and_up_to_date(false)
 			{  }
@@ -276,7 +277,7 @@ namespace GPlatesAppLogic
 			 * NOTE: Be sure to use 'if (proxy)' to test that an input layer proxy is wrapped
 			 * before calling this method.
 			 */
-			const typename LayerProxyType::non_null_ptr_type &
+			const typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type &
 			get_input_layer_proxy() const
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -289,7 +290,7 @@ namespace GPlatesAppLogic
 			/**
 			 * Returns the input layer proxy wrapped by this object as a boost::optional.
 			 */
-			boost::optional<typename LayerProxyType::non_null_ptr_type>
+			boost::optional<typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type>
 			get_optional_input_layer_proxy() const
 			{
 				if (!d_optional_input_layer_proxy)
@@ -309,7 +310,8 @@ namespace GPlatesAppLogic
 			 */
 			void
 			set_input_layer_proxy(
-					const boost::optional<typename LayerProxyType::non_null_ptr_type> &optional_input_layer_proxy = boost::none)
+					const boost::optional<typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type> &
+							optional_input_layer_proxy = boost::none)
 			{
 				if (d_optional_input_layer_proxy)
 				{
@@ -363,6 +365,7 @@ namespace GPlatesAppLogic
 
 		private:
 			boost::optional<InputLayerProxy<LayerProxyType> > d_optional_input_layer_proxy;
+			//boost::optional<InputLayerProxy<GPlatesGlobal::PointerTraits<LayerProxyType>> > d_optional_input_layer_proxy;
 
 			/**
 			 * This flag is only used if @a d_optional_input_layer_proxy is boost::none
@@ -412,7 +415,7 @@ namespace GPlatesAppLogic
 			 */
 			bool
 			set_input_layer_proxies(
-					const std::vector<typename LayerProxyType::non_null_ptr_type> &src_input_layer_proxies,
+					const std::vector<typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type> &src_input_layer_proxies,
 					const subject_token_method_type &subject_token_method = &LayerProxyType::get_subject_token)
 			{
 				bool input_layer_proxies_updated = false;
@@ -476,7 +479,7 @@ namespace GPlatesAppLogic
 			 */
 			void
 			add_input_layer_proxy(
-					const typename LayerProxyType::non_null_ptr_type &input_layer_proxy,
+					const typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type &input_layer_proxy,
 					const subject_token_method_type &subject_token_method = &LayerProxyType::get_subject_token)
 			{
 				d_seq.push_back(InputLayerProxy<LayerProxyType>(input_layer_proxy, subject_token_method));
@@ -487,7 +490,7 @@ namespace GPlatesAppLogic
 			 */
 			void
 			remove_input_layer_proxy(
-					const typename LayerProxyType::non_null_ptr_type &input_layer_proxy)
+					const typename GPlatesGlobal::PointerTraits<LayerProxyType>::non_null_ptr_type &input_layer_proxy)
 			{
 				// Search and erase the input layer proxy from our sequence.
 				typename seq_type::iterator input_layer_proxy_iter = d_seq.begin();

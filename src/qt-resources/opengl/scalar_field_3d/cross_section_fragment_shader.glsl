@@ -1,3 +1,28 @@
+/* $Id$ */
+
+/**
+ * \file 
+ * $Revision$
+ * $Date$
+ * 
+ * Copyright (C) 2013 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
 //
 // Fragment shader for rendering a vertical cross-section through a 3D scalar field.
 //
@@ -43,6 +68,7 @@ uniform int depth_radius_to_layer_resolution;
 uniform int colour_palette_resolution;
 uniform vec2 min_max_depth_radius;
 uniform int num_depth_layers;
+uniform vec2 min_max_colour_mapping_range;
 uniform vec2 min_max_scalar_value;
 uniform vec2 min_max_gradient_magnitude;
 
@@ -54,14 +80,20 @@ uniform bool lighting_enabled;
 // NOTE: Only one of these is true.
 // Also note that depth colour mode is not available for cross-section rendering (only isosurface rendering).
 //
-uniform bool colour_mode_isovalue;
+uniform bool colour_mode_scalar;
 uniform bool colour_mode_gradient;
 
-// If using the surface occlusion texture for early ray termination.
+// If using the surface occlusion texture.
 uniform bool read_from_surface_occlusion_texture;
-// The surface occlusion texture used for early ray termination.
+// The surface occlusion texture.
 // This contains the RGBA contents of rendering the front surface of the globe.
 uniform sampler2D surface_occlusion_texture_sampler;
+
+// If using a surface mask to limit regions in which cross sections are rendered.
+// (e.g. Africa, see Static Polygons connected with Scalar Field).
+uniform bool using_surface_fill_mask;
+uniform sampler2DArray surface_fill_mask_sampler;
+uniform int surface_fill_mask_resolution;
 
 // The world-space coordinates are interpolated across the cross-section geometry.
 varying vec3 world_position;
@@ -89,106 +121,99 @@ void main()
 		}
 	}
 
-	// Project the world position onto the cube face and determine the cube face that it projects onto.
+	// Sample the field at the current world position in the cross-section.
+	// Discard if the field at the current world position contains no valid data.
 	int cube_face_index;
-	vec3 projected_world_position = project_world_position_onto_cube_face(world_position, cube_face_index);
-
-	// Transform the world position (projected onto a cube face) into that cube face's local coordinate frame.
-	vec2 cube_face_coordinate_xy = convert_projected_world_position_to_local_cube_face_coordinate_frame(
-			projected_world_position, cube_face_index);
-
-	// Convert range [-1,1] to [0,1].
-	vec2 cube_face_coordinate_uv = 0.5 * cube_face_coordinate_xy + 0.5;
-
-	// Convert the local cube face (x,y) coordinates to (u,v) coordinates into metadata and field data textures.
-	vec2 tile_offset_uv;
-	vec2 tile_meta_data_coordinate_uv;
-	vec2 tile_coordinate_uv;
-	get_tile_uv_coordinates(
-			cube_face_coordinate_uv,
-			tile_meta_data_resolution,
-			tile_resolution,
-			tile_offset_uv,
-			tile_meta_data_coordinate_uv,
-			tile_coordinate_uv);
-
-	// Sample the tile metadata texture array.
-	vec3 tile_meta_data = texture2DArray(tile_meta_data_sampler, vec3(tile_meta_data_coordinate_uv, cube_face_index)).rgb;
-	float tile_ID = tile_meta_data.r;
-	float max_field_scalar = tile_meta_data.g;
-	float min_field_scalar = tile_meta_data.b;
-
-	// If the current tile has no data then there's nothing to render so discard the current pixel.
-	if (tile_ID < 0)
+	vec2 cube_face_coordinate_uv;
+	float field_scalar;
+	vec3 field_gradient;
+	if (!get_scalar_field_data_from_position(
+			world_position,
+			tile_meta_data_sampler, tile_meta_data_resolution,
+			mask_data_sampler, tile_resolution, field_data_sampler,
+			depth_radius_to_layer_sampler, depth_radius_to_layer_resolution,
+			num_depth_layers, min_max_depth_radius,
+			cube_face_index, cube_face_coordinate_uv,
+			field_scalar, field_gradient))
 	{
 		discard;
 	}
-
-	// Sample the mask data texture array.
-	float mask_data = texture2DArray(mask_data_sampler, vec3(tile_coordinate_uv, tile_ID)).r;
-		
-	// If the current world position (at all vertical depth locations) contains no field data
-	// then there's nothing to render so discard the current pixel.
-	//
-	// TODO: What happens for (bilinearly filtered) values *between* 0 and 1 ? Do they mean accept or reject ?
-	// If accept, then does that mean one or more samples used in bilinear filter of field data is invalid and
-	// hence corrupts scalar/gradient result ?
-	// Or is the field data dilated one texel (towards mask boundary texels) during pre-processing ?
-	if (mask_data == 0)
+	
+	// If using a surface fill mask and current cross section pixel is outside mask region then discard.
+	if (using_surface_fill_mask)
 	{
-		discard;
+		if (!projects_into_surface_fill_mask(
+				surface_fill_mask_sampler, surface_fill_mask_resolution,
+				cube_face_index, cube_face_coordinate_uv))
+		{
+			discard;
+		}
 	}
-
-	// Determine texture layer index to lookup our field data texture array with.
-	// We look up a 1D texture to convert depth radius to layer index.
-	// This is in case the depth layers are not uniformly spaced.
-	float world_position_depth_radius = length(world_position);
-	// There will be small mapping errors within a texel distance to each depth radius (for non-equidistant depth mappings)
-	// but that can only be reduced by increasing the resolution of the 1D texture.
-	// Note that 'world_position_depth_layer' is not an integer layer index.
-	float world_position_depth_layer = look_up_table_1D(
-			depth_radius_to_layer_sampler,
-			depth_radius_to_layer_resolution,
-			min_max_depth_radius.x, // input_lower_bound
-			min_max_depth_radius.y, // input_upper_bound
-			world_position_depth_radius).r;
-
-	// Sample the field data texture array.
-	vec4 field_data = sample_field_data_texture_array(
-			field_data_sampler, tile_coordinate_uv, num_depth_layers, tile_ID, world_position_depth_layer);
 
 	vec4 colour = vec4(0,0,0,0);
 
 	// Look up the colour palette using scalar value (or gradient magnitude).
-	if (colour_mode_isovalue)
+	if (colour_mode_scalar)
 	{
-		float field_scalar = field_data.r;
-
 		colour = look_up_table_1D(
 				colour_palette_sampler,
 				colour_palette_resolution,
-				min_max_scalar_value.x, // input_lower_bound
-				min_max_scalar_value.y, // input_upper_bound
+				min_max_colour_mapping_range.x, // input_lower_bound
+				min_max_colour_mapping_range.y, // input_upper_bound
 				field_scalar);
 	}
 	else if (colour_mode_gradient)
 	{
-		vec3 field_gradient = field_data.gba;
-
+		// NOTE: We have an asymmetric map of ||gradient|| to colour.
+		// We do not have a separate mapping of -||gradient|| to colour as is the case for isosurface rendering
+		// because we cannot easily determine front and back of isosurface when rendering cross-sections.
+		// So we only look up *positive* gradient (magnitude) - ie, we never negate the magnitude.
 		colour = look_up_table_1D(
 				colour_palette_sampler,
 				colour_palette_resolution,
-				min_max_gradient_magnitude.x, // input_lower_bound
-				min_max_gradient_magnitude.y, // input_upper_bound
+				min_max_colour_mapping_range.x, // input_lower_bound
+				min_max_colour_mapping_range.y, // input_upper_bound
 				length(field_gradient));
 	}
 
+#if 1
+	// If the current pixel is transparent then discard it.
+	//
+	// Note: We avoid final alpha values other than 0.0 or 1.0 in order
+	// to avoid order-dependent alpha-blending artifacts.
+	// These occur due to the fact that the cross sections are not drawn in
+	// back to front order (relative to the camera). If cross-section A
+	// partially occludes cross-section B, but A is drawn before B then
+	// A will write semi-transparent (border) pixels into the colour buffer
+	// (eg, blended with a black background) and the depth buffer will record
+	// the depth of these pixels. When B is then drawn it will not overwrite the
+	// A pixels (including the semi-transparent border pixels) and this leaves
+	// darkened edges around A (due to the black background).
+	// So instead we threshold alpha with 0.5 such that [0,0.5] -> 0.0 and [0.5,1] -> 1.0.
+	// This is essentially alpha cutouts. And since our 1D colour texture has been dilated
+	// one texel (for fully transparent texels neighbouring opaque texels) we don't have
+	// the issue of bilinear texture filtering including RGB black values in the final colour.
+	//
+	//      ---
+	//     | B |
+	//  -----------
+	// |     A     |
+	//  -----------
+	//     | B |
+	//      ---
+	//
+	if (colour.a < 0.5)
+	{
+		discard;
+	}
+	colour.a = 1;
+#else
 	// If the current pixel is fully transparent then discard it.
-	// Not that we have transparent iso-surfaces (yet).
 	if (colour.a == 0)
 	{
 		discard;
 	}
+#endif
 
 	// Output colour as pre-multiplied alpha.
 	// This enables alpha-blending to use (src,dst) blend factors of (1, 1-SrcAlpha) instead of

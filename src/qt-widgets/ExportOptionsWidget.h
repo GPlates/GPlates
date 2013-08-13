@@ -29,6 +29,7 @@
 #include <QWidget>
 #include <QString>
 
+#include "gui/ExportAnimationContext.h"
 #include "gui/ExportAnimationStrategy.h"
 
 

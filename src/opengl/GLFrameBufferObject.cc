@@ -75,16 +75,14 @@ namespace GPlatesOpenGL
 	}
 }
 
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 
 GLint
-GPlatesOpenGL::GLFrameBufferObject::Allocator::allocate()
+GPlatesOpenGL::GLFrameBufferObject::Allocator::allocate(
+		const GLCapabilities &capabilities)
 {
 	// We should only get here if the framebuffer object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	GLuint fbo;
@@ -97,11 +95,6 @@ void
 GPlatesOpenGL::GLFrameBufferObject::Allocator::deallocate(
 		GLuint fbo)
 {
-	// We should only get here if the framebuffer object extension is supported.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
-			GPLATES_ASSERTION_SOURCE);
-
 	glDeleteFramebuffersEXT(1, &fbo);
 }
 
@@ -115,9 +108,11 @@ GPlatesOpenGL::GLFrameBufferObject::gl_generate_mipmap(
 		GLenum texture_target,
 		const GLTexture::shared_ptr_to_const_type &texture)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// We should only get here if the framebuffer object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	//
@@ -141,11 +136,14 @@ GPlatesOpenGL::GLFrameBufferObject::GLFrameBufferObject(
 		GLRenderer &renderer) :
 	d_resource(
 			resource_type::create(
+					renderer.get_capabilities(),
 					renderer.get_context().get_non_shared_state()->get_frame_buffer_object_resource_manager()))
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// We should only get here if the framebuffer object extension is supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_framebuffer_object),
+			capabilities.framebuffer.gl_EXT_framebuffer_object,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Resize to the maximum number of colour attachments supported by GL_EXT_framebuffer_object.
@@ -178,7 +176,8 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_1D(
 	// Attachment must be a valid value.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-				attachment < GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments) ||
+				attachment < GL_COLOR_ATTACHMENT0_EXT +
+						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
 			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
 			(attachment == GL_STENCIL_ATTACHMENT_EXT),
 			GPLATES_ASSERTION_SOURCE);
@@ -225,7 +224,8 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_2D(
 	// Attachment must be a valid value.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-				attachment < GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments) ||
+				attachment < GL_COLOR_ATTACHMENT0_EXT +
+						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
 			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
 			(attachment == GL_STENCIL_ATTACHMENT_EXT),
 			GPLATES_ASSERTION_SOURCE);
@@ -273,7 +273,8 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_3D(
 	// Attachment must be a valid value.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-				attachment < GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments) ||
+				attachment < GL_COLOR_ATTACHMENT0_EXT +
+						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
 			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
 			(attachment == GL_STENCIL_ATTACHMENT_EXT),
 			GPLATES_ASSERTION_SOURCE);
@@ -309,6 +310,8 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array_layer(
 {
 	//PROFILE_FUNC();
 
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// The texture must be initialised with a width and a height minimum.
 	// This is for 1D array textures. 2D array textures also require depth but we don't check
 	// because we don't know the texture target (not needed for glFramebufferTextureLayerEXT).
@@ -323,14 +326,15 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array_layer(
 	// Attachment must be a valid value.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-				attachment < GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments) ||
+				attachment < GL_COLOR_ATTACHMENT0_EXT +
+						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
 			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
 			(attachment == GL_STENCIL_ATTACHMENT_EXT),
 			GPLATES_ASSERTION_SOURCE);
 
 	// The GL_EXT_texture_array extension is required for this call.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_texture_array),
+			capabilities.texture.gl_EXT_texture_array,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Attach to the texture.
@@ -360,6 +364,8 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array(
 {
 	//PROFILE_FUNC();
 
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// The texture must be initialised with a width and a height minimum.
 	// This is for 1D array textures. 2D array textures also require depth but we don't check
 	// because we don't know the texture target (not needed for glFramebufferTextureEXT).
@@ -374,14 +380,15 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_texture_array(
 	// Attachment must be a valid value.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-				attachment < GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments) ||
+				attachment < GL_COLOR_ATTACHMENT0_EXT +
+						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
 			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
 			(attachment == GL_STENCIL_ATTACHMENT_EXT),
 			GPLATES_ASSERTION_SOURCE);
 
 	// The GL_EXT_geometry_shader4 extension is required for this call.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_EXT_geometry_shader4),
+			capabilities.shader.gl_EXT_geometry_shader4,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Attach to the texture.
@@ -420,7 +427,8 @@ GPlatesOpenGL::GLFrameBufferObject::gl_attach_render_buffer(
 	// Attachment must be a valid value.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-				attachment < GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments) ||
+				attachment < GL_COLOR_ATTACHMENT0_EXT +
+						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
 			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
 			(attachment == GL_STENCIL_ATTACHMENT_EXT),
 			GPLATES_ASSERTION_SOURCE);
@@ -452,7 +460,8 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach(
 	// Attachment must be a valid value.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			(attachment >= GL_COLOR_ATTACHMENT0_EXT &&
-				attachment < GL_COLOR_ATTACHMENT0_EXT + GLContext::get_parameters().framebuffer.gl_max_color_attachments) ||
+				attachment < GL_COLOR_ATTACHMENT0_EXT +
+						renderer.get_capabilities().framebuffer.gl_max_color_attachments) ||
 			(attachment == GL_DEPTH_ATTACHMENT_EXT) ||
 			(attachment == GL_STENCIL_ATTACHMENT_EXT),
 			GPLATES_ASSERTION_SOURCE);
@@ -580,9 +589,11 @@ GPlatesOpenGL::GLFrameBufferObject::gl_draw_buffers(
 		GLRenderer &renderer,
 		const std::vector<GLenum> &bufs)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			!bufs.empty() &&
-				bufs.size() <= GLContext::get_parameters().framebuffer.gl_max_draw_buffers,
+				bufs.size() <= renderer.get_capabilities().framebuffer.gl_max_draw_buffers,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Revert our framebuffer binding on return so we don't affect changes made by clients.
@@ -597,7 +608,7 @@ GPlatesOpenGL::GLFrameBufferObject::gl_draw_buffers(
 	}
 	// Otherwise use the GL_ARB_draw_buffers extension for multiple buffers.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_draw_buffers),
+			capabilities.framebuffer.gl_ARB_draw_buffers,
 			GPLATES_ASSERTION_SOURCE);
 
 	glDrawBuffersARB(bufs.size(), &bufs[0]);
@@ -648,6 +659,142 @@ GPlatesOpenGL::GLFrameBufferObject::gl_check_frame_buffer_status(
 
 	// Keep compiler happy - we can't get here due to above 'Abort'.
 	return false;
+}
+
+
+boost::optional< std::pair<GLuint/*width*/, GLuint/*height*/> >
+GPlatesOpenGL::GLFrameBufferObject::get_frame_buffer_dimensions() const
+{
+	// Iterate over the attachment points until we find one that has something attached.
+	for (unsigned int attachment_index = 0;
+		attachment_index < d_attachment_points.size();
+		++attachment_index)
+	{
+		const boost::optional<AttachmentPoint> &attachment_point_opt = d_attachment_points[attachment_index];
+		if (!attachment_point_opt)
+		{
+			// Look at the next attachment point.
+			continue;
+		}
+		const AttachmentPoint &attachment_point = attachment_point_opt.get();
+
+		if (attachment_point.texture)
+		{
+			const boost::optional<GLuint> texture_width = attachment_point.texture.get()->get_width();
+			if (!texture_width)
+			{
+				// The attached texture has not allocated storage yet.
+				return boost::none;
+			}
+
+			const boost::optional<GLuint> texture_height = attachment_point.texture.get()->get_height();
+			return std::make_pair(
+					texture_width.get(),
+					// If no height specified then texture is 1D...
+					texture_height ? texture_height.get() : 1);
+		}
+
+		// Attachment point must either be a texture or a render buffer.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				attachment_point.render_buffer,
+				GPLATES_ASSERTION_SOURCE);
+
+		return attachment_point.render_buffer.get()->get_dimensions();
+	}
+
+	// Nothing attached to any attachment points.
+	return boost::none;
+}
+
+
+GPlatesOpenGL::GLFrameBufferObject::Classification::Classification() :
+	d_width(0),
+	d_height(0),
+	d_texture_internal_format(-1),
+	d_depth_buffer_internal_format(-1),
+	d_stencil_buffer_internal_format(-1)
+{
+}
+
+
+void
+GPlatesOpenGL::GLFrameBufferObject::Classification::set_dimensions(
+		GLuint width,
+		GLuint height)
+{
+	d_width = width;
+	d_height = height;
+}
+
+
+void
+GPlatesOpenGL::GLFrameBufferObject::Classification::set_texture_internal_format(
+		GLint texture_internal_format)
+{
+	d_texture_internal_format = texture_internal_format;
+}
+
+
+void
+GPlatesOpenGL::GLFrameBufferObject::Classification::set_depth_buffer_internal_format(
+		GLint depth_buffer_internal_format)
+{
+	d_depth_buffer_internal_format = depth_buffer_internal_format;
+}
+
+
+void
+GPlatesOpenGL::GLFrameBufferObject::Classification::set_stencil_buffer_internal_format(
+		GLint stencil_buffer_internal_format)
+{
+	d_stencil_buffer_internal_format = stencil_buffer_internal_format;
+}
+
+
+GPlatesOpenGL::GLFrameBufferObject::Classification::tuple_type
+GPlatesOpenGL::GLFrameBufferObject::Classification::get_tuple() const
+{
+	return tuple_type(
+			d_width,
+			d_height,
+			d_texture_internal_format,
+			d_depth_buffer_internal_format,
+			d_stencil_buffer_internal_format);
+}
+
+
+GLuint
+GPlatesOpenGL::GLFrameBufferObject::Classification::get_width() const
+{
+	return d_width;
+}
+
+
+GLuint
+GPlatesOpenGL::GLFrameBufferObject::Classification::get_height() const
+{
+	return d_height;
+}
+
+
+GLint
+GPlatesOpenGL::GLFrameBufferObject::Classification::get_texture_internal_format() const
+{
+	return d_texture_internal_format;
+}
+
+
+GLint
+GPlatesOpenGL::GLFrameBufferObject::Classification::get_depth_buffer_internal_format() const
+{
+	return d_depth_buffer_internal_format;
+}
+
+
+GLint
+GPlatesOpenGL::GLFrameBufferObject::Classification::get_stencil_buffer_internal_format() const
+{
+	return d_stencil_buffer_internal_format;
 }
 
 
@@ -703,6 +850,3 @@ GPlatesOpenGL::GLFrameBufferObject::AttachmentPoint::AttachmentPoint(
 	render_buffer(render_buffer_)
 {
 }
-
-// We use macros in <GL/glew.h> that contain old-style casts.
-ENABLE_GCC_WARNING("-Wold-style-cast")

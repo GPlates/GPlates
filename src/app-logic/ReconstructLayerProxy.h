@@ -28,10 +28,14 @@
 
 #include <utility>
 #include <vector>
+#include <map>
 #include <boost/optional.hpp>
+
+#include "AppLogicFwd.h"
 
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
+#include "MultiPointVectorField.h"
 #include "ReconstructContext.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionLayerProxy.h"
@@ -461,6 +465,74 @@ namespace GPlatesAppLogic
 
 
 		//
+		// Getting a sequence of velocities (@a MultiPointVectorField objects) corresponding
+		// to the reconstructed feature geometries of @a get_reconstructed_feature_geometries.
+		//
+		// NOTE: It actually makes more sense to calculate velocities here rather than in
+		// VelocityFieldCalculatorLayerProxy since the velocities are so closely coupled to the
+		// generation of reconstructed feature geometries.
+		// However VelocityFieldCalculatorLayerProxy is more suitable for calculating velocities
+		// at positions where *un-reconstructed* geometries intersect surfaces (eg, static polygons,
+		// and topological plates/network) from another layer.
+		//
+
+
+		/**
+		 * Returns the velocities associated with reconstructed feature geometries, for the current
+		 * reconstruct params and current reconstruction time, by appending them to
+		 * @a reconstructed_feature_velocities.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_feature_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities)
+		{
+			return get_reconstructed_feature_velocities(
+					reconstructed_feature_velocities, d_current_reconstruct_params, d_current_reconstruction_time);
+		}
+
+		/**
+		 * Returns the velocities associated with reconstructed feature geometries, for the specified
+		 * reconstruct params and current reconstruction time, by appending them to
+		 * @a reconstructed_feature_velocities.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_feature_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
+				const ReconstructParams &reconstruct_params)
+		{
+			return get_reconstructed_feature_velocities(
+					reconstructed_feature_velocities, reconstruct_params, d_current_reconstruction_time);
+		}
+
+		/**
+		 * Returns the velocities associated with reconstructed feature geometries, for the current
+		 * reconstruct params and specified reconstruction time, by appending them to
+		 * @a reconstructed_feature_velocities.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_feature_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
+				const double &reconstruction_time)
+		{
+			return get_reconstructed_feature_velocities(
+					reconstructed_feature_velocities, d_current_reconstruct_params, reconstruction_time);
+		}
+
+		/**
+		 * Returns the velocities associated with reconstructed feature geometries, for the specified
+		 * reconstruct params and reconstruction time, by appending them to
+		 * @a reconstructed_feature_velocities.
+		 *
+		 * Returns the reconstruct handle that identifies the reconstructed feature velocities.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_feature_velocities(
+				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
+				const ReconstructParams &reconstruct_params,
+				const double &reconstruction_time);
+
+
+		//
 		// Getting current reconstruct params and reconstruction time as set by the layer system.
 		//
 
@@ -512,9 +584,6 @@ namespace GPlatesAppLogic
 		 * corresponding entry in the returned sequence will be boost::none.
 		 * Current reasons for this include:
 		 * - polygon has too few vertices (includes case where geometry is a @a PointOnSphere),
-		 * - polygon is self-intersecting,
-		 * - polygon is too big and does not project onto a 2D plane.
-		 * FIXME: Remove the constraints of the last two cases.
 		 *
 		 * Use @a get_reconstructable_feature_collections_subject_token to determine
 		 * when these present day polygon meshes have been updated.
@@ -652,6 +721,26 @@ namespace GPlatesAppLogic
 		modified_reconstructable_feature_collection(
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
+		/**
+		 * Add a topological network resolver layer proxy.
+		 */
+		void
+		add_topological_network_resolver_layer_proxy(
+				const topology_network_resolver_layer_proxy_non_null_ptr_type &topological_network_resolver_layer_proxy);
+
+		/**
+		 * Remove a topological network resolver layer proxy.
+		 */
+		void
+		remove_topological_network_resolver_layer_proxy(
+				const topology_network_resolver_layer_proxy_non_null_ptr_type &topological_network_resolver_layer_proxy);
+
+		/**
+		 * Returns true if one or more topological network resolver layers are currently connected.
+		 */
+		bool
+		connected_to_topological_layer_proxies() const;		
+
 	private:
 		/**
 		 * Contains optional reconstructed feature geometries as sequences and spatial partitions.
@@ -661,11 +750,30 @@ namespace GPlatesAppLogic
 		 */
 		struct ReconstructionInfo
 		{
+			explicit
+			ReconstructionInfo(
+					const ReconstructContext::context_state_reference_type &context_state_) :
+				context_state(context_state_)
+			{  }
+
+			/**
+			 * The reconstruct context state that was used to reconstruct our cached geometries.
+			 *
+			 * We maintain a strong reference to the context state to keep it alive so it can be used
+			 * for reconstructions at a *different* time, but with the *same* reconstruct context state.
+			 *
+			 * The context state may be quite expensive to generate (it could contain deformation
+			 * tables) so we want to re-use it. However we also want to release it if no cached
+			 * reconstructions reference it anymore.
+			 */
+			ReconstructContext::context_state_reference_type context_state;
+
+
 			/**
 			 * The reconstruct handle that identifies all cached reconstructed feature geometries
 			 * in this structure.
 			 */
-			boost::optional<ReconstructHandle::type> cached_reconstruct_handle;
+			boost::optional<ReconstructHandle::type> cached_reconstructed_feature_geometries_handle;
 
 			/**
 			 * The cached reconstructed features (RFGs grouped by feature).
@@ -696,6 +804,19 @@ namespace GPlatesAppLogic
 			 */
 			boost::optional<reconstructions_spatial_partition_type::non_null_ptr_type>
 					cached_reconstructions_spatial_partition;
+
+
+			/**
+			 * The reconstruct handle that identifies all cached reconstructed feature *velocities*
+			 * in this structure.
+			 */
+			boost::optional<ReconstructHandle::type> cached_reconstructed_feature_velocities_handle;
+
+			/**
+			 * The cached reconstructed feature velocities.
+			 */
+			boost::optional< std::vector<MultiPointVectorField::non_null_ptr_type> >
+					cached_reconstructed_feature_velocities;
 		};
 
 		//! Typedef for the key type to the reconstruction cache (reconstruction time and reconstruct params).
@@ -711,6 +832,16 @@ namespace GPlatesAppLogic
 				reconstruction_cache_key_type,
 				reconstruction_cache_value_type>
 						reconstruction_cache_type;
+
+		/**
+		 * Typedef for mapping reconstruct parameters to their associated reconstruct context state.
+		 *
+		 * A *weak* reference is used because we don't want to influence the lifetime of the
+		 * context state objects - we just want to see if one already exists, for a specific
+		 * @a ReconstructParams, before we create a new context state.
+		 */
+		typedef std::map<ReconstructParams, ReconstructContext::context_state_weak_reference_type>
+				reconstruct_context_state_map_type;
 
 
 		/**
@@ -812,6 +943,15 @@ namespace GPlatesAppLogic
 		ReconstructContext d_reconstruct_context;
 
 		/**
+		 * A mapping of reconstruct parameters to their associated reconstruct context state.
+		 *
+		 * This can end up with weak references to context state that no longer exist because there
+		 * are no @a ReconstructionInfo objects (holding strong references to the context state)
+		 * because they have been expelled from the least-recently used reconstructions cache.
+		 */
+		reconstruct_context_state_map_type d_reconstruct_context_state_map;
+
+		/**
 		 * The input feature collections to reconstruct.
 		 */
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_reconstructable_feature_collections;
@@ -820,6 +960,12 @@ namespace GPlatesAppLogic
 		 * Used to get reconstruction trees at desired reconstruction times.
 		 */
 		LayerProxyUtils::InputLayerProxy<ReconstructionLayerProxy> d_current_reconstruction_layer_proxy;
+
+		/**
+		 * Used to get resolved topology network
+		 */
+		LayerProxyUtils::InputLayerProxySequence<TopologyNetworkResolverLayerProxy> 
+			d_current_topological_network_resolver_layer_proxies;
 
 		/**
 		 * The current reconstruction time as set by the layer system.
@@ -835,6 +981,13 @@ namespace GPlatesAppLogic
 		 * The various reconstructions cached according to reconstruction time and reconstruct params.
 		 */
 		reconstruction_cache_type d_cached_reconstructions;
+
+		/**
+		 * The default maximum size of the reconstructions cache.
+		 *
+		 * We temporarily reduce this to one when topologies are connected to reduce memory usage.
+		 */
+		unsigned int d_cached_reconstructions_default_maximum_size;
 
 		/**
 		 * The cached present day geometries and polygon meshes.
@@ -871,15 +1024,19 @@ namespace GPlatesAppLogic
 
 	// This method is public so that @a ReconstructLayerTask can flush any RFGs when
 	// it is deactivated - this is done so that topologies will no longer find the RFGs
-	// when they lookup observers of topological section features.
-	// This issue exists because the topology layers do not restrict topological sections
-	// to their input channels (and hence have no input channels for topological sections).
+	// when they look up observers of topological section features.
+	// This issue exists because the topology layers do not necessarily restrict topological sections
+	// to their input channels (unless topological sections input channels are connected), instead
+	// using an unrestricted global feature id lookup even though this 'reconstruct' layer has
+	// been disconnected from the topology layer in question.
 	public:
+
 		/**
-		 * Resets any cached variables forcing them to be recalculated next time they're accessed.
+		 * Resets any cached *reconstruction* variables forcing them to be recalculated next time they're accessed.
 		 */
 		void
-		reset_reconstructed_feature_geometry_caches();
+		reset_reconstruction_cache();
+
 	private:
 
 
@@ -909,7 +1066,6 @@ namespace GPlatesAppLogic
 		void
 		check_input_layer_proxies();
 
-
 		/**
 		 * Generates reconstructed features for the specified reconstruct params and
 		 * reconstruction time if they're not already cached.
@@ -917,7 +1073,6 @@ namespace GPlatesAppLogic
 		std::vector<ReconstructContext::ReconstructedFeature> &
 		cache_reconstructed_features(
 				ReconstructionInfo &reconstruction_info,
-				const ReconstructParams &reconstruct_params,
 				const double &reconstruction_time);
 
 
@@ -928,7 +1083,15 @@ namespace GPlatesAppLogic
 		reconstructions_spatial_partition_type::non_null_ptr_to_const_type
 		cache_reconstructions_spatial_partition(
 				ReconstructionInfo &reconstruction_info,
-				const ReconstructParams &reconstruct_params,
+				const double &reconstruction_time);
+
+		/**
+		 * Generates reconstructed feature *velocities* for the specified reconstruct params and
+		 * reconstruction time if they're not already cached.
+		 */
+		std::vector<MultiPointVectorField::non_null_ptr_type> &
+		cache_reconstructed_feature_velocities(
+				ReconstructionInfo &reconstruction_info,
 				const double &reconstruction_time);
 
 
@@ -936,16 +1099,18 @@ namespace GPlatesAppLogic
 		 * Utility method used by @a reconstruction_cache_type when it needs a new @a ReconstructionInfo
 		 * for a new reconstruction time / reconstruct params input pair.
 		 *
-		 * It is empty because we will cache the optional members as needed.
+		 * It starts out empty because we will cache the optional members as needed.
 		 * We're just using @a reconstruction_cache_type to evict least-recently requested reconstructions.
 		 */
-		static
 		ReconstructionInfo
-		create_empty_reconstruction_info(
-				const reconstruction_cache_key_type &)
-		{
-			return ReconstructionInfo();
-		}
+		create_reconstruction_info(
+				const reconstruction_cache_key_type &reconstruction_cache_key);
+
+
+		ReconstructContext::context_state_reference_type
+		create_reconstruct_context_state(
+				const double &reconstruction_time,
+				const ReconstructParams &reconstruct_params);
 	};
 }
 

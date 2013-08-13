@@ -32,6 +32,8 @@
 
 #include "OpaqueSphere.h"
 
+#include "FeedbackOpenGLToQPainter.h"
+
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
@@ -276,8 +278,27 @@ namespace
 
 		if (transparent)
 		{
-			renderer.gl_enable(GL_BLEND);
-			renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			// Set up alpha blending for pre-multiplied alpha.
+			// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
+			// This is where the RGB channels have already been multiplied by the alpha channel.
+			// See class GLVisualRasterSource for why this is done.
+			//
+			// To generate pre-multiplied alpha we'll use separate alpha-blend (src,dst) factors for the alpha channel...
+			//
+			//   RGB uses (src_alpha, 1 - src_alpha)  ->  (R,G,B) = (Rs*As,Gs*As,Bs*As) + (1-As) * (Rd,Gd,Bd)
+			//     A uses (1, 1 - src_alpha)          ->        A = As + (1-As) * Ad
+			if (renderer.get_capabilities().framebuffer.gl_EXT_blend_func_separate)
+			{
+				renderer.gl_enable(GL_BLEND);
+				renderer.gl_blend_func_separate(
+						GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+						GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+			}
+			else // otherwise resort to normal blending...
+			{
+				renderer.gl_enable(GL_BLEND);
+				renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			}
 		}
 
 		renderer.apply_compiled_draw_state(*draw_vertex_array);
@@ -332,7 +353,8 @@ GPlatesGui::OpaqueSphere::paint(
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
 
 	// Check whether the view state's background colour has changed.
-	if (d_view_state && d_view_state->get_background_colour() != d_colour)
+	if (d_view_state &&
+		d_view_state->get_background_colour() != d_colour)
 	{
 		d_colour = d_view_state->get_background_colour();
 		d_compiled_draw_state = compile_sphere_draw_state(renderer, *d_vertex_array, Colour::to_rgba8(d_colour));
@@ -342,5 +364,47 @@ GPlatesGui::OpaqueSphere::paint(
 	undo_rotation(transform, axis, angle_in_deg);
 
 	renderer.gl_mult_matrix(GL_MODELVIEW, transform);
-	renderer.apply_compiled_draw_state(*d_compiled_draw_state);
+
+	// Either render directly to the framebuffer, or render to a QImage and draw that to the
+	// feedback paint device using a QPainter.
+	//
+	// NOTE: For feedback to a QPainter we render to an image instead of rendering vector geometries.
+	// This is because, for SVG output, we don't want a large number of vector geometries due to this
+	// opaque sphere - we really only want actual geological data and grid lines as SVG vector data.
+	if (renderer.rendering_to_context_framebuffer())
+	{
+		renderer.apply_compiled_draw_state(*d_compiled_draw_state);
+	}
+	else
+	{
+		FeedbackOpenGLToQPainter feedback_opengl;
+		FeedbackOpenGLToQPainter::ImageScope image_scope(feedback_opengl, renderer);
+
+		// The feedback image tiling loop...
+		do
+		{
+			GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type tile_projection =
+					image_scope.begin_render_tile();
+
+			// Adjust the current projection transform - it'll get restored before the next tile though.
+			GPlatesOpenGL::GLMatrix projection_matrix(tile_projection->get_matrix());
+			projection_matrix.gl_mult_matrix(renderer.gl_get_matrix(GL_PROJECTION));
+			renderer.gl_load_matrix(GL_PROJECTION, projection_matrix);
+
+			// Clear the main framebuffer (colour and depth) before rendering the image.
+			// We also clear the stencil buffer in case it is used - also it's usually interleaved
+			// with depth so it's more efficient to clear both depth and stencil.
+			renderer.gl_clear_color();
+			renderer.gl_clear_depth();
+			renderer.gl_clear_stencil();
+			renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+			// Render the actual opaque sphere.
+			renderer.apply_compiled_draw_state(*d_compiled_draw_state);
+		}
+		while (image_scope.end_render_tile());
+
+		// Draw final raster QImage to feedback QPainter.
+		image_scope.end_render();
+	}
 }

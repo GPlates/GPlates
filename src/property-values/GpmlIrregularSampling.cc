@@ -24,12 +24,11 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
+#include <boost/foreach.hpp>
 #include <iostream>
 #include <typeinfo>
 
 #include "GpmlIrregularSampling.h"
-
 
 namespace
 {
@@ -105,4 +104,82 @@ GPlatesPropertyValues::GpmlIrregularSampling::directly_modifiable_fields_equal(
 		return false;
 	}
 }
+
+
+bool
+GPlatesPropertyValues::GpmlIrregularSampling::is_disabled() const
+{
+		return contain_disabled_sequence_flag();
+}
+
+
+void
+GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
+		bool flag)
+{
+	if(d_time_samples.empty())
+	{
+		qWarning() << "No time sample found in this GpmlIrregularSampling.";
+		return;
+	}
+	using namespace GPlatesModel;
+	//first, remove all DISABLED_SEQUENCE_FLAG
+	BOOST_FOREACH(GpmlTimeSample &sample, d_time_samples)
+	{
+		GpmlTotalReconstructionPole *trs_pole = 
+			dynamic_cast<GpmlTotalReconstructionPole *>(sample.value().get());
+		if(trs_pole)
+		{
+			MetadataContainer 
+				&meta_data = trs_pole->metadata(), new_meta_data;
+			BOOST_FOREACH(Metadata::shared_ptr_type m, meta_data)
+			{
+				if(m->get_name() != Metadata::DISABLED_SEQUENCE_FLAG)
+				{
+					new_meta_data.push_back(m);
+				}
+			}
+			trs_pole->metadata() = new_meta_data;
+		}
+	}
+	//then add new DISABLED_SEQUENCE_FLAG
+	GpmlTotalReconstructionPole *first_pole = 
+		dynamic_cast<GpmlTotalReconstructionPole *>(d_time_samples[0].value().get());
+	if(flag && first_pole)
+	{
+		first_pole->metadata().insert(
+				first_pole->metadata().begin(), 
+				Metadata::shared_ptr_type(
+						new Metadata(
+								Metadata::DISABLED_SEQUENCE_FLAG, 
+								"true")));
+	}
+}
+
+
+bool
+GPlatesPropertyValues::GpmlIrregularSampling::contain_disabled_sequence_flag() const 
+{
+	using namespace GPlatesModel;
+	BOOST_FOREACH(const GpmlTimeSample &sample, d_time_samples)
+	{
+		const GpmlTotalReconstructionPole *trs_pole = 
+			dynamic_cast<const GpmlTotalReconstructionPole *>(sample.value().get());
+		if(trs_pole)
+		{
+			const MetadataContainer &meta_data = trs_pole->metadata();
+			BOOST_FOREACH(const Metadata::shared_ptr_type m, meta_data)
+			{
+				if((m->get_name() == Metadata::DISABLED_SEQUENCE_FLAG) && 
+					!m->get_content().compare("true",Qt::CaseInsensitive))
+				{
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+
 

@@ -30,6 +30,7 @@
 
 #include "LayerOptionsWidget.h"
 #include "DrawStyleDialog.h"
+#include "OpenFileDialog.h"
 
 namespace GPlatesAppLogic
 {
@@ -45,6 +46,9 @@ namespace GPlatesQtWidgets
 {
 	// Forward declaration.
 	class ViewportWindow;
+	class ColourScaleWidget;
+	class FriendlyLineEdit;
+	class ReadErrorAccumulationDialog;
 
 	/**
 	 * TopologyNetworkResolverLayerOptionsWidget is used to show additional options for
@@ -78,16 +82,34 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
-		handle_mesh_clicked();
+		handle_triangulation_clicked();
 
 		void
 		handle_constrained_clicked();
 
 		void
-		handle_triangulation_clicked();
+		handle_mesh_clicked();
+
+		void
+		handle_total_triangulation_clicked();
+
+		void
+		handle_color_index_combobox_activated();
+
+		void
+		handle_fill_clicked();
 
 		void
 		handle_segment_velocity_clicked();
+
+		void
+		handle_update_button_clicked();
+
+		void
+		handle_select_palette_filename_button_clicked();
+
+		void
+		handle_use_default_palette_button_clicked();
 
 		void
 		open_draw_style_setting_dlg();
@@ -104,6 +126,11 @@ namespace GPlatesQtWidgets
 		GPlatesPresentation::ViewState &d_view_state;
 		ViewportWindow *d_viewport_window;
 		DrawStyleDialog		   *d_draw_style_dialog_ptr;
+
+		FriendlyLineEdit *d_palette_filename_lineedit;
+		OpenFileDialog d_open_file_dialog;
+
+		ColourScaleWidget *d_colour_scale_widget;
 
 		/**
 		 * The visual layer for which we are currently displaying options.

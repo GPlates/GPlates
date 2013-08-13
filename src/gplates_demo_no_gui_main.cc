@@ -415,14 +415,15 @@ populate_feature_store(
 
 void
 output_as_gpml(
-		GPlatesModel::FeatureCollectionHandle::const_iterator begin,
-		GPlatesModel::FeatureCollectionHandle::const_iterator end,
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &features,
 		const GPlatesModel::Gpgim &gpgim)
 {
 	QFile standard_output;
 	standard_output.open(stdout, QIODevice::WriteOnly);
-	GPlatesFileIO::GpmlOutputVisitor v(&standard_output, gpgim);
+	GPlatesFileIO::GpmlOutputVisitor v(&standard_output, features, gpgim);
 
+	GPlatesModel::FeatureCollectionHandle::iterator begin = features->begin();
+	GPlatesModel::FeatureCollectionHandle::iterator end = features->end();
 	for ( ; begin != end; ++begin) {
 		v.visit_feature(begin);
 	}
@@ -566,7 +567,7 @@ main(int argc, char *argv[])
 	GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs =
 			isochrons_and_total_recon_seqs.second;
 
-	::output_as_gpml(isochrons->begin(), isochrons->end(), *gpgim);
+	::output_as_gpml(isochrons, *gpgim);
 	//::output_reconstructions(isochrons, total_recon_seqs);
 
 	// Test GPML 1.6 reader.
@@ -591,9 +592,9 @@ main(int argc, char *argv[])
 				gpml_structural_type_reader,
 				accum);
 
-		GPlatesModel::FeatureCollectionHandle::const_weak_ref features =
+		GPlatesModel::FeatureCollectionHandle::weak_ref features =
 				file->get_reference().get_feature_collection();
-		::output_as_gpml(features->begin(), features->end(), *gpgim);
+		::output_as_gpml(features, *gpgim);
 
 #if 0
 		QFile file(filename);

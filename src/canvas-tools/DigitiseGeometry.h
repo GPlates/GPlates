@@ -30,7 +30,8 @@
 
 #include "CanvasTool.h"
 
-#include "view-operations/GeometryType.h"
+#include "maths/GeometryType.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
 
 
@@ -70,7 +71,7 @@ namespace GPlatesCanvasTools
 		const non_null_ptr_type
 		create(
 				const status_bar_callback_type &status_bar_callback,
-				GPlatesViewOperations::GeometryType::Value geom_type,
+				GPlatesMaths::GeometryType::Value geom_type,
 				GPlatesViewOperations::GeometryBuilder &geometry_builder,
 				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
@@ -115,7 +116,7 @@ namespace GPlatesCanvasTools
 		 */
 		DigitiseGeometry(
 				const status_bar_callback_type &status_bar_callback,
-				GPlatesViewOperations::GeometryType::Value geom_type,
+				GPlatesMaths::GeometryType::Value geom_type,
 				GPlatesViewOperations::GeometryBuilder &geometry_builder,
 				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
@@ -126,7 +127,7 @@ namespace GPlatesCanvasTools
 		/**
 		 * This is the type of geometry this particular DigitiseGeometry tool should default to.
 		 */
-		GPlatesViewOperations::GeometryType::Value d_default_geom_type;
+		GPlatesMaths::GeometryType::Value d_default_geom_type;
 
 		GPlatesViewOperations::GeometryBuilder &d_geometry_builder;
 

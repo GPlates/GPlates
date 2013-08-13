@@ -280,6 +280,10 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_topology_workflow()
 
 	add_tool_action_to_workflow(
 			topology_workflow,
+			GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY,
+			action_Click_Geometry);
+	add_tool_action_to_workflow(
+			topology_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY,
 			action_Build_Line_Topology);
 	add_tool_action_to_workflow(
@@ -310,6 +314,10 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_pole_manipulation_workflow()
 			tab_pole_manipulation,
 			pole_manipulation_toolbar_placeholder);
 
+	add_tool_action_to_workflow(
+			pole_manipulation_workflow,
+			GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY,
+			action_Click_Geometry);
 	add_tool_action_to_workflow(
 			pole_manipulation_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE,

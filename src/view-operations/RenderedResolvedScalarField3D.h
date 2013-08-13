@@ -58,7 +58,7 @@ namespace GPlatesViewOperations
 		accept_visitor(
 				ConstRenderedGeometryVisitor& visitor)
 		{
-			visitor.visit_resolved_scalar_field_3d(*this);
+			visitor.visit_rendered_resolved_scalar_field_3d(*this);
 		}
 
 		virtual

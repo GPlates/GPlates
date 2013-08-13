@@ -43,6 +43,7 @@
 #include "GLScreenRenderTarget.h"
 #include "GLShaderObject.h"
 #include "GLShaderProgramUtils.h"
+#include "GLShaderSource.h"
 #include "GLStreamPrimitives.h"
 #include "GLTexture.h"
 #include "GLVertex.h"
@@ -89,27 +90,48 @@ namespace GPlatesOpenGL
 		typedef boost::shared_ptr<void> cache_handle_type;
 
 		/**
-		 * Typedef for a sequence of surface geometries (points, polylines, polygons).
+		 * Typedef for a sequence of cross section geometries (points, multipoints, polylines, polygons).
 		 */
-		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> surface_geometry_seq_type;
+		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> cross_sections_seq_type;
+
+		/**
+		 * Typedef for a sequence of surface polygons mask geometries (polylines, polygons).
+		 */
+		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> surface_polygons_mask_seq_type;
 
 
 		/**
-		 * Defines surface geometries used as fill masks to limit rendering of isosurface to
-		 * certain volume regions defined by extruding the surface mask towards the globe centre.
+		 * Defines surface geometries used as fill masks to limit rendering of isosurface (or cross sections)
+		 * to certain volume regions defined by extruding the surface mask towards the globe centre.
 		 */
 		struct SurfaceFillMask
 		{
-			SurfaceFillMask(
-					const surface_geometry_seq_type &surface_geometries_,
-					bool treat_polylines_as_polygons_,
-					bool show_volume_fill_walls_,
-					bool only_show_boundary_walls_);
+			/**
+			 * Determines if show vertical walls when rendering iso-surface.
+			 * Does not apply to cross section rendering.
+			 */
+			struct ShowWalls
+			{
+				explicit
+				ShowWalls(
+						bool only_boundary_walls_ = true) :
+					only_boundary_walls(only_boundary_walls_)
+				{  }
 
-			const surface_geometry_seq_type &surface_geometries;
+				bool only_boundary_walls;
+			};
+
+			/**
+			 * @a show_walls_ does not apply to cross section rendering.
+			 */
+			SurfaceFillMask(
+					const surface_polygons_mask_seq_type &surface_polygons_mask_,
+					bool treat_polylines_as_polygons_,
+					boost::optional<ShowWalls> show_walls_ = boost::none);
+
+			surface_polygons_mask_seq_type surface_polygons_mask;
 			bool treat_polylines_as_polygons;
-			bool show_volume_fill_walls;
-			bool only_show_boundary_walls;
+			boost::optional<ShowWalls> show_walls;
 		};
 
 
@@ -141,12 +163,14 @@ namespace GPlatesOpenGL
 		/**
 		 * Set the colour palette.
 		 *
-		 * The colour palette is expected to have the input range [0,1].
+		 * The colour palette used to map scalar values (or gradient magnitudes) to colour.
+		 * @a colour_palette_value_range specifies the [min, max] range of the values used in the palette.
 		 */
 		void
 		set_colour_palette(
 				GLRenderer &renderer,
-				const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &colour_palette);
+				const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &colour_palette,
+				const std::pair<double, double> &colour_palette_value_range);
 
 
 		/**
@@ -178,7 +202,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @a render_mode must an isosurface mode (ie, not 'RENDER_MODE_CROSS_SECTIONS').
 		 *
-		 * @a surface_fill_mask contains the optional surface geometries that limit rendering
+		 * @a surface_fill_mask contains the optional surface polygon geometries that limit rendering
 		 * of the isosurface to regions underneath the filled surface geometries.
 		 * The surface geometries can optionally include polylines which are filled as if they were polygons.
 		 * The vertical walls of the fill mask can optionally be rendered as can the spherical surface mask itself.
@@ -216,8 +240,8 @@ namespace GPlatesOpenGL
 		render_iso_surface(
 				GLRenderer &renderer,
 				cache_handle_type &cache_handle,
-				GPlatesViewOperations::ScalarField3DRenderParameters::RenderMode render_mode,
-				GPlatesViewOperations::ScalarField3DRenderParameters::ColourMode colour_mode,
+				GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceDeviationWindowMode deviation_window_mode,
+				GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceColourMode colour_mode,
 				const GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters &isovalue_parameters,
 				const GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions &deviation_window_render_options,
 				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
@@ -232,9 +256,16 @@ namespace GPlatesOpenGL
 		 * Renders the scalar field as cross-section(s) visible in the view frustum
 		 * (determined by the current model-view/projection transforms of @a renderer).
 		 *
-		 * The cross-section geometry is formed by vertically extruded the specified surface geometry
-		 * from the maximum scalar field depth to the minimum depth. The surface geometry can be
-		 * points, polylines or polygons.
+		 * The cross-section geometry is formed by vertically extruded the specified cross section
+		 * geometry from the maximum scalar field depth to the minimum depth.
+		 * The cross section geometry can be points, polylines or polygons.
+		 *
+		 * @a surface_fill_mask contains the optional surface polygon geometries that limit rendering
+		 * of the cross sections to regions underneath the filled surface geometries.
+		 * The surface geometries can optionally include polylines which are filled as if they were polygons.
+		 *
+		 * The surface polygon mask @a surface_polygon_mask is the same as specified in @a render_iso_surface.
+		 * Here it is used to mask away parts of cross-sections that lie outside the mask region.
 		 *
 		 * @a test_variables are test variables to optionally use during shader program development.
 		 * These variables are in the range [0,1] and come from the scalar field visual layer GUI.
@@ -260,10 +291,11 @@ namespace GPlatesOpenGL
 		render_cross_sections(
 				GLRenderer &renderer,
 				cache_handle_type &cache_handle,
-				const surface_geometry_seq_type &surface_geometries,
-				GPlatesViewOperations::ScalarField3DRenderParameters::ColourMode colour_mode,
+				const cross_sections_seq_type &cross_sections,
+				GPlatesViewOperations::ScalarField3DRenderParameters::CrossSectionColourMode colour_mode,
 				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
 				const std::vector<float> &test_variables,
+				boost::optional<SurfaceFillMask> surface_fill_mask = boost::none,
 				boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture = boost::none);
 
 	private:
@@ -280,7 +312,7 @@ namespace GPlatesOpenGL
 		 * Also GLSL 1.2 supports 'gl_FragData' (part of GL_ARB_draw_buffers) so we don't
 		 * need to declare '#extension GL_ARB_draw_buffers : enable' in the fragment shader.
 		 */
-		static const GLShaderObject::ShaderVersion SHADER_VERSION = GLShaderObject::DEFAULT_SHADER_VERSION;
+		static const GLShaderSource::ShaderVersion SHADER_VERSION = GLShaderSource::DEFAULT_SHADER_VERSION;
 
 		/**
 		 * The resolution of the 1D texture for converting depth radii to layer indices.
@@ -332,8 +364,16 @@ namespace GPlatesOpenGL
 		static const unsigned int MAX_TEXTURE_IMAGE_UNITS_USED = 10;
 
 		/**
+		 * The maximum number of vertices output by the surface fill mask geometry shader.
+		 *
+		 * This is one triangle per cube face and 3 vertices per triangle...
+		 */
+		static const unsigned int SURFACE_FILL_MASK_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES = 6 * 3;
+
+#if 0 // Not currently used...
+		/**
 		 * We will tessellate a great circle arc, when rendering spherical caps,
-		 * if the either line segment endpoint is far enough away from the polygon centroid.
+		 * if either line segment endpoint is far enough away from the polygon centroid.
 		 *
 		 * In that case this is the number of subdivisions done (at the globe's surface).
 		 * Fewer subdivisions are performed at smaller depths.
@@ -343,13 +383,6 @@ namespace GPlatesOpenGL
 		static const unsigned int SPHERICAL_CAP_NUM_SUBDIVISIONS = 6;
 
 		/**
-		 * The maximum number of vertices output by the surface fill mask geometry shader.
-		 *
-		 * This is one triangle per cube face and 3 vertices per triangle...
-		 */
-		static const unsigned int SURFACE_FILL_MASK_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES = 6 * 3;
-
-		/**
 		 * The maximum number of vertices output by the volume fill spherical cap geometry shaders.
 		 *
 		 * This is a triangle strip resulting from subdividing an input triangle equally along two
@@ -357,6 +390,7 @@ namespace GPlatesOpenGL
 		 */
 		static const unsigned int VOLUME_FILL_SPHERICAL_CAP_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES =
 				2 * SPHERICAL_CAP_NUM_SUBDIVISIONS + 1;
+#endif
 
 		/**
 		 * The maximum number of vertices output by the volume fill wall geometry shaders.
@@ -492,8 +526,8 @@ namespace GPlatesOpenGL
 			template <typename GreatCircleArcForwardIter>
 			void
 			render_cross_sections_2d(
-					const GreatCircleArcForwardIter &begin_arcs,
-					const GreatCircleArcForwardIter &end_arcs);
+					GreatCircleArcForwardIter begin_arcs,
+					GreatCircleArcForwardIter end_arcs);
 
 			void
 			render_cross_section_2d(
@@ -597,7 +631,6 @@ namespace GPlatesOpenGL
 
 			VolumeFillBoundaryGeometryOnSphereVisitor(
 					GLRenderer &renderer,
-					const GLViewport &screen_viewport,
 					const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
 					const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
 					const GLVertexArray::shared_ptr_type &vertex_array,
@@ -624,8 +657,8 @@ namespace GPlatesOpenGL
 			template <typename GreatCircleArcForwardIter>
 			void
 			render_volume_fill_boundary(
-					const GreatCircleArcForwardIter &begin_arcs,
-					const GreatCircleArcForwardIter &end_arcs,
+					GreatCircleArcForwardIter begin_arcs,
+					GreatCircleArcForwardIter end_arcs,
 					const GPlatesMaths::UnitVector3D &centroid);
 
 			void
@@ -638,7 +671,6 @@ namespace GPlatesOpenGL
 			render_stream();
 
 			GLRenderer &d_renderer;
-			GLViewport d_screen_viewport;
 			GLVertexArray::shared_ptr_type d_vertex_array;
 			GLBuffer::MapBufferScope d_map_vertex_element_buffer_scope;
 			GLBuffer::MapBufferScope d_map_vertex_buffer_scope;
@@ -759,6 +791,11 @@ namespace GPlatesOpenGL
 		GLTexture::shared_ptr_type d_colour_palette_texture;
 
 		/**
+		 * The current range of the colour palette.
+		 */
+		std::pair<double, double> d_colour_palette_value_range;
+
+		/**
 		 * Shader program for rendering an iso-surface.
 		 */
 		boost::optional<GLProgramObject::shared_ptr_type> d_render_iso_surface_program_object;
@@ -773,10 +810,12 @@ namespace GPlatesOpenGL
 		 */
 		boost::optional<GLProgramObject::shared_ptr_type> d_render_surface_fill_mask_program_object;
 
+#if 0 // Not currently used...
 		/**
 		 * Shader program for rendering volume fill spherical cap (depth range).
 		 */
 		boost::optional<GLProgramObject::shared_ptr_type> d_render_volume_fill_spherical_cap_depth_range_program_object;
+#endif
 
 		/**
 		 * Shader program for rendering volume fill walls (depth range).
@@ -824,20 +863,19 @@ namespace GPlatesOpenGL
 		GLVertexArray::shared_ptr_type d_white_inner_sphere_vertex_array;
 
 		/**
+		 * Compiled draw state for white inner sphere.
+		 */
+		boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> d_white_inner_sphere_compiled_draw_state;
+
+		/**
 		 * Shader program for rendering white inner sphere (with lighting).
 		 */
 		boost::optional<GLProgramObject::shared_ptr_type> d_render_white_inner_sphere_program_object;
 
 		/**
-		 * Compiled draw state for white inner sphere.
+		 * Shader program for rendering inner sphere as screen-space depth.
 		 */
-		boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> d_white_inner_sphere_compiled_draw_state;
-
-
-		/**
-		 * The colour palette used to map scalar values (or gradient magnitudes) to colour.
-		 */
-		GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type d_current_colour_palette;
+		boost::optional<GLProgramObject::shared_ptr_type> d_render_depth_range_inner_sphere_program_object;
 
 
 		//! Constructor.
@@ -847,7 +885,7 @@ namespace GPlatesOpenGL
 				const GLLight::non_null_ptr_type &light);
 
 		void
-		initialise_white_inner_sphere(
+		initialise_inner_sphere(
 				GLRenderer &renderer);
 
 		void
@@ -918,14 +956,15 @@ namespace GPlatesOpenGL
 
 		void
 		load_colour_palette_texture(
-				GLRenderer &renderer);
+				GLRenderer &renderer,
+				const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &colour_palette,
+				const std::pair<double, double> &colour_palette_value_range);
 
 		void
 		set_iso_surface_and_cross_sections_shader_common_variables(
 				GLRenderer &renderer,
 				const GLProgramObject::shared_ptr_type &program_object,
 				unsigned int &current_texture_unit,
-				GPlatesViewOperations::ScalarField3DRenderParameters::ColourMode colour_mode,
 				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
 				const std::vector<float> &test_variables,
 				boost::optional<GLTexture::shared_ptr_to_const_type> surface_occlusion_texture);
@@ -940,15 +979,15 @@ namespace GPlatesOpenGL
 		bool
 		render_surface_fill_mask(
 				GLRenderer &renderer,
-				const surface_geometry_seq_type &surface_geometries,
+				const surface_polygons_mask_seq_type &surface_polygons_mask,
 				bool include_polylines,
 				GLTexture::shared_ptr_to_const_type &surface_fill_mask_texture);
 
 		//! Returns true if rendered successfully - should always return true but just in case.
 		bool
-		render_volume_fill_depth_range(
+		render_volume_fill_wall_depth_range(
 				GLRenderer &renderer,
-				const surface_geometry_seq_type &surface_geometries,
+				const surface_polygons_mask_seq_type &surface_polygons_mask,
 				bool include_polylines,
 				const GLTexture::shared_ptr_to_const_type &surface_fill_mask_texture,
 				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
@@ -956,9 +995,9 @@ namespace GPlatesOpenGL
 
 		//! Returns true if rendered successfully - should always return true but just in case.
 		bool
-		render_volume_fill_walls(
+		render_volume_fill_wall_surface_normal_and_depth(
 				GLRenderer &renderer,
-				const surface_geometry_seq_type &surface_geometries,
+				const surface_polygons_mask_seq_type &surface_polygons_mask,
 				bool include_polylines,
 				bool only_show_boundary_walls,
 				const GLTexture::shared_ptr_to_const_type &surface_fill_mask_texture,
@@ -971,7 +1010,7 @@ namespace GPlatesOpenGL
 				const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
 				const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
 				const GLVertexArray::shared_ptr_type &cross_section_vertex_array,
-				const surface_geometry_seq_type &surface_geometries);
+				const cross_sections_seq_type &cross_sections);
 
 		void
 		render_cross_sections_2d(
@@ -979,10 +1018,15 @@ namespace GPlatesOpenGL
 				const GLVertexElementBuffer::shared_ptr_type &streaming_vertex_element_buffer,
 				const GLVertexBuffer::shared_ptr_type &streaming_vertex_buffer,
 				const GLVertexArray::shared_ptr_type &cross_section_vertex_array,
-				const surface_geometry_seq_type &surface_geometries);
+				const cross_sections_seq_type &cross_sections);
 
 		void
 		render_white_inner_sphere(
+				GLRenderer &renderer,
+				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction);
+
+		void
+		render_inner_sphere_depth_range(
 				GLRenderer &renderer,
 				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction);
 	};

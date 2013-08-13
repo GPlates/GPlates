@@ -80,7 +80,8 @@ namespace GPlatesOpenGL
 		{
 		public:
 			resource_handle_type
-			allocate();
+			allocate(
+					const GLCapabilities &capabilities);
 
 			void
 			deallocate(
@@ -125,7 +126,7 @@ namespace GPlatesOpenGL
 		 * Performs same function as the glRenderBufferStorage OpenGL function.
 		 *
 		 * @throws PreconditionViolationError if @a width or @a height is greater than
-		 * GLContext::get_parameters().framebuffer.gl_max_renderbuffer_size.
+		 * context.get_capabilities().framebuffer.gl_max_renderbuffer_size.
 		 */
 		void
 		gl_render_buffer_storage(
@@ -157,7 +158,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Returns boost::none unless @a gl_render_buffer_storage has been called.
 		 */
-		boost::optional<GLenum>
+		boost::optional<GLint>
 		get_internal_format() const
 		{
 			return d_internal_format;
@@ -180,7 +181,7 @@ namespace GPlatesOpenGL
 
 		boost::optional< std::pair<GLuint/*width*/, GLuint/*height*/> > d_dimensions;
 
-		boost::optional<GLenum> d_internal_format;
+		boost::optional<GLint> d_internal_format;
 
 		//! Constructor.
 		explicit

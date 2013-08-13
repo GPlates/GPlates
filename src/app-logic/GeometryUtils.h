@@ -31,6 +31,7 @@
 #include <QDebug>
 
 #include "maths/GeometryOnSphere.h"
+#include "maths/GeometryType.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -39,17 +40,44 @@
 #include "model/FeatureHandle.h"
 #include "model/PropertyValue.h"
 
-#include "view-operations/GeometryType.h"
-
 
 namespace GPlatesAppLogic
 {
 	namespace GeometryUtils
 	{
 		/**
+		 * Returns the specified geometry-on-sphere as a point-on-sphere.
+		 */
+		boost::optional<const GPlatesMaths::PointOnSphere &>
+		get_point_on_sphere(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
+		/**
+		 * Returns the specified geometry-on-sphere as a multi-point-on-sphere.
+		 */
+		boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type>
+		get_multi_point_on_sphere(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
+		/**
+		 * Returns the specified geometry-on-sphere as a polyline-on-sphere.
+		 */
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
+		get_polyline_on_sphere(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
+		/**
+		 * Returns the specified geometry-on-sphere as a polygon-on-sphere.
+		 */
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+		get_polygon_on_sphere(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
+
+		/**
 		 * Returns the type of the specified @a GeometryOnSphere object.
 		 */
-		GPlatesViewOperations::GeometryType::Value
+		GPlatesMaths::GeometryType::Value
 		get_geometry_type(
 				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
 
@@ -62,8 +90,10 @@ namespace GPlatesAppLogic
 		 *
 		 * If @a reverse_points is true then the order of the points in @a geometry_on_sphere
 		 * are reversed before appending to @a points.
+		 *
+		 * Also returns the type of the specified @a GeometryOnSphere object.
 		 */
-		void
+		GPlatesMaths::GeometryType::Value
 		get_geometry_points(
 				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
 				std::vector<GPlatesMaths::PointOnSphere> &points,
@@ -99,6 +129,15 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Converts the specified geometry to a @a MultiPointOnSphere by treating storing the
+		 * geometry points as a multi-point.
+		 */
+		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
+		convert_geometry_to_multi_point(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
+
+		/**
 		 * Converts the specified geometry to a @a PolygonOnSphere if it is a polyline or multipoint
 		 * (or already a polygon) by treating the geometry points as a linear list of polygon points.
 		 *
@@ -108,6 +147,21 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
 		convert_geometry_to_polygon(
 				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
+
+		/**
+		 * Returns the geometry contained within the specified property.
+		 *
+		 * Returns boost::none if the property value is not geometric.
+		 *
+		 * @a reconstruction_time only applies to time-dependent properties in which case the
+		 * value of the property at the specified time is returned.
+		 * It is effectively ignored for constant-valued properties.
+		 */
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		get_geometry_from_property(
+				const GPlatesModel::FeatureHandle::iterator &property,
+				const double &reconstruction_time = 0);
 
 
 		/**
@@ -170,7 +224,7 @@ namespace GPlatesAppLogic
 		create_geometry_property_value(
 				PointForwardIter begin, 
 				PointForwardIter end,
-				GPlatesViewOperations::GeometryType::Value type);
+				GPlatesMaths::GeometryType::Value type);
 
 
 		/**
@@ -192,7 +246,7 @@ namespace GPlatesAppLogic
 		create_geometry_property_value(
 				PointForwardIter begin, 
 				PointForwardIter end,
-				GPlatesViewOperations::GeometryType::Value type)
+				GPlatesMaths::GeometryType::Value type)
 		{
 			if (begin == end)
 			{
@@ -201,26 +255,26 @@ namespace GPlatesAppLogic
 
 			switch(type)
 			{
-			case GPlatesViewOperations::GeometryType::POLYLINE:
+			case GPlatesMaths::GeometryType::POLYLINE:
 				return create_polyline_geometry_property_value(
 						GPlatesMaths::PolylineOnSphere::create_on_heap(begin, end));
 
-			case GPlatesViewOperations::GeometryType::MULTIPOINT:
+			case GPlatesMaths::GeometryType::MULTIPOINT:
 				return create_multipoint_geometry_property_value(
 						GPlatesMaths::MultiPointOnSphere::create_on_heap(begin, end));
 
-			case GPlatesViewOperations::GeometryType::POLYGON:
+			case GPlatesMaths::GeometryType::POLYGON:
 				return create_polygon_geometry_property_value(
 						GPlatesMaths::PolygonOnSphere::create_on_heap(begin, end));
 
-			case GPlatesViewOperations::GeometryType::POINT:
+			case GPlatesMaths::GeometryType::POINT:
 				return create_point_geometry_property_value(*begin);
 
-			case GPlatesViewOperations::GeometryType::NONE:
+			case GPlatesMaths::GeometryType::NONE:
 				break;
 
 			default:
-				qWarning() << "Unrecognised GPlatesViewOperations::GeometryType";
+				qWarning() << "Unrecognised GPlatesMaths::GeometryType";
 				break;
 			}
 

@@ -45,10 +45,10 @@
 #include "GLCompiledDrawState.h"
 #include "GLContext.h"
 #include "GLCubeSubdivision.h"
-#include "GLFrameBufferObject.h"
 #include "GLMultiResolutionRaster.h"
 #include "GLPixelBuffer.h"
 #include "GLRenderer.h"
+#include "GLRenderTarget.h"
 #include "GLUtils.h"
 
 #include "file-io/ErrorOpeningFileForWritingException.h"
@@ -204,22 +204,29 @@ GPlatesOpenGL::GLScalarField3DGenerator::is_supported(
 		// Need support for GLScalarFieldDepthLayersSource.
 		if (!GLMultiResolutionRaster::supports_scalar_field_depth_layers_source(renderer))
 		{
-			qWarning() << "Generation of 3D scalar fields NOT supported by this OpenGL system.";
+			qWarning() << "Generation of 3D scalar fields NOT supported by this graphics hardware.";
 			return false;
 		}
 
-		const GLContext::Parameters &context_params = GLContext::get_parameters();
+		const GLCapabilities &capabilities = renderer.get_capabilities();
 
 		// Test for OpenGL features used to generate scalar fields.
 		if (// Using floating-point textures...
-			!context_params.texture.gl_ARB_texture_float ||
-			!context_params.texture.gl_ARB_texture_non_power_of_two ||
-			!context_params.shader.gl_ARB_vertex_shader ||
-			!context_params.shader.gl_ARB_fragment_shader ||
+			!capabilities.texture.gl_ARB_texture_float ||
+			!capabilities.texture.gl_ARB_texture_non_power_of_two ||
+			!capabilities.shader.gl_ARB_vertex_shader ||
+			!capabilities.shader.gl_ARB_fragment_shader ||
 			// Need to render to textures using FBO...
-			!context_params.framebuffer.gl_EXT_framebuffer_object)
+			!capabilities.framebuffer.gl_EXT_framebuffer_object)
 		{
-			qWarning() << "Generation of 3D scalar fields NOT supported by this OpenGL system.";
+			qWarning() << "Generation of 3D scalar fields NOT supported by this graphics hardware.";
+			return false;
+		}
+
+		// Need to be able to render using a framebuffer object with an attached depth buffer.
+		if (!GLRenderTarget::is_supported(renderer, GL_RGBA32F_ARB, false, true, 256, 256))
+		{
+			qWarning() << "Generation of 3D scalar fields NOT supported by this graphics hardware.";
 			return false;
 		}
 
@@ -413,28 +420,25 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
 							d_cube_face_dimension,
 							0.5/* half a texel */));
 
-	// Create a texture for rendering the cube map tiles to.
-	GLTexture::shared_ptr_type cube_tile_texture = create_cube_tile_texture(renderer, tile_resolution);
+	// Create a render texture for rendering the cube map tiles to.
+	GLRenderTarget::shared_ptr_type cube_tile_render_target =
+			GLRenderTarget::create(
+					renderer,
+					GL_RGBA32F_ARB,
+					false/*include_depth_buffer*/,
+					true/*include_stencil_buffer*/,
+					tile_resolution,
+					tile_resolution);
 
-	// Framebuffer used to render to cube tile texture.
-	GLFrameBufferObject::shared_ptr_type framebuffer_object =
-			renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(renderer);
-	renderer.gl_bind_frame_buffer(framebuffer_object);
-
-	// All rendering is directed to the cube tile texture.
-	framebuffer_object->gl_attach_texture_2D(
-			renderer,
-			GL_TEXTURE_2D,
-			cube_tile_texture,
-			0, // level
-			GL_COLOR_ATTACHMENT0_EXT);
+	// Render to the cube tile render target.
+	GLRenderTarget::RenderScope cube_tile_render_target_scope(*cube_tile_render_target, renderer);
 
 	// Buffer size needed for a single layer of cube tile.
 	// Each floating-point RGBA pixel contains scalar value and field gradient.
 	const unsigned int buffer_size = tile_resolution * tile_resolution * 4 * sizeof(GLfloat);
 
 	// A pixel buffer object to read the cube map scalar field data.
-	GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer);
+	GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_PIXEL);
 	buffer->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_PIXEL_PACK_BUFFER,
@@ -448,8 +452,23 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
 	// Viewport for the cube tile render target.
 	renderer.gl_viewport(0, 0, tile_resolution, tile_resolution);
 
+	// We want regional (non-global) rasters to write their mask into the stencil buffer.
+	//
+	// Enable stencil writes (this is not strictly necessary since it's the default OpenGL state anyway).
+	renderer.gl_stencil_mask(~0);
+	// Enable stencil testing.
+	renderer.gl_enable(GL_STENCIL_TEST);
+	// Set the stencil function to always pass and set the reference value to (write) one.
+	renderer.gl_stencil_func(GL_ALWAYS, 1, ~0);
+	// Write the reference value into the stencil buffer where the raster region gets drawn.
+	renderer.gl_stencil_op(GL_KEEP, GL_KEEP, GL_REPLACE);
+
 	// The tile metadata.
 	std::vector<GPlatesFileIO::ScalarField3DFileFormat::TileMetaData> tile_meta_data_array;
+
+	// The mask data for the tiles.
+	std::vector<GPlatesFileIO::ScalarField3DFileFormat::MaskDataSample> mask_data_array;
+	mask_data_array.reserve(tile_resolution * tile_resolution * num_active_tiles);
 
 	// The scalar field statistics.
 	double scalar_min = (std::numeric_limits<double>::max)();
@@ -506,110 +525,19 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
 			depth_layer_index < d_depth_layers.size();
 			++depth_layer_index)
 		{
-			renderer.gl_clear_color(); // Clear colour to all zeros.
-			renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
-
-			// Set the depth at which to render the current layer.
-			d_depth_layers_source.get()->set_depth_layer(renderer, depth_layer_index);
-
-			// Render the multi-resolution raster.
-			// We don't need to keep the cache handle alive because we've asked for no caching in
-			// the multi-resolution raster.
-			GLMultiResolutionRaster::cache_handle_type multi_resolution_raster_cache_handle;
-			d_multi_resolution_raster.get()->render(
-					renderer,
-					source_raster_tile_handles,
-					multi_resolution_raster_cache_handle);
-
-			// Read back the data just rendered.
-			// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT
-			// (rows aligned to 4 bytes) since our data is floats (each float is already 4-byte aligned).
-			pixel_buffer->gl_read_pixels(
-					renderer, 0, 0, tile_resolution, tile_resolution, GL_RGBA, GL_FLOAT, 0);
-
-			// Map the pixel buffer to access its data.
-			GLBuffer::MapBufferScope map_pixel_buffer_scope(
-					renderer,
-					*pixel_buffer->get_buffer(),
-					GLBuffer::TARGET_PIXEL_PACK_BUFFER);
-
-			// Map the pixel buffer data.
-			void *field_data = map_pixel_buffer_scope.gl_map_buffer_static(GLBuffer::ACCESS_READ_ONLY);
-			GPlatesFileIO::ScalarField3DFileFormat::FieldDataSample *const field_data_pixels =
-					static_cast<GPlatesFileIO::ScalarField3DFileFormat::FieldDataSample *>(field_data);
-
-			// Iterate over the pixels in the depth layer.
-			for (unsigned int n = 0; n < tile_resolution * tile_resolution; ++n)
-			{
-				const double scalar = field_data_pixels[n].scalar;
-
-				// Find tile minimum scalar.
-				if (scalar < tile_scalar_min)
-				{
-					tile_scalar_min = scalar;
-				}
-
-				// Find tile maximum scalar.
-				if (scalar > tile_scalar_max)
-				{
-					tile_scalar_max = scalar;
-				}
-
-				// Find global minimum scalar.
-				if (scalar < scalar_min)
-				{
-					scalar_min = scalar;
-				}
-
-				// Find global maximum scalar.
-				if (scalar > scalar_max)
-				{
-					scalar_max = scalar;
-				}
-
-				// To help find global mean scalar.
-				scalar_sum += scalar;
-
-				// To help find global std-dev scalar.
-				scalar_sum_squares += scalar * scalar;
-
-				const GPlatesMaths::Vector3D gradient(
-						field_data_pixels[n].gradient[0],
-						field_data_pixels[n].gradient[1],
-						field_data_pixels[n].gradient[2]);
-				const double gradient_magnitude = gradient.magnitude().dval();
-
-				// Find global minimum gradient magnitude.
-				if (gradient_magnitude < gradient_magnitude_min)
-				{
-					gradient_magnitude_min = gradient_magnitude;
-				}
-
-				// Find global maximum gradient magnitude.
-				if (gradient_magnitude > gradient_magnitude_max)
-				{
-					gradient_magnitude_max = gradient_magnitude;
-				}
-
-				// To help find global mean gradient magnitude.
-				gradient_magnitude_sum += gradient_magnitude;
-
-				// To help find global std-dev gradient magnitude.
-				gradient_magnitude_sum_squares += gradient_magnitude * gradient_magnitude;
-			}
-
-			// Convert from the runtime system endian to the endian required for the file (if necessary).
-			GPlatesUtils::Endian::convert(
-					field_data_pixels,
-					field_data_pixels + tile_resolution * tile_resolution,
-					static_cast<QSysInfo::Endian>(GPlatesFileIO::ScalarField3DFileFormat::Q_DATA_STREAM_BYTE_ORDER));
-
-			// Write the field layer to the file.
-			out.writeRawData(
-					static_cast<const char *>(field_data),
-					tile_resolution * tile_resolution *
-						GPlatesFileIO::ScalarField3DFileFormat::FieldDataSample::STREAM_SIZE);
+			generate_scalar_field_depth_tile(
+					renderer, out, depth_layer_index,
+					source_raster_tile_handles, pixel_buffer,
+					tile_resolution, tile_scalar_min, tile_scalar_max,
+					scalar_min, scalar_max,
+					scalar_sum, scalar_sum_squares,
+					gradient_magnitude_min, gradient_magnitude_max,
+					gradient_magnitude_sum, gradient_magnitude_sum_squares);
 		}
+
+		// If the raster is regional (non-global) then its mask has been written into the stencil buffer.
+		// So we convert that stencil mask into a texture and read the texture back to the CPU.
+		generate_scalar_field_tile_mask(renderer, pixel_buffer, tile_resolution, mask_data_array);
 
 		// Specify the current tile's metadata.
 		GPlatesFileIO::ScalarField3DFileFormat::TileMetaData tile_meta_data;
@@ -680,32 +608,24 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
 	//
 	// Write the mask data layer-by-layer to the file.
 	//
-	// Set the tile mask data to all ones for now since only supporting global scalar fields.
-	// TODO: Add support for regional scalar fields.
-	GPlatesFileIO::ScalarField3DFileFormat::MaskDataSample mask_data_sample;
-	mask_data_sample.mask = 1.0f;
-	std::vector<GPlatesFileIO::ScalarField3DFileFormat::MaskDataSample> mask_data_array(
-			tile_resolution * tile_resolution, mask_data_sample);
+
 	// Dodgy endian conversion hack inside a std::vector.
-	// TODO: Fix this when adding support for regional scalar fields.
+	// TODO: Fix this.
 	void *mask_data = &mask_data_array[0];
 	GPlatesFileIO::ScalarField3DFileFormat::MaskDataSample *mask_data_pixels =
 			static_cast<GPlatesFileIO::ScalarField3DFileFormat::MaskDataSample *>(mask_data);
-	// Set all active tiles to mask values of one.
-	for (unsigned int mask_tile_index = 0; mask_tile_index < num_active_tiles; ++mask_tile_index)
-	{
-		// Convert from the runtime system endian to the endian required for the file (if necessary).
-		GPlatesUtils::Endian::convert(
-				mask_data_pixels,
-				mask_data_pixels + tile_resolution * tile_resolution,
-				static_cast<QSysInfo::Endian>(GPlatesFileIO::ScalarField3DFileFormat::Q_DATA_STREAM_BYTE_ORDER));
 
-		// Write the mask layer to the file.
-		out.writeRawData(
-				static_cast<const char *>(mask_data),
-				tile_resolution * tile_resolution *
-					GPlatesFileIO::ScalarField3DFileFormat::MaskDataSample::STREAM_SIZE);
-	}
+	// Convert from the runtime system endian to the endian required for the file (if necessary).
+	GPlatesUtils::Endian::convert(
+			mask_data_pixels,
+			mask_data_pixels + num_active_tiles * tile_resolution * tile_resolution,
+			static_cast<QSysInfo::Endian>(GPlatesFileIO::ScalarField3DFileFormat::Q_DATA_STREAM_BYTE_ORDER));
+
+	// Write the mask layer to the file.
+	out.writeRawData(
+			static_cast<const char *>(mask_data),
+			num_active_tiles * tile_resolution * tile_resolution *
+				GPlatesFileIO::ScalarField3DFileFormat::MaskDataSample::STREAM_SIZE);
 
 #ifdef SCALAR_FIELD_VERSION_ZERO
 	file.seek(meta_data_file_offset);
@@ -741,52 +661,200 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field(
 
 	file.close();
 
-	// Release attachment to our cube tile texture before relinquishing acquired framebuffer object
-	// since the texture only exists in the current scope.
-	framebuffer_object->gl_detach_all(renderer);
-
 	return true;
 }
 
 
-GPlatesOpenGL::GLTexture::shared_ptr_type
-GPlatesOpenGL::GLScalarField3DGenerator::create_cube_tile_texture(
+void
+GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field_depth_tile(
 		GLRenderer &renderer,
-		unsigned int tile_resolution)
+		QDataStream &out,
+		unsigned int depth_layer_index,
+		const std::vector<GLMultiResolutionRaster::tile_handle_type> &source_raster_tile_handles,
+		const GLPixelBuffer::shared_ptr_type &pixel_buffer,
+		unsigned int tile_resolution,
+		double &tile_scalar_min,
+		double &tile_scalar_max,
+		double &scalar_min,
+		double &scalar_max,
+		double &scalar_sum,
+		double &scalar_sum_squares,
+		double &gradient_magnitude_min,
+		double &gradient_magnitude_max,
+		double &gradient_magnitude_sum,
+		double &gradient_magnitude_sum_squares)
 {
-	// Create a texture for rendering the cube map tiles to.
-	GLTexture::shared_ptr_type cube_tile_texture = GLTexture::create(renderer);
+	// Clear the render target (colour and stencil).
+	// We also clear the depth buffer (even though we're not using depth) because it's usually
+	// interleaved with stencil so it's more efficient to clear both depth and stencil.
+	renderer.gl_clear_color();
+	renderer.gl_clear_depth();
+	renderer.gl_clear_stencil();
+	renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-	// Nearest filtering is fine.
-	// We're not actually going to use the texture - instead we download data from it to the CPU.
-	cube_tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	cube_tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	// Set the depth at which to render the current layer.
+	d_depth_layers_source.get()->set_depth_layer(renderer, depth_layer_index);
 
-	// Clamp texture coordinates to centre of edge texels -
-	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	// Render the multi-resolution raster.
+	// We don't need to keep the cache handle alive because we've asked for no caching in
+	// the multi-resolution raster.
+	GLMultiResolutionRaster::cache_handle_type multi_resolution_raster_cache_handle;
+	d_multi_resolution_raster.get()->render(
+			renderer,
+			source_raster_tile_handles,
+			multi_resolution_raster_cache_handle);
+
+	// Read back the data just rendered.
+	// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT
+	// (rows aligned to 4 bytes) since our data is floats (each float is already 4-byte aligned).
+	pixel_buffer->gl_read_pixels(
+			renderer, 0, 0, tile_resolution, tile_resolution, GL_RGBA, GL_FLOAT, 0);
+
+	// Map the pixel buffer to access its data.
+	GLBuffer::MapBufferScope map_pixel_buffer_scope(
+			renderer,
+			*pixel_buffer->get_buffer(),
+			GLBuffer::TARGET_PIXEL_PACK_BUFFER);
+
+	// Map the pixel buffer data.
+	void *field_data = map_pixel_buffer_scope.gl_map_buffer_static(GLBuffer::ACCESS_READ_ONLY);
+	GPlatesFileIO::ScalarField3DFileFormat::FieldDataSample *const field_data_pixels =
+			static_cast<GPlatesFileIO::ScalarField3DFileFormat::FieldDataSample *>(field_data);
+
+	// Iterate over the pixels in the depth layer.
+	for (unsigned int n = 0; n < tile_resolution * tile_resolution; ++n)
 	{
-		cube_tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		cube_tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		const double scalar = field_data_pixels[n].scalar;
+
+		// Find tile minimum scalar.
+		if (scalar < tile_scalar_min)
+		{
+			tile_scalar_min = scalar;
+		}
+
+		// Find tile maximum scalar.
+		if (scalar > tile_scalar_max)
+		{
+			tile_scalar_max = scalar;
+		}
+
+		// Find global minimum scalar.
+		if (scalar < scalar_min)
+		{
+			scalar_min = scalar;
+		}
+
+		// Find global maximum scalar.
+		if (scalar > scalar_max)
+		{
+			scalar_max = scalar;
+		}
+
+		// To help find global mean scalar.
+		scalar_sum += scalar;
+
+		// To help find global std-dev scalar.
+		scalar_sum_squares += scalar * scalar;
+
+		const GPlatesMaths::Vector3D gradient(
+				field_data_pixels[n].gradient[0],
+				field_data_pixels[n].gradient[1],
+				field_data_pixels[n].gradient[2]);
+		const double gradient_magnitude = gradient.magnitude().dval();
+
+		// Find global minimum gradient magnitude.
+		if (gradient_magnitude < gradient_magnitude_min)
+		{
+			gradient_magnitude_min = gradient_magnitude;
+		}
+
+		// Find global maximum gradient magnitude.
+		if (gradient_magnitude > gradient_magnitude_max)
+		{
+			gradient_magnitude_max = gradient_magnitude;
+		}
+
+		// To help find global mean gradient magnitude.
+		gradient_magnitude_sum += gradient_magnitude;
+
+		// To help find global std-dev gradient magnitude.
+		gradient_magnitude_sum_squares += gradient_magnitude * gradient_magnitude;
 	}
-	else
+
+	// Convert from the runtime system endian to the endian required for the file (if necessary).
+	GPlatesUtils::Endian::convert(
+			field_data_pixels,
+			field_data_pixels + tile_resolution * tile_resolution,
+			static_cast<QSysInfo::Endian>(GPlatesFileIO::ScalarField3DFileFormat::Q_DATA_STREAM_BYTE_ORDER));
+
+	// Write the field layer to the file.
+	out.writeRawData(
+			static_cast<const char *>(field_data),
+			tile_resolution * tile_resolution *
+				GPlatesFileIO::ScalarField3DFileFormat::FieldDataSample::STREAM_SIZE);
+}
+
+
+void
+GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field_tile_mask(
+		GLRenderer &renderer,
+		const GLPixelBuffer::shared_ptr_type &pixel_buffer,
+		unsigned int tile_resolution,
+		std::vector<GPlatesFileIO::ScalarField3DFileFormat::MaskDataSample> &mask_data_array)
+{
+	// Make sure we leave the OpenGL state the way it was.
+	GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// Obtain a full screen quad for converting the stencil buffer mask into a texture mask.
+	// We don't actual use the texture coordinates though.
+	// The vertex colours have RGBA channels set to 1.0.
+	GLCompiledDrawState::non_null_ptr_to_const_type full_screen_quad_drawable =
+			renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer);
+
+	// Set the stencil function to pass if reference value (zero) is not equal to the stencil buffer value.
+	renderer.gl_stencil_func(GL_NOTEQUAL, 0, ~0);
+	// Write the reference value (zero) into the stencil buffer where the raster region is drawn.
+	// Not strictly necessary since we later clear the stencil buffer anyway.
+	renderer.gl_stencil_op(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+	// Clear *only* the colour buffer (we need the current stencil buffer contents intact).
+	renderer.gl_clear_color();
+	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
+
+	// NOTE: We set the model-view and projection matrices to identity as that is what we
+	// we need to draw a full-screen quad.
+	renderer.gl_load_matrix(GL_MODELVIEW, GLMatrix::IDENTITY);
+	renderer.gl_load_matrix(GL_PROJECTION, GLMatrix::IDENTITY);
+
+	// Draw RGBA values of 1.0 into the colour buffer where the stencil buffer is non-zero.
+	renderer.apply_compiled_draw_state(*full_screen_quad_drawable);
+
+	// Read back the data just rendered.
+	// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT
+	// (rows aligned to 4 bytes) since our data is floats (each float is already 4-byte aligned).
+	pixel_buffer->gl_read_pixels(
+			renderer, 0, 0, tile_resolution, tile_resolution, GL_RGBA, GL_FLOAT, 0);
+
+	// Map the pixel buffer to access its data.
+	GLBuffer::MapBufferScope map_pixel_buffer_scope(
+			renderer,
+			*pixel_buffer->get_buffer(),
+			GLBuffer::TARGET_PIXEL_PACK_BUFFER);
+
+	// Map the pixel buffer data.
+	float *mask_data = static_cast<float *>(
+			map_pixel_buffer_scope.gl_map_buffer_static(GLBuffer::ACCESS_READ_ONLY));
+
+	// Iterate over the pixels in the stencil mask.
+	for (unsigned int n = 0; n < tile_resolution * tile_resolution; ++n)
 	{
-		cube_tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		cube_tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		GPlatesFileIO::ScalarField3DFileFormat::MaskDataSample mask_data_sample;
+
+		// All RGBA channels of a pixel contain the same mask - choose one arbitrarily.
+		mask_data_sample.mask = mask_data[4/*RGBA*/ * n];
+
+		mask_data_array.push_back(mask_data_sample);
 	}
-
-	// Create the texture but don't load any data into it.
-	//
-	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
-	// just use values that are compatible with all internal formats to avoid a possible error.
-	cube_tile_texture->gl_tex_image_2D(
-			renderer, GL_TEXTURE_2D, 0, GL_RGBA32F_ARB,
-			tile_resolution, tile_resolution, 0, GL_RGBA, GL_FLOAT, NULL);
-
-	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
-
-	return cube_tile_texture;
 }
 
 
@@ -911,9 +979,9 @@ GPlatesOpenGL::GLScalarField3DGenerator::initialise_cube_face_dimension(
 		d_cube_face_dimension = 128;
 	}
 	// Also limit to max texture size if exceeds.
-	if (d_cube_face_dimension > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (d_cube_face_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
 	{
-		d_cube_face_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
+		d_cube_face_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
 	}
 }
 

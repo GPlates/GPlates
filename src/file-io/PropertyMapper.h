@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2010 Geological Survey of Norway
+ * Copyright (C) 2008, 2010, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -28,6 +28,9 @@
 #ifndef GPLATES_FILEIO_PROPERTYMAPPER_H
 #define GPLATES_FILEIO_PROPERTYMAPPER_H
 
+#include <QMap>
+#include <QString>
+
 typedef QMap< QString, QString > model_to_attribute_map_type;
 
 namespace ShapefileAttributes {
@@ -41,6 +44,9 @@ namespace ShapefileAttributes {
 		DESCRIPTION,
 		FEATURE_ID,
 		CONJUGATE_PLATE_ID,
+		RECONSTRUCTION_METHOD,
+		LEFT_PLATE,
+		RIGHT_PLATE,
 		
 		NUM_PROPERTIES
 	};
@@ -53,18 +59,25 @@ namespace ShapefileAttributes {
 		"Name",
 		"Description",
 		"FeatureId",
-		"ConjugatePlateId"
+		"ConjugatePlateId",
+		"ReconstructionMethod",
+		"LeftPlate",
+		"RightPlate"
 	};
 	
 	static const QString default_attribute_field_names[] = {
 		"PLATEID1",
-		"TYPE",
+		"GPGIM_TYPE",
 		"FROMAGE",
 		"TOAGE",
 		"NAME",
 		"DESCR",
 		"FEATURE_ID",
-		"PLATEID2"
+		"PLATEID2",
+		"RECON_METH",
+		"L_PLATE",
+		"R_PLATE"
+
 	};
 
 }

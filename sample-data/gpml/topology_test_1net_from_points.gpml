@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0319" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0322" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
     <gml:featureMember>
         <gpml:TopologicalNetwork>
             <gpml:identity>GPlates-d8d5e665-8ec0-49a3-9967-b0482f5f05df</gpml:identity>
@@ -110,6 +110,26 @@
         <gpml:UnclassifiedFeature>
             <gpml:identity>GPlates-837bf1b0-edb3-4f19-a6ca-a850d71035ab</gpml:identity>
             <gpml:revision>GPlates-d175537d-e1c9-4a3a-841f-7e7985985cd1</gpml:revision>
+            <gpml:centerLineOf>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:Polygon>
+                            <gml:exterior>
+                                <gml:LinearRing>
+                                    <gml:posList gml:dimension="2">28.533899999999996 -28.585899999999999 22.1706 -30.707599999999999 16.940799999999999 -29.956799999999994 9.6243300000000005 -28.662700000000001 7.410260000000001 -28.168600000000001 5.2072700000000003 -26.1859 3.8345199999999999 -17.842400000000005 2.7379400000000005 -12.7081 3.0119699999999998 -8.8048000000000002 5.7571700000000003 -5.7864500000000021 9.3468499999999999 -3.8861899999999987 14.9482 -3.4013100000000001 21.875399999999999 -2.6552799999999999 25.4619 -2.42578 29.4727 -5.6679500000000003 29.4727 -19.220800000000001 29.158799999999999 -24.564599999999999 28.533899999999996 -28.585899999999999 </gml:posList>
+                                </gml:LinearRing>
+                            </gml:exterior>
+                        </gml:Polygon>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Polygon</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:centerLineOf>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>101</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
             <gml:name>bounding box</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
@@ -125,26 +145,6 @@
                     </gml:end>
                 </gml:TimePeriod>
             </gml:validTime>
-            <gpml:reconstructionPlateId>
-                <gpml:ConstantValue>
-                    <gpml:value>101</gpml:value>
-                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:reconstructionPlateId>
-            <gpml:centerLineOf>
-                <gpml:ConstantValue>
-                    <gpml:value>
-                        <gml:Polygon>
-                            <gml:exterior>
-                                <gml:LinearRing>
-                                    <gml:posList gml:dimension="2">28.533899999999996 -28.585899999999999 22.1706 -30.707599999999999 16.940799999999999 -29.956799999999994 9.6243300000000005 -28.662700000000001 7.410260000000001 -28.168600000000001 5.2072700000000003 -26.1859 3.8345199999999999 -17.842400000000005 2.7379400000000005 -12.7081 3.0119699999999998 -8.8048000000000002 5.7571700000000003 -5.7864500000000012 9.3468499999999999 -3.8861899999999996 14.9482 -3.4013100000000001 21.875399999999999 -2.6552799999999999 25.4619 -2.42578 29.4727 -5.6679500000000003 29.4727 -19.220800000000001 29.158799999999999 -24.564599999999999 28.533899999999996 -28.585899999999999 </gml:posList>
-                                </gml:LinearRing>
-                            </gml:exterior>
-                        </gml:Polygon>
-                    </gpml:value>
-                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:Polygon</gpml:valueType>
-                </gpml:ConstantValue>
-            </gpml:centerLineOf>
         </gpml:UnclassifiedFeature>
     </gml:featureMember>
     <gml:featureMember>

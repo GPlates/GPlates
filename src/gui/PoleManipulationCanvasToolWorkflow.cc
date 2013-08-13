@@ -33,9 +33,12 @@
 
 #include "canvas-tools/CanvasToolAdapterForGlobe.h"
 #include "canvas-tools/CanvasToolAdapterForMap.h"
+#include "canvas-tools/ClickGeometry.h"
 #include "canvas-tools/ManipulatePole.h"
 
 #include "global/GPlatesAssert.h"
+
+#include "gui/GeometryFocusHighlight.h"
 
 #include "presentation/ViewState.h"
 
@@ -73,7 +76,8 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::PoleManipulationCanvasToolWorkfl
 			// The tool to start off with...
 			CanvasToolWorkflows::TOOL_MANIPULATE_POLE),
 	d_feature_focus(view_state.get_feature_focus()),
-	d_rendered_geom_collection(view_state.get_rendered_geometry_collection())
+	d_rendered_geom_collection(view_state.get_rendered_geometry_collection()),
+	d_symbol_map(view_state.get_feature_type_symbol_map())
 {
 	create_canvas_tools(
 			canvas_tool_workflows,
@@ -87,8 +91,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::PoleManipulationCanvasToolWorkfl
 		SIGNAL(focus_changed(
 				GPlatesGui::FeatureFocus &)),
 		this,
-		SLOT(feature_focus_changed(
-				GPlatesGui::FeatureFocus &)));
+		SLOT(update_enable_state()));
 }
 
 
@@ -99,6 +102,35 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ViewportWindow &viewport_window)
 {
+	//
+	// Click geometry canvas tool.
+	//
+
+	GPlatesCanvasTools::ClickGeometry::non_null_ptr_type click_geometry_tool =
+			GPlatesCanvasTools::ClickGeometry::create(
+					status_bar_callback,
+					view_state.get_focused_feature_geometry_builder(),
+					view_state.get_rendered_geometry_collection(),
+					WORKFLOW_RENDER_LAYER,
+					viewport_window,
+					view_state.get_feature_table_model(),
+					viewport_window.dialogs().feature_properties_dialog(),
+					view_state.get_feature_focus(),
+					view_state.get_application_state());
+	// For the globe view.
+	d_globe_click_geometry_tool.reset(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+					click_geometry_tool,
+					viewport_window.globe_canvas().globe(),
+					viewport_window.globe_canvas()));
+	// For the map view.
+	d_map_click_geometry_tool.reset(
+			new GPlatesCanvasTools::CanvasToolAdapterForMap(
+					click_geometry_tool,
+					viewport_window.map_view().map_canvas(),
+					viewport_window.map_view(),
+					view_state.get_map_transform()));
+
 	//
 	// Manipulate pole canvas tool.
 	//
@@ -133,6 +165,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::initialise()
 	//
 	// NOTE: If you are updating the tool in 'update_enable_state()' then you
 	// don't need to enable/disable it here.
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_CLICK_GEOMETRY, true);
 
 	update_enable_state();
 }
@@ -143,6 +176,21 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::activate_workflow()
 {
 	// Activate the main rendered layer.
 	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, true/*active*/);
+
+	// Draw the focused feature when it changes feature or is modified.
+	QObject::connect(
+			&d_feature_focus,
+			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+	QObject::connect(
+			&d_feature_focus,
+			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+
+	// Draw the focused feature (or draw nothing) in case the focused feature changed while we were inactive.
+	draw_feature_focus(d_feature_focus);
 }
 
 
@@ -151,6 +199,18 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::deactivate_workflow()
 {
 	// Deactivate the main rendered layer.
 	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, false/*active*/);
+
+	// Don't draw the focused feature anymore.
+	QObject::disconnect(
+			&d_feature_focus,
+			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+	QObject::disconnect(
+			&d_feature_focus,
+			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
+			this,
+			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
 }
 
 
@@ -160,6 +220,9 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::get_selected_globe_and_map_canva
 {
 	switch (selected_tool)
 	{
+	case CanvasToolWorkflows::TOOL_CLICK_GEOMETRY:
+		return std::make_pair(d_globe_click_geometry_tool.get(), d_map_click_geometry_tool.get());
+
 	case CanvasToolWorkflows::TOOL_MANIPULATE_POLE:
 		return std::make_pair(d_globe_manipulate_pole_tool.get(), d_map_manipulate_pole_tool.get());
 
@@ -172,10 +235,14 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::get_selected_globe_and_map_canva
 
 
 void
-GPlatesGui::PoleManipulationCanvasToolWorkflow::feature_focus_changed(
+GPlatesGui::PoleManipulationCanvasToolWorkflow::draw_feature_focus(
 		GPlatesGui::FeatureFocus &feature_focus)
 {
-	update_enable_state();
+	GeometryFocusHighlight::draw_focused_geometry(
+			feature_focus,
+			*d_rendered_geom_collection.get_main_rendered_layer(WORKFLOW_RENDER_LAYER),
+			d_rendered_geom_collection,
+			d_symbol_map);
 }
 
 

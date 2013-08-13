@@ -38,6 +38,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLCapabilities;
+
 	/**
 	 * An RAII wrapper around an OpenGL object resource (such as a texture object)
 	 * that schedules the resource to be deallocated when its destructor is called.
@@ -66,11 +68,12 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
+				const GLCapabilities &capabilities,
 				const typename resource_manager_type::shared_ptr_type &resource_manager)
 		{
 			return non_null_ptr_type(
 					new GLObjectResource(
-							resource_manager->allocate_resource(),
+							resource_manager->allocate_resource(capabilities),
 							resource_manager));
 		}
 

@@ -149,7 +149,7 @@ namespace GPlatesQtWidgets
 		void
 		propagate_value()
 		{
-			emit value_changed(d_value);
+			Q_EMIT value_changed(d_value);
 		}
 #endif
 	protected Q_SLOTS:

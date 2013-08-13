@@ -10,3 +10,5 @@
 103 300.0  90.0     0.0  900.0  000 ! rot about Z ccw going fwd in time
 104   0.0   0.0     0.0    0.0  000 ! rot about X axis ( WHITE )
 104 300.0   0.0     0.0  900.0  000 ! rot about X
+1234567890 0.0   0.0     0.0  900.0  000 ! rot about X
+1234567890 300.0   0.0     0.0  900.0  000 ! rot about X

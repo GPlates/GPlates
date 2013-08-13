@@ -99,7 +99,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 			GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 						points.begin(), 
 						points.end(),
-						GPlatesViewOperations::GeometryType::POLYLINE).get();
+						GPlatesMaths::GeometryType::POLYLINE).get();
 
 	// Attempt to create a property wrapped in the correct time-dependent wrapper based on the
 	// property name (according to the GPGIM).
@@ -130,7 +130,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 			GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 					*d_oriented_pos_on_globe,
 					*rfg.get()->reconstruction_plate_id(),
-					*rfg.get()->reconstruction_tree(),
+					*rfg.get()->get_reconstruction_tree(),
 					true);
 		
 			points.insert(
@@ -215,7 +215,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 			GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 						points.begin(), 
 						points.begin() + point_index_to_split,
-						GPlatesViewOperations::GeometryType::POLYLINE).get();
+						GPlatesMaths::GeometryType::POLYLINE).get();
 
 	// Attempt to create a property wrapped in the correct time-dependent wrapper based on the
 	// property name (according to the GPGIM).
@@ -241,7 +241,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 			GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 						points.begin() + point_index_to_split -1, 
 						points.end(),
-						GPlatesViewOperations::GeometryType::POLYLINE).get();
+						GPlatesMaths::GeometryType::POLYLINE).get();
 
 	// Attempt to create a property wrapped in the correct time-dependent wrapper based on the
 	// property name (according to the GPGIM).

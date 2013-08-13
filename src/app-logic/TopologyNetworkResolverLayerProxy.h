@@ -6,6 +6,7 @@
  * $Date$
  * 
  * Copyright (C) 2011 The University of Sydney, Australia
+ * Copyright (C) 2013 California Institute of Technology
  *
  * This file is part of GPlates.
  *
@@ -30,6 +31,7 @@
 #include <boost/optional.hpp>
 
 #include "AppLogicFwd.h"
+#include "GeometryDeformation.h"
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
 #include "ReconstructHandle.h"
@@ -43,6 +45,8 @@
 
 namespace GPlatesAppLogic
 {
+	class ReconstructLayerProxy;
+
 	/**
 	 * A layer proxy that resolves topological networks from feature collection(s)
 	 * containing topological network features.
@@ -105,10 +109,28 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the current reconstruction layer proxy used for reconstructions.
+		 * Returns a time span of resolved topological networks.
+		 *
+		 * The main purpose of this method, over calling @a get_resolved_topological_networks for
+		 * a sequence of times (which essentially does the same thing), is to cache a time range
+		 * of resolved topological networks rather than just caching for a single reconstruction time.
+		 * This helps to avoid the expensive process of repeating the generation of a time span of
+		 * resolved networks which would happen if multiple clients each called
+		 * @a get_resolved_topological_networks over a sequence of reconstruction times because
+		 * a separate resolved network would unnecessarily be created for each client - whereas,
+		 * with this method, a single time range of resolved networks would be shared by all clients.
+		 *
+		 * NOTE: The returned @a ResolvedNetworkTimeSpan reference can be invalidated by a subsequent
+		 * request so it should be copied by the caller (it's cheap to copy since just intrusive pointers).
+		 *
+		 * @throws exception if the following is not satisfied:
+		 *   begin_time > end_time && time_increment > 0
 		 */
-		ReconstructionLayerProxy::non_null_ptr_type
-		get_reconstruction_layer_proxy();
+		const GeometryDeformation::ResolvedNetworkTimeSpan &
+		get_resolved_network_time_span(
+				const double &begin_time,
+				const double &end_time,
+				const double &time_increment);
 
 
 		/**
@@ -154,13 +176,6 @@ namespace GPlatesAppLogic
 		void
 		set_current_reconstruction_time(
 				const double &reconstruction_time);
-
-		/**
-		 * Set the reconstruction layer proxy used to rotate feature geometries.
-		 */
-		void
-		set_current_reconstruction_layer_proxy(
-				const ReconstructionLayerProxy::non_null_ptr_type &reconstruction_layer_proxy);
 
 		/**
 		 * Sets the current reconstruct layer proxies used to reconstruct the topological network boundary sections.
@@ -238,11 +253,6 @@ namespace GPlatesAppLogic
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_current_topological_network_feature_collections;
 
 		/**
-		 * Used to get reconstruction trees at desired reconstruction times.
-		 */
-		LayerProxyUtils::InputLayerProxy<ReconstructionLayerProxy> d_current_reconstruction_layer_proxy;
-
-		/**
 		 * Used to get reconstructed static features that form the topological sections for our topological geometries.
 		 */
 		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy>
@@ -260,9 +270,16 @@ namespace GPlatesAppLogic
 		double d_current_reconstruction_time;
 
 		/**
-		 * The cached resolved topologies.
+		 * The cached resolved topologies for a single reconstruction time.
 		 */
 		ResolvedNetworks d_cached_resolved_networks;
+
+		/**
+		 * The cached resolved topologies over a range of reconstruction times.
+		 *
+		 * This is cached as a performance optimisation for clients that deform geometries.
+		 */
+		boost::optional<GeometryDeformation::ResolvedNetworkTimeSpan> d_cached_resolved_network_time_span;
 
 		/**
 		 * Used to notify polling observers that we've been updated.
@@ -299,6 +316,34 @@ namespace GPlatesAppLogic
 		 */
 		void
 		check_input_layer_proxies();
+
+
+		/**
+		 * Generates resolved topological networks for the specified reconstruction time
+		 * if they're not already cached.
+		 */
+		std::vector<resolved_topological_network_non_null_ptr_type> &
+		cache_resolved_topological_networks(
+				const double &reconstruction_time);
+
+
+		/**
+		 * Generates a resolved network time span for the specified time range if one is not already cached.
+		 */
+		GeometryDeformation::ResolvedNetworkTimeSpan &
+		cache_resolved_network_time_span(
+				const double &begin_time,
+				const double &end_time,
+				const double &time_increment);
+
+
+		/**
+		 * Creates resolved topological networks for the specified reconstruction time.
+		 */
+		ReconstructHandle::type
+		create_resolved_topological_networks(
+				std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+				const double &reconstruction_time);
 	};
 }
 

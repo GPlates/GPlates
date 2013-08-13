@@ -33,12 +33,11 @@
 #include <boost/shared_ptr.hpp>
 
 #include "ColourScheme.h"
+#include "MapBackground.h"
 #include "MapGrid.h"
 #include "MapProjection.h"
 #include "MapRenderedGeometryCollectionPainter.h"
-#include "TextRenderer.h"
-
-#include "gui/ViewportZoom.h"
+#include "ViewportZoom.h"
 
 #include "opengl/GLVisualLayers.h"
 
@@ -74,10 +73,9 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				RenderSettings &render_settings,
+				const RenderSettings &render_settings,
 				ViewportZoom &viewport_zoom,
-				const ColourScheme::non_null_ptr_type &colour_scheme,
-				const TextRenderer::non_null_ptr_to_const_type &text_renderer);
+				const ColourScheme::non_null_ptr_type &colour_scheme);
 
 		/**
 		 * Initialise any OpenGL state.
@@ -137,7 +135,7 @@ namespace GPlatesGui
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
 		//! Flags to determine what data to show
-		GPlatesGui::RenderSettings &d_render_settings;
+		const GPlatesGui::RenderSettings &d_render_settings;
 
 		//! For zoom-dependent rendered objects.                                                                     
 		GPlatesGui::ViewportZoom &d_viewport_zoom;		
@@ -145,8 +143,12 @@ namespace GPlatesGui
 		//! For giving colour to RenderedGeometry
 		GPlatesGui::ColourScheme::non_null_ptr_type d_colour_scheme;
 
-		//! Used for rendering text
-		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
+		/**
+		 * The coloured map background (behind the grid and rendered geometry data).
+		 *
+		 * It's optional since it can't be constructed until @a initialiseGL is called (valid OpenGL context).
+		 */
+		boost::optional<MapBackground> d_background;
 
 		/**
 		 * Lines of lat and lon on the map.

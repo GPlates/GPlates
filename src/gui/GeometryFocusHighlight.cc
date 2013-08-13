@@ -73,14 +73,20 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 	// Find all reconstruction geometries, of all geometry properties, of the focused feature.
 	// NOTE: We get these from the rendered geometry collection since that represents the visible
 	// geometries and also represents the latest reconstruction.
+	//
+	// NOTE: We can get more than one matching ReconstructionGeometry for the the same
+	// focused feature (and its focused geometry property) because it might be reconstructed in two
+	// different layers. And since FeatureFocus arbitrarily picks the first match it might not pick
+	// the one associated with the originally selected ReconstructionGeometry - which might manifest
+	// as the user selecting one ReconstructionGeometry (from one layer) and finding that the other
+	// ReconstructionGeometry (from another layer) gets highlighted.
+	// So we highlight all ReconstructionGeometry's regardless of layer (instead of limiting to those
+	// reconstructed by the same layer as the focused geometry - using reconstruct handles).
 	GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type reconstruction_geometries_observing_feature;
 	if (!GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries_observing_feature(
 			reconstruction_geometries_observing_feature,
 			rendered_geom_collection,
-			feature,
-			// Restrict the found RGs to those reconstructed by same tree as focused geometry.
-			// They all come from current reconstruction time so should have the same reconstruction tree...
-			focused_geometry->reconstruction_tree()))
+			feature))
 	{
 		// Shouldn't really get here since there's a focused geometry (and associated focused feature)
 		// so we should get at least one reconstruction geometry.

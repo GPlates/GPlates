@@ -88,7 +88,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const GLBufferObject::shared_ptr_type &buffer)
 		{
-			return std::auto_ptr<GLVertexBufferObject>(new GLVertexBufferObject(buffer));
+			return std::auto_ptr<GLVertexBufferObject>(new GLVertexBufferObject(renderer, buffer));
 		}
 
 
@@ -215,6 +215,7 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GLVertexBufferObject(
+				GLRenderer &renderer,
 				const GLBufferObject::shared_ptr_type &buffer);
 	};
 }

@@ -40,6 +40,7 @@
 #include "global/AssertionFailureException.h"
 
 #include "maths/LatLonPoint.h"
+#include "maths/PointOnSphere.h"
 #include "maths/MathsUtils.h"
 #include "maths/UnitVector3D.h"
 #include "maths/types.h"
@@ -81,6 +82,16 @@ namespace GPlatesUtils
 		void
 		reset_sample_spacing(
 				const double &sample_bin_angle_spacing_degrees);
+
+
+		/**
+		 * Returns true if there are no sampled elements.
+		 */
+		bool
+		empty() const
+		{
+			return get_num_sampled_elements() == 0;
+		}
 
 
 		/**

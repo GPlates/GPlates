@@ -47,6 +47,8 @@ set(srcs
     GpgimVersion.h
     HandleTraits.h
     IdTypeGenerator.h
+    Metadata.cc
+    Metadata.h
     Model.cc
     Model.h
     ModelInterface.cc

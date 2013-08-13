@@ -578,6 +578,10 @@
 			<Type>gpml:TopologicalPolygon</Type>
 			<Description>A dynamic polygon formed by topological references to regular geometries and topological lines of other features.</Description>
 		</NativeProperty>
+		<NativeProperty>
+			<Type>gpml:GpmlMetadata</Type>
+			<Description>The metadata for feature collection.</Description>
+		</NativeProperty>
 	</PropertyTypeList>
 	
 	
@@ -1181,6 +1185,18 @@
 			<Name>gml:validTime</Name>
 			<Description>The period of time the feature is in existence.</Description>
 			<Type>gml:TimePeriod</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:metadata</Name>
+			<Description>The metadata for feature collection.</Description>
+			<Type>gpml:GpmlMetadata</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:mprsAttributes</Name>
+			<Description>Moving Plate Rotation Sequence attributes.</Description>
+			<Type>gpml:KeyValueDictionary</Type>
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
 	</PropertyList>
@@ -2162,6 +2178,7 @@
 			<Property>gpml:fixedReferenceFrame</Property>
 			<Property>gpml:movingReferenceFrame</Property>
 			<Property>gpml:totalReconstructionPole</Property>
+			<Property>gpml:mprsAttributes</Property>
 			<Comment>This feature represents a sequence of total reconstruction poles for the same (fixed plate Id, moving plate Id) pair which are temporally adjacent -- and thus, which may be interpolated.</Comment>
 			<Comment>Quoting JB: "How can a snapshot be captured of a feature which is an ephemoral result of an interpolation? Should this snapshot instead refer to the two features between which the interpolation occurred? What if a new feature is added "between" these two features, meaning that the two features are no longer temporally adjacent and hence no longer valid for interpolation? Does this then imply we need to capture a snapshot of the *whole feature collection*, which itself will change whenever any another unrelated feature is added or removed?"</Comment>
 		</FeatureClass>
@@ -2224,6 +2241,14 @@
 			<Property>gpml:outlineOf</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
 			<Comment>Single Active Volcano with point geometry. Might be referenced from other igneous Features, e.g. HotSpotTrail or IslandArc.</Comment>
+		</FeatureClass>
+		<FeatureClass>
+			<Name>gpml:FeatureCollectionMetadata</Name>
+			<Description>Contains metadata which applies to the whole feature collection.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:metadata</Property>
+			<Comment>metadata for feature collection</Comment>
 		</FeatureClass>
 	</FeatureClassList>
 </GPGIM>

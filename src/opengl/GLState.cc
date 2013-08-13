@@ -33,6 +33,7 @@
 
 #include "GLState.h"
 
+#include "GLCapabilities.h"
 #include "GLContext.h"
 #include "GLStateStore.h"
 
@@ -193,6 +194,7 @@ GPlatesOpenGL::GLState::clear()
 
 void
 GPlatesOpenGL::GLState::set_bind_buffer_object_and_apply(
+		const GLCapabilities &capabilities,
 		const GLBufferObject::shared_ptr_to_const_type &buffer_object,
 		GLenum target,
 		GLState &last_applied_state)
@@ -209,19 +211,20 @@ GPlatesOpenGL::GLState::set_bind_buffer_object_and_apply(
 	// See http://www.opengl.org/wiki/Vertex_Array_Object for more details.
 	if (target == GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER)
 	{
-		begin_bind_vertex_array_object(last_applied_state);
-		apply_state(last_applied_state, state_set_key);
-		end_bind_vertex_array_object(last_applied_state);
+		begin_bind_vertex_array_object(capabilities, last_applied_state);
+		apply_state(capabilities, last_applied_state, state_set_key);
+		end_bind_vertex_array_object(capabilities, last_applied_state);
 	}
 	else
 	{
-		apply_state(last_applied_state, state_set_key);
+		apply_state(capabilities, last_applied_state, state_set_key);
 	}
 }
 
 
 void
 GPlatesOpenGL::GLState::set_unbind_buffer_object_and_apply(
+		const GLCapabilities &capabilities,
 		GLenum target,
 		GLState &last_applied_state)
 {
@@ -237,19 +240,20 @@ GPlatesOpenGL::GLState::set_unbind_buffer_object_and_apply(
 	// See http://www.opengl.org/wiki/Vertex_Array_Object for more details.
 	if (target == GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER)
 	{
-		begin_bind_vertex_array_object(last_applied_state);
-		apply_state(last_applied_state, state_set_key);
-		end_bind_vertex_array_object(last_applied_state);
+		begin_bind_vertex_array_object(capabilities, last_applied_state);
+		apply_state(capabilities, last_applied_state, state_set_key);
+		end_bind_vertex_array_object(capabilities, last_applied_state);
 	}
 	else
 	{
-		apply_state(last_applied_state, state_set_key);
+		apply_state(capabilities, last_applied_state, state_set_key);
 	}
 }
 
 
 void
 GPlatesOpenGL::GLState::apply_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	PROFILE_FUNC();
@@ -258,7 +262,7 @@ GPlatesOpenGL::GLState::apply_state(
 	// client enable/disable state, etc, we apply it first.
 	// Then any state that it might contain gets applied afterwards so that it gets recorded
 	// in the bound vertex array object.
-	begin_bind_vertex_array_object(last_applied_state);
+	begin_bind_vertex_array_object(capabilities, last_applied_state);
 
 	// NOTE: This is called twice because it's possible for some state-sets to
 	// modify the dependent state-sets when they are being applied. For example, changing the active
@@ -274,14 +278,14 @@ GPlatesOpenGL::GLState::apply_state(
 	// First application is for all combined state-sets that are *not* dependent state-sets.
 	// Note that we determine the state-set slots *after* applying the bind-vertex-array-object
 	// state-set since it can modify the last applied state outside of its slot.
-	apply_state(last_applied_state, d_shared_data->inverse_dependent_state_set_slots);
+	apply_state(capabilities, last_applied_state, d_shared_data->inverse_dependent_state_set_slots);
 
 	// Note that the combined state-set slots are recalculated which is good since
 	// 'last_applied_state' may have had its dependent state-set slots modified.
 
 	// Second application is for all combined state-sets that are also dependent state-sets.
 	// Note that dependent state-sets do not modify other state-sets (so we don't need a third pass).
-	apply_state(last_applied_state, d_shared_data->dependent_state_set_slots);
+	apply_state(capabilities, last_applied_state, d_shared_data->dependent_state_set_slots);
 
 	// Some of the above state targets the currently bound vertex array object if one is bound.
 	// So we shadow the state that is currently set in the native OpenGL vertex array object.
@@ -289,32 +293,35 @@ GPlatesOpenGL::GLState::apply_state(
 	// it be in a certain state and we are always targeting that state (in case, for example, a
 	// vertex element buffer gets bound, which gets recorded in the vertex array object, and we want
 	// to remove that recording when the same vertex element buffer gets unbound).
-	end_bind_vertex_array_object(last_applied_state);
+	end_bind_vertex_array_object(capabilities, last_applied_state);
 }
 
 
 void
 GPlatesOpenGL::GLState::apply_state_used_by_gl_clear(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// NOTE: There are no bind vertex array object state-sets or dependent state-sets to worry about here.
 	// Simple application of the 'glClear' state set slots is all that is required.
-	apply_state(last_applied_state, d_shared_data->gl_clear_state_set_slots);
+	apply_state(capabilities, last_applied_state, d_shared_data->gl_clear_state_set_slots);
 }
 
 
 void
 GPlatesOpenGL::GLState::apply_state_used_by_gl_read_pixels(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 	// NOTE: There are no bind vertex array object state-sets or dependent state-sets to worry about here.
-	// Simple application of the 'glReadPixel' state set slots is all that is required.
-	apply_state(last_applied_state, d_shared_data->gl_read_pixels_state_set_slots);
+	// Simple application of the 'glReadPixels' state set slots is all that is required.
+	apply_state(capabilities, last_applied_state, d_shared_data->gl_read_pixels_state_set_slots);
 }
 
 
 void
 GPlatesOpenGL::GLState::apply_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state,
 		const state_set_slot_flags_type &state_set_slots_mask) const
 {
@@ -441,7 +448,7 @@ GPlatesOpenGL::GLState::apply_state(
 										// This is a transition from an existing state to another (possibly different)
 										// existing state - if the two states are the same then it's possible for this
 										// to do nothing.
-										current_state_set->apply_state(*last_applied_state_set, last_applied_state);
+										current_state_set->apply_state(capabilities, *last_applied_state_set, last_applied_state);
 
 										// Update the last applied state so subsequent state-sets can see it.
 										last_applied_state_set = current_state_set;
@@ -450,7 +457,7 @@ GPlatesOpenGL::GLState::apply_state(
 									{
 										// Only the last applied state set exists - get it to set the default state.
 										// This is a transition from an existing state to the default state.
-										last_applied_state_set->apply_to_default_state(last_applied_state);
+										last_applied_state_set->apply_to_default_state(capabilities, last_applied_state);
 
 										// Update the last applied state so subsequent state-sets can see it.
 										last_applied_state_set.reset();
@@ -466,7 +473,7 @@ GPlatesOpenGL::GLState::apply_state(
 
 									// Only the current state set exists - get it to apply its internal state.
 									// This is a transition from the default state to a new state.
-									current_state_set->apply_from_default_state(last_applied_state);
+									current_state_set->apply_from_default_state(capabilities, last_applied_state);
 
 									// Update the last applied state so subsequent state-sets can see it.
 									last_applied_state_set = current_state_set;
@@ -494,6 +501,7 @@ GPlatesOpenGL::GLState::apply_state(
 
 void
 GPlatesOpenGL::GLState::apply_state(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state,
 		state_set_key_type state_set_key) const
 {
@@ -538,7 +546,7 @@ GPlatesOpenGL::GLState::apply_state(
 			// This is a transition from an existing state to another (possibly different)
 			// existing state - if the two states are the same then it's possible for this
 			// to do nothing.
-			current_state_set->apply_state(*last_applied_state_set, last_applied_state);
+			current_state_set->apply_state(capabilities, *last_applied_state_set, last_applied_state);
 
 			// Update the last applied state so subsequent state-sets can see it.
 			last_applied_state_set = current_state_set;
@@ -547,7 +555,7 @@ GPlatesOpenGL::GLState::apply_state(
 		{
 			// Only the last applied state set exists - get it to set the default state.
 			// This is a transition from an existing state to the default state.
-			last_applied_state_set->apply_to_default_state(last_applied_state);
+			last_applied_state_set->apply_to_default_state(capabilities, last_applied_state);
 
 			// Update the last applied state so subsequent state-sets can see it.
 			last_applied_state_set.reset();
@@ -563,7 +571,7 @@ GPlatesOpenGL::GLState::apply_state(
 
 		// Only the current state set exists - get it to apply its internal state.
 		// This is a transition from the default state to a new state.
-		current_state_set->apply_from_default_state(last_applied_state);
+		current_state_set->apply_from_default_state(capabilities, last_applied_state);
 
 		// Update the last applied state so subsequent state-sets can see it.
 		last_applied_state_set = current_state_set;
@@ -713,12 +721,13 @@ GPlatesOpenGL::GLState::copy_vertex_array_state(
 
 void
 GPlatesOpenGL::GLState::begin_bind_vertex_array_object(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
  #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
-	if (GLEW_ARB_vertex_array_object)
+	if (capabilities.buffer.gl_ARB_vertex_array_object)
 	{
-		apply_state(last_applied_state, GLStateSetKeys::KEY_BIND_VERTEX_ARRAY_OBJECT);
+		apply_state(capabilities, last_applied_state, GLStateSetKeys::KEY_BIND_VERTEX_ARRAY_OBJECT);
 	}
 #endif
 }
@@ -726,11 +735,12 @@ GPlatesOpenGL::GLState::begin_bind_vertex_array_object(
 
 void
 GPlatesOpenGL::GLState::end_bind_vertex_array_object(
+		const GLCapabilities &capabilities,
 		GLState &last_applied_state) const
 {
 #ifdef GL_ARB_vertex_array_object // In case old 'glew.h' header
 	// If vertex array objects are not supported by the runtime system then nothing to do.
- 	if (GLEW_ARB_vertex_array_object)
+ 	if (capabilities.buffer.gl_ARB_vertex_array_object)
 	{
 		// Get the bind vertex array object state-set.
 		// Note that we get this from the last applied state as that is the state that OpenGL currently sees.
@@ -806,6 +816,7 @@ GPlatesOpenGL::GLState::clear_state_set_slot_flag(
 
 
 GPlatesOpenGL::GLState::SharedData::SharedData(
+		const GLCapabilities &capabilities,
 		const GLStateSetKeys &state_set_keys,
 		const GLState::shared_ptr_type &default_vertex_array_object_current_context_state_) :
 	dependent_state_set_slots(get_num_state_set_slot_flag32s(state_set_keys)),
@@ -816,16 +827,17 @@ GPlatesOpenGL::GLState::SharedData::SharedData(
 	gl_read_pixels_state_set_slots(get_num_state_set_slot_flag32s(state_set_keys)),
 	default_vertex_array_object_current_context_state(default_vertex_array_object_current_context_state_)
 {
-	initialise_dependent_state_set_slots(state_set_keys);
-	initialise_vertex_array_state_set_slots(state_set_keys);
-	initialise_gl_clear_state_set_slots(state_set_keys);
-	initialise_gl_read_pixels_state_set_slots(state_set_keys);
-	initialise_mutable_state_set_slots(state_set_keys);
+	initialise_dependent_state_set_slots(capabilities, state_set_keys);
+	initialise_vertex_array_state_set_slots(capabilities, state_set_keys);
+	initialise_gl_clear_state_set_slots(capabilities, state_set_keys);
+	initialise_gl_read_pixels_state_set_slots(capabilities, state_set_keys);
+	initialise_mutable_state_set_slots(capabilities, state_set_keys);
 }
 
 
 void
 GPlatesOpenGL::GLState::SharedData::initialise_dependent_state_set_slots(
+		const GLCapabilities &capabilities,
 		const GLStateSetKeys &state_set_keys)
 {
 	// There are a handful of state sets that need to be treated as special cases.
@@ -884,6 +896,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_dependent_state_set_slots(
 
 void
 GPlatesOpenGL::GLState::SharedData::initialise_vertex_array_state_set_slots(
+		const GLCapabilities &capabilities,
 		const GLStateSetKeys &state_set_keys)
 {
 	std::vector<bool> vertex_array_slots(state_set_keys.get_num_state_set_keys());
@@ -895,7 +908,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_vertex_array_state_set_slots(
 	vertex_array_slots[GLStateSetKeys::KEY_ENABLE_CLIENT_STATE_NORMAL_ARRAY] = true;
 	vertex_array_slots[GLStateSetKeys::KEY_ENABLE_CLIENT_STATE_VERTEX_ARRAY] = true;
 	// Iterate over the enable texture coordinate client state flags.
-	const unsigned int MAX_TEXTURE_COORDS = GLContext::get_parameters().texture.gl_max_texture_coords;
+	const unsigned int MAX_TEXTURE_COORDS = capabilities.texture.gl_max_texture_coords;
 	for (unsigned int texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_COORDS; ++texture_coord_index)
 	{
 		vertex_array_slots[
@@ -918,7 +931,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_vertex_array_state_set_slots(
 	//
 	// All generic vertex attribute enable/disable client state.
 	//
-	const GLuint MAX_VERTEX_ATTRIBS = GLContext::get_parameters().shader.gl_max_vertex_attribs;
+	const GLuint MAX_VERTEX_ATTRIBS = capabilities.shader.gl_max_vertex_attribs;
 	// Iterate over the supported number of generic vertex attribute arrays.
 	for (GLuint attribute_index = 0; attribute_index < MAX_VERTEX_ATTRIBS; ++attribute_index)
 	{
@@ -960,6 +973,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_vertex_array_state_set_slots(
 
 void
 GPlatesOpenGL::GLState::SharedData::initialise_gl_clear_state_set_slots(
+		const GLCapabilities &capabilities,
 		const GLStateSetKeys &state_set_keys)
 {
 	// Specify the state set keys representing states needed by 'glClear'.
@@ -978,6 +992,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_gl_clear_state_set_slots(
 
 void
 GPlatesOpenGL::GLState::SharedData::initialise_gl_read_pixels_state_set_slots(
+		const GLCapabilities &capabilities,
 		const GLStateSetKeys &state_set_keys)
 {
 	// Specify the state set keys representing states needed by 'glReadPixels'.
@@ -988,6 +1003,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_gl_read_pixels_state_set_slots(
 
 void
 GPlatesOpenGL::GLState::SharedData::initialise_mutable_state_set_slots(
+		const GLCapabilities &capabilities,
 		const GLStateSetKeys &state_set_keys)
 {
 	// If we are emulating vertex buffers and vertex element buffers then it's possible that
@@ -1020,7 +1036,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_mutable_state_set_slots(
 	set_state_set_slot_flag(mutable_state_set_slots.get(), GLStateSetKeys::KEY_VERTEX_ARRAY_VERTEX_POINTER);
 
 	// Add all texture coordinate pointer slots.
-	const GLuint MAX_TEXTURE_COORDS = GLContext::get_parameters().texture.gl_max_texture_coords;
+	const GLuint MAX_TEXTURE_COORDS = capabilities.texture.gl_max_texture_coords;
 	for (GLuint texture_coord_index = 0; texture_coord_index < MAX_TEXTURE_COORDS; ++texture_coord_index)
 	{
 		set_state_set_slot_flag(
@@ -1029,7 +1045,7 @@ GPlatesOpenGL::GLState::SharedData::initialise_mutable_state_set_slots(
 	}
 
 	// Add all the generic attribute array slots.
-	const GLuint MAX_VERTEX_ATTRIBS = GLContext::get_parameters().shader.gl_max_vertex_attribs;
+	const GLuint MAX_VERTEX_ATTRIBS = capabilities.shader.gl_max_vertex_attribs;
 	for (GLuint attribute_index = 0; attribute_index < MAX_VERTEX_ATTRIBS; ++attribute_index)
 	{
 		set_state_set_slot_flag(

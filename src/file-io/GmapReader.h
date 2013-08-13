@@ -28,6 +28,7 @@
 #ifndef GPLATES_FILEIO_GMAPREADER_H
 #define GPLATES_FILEIO_GMAPREADER_H
 
+#include "File.h"
 #include "FileInfo.h"
 #include "ReadErrorAccumulation.h"
 

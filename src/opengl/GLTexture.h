@@ -83,7 +83,8 @@ namespace GPlatesOpenGL
 		{
 		public:
 			resource_handle_type
-			allocate()
+			allocate(
+					const GLCapabilities &capabilities)
 			{
 				resource_handle_type texture;
 				glGenTextures(1, &texture);
@@ -517,7 +518,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Returns boost::none unless none of the texture image specification methods have been called.
 		 */
-		boost::optional<GLenum>
+		boost::optional<GLint>
 		get_internal_format() const
 		{
 			return d_internal_format;
@@ -573,7 +574,7 @@ namespace GPlatesOpenGL
 		boost::optional<GLuint> d_height;
 		boost::optional<GLuint> d_depth;
 
-		boost::optional<GLenum> d_internal_format;
+		boost::optional<GLint> d_internal_format;
 
 		//! Constructor.
 		explicit

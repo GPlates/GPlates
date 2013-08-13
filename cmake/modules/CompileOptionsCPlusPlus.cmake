@@ -46,7 +46,11 @@ if(MSVC)
     	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
     endif (GPLATES_MSVC80_PARALLEL_BUILD)
 
-    #set(CMAKE_EXE_LINKER_FLAGS )
+	# Enable 4Gb of virtual address space instead of 2Gb (default for Windows).
+	# This doubles addressable memory if GPlates is compiled as 32-bit but run on a 64-bit Windows OS.
+	# On a 32-bit Windows OS this won't help because only 2Gb (by default) is accessible
+	# (the 2-4Gb process address range is reserved for the system).
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
     #set(CMAKE_SHARED_LINKER_FLAGS )
     #set(CMAKE_MODULE_LINKER_FLAGS )
 

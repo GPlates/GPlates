@@ -30,6 +30,7 @@
 #include <boost/optional.hpp>
 
 #include "CubeCoordinateFrame.h"
+#include "CubeQuadTreeLocation.h"
 
 #include "utils/CopyConst.h"
 #include "utils/ObjectPool.h"
@@ -160,6 +161,10 @@ namespace GPlatesMaths
 		typedef Node node_type;
 
 
+		//! Typedef for a location in the cube quad tree.
+		typedef CubeQuadTreeLocation location_type;
+
+
 		/**
 		 * Iterator over the cube quad tree.
 		 *
@@ -201,6 +206,12 @@ namespace GPlatesMaths
 			ElementQualifiedType &
 			get_element() const;
 
+			/**
+			 * Returns the CubeQuadTreeLocation of the current element (returned by @a get_element).
+			 */
+			const location_type &
+			get_location() const;
+
 			void
 			next();
 
@@ -210,30 +221,40 @@ namespace GPlatesMaths
 		private:
 			struct NodeLocation
 			{
+				static location_type ROOT_ELEMENT_LOCATION;
+
 				explicit
 				NodeLocation(
-						node_qualified_type *node_) :
+						node_qualified_type *node_,
+						const location_type &location_) :
 					node(node_),
-					child_x_offset(0),
-					child_y_offset(0)
+					location(location_),
+					next_child_x_offset(0),
+					next_child_y_offset(0)
 				{  }
 
 				// Assists with conversion from 'iterator' to 'const_iterator'.
 				NodeLocation(
 						const typename Iterator<element_type>::NodeLocation &rhs) :
 					node(rhs.node),
-					child_x_offset(rhs.child_x_offset),
-					child_y_offset(rhs.child_y_offset)
+					location(rhs.location),
+					next_child_x_offset(rhs.next_child_x_offset),
+					next_child_y_offset(rhs.next_child_y_offset)
 				{  }
 
 				node_qualified_type *node;
-				unsigned short child_x_offset;
-				unsigned short child_y_offset;
+
+				// Global location of this node in the cube quad tree.
+				location_type location;
+
+				// Used to keep track of next child to visit during stack traversal.
+				unsigned short next_child_x_offset;
+				unsigned short next_child_y_offset;
 			};
 
 			cube_quad_tree_qualified_type *d_cube_quad_tree;
 			std::vector<NodeLocation> d_current_quad_tree_traversal_stack;
-			unsigned short d_current_cube_face;
+			unsigned short d_next_cube_face;
 			bool d_at_root_element;
 			bool d_finished;
 
@@ -700,13 +721,19 @@ namespace GPlatesMaths
 
 	template <typename ElementType>
 	template <typename ElementQualifiedType>
+	typename CubeQuadTree<ElementType>::location_type
+	CubeQuadTree<ElementType>::Iterator<ElementQualifiedType>::NodeLocation::ROOT_ELEMENT_LOCATION;
+
+
+	template <typename ElementType>
+	template <typename ElementQualifiedType>
 	CubeQuadTree<ElementType>::Iterator<ElementQualifiedType>::Iterator(
 			const Iterator<element_type> &rhs) :
 		d_cube_quad_tree(rhs.d_cube_quad_tree),
 		d_current_quad_tree_traversal_stack(
 				rhs.d_current_quad_tree_traversal_stack.begin(),
 				rhs.d_current_quad_tree_traversal_stack.end()),
-		d_current_cube_face(rhs.d_current_cube_face),
+		d_next_cube_face(rhs.d_next_cube_face),
 		d_at_root_element(rhs.d_at_root_element),
 		d_finished(rhs.d_finished)
 	{
@@ -737,7 +764,7 @@ namespace GPlatesMaths
 	void
 	CubeQuadTree<ElementType>::Iterator<ElementQualifiedType>::first()
 	{
-		d_current_cube_face = 0;
+		d_next_cube_face = 0;
 		d_finished = false;
 		if (d_cube_quad_tree->get_root_element())
 		{
@@ -765,6 +792,17 @@ namespace GPlatesMaths
 
 	template <typename ElementType>
 	template <typename ElementQualifiedType>
+	const typename CubeQuadTree<ElementType>::location_type &
+	CubeQuadTree<ElementType>::Iterator<ElementQualifiedType>::get_location() const
+	{
+		return d_at_root_element
+				? NodeLocation::ROOT_ELEMENT_LOCATION
+				: d_current_quad_tree_traversal_stack.back().location;
+	}
+
+
+	template <typename ElementType>
+	template <typename ElementQualifiedType>
 	bool
 	CubeQuadTree<ElementType>::Iterator<ElementQualifiedType>::finished() const
 	{
@@ -781,30 +819,31 @@ namespace GPlatesMaths
 		if (d_at_root_element)
 		{
 			d_at_root_element = false;
-			d_current_cube_face = 0;
+			d_next_cube_face = 0;
 		}
 
 		// Infinite loop.
 		for (;;)
 		{
 			// If the quad tree traversal stack is empty then we are at the root node
-			// of the quad tree of the current cube face.
+			// of the quad tree of the next cube face.
 			if (d_current_quad_tree_traversal_stack.empty())
 			{
 				// If there's no more cube faces to traverse then we're finished.
-				if (d_current_cube_face == 6)
+				if (d_next_cube_face == 6)
 				{
 					d_finished = true;
 					return;
 				}
 
-				// Get the current quad tree's root node.
+				// Get the next quad tree's root node.
+				const CubeCoordinateFrame::CubeFaceType cube_face =
+						static_cast<CubeCoordinateFrame::CubeFaceType>(d_next_cube_face);
 				node_qualified_type *const root_node =
-						d_cube_quad_tree->get_quad_tree_root_node(
-								static_cast<CubeCoordinateFrame::CubeFaceType>(d_current_cube_face));
+						d_cube_quad_tree->get_quad_tree_root_node(cube_face);
 
 				// Move to the next cube face.
-				++d_current_cube_face;
+				++d_next_cube_face;
 
 				if (!root_node)
 				{
@@ -813,36 +852,45 @@ namespace GPlatesMaths
 				}
 
 				// Push the root node onto the traversal stack and return.
-				d_current_quad_tree_traversal_stack.push_back(NodeLocation(root_node));
+				d_current_quad_tree_traversal_stack.push_back(
+						NodeLocation(root_node, location_type(cube_face)));
 				return;
 			}
 
 			NodeLocation &node_location = d_current_quad_tree_traversal_stack.back();
 
-			while (node_location.child_y_offset < 2)
+			while (node_location.next_child_y_offset < 2)
 			{
-				// Look for a child node of the current node.
+				// Look for a child node of the next node.
+				const unsigned int child_x_offset = node_location.next_child_x_offset;
+				const unsigned int child_y_offset = node_location.next_child_y_offset;
 				node_qualified_type *const child_node =
-						node_location.node->get_child_node(
-								node_location.child_x_offset, node_location.child_y_offset);
+						node_location.node->get_child_node(child_x_offset, child_y_offset);
 
 				// Move to the next child position.
-				if (++node_location.child_x_offset == 2)
+				if (++node_location.next_child_x_offset == 2)
 				{
-					node_location.child_x_offset = 0;
+					node_location.next_child_x_offset = 0;
 					// Note that this can increment to 2.
-					++node_location.child_y_offset;
+					++node_location.next_child_y_offset;
 				}
 
 				if (child_node)
 				{
 					// Push the child node onto the traversal stack and return.
-					d_current_quad_tree_traversal_stack.push_back(NodeLocation(child_node));
+					d_current_quad_tree_traversal_stack.push_back(
+							NodeLocation(
+									child_node,
+									// Record our global location in the cube quad tree...
+									location_type(
+											node_location.location,
+											child_x_offset,
+											child_y_offset)));
 					return;
 				}
 			}
 
-			// No more child nodes for the current node.
+			// No more child nodes for the next node.
 			d_current_quad_tree_traversal_stack.pop_back();
 		}
 

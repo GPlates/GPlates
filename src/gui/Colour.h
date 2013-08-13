@@ -184,6 +184,7 @@ namespace GPlatesGui
 	 * Also note that QImage::Format_ARGB32 means the 32-bit integer 0xAARRGGBB and
 	 * not necessarily (B,G,R,A) - they're only the same on little-endian machines where
 	 * the least significant part of the integer (litte end) goes into the byte array first.
+	 * QImage::Format_ARGB32_Premultiplied can also be used as a destination.
 	 *
 	 * Also note that GL_RGBA means (R,G,B,A) on both little and big endian machines -
 	 * in other words it specifies byte ordering in memory (not in a 32-bit integer like Qt).
@@ -473,6 +474,15 @@ namespace GPlatesGui
 				const Colour &first,
 				const Colour &second,
 				const double &position);
+
+		/**
+		 * Modulate/multiply two colours (including alpha channel).
+		 */
+		static
+		Colour
+		modulate(
+				const Colour &first,
+				const Colour &second);
 
 		/**
 		 * Converts a CMYK colour to a Colour (which is RGBA). The cyan,

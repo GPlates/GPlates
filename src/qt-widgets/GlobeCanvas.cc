@@ -29,11 +29,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <vector>
-#include <utility>
 #include <cmath>
 #include <iostream>
-#include <boost/none.hpp>
+#include <utility>
+#include <vector>
+#include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 
 #include <QDebug>
@@ -45,13 +45,15 @@
 
 #include "GlobeCanvas.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 #include "global/GPlatesException.h"
+#include "global/PreconditionViolationError.h"
 
+#include "gui/Colour.h"
 #include "gui/ColourScheme.h"
 #include "gui/GlobeVisibilityTester.h"
-#include "gui/QGLWidgetTextRenderer.h"
 #include "gui/SimpleGlobeOrientation.h"
-#include "gui/SvgExport.h"
 #include "gui/TextOverlay.h"
 
 #include "maths/types.h"
@@ -61,10 +63,14 @@
 #include "model/FeatureHandle.h"
 
 #include "opengl/GLContext.h"
+#include "opengl/GLContextImpl.h"
+#include "opengl/GLImageUtils.h"
 #include "opengl/GLRenderer.h"
+#include "opengl/GLTileRender.h"
 
 #include "presentation/ViewState.h"
 
+#include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
@@ -185,6 +191,121 @@ namespace
 		// closest point which *is* on the globe.
 		return calc_pos_at_intersection_with_globe(y, z, discrim);
 	}
+
+
+	/**
+	 * Given the scene view's dimensions (eg, canvas dimensions) generate projection transforms
+	 * needed to display the scene.
+	 *
+	 * NOTE: The projection transforms are post-multiplied (ie, not initialised to identity first)
+	 * so set them to identity first, if necessary, otherwise the previous values will be included.
+	 */
+	void
+	calc_scene_projection_transforms(
+			unsigned int scene_view_width,
+			unsigned int scene_view_height,
+			const double &zoom_factor,
+			GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
+			GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
+			GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
+			GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
+			GPlatesOpenGL::GLMatrix &projection_transform_text_overlay)
+	{
+		// NOTE: We ensure that the projection transforms calculated here can also be used when
+		// rendering to SVG output. This is because SVG output ignores depth buffering -
+		// it uses the OpenGL feedback mechanism which bypasses rasterisation - and hence the
+		// opaque disc through the centre of the globe does not occlude vector geometry
+		// on the back side of the globe).
+		// The solution is to set the far or near clip planes to pass through the globe centre
+		// (depending on whether rendering front or rear half of globe.
+		// This is effectively does the equivalent culling of the opaque disc but in the
+		// transformation pipeline instead of the rasterisation pipeline.
+		//
+		static const GLdouble eye_to_globe_centre_distance = EYE_POSITION.magnitude().dval();
+		// The 1.0 is the globe radius.
+		// The 0.5 is arbitrary and because we don't want to put the near clipping plane too close
+		// to the globe because some objects are outside the globe such as rendered arrows.
+		static const GLdouble depth_in_front_of_globe = eye_to_globe_centre_distance - 1.0 - 0.5;
+		static const GLdouble depth_behind_globe = eye_to_globe_centre_distance + 1.0 + 0.5;
+		// The stars need a far clip plane further away.
+		static const GLdouble depth_behind_globe_and_including_stars = depth_behind_globe + 10;
+		static const GLdouble depth_globe_centre = eye_to_globe_centre_distance;
+		// The 'depth_globe_centre' will need adjustment so that the circumference of the globe doesn't get clipped.
+		// Also the opaque sphere is now rendered as a flat disk facing the camera and
+		// positioned through the globe centre - so we don't want that to get clipped away either.
+		static const GLdouble depth_epsilon_to_avoid_clipping_globe_circumference = 0.0001;
+
+		// The smaller/larger of the dimensions (width/height) of the screen.
+		double smaller_dim;
+		double larger_dim;
+		if (scene_view_width <= scene_view_height)
+		{
+			smaller_dim = static_cast<GLdouble>(scene_view_width);
+			larger_dim = static_cast<GLdouble>(scene_view_height);
+		}
+		else
+		{
+			smaller_dim = static_cast<GLdouble>(scene_view_height);
+			larger_dim = static_cast<GLdouble>(scene_view_width);
+		}
+		
+		// This is used for the coordinates of the symmetrical clipping planes which bound the
+		// smaller dimension.
+		GLdouble smaller_dim_clipping = FRAMING_RATIO / zoom_factor;
+
+		// This is used for the coordinates of the symmetrical clipping planes which bound the
+		// larger dimension.
+		GLdouble dim_ratio = larger_dim / smaller_dim;
+		GLdouble larger_dim_clipping = smaller_dim_clipping * dim_ratio;
+
+		GLdouble ortho_left, ortho_right, ortho_bottom, ortho_top;
+		if (scene_view_width <= scene_view_height)
+		{
+			ortho_left = -smaller_dim_clipping;
+			ortho_right = smaller_dim_clipping;
+			ortho_bottom = -larger_dim_clipping;
+			ortho_top = larger_dim_clipping;
+		}
+		else
+		{
+			ortho_left = -larger_dim_clipping;
+			ortho_right = larger_dim_clipping;
+			ortho_bottom = -smaller_dim_clipping;
+			ortho_top = smaller_dim_clipping;
+		}
+
+		projection_transform_include_front_half_globe.gl_ortho(
+				ortho_left, ortho_right,
+				ortho_bottom, ortho_top,
+				depth_in_front_of_globe,
+				depth_globe_centre + depth_epsilon_to_avoid_clipping_globe_circumference);
+
+		projection_transform_include_rear_half_globe.gl_ortho(
+				ortho_left, ortho_right,
+				ortho_bottom, ortho_top,
+				depth_globe_centre - depth_epsilon_to_avoid_clipping_globe_circumference,
+				depth_behind_globe);
+
+		projection_transform_include_full_globe.gl_ortho(
+				ortho_left, ortho_right,
+				ortho_bottom, ortho_top,
+				depth_in_front_of_globe,
+				depth_behind_globe);
+
+		projection_transform_include_stars.gl_ortho(
+				ortho_left, ortho_right,
+				ortho_bottom, ortho_top,
+				depth_in_front_of_globe,
+				depth_behind_globe_and_including_stars);
+
+		// The text overlay coordinates are specified in window coordinates.
+		// The near and far values only need to include z=0 so [-1,1] will do fine.
+		projection_transform_text_overlay.gl_ortho(
+				0, scene_view_width,
+				0, scene_view_height,
+				-1,
+				1);
+	}
 }
 
 
@@ -202,36 +323,32 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme,
 		QWidget *parent_):
 	QGLWidget(
-			GPlatesOpenGL::GLContext::get_qgl_format(),
+			GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with(),
 			parent_),
 	d_view_state(view_state),
 	d_gl_context(
 			GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)))),
+							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*this)))),
 	d_make_context_current(*d_gl_context),
-	d_gl_viewport(0, 0, width(), height()),
+	d_initialisedGL(false),
 	d_gl_visual_layers(
 			GPlatesOpenGL::GLVisualLayers::create(
 					d_gl_context, view_state.get_application_state())),
 	// The following unit-vector initialisation value is arbitrary.
 	d_virtual_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_pointer_is_on_globe(false),
-	d_text_renderer(
-			GPlatesGui::QGLWidgetTextRenderer::create(this)),
 	d_globe(
 			view_state,
 			d_gl_visual_layers,
 			view_state.get_rendered_geometry_collection(),
 			view_state.get_visual_layers(),
 			view_state.get_render_settings(),
-			d_text_renderer,
 			GPlatesGui::GlobeVisibilityTester(*this),
 			colour_scheme),
 	d_text_overlay(
 			new GPlatesGui::TextOverlay(
-				view_state.get_application_state(),
-				d_text_renderer))
+				view_state.get_application_state()))
 {
 	init();
 }
@@ -247,7 +364,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesGui::ColourScheme::non_null_ptr_type colour_scheme_,
 		QWidget *parent_) :
 	QGLWidget(
-			GPlatesOpenGL::GLContext::get_qgl_format(),
+			GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with(),
 			parent_,
 			// Share texture objects, vertex buffer objects, etc...
 			existing_globe_canvas),
@@ -255,13 +372,13 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_gl_context(isSharing() // Mirror the sharing of OpenGL context state (if sharing)...
 			? GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)),
+							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*this)),
 					*existing_globe_canvas->d_gl_context)
 			: GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContext::QGLWidgetImpl(*this)))),
+							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*this)))),
 	d_make_context_current(*d_gl_context),
-	d_gl_viewport(0, 0, width(), height()),
+	d_initialisedGL(false),
 	d_gl_visual_layers(
 			// Attempt to share OpenGL resources across contexts.
 			// This will depend on whether the two 'GLContext's share any state.
@@ -271,18 +388,14 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 					view_state_.get_application_state())),
 	d_virtual_mouse_pointer_pos_on_globe(virtual_mouse_pointer_pos_on_globe_),
 	d_mouse_pointer_is_on_globe(mouse_pointer_is_on_globe_),
-	d_text_renderer(
-			GPlatesGui::QGLWidgetTextRenderer::create(this)),
 	d_globe(
 			existing_globe_,
 			d_gl_visual_layers,
-			d_text_renderer,
 			GPlatesGui::GlobeVisibilityTester(*this),
 			colour_scheme_),
 	d_text_overlay(
 			new GPlatesGui::TextOverlay(
-				d_view_state.get_application_state(),
-				d_text_renderer))
+				d_view_state.get_application_state()))
 {
 	if (!isSharing())
 	{
@@ -300,6 +413,26 @@ GPlatesQtWidgets::GlobeCanvas::~GlobeCanvas()
 void
 GPlatesQtWidgets::GlobeCanvas::init()
 {
+	// Since we're using a QPainter inside 'paintEvent()' or more specifically 'paintGL()'
+	// (which is called from 'paintEvent()') then we turn off automatic swapping of the OpenGL
+	// front and back buffers after each 'paintGL()' call. This is because QPainter::end(),
+	// or QPainter's destructor, automatically calls QGLWidget::swapBuffers() if auto buffer swap
+	// is enabled - and this results in two calls to QGLWidget::swapBuffers() - one from QPainter
+	// and one from 'paintEvent()'. So we disable auto buffer swapping and explicitly call it ourself.
+	//
+	// Also we don't want to swap buffers when we're just rendering to a QImage (using OpenGL)
+	// and not rendering to the QGLWidget itself, otherwise the widget will have the wrong content.
+	setAutoBufferSwap(false);
+
+	// Don't fill the background - we already clear the background using OpenGL in 'render_scene()' anyway.
+	//
+	// NOTE: Also there's a problem where QPainter (used in 'paintGL()') uses the background role
+	// of the canvas widget to fill the background using glClearColor/glClear - but the clear colour
+	// does not get reset to black (default OpenGL state) in 'QPainter::beginNativePainting()' which
+	// GLRenderer requires (the default OpenGL state) and hence it assumes the clear colour is black
+	// when it is not - and hence the background (behind the globe) is *not* black.
+	setAutoFillBackground(false);
+
 	// QWidget::setMouseTracking:
 	//   If mouse tracking is disabled (the default), the widget only receives mouse move
 	//   events when at least one mouse button is pressed while the mouse is being moved.
@@ -344,52 +477,6 @@ GPlatesQtWidgets::GlobeCanvas::init()
 	handle_zoom_change();
 
 	setAttribute(Qt::WA_NoSystemBackground);
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::set_disable_update(
-		bool b)
-{
-	if(b)
-	{
-		QObject::disconnect(
-				&(d_view_state.get_rendered_geometry_collection()),
-				SIGNAL(collection_was_updated(
-						GPlatesViewOperations::RenderedGeometryCollection &,
-						GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
-				this,
-				SLOT(update_canvas()));
-		QObject::disconnect(
-				&(d_globe.orientation()), 
-				SIGNAL(orientation_changed()),
-				this, 
-				SLOT(notify_of_orientation_change()));
-		QObject::disconnect(
-				&(d_globe.orientation()), 
-				SIGNAL(orientation_changed()),
-				this, 
-				SLOT(force_mouse_pointer_pos_change()));
-	}
-	else
-	{
-		QObject::connect(
-				&(d_view_state.get_rendered_geometry_collection()),
-				SIGNAL(collection_was_updated(
-						GPlatesViewOperations::RenderedGeometryCollection &,
-						GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
-				this,
-				SLOT(update_canvas()));
-		QObject::connect(
-				&(d_globe.orientation()), 
-				SIGNAL(orientation_changed()),
-				this, 
-				SLOT(notify_of_orientation_change()));
-		QObject::connect(
-				&(d_globe.orientation()), 
-				SIGNAL(orientation_changed()),
-				this, 
-				SLOT(force_mouse_pointer_pos_change()));
-	}
 }
 
 GPlatesQtWidgets::GlobeCanvas *
@@ -498,41 +585,9 @@ GPlatesQtWidgets::GlobeCanvas::update_canvas()
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::draw_svg_output()
-{
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
-
-	// Start a begin_render/end_render scope.
-	//
-	// By default the current render target of 'renderer' is the main frame buffer (of the window).
-	//
-	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	//
-	// Pass in the viewport of the window currently attached to the OpenGL context.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, d_gl_viewport);
-
-	// Clear the colour and depth buffers of the main framebuffer.
-	renderer->gl_clear_depth(); // Clear depth to 1.0
-	renderer->gl_clear_color(); // Clear colour to (0,0,0,0).
-	renderer->gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// NOTE: We're setting 'd_gl_projection_transform_include_front_half_globe'
-	// not 'd_gl_projection_transform_include_full_globe'.
-	renderer->gl_load_matrix(GL_PROJECTION, d_gl_projection_transform_include_front_half_globe);
-	renderer->gl_load_matrix(GL_MODELVIEW, d_gl_model_view_transform);
-
-	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
-	// Paint the globe and its contents.
-	d_globe.paint_vector_output(
-			*renderer,
-			viewport_zoom_factor,
-			calculate_scale());
-}
-
-void
 GPlatesQtWidgets::GlobeCanvas::notify_of_orientation_change() 
 {
-	update();
+	update_canvas();
 }
 
 
@@ -575,10 +630,35 @@ GPlatesQtWidgets::GlobeCanvas::force_mouse_pointer_pos_change()
 
 
 void 
+GPlatesQtWidgets::GlobeCanvas::initializeGL_if_necessary() 
+{
+	// Return early if we've already initialised OpenGL.
+	// This is now necessary because it's not only 'paintEvent()' and other QGLWidget methods
+	// that call our 'initializeGL()' method - we also now it when a client wants to render the
+	// scene to an image (instead of render/update the QGLWidget itself).
+	if (d_initialisedGL)
+	{
+		return;
+	}
+
+	// Make sure the OpenGL context is current.
+	// We can't use 'd_gl_context' yet because it hasn't been initialised.
+	makeCurrent();
+
+	initializeGL();
+}
+
+
+void 
 GPlatesQtWidgets::GlobeCanvas::initializeGL() 
 {
 	// Initialise our context-like object first.
 	d_gl_context->initialise();
+
+	// Create the off-screen context that's used when rendering OpenGL outside the paint event.
+	d_gl_off_screen_context =
+			GPlatesOpenGL::GLOffScreenContext::create(
+					GPlatesOpenGL::GLOffScreenContext::QGLWidgetContext(this, d_gl_context));
 
 	//
 	// Set up the initial model-view transform.
@@ -594,15 +674,13 @@ GPlatesQtWidgets::GlobeCanvas::initializeGL()
 			0, 0, 0,  // centre
 			0, 0, 1); // up
 
-	// Beginning rendering so we can clear the framebuffer.
-	// By default the current render target of 'renderer' is the main frame buffer (of the window).
-	//
+	// Get a renderer - it'll be used to initialise some OpenGL objects.
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
 
 	// Start a begin_render/end_render scope.
 	// Pass in the viewport of the window currently attached to the OpenGL context.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, d_gl_viewport);
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
 
 	// NOTE: We don't actually 'glClear()' the framebuffer because:
 	//  1) It's not necessary to do this before calling Globe::initialiseGL(), and
@@ -613,6 +691,9 @@ GPlatesQtWidgets::GlobeCanvas::initializeGL()
 
 	// Initialise those parts of globe that require a valid OpenGL context to be bound.
 	d_globe.initialiseGL(*renderer);
+
+	// 'initializeGL()' should only be called once.
+	d_initialisedGL = true;
 }
 
 
@@ -632,69 +713,378 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 //	(  http://doc.trolltech.com/4.3/opengl-overpainting.html )
 //
 
+	// We use a QPainter (attached to the canvas) since it is used for (OpenGL) text rendering.
+	QPainter painter(this);
+
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
+
+	// Start a begin_render/end_render scope.
+	//
+	// By default the current render target of 'renderer' is the main frame buffer (of the window).
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	//
+	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
+	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, painter);
+
+	// Hold onto the previous frame's cached resources *while* generating the current frame.
+	d_gl_frame_cache_handle = render_scene(
+			*renderer,
+			d_gl_projection_transform_include_front_half_globe,
+			d_gl_projection_transform_include_rear_half_globe,
+			d_gl_projection_transform_include_full_globe,
+			d_gl_projection_transform_include_stars,
+			d_gl_projection_transform_text_overlay,
+			width(),
+			height());
+}
+
+
+QSize
+GPlatesQtWidgets::GlobeCanvas::get_viewport_size() const
+{
+	return QSize(width(), height());
+}
+
+
+QImage
+GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
+		boost::optional<QSize> image_size)
+{
+	// Initialise OpenGL if we haven't already.
+	initializeGL_if_necessary();
+
+	// We use a QPainter (attached to the canvas) since it is used for (OpenGL) text rendering.
+	QPainter painter(this);
+
+	// Start a render scope.
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	//
+	// Where possible, force drawing to an off-screen render target.
+	// It seems making the OpenGL context current is not enough to prevent Snow Leopard systems
+	// with ATI graphics from hanging/crashing - this appears to be due to modifying/accessing the
+	// main/default framebuffer (which is intimately tied to the windowing system).
+	// Using an off-screen render target appears to avoid this issue.
+	//
+	// Set the off-screen render target to the size of the QGLWidget main framebuffer.
+	// This is because we use QPainter to render text and it sets itself up using the dimensions
+	// of the main framebuffer - if we change the dimensions then the text is rendered incorrectly.
+	//
+	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
+	GPlatesOpenGL::GLOffScreenContext::RenderScope off_screen_render_scope(
+			*d_gl_off_screen_context.get(),
+			width(),
+			height(),
+			painter);
+
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = off_screen_render_scope.get_renderer();
+
+	if (!image_size)
 	{
-		//PROFILE_BLOCK("GlobeCanvas::paintGL");
+		image_size = get_viewport_size();
+	}
 
-		GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = d_gl_context->create_renderer();
+	// The image to render the scene into.
+	QImage image(image_size.get(), QImage::Format_ARGB32);
+	if (image.isNull())
+	{
+		// Most likely a memory allocation failure - return the null image.
+		return QImage();
+	}
 
-		// Start a begin_render/end_render scope.
-		//
-		// By default the current render target of 'renderer' is the main frame buffer (of the window).
-		//
-		// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-		//
-		// Pass in the viewport of the window currently attached to the OpenGL context.
-		GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer, d_gl_viewport);
+	// Fill the image with transparent black in case there's an exception during rendering
+	// of one of the tiles and the image is incomplete.
+	image.fill(QColor(0,0,0,0).rgba());
 
-		// Clear the colour buffer of the main framebuffer.
-		// NOTE: We leave the depth clears to class Globe since it can do multiple
-		// depth buffer clears per render depending on the projection matrices it uses.
-		renderer->gl_clear_color(); // Clear colour to (0,0,0,0).
-		renderer->gl_clear(GL_COLOR_BUFFER_BIT);
+	// Get the frame buffer dimensions.
+	const std::pair<unsigned int/*width*/, unsigned int/*height*/> frame_buffer_dimensions =
+			renderer->get_current_frame_buffer_dimensions();
 
-		// NOTE: We only set the model-view transform here.
-		// The projection transform is set inside the globe renderer.
-		// This is because there are two projection transforms (with differing far clip planes)
-		// and the choice is determined by the globe renderer.
-		renderer->gl_load_matrix(GL_MODELVIEW, d_gl_model_view_transform);
+	// The border is half the point size or line width, rounded up to nearest pixel.
+	// TODO: Use the actual maximum point size or line width to calculate this.
+	const unsigned int tile_border = 10;
+	// Set up for rendering the scene into tiles.
+	// The tile render target dimensions match the frame buffer dimensions.
+	GPlatesOpenGL::GLTileRender tile_render(
+			frame_buffer_dimensions.first/*tile_render_target_width*/,
+			frame_buffer_dimensions.second/*tile_render_target_height*/,
+			GPlatesOpenGL::GLViewport(
+					0,
+					0,
+					image_size->width(),
+					image_size->height())/*destination_viewport*/,
+			tile_border);
 
-		// We need to do this before any text rendering can occur (and it can inside 'Globe::paint').
-		GPlatesGui::TextRenderer::RenderScope text_render_scope(*d_text_renderer, renderer.get());
+	// Keep track of the cache handles of all rendered tiles.
+	boost::shared_ptr< std::vector<cache_handle_type> > frame_cache_handle(
+			new std::vector<cache_handle_type>());
 
-		const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
-		const float scale = calculate_scale();
-		//
-		// Paint the globe and its contents.
-		//
-		// NOTE: We hold onto the previous frame's cached resources *while* generating the current frame
-		// and then release our hold on the previous frame (by assigning the current frame's cache).
-		// This just prevents a render frame from re-using cached resources of the previous frame
-		// in order to avoid regenerating the same cached resources unnecessarily each frame.
-		// Since the view direction usually differs little from one frame to the next there is a lot
-		// of overlap that we want to reuse (and not recalculate).
-		//
-		d_gl_frame_cache_handle = d_globe.paint(
-				*renderer,
-				viewport_zoom_factor,
-				scale,
-				d_gl_projection_transform_include_front_half_globe,
-				d_gl_projection_transform_include_rear_half_globe,
-				d_gl_projection_transform_include_full_globe,
-				d_gl_projection_transform_include_stars);
+	// Render the scene tile-by-tile.
+	for (tile_render.first_tile(); !tile_render.finished(); tile_render.next_tile())
+	{
+		// Render the scene to the feedback paint device.
+		// This will use the main framebuffer for intermediate rendering in some cases.
+		// Hold onto the previous frame's cached resources *while* generating the current frame.
+		const cache_handle_type tile_cache_handle =	
+				render_scene_tile_into_image(*renderer, tile_render, image);
+		frame_cache_handle->push_back(tile_cache_handle);
+	}
 
-		// Paint the text overlay.
-		// NOTE: We do this after finishing our renderer framework scope because this painting
-		// is implemented by Qt (not us).
-		d_text_overlay->paint(
-				d_view_state.get_text_overlay_settings(),
-				width(),
-				height(),
-				scale);
+	// The previous cached resources were kept alive *while* in the rendering loop above.
+	d_gl_frame_cache_handle = frame_cache_handle;
 
-		// Finished text rendering.
-		text_render_scope.end_render();
+	return image;
+}
 
-		// At scope exit OpenGL should now be back in the default OpenGL state...
+
+GPlatesQtWidgets::GlobeCanvas::cache_handle_type
+GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
+		GPlatesOpenGL::GLRenderer &renderer,
+		const GPlatesOpenGL::GLTileRender &tile_render,
+		QImage &image)
+{
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	GPlatesOpenGL::GLViewport current_tile_render_target_viewport;
+	tile_render.get_tile_render_target_viewport(current_tile_render_target_viewport);
+
+	GPlatesOpenGL::GLViewport current_tile_render_target_scissor_rect;
+	tile_render.get_tile_render_target_scissor_rectangle(current_tile_render_target_scissor_rect);
+
+	// Mask off rendering outside the current tile region in case the tile is smaller than the
+	// render target. Note that the tile's viewport is slightly larger than the tile itself
+	// (the scissor rectangle) in order that fat points and wide lines just outside the tile
+	// have pixels rasterised inside the tile (the projection transform has also been expanded slightly).
+	//
+	// This includes 'gl_clear()' calls which clear the entire framebuffer.
+	renderer.gl_enable(GL_SCISSOR_TEST);
+	renderer.gl_scissor(
+			current_tile_render_target_scissor_rect.x(),
+			current_tile_render_target_scissor_rect.y(),
+			current_tile_render_target_scissor_rect.width(),
+			current_tile_render_target_scissor_rect.height());
+	renderer.gl_viewport(
+			current_tile_render_target_viewport.x(),
+			current_tile_render_target_viewport.y(),
+			current_tile_render_target_viewport.width(),
+			current_tile_render_target_viewport.height());
+
+	//
+	// Adjust the various projection transforms for the current tile.
+	//
+
+	const GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type projection_transform_tile =
+			tile_render.get_tile_projection_transform();
+	const GPlatesOpenGL::GLMatrix &projection_matrix_tile = projection_transform_tile->get_matrix();
+
+	// Calculate the projection matrices associated with the current image dimensions.
+	GPlatesOpenGL::GLMatrix tile_projection_transform_include_front_half_globe(projection_matrix_tile);
+	GPlatesOpenGL::GLMatrix tile_projection_transform_include_rear_half_globe(projection_matrix_tile);
+	GPlatesOpenGL::GLMatrix tile_projection_transform_include_full_globe(projection_matrix_tile);
+	GPlatesOpenGL::GLMatrix tile_projection_transform_include_stars(projection_matrix_tile);
+	GPlatesOpenGL::GLMatrix tile_projection_transform_text_overlay(projection_matrix_tile);
+	calc_scene_projection_transforms(
+			image.width(),
+			image.height(),
+			d_view_state.get_viewport_zoom().zoom_factor(),
+			tile_projection_transform_include_front_half_globe,
+			tile_projection_transform_include_rear_half_globe,
+			tile_projection_transform_include_full_globe,
+			tile_projection_transform_include_stars,
+			tile_projection_transform_text_overlay);
+
+	//
+	// Render the scene.
+	//
+	const cache_handle_type tile_cache_handle = render_scene(
+			renderer,
+			tile_projection_transform_include_front_half_globe,
+			tile_projection_transform_include_rear_half_globe,
+			tile_projection_transform_include_full_globe,
+			tile_projection_transform_include_stars,
+			tile_projection_transform_text_overlay,
+			image.width(),
+			image.height());
+
+	//
+	// Copy the rendered tile into the appropriate sub-rect of the image.
+	//
+
+	GPlatesOpenGL::GLViewport current_tile_source_viewport;
+	tile_render.get_tile_source_viewport(current_tile_source_viewport);
+
+	GPlatesOpenGL::GLViewport current_tile_destination_viewport;
+	tile_render.get_tile_destination_viewport(current_tile_destination_viewport);
+
+	GPlatesOpenGL::GLImageUtils::copy_rgba8_frame_buffer_into_argb32_qimage(
+			renderer,
+			image,
+			current_tile_source_viewport,
+			current_tile_destination_viewport);
+
+	return tile_cache_handle;
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
+		QPaintDevice &feedback_paint_device)
+{
+	// Initialise OpenGL if we haven't already.
+	initializeGL_if_necessary();
+
+	// Note that we're not rendering to the OpenGL canvas here.
+	// The OpenGL rendering gets redirected into the QPainter (using OpenGL feedback) and
+	// ends up in the specified paint device.
+	QPainter feedback_painter(&feedback_paint_device);
+
+	// Start a render scope.
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	//
+	// Where possible, force drawing to an off-screen render target.
+	// It seems making the OpenGL context current is not enough to prevent Snow Leopard systems
+	// with ATI graphics from hanging/crashing - this appears to be due to modifying/accessing the
+	// main/default framebuffer (which is intimately tied to the windowing system).
+	// Using an off-screen render target appears to avoid this issue.
+	//
+	// Set the off-screen render target to the size of the QGLWidget main framebuffer.
+	// This is because we use QPainter to render text and it sets itself up using the dimensions
+	// of the main framebuffer - actually that doesn't apply when painting to a device other than
+	// the main framebuffer (in our case the feedback paint device, eg, SVG) - but we'll leave the
+	// restriction in for now.
+	// TODO: change to a larger size render target for more efficient rendering.
+	//
+	// We're currently in an active QPainter so we need to let the GLRenderer know about that.
+	GPlatesOpenGL::GLOffScreenContext::RenderScope off_screen_render_scope(
+			*d_gl_off_screen_context.get(),
+			width(),
+			height(),
+			feedback_painter,
+			false/*paint_device_is_framebuffer*/);
+
+	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = off_screen_render_scope.get_renderer();
+
+	// Set the viewport (and scissor rectangle) to the size of the feedback paint device instead
+	// of the globe canvas because OpenGL feedback uses the viewport to generate projected vertices.
+	// Also text rendering uses the viewport.
+	// And we want all this to be positioned correctly within the feedback paint device.
+	renderer->gl_viewport(0, 0, feedback_paint_device.width(), feedback_paint_device.height());
+	renderer->gl_scissor(0, 0, feedback_paint_device.width(), feedback_paint_device.height());
+
+	// Calculate the projection matrices associated with the feedback paint device dimensions.
+	GPlatesOpenGL::GLMatrix projection_transform_include_front_half_globe;
+	GPlatesOpenGL::GLMatrix projection_transform_include_rear_half_globe;
+	GPlatesOpenGL::GLMatrix projection_transform_include_full_globe;
+	GPlatesOpenGL::GLMatrix projection_transform_include_stars;
+	GPlatesOpenGL::GLMatrix projection_transform_text_overlay;
+	calc_scene_projection_transforms(
+			feedback_paint_device.width(),
+			feedback_paint_device.height(),
+			d_view_state.get_viewport_zoom().zoom_factor(),
+			projection_transform_include_front_half_globe,
+			projection_transform_include_rear_half_globe,
+			projection_transform_include_full_globe,
+			projection_transform_include_stars,
+			projection_transform_text_overlay);
+
+	// Render the scene to the feedback paint device.
+	// This will use the main framebuffer for intermediate rendering in some cases.
+	// Hold onto the previous frame's cached resources *while* generating the current frame.
+	d_gl_frame_cache_handle = render_scene(
+			*renderer,
+			projection_transform_include_front_half_globe,
+			projection_transform_include_rear_half_globe,
+			projection_transform_include_full_globe,
+			projection_transform_include_stars,
+			projection_transform_text_overlay,
+			feedback_paint_device.width(),
+			feedback_paint_device.height());
+}
+
+
+GPlatesQtWidgets::GlobeCanvas::cache_handle_type
+GPlatesQtWidgets::GlobeCanvas::render_scene(
+		GPlatesOpenGL::GLRenderer &renderer,
+		const GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
+		const GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
+		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
+		const GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
+		const GPlatesOpenGL::GLMatrix &projection_transform_text_overlay,
+		int paint_device_width,
+		int paint_device_height)
+{
+	PROFILE_FUNC();
+
+	// Clear the colour buffer of the main framebuffer.
+	// NOTE: We leave the depth clears to class Globe since it can do multiple
+	// depth buffer clears per render depending on the projection matrices it uses.
+	renderer.gl_clear_color(); // Clear colour to (0,0,0,0).
+	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
+
+	// NOTE: We only set the model-view transform here.
+	// The projection transform is set inside the globe renderer.
+	// This is because there are two projection transforms (with differing far clip planes)
+	// and the choice is determined by the globe renderer.
+	renderer.gl_load_matrix(GL_MODELVIEW, d_gl_model_view_transform);
+
+	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
+	const float scale = calculate_scale();
+	//
+	// Paint the globe and its contents.
+	//
+	// NOTE: We hold onto the previous frame's cached resources *while* generating the current frame
+	// and then release our hold on the previous frame (by assigning the current frame's cache).
+	// This just prevents a render frame from invalidating cached resources of the previous frame
+	// in order to avoid regenerating the same cached resources unnecessarily each frame.
+	// Since the view direction usually differs little from one frame to the next there is a lot
+	// of overlap that we want to reuse (and not recalculate).
+	//
+	const cache_handle_type frame_cache_handle = d_globe.paint(
+			renderer,
+			viewport_zoom_factor,
+			scale,
+			projection_transform_include_front_half_globe,
+			projection_transform_include_rear_half_globe,
+			projection_transform_include_full_globe,
+			projection_transform_include_stars);
+
+	// The text overlay is rendered in screen window coordinates (ie, no model-view transform needed).
+	renderer.gl_load_matrix(GL_MODELVIEW, GPlatesOpenGL::GLMatrix::IDENTITY);
+	renderer.gl_load_matrix(GL_PROJECTION, projection_transform_text_overlay);
+
+	// Paint the text overlay.
+	// We use the paint device dimensions (and not the canvas dimensions) in case the paint device
+	// is not the canvas (eg, when rendering to a larger dimension SVG paint device).
+	d_text_overlay->paint(
+			renderer,
+			d_view_state.get_text_overlay_settings(),
+			paint_device_width,
+			paint_device_height,
+			scale);
+
+	return frame_cache_handle;
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::paintEvent(
+		QPaintEvent *paint_event)
+{
+// This paintEvent() method should be enabled, and the paintGL method disabled, when we wish to use Qt overpainting
+//  ( http://doc.trolltech.com/4.3/opengl-overpainting.html )
+
+	QGLWidget::paintEvent(paint_event);
+
+	// Explicitly swap the OpenGL front and back buffers.
+	// Note that we have already disabled auto buffer swapping because otherwise both the QPainter
+	// in 'paintGL()' and 'QGLWidget::paintEvent()' will call 'QGLWidget::swapBuffers()'
+	// essentially canceling each other out (or causing flickering).
+	if (doubleBuffer() && !autoBufferSwap())
+	{
+		swapBuffers();
 	}
 
 	// If d_mouse_press_info is not boost::none, then mouse is down.
@@ -878,7 +1268,7 @@ GPlatesQtWidgets::GlobeCanvas::handle_zoom_change()
 	//   This function does not cause an immediate repaint; instead it schedules a paint event
 	//   for processing when Qt returns to the main event loop.
 	//    -- http://doc.trolltech.com/4.3/qwidget.html#update
-	update();
+	update_canvas();
 
 	handle_mouse_pointer_pos_change();
 }
@@ -888,115 +1278,42 @@ void
 GPlatesQtWidgets::GlobeCanvas::set_view() 
 {
 	//
-	// Set up the initial viewport and projection transform.
+	// Set up the projection transforms for the current canvas dimensions.
 	//
-
-	// NOTE: The projection transform for SVG output is different than for regular OpenGL rendering.
-	// This is because the far clip plane differs (because SVG output ignores depth buffering -
-	// it uses the OpenGL feedback mechanism which bypasses rasterisation - and hence the
-	// opaque disc through the centre of the globe does not occlude vector geometry
-	// on the back side of the globe and hence is visible in the SVG output).
-	// The solution is to set the far clip plane to pass through the globe centre
-	// (effectively doing the equivalent of the opaque disc but in the transformation
-	// pipeline instead of the rasterisation pipeline).
-	//
-	// NOTE: We also use the far clip plane that passes through the globe's centre for
-	// regular OpenGL rendering when the globe is opaque (when the background colour's alpha
-	// is not transparent) because the projection transform is used by the raster rendering code
-	// to find the view frustum and this frustum is used to determine which raster tiles need
-	// rendering. By limiting the far clip plane to only what is visible we avoid generating
-	// raster tiles for the rear of the globe when they are not visible.
-	//
-	static const GLdouble eye_to_globe_centre_distance = EYE_POSITION.magnitude().dval();
-	// The 1.0 is the globe radius.
-	// The 0.5 is arbitrary and because we don't want to put the near clipping plane too close
-	// to the globe because some objects are outside the globe such as rendered arrows.
-	static const GLdouble depth_in_front_of_globe = eye_to_globe_centre_distance - 1.0 - 0.5;
-	static const GLdouble depth_behind_globe = eye_to_globe_centre_distance + 1.0 + 0.5;
-	// The stars need a far clip plane further away.
-	static const GLdouble depth_behind_globe_and_including_stars = depth_behind_globe + 10;
-	static const GLdouble depth_globe_centre = eye_to_globe_centre_distance;
-	// The 'depth_globe_centre' will need adjustment so that the circumference of the globe doesn't get clipped.
-	// Also the opaque sphere is now rendered as a flat disk facing the camera and
-	// positioned through the globe centre - so we don't want that to get clipped away either.
-	static const GLdouble depth_epsilon_to_avoid_clipping_globe_circumference = 0.0001;
 
 	// Always fill up all of the available space.
 	update_dimensions();
-	d_gl_viewport.set_viewport(
-			0, 0,
-			static_cast<GLsizei>(d_canvas_screen_width),
-			static_cast<GLsizei>(d_canvas_screen_height));
-	
-	// This is used for the coordinates of the symmetrical clipping planes which bound the
-	// smaller dimension.
-	GLdouble smaller_dim_clipping =
-			FRAMING_RATIO / d_view_state.get_viewport_zoom().zoom_factor();
 
-	// This is used for the coordinates of the symmetrical clipping planes which bound the
-	// larger dimension.
-	GLdouble dim_ratio = d_larger_dim / d_smaller_dim;
-	GLdouble larger_dim_clipping = smaller_dim_clipping * dim_ratio;
-
+	// Update the projection matrices.
 	d_gl_projection_transform_include_front_half_globe.gl_load_identity();
 	d_gl_projection_transform_include_rear_half_globe.gl_load_identity();
 	d_gl_projection_transform_include_full_globe.gl_load_identity();
 	d_gl_projection_transform_include_stars.gl_load_identity();
-
-	GLdouble ortho_left, ortho_right, ortho_bottom, ortho_top;
-	if (d_canvas_screen_width <= d_canvas_screen_height)
-	{
-		ortho_left = -smaller_dim_clipping;
-		ortho_right = smaller_dim_clipping;
-		ortho_bottom = -larger_dim_clipping;
-		ortho_top = larger_dim_clipping;
-	}
-	else
-	{
-		ortho_left = -larger_dim_clipping;
-		ortho_right = larger_dim_clipping;
-		ortho_bottom = -smaller_dim_clipping;
-		ortho_top = smaller_dim_clipping;
-	}
-
-	d_gl_projection_transform_include_front_half_globe.gl_ortho(
-		ortho_left, ortho_right,
-		ortho_bottom, ortho_top,
-		depth_in_front_of_globe,
-		depth_globe_centre + depth_epsilon_to_avoid_clipping_globe_circumference);
-
-	d_gl_projection_transform_include_rear_half_globe.gl_ortho(
-		ortho_left, ortho_right,
-		ortho_bottom, ortho_top,
-		depth_globe_centre - depth_epsilon_to_avoid_clipping_globe_circumference,
-		depth_behind_globe);
-
-	d_gl_projection_transform_include_full_globe.gl_ortho(
-		ortho_left, ortho_right,
-		ortho_bottom, ortho_top,
-		depth_in_front_of_globe,
-		depth_behind_globe);
-
-	d_gl_projection_transform_include_stars.gl_ortho(
-		ortho_left, ortho_right,
-		ortho_bottom, ortho_top,
-		depth_in_front_of_globe,
-		depth_behind_globe_and_including_stars);
+	d_gl_projection_transform_text_overlay.gl_load_identity();
+	calc_scene_projection_transforms(
+			width(),
+			height(),
+			d_view_state.get_viewport_zoom().zoom_factor(),
+			d_gl_projection_transform_include_front_half_globe,
+			d_gl_projection_transform_include_rear_half_globe,
+			d_gl_projection_transform_include_full_globe,
+			d_gl_projection_transform_include_stars,
+			d_gl_projection_transform_text_overlay);
 }
 
 
 void
 GPlatesQtWidgets::GlobeCanvas::update_dimensions() 
 {
-	d_canvas_screen_width = width();
-	d_canvas_screen_height = height();
-
-	if (d_canvas_screen_width <= d_canvas_screen_height) {
-		d_smaller_dim = static_cast<GLdouble>(d_canvas_screen_width);
-		d_larger_dim = static_cast<GLdouble>(d_canvas_screen_height);
-	} else {
-		d_smaller_dim = static_cast<GLdouble>(d_canvas_screen_height);
-		d_larger_dim = static_cast<GLdouble>(d_canvas_screen_width);
+	if (width() <= height())
+	{
+		d_smaller_dim = static_cast<GLdouble>(width());
+		d_larger_dim = static_cast<GLdouble>(height());
+	}
+	else
+	{
+		d_smaller_dim = static_cast<GLdouble>(height());
+		d_larger_dim = static_cast<GLdouble>(width());
 	}
 }
 
@@ -1017,7 +1334,7 @@ GPlatesQtWidgets::GlobeCanvas::get_universe_coord_y(
 		int screen_x) const
 {
 	// Scale the screen to a "unit square".
-	double y_pos = (2.0 * screen_x - d_canvas_screen_width) / d_smaller_dim;
+	double y_pos = (2.0 * screen_x - width()) / d_smaller_dim;
 
 	return (y_pos * FRAMING_RATIO / d_view_state.get_viewport_zoom().zoom_factor());
 }
@@ -1028,30 +1345,11 @@ GPlatesQtWidgets::GlobeCanvas::get_universe_coord_z(
 		int screen_y) const
 {
 	// Scale the screen to a "unit square".
-	double z_pos = (d_canvas_screen_height - 2.0 * screen_y) / d_smaller_dim;
+	double z_pos = (height() - 2.0 * screen_y) / d_smaller_dim;
 	
 	return (z_pos * FRAMING_RATIO / d_view_state.get_viewport_zoom().zoom_factor());
 }
 
-
-#if 0
-void
-GPlatesQtWidgets::GlobeCanvas::paintEvent(QPaintEvent *paint_event)
-{
-// This paintEvent() method should be enabled, and the paintGL method disabled, when we wish to use Qt overpainting
-//  ( http://doc.trolltech.com/4.3/opengl-overpainting.html )
-
-	qglClearColor(Qt::black);
-
-	QPainter painter;
-	painter.begin(this);
-
-	painter.setRenderHint(QPainter::Antialiasing);
-
-	painter.end();
-
-}
-#endif
 
 #if 0
 void
@@ -1130,13 +1428,6 @@ GPlatesQtWidgets::GlobeCanvas::draw_colour_legend(
 #endif
 
 void
-GPlatesQtWidgets::GlobeCanvas::create_svg_output(
-	QString filename)
-{
-	GPlatesGui::SvgExport::create_svg_output(filename,this);
-}
-
-void
 GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
 	const GPlatesMaths::LatLonPoint &desired_centre)
 {
@@ -1212,12 +1503,6 @@ GPlatesQtWidgets::GlobeCanvas::calculate_scale()
 	int min_dimension = (std::min)(size().width(), size().height());
 	return static_cast<float>(min_dimension) /
 		static_cast<float>(d_view_state.get_main_viewport_min_dimension());
-}
-
-QImage
-GPlatesQtWidgets::GlobeCanvas::grab_frame_buffer()
-{
-	return grabFrameBuffer();
 }
 
 void

@@ -34,6 +34,7 @@
 #include <vector>
 
 #include "OpaqueData.h"
+#include "app-logic/ReconstructContext.h"
 
 namespace GPlatesAppLogic
 {

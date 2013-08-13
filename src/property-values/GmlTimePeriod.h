@@ -226,6 +226,19 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
+		 * Determine whether @a geo_time lies within the temporal span of this GmlTimePeriod instance.
+		 *
+		 * This is an overloaded version of the above method.
+		 */
+		bool
+		contains(
+				const double &geo_time) const
+		{
+			return contains(GeoTimeInstant(geo_time));
+		}
+
+
+		/**
 		 * Returns the structural type associated with this property value class.
 		 */
 		virtual

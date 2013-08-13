@@ -62,6 +62,17 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructionFeatureProperties();
 
+
+		/**
+		 * Returns the reconstruction time passed into constructor, or boost::none if none passed in.
+		 */
+		const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
+		get_reconstruction_time() const
+		{
+			return d_recon_time;
+		}
+
+
 		/**
 		 * Returns true unless a "gml:validTime" property in the feature has
 		 * a time period that does not include the time passed into constructor
@@ -132,6 +143,7 @@ namespace GPlatesAppLogic
 		{
 			return d_time_of_dissappearance;
 		}
+
 
 		virtual
 		void

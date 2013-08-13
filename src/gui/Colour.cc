@@ -273,6 +273,19 @@ GPlatesGui::Colour::linearly_interpolate(
 
 
 GPlatesGui::Colour
+GPlatesGui::Colour::modulate(
+		const Colour &first,
+		const Colour &second)
+{
+	return Colour(
+			static_cast<GLfloat>(first.red()   * second.red()),
+			static_cast<GLfloat>(first.green() * second.green()),
+			static_cast<GLfloat>(first.blue()  * second.blue()),
+			static_cast<GLfloat>(first.alpha() * second.alpha()));
+}
+
+
+GPlatesGui::Colour
 GPlatesGui::Colour::from_cmyk(
 		const CMYKColour &cmyk)
 {

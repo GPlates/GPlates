@@ -40,6 +40,9 @@
 #include "MapRenderedGeometryLayerPainter.h"
 #include "MapProjection.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "maths/EllipseGenerator.h"
 #include "maths/GreatCircle.h"
 #include "maths/MathsUtils.h"
@@ -53,6 +56,8 @@
 #include "opengl/GLRenderer.h"
 
 #include "view-operations/RenderedArrowedPolyline.h"
+#include "view-operations/RenderedColouredEdgeSurfaceMesh.h"
+#include "view-operations/RenderedColouredTriangleSurfaceMesh.h"
 #include "view-operations/RenderedCrossSymbol.h"
 #include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedEllipse.h"
@@ -205,15 +210,13 @@ GPlatesGui::MapRenderedGeometryLayerPainter::MapRenderedGeometryLayerPainter(
 		const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const double &inverse_viewport_zoom_factor,
-		RenderSettings &render_settings,
-		const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
+		const RenderSettings &render_settings,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_map_projection(map_projection),
 	d_rendered_geometry_layer(rendered_geometry_layer),
 	d_gl_visual_layers(gl_visual_layers),
 	d_inverse_zoom_factor(inverse_viewport_zoom_factor),
 	d_render_settings(render_settings),
-	d_text_renderer_ptr(text_renderer_ptr),
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f),
 	d_dateline_wrapper(GPlatesMaths::DateLineWrapper::create()),
@@ -249,8 +252,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint(
 	visit_rendered_geometries(renderer);
 
 	// Do the actual painting.
-	const cache_handle_type layer_cache =
-			layer_painter.end_painting(renderer, *d_text_renderer_ptr, d_scale);
+	const cache_handle_type layer_cache = layer_painter.end_painting(renderer, d_scale);
 
 	// We no longer have a layer painter.
 	d_layer_painter = boost::none;
@@ -390,22 +392,24 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polygon_on_sphere(
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
 			rendered_polygon_on_sphere.get_polygon_on_sphere();
 
-#if 0 // TODO: Implement filled polygons in map view.
 	if (rendered_polygon_on_sphere.get_is_filled())
 	{
-		GPlatesOpenGL::GLMultiResolutionFilledPolygons::filled_polygons_type &filled_polygons =
-				d_layer_painter->translucent_drawables_on_the_sphere.get_filled_polygons();
+		GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type &filled_polygons =
+				d_layer_painter->translucent_drawables_on_the_sphere.get_filled_polygons_map_view();
 
-		// Add the filled polygon at the current location (if any) in the rendered geometries spatial partition.
-		filled_polygons.add_filled_polygon(
-				*polygon_on_sphere,
-				Colour::to_rgba8(colour.get()),
-				boost::none/*transform*/,
-				d_current_cube_quad_tree_location);
+		// Modulate with the fill modulate colour.
+		const Colour fill_colour = Colour::modulate(
+				colour.get(),
+				rendered_polygon_on_sphere.get_fill_modulate_colour());
+
+		// Dateline wrap and project the polygon and render each wrapped polygon as a filled polygon.
+		paint_fill_geometry<GPlatesMaths::PolygonOnSphere>(
+				filled_polygons,
+				polygon_on_sphere,
+				fill_colour);
 
 		return;
 	}
-#endif
 
 	const float line_width =
 			rendered_polygon_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
@@ -432,6 +436,28 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 		return;
 	}
 
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
+			rendered_polyline_on_sphere.get_polyline_on_sphere();
+
+	if (rendered_polyline_on_sphere.get_is_filled())
+	{
+		GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type &filled_polygons =
+				d_layer_painter->translucent_drawables_on_the_sphere.get_filled_polygons_map_view();
+
+		// Modulate with the fill modulate colour.
+		const Colour fill_colour = Colour::modulate(
+				colour.get(),
+				rendered_polyline_on_sphere.get_fill_modulate_colour());
+
+		// Dateline wrap and project the polygon and render each wrapped polygon as a filled polygon.
+		paint_fill_geometry<GPlatesMaths::PolylineOnSphere>(
+				filled_polygons,
+				polyline_on_sphere,
+				fill_colour);
+
+		return;
+	}
+
 	const float line_width =
 			rendered_polyline_on_sphere.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 
@@ -439,14 +465,175 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_polyline_on_sphere(
 	stream_primitives_type &stream =
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
-			rendered_polyline_on_sphere.get_polyline_on_sphere();
-
 	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(polyline_on_sphere, colour.get(), stream);
 }
 
+
+
 void
-GPlatesGui::MapRenderedGeometryLayerPainter::visit_resolved_raster(
+GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_edge_surface_mesh(
+	const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh &rendered_coloured_edge_surface_mesh)
+{
+	const float line_width =
+			rendered_coloured_edge_surface_mesh.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	// Get the stream for lines of the current line width.
+	stream_primitives_type &stream =
+			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+
+	typedef GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh mesh_type;
+
+	const mesh_type::edge_seq_type &mesh_edges =
+			rendered_coloured_edge_surface_mesh.get_mesh_edges();
+	const mesh_type::vertex_seq_type &mesh_vertices =
+			rendered_coloured_edge_surface_mesh.get_mesh_vertices();
+
+	// Iterate over the mesh edges.
+	mesh_type::edge_seq_type::const_iterator mesh_edges_iter = mesh_edges.begin();
+	mesh_type::edge_seq_type::const_iterator mesh_edges_end = mesh_edges.end();
+	for ( ; mesh_edges_iter != mesh_edges_end; ++mesh_edges_iter)
+	{
+		const mesh_type::Edge &mesh_edge = *mesh_edges_iter;
+
+		boost::optional<Colour> colour = mesh_edge.colour.get_colour(d_colour_scheme);
+		if (!colour)
+		{
+			continue;
+		}
+
+		// Create a polyline with two points for the current edge.
+		const GPlatesMaths::PointOnSphere edge_points[2] =
+		{
+			mesh_vertices[mesh_edge.vertex_indices[0]],
+			mesh_vertices[mesh_edge.vertex_indices[1]]
+		};
+		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type edge =
+				GPlatesMaths::PolylineOnSphere::create_on_heap(
+						edge_points,
+						edge_points + 2);
+
+		// Paint the current single great circle arc edge (it might get dateline wrapped and
+		// tessellated into smaller arcs).
+		paint_line_geometry<GPlatesMaths::PolylineOnSphere>(edge, colour.get(), stream);
+	}
+}
+
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_surface_mesh(
+		const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh &rendered_coloured_triangle_surface_mesh)
+{
+	GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type &filled_polygons =
+			d_layer_painter->translucent_drawables_on_the_sphere.get_filled_polygons_map_view();
+
+	filled_polygons.begin_filled_triangle_mesh();
+
+	typedef GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh mesh_type;
+
+	const mesh_type::triangle_seq_type &mesh_triangles =
+			rendered_coloured_triangle_surface_mesh.get_mesh_triangles();
+	const mesh_type::vertex_seq_type &mesh_vertices =
+			rendered_coloured_triangle_surface_mesh.get_mesh_vertices();
+
+	// Iterate over the mesh triangles.
+	mesh_type::triangle_seq_type::const_iterator mesh_triangles_iter = mesh_triangles.begin();
+	mesh_type::triangle_seq_type::const_iterator mesh_triangles_end = mesh_triangles.end();
+	for ( ; mesh_triangles_iter != mesh_triangles_end; ++mesh_triangles_iter)
+	{
+		const mesh_type::Triangle &mesh_triangle = *mesh_triangles_iter;
+
+		boost::optional<Colour> colour = mesh_triangle.colour.get_colour(d_colour_scheme);
+		if (!colour)
+		{
+			continue;
+		}
+
+		// Create a PolygonOnSphere for the current triangle so we can pass it through the
+		// dateline wrapping and projection code.
+		const GPlatesMaths::PointOnSphere triangle_points[3] =
+		{
+			mesh_vertices[mesh_triangle.vertex_indices[0]],
+			mesh_vertices[mesh_triangle.vertex_indices[1]],
+			mesh_vertices[mesh_triangle.vertex_indices[2]]
+		};
+		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type triangle_polygon =
+				GPlatesMaths::PolygonOnSphere::create_on_heap(
+						triangle_points,
+						triangle_points + 3);
+
+		DatelineWrappedProjectedLineGeometry dateline_wrapped_projected_triangle;
+		dateline_wrap_and_project_line_geometry<GPlatesMaths::PolygonOnSphere>(
+				dateline_wrapped_projected_triangle,
+				triangle_polygon);
+
+		const std::vector<unsigned int> &geometries =
+				dateline_wrapped_projected_triangle.get_geometries();
+		const unsigned int num_geometries = geometries.size();
+		if (num_geometries == 0)
+		{
+			// Continue to the next triangle if there's nothing to paint - shouldn't really be able to get here.
+			continue;
+		}
+
+		unsigned int great_circle_arc_index = 0;
+		const std::vector<unsigned int> &great_circle_arcs =
+				dateline_wrapped_projected_triangle.get_great_circle_arcs();
+
+		unsigned int projected_vertex_index = 0;
+		const std::vector<QPointF> &projected_vertices =
+				dateline_wrapped_projected_triangle.get_vertices();
+
+		// Iterate over the dateline wrapped geometries.
+		for (unsigned int geometry_index = 0; geometry_index < num_geometries; ++geometry_index)
+		{
+			std::vector<QPointF> filled_triangle_geometry;
+
+			// Note that the dateline wrapper ensures the first great circle arc of each
+			// wrapped geometry contains at least two vertices.
+
+			// Iterate over the great circle arcs of the current geometry.
+			for ( ; great_circle_arc_index < geometries[geometry_index]; ++great_circle_arc_index)
+			{
+				// Iterate over the vertices of the current great circle arc.
+				for ( ; projected_vertex_index < great_circle_arcs[great_circle_arc_index]; ++projected_vertex_index)
+				{
+					filled_triangle_geometry.push_back(projected_vertices[projected_vertex_index]);
+				}
+			}
+
+			// If the dateline wrapped geometry remains a triangle (ie, same as before dateline wrapping)
+			// then add it to the current triangle mesh drawable since it results in faster rendering.
+			// Otherwise start a new polygon drawable (since it's not a triangle and could be concave).
+			// We test for 4 vertices instead of 3 for a triangle because the dateline wrapping code
+			// iterates over great circle arcs and outputs a vertex at beginning of first GCA and
+			// also at end of last GCA (which is a duplicate vertex for a closed polygon).
+			if (filled_triangle_geometry.size() == 4)
+			{
+				filled_polygons.add_filled_triangle_to_mesh(
+						filled_triangle_geometry[0],
+						filled_triangle_geometry[1],
+						filled_triangle_geometry[2],
+						colour.get());
+			}
+			else
+			{
+				// End the current mesh drawable.
+				filled_polygons.end_filled_triangle_mesh();
+
+				// Add the filled polygon geometry.
+				filled_polygons.add_filled_polygon(filled_triangle_geometry, colour.get());
+
+				// Start a new mesh drawable.
+				filled_polygons.begin_filled_triangle_mesh();
+			}
+		}
+	}
+
+	// End the current filled mesh.
+	filled_polygons.end_filled_triangle_mesh();
+}
+
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_resolved_raster(
 		const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster)
 {
 	// Queue the raster primitive for painting.
@@ -454,7 +641,8 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_resolved_raster(
 			LayerPainter::RasterDrawable(
 					rendered_resolved_raster.get_resolved_raster(),
 					rendered_resolved_raster.get_raster_colour_palette(),
-					rendered_resolved_raster.get_raster_modulate_colour()));
+					rendered_resolved_raster.get_raster_modulate_colour(),
+					rendered_resolved_raster.get_normal_map_height_field_scale_factor()));
 }
 
 void
@@ -466,22 +654,19 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_string(
 		return;
 	}
 
-	if (d_text_renderer_ptr)
-	{
-		// Get the projected text position.
-		const QPointF proj_pos = get_projected_unwrapped_position(rendered_string.get_point_on_sphere());
+	// Get the projected text position.
+	const QPointF proj_pos = get_projected_unwrapped_position(rendered_string.get_point_on_sphere());
 
-		d_layer_painter->text_drawables_2D.push_back(
-				LayerPainter::TextDrawable2D(
-						rendered_string.get_string(),
-						rendered_string.get_font(),
-						proj_pos.x(),
-						proj_pos.y(),
-						rendered_string.get_x_offset(),
-						rendered_string.get_y_offset(),
-						get_colour_of_rendered_geometry(rendered_string),
-						rendered_string.get_shadow_colour().get_colour(d_colour_scheme)));
-	}
+	d_layer_painter->text_drawables_2D.push_back(
+			LayerPainter::TextDrawable2D(
+					rendered_string.get_string(),
+					rendered_string.get_font(),
+					proj_pos.x(),
+					proj_pos.y(),
+					rendered_string.get_x_offset(),
+					rendered_string.get_y_offset(),
+					get_colour_of_rendered_geometry(rendered_string),
+					rendered_string.get_shadow_colour().get_colour(d_colour_scheme)));
 }
 
 void
@@ -999,11 +1184,9 @@ GPlatesGui::MapRenderedGeometryLayerPainter::get_colour_of_rendered_geometry(
 
 template <typename LineGeometryType>
 void
-GPlatesGui::MapRenderedGeometryLayerPainter::paint_line_geometry(
-		const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry,
-		const Colour &colour,
-		stream_primitives_type &lines_stream,
-		boost::optional<double> arrow_head_size)
+GPlatesGui::MapRenderedGeometryLayerPainter::dateline_wrap_and_project_line_geometry(
+		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+		const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry)
 {
 	// If the bounding small circle of the line geometry (in the central meridian reference frame)
 	// intersects the dateline then it's possible the line geometry does to (and hence needs wrapping).
@@ -1030,66 +1213,49 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_line_geometry(
 		{
 			// If it's a wrapped polygon (not a polyline) then add the start point to the end
 			// in order to close the loop - we need to do this because we're iterating over
-			// vertices not arcs like the 'paint_unwrapped_line_geometry()' method is.
+			// vertices not arcs like the 'project_and_tessellate_unwrapped_line_geometry()' method is.
 			if (boost::is_same<LineGeometryType, GPlatesMaths::PolygonOnSphere>::value)
 			{
 				wrapped_line_geometry->push_back(wrapped_line_geometry->front());
 			}
 
-			paint_wrapped_line_geometry(
+			project_and_tessellate_wrapped_line_geometry(
+					dateline_wrapped_projected_line_geometry,
 					wrapped_line_geometry->begin(),
-					wrapped_line_geometry->end(),
-					colour,
-					lines_stream,
-					arrow_head_size);
+					wrapped_line_geometry->end());
 		}
 
 		return;
 	}
 
-	// The line geometry does not need any wrapping so we can just paint it without wrapping
+	// The line geometry does not need any wrapping so we can just project it without wrapping
 	// and its associated rotation adjustments.
-	paint_unwrapped_line_geometry(
+	project_and_tessellate_unwrapped_line_geometry(
+			dateline_wrapped_projected_line_geometry,
 			line_geometry->begin(),
-			line_geometry->end(),
-			colour,
-			lines_stream,
-			arrow_head_size);
+			line_geometry->end());
 }
 
 
 template <typename LatLonPointForwardIter>
 void
-GPlatesGui::MapRenderedGeometryLayerPainter::paint_wrapped_line_geometry(
+GPlatesGui::MapRenderedGeometryLayerPainter::project_and_tessellate_wrapped_line_geometry(
+		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
 		const LatLonPointForwardIter &begin_lat_lon_points,
-		const LatLonPointForwardIter &end_lat_lon_points,
-		const Colour &colour,
-		stream_primitives_type &lines_stream,
-		boost::optional<double> arrow_head_size)
+		const LatLonPointForwardIter &end_lat_lon_points)
 {
 	if (begin_lat_lon_points == end_lat_lon_points)
 	{
 		return;
 	}
 
-	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
-
-	// Used to add line strips to the stream.
-	stream_primitives_type::LineStrips stream_line_strips(lines_stream);
-
-	stream_line_strips.begin_line_strip();
-
 	// Initialise for arc iteration.
 	GPlatesMaths::LatLonPoint arc_start_lat_lon_point = *begin_lat_lon_points;
 	GPlatesMaths::PointOnSphere arc_start_point_on_sphere = make_point_on_sphere(arc_start_lat_lon_point);
 
 	// Add the first vertex of the sequence of points.
-	// NOTE: We're adding the original wrapped lat/lon point (ie, correctly wrapped).
-	// Keep track of the last projected point to calculate arrow head tangent direction.
-	QPointF last_projected_point = get_projected_wrapped_position(arc_start_lat_lon_point);
-	const coloured_vertex_type first_vertex(last_projected_point.x(), last_projected_point.y(), 0/*z*/, rgba8_color);
-	stream_line_strips.add_vertex(first_vertex);
+	dateline_wrapped_projected_line_geometry.add_vertex(
+			get_projected_wrapped_position(arc_start_lat_lon_point));
 
 	// Iterate over the line geometry points.
 	for (LatLonPointForwardIter lat_lon_points_iter = begin_lat_lon_points;
@@ -1139,11 +1305,8 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_wrapped_line_geometry(
 							convert_rad_to_deg(tess_latitude).dval(),
 							arc_start_point_longitude.dval());
 
-					// Keep track of the last projected point to calculate arrow head tangent direction.
-					last_projected_point = get_projected_wrapped_position(tess_lat_lon);
-					const coloured_vertex_type tess_vertex(
-							last_projected_point.x(), last_projected_point.y(), 0/*z*/, rgba8_color);
-					stream_line_strips.add_vertex(tess_vertex);
+					dateline_wrapped_projected_line_geometry.add_vertex(
+							get_projected_wrapped_position(tess_lat_lon));
 				}
 			}
 			else // arc is *not* entirely on the dateline (although one of the end points could be) ...
@@ -1156,70 +1319,43 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_wrapped_line_geometry(
 					// dateline and hence are relatively safe from wrapping problems.
 					const GPlatesMaths::LatLonPoint tess_lat_lon = make_lat_lon_point(tess_points[n]);
 
-					// Keep track of the last projected point to calculate arrow head tangent direction.
-					last_projected_point = get_projected_wrapped_position(tess_lat_lon);
-					const coloured_vertex_type tess_vertex(
-							last_projected_point.x(), last_projected_point.y(), 0/*z*/, rgba8_color);
-					stream_line_strips.add_vertex(tess_vertex);
+					dateline_wrapped_projected_line_geometry.add_vertex(
+							get_projected_wrapped_position(tess_lat_lon));
 				}
 			}
 		}
 
 		// Vertex representing the projected arc end point's position and colour.
 		// NOTE: We're adding the original wrapped lat/lon point (ie, correctly wrapped).
-		const QPointF projected_gca_end_point = get_projected_wrapped_position(arc_end_lat_lon_point);
-		const coloured_vertex_type end_vertex(
-				projected_gca_end_point.x(), projected_gca_end_point.y(), 0/*z*/, rgba8_color);
-		stream_line_strips.add_vertex(end_vertex);
+		dateline_wrapped_projected_line_geometry.add_vertex(
+				get_projected_wrapped_position(arc_end_lat_lon_point));
 
-		// If we need to draw an arrow head at the end of each great circle arc segment...
-		if (arrow_head_size)
-		{
-			paint_arrow_head(
-					projected_gca_end_point,
-					// Our best estimate of the arrow direction tangent at the GCA end point...
-					projected_gca_end_point - last_projected_point,
-					arrow_head_size.get(),
-					rgba8_color);
-		}
+		dateline_wrapped_projected_line_geometry.add_great_circle_arc();
 
 		arc_start_lat_lon_point = arc_end_lat_lon_point;
 		arc_start_point_on_sphere = arc_end_point_on_sphere;
-		// Keep track of the last projected point to calculate arrow head tangent direction.
-		last_projected_point = projected_gca_end_point;
 	}
 
-	stream_line_strips.end_line_strip();
+	dateline_wrapped_projected_line_geometry.add_geometry();
 }
 
 
 template <typename GreatCircleArcForwardIter>
 void
-GPlatesGui::MapRenderedGeometryLayerPainter::paint_unwrapped_line_geometry(
+GPlatesGui::MapRenderedGeometryLayerPainter::project_and_tessellate_unwrapped_line_geometry(
+		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
 		const GreatCircleArcForwardIter &begin_arcs,
-		const GreatCircleArcForwardIter &end_arcs,
-		const Colour &colour,
-		stream_primitives_type &lines_stream,
-		boost::optional<double> arrow_head_size)
+		const GreatCircleArcForwardIter &end_arcs)
 {
 	if (begin_arcs == end_arcs)
 	{
 		return;
 	}
 
-	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
-
-	// Used to add line strips to the stream.
-	stream_primitives_type::LineStrips stream_line_strips(lines_stream);
-
-	stream_line_strips.begin_line_strip();
-
 	// Add the first vertex of the sequence of great circle arcs.
 	// Keep track of the last projected point to calculate arrow head tangent direction.
-	QPointF last_projected_point = get_projected_unwrapped_position(begin_arcs->start_point());
-	const coloured_vertex_type first_vertex(last_projected_point.x(), last_projected_point.y(), 0/*z*/, rgba8_color);
-	stream_line_strips.add_vertex(first_vertex);
+	dateline_wrapped_projected_line_geometry.add_vertex(
+			get_projected_unwrapped_position(begin_arcs->start_point()));
 
 	// Iterate over the great circle arcs.
 	for (GreatCircleArcForwardIter gca_iter = begin_arcs ; gca_iter != end_arcs; ++gca_iter)
@@ -1238,35 +1374,155 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_unwrapped_line_geometry(
 			for (unsigned int n = 1; n < tess_points.size() - 1; ++n)
 			{
 				// Keep track of the last projected point to calculate arrow head tangent direction.
-				last_projected_point = get_projected_unwrapped_position(tess_points[n]);
-				const coloured_vertex_type tess_vertex(
-						last_projected_point.x(), last_projected_point.y(), 0/*z*/, rgba8_color);
-				stream_line_strips.add_vertex(tess_vertex);
+				dateline_wrapped_projected_line_geometry.add_vertex(
+						get_projected_unwrapped_position(tess_points[n]));
 			}
 		}
 
 		// Vertex representing the end point's position and colour.
-		const QPointF projected_gca_end_point = get_projected_unwrapped_position(gca.end_point());
-		const coloured_vertex_type end_vertex(
-				projected_gca_end_point.x(), projected_gca_end_point.y(), 0/*z*/, rgba8_color);
-		stream_line_strips.add_vertex(end_vertex);
+		dateline_wrapped_projected_line_geometry.add_vertex(
+				get_projected_unwrapped_position(gca.end_point()));
 
-		// If we need to draw an arrow head at the end of each great circle arc segment...
-		if (arrow_head_size)
-		{
-			paint_arrow_head(
-					projected_gca_end_point,
-					// Our best estimate of the arrow direction tangent at the GCA end point...
-					projected_gca_end_point - last_projected_point,
-					arrow_head_size.get(),
-					rgba8_color);
-		}
-
-		// Keep track of the last projected point to calculate arrow head tangent direction.
-		last_projected_point = projected_gca_end_point;
+		dateline_wrapped_projected_line_geometry.add_great_circle_arc();
 	}
 
-	stream_line_strips.end_line_strip();
+	dateline_wrapped_projected_line_geometry.add_geometry();
+}
+
+
+template <typename LineGeometryType>
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::paint_fill_geometry(
+		GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type &filled_polygons,
+		const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry,
+		const Colour &colour)
+{
+	DatelineWrappedProjectedLineGeometry dateline_wrapped_projected_line_geometry;
+	dateline_wrap_and_project_line_geometry<LineGeometryType>(
+			dateline_wrapped_projected_line_geometry,
+			line_geometry);
+
+	const std::vector<unsigned int> &geometries = dateline_wrapped_projected_line_geometry.get_geometries();
+	const unsigned int num_geometries = geometries.size();
+	if (num_geometries == 0)
+	{
+		// Return early if there's nothing to paint - shouldn't really be able to get here.
+		return;
+	}
+
+	unsigned int great_circle_arc_index = 0;
+	const std::vector<unsigned int> &great_circle_arcs =
+			dateline_wrapped_projected_line_geometry.get_great_circle_arcs();
+
+	unsigned int vertex_index = 0;
+	const std::vector<QPointF> &vertices =
+			dateline_wrapped_projected_line_geometry.get_vertices();
+
+	// Iterate over the dateline wrapped geometries.
+	for (unsigned int geometry_index = 0; geometry_index < num_geometries; ++geometry_index)
+	{
+		std::vector<QPointF> filled_polygon_geometry;
+
+		// Note that the dateline wrapper ensures the first great circle arc of each wrapped geometry
+		// contains at least two vertices.
+
+		// Iterate over the great circle arcs of the current geometry.
+		for ( ; great_circle_arc_index < geometries[geometry_index]; ++great_circle_arc_index)
+		{
+			// Iterate over the vertices of the current great circle arc.
+			for ( ; vertex_index < great_circle_arcs[great_circle_arc_index]; ++vertex_index)
+			{
+				filled_polygon_geometry.push_back(vertices[vertex_index]);
+			}
+		}
+
+		// Add the current filled polygon geometry.
+		filled_polygons.add_filled_polygon(filled_polygon_geometry, colour);
+	}
+}
+
+
+template <typename LineGeometryType>
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::paint_line_geometry(
+		const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry,
+		const Colour &colour,
+		stream_primitives_type &lines_stream,
+		boost::optional<double> arrow_head_size)
+{
+	DatelineWrappedProjectedLineGeometry dateline_wrapped_projected_line_geometry;
+	dateline_wrap_and_project_line_geometry<LineGeometryType>(
+			dateline_wrapped_projected_line_geometry,
+			line_geometry);
+
+	const std::vector<unsigned int> &geometries = dateline_wrapped_projected_line_geometry.get_geometries();
+	const unsigned int num_geometries = geometries.size();
+	if (num_geometries == 0)
+	{
+		// Return early if there's nothing to paint - shouldn't really be able to get here.
+		return;
+	}
+
+	unsigned int great_circle_arc_index = 0;
+	const std::vector<unsigned int> &great_circle_arcs =
+			dateline_wrapped_projected_line_geometry.get_great_circle_arcs();
+
+	unsigned int vertex_index = 0;
+	const std::vector<QPointF> &vertices =
+			dateline_wrapped_projected_line_geometry.get_vertices();
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
+
+	// Used to add line strips to the stream.
+	stream_primitives_type::LineStrips stream_line_strips(lines_stream);
+
+	// Iterate over the dateline wrapped geometries.
+	for (unsigned int geometry_index = 0; geometry_index < num_geometries; ++geometry_index)
+	{
+		stream_line_strips.begin_line_strip();
+
+		// Keep track of the last and second last vertices to calculate best estimate of
+		// arrow direction tangent and the end of each great circle arc.
+		const QPointF *last_vertex = NULL;
+		const QPointF *second_last_vertex = NULL;
+
+		// Iterate over the great circle arcs of the current geometry.
+		for ( ; great_circle_arc_index < geometries[geometry_index]; ++great_circle_arc_index)
+		{
+			// Iterate over the vertices of the current great circle arc.
+			for ( ; vertex_index < great_circle_arcs[great_circle_arc_index]; ++vertex_index)
+			{
+				const QPointF &vertex = vertices[vertex_index];
+				const coloured_vertex_type coloured_vertex(vertex.x(), vertex.y(), 0/*z*/, rgba8_color);
+				stream_line_strips.add_vertex(coloured_vertex);
+
+				// Keep track of the last and second last vertices to calculate best estimate of
+				// arrow direction tangent and the end of each great circle arc.
+				second_last_vertex = last_vertex;
+				last_vertex = &vertex;
+			}
+
+			// If we need to draw an arrow head at the end of each great circle arc segment...
+			if (arrow_head_size)
+			{
+				// The dateline wrapper ensures the first great circle arc of each wrapped geometry
+				// contains at least two vertices so this should never fail.
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						last_vertex && second_last_vertex,
+						GPLATES_ASSERTION_SOURCE);
+
+				paint_arrow_head(
+						*last_vertex,
+						// Our best estimate of the arrow direction tangent at the GCA end point...
+						*last_vertex - *second_last_vertex,
+						arrow_head_size.get(),
+						rgba8_color);
+			}
+		}
+
+		stream_line_strips.end_line_strip();
+	}
 }
 
 

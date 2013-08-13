@@ -300,15 +300,20 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 {
 	// Create a reconstruct context - it will determine which reconstruct method each
 	// reconstructable feature requires.
-	ReconstructContext reconstruct_context(
-			reconstruct_method_registry,
-			reconstructable_features_collection);
+	ReconstructContext reconstruct_context(reconstruct_method_registry);
+	reconstruct_context.set_features(reconstructable_features_collection);
+
+	// Create the context state in which to reconstruct.
+	const ReconstructMethodInterface::Context reconstruct_method_context(
+			reconstruct_params,
+			reconstruction_tree_creator);
+	const ReconstructContext::context_state_reference_type context_state =
+			reconstruct_context.create_context_state(reconstruct_method_context);
 
 	// Reconstruct the reconstructable features.
-	return reconstruct_context.reconstruct(
+	return reconstruct_context.reconstruct_feature_geometries(
 			reconstructed_feature_geometries,
-			reconstruct_params,
-			reconstruction_tree_creator,
+			context_state,
 			reconstruction_time);
 }
 
@@ -327,9 +332,8 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 	register_default_reconstruct_method_types(reconstruct_method_registry);
 
 	ReconstructionTreeCreator reconstruction_tree_creator =
-			get_cached_reconstruction_tree_creator(
+			create_cached_reconstruction_tree_creator(
 					reconstruction_features_collection,
-					reconstruction_time,
 					anchor_plate_id,
 					reconstruction_tree_cache_size);
 
@@ -350,21 +354,24 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 		const ReconstructMethodRegistry &reconstruct_method_registry,
 		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const ReconstructParams &reconstruct_params,
 		const double &reconstruction_time,
 		bool reverse_reconstruct)
 {
-	// Find out how to reconstruct the geometry based on the feature containing the reconstruction properties.
-	const ReconstructMethod::Type reconstruct_method_type =
-			reconstruct_method_registry.get_reconstruct_method_type_or_default(reconstruction_properties);
+	// Create the context in which to reconstruct.
+	const ReconstructMethodInterface::Context reconstruct_method_context(
+			reconstruct_params,
+			reconstruction_tree_creator);
 
-	// Get the reconstruct method so we can reconstruct (or reverse reconstruct) the geometry.
+	// Find out how to reconstruct the geometry based on the feature containing the reconstruction properties.
 	ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
-			reconstruct_method_registry.get_reconstruct_method(reconstruct_method_type);
+			reconstruct_method_registry.create_reconstruct_method_or_default(
+					reconstruction_properties,
+					reconstruct_method_context);
 
 	return reconstruct_method->reconstruct_geometry(
 			geometry,
-			reconstruction_properties,
-			reconstruction_tree_creator,
+			reconstruct_method_context,
 			reconstruction_time,
 			reverse_reconstruct);
 }
@@ -377,13 +384,13 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		const ReconstructParams &reconstruct_params,
 		bool reverse_reconstruct,
 		unsigned int reconstruction_tree_cache_size)
 {
 	ReconstructionTreeCreator reconstruction_tree_creator =
-			get_cached_reconstruction_tree_creator(
+			create_cached_reconstruction_tree_creator(
 					reconstruction_features_collection,
-					reconstruction_time,
 					anchor_plate_id,
 					reconstruction_tree_cache_size);
 
@@ -395,6 +402,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 			reconstruct_method_registry,
 			reconstruction_properties,
 			reconstruction_tree_creator,
+			reconstruct_params,
 			reconstruction_time,
 			reverse_reconstruct);
 }
@@ -405,6 +413,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
 		const ReconstructionTree &reconstruction_tree,
+		const ReconstructParams &reconstruct_params,
 		bool reverse_reconstruct)
 {
 	return reconstruct_geometry(
@@ -413,6 +422,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 			reconstruction_tree.get_reconstruction_time(),
 			reconstruction_tree.get_anchor_plate_id(),
 			reconstruction_tree.get_reconstruction_features(),
+			reconstruct_params,
 			reverse_reconstruct);
 }
 
@@ -445,7 +455,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_as_half_stage(
 }
 
 
-boost::optional<GPlatesMaths::FiniteRotation>
+GPlatesMaths::FiniteRotation
 GPlatesAppLogic::ReconstructUtils::get_half_stage_rotation(
 		const ReconstructionTree &reconstruction_tree,
 		GPlatesModel::integer_plate_id_type left_plate_id,
@@ -466,33 +476,35 @@ GPlatesAppLogic::ReconstructUtils::get_half_stage_rotation(
 
 	using namespace GPlatesMaths;
 
+	FiniteRotation left_rotation = reconstruction_tree.get_composed_absolute_rotation(left_plate_id).first;
 	FiniteRotation right_rotation = reconstruction_tree.get_composed_absolute_rotation(right_plate_id).first;
 
-	FiniteRotation left_rotation = reconstruction_tree.get_composed_absolute_rotation(left_plate_id).first;
+	// NOTE: Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible
+	// that left_q and right_q could be separated by a longer path than are left_q and -right_q
+	// (or -left_q and right_q).
+	// However we do *not* restrict ourselves to the shortest path (like 'FiniteRotation::interpolate()'
+	// does in its SLERP routine). This is because the user (who created the total poles in the
+	// rotation file) may want to take the longest path.
+	//
+	const FiniteRotation left_to_right = compose(get_reverse(left_rotation), right_rotation);
 
-	const FiniteRotation& r = compose(get_reverse(left_rotation), right_rotation);
- 
-	UnitQuaternion3D quat = r.unit_quat();
-
-	if(!represents_identity_rotation(quat))
+	if (represents_identity_rotation(left_to_right.unit_quat()))
 	{
-		UnitQuaternion3D::RotationParams params = quat.get_rotation_params(r.axis_hint());
-		real_t half_angle = 0.5 * params.angle;
+		return left_rotation;
+	}
 
-		FiniteRotation half_rotation = 
+	UnitQuaternion3D::RotationParams left_to_right_params =
+			left_to_right.unit_quat().get_rotation_params(left_to_right.axis_hint());
+	const real_t half_angle = 0.5 * left_to_right_params.angle;
+
+	FiniteRotation half_rotation = 
 			FiniteRotation::create(
-			UnitQuaternion3D::create_rotation(
-			params.axis, 
-			half_angle),
-			r.axis_hint());
+					UnitQuaternion3D::create_rotation(
+							left_to_right_params.axis, 
+							half_angle),
+							left_to_right.axis_hint());
 
-		return compose(left_rotation, half_rotation);
-
-	}
-	else
-	{
-		return boost::none;
-	}
+	return compose(left_rotation, half_rotation);
 
 	//
 	// NOTE: The above algorithm works only if there is no motion of the right plate relative to
@@ -533,7 +545,7 @@ GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 	// Rotation from present day (0Ma) to time 't2' (via time 't1'):
 	//
 	// R(0->t2)  = R(t1->t2) * R(0->t1)
-	// ...or by post-multiplying both sides by R(t1->0) this becomes...
+	// ...or by post-multiplying both sides by R(t1->0), and then swapping sides, this becomes...
 	// R(t1->t2) = R(0->t2) * R(t1->0)
 	//
 	// Rotation from anchor plate 'A' to moving plate 'M' (via fixed plate 'F'):
@@ -593,6 +605,13 @@ GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 	//    = inverse[R(0->t2,A->F)] * R(0->t2,A->M) * inverse[R(0->t1,A->M)] * R(0->t1,A->F)
 	//
 	// ...where 'A' is the anchor plate, 'F' is the fixed plate and 'M' is the moving plate.
+
+	// NOTE: Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible
+	// that left_q and right_q could be separated by a longer path than are left_q and -right_q
+	// (or -left_q and right_q).
+	// However we do *not* restrict ourselves to the shortest path (like 'FiniteRotation::interpolate()'
+	// does in its SLERP routine). This is because the user (who created the total poles in the
+	// rotation file) may want to take the longest path.
 	//
 
 	// For t1, get the rotation for plate M w.r.t. anchor	
@@ -601,7 +620,7 @@ GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 
 	// For t1, get the rotation for plate F w.r.t. anchor	
 	GPlatesMaths::FiniteRotation rot_0_to_t1_F = 
-		reconstruction_tree_1.get_composed_absolute_rotation(fixed_plate_id).first;	
+		reconstruction_tree_1.get_composed_absolute_rotation(fixed_plate_id).first;
 
 
 	// For t2, get the rotation for plate M w.r.t. anchor	
@@ -610,7 +629,7 @@ GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 
 	// For t2, get the rotation for plate F w.r.t. anchor	
 	GPlatesMaths::FiniteRotation rot_0_to_t2_F = 
-		reconstruction_tree_2.get_composed_absolute_rotation(fixed_plate_id).first;	
+		reconstruction_tree_2.get_composed_absolute_rotation(fixed_plate_id).first;
 
 	// Compose these rotations so that we get
 	// the stage pole from time t1 to time t2 for plate M w.r.t. plate F.
@@ -625,7 +644,6 @@ GPlatesAppLogic::ReconstructUtils::get_stage_pole(
 		GPlatesMaths::compose(rot_t2,GPlatesMaths::get_reverse(rot_t1));	
 
 	return stage_pole;	
-
 }
 
 void

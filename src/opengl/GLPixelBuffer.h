@@ -71,7 +71,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Note that is is possible to attach the same buffer object to a @a GLVertexBuffer.
 		 * This allows you to, for example, render vertices to the framebuffer (using a fragment
-		 * shader), then read the pixels to a pixel buffer ,then bind the buffer as a vertex buffer
+		 * shader), then read the pixels to a pixel buffer, then bind the buffer as a vertex buffer
 		 * then render the data as vertices.
 		 */
 		static
@@ -136,6 +136,39 @@ namespace GPlatesOpenGL
 		void
 		gl_bind_pack(
 				GLRenderer &renderer) const = 0;
+
+
+		/**
+		 * Performs the equivalent of the OpenGL command 'glDrawPixels' with the exception that,
+		 * to mirror 'glReadPixels', the x and y pixel offsets are also specified (internally
+		 * 'glWindowPos2i(x, y)' is called since 'glDrawPixels' does not accept x and y).
+		 *
+		 * If native pixel buffer objects are supported (ie, derived type is @a GLPixelBufferObject)
+		 * then this call will start an asynchronous copy from CPU to GPU and
+		 * return immediately without blocking. The only time blocking will happen is when the
+		 * pixel buffer is written (via @a get_buffer) in which case the CPU will wait for the GPU
+		 * to finish copying the previous data from CPU to GPU (if it hasn't already completed).
+		 * So it is a good idea to delay writing of the buffer where possible by doing some work
+		 * in between (a good way to do this is to double buffer - ie, have two alternating pixel buffers).
+		 *
+		 * NOTE: You must have called @a gl_bind_unpack to bind 'this' buffer as an *unpack* target.
+		 *
+		 * NOTE: You should have enough memory in the buffer required by the frame buffer rectangle
+		 * to be copied (see 'GLBuffer::gl_buffer_data()').
+		 *
+		 * @a offset is a byte offset from the start of 'this' pixel buffer to start copying pixels from.
+		 */
+		virtual
+		void
+		gl_draw_pixels(
+				GLRenderer &renderer,
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height,
+				GLenum format,
+				GLenum type,
+				GLint offset) = 0;
 
 
 		/**

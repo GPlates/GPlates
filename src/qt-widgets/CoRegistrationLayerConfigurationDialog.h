@@ -290,8 +290,7 @@ namespace GPlatesQtWidgets
 		 * Creates an OpenGL renderer so we can query raster-related information.
 		 */
 		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLRenderer>::non_null_ptr_type
-		create_gl_renderer(
-				GPlatesOpenGL::GLViewport &viewport) const;
+		create_gl_renderer() const;
 
 		void
 		get_unique_attribute_names(

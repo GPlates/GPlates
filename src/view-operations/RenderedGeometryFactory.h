@@ -34,6 +34,8 @@
 #include <QFont>
 
 #include "RenderedGeometry.h"
+#include "RenderedColouredEdgeSurfaceMesh.h"
+#include "RenderedColouredTriangleSurfaceMesh.h"
 
 #include "app-logic/AppLogicFwd.h"
 #include "app-logic/ReconstructionGeometry.h"
@@ -129,6 +131,8 @@ namespace GPlatesViewOperations
 				float point_size_hint = DEFAULT_POINT_SIZE_HINT,
 				float line_width_hint = DEFAULT_LINE_WIDTH_HINT,
 				bool fill_polygon = false,
+				bool fill_polyline = false,
+				const GPlatesGui::Colour &fill_modulate_colour = DEFAULT_COLOUR,
 				const boost::optional<GPlatesGui::Symbol> &symbol = boost::none);
 
 		/**
@@ -165,12 +169,16 @@ namespace GPlatesViewOperations
 
 		/**
 		 * Creates a @a RenderedGeometry for a @a PolylineOnSphere.
+		 *
+		 * If @a filled is true then the polyline is treated like a polygon when filling.
 		 */
 		RenderedGeometry
 		create_rendered_polyline_on_sphere(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
 				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
-				float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
+				float line_width_hint = DEFAULT_LINE_WIDTH_HINT,
+				bool filled = false,
+				const GPlatesGui::Colour &fill_modulate_colour = DEFAULT_COLOUR);
 
 		/**
 		 * Creates a @a RenderedGeometry for a @a PolygonOnSphere.
@@ -180,7 +188,25 @@ namespace GPlatesViewOperations
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
 				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
 				float line_width_hint = DEFAULT_LINE_WIDTH_HINT,
-				bool filled = false);
+				bool filled = false,
+				const GPlatesGui::Colour &fill_modulate_colour = DEFAULT_COLOUR);
+
+		/**
+		 * Creates a @a RenderedGeometry for a coloured edge surface mesh.
+		 */
+		RenderedGeometry
+		create_rendered_coloured_edge_surface_mesh(
+				const RenderedColouredEdgeSurfaceMesh::edge_seq_type &mesh_edges,
+				const RenderedColouredEdgeSurfaceMesh::vertex_seq_type &mesh_vertices,
+				float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
+
+		/**
+		 * Creates a @a RenderedGeometry for a coloured triangle surface mesh.
+		 */
+		RenderedGeometry
+		create_rendered_coloured_triangle_surface_mesh(
+				const RenderedColouredTriangleSurfaceMesh::triangle_seq_type &mesh_triangles,
+				const RenderedColouredTriangleSurfaceMesh::vertex_seq_type &mesh_vertices);
 
 		/**
 		 * Creates a @a RenderedGeometry for a resolved raster.
@@ -189,7 +215,8 @@ namespace GPlatesViewOperations
 		create_rendered_resolved_raster(
 				const GPlatesAppLogic::resolved_raster_non_null_ptr_to_const_type &resolved_raster,
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
-				const GPlatesGui::Colour &raster_modulate_colour = GPlatesGui::Colour::get_white());
+				const GPlatesGui::Colour &raster_modulate_colour = GPlatesGui::Colour::get_white(),
+				float normal_map_height_field_scale_factor = 1);
 
 		/**
 		 * Creates a @a RenderedGeometry for a resolved 3D scalar field.
@@ -373,6 +400,19 @@ namespace GPlatesViewOperations
 				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
 				const unsigned int size = DEFAULT_SYMBOL_SIZE,
 				const float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
+		/**
+		 * Creates a cross centred at @a centre.  StrainMarker will be aligned via angle and
+		 * rendered on a tangent plane at the centre.
+		 */
+		RenderedGeometry
+		create_rendered_strain_marker_symbol(
+				const GPlatesMaths::PointOnSphere &centre,
+				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
+				const unsigned int size = DEFAULT_SYMBOL_SIZE,
+				const float line_width_hint = DEFAULT_LINE_WIDTH_HINT,
+				const double scale_x = 0,
+				const double scale_y = 0,
+				const double angle = 0);
 	}
 }
 

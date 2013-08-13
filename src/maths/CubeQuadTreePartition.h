@@ -508,6 +508,10 @@ namespace GPlatesMaths
 		typedef NodeReference<const cube_quad_tree_node_type> const_node_reference_type;
 
 
+		//! Typedef for a location in the cube quad tree.
+		typedef CubeQuadTreeLocation location_type;
+
+
 		/**
 		 * Iterator over the spatial partition.
 		 *
@@ -546,6 +550,12 @@ namespace GPlatesMaths
 			ElementQualifiedType &
 			get_element() const;
 
+			/**
+			 * Returns the CubeQuadTreeLocation of the current element (returned by @a get_element).
+			 */
+			const location_type &
+			get_location() const;
+
 			void
 			next();
 
@@ -577,10 +587,6 @@ namespace GPlatesMaths
 
 		//! Typedef for const iterator.
 		typedef Iterator<const element_type> const_iterator;
-
-
-		//! Typedef for a location in the cube quad tree.
-		typedef CubeQuadTreeLocation location_type;
 
 
 		/**
@@ -1781,7 +1787,7 @@ namespace GPlatesMaths
 		// See if we can even calculate the maximum projected radius on the cube face.
 		// If we can't then it means the bounding circle has a position and extent that
 		// cannot be projected onto the cube face (ie, it wraps around the globe enough away
-		// from the cube face enough that projected into onto the cube face is no longer well-defined).
+		// from the cube face enough that the projection onto the cube face is no longer well-defined).
 		if (cos_e_cos_a < sin_e_sin_a + 1e-6)
 		{
 			add(element, d_cube_quad_tree->get_or_create_root_element());
@@ -1904,7 +1910,7 @@ namespace GPlatesMaths
 			return;
 		}
 
-		CubeQuadTreeLocation::NodeLocation node_location = location.get_node_location().get();
+		location_type::NodeLocation node_location = location.get_node_location().get();
 		// Adjust the location to add if it specifies a depth greater than our maximum depth.
 		if (node_location.quad_tree_depth > d_maximum_quad_tree_depth)
 		{
@@ -2024,6 +2030,15 @@ namespace GPlatesMaths
 	CubeQuadTreePartition<ElementType>::Iterator<ElementQualifiedType>::get_element() const
 	{
 		return d_current_element_list_iterator->get_element();
+	}
+
+
+	template <typename ElementType>
+	template <typename ElementQualifiedType>
+	const typename CubeQuadTreePartition<ElementType>::location_type &
+	CubeQuadTreePartition<ElementType>::Iterator<ElementQualifiedType>::get_location() const
+	{
+		return d_cube_quad_tree_iterator.get_location();
 	}
 
 

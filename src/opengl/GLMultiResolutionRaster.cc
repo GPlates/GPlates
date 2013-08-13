@@ -26,6 +26,7 @@
 #include <cmath>
 #include <limits>
 #include <new> // For placement new.
+#include <vector>
 #include <boost/bind.hpp>
 #include <boost/cast.hpp>
 #include <boost/cstdint.hpp>
@@ -51,6 +52,7 @@
 #include "GLRenderer.h"
 #include "GLScalarFieldDepthLayersSource.h"
 #include "GLShaderProgramUtils.h"
+#include "GLShaderSource.h"
 #include "GLUtils.h"
 #include "GLVertex.h"
 
@@ -74,6 +76,16 @@ namespace GPlatesOpenGL
 		 */
 		const QString RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME =
 				":/opengl/multi_resolution_raster/render_raster_fragment_shader.glsl";
+
+		/**
+		 * Fragment shader source code to render sphere normals as part of clearing a render target
+		 * before rendering a normal-map raster.
+		 *
+		 * For example, for a *regional* normal map raster the normals outside the region are not rendered by
+		 * the normal map raster itself and so must be initialised to be normal to the globe's surface.
+		 */
+		const QString RENDER_SPHERE_NORMALS_FRAGMENT_SHADER_SOURCE_FILE_NAME =
+				":/opengl/multi_resolution_raster/render_sphere_normals_fragment_shader.glsl";
 	}
 }
 
@@ -97,11 +109,12 @@ GPlatesOpenGL::GLMultiResolutionRaster::supports_normal_map_source(
 		}
 
 		// Need vertex/fragment shader support.
-		if (!GLContext::get_parameters().shader.gl_ARB_vertex_shader ||
-			!GLContext::get_parameters().shader.gl_ARB_fragment_shader)
+		if (!renderer.get_capabilities().shader.gl_ARB_vertex_shader ||
+			!renderer.get_capabilities().shader.gl_ARB_fragment_shader)
 		{
-			//qDebug() <<
-			//		"GLMultiResolutionRaster: Disabling normal map raster lighting in OpenGL - requires vertex/fragment shader programs.";
+			qWarning() <<
+					"Normal map raster lighting NOT supported by this graphics hardware.\n"
+					"  Requires vertex/fragment shader programs.";
 			return false;
 		}
 
@@ -113,16 +126,17 @@ GPlatesOpenGL::GLMultiResolutionRaster::supports_normal_map_source(
 		// program regardless on the complexity of the shader.
 		//
 
-		GLShaderProgramUtils::ShaderSource fragment_shader_source;
-		fragment_shader_source.add_shader_source("#define SURFACE_NORMALS\n");
-		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+		GLShaderSource fragment_shader_source;
+		fragment_shader_source.add_code_segment("#define SURFACE_NORMALS\n");
+		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 		// Attempt to create the test shader program.
 		if (!GLShaderProgramUtils::compile_and_link_fragment_program(
 				renderer, fragment_shader_source))
 		{
-			//qDebug() <<
-			//		"GLMultiResolutionRaster: Disabling normal map raster lighting in OpenGL - unable to compile and link shader program.";
+			qWarning() <<
+					"Normal map raster lighting NOT supported by this graphics hardware.\n"
+					"  Unable to compile and link shader program.";
 			return false;
 		}
 
@@ -153,8 +167,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::supports_scalar_field_depth_layers_sourc
 		}
 
 		// Need vertex/fragment shader support.
-		if (!GLContext::get_parameters().shader.gl_ARB_vertex_shader ||
-			!GLContext::get_parameters().shader.gl_ARB_fragment_shader)
+		if (!renderer.get_capabilities().shader.gl_ARB_vertex_shader ||
+			!renderer.get_capabilities().shader.gl_ARB_fragment_shader)
 		{
 			return false;
 		}
@@ -167,9 +181,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::supports_scalar_field_depth_layers_sourc
 		// complexity of the shader.
 		//
 
-		GLShaderProgramUtils::ShaderSource fragment_shader_source;
-		fragment_shader_source.add_shader_source("#define SCALAR_GRADIENT\n");
-		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+		GLShaderSource fragment_shader_source;
+		fragment_shader_source.add_code_segment("#define SCALAR_GRADIENT\n");
+		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 		// Attempt to create the test shader program.
 		if (!GLShaderProgramUtils::compile_and_link_fragment_program(
@@ -420,6 +434,34 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 }
 
 
+void
+GPlatesOpenGL::GLMultiResolutionRaster::clear_frame_buffer(
+		GLRenderer &renderer)
+{
+	// If not a normal map then just clear the colour buffer.
+	if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()) == NULL)
+	{
+		renderer.gl_clear_color(); // Clear colour to all zeros.
+		renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+
+		return;
+	}
+
+	//
+	// We have a normal map raster source.
+	//
+
+	// If we've not yet created the ability to render sphere normals then do so now.
+	if (!d_render_sphere_normals)
+	{
+		d_render_sphere_normals = boost::in_place(boost::ref(renderer));
+	}
+
+	// Render the sphere normals.
+	d_render_sphere_normals->render(renderer);
+}
+
+
 bool
 GPlatesOpenGL::GLMultiResolutionRaster::render(
 		GLRenderer &renderer,
@@ -633,14 +675,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 }
 
 
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 void
 GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &texture)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	const GLint internal_format = d_raster_source->get_target_texture_internal_format();
 
 #if 0
@@ -661,7 +702,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// we have our own mipmapped raster tiles via proxied rasters. Also we turn on anisotropic
 	// filtering which will reduce any aliasing near the horizon of the globe.
 	// Turning off auto-mipmap-generation will also give us a small speed boost.
-	if (GLEW_SGIS_generate_mipmap)
+	if (capabilities.texture.gl_SGIS_generate_mipmap)
 	{
 		// Mipmaps will be generated automatically when the level 0 image is modified.
 		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
@@ -686,16 +727,17 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// NOTE: We don't enable anisotropic filtering for floating-point textures since earlier
 	// hardware (that supports floating-point textures) only supports nearest filtering.
 	if (!GLTexture::is_format_floating_point(internal_format) &&
-		GLEW_EXT_texture_filter_anisotropic &&
+		capabilities.texture.gl_EXT_texture_filter_anisotropic &&
 		d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_ANISOTROPIC)
 	{
-		const GLfloat anisotropy = GLContext::get_parameters().texture.gl_texture_max_anisotropy;
+		const GLfloat anisotropy = capabilities.texture.gl_texture_max_anisotropy;
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -720,8 +762,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// Check there are no OpenGL errors.
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
-
-ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 GPlatesOpenGL::GLMultiResolutionRaster::tile_vertices_cache_type::object_shared_ptr_type
@@ -1347,13 +1387,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 	// in a cube raster (which is decoupled from the raster geo-referencing or tangent-space).
 	if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()))
 	{
-		GLShaderProgramUtils::ShaderSource fragment_shader_source;
+		GLShaderSource fragment_shader_source;
 
 		// Configure shader for converting tangent-space surface normals to world-space.
-		fragment_shader_source.add_shader_source("#define SURFACE_NORMALS\n");
+		fragment_shader_source.add_code_segment("#define SURFACE_NORMALS\n");
 
 		// Finally add the GLSL 'main()' function.
-		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 		d_render_raster_program_object =
 				GLShaderProgramUtils::compile_and_link_fragment_program(
@@ -1368,13 +1408,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 	}
 	else if (dynamic_cast<GLScalarFieldDepthLayersSource *>(d_raster_source.get()))
 	{
-		GLShaderProgramUtils::ShaderSource fragment_shader_source;
+		GLShaderSource fragment_shader_source;
 
 		// Configure shader for completing the gradient calculation for a scalar field.
-		fragment_shader_source.add_shader_source("#define SCALAR_GRADIENT\n");
+		fragment_shader_source.add_code_segment("#define SCALAR_GRADIENT\n");
 
 		// Finally add the GLSL 'main()' function.
-		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 		d_render_raster_program_object =
 				GLShaderProgramUtils::compile_and_link_fragment_program(
@@ -1407,13 +1447,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 		// (rectified in 10.6) so instead we'll just use the programmable pipeline whenever it's
 		// available (and all platforms that support GL_ARB_texture_float should also support shaders).
 
-		GLShaderProgramUtils::ShaderSource fragment_shader_source;
+		GLShaderSource fragment_shader_source;
 
 		// Configure shader for floating-point rasters.
-		fragment_shader_source.add_shader_source("#define SOURCE_RASTER_IS_FLOATING_POINT\n");
+		fragment_shader_source.add_code_segment("#define SOURCE_RASTER_IS_FLOATING_POINT\n");
 
 		// Finally add the GLSL 'main()' function.
-		fragment_shader_source.add_shader_source_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 		d_render_raster_program_object =
 				GLShaderProgramUtils::compile_and_link_fragment_program(
@@ -2256,7 +2296,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_vertex_element_buffer(
 	}
 
 	// Set up the vertex element buffer.
-	GLBuffer::shared_ptr_type vertex_element_buffer_data = GLBuffer::create(renderer);
+	GLBuffer::shared_ptr_type vertex_element_buffer_data =
+			GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX);
 	vertex_element_buffer_data->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
@@ -2401,4 +2442,75 @@ GPlatesOpenGL::GLMultiResolutionRaster::LevelOfDetail::get_obb_tree_node(
 			GPLATES_ASSERTION_SOURCE);
 
 	return obb_tree_nodes[node_index];
+}
+
+
+GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals(
+		GLRenderer &renderer) :
+	d_vertex_array(GLVertexArray::create(renderer))
+{
+	GLShaderSource fragment_shader_source;
+	fragment_shader_source.add_code_segment_from_file(RENDER_SPHERE_NORMALS_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+
+	d_program_object =
+			GLShaderProgramUtils::compile_and_link_fragment_program(
+					renderer,
+					fragment_shader_source);
+
+	// We should be able to compile/link the shader program since we can only get here if we
+	// have a normal map source and the client should have called 'supports_normal_map_source()'
+	// which does a test compile/link.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_program_object,
+			GPLATES_ASSERTION_SOURCE);
+
+	//
+	// Create a cube - this is one of the simplest primitives that covers the globe.
+	// The per-pixel cube position (texture coordinate) gets normalised to unit normal in fragment shader.
+	//
+
+	std::vector<GLTexture3DVertex> vertices;
+	std::vector<GLushort> vertex_elements;
+
+	// Add the eight cube corner vertices.
+	vertices.push_back(GLTexture3DVertex(-1,-1,-1, -1,-1,-1)); // 0
+	vertices.push_back(GLTexture3DVertex(+1,-1,-1, +1,-1,-1)); // 1
+	vertices.push_back(GLTexture3DVertex(-1,+1,-1, -1,+1,-1)); // 2
+	vertices.push_back(GLTexture3DVertex(+1,+1,-1, +1,+1,-1)); // 3
+	vertices.push_back(GLTexture3DVertex(-1,-1,+1, -1,-1,+1)); // 4
+	vertices.push_back(GLTexture3DVertex(+1,-1,+1, +1,-1,+1)); // 5
+	vertices.push_back(GLTexture3DVertex(-1,+1,+1, -1,+1,+1)); // 6
+	vertices.push_back(GLTexture3DVertex(+1,+1,+1, +1,+1,+1)); // 7
+
+	// Add the twelve cube faces (two triangles per cube face).
+	vertex_elements.push_back(0); vertex_elements.push_back(1); vertex_elements.push_back(3);
+	vertex_elements.push_back(0); vertex_elements.push_back(3); vertex_elements.push_back(2);
+	vertex_elements.push_back(0); vertex_elements.push_back(5); vertex_elements.push_back(1);
+	vertex_elements.push_back(0); vertex_elements.push_back(4); vertex_elements.push_back(5);
+	vertex_elements.push_back(1); vertex_elements.push_back(7); vertex_elements.push_back(3);
+	vertex_elements.push_back(1); vertex_elements.push_back(5); vertex_elements.push_back(7);
+	vertex_elements.push_back(0); vertex_elements.push_back(2); vertex_elements.push_back(6);
+	vertex_elements.push_back(0); vertex_elements.push_back(6); vertex_elements.push_back(4);
+	vertex_elements.push_back(2); vertex_elements.push_back(3); vertex_elements.push_back(7);
+	vertex_elements.push_back(2); vertex_elements.push_back(7); vertex_elements.push_back(6);
+	vertex_elements.push_back(4); vertex_elements.push_back(7); vertex_elements.push_back(5);
+	vertex_elements.push_back(4); vertex_elements.push_back(6); vertex_elements.push_back(7);
+
+	d_draw_vertex_array = compile_vertex_array_draw_state(
+			renderer, *d_vertex_array, vertices, vertex_elements, GL_TRIANGLES);
+}
+
+
+void
+GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::render(
+		GLRenderer &renderer)
+{
+	// Make sure we leave the OpenGL state the way it was.
+	GLRenderer::StateBlockScope save_restore_state(renderer);
+
+	// Bind the shader program.
+	renderer.gl_bind_program_object(d_program_object.get());
+
+	// Render the cube.
+	renderer.apply_compiled_draw_state(*d_draw_vertex_array.get());
 }

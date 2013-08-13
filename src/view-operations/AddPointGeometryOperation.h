@@ -32,8 +32,9 @@
 
 #include "GeometryBuilder.h"
 #include "GeometryOperation.h"
-#include "GeometryType.h"
 #include "RenderedGeometryCollection.h"
+
+#include "maths/GeometryType.h"
 
 
 namespace GPlatesCanvasTools
@@ -69,7 +70,7 @@ namespace GPlatesViewOperations
 
 	public:
 		AddPointGeometryOperation(
-				GeometryType::Value build_geom_type,
+				GPlatesMaths::GeometryType::Value build_geom_type,
 				GeometryBuilder &geometry_builder,
 				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
 				RenderedGeometryCollection &rendered_geometry_collection,
@@ -111,7 +112,7 @@ namespace GPlatesViewOperations
 		/**
 		 * The type of geometry we are attempting to build.
 		 */
-		GeometryType::Value d_build_geom_type;
+		GPlatesMaths::GeometryType::Value d_build_geom_type;
 
 		/**
 		 * This is used to build geometry. We delete vertices with it.

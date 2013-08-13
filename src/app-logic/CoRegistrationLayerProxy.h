@@ -159,13 +159,6 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time);
 
 		/**
-		 * Set the current input reconstruction layer proxy.
-		 */
-		void
-		set_current_reconstruction_layer_proxy(
-				const ReconstructionLayerProxy::non_null_ptr_type &reconstruction_layer_proxy);
-
-		/**
 		 * Adds a co-registration seed layer proxy.
 		 */
 		void
@@ -237,12 +230,6 @@ namespace GPlatesAppLogic
 		}
 
 	private:
-		/**
-		 * Used to get reconstruction trees at desired reconstruction times.
-		 *
-		 * TODO: I'm not sure we really need a reconstruction tree layer ?
-		 */
-		LayerProxyUtils::InputLayerProxy<ReconstructionLayerProxy> d_current_reconstruction_layer_proxy;
 
 		/**
 		 * Used to get the co-registration reconstructed seed geometries.

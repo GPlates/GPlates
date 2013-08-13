@@ -38,13 +38,10 @@
 #include "maths/MultiPointOnSphere.h"
 
 
-namespace GPlatesPresentation
-{
-	class ViewState;
-}
-
 namespace GPlatesQtWidgets
 {
+	class ViewportWindow;
+
 	class GenerateVelocityDomainLatLonDialog: 
 			public GPlatesDialog,
 			protected Ui_GenerateVelocityDomainLatLonDialog
@@ -54,7 +51,7 @@ namespace GPlatesQtWidgets
 	public:
 
 		GenerateVelocityDomainLatLonDialog(
-				GPlatesPresentation::ViewState &view_state_,
+				ViewportWindow &main_window_,
 				QWidget *parent_ = NULL);
 		
 	private Q_SLOTS:
@@ -77,7 +74,7 @@ namespace GPlatesQtWidgets
 		
 	private:
 
-		GPlatesPresentation::ViewState &d_view_state;
+		ViewportWindow &d_main_window;
 
 		unsigned int d_num_latitude_grid_intervals;
 
@@ -96,7 +93,7 @@ namespace GPlatesQtWidgets
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
 		generate_lat_lon_domain();
 
-		void
+		bool
 		save_velocity_domain_file(
 				const GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type &velocity_sub_domain);
 

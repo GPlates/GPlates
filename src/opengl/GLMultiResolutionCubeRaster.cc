@@ -51,6 +51,31 @@
 #include "utils/Base2Utils.h"
 #include "utils/Profile.h"
 
+
+bool
+GPlatesOpenGL::GLMultiResolutionCubeRaster::supports_floating_point_source_raster(
+		GLRenderer &renderer)
+{
+	static bool supported = false;
+
+	// Only test for support the first time we're called.
+	static bool tested_for_support = false;
+	if (!tested_for_support)
+	{
+		tested_for_support = true;
+
+		// We use GLRenderer to render to render targets so it must support rendering to
+		// floating-point render targets.
+		supported =
+				renderer.supports_floating_point_render_target_2D() &&
+					// Don't really need to check for this but will anyway in case caller expects us to...
+					renderer.get_capabilities().texture.gl_ARB_texture_float;
+	}
+
+	return supported;
+}
+
+
 GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 		GLRenderer &renderer,
 		const GLMultiResolutionRaster::non_null_ptr_type &multi_resolution_raster,
@@ -67,21 +92,23 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 	d_cube_quad_tree(cube_quad_tree_type::create()),
 	d_num_source_levels_of_detail_used(1)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Adjust the tile dimension to the source raster resolution if non-power-of-two textures are supported.
 	// The number of levels of detail returned might not be all levels of the source raster -
 	// just the ones used by this cube map raster (the lowest resolutions might get left off).
-	adjust_tile_texel_dimension(adapt_tile_dimension_to_source_resolution);
+	adjust_tile_texel_dimension(adapt_tile_dimension_to_source_resolution, capabilities);
 
 	// The, possibly adapted, tile dimension should be a power-of-two *if*
 	// 'GL_ARB_texture_non_power_of_two' is *not* supported.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_non_power_of_two) ||
+			capabilities.texture.gl_ARB_texture_non_power_of_two ||
 				GPlatesUtils::Base2::is_power_of_two(d_tile_texel_dimension),
 			GPLATES_ASSERTION_SOURCE);
 	// Make sure the, possibly adapted, tile dimension does not exceed the maximum texture size...
-	if (d_tile_texel_dimension > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (d_tile_texel_dimension > capabilities.texture.gl_max_texture_size)
 	{
-		d_tile_texel_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
+		d_tile_texel_dimension = capabilities.texture.gl_max_texture_size;
 	}
 
 	initialise_cube_quad_trees();
@@ -96,12 +123,10 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::GLMultiResolutionCubeRaster(
 }
 
 
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 void
 GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
-		bool adapt_tile_dimension_to_source_resolution)
+		bool adapt_tile_dimension_to_source_resolution,
+		const GLCapabilities &capabilities)
 {
 	// We don't worry about half-texel expansion of the projection frustums here because
 	// we just need to determine viewport dimensions. There will be a slight error by neglecting
@@ -156,7 +181,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 	// to the next power-of-two if it isn't already a power-of-two.
 	//
 	// NOTE: We do this even if the client did *not* request the tile texel dimension be adapted.
-	if (!GLEW_ARB_texture_non_power_of_two)
+	if (!capabilities.texture.gl_ARB_texture_non_power_of_two)
 	{
 		// Round up to the next power-of-two.
 		// If it's already a power-of-two then it won't change.
@@ -245,8 +270,6 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::adjust_tile_texel_dimension(
 	// The '+1' converts from integer level-of-detail to number of levels of detail.
 	d_num_source_levels_of_detail_used = static_cast<int>(log2_viewport_dimension_scale_int + 0.5) + 1;
 }
-
-ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 void
@@ -565,52 +588,76 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 {
 	PROFILE_FUNC();
 
+	// We might do multiple source raster render calls (due to render target tiling).
+	boost::shared_ptr<std::vector<GLMultiResolutionRaster::cache_handle_type> > tile_cache_handle(
+			new std::vector<GLMultiResolutionRaster::cache_handle_type>());
+
 	// Begin rendering to a 2D render target texture.
-	GLRenderer::RenderTarget2DScope render_target_scope(renderer, tile_texture.texture);
-
-	renderer.gl_viewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension);
-
-	renderer.gl_clear_color(); // Clear colour to all zeros.
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
-
-	// The model-view matrix.
-	renderer.gl_load_matrix(GL_MODELVIEW, tile.d_view_transform->get_matrix());
-	// Multiply in the requested world transform.
-	renderer.gl_mult_matrix(GL_MODELVIEW, d_world_transform);
-
-	// The projection matrix.
-	renderer.gl_load_matrix(GL_PROJECTION, tile.d_projection_transform->get_matrix());
-
-	// If the render target is floating-point...
-	if (tile_texture.texture->is_floating_point())
-	{
-		// A lot of graphics hardware does not support blending to floating-point targets so we don't enable it.
-		// And a floating-point render target is used for data rasters (ie, not coloured as fixed-point
-		// for visual display) - where the coverage (or alpha) is in the green channel instead of the alpha channel.
-	}
-	else // an RGBA render target...
-	{
-#if 0 // We don't really need alpha blending since the source raster tiles don't overlap...
-		// Set up alpha blending for pre-multiplied alpha.
-		// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
-		// This is where the RGB channels have already been multiplied by the alpha channel.
-		renderer.gl_enable(GL_BLEND);
-		renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-#endif
-
-		// Enable alpha testing as an optimisation for culling transparent raster pixels.
-		renderer.gl_enable(GL_ALPHA_TEST);
-		renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
-	}
-
-	// Get the source raster to render into the render target using the view frustum
-	// we have provided. We have already pre-calculated the list of visible source raster tiles
-	// that need to be rendered into our frustum to save it a bit of culling work.
-	// And that's why we also don't need to test the return value to see if anything was rendered.
-	d_multi_resolution_raster->render(
+	GLRenderer::RenderTarget2DScope render_target_scope(
 			renderer,
-			tile.d_src_raster_tiles,
-			tile_texture.source_cache_handle);
+			tile_texture.texture,
+			GLViewport(0, 0, d_tile_texel_dimension, d_tile_texel_dimension));
+
+	// The render target tiling loop...
+	do
+	{
+		// Begin the current render target tile - this also sets the viewport.
+		GLTransform::non_null_ptr_to_const_type render_target_tile_projection = render_target_scope.begin_tile();
+
+		// Set up the projection transform adjustment for the current render target tile.
+		renderer.gl_load_matrix(GL_PROJECTION, render_target_tile_projection->get_matrix());
+		// Multiply in the projection matrix.
+		renderer.gl_mult_matrix(GL_PROJECTION, tile.d_projection_transform->get_matrix());
+
+		// The model-view matrix.
+		renderer.gl_load_matrix(GL_MODELVIEW, tile.d_view_transform->get_matrix());
+		// Multiply in the requested world transform.
+		renderer.gl_mult_matrix(GL_MODELVIEW, d_world_transform);
+
+		// Clear the frame buffer as appropriate for the source raster type.
+		//
+		// For example, for a *regional* normal map raster the normals outside the region must be
+		// normal to the globe's surface - so the frame buffer pixels must represent this.
+		//
+		// Other raster types simply clear the colour buffer to a constant colour - usually RGBA(0,0,0,0).
+		d_multi_resolution_raster->clear_frame_buffer(renderer);
+
+		// If the render target is floating-point...
+		if (tile_texture.texture->is_floating_point())
+		{
+			// A lot of graphics hardware does not support blending to floating-point targets so we don't enable it.
+			// And a floating-point render target is used for data rasters (ie, not coloured as fixed-point
+			// for visual display) - where the coverage (or alpha) is in the green channel instead of the alpha channel.
+		}
+		else // an RGBA render target...
+		{
+	#if 0 // We don't really need alpha blending since the source raster tiles don't overlap...
+			// Set up alpha blending for pre-multiplied alpha.
+			// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
+			// This is where the RGB channels have already been multiplied by the alpha channel.
+			renderer.gl_enable(GL_BLEND);
+			renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	#endif
+
+			// Enable alpha testing as an optimisation for culling transparent raster pixels.
+			renderer.gl_enable(GL_ALPHA_TEST);
+			renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
+		}
+
+		// Get the source raster to render into the render target using the view frustum
+		// we have provided. We have already pre-calculated the list of visible source raster tiles
+		// that need to be rendered into our frustum to save it a bit of culling work.
+		// And that's why we also don't need to test the return value to see if anything was rendered.
+		GLMultiResolutionRaster::cache_handle_type source_cache_handle;
+		d_multi_resolution_raster->render(
+				renderer,
+				tile.d_src_raster_tiles,
+				source_cache_handle);
+		tile_cache_handle->push_back(source_cache_handle);
+	}
+	while (render_target_scope.end_tile());
+
+	tile_texture.source_cache_handle = tile_cache_handle;
 
 	// This tile texture is now update-to-date with respect to the source multi-resolution raster.
 	d_multi_resolution_raster->get_subject_token().update_observer(
@@ -658,9 +705,6 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::get_child_node(
 }
 
 
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 void
 GPlatesOpenGL::GLMultiResolutionCubeRaster::create_tile_texture(
 		GLRenderer &renderer,
@@ -668,6 +712,8 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_tile_texture(
 		const CubeQuadTreeNode &tile)
 {
 	//PROFILE_FUNC();
+
+	const GLCapabilities &capabilities = renderer.get_capabilities();
 
 	// Use the same texture format as the source raster.
 	const GLint internal_format = d_multi_resolution_raster->get_target_texture_internal_format();
@@ -700,18 +746,19 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_tile_texture(
 		//
 		// NOTE: We don't enable anisotropic filtering for floating-point textures since earlier
 		// hardware (that supports floating-point textures) only supports nearest filtering.
-		if (GLEW_EXT_texture_filter_anisotropic &&
+		if (capabilities.texture.gl_EXT_texture_filter_anisotropic &&
 			(d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_MAG_NEAREST_ANISOTROPIC ||
 				d_fixed_point_texture_filter == FIXED_POINT_TEXTURE_FILTER_MAG_LINEAR_ANISOTROPIC))
 		{
-			const GLfloat anisotropy = GLContext::get_parameters().texture.gl_texture_max_anisotropy;
+			const GLfloat anisotropy = capabilities.texture.gl_texture_max_anisotropy;
 			tile_texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 		}
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		tile_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -744,7 +791,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::update_tile_texture(
 		const CubeQuadTreeNode &tile)
 {
 	// Use the same texture format as the source raster.
-	const boost::optional<GLenum> internal_format = tile_texture->get_internal_format();
+	const boost::optional<GLint> internal_format = tile_texture->get_internal_format();
 	// The texture should have been initialised.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			internal_format,
@@ -794,5 +841,3 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::update_fixed_point_tile_texture_mag_
 		break;
 	}
 }
-
-ENABLE_GCC_WARNING("-Wold-style-cast")

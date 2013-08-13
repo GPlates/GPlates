@@ -30,13 +30,14 @@
 #include <map>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tuple/tuple_comparison.hpp>
 #include <opengl/OpenGL.h>
 
 #include "GLCompiledDrawState.h"
+#include "GLRenderBufferObject.h"
+#include "GLSaveRestoreFrameBuffer.h"
 #include "GLState.h"
 #include "GLTexture.h"
+#include "GLTileRender.h"
 
 #include "utils/Counter64.h"
 #include "utils/non_null_intrusive_ptr.h"
@@ -45,6 +46,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLCapabilities;
+
 	namespace GLRendererImpl
 	{
 		/**
@@ -210,6 +213,7 @@ namespace GPlatesOpenGL
 			virtual
 			void
 			draw(
+					const GLCapabilities &capabilities,
 					const GLState &state_to_apply,
 					GLState &last_applied_state) const = 0;
 		};
@@ -272,57 +276,77 @@ namespace GPlatesOpenGL
 			RenderTextureTarget(
 					const GLViewport &texture_viewport_,
 					const GLTexture::shared_ptr_to_const_type &texture_,
-					GLint level_) :
+					GLint level_,
+					bool depth_buffer_,
+					bool stencil_buffer_) :
 				texture_viewport(texture_viewport_),
 				texture(texture_),
-				level(level_)
+				level(level_),
+				depth_buffer(depth_buffer_),
+				stencil_buffer(stencil_buffer_),
+				tile_save_restore_state(false)
 			{  }
 
 			GLViewport texture_viewport;
 			GLTexture::shared_ptr_to_const_type texture;
 			GLint level;
 
-			// The following parameters are not used if GL_EXT_framebuffer_object extension is available...
+			bool depth_buffer;
+			bool stencil_buffer;
 
-			//! Used to save/restore the main framebuffer when it's used as a render target.
-			boost::optional<GLTexture::shared_ptr_to_const_type> save_restore_texture;
-		};
+			//! Is true if should save/restore state within the current begin/end tile in render target.
+			bool tile_save_restore_state;
 
-		//! Shadowing of the framebuffer colour attachment state to cache 'glCheckFramebufferStatus' results.
-		class FrameBufferState
-		{
-		public:
-			typedef GLint texture_level_type;
-			typedef GLsizei texture_dimension_type;
-			typedef GLenum texture_internal_format_type;
-
-			FrameBufferState(
-					texture_level_type texture_level,
-					texture_dimension_type texture_width,
-					texture_dimension_type texture_height,
-					texture_internal_format_type texture_internal_format) :
-				state(texture_level, texture_width, texture_height, texture_internal_format)
-			{  }
-
-			bool
-			operator<(
-					const FrameBufferState &rhs) const
+			//! When using framebuffer object as a render target (when GL_EXT_framebuffer_object is supported).
+			struct FrameBufferObject
 			{
-				return state < rhs.state;
-			}
+				explicit
+				FrameBufferObject(
+						const GLFrameBufferObject::shared_ptr_type &frame_buffer_object_,
+						boost::optional<GLRenderBufferObject::shared_ptr_type> depth_buffer_,
+						boost::optional<GLRenderBufferObject::shared_ptr_type> stencil_buffer_) :
+					frame_buffer_object(frame_buffer_object_),
+					depth_buffer(depth_buffer_),
+					stencil_buffer(stencil_buffer_)
+				{  }
 
-		private:
-			//! Typedef for the texture attachment state - using boost tuple for easy comparison.
-			boost::tuple<
-					texture_level_type,
-					texture_dimension_type, // texture width
-					texture_dimension_type, // texture height
-					texture_internal_format_type
-							> state;
+				GLFrameBufferObject::shared_ptr_type frame_buffer_object;
+				boost::optional<GLRenderBufferObject::shared_ptr_type> depth_buffer;
+				boost::optional<GLRenderBufferObject::shared_ptr_type> stencil_buffer;
+			};
+
+			//! When using main framebuffer as a render target (when GL_EXT_framebuffer_object is not supported).
+			struct MainFrameBuffer
+			{
+				explicit
+				MainFrameBuffer(
+						const GLCapabilities &capabilities_,
+						const GLTileRender &tile_render_,
+						bool save_restore_depth_buffer_,
+						bool save_restore_stencil_buffer_) :
+					tile_render(tile_render_),
+					save_restore_frame_buffer(
+							capabilities_,
+							tile_render_.get_max_tile_render_target_width(),
+							tile_render_.get_max_tile_render_target_height(),
+							GL_RGBA8,
+							save_restore_depth_buffer_,
+							save_restore_stencil_buffer_)
+				{  }
+
+				//! Used to tile render when the main framebuffer is smaller than the render target.
+				GLTileRender tile_render;
+
+				//! Used to save/restore the main framebuffer when it's used as a render target.
+				GLSaveRestoreFrameBuffer save_restore_frame_buffer;
+			};
+
+			//! When using main framebuffer as a render target (when GL_EXT_framebuffer_object is not supported).
+			boost::optional<MainFrameBuffer> main_frame_buffer;
+
+			//! The framebuffer object to use for render targets (when GL_EXT_framebuff_object is supported).
+			boost::optional<FrameBufferObject> frame_buffer_object;
 		};
-
-		//! Typedef for a mapping of framebuffer state to 'glCheckFramebufferStatus' result.
-		typedef std::map<FrameBufferState, bool> frame_buffer_state_to_status_map_type;
 
 		/**
 		 * Contains information for a render target block.

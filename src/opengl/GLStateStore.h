@@ -42,6 +42,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLCapabilities;
+
 	/**
 	 * Manages allocation of derived @a GLState classes using an object cache.
 	 */
@@ -65,10 +67,11 @@ namespace GPlatesOpenGL
 		static
 		shared_ptr_type
 		create(
+				const GLCapabilities &capabilities,
 				const GLStateSetStore::non_null_ptr_type &state_set_store,
 				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys)
 		{
-			return shared_ptr_type(new GLStateStore(state_set_store, state_set_keys));
+			return shared_ptr_type(new GLStateStore(capabilities, state_set_store, state_set_keys));
 		}
 
 
@@ -114,6 +117,7 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GLStateStore(
+				const GLCapabilities &capabilities,
 				const GLStateSetStore::non_null_ptr_type &state_set_store,
 				const GLStateSetKeys::non_null_ptr_to_const_type &state_set_keys);
 	};

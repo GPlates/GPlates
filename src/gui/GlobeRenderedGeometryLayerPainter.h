@@ -28,6 +28,7 @@
 #ifndef GPLATES_GUI_GLOBERENDEREDGEOMETRYLAYERPAINTER_H
 #define GPLATES_GUI_GLOBERENDEREDGEOMETRYLAYERPAINTER_H
 
+#include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
@@ -38,20 +39,22 @@
 #include "ColourScheme.h"
 #include "GlobeVisibilityTester.h"
 #include "LayerPainter.h"
-#include "TextRenderer.h"
 #include "RenderSettings.h"
 
 #include "maths/CubeQuadTreeLocation.h"
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/types.h"
+#include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
 #include "opengl/GLCubeSubdivisionCache.h"
+#include "opengl/GLFrustum.h"
 #include "opengl/GLTexture.h"
 
 #include "presentation/VisualLayers.h"
 
 #include "view-operations/RenderedGeometry.h"
+#include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryVisitor.h"
 
 
@@ -95,17 +98,19 @@ namespace GPlatesGui
 		 * @a surface_occlusion_texture is a viewport-size 2D texture containing the RGBA rendering
 		 * of the surface geometries/rasters on the *front* of the globe.
 		 * It is only used when rendering sub-surface geometries.
+		 * @a improve_performance_reduce_quality_hint a hint to improve performance by presumably
+		 * reducing quality - this is a temporary hint usually during globe rotation mouse drag.
 		 */
 		GlobeRenderedGeometryLayerPainter(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const double &inverse_viewport_zoom_factor,
-				RenderSettings &render_settings,
-				const TextRenderer::non_null_ptr_to_const_type &text_renderer_ptr,
+				const RenderSettings &render_settings,
 				const GlobeVisibilityTester &visibility_tester,
 				ColourScheme::non_null_ptr_type colour_scheme,
 				PaintRegionType paint_region,
 				boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type>
-						surface_occlusion_texture = boost::none);
+						surface_occlusion_texture = boost::none,
+				bool improve_performance_reduce_quality_hint = false);
 
 
 		/**
@@ -131,6 +136,10 @@ namespace GPlatesGui
 		visit_rendered_arrowed_polyline(
 			const GPlatesViewOperations::RenderedArrowedPolyline &rendered_arrowed_polyline);
 
+		virtual
+		void
+		visit_rendered_strain_marker_symbol(
+			const GPlatesViewOperations::RenderedStrainMarkerSymbol &);
 
 		virtual
 		void
@@ -164,12 +173,22 @@ namespace GPlatesGui
 
 		virtual
 		void
-		visit_resolved_raster(
+		visit_rendered_coloured_edge_surface_mesh(
+			const GPlatesViewOperations::RenderedColouredEdgeSurfaceMesh &rendered_coloured_edge_surface_mesh);
+
+		virtual
+		void
+		visit_rendered_coloured_triangle_surface_mesh(
+			const GPlatesViewOperations::RenderedColouredTriangleSurfaceMesh &rendered_coloured_triangle_surface_mesh);
+
+		virtual
+		void
+		visit_rendered_resolved_raster(
 				const GPlatesViewOperations::RenderedResolvedRaster &rendered_resolved_raster);
 
 		virtual
 		void
-		visit_resolved_scalar_field_3d(
+		visit_rendered_resolved_scalar_field_3d(
 				const GPlatesViewOperations::RenderedResolvedScalarField3D &rendered_resolved_scalar_field);
 
 		virtual
@@ -207,6 +226,7 @@ namespace GPlatesGui
 		visit_rendered_triangle_symbol(
 				 const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol);
 
+	private:
 
 		//! Typedef for a vertex element (index).
 		typedef LayerPainter::vertex_element_type vertex_element_type;
@@ -225,7 +245,7 @@ namespace GPlatesGui
 
 
 		//! Typedef for a rendered geometries spatial partition.
-		typedef GPlatesMaths::CubeQuadTreePartition<GPlatesViewOperations::RenderedGeometry>
+		typedef GPlatesViewOperations::RenderedGeometryLayer::rendered_geometries_spatial_partition_type
 				rendered_geometries_spatial_partition_type;
 
 		/**
@@ -239,15 +259,58 @@ namespace GPlatesGui
 						cube_subdivision_cache_type;
 
 
+		/**
+		 * Information associated with a rendered geometry.
+		 */
+		struct RenderedGeometryInfo
+		{
+			RenderedGeometryInfo(
+					const GPlatesViewOperations::RenderedGeometry &rendered_geometry_,
+					const rendered_geometries_spatial_partition_type::location_type &spatial_partition_location_ =
+							rendered_geometries_spatial_partition_type::location_type()) :
+				rendered_geometry(rendered_geometry_),
+				spatial_partition_location(spatial_partition_location_)
+			{  }
+
+			GPlatesViewOperations::RenderedGeometry rendered_geometry;
+			rendered_geometries_spatial_partition_type::location_type spatial_partition_location;
+		};
+
+		/**
+		 * Helper structure to sort rendered geometries in their render order.
+		 */
+		struct RenderedGeometryOrder
+		{
+			RenderedGeometryOrder(
+					unsigned int rendered_geometry_info_index_,
+					GPlatesViewOperations::RenderedGeometryLayer::rendered_geometry_index_type render_order_) :
+				rendered_geometry_info_index(rendered_geometry_info_index_),
+				render_order(render_order_)
+			{  }
+
+			unsigned int rendered_geometry_info_index;
+			GPlatesViewOperations::RenderedGeometryLayer::rendered_geometry_index_type render_order;
+
+			//! Used to sort by render order.
+			struct SortRenderOrder
+			{
+				bool
+				operator()(
+						const RenderedGeometryOrder &lhs,
+						const RenderedGeometryOrder &rhs) const
+				{
+					return lhs.render_order < rhs.render_order;
+				}
+			};
+		};
+
+
 		const GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;
 
 		const double d_inverse_zoom_factor;
 
 		//! Rendering flags for determining what gets shown
-		RenderSettings &d_render_settings;
-
-		//! For rendering text
-		TextRenderer::non_null_ptr_to_const_type d_text_renderer_ptr;
+		const RenderSettings &d_render_settings;
 
 		//! For determining whether a particular point on the globe is visible or not
 		GlobeVisibilityTester d_visibility_tester;
@@ -269,6 +332,13 @@ namespace GPlatesGui
 		boost::optional<LayerPainter &> d_layer_painter;
 
 		/**
+		 * Used for frustum culling when the @a paint method is called.
+		 *
+		 * Is only valid during @a paint.
+		 */
+		boost::optional<GPlatesOpenGL::GLFrustum> d_frustum_planes;
+
+		/**
 		 * A viewport-size 2D texture containing the RGBA rendering
 		 * of the surface geometries/rasters on the *front* of the globe.
 		 * It is only used when rendering sub-surface geometries.
@@ -276,13 +346,20 @@ namespace GPlatesGui
 		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> d_surface_occlusion_texture;
 
 		/**
-		 * Optional location in cube quad tree (spatial partition) when/if traversing a
-		 * rendered geometries spatial partition.
+		 * A hint to improve performance presumably at the cost of quality.
 		 *
-		 * If it's boost::none then the location is the root of the spatial partition.
-		 * This is the default if the rendered geometries being visited are not in a spatial partition.
+		 * This is currently used to improve rendering performance of 3D scalar field iso-surfaces
+		 * during globe rotation (mouse drag).
 		 */
-		boost::optional<GPlatesMaths::CubeQuadTreeLocation> d_current_cube_quad_tree_location;
+		bool d_improve_performance_reduce_quality_hint;
+
+		/**
+		 * Location in cube quad tree (spatial partition) when traversing a rendered geometries spatial partition.
+		 *
+		 * Is only valid during @a paint (and when a rendered geometry is visited).
+		 */
+		boost::optional<const rendered_geometries_spatial_partition_type::location_type &>
+				d_current_spatial_partition_location;
 
 
 		//! Multiplying factor to get point size of 1.0f to look like one screen-space pixel.
@@ -290,6 +367,7 @@ namespace GPlatesGui
 
 		//! Multiplying factor to get line width of 1.0f to look like one screen-space pixel.
 		static const float LINE_WIDTH_ADJUSTMENT;
+		static const float STRAIN_LINE_WIDTH_ADJUSTMENT;
 
 
 		/**
@@ -300,12 +378,16 @@ namespace GPlatesGui
 				GPlatesOpenGL::GLRenderer &renderer);
 
 		void
-		render_spatial_partition(
+		get_visible_rendered_geometries(
 				GPlatesOpenGL::GLRenderer &renderer,
+				std::vector<RenderedGeometryInfo> &rendered_geometry_infos,
+				std::vector<RenderedGeometryOrder> &rendered_geometry_orders,
 				const rendered_geometries_spatial_partition_type &rendered_geometries_spatial_partition);
 
 		void
-		render_spatial_partition_quad_tree(
+		get_visible_rendered_geometries_from_spatial_partition_quad_tree(
+				std::vector<RenderedGeometryInfo> &rendered_geometry_infos,
+				std::vector<RenderedGeometryOrder> &rendered_geometry_orders,
 				const GPlatesMaths::CubeQuadTreeLocation &cube_quad_tree_node_location,
 				rendered_geometries_spatial_partition_type::const_node_reference_type rendered_geometries_quad_tree_node,
 				cube_subdivision_cache_type &cube_subdivision_cache,
@@ -328,8 +410,8 @@ namespace GPlatesGui
 		template <typename GreatCircleArcForwardIter>
 		void
 		paint_great_circle_arcs(
-				const GreatCircleArcForwardIter &begin_arcs,
-				const GreatCircleArcForwardIter &end_arcs,
+				GreatCircleArcForwardIter begin_arcs,
+				GreatCircleArcForwardIter end_arcs,
 				const Colour &colour,
 				stream_primitives_type &lines_stream);
 
@@ -348,7 +430,8 @@ namespace GPlatesGui
 		void
 		paint_cone(
 				const GPlatesMaths::Vector3D &apex,
-				const GPlatesMaths::Vector3D &cone_axis,
+				const GPlatesMaths::UnitVector3D &cone_axis_unit_vector,
+				const GPlatesMaths::real_t &cone_axis_mag,
 				rgba8_t rgba8_color,
 				stream_primitives_type &triangles_stream);
 	};

@@ -54,47 +54,79 @@ namespace GPlatesMaths
 			 * the PointOnSphere @a pos.
 			 */
 			explicit 
-			CartesianConvMatrix3D(const PointOnSphere &pos);
+			CartesianConvMatrix3D(
+					const PointOnSphere &pos);
 
 			real_t
-			nx() const { return _nx; }
+			nx() const
+			{
+				return _nx;
+			}
 
 			real_t
-			ny() const { return _ny; }
+			ny() const
+			{
+				return _ny;
+			}
 
 			real_t
-			nz() const { return _nz; }
+			nz() const
+			{
+				return _nz;
+			}
 
 			real_t
-			ex() const { return _ex; }
+			ex() const
+			{
+				return _ex;
+			}
 
 			real_t
-			ey() const { return _ey; }
+			ey() const
+			{
+				return _ey;
+			}
 
 			real_t
-			ez() const { return _ez; }
+			ez() const
+			{
+				return _ez;
+			}
 
 			real_t
-			dx() const { return _dx; }
+			dx() const
+			{
+				return _dx;
+			}
 
 			real_t
-			dy() const { return _dy; }
+			dy() const
+			{
+				return _dy;
+			}
 
 			real_t
-			dz() const { return _dz; }
+			dz() const
+			{
+				return _dz;
+			}
 
 		private:
-			real_t _nx, _ny, _nz,
-			       _ex, _ey, _ez,
-			       _dx, _dy, _dz;
+			real_t _nx, _ny, _nz;
+			real_t _ex, _ey, _ez;
+			real_t _dx, _dy, _dz;
 	};
 
 
 	Vector3D
-	operator*(const CartesianConvMatrix3D &ccm, const Vector3D &v);
+	operator*(
+			const CartesianConvMatrix3D &ccm,
+			const Vector3D &v);
 
 	Vector3D
-	inverse_multiply(const CartesianConvMatrix3D &ccm, const Vector3D &v);
+	inverse_multiply(
+			const CartesianConvMatrix3D &ccm,
+			const Vector3D &v);
 }
 
 #endif  // _GPLATES_MATHS_CARTESIANCONVMATRIX3D_H_

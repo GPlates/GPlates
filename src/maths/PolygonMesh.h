@@ -45,13 +45,6 @@ namespace GPlatesMaths
 	 *
 	 * Can also be generated from a multipoint by considering the order of points to form the
 	 * concave circumference of a polygon.
-	 *
-	 * TODO: Need to handle self-intersections (ie, generate mesh in presense of self-intersections).
-	 * UPDATE: Currently polygon stenciling of a polygon fan mesh (ie, a mesh not fully contained
-	 * within the interior of the polygon) is used exclusively for rendering filled polygons and
-	 * used for self-intersecting polygons when reconstructing rasters - polygon stenciling is a
-	 * raster based technique that masks away the regions of the fan mesh outside the polygon - so
-	 * this technique is only useful for raster based applications.
 	 */
 	class PolygonMesh :
 			public GPlatesUtils::ReferenceCount<PolygonMesh>
@@ -67,7 +60,7 @@ namespace GPlatesMaths
 		/**
 		 * A mesh triangle.
 		 *
-		 * Contains three vertex indices into the vertex array returned by 
+		 * Contains three vertex indices into the vertex array.
 		 */
 		class Triangle
 		{
@@ -126,8 +119,7 @@ namespace GPlatesMaths
 		 * Creates a @a PolygonMesh object from a @a PolygonOnSphere.
 		 *
 		 * Returns boost::none if failed to generate the mesh.
-		 * Such as a self-intersecting polygon or polygon too large to project onto a 2D plane.
-		 * TODO: Create polygon mesh under any situation (except too few unique vertices).
+		 * Such sa error meshing polygon.
 		 */
 		static
 		boost::optional<non_null_ptr_to_const_type>
@@ -141,8 +133,7 @@ namespace GPlatesMaths
 		 * A polygon is formed from the polyline by joining the first and last vertices.
 		 *
 		 * Returns boost::none if failed to generate the mesh.
-		 * Such as a self-intersecting polygon or polygon too large to project onto a 2D plane.
-		 * TODO: Create polygon mesh under any situation (except too few unique vertices).
+		 * Such as less than three vertices (needed for a polygon) or error meshing polygon.
 		 */
 		static
 		boost::optional<non_null_ptr_to_const_type>
@@ -157,8 +148,7 @@ namespace GPlatesMaths
 		 * as the vertices of a polygon.
 		 *
 		 * Returns boost::none if failed to generate the mesh.
-		 * Such as a self-intersecting polygon or polygon too large to project onto a 2D plane.
-		 * TODO: Create polygon mesh under any situation (except too few unique vertices).
+		 * Such as less than three vertices (needed for a polygon) or error meshing polygon.
 		 */
 		static
 		boost::optional<non_null_ptr_to_const_type>
@@ -170,8 +160,7 @@ namespace GPlatesMaths
 		 * Creates a @a PolygonMesh object from a @a GeometryOnSphere.
 		 *
 		 * Returns boost::none if failed to generate the mesh.
-		 * Such as a self-intersecting polygon or polygon too large to project onto a 2D plane.
-		 * TODO: Create polygon mesh under any situation (except too few unique vertices).
+		 * Such as less than three vertices (needed for a polygon) or error meshing polygon.
 		 *
 		 * Note that @a PointOnSphere is the only @a GeometryOnSphere derivation not handled.
 		 * Because can't have a polygon mesh with only a single point.
@@ -223,6 +212,12 @@ namespace GPlatesMaths
 		/**
 		 * Creates, and initialises, this polygon mesh using the specified range
 		 * of points as the polygon boundary.
+		 *
+		 * NOTE: We use a 2D planar projection to ensure that great circle arcs (the polygon edges)
+		 * project onto straight lines in the 2D projection - this ensures that the re-projection
+		 * of the resulting triangulation (with tessellated 2D lines) will have the extra triangulation
+		 * vertices lie on the great circle arcs. With a non-planar projection such as azimuthal
+		 * equal area projection this is not the case.
 		 */
 		template <typename PointOnSphereForwardIter>
 		bool

@@ -34,9 +34,8 @@
 GPlatesAppLogic::ResolvedScalarField3D::ResolvedScalarField3D(
 		GPlatesModel::FeatureHandle &feature_handle,
 		const double &reconstruction_time,
-		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 		const scalar_field_3d_layer_proxy_non_null_ptr_type &scalar_field_layer_proxy) :
-	ReconstructionGeometry(reconstruction_tree_),
+	ReconstructionGeometry(reconstruction_time),
 	WeakObserverType(feature_handle),
 	d_reconstruction_time(reconstruction_time),
 	d_scalar_field_layer_proxy(scalar_field_layer_proxy)

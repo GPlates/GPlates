@@ -29,17 +29,23 @@
 #define GPLATES_QTWIDGETS_MAPCANVAS_H
 
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QGLWidget>
 #include <QGraphicsScene>
+#include <QImage>
+#include <QPaintDevice>
+#include <QSize>
+#include <QTransform>
 
 #include "gui/ColourScheme.h"
 #include "gui/Map.h"
-#include "gui/QPainterTextRenderer.h"
 #include "gui/TextOverlay.h"
 
 #include "opengl/GLContext.h"
+#include "opengl/GLMatrix.h"
+#include "opengl/GLOffScreenContext.h"
 #include "opengl/GLVisualLayers.h"
 
 
@@ -47,6 +53,12 @@ namespace GPlatesGui
 {
 	class RenderSettings;
 	class ViewportZoom;
+}
+
+namespace GPlatesOpenGL
+{
+	class GLRenderer;
+	class GLTileRender;
 }
 
 namespace GPlatesPresentation
@@ -75,6 +87,7 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState &view_state,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				MapView *map_view_ptr,
+				QGLWidget *gl_widget,
 				const GPlatesOpenGL::GLContext::non_null_ptr_type &gl_context,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesGui::RenderSettings &render_settings,
@@ -96,17 +109,30 @@ namespace GPlatesQtWidgets
 			return d_map;
 		}
 
-		void
-		draw_svg_output();
+		/**
+		 * Renders the scene to a QImage of the dimensions specified by @a image_size.
+		 *
+		 * The paint device is the QGLWidget set as the viewport on MapView (on QGraphicsView).
+		 */
+		QImage
+		render_to_qimage(
+				QGLWidget *map_canvas_paint_device,
+				const QTransform &viewport_transform,
+				const QSize &image_size);
 
+		/**
+		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the
+		 * feedback paint device @a feedback_paint_device.
+		 *
+		 * @a map_canvas_paint_device is the map canvas's OpenGL paint device used for OpenGL rendering.
+		 *
+		 * @a viewport_transform is the view transform of the QGraphicsView initiating the rendering.
+		 */
 		void
-		set_disable_update(
-				bool b);
-
-	Q_SIGNALS:
-
-		void
-		repainted();
+		render_opengl_feedback_to_paint_device(
+				QGLWidget *map_canvas_paint_device,
+				const QTransform &viewport_transform,
+				QPaintDevice &feedback_paint_device);
 
 	public Q_SLOTS:
 		
@@ -125,17 +151,8 @@ namespace GPlatesQtWidgets
 
 	private:
 
-		//! Do some OpenGL initialisation.
-		void 
-		initializeGL();
-
-		//! Calculate scaling for lines, points and text based on size of view
-		float
-		calculate_scale();
-
-
 		/**
-		 * Utility class to make the QGLWidget's OpenGL context current in @a MapCanvas constructor.
+		 * Utility class to make the OpenGL context current in @a MapCanvas constructor.
 		 *
 		 * This is so we can do OpenGL stuff in the @a MapCanvas constructor when normally
 		 * we'd have to wait until 'drawBackground()'.
@@ -161,31 +178,26 @@ namespace GPlatesQtWidgets
 
 		//! Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
-		//! Makes the QGLWidget's OpenGL context current in @a GlobeCanvas constructor so it can call OpenGL.
+		//! Makes the OpenGL context current in @a GlobeCanvas constructor so it can call OpenGL.
 		MakeGLContextCurrent d_make_context_current;
+
+		/**
+		 * Used to render to an off-screen frame buffer when outside paint event.
+		 *
+		 * It's a boost::optional since we don't create it until @a initializeGL is called.
+		 */
+		boost::optional<GPlatesOpenGL::GLOffScreenContext::non_null_ptr_type> d_gl_off_screen_context;
 
 		/**
 		 * Enables frame-to-frame caching of persistent OpenGL resources.
 		 *
 		 * There is a certain amount of caching without this already.
-		 * This just prevents a render frame from re-using cached resources of the previous frame
+		 * This just prevents a render frame from invalidating cached resources of the previous frame
 		 * in order to avoid regenerating the same cached resources unnecessarily each frame.
 		 * We hold onto the previous frame's cached resources *while* generating the current frame and
 		 * then release our hold on the previous frame (and continue this pattern each new frame).
 		 */
 		cache_handle_type d_gl_frame_cache_handle;
-
-		/**
-		 * Renders text using the QPainter interface.
-		 *
-		 * Even though we're rendering to a QGLWidget we need a QPainter text renderer because
-		 * with Qt's *OpenGL2* paint engine we are not allowed to call QGLWidget::renderText while
-		 * a painter is active (regardless of whether inside beginNativePainting/endNativePainting
-		 * or not) so all text rendering should be done via the QPainter interface instead - which
-		 * will in turn use the OpenGL paint engine to render text onto the QGLWidget...
-		 * 
-		 */
-		GPlatesGui::TextRenderer::non_null_ptr_type d_text_renderer;
 
 		//! Paints an optional text overlay onto the map.
 		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;
@@ -196,10 +208,39 @@ namespace GPlatesQtWidgets
 		//! A pointer to the state's RenderedGeometryCollection
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
 
-		bool d_disable_update;
+
+		//! Do some OpenGL initialisation.
+		void 
+		initializeGL(
+				QGLWidget *gl_widget);
+
+		/**
+		 * Render one tile of the scene (as specified by @a tile_render).
+		 *
+		 * The sub-rect of @a image to render into is determined by @a tile_renderer.
+		 */
+		cache_handle_type
+		render_scene_tile_into_image(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const GPlatesOpenGL::GLTileRender &tile_render,
+				QImage &image,
+				const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
+				const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay);
+
+		//! Render onto the canvas.
+		cache_handle_type
+		render_scene(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
+				const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
+				int paint_device_width,
+				int paint_device_height);
+
+		//! Calculate scaling for lines, points and text based on size of view
+		float
+		calculate_scale();
+
 	};
-
 }
-
 
 #endif // GPLATES_QTWIDGETS_MAPCANVAS_H

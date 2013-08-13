@@ -50,21 +50,21 @@
          <item>
           <widget class="QRadioButton" name="velocity_vector_3D_radio_button">
            <property name="text">
-            <string>X / Y / Z</string>
+            <string>Cartesian 3D vector (vel_x / vel_y / vel_z)</string>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QRadioButton" name="velocity_vector_colat_lon_radio_button">
            <property name="text">
-            <string>Colatitude / Longitude</string>
+            <string>Colatitude / Longitude (South/East local tangent plane)</string>
            </property>
           </widget>
          </item>
          <item>
           <widget class="QRadioButton" name="velocity_vector_magnitude_angle_radio_button">
            <property name="text">
-            <string>Magnitude / Angle (-180 to +180 degrees anti-clockwise from East)</string>
+            <string>Magnitude / Angle (-180 to +180 degrees anti-clockwise from West)</string>
            </property>
           </widget>
          </item>

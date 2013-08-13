@@ -386,9 +386,10 @@ GPlatesQtWidgets::GlobeAndMapWidget::resizeEvent(
 
 
 QImage
-GPlatesQtWidgets::GlobeAndMapWidget::grab_frame_buffer()
+GPlatesQtWidgets::GlobeAndMapWidget::render_to_qimage(
+		boost::optional<QSize> image_size)
 {
-	return d_active_view_ptr->grab_frame_buffer();
+	return d_active_view_ptr->render_to_qimage(image_size);
 }
 
 
@@ -408,13 +409,6 @@ void
 GPlatesQtWidgets::GlobeAndMapWidget::update_canvas()
 {
 	d_active_view_ptr->update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::GlobeAndMapWidget::repaint_canvas()
-{
-	d_active_view_ptr->repaint_canvas();
 }
 
 

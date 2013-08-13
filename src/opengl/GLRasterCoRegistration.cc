@@ -47,6 +47,7 @@
 #include "GLDataRasterSource.h"
 #include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
+#include "GLShaderSource.h"
 #include "GLStreamPrimitives.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
@@ -104,7 +105,7 @@ bool
 GPlatesOpenGL::GLRasterCoRegistration::is_supported(
 		GLRenderer &renderer)
 {
-	const GLContext::Parameters &context_parameters = GLContext::get_parameters();
+	const GLCapabilities &context_parameters = renderer.get_capabilities();
 
 	// Note that we don't specifically request GL_ARB_vertex_buffer_object and GL_ARB_pixel_buffer_object
 	// because we have fall back paths for vertex and pixel buffers (using client memory instead of buffers)
@@ -134,7 +135,7 @@ GPlatesOpenGL::GLRasterCoRegistration::is_supported(
 			// It's most likely the graphics hardware doesn't support floating-point textures.
 			// Most hardware that supports it also supports the other OpenGL extensions also.
 			qWarning() <<
-					"Raster co-registration NOT supported by this OpenGL system - requires floating-point texture support.\n"
+					"Raster co-registration NOT supported by this graphics hardware - requires floating-point texture support.\n"
 					"  Your graphics hardware is most likely missing the 'GL_ARB_texture_float' OpenGL extension.";
 			emitted_warning = true;
 		}
@@ -150,8 +151,10 @@ GPlatesOpenGL::GLRasterCoRegistration::is_supported(
 GPlatesOpenGL::GLRasterCoRegistration::GLRasterCoRegistration(
 		GLRenderer &renderer) :
 	d_framebuffer_object(renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(renderer)),
-	d_streaming_vertex_element_buffer(GLVertexElementBuffer::create(renderer, GLBuffer::create(renderer))),
-	d_streaming_vertex_buffer(GLVertexBuffer::create(renderer, GLBuffer::create(renderer))),
+	d_streaming_vertex_element_buffer(
+			GLVertexElementBuffer::create(renderer, GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX))),
+	d_streaming_vertex_buffer(
+			GLVertexBuffer::create(renderer, GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_VERTEX))),
 	d_point_region_of_interest_vertex_array(GLVertexArray::create(renderer)),
 	d_line_region_of_interest_vertex_array(GLVertexArray::create(renderer)),
 	d_fill_region_of_interest_vertex_array(GLVertexArray::create(renderer)),
@@ -729,11 +732,11 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 		GLRenderer &renderer)
 {
 	// Vertex shader to copy target raster moments into seed sub-viewport with region-of-interest masking.
-	GLShaderProgramUtils::ShaderSource mask_region_of_interest_moments_vertex_shader_source;
+	GLShaderSource mask_region_of_interest_moments_vertex_shader_source;
 	// Add the '#define' first.
-	mask_region_of_interest_moments_vertex_shader_source.add_shader_source("#define FILTER_MOMENTS\n");
+	mask_region_of_interest_moments_vertex_shader_source.add_code_segment("#define FILTER_MOMENTS\n");
 	// Then add the GLSL 'main()' function.
-	mask_region_of_interest_moments_vertex_shader_source.add_shader_source_from_file(
+	mask_region_of_interest_moments_vertex_shader_source.add_code_segment_from_file(
 			MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE_FILE_NAME);
 	// Compile the vertex shader.
 	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_moments_vertex_shader =
@@ -745,11 +748,11 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 			GPLATES_ASSERTION_SOURCE);
 
 	// Fragment shader to copy target raster moments into seed sub-viewport with region-of-interest masking.
-	GLShaderProgramUtils::ShaderSource mask_region_of_interest_moments_fragment_shader_source;
+	GLShaderSource mask_region_of_interest_moments_fragment_shader_source;
 	// Add the '#define' first.
-	mask_region_of_interest_moments_fragment_shader_source.add_shader_source("#define FILTER_MOMENTS\n");
+	mask_region_of_interest_moments_fragment_shader_source.add_code_segment("#define FILTER_MOMENTS\n");
 	// Then add the GLSL 'main()' function.
-	mask_region_of_interest_moments_fragment_shader_source.add_shader_source_from_file(
+	mask_region_of_interest_moments_fragment_shader_source.add_code_segment_from_file(
 			MASK_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader.
 	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_moments_fragment_shader =
@@ -763,19 +766,19 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	boost::optional<GLProgramObject::shared_ptr_type> mask_region_of_interest_moments_program_object =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
-					*mask_region_of_interest_moments_vertex_shader.get(),
-					*mask_region_of_interest_moments_fragment_shader.get());
+					mask_region_of_interest_moments_vertex_shader.get(),
+					mask_region_of_interest_moments_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			mask_region_of_interest_moments_program_object,
 			GPLATES_ASSERTION_SOURCE);
 	d_mask_region_of_interest_moments_program_object = mask_region_of_interest_moments_program_object.get();
 
 	// Vertex shader to copy target raster min/max into seed sub-viewport with region-of-interest masking.
-	GLShaderProgramUtils::ShaderSource mask_region_of_interest_minmax_vertex_shader_source;
+	GLShaderSource mask_region_of_interest_minmax_vertex_shader_source;
 	// Add the '#define' first.
-	mask_region_of_interest_minmax_vertex_shader_source.add_shader_source("#define FILTER_MIN_MAX\n");
+	mask_region_of_interest_minmax_vertex_shader_source.add_code_segment("#define FILTER_MIN_MAX\n");
 	// Then add the GLSL 'main()' function.
-	mask_region_of_interest_minmax_vertex_shader_source.add_shader_source_from_file(
+	mask_region_of_interest_minmax_vertex_shader_source.add_code_segment_from_file(
 			MASK_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE_FILE_NAME);
 	// Compile the vertex shader.
 	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_minmax_vertex_shader =
@@ -787,11 +790,11 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 			GPLATES_ASSERTION_SOURCE);
 
 	// Fragment shader to copy target raster min/max into seed sub-viewport with region-of-interest masking.
-	GLShaderProgramUtils::ShaderSource mask_region_of_interest_minmax_fragment_shader_source;
+	GLShaderSource mask_region_of_interest_minmax_fragment_shader_source;
 	// Add the '#define' first.
-	mask_region_of_interest_minmax_fragment_shader_source.add_shader_source("#define FILTER_MIN_MAX\n");
+	mask_region_of_interest_minmax_fragment_shader_source.add_code_segment("#define FILTER_MIN_MAX\n");
 	// Then add the GLSL 'main()' function.
-	mask_region_of_interest_minmax_fragment_shader_source.add_shader_source_from_file(
+	mask_region_of_interest_minmax_fragment_shader_source.add_code_segment_from_file(
 			MASK_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader.
 	boost::optional<GLShaderObject::shared_ptr_type> mask_region_of_interest_minmax_fragment_shader =
@@ -805,8 +808,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 	boost::optional<GLProgramObject::shared_ptr_type> mask_region_of_interest_minmax_program_object =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
-					*mask_region_of_interest_minmax_vertex_shader.get(),
-					*mask_region_of_interest_minmax_fragment_shader.get());
+					mask_region_of_interest_minmax_vertex_shader.get(),
+					mask_region_of_interest_minmax_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			mask_region_of_interest_minmax_program_object,
 			GPLATES_ASSERTION_SOURCE);
@@ -922,21 +925,21 @@ GPlatesOpenGL::GLRasterCoRegistration::create_region_of_interest_shader_program(
 		const char *fragment_shader_defines)
 {
 	// Vertex shader source.
-	GLShaderProgramUtils::ShaderSource vertex_shader_source;
+	GLShaderSource vertex_shader_source;
 	// Add the '#define'.
-	vertex_shader_source.add_shader_source(vertex_shader_defines);
+	vertex_shader_source.add_code_segment(vertex_shader_defines);
 	// Then add the GLSL function to rotate by quaternion.
-	vertex_shader_source.add_shader_source_from_file(
+	vertex_shader_source.add_code_segment_from_file(
 			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
 	// Then add the GLSL 'main()' function.
-	vertex_shader_source.add_shader_source_from_file(
+	vertex_shader_source.add_code_segment_from_file(
 			RENDER_REGION_OF_INTEREST_GEOMETRIES_VERTEX_SHADER_SOURCE_FILE_NAME);
 
-	GLShaderProgramUtils::ShaderSource fragment_shader_source;
+	GLShaderSource fragment_shader_source;
 	// Add the '#define' first.
-	fragment_shader_source.add_shader_source(fragment_shader_defines);
+	fragment_shader_source.add_code_segment(fragment_shader_defines);
 	// Then add the GLSL 'main()' function.
-	fragment_shader_source.add_shader_source_from_file(
+	fragment_shader_source.add_code_segment_from_file(
 			RENDER_REGION_OF_INTEREST_GEOMETRIES_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 	// Link the shader program.
@@ -962,18 +965,18 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	boost::optional<GLShaderObject::shared_ptr_type> reduction_vertex_shader =
 			GLShaderProgramUtils::compile_vertex_shader(
 					renderer,
-					GLShaderProgramUtils::ShaderSource::create_shader_source_from_file(
+					GLShaderSource::create_shader_source_from_file(
 							REDUCTION_OF_REGION_OF_INTEREST_VERTEX_SHADER_SOURCE_FILE_NAME));
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			reduction_vertex_shader ,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Fragment shader to calculate the sum of region-of-interest filter results.
-	GLShaderProgramUtils::ShaderSource reduction_sum_fragment_shader_source;
+	GLShaderSource reduction_sum_fragment_shader_source;
 	// Add the '#define' first.
-	reduction_sum_fragment_shader_source.add_shader_source("#define REDUCTION_SUM\n");
+	reduction_sum_fragment_shader_source.add_code_segment("#define REDUCTION_SUM\n");
 	// Then add the GLSL 'main()' function.
-	reduction_sum_fragment_shader_source.add_shader_source_from_file(
+	reduction_sum_fragment_shader_source.add_code_segment_from_file(
 			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader to calculate the sum of region-of-interest filter results.
 	boost::optional<GLShaderObject::shared_ptr_type> reduction_sum_fragment_shader =
@@ -987,19 +990,19 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	boost::optional<GLProgramObject::shared_ptr_type> reduction_sum_program_object =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
-					*reduction_vertex_shader.get(),
-					*reduction_sum_fragment_shader.get());
+					reduction_vertex_shader.get(),
+					reduction_sum_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			reduction_sum_program_object,
 			GPLATES_ASSERTION_SOURCE);
 	d_reduction_sum_program_object = reduction_sum_program_object.get();
 
 	// Fragment shader to calculate the minimum of region-of-interest filter results.
-	GLShaderProgramUtils::ShaderSource reduction_min_fragment_shader_source;
+	GLShaderSource reduction_min_fragment_shader_source;
 	// Add the '#define' first.
-	reduction_min_fragment_shader_source.add_shader_source("#define REDUCTION_MIN\n");
+	reduction_min_fragment_shader_source.add_code_segment("#define REDUCTION_MIN\n");
 	// Then add the GLSL 'main()' function.
-	reduction_min_fragment_shader_source.add_shader_source_from_file(
+	reduction_min_fragment_shader_source.add_code_segment_from_file(
 			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader to calculate the minimum of region-of-interest filter results.
 	boost::optional<GLShaderObject::shared_ptr_type> reduction_min_fragment_shader =
@@ -1013,19 +1016,19 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	boost::optional<GLProgramObject::shared_ptr_type> reduction_min_program_object =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
-					*reduction_vertex_shader.get(),
-					*reduction_min_fragment_shader.get());
+					reduction_vertex_shader.get(),
+					reduction_min_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			reduction_min_program_object,
 			GPLATES_ASSERTION_SOURCE);
 	d_reduction_min_program_object = reduction_min_program_object.get();
 
 	// Fragment shader to calculate the maximum of region-of-interest filter results.
-	GLShaderProgramUtils::ShaderSource reduction_max_fragment_shader_source;
+	GLShaderSource reduction_max_fragment_shader_source;
 	// Add the '#define' first.
-	reduction_max_fragment_shader_source.add_shader_source("#define REDUCTION_MAX\n");
+	reduction_max_fragment_shader_source.add_code_segment("#define REDUCTION_MAX\n");
 	// Then add the GLSL 'main()' function.
-	reduction_max_fragment_shader_source.add_shader_source_from_file(
+	reduction_max_fragment_shader_source.add_code_segment_from_file(
 			REDUCTION_OF_REGION_OF_INTEREST_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 	// Compile the fragment shader to calculate the maximum of region-of-interest filter results.
 	boost::optional<GLShaderObject::shared_ptr_type> reduction_max_fragment_shader =
@@ -1039,8 +1042,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	boost::optional<GLProgramObject::shared_ptr_type> reduction_max_program_object =
 			GLShaderProgramUtils::link_vertex_fragment_program(
 					renderer,
-					*reduction_vertex_shader.get(),
-					*reduction_max_fragment_shader.get());
+					reduction_vertex_shader.get(),
+					reduction_max_fragment_shader.get());
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			reduction_max_program_object,
 			GPLATES_ASSERTION_SOURCE);
@@ -1387,11 +1390,14 @@ GPlatesOpenGL::GLRasterCoRegistration::create_reconstructed_seed_geometries_spat
 				reconstructed_feature.get_reconstructions();
 		BOOST_FOREACH(const GPlatesAppLogic::ReconstructContext::Reconstruction &reconstruction, reconstructions)
 		{
-			// NOTE: To avoid reconstructing geometries (it's faster if we transform using GPU) we
-			// add the *unreconstructed* geometry (and a finite rotation) to the spatial partition.
+			// NOTE: To avoid reconstructing geometries when it might not be needed we add the
+			// *unreconstructed* geometry (and a finite rotation) to the spatial partition.
 			// The spatial partition will rotate only the centroid of the *unreconstructed*
 			// geometry (instead of reconstructing the entire geometry) and then use that as the
 			// insertion location (along with the *unreconstructed* geometry's bounding circle extents).
+			// An example where transforming might not be needed is data mining co-registration
+			// where might not need to transform all geometries to determine if seed and target
+			// features are close enough within a region of interest.
 
 			const GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type &rfg =
 					reconstruction.get_reconstructed_feature_geometry();
@@ -1432,7 +1438,7 @@ GPlatesOpenGL::GLRasterCoRegistration::create_reconstructed_seed_geometries_spat
 				const GPlatesMaths::GeometryOnSphere &reconstructed_geometry = *rfg->reconstructed_geometry();
 
 				// It's not a finite rotation so we can't assume the geometry has rigidly rotated.
-				// Hence we can't assume it's shape is the same and hence can't assume the
+				// Hence we can't assume its shape is the same and hence can't assume the
 				// small circle bounding radius is the same.
 				// So just get the reconstructed geometry and insert it into the spatial partition.
 				// The appropriate bounding small circle will be generated for it when it's added.
@@ -4852,6 +4858,8 @@ GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_float_texture(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Acquire a cached floating-point texture.
 	// It'll get returned to its cache when we no longer reference it.
 	const GLTexture::shared_ptr_type texture =
@@ -4872,14 +4880,15 @@ GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_float_texture(
 	// texture hardware does not support it).
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	if (GLEW_EXT_texture_filter_anisotropic)
+	if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
 	{
 		texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -4898,6 +4907,8 @@ GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_fixed_texture(
 		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Acquire a cached fixed-point texture.
 	// It'll get returned to its cache when we no longer reference it.
 	const GLTexture::shared_ptr_type texture =
@@ -4917,14 +4928,15 @@ GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_fixed_texture(
 	// Turn off any linear/anisotropic filtering - we're using one-to-one texel-to-pixel mapping.
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	if (GLEW_EXT_texture_filter_anisotropic)
+	if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
 	{
 		texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -5432,7 +5444,7 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::ResultsQueue(
 	for (unsigned int n = 0; n < NUM_PIXEL_BUFFERS; ++n)
 	{
 		// Allocate enough memory in each pixel buffer to read back a floating-point texture.
-		GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer);
+		GLBuffer::shared_ptr_type buffer = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_PIXEL);
 		buffer->gl_buffer_data(
 				renderer,
 				GLBuffer::TARGET_PIXEL_PACK_BUFFER,

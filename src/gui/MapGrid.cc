@@ -35,6 +35,7 @@
 #include "MapGrid.h"
 
 #include "Colour.h"
+#include "FeedbackOpenGLToQPainter.h"
 #include "ProjectionException.h"
 
 #include "global/AssertionFailureException.h"
@@ -108,8 +109,27 @@ namespace
 			GPlatesOpenGL::GLRenderer &renderer)
 	{
 		// Set the alpha-blend state.
-		renderer.gl_enable(GL_BLEND);
-		renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		// Set up alpha blending for pre-multiplied alpha.
+		// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
+		// This is where the RGB channels have already been multiplied by the alpha channel.
+		// See class GLVisualRasterSource for why this is done.
+		//
+		// To generate pre-multiplied alpha we'll use separate alpha-blend (src,dst) factors for the alpha channel...
+		//
+		//   RGB uses (src_alpha, 1 - src_alpha)  ->  (R,G,B) = (Rs*As,Gs*As,Bs*As) + (1-As) * (Rd,Gd,Bd)
+		//     A uses (1, 1 - src_alpha)          ->        A = As + (1-As) * Ad
+		if (renderer.get_capabilities().framebuffer.gl_EXT_blend_func_separate)
+		{
+			renderer.gl_enable(GL_BLEND);
+			renderer.gl_blend_func_separate(
+					GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+					GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		}
+		else // otherwise resort to normal blending...
+		{
+			renderer.gl_enable(GL_BLEND);
+			renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		}
 
 		// Set the anti-aliased line state.
 		renderer.gl_enable(GL_LINE_SMOOTH);
@@ -363,5 +383,20 @@ GPlatesGui::MapGrid::paint(
 		d_last_seen_map_projection_settings = map_projection_settings;
 	}
 
-	renderer.apply_compiled_draw_state(*d_grid_compiled_draw_state.get());
+	// Either render directly to the framebuffer, or use OpenGL feedback to render to the
+	// QPainter's paint device.
+	if (renderer.rendering_to_context_framebuffer())
+	{
+		renderer.apply_compiled_draw_state(*d_grid_compiled_draw_state.get());
+	}
+	else
+	{
+		// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
+		// We are rendering to the QPainter attached to GLRenderer.
+		FeedbackOpenGLToQPainter feedback_opengl;
+		FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
+				feedback_opengl, renderer, 0, LINE_OF_LATITUDE_NUM_SEGMENTS * LINE_OF_LONGITUDE_NUM_SEGMENTS, 0);
+
+		renderer.apply_compiled_draw_state(*d_grid_compiled_draw_state.get());
+	}
 }

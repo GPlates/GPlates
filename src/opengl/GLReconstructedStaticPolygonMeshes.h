@@ -94,7 +94,7 @@ namespace GPlatesOpenGL
 
 		/**
 		 * A polygon mesh consisting of triangles within the interior region of the polygon if the
-		 * polygon is not self-intersecting, otherwise simply a triangle fan mesh (with centroid as apex).
+		 * polygon was successfully meshed, otherwise simply a triangle fan mesh (with centroid as apex).
 		 */
 		struct PolygonMeshDrawable
 		{
@@ -636,16 +636,6 @@ namespace GPlatesOpenGL
 		ReconstructedPolygonMeshTransformsGroups::non_null_ptr_to_const_type
 		get_reconstructed_polygon_meshes(
 				GLRenderer &renderer);
-
-
-		/**
-		 * Returns the current reconstruction time last set by @a update.
-		 */
-		const double &
-		get_reconstruction_time() const
-		{
-			return d_reconstruction_time;
-		}
 
 	private:
 		/**

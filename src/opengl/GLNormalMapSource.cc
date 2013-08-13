@@ -39,6 +39,7 @@
 #include "GLContext.h"
 #include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
+#include "GLShaderSource.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"
 
@@ -89,11 +90,12 @@ GPlatesOpenGL::GLNormalMapSource::is_supported(
 		// However vertex/fragment shader programs are required.
 		// Actually they're not required in this class since we can generate normals on the CPU
 		// but they are required when normals are used for lighting elsewhere.
-		if (!GLContext::get_parameters().shader.gl_ARB_vertex_shader ||
-			!GLContext::get_parameters().shader.gl_ARB_fragment_shader)
+		if (!renderer.get_capabilities().shader.gl_ARB_vertex_shader ||
+			!renderer.get_capabilities().shader.gl_ARB_fragment_shader)
 		{
-			//qDebug() <<
-			//		"GLNormalMapSource: Disabling normal map raster lighting in OpenGL - requires vertex/fragment shader programs.";
+			qWarning() <<
+					"Normal map raster lighting NOT supported by this graphics hardware.\n"
+					"  Requires vertex/fragment shader programs.";
 
 			return false;
 		}
@@ -110,7 +112,8 @@ boost::optional<GPlatesOpenGL::GLNormalMapSource::non_null_ptr_type>
 GPlatesOpenGL::GLNormalMapSource::create(
 		GLRenderer &renderer,
 		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &height_field_raster,
-		unsigned int tile_texel_dimension)
+		unsigned int tile_texel_dimension,
+		float height_field_scale_factor)
 {
 	if (!is_supported(renderer))
 	{
@@ -144,9 +147,9 @@ GPlatesOpenGL::GLNormalMapSource::create(
 	const unsigned int raster_height = raster_dimensions->second;
 
 	// Make sure our tile size does not exceed the maximum texture size...
-	if (tile_texel_dimension > GLContext::get_parameters().texture.gl_max_texture_size)
+	if (tile_texel_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
 	{
-		tile_texel_dimension = GLContext::get_parameters().texture.gl_max_texture_size;
+		tile_texel_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
 	}
 
 	// Make sure tile_texel_dimension is a power-of-two.
@@ -168,7 +171,8 @@ GPlatesOpenGL::GLNormalMapSource::create(
 			raster_width,
 			raster_height,
 			tile_texel_dimension,
-			raster_statistics));
+			raster_statistics,
+			height_field_scale_factor));
 }
 
 
@@ -179,28 +183,36 @@ GPlatesOpenGL::GLNormalMapSource::GLNormalMapSource(
 		unsigned int raster_width,
 		unsigned int raster_height,
 		unsigned int tile_texel_dimension,
-		const GPlatesPropertyValues::RasterStatistics &raster_statistics) :
+		const GPlatesPropertyValues::RasterStatistics &raster_statistics,
+		float height_field_scale_factor) :
 	d_proxied_raster_resolver(proxy_raster_resolver),
 	d_raster_width(raster_width),
 	d_raster_height(raster_height),
 	d_tile_texel_dimension(tile_texel_dimension),
-	d_height_field_scale(1), // Default scale
+	// The constant is arbitrary and empirically determined to work with some test rasters.
+	// The user can adjust the final scale value so this just needs to provide a reasonably OK starting point...
+	d_constant_height_field_scale_factor(GPlatesMaths::PI / 18),
+	d_raster_statistics_height_field_scale_factor(1), // Default scale
+	d_raster_resolution_height_field_scale_factor(1), // Default scale
+	d_client_height_field_scale_factor(height_field_scale_factor),
 	// Generating normals on GPU requires uploading height field as a floating-point texture with
 	// non-power-of-two dimension (tile_texel_dimension + 2) x (tile_texel_dimension + 2) ...
 	d_generate_normal_map_on_gpu(
-			GLEW_ARB_texture_float &&
-			GLEW_ARB_texture_non_power_of_two &&
-			GLEW_EXT_framebuffer_object/*needed when rendering to floating-point targets*/),
+			renderer.get_capabilities().texture.gl_ARB_texture_float &&
+			renderer.get_capabilities().texture.gl_ARB_texture_non_power_of_two &&
+			renderer.get_capabilities().framebuffer.gl_EXT_framebuffer_object/*needed when rendering to floating-point targets*/),
 	// These textures get reused even inside a single rendering frame so we just need a small number
 	// to give the graphics card some breathing room (in terms of render-texture dependencies)...
 	d_height_field_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(2)),
 	d_full_screen_quad_drawable(renderer.get_context().get_shared_state()->get_full_screen_2D_textured_quad(renderer)),
 	d_logged_tile_load_failure_warning(false)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	initialise_level_of_detail_dimensions();
 
-	// Adjust the height field scale based on the raster statistics.
-	initialise_height_field_scale(raster_statistics);
+	// Adjust the height field scale factor that's based on the raster statistics.
+	initialise_raster_statistics_height_field_scale_factor(raster_statistics);
 
 	if (d_generate_normal_map_on_gpu)
 	{
@@ -218,7 +230,7 @@ GPlatesOpenGL::GLNormalMapSource::GLNormalMapSource(
 	{
 		// If we generate normals on the GPU then the tile height working data will be used to
 		// upload to a height map texture...
-		const unsigned int num_floats_per_texel = GLEW_ARB_texture_rg ? 2/*RG*/ : 4/*RGBA*/;
+		const unsigned int num_floats_per_texel = capabilities.texture.gl_ARB_texture_rg ? 2/*RG*/ : 4/*RGBA*/;
 		d_tile_height_data_working_space.reset(
 				new float[num_floats_per_texel * height_map_texel_dimension * height_map_texel_dimension]);
 		// Zero the memory.
@@ -284,38 +296,53 @@ GPlatesOpenGL::GLNormalMapSource::initialise_level_of_detail_dimensions()
 
 
 void
-GPlatesOpenGL::GLNormalMapSource::initialise_height_field_scale(
+GPlatesOpenGL::GLNormalMapSource::initialise_raster_statistics_height_field_scale_factor(
 		const GPlatesPropertyValues::RasterStatistics &raster_statistics)
 {
 	if (!raster_statistics.minimum || !raster_statistics.maximum)
 	{
 		// Leave height field scale as default value.
+		d_raster_statistics_height_field_scale_factor = 1;
 		return;
 	}
 
 	// Base the scale off the range of raster values.
 	// The constant is arbitrary and empirically determined to work with some test rasters.
 	// The user can adjust this value so it just needs to be a reasonably OK starting point.
-	d_height_field_scale = 100.0 / (raster_statistics.maximum.get() - raster_statistics.minimum.get());
+	if (!GPlatesMaths::are_almost_exactly_equal(raster_statistics.maximum.get(), raster_statistics.minimum.get()))
+	{
+		d_raster_statistics_height_field_scale_factor = 1.0 / (raster_statistics.maximum.get() - raster_statistics.minimum.get());
+	}
+}
+
+
+float
+GPlatesOpenGL::GLNormalMapSource::get_height_field_scale() const
+{
+	// Multiple all the height field scale factors together.
+	return d_constant_height_field_scale_factor *
+		d_raster_statistics_height_field_scale_factor *
+		d_raster_resolution_height_field_scale_factor *
+		d_client_height_field_scale_factor;
 }
 
 
 void
 GPlatesOpenGL::GLNormalMapSource::set_max_highest_resolution_texel_size_on_unit_sphere(
-		const double &texel_size)
+		const double &max_highest_resolution_texel_size_on_unit_sphere)
 {
 	// The smaller the texel size on the unit-sphere the larger the scale we need to apply to the heights
 	// in order to keep the normals (slopes) the same as an equivalent lower (or higher) resolution raster.
-	// The constant is arbitrary and empirically determined to work with some test rasters.
-	// The user can adjust this value so it just needs to be a reasonably OK starting point.
-	d_height_field_scale *= (GPlatesMaths::PI / 1800) / texel_size;
+	d_raster_resolution_height_field_scale_factor =
+			1.0 / max_highest_resolution_texel_size_on_unit_sphere;
 }
 
 
 bool
 GPlatesOpenGL::GLNormalMapSource::change_raster(
 		GLRenderer &renderer,
-		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &new_height_raster)
+		const GPlatesPropertyValues::RawRaster::non_null_ptr_type &new_height_raster,
+		float height_field_scale_factor)
 {
 	// Get the raster dimensions.
 	boost::optional<std::pair<unsigned int, unsigned int> > new_raster_dimensions =
@@ -334,14 +361,33 @@ GPlatesOpenGL::GLNormalMapSource::change_raster(
 		return false;
 	}
 
-	// Create a new proxied raster resolver to perform region queries for the new raster data.
+	// The raster type is expected to contain numerical (height) data, not colour RGBA data.
+	if (!GPlatesPropertyValues::RawRasterUtils::does_raster_contain_numerical_data(*new_height_raster))
+	{
+		return false;
+	}
+
 	boost::optional<GPlatesPropertyValues::ProxiedRasterResolver::non_null_ptr_type> proxy_resolver_opt =
 			GPlatesPropertyValues::ProxiedRasterResolver::create(new_height_raster);
 	if (!proxy_resolver_opt)
 	{
 		return false;
 	}
+
 	d_proxied_raster_resolver = proxy_resolver_opt.get();
+
+	// Get the raster statistics (if any).
+	GPlatesPropertyValues::RasterStatistics raster_statistics;
+	if (GPlatesPropertyValues::RasterStatistics *raster_statistics_ptr =
+			GPlatesPropertyValues::RawRasterUtils::get_raster_statistics(*new_height_raster))
+	{
+		raster_statistics = *raster_statistics_ptr;
+	}
+
+	// Adjust the heightfield scale based on raster statistics.
+	initialise_raster_statistics_height_field_scale_factor(raster_statistics);
+
+	d_client_height_field_scale_factor = height_field_scale_factor;
 
 	// Invalidate any raster data that clients may have cached.
 	invalidate();
@@ -456,7 +502,8 @@ GPlatesOpenGL::GLNormalMapSource::load_tile(
 			src_height_map_texel_width,
 			src_height_map_texel_height,
 			dst_height_map_texel_width,
-			dst_height_map_texel_height))
+			dst_height_map_texel_height,
+			renderer))
 	{
 		load_default_normal_map(
 				level,
@@ -477,7 +524,7 @@ GPlatesOpenGL::GLNormalMapSource::load_tile(
 	// when transitioning between levels).
 	// The division by 6 accounts for the 3 slope calculations per u or v direction and the distance
 	// of two pixels covered by each.
-	const float lod_height_scale = (1.0f / 6) * d_height_field_scale / (1 << level);
+	const float lod_height_scale = (1.0f / 6) * get_height_field_scale() / (1 << level);
 
 	// If we can offload the normal map generation to the GPU then do so.
 	// This really requires floating-point textures to get sufficient precision for the height field values.
@@ -516,6 +563,8 @@ GPlatesOpenGL::GLNormalMapSource::gpu_convert_height_field_to_normal_map(
 {
 	PROFILE_FUNC();
 
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// Simply allocate a new texture from the texture cache and fill it with height data.
 	// Get an unused tile texture from the cache if there is one.
 	boost::optional<GLTexture::shared_ptr_type> height_field_texture =
@@ -539,67 +588,80 @@ GPlatesOpenGL::GLNormalMapSource::gpu_convert_height_field_to_normal_map(
 			renderer,
 			height_field_texture.get(),
 			d_tile_height_data_working_space.get(),
-			(GLEW_ARB_texture_rg ? GL_RG : GL_RGBA),
+			(capabilities.texture.gl_ARB_texture_rg ? GL_RG : GL_RGBA),
 			GL_FLOAT,
 			height_map_texel_width,
 			height_map_texel_height);
 
 	// Begin rendering to the 2D render target normal map texture.
-	GLRenderer::RenderTarget2DScope render_target_scope(renderer, target_texture);
-
-	// Viewport that matches the possibly partial tile dimensions and *not* necessarily always
-	// the full tile dimensions. This happens for tiles near the bottom or right edge of the raster.
-	renderer.gl_viewport(0, 0, normal_map_texel_width, normal_map_texel_height);
-
-	// The default normal is normal to the surface with (x,y,z) of (0,0,1).
-	// We also need to convert the x and y components from the signed range [-1,1] to unsigned range [0,1].
-	// This is because our normal map texture is unsigned 8-bit RGB.
-	// It'll get converted back to the signed range when lighting is applied in a shader program.
 	//
-	// The default normal is useful because if the region does not occupy the entire tile then it
-	// means we've reached the right or bottom edge of the raster and it's possible that our generated
-	// normal map could be sampled outside its valid region due to the fact that it's partially filled
-	// and contains undefined values outside the region.
-	// In this case the default normal will be sampled to give the same lighting results as
-	// non-normal-mapped regions of the globe.
-	// This also enables us to use discard in the shader program when the coverage is zero in order
-	// to use the default normal.
-	// NOTE: The clear is not limited to the viewport region (specified above) which is important
-	// for the above reason.
-	renderer.gl_clear_color(GLclampf(0.5), GLclampf(0.5), GLclampf(1), GLclampf(1));
-
-	// Clear only the colour buffer.
-	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
-
-	// Bind the shader program.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_generate_normals_program_object,
-			GPLATES_ASSERTION_SOURCE);
-	renderer.gl_bind_program_object(d_generate_normals_program_object.get());
-
-	// Bind the height field texture to texture unit 0.
-	renderer.gl_bind_texture(height_field_texture.get(), GL_TEXTURE0, GL_TEXTURE_2D);
-
-	// Set the height field texture sampler to texture unit 0.
-	d_generate_normals_program_object.get()->gl_uniform1i(
-			renderer, "height_field_texture_sampler", 0);
-
-	// Set the texture coordinates scale/translate to convert from [0,1] in the possibly partial
-	// tile region in the viewport to the full-size square height field tile of dimension
-	//    (d_tile_texel_dimension + 2) x (d_tile_texel_dimension + 2).
-	const float inverse_full_height_map_tile = 1.0f / (d_tile_texel_dimension + 2);
-	const float u_scale = normal_map_texel_width * inverse_full_height_map_tile;
-	const float v_scale = normal_map_texel_height * inverse_full_height_map_tile;
-	d_generate_normals_program_object.get()->gl_uniform4f(
+	// Specify a viewport that matches the possibly partial tile dimensions and *not* necessarily always
+	// the full tile dimensions. This happens for tiles near the bottom or right edge of the raster.
+	GLRenderer::RenderTarget2DScope render_target_scope(
 			renderer,
-			"height_field_parameters",
-			u_scale, // scale u
-			v_scale, // scale v
-			inverse_full_height_map_tile, // translate u and v
-			lod_height_scale);
+			target_texture,
+			GLViewport(0, 0, normal_map_texel_width, normal_map_texel_height));
 
-	// Draw a full-screen quad.
-	renderer.apply_compiled_draw_state(*d_full_screen_quad_drawable);
+	// The render target tiling loop...
+	do
+	{
+		// Begin the current render target tile - this also sets the viewport.
+		GLTransform::non_null_ptr_to_const_type tile_projection = render_target_scope.begin_tile();
+
+		// Set up the projection transform adjustment for the current render target tile.
+		renderer.gl_load_matrix(GL_PROJECTION, tile_projection->get_matrix());
+
+		// The default normal is normal to the surface with (x,y,z) of (0,0,1).
+		// We also need to convert the x and y components from the signed range [-1,1] to unsigned range [0,1].
+		// This is because our normal map texture is unsigned 8-bit RGB.
+		// It'll get converted back to the signed range when lighting is applied in a shader program.
+		//
+		// The default normal is useful because if the region does not occupy the entire tile then it
+		// means we've reached the right or bottom edge of the raster and it's possible that our generated
+		// normal map could be sampled outside its valid region due to the fact that it's partially filled
+		// and contains undefined values outside the region.
+		// In this case the default normal will be sampled to give the same lighting results as
+		// non-normal-mapped regions of the globe.
+		// This also enables us to use discard in the shader program when the coverage is zero in order
+		// to use the default normal.
+		// NOTE: The clear is not limited to the viewport region (specified above) which is important
+		// for the above reason.
+		renderer.gl_clear_color(GLclampf(0.5), GLclampf(0.5), GLclampf(1), GLclampf(1));
+
+		// Clear only the colour buffer.
+		renderer.gl_clear(GL_COLOR_BUFFER_BIT);
+
+		// Bind the shader program.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_generate_normals_program_object,
+				GPLATES_ASSERTION_SOURCE);
+		renderer.gl_bind_program_object(d_generate_normals_program_object.get());
+
+		// Bind the height field texture to texture unit 0.
+		renderer.gl_bind_texture(height_field_texture.get(), GL_TEXTURE0, GL_TEXTURE_2D);
+
+		// Set the height field texture sampler to texture unit 0.
+		d_generate_normals_program_object.get()->gl_uniform1i(
+				renderer, "height_field_texture_sampler", 0);
+
+		// Set the texture coordinates scale/translate to convert from [0,1] in the possibly partial
+		// tile region in the viewport to the full-size square height field tile of dimension
+		//    (d_tile_texel_dimension + 2) x (d_tile_texel_dimension + 2).
+		const float inverse_full_height_map_tile = 1.0f / (d_tile_texel_dimension + 2);
+		const float u_scale = normal_map_texel_width * inverse_full_height_map_tile;
+		const float v_scale = normal_map_texel_height * inverse_full_height_map_tile;
+		d_generate_normals_program_object.get()->gl_uniform4f(
+				renderer,
+				"height_field_parameters",
+				u_scale, // scale u
+				v_scale, // scale v
+				inverse_full_height_map_tile, // translate u and v
+				lod_height_scale);
+
+		// Draw a full-screen quad.
+		renderer.apply_compiled_draw_state(*d_full_screen_quad_drawable);
+	}
+	while (render_target_scope.end_tile());
 }
 
 
@@ -833,13 +895,16 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 		unsigned int src_texel_width,
 		unsigned int src_texel_height,
 		unsigned int dst_texel_width,
-		unsigned int dst_texel_height)
+		unsigned int dst_texel_height,
+		GLRenderer &renderer)
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	float *const dst_working_space = d_tile_height_data_working_space.get();
 
 	const unsigned int num_floats_per_texel =
 			// Generating normals on GPU using RGBA format for height data...
-			(d_generate_normal_map_on_gpu && !GLEW_ARB_texture_rg)
+			(d_generate_normal_map_on_gpu && !capabilities.texture.gl_ARB_texture_rg)
 			? 4
 			// Generating normals on CPU, or generating on GPU using RG format for height data...
 			: 2;
@@ -941,7 +1006,8 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 		unsigned int src_texel_width,
 		unsigned int src_texel_height,
 		unsigned int dst_texel_width,
-		unsigned int dst_texel_height)
+		unsigned int dst_texel_height,
+		GLRenderer &renderer)
 {
 	boost::optional<GPlatesPropertyValues::FloatRawRaster::non_null_ptr_type> float_region_tile =
 			GPlatesPropertyValues::RawRasterUtils::try_raster_cast<
@@ -956,7 +1022,8 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height);
+				dst_texel_height,
+				renderer);
 
 		return true;
 	}
@@ -974,7 +1041,8 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height);
+				dst_texel_height,
+				renderer);
 
 		return true;
 	}
@@ -992,7 +1060,8 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height);
+				dst_texel_height,
+				renderer);
 
 		return true;
 	}
@@ -1010,7 +1079,8 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height);
+				dst_texel_height,
+				renderer);
 
 		return true;
 	}
@@ -1028,7 +1098,8 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height);
+				dst_texel_height,
+				renderer);
 
 		return true;
 	}
@@ -1046,7 +1117,8 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height);
+				dst_texel_height,
+				renderer);
 
 		return true;
 	}
@@ -1064,7 +1136,8 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height);
+				dst_texel_height,
+				renderer);
 
 		return true;
 	}
@@ -1082,7 +1155,8 @@ GPlatesOpenGL::GLNormalMapSource::pack_height_data_into_tile_working_space(
 				src_texel_width,
 				src_texel_height,
 				dst_texel_width,
-				dst_texel_height);
+				dst_texel_height,
+				renderer);
 
 		return true;
 	}
@@ -1095,15 +1169,15 @@ bool
 GPlatesOpenGL::GLNormalMapSource::create_normal_map_generation_shader_program(
 		GLRenderer &renderer)
 {
-	GLShaderProgramUtils::ShaderSource generate_normal_map_vertex_shader_source;
-	GLShaderProgramUtils::ShaderSource generate_normal_map_fragment_shader_source;
+	GLShaderSource generate_normal_map_vertex_shader_source;
+	GLShaderSource generate_normal_map_fragment_shader_source;
 
 	// Finally add the GLSL 'main()' function.
-	generate_normal_map_vertex_shader_source.add_shader_source_from_file(
+	generate_normal_map_vertex_shader_source.add_code_segment_from_file(
 			GENERATE_NORMAL_MAP_VERTEX_SHADER_SOURCE_FILE_NAME);
 
 	// Finally add the GLSL 'main()' function.
-	generate_normal_map_fragment_shader_source.add_shader_source_from_file(
+	generate_normal_map_fragment_shader_source.add_code_segment_from_file(
 			GENERATE_NORMAL_MAP_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 	// Create the shader program for *inactive* polygons.
@@ -1128,13 +1202,16 @@ GPlatesOpenGL::GLNormalMapSource::create_height_tile_texture(
 		GLRenderer &renderer,
 		const GLTexture::shared_ptr_type &texture) const
 {
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
 	// It's a floating-point texture so use nearest neighbour filtering and no anisotropic.
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (GLEW_EXT_texture_edge_clamp || GLEW_SGIS_texture_edge_clamp)
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
 	{
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -1149,11 +1226,11 @@ GPlatesOpenGL::GLNormalMapSource::create_height_tile_texture(
 	// NOTE: Otherwise we use RGBA (instead of RGB) because hardware typically uses
 	// four channels for RGB formats anyway and uploading to the hardware should be faster
 	// since driver doesn't need to be involved (consuming CPU cycles to convert RGB to RGBA).
-	const GLint internalformat = GLEW_ARB_texture_rg ? GL_RG32F : GL_RGBA32F_ARB;
+	const GLint internalformat = capabilities.texture.gl_ARB_texture_rg ? GL_RG32F : GL_RGBA32F_ARB;
 
 	// The height map is a non-power-of-two texture (the normal map is the power-of-two tile dimension).
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			GPLATES_OPENGL_BOOL(GLEW_ARB_texture_non_power_of_two),
+			capabilities.texture.gl_ARB_texture_non_power_of_two,
 			GPLATES_ASSERTION_SOURCE);
 	const unsigned int height_map_texel_dimension = d_tile_texel_dimension + 2;
 

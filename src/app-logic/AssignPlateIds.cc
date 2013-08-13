@@ -70,9 +70,8 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	d_respect_feature_time_period(respect_feature_time_period)
 {
 	ReconstructionTreeCreator reconstruction_tree_cache =
-			get_cached_reconstruction_tree_creator(
+			create_cached_reconstruction_tree_creator(
 					reconstruction_feature_collections,
-					reconstruction_time,
 					anchor_plate_id,
 					10/*max_num_reconstruction_trees_in_cache*/);
 
@@ -104,7 +103,8 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 				TopologyUtils::resolve_topological_lines(
 						resolved_topological_lines,
 						partitioning_feature_collections,
-						reconstruction_tree_cache.get_reconstruction_tree(),
+						reconstruction_tree_cache, 
+						reconstruction_tree_cache.get_reconstruction_tree(reconstruction_time),
 						// Resolved topo lines use the reconstructed non-topo geometries...
 						reconstruct_handles);
 
@@ -123,7 +123,8 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 		TopologyUtils::resolve_topological_boundaries(
 				resolved_topological_boundaries,
 				partitioning_feature_collections,
-				reconstruction_tree_cache.get_reconstruction_tree(),
+				reconstruction_tree_cache, 
+				reconstruction_tree_cache.get_reconstruction_tree(reconstruction_time),
 				// Resolved topo boundaries use the resolved topo lines *and* the reconstructed non-topo geometries...
 				reconstruct_handles);
 	}
@@ -132,8 +133,8 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	{
 		TopologyUtils::resolve_topological_networks(
 				resolved_topological_networks,
+				reconstruction_time,
 				partitioning_feature_collections,
-				reconstruction_tree_cache.get_reconstruction_tree(),
 				// Resolved topo networks use the resolved topo lines *and* the reconstructed non-topo geometries...
 				reconstruct_handles);
 	}
@@ -155,7 +156,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	d_partition_feature_tasks =
 			// Get all tasks that assign properties from polygon features to partitioned features.
 			get_partition_feature_tasks(
-					*reconstruction_tree_cache.get_reconstruction_tree(),
+					*reconstruction_tree_cache.get_reconstruction_tree(reconstruction_time),
 					assign_plate_id_method,
 					feature_property_types_to_assign);
 }
@@ -164,7 +165,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 		AssignPlateIdMethodType assign_plate_id_method,
 		const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
-		const double &reconstruction_time,
+		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 		const feature_property_flags_type &feature_property_types_to_assign,
 		bool respect_feature_time_period) :
 	d_assign_plate_id_method(assign_plate_id_method),
@@ -185,8 +186,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	// See comment in header for why a deforming region is currently used to assign plate ids.
 	std::vector<resolved_topological_network_non_null_ptr_type> resolved_topological_networks;
 
-	// The reconstruction tree of the static/dynamic polygons - used to reverse reconstruct if necessary.
-	boost::optional<ReconstructionTree::non_null_ptr_to_const_type> reconstruction_tree;
+	const double reconstruction_time = reconstruction_tree->get_reconstruction_time();
 
 	// Iterate over the partitioning layer  proxies.
 	BOOST_FOREACH(const LayerProxy::non_null_ptr_type &partitioning_layer_proxy, partitioning_layer_proxies)
@@ -200,9 +200,6 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 			static_polygons_layer_proxy.get()->get_reconstructed_feature_geometries(
 					reconstructed_static_polygons,
 					reconstruction_time);
-
-			reconstruction_tree = static_polygons_layer_proxy.get()->get_reconstruction_layer_proxy()
-					->get_reconstruction_tree(reconstruction_time);
 		}
 
 
@@ -215,9 +212,6 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 			dynamic_polygons_layer_proxy.get()->get_resolved_topological_boundaries(
 				resolved_topological_boundaries,
 				reconstruction_time);
-
-			reconstruction_tree = dynamic_polygons_layer_proxy.get()->get_reconstruction_layer_proxy()
-					->get_reconstruction_tree(reconstruction_time);
 		}
 
 		// See if the input layer proxy is a topology network resolver layer proxy.
@@ -230,9 +224,6 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 			dynamic_networks_layer_proxy.get()->get_resolved_topological_networks(
 					resolved_topological_networks,
 					reconstruction_time);
-
-			reconstruction_tree = dynamic_networks_layer_proxy.get()->get_reconstruction_layer_proxy()
-					->get_reconstruction_tree(reconstruction_time);
 		}
 	}
 
@@ -243,17 +234,10 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 					resolved_topological_boundaries,
 					resolved_topological_networks));
 
-	// If there's no partitioning polygons then there's no reconstruction tree so
-	// just create an empty dummy one.
-	if (!reconstruction_tree)
-	{
-		reconstruction_tree = create_reconstruction_tree(reconstruction_time, 0/*anchor_plate_id*/);
-	}
-
 	d_partition_feature_tasks =
 			// Get all tasks that assign properties from polygon features to partitioned features.
 			get_partition_feature_tasks(
-					*reconstruction_tree.get(),
+					*reconstruction_tree,
 					assign_plate_id_method,
 					feature_property_types_to_assign);
 }
