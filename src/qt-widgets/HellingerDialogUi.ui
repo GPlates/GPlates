@@ -293,7 +293,7 @@
         <item row="0" column="1">
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <property name="spacing">
-           <number>0</number>
+           <number>1</number>
           </property>
           <item>
            <widget class="QLabel" name="label_8">
@@ -303,11 +303,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="button_new_point">
+           <widget class="QPushButton" name="button_new_pick">
             <property name="minimumSize">
              <size>
               <width>0</width>
-              <height>27</height>
+              <height>30</height>
              </size>
             </property>
             <property name="toolTip">
@@ -323,7 +323,7 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
-              <height>27</height>
+              <height>30</height>
              </size>
             </property>
             <property name="toolTip">
@@ -342,7 +342,7 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
-              <height>27</height>
+              <height>30</height>
              </size>
             </property>
             <property name="toolTip">
@@ -361,7 +361,7 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
-              <height>27</height>
+              <height>30</height>
              </size>
             </property>
             <property name="toolTip">
@@ -380,7 +380,7 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
-              <height>27</height>
+              <height>30</height>
              </size>
             </property>
             <property name="toolTip">
@@ -1160,7 +1160,7 @@
   <tabstop>button_collapse_all</tabstop>
   <tabstop>button_renumber</tabstop>
   <tabstop>button_clear</tabstop>
-  <tabstop>button_new_point</tabstop>
+  <tabstop>button_new_pick</tabstop>
   <tabstop>button_remove_point</tabstop>
   <tabstop>button_edit_point</tabstop>
   <tabstop>button_activate_pick</tabstop>

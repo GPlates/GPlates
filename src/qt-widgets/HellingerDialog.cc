@@ -1292,8 +1292,8 @@ GPlatesQtWidgets::HellingerDialog::renumber_segments()
 	update_tree_from_model();
 	button_renumber->setEnabled(false);
 
-	// TODO: if we want to restore the expanded status here we'll need to
-	// correct it for the re-ordered segments.
+	// TODO: if we want to restore the expanded status here properly we'll need to
+	// correct it for the re-numbered segments.
 	restore_expanded_status();
 }
 
