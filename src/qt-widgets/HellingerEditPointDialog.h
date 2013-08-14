@@ -76,7 +76,7 @@ namespace GPlatesQtWidgets
 		int d_segment;
 		int d_row;
 
-		bool d_create_new_point;
+		bool d_create_new_pick;
 	};
 }
 

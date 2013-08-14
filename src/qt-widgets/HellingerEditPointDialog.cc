@@ -36,14 +36,14 @@
 
 GPlatesQtWidgets::HellingerEditPointDialog::HellingerEditPointDialog(HellingerDialog *hellinger_dialog,
 		HellingerModel *hellinger_model,
-		bool create_new_point,
+		bool create_new_pick,
 		QWidget *parent_):
 	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_hellinger_dialog_ptr(hellinger_dialog),
 	d_hellinger_model_ptr(hellinger_model),
 	d_segment(0),
 	d_row(0),
-	d_create_new_point(create_new_point)
+	d_create_new_pick(create_new_pick)
 {
 	setupUi(this);
 
@@ -52,9 +52,15 @@ GPlatesQtWidgets::HellingerEditPointDialog::HellingerEditPointDialog(HellingerDi
 	QObject::connect(button_apply, SIGNAL(clicked()), this, SLOT(handle_apply()));
 	QObject::connect(button_cancel,SIGNAL(clicked()),this,SLOT(reject()));
 
-	if (d_create_new_point)
+	if (d_create_new_pick)
 	{
-		button_apply->setText(QObject::tr("&Add point"));
+		button_apply->setText(QObject::tr("&Add pick"));
+		setWindowTitle(QObject::tr("New Pick"));
+	}
+	if (!d_create_new_pick)
+	{
+		button_apply->setText(QObject::tr("&Apply"));
+		setWindowTitle(QObject::tr("Edit Pick"));
 	}
 }
 
@@ -114,7 +120,7 @@ GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 	double lon = spinbox_lon->value();
 	double uncertainty = spinbox_uncert->value();
 
-	if (!d_create_new_point)
+	if (!d_create_new_pick)
 	{
 		d_hellinger_model_ptr->remove_pick(d_segment,d_row);
 	}
