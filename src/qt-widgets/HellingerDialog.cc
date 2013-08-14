@@ -24,6 +24,8 @@
  */
 #include <vector>
 
+#include <boost/foreach.hpp>
+
 #include <QDebug>
 #include <QDir>
 #include <QFileDialog>
@@ -54,12 +56,8 @@
 const double SLIDER_MULTIPLIER = -10000.;
 const int SYMBOL_SIZE = 2;
 
-// TODO: expand a newly edited / created segment.
-// TODO: expand a segment to which we've just added a point.
 // TODO: check tooltips throughout the whole Hellinger workflow.
-// TODO: check button/widget focus throughout Hellinger worlflow.
-// TODO: check consistency of "point"/"pick" terminology - I think I have
-// a mixture throughout the UI.
+// TODO: check button/widget focus throughout Hellinger workflow.
 
 namespace{
 
@@ -71,6 +69,37 @@ namespace{
 		LON,
 		UNCERTAINTY
 	};
+
+	/**
+	 * For debugging.
+	 */
+	void
+	display_map(
+			const GPlatesQtWidgets::HellingerDialog::expanded_status_map_type &map)
+	{
+		BOOST_FOREACH(GPlatesQtWidgets::HellingerDialog::expanded_status_map_type::value_type pair,map)
+		{
+			qDebug() << "key: " << pair.first << ", value: " << pair.second;
+		}
+	}
+
+	/**
+	 * @brief renumber_expanded_status_map
+	 * On return the keys of @a map will be contiguous from 1.
+	 * @param map
+	 */
+	void
+	renumber_expanded_status_map(
+			GPlatesQtWidgets::HellingerDialog::expanded_status_map_type &map)
+	{
+		GPlatesQtWidgets::HellingerDialog::expanded_status_map_type new_map;
+		int new_index = 1;
+		BOOST_FOREACH(GPlatesQtWidgets::HellingerDialog::expanded_status_map_type::value_type pair,map)
+		{
+			new_map.insert(std::pair<int,bool>(new_index++,pair.second));
+		}
+		map = new_map;
+	}
 
 	void
 	set_text_colour_according_to_state(
@@ -676,8 +705,6 @@ void
 GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 {        
 	// TODO: Refactor this method.
-	// FIXME: This assumes that the state of the button always reflects the ordered state of the picks in the model. Check
-	// that this is indeed the case.
 	if (!d_hellinger_model->segments_are_ordered())
 	{
 		QMessageBox message_box;
@@ -1287,7 +1314,9 @@ GPlatesQtWidgets::HellingerDialog::handle_fit_spinboxes_changed()
 void
 GPlatesQtWidgets::HellingerDialog::renumber_segments()
 {
+	store_expanded_status();
 	d_hellinger_model->renumber_segments();
+	renumber_expanded_status_map(d_segment_expanded_status);
 	tree_widget_picks->clear();
 	update_tree_from_model();
 	button_renumber->setEnabled(false);
@@ -1386,13 +1415,11 @@ GPlatesQtWidgets::HellingerDialog::store_expanded_status()
 {
 	int count = tree_widget_picks->topLevelItemCount();
 
-	d_segment_expanded_statuses.clear();
-	//qDebug() << "Storing expanded status with" << count << " items.";
+	d_segment_expanded_status.clear();
 	for (int i = 0 ; i < count; ++i)
 	{
 		int segment = tree_widget_picks->topLevelItem(i)->text(0).toInt();
-		//qDebug() << "i: " << i << ", segment: " << segment << ", " << tree_widget_picks->topLevelItem(i)->isExpanded();
-		d_segment_expanded_statuses.insert(std::make_pair<int,bool>(segment,tree_widget_picks->topLevelItem(i)->isExpanded()));
+		d_segment_expanded_status.insert(std::make_pair<int,bool>(segment,tree_widget_picks->topLevelItem(i)->isExpanded()));
 	}
 }
 
@@ -1400,17 +1427,13 @@ void
 GPlatesQtWidgets::HellingerDialog::restore_expanded_status()
 {
 	int top_level_items = tree_widget_picks->topLevelItemCount();
-
-	//qDebug() << "Restoring expanded status with " << top_level_items << " items.";
-	//qDebug() << "Items in map: " << d_segment_expanded_statuses.size();
 	QObject::disconnect(tree_widget_picks,SIGNAL(collapsed(QModelIndex)),this,SLOT(store_expanded_status()));
 	QObject::disconnect(tree_widget_picks,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
 	for (int i = 0; i < top_level_items ; ++i)
 	{
 		int segment = tree_widget_picks->topLevelItem(i)->text(0).toInt();
-		//qDebug() << "i: " << i << ", segment: " << segment << ", " << tree_widget_picks->topLevelItem(i)->isExpanded();
-		expanded_status_map_type::const_iterator iter = d_segment_expanded_statuses.find(segment);
-		if (iter != d_segment_expanded_statuses.end())
+		expanded_status_map_type::const_iterator iter = d_segment_expanded_status.find(segment);
+		if (iter != d_segment_expanded_status.end())
 		{
 			tree_widget_picks->topLevelItem(i)->setExpanded(iter->second);
 		}
@@ -1430,8 +1453,8 @@ void GPlatesQtWidgets::HellingerDialog::expand_segment(
 
 		if (segment == segment_number){
 			tree_widget_picks->topLevelItem(i)->setExpanded(true);
-			expanded_status_map_type::iterator iter = d_segment_expanded_statuses.find(segment);
-			if (iter != d_segment_expanded_statuses.end())
+			expanded_status_map_type::iterator iter = d_segment_expanded_status.find(segment);
+			if (iter != d_segment_expanded_status.end())
 			{
 				iter->second = true;
 			}

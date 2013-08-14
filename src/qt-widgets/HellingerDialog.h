@@ -332,7 +332,7 @@ namespace GPlatesQtWidgets
 		QString d_temp_par;
 		QString d_temp_res;
 
-		expanded_status_map_type d_segment_expanded_statuses;
+		expanded_status_map_type d_segment_expanded_status;
 
 
 	};
