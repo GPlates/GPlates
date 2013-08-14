@@ -34,6 +34,7 @@
 #include "canvas-tools/CanvasToolAdapterForGlobe.h"
 #include "canvas-tools/CanvasToolAdapterForMap.h"
 #include "canvas-tools/ClickGeometry.h"
+#include "canvas-tools/FitToPole.h"
 #include "canvas-tools/ManipulatePole.h"
 
 #include "global/GPlatesAssert.h"
@@ -153,6 +154,31 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 					viewport_window.map_view().map_canvas(),
 					viewport_window.map_view(),
 					view_state.get_map_transform()));
+
+	//
+	// Edit hellinger segments canvas tool.
+	//
+
+	GPlatesCanvasTools::FitToPole::non_null_ptr_type fit_to_pole_tool =
+			GPlatesCanvasTools::FitToPole::create(
+					status_bar_callback,
+					view_state.get_rendered_geometry_collection(),
+					WORKFLOW_RENDER_LAYER,
+					viewport_window.dialogs().hellinger_dialog());
+	// For the globe view.
+	d_globe_fit_to_pole_tool.reset(
+			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+					fit_to_pole_tool,
+					viewport_window.globe_canvas().globe(),
+					viewport_window.globe_canvas()));
+	// For the map view.
+	d_map_fit_to_pole_tool.reset(
+			new GPlatesCanvasTools::CanvasToolAdapterForMap(
+					fit_to_pole_tool,
+					viewport_window.map_view().map_canvas(),
+					viewport_window.map_view(),
+					view_state.get_map_transform()));
+
 }
 
 

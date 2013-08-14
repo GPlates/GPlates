@@ -120,6 +120,11 @@ namespace GPlatesGui
 		//! For manipulating poles in the 2D map view.
 		boost::scoped_ptr<MapCanvasTool> d_map_manipulate_pole_tool;
 
+		//! For editing hellinger segments in the 3D globe view.
+		boost::scoped_ptr<GlobeCanvasTool> d_globe_fit_to_pole_tool;
+		//! For editing hellinger segments in the 2D map view.
+		boost::scoped_ptr<MapCanvasTool> d_map_fit_to_pole_tool;
+
 
 		void
 		create_canvas_tools(

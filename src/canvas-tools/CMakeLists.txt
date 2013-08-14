@@ -28,6 +28,8 @@ set(srcs
     DigitiseGeometry.h
     EditTopology.cc
     EditTopology.h
+    FitToPole.cc
+    FitToPole.h
     GeometryOperationState.h
     InsertVertex.cc
     InsertVertex.h
