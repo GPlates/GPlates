@@ -362,6 +362,15 @@ namespace
 				continue;
 			}
 
+			//The disabled poles should not count.
+			QVariant qv = item->data(Qt::UserRole);
+			using namespace GPlatesPropertyValues;
+			boost::optional<GpmlTimeSample> sample = qv.value<boost::optional<GpmlTimeSample> >();
+			if(sample->is_disabled())
+			{
+				continue;
+			}
+
 			// The item text should have been derived from a spinbox, but check we
 			// have a double anyway.
 			double time = table->item(i,ColumnNames::TIME)->text().toDouble(&ok);
