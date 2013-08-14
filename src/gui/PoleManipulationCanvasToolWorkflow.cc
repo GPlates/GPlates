@@ -252,6 +252,9 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::get_selected_globe_and_map_canva
 	case CanvasToolWorkflows::TOOL_MANIPULATE_POLE:
 		return std::make_pair(d_globe_manipulate_pole_tool.get(), d_map_manipulate_pole_tool.get());
 
+	case CanvasToolWorkflows::TOOL_FIT_TO_POLE:
+		return std::make_pair(d_globe_fit_to_pole_tool.get(), d_map_fit_to_pole_tool.get());
+
 	default:
 		break;
 	}

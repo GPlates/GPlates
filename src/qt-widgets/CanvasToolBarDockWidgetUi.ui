@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>69</width>
+    <width>79</width>
     <height>507</height>
    </rect>
   </property>
@@ -48,7 +48,7 @@
        <enum>QTabWidget::West</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>4</number>
       </property>
       <property name="iconSize">
        <size>
@@ -762,6 +762,24 @@
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="action_Fit_To_Pole">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/crappy-hellinger-icon_35.png</normaloff>:/crappy-hellinger-icon_35.png</iconset>
+   </property>
+   <property name="text">
+    <string>Fit To Pole</string>
+   </property>
+   <property name="toolTip">
+    <string>Fit features to a Rotation Pole</string>
+   </property>
+   <property name="shortcut">
+    <string>H</string>
    </property>
   </action>
  </widget>
