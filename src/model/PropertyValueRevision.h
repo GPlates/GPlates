@@ -38,6 +38,7 @@ namespace GPlatesModel
 	class PropertyValue;
 	class PropertyValueRevision;
 	class PropertyValueRevisionContext;
+	template <class PropertyValueType> class PropertyValueRevisionedReference;
 
 
 	/**
@@ -133,16 +134,19 @@ namespace GPlatesModel
 		/**
 		 * Default constructor - is needed since no implicit constructor generated because copy constructor defined.
 		 */
-		PropertyValueRevision()
+		PropertyValueRevision() :
+			d_revision_reference_ref_count(0)
 		{  }
 
 		/**
 		 * Copy constructor - calls default constructor of ReferenceCount (non-copyable) base class.
 		 *
-		 * Note: This does not copy the revision context.
+		 * Note: This also copies the revision context.
 		 */
 		PropertyValueRevision(
-				const PropertyValueRevision &other)
+				const PropertyValueRevision &other) :
+			d_context(other.d_context),
+			d_revision_reference_ref_count(0)
 		{  }
 
 
@@ -170,6 +174,18 @@ namespace GPlatesModel
 		 * that is called just prior to making a modification to 'this' property value.
 		 */
 		boost::optional<PropertyValueRevisionContext &> d_context;
+
+
+		/**
+		 * The reference-count of this instance by @a PropertyValueRevisionedReference.
+		 *
+		 * This is used to detach 'this' property value revision from its revision context when
+		 * the last @a PropertyValueRevisionedReference referencing 'this' is destroyed.
+		 */
+		mutable int d_revision_reference_ref_count;
+
+		template <class PropertyValueType>
+		friend class PropertyValueRevisionedReference;
 	};
 }
 

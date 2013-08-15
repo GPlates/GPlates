@@ -52,6 +52,18 @@ namespace GPlatesModel
 	{
 	public:
 
+		~PropertyValueRevisionedReference();
+
+		//! Copy constructor.
+		PropertyValueRevisionedReference(
+				const PropertyValueRevisionedReference &other);
+
+		//! Copy assignment operator.
+		PropertyValueRevisionedReference &
+		operator=(
+				PropertyValueRevisionedReference other);
+
+
 		/**
 		 * Creates a revisioned reference by attaching the specified property value to the
 		 * specific revision context.
@@ -134,7 +146,9 @@ namespace GPlatesModel
 				const PropertyValueRevision::non_null_ptr_to_const_type &revision) :
 			d_property_value(property_value),
 			d_revision(revision)
-		{  }
+		{
+			++d_revision->d_revision_reference_ref_count;
+		}
 
 		GPlatesUtils::non_null_intrusive_ptr<PropertyValueType> d_property_value;
 		PropertyValueRevision::non_null_ptr_to_const_type d_revision;
@@ -147,6 +161,65 @@ namespace GPlatesModel
 
 namespace GPlatesModel
 {
+	template <class PropertyValueType>
+	PropertyValueRevisionedReference<PropertyValueType>::~PropertyValueRevisionedReference()
+	{
+		// Since this is a destructor we cannot let any exceptions escape.
+		// If one is thrown we just have to lump it and continue on.
+		try
+		{
+			// If we're the last revisioned reference that references the revision...
+			// Note that this doesn't necessarily mean the revision is about to be destroyed because
+			// the property value might currently be referencing it.
+			if (--d_revision->d_revision_reference_ref_count == 0)
+			{
+				// If the property value is currently referencing the revision then detach it
+				// by creating a revision with no context and setting that on the property value.
+				// This ensures that if the parent property value (context) is destroyed then the
+				// property value (revision) isn't left with a dangling reference back up to it.
+				// Note that the client still should call 'detach' (or 'change') when they remove
+				// a child property value from a parent property value (or top-level property) so
+				// that the child property value can then be attached to a different parent
+				// property value.
+				// So these are two different things and both are needed.
+				if (d_property_value->d_current_revision == d_revision)
+				{
+					// Normally this is done as a model transaction but we do it directly here
+					// since we're in a destructor where the client has no opportunity to
+					// create a model transaction object and pass it to us.
+					d_property_value->d_current_revision = d_revision->clone_revision();
+				}
+			}
+		}
+		catch (...)
+		{
+		}
+	}
+
+
+	template <class PropertyValueType>
+	PropertyValueRevisionedReference<PropertyValueType>::PropertyValueRevisionedReference(
+			const PropertyValueRevisionedReference &other) :
+		d_property_value(other.d_property_value.get()),
+		d_revision(other.d_revision)
+	{
+		++d_revision->d_revision_reference_ref_count;
+	}
+
+
+	template <class PropertyValueType>
+	PropertyValueRevisionedReference<PropertyValueType> &
+	PropertyValueRevisionedReference<PropertyValueType>::operator=(
+			PropertyValueRevisionedReference other)
+	{
+		// Copy-and-swap idiom.
+		swap(d_property_value, other.d_property_value);
+		swap(d_revision, other.d_revision);
+
+		return *this;
+	}
+
+
 	template <class PropertyValueType>
 	PropertyValueRevisionedReference<PropertyValueType>
 	PropertyValueRevisionedReference<PropertyValueType>::attach(
