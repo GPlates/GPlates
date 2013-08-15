@@ -990,8 +990,7 @@ void
 GPlatesQtWidgets::HellingerDialog::update_canvas()
 {
 	clear_rendered_geometries();
-	draw_fixed_picks();
-	draw_moving_picks();
+	draw_picks();
 	update_result();
 	draw_error_ellipse();
 
@@ -1090,7 +1089,7 @@ GPlatesQtWidgets::HellingerDialog::draw_fixed_picks()
 							GPlatesGui::Colour::get_white(), // dummy colour argument
 							it->second.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
-				d_pick_layer_ptr->add_rendered_geometry(pick_geometry);
+				d_rotated_layer_ptr->add_rendered_geometry(pick_geometry);
 			}
 		}
 	}
@@ -1135,6 +1134,43 @@ GPlatesQtWidgets::HellingerDialog::draw_moving_picks()
 		}
 	}
 
+}
+
+void GPlatesQtWidgets::HellingerDialog::draw_picks()
+{
+	hellinger_model_type::const_iterator it = d_hellinger_model->begin();
+	int num_segment = 0;
+	int num_colour = 0;
+	for (; it != d_hellinger_model->end(); ++it)
+	{
+		if (it->second.d_is_enabled)
+		{
+			if (num_segment != it->first)
+			{
+				++num_colour;
+				++num_segment;
+			}
+
+			set_segment_colours(num_colour);
+
+			GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
+						GPlatesMaths::LatLonPoint(it->second.d_lat,it->second.d_lon));
+
+			GPlatesViewOperations::RenderedGeometry pick_geometry =
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+						point.get_non_null_pointer(),
+						d_segment_colour,
+						2, /* point thickness */
+						2, /* line thickness */
+						false, /* fill polygon */
+						false, /* fill polyline */
+						GPlatesGui::Colour::get_white(), // dummy colour argument
+						it->second.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
+
+			d_pick_layer_ptr->add_rendered_geometry(pick_geometry);
+
+		}
+	}
 }
 
 void
@@ -1500,5 +1536,10 @@ void GPlatesQtWidgets::HellingerDialog::expand_segment(
 			return;
 		}
 	}
+}
+
+GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GPlatesQtWidgets::HellingerDialog::get_pick_layer()
+{
+	return d_pick_layer_ptr;
 }
 

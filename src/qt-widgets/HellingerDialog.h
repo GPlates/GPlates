@@ -99,6 +99,8 @@ namespace GPlatesQtWidgets
 		expand_segment(
 				const int segment_number);
 
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+		get_pick_layer();
 
 	public Q_SLOTS:
 
@@ -194,6 +196,9 @@ namespace GPlatesQtWidgets
 
 		void
 		draw_moving_picks();
+
+		void
+		draw_picks();
 
 		void
 		set_segment_colours(
@@ -355,7 +360,6 @@ namespace GPlatesQtWidgets
 		QString d_temporary_path;
 
 		expanded_status_map_type d_segment_expanded_status;
-
 
 	};
 }

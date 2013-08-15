@@ -29,6 +29,7 @@
 #include "qt-widgets/HellingerDialog.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
+#include "view-operations/RenderedGeometryProximity.h"
 #include "FitToPole.h"
 
 
@@ -47,16 +48,12 @@ void
 GPlatesCanvasTools::FitToPole::handle_activation()
 {
 	set_status_bar_message(QT_TR_NOOP(""));
-
-	//d_fit_to_pole_layer_ptr->set_active();
-	//d_small_circle_widget_ptr->setEnabled(true);
 }
 
 void
 GPlatesCanvasTools::FitToPole::handle_deactivation()
 {
-	//d_fit_to_pole_layer_ptr->set_active(false);
-	//d_small_circle_widget_ptr->setEnabled(false);
+
 }
 
 
@@ -102,7 +99,17 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
 {
-
+	GPlatesMaths::ProximityCriteria proximity_criteria(
+			point_on_sphere,
+			proximity_inclusion_threshold);
+	std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
+	if (GPlatesViewOperations::test_proximity(
+				sorted_hits,
+				proximity_criteria,
+				*d_hellinger_dialog_ptr->get_pick_layer()))
+	{
+		qDebug() << "Hovering over a pick.";
+	}
 }
 
 void
