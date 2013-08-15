@@ -50,7 +50,15 @@ GPlatesModel::NotificationGuard::NotificationGuard(
 
 GPlatesModel::NotificationGuard::~NotificationGuard()
 {
-	release_guard();
+	// Since this is a destructor we cannot let any exceptions escape.
+	// If one is thrown we just have to lump it and continue on.
+	try
+	{
+		release_guard();
+	}
+	catch (...)
+	{
+	}
 }
 
 

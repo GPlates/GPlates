@@ -26,11 +26,13 @@
 #ifndef GPLATES_MODEL_MODELTRANSACTION_H
 #define GPLATES_MODEL_MODELTRANSACTION_H
 
+#include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
 #include "PropertyValue.h"
-#include "TopLevelProperty.h"
+#include "PropertyValueRevision.h"
+//#include "TopLevelProperty.h"
 
 
 namespace GPlatesModel
@@ -51,24 +53,49 @@ namespace GPlatesModel
 	public:
 
 		/**
-		 * Sets the property value revisioned reference for this transaction.
+		 * Transaction to set a property value's revision.
 		 */
-		void
-		set_property_value_revision(
-				const PropertyValue::RevisionedReference &revision)
+		class PropertyValueTransaction
 		{
-			d_property_value_revision = revision;
-		}
+		public:
+
+			PropertyValueTransaction(
+					const PropertyValue::non_null_ptr_to_const_type &property_value,
+					const PropertyValueRevision::non_null_ptr_to_const_type &revision) :
+				d_property_value(property_value),
+				d_revision(revision)
+			{  }
+
+		private:
+
+			PropertyValue::non_null_ptr_to_const_type d_property_value;
+			PropertyValueRevision::non_null_ptr_to_const_type d_revision;
+
+			friend class ModelTransaction;
+		};
+
 
 		/**
-		 * Sets the top level property revisioned reference for this transaction.
+		 * Adds the specified property value revision to this transaction.
+		 */
+		void
+		add_property_value_transaction(
+				const PropertyValueTransaction &revision)
+		{
+			d_property_value_transactions.push_back(revision);
+		}
+
+#if 0
+		/**
+		 * Sets the top level property revision for this transaction.
 		 */
 		void
 		set_top_level_property_revision(
 				const TopLevelProperty::RevisionedReference &revision)
 		{
-			d_top_level_property_revision = revision;
+			d_top_level_property_transactions = revision;
 		}
+#endif
 
 
 		/**
@@ -82,8 +109,10 @@ namespace GPlatesModel
 
 	private:
 
-		boost::optional<PropertyValue::RevisionedReference> d_property_value_revision;
-		boost::optional<TopLevelProperty::RevisionedReference> d_top_level_property_revision;
+		std::vector<PropertyValueTransaction> d_property_value_transactions;
+#if 0
+		boost::optional<TopLevelProperty::RevisionedReference> d_top_level_property_transactions;
+#endif
 	};
 }
 

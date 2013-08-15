@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
+
 #include "ModelTransaction.h"
 
 
@@ -33,22 +35,31 @@ GPlatesModel::ModelTransaction::commit()
 	// Switch the property value, top level property, feature, feature collection and feature store
 	// objects to reference their new (bubbled up) revisions.
 
-	if (d_property_value_revision)
+	BOOST_FOREACH(
+			PropertyValueTransaction &property_value_transaction,
+			d_property_value_transactions)
 	{
 		// Essentially amounts to a no-throw swap of the current revision for the new revision.
-		PropertyValue::RevisionedReference current_revisioned_reference =
-				d_property_value_revision->get_property_value()->get_current_revisioned_reference();
-		d_property_value_revision->set_current_revision();
-		d_property_value_revision = current_revisioned_reference;
+		PropertyValueTransaction current_revisioned_reference(
+				property_value_transaction.d_property_value,
+				property_value_transaction.d_property_value->d_current_revision);
+
+		property_value_transaction.d_property_value->d_current_revision =
+				property_value_transaction.d_revision;
+
+		property_value_transaction = current_revisioned_reference;
 	}
-	if (d_top_level_property_revision)
+
+#if 0
+	if (d_top_level_property_transactions)
 	{
 		// Essentially amounts to a no-throw swap of the current revision for the new revision.
 		TopLevelProperty::RevisionedReference current_revisioned_reference =
-				d_top_level_property_revision->get_top_level_property()->get_current_revisioned_reference();
-		d_top_level_property_revision->set_current_revision();
-		d_top_level_property_revision = current_revisioned_reference;
+				d_top_level_property_transactions->get_top_level_property()->get_current_revisioned_reference();
+		d_top_level_property_transactions->set_current_revision();
+		d_top_level_property_transactions = current_revisioned_reference;
 	}
+#endif
 
 	// The destructor of ModelTransaction will release the old revisions which are now stored
 	// in our revision references (we swapped the new for the old).
