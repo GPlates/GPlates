@@ -126,7 +126,7 @@ GPlatesGui::SmallCircleCanvasToolWorkflow::initialise()
 {
 	// Set the initial enable/disable state for our canvas tools.
 	//
-	// These tools are always enabled regardless of the current state.
+	// These tools are always fit_to_pole_layer regardless of the current state.
 	//
 	// NOTE: If you are updating the tool in 'update_enable_state()' then you
 	// don't need to enable/disable it here.

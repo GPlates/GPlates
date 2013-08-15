@@ -39,28 +39,23 @@ GPlatesCanvasTools::FitToPole::FitToPole(
 		GPlatesQtWidgets::HellingerDialog &hellinger_dialog) :
 	CanvasTool(status_bar_callback),
 	d_rendered_geom_collection_ptr(&rendered_geom_collection),
-	d_fit_to_pole_layer_ptr(rendered_geom_collection.get_main_rendered_layer(main_rendered_layer_type)),
 	d_hellinger_dialog_ptr(&hellinger_dialog)
 {
-#if 0
-	QObject::connect(d_small_circle_widget_ptr,SIGNAL(clear_geometries()),
-			this,SLOT(handle_clear_geometries()));
-#endif
 }
 
 void
 GPlatesCanvasTools::FitToPole::handle_activation()
 {
-    set_status_bar_message(QT_TR_NOOP("Click to mark the centre and radius. Shift+click to add more radii."));
+	set_status_bar_message(QT_TR_NOOP(""));
 
-	d_fit_to_pole_layer_ptr->set_active();
+	//d_fit_to_pole_layer_ptr->set_active();
 	//d_small_circle_widget_ptr->setEnabled(true);
 }
 
 void
 GPlatesCanvasTools::FitToPole::handle_deactivation()
 {
-	d_fit_to_pole_layer_ptr->set_active(false);
+	//d_fit_to_pole_layer_ptr->set_active(false);
 	//d_small_circle_widget_ptr->setEnabled(false);
 }
 
@@ -71,6 +66,7 @@ GPlatesCanvasTools::FitToPole::handle_left_click(
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
 {
+	qDebug() << "Left click in fit-to-pole tool";
 #if 0
 	if (!is_on_earth)
 	{
@@ -107,70 +103,16 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 		double proximity_inclusion_threshold)
 {
 
-#if 0
-	if (d_circle_is_being_drawn)
-	{
-		d_point_on_radius.reset(point_on_sphere);
-		GPlatesMaths::SmallCircle circle = GPlatesMaths::SmallCircle::create(d_centre->position_vector(),*d_point_on_radius);
-		d_small_circle_widget_ptr->update_radii(circle.colatitude().dval());
-	}
-	paint();
-#endif
-}
-
-void
-GPlatesCanvasTools::FitToPole::handle_shift_left_click(
-	const GPlatesMaths::PointOnSphere &point_on_sphere,
-	bool is_on_earth,
-	double proximity_inclusion_threshold)
-{
-#if 0
-	if (d_circle_is_being_drawn)
-	{
-		d_point_on_radius.reset(point_on_sphere);
-		GPlatesMaths::SmallCircle circle = GPlatesMaths::SmallCircle::create(d_centre->position_vector(),*d_point_on_radius);
-		d_small_circle_collection_ref.push_back(circle);
-		d_small_circle_widget_ptr->update_radii();
-	}
-	paint();
-#endif
 }
 
 void
 GPlatesCanvasTools::FitToPole::paint()
 {
-#if 0
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 
-	// Draw any circles in the widget's collection.
-	d_small_circle_widget_ptr->update_small_circle_layer();
-
-	// Draw the tool's current circle.
-	if (d_centre)
-	{
-		GPlatesViewOperations::RenderedGeometry rendered_point = 
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(*d_centre);
-
-			d_small_circle_layer_ptr->add_rendered_geometry(rendered_point);
-	}
-
-	if (d_centre && d_point_on_radius)
-	{	
-		GPlatesViewOperations::RenderedGeometry rendered_circle =
-				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_small_circle(
-					GPlatesMaths::SmallCircle::create(d_centre->position_vector(),*d_point_on_radius));
-
-		d_small_circle_layer_ptr->add_rendered_geometry(rendered_circle);
-	}
-#endif
 }
 
-void
-GPlatesCanvasTools::FitToPole::handle_clear_geometries()
-{
-
-}
 
 

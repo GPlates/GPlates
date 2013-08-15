@@ -32,8 +32,6 @@
 
 #include "view-operations/RenderedGeometryCollection.h"
 
-#include "qt-widgets/HellingerDialog.h"
-
 // TODO: Check if we need any of these "inherited" includes/forward-declarations.
 namespace GPlatesGui
 {
@@ -43,6 +41,11 @@ namespace GPlatesGui
 namespace GPlatesMaths
 {
 	class PointOnSphere;
+}
+
+namespace GPlatesQtWidgets
+{
+	class HellingerDialog;
 }
 
 namespace GPlatesViewOperations
@@ -108,26 +111,6 @@ namespace GPlatesCanvasTools
 				bool is_on_earth,
 				double proximity_inclusion_threshold);
 
-		/**
-		 * We'll use shift-left-click to continue drawing an additional circle after closing 
-		 * the current circle, so that we can build up multiple concentric circles in the same
-		 * operation.
-		 */
-		virtual
-		void
-		handle_shift_left_click(
-				const GPlatesMaths::PointOnSphere &point_on_sphere, 
-				bool is_on_earth, 
-				double proximity_inclusion_threshold);
-
-	private Q_SLOTS:
-
-		/**
-		 *  Respond to the widget's clear signal.                                                                    
-		 */
-		void
-		handle_clear_geometries();
-
 	private:
 
 		void
@@ -141,13 +124,6 @@ namespace GPlatesCanvasTools
 
 		//! For rendering purposes
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection_ptr;
-
-		//! FitToPole layer
-		// TODO: Check if we need this separate layer, or if this can be done
-		// on the PoleManipulation layer. (At least while this fit-to-pole tool
-		// remains a part of the PoleManipulation workflows, as opposed to going
-		// into its own, say, "Statistics" or "Fitting" workflow...
-		GPlatesViewOperations::RenderedGeometryLayer *d_fit_to_pole_layer_ptr;
 
 		GPlatesQtWidgets::HellingerDialog *d_hellinger_dialog_ptr;
 

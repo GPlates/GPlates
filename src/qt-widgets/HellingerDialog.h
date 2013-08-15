@@ -35,6 +35,7 @@
 #include "gui/Colour.h"
 #include "gui/Symbol.h"
 #include "model/types.h"
+#include "view-operations/RenderedGeometryCollection.h"
 #include "GPlatesDialog.h"
 #include "HellingerModel.h"
 #include "HellingerDialogUi.h"
@@ -117,6 +118,12 @@ namespace GPlatesQtWidgets
 
 		void
 		set_up_connections();
+
+		void
+		set_up_child_layers();
+
+		void
+		clear_rendered_geometries();
 
 		void
 		add_point(
@@ -278,6 +285,9 @@ namespace GPlatesQtWidgets
 
 	private:
 
+		//! Convenience typedef for GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+		typedef GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type child_layer_ptr_type;
+
 		/**
 		 * Draw the model contents on the globe/map.
 		 */
@@ -305,7 +315,19 @@ namespace GPlatesQtWidgets
 
 
 		GPlatesPresentation::ViewState &d_view_state;
-		GPlatesViewOperations::RenderedGeometryLayer &d_hellinger_layer;
+
+		/// For creating child layers
+		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection_ptr;
+
+		//! For drawing picks
+		child_layer_ptr_type d_pick_layer_ptr;
+
+		//! For highlights
+		child_layer_ptr_type d_highlight_layer_ptr;
+
+		//! For rotated picks
+		child_layer_ptr_type d_rotated_layer_ptr;
+
 		ReadErrorAccumulationDialog &d_read_error_accumulation_dialog;
 		HellingerModel *d_hellinger_model;
 		HellingerStatsDialog *d_hellinger_stats_dialog;
@@ -327,10 +349,6 @@ namespace GPlatesQtWidgets
 		QString d_python_path;
 		QString d_python_file;
 		QString d_temporary_path;
-		QString d_temp_pick_file;
-		QString d_temp_result;
-		QString d_temp_par;
-		QString d_temp_res;
 
 		expanded_status_map_type d_segment_expanded_status;
 

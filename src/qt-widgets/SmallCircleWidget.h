@@ -2,10 +2,10 @@
 
 /**
  * \file Displays lat/lon points of geometry being modified by a canvas tool.
- * 
+ *
  * $Revision: 10789 $
  * $Date: 2011-01-19 09:58:33 +0100 (on, 19 jan 2011) $
- * 
+ *
  * Copyright (C) 2011 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -61,10 +61,10 @@ namespace GPlatesViewOperations
 
 namespace GPlatesQtWidgets
 {
-        class CreateSmallCircleDialog;
+	class CreateSmallCircleDialog;
 
 	class SmallCircleWidget :
-			public TaskPanelWidget, 
+			public TaskPanelWidget,
 			protected Ui_SmallCircleWidget
 	{
 		Q_OBJECT
@@ -75,7 +75,7 @@ namespace GPlatesQtWidgets
 
 		explicit
 		SmallCircleWidget(
-				GPlatesPresentation::ViewState &view_state,				
+				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
 
 		void
@@ -83,9 +83,9 @@ namespace GPlatesQtWidgets
 
 		void
 		set_centre(
-			const GPlatesMaths::LatLonPoint &centre);
+				const GPlatesMaths::LatLonPoint &centre);
 
-                small_circle_collection_type&
+		small_circle_collection_type&
 		small_circle_collection()
 		{
 			return d_small_circles;
@@ -95,34 +95,34 @@ namespace GPlatesQtWidgets
 		update_small_circle_layer();
 
 		/**
-		 * Update the centre part of the current_circles group box.                                                                    
+		 * Update the centre part of the current_circles group box.
 		 */
 		void
 		update_current_centre(
-			const GPlatesMaths::PointOnSphere &current_centre);
+				const GPlatesMaths::PointOnSphere &current_centre);
 
 		
 		void
 		update_current_radius(
-			const GPlatesMaths::Real &radius_in_radians);
+				const GPlatesMaths::Real &radius_in_radians);
 
 		/**
-		 * Update the radii of the current_circles group box from small circles collection d_small_circles. 
-		 * 
+		 * Update the radii of the current_circles group box from small circles collection d_small_circles.
+		 *
 		 * An optional extra radius can be provided - so that we can add the radius of the current canvas circle.
 		 */
 		void
 		update_radii(
-			boost::optional<double> current_radius = boost::none);
+				boost::optional<double> current_radius = boost::none);
 
-                void
-                update_circles(
-                        small_circle_collection_type &small_circle_collection);
+		void
+		update_circles(
+				small_circle_collection_type &small_circle_collection);
 
 	Q_SIGNALS:
 		
 		/**
-		 * For triggering a reconstruction.                                                                    
+		 * For triggering a reconstruction.
 		 */
 		void
 		feature_created();
@@ -139,12 +139,12 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Override the QWidget's hideEvent so that we can
-                 * close the associated (non-modal) CalculateSmallCircle dialog as well.
+		 * close the associated (non-modal) CalculateSmallCircle dialog as well.
 		 */
 		virtual
 		void
 		hideEvent(
-			QHideEvent *);
+				QHideEvent *);
 
 		void
 		update_buttons();
@@ -162,17 +162,17 @@ namespace GPlatesQtWidgets
 		void
 		handle_clear();
 
-                void
-                handle_specify();
+		void
+		handle_specify();
 
 
 	private:
 
 		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
-                CreateSmallCircleDialog *d_create_small_circle_dialog_ptr;
+		CreateSmallCircleDialog *d_create_small_circle_dialog_ptr;
 		GPlatesViewOperations::RenderedGeometryLayer *d_small_circle_layer;
 
-                small_circle_collection_type d_small_circles;
+		small_circle_collection_type d_small_circles;
 
 	};
 }

@@ -156,7 +156,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 					view_state.get_map_transform()));
 
 	//
-	// Edit hellinger segments canvas tool.
+	// Fit-to-pole canvas tool.
 	//
 
 	GPlatesCanvasTools::FitToPole::non_null_ptr_type fit_to_pole_tool =
@@ -192,6 +192,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::initialise()
 	// NOTE: If you are updating the tool in 'update_enable_state()' then you
 	// don't need to enable/disable it here.
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_CLICK_GEOMETRY, true);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_FIT_TO_POLE, true);
 
 	update_enable_state();
 }

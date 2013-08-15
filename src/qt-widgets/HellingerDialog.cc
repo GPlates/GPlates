@@ -55,6 +55,10 @@
 
 const double SLIDER_MULTIPLIER = -10000.;
 const int SYMBOL_SIZE = 2;
+const QString TEMP_PICK_FILENAME("temp_pick");
+const QString TEMP_RESULT_FILENAME("temp_result");
+const QString TEMP_PAR_FILENAME("temp_par");
+const QString TEMP_RES_FILENAME("temp_res");
 
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger workflow.
@@ -210,8 +214,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 		//Qt::Window),
 		Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_view_state(view_state),
-	d_hellinger_layer(*view_state.get_rendered_geometry_collection().get_main_rendered_layer(
-						  GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_TOOL_LAYER)),
+	d_rendered_geom_collection_ptr(&view_state.get_rendered_geometry_collection()),
 	d_read_error_accumulation_dialog(read_error_accumulation_dialog),
 	d_hellinger_model(0),
 	d_hellinger_stats_dialog(0),
@@ -225,11 +228,6 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_thread_type(POLE_THREAD_TYPE)
 {
 	setupUi(this);
-
-	//TODO: think about when we should deactivate this layer....and/or do we make it an orthogonal layer?
-	d_view_state.get_rendered_geometry_collection().set_main_layer_active(
-				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_TOOL_LAYER);
-	d_hellinger_layer.set_active();
 
 	// Path copied from PythonUtils / PythonManager.
 
@@ -248,16 +246,11 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	set_up_connections();
 
+	set_up_child_layers();
+
 	d_python_path.append(QDir::separator());
 	d_python_file = d_python_path + "py_hellinger.py";
 	d_temporary_path = d_python_path;
-
-	d_temp_pick_file = QString("temp_file");
-	d_temp_result = QString("temp_file_temp_result");
-	d_temp_par = QString("temp_file_par");
-	d_temp_res = QString("temp_file_res");
-
-
 
 	progress_bar->setEnabled(false);
 	progress_bar->setMinimum(0.);
@@ -328,7 +321,6 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 
 	// Update the highlighted (if any) point. Begin by resetting the hellinger layer
 	// on the canvas.
-	d_hellinger_layer.clear_rendered_geometries();
 	update_canvas();
 
 	if (!tree_widget_picks->currentItem()->text(1).isEmpty())
@@ -382,7 +374,7 @@ GPlatesQtWidgets::HellingerDialog::highlight_selected_point(
 				GPlatesGui::Colour::get_white(), // dummy colour argument
 				type_segment == MOVING_PICK_TYPE ? moving_symbol : fixed_symbol);
 
-	d_hellinger_layer.add_rendered_geometry(pick_geometry);
+	d_highlight_layer_ptr->add_rendered_geometry(pick_geometry);
 
 }
 
@@ -575,7 +567,7 @@ GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 	}
 
 	line_import_file->setText(path);
-	d_hellinger_layer.clear_rendered_geometries();
+	clear_rendered_geometries();
 
 	update_buttons();
 	update_from_model();
@@ -627,10 +619,10 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_stats()
 				d_filename_down,
 				d_python_file,
 				d_temporary_path,
-				d_temp_pick_file,
-				d_temp_result,
-				d_temp_par,
-				d_temp_res);
+				TEMP_PICK_FILENAME,
+				TEMP_RESULT_FILENAME,
+				TEMP_PAR_FILENAME,
+				TEMP_RES_FILENAME);
 	d_hellinger_thread->set_python_script_type(d_thread_type);
 	progress_bar->setEnabled(true);
 	progress_bar->setMaximum(0.);
@@ -744,7 +736,7 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 	QFile python_code(d_python_file);
 	if (python_code.exists())
 	{
-		QString path = d_python_path + d_temp_pick_file;
+		QString path = d_python_path + TEMP_PICK_FILENAME;
 		GPlatesFileIO::HellingerWriter::write_pick_file(path,*d_hellinger_model,false);
 		QString import_file_line = line_import_file->text();
 		// TODO: check if we actually need to update the buttons here.
@@ -800,10 +792,10 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 					iteration,
 					d_python_file,
 					d_temporary_path,
-					d_temp_pick_file,
-					d_temp_result,
-					d_temp_par,
-					d_temp_res);
+					TEMP_PICK_FILENAME,
+					TEMP_RESULT_FILENAME,
+					TEMP_PAR_FILENAME,
+					TEMP_RES_FILENAME);
 		d_thread_type = POLE_THREAD_TYPE;
 
 		d_hellinger_thread->set_python_script_type(d_thread_type);
@@ -906,7 +898,7 @@ GPlatesQtWidgets::HellingerDialog::draw_pole(
 				GPlatesGui::Colour::get_white(), // dummy colour argument
 				results_symbol);
 
-	d_hellinger_layer.add_rendered_geometry(pick_results);
+	d_rotated_layer_ptr->add_rendered_geometry(pick_results);
 }
 
 
@@ -954,7 +946,7 @@ GPlatesQtWidgets::HellingerDialog::draw_error_ellipse()
 						false, /* fill polyline */
 						GPlatesGui::Colour::get_white(), // dummy colour argument
 						results_symbol);
-			d_hellinger_layer.add_rendered_geometry(pick_results);
+			d_rotated_layer_ptr->add_rendered_geometry(pick_results);
 		}
 	}
 
@@ -988,13 +980,13 @@ GPlatesQtWidgets::HellingerDialog::create_feature_collection()
 void
 GPlatesQtWidgets::HellingerDialog::handle_close()
 {
-	d_hellinger_layer.clear_rendered_geometries();
+	clear_rendered_geometries();
 }
 
 void
 GPlatesQtWidgets::HellingerDialog::update_canvas()
 {
-	d_hellinger_layer.clear_rendered_geometries();
+	clear_rendered_geometries();
 	draw_fixed_picks();
 	draw_moving_picks();
 	update_result();
@@ -1095,7 +1087,7 @@ GPlatesQtWidgets::HellingerDialog::draw_fixed_picks()
 							GPlatesGui::Colour::get_white(), // dummy colour argument
 							it->second.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
-				d_hellinger_layer.add_rendered_geometry(pick_geometry);
+				d_pick_layer_ptr->add_rendered_geometry(pick_geometry);
 			}
 		}
 	}
@@ -1135,7 +1127,7 @@ GPlatesQtWidgets::HellingerDialog::draw_moving_picks()
 							GPlatesGui::Colour::get_white(), // dummy colour argument
 							it->second.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
-				d_hellinger_layer.add_rendered_geometry(pick_geometry);
+				d_pick_layer_ptr->add_rendered_geometry(pick_geometry);
 			}
 		}
 	}
@@ -1146,7 +1138,7 @@ void
 GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 {
 
-	d_hellinger_layer.clear_rendered_geometries();
+	clear_rendered_geometries();
 	draw_fixed_picks();
 	update_result();
 	boost::optional<GPlatesQtWidgets::HellingerFitStructure> data_fit_struct = d_hellinger_model->get_fit();
@@ -1208,7 +1200,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 								GPlatesGui::Colour::get_white(), // dummy colour argument
 								it->second.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
-					d_hellinger_layer.add_rendered_geometry(pick_geometry);
+					d_rotated_layer_ptr->add_rendered_geometry(pick_geometry);
 				}
 			}
 		}
@@ -1273,7 +1265,7 @@ GPlatesQtWidgets::HellingerDialog::handle_chron_time_changed(
 		d_recon_time = d_chron_time;
 
 	}
-	d_hellinger_layer.clear_rendered_geometries();
+	clear_rendered_geometries();
 
 	draw_fixed_picks();
 	draw_moving_picks();
@@ -1388,6 +1380,42 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(d_hellinger_thread, SIGNAL(finished()),this, SLOT(handle_thread_finished()));
 	QObject::connect(button_cancel,SIGNAL(clicked()),this,SLOT(handle_cancel()));
 	QObject::connect(button_clear,SIGNAL(clicked()),this,SLOT(handle_clear()));
+}
+
+void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
+{
+	// Delay any notification of changes to the rendered geometry collection
+	// until end of current scope block. This is so we can do multiple changes
+	// without redrawing canvas after each change.
+	// This should ideally be located at the highest level to capture one
+	// user GUI interaction - the user performs an action and we update canvas once.
+	// But since these guards can be nested it's probably a good idea to have it here too.
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
+	// Create a rendered layer to draw the picks.
+	d_pick_layer_ptr =
+		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
+
+	// Create a rendered layer to draw rotated geometries
+	// NOTE: this must be created second to get drawn on top.
+	d_rotated_layer_ptr =
+		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
+
+
+	// Create a rendered layer to draw highlighted geometries
+	// NOTE: this must be created second to get drawn on top.
+	d_highlight_layer_ptr =
+		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
+}
+
+void GPlatesQtWidgets::HellingerDialog::clear_rendered_geometries()
+{
+	d_pick_layer_ptr->clear_rendered_geometries();
+	d_highlight_layer_ptr->clear_rendered_geometries();
+	d_rotated_layer_ptr->clear_rendered_geometries();
 }
 
 void
