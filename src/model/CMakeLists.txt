@@ -62,6 +62,12 @@ set(srcs
     PropertyName.h
     PropertyValue.cc
     PropertyValue.h
+    PropertyValueBubbleUpRevisionHandler.cc
+    PropertyValueBubbleUpRevisionHandler.h
+    PropertyValueRevision.h
+    PropertyValueRevisionContext.h
+    PropertyValueRevisionedReference.cc
+    PropertyValueRevisionedReference.h
     QualifiedXmlName.h
     RevisionAwareIterator.cc
     RevisionAwareIterator.h
