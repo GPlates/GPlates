@@ -123,6 +123,10 @@ namespace GPlatesQtWidgets
 		set_up_child_layers();
 
 		void
+		activate_layers(
+				bool activate);
+
+		void
 		clear_rendered_geometries();
 
 		void

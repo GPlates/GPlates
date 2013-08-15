@@ -248,6 +248,8 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	set_up_child_layers();
 
+	activate_layers(true);
+
 	d_python_path.append(QDir::separator());
 	d_python_file = d_python_path + "py_hellinger.py";
 	d_temporary_path = d_python_path;
@@ -981,6 +983,7 @@ void
 GPlatesQtWidgets::HellingerDialog::handle_close()
 {
 	clear_rendered_geometries();
+	activate_layers(false);
 }
 
 void
@@ -1409,6 +1412,14 @@ void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
 	d_highlight_layer_ptr =
 		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
+}
+
+void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
+{
+	d_pick_layer_ptr->set_active(activate);
+	d_highlight_layer_ptr->set_active(activate);
+	d_rotated_layer_ptr->set_active(activate);
+
 }
 
 void GPlatesQtWidgets::HellingerDialog::clear_rendered_geometries()
