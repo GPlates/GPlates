@@ -366,7 +366,7 @@ namespace
 			QVariant qv = item->data(Qt::UserRole);
 			using namespace GPlatesPropertyValues;
 			boost::optional<GpmlTimeSample> sample = qv.value<boost::optional<GpmlTimeSample> >();
-			if(sample->is_disabled())
+			if(sample && sample->is_disabled())
 			{
 				continue;
 			}
