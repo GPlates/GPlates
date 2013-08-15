@@ -29,10 +29,8 @@
 
 #include "PropertyValue.h"
 
-#include "Model.h"
 #include "ModelTransaction.h"
-#include "TopLevelProperty.h"
-#include "WeakReferenceCallback.h"
+#include "PropertyValueRevisionedReference.h"
 
 
 bool
@@ -66,24 +64,24 @@ GPlatesModel::PropertyValue::equality(
 boost::optional<GPlatesModel::Model &>
 GPlatesModel::PropertyValue::get_model()
 {
-	if (!d_current_parent)
+	if (!d_current_revision->get_context())
 	{
 		return boost::none;
 	}
 
-	return d_current_parent->get_model();
+	return d_current_revision->get_context()->get_model();
 }
 
 
 boost::optional<const GPlatesModel::Model &>
 GPlatesModel::PropertyValue::get_model() const
 {
-	if (!d_current_parent)
+	if (!d_current_revision->get_context())
 	{
 		return boost::none;
 	}
 
-	boost::optional<GPlatesModel::Model &> model = d_current_parent->get_model();
+	boost::optional<GPlatesModel::Model &> model = d_current_revision->get_context()->get_model();
 	if (!model)
 	{
 		return boost::none;
@@ -93,45 +91,25 @@ GPlatesModel::PropertyValue::get_model() const
 }
 
 
-GPlatesModel::PropertyValue::MutableRevisionHandler::MutableRevisionHandler(
-		const PropertyValue::non_null_ptr_type &property_value) :
-	d_model(property_value->get_model()),
-	d_property_value(property_value),
-	d_mutable_revision(
-		// The current property value revision is immutable so we create a new revision by cloning it.
-		d_property_value->d_current_revision->clone_for_bubble_up_modification())
+GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesModel::PropertyValue::create_bubble_up_revision(
+		ModelTransaction &transaction) const
 {
-}
-
-
-void
-GPlatesModel::PropertyValue::MutableRevisionHandler::handle_revision_modification()
-{
-	// Create a model transaction that will switch the current revision to the new one.
-	ModelTransaction transaction;
-
-	RevisionedReference revision(d_property_value, d_mutable_revision);
-	transaction.set_property_value_revision(revision);
-
-	// If the property value has a parent then bubble up the modification towards the root (feature store).
-	if (d_property_value->d_current_parent)
+	// If we don't have a (parent) context then just clone the current revision without any context.
+	if (!get_current_revision()->get_context())
 	{
-		d_property_value->d_current_parent->bubble_up_modification(revision, transaction);
+		PropertyValueRevision::non_null_ptr_type cloned_revision =
+				get_current_revision()->clone_revision();
+
+		transaction.add_property_value_transaction(
+				ModelTransaction::PropertyValueTransaction(this, cloned_revision));
+
+		return cloned_revision;
 	}
 
-	// If the bubble-up reaches the top of the model hierarchy (ie, connected all the way up to the model)
-	// then the model will store the new version in the undo/redo queue.
-	transaction.commit();
-
-	// Emit the model events if either there's no model (ie, not attached to model), or
-	// we are attached to the model but the model notification guard is currently active
-	// (in which case the events will be re-determined and then emitted when the notification
-	// guard is released).
-	if (!d_model ||
-		!d_model->has_notification_guard())
-	{
-		// TODO: Emit model events.
-	}
+	// We have a parent context so bubble up the revision towards the root
+	// (feature store). And our parent will create a new revision for us...
+	return get_current_revision()->get_context()->bubble_up(transaction, this);
 }
 
 
