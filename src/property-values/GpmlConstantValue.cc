@@ -29,14 +29,35 @@
 
 #include "GpmlConstantValue.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+#include "model/ModelTransaction.h"
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
+
+const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
+GPlatesPropertyValues::GpmlConstantValue::create(
+		GPlatesModel::PropertyValue::non_null_ptr_type value_,
+		const StructuralType &value_type_,
+		const GPlatesUtils::UnicodeString &description_)
+{
+	GPlatesModel::ModelTransaction transaction;
+	non_null_ptr_type ptr(new GpmlConstantValue(transaction, value_, value_type_, description_));
+	transaction.commit();
+
+	return ptr;
+}
+
 
 void
 GPlatesPropertyValues::GpmlConstantValue::set_value(
-		GPlatesModel::PropertyValue::non_null_ptr_to_const_type v)
+		GPlatesModel::PropertyValue::non_null_ptr_type value)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().value = v;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().value.change(
+			revision_handler.get_model_transaction(), value);
+	revision_handler.commit();
 }
 
 
@@ -44,9 +65,9 @@ void
 GPlatesPropertyValues::GpmlConstantValue::set_description(
 		const GPlatesUtils::UnicodeString &new_description)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().description = new_description;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().description = new_description;
+	revision_handler.commit();
 }
 
 
@@ -54,5 +75,23 @@ std::ostream &
 GPlatesPropertyValues::GpmlConstantValue::print_to(
 		std::ostream &os) const
 {
-	return os << *get_current_revision<Revision>().value.get_const();
+	return os << *get_current_revision<Revision>().value.get_property_value();
+}
+
+
+GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesPropertyValues::GpmlConstantValue::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type &child_property_value)
+{
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// There's only one nested property value so it must be that.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			child_property_value == revision.value.get_property_value(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Create a new revision for the child property value.
+	return revision.value.clone_revision(transaction);
 }
