@@ -47,7 +47,7 @@ GPlatesCanvasTools::FitToPole::FitToPole(
 void
 GPlatesCanvasTools::FitToPole::handle_activation()
 {
-	set_status_bar_message(QT_TR_NOOP(""));
+	set_status_bar_message(QT_TR_NOOP("Click to select a pick. Shift+click to edit a pick."));
 }
 
 void
@@ -113,6 +113,15 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 	{
 		d_hellinger_dialog_ptr->clear_hovered_layer();
 	}
+}
+
+void
+GPlatesCanvasTools::FitToPole::handle_shift_left_click(
+		const GPlatesMaths::PointOnSphere &point_on_sphere,
+		bool is_on_earth,
+		double proximity_inclusion_threshold)
+{
+
 }
 
 void

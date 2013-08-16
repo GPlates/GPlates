@@ -95,8 +95,6 @@ namespace GPlatesCanvasTools
 		void
 		handle_deactivation();
 
-		// TODO: The various handle_ methods below are inherited from the SmallCircleTool which we copied.
-		// Update these as appropriate for the Fitting tool.
 		virtual
 		void
 		handle_left_click(
@@ -107,6 +105,13 @@ namespace GPlatesCanvasTools
 		virtual
 		void
 		handle_move_without_drag(	
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
+
+		virtual
+		void
+		handle_shift_left_click(
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold);
