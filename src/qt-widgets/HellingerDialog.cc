@@ -171,7 +171,6 @@ namespace{
 			QTreeWidgetItem *item,
 			bool original_state)
 	{
-		qDebug() << "Resetting original item";
 		set_text_colour_according_to_enabled_state(item,original_state);
 	}
 
@@ -236,7 +235,10 @@ namespace{
 			item->setTextColor(LON,Qt::gray);
 			item->setTextColor(UNCERTAINTY,Qt::gray);
 		}
-		geometry_to_tree_item_map.push_back(item);
+		if (pick.d_is_enabled)
+		{
+			geometry_to_tree_item_map.push_back(item);
+		}
 	}
 
 	void
@@ -362,6 +364,8 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 	// If nothing is selected:
 	//	 disable everything (except the new pick / new segment buttons - which are always enabled anyway)
 
+	clear_selection_layer();
+
 	if (new_selection.empty())
 	{
 		// Nothing selected:
@@ -437,7 +441,7 @@ GPlatesQtWidgets::HellingerDialog::highlight_selected_point(
 				GPlatesGui::Colour::get_white(), // dummy colour argument
 				type_segment == MOVING_PICK_TYPE ? moving_symbol : fixed_symbol);
 
-	d_highlight_layer_ptr->add_rendered_geometry(pick_geometry);
+	d_selection_layer_ptr->add_rendered_geometry(pick_geometry);
 
 }
 
@@ -1206,6 +1210,7 @@ void GPlatesQtWidgets::HellingerDialog::draw_picks()
 	hellinger_model_type::const_iterator it = d_hellinger_model->begin();
 	int num_segment = 0;
 	int num_colour = 0;
+	d_geometry_to_model_map.clear();
 	for (; it != d_hellinger_model->end(); ++it)
 	{
 		if (it->second.d_is_enabled)
@@ -1355,7 +1360,7 @@ void GPlatesQtWidgets::HellingerDialog::set_buttons_for_pick_selected(
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::update_highlighted_item(
+GPlatesQtWidgets::HellingerDialog::update_hovered_item(
 		boost::optional<QTreeWidgetItem *> item,
 		bool current_state)
 {
@@ -1531,7 +1536,7 @@ void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
 				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// Create a rendered layer to draw highlighted geometries
-	d_highlight_layer_ptr =
+	d_hover_layer_ptr =
 		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
 }
@@ -1539,7 +1544,7 @@ void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
 void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
 {
 	d_pick_layer_ptr->set_active(activate);
-	d_highlight_layer_ptr->set_active(activate);
+	d_hover_layer_ptr->set_active(activate);
 	d_result_layer_ptr->set_active(activate);
 	d_selection_layer_ptr->set_active(activate);
 
@@ -1548,7 +1553,7 @@ void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
 void GPlatesQtWidgets::HellingerDialog::clear_rendered_geometries()
 {
 	d_pick_layer_ptr->clear_rendered_geometries();
-	d_highlight_layer_ptr->clear_rendered_geometries();
+	d_hover_layer_ptr->clear_rendered_geometries();
 	d_result_layer_ptr->clear_rendered_geometries();
 }
 
@@ -1642,7 +1647,7 @@ void GPlatesQtWidgets::HellingerDialog::highlight_hovered_pick(const unsigned in
 	hellinger_model_type::const_iterator it = d_geometry_to_model_map[index];
 	const HellingerPick &pick = it->second;
 
-	d_highlight_layer_ptr->clear_rendered_geometries();
+	d_hover_layer_ptr->clear_rendered_geometries();
 	const GPlatesMaths::LatLonPoint llp(pick.d_lat,pick.d_lon);
 	const GPlatesMaths::PointOnSphere point = make_point_on_sphere(llp);
 
@@ -1657,14 +1662,14 @@ void GPlatesQtWidgets::HellingerDialog::highlight_hovered_pick(const unsigned in
 				GPlatesGui::Colour::get_white(), // dummy colour argument
 				pick.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
-	d_highlight_layer_ptr->add_rendered_geometry(pick_geometry);
+	d_hover_layer_ptr->add_rendered_geometry(pick_geometry);
 
 	if (index > d_geometry_to_tree_item_map.size())
 	{
 		return;
 	}
 
-	update_highlighted_item(d_geometry_to_tree_item_map[index],pick.d_is_enabled);
+	update_hovered_item(d_geometry_to_tree_item_map[index],pick.d_is_enabled);
 
 }
 
@@ -1673,39 +1678,21 @@ void GPlatesQtWidgets::HellingerDialog::highlight_selected_pick(
 {
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 
-	qDebug() << "Index: " << index << ", " << d_geometry_to_model_map.size();
-
-	if (index > d_geometry_to_model_map.size())
+	if (index > d_geometry_to_tree_item_map.size())
 	{
 		return;
 	}
 
+	update_hovered_item();
+	tree_widget_picks->setCurrentItem(d_geometry_to_tree_item_map[index]);
 
-	hellinger_model_type::const_iterator it = d_geometry_to_model_map[index];
-	const HellingerPick &pick = it->second;
-
-	d_selection_layer_ptr->clear_rendered_geometries();
-	const GPlatesMaths::LatLonPoint llp(pick.d_lat,pick.d_lon);
-	const GPlatesMaths::PointOnSphere point = make_point_on_sphere(llp);
-
-	GPlatesViewOperations::RenderedGeometry pick_geometry =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				point.get_non_null_pointer(),
-				GPlatesGui::Colour::get_yellow(),
-				2, /* point thickness */
-				2, /* line thickness */
-				false, /* fill polygon */
-				false, /* fill polyline */
-				GPlatesGui::Colour::get_white(), // dummy colour argument
-				pick.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
-
-	d_selection_layer_ptr->add_rendered_geometry(pick_geometry);
 }
 
-void GPlatesQtWidgets::HellingerDialog::clear_highlight_layer()
+void GPlatesQtWidgets::HellingerDialog::clear_hovered_layer()
 {
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
-	d_highlight_layer_ptr->clear_rendered_geometries();
+	d_hover_layer_ptr->clear_rendered_geometries();
+	update_hovered_item();
 }
 
 void GPlatesQtWidgets::HellingerDialog::clear_selection_layer()

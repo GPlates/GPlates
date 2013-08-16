@@ -111,7 +111,7 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 	}
 	else
 	{
-		d_hellinger_dialog_ptr->clear_highlight_layer();
+		d_hellinger_dialog_ptr->clear_hovered_layer();
 	}
 }
 

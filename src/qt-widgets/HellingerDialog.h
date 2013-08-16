@@ -113,7 +113,7 @@ namespace GPlatesQtWidgets
 				const unsigned int index);
 
 		void
-		clear_highlight_layer();
+		clear_hovered_layer();
 
 		void
 		clear_selection_layer();
@@ -340,7 +340,9 @@ namespace GPlatesQtWidgets
 				bool state_is_active);
 
 		void
-		update_highlighted_item(boost::optional<QTreeWidgetItem*> item, bool current_state);
+		update_hovered_item(
+				boost::optional<QTreeWidgetItem*> item = boost::none,
+				bool current_state = true);
 
 
 		GPlatesPresentation::ViewState &d_view_state;
@@ -352,7 +354,7 @@ namespace GPlatesQtWidgets
 		child_layer_ptr_type d_pick_layer_ptr;
 
 		//! For highlights
-		child_layer_ptr_type d_highlight_layer_ptr;
+		child_layer_ptr_type d_hover_layer_ptr;
 
 		//! For selected pick / segment
 		child_layer_ptr_type d_selection_layer_ptr;
