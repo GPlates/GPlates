@@ -31,7 +31,7 @@
 #include "boost/optional.hpp"
 
 #include "maths/PointOnSphere.h"
-#include "HellingerDialog.h"
+//#include "HellingerDialog.h"
 
 
 namespace GPlatesQtWidgets
@@ -187,52 +187,56 @@ namespace GPlatesQtWidgets
 
 		void
 		add_pick(const HellingerPick &pick,
-				 const int &segment_number);
+				 const unsigned int &segment_number);
 
 		void
 		add_segment(hellinger_segment_type &picks,
-					const int &segment_number);
+				const unsigned int &segment_number);
 
         QStringList
 		get_pick_as_string(
-			int &segment,
-			int &row) const;
+			const unsigned int &segment,
+			const unsigned int &row) const;
+
+		boost::optional<const HellingerPick &> get_pick(
+			const unsigned int &index) const;
 
         bool
 		get_pick_state(
-			const int &segment,
-			const int &row) const ;
+			const unsigned int &segment,
+			const unsigned int &row) const ;
 
         void
 		set_pick_state(
-			const int &segment,
-			const int &row,
+			const unsigned int &segment,
+			const unsigned int &row,
 			bool enabled);
 
 		boost::optional<HellingerPick>
 		get_pick(
-			const int &segment, 
-			const int &row) const;
+			const unsigned int &segment,
+			const unsigned int &row) const;
 
         QStringList
 		get_segment_as_string(
-			const int &segment) const;
+			const unsigned int &segment) const;
 
 		hellinger_segment_type
 		get_segment(
-			const int &segment) const;
+			const unsigned int &segment) const;
 
         int
-		num_rows_in_segment(const int &segment) const;
+		num_rows_in_segment(
+			const unsigned int &segment) const;
 
         void
 		remove_pick(
-			const int &segment,
-			const int &row);
+			const unsigned int &segment,
+			const unsigned int &row);
 
         void
         remove_segment(
-			const int &segment);
+			const unsigned int &segment);
 
         void
         reset_model();

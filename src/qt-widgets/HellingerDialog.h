@@ -67,6 +67,7 @@ namespace GPlatesQtWidgets
 	public:
 
 		typedef std::map<int,bool> expanded_status_map_type;
+		typedef std::vector<hellinger_model_type::const_iterator > geometry_to_model_map_type;
 
 		HellingerDialog(
 				GPlatesPresentation::ViewState &view_state,
@@ -97,10 +98,13 @@ namespace GPlatesQtWidgets
 
 		void
 		expand_segment(
-				const int segment_number);
+				const unsigned int segment_number);
 
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 		get_pick_layer();
+
+		void
+		highlight_hovered_pick(const unsigned int index);
 
 	public Q_SLOTS:
 
@@ -334,8 +338,11 @@ namespace GPlatesQtWidgets
 		//! For highlights
 		child_layer_ptr_type d_highlight_layer_ptr;
 
-		//! For rotated picks
-		child_layer_ptr_type d_rotated_layer_ptr;
+		//! For selected pick / segment
+		child_layer_ptr_type d_selection_layer_ptr;
+
+		//! For fitted pole, uncertainty, and rotated picks
+		child_layer_ptr_type d_result_layer_ptr;
 
 		ReadErrorAccumulationDialog &d_read_error_accumulation_dialog;
 		HellingerModel *d_hellinger_model;
@@ -360,6 +367,7 @@ namespace GPlatesQtWidgets
 		QString d_temporary_path;
 
 		expanded_status_map_type d_segment_expanded_status;
+		geometry_to_model_map_type d_geometry_to_model_map;
 
 	};
 }

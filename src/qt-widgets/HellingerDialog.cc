@@ -22,6 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#include <iterator> // std::advance
 #include <vector>
 
 #include <boost/foreach.hpp>
@@ -900,7 +901,7 @@ GPlatesQtWidgets::HellingerDialog::draw_pole(
 				GPlatesGui::Colour::get_white(), // dummy colour argument
 				results_symbol);
 
-	d_rotated_layer_ptr->add_rendered_geometry(pick_results);
+	d_result_layer_ptr->add_rendered_geometry(pick_results);
 }
 
 
@@ -948,7 +949,7 @@ GPlatesQtWidgets::HellingerDialog::draw_error_ellipse()
 						false, /* fill polyline */
 						GPlatesGui::Colour::get_white(), // dummy colour argument
 						results_symbol);
-			d_rotated_layer_ptr->add_rendered_geometry(pick_results);
+			d_result_layer_ptr->add_rendered_geometry(pick_results);
 		}
 	}
 
@@ -1089,7 +1090,7 @@ GPlatesQtWidgets::HellingerDialog::draw_fixed_picks()
 							GPlatesGui::Colour::get_white(), // dummy colour argument
 							it->second.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
-				d_rotated_layer_ptr->add_rendered_geometry(pick_geometry);
+				d_result_layer_ptr->add_rendered_geometry(pick_geometry);
 			}
 		}
 	}
@@ -1138,6 +1139,9 @@ GPlatesQtWidgets::HellingerDialog::draw_moving_picks()
 
 void GPlatesQtWidgets::HellingerDialog::draw_picks()
 {
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+	d_pick_layer_ptr->clear_rendered_geometries();
+
 	hellinger_model_type::const_iterator it = d_hellinger_model->begin();
 	int num_segment = 0;
 	int num_colour = 0;
@@ -1168,7 +1172,7 @@ void GPlatesQtWidgets::HellingerDialog::draw_picks()
 						it->second.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
 			d_pick_layer_ptr->add_rendered_geometry(pick_geometry);
-
+			d_geometry_to_model_map.push_back(it);
 		}
 	}
 }
@@ -1239,7 +1243,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 								GPlatesGui::Colour::get_white(), // dummy colour argument
 								it->second.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
-					d_rotated_layer_ptr->add_rendered_geometry(pick_geometry);
+					d_result_layer_ptr->add_rendered_geometry(pick_geometry);
 				}
 			}
 		}
@@ -1436,15 +1440,18 @@ void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
 		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
 
-	// Create a rendered layer to draw rotated geometries
-	// NOTE: this must be created second to get drawn on top.
-	d_rotated_layer_ptr =
+	// Create a rendered layer to draw resultant pole and reconstructed picks
+	d_result_layer_ptr =
 		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
 
 
+	// Create a rendered layer to draw selected geometries
+	d_selection_layer_ptr =
+		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
+
 	// Create a rendered layer to draw highlighted geometries
-	// NOTE: this must be created second to get drawn on top.
 	d_highlight_layer_ptr =
 		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
@@ -1454,7 +1461,7 @@ void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
 {
 	d_pick_layer_ptr->set_active(activate);
 	d_highlight_layer_ptr->set_active(activate);
-	d_rotated_layer_ptr->set_active(activate);
+	d_result_layer_ptr->set_active(activate);
 
 }
 
@@ -1462,7 +1469,7 @@ void GPlatesQtWidgets::HellingerDialog::clear_rendered_geometries()
 {
 	d_pick_layer_ptr->clear_rendered_geometries();
 	d_highlight_layer_ptr->clear_rendered_geometries();
-	d_rotated_layer_ptr->clear_rendered_geometries();
+	d_result_layer_ptr->clear_rendered_geometries();
 }
 
 void
@@ -1519,12 +1526,12 @@ GPlatesQtWidgets::HellingerDialog::restore_expanded_status()
 }
 
 void GPlatesQtWidgets::HellingerDialog::expand_segment(
-		const int segment_number)
+		const unsigned int segment_number)
 {
 	int top_level_items = tree_widget_picks->topLevelItemCount();
 	for (int i = 0; i < top_level_items ; ++i)
 	{
-		int segment = tree_widget_picks->topLevelItem(i)->text(0).toInt();
+		const unsigned int segment = tree_widget_picks->topLevelItem(i)->text(0).toInt();
 
 		if (segment == segment_number){
 			tree_widget_picks->topLevelItem(i)->setExpanded(true);
@@ -1541,5 +1548,36 @@ void GPlatesQtWidgets::HellingerDialog::expand_segment(
 GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GPlatesQtWidgets::HellingerDialog::get_pick_layer()
 {
 	return d_pick_layer_ptr;
+}
+
+void GPlatesQtWidgets::HellingerDialog::highlight_hovered_pick(const unsigned int index)
+{
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
+	if (index > d_geometry_to_model_map.size())
+	{
+		return;
+	}
+
+	hellinger_model_type::const_iterator it = d_geometry_to_model_map[index];
+	const HellingerPick &pick = it->second;
+
+	d_highlight_layer_ptr->clear_rendered_geometries();
+	GPlatesMaths::LatLonPoint llp(pick.d_lat,pick.d_lon);
+	GPlatesMaths::PointOnSphere point = make_point_on_sphere(llp);
+
+	GPlatesViewOperations::RenderedGeometry pick_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+				point.get_non_null_pointer(),
+				GPlatesGui::Colour::get_silver(),
+				2, /* point thickness */
+				2, /* line thickness */
+				false, /* fill polygon */
+				false, /* fill polyline */
+				GPlatesGui::Colour::get_white(), // dummy colour argument
+				pick.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
+
+	d_highlight_layer_ptr->add_rendered_geometry(pick_geometry);
+
 }
 

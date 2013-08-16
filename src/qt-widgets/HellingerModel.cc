@@ -25,6 +25,7 @@
 
 #include <algorithm> // copy
 #include <map>
+#include <set>
 #include <vector>
 
 #include "boost/foreach.hpp"
@@ -61,7 +62,8 @@ GPlatesQtWidgets::HellingerModel::HellingerModel(
 }
 
 QStringList
-GPlatesQtWidgets::HellingerModel::get_pick_as_string(int &segment, int &row) const
+GPlatesQtWidgets::HellingerModel::get_pick_as_string(
+		const unsigned int &segment, const unsigned int &row) const
 {
 
 	hellinger_model_const_range_type pair =
@@ -70,7 +72,7 @@ GPlatesQtWidgets::HellingerModel::get_pick_as_string(int &segment, int &row) con
 	hellinger_model_type::const_iterator iter = pair.first;
 
 	QStringList get_data_line;
-	for (int n = 0;  iter != pair.second ; ++iter, ++n)
+	for (unsigned int n = 0;  iter != pair.second ; ++iter, ++n)
 	{
 		if (n == row)
 		{
@@ -90,10 +92,23 @@ GPlatesQtWidgets::HellingerModel::get_pick_as_string(int &segment, int &row) con
 	return get_data_line;
 }
 
+boost::optional<const GPlatesQtWidgets::HellingerPick &>
+GPlatesQtWidgets::HellingerModel::get_pick(
+		const unsigned int &index) const
+{
+	if (index >= d_model.size())
+	{
+		return boost::none;
+	}
+	hellinger_model_type::const_iterator it = d_model.begin();
+	std::advance(it, index);
+	return it->second;
+}
+
 void
 GPlatesQtWidgets::HellingerModel::set_pick_state(
-		const int &segment,
-		const int &row,
+		const unsigned int &segment,
+		const unsigned int &row,
 		bool enabled)
 {
 	hellinger_model_range_type pair =
@@ -101,7 +116,7 @@ GPlatesQtWidgets::HellingerModel::set_pick_state(
 
 	hellinger_model_type::iterator iter = pair.first;
 
-	for (int n = 0 ; iter != pair.second ; ++iter, ++n)
+	for (unsigned int n = 0 ; iter != pair.second ; ++iter, ++n)
 	{
 		if (n == row){
 			iter->second.d_is_enabled = enabled;
@@ -110,14 +125,15 @@ GPlatesQtWidgets::HellingerModel::set_pick_state(
 }
 
 bool
-GPlatesQtWidgets::HellingerModel::get_pick_state(const int &segment, const int &row) const
+GPlatesQtWidgets::HellingerModel::get_pick_state(
+		const unsigned int &segment, const unsigned int &row) const
 {
 	hellinger_model_const_range_type pair =
 			d_model.equal_range(segment);
 
 	hellinger_model_type::const_iterator iter = pair.first;
 
-	for (int n = 0; iter != pair.second; ++iter, ++n)
+	for (unsigned int n = 0; iter != pair.second; ++iter, ++n)
     {
 		if (n == row){
 			return iter->second.d_is_enabled;
@@ -129,14 +145,14 @@ GPlatesQtWidgets::HellingerModel::get_pick_state(const int &segment, const int &
 
 int
 GPlatesQtWidgets::HellingerModel::num_rows_in_segment(
-		const int &segment) const
+		const unsigned int &segment) const
 {
 	return d_model.count(segment);
 }
 
 QStringList
 GPlatesQtWidgets::HellingerModel::get_segment_as_string(
-		const int &segment) const
+		const unsigned int &segment) const
 {
 	hellinger_model_const_range_type pair =
 			d_model.equal_range(segment);
@@ -164,14 +180,15 @@ GPlatesQtWidgets::HellingerModel::get_segment_as_string(
 }
 
 void
-GPlatesQtWidgets::HellingerModel::remove_pick(const int &segment, const int &row)
+GPlatesQtWidgets::HellingerModel::remove_pick(
+		unsigned const int &segment, unsigned const int &row)
 {
 	hellinger_model_range_type pair =
 			d_model.equal_range(segment);
 
 	hellinger_model_type::iterator iter = pair.first;
 
-	for (int n = 0;  iter != pair.second ; ++iter, ++n)
+	for (unsigned int n = 0;  iter != pair.second ; ++iter, ++n)
     {
 		if (n == row)
         {
@@ -182,7 +199,8 @@ GPlatesQtWidgets::HellingerModel::remove_pick(const int &segment, const int &row
 }
 
 void
-GPlatesQtWidgets::HellingerModel::remove_segment(const int &segment)
+GPlatesQtWidgets::HellingerModel::remove_segment(
+		const unsigned int &segment)
 {
 	d_model.erase(segment);
 }
@@ -253,7 +271,7 @@ GPlatesQtWidgets::HellingerModel::add_pick(const QStringList &pick)
 void
 GPlatesQtWidgets::HellingerModel::add_pick(
 		const HellingerPick &pick,
-		const int &segment_number)
+		const unsigned int &segment_number)
 {
 	d_model.insert(hellinger_model_pair_type(segment_number,pick));
 }
@@ -472,14 +490,14 @@ GPlatesQtWidgets::HellingerModel::make_space_for_new_segment(int segment)
 
 boost::optional<GPlatesQtWidgets::HellingerPick>
 GPlatesQtWidgets::HellingerModel::get_pick(
-		const int &segment,
-		const int &row) const
+		const unsigned int &segment,
+		const unsigned int &row) const
 {
 	hellinger_model_const_range_type range =
 			d_model.equal_range(segment);
 
 	hellinger_model_type::const_iterator iter = range.first;
-	for (int n = 0; iter != range.second; ++iter, ++n)
+	for (unsigned int n = 0; iter != range.second; ++iter, ++n)
 	{
 		if (n == row)
 		{
@@ -491,7 +509,7 @@ GPlatesQtWidgets::HellingerModel::get_pick(
 
 GPlatesQtWidgets::hellinger_segment_type
 GPlatesQtWidgets::HellingerModel::get_segment(
-		const int &segment_num) const
+		const unsigned int &segment_num) const
 {
 	hellinger_model_type::const_iterator
 			iter = segment_begin(segment_num),

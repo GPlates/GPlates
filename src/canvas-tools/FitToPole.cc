@@ -109,6 +109,9 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 				*d_hellinger_dialog_ptr->get_pick_layer()))
 	{
 		qDebug() << "Hovering over a pick.";
+		const unsigned int index = sorted_hits.front().d_rendered_geom_index;
+		qDebug() << "index: " << index;
+		d_hellinger_dialog_ptr->highlight_hovered_pick(index);
 	}
 }
 
