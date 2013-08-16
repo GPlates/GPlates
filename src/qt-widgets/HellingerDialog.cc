@@ -72,7 +72,24 @@ namespace{
 		SEGMENT_TYPE,
 		LAT,
 		LON,
-		UNCERTAINTY
+		UNCERTAINTY,
+
+		NUM_COLUMNS
+	};
+
+	/**
+	 * @brief The PickDisplayState enum defines the state of the pick in the treewidget.
+	 * This is purely for colouring purposes, for which the tree widget item is in one of
+	 * four display states.
+	 */
+	enum PickDisplayState
+	{
+		ENABLED,
+		DISABLED,
+		HOVERED,
+		SELECTED,
+
+		NUM_STATES
 	};
 
 	/**
@@ -107,17 +124,55 @@ namespace{
 	}
 
 	void
-	set_text_colour_according_to_state(
+	set_text_colour_according_to_enabled_state(
 			QTreeWidgetItem *item,
 			bool enabled)
 	{
 
-		Qt::GlobalColor colour = enabled? Qt::black : Qt::gray;
-		item->setTextColor(SEGMENT_NUMBER,colour);
-		item->setTextColor(SEGMENT_TYPE,colour);
-		item->setTextColor(LAT,colour);
-		item->setTextColor(LON,colour);
-		item->setTextColor(UNCERTAINTY,colour);
+		static const Qt::GlobalColor text_colour = enabled? Qt::black : Qt::gray;
+		static const Qt::GlobalColor background_colour = Qt::white;
+
+		item->setBackgroundColor(SEGMENT_NUMBER,background_colour);
+		item->setBackgroundColor(SEGMENT_TYPE,background_colour);
+		item->setBackgroundColor(LAT,background_colour);
+		item->setBackgroundColor(LON,background_colour);
+		item->setBackgroundColor(UNCERTAINTY,background_colour);
+
+		item->setTextColor(SEGMENT_NUMBER,text_colour);
+		item->setTextColor(SEGMENT_TYPE,text_colour);
+		item->setTextColor(LAT,text_colour);
+		item->setTextColor(LON,text_colour);
+		item->setTextColor(UNCERTAINTY,text_colour);
+	}
+
+	void
+	set_highlighted_item(
+			QTreeWidgetItem *item)
+	{
+
+		static const Qt::GlobalColor text_colour = Qt::black;
+		static const Qt::GlobalColor background_colour = Qt::yellow;
+
+		item->setBackgroundColor(SEGMENT_NUMBER,background_colour);
+		item->setBackgroundColor(SEGMENT_TYPE,background_colour);
+		item->setBackgroundColor(LAT,background_colour);
+		item->setBackgroundColor(LON,background_colour);
+		item->setBackgroundColor(UNCERTAINTY,background_colour);
+
+		item->setTextColor(SEGMENT_NUMBER,text_colour);
+		item->setTextColor(SEGMENT_TYPE,text_colour);
+		item->setTextColor(LAT,text_colour);
+		item->setTextColor(LON,text_colour);
+		item->setTextColor(UNCERTAINTY,text_colour);
+	}
+
+	void
+	reset_highlighted_item(
+			QTreeWidgetItem *item,
+			bool original_state)
+	{
+		qDebug() << "Resetting original item";
+		set_text_colour_according_to_enabled_state(item,original_state);
 	}
 
 	boost::optional<int>
@@ -162,7 +217,8 @@ namespace{
 	add_pick_to_segment(
 			QTreeWidgetItem *parent_item,
 			const int &segment_number,
-			const GPlatesQtWidgets::HellingerPick &pick)
+			const GPlatesQtWidgets::HellingerPick &pick,
+			GPlatesQtWidgets::HellingerDialog::geometry_to_tree_item_map_type &geometry_to_tree_item_map)
 	{
 		QTreeWidgetItem *item = new QTreeWidgetItem();
 		item->setText(SEGMENT_NUMBER, QString::number(segment_number));
@@ -180,13 +236,15 @@ namespace{
 			item->setTextColor(LON,Qt::gray);
 			item->setTextColor(UNCERTAINTY,Qt::gray);
 		}
+		geometry_to_tree_item_map.push_back(item);
 	}
 
 	void
 	add_pick_to_tree(
 			const int &segment_number,
 			const GPlatesQtWidgets::HellingerPick &pick,
-			QTreeWidget *tree)
+			QTreeWidget *tree,
+			GPlatesQtWidgets::HellingerDialog::geometry_to_tree_item_map_type &geometry_to_tree_item_map)
 	{
 		QString segment_as_string = QString::number(segment_number);
 		QList<QTreeWidgetItem*> items = tree->findItems(
@@ -202,7 +260,8 @@ namespace{
 		{
 			item = items.at(0);
 		}
-		add_pick_to_segment(item, segment_number, pick);
+		add_pick_to_segment(item, segment_number, pick, geometry_to_tree_item_map);
+
 	}
 }
 
@@ -226,7 +285,8 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_chron_time(0.),
 	d_moving_symbol(GPlatesGui::Symbol::CROSS, SYMBOL_SIZE, true),
 	d_fixed_symbol(GPlatesGui::Symbol::SQUARE, SYMBOL_SIZE, false),
-	d_thread_type(POLE_THREAD_TYPE)
+	d_thread_type(POLE_THREAD_TYPE),
+	d_highlighted_item_original_state(true)
 {
 	setupUi(this);
 
@@ -409,7 +469,7 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 
 	set_buttons_for_pick_selected(new_enabled_state);
 
-	set_text_colour_according_to_state(tree_widget_picks->currentItem(),new_enabled_state);
+	set_text_colour_according_to_enabled_state(tree_widget_picks->currentItem(),new_enabled_state);
 }
 
 void
@@ -960,6 +1020,7 @@ void
 GPlatesQtWidgets::HellingerDialog::update_tree_from_model()
 {    
 	tree_widget_picks->clear();
+	d_geometry_to_tree_item_map.clear();
 
 	hellinger_model_type::const_iterator
 			iter = d_hellinger_model->begin(),
@@ -967,7 +1028,7 @@ GPlatesQtWidgets::HellingerDialog::update_tree_from_model()
 
 	for (; iter != end ; ++iter)
 	{
-		add_pick_to_tree(iter->first,iter->second,tree_widget_picks);
+		add_pick_to_tree(iter->first,iter->second,tree_widget_picks,d_geometry_to_tree_item_map);
 	}
 
 	update_canvas();
@@ -1294,6 +1355,24 @@ void GPlatesQtWidgets::HellingerDialog::set_buttons_for_pick_selected(
 }
 
 void
+GPlatesQtWidgets::HellingerDialog::update_highlighted_item(
+		boost::optional<QTreeWidgetItem *> item,
+		bool current_state)
+{
+
+	if (d_highlighted_item)
+	{
+		reset_highlighted_item(*d_highlighted_item,d_highlighted_item_original_state);
+	}
+	d_highlighted_item = item;
+	if (d_highlighted_item)
+	{
+		set_highlighted_item(*d_highlighted_item);
+		d_highlighted_item_original_state = current_state;
+	}
+}
+
+void
 GPlatesQtWidgets::HellingerDialog::handle_chron_time_changed(
 		const double &time)
 {
@@ -1563,8 +1642,8 @@ void GPlatesQtWidgets::HellingerDialog::highlight_hovered_pick(const unsigned in
 	const HellingerPick &pick = it->second;
 
 	d_highlight_layer_ptr->clear_rendered_geometries();
-	GPlatesMaths::LatLonPoint llp(pick.d_lat,pick.d_lon);
-	GPlatesMaths::PointOnSphere point = make_point_on_sphere(llp);
+	const GPlatesMaths::LatLonPoint llp(pick.d_lat,pick.d_lon);
+	const GPlatesMaths::PointOnSphere point = make_point_on_sphere(llp);
 
 	GPlatesViewOperations::RenderedGeometry pick_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
@@ -1578,6 +1657,13 @@ void GPlatesQtWidgets::HellingerDialog::highlight_hovered_pick(const unsigned in
 				pick.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
 
 	d_highlight_layer_ptr->add_rendered_geometry(pick_geometry);
+
+	if (index > d_geometry_to_tree_item_map.size())
+	{
+		return;
+	}
+
+	update_highlighted_item(d_geometry_to_tree_item_map[index],pick.d_is_enabled);
 
 }
 

@@ -176,8 +176,6 @@ namespace GPlatesQtWidgets
 
 	public:
 
-
-
         HellingerModel(
 			const QString &python_path);
 

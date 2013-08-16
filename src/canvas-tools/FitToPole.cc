@@ -113,6 +113,10 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 		qDebug() << "index: " << index;
 		d_hellinger_dialog_ptr->highlight_hovered_pick(index);
 	}
+	else
+	{
+		d_hellinger_dialog_ptr->clear_highlight_layer();
+	}
 }
 
 void

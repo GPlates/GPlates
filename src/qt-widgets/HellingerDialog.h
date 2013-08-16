@@ -68,6 +68,7 @@ namespace GPlatesQtWidgets
 
 		typedef std::map<int,bool> expanded_status_map_type;
 		typedef std::vector<hellinger_model_type::const_iterator > geometry_to_model_map_type;
+		typedef std::vector<QTreeWidgetItem*> geometry_to_tree_item_map_type;
 
 		HellingerDialog(
 				GPlatesPresentation::ViewState &view_state,
@@ -105,6 +106,13 @@ namespace GPlatesQtWidgets
 
 		void
 		highlight_hovered_pick(const unsigned int index);
+
+		void
+		clear_highlight_layer()
+		{
+			d_highlight_layer_ptr->clear_rendered_geometries();
+		}
+
 
 	public Q_SLOTS:
 
@@ -326,6 +334,9 @@ namespace GPlatesQtWidgets
 		set_buttons_for_pick_selected(
 				bool state_is_active);
 
+		void
+		update_highlighted_item(boost::optional<QTreeWidgetItem*> item, bool current_state);
+
 
 		GPlatesPresentation::ViewState &d_view_state;
 
@@ -368,6 +379,10 @@ namespace GPlatesQtWidgets
 
 		expanded_status_map_type d_segment_expanded_status;
 		geometry_to_model_map_type d_geometry_to_model_map;
+		geometry_to_tree_item_map_type d_geometry_to_tree_item_map;
+
+		boost::optional<QTreeWidgetItem*> d_highlighted_item;
+		bool d_highlighted_item_original_state;
 
 	};
 }
