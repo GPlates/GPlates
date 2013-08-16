@@ -118,6 +118,9 @@ namespace GPlatesQtWidgets
 		void
 		clear_selection_layer();
 
+		void
+		edit_current_pick();
+
 
 	public Q_SLOTS:
 

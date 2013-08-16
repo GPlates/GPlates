@@ -386,8 +386,6 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 		set_buttons_for_pick_selected(state);
 	}
 
-	// Update the highlighted (if any) point. Begin by resetting the hellinger layer
-	// on the canvas.
 	update_canvas();
 
 	if (!tree_widget_picks->currentItem()->text(1).isEmpty())
@@ -491,6 +489,7 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 	dialog->initialise_with_pick(segment_int, row);
 	dialog->exec();
 	restore_expanded_status();
+	update_canvas();
 }
 
 void
@@ -513,6 +512,7 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 	{
 		button_renumber->setEnabled(true);
 	}
+	update_canvas();
 }
 
 void
@@ -1055,6 +1055,7 @@ GPlatesQtWidgets::HellingerDialog::handle_close()
 void
 GPlatesQtWidgets::HellingerDialog::update_canvas()
 {
+	qDebug() << "updating canvas";
 	clear_rendered_geometries();
 	draw_picks();
 	update_result();
@@ -1552,9 +1553,11 @@ void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
 
 void GPlatesQtWidgets::HellingerDialog::clear_rendered_geometries()
 {
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 	d_pick_layer_ptr->clear_rendered_geometries();
 	d_hover_layer_ptr->clear_rendered_geometries();
 	d_result_layer_ptr->clear_rendered_geometries();
+	d_selection_layer_ptr->clear_rendered_geometries();
 }
 
 void
@@ -1635,9 +1638,9 @@ GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GP
 	return d_pick_layer_ptr;
 }
 
-void GPlatesQtWidgets::HellingerDialog::highlight_hovered_pick(const unsigned int index)
+void GPlatesQtWidgets::HellingerDialog::highlight_hovered_pick(
+		const unsigned int index)
 {
-	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 
 	if (index > d_geometry_to_model_map.size())
 	{
@@ -1676,8 +1679,6 @@ void GPlatesQtWidgets::HellingerDialog::highlight_hovered_pick(const unsigned in
 void GPlatesQtWidgets::HellingerDialog::highlight_selected_pick(
 		const unsigned int index)
 {
-	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
-
 	if (index > d_geometry_to_tree_item_map.size())
 	{
 		return;
@@ -1685,7 +1686,6 @@ void GPlatesQtWidgets::HellingerDialog::highlight_selected_pick(
 
 	update_hovered_item();
 	tree_widget_picks->setCurrentItem(d_geometry_to_tree_item_map[index]);
-
 }
 
 void GPlatesQtWidgets::HellingerDialog::clear_hovered_layer()
@@ -1699,5 +1699,10 @@ void GPlatesQtWidgets::HellingerDialog::clear_selection_layer()
 {
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 	d_selection_layer_ptr->clear_rendered_geometries();
+}
+
+void GPlatesQtWidgets::HellingerDialog::edit_current_pick()
+{
+	handle_edit_pick();
 }
 

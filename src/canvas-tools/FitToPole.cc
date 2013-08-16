@@ -63,8 +63,6 @@ GPlatesCanvasTools::FitToPole::handle_left_click(
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
 {
-	qDebug() << "Left click in fit-to-pole tool";
-
 	if (!is_on_earth)
 	{
 		return;
@@ -121,7 +119,28 @@ GPlatesCanvasTools::FitToPole::handle_shift_left_click(
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
 {
+	if (!is_on_earth)
+	{
+		return;
+	}
 
+	GPlatesMaths::ProximityCriteria proximity_criteria(
+			point_on_sphere,
+			proximity_inclusion_threshold);
+	std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
+	if (GPlatesViewOperations::test_proximity(
+				sorted_hits,
+				proximity_criteria,
+				*d_hellinger_dialog_ptr->get_pick_layer()))
+	{
+		const unsigned int index = sorted_hits.front().d_rendered_geom_index;
+		d_hellinger_dialog_ptr->highlight_selected_pick(index);
+		d_hellinger_dialog_ptr->edit_current_pick();
+	}
+	else
+	{
+		d_hellinger_dialog_ptr->clear_selection_layer();
+	}
 }
 
 void
