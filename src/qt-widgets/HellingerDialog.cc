@@ -1541,6 +1541,7 @@ void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
 	d_pick_layer_ptr->set_active(activate);
 	d_highlight_layer_ptr->set_active(activate);
 	d_result_layer_ptr->set_active(activate);
+	d_selection_layer_ptr->set_active(activate);
 
 }
 
@@ -1665,5 +1666,51 @@ void GPlatesQtWidgets::HellingerDialog::highlight_hovered_pick(const unsigned in
 
 	update_highlighted_item(d_geometry_to_tree_item_map[index],pick.d_is_enabled);
 
+}
+
+void GPlatesQtWidgets::HellingerDialog::highlight_selected_pick(
+		const unsigned int index)
+{
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+
+	qDebug() << "Index: " << index << ", " << d_geometry_to_model_map.size();
+
+	if (index > d_geometry_to_model_map.size())
+	{
+		return;
+	}
+
+
+	hellinger_model_type::const_iterator it = d_geometry_to_model_map[index];
+	const HellingerPick &pick = it->second;
+
+	d_selection_layer_ptr->clear_rendered_geometries();
+	const GPlatesMaths::LatLonPoint llp(pick.d_lat,pick.d_lon);
+	const GPlatesMaths::PointOnSphere point = make_point_on_sphere(llp);
+
+	GPlatesViewOperations::RenderedGeometry pick_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+				point.get_non_null_pointer(),
+				GPlatesGui::Colour::get_yellow(),
+				2, /* point thickness */
+				2, /* line thickness */
+				false, /* fill polygon */
+				false, /* fill polyline */
+				GPlatesGui::Colour::get_white(), // dummy colour argument
+				pick.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
+
+	d_selection_layer_ptr->add_rendered_geometry(pick_geometry);
+}
+
+void GPlatesQtWidgets::HellingerDialog::clear_highlight_layer()
+{
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+	d_highlight_layer_ptr->clear_rendered_geometries();
+}
+
+void GPlatesQtWidgets::HellingerDialog::clear_selection_layer()
+{
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+	d_selection_layer_ptr->clear_rendered_geometries();
 }
 

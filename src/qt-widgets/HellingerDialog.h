@@ -105,13 +105,18 @@ namespace GPlatesQtWidgets
 		get_pick_layer();
 
 		void
-		highlight_hovered_pick(const unsigned int index);
+		highlight_hovered_pick(
+				const unsigned int index);
 
 		void
-		clear_highlight_layer()
-		{
-			d_highlight_layer_ptr->clear_rendered_geometries();
-		}
+		highlight_selected_pick(
+				const unsigned int index);
+
+		void
+		clear_highlight_layer();
+
+		void
+		clear_selection_layer();
 
 
 	public Q_SLOTS:

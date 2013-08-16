@@ -64,31 +64,29 @@ GPlatesCanvasTools::FitToPole::handle_left_click(
 		double proximity_inclusion_threshold)
 {
 	qDebug() << "Left click in fit-to-pole tool";
-#if 0
+
 	if (!is_on_earth)
 	{
 		return;
 	}
 
 
-	if (!d_circle_is_being_drawn)
+	GPlatesMaths::ProximityCriteria proximity_criteria(
+			point_on_sphere,
+			proximity_inclusion_threshold);
+	std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
+	if (GPlatesViewOperations::test_proximity(
+				sorted_hits,
+				proximity_criteria,
+				*d_hellinger_dialog_ptr->get_pick_layer()))
 	{
-		d_circle_is_being_drawn = true;
-		d_centre.reset(point_on_sphere);
-		d_point_on_radius.reset();
-		d_small_circle_collection_ref.clear();
-		d_small_circle_widget_ptr->update_current_centre(*d_centre);
+		const unsigned int index = sorted_hits.front().d_rendered_geom_index;
+		d_hellinger_dialog_ptr->highlight_selected_pick(index);
 	}
 	else
 	{
-		d_circle_is_being_drawn = false;
-		d_point_on_radius.reset(point_on_sphere);
-		GPlatesMaths::SmallCircle circle = GPlatesMaths::SmallCircle::create(d_centre->position_vector(),*d_point_on_radius);
-		d_small_circle_collection_ref.push_back(circle);
-		d_small_circle_widget_ptr->update_radii();
+		d_hellinger_dialog_ptr->clear_selection_layer();
 	}
-	paint();
-#endif
 }
 
 
@@ -108,9 +106,7 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 				proximity_criteria,
 				*d_hellinger_dialog_ptr->get_pick_layer()))
 	{
-		qDebug() << "Hovering over a pick.";
 		const unsigned int index = sorted_hits.front().d_rendered_geom_index;
-		qDebug() << "index: " << index;
 		d_hellinger_dialog_ptr->highlight_hovered_pick(index);
 	}
 	else
@@ -122,10 +118,11 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 void
 GPlatesCanvasTools::FitToPole::paint()
 {
+#if 0
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
-
+#endif
 }
 
 
