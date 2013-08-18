@@ -60,45 +60,19 @@ namespace GPlatesModel
 
 
 		/**
-		 * Create a duplicate of this Revision instance, including a recursive copy
-		 * of any property values this instance might contain.
+		 * A shallow clone that deep copies everything except nested property value revision references.
 		 *
-		 * This is used when cloning a property value instance because we want an entirely
-		 * new property value instance that does not share anything with the original instance.
-		 * This is useful when cloning a feature to get an entirely new feature (and not a new
-		 * revision of the same feature) - in this situation if we didn't do a deep clone then,
-		 * while both feature's would each have their own property value, they would still
-		 * share a (more deeply) nested property value - in which case a modification to that
-		 * nested property value would incorrectly affect both features.
-		 */
-		non_null_ptr_type
-		clone(
-				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
-		{
-			// Clone the property value and set the (parent) context.
-			non_null_ptr_type cloned_revision = clone_impl();
-			cloned_revision->d_context = context;
-			return cloned_revision;
-		}
-
-
-		/**
-		 * A shallow version of @a clone that deep copies everything except nested property value
-		 * revision references.
+		 * @a context is the optional (parent) context within which this revision is nested.
+		 * A property value (revision) that is not attached to a parent has no context.
 		 *
 		 * Since property values nested within this property value are already revisioned
 		 * we don't need to deep copy them. In other words two parent property value
 		 * revisions can share the same nested property value revision.
 		 */
+		virtual
 		non_null_ptr_type
 		clone_revision(
-				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
-		{
-			// Clone the revision and set the (parent) context.
-			non_null_ptr_type cloned_revision = clone_revision_impl();
-			cloned_revision->d_context = context;
-			return cloned_revision;
-		}
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) const = 0;
 
 
 		/**
@@ -132,9 +106,12 @@ namespace GPlatesModel
 	protected:
 
 		/**
-		 * Default constructor - is needed since no implicit constructor generated because copy constructor defined.
+		 * Constructor specified optional (parent) context in which this property value (revision) is nested.
 		 */
-		PropertyValueRevision() :
+		explicit
+		PropertyValueRevision(
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) :
+			d_context(context),
 			d_revision_reference_ref_count(0)
 		{  }
 
@@ -148,24 +125,6 @@ namespace GPlatesModel
 			d_context(other.d_context),
 			d_revision_reference_ref_count(0)
 		{  }
-
-
-		/**
-		 * Create a duplicate of this Revision instance, including a recursive copy
-		 * of any property values this instance might contain.
-		 */
-		virtual
-		non_null_ptr_type
-		clone_impl() const = 0;
-
-
-		/**
-		 * A shallow version of @a clone that deep copies everything except nested property value
-		 * revision references.
-		 */
-		virtual
-		non_null_ptr_type
-		clone_revision_impl() const = 0;
 
 	private:
 

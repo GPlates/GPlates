@@ -179,16 +179,16 @@ namespace GPlatesModel
 		{  }
 
 		/**
-		 * Copy-construct a PropertyValue instance.
+		 * NOTE: Copy-constructor is intentionally not defined anywhere (not strictly necessary to do
+		 * this since base class ReferenceCount is already non-copyable, but makes it more obvious).
 		 *
-		 * This ctor should only be invoked by the @a clone member function.
-		 * We don't copy the parent feature reference because a cloned property value does
-		 * not belong to the original feature (so initially it has no parent).
+		 * Use the constructor (accepting revision) when cloning a property value.
+		 * Note that two property value instances should not point to the same revision instance as
+		 * this will prevent the revisioning system from functioning correctly - this doesn't mean
+		 * that two property value *revision* instances can't reference the same revision instance though.
 		 */
 		PropertyValue(
-				const PropertyValue &other) :
-			d_current_revision(other.d_current_revision->clone())
-		{  }
+				const PropertyValue &other);
 
 		/**
 		 * Returns the current immutable revision as the base revision type.
@@ -235,19 +235,17 @@ namespace GPlatesModel
 			return dynamic_cast<RevisionType &>(*create_bubble_up_revision(transaction));
 		}
 
-		void
-		clone_impl(
-				PropertyValueRevisionContext &revision_context)
-		{
-		}
-
 		/**
 		 * Create a duplicate of this PropertyValue instance, including a recursive copy
 		 * of any property values this instance might contain.
+		 *
+		 * @a context is non-null if this property value is nested within a parent
+		 * property value (or top-level property).
 		 */
 		virtual
 		const non_null_ptr_type
-		clone_impl() const = 0;
+		clone_impl(
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) const = 0;
 
 		/**
 		 * Determine if two property value instances ('this' and 'other') value compare equal.

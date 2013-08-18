@@ -38,7 +38,7 @@
 
 const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 GPlatesPropertyValues::GpmlConstantValue::create(
-		GPlatesModel::PropertyValue::non_null_ptr_type value_,
+		PropertyValue::non_null_ptr_type value_,
 		const StructuralType &value_type_,
 		const GPlatesUtils::UnicodeString &description_)
 {
@@ -52,7 +52,7 @@ GPlatesPropertyValues::GpmlConstantValue::create(
 
 void
 GPlatesPropertyValues::GpmlConstantValue::set_value(
-		GPlatesModel::PropertyValue::non_null_ptr_type value)
+		PropertyValue::non_null_ptr_type value)
 {
 	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().value.change(
@@ -82,7 +82,7 @@ GPlatesPropertyValues::GpmlConstantValue::print_to(
 GPlatesModel::PropertyValueRevision::non_null_ptr_type
 GPlatesPropertyValues::GpmlConstantValue::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
-		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type &child_property_value)
+		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
 {
 	// Bubble up to our (parent) context (if any) which creates a new revision for us.
 	Revision &revision = create_bubble_up_revision<Revision>(transaction);

@@ -71,7 +71,7 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesModel::PropertyValue::non_null_ptr_type value_,
+				PropertyValue::non_null_ptr_type value_,
 				const StructuralType &value_type_,
 				const GPlatesUtils::UnicodeString &description_ = "");
 
@@ -84,7 +84,7 @@ namespace GPlatesPropertyValues
 		/**
 		 * Returns the 'const' property value.
 		 */
-		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
+		const PropertyValue::non_null_ptr_to_const_type
 		value() const
 		{
 			return get_current_revision<Revision>().value.get_property_value();
@@ -93,7 +93,7 @@ namespace GPlatesPropertyValues
 		/**
 		 * Returns the 'non-const' property value.
 		 */
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		const PropertyValue::non_null_ptr_type
 		value()
 		{
 			return get_current_revision<Revision>().value.get_property_value();
@@ -104,7 +104,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_value(
-				GPlatesModel::PropertyValue::non_null_ptr_type v);
+				PropertyValue::non_null_ptr_type v);
 
 		// Note that no "setter" is provided:  The value type of a GpmlConstantValue
 		// instance should never be changed.
@@ -174,7 +174,7 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		GpmlConstantValue(
 				GPlatesModel::ModelTransaction &transaction_,
-				GPlatesModel::PropertyValue::non_null_ptr_type value_,
+				PropertyValue::non_null_ptr_type value_,
 				const StructuralType &value_type_,
 				const GPlatesUtils::UnicodeString &description_) :
 			PropertyValue(
@@ -183,11 +183,22 @@ namespace GPlatesPropertyValues
 			d_value_type(value_type_)
 		{  }
 
+		//! Constructor used when cloning.
+		GpmlConstantValue(
+				const GpmlConstantValue &other_,
+				boost::optional<PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_, *this))),
+			d_value_type(other_.d_value_type)
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlConstantValue(*this));
+			return non_null_ptr_type(new GpmlConstantValue(*this, context));
 		}
 
 		virtual
@@ -199,7 +210,7 @@ namespace GPlatesPropertyValues
 
 			return d_value_type == other_pv.d_value_type &&
 					// The revisioned data comparisons are handled here...
-					GPlatesModel::PropertyValue::equality(other);
+					PropertyValue::equality(other);
 		}
 
 	private:
@@ -213,7 +224,7 @@ namespace GPlatesPropertyValues
 		GPlatesModel::PropertyValueRevision::non_null_ptr_type
 		bubble_up(
 				GPlatesModel::ModelTransaction &transaction,
-				const GPlatesModel::PropertyValue::non_null_ptr_to_const_type &child_property_value);
+				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
 
 		/**
 		 * Inherited from @a PropertyValueRevisionContext.
@@ -235,49 +246,62 @@ namespace GPlatesPropertyValues
 			typedef GPlatesUtils::non_null_intrusive_ptr<Revision> non_null_ptr_type;
 			typedef GPlatesUtils::non_null_intrusive_ptr<const Revision> non_null_ptr_to_const_type;
 
+			//! Regular constructor.
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
-					GPlatesModel::PropertyValueRevisionContext &revision_context_,
-					const GPlatesModel::PropertyValue::non_null_ptr_type value_,
+					PropertyValueRevisionContext &child_context_,
+					const PropertyValue::non_null_ptr_type value_,
 					const GPlatesUtils::UnicodeString &description_) :
 				value(
-						GPlatesModel::PropertyValueRevisionedReference<GPlatesModel::PropertyValue>::attach(
-								transaction_, revision_context_, value_)),
+						GPlatesModel::PropertyValueRevisionedReference<PropertyValue>::attach(
+								transaction_, child_context_, value_)),
 				description(description_)
 			{  }
 
-			virtual
-			GPlatesModel::PropertyValueRevision::non_null_ptr_type
-			clone_impl() const
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_,
+					PropertyValueRevisionContext &child_context_) :
+				PropertyValueRevision(context_),
+				value(other_.value),
+				description(other_.description)
 			{
-				// Copy constructor followed by cloning data members that were not deep copied.
-				non_null_ptr_type dup(new Revision(*this));
-				dup->value.clone();
-				return dup;
+				// Clone data members that were not deep copied.
+				value.clone(child_context_);
 			}
 
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				value(other_.value),
+				description(other_.description)
+			{  }
+
 			virtual
-			GPlatesModel::PropertyValueRevision::non_null_ptr_type
-			clone_revision_impl() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<PropertyValueRevisionContext &> context = boost::none) const
 			{
-				// Copy constructor is sufficient - deep copies all but revision references.
-				return non_null_ptr_type(new Revision(*this));
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValueRevision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				// Note that we compare the property value contents (and not pointers).
 				return *value.get_property_value() == *other_revision.value.get_property_value() &&
 						description == other_revision.description &&
-						GPlatesModel::PropertyValueRevision::equality(other);
+						PropertyValueRevision::equality(other);
 			}
 
-			GPlatesModel::PropertyValueRevisionedReference<GPlatesModel::PropertyValue> value;
+			GPlatesModel::PropertyValueRevisionedReference<PropertyValue> value;
 			GPlatesUtils::UnicodeString description;
 		};
 
