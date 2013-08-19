@@ -76,10 +76,13 @@ set(srcs
     StringSetSingletons.h
     TopLevelProperty.cc
     TopLevelProperty.h
+    TopLevelPropertyBubbleUpRevisionHandler.cc
+    TopLevelPropertyBubbleUpRevisionHandler.h
     TopLevelPropertyInline.cc
     TopLevelPropertyInline.h
     TopLevelPropertyRef.cc
     TopLevelPropertyRef.h
+    TopLevelPropertyRevision.h
     types.h
     WeakObserver.h
     WeakObserverPublisher.h
