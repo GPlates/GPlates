@@ -39,8 +39,11 @@
 #include <boost/optional.hpp>
 #include <boost/type_traits/is_const.hpp>
 
-#include "TopLevelProperty.h"
+#include "ModelTransaction.h"
 #include "PropertyValue.h"
+#include "PropertyValueRevisionContext.h"
+#include "PropertyValueRevisionedReference.h"
+#include "TopLevelProperty.h"
 
 #include "global/PointerTraits.h"
 #include "global/unicode.h"
@@ -52,15 +55,9 @@ namespace GPlatesModel
 	 * property-value inline.
 	 */
 	class TopLevelPropertyInline:
-			public TopLevelProperty
+			public TopLevelProperty,
+			public PropertyValueRevisionContext
 	{
-	private:
-
-		/**
-		 * The type of our container of PropertyValue revisioned references.
-		 */
-		typedef std::vector<PropertyValue::RevisionedReference> container_type;
-
 	public:
 
 		/**
@@ -182,7 +179,8 @@ namespace GPlatesModel
 
 
 		virtual
-		~TopLevelPropertyInline();
+		~TopLevelPropertyInline()
+		{  }
 
 		template<class PropertyValueIterator>
 		static
@@ -193,12 +191,12 @@ namespace GPlatesModel
 				const PropertyValueIterator &values_end_,
 				const xml_attributes_type &xml_attributes_ = xml_attributes_type())
 		{
-			return non_null_ptr_type(
+			ModelTransaction transaction;
+			non_null_ptr_type ptr(
 					new TopLevelPropertyInline(
-						property_name_,
-						values_begin_,
-						values_end_,
-						xml_attributes_));
+							transaction, property_name_, values_begin_, values_end_, xml_attributes_));
+			transaction.commit();
+			return ptr;
 		}
 
 		static
@@ -301,6 +299,7 @@ namespace GPlatesModel
 
 		template<class PropertyValueIterator>
 		TopLevelPropertyInline(
+				ModelTransaction &transaction_,
 				const PropertyName &property_name_,
 				const PropertyValueIterator &values_begin_,
 				const PropertyValueIterator &values_end_,
@@ -308,44 +307,72 @@ namespace GPlatesModel
 			TopLevelProperty(
 					property_name_,
 					Revision::non_null_ptr_type(
-							new Revision(values_begin_, values_end_, xml_attributes_)))
-		{
-			// Enable property value modifications to bubble up to us.
-			set_parent_on_child_property_values();
-		}
+							new Revision(transaction_, *this, values_begin_, values_end_, xml_attributes_)))
+		{  }
 
-		/**
-		 * Copy constructor does a deep copy.
-		 */
+		//! Constructor used when cloning.
 		TopLevelPropertyInline(
-				const TopLevelPropertyInline &other) :
-			TopLevelProperty(other)
-		{
-			// Enable property value modifications to bubble up to us.
-			set_parent_on_child_property_values();
-		}
+				const TopLevelPropertyInline &other_,
+				boost::optional<FeatureHandle &> context_) :
+			TopLevelProperty(
+					other_,
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
+		{  }
 
 		virtual
 		const TopLevelProperty::non_null_ptr_type
-		clone_impl() const
+		clone_impl(
+				boost::optional<FeatureHandle &> context = boost::none) const
 		{
-			return non_null_ptr_type(new TopLevelPropertyInline(*this));
+			return non_null_ptr_type(new TopLevelPropertyInline(*this, context));
 		}
 
 	private:
 
 		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		PropertyValueRevision::non_null_ptr_type
+		bubble_up(
+				ModelTransaction &transaction,
+				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+
+		/**
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		boost::optional<Model &>
+		get_model()
+		{
+			return TopLevelProperty::get_model();
+		}
+
+
+		/**
+		 * The type of our container of PropertyValue revisioned references.
+		 */
+		typedef std::vector<PropertyValueRevisionedReference<PropertyValue> > property_value_container_type;
+
+
+		/**
 		 * Top level property data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public TopLevelProperty::Revision
+				public TopLevelPropertyRevision
 		{
 			template<class PropertyValueIterator>
 			Revision(
+					ModelTransaction &transaction_,
+					PropertyValueRevisionContext &child_context_,
 					const PropertyValueIterator &values_begin_,
 					const PropertyValueIterator &values_end_,
 					const xml_attributes_type &xml_attributes_) :
-				TopLevelProperty::Revision(xml_attributes_)
+				TopLevelPropertyRevision(xml_attributes_)
 			{
 				PropertyValueIterator values_iter = values_begin_;
 				for ( ; values_iter != values_end_; ++values_iter)
@@ -354,75 +381,55 @@ namespace GPlatesModel
 
 					// A revisioned reference to the property value enables us to switch to its
 					// revision later (eg, during undo/redo).
-					PropertyValue::RevisionedReference revisioned_property_value =
-							property_value->get_current_revisioned_reference();
+					PropertyValueRevisionedReference<PropertyValue> revisioned_property_value =
+							PropertyValueRevisionedReference<PropertyValue>::attach(
+									transaction_, child_context_, property_value);
 
 					values.push_back(revisioned_property_value);
 				}
 			}
 
-			//! Shallow copy of revisioned values.
+			//! Deep-clone constructor.
 			Revision(
-					const container_type &values_,
-					const xml_attributes_type &xml_attributes_) :
-				TopLevelProperty::Revision(xml_attributes_),
-				values(values_)
+					const Revision &other_,
+					boost::optional<FeatureHandle &> context_,
+					PropertyValueRevisionContext &child_context_) :
+				TopLevelPropertyRevision(other_, context_),
+				values(other_.values)
+			{
+				// Clone data members that were not deep copied.
+				property_value_container_type::iterator values_iter = values.begin();
+				property_value_container_type::iterator values_end = values.end();
+				for ( ; values_iter != values_end; ++values_iter)
+				{
+					values_iter->clone(child_context_);
+				}
+			}
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<FeatureHandle &> context_) :
+				TopLevelPropertyRevision(other_, context_),
+				values(other_.values)
 			{  }
 
-			//! Deep copy constructor.
-			Revision(
-					const Revision &other);
-
 			virtual
-			TopLevelProperty::Revision::non_null_ptr_type
-			clone() const
+			TopLevelPropertyRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<FeatureHandle &> context) const
 			{
-				return non_null_ptr_type(new Revision(*this));
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
 			}
-
-			virtual
-			TopLevelProperty::Revision::non_null_ptr_type
-			clone_for_bubble_up_modification() const
-			{
-				// Don't clone the property values.
-				// This can be achieved using our regular constructor which does shallow copying.
-				return non_null_ptr_type(new Revision(values, xml_attributes));
-			}
-
-			virtual
-			void
-			reference_bubbled_up_property_value_revision(
-					const PropertyValue::RevisionedReference &property_value_revisioned_reference);
 
 			virtual
 			bool
 			equality(
-					const TopLevelProperty::Revision &other) const;
+					const TopLevelPropertyRevision &other) const;
 
-			container_type values;
+			property_value_container_type values;
 		};
-
-
-		/**
-		 * Set 'this' as the parent of the child property values.
-		 */
-		void
-		set_parent_on_child_property_values();
-
-		/**
-		 * Unset the parent of the child property values.
-		 */
-		void
-		unset_parent_on_child_property_values();
-
-
-		// This operator should never be defined, because we don't want/need to allow
-		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'
-		// (which will in turn use the copy-constructor); all "assignment" should really
-		// only be assignment of one intrusive_ptr to another.
-		TopLevelPropertyInline &
-		operator=(
-				const TopLevelPropertyInline &);
 
 	};
 }

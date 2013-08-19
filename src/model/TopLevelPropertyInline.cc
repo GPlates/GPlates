@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <iostream>
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 
 // Suppress warning being emitted from Boost 1.35 header.
 #include "global/CompilerWarnings.h"
@@ -36,8 +37,11 @@ DISABLE_MSVC_WARNING(4181)
 #include <boost/lambda/lambda.hpp>
 
 #include "TopLevelPropertyInline.h"
-#include "FeatureVisitor.h"
 
+#include "FeatureVisitor.h"
+#include "ModelTransaction.h"
+
+#include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
 #include "utils/UnicodeStringUtils.h"
@@ -62,15 +66,6 @@ GPlatesModel::TopLevelPropertyInline::create(
 			property_name_,
 			value_,
 			xml_attributes_);
-}
-
-
-GPlatesModel::TopLevelPropertyInline::~TopLevelPropertyInline()
-{
-	// Remove parent references in our child property values.
-	// This is in case one or more child property values outlive us, eg, because some client
-	// is holding an intrusive pointer to the property value(s).
-	unset_parent_on_child_property_values();
 }
 
 
@@ -115,84 +110,45 @@ GPlatesModel::TopLevelPropertyInline::print_to(
 }
 
 
-void
-GPlatesModel::TopLevelPropertyInline::set_parent_on_child_property_values()
+GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesModel::TopLevelPropertyInline::bubble_up(
+		ModelTransaction &transaction,
+		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
 {
-	Revision &revision = get_current_revision<Revision>();
-	container_type::iterator values_iter = revision.values.begin();
-	container_type::iterator values_end = revision.values.end();
-	for ( ; values_iter != values_end; ++values_iter)
-	{
-		PropertyValue::RevisionedReference &revisioned_property_value = *values_iter;
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
 
-		// Enable property value modifications to bubble up to us.
-		// Note that we didn't clone the property value - so an external client could modify
-		// it (if it has a pointer to the property value) and this modification will bubble up
-		// to us and cause us to create a new TopLevelProperty revision.
-		revisioned_property_value.get_property_value()->set_parent(*this);
-	}
-}
-
-
-void
-GPlatesModel::TopLevelPropertyInline::unset_parent_on_child_property_values()
-{
-	Revision &revision = get_current_revision<Revision>();
-
-	// Remove parent references in our child property values.
-	container_type::iterator values_iter = revision.values.begin();
-	container_type::iterator values_end = revision.values.end();
-	for ( ; values_iter != values_end; ++values_iter)
-	{
-		PropertyValue::RevisionedReference &revisioned_property_value = *values_iter;
-
-		revisioned_property_value.get_property_value()->unset_parent();
-	}
-}
-
-
-GPlatesModel::TopLevelPropertyInline::Revision::Revision(
-		const Revision &other) :
-	TopLevelProperty::Revision(other)
-{
-	// Clone the property values.
-	BOOST_FOREACH(const PropertyValue::RevisionedReference &other_value, other.values)
-	{
-		PropertyValue::non_null_ptr_type cloned_pval = other_value.get_property_value()->clone();
-		values.push_back(cloned_pval->get_current_revisioned_reference());
-	}
-}
-
-
-void
-GPlatesModel::TopLevelPropertyInline::Revision::reference_bubbled_up_property_value_revision(
-		const PropertyValue::RevisionedReference &property_value_revisioned_reference)
-{
 	// In this method we are operating on a (bubble up) cloned version of the current revision.
-	// We just need to change the existing property value reference so it points to the new property value.
 
-	// Search for the property value in our property value list.
-	container_type::iterator values_iter = values.begin();
-	container_type::iterator values_end = values.end();
+	boost::optional<PropertyValueRevision::non_null_ptr_type> child_revision;
+
+	// Search for the child property value in our property value list.
+	property_value_container_type::iterator values_iter = revision.values.begin();
+	property_value_container_type::iterator values_end = revision.values.end();
 	for ( ; values_iter != values_end; ++values_iter)
 	{
-		// If the new revision and the existing revision are associated with the same property value
-		// then update the new revision to reference the bubbled-up property value revision.
-		if (values_iter->get_property_value() == property_value_revisioned_reference.get_property_value())
+		PropertyValueRevisionedReference<PropertyValue> &revisioned_reference = *values_iter;
+
+		if (child_property_value == revisioned_reference.get_property_value())
 		{
-			*values_iter = property_value_revisioned_reference;
-			return;
+			// Create a new revision for the child property value.
+			child_revision = revisioned_reference.clone_revision(transaction);
+			break;
 		}
 	}
 
-	// Shouldn't get here if the revisions have been linked up correctly.
-	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			child_revision,
+			GPLATES_ASSERTION_SOURCE);
+
+	return child_revision.get();
 }
 
 
 bool
 GPlatesModel::TopLevelPropertyInline::Revision::equality(
-		const TopLevelProperty::Revision &other) const
+		const TopLevelPropertyRevision &other) const
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
@@ -210,7 +166,7 @@ GPlatesModel::TopLevelPropertyInline::Revision::equality(
 		}
 	}
 
-	return TopLevelProperty::Revision::equality(other);
+	return TopLevelPropertyRevision::equality(other);
 }
 
 
