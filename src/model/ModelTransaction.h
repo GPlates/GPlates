@@ -32,7 +32,8 @@
 
 #include "PropertyValue.h"
 #include "PropertyValueRevision.h"
-//#include "TopLevelProperty.h"
+#include "TopLevelProperty.h"
+#include "TopLevelPropertyRevision.h"
 
 
 namespace GPlatesModel
@@ -51,6 +52,28 @@ namespace GPlatesModel
 			private boost::noncopyable
 	{
 	public:
+
+		/**
+		 * Transaction to set a top-level property's revision.
+		 */
+		class TopLevelPropertyTransaction
+		{
+		public:
+
+			TopLevelPropertyTransaction(
+					const TopLevelProperty::non_null_ptr_to_const_type &top_level_property,
+					const TopLevelPropertyRevision::non_null_ptr_to_const_type &revision) :
+				d_top_level_property(top_level_property),
+				d_revision(revision)
+			{  }
+
+		private:
+
+			TopLevelProperty::non_null_ptr_to_const_type d_top_level_property;
+			TopLevelPropertyRevision::non_null_ptr_to_const_type d_revision;
+
+			friend class ModelTransaction;
+		};
 
 		/**
 		 * Transaction to set a property value's revision.
@@ -76,6 +99,16 @@ namespace GPlatesModel
 
 
 		/**
+		 * Sets the top level property revision for this transaction.
+		 */
+		void
+		set_top_level_property_transaction(
+				const TopLevelPropertyTransaction &revision)
+		{
+			d_top_level_property_transaction = revision;
+		}
+
+		/**
 		 * Adds the specified property value revision to this transaction.
 		 */
 		void
@@ -84,18 +117,6 @@ namespace GPlatesModel
 		{
 			d_property_value_transactions.push_back(revision);
 		}
-
-#if 0
-		/**
-		 * Sets the top level property revision for this transaction.
-		 */
-		void
-		set_top_level_property_revision(
-				const TopLevelProperty::RevisionedReference &revision)
-		{
-			d_top_level_property_transactions = revision;
-		}
-#endif
 
 
 		/**
@@ -110,9 +131,7 @@ namespace GPlatesModel
 	private:
 
 		std::vector<PropertyValueTransaction> d_property_value_transactions;
-#if 0
-		boost::optional<TopLevelProperty::RevisionedReference> d_top_level_property_transactions;
-#endif
+		boost::optional<TopLevelPropertyTransaction> d_top_level_property_transaction;
 	};
 }
 

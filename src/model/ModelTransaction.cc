@@ -50,16 +50,18 @@ GPlatesModel::ModelTransaction::commit()
 		property_value_transaction = current_revisioned_reference;
 	}
 
-#if 0
-	if (d_top_level_property_transactions)
+	if (d_top_level_property_transaction)
 	{
 		// Essentially amounts to a no-throw swap of the current revision for the new revision.
-		TopLevelProperty::RevisionedReference current_revisioned_reference =
-				d_top_level_property_transactions->get_top_level_property()->get_current_revisioned_reference();
-		d_top_level_property_transactions->set_current_revision();
-		d_top_level_property_transactions = current_revisioned_reference;
+		TopLevelPropertyTransaction current_revisioned_reference(
+				d_top_level_property_transaction->d_top_level_property,
+				d_top_level_property_transaction->d_top_level_property->d_current_revision);
+
+		d_top_level_property_transaction->d_top_level_property->d_current_revision =
+				d_top_level_property_transaction->d_revision;
+
+		d_top_level_property_transaction = current_revisioned_reference;
 	}
-#endif
 
 	// The destructor of ModelTransaction will release the old revisions which are now stored
 	// in our revision references (we swapped the new for the old).
