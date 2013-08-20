@@ -452,22 +452,22 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_hot_spot_trail_mark(
 	d_line_stream << " HotSpotTrailMark";
 
 	d_line_stream << " <position>";
-	gpml_hot_spot_trail_mark.get_position()->accept_visitor(*this);
+	gpml_hot_spot_trail_mark.position()->accept_visitor(*this);
 	d_line_stream << "</position>";
 
-	if (gpml_hot_spot_trail_mark.get_trail_width()) {
+	if (gpml_hot_spot_trail_mark.trail_width()) {
 		d_line_stream << " <trailWidth>";
-		(*gpml_hot_spot_trail_mark.get_trail_width())->accept_visitor(*this);
+		(*gpml_hot_spot_trail_mark.trail_width())->accept_visitor(*this);
 		d_line_stream << "</trailWidth>";
 	}
-	if (gpml_hot_spot_trail_mark.get_measured_age()) {
+	if (gpml_hot_spot_trail_mark.measured_age()) {
 		d_line_stream << " <measuredAge>";
-		(*gpml_hot_spot_trail_mark.get_measured_age())->accept_visitor(*this);
+		(*gpml_hot_spot_trail_mark.measured_age())->accept_visitor(*this);
 		d_line_stream << "</measuredAge>";
 	}
-	if (gpml_hot_spot_trail_mark.get_measured_age_range()) {
+	if (gpml_hot_spot_trail_mark.measured_age_range()) {
 		d_line_stream << " <measuredAgeRange>";
-		(*gpml_hot_spot_trail_mark.get_measured_age_range())->accept_visitor(*this);
+		(*gpml_hot_spot_trail_mark.measured_age_range())->accept_visitor(*this);
 		d_line_stream << "</measuredAgeRange>";
 	}
 
