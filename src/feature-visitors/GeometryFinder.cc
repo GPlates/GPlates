@@ -96,7 +96,7 @@ void
 GPlatesFeatureVisitors::GeometryFinder::visit_gml_orientable_curve(
 		const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 {
-	gml_orientable_curve.get_base_curve()->accept_visitor(*this);
+	gml_orientable_curve.base_curve()->accept_visitor(*this);
 }
 
 

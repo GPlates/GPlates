@@ -32,9 +32,10 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
+#include "model/PropertyValueRevisionContext.h"
+#include "model/PropertyValueRevisionedReference.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
-#include "utils/CopyOnWrite.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -49,7 +50,8 @@ namespace GPlatesPropertyValues
 	 * This class implements the PropertyValue which corresponds to "gml:OrientableCurve".
 	 */
 	class GmlOrientableCurve:
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::PropertyValueRevisionContext
 	{
 
 	public:
@@ -81,12 +83,8 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesModel::PropertyValue::non_null_ptr_to_const_type base_curve_,
-				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-						xml_attributes_)
-		{
-			return non_null_ptr_type(new GmlOrientableCurve(base_curve_, xml_attributes_));
-		}
+				GPlatesModel::PropertyValue::non_null_ptr_type base_curve_,
+				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &xml_attributes_);
 
 		const non_null_ptr_type
 		clone() const
@@ -95,15 +93,21 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * Access the PropertyValue which is the "base curve" of this instance.
-		 *
-		 * Returns the 'const' property value - which is 'const' so that it cannot be
-		 * modified and bypass the revisioning system.
+		 * Access the 'const' PropertyValue which is the "base curve" of this instance.
 		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
-		get_base_curve() const
+		base_curve() const
 		{
-			return get_current_revision<Revision>().base_curve.get();
+			return get_current_revision<Revision>().base_curve.get_property_value();
+		}
+
+		/**
+		 * Access the 'non-const' PropertyValue which is the "base curve" of this instance.
+		 */
+		const GPlatesModel::PropertyValue::non_null_ptr_type
+		base_curve()
+		{
+			return get_current_revision<Revision>().base_curve.get_property_value();
 		}
 
 		/**
@@ -111,7 +115,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_base_curve(
-				GPlatesModel::PropertyValue::non_null_ptr_to_const_type bc);
+				GPlatesModel::PropertyValue::non_null_ptr_type bc);
 
 		/**
 		 * Return the map of XML attributes contained by this instance.
@@ -131,7 +135,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_xml_attributes(
-				std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &xml_attributes);
+				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &xml_attributes);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -182,56 +186,117 @@ namespace GPlatesPropertyValues
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GmlOrientableCurve(
-				GPlatesModel::PropertyValue::non_null_ptr_to_const_type base_curve_,
+				GPlatesModel::ModelTransaction &transaction_,
+				GPlatesModel::PropertyValue::non_null_ptr_type base_curve_,
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-						xml_attributes_):
-			PropertyValue(Revision::non_null_ptr_type(new Revision(base_curve_, xml_attributes_)))
+						xml_attributes_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(transaction_, *this, base_curve_, xml_attributes_)))
+		{  }
+
+		//! Constructor used when cloning.
+		GmlOrientableCurve(
+				const GmlOrientableCurve &other_,
+				boost::optional<PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
 
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GmlOrientableCurve(*this));
+			return non_null_ptr_type(new GmlOrientableCurve(*this, context));
 		}
 
 	private:
 
 		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+
+		/**
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
+
+		/**
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			Revision(
-					GPlatesModel::PropertyValue::non_null_ptr_to_const_type base_curve_,
-					const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-							xml_attributes_):
-				base_curve(base_curve_),
+					GPlatesModel::ModelTransaction &transaction_,
+					PropertyValueRevisionContext &child_context_,
+					GPlatesModel::PropertyValue::non_null_ptr_type base_curve_,
+					const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &xml_attributes_):
+				base_curve(
+						GPlatesModel::PropertyValueRevisionedReference<PropertyValue>::attach(
+								transaction_, child_context_, base_curve_)),
 				xml_attributes(xml_attributes_)
 			{  }
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_,
+					PropertyValueRevisionContext &child_context_) :
+				PropertyValueRevision(context_),
+				base_curve(other_.base_curve),
+				xml_attributes(other_.xml_attributes)
 			{
-				// The default copy constructor is fine since we use CopyOnWrite.
-				return non_null_ptr_type(new Revision(*this));
+				// Clone data members that were not deep copied.
+				base_curve.clone(child_context_);
+			}
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				base_curve(other_.base_curve),
+				xml_attributes(other_.xml_attributes)
+			{  }
+
+			virtual
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<PropertyValueRevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-				return *base_curve.get_const() == *other_revision.base_curve.get_const() &&
+				return *base_curve.get_property_value() == *other_revision.base_curve.get_property_value() &&
 						xml_attributes == other_revision.xml_attributes &&
-						GPlatesModel::PropertyValue::Revision::equality(other);
+						PropertyValueRevision::equality(other);
 			}
 
-			GPlatesUtils::CopyOnWrite<GPlatesModel::PropertyValue::non_null_ptr_to_const_type> base_curve;
+			GPlatesModel::PropertyValueRevisionedReference<PropertyValue> base_curve;
 			std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
 		};
 

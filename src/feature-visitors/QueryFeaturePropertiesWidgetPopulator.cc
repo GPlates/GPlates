@@ -291,8 +291,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_orienta
 						true));
 	}
 
-	// FIXME:  Ensure that 'gml_orientable_curve.base_curve()' is not NULL.
-	add_child_then_visit_value(QObject::tr("gml:baseCurve"), QString(), *gml_orientable_curve.get_base_curve());
+	add_child_then_visit_value(QObject::tr("gml:baseCurve"), QString(),
+			*gml_orientable_curve.base_curve());
 #if 0
 	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:OrientableCurve",
 			gml_orientable_curve.xml_attributes().begin(),

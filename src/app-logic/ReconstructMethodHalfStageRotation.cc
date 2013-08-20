@@ -285,10 +285,7 @@ namespace GPlatesAppLogic
 			visit_gml_orientable_curve(
 					GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 			{
-				GPlatesModel::PropertyValue::non_null_ptr_type property_value =
-						gml_orientable_curve.get_base_curve()->clone();
-				property_value->accept_visitor(*this);
-				gml_orientable_curve.set_base_curve(property_value);
+				gml_orientable_curve.base_curve()->accept_visitor(*this);
 			}
 
 			virtual
@@ -442,10 +439,7 @@ namespace GPlatesAppLogic
 			visit_gml_orientable_curve(
 					GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
 			{
-				GPlatesModel::PropertyValue::non_null_ptr_type property_value =
-						gml_orientable_curve.get_base_curve()->clone();
-				property_value->accept_visitor(*this);
-				gml_orientable_curve.set_base_curve(property_value);
+				gml_orientable_curve.base_curve()->accept_visitor(*this);
 			}
 
 
