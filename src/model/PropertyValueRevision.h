@@ -113,15 +113,13 @@ namespace GPlatesModel
 		{  }
 
 		/**
-		 * Copy constructor - calls default constructor of ReferenceCount (non-copyable) base class.
+		 * NOTE: Copy-constructor is intentionally not defined anywhere (not strictly necessary to do
+		 * this since base class ReferenceCount is already non-copyable, but makes it more obvious).
 		 *
-		 * Note: This also copies the revision context.
+		 * Use the constructor (accepting revision context) when cloning a revision.
 		 */
 		PropertyValueRevision(
-				const PropertyValueRevision &other) :
-			d_context(other.d_context),
-			d_revision_reference_ref_count(0)
-		{  }
+				const PropertyValueRevision &other);
 
 	private:
 

@@ -33,8 +33,8 @@
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/PropertyValue.h"
-
-#include "utils/CopyOnWrite.h"
+#include "model/PropertyValueRevisionContext.h"
+#include "model/PropertyValueRevisionedReference.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -52,7 +52,8 @@ namespace GPlatesPropertyValues
 	 * be later than the "end" attribute.
 	 */
 	class GmlTimePeriod:
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::PropertyValueRevisionContext
 	{
 
 	public:
@@ -84,10 +85,7 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create(
 				GmlTimeInstant::non_null_ptr_type begin_,
-				GmlTimeInstant::non_null_ptr_type end_)
-		{
-			return non_null_ptr_type(new GmlTimePeriod(begin_, end_));
-		}
+				GmlTimeInstant::non_null_ptr_type end_);
 
 		const non_null_ptr_type
 		clone() const
@@ -96,18 +94,24 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * Return the "begin" attribute of this GmlTimePeriod instance.
+		 * Return the 'const' "begin" attribute of this GmlTimePeriod instance.
+		 */
+		const GmlTimeInstant::non_null_ptr_to_const_type
+		begin() const
+		{
+			return get_current_revision<Revision>().begin.get_property_value();
+		}
+
+		/**
+		 * Return the 'non-const' "begin" attribute of this GmlTimePeriod instance.
 		 *
 		 * Note that it is an invariant of this class that the "begin" attribute must not
 		 * be later than the "end" attribute.
-		 *
-		 * The returned property value is 'const' so that it cannot be modified and
-		 * bypass the revisioning system.
 		 */
-		const GmlTimeInstant::non_null_ptr_to_const_type
-		get_begin() const
+		const GmlTimeInstant::non_null_ptr_type
+		begin()
 		{
-			return get_current_revision<Revision>().begin.get();
+			return get_current_revision<Revision>().begin.get_property_value();
 		}
 
 		/**
@@ -118,21 +122,27 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_begin(
-				GmlTimeInstant::non_null_ptr_to_const_type begin);
+				GmlTimeInstant::non_null_ptr_type begin);
+
+		/**
+		 * Return the "end" attribute of this GmlTimePeriod instance.
+		 */
+		const GmlTimeInstant::non_null_ptr_to_const_type
+		end() const
+		{
+			return get_current_revision<Revision>().end.get_property_value();
+		}
 
 		/**
 		 * Return the "end" attribute of this GmlTimePeriod instance.
 		 *
 		 * Note that it is an invariant of this class that the "end" attribute must not
 		 * be earlier than the "begin" attribute.
-		 *
-		 * The returned property value is 'const' so that it cannot be modified and
-		 * bypass the revisioning system.
 		 */
-		const GmlTimeInstant::non_null_ptr_to_const_type
-		get_end() const
+		const GmlTimeInstant::non_null_ptr_type
+		end()
 		{
-			return get_current_revision<Revision>().end.get();
+			return get_current_revision<Revision>().end.get_property_value();
 		}
 
 		/**
@@ -143,7 +153,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_end(
-				GmlTimeInstant::non_null_ptr_to_const_type end);
+				GmlTimeInstant::non_null_ptr_type end);
 
 		/**
 		 * Determine whether @a geo_time lies within the temporal span of this
@@ -157,8 +167,8 @@ namespace GPlatesPropertyValues
 		contains(
 				const GeoTimeInstant &geo_time) const
 		{
-			return get_begin()->get_time_position().is_earlier_than_or_coincident_with(geo_time) &&
-					geo_time.is_earlier_than_or_coincident_with(get_end()->get_time_position());
+			return begin()->get_time_position().is_earlier_than_or_coincident_with(geo_time) &&
+					geo_time.is_earlier_than_or_coincident_with(end()->get_time_position());
 		}
 
 		/**
@@ -223,57 +233,120 @@ namespace GPlatesPropertyValues
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GmlTimePeriod(
-				GmlTimeInstant::non_null_ptr_to_const_type begin_,
-				GmlTimeInstant::non_null_ptr_to_const_type end_):
-			PropertyValue(Revision::non_null_ptr_type(new Revision(begin_, end_)))
+				GPlatesModel::ModelTransaction &transaction_,
+				GmlTimeInstant::non_null_ptr_type begin_,
+				GmlTimeInstant::non_null_ptr_type end_):
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(transaction_, *this, begin_, end_)))
+		{  }
+
+		//! Constructor used when cloning.
+		GmlTimePeriod(
+				const GmlTimePeriod &other_,
+				boost::optional<PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
 
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GmlTimePeriod(*this));
+			return non_null_ptr_type(new GmlTimePeriod(*this, context));
 		}
 
 	private:
 
 		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+
+		/**
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
+
+		/**
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			Revision(
-					const GmlTimeInstant::non_null_ptr_to_const_type &begin_,
-					const GmlTimeInstant::non_null_ptr_to_const_type &end_) :
-				begin(begin_),
-				end(end_)
+					GPlatesModel::ModelTransaction &transaction_,
+					PropertyValueRevisionContext &child_context_,
+					const GmlTimeInstant::non_null_ptr_type &begin_,
+					const GmlTimeInstant::non_null_ptr_type &end_) :
+				begin(
+						GPlatesModel::PropertyValueRevisionedReference<GmlTimeInstant>::attach(
+								transaction_, child_context_, begin_)),
+				end(
+						GPlatesModel::PropertyValueRevisionedReference<GmlTimeInstant>::attach(
+								transaction_, child_context_, end_))
+			{  }
+
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_,
+					PropertyValueRevisionContext &child_context_) :
+				PropertyValueRevision(context_),
+				begin(other_.begin),
+				end(other_.end)
+			{
+				// Clone data members that were not deep copied.
+				begin.clone(child_context_);
+				end.clone(child_context_);
+			}
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				begin(other_.begin),
+				end(other_.end)
 			{  }
 
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<PropertyValueRevisionContext &> context) const
 			{
-				// The default copy constructor is fine since we use CopyOnWrite.
-				return non_null_ptr_type(new Revision(*this));
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
 			}
-
-			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-				return *begin.get_const() == *other_revision.begin.get_const() &&
-						*end.get_const() == *other_revision.end.get_const() &&
-						GPlatesModel::PropertyValue::Revision::equality(other);
+				return *begin.get_property_value() == *other_revision.begin.get_property_value() &&
+						*end.get_property_value() == *other_revision.end.get_property_value() &&
+						PropertyValueRevision::equality(other);
 			}
 
-			GPlatesUtils::CopyOnWrite<GmlTimeInstant::non_null_ptr_to_const_type> begin;
-			GPlatesUtils::CopyOnWrite<GmlTimeInstant::non_null_ptr_to_const_type> end;
+			GPlatesModel::PropertyValueRevisionedReference<GmlTimeInstant> begin;
+			GPlatesModel::PropertyValueRevisionedReference<GmlTimeInstant> end;
 		};
 
 	};
