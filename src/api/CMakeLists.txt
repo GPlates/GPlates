@@ -31,6 +31,7 @@ set(srcs
     PyOldFeature.h
     PyPropertyValues.cc
     Python.cc
+    PythonConverterUtils.h
     PythonExecutionMonitor.cc
     PythonExecutionMonitor.h
     PythonExecutionThread.cc
