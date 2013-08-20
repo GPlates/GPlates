@@ -33,6 +33,7 @@
 #include "PropertyValueRevision.h"
 #include "PropertyValueRevisionContext.h"
 
+#include "utils/CopyConst.h"
 #include "utils/non_null_intrusive_ptr.h"
 
 
@@ -143,12 +144,7 @@ namespace GPlatesModel
 		explicit
 		PropertyValueRevisionedReference(
 				const GPlatesUtils::non_null_intrusive_ptr<PropertyValueType> &property_value,
-				const PropertyValueRevision::non_null_ptr_to_const_type &revision) :
-			d_property_value(property_value),
-			d_revision(revision)
-		{
-			++d_revision->d_revision_reference_ref_count;
-		}
+				const PropertyValueRevision::non_null_ptr_to_const_type &revision);
 
 		GPlatesUtils::non_null_intrusive_ptr<PropertyValueType> d_property_value;
 		PropertyValueRevision::non_null_ptr_to_const_type d_revision;
@@ -161,6 +157,17 @@ namespace GPlatesModel
 
 namespace GPlatesModel
 {
+	template <class PropertyValueType>
+	PropertyValueRevisionedReference<PropertyValueType>::PropertyValueRevisionedReference(
+			const GPlatesUtils::non_null_intrusive_ptr<PropertyValueType> &property_value,
+			const PropertyValueRevision::non_null_ptr_to_const_type &revision) :
+		d_property_value(property_value),
+		d_revision(revision)
+	{
+		++d_revision->d_revision_reference_ref_count;
+	}
+
+
 	template <class PropertyValueType>
 	PropertyValueRevisionedReference<PropertyValueType>::~PropertyValueRevisionedReference()
 	{
@@ -306,7 +313,18 @@ namespace GPlatesModel
 	PropertyValueRevisionedReference<PropertyValueType>::clone(
 			PropertyValueRevisionContext &revision_context)
 	{
-		d_property_value = d_property_value->clone_impl(revision_context);
+		// Either 'PropertyValue' or 'const PropertyValue'.
+		typedef typename GPlatesUtils::CopyConst<PropertyValueType, PropertyValue>::type
+				base_property_value_type;
+
+		// We have friend access to the base PropertyValue class so to avoid requiring friend
+		// access to derived property value classes we upcast to PropertyValue, clone and then
+		// downcast the cloned result.
+		PropertyValue::non_null_ptr_type cloned_property_value =
+				GPlatesUtils::static_pointer_cast<base_property_value_type>(
+						d_property_value)->clone_impl(revision_context);
+		d_property_value = GPlatesUtils::dynamic_pointer_cast<PropertyValueType>(cloned_property_value);
+
 		d_revision = d_property_value->d_current_revision;
 
 		// No model transaction needed here since the cloned property value already

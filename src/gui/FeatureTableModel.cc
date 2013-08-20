@@ -192,8 +192,8 @@ namespace
 			const GPlatesPropertyValues::GmlTimePeriod &time_period)
 	{
 		return QObject::tr("%1 - %2")
-				.arg(format_time_instant(*(time_period.get_begin())))
-				.arg(format_time_instant(*(time_period.get_end())));
+				.arg(format_time_instant(*(time_period.begin())))
+				.arg(format_time_instant(*(time_period.end())));
 	}
 
 
@@ -215,7 +215,7 @@ namespace
 				// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
 				// in the latter case it has a slightly different meaning and we should be displaying the
 				// gpml:reconstructedTime property instead.
-				return format_time_instant(*(time_period->get_begin()));
+				return format_time_instant(*(time_period->begin()));
 			}
 		}
 		return QVariant();
@@ -240,7 +240,7 @@ namespace
 				// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
 				// in the latter case it has a slightly different meaning and we should be displaying the
 				// gpml:reconstructedTime property instead.
-				return format_time_instant(*(time_period->get_end()));
+				return format_time_instant(*(time_period->end()));
 			}
 		}
 		return QVariant();

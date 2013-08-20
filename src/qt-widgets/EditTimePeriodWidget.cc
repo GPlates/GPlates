@@ -164,8 +164,8 @@ GPlatesQtWidgets::EditTimePeriodWidget::update_widget_from_time_period(
 		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
 	d_time_period_ptr = &gml_time_period;
-	const GPlatesPropertyValues::GeoTimeInstant begin = gml_time_period.get_begin()->get_time_position();
-	const GPlatesPropertyValues::GeoTimeInstant end = gml_time_period.get_end()->get_time_position();
+	const GPlatesPropertyValues::GeoTimeInstant begin = gml_time_period.begin()->get_time_position();
+	const GPlatesPropertyValues::GeoTimeInstant end = gml_time_period.end()->get_time_position();
 
 	if (begin.is_real()) {
 		spinbox_time_of_appearance->setValue(begin.value());

@@ -441,8 +441,8 @@ GPlatesFileIO::OgrUtils::add_begin_and_end_time_to_kvd(
     if (GPlatesFeatureVisitors::get_property_value(
         feature,valid_time_property_name,time_period))
     {
-		begin_time = get_time_from_time_period(*(time_period->get_begin()));
-		end_time = get_time_from_time_period(*(time_period->get_end()));
+		begin_time = get_time_from_time_period(*(time_period->begin()));
+		end_time = get_time_from_time_period(*(time_period->end()));
     }
 
 	GPlatesPropertyValues::XsDouble::non_null_ptr_type begin_value =

@@ -48,30 +48,6 @@ DISABLE_GCC_WARNING("-Wshadow")
 ENABLE_GCC_WARNING("-Wshadow")
 
 	/**
-	 * Returns a modifiable begin time instant from a time period.
-	 *
-	 * TODO: Fix revisioning such that the time period returns a 'non-const' time instant.
-	 */
-	GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
-	gml_time_period_get_begin(
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period)
-	{
-		return gml_time_period->get_begin()->clone();
-	}
-
-	/**
-	 * Returns a modifiable end time instant from a time period.
-	 *
-	 * TODO: Fix revisioning such that the time period returns a 'non-const' time instant.
-	 */
-	GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
-	gml_time_period_get_end(
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period)
-	{
-		return gml_time_period->get_end()->clone();
-	}
-
-	/**
 	 * Handle implicit conversions of non_null_intrusive_ptr for the specified derived/base classes.
 	 *
 	 * Both 'SourceType' and 'TargetType' should be non-const.
@@ -160,9 +136,17 @@ export_property_values()
 			bp::bases<GPlatesModel::PropertyValue> >("GmlTimePeriod", bp::no_init)
  		.def("create", &GPlatesPropertyValues::GmlTimePeriod::create)
  		.staticmethod("create")
-		.def("get_begin", &GPlatesApi::gml_time_period_get_begin)
+		.def("begin",
+			// Use the 'non-const' overload so GmlTimeInstant can be modified via python...
+			(const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
+				(GPlatesPropertyValues::GmlTimePeriod::*)())
+					(&GPlatesPropertyValues::GmlTimePeriod::begin))
  		.def("set_begin", &GPlatesPropertyValues::GmlTimePeriod::set_begin)
-  		.def("get_end", &GPlatesApi::gml_time_period_get_end)
+		.def("end",
+			// Use the 'non-const' overload so GmlTimeInstant can be modified via python...
+			(const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
+				(GPlatesPropertyValues::GmlTimePeriod::*)())
+					(&GPlatesPropertyValues::GmlTimePeriod::end))
  		.def("set_end", &GPlatesPropertyValues::GmlTimePeriod::set_end)
 	;
 

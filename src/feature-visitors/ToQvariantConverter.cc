@@ -112,8 +112,8 @@ void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_gml_time_period(
 		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
-	const GPlatesPropertyValues::GeoTimeInstant begin = gml_time_period.get_begin()->get_time_position();
-	const GPlatesPropertyValues::GeoTimeInstant end = gml_time_period.get_end()->get_time_position();
+	const GPlatesPropertyValues::GeoTimeInstant begin = gml_time_period.begin()->get_time_position();
+	const GPlatesPropertyValues::GeoTimeInstant end = gml_time_period.end()->get_time_position();
 	
 	if (d_role == Qt::EditRole) {
 		QList<QVariant> list;

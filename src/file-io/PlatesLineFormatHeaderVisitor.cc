@@ -258,8 +258,8 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::visit_gml_time_period(
 	}
 
 	if ( ! d_accum.age_of_appearance) {
-		d_accum.age_of_appearance = gml_time_period.get_begin()->get_time_position();
-		d_accum.age_of_disappearance = gml_time_period.get_end()->get_time_position();
+		d_accum.age_of_appearance = gml_time_period.begin()->get_time_position();
+		d_accum.age_of_disappearance = gml_time_period.end()->get_time_position();
 	} else {
 		// The age of appearance was already set, which means that there was already a
 		// "gml:validTime" property which contains a "gml:TimeInstant" or "gml:TimePeriod".

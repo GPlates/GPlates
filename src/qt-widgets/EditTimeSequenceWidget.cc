@@ -476,7 +476,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
 		    dynamic_cast<const GPlatesPropertyValues::GmlTimePeriod*>(it->get_value().get());
 
 	    GPlatesPropertyValues::GeoTimeInstant geo_time_instant =
-		    gml_time_period_ptr->get_end()->get_time_position();
+		    gml_time_period_ptr->end()->get_time_position();
 
 	    if (geo_time_instant.is_real())
 	    {
@@ -493,7 +493,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
     if (gml_time_period_ptr)
     {
         GPlatesPropertyValues::GeoTimeInstant geo_time_instant =
-				gml_time_period_ptr->get_begin()->get_time_position();
+				gml_time_period_ptr->begin()->get_time_position();
         if (geo_time_instant.is_real())
         {
             attempt_to_populate_table_row_from_time(*this,*table_times,geo_time_instant.value());

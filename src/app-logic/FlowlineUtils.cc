@@ -75,7 +75,7 @@ GPlatesAppLogic::FlowlineUtils::get_times_from_time_period_array(
 				dynamic_cast<const GPlatesPropertyValues::GmlTimePeriod*>(iter->get_value().get());
 
 			GPlatesPropertyValues::GeoTimeInstant geo_time_instant = 
-				gml_time_period_ptr->get_end()->get_time_position();
+				gml_time_period_ptr->end()->get_time_position();
 
 			if (geo_time_instant.is_real())
 			{
@@ -85,7 +85,7 @@ GPlatesAppLogic::FlowlineUtils::get_times_from_time_period_array(
 		if (gml_time_period_ptr)
 		{
 			GPlatesPropertyValues::GeoTimeInstant geo_time_instant =
-				gml_time_period_ptr->get_begin()->get_time_position();
+				gml_time_period_ptr->begin()->get_time_position();
 			if (geo_time_instant.is_real())
 			{
 				times.push_back(geo_time_instant.value());
@@ -194,8 +194,8 @@ GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder::visit_gml_time_period(
 		    d_feature_is_defined_at_recon_time = false;
 	    }
 	    // Also, cache the time of appearance/dissappearance.
-	    d_time_of_appearance = gml_time_period.get_begin()->get_time_position();
-	    d_time_of_dissappearance = gml_time_period.get_end()->get_time_position();
+	    d_time_of_appearance = gml_time_period.begin()->get_time_position();
+	    d_time_of_dissappearance = gml_time_period.end()->get_time_position();
 	}
 }
 

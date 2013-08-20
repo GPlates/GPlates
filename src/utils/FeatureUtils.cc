@@ -79,8 +79,8 @@ public:
 	visit_gml_time_period(
 			ConstFeatureVisitor::gml_time_period_type &gml_time_period)
 	{
-		d_start_time = gml_time_period.get_begin()->get_time_position();
-		d_end_time   = gml_time_period.get_end()->get_time_position();
+		d_start_time = gml_time_period.begin()->get_time_position();
+		d_end_time   = gml_time_period.end()->get_time_position();
 	}
 
 private:

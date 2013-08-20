@@ -81,7 +81,7 @@ namespace
 			if (GPlatesFeatureVisitors::get_property_value(
 					table_row.get_feature_ref(), valid_time_property_name, time_period))
 			{
-				return time_period->get_begin()->get_time_position();
+				return time_period->begin()->get_time_position();
 			}
 		}
 
@@ -116,7 +116,7 @@ namespace
 			if (GPlatesFeatureVisitors::get_property_value(
 					table_row.get_feature_ref(), valid_time_property_name, time_period))
 			{
-				return time_period->get_end()->get_time_position();
+				return time_period->end()->get_time_position();
 			}
 		}
 

@@ -466,8 +466,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_pe
 					true));
 
 	// FIXME:  Ensure that 'gml_time_period.begin()' and 'gml_time_period.end()' are not NULL.
-	add_child_then_visit_value(QObject::tr("gml:begin"), QString(), *gml_time_period.get_begin());
-	add_child_then_visit_value(QObject::tr("gml:end"), QString(), *gml_time_period.get_end());
+	add_child_then_visit_value(QObject::tr("gml:begin"), QString(), *gml_time_period.begin());
+	add_child_then_visit_value(QObject::tr("gml:end"), QString(), *gml_time_period.end());
 }
 
 

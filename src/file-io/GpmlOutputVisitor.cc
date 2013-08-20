@@ -1082,11 +1082,11 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_time_period(
 {
 	d_output.writeStartGmlElement("TimePeriod");
 		d_output.writeStartGmlElement("begin");
-			gml_time_period.get_begin()->accept_visitor(*this);
+			gml_time_period.begin()->accept_visitor(*this);
 		d_output.writeEndElement();
 
 		d_output.writeStartGmlElement("end");
-			gml_time_period.get_end()->accept_visitor(*this);
+			gml_time_period.end()->accept_visitor(*this);
 		d_output.writeEndElement();
 	d_output.writeEndElement(); // </gml:TimePeriod>
 }

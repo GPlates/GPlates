@@ -263,11 +263,11 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gml_time_period(
 	d_line_stream << " TimePeriod";
 
 	d_line_stream << " <begin>";
-	gml_time_period.get_begin()->accept_visitor(*this);
+	gml_time_period.begin()->accept_visitor(*this);
 	d_line_stream << "</begin>";
 
 	d_line_stream << " <end>";
-	gml_time_period.get_end()->accept_visitor(*this);
+	gml_time_period.end()->accept_visitor(*this);
 	d_line_stream << "</end>";
 
 	end_header_line();

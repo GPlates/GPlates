@@ -318,8 +318,8 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	{
 		// The feature has a gml:validTime property.
 		
-		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->get_begin())));
-		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->get_end())));
+		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->begin())));
+		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->end())));
 	}
 
 	if (associated_rg)

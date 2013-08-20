@@ -994,8 +994,8 @@ namespace
 					feature,valid_time_property_name,time_period))
 		{
 
-			double begin_time = get_time_from_time_period(*(time_period->get_begin()));
-			double end_time = get_time_from_time_period(*(time_period->get_end()));
+			double begin_time = get_time_from_time_period(*(time_period->begin()));
+			double end_time = get_time_from_time_period(*(time_period->end()));
 
 			GPlatesPropertyValues::XsDouble::non_null_ptr_type begin_value =
 					GPlatesPropertyValues::XsDouble::create(begin_time);

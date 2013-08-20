@@ -70,16 +70,16 @@ namespace GPlatesQtWidgets
 		get_time_period_begin()
 		{
 			double b = 0.0;
-			if ( d_time_period_ptr->get_begin()->get_time_position().is_distant_past() )
+			if ( d_time_period_ptr->begin()->get_time_position().is_distant_past() )
 			{
 				b = 1000.0;
 			}
-			else if ( d_time_period_ptr->get_begin()->get_time_position().is_distant_past() )
+			else if ( d_time_period_ptr->begin()->get_time_position().is_distant_past() )
 			{
 				b = 0.0;
 			}
 			else {
-				b = d_time_period_ptr->get_begin()->get_time_position().value();
+				b = d_time_period_ptr->begin()->get_time_position().value();
 			}
 			return b;
 		}
@@ -88,16 +88,16 @@ namespace GPlatesQtWidgets
 		get_time_period_end()
 		{
 			double e = 0.0;
-			if ( d_time_period_ptr->get_end()->get_time_position().is_distant_past() )
+			if ( d_time_period_ptr->end()->get_time_position().is_distant_past() )
 			{
 				e = 1000.0;
 			}
-			else if ( d_time_period_ptr->get_end()->get_time_position().is_distant_past() )
+			else if ( d_time_period_ptr->end()->get_time_position().is_distant_past() )
 			{
 				e = 0.0;
 			}
 			else {
-				e = d_time_period_ptr->get_end()->get_time_position().value();
+				e = d_time_period_ptr->end()->get_time_position().value();
 			}
 			return e;
 		}
