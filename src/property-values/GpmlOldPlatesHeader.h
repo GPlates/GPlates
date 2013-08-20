@@ -371,11 +371,21 @@ namespace GPlatesPropertyValues
 									conjugate_plate_id_number_, colour_code_, number_of_points_)))
 		{ }
 
+		//! Constructor used when cloning.
+		GpmlOldPlatesHeader(
+				const GpmlOldPlatesHeader &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlOldPlatesHeader(*this));
+			return non_null_ptr_type(new GpmlOldPlatesHeader(*this, context));
 		}
 
 	private:
@@ -384,7 +394,7 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			Revision(
 					unsigned int region_number_,
@@ -415,17 +425,38 @@ namespace GPlatesPropertyValues
 				number_of_points(number_of_points_)
 			{  }
 
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				region_number(other_.region_number),
+				reference_number(other_.reference_number),
+				string_number(other_.string_number),
+				geographic_description(other_.geographic_description),
+				plate_id_number(other_.plate_id_number),
+				age_of_appearance(other_.age_of_appearance),
+				age_of_disappearance(other_.age_of_disappearance),
+				data_type_code(other_.data_type_code),
+				data_type_code_number(other_.data_type_code_number),
+				data_type_code_number_additional(other_.data_type_code_number_additional),
+				conjugate_plate_id_number(other_.conjugate_plate_id_number),
+				colour_code(other_.colour_code),
+				number_of_points(other_.number_of_points)
+			{  }
+
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
 			{
-				return non_null_ptr_type(new Revision(*this));
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
@@ -442,7 +473,7 @@ namespace GPlatesPropertyValues
 						conjugate_plate_id_number == other_revision.conjugate_plate_id_number &&
 						colour_code == other_revision.colour_code &&
 						number_of_points == other_revision.number_of_points &&
-						GPlatesModel::PropertyValue::Revision::equality(other);
+						PropertyValueRevision::equality(other);
 			}
 
 			unsigned int region_number;

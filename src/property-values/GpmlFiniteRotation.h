@@ -120,8 +120,8 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const GmlPoint::non_null_ptr_type &gpml_euler_pole,
-				const GpmlMeasure::non_null_ptr_type &gml_angle_in_degrees);
+				const GmlPoint::non_null_ptr_to_const_type &gpml_euler_pole,
+				const GpmlMeasure::non_null_ptr_to_const_type &gml_angle_in_degrees);
 
 		/**
 		 * Create a GpmlFiniteRotation instance which represents a "zero" rotation.
@@ -221,33 +221,11 @@ namespace GPlatesPropertyValues
 
 	protected:
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		explicit
-		GpmlFiniteRotation(
-				const GPlatesMaths::FiniteRotation &finite_rotation_):
-			PropertyValue(Revision::non_null_ptr_type(new Revision(finite_rotation_)))
-		{  }
-
-		// This constructor is used by derived classes.
-		explicit
-		GpmlFiniteRotation(
-				const Revision::non_null_ptr_type &revision_):
-			PropertyValue(revision_)
-		{  }
-
-		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
-		{
-			return non_null_ptr_type(new GpmlFiniteRotation(*this));
-		}
-
 		/**
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			explicit
 			Revision(
@@ -255,26 +233,76 @@ namespace GPlatesPropertyValues
 				finite_rotation(finite_rotation_)
 			{  }
 
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				finite_rotation(other_.finite_rotation)
+			{  }
+
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
 			{
-				return non_null_ptr_type(new Revision(*this));
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return finite_rotation == other_revision.finite_rotation &&
-					GPlatesModel::PropertyValue::Revision::equality(other);
+						PropertyValueRevision::equality(other);
 			}
 
 			GPlatesMaths::FiniteRotation finite_rotation;
 		};
+
+
+		// This constructor should not be public, because we don't want to allow
+		// instantiation of this type on the stack.
+		explicit
+		GpmlFiniteRotation(
+				const GPlatesMaths::FiniteRotation &finite_rotation_) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(finite_rotation_)))
+		{  }
+
+		//! Constructor used when cloning.
+		GpmlFiniteRotation(
+				const GpmlFiniteRotation &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
+
+		// This constructor is used by derived classes - seems we need to define after @a Revision.
+		explicit
+		GpmlFiniteRotation(
+				const Revision::non_null_ptr_type &revision_) :
+			PropertyValue(revision_)
+		{  }
+
+		// This constructor is used by derived classes - seems we need to define after @a Revision.
+		explicit
+		GpmlFiniteRotation(
+				const GpmlFiniteRotation &other_,
+				const Revision::non_null_ptr_type &revision_) :
+			PropertyValue(revision_)
+		{  }
+
+		virtual
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
+		{
+			return non_null_ptr_type(new GpmlFiniteRotation(*this, context));
+		}
 
 	private:
 

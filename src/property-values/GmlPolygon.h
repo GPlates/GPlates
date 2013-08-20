@@ -208,11 +208,21 @@ namespace GPlatesPropertyValues
 			PropertyValue(Revision::non_null_ptr_type(new Revision(exterior_ring, interior_rings)))
 		{  }
 
+		//! Constructor used when cloning.
+		GmlPolygon(
+				const GmlPolygon &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GmlPolygon(*this));
+			return non_null_ptr_type(new GmlPolygon(*this, context));
 		}
 
 	private:
@@ -221,7 +231,7 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			Revision(
 					const ring_type &exterior_ring_,
@@ -230,19 +240,29 @@ namespace GPlatesPropertyValues
 				interiors(interior_rings_)
 			{  }
 
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				// Note there is no need to distinguish between shallow and deep copying because
+				// PolygonOnSphere is immutable and hence there is never a need to deep copy it...
+				exterior(other_.exterior),
+				interiors(other_.interiors)
+			{  }
+
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
 			{
-				// Note that the default copy constructor (shallow copy) is fine because
-				// PolygonOnSphere is immutable and hence can be shared without copy-on-write.
-				return non_null_ptr_type(new Revision(*this));
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const;
+					const PropertyValueRevision &other) const;
 
 			/**
 			 * This is the GPlatesMaths::PolygonOnSphere which defines the exterior ring of this

@@ -246,11 +246,21 @@ namespace GPlatesPropertyValues
 			PropertyValue(Revision::non_null_ptr_type(new Revision(strings_to_swap_)))
 		{  }
 
+		//! Constructor used when cloning.
+		GpmlStringList(
+				const GpmlStringList &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlStringList(*this));
+			return non_null_ptr_type(new GpmlStringList(*this, context));
 		}
 
 	private:
@@ -259,7 +269,7 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			Revision()
 			{  }
@@ -278,6 +288,14 @@ namespace GPlatesPropertyValues
 				swap_strings(strings_to_swap_);
 			}
 
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				strings(other_.strings)
+			{  }
+
 			void
 			swap_strings(
 					string_list_type &strings_to_swap_)
@@ -286,21 +304,22 @@ namespace GPlatesPropertyValues
 			}
 
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
 			{
-				return non_null_ptr_type(new Revision(*this));
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return strings == other_revision.strings &&
-					GPlatesModel::PropertyValue::Revision::equality(other);
+						PropertyValueRevision::equality(other);
 			}
 
 			string_list_type strings;

@@ -28,14 +28,16 @@
 
 #include "GpmlTotalReconstructionPole.h"
 
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
 
 void
 GPlatesPropertyValues::GpmlTotalReconstructionPole::set_metadata(
 		const GPlatesModel::MetadataContainer &meta)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().meta = meta;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().meta = meta;
+	revision_handler.commit();
 }
 
 
@@ -86,8 +88,9 @@ GPlatesPropertyValues::GpmlTotalReconstructionPole::Revision::Revision(
 
 
 GPlatesPropertyValues::GpmlTotalReconstructionPole::Revision::Revision(
-		const Revision &other) :
-	GpmlFiniteRotation::Revision(other)
+		const Revision &other,
+		boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+	GpmlFiniteRotation::Revision(other, context_)
 {
 	// Clone each metadata entry.
 	BOOST_FOREACH(const GPlatesModel::MetadataContainer::value_type &metadata, other.meta)
@@ -99,7 +102,7 @@ GPlatesPropertyValues::GpmlTotalReconstructionPole::Revision::Revision(
 
 bool
 GPlatesPropertyValues::GpmlTotalReconstructionPole::Revision::equality(
-		const GPlatesModel::PropertyValue::Revision &other) const
+		const PropertyValueRevision &other) const
 {
 	// Compare each metadata entry (ie, dereferenced smart pointer).
 	// TODO: Implement - may need to sort by metadata name (and type) before can compare.

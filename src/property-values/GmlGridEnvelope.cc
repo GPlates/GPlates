@@ -30,8 +30,11 @@
 
 #include "GmlGridEnvelope.h"
 
-#include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
 
 const GPlatesPropertyValues::GmlGridEnvelope::non_null_ptr_type
 GPlatesPropertyValues::GmlGridEnvelope::create(
@@ -53,14 +56,14 @@ GPlatesPropertyValues::GmlGridEnvelope::set_low_and_high(
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			low_.size() == high_.size(), GPLATES_ASSERTION_SOURCE);
 
-	MutableRevisionHandler revision_handler(this);
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
 
-	Revision &revision = revision_handler.get_mutable_revision<Revision>();
+	Revision &revision = revision_handler.get_revision<Revision>();
 
 	revision.low = low_;
 	revision.high = high_;
 
-	revision_handler.handle_revision_modification();
+	revision_handler.commit();
 }
 
 

@@ -29,14 +29,16 @@
 
 #include "GpmlPlateId.h"
 
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
 
 void
 GPlatesPropertyValues::GpmlPlateId::set_value(
 		const GPlatesModel::integer_plate_id_type &p)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().value = p;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().value = p;
+	revision_handler.commit();
 }
 
 

@@ -136,16 +136,21 @@ namespace GPlatesPropertyValues
 			GpmlFiniteRotation(Revision::non_null_ptr_type(new Revision(finite_rotation, xml_element)))
 		{ }
 
+		//! Constructor used when cloning.
 		GpmlTotalReconstructionPole(
-				const GpmlTotalReconstructionPole &other) :
-			GpmlFiniteRotation(other)
-		{ }
+				const GpmlTotalReconstructionPole &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			GpmlFiniteRotation(
+					other_,
+					Revision::non_null_ptr_type(new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
 
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlTotalReconstructionPole(*this));
+			return non_null_ptr_type(new GpmlTotalReconstructionPole(*this, context));
 		}
 
 	private:
@@ -166,20 +171,23 @@ namespace GPlatesPropertyValues
 					const GPlatesMaths::FiniteRotation &finite_rotation_, 
 					GPlatesModel::XmlElementNode::non_null_ptr_type xml_element);
 
+			//! Clone constructor.
 			Revision(
-					const Revision &other);
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_);
 
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
 			{
-				return non_null_ptr_type(new Revision(*this));
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const;
+					const PropertyValueRevision &other) const;
 
 			GPlatesModel::MetadataContainer meta;
 		};

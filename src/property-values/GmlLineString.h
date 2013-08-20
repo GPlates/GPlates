@@ -162,11 +162,21 @@ namespace GPlatesPropertyValues
 			PropertyValue(Revision::non_null_ptr_type(new Revision(polyline_)))
 		{  }
 
+		//! Constructor used when cloning.
+		GmlLineString(
+				const GmlLineString &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GmlLineString(*this));
+			return non_null_ptr_type(new GmlLineString(*this, context));
 		}
 
 	private:
@@ -175,7 +185,7 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			explicit
 			Revision(
@@ -183,24 +193,33 @@ namespace GPlatesPropertyValues
 				polyline(polyline_)
 			{  }
 
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				// Note there is no need to distinguish between shallow and deep copying because
+				// PolylineOnSphere is immutable and hence there is never a need to deep copy it...
+				polyline(other_.polyline)
+			{  }
+
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
 			{
-				// Note that the default copy constructor (shallow copy) is fine because
-				// PolylineOnSphere is immutable and hence can be shared without copy-on-write.
-				return non_null_ptr_type(new Revision(*this));
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return *polyline == *other_revision.polyline &&
-					GPlatesModel::PropertyValue::Revision::equality(other);
+						PropertyValueRevision::equality(other);
 			}
 
 			polyline_type polyline;

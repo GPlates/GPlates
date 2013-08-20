@@ -108,21 +108,10 @@ namespace GPlatesPropertyValues
 	protected:
 
 		/**
-		 * Construct a GpmlInterpolationFunction instance.
-		 */
-		explicit
-		GpmlInterpolationFunction(
-				const Revision::non_null_ptr_type &revision):
-			PropertyValue(revision)
-		{  }
-
-		/**
 		 * Property value data that is mutable/revisionable.
-		 *
-		 * Derived revision classes must implement pure virtual methods from GPlatesModel::PropertyValue::Revision.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			explicit
 			Revision(
@@ -130,26 +119,44 @@ namespace GPlatesPropertyValues
 				value_type(value_type_)
 			{  }
 
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				value_type(other_.value_type)
+			{  }
+
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
 			{
-				return non_null_ptr_type(new Revision(*this));
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return value_type == other_revision.value_type &&
-					GPlatesModel::PropertyValue::Revision::equality(other);
+					PropertyValueRevision::equality(other);
 			}
 
 			StructuralType value_type;
 		};
+
+		/**
+		 * Construct a GpmlInterpolationFunction instance - seems we need to define after @a Revision.
+		 */
+		explicit
+		GpmlInterpolationFunction(
+				const Revision::non_null_ptr_type &revision) :
+			PropertyValue(revision)
+		{  }
 
 	private:
 

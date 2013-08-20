@@ -34,6 +34,8 @@
 
 #include "maths/MultiPointOnSphere.h"
 
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
 
 const GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
 GPlatesPropertyValues::GmlMultiPoint::create(
@@ -55,14 +57,14 @@ void
 GPlatesPropertyValues::GmlMultiPoint::set_multipoint(
 		const multipoint_type &p)
 {
-	MutableRevisionHandler revision_handler(this);
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
 
-	Revision &revision = revision_handler.get_mutable_revision<Revision>();
+	Revision &revision = revision_handler.get_revision<Revision>();
 
 	revision.multipoint = p;
 	revision.fill_gml_properties();
 
-	revision_handler.handle_revision_modification();
+	revision_handler.commit();
 }
 
 
@@ -70,9 +72,9 @@ void
 GPlatesPropertyValues::GmlMultiPoint::set_gml_properties(
 		const std::vector<GmlPoint::GmlProperty> &gml_properties_)
 {
-	MutableRevisionHandler revision_handler(this);
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
 
-	Revision &revision = revision_handler.get_mutable_revision<Revision>();
+	Revision &revision = revision_handler.get_revision<Revision>();
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			revision.multipoint->number_of_points() == gml_properties_.size(),
@@ -80,7 +82,7 @@ GPlatesPropertyValues::GmlMultiPoint::set_gml_properties(
 
 	revision.gml_properties = gml_properties_;
 
-	revision_handler.handle_revision_modification();
+	revision_handler.commit();
 }
 
 

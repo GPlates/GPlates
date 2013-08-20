@@ -157,11 +157,22 @@ namespace GPlatesPropertyValues
 			d_value_type(value_type_)
 		{  }
 
+		//! Constructor used when cloning.
+		GpmlFeatureReference(
+				const GpmlFeatureReference &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_))),
+			d_value_type(other_.d_value_type)
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlFeatureReference(*this));
+			return non_null_ptr_type(new GpmlFeatureReference(*this, context));
 		}
 
 		virtual
@@ -173,7 +184,7 @@ namespace GPlatesPropertyValues
 
 			return d_value_type == other_pv.d_value_type &&
 					// The revisioned data comparisons are handled here...
-					GPlatesModel::PropertyValue::equality(other);
+					PropertyValue::equality(other);
 		}
 
 	private:
@@ -182,7 +193,7 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			explicit
 			Revision(
@@ -190,22 +201,31 @@ namespace GPlatesPropertyValues
 				feature(feature_)
 			{  }
 
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				feature(other_.feature)
+			{  }
+
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
 			{
-				return non_null_ptr_type(new Revision(*this));
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return feature == other_revision.feature &&
-						GPlatesModel::PropertyValue::Revision::equality(other);
+						PropertyValueRevision::equality(other);
 			}
 
 			GPlatesModel::FeatureId feature;

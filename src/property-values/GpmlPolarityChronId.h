@@ -190,11 +190,21 @@ namespace GPlatesPropertyValues
 			PropertyValue(Revision::non_null_ptr_type(new Revision(era, major_region, minor_region)))
 		{  }
 
+		//! Constructor used when cloning.
+		GpmlPolarityChronId(
+				const GpmlPolarityChronId &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlPolarityChronId(*this));
+			return non_null_ptr_type(new GpmlPolarityChronId(*this, context));
 		}
 
 	private:
@@ -203,7 +213,7 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			Revision(
 					boost::optional<QString> era_,
@@ -214,24 +224,35 @@ namespace GPlatesPropertyValues
 				minor_region(minor_region_)
 			{  }
 
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				era(other_.era),
+				major_region(other_.major_region),
+				minor_region(other_.minor_region)
+			{  }
+
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
 			{
-				return non_null_ptr_type(new Revision(*this));
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return era == other_revision.era &&
 						major_region == other_revision.major_region &&
 						minor_region == other_revision.minor_region &&
-						GPlatesModel::PropertyValue::Revision::equality(other);
+						PropertyValueRevision::equality(other);
 			}
 
 			boost::optional<QString> era;

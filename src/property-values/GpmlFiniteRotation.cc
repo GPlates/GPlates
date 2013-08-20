@@ -36,6 +36,8 @@
 #include "maths/MathsUtils.h"
 #include "maths/PointOnSphere.h"
 
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
 
 const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesPropertyValues::GpmlFiniteRotation::create(
@@ -59,8 +61,8 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 
 const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesPropertyValues::GpmlFiniteRotation::create(
-		const GmlPoint::non_null_ptr_type &gpml_euler_pole,
-		const GpmlMeasure::non_null_ptr_type &gml_angle_in_degrees)
+		const GmlPoint::non_null_ptr_to_const_type &gpml_euler_pole,
+		const GpmlMeasure::non_null_ptr_to_const_type &gml_angle_in_degrees)
 {
 	GPlatesMaths::FiniteRotation fr =
 			GPlatesMaths::FiniteRotation::create(
@@ -95,9 +97,9 @@ void
 GPlatesPropertyValues::GpmlFiniteRotation::set_finite_rotation(
 		const GPlatesMaths::FiniteRotation &fr)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().finite_rotation = fr;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().finite_rotation = fr;
+	revision_handler.commit();
 }
 
 

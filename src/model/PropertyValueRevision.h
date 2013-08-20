@@ -34,9 +34,6 @@
 namespace GPlatesModel
 {
 	// Forward declarations.
-	class ModelTransaction;
-	class PropertyValue;
-	class PropertyValueRevision;
 	class PropertyValueRevisionContext;
 	template <class PropertyValueType> class PropertyValueRevisionedReference;
 
@@ -136,7 +133,7 @@ namespace GPlatesModel
 
 
 		/**
-		 * The reference-count of this instance by @a PropertyValueRevisionedReference.
+		 * The reference-count of this instance used by @a PropertyValueRevisionedReference.
 		 *
 		 * This is used to detach 'this' property value revision from its revision context when
 		 * the last @a PropertyValueRevisionedReference referencing 'this' is destroyed.

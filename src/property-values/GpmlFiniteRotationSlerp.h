@@ -109,26 +109,24 @@ namespace GPlatesPropertyValues {
 		explicit
 		GpmlFiniteRotationSlerp(
 				const StructuralType &value_type_):
-			GpmlInterpolationFunction(
-					GPlatesModel::PropertyValue::Revision::non_null_ptr_type(
-							new GpmlInterpolationFunction::Revision(value_type_)))
+			GpmlInterpolationFunction(Revision::non_null_ptr_type(new Revision(value_type_)))
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GpmlFiniteRotationSlerp(
-				const GpmlFiniteRotationSlerp &other) :
-			GpmlInterpolationFunction(other)
+				const GpmlFiniteRotationSlerp &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
 		{  }
 
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlFiniteRotationSlerp(*this));
+			return non_null_ptr_type(new GpmlFiniteRotationSlerp(*this, context));
 		}
 
 	private:

@@ -176,11 +176,21 @@ namespace GPlatesPropertyValues
 			PropertyValue(Revision::non_null_ptr_type(new Revision(time_position_, time_position_xml_attributes_)))
 		{  }
 
+		//! Constructor used when cloning.
+		GmlTimeInstant(
+				const GmlTimeInstant &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GmlTimeInstant(*this));
+			return non_null_ptr_type(new GmlTimeInstant(*this, context));
 		}
 
 	private:
@@ -189,7 +199,7 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			Revision(
 					const GeoTimeInstant &time_position_,
@@ -198,23 +208,33 @@ namespace GPlatesPropertyValues
 				time_position_xml_attributes(time_position_xml_attributes_)
 			{  }
 
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				time_position(other_.time_position),
+				time_position_xml_attributes(other_.time_position_xml_attributes)
+			{  }
+
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
 			{
-				return non_null_ptr_type(new Revision(*this));
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return time_position == other_revision.time_position &&
 						time_position_xml_attributes == other_revision.time_position_xml_attributes &&
-						GPlatesModel::PropertyValue::Revision::equality(other);
+						PropertyValueRevision::equality(other);
 			}
 
 			GeoTimeInstant time_position;

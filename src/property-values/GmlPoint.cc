@@ -32,6 +32,8 @@
 #include "maths/MathsUtils.h"
 #include "maths/PointOnSphere.h"
 
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
 
 const GPlatesPropertyValues::GmlPoint::non_null_ptr_type
 GPlatesPropertyValues::GmlPoint::create(
@@ -95,13 +97,13 @@ void
 GPlatesPropertyValues::GmlPoint::set_point(
 		GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p)
 {
-	MutableRevisionHandler revision_handler(this);
-	Revision &mutable_revision = revision_handler.get_mutable_revision<Revision>();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	Revision &revision = revision_handler.get_revision<Revision>();
 
-	mutable_revision.point = p;
-	mutable_revision.original_longitude = boost::none;
+	revision.point = p;
+	revision.original_longitude = boost::none;
 
-	revision_handler.handle_revision_modification();
+	revision_handler.commit();
 }
 
 
@@ -109,9 +111,9 @@ void
 GPlatesPropertyValues::GmlPoint::set_gml_property(
 		GmlProperty gml_property_)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().gml_property = gml_property_;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().gml_property = gml_property_;
+	revision_handler.commit();
 }
 
 

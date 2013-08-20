@@ -29,14 +29,16 @@
 
 #include "GmlTimeInstant.h"
 
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
 
 void
 GPlatesPropertyValues::GmlTimeInstant::set_time_position(
 		const GeoTimeInstant &tp)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().time_position = tp;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().time_position = tp;
+	revision_handler.commit();
 }
 
 
@@ -44,9 +46,9 @@ void
 GPlatesPropertyValues::GmlTimeInstant::set_time_position_xml_attributes(
 		const xml_attribute_map_type &tpxa)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().time_position_xml_attributes = tpxa;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().time_position_xml_attributes = tpxa;
+	revision_handler.commit();
 }
 
 

@@ -139,11 +139,22 @@ namespace GPlatesPropertyValues
 			d_type(enum_type)
 		{  }
 
+		//! Constructor used when cloning.
+		Enumeration(
+				const Enumeration &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_))),
+			d_type(other_.d_type)
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new Enumeration(*this));
+			return non_null_ptr_type(new Enumeration(*this, context));
 		}
 
 		virtual
@@ -155,7 +166,7 @@ namespace GPlatesPropertyValues
 
 			return d_type == other_pv.d_type &&
 					// The revisioned data comparisons are handled here...
-					GPlatesModel::PropertyValue::equality(other);
+					PropertyValue::equality(other);
 		}
 
 	private:
@@ -164,7 +175,7 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			explicit
 			Revision(
@@ -172,22 +183,31 @@ namespace GPlatesPropertyValues
 				value(value_)
 			{  }
 
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				value(other_.value)
+			{  }
+
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
 			{
-				return non_null_ptr_type(new Revision(*this));
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return value == other_revision.value &&
-					GPlatesModel::PropertyValue::Revision::equality(other);
+						PropertyValueRevision::equality(other);
 			}
 
 			EnumerationContent value;

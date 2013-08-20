@@ -193,7 +193,7 @@ namespace GPlatesModel
 		/**
 		 * Returns the current immutable revision as the base revision type.
 		 *
-		 * Revisions are immutable - use @a MutableRevisionHandler to modify revisions.
+		 * Revisions are immutable - use @a PropertyValueBubbleUpRevisionHandler to modify revisions.
 		 */
 		PropertyValueRevision::non_null_ptr_to_const_type
 		get_current_revision() const
@@ -204,7 +204,7 @@ namespace GPlatesModel
 		/**
 		 * Returns the current immutable revision as the specified derived revision type.
 		 *
-		 * Revisions are immutable - use @a MutableRevisionHandler to modify revisions.
+		 * Revisions are immutable - use @a PropertyValueBubbleUpRevisionHandler to modify revisions.
 		 */
 		template <class RevisionType>
 		const RevisionType &

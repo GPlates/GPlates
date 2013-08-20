@@ -166,7 +166,7 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			explicit
 			Revision(
@@ -175,7 +175,7 @@ namespace GPlatesPropertyValues
 			{  }
 
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
+			PropertyValueRevision::non_null_ptr_type
 			clone() const
 			{
 				return non_null_ptr_type(new Revision(*this));
@@ -184,7 +184,7 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				// Compare the feature collectin metadata.
 				// TODO: Implement.

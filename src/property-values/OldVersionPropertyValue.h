@@ -154,17 +154,28 @@ namespace GPlatesPropertyValues
 		OldVersionPropertyValue(
 				const StructuralType &structural_type,
 				const value_type &value_) :
-			// We don't actually need revisioning so just create an empty base class revision...
-			PropertyValue(GPlatesModel::PropertyValue::Revision::non_null_ptr_type(new Revision())),
+			PropertyValue(Revision::non_null_ptr_type(new Revision())),
 			d_structural_type(structural_type),
 			d_value(value_)
 		{  }
 
+		//! Constructor used when cloning.
+		OldVersionPropertyValue(
+				const OldVersionPropertyValue &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_))),
+			d_structural_type(other_.d_structural_type),
+			d_value(other_.d_value)
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new OldVersionPropertyValue(*this));
+			return non_null_ptr_type(new OldVersionPropertyValue(*this, context));
 		}
 
 		virtual
@@ -177,6 +188,31 @@ namespace GPlatesPropertyValues
 		}
 
 	private:
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::PropertyValueRevision
+		{
+			Revision()
+			{  }
+
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_)
+			{  }
+
+			virtual
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+		};
 
 		//! The structural type of the old property value type.
 		StructuralType d_structural_type;

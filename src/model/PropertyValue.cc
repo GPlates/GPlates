@@ -53,7 +53,7 @@ GPlatesModel::PropertyValue::operator==(
 
 
 bool
-GPlatesModel::PropertyValue::equality(
+PropertyValue::equality(
 		const PropertyValue &other) const
 {
 	// Compare the mutable data that is contained in the revisions.

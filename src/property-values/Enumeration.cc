@@ -29,14 +29,16 @@
 
 #include "Enumeration.h"
 
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
 
 void
 GPlatesPropertyValues::Enumeration::set_value(
 		const EnumerationContent &new_value)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().value = new_value;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().value = new_value;
+	revision_handler.commit();
 }
 
 

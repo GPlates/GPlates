@@ -157,11 +157,21 @@ namespace GPlatesPropertyValues
 			PropertyValue(Revision::non_null_ptr_type(new Revision(low_, high_)))
 		{  }
 
+		//! Constructor used when cloning.
+		GmlGridEnvelope(
+				const GmlGridEnvelope &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GmlGridEnvelope(*this));
+			return non_null_ptr_type(new GmlGridEnvelope(*this, context));
 		}
 
 	private:
@@ -170,7 +180,7 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			Revision(
 					const integer_list_type &low_,
@@ -179,25 +189,33 @@ namespace GPlatesPropertyValues
 				high(high_)
 			{  }
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
-			{
-				return non_null_ptr_type(new Revision(*this));
-			}
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				low(other_.low),
+				high(other_.high)
+			{  }
 
-			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
+			virtual
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
+			{
+				return non_null_ptr_type(new Revision(*this, context));
+			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return low == other_revision.low &&
 						high == other_revision.high &&
-						GPlatesModel::PropertyValue::Revision::equality(other);
+						PropertyValueRevision::equality(other);
 			}
 
 			integer_list_type low;

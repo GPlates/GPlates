@@ -29,14 +29,16 @@
 
 #include "GpmlStringList.h"
 
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
 
 void
 GPlatesPropertyValues::GpmlStringList::set_string_list(
 		const string_list_type &strings_)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().strings = strings_;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().strings = strings_;
+	revision_handler.commit();
 }
 
 
@@ -44,9 +46,9 @@ void
 GPlatesPropertyValues::GpmlStringList::swap(
 		string_list_type &strings_)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().strings.swap(strings_);
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().strings.swap(strings_);
+	revision_handler.commit();
 }
 
 
