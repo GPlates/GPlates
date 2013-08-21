@@ -28,14 +28,21 @@
 
 #include "GpmlTopologicalNetwork.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+#include "global/NotYetImplementedException.h"
+
+#include "model/ModelTransaction.h"
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
 
 void
 GPlatesPropertyValues::GpmlTopologicalNetwork::set_boundary_sections(
 		const boundary_sections_seq_type &boundary_sections)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().boundary_sections = boundary_sections;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().boundary_sections = boundary_sections;
+	revision_handler.commit();
 }
 
 
@@ -43,9 +50,9 @@ void
 GPlatesPropertyValues::GpmlTopologicalNetwork::set_interior_geometries(
 		const interior_geometry_seq_type &interior_geometries)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().interior_geometries = interior_geometries;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().interior_geometries = interior_geometries;
+	revision_handler.commit();
 }
 
 
@@ -83,9 +90,19 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::print_to(
 }
 
 
+GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesPropertyValues::GpmlTopologicalNetwork::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+{
+	// Currently this can't be reached because we don't attach to our children yet.
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+
 bool
 GPlatesPropertyValues::GpmlTopologicalNetwork::Revision::equality(
-		const GPlatesModel::PropertyValue::Revision &other) const
+		const PropertyValueRevision &other) const
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
@@ -111,7 +128,7 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::Revision::equality(
 		}
 	}
 
-	return GPlatesModel::PropertyValue::Revision::equality(other);
+	return PropertyValueRevision::equality(other);
 }
 
 
