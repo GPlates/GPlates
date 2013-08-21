@@ -303,12 +303,12 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_point(
 		GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
 {  
 	const GPlatesModel::FeatureId source_feature_id =
-			gpml_toplogical_point.get_source_geometry()->get_feature_id();
+			gpml_toplogical_point.source_geometry()->get_feature_id();
 
 	boost::optional<ResolvedGeometry::Section> section =
 			record_topological_section_reconstructed_geometry(
 					source_feature_id,
-					*gpml_toplogical_point.get_source_geometry());
+					*gpml_toplogical_point.source_geometry());
 	if (!section)
 	{
 		// Return without adding topological section to the list of sections.

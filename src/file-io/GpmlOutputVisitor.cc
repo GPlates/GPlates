@@ -1430,7 +1430,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_point(
 	d_output.writeStartGpmlElement("TopologicalPoint");
 		d_output.writeStartGpmlElement("sourceGeometry");
 			// visit the delegate
-			( gpml_toplogical_point.get_source_geometry() )->accept_visitor(*this); 
+			( gpml_toplogical_point.source_geometry() )->accept_visitor(*this); 
 		d_output.writeEndElement();
 	d_output.writeEndElement();  
 }

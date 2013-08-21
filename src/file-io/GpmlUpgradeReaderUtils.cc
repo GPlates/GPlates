@@ -653,7 +653,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 				{
 					topological_interiors->push_back(
 							GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(
-									topological_point->get_source_geometry()->clone()));
+									topological_point->source_geometry()->clone()));
 				}
 			}
 		}

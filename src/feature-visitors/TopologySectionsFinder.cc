@@ -314,7 +314,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_point(
 
 	// Access directly the data
 	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type property_delegate_ptr =
-			gpml_toplogical_point.get_source_geometry();
+			gpml_toplogical_point.source_geometry();
 	GPlatesModel::FeatureId	src_geom_id = property_delegate_ptr->get_feature_id();
 	const GPlatesModel::PropertyName src_prop_name = property_delegate_ptr->get_target_property_name();
 

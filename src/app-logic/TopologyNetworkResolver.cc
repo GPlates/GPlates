@@ -324,7 +324,7 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_point(
 	// Get the reconstruction geometry referenced by the topological point property delegate.
 	boost::optional<ReconstructionGeometry::non_null_ptr_type> topological_reconstruction_geometry =
 			find_topological_reconstruction_geometry(
-					*gpml_toplogical_point.get_source_geometry());
+					*gpml_toplogical_point.source_geometry());
 	if (!topological_reconstruction_geometry)
 	{
 		// If no RG was found then it's possible that the current reconstruction time is
@@ -354,7 +354,7 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_topological_point(
 
 	boost::optional<ResolvedNetwork::BoundarySection> boundary_section =
 			record_topological_boundary_section_reconstructed_geometry(
-					gpml_toplogical_point.get_source_geometry()->get_feature_id(),
+					gpml_toplogical_point.source_geometry()->get_feature_id(),
 					topological_reconstruction_geometry.get());
 	if (!boundary_section)
 	{

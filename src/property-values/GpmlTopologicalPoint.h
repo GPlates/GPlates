@@ -31,7 +31,8 @@
 #include "GpmlPropertyDelegate.h"
 #include "GpmlTopologicalSection.h"
 
-#include "utils/CopyOnWrite.h"
+#include "model/PropertyValueRevisionContext.h"
+#include "model/PropertyValueRevisionedReference.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -43,7 +44,8 @@ namespace GPlatesPropertyValues
 {
 
 	class GpmlTopologicalPoint:
-			public GpmlTopologicalSection
+			public GpmlTopologicalSection,
+			public GPlatesModel::PropertyValueRevisionContext
 	{
 
 	public:
@@ -66,10 +68,7 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry) 
-		{
-			return non_null_ptr_type(new GpmlTopologicalPoint(source_geometry));
-		}
+				GpmlPropertyDelegate::non_null_ptr_type source_geometry);
 
 		const non_null_ptr_type
 		clone() const
@@ -78,21 +77,29 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * Returns the 'const' property delegate - which is 'const' so that it cannot be
-		 * modified and bypass the revisioning system.
+		 * Returns the 'const' property delegate.
 		 */
 		GpmlPropertyDelegate::non_null_ptr_to_const_type
-		get_source_geometry() const
+		source_geometry() const
 		{
-			return get_current_revision<Revision>().source_geometry.get();
+			return get_current_revision<Revision>().source_geometry.get_property_value();
 		}
 
 		/**
-		 * Sets the internal property delegate to a clone of @a source_geometry.
+		 * Returns the 'non-const' property delegate.
+		 */
+		GpmlPropertyDelegate::non_null_ptr_type
+		source_geometry()
+		{
+			return get_current_revision<Revision>().source_geometry.get_property_value();
+		}
+
+		/**
+		 * Sets the internal property delegate.
 		 */
 		void
 		set_source_geometry(
-				GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry);
+				GpmlPropertyDelegate::non_null_ptr_type source_geometry);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -138,64 +145,112 @@ namespace GPlatesPropertyValues
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GpmlTopologicalPoint(
-				GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry) :
-			GpmlTopologicalSection(Revision::non_null_ptr_type(new Revision(source_geometry)))
+				GPlatesModel::ModelTransaction &transaction_,
+				GpmlPropertyDelegate::non_null_ptr_type source_geometry) :
+			GpmlTopologicalSection(
+					Revision::non_null_ptr_type(
+							new Revision(transaction_, *this, source_geometry)))
 		{  }
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except it should not be public.
+		//! Constructor used when cloning.
 		GpmlTopologicalPoint(
-				const GpmlTopologicalPoint &other) :
-			GpmlTopologicalSection(other)
+				const GpmlTopologicalPoint &other_,
+				boost::optional<PropertyValueRevisionContext &> context_) :
+			GpmlTopologicalSection(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
 
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlTopologicalPoint(*this));
+			return non_null_ptr_type(new GpmlTopologicalPoint(*this, context));
 		}
 
 	private:
 
 		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+
+		/**
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
+
+		/**
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GpmlTopologicalSection::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			explicit
 			Revision(
-					GpmlPropertyDelegate::non_null_ptr_to_const_type source_geometry_) :
-				source_geometry(source_geometry_)
+					GPlatesModel::ModelTransaction &transaction_,
+					PropertyValueRevisionContext &child_context_,
+					GpmlPropertyDelegate::non_null_ptr_type source_geometry_) :
+				source_geometry(
+						GPlatesModel::PropertyValueRevisionedReference<GpmlPropertyDelegate>::attach(
+								transaction_, child_context_, source_geometry_))
+			{  }
+
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_,
+					PropertyValueRevisionContext &child_context_) :
+				PropertyValueRevision(context_),
+				source_geometry(other_.source_geometry)
+			{
+				// Clone data members that were not deep copied.
+				source_geometry.clone(child_context_);
+			}
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				source_geometry(other_.source_geometry)
 			{  }
 
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<PropertyValueRevisionContext &> context) const
 			{
-				// The default copy constructor is fine since we use CopyOnWrite.
-				return non_null_ptr_type(new Revision(*this));
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
 			}
-
-			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				// Compare property delegate objects not pointers.
-				return *source_geometry.get_const() == *other_revision.source_geometry.get_const() &&
-					GpmlTopologicalSection::Revision::equality(other);
+				return *source_geometry.get_property_value() == *other_revision.source_geometry.get_property_value() &&
+					PropertyValueRevision::equality(other);
 			}
 
-			GPlatesUtils::CopyOnWrite<GpmlPropertyDelegate::non_null_ptr_to_const_type> source_geometry;
+			GPlatesModel::PropertyValueRevisionedReference<GpmlPropertyDelegate> source_geometry;
 		};
 
 	};
