@@ -1412,7 +1412,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_line_section(
 
 		d_output.writeStartGpmlElement("sourceGeometry");
 			// visit the delgate 
-			( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
+			( gpml_toplogical_line_section.source_geometry() )->accept_visitor(*this); 
 		d_output.writeEndElement();
 		
 		d_output.writeStartGpmlElement("reverseOrder");

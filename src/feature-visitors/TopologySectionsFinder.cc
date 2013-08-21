@@ -230,7 +230,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_network_i
 {
 	// source geom.'s value is a delegate 
 	// DO NOT visit the delegate with:
-	// ( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
+	// ( gpml_toplogical_line_section.source_geometry() )->accept_visitor(*this); 
 
 	// Rather, access directly
 	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type property_delegate_ptr =
@@ -277,11 +277,11 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_line_sect
 {  
 	// source geom.'s value is a delegate 
 	// DO NOT visit the delegate with:
-	// ( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
+	// ( gpml_toplogical_line_section.source_geometry() )->accept_visitor(*this); 
 
 	// Rather, access directly
 	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type property_delegate_ptr =
-			gpml_toplogical_line_section.get_source_geometry();
+			gpml_toplogical_line_section.source_geometry();
 	GPlatesModel::FeatureId src_geom_id = property_delegate_ptr->get_feature_id();
 	const GPlatesModel::PropertyName src_prop_name = property_delegate_ptr->get_target_property_name();
 
@@ -310,7 +310,7 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_point(
 		const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
 {  
 	// DO NOT visit the delegate with:
-	// ( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
+	// ( gpml_toplogical_line_section.source_geometry() )->accept_visitor(*this); 
 
 	// Access directly the data
 	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type property_delegate_ptr =

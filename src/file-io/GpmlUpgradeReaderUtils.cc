@@ -647,7 +647,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 				{
 					topological_interiors->push_back(
 							GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(
-									topological_line_section->get_source_geometry()->clone()));
+									topological_line_section->source_geometry()->clone()));
 				}
 				else if (GPlatesFeatureVisitors::get_property_value(*interior_topological_section, topological_point))
 				{
