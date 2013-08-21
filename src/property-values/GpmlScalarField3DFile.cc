@@ -27,14 +27,33 @@
 
 #include "GpmlScalarField3DFile.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+#include "model/ModelTransaction.h"
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
+
+const GPlatesPropertyValues::GpmlScalarField3DFile::non_null_ptr_type
+GPlatesPropertyValues::GpmlScalarField3DFile::create(
+		XsString::non_null_ptr_type filename_)
+{
+	GPlatesModel::ModelTransaction transaction;
+	non_null_ptr_type ptr(new GpmlScalarField3DFile(transaction, filename_));
+	transaction.commit();
+
+	return ptr;
+}
+
 
 void
 GPlatesPropertyValues::GpmlScalarField3DFile::set_file_name(
-		const file_name_type &filename_)
+		XsString::non_null_ptr_type filename_)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().filename = filename_;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().filename.change(
+			revision_handler.get_model_transaction(), filename_);
+	revision_handler.commit();
 }
 
 
@@ -43,4 +62,23 @@ GPlatesPropertyValues::GpmlScalarField3DFile::print_to(
 		std::ostream &os) const
 {
 	return os << "GpmlScalarField3DFile";
+}
+
+
+GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesPropertyValues::GpmlScalarField3DFile::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+{
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			child_property_value == revision.filename.get_property_value(),
+			GPLATES_ASSERTION_SOURCE);
+
+	return revision.filename.clone_revision(transaction);
 }

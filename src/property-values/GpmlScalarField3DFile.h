@@ -33,8 +33,8 @@
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/PropertyValue.h"
-
-#include "utils/CopyOnWrite.h"
+#include "model/PropertyValueRevisionContext.h"
+#include "model/PropertyValueRevisionedReference.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -48,7 +48,8 @@ namespace GPlatesPropertyValues
 	 * This class implements the PropertyValue referencing a GPlates-specific 3D scalar field file.
 	 */
 	class GpmlScalarField3DFile :
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::PropertyValueRevisionContext
 	{
 	public:
 
@@ -63,10 +64,6 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlScalarField3DFile> non_null_ptr_to_const_type;
 
 
-		//! Typedef for the scalar field filename.
-		typedef XsString::non_null_ptr_to_const_type file_name_type;
-
-
 		virtual
 		~GpmlScalarField3DFile()
 		{  }
@@ -77,10 +74,7 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const file_name_type &filename_)
-		{
-			return new GpmlScalarField3DFile(filename_);
-		}
+				XsString::non_null_ptr_type filename_);
 
 		const non_null_ptr_type
 		clone() const
@@ -89,18 +83,17 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * Returns the 'const' file name - which is 'const' so that it cannot be
-		 * modified and bypass the revisioning system.
+		 * Returns the 'const' file name - the file name shouldn't be modifiable.
 		 */
-		file_name_type
+		XsString::non_null_ptr_to_const_type
 		get_file_name() const
 		{
-			return get_current_revision<Revision>().filename.get();
+			return get_current_revision<Revision>().filename.get_property_value();
 		}
 
 		void
 		set_file_name(
-				const file_name_type &filename_);
+				XsString::non_null_ptr_type filename_);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -152,53 +145,109 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		explicit
 		GpmlScalarField3DFile(
-				const file_name_type &filename_) :
-			PropertyValue(Revision::non_null_ptr_type(new Revision(filename_)))
+				GPlatesModel::ModelTransaction &transaction_,
+				XsString::non_null_ptr_type filename_) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, filename_)))
+		{  }
+
+		//! Constructor used when cloning.
+		GpmlScalarField3DFile(
+				const GpmlScalarField3DFile &other_,
+				boost::optional<PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
 
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlScalarField3DFile(*this));
+			return non_null_ptr_type(new GpmlScalarField3DFile(*this, context));
 		}
 
 	private:
 
 		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+
+		/**
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
+
+		/**
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			explicit
 			Revision(
-					const file_name_type &filename_) :
-				filename(filename_)
+					GPlatesModel::ModelTransaction &transaction_,
+					PropertyValueRevisionContext &child_context_,
+					XsString::non_null_ptr_type filename_) :
+				filename(
+						GPlatesModel::PropertyValueRevisionedReference<XsString>::attach(
+								transaction_, child_context_, filename_))
+			{  }
+
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_,
+					PropertyValueRevisionContext &child_context_) :
+				PropertyValueRevision(context_),
+				filename(other_.filename)
+			{
+				// Clone data members that were not deep copied.
+				filename.clone(child_context_);
+			}
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				filename(other_.filename)
 			{  }
 
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<PropertyValueRevisionContext &> context) const
 			{
-				// The default copy constructor is fine since we use CopyOnWrite.
-				return non_null_ptr_type(new Revision(*this));
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
 			}
-
-			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-				return *filename.get_const() == *other_revision.filename.get_const() &&
-					GPlatesModel::PropertyValue::Revision::equality(other);
+				return *filename.get_property_value() == *other_revision.filename.get_property_value() &&
+						PropertyValueRevision::equality(other);
 			}
 
-			GPlatesUtils::CopyOnWrite<file_name_type> filename;
+			GPlatesModel::PropertyValueRevisionedReference<XsString> filename;
 		};
 
 	};

@@ -54,7 +54,7 @@ ENABLE_GCC_WARNING("-Wshadow")
 
 
 void
-export_property_values()
+export_property_value()
 {
 	/*
 	 * Base property value wrapper class.
@@ -62,15 +62,15 @@ export_property_values()
 	 * Enables 'isinstance(obj, PropertyValue)' in python - not that it's that useful.
 	 */
 	bp::class_<GPlatesModel::PropertyValue, boost::noncopyable>("PropertyValue", bp::no_init);
+}
 
+//////////////////////////////////////////////////////////////////////////
+// NOTE: Please keep the property values alphabetically ordered.
+//////////////////////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////
-	// NOTE: Please keep the property values alphabetically ordered.
-	//////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////
-
-
+void
+export_geo_time_instant()
+{
 	//
 	// GeoTimeInstant
 	//
@@ -91,8 +91,12 @@ export_property_values()
  		.def(bp::self > bp::self)
  		.def(bp::self >= bp::self)
 	;
+}
 
 
+void
+export_gml_time_instant()
+{
 	//
 	// GmlTimeInstant
 	//
@@ -119,9 +123,12 @@ export_property_values()
 			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type,
 			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_to_const_type>();
 	// Enable boost::optional<GPlatesPropertyValues::GmlTimeInstant> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::GmlTimeInstant>();
+}
 
 
+void
+export_gml_time_period()
+{
 	//
 	// GmlTimePeriod
 	//
@@ -155,8 +162,12 @@ export_property_values()
 			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type>();
 	// Enable boost::optional<GPlatesPropertyValues::GmlTimePeriod> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::GmlTimePeriod>();
+}
 
 
+void
+export_gpml_hot_spot_trail_mark()
+{
 	//
 	// GpmlHotSpotTrailMark
 	//
@@ -184,8 +195,12 @@ export_property_values()
 	bp::implicitly_convertible<
 			GPlatesPropertyValues::GpmlHotSpotTrailMark::non_null_ptr_type,
 			GPlatesPropertyValues::GpmlHotSpotTrailMark::non_null_ptr_to_const_type>();
+}
 
 
+void
+export_gpml_plate_id()
+{
 	//
 	// GpmlPlateId
 	//
@@ -207,7 +222,23 @@ export_property_values()
 	bp::implicitly_convertible<
 			GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type,
 			GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type>();
+}
 
+
+void
+export_property_values()
+{
+	export_property_value();
+
+	//////////////////////////////////////////////////////////////////////////
+	// NOTE: Please keep the property values alphabetically ordered.
+	//////////////////////////////////////////////////////////////////////////
+
+	export_geo_time_instant();
+	export_gml_time_instant();
+	export_gml_time_period();
+	export_gpml_hot_spot_trail_mark();
+	export_gpml_plate_id();
 }
 
 #endif // GPLATES_NO_PYTHON
