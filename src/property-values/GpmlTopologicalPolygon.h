@@ -36,9 +36,10 @@
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/FeatureVisitor.h"
+#include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
-
-#include "utils/CopyOnWrite.h"
+#include "model/PropertyValueRevisionContext.h"
+#include "model/PropertyValueRevisionedReference.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -52,7 +53,8 @@ namespace GPlatesPropertyValues
 	 * This class implements the PropertyValue which corresponds to "gpml:TopologicalPolygon".
 	 */
 	class GpmlTopologicalPolygon:
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::PropertyValueRevisionContext
 	{
 
 	public:
@@ -114,12 +116,12 @@ namespace GPlatesPropertyValues
 			operator==(
 					const Section &other) const
 			{
-				return *d_source_section.get_const() == *other.d_source_section.get_const();
+				return *d_source_section == *other.d_source_section;
 			}
 
 		private:
 
-			GPlatesUtils::CopyOnWrite<GpmlTopologicalSection::non_null_ptr_type> d_source_section;
+			GpmlTopologicalSection::non_null_ptr_type d_source_section;
 		};
 
 		//! Typedef for a sequence of sections.
@@ -145,8 +147,12 @@ namespace GPlatesPropertyValues
 				const TopologicalSectionsIterator &exterior_sections_begin_,
 				const TopologicalSectionsIterator &exterior_sections_end_)
 		{
-			return non_null_ptr_type(
-					new GpmlTopologicalPolygon(exterior_sections_begin_, exterior_sections_end_));
+			ModelTransaction transaction;
+			non_null_ptr_type ptr(
+					new GpmlTopologicalPolygon(
+							transaction, exterior_sections_begin_, exterior_sections_end_));
+			transaction.commit();
+			return ptr;
 		}
 
 		const non_null_ptr_type
@@ -228,49 +234,102 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		template <typename TopologicalSectionsIterator>
 		GpmlTopologicalPolygon(
+				GPlatesModel::ModelTransaction &transaction_,
 				const TopologicalSectionsIterator &exterior_sections_begin_,
 				const TopologicalSectionsIterator &exterior_sections_end_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
-							new Revision(exterior_sections_begin_, exterior_sections_end_)))
+							new Revision(transaction_, *this, exterior_sections_begin_, exterior_sections_end_)))
+		{  }
+
+		//! Constructor used when cloning.
+		GpmlTopologicalPolygon(
+				const GpmlTopologicalPolygon &other_,
+				boost::optional<PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
 
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlTopologicalPolygon(*this));
+			return non_null_ptr_type(new GpmlTopologicalPolygon(*this, context));
 		}
 
 	private:
 
 		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+
+		/**
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
+
+		/**
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			template <typename TopologicalSectionsIterator>
 			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					PropertyValueRevisionContext &child_context_,
 					const TopologicalSectionsIterator &exterior_sections_begin_,
 					const TopologicalSectionsIterator &exterior_sections_end_) :
 				exterior_sections(exterior_sections_begin_, exterior_sections_end_)
 			{  }
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_,
+					PropertyValueRevisionContext &child_context_) :
+				PropertyValueRevision(context_),
+				exterior_sections(other_.exterior_sections)
 			{
-				// The default copy constructor is fine since we use CopyOnWrite.
-				return non_null_ptr_type(new Revision(*this));
+				// Clone data members that were not deep copied.
 			}
 
-			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				exterior_sections(other_.exterior_sections)
+			{  }
+
+			virtual
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<PropertyValueRevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const;
+					const PropertyValueRevision &other) const;
 
 			sections_seq_type exterior_sections;
 		};
