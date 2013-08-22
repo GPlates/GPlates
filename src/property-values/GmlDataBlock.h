@@ -33,7 +33,6 @@
 #include "GmlDataBlockCoordinateList.h"
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
-#include "utils/CopyOnWrite.h"
 
 
 namespace GPlatesPropertyValues
@@ -84,7 +83,7 @@ namespace GPlatesPropertyValues
 			const GmlDataBlockCoordinateList::non_null_ptr_to_const_type
 			get_coordinate_list() const
 			{
-				return d_coordinate_list.get();
+				return d_coordinate_list;
 			}
 
 			/**
@@ -93,7 +92,7 @@ namespace GPlatesPropertyValues
 			const GmlDataBlockCoordinateList::non_null_ptr_type
 			get_coordinate_list()
 			{
-				return d_coordinate_list.get();
+				return d_coordinate_list;
 			}
 
 			void
@@ -112,11 +111,11 @@ namespace GPlatesPropertyValues
 			operator==(
 					const CoordinateList &other) const
 			{
-				return *d_coordinate_list.get_const() == *other.d_coordinate_list.get_const();
+				return *d_coordinate_list == *other.d_coordinate_list;
 			}
 
 		private:
-			GPlatesUtils::CopyOnWrite<GmlDataBlockCoordinateList::non_null_ptr_type> d_coordinate_list;
+			GmlDataBlockCoordinateList::non_null_ptr_type d_coordinate_list;
 		};
 
 		//! Typedef for a sequence of coordinate lists.
@@ -220,11 +219,21 @@ namespace GPlatesPropertyValues
 			PropertyValue(Revision::non_null_ptr_type(new Revision(tuple_list)))
 		{  }
 
+		//! Constructor used when cloning.
+		GmlDataBlock(
+				const GmlDataBlock &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GmlDataBlock(*this));
+			return non_null_ptr_type(new GmlDataBlock(*this, context));
 		}
 
 	private:
@@ -233,7 +242,7 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			explicit
 			Revision(
@@ -241,23 +250,31 @@ namespace GPlatesPropertyValues
 				tuple_list(tuple_list_)
 			{  }
 
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				tuple_list(other_.tuple_list)
+			{  }
+
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
 			{
-				// The default copy constructor is fine since we use CopyOnWrite.
-				return non_null_ptr_type(new Revision(*this));
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return tuple_list == other_revision.tuple_list &&
-					GPlatesModel::PropertyValue::Revision::equality(other);
+						PropertyValueRevision::equality(other);
 			}
 
 			tuple_list_type tuple_list;
