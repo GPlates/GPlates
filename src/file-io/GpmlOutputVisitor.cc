@@ -1023,7 +1023,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_rectified_grid(
 	d_output.writeAttributes(xml_attributes.begin(), xml_attributes.end());
 
 		d_output.writeStartGmlElement("limits");
-			visit_gml_grid_envelope(*gml_rectified_grid.get_limits());
+			visit_gml_grid_envelope(*gml_rectified_grid.limits());
 		d_output.writeEndElement(); // </gml:limits>
 
 		const GmlRectifiedGrid::axes_list_type &axes = gml_rectified_grid.get_axes();
@@ -1035,7 +1035,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_rectified_grid(
 		}
 
 		d_output.writeStartGmlElement("origin");
-			visit_gml_point(*gml_rectified_grid.get_origin());
+			visit_gml_point(*gml_rectified_grid.origin());
 		d_output.writeEndElement(); // </gml:origin>
 
 		const GmlRectifiedGrid::offset_vector_list_type &offset_vectors =

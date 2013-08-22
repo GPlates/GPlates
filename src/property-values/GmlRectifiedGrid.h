@@ -41,6 +41,8 @@
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/PropertyValue.h"
+#include "model/PropertyValueRevisionContext.h"
+#include "model/PropertyValueRevisionedReference.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
 
@@ -58,7 +60,8 @@ namespace GPlatesPropertyValues
 	 * This class implements the PropertyValue which corresponds to "gml:RectifiedGrid".
 	 */
 	class GmlRectifiedGrid:
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::PropertyValueRevisionContext
 	{
 	public:
 
@@ -100,7 +103,7 @@ namespace GPlatesPropertyValues
 			const XsString::non_null_ptr_to_const_type
 			get_name() const
 			{
-				return d_name.get();
+				return d_name;
 			}
 
 			/**
@@ -109,7 +112,7 @@ namespace GPlatesPropertyValues
 			const XsString::non_null_ptr_type
 			get_name()
 			{
-				return d_name.get();
+				return d_name;
 			}
 
 			void
@@ -128,11 +131,11 @@ namespace GPlatesPropertyValues
 			operator==(
 					const Axis &other) const
 			{
-				return *d_name.get_const() == *other.d_name.get_const();
+				return *d_name == *other.d_name;
 			}
 
 		private:
-			GPlatesUtils::CopyOnWrite<XsString::non_null_ptr_type> d_name;
+			XsString::non_null_ptr_type d_name;
 		};
 
 		//! Typedef for a sequence of axes.
@@ -161,14 +164,11 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const GmlGridEnvelope::non_null_ptr_to_const_type &limits_,
+				const GmlGridEnvelope::non_null_ptr_type &limits_,
 				const axes_list_type &axes_,
-				const GmlPoint::non_null_ptr_to_const_type &origin_,
+				const GmlPoint::non_null_ptr_type &origin_,
 				const offset_vector_list_type &offset_vectors_,
-				const xml_attributes_type &xml_attributes_)
-		{
-			return non_null_ptr_type(new GmlRectifiedGrid(limits_, axes_, origin_, offset_vectors_, xml_attributes_));
-		}
+				const xml_attributes_type &xml_attributes_);
 
 		/**
 		 * Convenience function for creating a GmlRectifiedGrid from georeferencing
@@ -189,21 +189,29 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * Returns the 'const' limits - which is 'const' so that it cannot be
-		 * modified and bypass the revisioning system.
+		 * Returns the 'const' limits.
 		 */
 		const GmlGridEnvelope::non_null_ptr_to_const_type
-		get_limits() const
+		limits() const
 		{
-			return get_current_revision<Revision>().limits.get();
+			return get_current_revision<Revision>().limits.get_property_value();
 		}
 
 		/**
-		 * Sets the internal limits to a clone of @a limits_.
+		 * Returns the 'non-const' limits.
+		 */
+		const GmlGridEnvelope::non_null_ptr_type
+		limits()
+		{
+			return get_current_revision<Revision>().limits.get_property_value();
+		}
+
+		/**
+		 * Sets the internal limits.
 		 */
 		void
 		set_limits(
-				const GmlGridEnvelope::non_null_ptr_to_const_type &limits_);
+				const GmlGridEnvelope::non_null_ptr_type &limits_);
 
 		/**
 		 * Returns the axes.
@@ -229,21 +237,29 @@ namespace GPlatesPropertyValues
 				const axes_list_type &axes_);
 
 		/**
-		 * Returns the 'const' origin - which is 'const' so that it cannot be
-		 * modified and bypass the revisioning system.
+		 * Returns the 'const' origin.
 		 */
 		const GmlPoint::non_null_ptr_to_const_type
-		get_origin() const
+		origin() const
 		{
-			return get_current_revision<Revision>().origin.get();
+			return get_current_revision<Revision>().origin.get_property_value();
 		}
 
 		/**
-		 * Sets the internal origin to a clone of @a origin_.
+		 * Returns the 'non-const' origin.
+		 */
+		const GmlPoint::non_null_ptr_type
+		origin()
+		{
+			return get_current_revision<Revision>().origin.get_property_value();
+		}
+
+		/**
+		 * Sets the internal origin.
 		 */
 		void
 		set_origin(
-				const GmlPoint::non_null_ptr_to_const_type &origin_);
+				GmlPoint::non_null_ptr_type origin_);
 
 		/**
 		 * Returns the offset vectors.
@@ -328,62 +344,131 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		explicit
 		GmlRectifiedGrid(
-				const GmlGridEnvelope::non_null_ptr_to_const_type &limits_,
+				GPlatesModel::ModelTransaction &transaction_,
+				const GmlGridEnvelope::non_null_ptr_type &limits_,
 				const axes_list_type &axes_,
-				const GmlPoint::non_null_ptr_to_const_type &origin_,
+				const GmlPoint::non_null_ptr_type &origin_,
 				const offset_vector_list_type &offset_vectors_,
 				const xml_attributes_type xml_attributes_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
-							new Revision(limits_, axes_, origin_, offset_vectors_, xml_attributes_)))
+							new Revision(
+									transaction_, *this,
+									limits_, axes_, origin_, offset_vectors_, xml_attributes_)))
+		{  }
+
+		//! Constructor used when cloning.
+		GmlRectifiedGrid(
+				const GmlRectifiedGrid &other_,
+				boost::optional<PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
 
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GmlRectifiedGrid(*this));
+			return non_null_ptr_type(new GmlRectifiedGrid(*this, context));
 		}
 
 	private:
 
 		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+
+		/**
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
+
+		/**
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			Revision(
-					const GmlGridEnvelope::non_null_ptr_to_const_type &limits_,
+					GPlatesModel::ModelTransaction &transaction_,
+					PropertyValueRevisionContext &child_context_,
+					const GmlGridEnvelope::non_null_ptr_type &limits_,
 					const axes_list_type &axes_,
-					const GmlPoint::non_null_ptr_to_const_type &origin_,
+					const GmlPoint::non_null_ptr_type &origin_,
 					const offset_vector_list_type &offset_vectors_,
 					const xml_attributes_type xml_attributes_) :
-				limits(limits_),
+				limits(
+						GPlatesModel::PropertyValueRevisionedReference<GmlGridEnvelope>::attach(
+								transaction_, child_context_, limits_)),
 				axes(axes_),
-				origin(origin_),
+				origin(
+						GPlatesModel::PropertyValueRevisionedReference<GmlPoint>::attach(
+								transaction_, child_context_, origin_)),
 				offset_vectors(offset_vectors_),
 				xml_attributes(xml_attributes_)
 			{  }
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_,
+					PropertyValueRevisionContext &child_context_) :
+				PropertyValueRevision(context_),
+				limits(other_.limits),
+				axes(other_.axes),
+				origin(other_.origin),
+				offset_vectors(other_.offset_vectors),
+				xml_attributes(other_.xml_attributes)
 			{
-				// The default copy constructor is fine since we use CopyOnWrite.
-				return non_null_ptr_type(new Revision(*this));
+				// Clone data members that were not deep copied.
+				limits.clone(child_context_);
+				origin.clone(child_context_);
 			}
 
-			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				limits(other_.limits),
+				axes(other_.axes),
+				origin(other_.origin),
+				offset_vectors(other_.offset_vectors),
+				xml_attributes(other_.xml_attributes)
+			{  }
+
+			virtual
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<PropertyValueRevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const;
+					const PropertyValueRevision &other) const;
 
-			GPlatesUtils::CopyOnWrite<GmlGridEnvelope::non_null_ptr_to_const_type> limits;
+			GPlatesModel::PropertyValueRevisionedReference<GmlGridEnvelope> limits;
 			axes_list_type axes;
-			GPlatesUtils::CopyOnWrite<GmlPoint::non_null_ptr_to_const_type> origin;
+			GPlatesModel::PropertyValueRevisionedReference<GmlPoint> origin;
 			offset_vector_list_type offset_vectors;
 
 			xml_attributes_type xml_attributes;
