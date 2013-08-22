@@ -417,12 +417,10 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_time_sample(
 		is_disabled = find_and_create_optional(elem, &create_boolean,
 				IS_DISABLED, gpml_version, read_errors);
 
-	boost::intrusive_ptr<GPlatesPropertyValues::XsString> desc;
+	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_type> desc;
 	if (description) {
-		GPlatesPropertyValues::XsString::non_null_ptr_type tmp = 
-			GPlatesPropertyValues::XsString::create(
+		desc = GPlatesPropertyValues::XsString::create(
 				GPlatesUtils::make_icu_string_from_qstring(*description));
-		desc = GPlatesUtils::get_intrusive_ptr(tmp);
 	}
 
 	if (is_disabled) {

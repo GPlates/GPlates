@@ -550,12 +550,21 @@ namespace
 		}
 
 		static const XsString::non_null_ptr_to_const_type EMPTY_FILE_STRUCTURE =
-			XsString::create(GPlatesUtils::UnicodeString());
+				XsString::create(GPlatesUtils::UnicodeString());
+
+		boost::optional<XsString::non_null_ptr_to_const_type> const_mime_type =
+				get_mime_type(file_info.file_name);
+		boost::optional<XsString::non_null_ptr_type> mime_type;
+		if (const_mime_type)
+		{
+			mime_type = const_mime_type.get()->clone();
+		}
+
 		return GmlFile::create(
 				range_parameters,
 				XsString::create(GPlatesUtils::make_icu_string_from_qstring(file_info.absolute_file_path)),
-				EMPTY_FILE_STRUCTURE,
-				get_mime_type(file_info.file_name),
+				EMPTY_FILE_STRUCTURE->clone(),
+				mime_type,
 				boost::none /* compression */);
 	}
 }

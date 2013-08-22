@@ -158,14 +158,14 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_g
 	}
 	// else:  'iter' points to the most-recent non-disabled time sample.
 
-	if (d_recon_time.is_strictly_later_than(iter->get_valid_time()->get_time_position())) {
+	if (d_recon_time.is_strictly_later_than(iter->valid_time()->get_time_position())) {
 		// The requested reconstruction time is later than the time of the most-recent
 		// non-disabled time sample.  Hence, it is not valid to reconstruct to the
 		// requested reconstruction time.
 		// FIXME:  Should we complain about this?
 		return;
 	}
-	if (d_recon_time.is_coincident_with((iter->get_valid_time()->get_time_position()))) {
+	if (d_recon_time.is_coincident_with((iter->valid_time()->get_time_position()))) {
 		// An exact match!  Hence, we can use the FiniteRotation of this time sample
 		// directly, without need for interpolation.
 
@@ -173,7 +173,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_g
 		// FiniteRotation inside it.
 		d_is_expecting_a_finite_rotation = true;
 		d_trp_time_matches_exactly = true;
-		iter->get_value()->accept_visitor(*this);
+		iter->value()->accept_visitor(*this);
 
 		// Did the visitor successfully collect the FiniteRotation?
 		if ( ! d_finite_rotation_result) {
@@ -207,7 +207,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_g
 		}
 		// else:  'iter' points to the most-recent non-disabled time sample.
 
-		if (d_recon_time.is_strictly_later_than(iter->get_valid_time()->get_time_position())) {
+		if (d_recon_time.is_strictly_later_than(iter->valid_time()->get_time_position())) {
 			// The requested reconstruction time is later than (ie, less far in the
 			// past than) the time of the current time sample, which must mean that it
 			// lies "on the rail" between the current time sample and the time sample
@@ -222,7 +222,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_g
 			// Let's visit the time sample, to collect (what we expect to be) the
 			// FiniteRotation inside it.
 			d_is_expecting_a_finite_rotation = true;
-			iter->get_value()->accept_visitor(*this);
+			iter->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_finite_rotation_for_interp) {
@@ -237,7 +237,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_g
 			// Now let's visit the _previous_ non-disabled time sample, to collect
 			// (what we expect to be) the FiniteRotation inside it.
 			d_is_expecting_a_finite_rotation = true;
-			prev->get_value()->accept_visitor(*this);
+			prev->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_finite_rotation_for_interp) {
@@ -250,9 +250,9 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_g
 			}
 
 			GPlatesMaths::real_t current_time =
-					iter->get_valid_time()->get_time_position().value();
+					iter->valid_time()->get_time_position().value();
 			GPlatesMaths::real_t previous_time =
-					prev->get_valid_time()->get_time_position().value();
+					prev->valid_time()->get_time_position().value();
 			GPlatesMaths::real_t target_time =
 					d_recon_time.value();
 
@@ -275,7 +275,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_g
 			// the iterators.
 			return;
 		}
-		if (d_recon_time.is_coincident_with(iter->get_valid_time()->get_time_position())) {
+		if (d_recon_time.is_coincident_with(iter->valid_time()->get_time_position())) {
 			// An exact match!  Hence, we can use the FiniteRotation of this time
 			// sample directly, without need for interpolation.
 
@@ -283,7 +283,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_g
 			// FiniteRotation inside it.
 			d_is_expecting_a_finite_rotation = true;
 			d_trp_time_matches_exactly = true;
-			iter->get_value()->accept_visitor(*this);
+			iter->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_finite_rotation_result) {

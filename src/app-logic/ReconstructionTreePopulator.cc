@@ -116,7 +116,7 @@ namespace
 					const GPlatesPropertyValues::GpmlTimeSample &time_sample,
 					gpml_irregular_sampling.get_time_samples())
 			{
-				time_sample.get_value()->accept_visitor(*this);
+				time_sample.value()->accept_visitor(*this);
 			}
 		}
 
@@ -302,21 +302,21 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 	}
 	// else:  'iter' points to the most-recent non-disabled time sample.
 
-	if (d_recon_time.is_strictly_later_than(iter->get_valid_time()->get_time_position())) {
+	if (d_recon_time.is_strictly_later_than(iter->valid_time()->get_time_position())) {
 		// The requested reconstruction time is later than the time of the most-recent
 		// non-disabled time sample.  Hence, it is not valid to reconstruct to the
 		// requested reconstruction time.
 		// FIXME:  Should we complain about this?
 		return;
 	}
-	if (d_recon_time.is_coincident_with((iter->get_valid_time()->get_time_position()))) {
+	if (d_recon_time.is_coincident_with((iter->valid_time()->get_time_position()))) {
 		// An exact match!  Hence, we can use the FiniteRotation of this time sample
 		// directly, without need for interpolation.
 
 		// Let's visit the time sample, to collect (what we expect to be) the
 		// FiniteRotation inside it.
 		d_accumulator->d_is_expecting_a_finite_rotation = true;
-		iter->get_value()->accept_visitor(*this);
+		iter->value()->accept_visitor(*this);
 
 		// Did the visitor successfully collect the FiniteRotation?
 		if ( ! d_accumulator->d_finite_rotation) {
@@ -350,7 +350,7 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 		}
 		// else:  'iter' points to the most-recent non-disabled time sample.
 
-		if (d_recon_time.is_strictly_later_than(iter->get_valid_time()->get_time_position())) {
+		if (d_recon_time.is_strictly_later_than(iter->valid_time()->get_time_position())) {
 			// The requested reconstruction time is later than (ie, less far in the
 			// past than) the time of the current time sample, which must mean that it
 			// lies "on the rail" between the current time sample and the time sample
@@ -365,7 +365,7 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			// Let's visit the time sample, to collect (what we expect to be) the
 			// FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
-			iter->get_value()->accept_visitor(*this);
+			iter->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_accumulator->d_finite_rotation) {
@@ -380,7 +380,7 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			// Now let's visit the _previous_ non-disabled time sample, to collect
 			// (what we expect to be) the FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
-			prev->get_value()->accept_visitor(*this);
+			prev->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_accumulator->d_finite_rotation) {
@@ -393,9 +393,9 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			}
 
 			GPlatesMaths::real_t current_time =
-					iter->get_valid_time()->get_time_position().value();
+					iter->valid_time()->get_time_position().value();
 			GPlatesMaths::real_t previous_time =
-					prev->get_valid_time()->get_time_position().value();
+					prev->valid_time()->get_time_position().value();
 			GPlatesMaths::real_t target_time =
 					d_recon_time.value();
 
@@ -415,14 +415,14 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 
 			return;
 		}
-		if (d_recon_time.is_coincident_with(iter->get_valid_time()->get_time_position())) {
+		if (d_recon_time.is_coincident_with(iter->valid_time()->get_time_position())) {
 			// An exact match!  Hence, we can use the FiniteRotation of this time
 			// sample directly, without need for interpolation.
 
 			// Let's visit the time sample, to collect (what we expect to be) the
 			// FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
-			iter->get_value()->accept_visitor(*this);
+			iter->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_accumulator->d_finite_rotation) {

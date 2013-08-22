@@ -581,7 +581,7 @@ GPlatesFileIO::GpmlPropertyReader::convert_time_dependent_wrapped_to_unwrapped_s
 					ReadErrors::PropertyConvertedFromTimeDependent);
 
 			// Return the unwrapped property value (ie, without the GpmlConstantValue wrapper).
-			return constant_value_property_value->get_value()->clone();
+			return constant_value_property_value->value();
 		}
 		catch (const GpmlReaderException &exc)
 		{

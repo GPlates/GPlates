@@ -1123,11 +1123,11 @@ GPlatesQtWidgets::MetadataDialog::get_gpml_total_reconstruction_pole(
 	GpmlTotalReconstructionPole *trs = NULL;
 	for ( ; iter != end; ++iter) 
 	{
-		if(std::fabs(iter->get_valid_time()->get_time_position().value() - time.toDouble()) < EPSILON)
+		if(std::fabs(iter->valid_time()->get_time_position().value() - time.toDouble()) < EPSILON)
 		{
 			// FIXME: This const cast bypasses the model revisioning system.
 			trs = const_cast<GpmlTotalReconstructionPole *>(
-					dynamic_cast<const GpmlTotalReconstructionPole *>(iter->get_value().get()));
+					dynamic_cast<const GpmlTotalReconstructionPole *>(iter->value().get()));
 			if(!trs)
 			{
 				qWarning() << "The time sample is not GpmlTotalReconstructionPole type.";

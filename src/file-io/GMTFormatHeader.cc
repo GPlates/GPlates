@@ -303,7 +303,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_constant_value(
 	d_line_stream << " ConstantValue";
 
 	d_line_stream << " <value>";
-	gpml_constant_value.get_value()->accept_visitor(*this);
+	gpml_constant_value.value()->accept_visitor(*this);
 	d_line_stream << "</value>";
 	
 	d_line_stream
@@ -615,18 +615,18 @@ GPlatesFileIO::GMTFormatVerboseHeader::write_gpml_time_sample(
 	d_line_stream << " TimeSample";
 
 	d_line_stream << " <value>";
-	gpml_time_sample.get_value()->accept_visitor(*this);
+	gpml_time_sample.value()->accept_visitor(*this);
 	d_line_stream << "</value>";
 
 	d_line_stream << " <validTime>";
-	gpml_time_sample.get_valid_time()->accept_visitor(*this);
+	gpml_time_sample.valid_time()->accept_visitor(*this);
 	d_line_stream << "</validTime>";
 
 	// The description is optional.
-	if (gpml_time_sample.get_description() != NULL) 
+	if (gpml_time_sample.description())
 	{
 		d_line_stream << " <description>";
-		gpml_time_sample.get_description()->accept_visitor(*this);
+		gpml_time_sample.description().get()->accept_visitor(*this);
 		d_line_stream << "</description>";
 	}
 

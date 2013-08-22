@@ -271,7 +271,7 @@ void
 GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.get_value()->accept_visitor(*this);
+	gpml_constant_value.value()->accept_visitor(*this);
 }
 
 
@@ -343,15 +343,15 @@ GPlatesFileIO::PlatesRotationFormatWriter::write_gpml_time_sample(
 	// Start a new reconstruction pole
 	d_accum.reconstruction_poles.push_back(PlatesRotationFormatAccumulator::ReconstructionPoleData());
 
-	d_accum.current_pole().time = gpml_time_sample.get_valid_time()->get_time_position().value();
+	d_accum.current_pole().time = gpml_time_sample.valid_time()->get_time_position().value();
 	d_accum.current_pole().is_disabled = gpml_time_sample.is_disabled();
 	
 	// Visit the finite rotation inside this time sample.
-	gpml_time_sample.get_value()->accept_visitor(*this);
+	gpml_time_sample.value()->accept_visitor(*this);
 
 	// Visit the comment.
-	if (gpml_time_sample.get_description()) {
-		gpml_time_sample.get_description()->accept_visitor(*this);
+	if (gpml_time_sample.description()) {
+		gpml_time_sample.description().get()->accept_visitor(*this);
 	}
 }
 

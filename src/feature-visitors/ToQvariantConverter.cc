@@ -134,7 +134,7 @@ GPlatesFeatureVisitors::ToQvariantConverter::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	d_found_time_dependencies.push_back(QVariant("ConstantValue"));
-	gpml_constant_value.get_value()->accept_visitor(*this);
+	gpml_constant_value.value()->accept_visitor(*this);
 }
 
 

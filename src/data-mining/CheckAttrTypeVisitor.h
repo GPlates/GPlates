@@ -115,7 +115,7 @@ namespace GPlatesDataMining
 		visit_gpml_constant_value(
 			gpml_constant_value_type &gpml_constant_value)
 		{
-			gpml_constant_value.get_value()->accept_visitor(*this);
+			gpml_constant_value.value()->accept_visitor(*this);
 		}
 
 		virtual

@@ -614,7 +614,8 @@ GPlatesModel::ModelUtils::add_remove_or_convert_time_dependent_wrapper(
 		// If the GPGIM specifies a non-time-dependent property then unwrap the property value.
 		if (!time_dependent_flags.any())
 		{
-			return gpml_constant_value->get_value()->clone();
+			// Clone the nested property value since it is currently attached to the constant-value.
+			return gpml_constant_value->value()->clone();
 		}
 
 		// ...else we cannot convert a constant-value property to an irregularly-sampled property.
@@ -664,8 +665,8 @@ GPlatesModel::ModelUtils::add_remove_or_convert_time_dependent_wrapper(
 
 			// If the there's a single time window that covers all time and it's a constant-value...
 			if (time_windows.size() == 1 &&
-				time_windows.front().get_valid_time()->get_begin()->get_time_position().is_distant_past() &&
-				time_windows.front().get_valid_time()->get_end()->get_time_position().is_distant_future() &&
+				time_windows.front().get_valid_time()->begin()->get_time_position().is_distant_past() &&
+				time_windows.front().get_valid_time()->end()->get_time_position().is_distant_future() &&
 				time_windows.front().get_time_dependent_value()->get_structural_type() == CONSTANT_VALUE_TYPE)
 			{
 				GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_to_const_type gpml_constant_value =
@@ -681,7 +682,8 @@ GPlatesModel::ModelUtils::add_remove_or_convert_time_dependent_wrapper(
 				// If the GPGIM specifies a non-time-dependent property then unwrap the property value.
 				if (!time_dependent_flags.any())
 				{
-					return gpml_constant_value->get_value()->clone();
+					// Clone the nested property value since it is currently attached to the constant-value.
+					return gpml_constant_value->value()->clone();
 				}
 			}
 		}
@@ -840,8 +842,8 @@ GPlatesModel::ModelUtils::create_total_reconstruction_pole(
 	PropertyValue::non_null_ptr_type gpml_irregular_sampling =
 		GpmlIrregularSampling::create(
 				time_samples,
-				GPlatesUtils::get_intrusive_ptr(
-						GpmlFiniteRotationSlerp::create(*value_type)), 
+				GpmlInterpolationFunction::non_null_ptr_type(
+						GpmlFiniteRotationSlerp::create(*value_type)),
 				*value_type);
 
 	TopLevelProperty::non_null_ptr_type top_level_property_inline =
@@ -956,7 +958,7 @@ GPlatesModel::ModelUtils::create_gml_time_sample(
 		return GpmlTimeSample(
 				GpmlTotalReconstructionPole::create(gpml_finite_rotation->get_finite_rotation()),
 				gml_time_instant,
-				get_intrusive_ptr(gml_description), 
+				gml_description, 
 				StructuralType::create_gpml("TotalReconstructionPole"));
 	}
 	else
@@ -964,7 +966,7 @@ GPlatesModel::ModelUtils::create_gml_time_sample(
 		return GpmlTimeSample(
 				gpml_finite_rotation, 
 				gml_time_instant,
-				get_intrusive_ptr(gml_description), 
+				gml_description, 
 				StructuralType::create_gpml("FiniteRotation"));
 	}
 }

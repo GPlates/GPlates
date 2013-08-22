@@ -258,9 +258,9 @@ namespace
 		GmlTimeInstant::non_null_ptr_type valid_time =
 				ModelUtils::create_gml_time_instant(geo_time_instant);
 
-		boost::intrusive_ptr<XsString> description;
+		boost::optional<XsString::non_null_ptr_type> description;
 		if ( ! comment.empty()) {
-			description = (XsString::create(comment.c_str())).get();
+			description = XsString::create(comment.c_str());
 		}
 
 		StructuralType value_type = 
@@ -286,7 +286,7 @@ namespace
 	{
 		using namespace GPlatesFileIO;
 
-		if (gml_time_instants_are_approx_equal(time_sample.get_valid_time(), prev_time_sample.get_valid_time())) {
+		if (gml_time_instants_are_approx_equal(time_sample.valid_time(), prev_time_sample.valid_time())) {
 			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::SamePlateIdsButDuplicateGeoTime;
 			ReadErrors::Result res = ReadErrors::NewOverlappingSequenceBegun;
@@ -335,7 +335,7 @@ namespace
 				GpmlFiniteRotationSlerp::create(time_sample.get_value_type());
 		GpmlIrregularSampling::non_null_ptr_type gpml_irregular_sampling =
 				GpmlIrregularSampling::create(time_sample,
-						GPlatesUtils::get_intrusive_ptr(gpml_finite_rotation_slerp),
+						gpml_finite_rotation_slerp,
 						time_sample.get_value_type());
 
 		// We retain an iterator that points to the property in the model. This is
@@ -472,7 +472,7 @@ namespace
 		// container which can never be empty?
 		const GpmlTimeSample prev_time_sample = time_samples.back();
 
-		if (gml_time_instants_are_approx_equal(time_sample.get_valid_time(), prev_time_sample.get_valid_time())) {
+		if (gml_time_instants_are_approx_equal(time_sample.valid_time(), prev_time_sample.valid_time())) {
 			// We'll assume it's the start of a new sequence.  Since we're cautious
 			// programmers, let's just double-check whether the plate IDs are the same.
 
@@ -524,8 +524,8 @@ namespace
 						props_in_current_trs, time_sample, fixed_plate_id,
 						moving_plate_id);
 			}
-		} else if (time_sample.get_valid_time()->get_time_position().value() <
-				prev_time_sample.get_valid_time()->get_time_position().value()) {
+		} else if (time_sample.valid_time()->get_time_position().value() <
+				prev_time_sample.valid_time()->get_time_position().value()) {
 			// We'll assume it's the start of a new sequence.  Since we're cautious
 			// programmers, let's just double-check whether the plate IDs are the same.
 

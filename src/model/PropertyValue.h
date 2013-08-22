@@ -179,18 +179,6 @@ namespace GPlatesModel
 		{  }
 
 		/**
-		 * NOTE: Copy-constructor is intentionally not defined anywhere (not strictly necessary to do
-		 * this since base class ReferenceCount is already non-copyable, but makes it more obvious).
-		 *
-		 * Use the constructor (accepting revision) when cloning a property value.
-		 * Note that two property value instances should not point to the same revision instance as
-		 * this will prevent the revisioning system from functioning correctly - this doesn't mean
-		 * that two property value *revision* instances can't reference the same revision instance though.
-		 */
-		PropertyValue(
-				const PropertyValue &other);
-
-		/**
 		 * Returns the current immutable revision as the base revision type.
 		 *
 		 * Revisions are immutable - use @a PropertyValueBubbleUpRevisionHandler to modify revisions.
@@ -265,6 +253,18 @@ namespace GPlatesModel
 				const PropertyValue &other) const;
 
 	private:
+
+		/**
+		 * NOTE: Copy-constructor is intentionally not defined anywhere (not strictly necessary to do
+		 * this since base class ReferenceCount is already non-copyable, but makes it more obvious).
+		 *
+		 * Use the constructor (accepting revision) when cloning a property value.
+		 * Note that two property value instances should not point to the same revision instance as
+		 * this will prevent the revisioning system from functioning correctly - this doesn't mean
+		 * that two property value *revision* instances can't reference the same revision instance though.
+		 */
+		PropertyValue(
+				const PropertyValue &other);
 
 		/**
 		 * The current revision of this property value.

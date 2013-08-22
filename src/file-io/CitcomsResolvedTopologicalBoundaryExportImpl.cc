@@ -145,7 +145,7 @@ namespace GPlatesFileIO
 			visit_gpml_constant_value(
 					const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 			{
-				gpml_constant_value.get_value()->accept_visitor(*this);
+				gpml_constant_value.value()->accept_visitor(*this);
 			}
 
 
@@ -161,9 +161,9 @@ namespace GPlatesFileIO
 				for ( ; iter != end; ++iter)
 				{
 					// If time of time sample matches our reconstruction time then visit.
-					if (d_recon_time.is_coincident_with(iter->get_valid_time()->get_time_position()))
+					if (d_recon_time.is_coincident_with(iter->valid_time()->get_time_position()))
 					{
-						iter->get_value()->accept_visitor(*this);
+						iter->value()->accept_visitor(*this);
 					}
 				}
 			}
@@ -350,7 +350,7 @@ namespace GPlatesFileIO
 			visit_gpml_constant_value(
 					const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 			{
-				gpml_constant_value.get_value()->accept_visitor(*this);
+				gpml_constant_value.value()->accept_visitor(*this);
 			}
 
 
@@ -366,9 +366,9 @@ namespace GPlatesFileIO
 				for ( ; iter != end; ++iter)
 				{
 					// If time of time sample matches our reconstruction time then visit.
-					if (d_recon_time.is_coincident_with(iter->get_valid_time()->get_time_position()))
+					if (d_recon_time.is_coincident_with(iter->valid_time()->get_time_position()))
 					{
-						iter->get_value()->accept_visitor(*this);
+						iter->value()->accept_visitor(*this);
 					}
 				}
 			}

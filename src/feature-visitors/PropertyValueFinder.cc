@@ -35,7 +35,7 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_constant_value(
 		GPlatesModel::ConstFeatureVisitor::gpml_constant_value_type &gpml_constant_value,
 		GPlatesModel::ConstFeatureVisitor &visitor)
 {
-	gpml_constant_value.get_value()->accept_visitor(visitor);
+	gpml_constant_value.value()->accept_visitor(visitor);
 }
 
 
@@ -44,10 +44,7 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_constant_value(
 		GPlatesModel::FeatureVisitor::gpml_constant_value_type &gpml_constant_value,
 		GPlatesModel::FeatureVisitor &visitor)
 {
-	GPlatesModel::PropertyValue::non_null_ptr_type property_value =
-			gpml_constant_value.get_value()->clone();
-	property_value->accept_visitor(visitor);
-	gpml_constant_value.set_value(property_value);
+	gpml_constant_value.value()->accept_visitor(visitor);
 }
 
 
@@ -66,9 +63,9 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 		//
 		// FIXME: Should really visit the two closest samples and interpolate them, but
 		// that's hard to do when the property being visited is a template type.
-		if (reconstruction_time.is_coincident_with(iter->get_valid_time()->get_time_position()))
+		if (reconstruction_time.is_coincident_with(iter->valid_time()->get_time_position()))
 		{
-			iter->get_value()->accept_visitor(visitor);
+			iter->value()->accept_visitor(visitor);
 			return;
 		}
 	}
@@ -93,9 +90,9 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 		//
 		// FIXME: Should really visit the two closest samples and interpolate them, but
 		// that's hard to do when the property being visited is a template type.
-		if (reconstruction_time.is_coincident_with(iter->get_valid_time()->get_time_position()))
+		if (reconstruction_time.is_coincident_with(iter->valid_time()->get_time_position()))
 		{
-			iter->get_value()->accept_visitor(visitor);
+			iter->value()->accept_visitor(visitor);
 			return;
 		}
 	}

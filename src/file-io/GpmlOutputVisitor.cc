@@ -1146,7 +1146,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_constant_value(
 {
 	d_output.writeStartGpmlElement("ConstantValue");
 		d_output.writeStartGpmlElement("value");
-			gpml_constant_value.get_value()->accept_visitor(*this);
+			gpml_constant_value.value()->accept_visitor(*this);
 		d_output.writeEndElement();
 
 
@@ -1586,18 +1586,18 @@ GPlatesFileIO::GpmlOutputVisitor::write_gpml_time_sample(
 {
 	d_output.writeStartGpmlElement("TimeSample");
 		d_output.writeStartGpmlElement("value");
-			gpml_time_sample.get_value()->accept_visitor(*this);
+			gpml_time_sample.value()->accept_visitor(*this);
 		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("validTime");
-			gpml_time_sample.get_valid_time()->accept_visitor(*this);
+			gpml_time_sample.valid_time()->accept_visitor(*this);
 		d_output.writeEndElement();
 
 		// The description is optional.
-		if (gpml_time_sample.get_description() != NULL) 
+		if (gpml_time_sample.description())
 		{
 			d_output.writeStartGmlElement("description");
-				gpml_time_sample.get_description()->accept_visitor(*this);
+				gpml_time_sample.description().get()->accept_visitor(*this);
 			d_output.writeEndElement();
 		}
 

@@ -777,18 +777,18 @@ namespace
 
             // Now display the geo-time instant of the TimeSample.
             fill_tree_widget_pole_time_instant(item_for_pole,
-                    iter->get_valid_time()->get_time_position(),
+                    iter->valid_time()->get_time_position(),
                     locale_);
             
             // Display the pole's FiniteRotation (the expected value of the TimeSample).
             fill_tree_widget_pole_sample_value(item_for_pole,
-                    iter->get_value(),
+                    iter->value(),
                     locale_);
 
             // Display the pole comment (the TimeSample description), if present.
-            if (iter->get_description()) {
+            if (iter->description()) {
                 QString comment = GPlatesUtils::make_qstring_from_icu_string(
-                        iter->get_description()->get_value().get());
+                        iter->description().get()->get_value().get());
                 item_for_pole->setText(ColumnNames::COMMENT, comment);
                 sequence->append_new_pole(comment, item_for_pole);
             } else {
@@ -1694,7 +1694,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::is_grot_sequence(
         end =	irreg_sampling_const->get_time_samples().end();
     for ( ; iter != end; ++iter) 
     {
-        if(!dynamic_cast<const GpmlTotalReconstructionPole *>(iter->get_value().get()))
+        if(!dynamic_cast<const GpmlTotalReconstructionPole *>(iter->value().get()))
         {
             return false;
         }
@@ -1841,14 +1841,14 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_pole_data_from_feature
         for ( ; iter != end; ++iter) 
         {
             const GpmlFiniteRotation *time_sample_value =
-                dynamic_cast<const GpmlFiniteRotation*>(iter->get_value().get());
+                dynamic_cast<const GpmlFiniteRotation*>(iter->value().get());
             if(time_sample_value)
             {
                 RotationPoleData pole(
                         time_sample_value->get_finite_rotation(),
                         moving_plate_id,
                         fixed_plate_id,
-                        iter->get_valid_time()->get_time_position().value(),
+                        iter->valid_time()->get_time_position().value(),
 						iter->is_disabled());
                 ret.push_back(pole);
             }
@@ -2017,10 +2017,10 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 		BOOST_FOREACH(const GpmlTimeSample &sample, samples)
 		{
 			const GpmlTotalReconstructionPole *trs_pole = 
-				dynamic_cast<const GpmlTotalReconstructionPole *>(sample.get_value().get());
+				dynamic_cast<const GpmlTotalReconstructionPole *>(sample.value().get());
 			if(trs_pole)
 			{
-				double time = sample.get_valid_time()->get_time_position().value();
+				double time = sample.valid_time()->get_time_position().value();
 				proxy->update_pole_metadata(
 						trs_pole->get_metadata(), 
 						GPlatesFileIO::RotationPoleData(

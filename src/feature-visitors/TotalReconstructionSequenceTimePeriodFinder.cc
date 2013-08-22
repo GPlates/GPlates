@@ -88,7 +88,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_gpml_
 				continue;
 			}
 		}
-		const GeoTimeInstant &gti = iter->get_valid_time()->get_time_position();
+		const GeoTimeInstant &gti = iter->valid_time()->get_time_position();
 		if ( ! gti.is_real()) {
 			// This geo-time-instant seems to be in either the distant past or the
 			// distant future.  This should not be the case in an irregular sampling.

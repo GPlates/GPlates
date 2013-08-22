@@ -75,7 +75,7 @@ namespace
 				const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 		{
 			d_inside_constant_value = true;
-			gpml_constant_value.get_value()->accept_visitor(*this);
+			gpml_constant_value.value()->accept_visitor(*this);
 			d_inside_constant_value = false;
 		}
 
@@ -179,7 +179,7 @@ GPlatesAppLogic::ExtractScalarField3DFeatureProperties::visit_gpml_constant_valu
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	d_inside_constant_value = true;
-	gpml_constant_value.get_value()->accept_visitor(*this);
+	gpml_constant_value.value()->accept_visitor(*this);
 	d_inside_constant_value = false;
 }
 

@@ -475,7 +475,7 @@ void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.get_value()->accept_visitor(*this);
+	gpml_constant_value.value()->accept_visitor(*this);
 }
 
 
@@ -614,8 +614,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_time_s
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:description");
 		// The description is optional.
-		if (gpml_time_sample.get_description() != NULL) {
-			gpml_time_sample.get_description()->accept_visitor(*this);
+		if (gpml_time_sample.get_description()) {
+			gpml_time_sample.get_description().get()->accept_visitor(*this);
 		}
 	}
 	{

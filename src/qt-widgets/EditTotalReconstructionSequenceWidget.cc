@@ -237,15 +237,15 @@ namespace
 			const QLocale &locale_)
 	{
 		table->insertRow(row_count);
-		fill_table_with_time_instant(table,row_count,time_sample.get_valid_time()->get_time_position(),locale_);
+		fill_table_with_time_instant(table,row_count,time_sample.valid_time()->get_time_position(),locale_);
 		
-		fill_table_with_pole(table,row_count,time_sample.get_value(),locale_);
+		fill_table_with_pole(table,row_count,time_sample.value(),locale_);
 
 		QString comment;
-		if (time_sample.get_description())
+		if (time_sample.description())
 		{
 			comment = GPlatesUtils::make_qstring_from_icu_string(
-				time_sample.get_description()->get_value().get());
+				time_sample.description().get()->get_value().get());
 		}
 		fill_table_with_comment(table, row_count, comment);
 		
@@ -567,7 +567,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::update_table_widget_fro
 
 	for ( ; iter != end; ++iter) 
 	{
-		if(dynamic_cast<const GpmlTotalReconstructionPole*>(iter->get_value().get()))
+		if(dynamic_cast<const GpmlTotalReconstructionPole*>(iter->value().get()))
 		{
 			break;
 		}
@@ -1011,8 +1011,8 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::make_irregular_sampling
 				new_time_sample.set_disabled(true);
 			}
 			GpmlTotalReconstructionPole 
-				*new_pole =	dynamic_cast<GpmlTotalReconstructionPole*>(new_time_sample.get_value().get()),
-				*old_pole = dynamic_cast<GpmlTotalReconstructionPole*>(original_sample->get_value().get());			
+				*new_pole =	dynamic_cast<GpmlTotalReconstructionPole*>(new_time_sample.value().get()),
+				*old_pole = dynamic_cast<GpmlTotalReconstructionPole*>(original_sample->value().get());			
 			if(new_pole && old_pole)
 			{
 				new_pole->set_metadata(old_pole->get_metadata());
@@ -1028,7 +1028,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::make_irregular_sampling
 	PropertyValue::non_null_ptr_type gpml_irregular_sampling =
 		GpmlIrregularSampling::create(
 				time_samples,
-				GPlatesUtils::get_intrusive_ptr(
+				GpmlInterpolationFunction::non_null_ptr_type(
 						GpmlFiniteRotationSlerp::create(value_type)), 
 				value_type);
 

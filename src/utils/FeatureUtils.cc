@@ -72,7 +72,7 @@ public:
 	visit_gpml_constant_value(
 			ConstFeatureVisitor::gpml_constant_value_type &v)
 	{
-		v.get_value()->accept_visitor(*this);
+		v.value()->accept_visitor(*this);
 	}
 
 	void

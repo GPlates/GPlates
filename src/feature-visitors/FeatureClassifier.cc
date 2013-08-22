@@ -164,7 +164,7 @@ void
 GPlatesFeatureVisitors::FeatureClassifier::visit_gpml_constant_value(
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
-	gpml_constant_value.get_value()->accept_visitor(*this);
+	gpml_constant_value.value()->accept_visitor(*this);
 }
 
 

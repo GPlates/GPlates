@@ -79,24 +79,6 @@
 
 using namespace GPlatesFileIO::GpmlStructuralTypeReaderUtils;
 
-namespace
-{
-	template<typename T>
-	boost::optional<GPlatesUtils::non_null_intrusive_ptr<const T> >
-	to_optional_of_ptr_to_const(
-			const boost::optional<GPlatesUtils::non_null_intrusive_ptr<T> > &opt)
-	{
-		if (opt)
-		{
-			return GPlatesUtils::non_null_intrusive_ptr<const T>(*opt);
-		}
-		else
-		{
-			return boost::none;
-		}
-	}
-}
-
 
 //
 // Please keep these ordered alphabetically (within the XSI, GML and GPML groups)...
@@ -177,12 +159,12 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_file(
 			find_and_create_one(elem, &create_xs_string, FILE_STRUCTURE, gpml_version, read_errors);
 
 	// <gml:mimeType>
-	boost::optional<XsString::non_null_ptr_to_const_type> mime_type = to_optional_of_ptr_to_const(
-			find_and_create_optional(elem, &create_xs_string, MIME_TYPE, gpml_version, read_errors));
+	boost::optional<XsString::non_null_ptr_type> mime_type =
+			find_and_create_optional(elem, &create_xs_string, MIME_TYPE, gpml_version, read_errors);
 
 	// <gml:compression>
-	boost::optional<XsString::non_null_ptr_to_const_type> compression = to_optional_of_ptr_to_const(
-			find_and_create_optional(elem, &create_xs_string, COMPRESSION, gpml_version, read_errors));
+	boost::optional<XsString::non_null_ptr_type> compression =
+			find_and_create_optional(elem, &create_xs_string, COMPRESSION, gpml_version, read_errors);
 
 	return GmlFile::create(range_parameters, file_name, file_structure, mime_type, compression, &read_errors);
 }
@@ -691,24 +673,8 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_hot_spot_trail
 		measured_age_range = find_and_create_optional(elem, &create_gml_time_period, 
 				MEASURED_AGE_RANGE, gpml_version, read_errors);
 
-	boost::optional< GPlatesPropertyValues::GpmlMeasure::non_null_ptr_to_const_type > const_trail_width;
-	if (trail_width)
-	{
-		const_trail_width = trail_width.get();
-	}
-	boost::optional< GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_to_const_type > const_measured_age;
-	if (measured_age)
-	{
-		const_measured_age = measured_age.get();
-	}
-	boost::optional< GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type > const_measured_age_range;
-	if (measured_age_range)
-	{
-		const_measured_age_range = measured_age_range.get();
-	}
-
 	return GPlatesPropertyValues::GpmlHotSpotTrailMark::create(
-			position, const_trail_width, const_measured_age, const_measured_age_range);
+			position, trail_width, measured_age, measured_age_range);
 }
 
 
@@ -742,12 +708,9 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_irregular_samp
 
 	if (interp_func) {
 		return GPlatesPropertyValues::GpmlIrregularSampling::create(
-				time_samples, GPlatesUtils::get_intrusive_ptr(*interp_func), type);
+				time_samples, *interp_func, type);
 	}
-	return GPlatesPropertyValues::GpmlIrregularSampling::create(
-				time_samples, 
-				GPlatesPropertyValues::GpmlInterpolationFunction::maybe_null_ptr_type(), 
-				type);
+	return GPlatesPropertyValues::GpmlIrregularSampling::create(time_samples, boost::none, type);
 }
 
 
