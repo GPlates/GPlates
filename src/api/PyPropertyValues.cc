@@ -135,6 +135,15 @@ export_gml_time_instant()
 void
 export_gml_time_period()
 {
+	// Use the 'non-const' overload so GmlTimeInstant can be modified via python...
+	const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
+			(GPlatesPropertyValues::GmlTimePeriod::*begin)() =
+					&GPlatesPropertyValues::GmlTimePeriod::begin;
+	// Use the 'non-const' overload so GmlTimeInstant can be modified via python...
+	const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
+			(GPlatesPropertyValues::GmlTimePeriod::*end)() =
+					&GPlatesPropertyValues::GmlTimePeriod::end;
+
 	//
 	// GmlTimePeriod
 	//
@@ -146,17 +155,9 @@ export_gml_time_period()
 					"GmlTimePeriod", bp::no_init)
  		.def("create", &GPlatesPropertyValues::GmlTimePeriod::create)
  		.staticmethod("create")
-		.def("begin",
-			// Use the 'non-const' overload so GmlTimeInstant can be modified via python...
-			(const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
-				(GPlatesPropertyValues::GmlTimePeriod::*)())
-					(&GPlatesPropertyValues::GmlTimePeriod::begin))
+		.def("begin", begin)
  		.def("set_begin", &GPlatesPropertyValues::GmlTimePeriod::set_begin)
-		.def("end",
-			// Use the 'non-const' overload so GmlTimeInstant can be modified via python...
-			(const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
-				(GPlatesPropertyValues::GmlTimePeriod::*)())
-					(&GPlatesPropertyValues::GmlTimePeriod::end))
+		.def("end", end)
  		.def("set_end", &GPlatesPropertyValues::GmlTimePeriod::set_end)
 	;
 
@@ -179,6 +180,11 @@ export_gml_time_period()
 void
 export_gpml_hot_spot_trail_mark()
 {
+	// Use the 'non-const' overload so GmlTimeInstant can be modified via python...
+	const boost::optional<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>
+			(GPlatesPropertyValues::GpmlHotSpotTrailMark::*measured_age)() =
+					&GPlatesPropertyValues::GpmlHotSpotTrailMark::measured_age;
+
 	//
 	// GpmlHotSpotTrailMark
 	//
@@ -192,11 +198,7 @@ export_gpml_hot_spot_trail_mark()
  		//.staticmethod("create")
   		//.def("position", &GPlatesPropertyValues::GpmlHotSpotTrailMark::position)
  		//.def("set_position", &GPlatesPropertyValues::GpmlHotSpotTrailMark::set_position)
-		.def("measured_age",
-			// Use the 'non-const' overload so GmlTimeInstant can be modified via python...
-			(const boost::optional<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>
-				(GPlatesPropertyValues::GpmlHotSpotTrailMark::*)())
-					(&GPlatesPropertyValues::GpmlHotSpotTrailMark::measured_age))
+		.def("measured_age", measured_age)
 	;
 
 	// Enable a python-wrapped GpmlHotSpotTrailMark to be used when a PropertyValue is requested.

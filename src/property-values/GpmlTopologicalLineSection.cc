@@ -36,11 +36,11 @@
 
 const GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type
 GPlatesPropertyValues::GpmlTopologicalLineSection::create(
-		GpmlPropertyDelegate::non_null_ptr_type source_geometry,
+		GpmlPropertyDelegate::non_null_ptr_type source_geometry_,
 		const bool reverse_order) 
 {
 	GPlatesModel::ModelTransaction transaction;
-	non_null_ptr_type ptr(new GpmlTopologicalLineSection(transaction, source_geometry, reverse_order));
+	non_null_ptr_type ptr(new GpmlTopologicalLineSection(transaction, source_geometry_, reverse_order));
 	transaction.commit();
 
 	return ptr;
@@ -49,11 +49,11 @@ GPlatesPropertyValues::GpmlTopologicalLineSection::create(
 
 void
 GPlatesPropertyValues::GpmlTopologicalLineSection::set_source_geometry(
-		GpmlPropertyDelegate::non_null_ptr_type source_geometry)
+		GpmlPropertyDelegate::non_null_ptr_type source_geometry_)
 {
 	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().source_geometry.change(
-			revision_handler.get_model_transaction(), source_geometry);
+			revision_handler.get_model_transaction(), source_geometry_);
 	revision_handler.commit();
 }
 

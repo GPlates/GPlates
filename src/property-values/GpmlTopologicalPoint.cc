@@ -36,10 +36,10 @@
 
 const GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type
 GPlatesPropertyValues::GpmlTopologicalPoint::create(
-		GpmlPropertyDelegate::non_null_ptr_type source_geometry) 
+		GpmlPropertyDelegate::non_null_ptr_type source_geometry_) 
 {
 	GPlatesModel::ModelTransaction transaction;
-	non_null_ptr_type ptr(new GpmlTopologicalPoint(transaction, source_geometry));
+	non_null_ptr_type ptr(new GpmlTopologicalPoint(transaction, source_geometry_));
 	transaction.commit();
 
 	return ptr;
@@ -48,11 +48,11 @@ GPlatesPropertyValues::GpmlTopologicalPoint::create(
 
 void
 GPlatesPropertyValues::GpmlTopologicalPoint::set_source_geometry(
-		GpmlPropertyDelegate::non_null_ptr_type source_geometry)
+		GpmlPropertyDelegate::non_null_ptr_type source_geometry_)
 {
 	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().source_geometry.change(
-			revision_handler.get_model_transaction(), source_geometry);
+			revision_handler.get_model_transaction(), source_geometry_);
 	revision_handler.commit();
 }
 

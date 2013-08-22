@@ -67,7 +67,7 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				GpmlPropertyDelegate::non_null_ptr_type source_geometry,
+				GpmlPropertyDelegate::non_null_ptr_type source_geometry_,
 				const bool reverse_order);
 
 		const non_null_ptr_type
@@ -99,7 +99,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_source_geometry(
-				GpmlPropertyDelegate::non_null_ptr_type source_geometry);
+				GpmlPropertyDelegate::non_null_ptr_type source_geometry_);
 
 		//! Returns the reverse order.
 		bool
@@ -158,11 +158,11 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		GpmlTopologicalLineSection(
 				GPlatesModel::ModelTransaction &transaction_,
-				GpmlPropertyDelegate::non_null_ptr_type source_geometry,
+				GpmlPropertyDelegate::non_null_ptr_type source_geometry_,
 				const bool reverse_order) :
 			GpmlTopologicalSection(
 					Revision::non_null_ptr_type(
-							new Revision(transaction_, *this, source_geometry, reverse_order)))
+							new Revision(transaction_, *this, source_geometry_, reverse_order)))
 		{  }
 
 		//! Constructor used when cloning.

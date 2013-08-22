@@ -137,7 +137,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_interpolation_function(
-				boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interpolation_function);
+				boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interpolation_function_);
 
 
 		// Note that no "setter" is provided:  The value type of a GpmlIrregularSampling

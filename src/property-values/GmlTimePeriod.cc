@@ -51,22 +51,22 @@ GPlatesPropertyValues::GmlTimePeriod::create(
 
 void
 GPlatesPropertyValues::GmlTimePeriod::set_begin(
-		GmlTimeInstant::non_null_ptr_type begin)
+		GmlTimeInstant::non_null_ptr_type begin_)
 {
 	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().begin.change(
-			revision_handler.get_model_transaction(), begin);
+			revision_handler.get_model_transaction(), begin_);
 	revision_handler.commit();
 }
 
 
 void
 GPlatesPropertyValues::GmlTimePeriod::set_end(
-		GmlTimeInstant::non_null_ptr_type end)
+		GmlTimeInstant::non_null_ptr_type end_)
 {
 	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().end.change(
-			revision_handler.get_model_transaction(), end);
+			revision_handler.get_model_transaction(), end_);
 	revision_handler.commit();
 }
 

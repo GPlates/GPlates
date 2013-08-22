@@ -52,11 +52,11 @@ GPlatesPropertyValues::GpmlConstantValue::create(
 
 void
 GPlatesPropertyValues::GpmlConstantValue::set_value(
-		PropertyValue::non_null_ptr_type value)
+		PropertyValue::non_null_ptr_type value_)
 {
 	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().value.change(
-			revision_handler.get_model_transaction(), value);
+			revision_handler.get_model_transaction(), value_);
 	revision_handler.commit();
 }
 

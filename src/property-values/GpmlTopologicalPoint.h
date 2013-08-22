@@ -68,7 +68,7 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				GpmlPropertyDelegate::non_null_ptr_type source_geometry);
+				GpmlPropertyDelegate::non_null_ptr_type source_geometry_);
 
 		const non_null_ptr_type
 		clone() const
@@ -146,10 +146,10 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		GpmlTopologicalPoint(
 				GPlatesModel::ModelTransaction &transaction_,
-				GpmlPropertyDelegate::non_null_ptr_type source_geometry) :
+				GpmlPropertyDelegate::non_null_ptr_type source_geometry_) :
 			GpmlTopologicalSection(
 					Revision::non_null_ptr_type(
-							new Revision(transaction_, *this, source_geometry)))
+							new Revision(transaction_, *this, source_geometry_)))
 		{  }
 
 		//! Constructor used when cloning.

@@ -124,9 +124,9 @@ namespace GPlatesApi
 		{
 			// Remove 'const' in case caller did not specify a 'non-const' type.
 			typedef typename boost::remove_const<SourceType>::type non_const_source_type;
-			typedef typename const non_const_source_type const_source_type;
+			typedef const non_const_source_type const_source_type;
 			typedef typename boost::remove_const<TargetType>::type non_const_target_type;
-			typedef typename const non_const_target_type const_target_type;
+			typedef const non_const_target_type const_target_type;
 
 			// Enable a python-wrapped SourceType to be used when a TargetType is requested.
 			boost::python::implicitly_convertible<

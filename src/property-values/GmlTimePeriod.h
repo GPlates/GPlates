@@ -122,7 +122,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_begin(
-				GmlTimeInstant::non_null_ptr_type begin);
+				GmlTimeInstant::non_null_ptr_type begin_);
 
 		/**
 		 * Return the "end" attribute of this GmlTimePeriod instance.
@@ -153,7 +153,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_end(
-				GmlTimeInstant::non_null_ptr_type end);
+				GmlTimeInstant::non_null_ptr_type end_);
 
 		/**
 		 * Determine whether @a geo_time lies within the temporal span of this

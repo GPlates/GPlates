@@ -119,26 +119,26 @@ GPlatesPropertyValues::GpmlIrregularSampling::interpolation_function()
 
 void
 GPlatesPropertyValues::GpmlIrregularSampling::set_interpolation_function(
-		boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interpolation_function)
+		boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interpolation_function_)
 {
 	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
 	Revision &revision = revision_handler.get_revision<Revision>();
 
 	if (revision.interpolation_function)
 	{
-		if (interpolation_function)
+		if (interpolation_function_)
 		{
-			revision.interpolation_function->change(revision_handler.get_model_transaction(), interpolation_function.get());
+			revision.interpolation_function->change(revision_handler.get_model_transaction(), interpolation_function_.get());
 		}
 		else
 		{
 			revision.interpolation_function->detach(revision_handler.get_model_transaction());
 		}
 	}
-	else if (interpolation_function)
+	else if (interpolation_function_)
 	{
 		revision.interpolation_function = GPlatesModel::PropertyValueRevisionedReference<GpmlInterpolationFunction>::attach(
-				revision_handler.get_model_transaction(), *this, interpolation_function.get());
+				revision_handler.get_model_transaction(), *this, interpolation_function_.get());
 	}
 	// ...else nothing to do.
 
