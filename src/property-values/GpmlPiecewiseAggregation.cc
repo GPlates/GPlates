@@ -30,14 +30,33 @@
 
 #include "GpmlPiecewiseAggregation.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+#include "global/NotYetImplementedException.h"
+
+#include "model/ModelTransaction.h"
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
+
+const GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
+GPlatesPropertyValues::GpmlPiecewiseAggregation::create(
+		const std::vector<GpmlTimeWindow> &time_windows_,
+		const StructuralType &value_type_)
+{
+	GPlatesModel::ModelTransaction transaction;
+	non_null_ptr_type ptr(new GpmlPiecewiseAggregation(transaction, time_windows_, value_type_));
+	transaction.commit();
+	return ptr;
+}
+
 
 void
 GPlatesPropertyValues::GpmlPiecewiseAggregation::set_time_windows(
 		const std::vector<GpmlTimeWindow> &time_windows)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().time_windows = time_windows;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().time_windows = time_windows;
+	revision_handler.commit();
 }
 
 
@@ -57,4 +76,14 @@ GPlatesPropertyValues::GpmlPiecewiseAggregation::print_to(
 	}
 
 	return os << " ]";
+}
+
+
+GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesPropertyValues::GpmlPiecewiseAggregation::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+{
+	// Currently this can't be reached because we don't attach to our children yet.
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }

@@ -35,6 +35,8 @@
 #include "StructuralType.h"
 #include "feature-visitors/PropertyValueFinder.h"
 #include "model/PropertyValue.h"
+#include "model/PropertyValueRevisionContext.h"
+#include "model/PropertyValueRevisionedReference.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -46,7 +48,8 @@ namespace GPlatesPropertyValues
 {
 
 	class GpmlPiecewiseAggregation:
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::PropertyValueRevisionContext
 	{
 
 	public:
@@ -70,10 +73,7 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create(
 				const std::vector<GpmlTimeWindow> &time_windows_,
-				const StructuralType &value_type_)
-		{
-			return non_null_ptr_type(new GpmlPiecewiseAggregation(time_windows_, value_type_));
-		}
+				const StructuralType &value_type_);
 
 		const non_null_ptr_type
 		clone() const
@@ -161,17 +161,30 @@ namespace GPlatesPropertyValues
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GpmlPiecewiseAggregation(
+				GPlatesModel::ModelTransaction &transaction_,
 				const std::vector<GpmlTimeWindow> &time_windows_,
 				const StructuralType &value_type_):
-			PropertyValue(Revision::non_null_ptr_type(new Revision(time_windows_))),
+			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, time_windows_))),
 			d_value_type(value_type_)
 		{  }
 
+		//! Constructor used when cloning.
+		GpmlPiecewiseAggregation(
+				const GpmlPiecewiseAggregation &other_,
+				boost::optional<PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this))),
+			d_value_type(other_.d_value_type)
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlPiecewiseAggregation(*this));
+			return non_null_ptr_type(new GpmlPiecewiseAggregation(*this, context));
 		}
 
 		virtual
@@ -183,41 +196,83 @@ namespace GPlatesPropertyValues
 
 			return d_value_type == other_pv.d_value_type &&
 					// The revisioned data comparisons are handled here...
-					GPlatesModel::PropertyValue::equality(other);
+					PropertyValue::equality(other);
 		}
 
 	private:
 
 		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+
+		/**
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
+
+		/**
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			explicit
 			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					PropertyValueRevisionContext &child_context_,
 					const std::vector<GpmlTimeWindow> &time_windows_) :
 				time_windows(time_windows_)
 			{  }
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_,
+					PropertyValueRevisionContext &child_context_) :
+				PropertyValueRevision(context_),
+				time_windows(other_.time_windows)
 			{
-				return non_null_ptr_type(new Revision(*this));
+				// Clone data members that were not deep copied.
 			}
 
-			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				time_windows(other_.time_windows)
+			{  }
+
+			virtual
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<PropertyValueRevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return time_windows == other_revision.time_windows &&
-					GPlatesModel::PropertyValue::Revision::equality(other);
+						PropertyValueRevision::equality(other);
 			}
 
 			std::vector<GpmlTimeWindow> time_windows;
