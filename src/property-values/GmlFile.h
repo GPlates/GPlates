@@ -44,10 +44,10 @@
 #include "global/unicode.h"
 
 #include "model/PropertyValue.h"
+#include "model/PropertyValueRevisionContext.h"
+#include "model/PropertyValueRevisionedReference.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
-
-#include "utils/CopyOnWrite.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -64,7 +64,8 @@ namespace GPlatesPropertyValues
 	 * instance for each band in that raster file.
 	 */
 	class GmlFile:
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::PropertyValueRevisionContext
 	{
 	private:
 
@@ -126,23 +127,18 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create(
 				const composite_value_type &range_parameters_,
-				const XsString::non_null_ptr_to_const_type &file_name_,
-				const XsString::non_null_ptr_to_const_type &file_structure_,
-				const boost::optional<XsString::non_null_ptr_to_const_type> &mime_type_ = boost::none,
-				const boost::optional<XsString::non_null_ptr_to_const_type> &compression_ = boost::none,
-				GPlatesFileIO::ReadErrorAccumulation *read_errors_ = NULL)
-		{
-			return non_null_ptr_type(
-					new GmlFile(
-							range_parameters_, file_name_, file_structure_, mime_type_,
-							compression_, read_errors_));
-		}
+				const XsString::non_null_ptr_type &file_name_,
+				const XsString::non_null_ptr_type &file_structure_,
+				const boost::optional<XsString::non_null_ptr_type> &mime_type_ = boost::none,
+				const boost::optional<XsString::non_null_ptr_type> &compression_ = boost::none,
+				GPlatesFileIO::ReadErrorAccumulation *read_errors_ = NULL);
 
 		const non_null_ptr_type
 		clone() const
 		{
 			return GPlatesUtils::dynamic_pointer_cast<GmlFile>(clone_impl());
 		}
+
 
 		const composite_value_type &
 		get_range_parameters() const
@@ -154,40 +150,62 @@ namespace GPlatesPropertyValues
 		set_range_parameters(
 				const composite_value_type &range_parameters_);
 
+
 		const XsString::non_null_ptr_to_const_type
 		get_file_name() const
 		{
-			return get_current_revision<Revision>().file_name.get();
+			return get_current_revision<Revision>().file_name.get_property_value();
+		}
+
+		const XsString::non_null_ptr_type
+		get_file_name()
+		{
+			return get_current_revision<Revision>().file_name.get_property_value();
 		}
 
 		void
 		set_file_name(
-				const XsString::non_null_ptr_to_const_type &file_name_,
+				XsString::non_null_ptr_type file_name_,
 				GPlatesFileIO::ReadErrorAccumulation *read_errors = NULL);
+
 
 		const XsString::non_null_ptr_to_const_type
 		get_file_structure() const
 		{
-			return get_current_revision<Revision>().file_structure.get();
+			return get_current_revision<Revision>().file_structure.get_property_value();
+		}
+
+		const XsString::non_null_ptr_type
+		get_file_structure()
+		{
+			return get_current_revision<Revision>().file_structure.get_property_value();
 		}
 
 		void
 		set_file_structure(
-				const XsString::non_null_ptr_to_const_type &file_structure_);
+				XsString::non_null_ptr_type file_structure_);
+
 
 		const boost::optional<XsString::non_null_ptr_to_const_type>
 		get_mime_type() const;
 
+		const boost::optional<XsString::non_null_ptr_type>
+		get_mime_type();
+
 		void
 		set_mime_type(
-				const boost::optional<XsString::non_null_ptr_to_const_type> &mime_type_);
+				boost::optional<XsString::non_null_ptr_type> mime_type_);
+
 
 		const boost::optional<XsString::non_null_ptr_to_const_type>
 		get_compression() const;
 
+		const boost::optional<XsString::non_null_ptr_type>
+		get_compression();
+
 		void
 		set_compression(
-				const boost::optional<XsString::non_null_ptr_to_const_type> &compression_);
+				boost::optional<XsString::non_null_ptr_type> compression_);
 
 		/**
 		 * If the file is a raster file, and the bands could be read, returns one
@@ -249,74 +267,120 @@ namespace GPlatesPropertyValues
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GmlFile(
+				GPlatesModel::ModelTransaction &transaction_,
 				const composite_value_type &range_parameters_,
-				const XsString::non_null_ptr_to_const_type &file_name_,
-				const XsString::non_null_ptr_to_const_type &file_structure_,
-				const boost::optional<XsString::non_null_ptr_to_const_type> &mime_type_,
-				const boost::optional<XsString::non_null_ptr_to_const_type> &compression_,
-				GPlatesFileIO::ReadErrorAccumulation *read_errors_ = NULL) :
+				const XsString::non_null_ptr_type &file_name_,
+				const XsString::non_null_ptr_type &file_structure_,
+				const boost::optional<XsString::non_null_ptr_type> &mime_type_,
+				const boost::optional<XsString::non_null_ptr_type> &compression_,
+				GPlatesFileIO::ReadErrorAccumulation *read_errors_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
 							new Revision(
+									transaction_, *this,
 									range_parameters_, file_name_, file_structure_, mime_type_,
 									compression_, read_errors_)))
 		{  }
 
+		//! Constructor used when cloning.
+		GmlFile(
+				const GmlFile &other_,
+				boost::optional<PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GmlFile(*this));
+			return non_null_ptr_type(new GmlFile(*this, context));
 		}
 
 	private:
 
 		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+
+		/**
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
+
+		/**
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					PropertyValueRevisionContext &child_context_,
 					const composite_value_type &range_parameters_,
-					const XsString::non_null_ptr_to_const_type &file_name_,
-					const XsString::non_null_ptr_to_const_type &file_structure_,
-					const boost::optional<XsString::non_null_ptr_to_const_type> &mime_type_,
-					const boost::optional<XsString::non_null_ptr_to_const_type> &compression_,
-					GPlatesFileIO::ReadErrorAccumulation *read_errors_) :
-				range_parameters(range_parameters_),
-				file_name(file_name_),
-				file_structure(file_structure_),
-				mime_type(mime_type_),
-				compression(compression_),
-				proxied_raster_cache(ProxiedRasterCache::create(file_name_->get_value(), read_errors_))
-			{  }
+					const XsString::non_null_ptr_type &file_name_,
+					const XsString::non_null_ptr_type &file_structure_,
+					const boost::optional<XsString::non_null_ptr_type> &mime_type_,
+					const boost::optional<XsString::non_null_ptr_type> &compression_,
+					GPlatesFileIO::ReadErrorAccumulation *read_errors_);
+
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_,
+					PropertyValueRevisionContext &child_context_);
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_);
 
 			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<PropertyValueRevisionContext &> context) const
 			{
-				// The default copy constructor is fine since we use CopyOnWrite.
-				return non_null_ptr_type(new Revision(*this));
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const;
+					const PropertyValueRevision &other) const;
+
+			void
+			update_proxied_raster_cache(
+					GPlatesFileIO::ReadErrorAccumulation *read_errors) const;
+
 
 			composite_value_type range_parameters;
-			GPlatesUtils::CopyOnWrite<XsString::non_null_ptr_to_const_type> file_name;
-			GPlatesUtils::CopyOnWrite<XsString::non_null_ptr_to_const_type> file_structure;
-			boost::optional<GPlatesUtils::CopyOnWrite<XsString::non_null_ptr_to_const_type> > mime_type;
-			boost::optional<GPlatesUtils::CopyOnWrite<XsString::non_null_ptr_to_const_type> > compression;
+			GPlatesModel::PropertyValueRevisionedReference<XsString> file_name;
+			GPlatesModel::PropertyValueRevisionedReference<XsString> file_structure;
+			boost::optional<GPlatesModel::PropertyValueRevisionedReference<XsString> > mime_type;
+			boost::optional<GPlatesModel::PropertyValueRevisionedReference<XsString> > compression;
 
 			// TODO: Remove caching and updating when filename changes and when image on disk is modified.
 			// The image (eg, JPEG) should be converted/updated to GPlates format during import only.
 			// And when the filename changes this should be handled by client code by listening
 			// to model events that indicate the raster feature (that this property belongs) has been
 			// modified in which case it can reference a different GPlates format raster image file.
-			ProxiedRasterCache::non_null_ptr_type proxied_raster_cache;
+			mutable boost::optional<ProxiedRasterCache::non_null_ptr_type> proxied_raster_cache;
 		};
 
 	};

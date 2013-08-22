@@ -29,14 +29,20 @@
 
 #include "GmlFile.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+#include "model/ModelTransaction.h"
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
 
 namespace
 {
 	template<class T>
 	bool
-	opt_cow_eq(
-			const boost::optional<GPlatesUtils::CopyOnWrite<T> > &opt1,
-			const boost::optional<GPlatesUtils::CopyOnWrite<T> > &opt2)
+	opt_eq(
+			const boost::optional<GPlatesModel::PropertyValueRevisionedReference<T> > &opt1,
+			const boost::optional<GPlatesModel::PropertyValueRevisionedReference<T> > &opt2)
 	{
 		if (opt1)
 		{
@@ -44,7 +50,7 @@ namespace
 			{
 				return false;
 			}
-			return *opt1.get().get_const() == *opt2.get().get_const();
+			return *opt1.get().get_property_value() == *opt2.get().get_property_value();
 		}
 		else
 		{
@@ -54,39 +60,63 @@ namespace
 }
 
 
+const GPlatesPropertyValues::GmlFile::non_null_ptr_type
+GPlatesPropertyValues::GmlFile::create(
+		const composite_value_type &range_parameters_,
+		const XsString::non_null_ptr_type &file_name_,
+		const XsString::non_null_ptr_type &file_structure_,
+		const boost::optional<XsString::non_null_ptr_type> &mime_type_,
+		const boost::optional<XsString::non_null_ptr_type> &compression_,
+		GPlatesFileIO::ReadErrorAccumulation *read_errors_)
+{
+	GPlatesModel::ModelTransaction transaction;
+	non_null_ptr_type ptr(
+			new GmlFile(
+					transaction,
+					range_parameters_, file_name_, file_structure_, mime_type_, compression_, read_errors_));
+	transaction.commit();
+
+	return ptr;
+}
+
+
 void
 GPlatesPropertyValues::GmlFile::set_range_parameters(
 		const composite_value_type &range_parameters_)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().range_parameters = range_parameters_;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().range_parameters = range_parameters_;
+	revision_handler.commit();
 }
 
 
 void
 GPlatesPropertyValues::GmlFile::set_file_name(
-		const XsString::non_null_ptr_to_const_type &file_name_,
+		XsString::non_null_ptr_type file_name_,
 		GPlatesFileIO::ReadErrorAccumulation *read_errors)
 {
-	MutableRevisionHandler revision_handler(this);
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
 
-	Revision &revision = revision_handler.get_mutable_revision<Revision>();
+	Revision &revision = revision_handler.get_revision<Revision>();
 
-	revision.file_name = file_name_;
-	revision.proxied_raster_cache->set_file_name(file_name_->get_value(), read_errors);
+	revision.file_name.change(revision_handler.get_model_transaction(), file_name_);
 
-	revision_handler.handle_revision_modification();
+	revision_handler.commit();
+
+	// Update the proxied raster cache using the new filename.
+	// NOTE: We do this *after* the commit otherwise we would be looking at an old version filename.
+	revision.update_proxied_raster_cache(read_errors);
 }
 
 
 void
 GPlatesPropertyValues::GmlFile::set_file_structure(
-		const XsString::non_null_ptr_to_const_type &file_structure_)
+		XsString::non_null_ptr_type file_structure_)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().file_structure = file_structure_;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().file_structure.change(
+			revision_handler.get_model_transaction(), file_structure_);
+	revision_handler.commit();
 }
 
 
@@ -100,17 +130,51 @@ GPlatesPropertyValues::GmlFile::get_mime_type() const
 		return boost::none;
 	}
 
-	return revision.mime_type->get();
+	return GPlatesUtils::static_pointer_cast<const XsString>(
+			revision.mime_type->get_property_value());
+}
+
+
+const boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_type>
+GPlatesPropertyValues::GmlFile::get_mime_type()
+{
+	const Revision &revision = get_current_revision<Revision>();
+
+	if (!revision.mime_type)
+	{
+		return boost::none;
+	}
+
+	return revision.mime_type->get_property_value();
 }
 
 
 void
 GPlatesPropertyValues::GmlFile::set_mime_type(
-		const boost::optional<XsString::non_null_ptr_to_const_type> &mime_type_)
+		boost::optional<XsString::non_null_ptr_type> mime_type_)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().mime_type = mime_type_;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	Revision &revision = revision_handler.get_revision<Revision>();
+
+	if (revision.mime_type)
+	{
+		if (mime_type_)
+		{
+			revision.mime_type->change(revision_handler.get_model_transaction(), mime_type_.get());
+		}
+		else
+		{
+			revision.mime_type->detach(revision_handler.get_model_transaction());
+		}
+	}
+	else if (mime_type_)
+	{
+		revision.mime_type = GPlatesModel::PropertyValueRevisionedReference<XsString>::attach(
+				revision_handler.get_model_transaction(), *this, mime_type_.get());
+	}
+	// ...else nothing to do.
+
+	revision_handler.commit();
 }
 
 
@@ -124,24 +188,67 @@ GPlatesPropertyValues::GmlFile::get_compression() const
 		return boost::none;
 	}
 
-	return revision.compression->get();
+	return GPlatesUtils::static_pointer_cast<const XsString>(
+			revision.compression->get_property_value());
+}
+
+
+const boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_type>
+GPlatesPropertyValues::GmlFile::get_compression()
+{
+	const Revision &revision = get_current_revision<Revision>();
+
+	if (!revision.compression)
+	{
+		return boost::none;
+	}
+
+	return revision.compression->get_property_value();
 }
 
 
 void
 GPlatesPropertyValues::GmlFile::set_compression(
-		const boost::optional<XsString::non_null_ptr_to_const_type> &compression_)
+		boost::optional<XsString::non_null_ptr_type> compression_)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().compression = compression_;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	Revision &revision = revision_handler.get_revision<Revision>();
+
+	if (revision.compression)
+	{
+		if (compression_)
+		{
+			revision.compression->change(revision_handler.get_model_transaction(), compression_.get());
+		}
+		else
+		{
+			revision.compression->detach(revision_handler.get_model_transaction());
+		}
+	}
+	else if (compression_)
+	{
+		revision.compression = GPlatesModel::PropertyValueRevisionedReference<XsString>::attach(
+				revision_handler.get_model_transaction(), *this, compression_.get());
+	}
+	// ...else nothing to do.
+
+	revision_handler.commit();
 }
 
 
 std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type>
 GPlatesPropertyValues::GmlFile::get_proxied_raw_rasters() const
 {
-	return get_current_revision<Revision>().proxied_raster_cache->proxied_raw_rasters();
+	const Revision &revision = get_current_revision<Revision>();
+
+	if (!revision.proxied_raster_cache)
+	{
+		// We can't actually report the read errors to the user.
+		GPlatesFileIO::ReadErrorAccumulation read_errors;
+		revision.update_proxied_raster_cache(&read_errors);
+	}
+
+	return revision.proxied_raster_cache.get()->proxied_raw_rasters();
 }
 
 
@@ -149,20 +256,151 @@ std::ostream &
 GPlatesPropertyValues::GmlFile::print_to(
 		std::ostream &os) const
 {
-	return os << *get_current_revision<Revision>().file_name.get_const();
+	return os << *get_current_revision<Revision>().file_name.get_property_value();
+}
+
+
+GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesPropertyValues::GmlFile::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+{
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+
+	if (child_property_value == revision.file_name.get_property_value())
+	{
+		// Invalidate the proxied raster cache because that's calculated using the filename.
+		// We can't actually re-calculate the cache because we don't know the new filename yet
+		// because the child property value hasn't modified it just yet.
+		revision.proxied_raster_cache = boost::none;
+
+		return revision.file_name.clone_revision(transaction);
+	}
+	if (child_property_value == revision.file_structure.get_property_value())
+	{
+		return revision.file_structure.clone_revision(transaction);
+	}
+	if (revision.mime_type &&
+		child_property_value == revision.mime_type->get_property_value())
+	{
+		return revision.mime_type->clone_revision(transaction);
+	}
+	if (revision.compression &&
+		child_property_value == revision.compression->get_property_value())
+	{
+		return revision.compression->clone_revision(transaction);
+	}
+
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+
+	// To keep compiler happy - won't be able to get past 'Abort()'.
+	return GPlatesModel::PropertyValueRevision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesPropertyValues::GmlFile::Revision::Revision(
+		GPlatesModel::ModelTransaction &transaction_,
+		PropertyValueRevisionContext &child_context_,
+		const composite_value_type &range_parameters_,
+		const XsString::non_null_ptr_type &file_name_,
+		const XsString::non_null_ptr_type &file_structure_,
+		const boost::optional<XsString::non_null_ptr_type> &mime_type_,
+		const boost::optional<XsString::non_null_ptr_type> &compression_,
+		GPlatesFileIO::ReadErrorAccumulation *read_errors_) :
+	range_parameters(range_parameters_),
+	file_name(
+			GPlatesModel::PropertyValueRevisionedReference<XsString>::attach(
+					transaction_, child_context_, file_name_)),
+	file_structure(
+			GPlatesModel::PropertyValueRevisionedReference<XsString>::attach(
+					transaction_, child_context_, file_structure_)),
+	proxied_raster_cache(ProxiedRasterCache::create(file_name_->get_value(), read_errors_))
+{
+	if (mime_type_)
+	{
+		mime_type = GPlatesModel::PropertyValueRevisionedReference<XsString>::attach(
+				transaction_, child_context_, mime_type_.get());
+	}
+
+	if (compression_)
+	{
+		compression = GPlatesModel::PropertyValueRevisionedReference<XsString>::attach(
+				transaction_, child_context_, compression_.get());
+	}
+}
+
+
+GPlatesPropertyValues::GmlFile::Revision::Revision(
+		const Revision &other_,
+		boost::optional<PropertyValueRevisionContext &> context_,
+		PropertyValueRevisionContext &child_context_) :
+	PropertyValueRevision(context_),
+	range_parameters(other_.range_parameters),
+	file_name(other_.file_name),
+	file_structure(other_.file_structure),
+	mime_type(other_.mime_type),
+	compression(other_.compression)
+{
+	// Clone data members that were not deep copied.
+	file_name.clone(child_context_);
+	file_structure.clone(child_context_);
+
+	if (mime_type)
+	{
+		mime_type->clone(child_context_);
+	}
+
+	if (compression)
+	{
+		compression->clone(child_context_);
+	}
+}
+
+
+GPlatesPropertyValues::GmlFile::Revision::Revision(
+		const Revision &other_,
+		boost::optional<PropertyValueRevisionContext &> context_) :
+	PropertyValueRevision(context_),
+	range_parameters(other_.range_parameters),
+	file_name(other_.file_name),
+	file_structure(other_.file_structure),
+	mime_type(other_.mime_type),
+	compression(other_.compression)
+{
 }
 
 
 bool
 GPlatesPropertyValues::GmlFile::Revision::equality(
-		const GPlatesModel::PropertyValue::Revision &other) const
+		const PropertyValueRevision &other) const
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 	return range_parameters == other_revision.range_parameters &&
-			*file_name.get_const() == *other_revision.file_name.get_const() &&
-			*file_structure.get_const() == *other_revision.file_structure.get_const() &&
-			opt_cow_eq(mime_type, other_revision.mime_type) &&
-			opt_cow_eq(compression, other_revision.compression) &&
-			GPlatesModel::PropertyValue::Revision::equality(other);
+			*file_name.get_property_value() == *other_revision.file_name.get_property_value() &&
+			*file_structure.get_property_value() == *other_revision.file_structure.get_property_value() &&
+			opt_eq(mime_type, other_revision.mime_type) &&
+			opt_eq(compression, other_revision.compression) &&
+			PropertyValueRevision::equality(other);
+}
+
+
+void
+GPlatesPropertyValues::GmlFile::Revision::update_proxied_raster_cache(
+		GPlatesFileIO::ReadErrorAccumulation *read_errors) const
+{
+	// Update the proxied raster cache.
+	if (proxied_raster_cache)
+	{
+		proxied_raster_cache.get()->set_file_name(file_name.get_property_value()->get_value(), read_errors);
+	}
+	else
+	{
+		proxied_raster_cache =
+				ProxiedRasterCache::create(file_name.get_property_value()->get_value(), read_errors);
+	}
 }
