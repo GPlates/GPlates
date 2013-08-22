@@ -34,7 +34,6 @@
 #include "property-values/StructuralType.h"
 #include "property-values/XsString.h"
 
-#include "utils/CopyOnWrite.h"
 #include "utils/QtStreamable.h"
 
 
@@ -69,25 +68,25 @@ namespace GPlatesPropertyValues
 		const XsString::non_null_ptr_to_const_type
 		key() const
 		{
-			return d_key.get();
+			return d_key;
 		}
 
 		const XsString::non_null_ptr_type
 		key()
 		{
-			return d_key.get();
+			return d_key;
 		}		
 
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
 		value() const
 		{
-			return d_value.get();
+			return d_value;
 		}
 
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		value()
 		{
-			return d_value.get();
+			return d_value;
 		}
 
 		const StructuralType &
@@ -102,8 +101,8 @@ namespace GPlatesPropertyValues
 
 	private:
 
-		GPlatesUtils::CopyOnWrite<XsString::non_null_ptr_type> d_key;
-		GPlatesUtils::CopyOnWrite<GPlatesModel::PropertyValue::non_null_ptr_type> d_value;
+		XsString::non_null_ptr_type d_key;
+		GPlatesModel::PropertyValue::non_null_ptr_type d_value;
 		StructuralType d_value_type;
 
 	};

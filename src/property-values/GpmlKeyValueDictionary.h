@@ -33,7 +33,11 @@
 #include <vector>
 
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
+#include "model/PropertyValueRevisionContext.h"
+#include "model/PropertyValueRevisionedReference.h"
+
 #include "property-values/GpmlKeyValueDictionaryElement.h"
 
 
@@ -48,7 +52,8 @@ namespace GPlatesPropertyValues
 	class GpmlKeyValueDictionaryElement;
 
 	class GpmlKeyValueDictionary :
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::PropertyValueRevisionContext
 	{
 
 	public:
@@ -77,10 +82,7 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-			const std::vector<GpmlKeyValueDictionaryElement> &elements)
-		{
-			return non_null_ptr_type(new GpmlKeyValueDictionary(elements));
-		}
+			const std::vector<GpmlKeyValueDictionaryElement> &elements);
 
 		const non_null_ptr_type
 		clone() const
@@ -160,49 +162,103 @@ namespace GPlatesPropertyValues
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GpmlKeyValueDictionary(
+				GPlatesModel::ModelTransaction &transaction_,
 				const std::vector<GpmlKeyValueDictionaryElement> &elements_):
-			PropertyValue(Revision::non_null_ptr_type(new Revision(elements_)))
+			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, elements_)))
+		{  }
+
+		//! Constructor used when cloning.
+		GpmlKeyValueDictionary(
+				const GpmlKeyValueDictionary &other_,
+				boost::optional<PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
 
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlKeyValueDictionary(*this));
+			return non_null_ptr_type(new GpmlKeyValueDictionary(*this, context));
 		}
 
 	private:
 
 		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+
+		/**
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
+
+		/**
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			explicit
 			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					PropertyValueRevisionContext &child_context_,
 					const std::vector<GpmlKeyValueDictionaryElement> &elements_) :
 				elements(elements_)
 			{  }
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_,
+					PropertyValueRevisionContext &child_context_) :
+				PropertyValueRevision(context_),
+				elements(other_.elements)
 			{
-				return non_null_ptr_type(new Revision(*this));
+				// Clone data members that were not deep copied.
 			}
 
-			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				elements(other_.elements)
+			{  }
+
+			virtual
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<PropertyValueRevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const
+					const PropertyValueRevision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return elements == other_revision.elements &&
-					GPlatesModel::PropertyValue::Revision::equality(other);
+						PropertyValueRevision::equality(other);
 			}
 
 			std::vector<GpmlKeyValueDictionaryElement> elements;

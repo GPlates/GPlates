@@ -34,8 +34,8 @@ bool
 GPlatesPropertyValues::GpmlKeyValueDictionaryElement::operator==(
 		const GpmlKeyValueDictionaryElement &other) const
 {
-	return *d_key.get_const() == *other.d_key.get_const() &&
-		*d_value.get_const() == *other.d_value.get_const() &&
+	return *d_key == *other.d_key &&
+		*d_value == *other.d_value &&
 		d_value_type == other.d_value_type;
 }
 

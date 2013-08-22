@@ -29,14 +29,32 @@
 
 #include "GpmlKeyValueDictionary.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+#include "global/NotYetImplementedException.h"
+
+#include "model/ModelTransaction.h"
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
+
+const GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
+GPlatesPropertyValues::GpmlKeyValueDictionary::create(
+	const std::vector<GpmlKeyValueDictionaryElement> &elements)
+{
+	GPlatesModel::ModelTransaction transaction;
+	non_null_ptr_type ptr(new GpmlKeyValueDictionary(transaction, elements));
+	transaction.commit();
+	return ptr;
+}
+
 
 void
 GPlatesPropertyValues::GpmlKeyValueDictionary::set_elements(
 		const std::vector<GpmlKeyValueDictionaryElement> &elements)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().elements = elements;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().elements = elements;
+	revision_handler.commit();
 }
 
 
@@ -56,4 +74,14 @@ GPlatesPropertyValues::GpmlKeyValueDictionary::print_to(
 	}
 
 	return os << " ]";
+}
+
+
+GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesPropertyValues::GpmlKeyValueDictionary::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+{
+	// Currently this can't be reached because we don't attach to our children yet.
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
