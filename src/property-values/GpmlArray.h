@@ -34,9 +34,12 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "model/FeatureVisitor.h"
+#include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
+#include "model/PropertyValueRevisionContext.h"
+#include "model/PropertyValueRevisionedReference.h"
 
-#include "utils/CopyOnWrite.h"
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -47,7 +50,8 @@ namespace GPlatesPropertyValues
 {
 
 	class GpmlArray:
-		public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::PropertyValueRevisionContext
 	{
 
 	public:
@@ -89,7 +93,7 @@ namespace GPlatesPropertyValues
 			const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
 			get_value() const
 			{
-				return d_value.get();
+				return d_value;
 			}
 
 			/**
@@ -98,7 +102,7 @@ namespace GPlatesPropertyValues
 			const GPlatesModel::PropertyValue::non_null_ptr_type
 			get_value()
 			{
-				return d_value.get();
+				return d_value;
 			}
 
 			void
@@ -117,11 +121,11 @@ namespace GPlatesPropertyValues
 			operator==(
 					const Member &other) const
 			{
-				return *d_value.get_const() == *other.d_value.get_const();
+				return *d_value == *other.d_value;
 			}
 
 		private:
-			GPlatesUtils::CopyOnWrite<GPlatesModel::PropertyValue::non_null_ptr_type> d_value;
+			GPlatesModel::PropertyValue::non_null_ptr_type d_value;
 		};
 
 		//! Typedef for a sequence of array members.
@@ -150,7 +154,10 @@ namespace GPlatesPropertyValues
 				ForwardIterator begin,
 				ForwardIterator end)
 		{
-			return non_null_ptr_type(new GpmlArray(value_type, begin, end));
+			GPlatesModel::ModelTransaction transaction;
+			non_null_ptr_type ptr(new GpmlArray(transaction, value_type, begin, end));
+			transaction.commit();
+			return ptr;
 		}
 
 		const non_null_ptr_type
@@ -241,18 +248,31 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		template<typename ForwardIterator>
 		GpmlArray(
+				GPlatesModel::ModelTransaction &transaction_,
 				const StructuralType &value_type,
 				ForwardIterator begin,
 				ForwardIterator end) :
-			PropertyValue(Revision::non_null_ptr_type(new Revision(begin, end))),
+			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, begin, end))),
 			d_value_type(value_type)
 		{  }
 
+		//! Constructor used when cloning.
+		GpmlArray(
+				const GpmlArray &other_,
+				boost::optional<PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this))),
+			d_value_type(other_.d_value_type)
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlArray(*this));
+			return non_null_ptr_type(new GpmlArray(*this, context));
 		}
 
 		virtual
@@ -264,38 +284,79 @@ namespace GPlatesPropertyValues
 
 			return d_value_type == other_pv.d_value_type &&
 					// The revisioned data comparisons are handled here...
-					GPlatesModel::PropertyValue::equality(other);
+					PropertyValue::equality(other);
 		}
 
 	private:
 
 		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+
+		/**
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
+
+		/**
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			template<typename ForwardIterator>
 			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					PropertyValueRevisionContext &child_context_,
 					ForwardIterator begin_,
 					ForwardIterator end_) :
 				members(begin_, end_)
 			{  }
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_,
+					PropertyValueRevisionContext &child_context_) :
+				PropertyValueRevision(context_),
+				members(other_.members)
 			{
-				// The default copy constructor is fine since we use CopyOnWrite.
-				return non_null_ptr_type(new Revision(*this));
+				// Clone data members that were not deep copied.
 			}
 
-			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				members(other_.members)
+			{  }
+
+			virtual
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<PropertyValueRevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const;
+					const PropertyValueRevision &other) const;
 
 			member_array_type members;
 		};
