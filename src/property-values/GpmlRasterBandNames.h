@@ -35,9 +35,10 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
-
-#include "utils/CopyOnWrite.h"
+#include "model/PropertyValueRevisionContext.h"
+#include "model/PropertyValueRevisionedReference.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -51,7 +52,8 @@ namespace GPlatesPropertyValues
 	 * This class implements the PropertyValue which corresponds to "gpml:RasterBandNames".
 	 */
 	class GpmlRasterBandNames :
-			public GPlatesModel::PropertyValue
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::PropertyValueRevisionContext
 	{
 	public:
 
@@ -94,7 +96,7 @@ namespace GPlatesPropertyValues
 			const XsString::non_null_ptr_to_const_type
 			get_name() const
 			{
-				return d_name.get();
+				return d_name;
 			}
 
 			/**
@@ -103,7 +105,7 @@ namespace GPlatesPropertyValues
 			const XsString::non_null_ptr_type
 			get_name()
 			{
-				return d_name.get();
+				return d_name;
 			}
 
 			void
@@ -122,11 +124,11 @@ namespace GPlatesPropertyValues
 			operator==(
 					const BandName &other) const
 			{
-				return *d_name.get_const() == *other.d_name.get_const();
+				return *d_name == *other.d_name;
 			}
 
 		private:
-			GPlatesUtils::CopyOnWrite<XsString::non_null_ptr_type> d_name;
+			XsString::non_null_ptr_type d_name;
 		};
 
 		//! Typedef for a sequence of band names.
@@ -155,7 +157,10 @@ namespace GPlatesPropertyValues
 				ForwardIterator begin,
 				ForwardIterator end)
 		{
-			return non_null_ptr_type(new GpmlRasterBandNames(begin, end));
+			GPlatesModel::ModelTransaction transaction;
+			non_null_ptr_type ptr(new GpmlRasterBandNames(transaction, begin, end));
+			transaction.commit();
+			return ptr;
 		}
 
 		const non_null_ptr_type
@@ -237,46 +242,100 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		template<typename ForwardIterator>
 		GpmlRasterBandNames(
+				GPlatesModel::ModelTransaction &transaction_,
 				ForwardIterator begin,
 				ForwardIterator end) :
-			PropertyValue(Revision::non_null_ptr_type(new Revision(begin, end)))
+			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, begin, end)))
+		{  }
+
+		//! Constructor used when cloning.
+		GpmlRasterBandNames(
+				const GpmlRasterBandNames &other_,
+				boost::optional<PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
 
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlRasterBandNames(*this));
+			return non_null_ptr_type(new GpmlRasterBandNames(*this, context));
 		}
 
 	private:
 
 		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+
+		/**
+		 * Inherited from @a PropertyValueRevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
+
+		/**
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValue::Revision
+				public GPlatesModel::PropertyValueRevision
 		{
 			template<typename ForwardIterator>
 			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					PropertyValueRevisionContext &child_context_,
 					ForwardIterator begin_,
 					ForwardIterator end_) :
 				band_names(begin_, end_)
 			{  }
 
-			virtual
-			GPlatesModel::PropertyValue::Revision::non_null_ptr_type
-			clone() const
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_,
+					PropertyValueRevisionContext &child_context_) :
+				PropertyValueRevision(context_),
+				band_names(other_.band_names)
 			{
-				return non_null_ptr_type(new Revision(*this));
+				// Clone data members that were not deep copied.
 			}
 
-			// Don't need 'clone_for_bubble_up_modification()' since we're using CopyOnWrite.
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				band_names(other_.band_names)
+			{  }
+
+			virtual
+			PropertyValueRevision::non_null_ptr_type
+			clone_revision(
+					boost::optional<PropertyValueRevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
 
 			virtual
 			bool
 			equality(
-					const GPlatesModel::PropertyValue::Revision &other) const;
+					const PropertyValueRevision &other) const;
 
 			band_names_list_type band_names;
 		};
