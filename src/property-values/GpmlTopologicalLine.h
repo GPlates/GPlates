@@ -140,7 +140,7 @@ namespace GPlatesPropertyValues
 				const TopologicalSectionsIterator &sections_begin_,
 				const TopologicalSectionsIterator &sections_end_)
 		{
-			ModelTransaction transaction;
+			GPlatesModel::ModelTransaction transaction;
 			non_null_ptr_type ptr(new GpmlTopologicalLine(transaction, sections_begin_, sections_end_));
 			transaction.commit();
 			return ptr;

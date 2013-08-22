@@ -35,6 +35,7 @@
 
 #include "model/Metadata.h"
 #include "model/PropertyValue.h"
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
 
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
@@ -85,9 +86,9 @@ namespace GPlatesPropertyValues
 		set_data(
 				const GPlatesModel::FeatureCollectionMetadata &metadata)
 		{
-			MutableRevisionHandler revision_handler(this);
-			revision_handler.get_mutable_revision<Revision>().metadata = metadata;
-			revision_handler.handle_revision_modification();
+			GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+			revision_handler.get_revision<Revision>().metadata = metadata;
+			revision_handler.commit();
 		}
 
 		std::multimap<QString, QString>
@@ -153,11 +154,21 @@ namespace GPlatesPropertyValues
 			PropertyValue(Revision::non_null_ptr_type(new Revision(metadata)))
 		{ }
 
+		//! Constructor used when cloning.
+		GpmlMetadata(
+				const GpmlMetadata &other_,
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+			PropertyValue(
+					Revision::non_null_ptr_type(
+							new Revision(other_.get_current_revision<Revision>(), context_)))
+		{  }
+
 		virtual
-		const GPlatesModel::PropertyValue::non_null_ptr_type
-		clone_impl() const
+		const PropertyValue::non_null_ptr_type
+		clone_impl(
+				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
 		{
-			return non_null_ptr_type(new GpmlMetadata(*this));
+			return non_null_ptr_type(new GpmlMetadata(*this, context));
 		}
 
 	private:
@@ -174,11 +185,20 @@ namespace GPlatesPropertyValues
 				metadata(metadata_)
 			{  }
 
+			//! Clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				PropertyValueRevision(context_),
+				metadata(other_.metadata)
+			{  }
+
 			virtual
 			PropertyValueRevision::non_null_ptr_type
-			clone() const
+			clone_revision(
+					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
 			{
-				return non_null_ptr_type(new Revision(*this));
+				return non_null_ptr_type(new Revision(*this, context));
 			}
 
 			virtual

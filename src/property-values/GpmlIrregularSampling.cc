@@ -34,7 +34,6 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
-#include "global/NotYetImplementedException.h"
 
 #include "model/Metadata.h"
 #include "model/ModelTransaction.h"
@@ -176,7 +175,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 	BOOST_FOREACH(GpmlTimeSample &sample, revision.time_samples)
 	{
 		GpmlTotalReconstructionPole *trs_pole = 
-			dynamic_cast<GpmlTotalReconstructionPole *>(sample.get_value().get());
+			dynamic_cast<GpmlTotalReconstructionPole *>(sample.value().get());
 		if(trs_pole)
 		{
 			const MetadataContainer &meta_data = trs_pole->get_metadata();
@@ -194,7 +193,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 
 	//then add new DISABLED_SEQUENCE_FLAG
 	GpmlTotalReconstructionPole *first_pole = 
-		dynamic_cast<GpmlTotalReconstructionPole *>(revision.time_samples[0].get_value().get());
+		dynamic_cast<GpmlTotalReconstructionPole *>(revision.time_samples[0].value().get());
 	if(flag && first_pole)
 	{
 		MetadataContainer first_pole_meta_data = first_pole->get_metadata();
@@ -223,7 +222,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::contains_disabled_sequence_flag() 
 	BOOST_FOREACH(const GpmlTimeSample &sample, time_samples)
 	{
 		const GpmlTotalReconstructionPole *trs_pole = 
-			dynamic_cast<const GpmlTotalReconstructionPole *>(sample.get_value().get());
+			dynamic_cast<const GpmlTotalReconstructionPole *>(sample.value().get());
 		if(trs_pole)
 		{
 			const MetadataContainer &meta_data = trs_pole->get_metadata();
@@ -266,8 +265,21 @@ GPlatesPropertyValues::GpmlIrregularSampling::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
 		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
 {
-	// Currently this can't be reached because we don't attach to our children yet.
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+	if (revision.interpolation_function &&
+		child_property_value == revision.interpolation_function->get_property_value())
+	{
+		return revision.interpolation_function->clone_revision(transaction);
+	}
+
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+
+	// To keep compiler happy - won't be able to get past 'Abort()'.
+	return GPlatesModel::PropertyValueRevision::non_null_ptr_type(NULL);
 }
 
 

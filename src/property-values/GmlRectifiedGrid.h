@@ -46,8 +46,6 @@
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
 
-#include "utils/CopyOnWrite.h"
-
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.

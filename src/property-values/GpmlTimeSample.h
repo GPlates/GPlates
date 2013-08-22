@@ -29,6 +29,7 @@
 #define GPLATES_PROPERTYVALUES_GPMLTIMESAMPLE_H
 
 #include <iosfwd>
+#include <boost/optional.hpp>
 
 #include "GmlTimeInstant.h"
 
@@ -37,14 +38,13 @@
 
 #include "model/PropertyValue.h"
 
-#include "utils/CopyOnWrite.h"
 #include "utils/QtStreamable.h"
 
 
 namespace GPlatesPropertyValues
 {
 
-	// Since all the members of this class are of type boost::intrusive_ptr or
+	// Since all the members of this class are of type non_null_intrusive_ptr or
 	// StructuralType (which wraps an StringSet::SharedIterator instance which
 	// points to a pre-allocated node in a StringSet), none of the construction,
 	// copy-construction or copy-assignment operations for this class should throw.
@@ -55,18 +55,10 @@ namespace GPlatesPropertyValues
 
 	public:
 
-		/**
-		 * GpmlTimeSample has value semantics where each @a GpmlTimeSample instance has its own state.
-		 * So if you create a copy and modify the copy's state then it will not modify the state
-		 * of the original object.
-		 *
-		 * The constructor first clones the property values and then copy-on-write is used to allow
-		 * multiple @a GpmlTimeSample objects to share the same state (until the state is modified).
-		 */
 		GpmlTimeSample(
 				GPlatesModel::PropertyValue::non_null_ptr_type value_,
 				GmlTimeInstant::non_null_ptr_type valid_time_,
-				boost::intrusive_ptr<XsString> description_,
+				boost::optional<XsString::non_null_ptr_type> description_,
 				const StructuralType &value_type_,
 				bool is_disabled_ = false):
 			d_value(value_),
@@ -80,18 +72,18 @@ namespace GPlatesPropertyValues
 		 * Returns the 'const' time-dependent property value.
 		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
-		get_value() const
+		value() const
 		{
-			return d_value.get();
+			return d_value;
 		}
 
 		/**
 		 * Returns the 'non-const' time-dependent property value.
 		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_type
-		get_value()
+		value()
 		{
-			return d_value.get();
+			return d_value;
 		}
 
 		void
@@ -105,18 +97,18 @@ namespace GPlatesPropertyValues
 		 * Returns the 'const' time instant.
 		 */
 		const GmlTimeInstant::non_null_ptr_to_const_type
-		get_valid_time() const
+		valid_time() const
 		{
-			return d_valid_time.get();
+			return d_valid_time;
 		}
 
 		/**
 		 * Returns the 'non-const' time instant.
 		 */
 		const GmlTimeInstant::non_null_ptr_type
-		get_valid_time()
+		valid_time()
 		{
-			return d_valid_time.get();
+			return d_valid_time;
 		}
 
 		void
@@ -129,24 +121,34 @@ namespace GPlatesPropertyValues
 		/**
 		 * Returns the 'const' description.
 		 */
-		const boost::intrusive_ptr<const XsString>
-		get_description() const
+		const boost::optional<XsString::non_null_ptr_to_const_type>
+		description() const
 		{
-			return d_description.get();
+			if (!d_description)
+			{
+				return boost::none;
+			}
+
+			return XsString::non_null_ptr_to_const_type(d_description.get());
 		}
 
 		/**
 		 * Returns the 'non-const' description.
 		 */
-		const boost::intrusive_ptr<XsString>
-		get_description()
+		const boost::optional<XsString::non_null_ptr_type>
+		description()
 		{
+			if (!d_description)
+			{
+				return boost::none;
+			}
+
 			return d_description.get();
 		}
 
 		void
 		set_description(
-				boost::intrusive_ptr<XsString> d)
+				boost::optional<XsString::non_null_ptr_type> d)
 		{
 			d_description = d;
 		}
@@ -178,18 +180,14 @@ namespace GPlatesPropertyValues
 
 	private:
 
-		//! Allow sharing of copied values until modification (copy-on-write value semantics).
-		GPlatesUtils::CopyOnWrite<GPlatesModel::PropertyValue::non_null_ptr_type> d_value;
+		GPlatesModel::PropertyValue::non_null_ptr_type d_value;
 
-		//! Allow sharing of copied values until modification (copy-on-write value semantics).
-		GPlatesUtils::CopyOnWrite<GmlTimeInstant::non_null_ptr_type> d_valid_time;
+		GmlTimeInstant::non_null_ptr_type d_valid_time;
 
 		/**
 		 * The description is optional.
-		 *
-		 * Allow sharing of copied values until modification (copy-on-write value semantics).
 		 */
-		GPlatesUtils::CopyOnWrite<boost::intrusive_ptr<XsString> > d_description;
+		boost::optional<XsString::non_null_ptr_type> d_description;
 
 		StructuralType d_value_type;
 

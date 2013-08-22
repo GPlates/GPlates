@@ -35,9 +35,9 @@ bool
 GPlatesPropertyValues::GpmlTimeSample::operator==(
 		const GpmlTimeSample &other) const
 {
-	return *d_value.get_const() == *other.d_value.get_const() &&
-		*d_valid_time.get_const() == *other.d_valid_time.get_const() &&
-		boost::equal_pointees(d_description.get_const(), other.d_description.get_const()) &&
+	return *d_value == *other.d_value &&
+		*d_valid_time == *other.d_valid_time &&
+		boost::equal_pointees(d_description, other.d_description) &&
 		d_value_type == other.d_value_type &&
 		d_is_disabled == other.d_is_disabled;
 }
@@ -48,5 +48,5 @@ GPlatesPropertyValues::operator<<(
 		std::ostream &os,
 		const GpmlTimeSample &time_sample)
 {
-	return os << *time_sample.get_value();
+	return os << *time_sample.value();
 }

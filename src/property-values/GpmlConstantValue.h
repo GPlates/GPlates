@@ -100,7 +100,7 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * Sets the internal property value to a clone of @a v.
+		 * Sets the internal property value.
 		 */
 		void
 		set_value(
@@ -189,6 +189,7 @@ namespace GPlatesPropertyValues
 				boost::optional<PropertyValueRevisionContext &> context_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
 							new Revision(other_.get_current_revision<Revision>(), context_, *this))),
 			d_value_type(other_.d_value_type)
 		{  }
@@ -243,9 +244,6 @@ namespace GPlatesPropertyValues
 		struct Revision :
 				public GPlatesModel::PropertyValueRevision
 		{
-			typedef GPlatesUtils::non_null_intrusive_ptr<Revision> non_null_ptr_type;
-			typedef GPlatesUtils::non_null_intrusive_ptr<const Revision> non_null_ptr_to_const_type;
-
 			//! Regular constructor.
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
@@ -283,8 +281,9 @@ namespace GPlatesPropertyValues
 			virtual
 			PropertyValueRevision::non_null_ptr_type
 			clone_revision(
-					boost::optional<PropertyValueRevisionContext &> context = boost::none) const
+					boost::optional<PropertyValueRevisionContext &> context) const
 			{
+				// Use shallow-clone constructor.
 				return non_null_ptr_type(new Revision(*this, context));
 			}
 

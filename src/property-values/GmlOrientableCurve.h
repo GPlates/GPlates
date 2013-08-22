@@ -188,8 +188,7 @@ namespace GPlatesPropertyValues
 		GmlOrientableCurve(
 				GPlatesModel::ModelTransaction &transaction_,
 				GPlatesModel::PropertyValue::non_null_ptr_type base_curve_,
-				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-						xml_attributes_) :
+				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &xml_attributes_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
 							new Revision(transaction_, *this, base_curve_, xml_attributes_)))

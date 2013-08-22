@@ -49,16 +49,6 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for boost::intrusive_ptr<GpmlInterpolationFunction>.
-		 */
-		typedef boost::intrusive_ptr<GpmlInterpolationFunction> maybe_null_ptr_type;
-
-		/**
-		 * A convenience typedef for boost::intrusive_ptr<const GpmlInterpolationFunction>.
-		 */
-		typedef boost::intrusive_ptr<const GpmlInterpolationFunction> maybe_null_ptr_to_const_type;
-
-		/**
 		 * A convenience typedef for
 		 * GPlatesUtils::non_null_intrusive_ptr<GpmlInterpolationFunction>.
 		 */

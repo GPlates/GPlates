@@ -116,7 +116,7 @@ namespace GPlatesPropertyValues {
 		GpmlFiniteRotationSlerp(
 				const GpmlFiniteRotationSlerp &other_,
 				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
-			PropertyValue(
+			GpmlInterpolationFunction(
 					Revision::non_null_ptr_type(
 							new Revision(other_.get_current_revision<Revision>(), context_)))
 		{  }

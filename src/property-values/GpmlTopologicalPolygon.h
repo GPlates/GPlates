@@ -147,7 +147,7 @@ namespace GPlatesPropertyValues
 				const TopologicalSectionsIterator &exterior_sections_begin_,
 				const TopologicalSectionsIterator &exterior_sections_end_)
 		{
-			ModelTransaction transaction;
+			GPlatesModel::ModelTransaction transaction;
 			non_null_ptr_type ptr(
 					new GpmlTopologicalPolygon(
 							transaction, exterior_sections_begin_, exterior_sections_end_));

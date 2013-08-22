@@ -236,6 +236,9 @@ GPlatesPropertyValues::GmlRectifiedGrid::bubble_up(
 	}
 	if (child_property_value == revision.origin.get_property_value())
 	{
+		// Invalidate the georeferencing cache because that's calculated using the origin.
+		revision.cached_georeferencing = boost::none;
+
 		return revision.origin.clone_revision(transaction);
 	}
 

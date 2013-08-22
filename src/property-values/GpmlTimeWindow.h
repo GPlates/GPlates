@@ -36,14 +36,13 @@
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
 
-#include "utils/CopyOnWrite.h"
 #include "utils/QtStreamable.h"
 
 
 namespace GPlatesPropertyValues
 {
 
-	// Since all the members of this class are of type boost::intrusive_ptr or
+	// Since all the members of this class are of type non_null_intrusive_ptr or
 	// StructuralType (which wraps an StringSet::SharedIterator instance which
 	// points to a pre-allocated node in a StringSet), none of the construction,
 	// copy-construction or copy-assignment operations for this class should throw.
@@ -54,14 +53,6 @@ namespace GPlatesPropertyValues
 
 	public:
 
-		/**
-		 * GpmlTimeWindow has value semantics where each @a GpmlTimeWindow instance has its own state.
-		 * So if you create a copy and modify the copy's state then it will not modify the state
-		 * of the original object.
-		 *
-		 * The constructor first clones the property values and then copy-on-write is used to allow
-		 * multiple @a GpmlTimeWindow objects to share the same state (until the state is modified).
-		 */
 		GpmlTimeWindow(
 				GPlatesModel::PropertyValue::non_null_ptr_type time_dependent_value_,
 				GmlTimePeriod::non_null_ptr_type valid_time_,
@@ -77,7 +68,7 @@ namespace GPlatesPropertyValues
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
 		get_time_dependent_value() const
 		{
-			return d_time_dependent_value.get();
+			return d_time_dependent_value;
 		}
 
 		/**
@@ -86,7 +77,7 @@ namespace GPlatesPropertyValues
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		get_time_dependent_value()
 		{
-			return d_time_dependent_value.get();
+			return d_time_dependent_value;
 		}
 
 		void
@@ -102,7 +93,7 @@ namespace GPlatesPropertyValues
 		const GmlTimePeriod::non_null_ptr_to_const_type
 		get_valid_time() const
 		{
-			return d_valid_time.get();
+			return d_valid_time;
 		}
 
 		/**
@@ -111,7 +102,7 @@ namespace GPlatesPropertyValues
 		const GmlTimePeriod::non_null_ptr_type
 		get_valid_time()
 		{
-			return d_valid_time.get();
+			return d_valid_time;
 		}
 
 		void
@@ -136,10 +127,10 @@ namespace GPlatesPropertyValues
 	private:
 
 		//! Allow sharing of copied values until modification (copy-on-write value semantics).
-		GPlatesUtils::CopyOnWrite<GPlatesModel::PropertyValue::non_null_ptr_type> d_time_dependent_value;
+		GPlatesModel::PropertyValue::non_null_ptr_type d_time_dependent_value;
 
 		//! Allow sharing of copied values until modification (copy-on-write value semantics).
-		GPlatesUtils::CopyOnWrite<GmlTimePeriod::non_null_ptr_type> d_valid_time;
+		GmlTimePeriod::non_null_ptr_type d_valid_time;
 
 		StructuralType d_value_type;
 	};

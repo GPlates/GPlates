@@ -207,7 +207,7 @@ namespace GPlatesPropertyValues
 				const BoundaryTopologicalSectionsIterator &boundary_sections_begin_,
 				const BoundaryTopologicalSectionsIterator &boundary_sections_end_)
 		{
-			ModelTransaction transaction;
+			GPlatesModel::ModelTransaction transaction;
 			non_null_ptr_type ptr(
 					new GpmlTopologicalNetwork(
 							transaction, boundary_sections_begin_, boundary_sections_end_));
@@ -227,7 +227,7 @@ namespace GPlatesPropertyValues
 				const InteriorGeometriesIterator &interior_geometries_begin_,
 				const InteriorGeometriesIterator &interior_geometries_end_)
 		{
-			ModelTransaction transaction;
+			GPlatesModel::ModelTransaction transaction;
 			non_null_ptr_type ptr(
 					new GpmlTopologicalNetwork(
 							transaction,
