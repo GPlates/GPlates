@@ -538,9 +538,9 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_irregu
 		}
 	}
 	// The interpolation function is optional.
-	if (gpml_irregular_sampling.interpolation_function() != NULL) {
+	if (gpml_irregular_sampling.interpolation_function()) {
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:interpolationFunction");
-		gpml_irregular_sampling.interpolation_function()->accept_visitor(*this);
+		gpml_irregular_sampling.interpolation_function().get()->accept_visitor(*this);
 	}
 	{
 		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");

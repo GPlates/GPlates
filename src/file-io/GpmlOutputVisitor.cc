@@ -1517,10 +1517,10 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_irregular_sampling(
 		}
 
 		// The interpolation function is optional.
-		if (gpml_irregular_sampling.get_interpolation_function() != NULL)
+		if (gpml_irregular_sampling.interpolation_function())
 		{
 			d_output.writeStartGpmlElement("interpolationFunction");
-				gpml_irregular_sampling.get_interpolation_function()->accept_visitor(*this);
+				gpml_irregular_sampling.interpolation_function().get()->accept_visitor(*this);
 			d_output.writeEndElement();
 		}
 

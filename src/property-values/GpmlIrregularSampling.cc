@@ -27,33 +27,123 @@
 
 #include <iostream>
 #include <boost/foreach.hpp>
-#include <boost/utility/compare_pointees.hpp>
 
 #include "GpmlIrregularSampling.h"
 
 #include "GpmlTotalReconstructionPole.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+#include "global/NotYetImplementedException.h"
+
 #include "model/Metadata.h"
+#include "model/ModelTransaction.h"
 #include "model/NotificationGuard.h"
+#include "model/PropertyValueBubbleUpRevisionHandler.h"
+
+
+namespace
+{
+	template<class T>
+	bool
+	opt_eq(
+			const boost::optional<GPlatesModel::PropertyValueRevisionedReference<T> > &opt1,
+			const boost::optional<GPlatesModel::PropertyValueRevisionedReference<T> > &opt2)
+	{
+		if (opt1)
+		{
+			if (!opt2)
+			{
+				return false;
+			}
+			return *opt1.get().get_property_value() == *opt2.get().get_property_value();
+		}
+		else
+		{
+			return !opt2;
+		}
+	}
+}
+
+
+const GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
+GPlatesPropertyValues::GpmlIrregularSampling::create(
+		const std::vector<GpmlTimeSample> &time_samples_,
+		boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interp_func,
+		const StructuralType &value_type_)
+{
+	GPlatesModel::ModelTransaction transaction;
+	non_null_ptr_type ptr(new GpmlIrregularSampling(transaction, time_samples_, interp_func, value_type_));
+	transaction.commit();
+	return ptr;
+}
 
 
 void
 GPlatesPropertyValues::GpmlIrregularSampling::set_time_samples(
 		const std::vector<GpmlTimeSample> &time_samples)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().time_samples = time_samples;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().time_samples = time_samples;
+	revision_handler.commit();
+}
+
+
+const boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_to_const_type>
+GPlatesPropertyValues::GpmlIrregularSampling::interpolation_function() const
+{
+	const Revision &revision = get_current_revision<Revision>();
+
+	if (!revision.interpolation_function)
+	{
+		return boost::none;
+	}
+
+	return GPlatesUtils::static_pointer_cast<const GpmlInterpolationFunction>(
+			revision.interpolation_function->get_property_value());
+}
+
+
+const boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>
+GPlatesPropertyValues::GpmlIrregularSampling::interpolation_function()
+{
+	const Revision &revision = get_current_revision<Revision>();
+
+	if (!revision.interpolation_function)
+	{
+		return boost::none;
+	}
+
+	return revision.interpolation_function->get_property_value();
 }
 
 
 void
 GPlatesPropertyValues::GpmlIrregularSampling::set_interpolation_function(
-		GpmlInterpolationFunction::maybe_null_ptr_to_const_type interpolation_function)
+		boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interpolation_function)
 {
-	MutableRevisionHandler revision_handler(this);
-	revision_handler.get_mutable_revision<Revision>().interpolation_function = interpolation_function;
-	revision_handler.handle_revision_modification();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	Revision &revision = revision_handler.get_revision<Revision>();
+
+	if (revision.interpolation_function)
+	{
+		if (interpolation_function)
+		{
+			revision.interpolation_function->change(revision_handler.get_model_transaction(), interpolation_function.get());
+		}
+		else
+		{
+			revision.interpolation_function->detach(revision_handler.get_model_transaction());
+		}
+	}
+	else if (interpolation_function)
+	{
+		revision.interpolation_function = GPlatesModel::PropertyValueRevisionedReference<GpmlInterpolationFunction>::attach(
+				revision_handler.get_model_transaction(), *this, interpolation_function.get());
+	}
+	// ...else nothing to do.
+
+	revision_handler.commit();
 }
 
 
@@ -78,12 +168,12 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 	// when modifying the total reconstruction pole property values.
 	GPlatesModel::NotificationGuard model_notification_guard(get_model());
 
-	MutableRevisionHandler revision_handler(this);
-	Revision &mutable_revision = revision_handler.get_mutable_revision<Revision>();
+	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	Revision &revision = revision_handler.get_revision<Revision>();
 
 	using namespace GPlatesModel;
 	//first, remove all DISABLED_SEQUENCE_FLAG
-	BOOST_FOREACH(GpmlTimeSample &sample, mutable_revision.time_samples)
+	BOOST_FOREACH(GpmlTimeSample &sample, revision.time_samples)
 	{
 		GpmlTotalReconstructionPole *trs_pole = 
 			dynamic_cast<GpmlTotalReconstructionPole *>(sample.get_value().get());
@@ -104,7 +194,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 
 	//then add new DISABLED_SEQUENCE_FLAG
 	GpmlTotalReconstructionPole *first_pole = 
-		dynamic_cast<GpmlTotalReconstructionPole *>(mutable_revision.time_samples[0].get_value().get());
+		dynamic_cast<GpmlTotalReconstructionPole *>(revision.time_samples[0].get_value().get());
 	if(flag && first_pole)
 	{
 		MetadataContainer first_pole_meta_data = first_pole->get_metadata();
@@ -119,7 +209,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 		first_pole->set_metadata(first_pole_meta_data);
 	}
 
-	revision_handler.handle_revision_modification();
+	revision_handler.commit();
 }
 
 
@@ -171,13 +261,23 @@ GPlatesPropertyValues::GpmlIrregularSampling::print_to(
 }
 
 
+GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesPropertyValues::GpmlIrregularSampling::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+{
+	// Currently this can't be reached because we don't attach to our children yet.
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+
 bool
 GPlatesPropertyValues::GpmlIrregularSampling::Revision::equality(
-		const GPlatesModel::PropertyValue::Revision &other) const
+		const PropertyValueRevision &other) const
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 	return time_samples == other_revision.time_samples &&
-			boost::equal_pointees(interpolation_function.get_const(), other_revision.interpolation_function.get_const()) &&
-			GPlatesModel::PropertyValue::Revision::equality(other);
+			opt_eq(interpolation_function, other_revision.interpolation_function) &&
+			PropertyValueRevision::equality(other);
 }
