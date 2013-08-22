@@ -116,19 +116,11 @@ export_gml_time_instant()
  		.def("set_time_position", &GPlatesPropertyValues::GmlTimeInstant::set_time_position)
 	;
 
-	// Enable a python-wrapped GmlTimeInstant to be used when a PropertyValue is requested.
-	GPlatesApi::PythonConverterUtils::non_null_intrusive_ptr_implicitly_convertible<
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			GPlatesPropertyValues::GmlTimeInstant,
 			GPlatesModel::PropertyValue>();
-
-	// Enable a python-wrapped 'non-const' GmlTimeInstant to be used when a 'const' GmlTimeInstant is requested.
-	bp::implicitly_convertible<
-			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type,
-			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_to_const_type>();
-
-	// Enable boost::optional<GPlatesPropertyValues::GmlTimeInstant> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<
-			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>();
 }
 
 
@@ -161,19 +153,11 @@ export_gml_time_period()
  		.def("set_end", &GPlatesPropertyValues::GmlTimePeriod::set_end)
 	;
 
-	// Enable a python-wrapped GmlTimePeriod to be used when a PropertyValue is requested.
-	GPlatesApi::PythonConverterUtils::non_null_intrusive_ptr_implicitly_convertible<
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			GPlatesPropertyValues::GmlTimePeriod,
 			GPlatesModel::PropertyValue>();
-
-	// Enable a python-wrapped 'non-const' GmlTimePeriod to be used when a 'const' GmlTimePeriod is requested.
-	bp::implicitly_convertible<
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type,
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type>();
-
-	// Enable boost::optional<GPlatesPropertyValues::GmlTimePeriod> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type>();
 }
 
 
@@ -201,16 +185,11 @@ export_gpml_hot_spot_trail_mark()
 		.def("measured_age", measured_age)
 	;
 
-	// Enable a python-wrapped GpmlHotSpotTrailMark to be used when a PropertyValue is requested.
-	GPlatesApi::PythonConverterUtils::non_null_intrusive_ptr_implicitly_convertible<
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			GPlatesPropertyValues::GpmlHotSpotTrailMark,
 			GPlatesModel::PropertyValue>();
-
-	// Enable a python-wrapped 'non-const' GpmlHotSpotTrailMark to be used when a
-	// 'const' GpmlHotSpotTrailMark is requested.
-	bp::implicitly_convertible<
-			GPlatesPropertyValues::GpmlHotSpotTrailMark::non_null_ptr_type,
-			GPlatesPropertyValues::GpmlHotSpotTrailMark::non_null_ptr_to_const_type>();
 }
 
 
@@ -232,15 +211,11 @@ export_gpml_plate_id()
  		.def("set_value", &GPlatesPropertyValues::GpmlPlateId::set_value)
 	;
 
-	// Enable a python-wrapped GpmlPlateId to be used when a PropertyValue is requested.
-	GPlatesApi::PythonConverterUtils::non_null_intrusive_ptr_implicitly_convertible<
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			GPlatesPropertyValues::GpmlPlateId,
 			GPlatesModel::PropertyValue>();
-
-	// Enable a python-wrapped 'non-const' GpmlPlateId to be used when a 'const' GpmlPlateId is requested.
-	bp::implicitly_convertible<
-			GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type,
-			GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type>();
 }
 
 
