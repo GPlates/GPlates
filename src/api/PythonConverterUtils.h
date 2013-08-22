@@ -144,18 +144,18 @@ namespace GPlatesApi
 		template <typename T>
 		python_optional<T>::python_optional()
 		{
-			using namespace boost::python;
+			namespace bp = boost::python;
 
-			if (!extract<boost::optional<T> >(object()).check())
+			if (!bp::extract<boost::optional<T> >(bp::object()).check())
 			{
 				// To python conversion.
-				to_python_converter<boost::optional<T>, Conversion>();
+				bp::to_python_converter<boost::optional<T>, Conversion>();
 
 				// From python conversion.
-				converter::registry::push_back(
+				bp::converter::registry::push_back(
 						&convertible,
 						&construct,
-						type_id<boost::optional<T> >());
+						bp::type_id<boost::optional<T> >());
 			}
 		}
 
@@ -164,9 +164,9 @@ namespace GPlatesApi
 		python_optional<T>::Conversion::convert(
 				const boost::optional<T> &value)
 		{
-			using namespace boost::python;
+			namespace bp = boost::python;
 
-			return incref((value ? object(value.get()) : object()).ptr());
+			return bp::incref((value ? bp::object(value.get()) : bp::object()).ptr());
 		};
 
 		template <typename T>
@@ -174,10 +174,10 @@ namespace GPlatesApi
 		python_optional<T>::convertible(
 				PyObject *obj)
 		{
-			using namespace boost::python;
+			namespace bp = boost::python;
 
 			if (obj == Py_None ||
-				extract<T>(obj).check())
+				bp::extract<T>(obj).check())
 			{
 				return obj;
 			}
@@ -191,10 +191,10 @@ namespace GPlatesApi
 				PyObject *obj,
 				boost::python::converter::rvalue_from_python_stage1_data *data)
 		{
-			using namespace boost::python;
+			namespace bp = boost::python;
 
 			void *const storage = reinterpret_cast<
-					converter::rvalue_from_python_storage<boost::optional<T> > *>(
+					bp::converter::rvalue_from_python_storage<boost::optional<T> > *>(
 							data)->storage.bytes;
 
 			if (obj == Py_None)
@@ -203,7 +203,7 @@ namespace GPlatesApi
 			}
 			else
 			{
-				new (storage) boost::optional<T>(extract<T>(obj));
+				new (storage) boost::optional<T>(bp::extract<T>(obj));
 			}
 
 			data->convertible = storage;

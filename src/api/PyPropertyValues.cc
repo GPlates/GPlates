@@ -103,7 +103,9 @@ export_gml_time_instant()
 	bp::class_<
 			GPlatesPropertyValues::GmlTimeInstant,
 			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type,
-			bp::bases<GPlatesModel::PropertyValue> >("GmlTimeInstant", bp::no_init)
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GmlTimeInstant", bp::no_init)
  		.def("create",
 				&GPlatesPropertyValues::GmlTimeInstant::create,
 				GPlatesApi::gml_time_instant_create_overloads())
@@ -118,11 +120,15 @@ export_gml_time_instant()
 	GPlatesApi::PythonConverterUtils::non_null_intrusive_ptr_implicitly_convertible<
 			GPlatesPropertyValues::GmlTimeInstant,
 			GPlatesModel::PropertyValue>();
+
 	// Enable a python-wrapped 'non-const' GmlTimeInstant to be used when a 'const' GmlTimeInstant is requested.
 	bp::implicitly_convertible<
 			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type,
 			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_to_const_type>();
+
 	// Enable boost::optional<GPlatesPropertyValues::GmlTimeInstant> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::python_optional<
+			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>();
 }
 
 
@@ -135,7 +141,9 @@ export_gml_time_period()
 	bp::class_<
 			GPlatesPropertyValues::GmlTimePeriod,
 			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type,
-			bp::bases<GPlatesModel::PropertyValue> >("GmlTimePeriod", bp::no_init)
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GmlTimePeriod", bp::no_init)
  		.def("create", &GPlatesPropertyValues::GmlTimePeriod::create)
  		.staticmethod("create")
 		.def("begin",
@@ -156,12 +164,15 @@ export_gml_time_period()
 	GPlatesApi::PythonConverterUtils::non_null_intrusive_ptr_implicitly_convertible<
 			GPlatesPropertyValues::GmlTimePeriod,
 			GPlatesModel::PropertyValue>();
+
 	// Enable a python-wrapped 'non-const' GmlTimePeriod to be used when a 'const' GmlTimePeriod is requested.
 	bp::implicitly_convertible<
 			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type,
 			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type>();
+
 	// Enable boost::optional<GPlatesPropertyValues::GmlTimePeriod> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::GmlTimePeriod>();
+	GPlatesApi::PythonConverterUtils::python_optional<
+			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type>();
 }
 
 
@@ -174,7 +185,9 @@ export_gpml_hot_spot_trail_mark()
 	bp::class_<
 			GPlatesPropertyValues::GpmlHotSpotTrailMark,
 			GPlatesPropertyValues::GpmlHotSpotTrailMark::non_null_ptr_type,
-			bp::bases<GPlatesModel::PropertyValue> >("GpmlHotSpotTrailMark", bp::no_init)
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GpmlHotSpotTrailMark", bp::no_init)
  		//.def("create", &GPlatesPropertyValues::GpmlHotSpotTrailMark::create)
  		//.staticmethod("create")
   		//.def("position", &GPlatesPropertyValues::GpmlHotSpotTrailMark::position)
@@ -190,6 +203,7 @@ export_gpml_hot_spot_trail_mark()
 	GPlatesApi::PythonConverterUtils::non_null_intrusive_ptr_implicitly_convertible<
 			GPlatesPropertyValues::GpmlHotSpotTrailMark,
 			GPlatesModel::PropertyValue>();
+
 	// Enable a python-wrapped 'non-const' GpmlHotSpotTrailMark to be used when a
 	// 'const' GpmlHotSpotTrailMark is requested.
 	bp::implicitly_convertible<
@@ -207,7 +221,9 @@ export_gpml_plate_id()
 	bp::class_<
 			GPlatesPropertyValues::GpmlPlateId,
 			GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type,
-			bp::bases<GPlatesModel::PropertyValue> >("GpmlPlateId", bp::no_init)
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GpmlPlateId", bp::no_init)
  		.def("create", &GPlatesPropertyValues::GpmlPlateId::create)
  		.staticmethod("create")
   		.def("get_value", &GPlatesPropertyValues::GpmlPlateId::get_value)
@@ -218,6 +234,7 @@ export_gpml_plate_id()
 	GPlatesApi::PythonConverterUtils::non_null_intrusive_ptr_implicitly_convertible<
 			GPlatesPropertyValues::GpmlPlateId,
 			GPlatesModel::PropertyValue>();
+
 	// Enable a python-wrapped 'non-const' GpmlPlateId to be used when a 'const' GpmlPlateId is requested.
 	bp::implicitly_convertible<
 			GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type,
