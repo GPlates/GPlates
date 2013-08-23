@@ -28,6 +28,8 @@
 
 #include "PythonConverterUtils.h"
 
+
+#include "global/CompilerWarnings.h"
 #include "global/python.h"
 
 #include "utils/UnicodeString.h"
@@ -40,6 +42,9 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+// For PyString_Check below.
+DISABLE_GCC_WARNING("-Wold-style-cast")
+
 	/**
 	 * Enables QString to be passed to and from python.
 	 *
@@ -110,6 +115,8 @@ namespace GPlatesApi
 			data->convertible = storage;
 		}
 	};
+
+ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 	/**
