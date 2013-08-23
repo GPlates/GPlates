@@ -265,7 +265,7 @@ namespace GPlatesApi
 			namespace bp = boost::python;
 
 			return bp::incref((value ? bp::object(value.get()) : bp::object()).ptr());
-		};
+		}
 
 		template <typename T>
 		void *

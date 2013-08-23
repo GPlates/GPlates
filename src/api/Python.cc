@@ -31,6 +31,9 @@
 
 #if !defined(GPLATES_NO_PYTHON)
 
+// utils directory
+void export_strings();
+
 // api directory.
 void export_console_reader();
 void export_console_writer();
@@ -74,6 +77,7 @@ BOOST_PYTHON_MODULE(pygplates)
 
 	export_coregistration_layer_proxy();
 #endif	
+	export_strings();
 	export_feature_collection();
 	export_feature();
 	export_property_values();
