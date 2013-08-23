@@ -30,6 +30,7 @@ set(srcs
     PyOldFeature.cc
     PyOldFeature.h
     PyPropertyValues.cc
+    PyQualifiedXmlNames.cc
     PyStrings.cc
     Python.cc
     PythonConverterUtils.h

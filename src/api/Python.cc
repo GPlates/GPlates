@@ -31,14 +31,18 @@
 
 #if !defined(GPLATES_NO_PYTHON)
 
-// utils directory
+// utils namespace
 void export_strings();
+
+// model namespace
+void export_feature();
+void export_feature_collection();
+void export_property_values();
+void export_qualified_xml_names();
 
 // api directory.
 void export_console_reader();
 void export_console_writer();
-void export_feature_collection();
-void export_property_values();
 
 // presentation directory.
 void export_instance();
@@ -53,7 +57,6 @@ void export_co_registration();
 void export_functions();
 
 void export_colour();
-void export_feature();
 void export_topology_tools();
 
 void export_coregistration_layer_proxy();
@@ -77,10 +80,15 @@ BOOST_PYTHON_MODULE(pygplates)
 
 	export_coregistration_layer_proxy();
 #endif	
+	// utils namespace
 	export_strings();
-	export_feature_collection();
+
+	// model namespace
 	export_feature();
+	export_feature_collection();
 	export_property_values();
+	export_qualified_xml_names();
+
 	//export_co_registration();
 	export_functions();
 	export_colour();

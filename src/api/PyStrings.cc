@@ -26,6 +26,8 @@
 #include <boost/noncopyable.hpp>
 #include <QString>
 
+#include "PythonConverterUtils.h"
+
 #include "global/python.h"
 
 #include "utils/UnicodeString.h"
@@ -185,6 +187,9 @@ export_qstring()
 {
 	// Registers the python to/from converters for QString.
 	GPlatesApi::python_QString();
+
+	// Enable boost::optional<QString> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::python_optional<QString>();
 }
 
 
@@ -193,6 +198,9 @@ export_unicode_string()
 {
 	// Registers the python to/from converters for GPlatesUtils::UnicodeString.
 	GPlatesApi::python_UnicodeString();
+
+	// Enable boost::optional<GPlatesUtils::UnicodeString> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::python_optional<GPlatesUtils::UnicodeString>();
 }
 
 

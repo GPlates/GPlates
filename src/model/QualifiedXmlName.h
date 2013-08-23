@@ -365,10 +365,10 @@ namespace GPlatesModel
 	 * Convenience function to convert a @a QualifiedXmlName to a QString as:
 	 *    "<namespace_alias>:<name>".
 	 */
-	template <class SingletonType>
+	template <class QualifiedXmlNameType>
 	QString
 	convert_qualified_xml_name_to_qstring(
-			const QualifiedXmlName<SingletonType> &qualified_xml_name)
+			const QualifiedXmlNameType &qualified_xml_name)
 	{
 		return GPlatesUtils::make_qstring_from_icu_string(
 				qualified_xml_name.build_aliased_name());
