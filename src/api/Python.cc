@@ -39,6 +39,7 @@ void export_feature();
 void export_feature_collection();
 void export_property_values();
 void export_qualified_xml_names();
+void export_top_level_property();
 
 // api directory.
 void export_console_reader();
@@ -88,6 +89,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	export_feature_collection();
 	export_property_values();
 	export_qualified_xml_names();
+	export_top_level_property();
 
 	//export_co_registration();
 	export_functions();

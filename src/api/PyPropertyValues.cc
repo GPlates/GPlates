@@ -40,18 +40,6 @@
 
 namespace bp = boost::python;
 
-namespace GPlatesApi
-{
-DISABLE_GCC_WARNING("-Wshadow")
-
-	// Default argument overloads of 'GPlatesPropertyValues::GmlTimeInstant::create'.
-	BOOST_PYTHON_FUNCTION_OVERLOADS(
-			gml_time_instant_create_overloads,
-			GPlatesPropertyValues::GmlTimeInstant::create, 1, 2)
-
-ENABLE_GCC_WARNING("-Wshadow")
-}
-
 
 void
 export_property_value()
@@ -60,6 +48,10 @@ export_property_value()
 	 * Base property value wrapper class.
 	 *
 	 * Enables 'isinstance(obj, PropertyValue)' in python - not that it's that useful.
+	 *
+	 * NOTE: We never return a 'PropertyValue::non_null_ptr_type' to python because then python is
+	 * unable to access the attributes of the derived property value type. For this reason usually
+	 * the derived property value is returned (or 
 	 */
 	bp::class_<GPlatesModel::PropertyValue, boost::noncopyable>("PropertyValue", bp::no_init);
 }
@@ -91,6 +83,21 @@ export_geo_time_instant()
  		.def(bp::self > bp::self)
  		.def(bp::self >= bp::self)
 	;
+
+	// Enable boost::optional<GeoTimeInstant> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::GeoTimeInstant>();
+}
+
+
+namespace GPlatesApi
+{
+	const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
+	gml_time_instant_create(
+			const GPlatesPropertyValues::GeoTimeInstant &time_position)
+	{
+		// Use the default value for the second argument.
+		return GPlatesPropertyValues::GmlTimeInstant::create(time_position);
+	}
 }
 
 
@@ -106,9 +113,7 @@ export_gml_time_instant()
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
 					"GmlTimeInstant", bp::no_init)
- 		.def("create",
-				&GPlatesPropertyValues::GmlTimeInstant::create,
-				GPlatesApi::gml_time_instant_create_overloads())
+ 		.def("create", &GPlatesApi::gml_time_instant_create)
  		.staticmethod("create")
   		.def("get_time_position",
 				&GPlatesPropertyValues::GmlTimeInstant::get_time_position,

@@ -29,10 +29,12 @@ set(srcs
     PyFunctions.cc
     PyOldFeature.cc
     PyOldFeature.h
+    PyProperty.cc
     PyPropertyValues.cc
     PyQualifiedXmlNames.cc
     PyStrings.cc
     Python.cc
+    PythonConverterUtils.cc
     PythonConverterUtils.h
     PythonExecutionMonitor.cc
     PythonExecutionMonitor.h

@@ -620,6 +620,12 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gpml_total_reconstruction_pole(
+				gpml_total_reconstruction_pole_type &trs)
+		{  }
+
+		virtual
+		void
 		visit_old_version_property_value(
 				old_version_property_value_type &old_version_prop_val) 
 		{  }
@@ -652,12 +658,6 @@ namespace GPlatesModel
 		void
 		visit_xs_string(
 				xs_string_type &xs_string)
-		{  }
-
-		virtual
-		void
-		visit_gpml_total_reconstruction_pole(
-				gpml_total_reconstruction_pole_type &trs)
 		{  }
 
 	private:
