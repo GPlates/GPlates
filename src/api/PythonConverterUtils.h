@@ -32,6 +32,8 @@
 
 #include "global/python.h"
 
+#include "model/PropertyValue.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 
 
@@ -41,6 +43,18 @@ namespace GPlatesApi
 {
 	namespace PythonConverterUtils
 	{
+		/**
+		 * Returns the actual *derived* property value (converted to boost::python::object).
+		 *
+		 * The derived type is needed otherwise python is unable to access the attributes of the
+		 * derived property value type. In other words 'PropertyValue::non_null_ptr_type' is
+		 * never returned to python without first going through this function.
+		 */
+		boost::python::object/*derived property value non_null_intrusive_ptr*/
+		get_property_value_as_derived_type(
+				GPlatesModel::PropertyValue::non_null_ptr_type property_value);
+
+
 		/**
 		 * Register implicit conversions of non_null_intrusive_ptr for the specified derived/base classes.
 		 *
