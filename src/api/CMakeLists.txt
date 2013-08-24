@@ -31,6 +31,7 @@ set(srcs
     PyOldFeature.h
     PyProperty.cc
     PyPropertyValues.cc
+    PyPropertyValueVisitor.cc
     PyQualifiedXmlNames.cc
     PyStrings.cc
     Python.cc

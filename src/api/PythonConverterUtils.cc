@@ -31,6 +31,7 @@
 
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
 
 
@@ -58,7 +59,6 @@ namespace GPlatesApi
 			return d_property_value;
 		}
 
-
 		void 
 		visit_gml_time_instant(
 				gml_time_instant_type &gml_time_instant)
@@ -66,7 +66,6 @@ namespace GPlatesApi
 			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
 			d_property_value = bp::object(gml_time_instant_type::non_null_ptr_type(&gml_time_instant));
 		}
-
 
 		void
 		visit_gml_time_period(
@@ -76,6 +75,13 @@ namespace GPlatesApi
 			d_property_value = bp::object(gml_time_period_type::non_null_ptr_type(&gml_time_period));
 		}
 
+		void
+		visit_gpml_constant_value(
+				gpml_constant_value_type &gpml_constant_value)
+		{
+			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
+			d_property_value = bp::object(gpml_constant_value_type::non_null_ptr_type(&gpml_constant_value));
+		}
 
 		void
 		visit_gpml_plate_id(

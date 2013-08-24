@@ -38,6 +38,7 @@ void export_strings();
 void export_feature();
 void export_feature_collection();
 void export_property_values();
+void export_property_value_visitor();
 void export_qualified_xml_names();
 void export_top_level_property();
 
@@ -88,6 +89,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	export_feature();
 	export_feature_collection();
 	export_property_values();
+	export_property_value_visitor();
 	export_qualified_xml_names();
 	export_top_level_property();
 
