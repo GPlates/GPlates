@@ -733,11 +733,12 @@ GPlatesModel::ModelUtils::add_remove_or_convert_time_dependent_wrapper(
 
 const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 GPlatesModel::ModelUtils::create_gpml_constant_value(
-		const PropertyValue::non_null_ptr_type &property_value)
+		const PropertyValue::non_null_ptr_type &property_value,
+		const GPlatesUtils::UnicodeString &description)
 {
 	const GPlatesPropertyValues::StructuralType structural_type = property_value->get_structural_type();
 
-	return GPlatesPropertyValues::GpmlConstantValue::create(property_value, structural_type);
+	return GPlatesPropertyValues::GpmlConstantValue::create(property_value, structural_type, description);
 }
 
 

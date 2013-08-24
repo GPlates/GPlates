@@ -36,6 +36,9 @@
 #include "PropertyValue.h"
 #include "TopLevelPropertyInline.h"
 
+#include "global/InvalidFeatureCollectionException.h"
+#include "global/InvalidParametersException.h"
+
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlOrientableCurve.h"
@@ -43,12 +46,11 @@
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/StructuralType.h"
-#include "property-values/GpmlKeyValueDictionary.h"
 
-#include "global/InvalidFeatureCollectionException.h"
-#include "global/InvalidParametersException.h"
+#include "utils/UnicodeString.h"
 
 
 namespace GPlatesModel
@@ -183,7 +185,8 @@ namespace GPlatesModel
 		 */
 		const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 		create_gpml_constant_value(
-				const PropertyValue::non_null_ptr_type &property_value);
+				const PropertyValue::non_null_ptr_type &property_value,
+				const GPlatesUtils::UnicodeString &description = "");
 
 
 		/**
