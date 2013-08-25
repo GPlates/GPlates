@@ -55,15 +55,6 @@ namespace GPlatesModel
 
 		~PropertyValueRevisionedReference();
 
-		//! Copy constructor.
-		PropertyValueRevisionedReference(
-				const PropertyValueRevisionedReference &other);
-
-		//! Copy assignment operator.
-		PropertyValueRevisionedReference &
-		operator=(
-				PropertyValueRevisionedReference other);
-
 
 		/**
 		 * Creates a revisioned reference by attaching the specified property value to the
@@ -141,13 +132,78 @@ namespace GPlatesModel
 
 	private:
 
+		/**
+		 * Helper class to manage revision reference counts.
+		 */
+		class Revision
+		{
+		public:
+
+			explicit
+			Revision(
+					const PropertyValueRevision::non_null_ptr_to_const_type &revision) :
+				d_revision(revision)
+			{
+				++d_revision->d_revision_reference_ref_count;
+			}
+
+			~Revision()
+			{
+				--d_revision->d_revision_reference_ref_count;
+			}
+
+			//! Copy constructor.
+			Revision(
+					const Revision &other) :
+				d_revision(other.d_revision)
+			{
+				++d_revision->d_revision_reference_ref_count;
+			}
+
+			//! Copy assignment operator.
+			Revision &
+			operator=(
+					Revision other)
+			{
+				// Copy-and-swap idiom.
+				swap(d_revision, other.d_revision);
+				return *this;
+			}
+
+			//! Assignment operator.
+			Revision &
+			operator=(
+					const PropertyValueRevision::non_null_ptr_to_const_type &revision)
+			{
+				--d_revision->d_revision_reference_ref_count;
+				d_revision = revision;
+				++d_revision->d_revision_reference_ref_count;
+				return *this;
+			}
+
+			PropertyValueRevision::non_null_ptr_to_const_type
+			get_revision() const
+			{
+				return d_revision;
+			}
+
+		private:
+
+			PropertyValueRevision::non_null_ptr_to_const_type d_revision;
+		};
+
+
 		explicit
 		PropertyValueRevisionedReference(
 				const GPlatesUtils::non_null_intrusive_ptr<PropertyValueType> &property_value,
-				const PropertyValueRevision::non_null_ptr_to_const_type &revision);
+				const PropertyValueRevision::non_null_ptr_to_const_type &revision) :
+			d_property_value(property_value),
+			d_revision(revision)
+		{  }
+
 
 		GPlatesUtils::non_null_intrusive_ptr<PropertyValueType> d_property_value;
-		PropertyValueRevision::non_null_ptr_to_const_type d_revision;
+		Revision d_revision;
 	};
 }
 
@@ -158,17 +214,6 @@ namespace GPlatesModel
 namespace GPlatesModel
 {
 	template <class PropertyValueType>
-	PropertyValueRevisionedReference<PropertyValueType>::PropertyValueRevisionedReference(
-			const GPlatesUtils::non_null_intrusive_ptr<PropertyValueType> &property_value,
-			const PropertyValueRevision::non_null_ptr_to_const_type &revision) :
-		d_property_value(property_value),
-		d_revision(revision)
-	{
-		++d_revision->d_revision_reference_ref_count;
-	}
-
-
-	template <class PropertyValueType>
 	PropertyValueRevisionedReference<PropertyValueType>::~PropertyValueRevisionedReference()
 	{
 		// Since this is a destructor we cannot let any exceptions escape.
@@ -178,7 +223,10 @@ namespace GPlatesModel
 			// If we're the last revisioned reference that references the revision...
 			// Note that this doesn't necessarily mean the revision is about to be destroyed because
 			// the property value might currently be referencing it.
-			if (--d_revision->d_revision_reference_ref_count == 0)
+			//
+			// NOTE: We test for '1' instead of '0' since our sub-objects have not yet been destroyed
+			// and hence the 'd_revision' destructor has not yet decremented the reference count.
+			if (d_revision.get_revision()->d_revision_reference_ref_count == 1)
 			{
 				// If the property value is currently referencing the revision then detach it
 				// by creating a revision with no context and setting that on the property value.
@@ -189,41 +237,18 @@ namespace GPlatesModel
 				// that the child property value can then be attached to a different parent
 				// property value.
 				// So these are two different things and both are needed.
-				if (d_property_value->d_current_revision == d_revision)
+				if (d_property_value->d_current_revision == d_revision.get_revision())
 				{
 					// Normally this is done as a model transaction but we do it directly here
 					// since we're in a destructor where the client has no opportunity to
 					// create a model transaction object and pass it to us.
-					d_property_value->d_current_revision = d_revision->clone_revision();
+					d_property_value->d_current_revision = d_revision.get_revision()->clone_revision();
 				}
 			}
 		}
 		catch (...)
 		{
 		}
-	}
-
-
-	template <class PropertyValueType>
-	PropertyValueRevisionedReference<PropertyValueType>::PropertyValueRevisionedReference(
-			const PropertyValueRevisionedReference &other) :
-		d_property_value(other.d_property_value.get()),
-		d_revision(other.d_revision)
-	{
-		++d_revision->d_revision_reference_ref_count;
-	}
-
-
-	template <class PropertyValueType>
-	PropertyValueRevisionedReference<PropertyValueType> &
-	PropertyValueRevisionedReference<PropertyValueType>::operator=(
-			PropertyValueRevisionedReference other)
-	{
-		// Copy-and-swap idiom.
-		swap(d_property_value, other.d_property_value);
-		swap(d_revision, other.d_revision);
-
-		return *this;
 	}
 
 
@@ -242,7 +267,7 @@ namespace GPlatesModel
 		transaction.add_property_value_transaction(
 				ModelTransaction::PropertyValueTransaction(
 						revisioned_reference.d_property_value,
-						revisioned_reference.d_revision));
+						revisioned_reference.d_revision.get_revision()));
 
 		return revisioned_reference;
 	}
@@ -253,13 +278,14 @@ namespace GPlatesModel
 	PropertyValueRevisionedReference<PropertyValueType>::detach(
 			ModelTransaction &transaction)
 	{
-		boost::optional<PropertyValueRevisionContext &> revision_context = d_revision->get_context();
+		boost::optional<PropertyValueRevisionContext &> revision_context =
+				d_revision.get_revision()->get_context();
 
 		// Detach the current property value by creating a revision with no context.
-		d_revision = d_revision->clone_revision();
+		d_revision = d_revision.get_revision()->clone_revision();
 
 		transaction.add_property_value_transaction(
-				ModelTransaction::PropertyValueTransaction(d_property_value, d_revision));
+				ModelTransaction::PropertyValueTransaction(d_property_value, d_revision.get_revision()));
 
 		return revision_context;
 	}
@@ -271,19 +297,20 @@ namespace GPlatesModel
 			ModelTransaction &transaction,
 			const GPlatesUtils::non_null_intrusive_ptr<PropertyValueType> &property_value)
 	{
-		boost::optional<PropertyValueRevisionContext &> revision_context = d_revision->get_context();
+		boost::optional<PropertyValueRevisionContext &> revision_context =
+				d_revision.get_revision()->get_context();
 
 		// Detach the current property value by creating a revision with no context.
 		transaction.add_property_value_transaction(
 				ModelTransaction::PropertyValueTransaction(
 						d_property_value,
-						d_revision->clone_revision()));
+						d_revision.get_revision()->clone_revision()));
 
 		// Attach the new property value by creating a revision with the detached context.
 		d_property_value = property_value;
 		d_revision = d_property_value->d_current_revision->clone_revision(revision_context);
 		transaction.add_property_value_transaction(
-				ModelTransaction::PropertyValueTransaction(d_property_value, d_revision));
+				ModelTransaction::PropertyValueTransaction(d_property_value, d_revision.get_revision()));
 	}
 
 
@@ -292,17 +319,18 @@ namespace GPlatesModel
 	PropertyValueRevisionedReference<PropertyValueType>::clone_revision(
 			ModelTransaction &transaction)
 	{
-		boost::optional<PropertyValueRevisionContext &> revision_context = d_revision->get_context();
+		boost::optional<PropertyValueRevisionContext &> revision_context =
+				d_revision.get_revision()->get_context();
 
 		// The cloned revision's context is the same as the original revision.
 		// Essentially this means the parent property value (or top-level property) is the
 		// same for both revisions.
 		PropertyValueRevision::non_null_ptr_type mutable_revision =
-				d_revision->clone_revision(revision_context);
+				d_revision.get_revision()->clone_revision(revision_context);
 		d_revision = mutable_revision;
 
 		transaction.add_property_value_transaction(
-				ModelTransaction::PropertyValueTransaction(d_property_value, d_revision));
+				ModelTransaction::PropertyValueTransaction(d_property_value, d_revision.get_revision()));
 
 		return mutable_revision;
 	}
