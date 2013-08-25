@@ -34,6 +34,12 @@
 // utils namespace
 void export_strings();
 
+// maths namespace
+void export_finite_rotation();
+void export_real();
+void export_unit_quaternion_3d();
+void export_unit_vector_3d();
+
 // model namespace
 void export_feature();
 void export_feature_collection();
@@ -44,6 +50,7 @@ void export_old_feature_collection();
 void export_property_values();
 void export_property_value_visitor();
 void export_qualified_xml_names();
+void export_reconstruction_tree();
 void export_top_level_property();
 
 // api directory.
@@ -89,6 +96,12 @@ BOOST_PYTHON_MODULE(pygplates)
 	// utils namespace
 	export_strings();
 
+	// maths namespace
+	export_finite_rotation();
+	export_real();
+	export_unit_quaternion_3d();
+	export_unit_vector_3d();
+
 	// model namespace
 	export_feature();
 	export_feature_collection();
@@ -99,6 +112,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	export_property_values();
 	export_property_value_visitor();
 	export_qualified_xml_names();
+	export_reconstruction_tree();
 	export_top_level_property();
 
 	//export_co_registration();

@@ -28,6 +28,7 @@ set(srcs
     PyFeatureCollection.cc
     PyFeatureCollectionFileFormatRegistry.cc
     PyFeatureId.cc
+    PyFiniteRotation.cc
     PyFunctions.cc
     PyOldFeature.cc
     PyOldFeature.h
@@ -37,6 +38,8 @@ set(srcs
     PyPropertyValues.cc
     PyPropertyValueVisitor.cc
     PyQualifiedXmlNames.cc
+    PyReal.cc
+    PyReconstructionTree.cc
     PyStrings.cc
     Python.cc
     PythonConverterUtils.cc
@@ -54,6 +57,8 @@ set(srcs
     PythonUtils.cc
     PythonUtils.h
     PyTopologyTools.cc
+    PyUnitQuaternion3D.cc
+    PyUnitVector3D.cc
     PyViewportWindow.cc
     Sleeper.cc
     Sleeper.h
