@@ -36,6 +36,7 @@ void export_strings();
 
 // model namespace
 void export_feature();
+void export_feature_collection();
 void export_feature_id();
 void export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
 void export_old_feature_collection();
@@ -89,6 +90,7 @@ BOOST_PYTHON_MODULE(pygplates)
 
 	// model namespace
 	export_feature();
+	export_feature_collection();
 	export_feature_id();
 	export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
 	export_old_feature_collection();
