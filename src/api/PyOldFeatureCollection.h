@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_API_FEATURECOLLECTION_H
-#define GPLATES_API_FEATURECOLLECTION_H
+#ifndef GPLATES_API_OLDFEATURECOLLECTION_H
+#define GPLATES_API_OLDFEATURECOLLECTION_H
 
 #include "PyOldFeature.h"
 #include "global/python.h"
@@ -41,16 +41,16 @@ namespace GPlatesApi
 	 *
 	 */
 #ifndef GPLATES_NO_PYTHON
-	class FeatureCollection 
+	class OldFeatureCollection 
 	{
 	public:
 
 		static
-		FeatureCollection
+		OldFeatureCollection
 		create(
 				GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection)
 		{
-			return FeatureCollection(feature_collection);
+			return OldFeatureCollection(feature_collection);
 		}
 
 		std::size_t
@@ -76,7 +76,7 @@ namespace GPlatesApi
 	private:
 
 		explicit
-		FeatureCollection(
+		OldFeatureCollection(
 				GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 		GPlatesModel::FeatureCollectionHandle::weak_ref d_feature_collection;
@@ -84,4 +84,4 @@ namespace GPlatesApi
 #endif
 }
 
-#endif  // GPLATES_API_FEATURECOLLECTION_H
+#endif  // GPLATES_API_OLDFEATURECOLLECTION_H

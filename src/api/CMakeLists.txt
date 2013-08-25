@@ -24,11 +24,12 @@ set(srcs
     PyColour.cc
     PyCoregistrationLayerProxy.cc
     PyCoregistrationLayerProxy.h
-    PyFeatureCollection.cc
-    PyFeatureCollection.h
+    PyFeature.cc
     PyFunctions.cc
     PyOldFeature.cc
     PyOldFeature.h
+    PyOldFeatureCollection.cc
+    PyOldFeatureCollection.h
     PyProperty.cc
     PyPropertyValues.cc
     PyPropertyValueVisitor.cc

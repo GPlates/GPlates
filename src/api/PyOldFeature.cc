@@ -35,7 +35,7 @@
 
 
 void
-export_feature()
+export_old_feature()
 {
 	using namespace boost::python;
 	class_<GPlatesApi::OldFeature>("OldFeature", no_init )

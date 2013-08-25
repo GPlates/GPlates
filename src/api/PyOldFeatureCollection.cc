@@ -22,17 +22,17 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include "PyFeatureCollection.h"
+#include "PyOldFeatureCollection.h"
 
 #if !defined(GPLATES_NO_PYTHON)
-GPlatesApi::FeatureCollection::FeatureCollection(
+GPlatesApi::OldFeatureCollection::OldFeatureCollection(
 		GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection) :
 	d_feature_collection(feature_collection)
 {  }
 
 
 std::size_t
-GPlatesApi::FeatureCollection::size() const
+GPlatesApi::OldFeatureCollection::size() const
 {
 	if(!d_feature_collection.is_valid())
 		return 0;
@@ -42,14 +42,14 @@ GPlatesApi::FeatureCollection::size() const
 
 
 void
-export_feature_collection()
+export_old_feature_collection()
 {
 	using namespace boost::python;
 
-	class_<GPlatesApi::FeatureCollection>("FeatureCollection", no_init /* for now, disable creation */)
-		//.add_property("size", &GPlatesApi::FeatureCollection::size)
-		.def("size", &GPlatesApi::FeatureCollection::size)
-		.def("features", &GPlatesApi::FeatureCollection::features)
+	class_<GPlatesApi::OldFeatureCollection>("OldFeatureCollection", no_init /* for now, disable creation */)
+		//.add_property("size", &GPlatesApi::OldFeatureCollection::size)
+		.def("size", &GPlatesApi::OldFeatureCollection::size)
+		.def("features", &GPlatesApi::OldFeatureCollection::features)
 		;
 }
 #endif   //GPLATES_NO_PYTHON
