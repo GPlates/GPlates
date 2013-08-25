@@ -73,8 +73,6 @@ namespace GPlatesApi
 		return GPlatesPropertyValues::GmlTimeInstant::create(time_position);
 	}
 
-DISABLE_GCC_WARNING("-Wshadow")
-
 	const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 	gpml_constant_value_create(
 			GPlatesModel::PropertyValue::non_null_ptr_type property_value,
@@ -84,11 +82,11 @@ DISABLE_GCC_WARNING("-Wshadow")
 		return GPlatesModel::ModelUtils::create_gpml_constant_value(property_value, description);
 	}
 
+DISABLE_GCC_WARNING("-Wshadow")
 	// Default argument overloads of 'GPlatesPropertyValues::GpmlConstantValue::create'.
 	BOOST_PYTHON_FUNCTION_OVERLOADS(
 			gpml_constant_value_create_overloads,
 			gpml_constant_value_create, 1, 2)
-
 ENABLE_GCC_WARNING("-Wshadow")
 
 	// Return base property value to python as its derived property value type.

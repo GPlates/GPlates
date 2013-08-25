@@ -28,7 +28,6 @@
 
 #include "PythonConverterUtils.h"
 
-
 #include "global/CompilerWarnings.h"
 #include "global/python.h"
 
