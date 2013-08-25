@@ -43,7 +43,6 @@ namespace GPlatesModel
 	class Model;
 	template<class H> class RevisionAwareIterator;
 	class TopLevelProperty;
-	class TopLevelPropertyRef;
 	template<class H> class WeakReference;
 
 	namespace HandleTraitsInternals
@@ -186,10 +185,10 @@ namespace GPlatesModel
 		typedef TopLevelProperty child_type;
 
 		/**
-		 * Typedef for TopLevelPropertyRef, the type returned on dereference of the
-		 * FeatureHandle non-const iterator.
+		 * Typedef for PointerTraits<TopLevelProperty>::non_null_ptr_type, the type
+		 * returned on dereference of the FeatureHandle iterator.
 		 */
-		typedef TopLevelPropertyRef iterator_value_type;
+		typedef GPlatesGlobal::PointerTraits<TopLevelProperty>::non_null_ptr_type iterator_value_type;
 
 		/**
 		 * Typedef for PointerTraits<const TopLevelProperty>::non_null_ptr_type, the type
