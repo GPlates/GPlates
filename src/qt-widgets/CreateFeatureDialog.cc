@@ -1230,7 +1230,7 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 
 	// Get the geometry property value from the geometry property iterator.
 	GPlatesModel::ModelUtils::TopLevelPropertyError::Type get_property_value_error_code;
-	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type> geometry_property_value =
+	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_property_value =
 			GPlatesModel::ModelUtils::get_property_value(
 					**geometry_property_iterator,
 					&get_property_value_error_code);
@@ -1501,7 +1501,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 
 	// Get the geometry property value from the geometry property iterator.
 	GPlatesModel::ModelUtils::TopLevelPropertyError::Type get_property_value_error_code;
-	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type> geometry_property_value =
+	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_property_value =
 			GPlatesModel::ModelUtils::get_property_value(
 					**geometry_property_iterator,
 					&get_property_value_error_code);

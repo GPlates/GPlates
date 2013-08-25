@@ -1315,7 +1315,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::has_metadata(
 	std::vector<FeatureHandle::iterator> prop_vec;
 	BOOST_FOREACH(FeatureHandle::non_null_ptr_type feature, *fc)
 	{
-		prop_vec = ModelUtils::get_top_level_property_ref(
+		prop_vec = ModelUtils::get_top_level_properties(
 				PropertyName::create_gpml(QString("metadata")),
 				WeakReference<FeatureHandle>(*feature));
 		if(prop_vec.size()>0)
@@ -1881,7 +1881,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_current_fc_metadata()
     using namespace GPlatesModel;
     FeatureCollectionMetadata ret;
     GPlatesModel::FeatureHandle::iterator iter = get_current_metadata_property();
-    boost::optional<PropertyValue::non_null_ptr_to_const_type> value = 
+    boost::optional<PropertyValue::non_null_ptr_type> value = 
         ModelUtils::get_property_value(**iter);
     if(value)
     {
@@ -1908,7 +1908,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_current_metadata_prope
         std::vector<FeatureHandle::iterator> prop_vec;
         BOOST_FOREACH(FeatureHandle::non_null_ptr_type feature, *fc)
         {
-            prop_vec = ModelUtils::get_top_level_property_ref(
+            prop_vec = ModelUtils::get_top_level_properties(
                     PropertyName::create_gpml(QString("metadata")),
                     WeakReference<FeatureHandle>(*feature));
             if(prop_vec.size()>0)

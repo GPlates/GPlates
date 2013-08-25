@@ -838,7 +838,7 @@ GPlatesQtWidgets::MetadataDialog::set_data(
 		GPlatesModel::FeatureHandle::iterator iter)
 {
 	d_type = FC;
-	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type> value = 
+	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> value = 
 		GPlatesModel::ModelUtils::get_property_value(**iter);
 	if(value)
 	{
@@ -925,7 +925,7 @@ GPlatesQtWidgets::MetadataDialog::set_data(
 		}
 	}
 
-	std::vector<FeatureHandle::iterator> iters = ModelUtils::get_top_level_property_ref(
+	std::vector<FeatureHandle::iterator> iters = ModelUtils::get_top_level_properties(
 			PropertyName::create_gpml(QString("totalReconstructionPole")),
 			d_feature_ref);
 	if(iters.size()!=1)
@@ -1054,7 +1054,7 @@ void
 GPlatesQtWidgets::MetadataDialog::save_pole_meta()
 {
 	using namespace GPlatesModel;
-	std::vector<FeatureHandle::iterator> iters = ModelUtils::get_top_level_property_ref(
+	std::vector<FeatureHandle::iterator> iters = ModelUtils::get_top_level_properties(
 			PropertyName::create_gpml(QString("totalReconstructionPole")),
 			d_feature_ref);
 	if(iters.size()!=1)

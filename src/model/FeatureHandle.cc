@@ -31,19 +31,6 @@
 #include "FeatureCollectionHandle.h"
 
 
-namespace
-{
-	bool
-	new_child_equals_existing(
-			const GPlatesModel::TopLevelProperty::non_null_ptr_to_const_type &new_child,
-			const boost::intrusive_ptr<GPlatesModel::TopLevelProperty> &existing_child)
-	{
-		// Assume existing_child != NULL.
-		return *new_child == *existing_child;
-	}
-}
-
-
 const GPlatesModel::FeatureHandle::non_null_ptr_type
 GPlatesModel::FeatureHandle::create(
 		const FeatureType &feature_type_,
@@ -167,14 +154,14 @@ GPlatesModel::FeatureHandle::remove(
 void
 GPlatesModel::FeatureHandle::set(
 		iterator iter,
-		child_type::non_null_ptr_to_const_type new_child)
+		child_type::non_null_ptr_type new_child)
 {
 	ChangesetHandle changeset(model_ptr());
 
 	const boost::intrusive_ptr<child_type> &existing_child = current_revision()->get(iter.index());
-	if (existing_child && !new_child_equals_existing(new_child, existing_child))
+	if (existing_child)
 	{
-		current_revision()->set(iter.index(), new_child->clone());
+		current_revision()->set(iter.index(), new_child);
 
 		notify_listeners_of_modification(false, true);
 

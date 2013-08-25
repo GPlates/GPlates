@@ -266,10 +266,10 @@ namespace GPlatesModel
 
 
 		/**
-		 * Returns the TopLevelPropertyRef(s) of the given name in a feature.
+		 * Returns a list of top-level properties matching the specified name in the specified feature.
 		 */
 		std::vector<FeatureHandle::iterator>
-		get_top_level_property_ref(
+		get_top_level_properties(
 				const PropertyName& name,
 				GPlatesModel::FeatureHandle::weak_ref feature);
 

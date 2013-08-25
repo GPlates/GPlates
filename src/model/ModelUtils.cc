@@ -259,7 +259,7 @@ GPlatesModel::ModelUtils::get_property_value(
 
 
 std::vector<GPlatesModel::FeatureHandle::iterator>
-GPlatesModel::ModelUtils::get_top_level_property_ref(
+GPlatesModel::ModelUtils::get_top_level_properties(
 		const PropertyName& name,
 		GPlatesModel::FeatureHandle::weak_ref feature)
 {

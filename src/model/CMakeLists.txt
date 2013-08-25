@@ -31,7 +31,6 @@ set(srcs
     FeatureStoreRootRevision.cc
     FeatureStoreRootRevision.h
     FeatureType.h
-    FeatureVisitor.cc
     FeatureVisitor.h
     Gpgim.cc
     Gpgim.h
@@ -68,7 +67,6 @@ set(srcs
     PropertyValueRevisionContext.h
     PropertyValueRevisionedReference.h
     QualifiedXmlName.h
-    RevisionAwareIterator.cc
     RevisionAwareIterator.h
     RevisionId.h
     StringContentTypeGenerator.h
@@ -80,8 +78,6 @@ set(srcs
     TopLevelPropertyBubbleUpRevisionHandler.h
     TopLevelPropertyInline.cc
     TopLevelPropertyInline.h
-    TopLevelPropertyRef.cc
-    TopLevelPropertyRef.h
     TopLevelPropertyRevision.h
     types.h
     WeakObserver.h

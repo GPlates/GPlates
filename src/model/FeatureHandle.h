@@ -219,7 +219,7 @@ namespace GPlatesModel
 		void
 		set(
 				iterator iter,
-				child_type::non_null_ptr_to_const_type new_child);
+				child_type::non_null_ptr_type new_child);
 
 		/**
 		 * Removes all children properties that have the given @a property_name.
