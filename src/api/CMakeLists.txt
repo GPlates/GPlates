@@ -25,6 +25,7 @@ set(srcs
     PyCoregistrationLayerProxy.cc
     PyCoregistrationLayerProxy.h
     PyFeature.cc
+    PyFeatureId.cc
     PyFunctions.cc
     PyOldFeature.cc
     PyOldFeature.h

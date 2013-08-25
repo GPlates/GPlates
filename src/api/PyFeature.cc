@@ -31,6 +31,8 @@
 #include "global/python.h"
 
 #include "model/FeatureHandle.h"
+#include "model/FeatureId.h"
+#include "model/RevisionId.h"
 #include "model/TopLevelProperty.h"
 
 
@@ -59,6 +61,14 @@ namespace GPlatesApi
 		feature_handle->add(property);
 	}
 #endif // TEST_FEATURE_CREATE_MODIFY
+
+	// TODO: Wrap RevisionId in its own python wrapper.
+	GPlatesUtils::UnicodeString
+	feature_handle_get_revision_id(
+			GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle)
+	{
+		return feature_handle->revision_id().get();
+	}
 }
 
 
@@ -81,6 +91,10 @@ export_feature()
 		.def("get_feature_type",
 				&GPlatesModel::FeatureHandle::feature_type,
 				bp::return_value_policy<bp::copy_const_reference>())
+		.def("get_feature_id",
+				&GPlatesModel::FeatureHandle::feature_id,
+				bp::return_value_policy<bp::copy_const_reference>())
+		.def("get_revision_id", &GPlatesApi::feature_handle_get_revision_id)
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
 	;
 
