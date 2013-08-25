@@ -37,11 +37,8 @@ namespace GPlatesModel
 	BasicHandle<FeatureHandle>::actual_add(
 			GPlatesGlobal::PointerTraits<TopLevelProperty>::non_null_ptr_type new_child)
 	{
-		// Same as the generic case, except that we make a clone first.
-		// This is because we can't allow direct modification of TopLevelProperty
-		// objects in the model.
-		// We also don't set the parent of TLP because it doesn't have one.
-		return current_revision()->add(new_child->clone());
+		// Same as the generic case, except we don't set the parent of TLP because it doesn't have one.
+		return current_revision()->add(new_child);
 	}
 
 

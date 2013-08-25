@@ -308,7 +308,6 @@ namespace
 		{  }
 
 		boost::intrusive_ptr<GPlatesPropertyValues::GpmlIrregularSampling> d_irregular_sampling;
-		GPlatesModel::FeatureHandle::iterator d_irregular_sampling_iter;
 		GPlatesModel::integer_plate_id_type d_fixed_plate_id;
 		GPlatesModel::integer_plate_id_type d_moving_plate_id;
 	};
@@ -337,14 +336,9 @@ namespace
 						gpml_finite_rotation_slerp,
 						time_sample.get_value_type());
 
-		// We retain an iterator that points to the property in the model. This is
-		// because we cannot modify the model's copy of the property directly and we
-		// need to modify a copy of the property outside the model. The iterator then
-		// allows us to "set" the property in the feature after we're done with
-		// modifying the property.
 		// Note that the "gpml:totalReconstructionPole" property has to come first
 		// otherwise the PlatesRotationFormatWriter barfs.
-		props_in_current_trs.d_irregular_sampling_iter = current_total_recon_seq->add(
+		current_total_recon_seq->add(
 				TopLevelPropertyInline::create(
 					PropertyName::create_gpml("totalReconstructionPole"),
 					gpml_irregular_sampling));
@@ -458,11 +452,13 @@ namespace
 		// A copy of the current time samples to work with.
 		std::vector<GpmlTimeSample> time_samples =
 				props_in_current_trs.d_irregular_sampling->get_time_samples();
+#if 0
 		// This needs to be set back onto the irregular sampling property when/if we're done making
 		// modifications - we do this automatically at scope exit (to cover all the 'return' paths).
 		Loki::ScopeGuard gpml_irregular_sampling_set_time_samples_guard =
 				Loki::MakeGuard(&GPlatesPropertyValues::GpmlIrregularSampling::set_time_samples,
 						*props_in_current_trs.d_irregular_sampling, boost::cref(time_samples));
+#endif
 
 		// FIXME:  Since GpmlIrregularSampling should always contain at least one
 		// TimeSample, should we replace the std::vector (which is used to contain the
@@ -486,11 +482,13 @@ namespace
 					props_in_current_trs.d_fixed_plate_id == fixed_plate_id &&
 					props_in_current_trs.d_moving_plate_id == moving_plate_id) {
 				time_samples.push_back(time_sample);
+				props_in_current_trs.d_irregular_sampling->set_time_samples(time_samples);
 			} else if (moving_plate_id == 999 &&
 					props_in_current_trs.d_fixed_plate_id == fixed_plate_id) {
 				// Let's assume the current pole was intended to be part of the
 				// sequence, but commented-out.
 				time_samples.push_back(time_sample);
+				props_in_current_trs.d_irregular_sampling->set_time_samples(time_samples);
 
 				// Don't forget to warn the user that the moving plate ID of the
 				// pole was changed as part of this interpretation.
@@ -558,6 +556,7 @@ namespace
 				// OK, it's the special case.  Let's assume the current pole was
 				// intended to be part of the sequence, but commented-out.
 				time_samples.push_back(time_sample);
+				props_in_current_trs.d_irregular_sampling->set_time_samples(time_samples);
 
 				// Don't forget to warn the user that the moving plate ID of the
 				// pole was changed as part of this interpretation.
@@ -582,19 +581,13 @@ namespace
 						moving_plate_id);
 			} else {
 				time_samples.push_back(time_sample);
+				props_in_current_trs.d_irregular_sampling->set_time_samples(time_samples);
 			}
 		}
 
 		// Set the time samples on the irregular sampling before we, in turn, set it on the feature.
-		gpml_irregular_sampling_set_time_samples_guard.Dismiss();
-		props_in_current_trs.d_irregular_sampling->set_time_samples(time_samples);
-
-		// Now that we've finished modifying the property, let's set the model's
-		// copy of the property to our modified copy.
-		*(props_in_current_trs.d_irregular_sampling_iter) =
-				GPlatesModel::TopLevelPropertyInline::create(
-					GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"),
-					props_in_current_trs.d_irregular_sampling.get());
+		//gpml_irregular_sampling_set_time_samples_guard.Dismiss();
+		//props_in_current_trs.d_irregular_sampling->set_time_samples(time_samples);
 	}
 
 
