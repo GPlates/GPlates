@@ -407,7 +407,7 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_319_feature_reader_i
 								gpgim_feature_class,
 								parent_feature_reader_impl.get(),
 								d_property_structural_type_reader,
-								*d_gpgim,
+								d_gpgim,
 								d_gpml_version);
 		if (!feature_reader_impl)
 		{
@@ -420,7 +420,7 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_319_feature_reader_i
 		return GpmlUpgradeReaderUtils::create_property_rename_feature_reader_impl(
 				feature_reader_impl.get(),
 				property_rename_pairs,
-				*d_gpgim);
+				d_gpgim);
 	}
 
 	return boost::none;
@@ -459,7 +459,7 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_320_feature_reader_i
 				GpmlUpgradeReaderUtils::ChangeFeatureTypeFeatureReaderImpl::create(
 						UNCLASSIFIED_FEATURE_TYPE,
 						unclassified_feature_reader_impl.get(),
-						*d_gpgim));
+						d_gpgim));
 	}
 
 	return boost::none;
@@ -516,5 +516,5 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_property_name_feature_re
 	return GpmlUpgradeReaderUtils::create_property_rename_feature_reader_impl(
 			feature_reader_impl.get(),
 			property_rename_pairs,
-			*d_gpgim);
+			d_gpgim);
 }

@@ -43,7 +43,7 @@ using GPlatesPropertyValues::StructuralType;
 
 GPlatesFileIO::GpmlPropertyStructuralTypeReader::non_null_ptr_type
 GPlatesFileIO::GpmlPropertyStructuralTypeReader::create(
-		const GPlatesModel::Gpgim &gpgim)
+		const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim)
 {
 	non_null_ptr_type gpml_property_structural_type_reader = create_empty(gpgim);
 
@@ -55,8 +55,8 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReader::create(
 
 
 GPlatesFileIO::GpmlPropertyStructuralTypeReader::GpmlPropertyStructuralTypeReader(
-		const GPlatesModel::Gpgim &gpgim) :
-	d_gpgim(&gpgim)
+		const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim) :
+	d_gpgim(gpgim)
 {
 	// In ".cc" file because constructor of GPlatesUtils::non_null_intrusive_ptr requires complete type.
 }

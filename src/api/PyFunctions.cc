@@ -95,10 +95,8 @@ namespace
 		const std::vector<QString> s_rot_files = to_str_vector(rot_files);
 		const std::vector<QString> s_recon_files = to_str_vector(recon_files);
 	
-		boost::scoped_ptr<FeatureCollectionFileFormat::Registry> registry(new FeatureCollectionFileFormat::Registry());
-		
-		GPlatesModel::Gpgim::non_null_ptr_to_const_type gpgim = GPlatesModel::Gpgim::create();
-		register_default_file_formats(*registry, *gpgim);
+		boost::scoped_ptr<FeatureCollectionFileFormat::Registry> registry(
+				new FeatureCollectionFileFormat::Registry(GPlatesModel::Gpgim::create()));
 		
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> recon_fc = 
 			utils::load_files(s_recon_files, p_recon_files,*registry);
@@ -185,9 +183,8 @@ namespace
 		const QString output_file_format = QString(bp::extract<const char *>(python_output_file_format));
 		const QString output_file_basename_suffix = QString(bp::extract<const char *>(python_output_file_basename_suffix));
 
-		GPlatesFileIO::FeatureCollectionFileFormat::Registry feature_collection_file_format_registry;
-		GPlatesModel::Gpgim::non_null_ptr_to_const_type gpgim = GPlatesModel::Gpgim::create();
-		register_default_file_formats(feature_collection_file_format_registry, *gpgim);
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry feature_collection_file_format_registry(
+				GPlatesModel::Gpgim::create());
 
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstruction_files;
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstruction_feature_collections = 

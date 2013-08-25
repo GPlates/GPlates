@@ -42,12 +42,8 @@
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureVisitor.h"
+#include "model/Gpgim.h"
 
-
-namespace GPlatesModel
-{
-	class Gpgim;
-}
 
 namespace GPlatesFileIO
 {
@@ -84,6 +80,7 @@ namespace GPlatesFileIO
 			typedef boost::function<
 					void (
 							File::Reference &,
+							const GPlatesModel::Gpgim &,
 							ReadErrorAccumulation &)>
 									read_feature_collection_function_type;
 
@@ -97,8 +94,29 @@ namespace GPlatesFileIO
 			 */
 			typedef boost::function<
 					boost::shared_ptr<GPlatesModel::ConstFeatureVisitor> (
-							File::Reference &)>
+							File::Reference &,
+							GPlatesModel::Gpgim::non_null_ptr_to_const_type)>
 									create_feature_collection_writer_function_type;
+
+
+			/**
+			 * Constructor.
+			 *
+			 * If @a register_default_file_formats is true then the default file formats are registered.
+			 */
+			explicit
+			Registry(
+					const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim,
+					bool register_default_file_formats_ = true);
+
+
+			/**
+			 * Registers information about the default feature collection file formats.
+			 *
+			 * Note that this was called by the constructor if it's @a register_default_file_formats was true.
+			 */
+			void
+			register_default_file_formats();
 
 
 			/**
@@ -312,6 +330,11 @@ namespace GPlatesFileIO
 
 
 			/**
+			 * The GPGIM is used to validate feature collections read from file.
+			 */
+			GPlatesModel::Gpgim::non_null_ptr_to_const_type d_gpgim;
+
+			/**
 			 * Stores a struct of information for each file format.
 			 */
 			file_format_info_map_type d_file_format_info_map;
@@ -327,15 +350,6 @@ namespace GPlatesFileIO
 			get_file_format_info(
 					Format file_format);
 		};
-
-
-		/**
-		 * Registers information about the default feature collection file formats with the given @a registry.
-		 */
-		void
-		register_default_file_formats(
-				Registry &registry,
-				const GPlatesModel::Gpgim &gpgim);
 	}
 }
 

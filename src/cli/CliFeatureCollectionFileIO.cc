@@ -114,10 +114,9 @@ GPlatesCli::FeatureCollectionFileIO::FeatureCollectionFileIO(
 		const boost::program_options::variables_map &command_line_variables) :
 	d_model(model),
 	d_gpgim(GPlatesModel::Gpgim::create()),
-	d_file_format_registry(),
+	d_file_format_registry(d_gpgim),
 	d_command_line_variables(&command_line_variables)
 {
-	register_default_file_formats(d_file_format_registry, d_model, *d_gpgim);
 }
 
 

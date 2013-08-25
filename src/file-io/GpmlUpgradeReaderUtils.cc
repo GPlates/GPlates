@@ -266,7 +266,7 @@ GPlatesFileIO::GpmlFeatureReaderImpl::non_null_ptr_type
 GPlatesFileIO::GpmlUpgradeReaderUtils::create_property_rename_feature_reader_impl(
 		const GpmlFeatureReaderImpl::non_null_ptr_type &parent_feature_reader_impl,
 		const std::vector<PropertyRename> &property_renames,
-		const GPlatesModel::Gpgim &gpgim)
+		const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim)
 {
 	GpmlFeatureReaderImpl::non_null_ptr_type feature_reader_impl = parent_feature_reader_impl;
 
@@ -342,7 +342,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::RenamePropertyFeatureReaderImpl::RenamePr
 		const GPlatesModel::PropertyName &from_property_name,
 		const GPlatesModel::PropertyName &to_property_name,
 		const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader,
-		const GPlatesModel::Gpgim &gpgim) :
+		const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim) :
 	d_gpgim(gpgim),
 	d_feature_reader(feature_reader),
 	d_from_property_name(from_property_name),
@@ -370,7 +370,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::RenamePropertyFeatureReaderImpl::read_fea
 			*feature,
 			d_from_property_name,
 			d_to_property_name,
-			d_gpgim,
+			*d_gpgim,
 			true/*check_new_property_name_allowed_for_feature_type*/,
 			&error_code))
 	{
@@ -384,7 +384,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::RenamePropertyFeatureReaderImpl::read_fea
 GPlatesFileIO::GpmlUpgradeReaderUtils::ChangeFeatureTypeFeatureReaderImpl::ChangeFeatureTypeFeatureReaderImpl(
 		const GPlatesModel::FeatureType &new_feature_type,
 		const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader,
-		const GPlatesModel::Gpgim &gpgim) :
+		const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim) :
 	d_gpgim(gpgim),
 	d_feature_reader(feature_reader),
 	d_new_feature_type(new_feature_type)
@@ -417,7 +417,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 		const GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type &original_gpgim_feature_class,
 		const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &parent_feature_reader,
 		const GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type &property_structural_type_reader,
-		const GPlatesModel::Gpgim &gpgim,
+		const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim,
 		const GPlatesModel::GpgimVersion &gpml_version)
 {
 	//
@@ -691,7 +691,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 		feature->reference(),
 		d_network_property_name,
 		network_property_value,
-		d_gpgim,
+		*d_gpgim,
 		true/*check_property_name_allowed_for_feature_type*/,
 		&add_property_error_code))
 	{

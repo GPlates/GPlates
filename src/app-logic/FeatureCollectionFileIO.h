@@ -44,8 +44,9 @@
 #include "file-io/File.h"
 #include "file-io/FileInfo.h"
 
-#include "model/ModelInterface.h"
 #include "model/FeatureCollectionHandle.h"
+#include "model/Gpgim.h"
+#include "model/ModelInterface.h"
 
 
 namespace GPlatesFileIO
@@ -56,11 +57,6 @@ namespace GPlatesFileIO
 	}
 
 	struct ReadErrorAccumulation;
-}
-
-namespace GPlatesModel
-{
-	class Gpgim;
 }
 
 namespace GPlatesAppLogic
@@ -80,7 +76,7 @@ namespace GPlatesAppLogic
 
 	public:
 		FeatureCollectionFileIO(
-				const GPlatesModel::Gpgim &gpgim,
+				const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim,
 				GPlatesModel::ModelInterface &model,
 				GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				GPlatesAppLogic::FeatureCollectionFileState &file_state);
@@ -218,7 +214,7 @@ namespace GPlatesAppLogic
 		typedef std::vector<GPlatesFileIO::File::non_null_ptr_type> file_seq_type;
 
 
-		const GPlatesModel::Gpgim &d_gpgim;
+		GPlatesModel::Gpgim::non_null_ptr_to_const_type d_gpgim;
 
 		GPlatesModel::ModelInterface d_model;
 

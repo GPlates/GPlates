@@ -35,6 +35,7 @@
 
 #include "global/NotYetImplementedException.h"
 
+#include "model/Gpgim.h"
 #include "model/GpgimFeatureClass.h"
 #include "model/GpgimProperty.h"
 #include "model/GpgimVersion.h"
@@ -42,11 +43,6 @@
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
 
-
-namespace GPlatesModel
-{
-	class Gpgim;
-}
 
 namespace GPlatesFileIO
 {
@@ -86,7 +82,7 @@ namespace GPlatesFileIO
 		create_property_rename_feature_reader_impl(
 				const GpmlFeatureReaderImpl::non_null_ptr_type &feature_reader_impl,
 				const std::vector<PropertyRename> &property_renames,
-				const GPlatesModel::Gpgim &gpgim);
+				const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim);
 
 
 		/**
@@ -130,7 +126,7 @@ namespace GPlatesFileIO
 					const GPlatesModel::PropertyName &from_property_name,
 					const GPlatesModel::PropertyName &to_property_name,
 					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader,
-					const GPlatesModel::Gpgim &gpgim)
+					const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim)
 			{
 				return non_null_ptr_type(
 						new RenamePropertyFeatureReaderImpl(
@@ -150,7 +146,7 @@ namespace GPlatesFileIO
 
 		private:
 
-			const GPlatesModel::Gpgim &d_gpgim;
+			const GPlatesModel::Gpgim::non_null_ptr_to_const_type &d_gpgim;
 
 			/**
 			 * The feature reader that we delegate all property reading to.
@@ -165,7 +161,7 @@ namespace GPlatesFileIO
 					const GPlatesModel::PropertyName &from_property_name,
 					const GPlatesModel::PropertyName &to_property_name,
 					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader,
-					const GPlatesModel::Gpgim &gpgim);
+					const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim);
 
 		};
 
@@ -196,7 +192,7 @@ namespace GPlatesFileIO
 			create(
 					const GPlatesModel::FeatureType &new_feature_type,
 					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader,
-					const GPlatesModel::Gpgim &gpgim)
+					const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim)
 			{
 				return non_null_ptr_type(
 						new ChangeFeatureTypeFeatureReaderImpl(
@@ -215,7 +211,7 @@ namespace GPlatesFileIO
 
 		private:
 
-			const GPlatesModel::Gpgim &d_gpgim;
+			GPlatesModel::Gpgim::non_null_ptr_to_const_type d_gpgim;
 
 			/**
 			 * The feature reader that we delegate all property reading to.
@@ -228,7 +224,7 @@ namespace GPlatesFileIO
 			ChangeFeatureTypeFeatureReaderImpl(
 					const GPlatesModel::FeatureType &new_feature_type,
 					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader,
-					const GPlatesModel::Gpgim &gpgim);
+					const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim);
 
 		};
 
@@ -256,7 +252,7 @@ namespace GPlatesFileIO
 					const GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type &gpgim_feature_class,
 					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &parent_feature_reader,
 					const GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type &property_structural_type_reader,
-					const GPlatesModel::Gpgim &gpgim,
+					const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim,
 					const GPlatesModel::GpgimVersion &gpml_version);
 
 
@@ -269,7 +265,7 @@ namespace GPlatesFileIO
 
 		private:
 
-			const GPlatesModel::Gpgim &d_gpgim;
+			GPlatesModel::Gpgim::non_null_ptr_to_const_type d_gpgim;
 
 			//! The feature reader associated with the parent GPGIM feature class.
 			GpmlFeatureReaderImpl::non_null_ptr_to_const_type d_parent_feature_reader;
@@ -289,7 +285,7 @@ namespace GPlatesFileIO
 					const GpmlPropertyReader::non_null_ptr_to_const_type &boundary_property_reader,
 					const GpmlPropertyReader::non_null_ptr_to_const_type &interior_property_reader,
 					const GPlatesModel::PropertyName &network_property_name,
-					const GPlatesModel::Gpgim &gpgim) :
+					const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim) :
 				d_gpgim(gpgim),
 				d_parent_feature_reader(parent_feature_reader),
 				d_boundary_property_reader(boundary_property_reader),

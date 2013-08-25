@@ -92,7 +92,7 @@ namespace GPlatesFileIO
 		static
 		non_null_ptr_type
 		create(
-				const GPlatesModel::Gpgim &gpgim);
+				const GPlatesGlobal::PointerTraits<const GPlatesModel::Gpgim>::non_null_ptr_type &gpgim);
 
 
 		/**
@@ -101,7 +101,7 @@ namespace GPlatesFileIO
 		static
 		non_null_ptr_type
 		create_empty(
-				const GPlatesModel::Gpgim &gpgim)
+				const GPlatesGlobal::PointerTraits<const GPlatesModel::Gpgim>::non_null_ptr_type &gpgim)
 		{
 			return non_null_ptr_type(new GpmlPropertyStructuralTypeReader(gpgim));
 		}
@@ -190,7 +190,7 @@ namespace GPlatesFileIO
 
 		explicit
 		GpmlPropertyStructuralTypeReader(
-				const GPlatesModel::Gpgim &gpgim);
+				const GPlatesGlobal::PointerTraits<const GPlatesModel::Gpgim>::non_null_ptr_type &gpgim);
 
 
 		void
