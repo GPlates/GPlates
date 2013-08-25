@@ -29,6 +29,7 @@
 
 #include "model/FeatureVisitor.h"
 
+#include "property-values/GmlPoint.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
@@ -62,6 +63,29 @@ namespace GPlatesApi
 			public GPlatesModel::FeatureVisitor,
 			public bp::wrapper<GPlatesModel::FeatureVisitor>
 	{
+		virtual
+		void
+		visit_gml_point(
+				gml_point_type &gml_point)
+		{
+			if (bp::override visit = this->get_override("visit_gml_point"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gml_point_type::non_null_ptr_type(&gml_point));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gml_point(gml_point);
+		}
+
+		void
+		default_visit_gml_point(
+				gml_point_type &gml_point)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gml_point(gml_point);
+		}
+
+
 		virtual
 		void
 		visit_gml_time_instant(
@@ -163,6 +187,9 @@ export_property_value_visitor()
 	// PropertyValueVisitor
 	//
 	bp::class_<GPlatesApi::FeatureVisitorWrap, boost::noncopyable>("PropertyValueVisitor")
+		.def("visit_gml_point",
+				&GPlatesModel::FeatureVisitor::visit_gml_point,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_point)
 		.def("visit_gml_time_instant",
 				&GPlatesModel::FeatureVisitor::visit_gml_time_instant,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_time_instant)

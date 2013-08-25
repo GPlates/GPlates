@@ -40,7 +40,7 @@
 
 namespace bp = boost::python;
 
-#define TEST_FEATURE_CREATE_MODIFY
+//#define TEST_FEATURE_CREATE_MODIFY
 
 namespace GPlatesApi
 {

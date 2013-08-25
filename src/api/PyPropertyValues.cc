@@ -65,6 +65,29 @@ namespace GPlatesApi
 		property_value.accept_visitor(visitor);
 	}
 
+	const GPlatesPropertyValues::GmlPoint::non_null_ptr_type
+	gml_point_create(
+			const GPlatesMaths::PointOnSphere &point)
+	{
+		// Use the default value for the second argument.
+		return GPlatesPropertyValues::GmlPoint::create(point);
+	}
+
+	const GPlatesMaths::PointOnSphere
+	gml_point_get_point(
+			GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point)
+	{
+		return *gml_point->get_point();
+	}
+
+	void
+	gml_point_set_point(
+			GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point,
+			const GPlatesMaths::PointOnSphere &point)
+	{
+		gml_point->set_point(point.clone_as_point());
+	}
+
 	const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
 	gml_time_instant_create(
 			const GPlatesPropertyValues::GeoTimeInstant &time_position)
@@ -156,6 +179,32 @@ export_geo_time_instant()
 
 
 void
+export_gml_point()
+{
+	//
+	// GmlPoint
+	//
+	bp::class_<
+			GPlatesPropertyValues::GmlPoint,
+			GPlatesPropertyValues::GmlPoint::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GmlPoint", bp::no_init)
+		.def("create", &GPlatesApi::gml_point_create)
+		.staticmethod("create")
+		.def("get_point", &GPlatesApi::gml_point_get_point)
+		.def("set_point", &GPlatesApi::gml_point_set_point)
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GpmlPlateId,
+			GPlatesModel::PropertyValue>();
+}
+
+
+void
 export_gml_time_instant()
 {
 	//
@@ -206,9 +255,9 @@ export_gml_time_period()
 					"GmlTimePeriod", bp::no_init)
 		.def("create", &GPlatesPropertyValues::GmlTimePeriod::create)
 		.staticmethod("create")
-		.def("begin", begin)
+		.def("get_begin", begin)
 		.def("set_begin", &GPlatesPropertyValues::GmlTimePeriod::set_begin)
-		.def("end", end)
+		.def("get_end", end)
 		.def("set_end", &GPlatesPropertyValues::GmlTimePeriod::set_end)
 	;
 
@@ -320,6 +369,7 @@ export_property_values()
 	//////////////////////////////////////////////////////////////////////////
 
 	export_geo_time_instant();
+	export_gml_point();
 	export_gml_time_instant();
 	export_gml_time_period();
 	export_gpml_constant_value();

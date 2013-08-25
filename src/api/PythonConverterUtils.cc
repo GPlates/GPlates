@@ -29,6 +29,7 @@
 
 #include "model/FeatureVisitor.h"
 
+#include "property-values/GmlPoint.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
@@ -57,6 +58,14 @@ namespace GPlatesApi
 		get_property_value_as_derived_type()
 		{
 			return d_property_value;
+		}
+
+		void 
+		visit_gml_point(
+				gml_point_type &gml_point)
+		{
+			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
+			d_property_value = bp::object(gml_point_type::non_null_ptr_type(&gml_point));
 		}
 
 		void 
