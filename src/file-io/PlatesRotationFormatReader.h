@@ -36,7 +36,6 @@
 #include "FileInfo.h"
 #include "ErrorOpeningFileForReadingException.h"
 #include "ReadErrorAccumulation.h"
-#include "model/ModelInterface.h"
 #include "model/FeatureCollectionHandle.h"
 
 
@@ -64,7 +63,6 @@ namespace GPlatesFileIO
 		void
 		read_file(
 				File::Reference &file,
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::Gpgim &gpgim,
 				ReadErrorAccumulation &read_errors);
 	};

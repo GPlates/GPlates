@@ -39,7 +39,6 @@
 #include "ReadErrorAccumulation.h"
 #include "RotationAttributesRegistry.h"
 #include "maths/FiniteRotation.h"
-#include "model/ModelInterface.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/Metadata.h"
 #include "property-values/GpmlIrregularSampling.h"
@@ -626,7 +625,6 @@ namespace GPlatesFileIO
 		void
 		read_file(
 				File::Reference &file,
-				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors);
 		
 		virtual

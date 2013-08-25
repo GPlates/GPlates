@@ -282,7 +282,6 @@ GPlatesFileIO::RotationFileReaderV2::RotationFileReaderV2() :
 void
 GPlatesFileIO::RotationFileReader::read_file(
 		File::Reference &file,
-		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors)
 {
 

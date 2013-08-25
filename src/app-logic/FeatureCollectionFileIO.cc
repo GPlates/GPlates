@@ -297,7 +297,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
 	ArbitraryXmlReader::instance()->read_xml_data(
 			file->get_reference(), 
 			boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()), 
-			d_model,
 			data,
 			d_gpgim,
 			read_errors);

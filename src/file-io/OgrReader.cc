@@ -226,7 +226,6 @@ namespace
 	 */
 	const GPlatesModel::FeatureHandle::weak_ref
 	create_feature(
-		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 		const QString &feature_type_qstring,
 		boost::optional<GPlatesUtils::UnicodeString> &feature_id)
@@ -944,7 +943,6 @@ GPlatesFileIO::OgrReader::open_file(
 
 void
 GPlatesFileIO::OgrReader::read_features(
-	GPlatesModel::ModelInterface &model,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 	ReadErrorAccumulation &read_errors)
 {
@@ -1065,32 +1063,32 @@ GPlatesFileIO::OgrReader::read_features(
 		switch (flattened_type){
 		case wkbPoint:
 			{
-				handle_point(model,collection,read_errors,e_source,e_location);
+				handle_point(collection,read_errors,e_source,e_location);
 			}
 			break;
 		case wkbMultiPoint:
 			{
-				handle_multi_point(model,collection,read_errors,e_source,e_location);
+				handle_multi_point(collection,read_errors,e_source,e_location);
 			}
 			break;
 		case wkbLineString:
 			{
-				handle_linestring(model,collection,read_errors,e_source,e_location);
+				handle_linestring(collection,read_errors,e_source,e_location);
 			}
 			break;
 		case wkbMultiLineString:
 			{
-				handle_multi_linestring(model,collection,read_errors,e_source,e_location);
+				handle_multi_linestring(collection,read_errors,e_source,e_location);
 			}
 			break;
 		case wkbPolygon:
 			{
-				handle_polygon(model,collection,read_errors,e_source,e_location);
+				handle_polygon(collection,read_errors,e_source,e_location);
 			}
 			break;
 		case wkbMultiPolygon:
 			{
-				handle_multi_polygon(model,collection,read_errors,e_source,e_location);
+				handle_multi_polygon(collection,read_errors,e_source,e_location);
 			}
 			break;
 		default:
@@ -1112,13 +1110,12 @@ GPlatesFileIO::OgrReader::read_features(
 
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesFileIO::OgrReader::create_polygon_feature_from_list(
-	GPlatesModel::ModelInterface &model,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 	std::list<GPlatesMaths::PointOnSphere> &list_of_points)
 {
 
 			
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(collection,d_feature_type,d_feature_id);
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
 		GPlatesMaths::PolygonOnSphere::create_on_heap(list_of_points);
@@ -1141,11 +1138,10 @@ GPlatesFileIO::OgrReader::create_polygon_feature_from_list(
 
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesFileIO::OgrReader::create_line_feature_from_list(
-	GPlatesModel::ModelInterface &model,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 	std::list<GPlatesMaths::PointOnSphere> &list_of_points)
 {
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(collection,d_feature_type,d_feature_id);
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
 		GPlatesMaths::PolylineOnSphere::create_on_heap(list_of_points);
@@ -1171,11 +1167,10 @@ GPlatesFileIO::OgrReader::create_line_feature_from_list(
 
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesFileIO::OgrReader::create_point_feature_from_pair(
-	GPlatesModel::ModelInterface &model, 
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection, 
 	std::pair<double,double> &point)
 {
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(collection,d_feature_type,d_feature_id);
 
 	const GPlatesModel::PropertyValue::non_null_ptr_type gml_point =
 		GPlatesPropertyValues::GmlPoint::create(point);
@@ -1196,12 +1191,11 @@ GPlatesFileIO::OgrReader::create_point_feature_from_pair(
 
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesFileIO::OgrReader::create_point_feature_from_point_on_sphere(
-	GPlatesModel::ModelInterface &model, 
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection, 
 	GPlatesMaths::PointOnSphere &point)
 {
 
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(collection,d_feature_type,d_feature_id);
 
 	const GPlatesModel::PropertyValue::non_null_ptr_type gml_point =
 		GPlatesPropertyValues::GmlPoint::create(point);
@@ -1222,12 +1216,11 @@ GPlatesFileIO::OgrReader::create_point_feature_from_point_on_sphere(
 
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesFileIO::OgrReader::create_multi_point_feature_from_list(
-	GPlatesModel::ModelInterface &model,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 	std::list<GPlatesMaths::PointOnSphere> &list_of_points)
 {
 
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(collection,d_feature_type,d_feature_id);
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere =
 		GPlatesMaths::MultiPointOnSphere::create_on_heap(list_of_points);
@@ -1392,7 +1385,7 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
 		GPlatesPropertyValues::GpmlKeyValueDictionary::create(dictionary_elements);
 
-	// Add the dictionary to the model.
+	// Add the dictionary to the feature.
 	feature->add(
 			GPlatesModel::TopLevelPropertyInline::create(
 				GPlatesModel::PropertyName::create_gpml("shapefileAttributes"),
@@ -1459,20 +1452,12 @@ void
 GPlatesFileIO::OgrReader::read_file(
 		GPlatesFileIO::File::Reference &file_ref,
 		const FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_file_configuration,
-		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors)
 {
 	PROFILE_FUNC();
 
 	const FileInfo &fileinfo = file_ref.get_file_info();
-
-	// By placing all changes to the model under the one changeset, we ensure that
-	// feature revision ids don't get changed from what was loaded from file no
-	// matter what we do to the features.
-	GPlatesModel::ChangesetHandle changeset(
-			model.access_model(),
-			"open " + fileinfo.get_qfileinfo().fileName().toStdString());
 
 	QString absolute_path_filename = fileinfo.get_qfileinfo().absoluteFilePath();
 	QString filename = fileinfo.get_qfileinfo().fileName();
@@ -1514,7 +1499,7 @@ GPlatesFileIO::OgrReader::read_file(
 
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection = file_ref.get_feature_collection();
 
-	reader.read_features(model,collection,read_errors);
+	reader.read_features(collection,read_errors);
 
 
 	//reader.display_feature_counts();
@@ -1531,7 +1516,6 @@ GPlatesFileIO::OgrReader::set_property_mapper(
 
 void
 GPlatesFileIO::OgrReader::handle_point(
-		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 		ReadErrorAccumulation &read_errors,
 		const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -1547,7 +1531,7 @@ GPlatesFileIO::OgrReader::handle_point(
 				GPlatesMaths::LatLonPoint llp(lat,lon);
 				GPlatesMaths::PointOnSphere p = GPlatesMaths::make_point_on_sphere(llp);
 				try {
-					GPlatesModel::FeatureHandle::weak_ref feature = create_point_feature_from_point_on_sphere(model,collection,p);
+					GPlatesModel::FeatureHandle::weak_ref feature = create_point_feature_from_point_on_sphere(collection,p);
 					add_attributes_to_feature(feature,read_errors,source,location);
 					d_loaded_geometries++;
 				}
@@ -1579,7 +1563,6 @@ GPlatesFileIO::OgrReader::handle_point(
 
 void
 GPlatesFileIO::OgrReader::handle_multi_point(
-			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -1609,7 +1592,8 @@ GPlatesFileIO::OgrReader::handle_multi_point(
 		if (!list_of_points.empty())
 		{
 			try {
-				GPlatesModel::FeatureHandle::weak_ref feature = create_multi_point_feature_from_list(model,collection,list_of_points);
+				GPlatesModel::FeatureHandle::weak_ref feature =
+						create_multi_point_feature_from_list(collection,list_of_points);
 				add_attributes_to_feature(feature,read_errors,source,location);
 				d_loaded_geometries++;
 			}
@@ -1638,7 +1622,6 @@ GPlatesFileIO::OgrReader::handle_multi_point(
 
 void
 GPlatesFileIO::OgrReader::handle_linestring(
-			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -1674,7 +1657,7 @@ GPlatesFileIO::OgrReader::handle_linestring(
 	}
 
 	try {
-		GPlatesModel::FeatureHandle::weak_ref feature = create_line_feature_from_list(model,collection,feature_points);
+		GPlatesModel::FeatureHandle::weak_ref feature = create_line_feature_from_list(collection,feature_points);
 		add_attributes_to_feature(feature,read_errors,source,location);
 		d_loaded_geometries++;
 	}
@@ -1705,7 +1688,6 @@ GPlatesFileIO::OgrReader::handle_linestring(
 
 void
 GPlatesFileIO::OgrReader::handle_multi_linestring(
-			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -1721,7 +1703,7 @@ GPlatesFileIO::OgrReader::handle_multi_linestring(
 	qDebug() << "num geometries: " << num_geometries;
 #endif
 		
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);				
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(collection,d_feature_type,d_feature_id);				
 	add_attributes_to_feature(feature,read_errors,source,location);	
 
 	for (int multiCount = 0; multiCount < num_geometries ; multiCount++){
@@ -1791,7 +1773,6 @@ GPlatesFileIO::OgrReader::handle_multi_linestring(
 
 void
 GPlatesFileIO::OgrReader::handle_polygon(
-			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -1804,7 +1785,7 @@ GPlatesFileIO::OgrReader::handle_polygon(
 	OGRLinearRing *ring = polygon->getExteriorRing();
 	add_ring_to_points_list(ring,feature_points,read_errors,source,location);
 
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);				
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(collection,d_feature_type,d_feature_id);				
 	add_attributes_to_feature(feature,read_errors,source,location);	
 
 	if (!feature_points.empty()){
@@ -1888,7 +1869,6 @@ GPlatesFileIO::OgrReader::handle_polygon(
 
 void
 GPlatesFileIO::OgrReader::handle_multi_polygon(
-			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -1898,7 +1878,7 @@ GPlatesFileIO::OgrReader::handle_multi_polygon(
 	OGRMultiPolygon *multi = static_cast<OGRMultiPolygon*>(d_geometry_ptr);
 	int num_geometries = multi->getNumGeometries();
 
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(model,collection,d_feature_type,d_feature_id);				
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(collection,d_feature_type,d_feature_id);				
 	add_attributes_to_feature(feature,read_errors,source,location);	
 
 	d_total_geometries += num_geometries;

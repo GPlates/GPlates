@@ -42,7 +42,6 @@
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureVisitor.h"
-#include "model/ModelInterface.h"
 
 
 namespace GPlatesModel
@@ -336,7 +335,6 @@ namespace GPlatesFileIO
 		void
 		register_default_file_formats(
 				Registry &registry,
-				GPlatesModel::ModelInterface model,
 				const GPlatesModel::Gpgim &gpgim);
 	}
 }

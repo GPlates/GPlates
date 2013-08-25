@@ -40,9 +40,6 @@
 #include "ReadErrorAccumulation.h"
 #include "ReadErrors.h"
 
-#include "model/ChangesetHandle.h"
-#include "model/Model.h"
-#include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
 
 #include "property-values/GmlPoint.h"
@@ -267,7 +264,6 @@ namespace
  
 	void
 	create_vgp_feature(
-		GPlatesModel::ModelInterface &model,
 		GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 		const VirtualGeomagneticPole &vgp)
 	{
@@ -346,7 +342,6 @@ namespace
 	
 	void
 	read_feature(
-		GPlatesModel::ModelInterface &model,
 		GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 		const QString &header_line,
 		QTextStream &input,
@@ -490,7 +485,7 @@ namespace
 
 		//display_vgp(vgp);
 
-		create_vgp_feature(model,collection,vgp);
+		create_vgp_feature(collection,vgp);
 	}
 	
  }
@@ -499,20 +494,12 @@ namespace
 void
 GPlatesFileIO::GmapReader::read_file(
 		File::Reference &file_ref,
-		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors)
 {
 	PROFILE_FUNC();
 
 	const FileInfo &fileinfo = file_ref.get_file_info();
-
-	// By placing all changes to the model under the one changeset, we ensure that
-	// feature revision ids don't get changed from what was loaded from file no
-	// matter what we do to the features.
-	GPlatesModel::ChangesetHandle changeset(
-			model.access_model(),
-			"open " + fileinfo.get_qfileinfo().fileName().toStdString());
 
 	QString filename = fileinfo.get_qfileinfo().absoluteFilePath();
 	
@@ -538,7 +525,7 @@ GPlatesFileIO::GmapReader::read_file(
 		{
 			try
 			{
-				read_feature(model, collection, header_line, input, source, line_number, read_errors);
+				read_feature(collection, header_line, input, source, line_number, read_errors);
 			} 
 			catch (GPlatesFileIO::ReadErrors::Description error)
 			{

@@ -380,7 +380,6 @@ namespace
 void
 GPlatesFileIO::GpmlReader::read_file(
 		File::Reference &file,
-		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::Gpgim &gpgim,
 		const GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type &property_structural_type_reader,
 		ReadErrorAccumulation &read_errors,
@@ -389,13 +388,6 @@ GPlatesFileIO::GpmlReader::read_file(
 	PROFILE_FUNC();
 
 	const FileInfo &fileinfo = file.get_file_info();
-
-	// By placing all changes to the model under the one changeset, we ensure that
-	// feature revision ids don't get changed from what was loaded from file no
-	// matter what we do to the features.
-	GPlatesModel::ChangesetHandle changeset(
-			model.access_model(),
-			"open " + fileinfo.get_qfileinfo().fileName().toStdString());
 
 	QString filename(fileinfo.get_qfileinfo().filePath());
 	QXmlStreamReader reader;

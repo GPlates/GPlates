@@ -52,7 +52,6 @@
 #include "PropertyMapper.h"
 #include "ReadErrorAccumulation.h"
 
-#include "model/ModelInterface.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelUtils.h"
 
@@ -90,7 +89,6 @@ namespace GPlatesFileIO
 		read_file(
 				GPlatesFileIO::File::Reference &file_ref,
 				const boost::shared_ptr<const FeatureCollectionFileFormat::OGRConfiguration> &default_file_configuration,
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::Gpgim &gpgim,
 				ReadErrorAccumulation &read_errors);
 
@@ -167,7 +165,6 @@ namespace GPlatesFileIO
 
 		void
 		handle_point(
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -175,7 +172,6 @@ namespace GPlatesFileIO
 
 		void
 		handle_multi_point(
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -184,16 +180,13 @@ namespace GPlatesFileIO
 
 		void
 		handle_linestring(
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
-				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location
-				);
+				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);
 
 		void
 		handle_multi_linestring(
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -201,7 +194,6 @@ namespace GPlatesFileIO
 
 		void
 		handle_polygon(
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -209,7 +201,6 @@ namespace GPlatesFileIO
 
 		void
 		handle_multi_polygon(
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -218,37 +209,31 @@ namespace GPlatesFileIO
 
 		void
 		read_features(
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors);
 
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_polygon_feature_from_list(
-			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			std::list<GPlatesMaths::PointOnSphere> &list);
 
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_line_feature_from_list(
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				std::list<GPlatesMaths::PointOnSphere> &list);
 
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_point_feature_from_pair(
-			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			std::pair<double,double> &pair);
 
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_point_feature_from_point_on_sphere(
-			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesMaths::PointOnSphere &point);
 
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_multi_point_feature_from_list(
-			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			std::list<GPlatesMaths::PointOnSphere> &list);
 
