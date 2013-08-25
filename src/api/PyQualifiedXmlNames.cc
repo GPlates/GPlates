@@ -29,6 +29,7 @@
 
 #include "global/python.h"
 
+#include "model/FeatureType.h"
 #include "model/PropertyName.h"
 
 #include "property-values/EnumerationType.h"
@@ -108,8 +109,14 @@ export_qualified_xml_name(
 		.def("get_name",
 				&qualified_xml_name_type::get_name,
 				bp::return_value_policy<bp::copy_const_reference>())
- 		.def(bp::self == bp::self)
- 		.def(bp::self != bp::self)
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
+		.def(bp::self < bp::self)
+		.def(bp::self <= bp::self)
+		.def(bp::self > bp::self)
+		.def(bp::self >= bp::self)
+		// For '__str__' convert to a qualified XML string...
+		.def("__str__", &GPlatesModel::convert_qualified_xml_name_to_qstring<qualified_xml_name_type>)
 	;
 
 	// Enable boost::optional<GPlatesModel::QualifiedXmlName<> > to be passed to and from python.
@@ -144,6 +151,22 @@ export_enumeration_type()
 
 
 void
+export_feature_type()
+{
+	//
+	// FeatureType
+	//
+	bp::class_<GPlatesModel::FeatureType> feature_type_class(
+			"FeatureType", bp::no_init/*force usage of create functions*/);
+	// Select the create functions appropriate for this QualifiedXmlName type...
+	feature_type_class.def("create_gpml", &GPlatesApi::qualified_xml_name_create_gpml<GPlatesModel::FeatureType>);
+ 	feature_type_class.staticmethod("create_gpml");
+
+	// Add the parts common to each GPlatesModel::QualifiedXmlName template instantiation (code re-use).
+	export_qualified_xml_name(feature_type_class);
+}
+
+void
 export_property_name()
 {
 	//
@@ -168,6 +191,7 @@ void
 export_qualified_xml_names()
 {
 	export_enumeration_type();
+	export_feature_type();
 	export_property_name();
 }
 

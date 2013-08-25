@@ -93,6 +93,9 @@ export_top_level_property()
 				&GPlatesModel::TopLevelProperty::get_property_name,
 				bp::return_value_policy<bp::copy_const_reference>())
 		.def("get_property_value", &GPlatesApi::top_level_property_get_property_value)
+		// Generate '__str__' from 'operator<<'...
+		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
+		.def(bp::self_ns::str(bp::self))
 	;
 
 	// Enable boost::optional<TopLevelProperty::non_null_ptr_type> to be passed to and from python.

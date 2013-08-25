@@ -28,6 +28,7 @@
 #ifndef GPLATES_MODEL_QUALIFIEDXMLNAME_H
 #define GPLATES_MODEL_QUALIFIEDXMLNAME_H
 
+#include <boost/operators.hpp>
 #include <boost/optional.hpp>
 #include <QString>
 #include <QStringList>
@@ -64,7 +65,11 @@ namespace GPlatesModel
 	 * for the name of this QualifiedXmlName.  See "PropertyName.h" for an example.
 	 */
 	template<typename SingletonType>
-	class QualifiedXmlName
+	class QualifiedXmlName :
+			// NOTE: Base class chaining is used to avoid increasing sizeof(QualifiedXmlName) due to multiple
+			// inheritance from several empty base classes...
+			public boost::less_than_comparable<QualifiedXmlName<SingletonType>,
+					boost::equality_comparable<QualifiedXmlName<SingletonType> > >
 	{
 	public:
 
@@ -306,7 +311,7 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Equality comparison operator.
+		 * Equality comparison operator - inequality operator provided by 'boost::equality_comparable'.
 		 */
 		bool
 		operator==(
@@ -315,16 +320,9 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Inequality comparison operator.
-		 */
-		bool
-		operator!=(
-				const QualifiedXmlName &other) const {
-			return !is_equal_to(other);
-		}
-
-		/**
 		 * Less-than operator - provided so @a QualifiedXmlName can be used as a key in std::map.
+		 *
+		 * The other comparison operators are provided by boost::less_than_comparable.
 		 */
 		bool
 		operator<(

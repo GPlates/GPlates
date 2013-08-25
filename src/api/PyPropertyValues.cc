@@ -118,6 +118,9 @@ export_property_value()
 	bp::class_<GPlatesModel::PropertyValue, boost::noncopyable>("PropertyValue", bp::no_init)
 		.def("clone", &GPlatesApi::property_value_clone)
 		.def("accept_visitor", &GPlatesApi::property_value_accept_visitor)
+		// Generate '__str__' from 'operator<<'...
+		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
+		.def(bp::self_ns::str(bp::self))
 	;
 }
 
@@ -222,11 +225,6 @@ export_gml_time_period()
 void
 export_gpml_constant_value()
 {
-	// Use the 'non-const' overload so the nested property value in GpmlConstantValue can be modified via python...
-	const GPlatesModel::PropertyValue::non_null_ptr_type
-			(GPlatesPropertyValues::GpmlConstantValue::*value)() =
-					&GPlatesPropertyValues::GpmlConstantValue::value;
-
 	//
 	// GpmlConstantValue
 	//
