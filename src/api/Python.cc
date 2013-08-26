@@ -36,6 +36,8 @@ void export_strings();
 
 // maths namespace
 void export_finite_rotation();
+void export_geometries_on_sphere();
+void export_lat_lon_point();
 void export_real();
 void export_unit_quaternion_3d();
 void export_unit_vector_3d();
@@ -98,6 +100,8 @@ BOOST_PYTHON_MODULE(pygplates)
 
 	// maths namespace
 	export_finite_rotation();
+	export_geometries_on_sphere();
+	export_lat_lon_point();
 	export_real();
 	export_unit_quaternion_3d();
 	export_unit_vector_3d();

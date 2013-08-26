@@ -30,6 +30,8 @@ set(srcs
     PyFeatureId.cc
     PyFiniteRotation.cc
     PyFunctions.cc
+    PyGeometriesOnSphere.cc
+    PyLatLonPoint.cc
     PyOldFeature.cc
     PyOldFeature.h
     PyOldFeatureCollection.cc

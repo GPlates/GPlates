@@ -126,7 +126,7 @@ export_qualified_xml_name(
 	qualified_xml_name_class.def("to_qualified_string",
 			&GPlatesModel::convert_qualified_xml_name_to_qstring<qualified_xml_name_type>);
 
-	// Non-member from-QString conversion function.
+	// Static-member from-QString conversion function.
 	qualified_xml_name_class.def("from_qualified_string",
 			&GPlatesModel::convert_qstring_to_qualified_xml_name<qualified_xml_name_type>);
  	qualified_xml_name_class.staticmethod("from_qualified_string");

@@ -30,7 +30,8 @@
 
 #include "global/python.h"
 
-#include "maths/FiniteRotation.h"
+#include "maths/LatLonPoint.h"
+#include "maths/PointOnSphere.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -39,26 +40,34 @@ namespace bp = boost::python;
 
 
 void
-export_finite_rotation()
+export_lat_lon_point()
 {
 	//
-	// FiniteRotation
+	// LatLonPoint
 	//
-	bp::class_<GPlatesMaths::FiniteRotation>("FiniteRotation", bp::no_init)
-		.def("get_unit_quaternion",
-				&GPlatesMaths::FiniteRotation::unit_quat,
+	bp::class_<GPlatesMaths::LatLonPoint>("LatLonPoint", bp::init<double,double>())
+		.def("is_valid_latitude", &GPlatesMaths::LatLonPoint::is_valid_latitude)
+		.staticmethod("is_valid_latitude")
+		.def("is_valid_longitude", &GPlatesMaths::LatLonPoint::is_valid_longitude)
+		.staticmethod("is_valid_longitude")
+		.def("get_latitude",
+				&GPlatesMaths::LatLonPoint::latitude,
 				bp::return_value_policy<bp::copy_const_reference>())
+		.def("get_longitude",
+				&GPlatesMaths::LatLonPoint::longitude,
+				bp::return_value_policy<bp::copy_const_reference>())
+		// Member to-PointOnSphere conversion function...
+		.def("to_point_on_sphere", &GPlatesMaths::make_point_on_sphere)
+		// Static-member from-PointOnSphere conversion function...
+		.def("from_point_on_sphere", &GPlatesMaths::make_lat_lon_point)
+ 		.staticmethod("from_point_on_sphere")
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
-		// Rotate a unit vector...
-		.def(bp::self * bp::other<GPlatesMaths::UnitVector3D>())
-		// Rotate a PointOnSphere...
-		.def(bp::self * bp::other<GPlatesMaths::PointOnSphere>())
 	;
 
-	// Enable boost::optional<FiniteRotation> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesMaths::FiniteRotation>();
+	// Enable boost::optional<LatLonPoint> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::python_optional<GPlatesMaths::LatLonPoint>();
 }
 
 #endif // GPLATES_NO_PYTHON
