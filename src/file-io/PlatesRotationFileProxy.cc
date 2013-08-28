@@ -859,13 +859,18 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 						*d_current_sampling));
 	}
 
-	GpmlTimeSample time_sample = create_time_sample(RotationPoleData());//dummy sample
+	//Create a temporary GpmlTimeSample object.
+	//A GpmlTimeSample object is needed to create GpmlIrregularSampling.
+	//But we do not have a real GpmlTimeSample here.
+	//So create a temporary one and remove it at the end of this function.
+	GpmlTimeSample time_sample = create_time_sample(RotationPoleData());
 
-	//create feature
+	//Create a new total reconstruction sequence feature.
+	//The new feature will overwrite the old one in d_current_feature.
 	FeatureType feature_type = FeatureType::create_gpml("TotalReconstructionSequence");
-	d_current_feature = GPlatesModel::FeatureHandle::create(d_fc, feature_type);
+	d_current_feature = FeatureHandle::create(d_fc, feature_type);
 
-	//create GpmlIrregularSampling
+	//Create GpmlIrregularSampling
 	GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
 		GpmlFiniteRotationSlerp::create(
 				time_sample.value_type());
@@ -875,29 +880,29 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 				GPlatesUtils::get_intrusive_ptr(gpml_finite_rotation_slerp),
 				time_sample.value_type());
 	
-	//add fixed reference frame
-	GpmlPlateId::non_null_ptr_type fixed_ref_frame =
-		GpmlPlateId::create(fix_plate_id);
+	//Add fixed reference frame
+	GpmlPlateId::non_null_ptr_type fixed_ref_frame = GpmlPlateId::create(fix_plate_id);
 	d_current_feature->add(
 			TopLevelPropertyInline::create(
 			PropertyName::create_gpml("fixedReferenceFrame"),
 			fixed_ref_frame));
 
-	//add moving reference frame
-	GpmlPlateId::non_null_ptr_type moving_ref_frame =
-		GpmlPlateId::create(moving_plate_id);
+	//Add moving reference frame
+	GpmlPlateId::non_null_ptr_type moving_ref_frame = GpmlPlateId::create(moving_plate_id);
 	d_current_feature->add(
 			TopLevelPropertyInline::create(
 					GPlatesModel::PropertyName::create_gpml("movingReferenceFrame"),
 					moving_ref_frame));
 	
-	GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
-		GpmlKeyValueDictionary::create();
-	
+	//If the moving plate id is the same with the previous sequence,
+	//use the MPRS header data of previous sequence.
 	if(moving_plate_id == static_cast<unsigned long>(d_last_pole.moving_plate_id))
 	{
 		d_mprs_attrs = d_last_mprs;
 	}
+
+	//We don't allow an empty MPRS header. 
+	//If it is empty, give it a default entry.
 	if(d_mprs_attrs.empty())
 	{
 		XsString::non_null_ptr_type key = XsString::create(
@@ -913,6 +918,9 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 				StructuralType::create_xsi("string"));
 		d_mprs_attrs.push_back(element);
 	}
+
+	//Save MPRS header data in GpmlKeyValueDictionary.
+	GpmlKeyValueDictionary::non_null_ptr_type dictionary = GpmlKeyValueDictionary::create();
 	dictionary->elements() = d_mprs_attrs;
 	d_last_mprs = d_mprs_attrs;
 	d_mprs_attrs.clear();
@@ -924,7 +932,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 						dictionary));
 	}
 	
-	(*d_current_sampling)->time_samples().clear(); //clear dummy sample
+	(*d_current_sampling)->time_samples().clear(); //clear the temporary sample
 }
 
 
@@ -946,22 +954,23 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::is_new_trs(
 void
 GPlatesFileIO::PopulateReconstructionFeatureCollection::finalize()
 {
+	using namespace GPlatesModel;
 	if(d_current_feature.is_valid())
 	{
 		d_current_feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-						GPlatesModel::PropertyName::create_gpml("totalReconstructionPole"),
+				TopLevelPropertyInline::create(
+						PropertyName::create_gpml("totalReconstructionPole"),
 						*d_current_sampling));
 		
 		//reset the feature weak ref after the final clean up.
-		d_current_feature = GPlatesModel::FeatureHandle::weak_ref();
+		d_current_feature = FeatureHandle::weak_ref();
 	}
 	//create a FeatureCollectionMetadata feature.
 	FeatureType feature_type = FeatureType::create_gpml("FeatureCollectionMetadata");
-	d_fc_metadata_feature = GPlatesModel::FeatureHandle::create(d_fc, feature_type);
+	d_fc_metadata_feature = FeatureHandle::create(d_fc, feature_type);
 	d_fc_metadata_feature->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-					GPlatesModel::PropertyName::create_gpml("metadata"),
+			TopLevelPropertyInline::create(
+					PropertyName::create_gpml("metadata"),
 					GPlatesPropertyValues::GpmlMetadata::create(d_fc_metadata)));
 
 }
