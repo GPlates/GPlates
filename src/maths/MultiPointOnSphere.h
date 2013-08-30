@@ -394,12 +394,13 @@ namespace GPlatesMaths
 		 * @a closeness_inclusion_threshold.
 		 *
 		 * If @a test_point is "close", the function will calculate
-		 * exactly @em how close, and store that value in @a closeness.
+		 * exactly @em how close, and store that value in @a closeness and
+		 * return the closest point on the MultiPointOnSphere.
 		 *
 		 * For more information, read the comment before
 		 * @a GPlatesGui::ProximityTests::find_close_rfgs.
 		 */
-		bool
+		boost::optional<GPlatesMaths::PointOnSphere>
 		is_close_to(
 				const PointOnSphere &test_point,
 				const real_t &closeness_inclusion_threshold,
