@@ -479,6 +479,64 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 
 
 		/**
+		 * Calculate the boundary velocity at the specified point sample (which is very close
+		 * to the boundary but not on it).
+		 *
+		 * It will be either inside the polygon or outside (in an adjacent polygon).
+		 */
+		void
+		solve_velocity_at_boundary(
+				const GPlatesMaths::PointOnSphere &point_sample,
+				boost::optional<GPlatesMaths::Vector3D> &velocity_inside_polygon_boundary,
+				boost::optional<GPlatesMaths::Vector3D> &velocity_outside_polygon_boundary,
+				const ReconstructionGeometry *polygon_recon_geom_containing_domain_point,
+				const GeometryCookieCutter &reconstructed_static_polygons_query,
+				const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type &resolved_rigid_plates_query,
+				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query)
+		{
+			// Sample the velocity at the point sample.
+			boost::optional<MultiPointVectorField::CodomainElement> velocity_sample;
+			if (!solve_velocity_on_surfaces(
+					point_sample,
+					velocity_sample,
+					reconstructed_static_polygons_query,
+					resolved_rigid_plates_query,
+					resolved_networks_query))
+			{
+				// Didn't sample a surface.
+				return;
+			}
+
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					velocity_sample,
+					GPLATES_ASSERTION_SOURCE);
+
+			// If the surface was found (ie, not a zero velocity vector) then assign the
+			// velocity to the inside of outside polygon depending on the surface.
+			if (velocity_sample->d_plate_id_reconstruction_geometry)
+			{
+				if (velocity_sample->d_plate_id_reconstruction_geometry.get() ==
+					polygon_recon_geom_containing_domain_point)
+				{
+					// If not already found a velocity inside polygon...
+					if (!velocity_inside_polygon_boundary)
+					{
+						velocity_inside_polygon_boundary = velocity_sample->d_vector;
+					}
+				}
+				else // velocity sample is from the adjacent polygon(s)...
+				{
+					// If not already found a velocity outside polygon...
+					if (!velocity_outside_polygon_boundary)
+					{
+						velocity_outside_polygon_boundary = velocity_sample->d_vector;
+					}
+				}
+			}
+		}
+
+
+		/**
 		 * Calculate the average velocity, at the specified point on the polygon boundary,
 		 * by averaging the velocity on each side of the boundary.
 		 */
@@ -491,59 +549,165 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 				const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type &resolved_rigid_plates_query,
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query)
 		{
-			GPlatesMaths::Vector3D rotation_axis_cross_product = cross(
+			// We need both a velocity just inside and just outside the polygon boundary before
+			// we can calculate the average velocity at boundary.
+			boost::optional<GPlatesMaths::Vector3D> velocity_inside_polygon_boundary;
+			boost::optional<GPlatesMaths::Vector3D> velocity_outside_polygon_boundary;
+
+			// Rotation axis to rotate domain point towards polygon boundary point.
+			GPlatesMaths::Vector3D domain_to_boundary_rotation_axis_cross_product = cross(
 					GPlatesMaths::Vector3D(domain_point.position_vector()),
 					GPlatesMaths::Vector3D(polygon_boundary_point.position_vector()));
-			if (rotation_axis_cross_product.magSqrd() <= 0.0)
-			{
-				return boost::none;
-			}
-			const GPlatesMaths::UnitVector3D rotation_axis = rotation_axis_cross_product.get_normalisation();
+			const GPlatesMaths::UnitVector3D domain_to_boundary_rotation_axis =
+					(domain_to_boundary_rotation_axis_cross_product.magSqrd() > 0.0)
+					? domain_to_boundary_rotation_axis_cross_product.get_normalisation()
+					// The domain point and the polygon boundary point happen to coincide.
+					// Pick an arbitrary rotation axis orthogonal to the polygon boundary point...
+					: GPlatesMaths::generate_perpendicular(polygon_boundary_point.position_vector());
 
+			// This should be small but not too small that we start getting epsilon issues when
+			// testing the epsilon-rotated points for inclusion in polygons sharing boundary.
 			const double epsilon_rotation_angle = 1e-3/*radians, ~0.1 degrees or 10Kms*/;
 
-			// Get the point just inside the adjacent polygon.
-			const GPlatesMaths::PointOnSphere point_inside_adjacent_polygon =
-					GPlatesMaths::Rotation::create(rotation_axis, epsilon_rotation_angle) *
+			//
+			// Try sampling directly outside and inside (separated by 180 degrees).
+			//
+
+			// Start with the point just inside the adjacent polygon (it might not be though).
+			// In most cases this will give us the best chance of finding the velocity in the adjacent polygon.
+			const GPlatesMaths::PointOnSphere original_point_outside_polygon_boundary =
+					GPlatesMaths::Rotation::create(domain_to_boundary_rotation_axis, epsilon_rotation_angle) *
 							polygon_boundary_point;
 
-			// Solve the velocity at the point just inside the adjacent polygon.
-			boost::optional<MultiPointVectorField::CodomainElement> velocity_inside_adjacent_polygon;
-			if (!solve_velocity_on_surfaces(
-					point_inside_adjacent_polygon,
-					velocity_inside_adjacent_polygon,
+			// Sample directly outside the polygon.
+			solve_velocity_at_boundary(
+					original_point_outside_polygon_boundary,
+					velocity_inside_polygon_boundary,
+					velocity_outside_polygon_boundary,
+					polygon_recon_geom_containing_domain_point,
 					reconstructed_static_polygons_query,
 					resolved_rigid_plates_query,
-					resolved_networks_query))
-			{
-				// Unable to sample adjacent polygon.
-				return boost::none;
-			}
+					resolved_networks_query);
 
-			// Get the point just outside the adjacent polygon.
-			const GPlatesMaths::PointOnSphere point_outside_adjacent_polygon =
-					GPlatesMaths::Rotation::create(rotation_axis, -epsilon_rotation_angle) *
-							polygon_boundary_point;
+			// To get point sample inside polygon boundary we rotate the point outside by 180 degrees.
+			GPlatesMaths::Rotation rotation_180_about_polygon_boundary_point =
+					GPlatesMaths::Rotation::create(polygon_boundary_point.position_vector(), GPlatesMaths::PI);
 
-			// Solve the velocity at the point just inside the adjacent polygon.
-			boost::optional<MultiPointVectorField::CodomainElement> velocity_outside_adjacent_polygon;
-			if (!solve_velocity_on_surfaces(
-					point_outside_adjacent_polygon,
-					velocity_outside_adjacent_polygon,
+			// Sample directly inside the polygon.
+			solve_velocity_at_boundary(
+					rotation_180_about_polygon_boundary_point * original_point_outside_polygon_boundary,
+					velocity_inside_polygon_boundary,
+					velocity_outside_polygon_boundary,
+					polygon_recon_geom_containing_domain_point,
 					reconstructed_static_polygons_query,
 					resolved_rigid_plates_query,
-					resolved_networks_query))
+					resolved_networks_query);
+
+			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
 			{
-				// Unable to sample adjacent polygon.
-				return boost::none;
+				// Return the average velocity at boundary.
+				return 0.5 * (velocity_inside_polygon_boundary.get() + velocity_outside_polygon_boundary.get());
 			}
 
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					velocity_inside_adjacent_polygon && velocity_outside_adjacent_polygon,
-					GPLATES_ASSERTION_SOURCE);
+			//
+			// Try sampling directly left and right along boundary (separated by 180 degrees).
+			//
 
-			return 0.5 * (velocity_inside_adjacent_polygon->d_vector +
-					velocity_outside_adjacent_polygon->d_vector);
+			GPlatesMaths::Rotation rotation_90_about_polygon_boundary_point =
+					GPlatesMaths::Rotation::create(polygon_boundary_point.position_vector(), GPlatesMaths::HALF_PI);
+
+			// Start with the point just inside the adjacent polygon (it might not be though).
+			// In most cases this will give us the best chance of finding the velocity in the adjacent polygon.
+			const GPlatesMaths::PointOnSphere point_left_along_polygon_boundary =
+					rotation_90_about_polygon_boundary_point * original_point_outside_polygon_boundary;
+
+			// Sample left along polygon boundary.
+			solve_velocity_at_boundary(
+					point_left_along_polygon_boundary,
+					velocity_inside_polygon_boundary,
+					velocity_outside_polygon_boundary,
+					polygon_recon_geom_containing_domain_point,
+					reconstructed_static_polygons_query,
+					resolved_rigid_plates_query,
+					resolved_networks_query);
+
+			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
+			{
+				// Return the average velocity at boundary.
+				return 0.5 * (velocity_inside_polygon_boundary.get() + velocity_outside_polygon_boundary.get());
+			}
+
+			// Sample right along polygon boundary.
+			solve_velocity_at_boundary(
+					rotation_180_about_polygon_boundary_point * point_left_along_polygon_boundary,
+					velocity_inside_polygon_boundary,
+					velocity_outside_polygon_boundary,
+					polygon_recon_geom_containing_domain_point,
+					reconstructed_static_polygons_query,
+					resolved_rigid_plates_query,
+					resolved_networks_query);
+
+			if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
+			{
+				// Return the average velocity at boundary.
+				return 0.5 * (velocity_inside_polygon_boundary.get() + velocity_outside_polygon_boundary.get());
+			}
+
+			//
+			// Try sampling at regular intervals around a circle (around the polygon boundary point).
+			// With each depth level halving the previous level's interval.
+			//
+
+			for (unsigned int level = 2; level < 5; ++level)
+			{
+				const unsigned int num_intervals = (1 << level);
+				const double interval_rotation_angle = 2 * GPlatesMaths::PI / num_intervals;
+
+				// The starting point sample is offset by 'half' an interval in order to avoid
+				// sampling the same points as the previous level.
+				GPlatesMaths::PointOnSphere point_sample =
+						GPlatesMaths::Rotation::create(
+								polygon_boundary_point.position_vector(),
+								0.5 * interval_rotation_angle) *
+										original_point_outside_polygon_boundary;
+
+				GPlatesMaths::Rotation interval_rotation_about_polygon_boundary_point =
+						GPlatesMaths::Rotation::create(
+								polygon_boundary_point.position_vector(),
+								interval_rotation_angle);
+
+				for (unsigned int interval = 0; interval < num_intervals; ++interval)
+				{
+					solve_velocity_at_boundary(
+							point_sample,
+							velocity_inside_polygon_boundary,
+							velocity_outside_polygon_boundary,
+							polygon_recon_geom_containing_domain_point,
+							reconstructed_static_polygons_query,
+							resolved_rigid_plates_query,
+							resolved_networks_query);
+
+					if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
+					{
+						// Return the average velocity at boundary.
+						return 0.5 * (velocity_inside_polygon_boundary.get() + velocity_outside_polygon_boundary.get());
+					}
+
+					// Move to the next sample point.
+					point_sample = interval_rotation_about_polygon_boundary_point * point_sample;
+				}
+			}
+
+			// We were unable to find a velocity both inside and outside the polygon boundary.
+			qWarning() << "Unable to find average velocity at plate boundary for smoothing:";
+			qWarning() << "  Most likely cause is overlapping plates/surfaces.";
+			GPlatesMaths::LatLonPoint polygon_boundary_point_lat_lon =
+					GPlatesMaths::make_lat_lon_point(polygon_boundary_point);
+			qWarning() << "  Plate boundary location lat/lon: "
+					<< polygon_boundary_point_lat_lon.latitude() << ", "
+					<< polygon_boundary_point_lat_lon.longitude() << "\n";
+
+			return boost::none;
 		}
 
 
