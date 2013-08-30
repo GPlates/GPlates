@@ -33,6 +33,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/VelocityFieldCalculatorLayerTask.h"
+#include "app-logic/VelocityParams.h"
 
 #include "global/GPlatesAssert.h"
 
@@ -184,24 +185,23 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::set_data(
 					&layer.get_layer_task_params());
 		if (layer_task_params)
 		{
-			typedef GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params layer_task_params_type;
 			// Update this source code if more 'solve velocities' enumeration values have been added (or removed).
-			BOOST_STATIC_ASSERT(layer_task_params_type::NUM_SOLVE_VELOCITY_METHODS == 2);
+			BOOST_STATIC_ASSERT(GPlatesAppLogic::VelocityParams::NUM_SOLVE_VELOCITY_METHODS == 2);
 
 			// Populate the 'solve velocities' combobox.
 			solve_velocities_method_combobox->clear();
-			for (int i = 0; i < layer_task_params_type::NUM_SOLVE_VELOCITY_METHODS; ++i)
+			for (int i = 0; i < GPlatesAppLogic::VelocityParams::NUM_SOLVE_VELOCITY_METHODS; ++i)
 			{
-				const layer_task_params_type::SolveVelocitiesMethodType solve_velocities_method =
-						static_cast<layer_task_params_type::SolveVelocitiesMethodType>(i);
+				const GPlatesAppLogic::VelocityParams::SolveVelocitiesMethodType solve_velocities_method =
+						static_cast<GPlatesAppLogic::VelocityParams::SolveVelocitiesMethodType>(i);
 
 				// "Calculate velocities "....
 				switch (solve_velocities_method)
 				{
-				case layer_task_params_type::SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS:
+				case GPlatesAppLogic::VelocityParams::SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS:
 					solve_velocities_method_combobox->addItem("of surfaces");
 					break;
-				case layer_task_params_type::SOLVE_VELOCITIES_OF_DOMAIN_POINTS:
+				case GPlatesAppLogic::VelocityParams::SOLVE_VELOCITIES_OF_DOMAIN_POINTS:
 					solve_velocities_method_combobox->addItem("of domain points");
 					break;
 				default:
@@ -210,7 +210,8 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::set_data(
 				}
 			}
 
-			solve_velocities_method_combobox->setCurrentIndex(layer_task_params->get_solve_velocities_method());
+			solve_velocities_method_combobox->setCurrentIndex(
+					layer_task_params->get_velocity_params().get_solve_velocities_method());
 		}
 
 		GPlatesPresentation::VelocityFieldCalculatorVisualLayerParams *visual_layer_params =
@@ -274,20 +275,23 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_solve_veloci
 					&layer.get_layer_task_params());
 		if (layer_task_params)
 		{
-			if (index < 0 || index >= GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::NUM_SOLVE_VELOCITY_METHODS)
+			if (index < 0 || index >= GPlatesAppLogic::VelocityParams::NUM_SOLVE_VELOCITY_METHODS)
 			{
 				return;
 			}
 
 			// If the combobox choice has not changed then return early.
-			if (index == layer_task_params->get_solve_velocities_method())
+			if (index == layer_task_params->get_velocity_params().get_solve_velocities_method())
 			{
 				return;
 			}
 
-			layer_task_params->set_solve_velocities_method(
-					static_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType>(
-							index));
+			GPlatesAppLogic::VelocityParams velocity_params = layer_task_params->get_velocity_params();
+
+			velocity_params.set_solve_velocities_method(
+					static_cast<GPlatesAppLogic::VelocityParams::SolveVelocitiesMethodType>(index));
+
+			layer_task_params->set_velocity_params(velocity_params);
 		}
 	}
 }

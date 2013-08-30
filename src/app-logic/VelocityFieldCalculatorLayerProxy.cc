@@ -38,9 +38,9 @@
 #include "global/GPlatesAssert.h"
 
 GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::VelocityFieldCalculatorLayerProxy(
-		VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method) :
+		const VelocityParams &velocity_params) :
 	d_current_reconstruction_time(0),
-	d_current_solve_velocities_method(solve_velocities_method)
+	d_current_velocity_params(velocity_params)
 {
 	// Defined in ".cc" file because...
 	// non_null_ptr destructors require complete type of class they're referring to.
@@ -58,6 +58,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::~VelocityFieldCalculatorLaye
 void
 GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vector_fields(
 		std::vector<multi_point_vector_field_non_null_ptr_type> &multi_point_vector_fields,
+		const VelocityParams &velocity_params,
 		const double &reconstruction_time)
 {
 	// If we have no velocity domains then there's no points at which to calculate velocities.
@@ -69,8 +70,9 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 	// See if any input layer proxies have changed.
 	check_input_layer_proxies();
 
-	// See if the reconstruction time has changed.
-	if (d_cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
+	// See if the reconstruction time or velocity parameters have changed.
+	if (d_cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time) ||
+		d_cached_velocity_params != velocity_params)
 	{
 		// The velocities are now invalid.
 		reset_cache();
@@ -79,6 +81,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 		// have velocities for a different time they don't need
 		// to be updated just because some other client requested a different time.
 		d_cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
+		d_cached_velocity_params = velocity_params;
 	}
 
 	if (!d_cached_multi_point_velocity_fields)
@@ -91,8 +94,8 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 		// Calculate velocities based on the solve velocities method type.
 		//
 
-		if (d_current_solve_velocities_method ==
-			VelocityFieldCalculatorLayerTask::Params::SOLVE_VELOCITIES_OF_DOMAIN_POINTS)
+		if (velocity_params.get_solve_velocities_method() ==
+			VelocityParams::SOLVE_VELOCITIES_OF_DOMAIN_POINTS)
 		{
 			//
 			// Get the velocities of the reconstructed feature geometries in the velocity domain layers.
@@ -109,8 +112,8 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 						reconstruction_time);
 			}
 		}
-		else if (d_current_solve_velocities_method ==
-			VelocityFieldCalculatorLayerTask::Params::SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS)
+		else if (velocity_params.get_solve_velocities_method() ==
+			VelocityParams::SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS)
 		{
 			//
 			// Get the domain geometries for the velocity calculation.
@@ -176,7 +179,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 		else
 		{
 			// Update this source code if more 'solve velocities' enumeration values have been added (or removed).
-			BOOST_STATIC_ASSERT(VelocityFieldCalculatorLayerTask::Params::NUM_SOLVE_VELOCITY_METHODS == 2);
+			BOOST_STATIC_ASSERT(VelocityParams::NUM_SOLVE_VELOCITY_METHODS == 2);
 
 			// Shouldn't get here.
 			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -215,20 +218,19 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::set_current_reconstruction_t
 
 
 void
-GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::set_solve_velocities_method(
-		VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType solve_velocities_method)
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::set_current_velocity_params(
+		const VelocityParams &velocity_params)
 {
-	if (d_current_solve_velocities_method == solve_velocities_method)
+	if (d_current_velocity_params == velocity_params)
 	{
-		// The current velocity method hasn't changed so avoid updating any observers unnecessarily.
+		// The current velocity params haven't changed so avoid updating any observers unnecessarily.
 		return;
 	}
-	d_current_solve_velocities_method = solve_velocities_method;
+	d_current_velocity_params = velocity_params;
 
-	// The velocities are now invalid.
-	reset_cache();
-
-	// Polling observers need to update themselves with respect to us.
+	// Note that we don't invalidate our velocities cache because if a velocities is
+	// not cached for a requested velocity params then a new velocities is created.
+	// Observers need to be aware that the default velocity params have changed.
 	d_subject_token.invalidate();
 }
 
@@ -351,6 +353,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::reset_cache()
 	// Clear any cached resolved topological boundaries.
 	d_cached_multi_point_velocity_fields = boost::none;
 	d_cached_reconstruction_time = boost::none;
+	d_cached_velocity_params = boost::none;
 }
 
 

@@ -512,7 +512,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 					GPLATES_ASSERTION_SOURCE);
 
 			// If the surface was found (ie, not a zero velocity vector) then assign the
-			// velocity to the inside of outside polygon depending on the surface.
+			// velocity to the inside or outside polygon depending on the surface.
 			if (velocity_sample->d_plate_id_reconstruction_geometry)
 			{
 				if (velocity_sample->d_plate_id_reconstruction_geometry.get() ==
@@ -700,10 +700,15 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 
 			// We were unable to find a velocity both inside and outside the polygon boundary.
 			qWarning() << "Unable to find average velocity at plate boundary for smoothing:";
-			qWarning() << "  Most likely cause is overlapping plates/surfaces.";
+			qWarning() << "  Most likely cause is overlapping plates/surfaces or gaps.";
+			GPlatesMaths::LatLonPoint domain_point_lat_lon =
+					GPlatesMaths::make_lat_lon_point(domain_point);
+			qWarning() << "  Domain point location lat/lon: "
+					<< domain_point_lat_lon.latitude() << ", "
+					<< domain_point_lat_lon.longitude();
 			GPlatesMaths::LatLonPoint polygon_boundary_point_lat_lon =
 					GPlatesMaths::make_lat_lon_point(polygon_boundary_point);
-			qWarning() << "  Plate boundary location lat/lon: "
+			qWarning() << "  Nearest plate boundary location lat/lon: "
 					<< polygon_boundary_point_lat_lon.latitude() << ", "
 					<< polygon_boundary_point_lat_lon.longitude() << "\n";
 

@@ -216,6 +216,7 @@ set(srcs
     VelocityFieldCalculatorLayerProxy.h
     VelocityFieldCalculatorLayerTask.cc
     VelocityFieldCalculatorLayerTask.h
+    VelocityParams.h
     VgpPartitionFeatureTask.cc
     VgpPartitionFeatureTask.h
 )
