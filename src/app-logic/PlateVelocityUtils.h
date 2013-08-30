@@ -110,9 +110,19 @@ namespace GPlatesAppLogic
 		 * geometries in @a velocity_domains. In other words their *reconstructed* positions are used.
 		 * To avoid using reconstructed positions, assign plate id zero to the velocity domain features.
 		 * Note that plate id zero can still give a non-zero rotation if the anchor plate id is non-zero.
+		 *
 		 * The position at which velocities are calculated is then tested against the reconstructed
 		 * static polygons and resolved topological plates/networks and the velocities then depend
 		 * on these surfaces.
+		 *
+		 * If @a boundary_smoothing_angular_half_extent is specified it provides the angular
+		 * distance (radians) over which velocities are smoothed across a plate/network boundary.
+		 * If any points of the reconstructed velocity domain lie within this distance from a
+		 * boundary then their velocity is interpolated between the domain point's calculated velocity
+		 * and the average velocity (at the nearest boundary point) using the distance-to-boundary
+		 * for interpolation. The average velocity at the boundary point is the average of the
+		 * velocities a very small (epsilon) distance on either side of the boundary.
+		 * The smoothing occurs over boundaries of topological boundaries/networks and static polygons.
 		 *
 		 * NOTE: Originally the geometries were expected to be multi-point geometries but now any
 		 * geometry type can be used (the points in the geometry are treated as a collection of points).
@@ -138,7 +148,8 @@ namespace GPlatesAppLogic
 				// and we are avoiding that due to a cyclic header dependency with "ResolvedTopologicalNetwork.h"...
 				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
 				const std::vector<resolved_topological_geometry_non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
-				const std::vector<resolved_topological_network_non_null_ptr_type> &velocity_surface_resolved_topological_networks);
+				const std::vector<resolved_topological_network_non_null_ptr_type> &velocity_surface_resolved_topological_networks,
+				boost::optional<double> boundary_smoothing_angular_half_extent = boost::none);
 
 
 		//////////////////////////////
