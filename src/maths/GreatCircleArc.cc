@@ -316,8 +316,7 @@ GPlatesMaths::GreatCircleArc::get_closest_point(
 	// Get the closest feature of this GCA to 'test_point'.
 	real_t closeness;
 	boost::optional<PointOnSphere> closest_point_on_great_circle_arc;
-	const GreatCircleArcFeature gca_feature = calculate_closest_feature(
-			*this, test_point, closest_point_on_great_circle_arc, closeness);
+	calculate_closest_feature(*this, test_point, closest_point_on_great_circle_arc, closeness);
 
 	return closest_point_on_great_circle_arc->get_non_null_pointer();
 }

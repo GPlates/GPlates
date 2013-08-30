@@ -177,7 +177,6 @@ GPlatesMaths::MultiPointOnSphere::is_close_to(
 {
 	real_t &closest_closeness_so_far = closeness;  // A descriptive alias.
 	boost::optional<PointOnSphere> closest_point;
-	bool have_already_found_a_close_point = false;
 
 	const_iterator iter = begin(), the_end = end();
 	for ( ; iter != the_end; ++iter)
