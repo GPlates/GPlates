@@ -29,6 +29,8 @@
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
+#include "maths/MathsUtils.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -58,7 +60,9 @@ namespace GPlatesAppLogic
 
 		VelocityParams() :
 			// Default to using surfaces since that's how GPlates started out calculating velocities...
-			d_solve_velocities_method(SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS)
+			d_solve_velocities_method(SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS),
+			d_is_boundary_smoothing_enabled(false),
+			d_boundary_smoothing_angular_half_extent_degrees(1.0)
 		{  }
 
 		SolveVelocitiesMethodType
@@ -74,13 +78,55 @@ namespace GPlatesAppLogic
 			d_solve_velocities_method = solve_velocities_method;
 		}
 
+		bool
+		get_is_boundary_smoothing_enabled() const
+		{
+			return d_is_boundary_smoothing_enabled;
+		}
+
+		void
+		set_is_boundary_smoothing_enabled(
+				bool is_boundary_smoothing_enabled = true)
+		{
+			d_is_boundary_smoothing_enabled = is_boundary_smoothing_enabled;
+		}
+
+		/**
+		 * Specifies the angular distance (radians) over which velocities are smoothed across
+		 * a plate/network boundary.
+		 *
+		 * If any points of the reconstructed velocity domain lie within this distance from a
+		 * boundary then their velocity is interpolated between the domain point's calculated velocity
+		 * and the average velocity (at the nearest boundary point) using the distance-to-boundary
+		 * for interpolation. The average velocity at the boundary point is the average of the
+		 * velocities a very small (epsilon) distance on either side of the boundary.
+		 *
+		 * The smoothing occurs over boundaries of topological boundaries/networks and static polygons.
+		 */
+		const double &
+		get_boundary_smoothing_angular_half_extent_degrees() const
+		{
+			return d_boundary_smoothing_angular_half_extent_degrees;
+		}
+
+		void
+		set_boundary_smoothing_angular_half_extent_degrees(
+				const double &boundary_smoothing_angular_half_extent_degrees)
+		{
+			d_boundary_smoothing_angular_half_extent_degrees = boundary_smoothing_angular_half_extent_degrees;
+		}
+
 
 		//! Equality comparison operator.
 		bool
 		operator==(
 				const VelocityParams &rhs) const
 		{
-			return d_solve_velocities_method == rhs.d_solve_velocities_method;
+			return d_solve_velocities_method == rhs.d_solve_velocities_method &&
+					d_is_boundary_smoothing_enabled == rhs.d_is_boundary_smoothing_enabled &&
+					GPlatesMaths::are_almost_exactly_equal(
+							d_boundary_smoothing_angular_half_extent_degrees,
+							rhs.d_boundary_smoothing_angular_half_extent_degrees);
 		}
 
 		//! Less than comparison operator.
@@ -92,6 +138,28 @@ namespace GPlatesAppLogic
 			{
 				return true;
 			}
+			if (d_solve_velocities_method > rhs.d_solve_velocities_method)
+			{
+				return false;
+			}
+
+			if (d_is_boundary_smoothing_enabled < rhs.d_is_boundary_smoothing_enabled)
+			{
+				return true;
+			}
+			if (d_is_boundary_smoothing_enabled > rhs.d_is_boundary_smoothing_enabled)
+			{
+				return false;
+			}
+
+			if (d_boundary_smoothing_angular_half_extent_degrees < rhs.d_boundary_smoothing_angular_half_extent_degrees)
+			{
+				return true;
+			}
+			if (d_boundary_smoothing_angular_half_extent_degrees > rhs.d_boundary_smoothing_angular_half_extent_degrees)
+			{
+				return false;
+			}
 
 			return false;
 		}
@@ -99,6 +167,9 @@ namespace GPlatesAppLogic
 	private:
 
 		SolveVelocitiesMethodType d_solve_velocities_method;
+
+		bool d_is_boundary_smoothing_enabled;
+		double d_boundary_smoothing_angular_half_extent_degrees;
 
 	};
 }

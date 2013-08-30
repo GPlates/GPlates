@@ -37,6 +37,9 @@
 
 #include "global/GPlatesAssert.h"
 
+#include "maths/MathsUtils.h"
+
+
 GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::VelocityFieldCalculatorLayerProxy(
 		const VelocityParams &velocity_params) :
 	d_current_reconstruction_time(0),
@@ -167,6 +170,15 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 						reconstruction_time);
 			}
 
+			// Get the velocity smoothing angular distance, if enabled.
+			boost::optional<double> boundary_smoothing_angular_half_extent_radians;
+			if (velocity_params.get_is_boundary_smoothing_enabled())
+			{
+				boundary_smoothing_angular_half_extent_radians =
+						GPlatesMaths::convert_deg_to_rad(
+								velocity_params.get_boundary_smoothing_angular_half_extent_degrees());
+			}
+
 			// Calculate the velocity fields using the surfaces.
 			PlateVelocityUtils::solve_velocities_on_surfaces(
 					d_cached_multi_point_velocity_fields.get(),
@@ -174,7 +186,8 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 					velocity_domains,
 					reconstructed_static_polygons,
 					resolved_topological_boundaries,
-					resolved_topological_networks);
+					resolved_topological_networks,
+					boundary_smoothing_angular_half_extent_radians);
 		}
 		else
 		{
