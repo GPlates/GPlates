@@ -265,9 +265,6 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 				const TerraTextConfiguration &configuration =
 						dynamic_cast<const TerraTextConfiguration &>(*d_configuration);
 
-				qDebug() << "smoothing: " << configuration.is_boundary_smoothing_enabled
-					<< " " << configuration.boundary_smoothing_angular_half_extent_degrees;
-
 				// Get all the MultiPointVectorFields from the current reconstruction.
 				// Get the velocity field calculator layer outputs.
 				std::vector<GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::non_null_ptr_type> velocity_field_outputs;
