@@ -249,7 +249,7 @@
         <item>
          <widget class="QCheckBox" name="velocity_smoothing_check_box">
           <property name="text">
-           <string>Enable smoothing</string>
+           <string>Smooth boundary velocities</string>
           </property>
          </widget>
         </item>
@@ -276,13 +276,6 @@
             </spacer>
            </item>
            <item>
-            <widget class="QLabel" name="velocity_smoothing_distance_label">
-             <property name="text">
-              <string>Angular extent</string>
-             </property>
-            </widget>
-           </item>
-           <item>
             <widget class="QDoubleSpinBox" name="velocity_smoothing_distance_spinbox">
              <property name="minimum">
               <double>0.100000000000000</double>
@@ -295,6 +288,13 @@
              </property>
              <property name="value">
               <double>1.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="velocity_smoothing_degrees_label">
+             <property name="text">
+              <string>degrees</string>
              </property>
             </widget>
            </item>

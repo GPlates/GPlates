@@ -100,6 +100,21 @@ namespace
 }
 
 
+GPlatesQtWidgets::LayerOptionsWidget *
+GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::create(
+		GPlatesAppLogic::ApplicationState &application_state,
+		GPlatesPresentation::ViewState &view_state,
+		ViewportWindow *viewport_window,
+		QWidget *parent_)
+{
+	return new VelocityFieldCalculatorLayerOptionsWidget(
+			application_state,
+			view_state,
+			viewport_window,
+			parent_);
+}
+
+
 GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalculatorLayerOptionsWidget(
 		GPlatesAppLogic::ApplicationState &application_state,
 		GPlatesPresentation::ViewState &view_state,
@@ -178,21 +193,6 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalcul
 	QObject::connect(
 			push_button_help_velocity_smoothing, SIGNAL(clicked()),
 			d_help_velocity_smoothing_dialog, SLOT(show()));
-}
-
-
-GPlatesQtWidgets::LayerOptionsWidget *
-GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::create(
-		GPlatesAppLogic::ApplicationState &application_state,
-		GPlatesPresentation::ViewState &view_state,
-		ViewportWindow *viewport_window,
-		QWidget *parent_)
-{
-	return new VelocityFieldCalculatorLayerOptionsWidget(
-			application_state,
-			view_state,
-			viewport_window,
-			parent_);
 }
 
 

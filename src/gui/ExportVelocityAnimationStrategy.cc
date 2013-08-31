@@ -49,6 +49,7 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/VelocityFieldCalculatorLayerProxy.h"
+#include "app-logic/VelocityParams.h"
 
 #include "file-io/ExportTemplateFilenameSequence.h"
 #include "file-io/File.h"
@@ -67,9 +68,47 @@
 namespace
 {
 	/**
+	 * Typedef for sequence of velocity field calculator layer proxies.
+	 */
+	typedef std::vector<GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::non_null_ptr_type>
+			velocity_field_calculator_layer_proxy_seq_type;
+
+	/**
 	 * Typedef for a sequence of @a MultiPointVectorField pointers.
 	 */
 	typedef std::vector<const GPlatesAppLogic::MultiPointVectorField *> vector_field_seq_type;
+
+
+	void
+	get_velocity_field_calculator_layer_proxies(
+			velocity_field_calculator_layer_proxy_seq_type &velocity_field_outputs,
+			const GPlatesAppLogic::ApplicationState &application_state)
+	{
+		using namespace GPlatesAppLogic;
+
+		const Reconstruction &reconstruction = application_state.get_current_reconstruction();
+
+		// Get the velocity field calculator layer outputsx.
+		// Note that an active layer does not necessarily mean a visible layer.
+		reconstruction.get_active_layer_outputs<VelocityFieldCalculatorLayerProxy>(velocity_field_outputs);
+	}
+
+
+	void
+	get_vector_field_seq(
+			vector_field_seq_type &vector_field_seq,
+			const std::vector<GPlatesAppLogic::multi_point_vector_field_non_null_ptr_type> &multi_point_velocity_fields)
+	{
+		using namespace GPlatesAppLogic;
+
+		// Convert sequence of non_null_ptr_type's to a sequence of raw pointers expected by the caller.
+		BOOST_FOREACH(
+				const multi_point_vector_field_non_null_ptr_type &multi_point_velocity_field,
+				multi_point_velocity_fields)
+		{
+			vector_field_seq.push_back(multi_point_velocity_field.get());
+		}
+	}
 
 
 	void
@@ -79,33 +118,21 @@ namespace
 	{
 		using namespace GPlatesAppLogic;
 
-		const Reconstruction &reconstruction = application_state.get_current_reconstruction();
-
 		// Get the velocity field calculator layer outputs.
-		// Note that an active layer does not necessarily mean a visible layer.
-		std::vector<GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::non_null_ptr_type> velocity_field_outputs;
-		if (!reconstruction.get_active_layer_outputs<GPlatesAppLogic::VelocityFieldCalculatorLayerProxy>(
-				velocity_field_outputs))
-		{
-			return;
-		}
+		std::vector<VelocityFieldCalculatorLayerProxy::non_null_ptr_type> velocity_field_outputs;
+		get_velocity_field_calculator_layer_proxies(velocity_field_outputs, application_state);
 
 		// Iterate over the layers that have velocity field calculator outputs.
 		std::vector<multi_point_vector_field_non_null_ptr_type> multi_point_velocity_fields;
 		BOOST_FOREACH(
-				const GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::non_null_ptr_type &velocity_field_calculator_layer_proxy,
+				const VelocityFieldCalculatorLayerProxy::non_null_ptr_type &velocity_field_output,
 				velocity_field_outputs)
 		{
-			velocity_field_calculator_layer_proxy->get_velocity_multi_point_vector_fields(multi_point_velocity_fields);
+			velocity_field_output->get_velocity_multi_point_vector_fields(multi_point_velocity_fields);
 		}
 
 		// Convert sequence of non_null_ptr_type's to a sequence of raw pointers expected by the caller.
-		BOOST_FOREACH(
-				const multi_point_vector_field_non_null_ptr_type &multi_point_velocity_field,
-				multi_point_velocity_fields)
-		{
-			vector_field_seq.push_back(multi_point_velocity_field.get());
-		}
+		get_vector_field_seq(vector_field_seq, multi_point_velocity_fields);
 	}
 }
 
@@ -170,12 +197,6 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 			.arg(basename)
 			.arg(frame_index) );
 
-	// Get all the MultiPointVectorFields from the current reconstruction.
-	vector_field_seq_type velocity_vector_field_seq;
-	populate_vector_field_seq(
-			velocity_vector_field_seq,
-			d_export_animation_context_ptr->view_state().get_application_state());
-
 	// Here's where we do the actual work of exporting the velocity vector fields.
 	try
 	{
@@ -186,6 +207,12 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 				// Throws bad_cast if fails.
 				const GpmlConfiguration &configuration =
 						dynamic_cast<const GpmlConfiguration &>(*d_configuration);
+
+				// Get all the MultiPointVectorFields from the current reconstruction.
+				vector_field_seq_type velocity_vector_field_seq;
+				populate_vector_field_seq(
+						velocity_vector_field_seq,
+						d_export_animation_context_ptr->view_state().get_application_state());
 
 				GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gpml_format(
 					full_filename,
@@ -206,6 +233,12 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 				// Throws bad_cast if fails.
 				const GMTConfiguration &configuration =
 						dynamic_cast<const GMTConfiguration &>(*d_configuration);
+
+				// Get all the MultiPointVectorFields from the current reconstruction.
+				vector_field_seq_type velocity_vector_field_seq;
+				populate_vector_field_seq(
+						velocity_vector_field_seq,
+						d_export_animation_context_ptr->view_state().get_application_state());
 
 				GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gmt_format(
 					full_filename,
@@ -232,6 +265,40 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 				const TerraTextConfiguration &configuration =
 						dynamic_cast<const TerraTextConfiguration &>(*d_configuration);
 
+				qDebug() << "smoothing: " << configuration.is_boundary_smoothing_enabled
+					<< " " << configuration.boundary_smoothing_angular_half_extent_degrees;
+
+				// Get all the MultiPointVectorFields from the current reconstruction.
+				// Get the velocity field calculator layer outputs.
+				std::vector<GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::non_null_ptr_type> velocity_field_outputs;
+				get_velocity_field_calculator_layer_proxies(
+						velocity_field_outputs,
+						d_export_animation_context_ptr->view_state().get_application_state());
+
+				// Iterate over the layers that have velocity field calculator outputs.
+				std::vector<GPlatesAppLogic::multi_point_vector_field_non_null_ptr_type> multi_point_velocity_fields;
+				BOOST_FOREACH(
+						const GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::non_null_ptr_type &velocity_field_output,
+						velocity_field_outputs)
+				{
+					GPlatesAppLogic::VelocityParams velocity_params =
+							velocity_field_output->get_current_velocity_params();
+
+					// Override with any layer velocity params explicitly set in the export options.
+					velocity_params.set_is_boundary_smoothing_enabled(
+							configuration.is_boundary_smoothing_enabled);
+					velocity_params.set_boundary_smoothing_angular_half_extent_degrees(
+							configuration.boundary_smoothing_angular_half_extent_degrees);
+
+					velocity_field_output->get_velocity_multi_point_vector_fields(
+							multi_point_velocity_fields,
+							velocity_params);
+				}
+
+				// Convert sequence of non_null_ptr_type's to a sequence of raw pointers.
+				vector_field_seq_type velocity_vector_field_seq;
+				get_vector_field_seq(velocity_vector_field_seq, multi_point_velocity_fields);
+
 				GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_terra_text_format(
 					configuration.terra_grid_filename_template,
 					full_filename,
@@ -251,6 +318,12 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 				// Throws bad_cast if fails.
 				const CitcomsGlobalConfiguration &configuration =
 						dynamic_cast<const CitcomsGlobalConfiguration &>(*d_configuration);
+
+				// Get all the MultiPointVectorFields from the current reconstruction.
+				vector_field_seq_type velocity_vector_field_seq;
+				populate_vector_field_seq(
+						velocity_vector_field_seq,
+						d_export_animation_context_ptr->view_state().get_application_state());
 
 				// Export the raw CitcomS velocity files.
 				// Also export CitcomS-compatible GMT format files, if requested.
