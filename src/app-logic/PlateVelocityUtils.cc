@@ -699,8 +699,36 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 			}
 
 			// We were unable to find a velocity both inside and outside the polygon boundary.
+
+			// If unable to find a velocity inside the polygon boundary then just resort to
+			// using the velocity at the domain point even though it could be further from
+			// the boundary point (although still within the smoothing distance).
+			// The velocities within the same polygon (and relatively near each other) should
+			// be relatively the same.
+			// This scenario happens when there are overlapping polygons and the domain point
+			// is outside the overlapping region (then the boundary point lies in the overlapping
+			// region and the plate polygon of the domain point cannot be found at the boundary point).
+			if (!velocity_inside_polygon_boundary)
+			{
+				solve_velocity_at_boundary(
+						domain_point,
+						velocity_inside_polygon_boundary,
+						velocity_outside_polygon_boundary,
+						polygon_recon_geom_containing_domain_point,
+						reconstructed_static_polygons_query,
+						resolved_rigid_plates_query,
+						resolved_networks_query);
+
+				if (velocity_inside_polygon_boundary && velocity_outside_polygon_boundary)
+				{
+					// Return the average velocity at boundary.
+					return 0.5 * (velocity_inside_polygon_boundary.get() + velocity_outside_polygon_boundary.get());
+				}
+			}
+
+			// We were unable to find a velocity both inside and outside the polygon boundary.
 			qWarning() << "Unable to find average velocity at plate boundary for smoothing:";
-			qWarning() << "  Most likely cause is overlapping plates/surfaces or gaps.";
+			qWarning() << "  Most likely cause is a gap between plates/surfaces.";
 			GPlatesMaths::LatLonPoint domain_point_lat_lon =
 					GPlatesMaths::make_lat_lon_point(domain_point);
 			qWarning() << "  Domain point location lat/lon: "
