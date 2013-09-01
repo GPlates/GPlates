@@ -14,6 +14,8 @@ set(srcs
     BasicHandle.cc
     BasicHandle.h
     BasicRevision.h
+    BubbleUpRevisionHandler.cc
+    BubbleUpRevisionHandler.h
     ChangesetHandle.cc
     ChangesetHandle.h
     FeatureCollectionHandle.cc
@@ -61,24 +63,22 @@ set(srcs
     PropertyName.h
     PropertyValue.cc
     PropertyValue.h
-    PropertyValueBubbleUpRevisionHandler.cc
-    PropertyValueBubbleUpRevisionHandler.h
-    PropertyValueRevision.h
-    PropertyValueRevisionContext.h
-    PropertyValueRevisionedReference.h
     QualifiedXmlName.h
+    Revision.h
+    Revisionable.cc
+    Revisionable.h
     RevisionAwareIterator.h
+    RevisionContext.h
+    RevisionedReference.cc
+    RevisionedReference.h
     RevisionId.h
     StringContentTypeGenerator.h
     StringSetSingletons.cc
     StringSetSingletons.h
     TopLevelProperty.cc
     TopLevelProperty.h
-    TopLevelPropertyBubbleUpRevisionHandler.cc
-    TopLevelPropertyBubbleUpRevisionHandler.h
     TopLevelPropertyInline.cc
     TopLevelPropertyInline.h
-    TopLevelPropertyRevision.h
     types.h
     WeakObserver.h
     WeakObserverPublisher.h

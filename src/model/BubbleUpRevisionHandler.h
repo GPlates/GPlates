@@ -23,15 +23,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_MODEL_PROPERTYVALUEBUBBLEUPREVISIONHANDLER_H
-#define GPLATES_MODEL_PROPERTYVALUEBUBBLEUPREVISIONHANDLER_H
+#ifndef GPLATES_MODEL_BUBBLEUPREVISIONHANDLER_H
+#define GPLATES_MODEL_BUBBLEUPREVISIONHANDLER_H
 
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
 #include "ModelTransaction.h"
-#include "PropertyValue.h"
-#include "PropertyValueRevision.h"
+#include "Revisionable.h"
+#include "Revision.h"
 
 
 namespace GPlatesModel
@@ -40,21 +40,21 @@ namespace GPlatesModel
 	class Model;
 
 	/**
-	 * A convenience RAII helper class used by derived property value classes in their methods
-	 * that modify property value state.
+	 * A convenience RAII helper class used by derived revisionable classes in their methods
+	 * that modify revisionable state.
 	 */
-	class PropertyValueBubbleUpRevisionHandler :
+	class BubbleUpRevisionHandler :
 			private boost::noncopyable
 	{
 	public:
 
 		/**
-		 * Constructor creates the bubble-up revisions from the specified property value
+		 * Constructor creates the bubble-up revisions from the specified revisionable object
 		 * up to the model feature store (if connected all the way up).
 		 */
 		explicit
-		PropertyValueBubbleUpRevisionHandler(
-				const PropertyValue::non_null_ptr_type &property_value);
+		BubbleUpRevisionHandler(
+				const Revisionable::non_null_ptr_type &revisionable);
 
 		/**
 		 * Calls @a commit if it hasn't already been called.
@@ -62,7 +62,7 @@ namespace GPlatesModel
 		 * Exposing @a commit as a method enables caller to avoid the double-exception-terminates problem.
 		 * In other words destructor must block/lose exception but @a commit does not.
 		 */
-		~PropertyValueBubbleUpRevisionHandler();
+		~BubbleUpRevisionHandler();
 
 
 		/**
@@ -77,7 +77,7 @@ namespace GPlatesModel
 		/**
 		 * Returns the new mutable (base class) revision.
 		 */
-		PropertyValueRevision::non_null_ptr_type
+		Revision::non_null_ptr_type
 		get_revision()
 		{
 			return d_revision;
@@ -85,7 +85,7 @@ namespace GPlatesModel
 
 		/**
 		 * Returns the new mutable revision (cast to specified derived revision type).
-		 * Derived property value classes modify the data in the returned derived revision class.
+		 * Derived revisionable classes modify the data in the returned derived revision class.
 		 */
 		template <class RevisionType>
 		RevisionType &
@@ -110,13 +110,13 @@ namespace GPlatesModel
 		//! The model transaction will switch the current revision to the new one.
 		ModelTransaction d_transaction;
 
-		PropertyValue::non_null_ptr_type d_property_value;
+		Revisionable::non_null_ptr_type d_revisionable;
 
-		PropertyValueRevision::non_null_ptr_type d_revision;
+		Revision::non_null_ptr_type d_revision;
 
 		bool d_committed;
 
 	};
 }
 
-#endif // GPLATES_MODEL_PROPERTYVALUEBUBBLEUPREVISIONHANDLER_H
+#endif // GPLATES_MODEL_BUBBLEUPREVISIONHANDLER_H

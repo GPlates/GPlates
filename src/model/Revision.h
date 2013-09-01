@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_MODEL_PROPERTYVALUEREVISION_H
-#define GPLATES_MODEL_PROPERTYVALUEREVISION_H
+#ifndef GPLATES_MODEL_REVISION_H
+#define GPLATES_MODEL_REVISION_H
 
 #include <boost/optional.hpp>
 
@@ -34,42 +34,45 @@
 namespace GPlatesModel
 {
 	// Forward declarations.
-	class PropertyValueRevisionContext;
-	template <class PropertyValueType> class PropertyValueRevisionedReference;
+	class RevisionContext;
+	namespace Implementation
+	{
+		class RevisionedReference;
+	}
 
 
 	/**
-	 * Base class inherited by derived revision classes (in derived property values) where
-	 * mutable/revisionable property value state is stored so it can be revisioned.
+	 * Base revision class inherited by derived revision classes where mutable/revisionable
+	 * state is stored so it can be revisioned.
 	 */
-	class PropertyValueRevision :
-			public GPlatesUtils::ReferenceCount<PropertyValueRevision>
+	class Revision :
+			public GPlatesUtils::ReferenceCount<Revision>
 	{
 	public:
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<PropertyValueRevision> non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PropertyValueRevision> non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<Revision> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const Revision> non_null_ptr_to_const_type;
 
 
 		virtual
-		~PropertyValueRevision()
+		~Revision()
 		{  }
 
 
 		/**
-		 * A shallow clone that deep copies everything except nested property value revision references.
+		 * A shallow clone that deep copies everything except nested revision references.
 		 *
 		 * @a context is the optional (parent) context within which this revision is nested.
-		 * A property value (revision) that is not attached to a parent has no context.
+		 * A revision that is not attached to a parent has no context.
 		 *
-		 * Since property values nested within this property value are already revisioned
-		 * we don't need to deep copy them. In other words two parent property value
+		 * Since revisionable objects nested within this revision are already revisioned
+		 * we don't need to deep copy them. In other words, for example, two parent property value
 		 * revisions can share the same nested property value revision.
 		 */
 		virtual
 		non_null_ptr_type
 		clone_revision(
-				boost::optional<PropertyValueRevisionContext &> context = boost::none) const = 0;
+				boost::optional<RevisionContext &> context = boost::none) const = 0;
 
 
 		/**
@@ -82,7 +85,7 @@ namespace GPlatesModel
 		virtual
 		bool
 		equality(
-				const PropertyValueRevision &other) const
+				const Revision &other) const
 		{
 			return true; // Terminates derived-to-base recursion.
 		}
@@ -94,7 +97,7 @@ namespace GPlatesModel
 		 * Note: There's no set method since it should not be possible to alter the context
 		 * after a revision has been created.
 		 */
-		boost::optional<PropertyValueRevisionContext &>
+		boost::optional<RevisionContext &>
 		get_context() const
 		{
 			return d_context;
@@ -103,14 +106,16 @@ namespace GPlatesModel
 	protected:
 
 		/**
-		 * Constructor specified optional (parent) context in which this property value (revision) is nested.
+		 * Constructor specified optional (parent) context in which this revision is nested.
 		 */
 		explicit
-		PropertyValueRevision(
-				boost::optional<PropertyValueRevisionContext &> context = boost::none) :
+		Revision(
+				boost::optional<RevisionContext &> context = boost::none) :
 			d_context(context),
 			d_revision_reference_ref_count(0)
 		{  }
+
+	private:
 
 		/**
 		 * NOTE: Copy-constructor is intentionally not defined anywhere (not strictly necessary to do
@@ -118,29 +123,27 @@ namespace GPlatesModel
 		 *
 		 * Use the constructor (accepting revision context) when cloning a revision.
 		 */
-		PropertyValueRevision(
-				const PropertyValueRevision &other);
+		Revision(
+				const Revision &other);
 
-	private:
 
 		/**
-		 * The bubble up callback to the parent property value (or top-level property), if any,
-		 * that is called just prior to making a modification to 'this' property value.
+		 * The bubble up callback to the parent revisionable object, if any, that is called just
+		 * prior to making a modification to 'this' revisionable object.
 		 */
-		boost::optional<PropertyValueRevisionContext &> d_context;
+		boost::optional<RevisionContext &> d_context;
 
 
 		/**
-		 * The reference-count of this instance used by @a PropertyValueRevisionedReference.
+		 * The reference-count of this instance used by @a RevisionedReference.
 		 *
-		 * This is used to detach 'this' property value revision from its revision context when
-		 * the last @a PropertyValueRevisionedReference referencing 'this' is destroyed.
+		 * This is used to detach 'this' revision from its revision context when
+		 * the last @a RevisionedReference referencing 'this' is destroyed.
 		 */
 		mutable int d_revision_reference_ref_count;
 
-		template <class PropertyValueType>
-		friend class PropertyValueRevisionedReference;
+		friend class Implementation::RevisionedReference;
 	};
 }
 
-#endif // GPLATES_MODEL_PROPERTYVALUEREVISION_H
+#endif // GPLATES_MODEL_REVISION_H

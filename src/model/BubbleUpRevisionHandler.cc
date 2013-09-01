@@ -23,22 +23,22 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "PropertyValueBubbleUpRevisionHandler.h"
+#include "BubbleUpRevisionHandler.h"
 
 #include "Model.h"
 
 
-GPlatesModel::PropertyValueBubbleUpRevisionHandler::PropertyValueBubbleUpRevisionHandler(
-		const PropertyValue::non_null_ptr_type &property_value) :
-	d_model(property_value->get_model()),
-	d_property_value(property_value),
-	d_revision(property_value->create_bubble_up_revision(d_transaction)),
+GPlatesModel::BubbleUpRevisionHandler::BubbleUpRevisionHandler(
+		const Revisionable::non_null_ptr_type &revisionable) :
+	d_model(revisionable->get_model()),
+	d_revisionable(revisionable),
+	d_revision(revisionable->create_bubble_up_revision(d_transaction)),
 	d_committed(false)
 {
 }
 
 
-GPlatesModel::PropertyValueBubbleUpRevisionHandler::~PropertyValueBubbleUpRevisionHandler()
+GPlatesModel::BubbleUpRevisionHandler::~BubbleUpRevisionHandler()
 {
 	// Since this is a destructor we cannot let any exceptions escape.
 	// If one is thrown we just have to lump it and continue on.
@@ -53,7 +53,7 @@ GPlatesModel::PropertyValueBubbleUpRevisionHandler::~PropertyValueBubbleUpRevisi
 
 
 void
-GPlatesModel::PropertyValueBubbleUpRevisionHandler::commit()
+GPlatesModel::BubbleUpRevisionHandler::commit()
 {
 	if (d_committed)
 	{

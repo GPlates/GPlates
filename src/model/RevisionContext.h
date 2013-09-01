@@ -23,13 +23,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_MODEL_PROPERTYVALUEREVISIONCONTEXT_H
-#define GPLATES_MODEL_PROPERTYVALUEREVISIONCONTEXT_H
+#ifndef GPLATES_MODEL_REVISIONCONTEXT_H
+#define GPLATES_MODEL_REVISIONCONTEXT_H
 
 #include <boost/optional.hpp>
 
-#include "PropertyValue.h"
-#include "PropertyValueRevision.h"
+#include "Revisionable.h"
+#include "Revision.h"
 
 
 namespace GPlatesModel
@@ -39,26 +39,26 @@ namespace GPlatesModel
 	class ModelTransaction;
 
 
-	class PropertyValueRevisionContext
+	class RevisionContext
 	{
 	public:
 
 		virtual
-		~PropertyValueRevisionContext()
+		~RevisionContext()
 		{  }
 
 
 		/**
-		 * Bubbles up a modification from a property value (initiated by property value).
+		 * Bubbles up a modification from a revisionable object.
 		 *
 		 * The bubble-up mechanism creates a new revision as it bubbles up the (parent) context chain
 		 * towards the top of the model hierarchy (feature store) if connected all the way up.
 		 */
 		virtual
-		PropertyValueRevision::non_null_ptr_type
+		Revision::non_null_ptr_type
 		bubble_up(
 				ModelTransaction &transaction,
-				const PropertyValue::non_null_ptr_to_const_type &property_value) = 0;
+				const Revisionable::non_null_ptr_to_const_type &revisionable) = 0;
 
 		
 		/**
@@ -74,4 +74,4 @@ namespace GPlatesModel
 	};
 }
 
-#endif // GPLATES_MODEL_PROPERTYVALUEREVISIONCONTEXT_H
+#endif // GPLATES_MODEL_REVISIONCONTEXT_H
