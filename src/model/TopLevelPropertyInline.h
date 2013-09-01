@@ -41,8 +41,8 @@
 
 #include "ModelTransaction.h"
 #include "PropertyValue.h"
-#include "PropertyValueRevisionContext.h"
-#include "PropertyValueRevisionedReference.h"
+#include "RevisionContext.h"
+#include "RevisionedReference.h"
 #include "TopLevelProperty.h"
 
 #include "global/PointerTraits.h"
@@ -56,7 +56,7 @@ namespace GPlatesModel
 	 */
 	class TopLevelPropertyInline:
 			public TopLevelProperty,
-			public PropertyValueRevisionContext
+			public RevisionContext
 	{
 	public:
 
@@ -127,7 +127,7 @@ namespace GPlatesModel
 			operator*() const
 			{
 				return d_top_level_property_inline->get_current_revision<Revision>()
-						.values[d_index].get_property_value();
+						.values[d_index].get_revisionable();
 			}
 
 			//! Post-increment operator provided by base class boost::incrementable.
@@ -313,7 +313,7 @@ namespace GPlatesModel
 		//! Constructor used when cloning.
 		TopLevelPropertyInline(
 				const TopLevelPropertyInline &other_,
-				boost::optional<FeatureHandle &> context_) :
+				boost::optional<RevisionContext &> context_) :
 			TopLevelProperty(
 					other_,
 					Revision::non_null_ptr_type(
@@ -322,9 +322,9 @@ namespace GPlatesModel
 		{  }
 
 		virtual
-		const TopLevelProperty::non_null_ptr_type
+		const Revisionable::non_null_ptr_type
 		clone_impl(
-				boost::optional<FeatureHandle &> context = boost::none) const
+				boost::optional<RevisionContext &> context = boost::none) const
 		{
 			return non_null_ptr_type(new TopLevelPropertyInline(*this, context));
 		}
@@ -334,16 +334,16 @@ namespace GPlatesModel
 		/**
 		 * Used when modifications bubble up to us.
 		 *
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
-		PropertyValueRevision::non_null_ptr_type
+		GPlatesModel::Revision::non_null_ptr_type
 		bubble_up(
 				ModelTransaction &transaction,
-				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
 		/**
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
 		boost::optional<Model &>
@@ -356,23 +356,23 @@ namespace GPlatesModel
 		/**
 		 * The type of our container of PropertyValue revisioned references.
 		 */
-		typedef std::vector<PropertyValueRevisionedReference<PropertyValue> > property_value_container_type;
+		typedef std::vector<RevisionedReference<PropertyValue> > property_value_container_type;
 
 
 		/**
 		 * Top level property data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public TopLevelPropertyRevision
+				public TopLevelProperty::Revision
 		{
 			template<class PropertyValueIterator>
 			Revision(
 					ModelTransaction &transaction_,
-					PropertyValueRevisionContext &child_context_,
+					RevisionContext &child_context_,
 					const PropertyValueIterator &values_begin_,
 					const PropertyValueIterator &values_end_,
 					const xml_attributes_type &xml_attributes_) :
-				TopLevelPropertyRevision(xml_attributes_)
+				TopLevelProperty::Revision(xml_attributes_)
 			{
 				PropertyValueIterator values_iter = values_begin_;
 				for ( ; values_iter != values_end_; ++values_iter)
@@ -381,8 +381,8 @@ namespace GPlatesModel
 
 					// A revisioned reference to the property value enables us to switch to its
 					// revision later (eg, during undo/redo).
-					PropertyValueRevisionedReference<PropertyValue> revisioned_property_value =
-							PropertyValueRevisionedReference<PropertyValue>::attach(
+					RevisionedReference<PropertyValue> revisioned_property_value =
+							RevisionedReference<PropertyValue>::attach(
 									transaction_, child_context_, property_value);
 
 					values.push_back(revisioned_property_value);
@@ -392,9 +392,9 @@ namespace GPlatesModel
 			//! Deep-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<FeatureHandle &> context_,
-					PropertyValueRevisionContext &child_context_) :
-				TopLevelPropertyRevision(other_, context_),
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				TopLevelProperty::Revision(other_, context_),
 				values(other_.values)
 			{
 				// Clone data members that were not deep copied.
@@ -409,15 +409,15 @@ namespace GPlatesModel
 			//! Shallow-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<FeatureHandle &> context_) :
-				TopLevelPropertyRevision(other_, context_),
+					boost::optional<RevisionContext &> context_) :
+				TopLevelProperty::Revision(other_, context_),
 				values(other_.values)
 			{  }
 
 			virtual
-			TopLevelPropertyRevision::non_null_ptr_type
+			GPlatesModel::Revision::non_null_ptr_type
 			clone_revision(
-					boost::optional<FeatureHandle &> context) const
+					boost::optional<RevisionContext &> context) const
 			{
 				// Use shallow-clone constructor.
 				return non_null_ptr_type(new Revision(*this, context));
@@ -426,7 +426,7 @@ namespace GPlatesModel
 			virtual
 			bool
 			equality(
-					const TopLevelPropertyRevision &other) const;
+					const GPlatesModel::Revision &other) const;
 
 			property_value_container_type values;
 		};

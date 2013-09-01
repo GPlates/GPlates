@@ -110,26 +110,26 @@ GPlatesModel::TopLevelPropertyInline::print_to(
 }
 
 
-GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesModel::Revision::non_null_ptr_type
 GPlatesModel::TopLevelPropertyInline::bubble_up(
 		ModelTransaction &transaction,
-		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
 	// Bubble up to our (parent) context (if any) which creates a new revision for us.
 	Revision &revision = create_bubble_up_revision<Revision>(transaction);
 
 	// In this method we are operating on a (bubble up) cloned version of the current revision.
 
-	boost::optional<PropertyValueRevision::non_null_ptr_type> child_revision;
+	boost::optional<GPlatesModel::Revision::non_null_ptr_type> child_revision;
 
 	// Search for the child property value in our property value list.
 	property_value_container_type::iterator values_iter = revision.values.begin();
 	property_value_container_type::iterator values_end = revision.values.end();
 	for ( ; values_iter != values_end; ++values_iter)
 	{
-		PropertyValueRevisionedReference<PropertyValue> &revisioned_reference = *values_iter;
+		RevisionedReference<PropertyValue> &revisioned_reference = *values_iter;
 
-		if (child_property_value == revisioned_reference.get_property_value())
+		if (child_revisionable == revisioned_reference.get_revisionable())
 		{
 			// Create a new revision for the child property value.
 			child_revision = revisioned_reference.clone_revision(transaction);
@@ -148,7 +148,7 @@ GPlatesModel::TopLevelPropertyInline::bubble_up(
 
 bool
 GPlatesModel::TopLevelPropertyInline::Revision::equality(
-		const TopLevelPropertyRevision &other) const
+		const GPlatesModel::Revision &other) const
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
@@ -160,13 +160,13 @@ GPlatesModel::TopLevelPropertyInline::Revision::equality(
 	for (std::size_t n = 0; n < values.size(); ++n)
 	{
 		// Compare PropertyValues, not pointers to PropertyValues...
-		if (*values[n].get_property_value() != *other_revision.values[n].get_property_value())
+		if (*values[n].get_revisionable() != *other_revision.values[n].get_revisionable())
 		{
 			return false;
 		}
 	}
 
-	return TopLevelPropertyRevision::equality(other);
+	return TopLevelProperty::Revision::equality(other);
 }
 
 
