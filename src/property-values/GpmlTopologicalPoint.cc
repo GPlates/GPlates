@@ -30,8 +30,8 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
 
 
 const GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type
@@ -50,17 +50,17 @@ void
 GPlatesPropertyValues::GpmlTopologicalPoint::set_source_geometry(
 		GpmlPropertyDelegate::non_null_ptr_type source_geometry_)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().source_geometry.change(
 			revision_handler.get_model_transaction(), source_geometry_);
 	revision_handler.commit();
 }
 
 
-GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesModel::Revision::non_null_ptr_type
 GPlatesPropertyValues::GpmlTopologicalPoint::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
-		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
 	// Bubble up to our (parent) context (if any) which creates a new revision for us.
 	Revision &revision = create_bubble_up_revision<Revision>(transaction);
@@ -69,7 +69,7 @@ GPlatesPropertyValues::GpmlTopologicalPoint::bubble_up(
 
 	// The child property value that bubbled up the modification should be one of our children.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			child_property_value == revision.source_geometry.get_property_value(),
+			child_revisionable == revision.source_geometry.get_revisionable(),
 			GPLATES_ASSERTION_SOURCE);
 
 	return revision.source_geometry.clone_revision(transaction);

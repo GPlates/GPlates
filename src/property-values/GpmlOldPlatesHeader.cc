@@ -29,14 +29,14 @@
 
 #include "GpmlOldPlatesHeader.h"
 
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
+#include "model/BubbleUpRevisionHandler.h"
 
 
 void
 GPlatesPropertyValues::GpmlOldPlatesHeader::set_region_number(
 		const unsigned int &i)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().region_number = i;
 	revision_handler.commit();
 }
@@ -46,7 +46,7 @@ void
 GPlatesPropertyValues::GpmlOldPlatesHeader::set_reference_number(
 		const unsigned int &i)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().reference_number = i;
 	revision_handler.commit();
 }
@@ -56,7 +56,7 @@ void
 GPlatesPropertyValues::GpmlOldPlatesHeader::set_string_number(
 		const unsigned int &i)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().string_number = i;
 	revision_handler.commit();
 }
@@ -66,7 +66,7 @@ void
 GPlatesPropertyValues::GpmlOldPlatesHeader::set_geographic_description(
 		const GPlatesUtils::UnicodeString &us)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().geographic_description = us;
 	revision_handler.commit();
 }
@@ -76,7 +76,7 @@ void
 GPlatesPropertyValues::GpmlOldPlatesHeader::set_plate_id_number(
 		const GPlatesModel::integer_plate_id_type &i)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().plate_id_number = i;
 	revision_handler.commit();
 }
@@ -86,7 +86,7 @@ void
 GPlatesPropertyValues::GpmlOldPlatesHeader::set_age_of_appearance(
 		const double &d)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().age_of_appearance = d;
 	revision_handler.commit();
 }
@@ -96,7 +96,7 @@ void
 GPlatesPropertyValues::GpmlOldPlatesHeader::set_age_of_disappearance(
 		const double &d)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().age_of_disappearance = d;
 	revision_handler.commit();
 }
@@ -106,7 +106,7 @@ void
 GPlatesPropertyValues::GpmlOldPlatesHeader::set_data_type_code(
 		const GPlatesUtils::UnicodeString &us)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().data_type_code = TextContent(us);
 	revision_handler.commit();
 }
@@ -116,7 +116,7 @@ void
 GPlatesPropertyValues::GpmlOldPlatesHeader::set_data_type_code_number(
 		const unsigned int &i)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().data_type_code_number = i;
 	revision_handler.commit();
 }
@@ -126,7 +126,7 @@ void
 GPlatesPropertyValues::GpmlOldPlatesHeader::set_data_type_code_number_additional(
 		const GPlatesUtils::UnicodeString &us)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().data_type_code_number_additional = TextContent(us);
 	revision_handler.commit();
 }
@@ -136,7 +136,7 @@ void
 GPlatesPropertyValues::GpmlOldPlatesHeader::set_conjugate_plate_id_number(
 		const GPlatesModel::integer_plate_id_type &i)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().conjugate_plate_id_number = i;
 	revision_handler.commit();
 }
@@ -146,7 +146,7 @@ void
 GPlatesPropertyValues::GpmlOldPlatesHeader::set_colour_code(
 		const unsigned int &i)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().colour_code = i;
 	revision_handler.commit();
 }
@@ -156,7 +156,7 @@ void
 GPlatesPropertyValues::GpmlOldPlatesHeader::set_number_of_points(
 		const unsigned int &i)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().number_of_points = i;
 	revision_handler.commit();
 }

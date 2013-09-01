@@ -29,14 +29,14 @@
 
 #include "XsString.h"
 
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
+#include "model/BubbleUpRevisionHandler.h"
 
 
 void
 GPlatesPropertyValues::XsString::set_value(
 		const TextContent &tc)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().value = tc;
 	revision_handler.commit();
 }

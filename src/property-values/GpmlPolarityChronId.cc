@@ -29,14 +29,14 @@
 
 #include "GpmlPolarityChronId.h"
 
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
+#include "model/BubbleUpRevisionHandler.h"
 
 
 void
 GPlatesPropertyValues::GpmlPolarityChronId::set_era(
 		const QString &era)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().era = era;
 	revision_handler.commit();
 }
@@ -46,7 +46,7 @@ void
 GPlatesPropertyValues::GpmlPolarityChronId::set_major_region(
 		unsigned int major_region)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().major_region = major_region;
 	revision_handler.commit();
 }
@@ -56,7 +56,7 @@ void
 GPlatesPropertyValues::GpmlPolarityChronId::set_minor_region(
 		const QString &minor_region)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().minor_region = minor_region;
 	revision_handler.commit();
 }

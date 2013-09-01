@@ -32,7 +32,7 @@
 #include "maths/MathsUtils.h"
 #include "maths/PointOnSphere.h"
 
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
+#include "model/BubbleUpRevisionHandler.h"
 
 
 const GPlatesPropertyValues::GmlPoint::non_null_ptr_type
@@ -97,7 +97,7 @@ void
 GPlatesPropertyValues::GmlPoint::set_point(
 		GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> p)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	Revision &revision = revision_handler.get_revision<Revision>();
 
 	revision.point = p;
@@ -111,7 +111,7 @@ void
 GPlatesPropertyValues::GmlPoint::set_gml_property(
 		GmlProperty gml_property_)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().gml_property = gml_property_;
 	revision_handler.commit();
 }

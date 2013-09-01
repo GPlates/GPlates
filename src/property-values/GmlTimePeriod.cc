@@ -32,8 +32,8 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
 
 
 const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
@@ -53,7 +53,7 @@ void
 GPlatesPropertyValues::GmlTimePeriod::set_begin(
 		GmlTimeInstant::non_null_ptr_type begin_)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().begin.change(
 			revision_handler.get_model_transaction(), begin_);
 	revision_handler.commit();
@@ -64,7 +64,7 @@ void
 GPlatesPropertyValues::GmlTimePeriod::set_end(
 		GmlTimeInstant::non_null_ptr_type end_)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().end.change(
 			revision_handler.get_model_transaction(), end_);
 	revision_handler.commit();
@@ -79,24 +79,24 @@ GPlatesPropertyValues::GmlTimePeriod::print_to(
 }
 
 
-GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesModel::Revision::non_null_ptr_type
 GPlatesPropertyValues::GmlTimePeriod::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
-		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
 	// Bubble up to our (parent) context (if any) which creates a new revision for us.
 	Revision &revision = create_bubble_up_revision<Revision>(transaction);
 
 	// In this method we are operating on a (bubble up) cloned version of the current revision.
 
-	if (child_property_value == revision.begin.get_property_value())
+	if (child_revisionable == revision.begin.get_revisionable())
 	{
 		return revision.begin.clone_revision(transaction);
 	}
 
 	// The child property value that bubbled up the modification should be one of our children.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			child_property_value == revision.end.get_property_value(),
+			child_revisionable == revision.end.get_revisionable(),
 			GPLATES_ASSERTION_SOURCE);
 
 	return revision.end.clone_revision(transaction);

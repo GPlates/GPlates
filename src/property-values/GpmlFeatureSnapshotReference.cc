@@ -29,14 +29,14 @@
 
 #include "GpmlFeatureSnapshotReference.h"
 
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
+#include "model/BubbleUpRevisionHandler.h"
 
 
 void
 GPlatesPropertyValues::GpmlFeatureSnapshotReference::set_feature_id(
 		const GPlatesModel::FeatureId &feature)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().feature = feature;
 	revision_handler.commit();
 }
@@ -46,7 +46,7 @@ void
 GPlatesPropertyValues::GpmlFeatureSnapshotReference::set_revision_id(
 		const GPlatesModel::RevisionId &revision)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().revision = revision;
 	revision_handler.commit();
 }

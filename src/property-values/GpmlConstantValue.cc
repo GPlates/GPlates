@@ -32,8 +32,8 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
 
 
 const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
@@ -54,7 +54,7 @@ void
 GPlatesPropertyValues::GpmlConstantValue::set_value(
 		PropertyValue::non_null_ptr_type value_)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().value.change(
 			revision_handler.get_model_transaction(), value_);
 	revision_handler.commit();
@@ -65,7 +65,7 @@ void
 GPlatesPropertyValues::GpmlConstantValue::set_description(
 		const GPlatesUtils::UnicodeString &new_description)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().description = new_description;
 	revision_handler.commit();
 }
@@ -75,21 +75,21 @@ std::ostream &
 GPlatesPropertyValues::GpmlConstantValue::print_to(
 		std::ostream &os) const
 {
-	return os << *get_current_revision<Revision>().value.get_property_value();
+	return os << *get_current_revision<Revision>().value.get_revisionable();
 }
 
 
-GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesModel::Revision::non_null_ptr_type
 GPlatesPropertyValues::GpmlConstantValue::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
-		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
 	// Bubble up to our (parent) context (if any) which creates a new revision for us.
 	Revision &revision = create_bubble_up_revision<Revision>(transaction);
 
 	// There's only one nested property value so it must be that.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			child_property_value == revision.value.get_property_value(),
+			child_revisionable == revision.value.get_revisionable(),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Create a new revision for the child property value.

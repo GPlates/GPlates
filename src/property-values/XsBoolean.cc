@@ -29,14 +29,14 @@
 
 #include "XsBoolean.h"
 
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
+#include "model/BubbleUpRevisionHandler.h"
 
 
 void
 GPlatesPropertyValues::XsBoolean::set_value(
 		bool b)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().value = b;
 	revision_handler.commit();
 }

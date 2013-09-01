@@ -29,14 +29,14 @@
 
 #include "GpmlMeasure.h"
 
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
+#include "model/BubbleUpRevisionHandler.h"
 
 
 void
 GPlatesPropertyValues::GpmlMeasure::set_quantity(
 		const double &q)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().quantity = q;
 	revision_handler.commit();
 }
@@ -46,7 +46,7 @@ void
 GPlatesPropertyValues::GpmlMeasure::set_quantity_xml_attributes(
 		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &qxa)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().quantity_xml_attributes = qxa;
 	revision_handler.commit();
 }

@@ -37,8 +37,8 @@
 #include "model/FeatureVisitor.h"
 #include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
-#include "model/PropertyValueRevisionContext.h"
-#include "model/PropertyValueRevisionedReference.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -51,7 +51,7 @@ namespace GPlatesPropertyValues
 
 	class GpmlArray:
 			public GPlatesModel::PropertyValue,
-			public GPlatesModel::PropertyValueRevisionContext
+			public GPlatesModel::RevisionContext
 	{
 
 	public:
@@ -259,7 +259,7 @@ namespace GPlatesPropertyValues
 		//! Constructor used when cloning.
 		GpmlArray(
 				const GpmlArray &other_,
-				boost::optional<PropertyValueRevisionContext &> context_) :
+				boost::optional<RevisionContext &> context_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
 							// Use deep-clone constructor...
@@ -268,9 +268,9 @@ namespace GPlatesPropertyValues
 		{  }
 
 		virtual
-		const PropertyValue::non_null_ptr_type
+		const Revisionable::non_null_ptr_type
 		clone_impl(
-				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
+				boost::optional<RevisionContext &> context = boost::none) const
 		{
 			return non_null_ptr_type(new GpmlArray(*this, context));
 		}
@@ -278,13 +278,13 @@ namespace GPlatesPropertyValues
 		virtual
 		bool
 		equality(
-				const PropertyValue &other) const
+				const Revisionable &other) const
 		{
 			const GpmlArray &other_pv = dynamic_cast<const GpmlArray &>(other);
 
 			return d_value_type == other_pv.d_value_type &&
 					// The revisioned data comparisons are handled here...
-					PropertyValue::equality(other);
+					Revisionable::equality(other);
 		}
 
 	private:
@@ -292,16 +292,16 @@ namespace GPlatesPropertyValues
 		/**
 		 * Used when modifications bubble up to us.
 		 *
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
-		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		GPlatesModel::Revision::non_null_ptr_type
 		bubble_up(
 				GPlatesModel::ModelTransaction &transaction,
-				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
 		/**
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
 		boost::optional<GPlatesModel::Model &>
@@ -314,12 +314,12 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValueRevision
+				public PropertyValue::Revision
 		{
 			template<typename ForwardIterator>
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
-					PropertyValueRevisionContext &child_context_,
+					RevisionContext &child_context_,
 					ForwardIterator begin_,
 					ForwardIterator end_) :
 				members(begin_, end_)
@@ -328,9 +328,9 @@ namespace GPlatesPropertyValues
 			//! Deep-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<PropertyValueRevisionContext &> context_,
-					PropertyValueRevisionContext &child_context_) :
-				PropertyValueRevision(context_),
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				PropertyValue::Revision(context_),
 				members(other_.members)
 			{
 				// Clone data members that were not deep copied.
@@ -339,15 +339,15 @@ namespace GPlatesPropertyValues
 			//! Shallow-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<PropertyValueRevisionContext &> context_) :
-				PropertyValueRevision(context_),
+					boost::optional<RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
 				members(other_.members)
 			{  }
 
 			virtual
-			PropertyValueRevision::non_null_ptr_type
+			GPlatesModel::Revision::non_null_ptr_type
 			clone_revision(
-					boost::optional<PropertyValueRevisionContext &> context) const
+					boost::optional<RevisionContext &> context) const
 			{
 				// Use shallow-clone constructor.
 				return non_null_ptr_type(new Revision(*this, context));
@@ -356,7 +356,7 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const PropertyValueRevision &other) const;
+					const GPlatesModel::Revision &other) const;
 
 			member_array_type members;
 		};

@@ -179,16 +179,16 @@ namespace GPlatesPropertyValues
 		//! Constructor used when cloning.
 		GpmlMeasure(
 				const GpmlMeasure &other_,
-				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
 							new Revision(other_.get_current_revision<Revision>(), context_)))
 		{  }
 
 		virtual
-		const PropertyValue::non_null_ptr_type
+		const Revisionable::non_null_ptr_type
 		clone_impl(
-				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
 		{
 			return non_null_ptr_type(new GpmlMeasure(*this, context));
 		}
@@ -199,7 +199,7 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValueRevision
+				public PropertyValue::Revision
 		{
 			Revision(
 					const double &quantity_,
@@ -212,16 +212,16 @@ namespace GPlatesPropertyValues
 			//! Clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
-				PropertyValueRevision(context_),
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
 				quantity(other_.quantity),
 				quantity_xml_attributes(other_.quantity_xml_attributes)
 			{  }
 
 			virtual
-			PropertyValueRevision::non_null_ptr_type
+			GPlatesModel::Revision::non_null_ptr_type
 			clone_revision(
-					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
+					boost::optional<GPlatesModel::RevisionContext &> context) const
 			{
 				return non_null_ptr_type(new Revision(*this, context));
 			}
@@ -229,13 +229,13 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const PropertyValueRevision &other) const
+					const GPlatesModel::Revision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return GPlatesMaths::are_almost_exactly_equal(quantity, other_revision.quantity) &&
 						quantity_xml_attributes == other_revision.quantity_xml_attributes &&
-						PropertyValueRevision::equality(other);
+						GPlatesModel::Revision::equality(other);
 			}
 
 			double quantity;

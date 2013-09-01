@@ -29,14 +29,14 @@
 
 #include "GpmlFeatureReference.h"
 
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
+#include "model/BubbleUpRevisionHandler.h"
 
 
 void
 GPlatesPropertyValues::GpmlFeatureReference::set_feature_id(
 		const GPlatesModel::FeatureId &feature)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().feature = feature;
 	revision_handler.commit();
 }

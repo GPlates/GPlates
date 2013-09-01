@@ -30,14 +30,14 @@
 
 #include "GmlPolygon.h"
 
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
+#include "model/BubbleUpRevisionHandler.h"
 
 
 void
 GPlatesPropertyValues::GmlPolygon::set_exterior(
 		const ring_type &exterior)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().exterior = exterior;
 	revision_handler.commit();
 }
@@ -47,7 +47,7 @@ void
 GPlatesPropertyValues::GmlPolygon::set_interiors(
 		const ring_sequence_type &interiors)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().interiors = interiors;
 	revision_handler.commit();
 }
@@ -64,7 +64,7 @@ GPlatesPropertyValues::GmlPolygon::print_to(
 
 bool
 GPlatesPropertyValues::GmlPolygon::Revision::equality(
-		const PropertyValueRevision &other) const
+		const GPlatesModel::Revision &other) const
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
@@ -87,5 +87,5 @@ GPlatesPropertyValues::GmlPolygon::Revision::equality(
 		}
 	}
 
-	return PropertyValueRevision::equality(other);
+	return GPlatesModel::Revision::equality(other);
 }

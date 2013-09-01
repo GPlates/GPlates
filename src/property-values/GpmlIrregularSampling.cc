@@ -35,10 +35,10 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "model/BubbleUpRevisionHandler.h"
 #include "model/Metadata.h"
 #include "model/ModelTransaction.h"
 #include "model/NotificationGuard.h"
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
 
 
 namespace
@@ -46,8 +46,8 @@ namespace
 	template<class T>
 	bool
 	opt_eq(
-			const boost::optional<GPlatesModel::PropertyValueRevisionedReference<T> > &opt1,
-			const boost::optional<GPlatesModel::PropertyValueRevisionedReference<T> > &opt2)
+			const boost::optional<GPlatesModel::RevisionedReference<T> > &opt1,
+			const boost::optional<GPlatesModel::RevisionedReference<T> > &opt2)
 	{
 		if (opt1)
 		{
@@ -55,7 +55,7 @@ namespace
 			{
 				return false;
 			}
-			return *opt1.get().get_property_value() == *opt2.get().get_property_value();
+			return *opt1.get().get_revisionable() == *opt2.get().get_revisionable();
 		}
 		else
 		{
@@ -82,7 +82,7 @@ void
 GPlatesPropertyValues::GpmlIrregularSampling::set_time_samples(
 		const std::vector<GpmlTimeSample> &time_samples)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().time_samples = time_samples;
 	revision_handler.commit();
 }
@@ -99,7 +99,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::interpolation_function() const
 	}
 
 	return GPlatesUtils::static_pointer_cast<const GpmlInterpolationFunction>(
-			revision.interpolation_function->get_property_value());
+			revision.interpolation_function->get_revisionable());
 }
 
 
@@ -113,7 +113,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::interpolation_function()
 		return boost::none;
 	}
 
-	return revision.interpolation_function->get_property_value();
+	return revision.interpolation_function->get_revisionable();
 }
 
 
@@ -121,7 +121,7 @@ void
 GPlatesPropertyValues::GpmlIrregularSampling::set_interpolation_function(
 		boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interpolation_function_)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	Revision &revision = revision_handler.get_revision<Revision>();
 
 	if (revision.interpolation_function)
@@ -137,7 +137,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_interpolation_function(
 	}
 	else if (interpolation_function_)
 	{
-		revision.interpolation_function = GPlatesModel::PropertyValueRevisionedReference<GpmlInterpolationFunction>::attach(
+		revision.interpolation_function = GPlatesModel::RevisionedReference<GpmlInterpolationFunction>::attach(
 				revision_handler.get_model_transaction(), *this, interpolation_function_.get());
 	}
 	// ...else nothing to do.
@@ -167,7 +167,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 	// when modifying the total reconstruction pole property values.
 	GPlatesModel::NotificationGuard model_notification_guard(get_model());
 
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	Revision &revision = revision_handler.get_revision<Revision>();
 
 	using namespace GPlatesModel;
@@ -260,17 +260,17 @@ GPlatesPropertyValues::GpmlIrregularSampling::print_to(
 }
 
 
-GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesModel::Revision::non_null_ptr_type
 GPlatesPropertyValues::GpmlIrregularSampling::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
-		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
 	// Bubble up to our (parent) context (if any) which creates a new revision for us.
 	Revision &revision = create_bubble_up_revision<Revision>(transaction);
 
 	// In this method we are operating on a (bubble up) cloned version of the current revision.
 	if (revision.interpolation_function &&
-		child_property_value == revision.interpolation_function->get_property_value())
+		child_revisionable == revision.interpolation_function->get_revisionable())
 	{
 		return revision.interpolation_function->clone_revision(transaction);
 	}
@@ -279,17 +279,17 @@ GPlatesPropertyValues::GpmlIrregularSampling::bubble_up(
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
-	return GPlatesModel::PropertyValueRevision::non_null_ptr_type(NULL);
+	return GPlatesModel::Revision::non_null_ptr_type(NULL);
 }
 
 
 bool
 GPlatesPropertyValues::GpmlIrregularSampling::Revision::equality(
-		const PropertyValueRevision &other) const
+		const GPlatesModel::Revision &other) const
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 	return time_samples == other_revision.time_samples &&
 			opt_eq(interpolation_function, other_revision.interpolation_function) &&
-			PropertyValueRevision::equality(other);
+			GPlatesModel::Revision::equality(other);
 }

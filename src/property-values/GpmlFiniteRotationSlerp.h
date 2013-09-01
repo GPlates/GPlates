@@ -115,16 +115,16 @@ namespace GPlatesPropertyValues {
 		//! Constructor used when cloning.
 		GpmlFiniteRotationSlerp(
 				const GpmlFiniteRotationSlerp &other_,
-				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
 			GpmlInterpolationFunction(
 					Revision::non_null_ptr_type(
 							new Revision(other_.get_current_revision<Revision>(), context_)))
 		{  }
 
 		virtual
-		const PropertyValue::non_null_ptr_type
+		const Revisionable::non_null_ptr_type
 		clone_impl(
-				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
 		{
 			return non_null_ptr_type(new GpmlFiniteRotationSlerp(*this, context));
 		}

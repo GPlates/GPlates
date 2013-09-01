@@ -30,8 +30,8 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
 
 
 const GPlatesPropertyValues::GpmlScalarField3DFile::non_null_ptr_type
@@ -50,7 +50,7 @@ void
 GPlatesPropertyValues::GpmlScalarField3DFile::set_file_name(
 		XsString::non_null_ptr_type filename_)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().filename.change(
 			revision_handler.get_model_transaction(), filename_);
 	revision_handler.commit();
@@ -65,10 +65,10 @@ GPlatesPropertyValues::GpmlScalarField3DFile::print_to(
 }
 
 
-GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesModel::Revision::non_null_ptr_type
 GPlatesPropertyValues::GpmlScalarField3DFile::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
-		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
 	// Bubble up to our (parent) context (if any) which creates a new revision for us.
 	Revision &revision = create_bubble_up_revision<Revision>(transaction);
@@ -77,7 +77,7 @@ GPlatesPropertyValues::GpmlScalarField3DFile::bubble_up(
 
 	// The child property value that bubbled up the modification should be one of our children.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			child_property_value == revision.filename.get_property_value(),
+			child_revisionable == revision.filename.get_revisionable(),
 			GPLATES_ASSERTION_SOURCE);
 
 	return revision.filename.clone_revision(transaction);

@@ -32,15 +32,15 @@
 #include "global/GPlatesAssert.h"
 #include "global/NotYetImplementedException.h"
 
+#include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
 
 
 void
 GPlatesPropertyValues::GpmlTopologicalNetwork::set_boundary_sections(
 		const boundary_sections_seq_type &boundary_sections)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().boundary_sections = boundary_sections;
 	revision_handler.commit();
 }
@@ -50,7 +50,7 @@ void
 GPlatesPropertyValues::GpmlTopologicalNetwork::set_interior_geometries(
 		const interior_geometry_seq_type &interior_geometries)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().interior_geometries = interior_geometries;
 	revision_handler.commit();
 }
@@ -90,10 +90,10 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::print_to(
 }
 
 
-GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesModel::Revision::non_null_ptr_type
 GPlatesPropertyValues::GpmlTopologicalNetwork::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
-		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
 	// Currently this can't be reached because we don't attach to our children yet.
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
@@ -102,7 +102,7 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::bubble_up(
 
 bool
 GPlatesPropertyValues::GpmlTopologicalNetwork::Revision::equality(
-		const PropertyValueRevision &other) const
+		const GPlatesModel::Revision &other) const
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
@@ -128,7 +128,7 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::Revision::equality(
 		}
 	}
 
-	return PropertyValueRevision::equality(other);
+	return GPlatesModel::Revision::equality(other);
 }
 
 

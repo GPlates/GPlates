@@ -33,9 +33,9 @@
 
 #include "file-io/XmlWriter.h"
 
+#include "model/BubbleUpRevisionHandler.h"
 #include "model/Metadata.h"
 #include "model/PropertyValue.h"
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
 
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
@@ -86,7 +86,7 @@ namespace GPlatesPropertyValues
 		set_data(
 				const GPlatesModel::FeatureCollectionMetadata &metadata)
 		{
-			GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 			revision_handler.get_revision<Revision>().metadata = metadata;
 			revision_handler.commit();
 		}
@@ -157,16 +157,16 @@ namespace GPlatesPropertyValues
 		//! Constructor used when cloning.
 		GpmlMetadata(
 				const GpmlMetadata &other_,
-				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
 							new Revision(other_.get_current_revision<Revision>(), context_)))
 		{  }
 
 		virtual
-		const PropertyValue::non_null_ptr_type
+		const Revisionable::non_null_ptr_type
 		clone_impl(
-				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
 		{
 			return non_null_ptr_type(new GpmlMetadata(*this, context));
 		}
@@ -177,7 +177,7 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValueRevision
+				public PropertyValue::Revision
 		{
 			explicit
 			Revision(
@@ -188,15 +188,15 @@ namespace GPlatesPropertyValues
 			//! Clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
-				PropertyValueRevision(context_),
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
 				metadata(other_.metadata)
 			{  }
 
 			virtual
-			PropertyValueRevision::non_null_ptr_type
+			GPlatesModel::Revision::non_null_ptr_type
 			clone_revision(
-					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
+					boost::optional<GPlatesModel::RevisionContext &> context) const
 			{
 				return non_null_ptr_type(new Revision(*this, context));
 			}
@@ -204,7 +204,7 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const PropertyValueRevision &other) const
+					const GPlatesModel::Revision &other) const
 			{
 				// Compare the feature collectin metadata.
 				// TODO: Implement.

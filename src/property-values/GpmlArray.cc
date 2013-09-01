@@ -31,15 +31,15 @@
 #include "global/GPlatesAssert.h"
 #include "global/NotYetImplementedException.h"
 
+#include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
 
 
 void
 GPlatesPropertyValues::GpmlArray::set_members(
 		const member_array_type &members)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().members = members;
 	revision_handler.commit();
 }
@@ -64,10 +64,10 @@ GPlatesPropertyValues::GpmlArray::print_to(
 }
 
 
-GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesModel::Revision::non_null_ptr_type
 GPlatesPropertyValues::GpmlArray::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
-		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
 	// Currently this can't be reached because we don't attach to our children yet.
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
@@ -76,7 +76,7 @@ GPlatesPropertyValues::GpmlArray::bubble_up(
 
 bool
 GPlatesPropertyValues::GpmlArray::Revision::equality(
-		const PropertyValueRevision &other) const
+		const GPlatesModel::Revision &other) const
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
@@ -93,5 +93,5 @@ GPlatesPropertyValues::GpmlArray::Revision::equality(
 		}
 	}
 
-	return PropertyValueRevision::equality(other);
+	return GPlatesModel::Revision::equality(other);
 }

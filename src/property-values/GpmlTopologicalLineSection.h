@@ -32,11 +32,11 @@
 #include "GpmlPropertyDelegate.h"
 #include "GpmlTopologicalSection.h"
 
-#include "model/PropertyValueRevisionContext.h"
-#include "model/PropertyValueRevisionedReference.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
 
 
-// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_revisionable() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlTopologicalLineSection, visit_gpml_topological_line_section)
@@ -48,7 +48,7 @@ namespace GPlatesPropertyValues
 	 */
 	class GpmlTopologicalLineSection:
 			public GpmlTopologicalSection,
-			public GPlatesModel::PropertyValueRevisionContext
+			public GPlatesModel::RevisionContext
 	{
 
 	public:
@@ -82,7 +82,7 @@ namespace GPlatesPropertyValues
 		GpmlPropertyDelegate::non_null_ptr_to_const_type
 		source_geometry() const
 		{
-			return get_current_revision<Revision>().source_geometry.get_property_value();
+			return get_current_revision<Revision>().source_geometry.get_revisionable();
 		}
 
 		/**
@@ -91,7 +91,7 @@ namespace GPlatesPropertyValues
 		GpmlPropertyDelegate::non_null_ptr_type
 		source_geometry()
 		{
-			return get_current_revision<Revision>().source_geometry.get_property_value();
+			return get_current_revision<Revision>().source_geometry.get_revisionable();
 		}
 
 		/**
@@ -168,7 +168,7 @@ namespace GPlatesPropertyValues
 		//! Constructor used when cloning.
 		GpmlTopologicalLineSection(
 				const GpmlTopologicalLineSection &other_,
-				boost::optional<PropertyValueRevisionContext &> context_) :
+				boost::optional<RevisionContext &> context_) :
 			GpmlTopologicalSection(
 					Revision::non_null_ptr_type(
 							// Use deep-clone constructor...
@@ -176,9 +176,9 @@ namespace GPlatesPropertyValues
 		{  }
 
 		virtual
-		const PropertyValue::non_null_ptr_type
+		const Revisionable::non_null_ptr_type
 		clone_impl(
-				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
+				boost::optional<RevisionContext &> context = boost::none) const
 		{
 			return non_null_ptr_type(new GpmlTopologicalLineSection(*this, context));
 		}
@@ -188,16 +188,16 @@ namespace GPlatesPropertyValues
 		/**
 		 * Used when modifications bubble up to us.
 		 *
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
-		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		GPlatesModel::Revision::non_null_ptr_type
 		bubble_up(
 				GPlatesModel::ModelTransaction &transaction,
-				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
 		/**
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
 		boost::optional<GPlatesModel::Model &>
@@ -210,16 +210,16 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValueRevision
+				public PropertyValue::Revision
 		{
 			explicit
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
-					PropertyValueRevisionContext &child_context_,
+					RevisionContext &child_context_,
 					GpmlPropertyDelegate::non_null_ptr_type source_geometry_,
 					bool reverse_order_) :
 				source_geometry(
-						GPlatesModel::PropertyValueRevisionedReference<GpmlPropertyDelegate>::attach(
+						GPlatesModel::RevisionedReference<GpmlPropertyDelegate>::attach(
 								transaction_, child_context_, source_geometry_)),
 				reverse_order(reverse_order_)
 			{  }
@@ -227,9 +227,9 @@ namespace GPlatesPropertyValues
 			//! Deep-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<PropertyValueRevisionContext &> context_,
-					PropertyValueRevisionContext &child_context_) :
-				PropertyValueRevision(context_),
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				PropertyValue::Revision(context_),
 				source_geometry(other_.source_geometry),
 				reverse_order(other_.reverse_order)
 			{
@@ -240,16 +240,16 @@ namespace GPlatesPropertyValues
 			//! Shallow-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<PropertyValueRevisionContext &> context_) :
-				PropertyValueRevision(context_),
+					boost::optional<RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
 				source_geometry(other_.source_geometry),
 				reverse_order(other_.reverse_order)
 			{  }
 
 			virtual
-			PropertyValueRevision::non_null_ptr_type
+			GPlatesModel::Revision::non_null_ptr_type
 			clone_revision(
-					boost::optional<PropertyValueRevisionContext &> context) const
+					boost::optional<RevisionContext &> context) const
 			{
 				// Use shallow-clone constructor.
 				return non_null_ptr_type(new Revision(*this, context));
@@ -258,17 +258,17 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const PropertyValueRevision &other) const
+					const GPlatesModel::Revision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				// Compare property delegate objects not pointers.
-				return *source_geometry.get_property_value() == *other_revision.source_geometry.get_property_value() &&
+				return *source_geometry.get_revisionable() == *other_revision.source_geometry.get_revisionable() &&
 						reverse_order == other_revision.reverse_order &&
-						PropertyValueRevision::equality(other);
+						GPlatesModel::Revision::equality(other);
 			}
 
-			GPlatesModel::PropertyValueRevisionedReference<GpmlPropertyDelegate> source_geometry;
+			GPlatesModel::RevisionedReference<GpmlPropertyDelegate> source_geometry;
 			bool reverse_order;
 		};
 

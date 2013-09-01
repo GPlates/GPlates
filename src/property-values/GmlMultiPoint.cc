@@ -34,7 +34,7 @@
 
 #include "maths/MultiPointOnSphere.h"
 
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
+#include "model/BubbleUpRevisionHandler.h"
 
 
 const GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
@@ -57,7 +57,7 @@ void
 GPlatesPropertyValues::GmlMultiPoint::set_multipoint(
 		const multipoint_type &p)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 
 	Revision &revision = revision_handler.get_revision<Revision>();
 
@@ -72,7 +72,7 @@ void
 GPlatesPropertyValues::GmlMultiPoint::set_gml_properties(
 		const std::vector<GmlPoint::GmlProperty> &gml_properties_)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 
 	Revision &revision = revision_handler.get_revision<Revision>();
 

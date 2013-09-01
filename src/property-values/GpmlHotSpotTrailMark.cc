@@ -33,8 +33,8 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
 
 
 namespace
@@ -42,8 +42,8 @@ namespace
 	template<class T>
 	bool
 	opt_eq(
-			const boost::optional<GPlatesModel::PropertyValueRevisionedReference<T> > &opt1,
-			const boost::optional<GPlatesModel::PropertyValueRevisionedReference<T> > &opt2)
+			const boost::optional<GPlatesModel::RevisionedReference<T> > &opt1,
+			const boost::optional<GPlatesModel::RevisionedReference<T> > &opt2)
 	{
 		if (opt1)
 		{
@@ -51,7 +51,7 @@ namespace
 			{
 				return false;
 			}
-			return *opt1.get().get_property_value() == *opt2.get().get_property_value();
+			return *opt1.get().get_revisionable() == *opt2.get().get_revisionable();
 		}
 		else
 		{
@@ -82,7 +82,7 @@ void
 GPlatesPropertyValues::GpmlHotSpotTrailMark::set_position(
 		GmlPoint::non_null_ptr_type pos)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().position.change(
 			revision_handler.get_model_transaction(), pos);
 	revision_handler.commit();
@@ -100,7 +100,7 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::trail_width() const
 	}
 
 	return GPlatesUtils::static_pointer_cast<const GpmlMeasure>(
-			revision.trail_width->get_property_value());
+			revision.trail_width->get_revisionable());
 }
 
 
@@ -114,7 +114,7 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::trail_width()
 		return boost::none;
 	}
 
-	return revision.trail_width->get_property_value();
+	return revision.trail_width->get_revisionable();
 }
 
 
@@ -122,7 +122,7 @@ void
 GPlatesPropertyValues::GpmlHotSpotTrailMark::set_trail_width(
 		GpmlMeasure::non_null_ptr_type tw)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	Revision &revision = revision_handler.get_revision<Revision>();
 
 	if (revision.trail_width)
@@ -131,7 +131,7 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::set_trail_width(
 	}
 	else
 	{
-		revision.trail_width = GPlatesModel::PropertyValueRevisionedReference<GpmlMeasure>::attach(
+		revision.trail_width = GPlatesModel::RevisionedReference<GpmlMeasure>::attach(
 				revision_handler.get_model_transaction(), *this, tw);
 	}
 
@@ -150,7 +150,7 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::measured_age() const
 	}
 
 	return GPlatesUtils::static_pointer_cast<const GmlTimeInstant>(
-			revision.measured_age->get_property_value());
+			revision.measured_age->get_revisionable());
 }
 
 
@@ -164,7 +164,7 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::measured_age()
 		return boost::none;
 	}
 
-	return revision.measured_age->get_property_value();
+	return revision.measured_age->get_revisionable();
 }
 
 
@@ -172,7 +172,7 @@ void
 GPlatesPropertyValues::GpmlHotSpotTrailMark::set_measured_age(
 		GmlTimeInstant::non_null_ptr_type ti)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	Revision &revision = revision_handler.get_revision<Revision>();
 
 	if (revision.measured_age)
@@ -181,7 +181,7 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::set_measured_age(
 	}
 	else
 	{
-		revision.measured_age = GPlatesModel::PropertyValueRevisionedReference<GmlTimeInstant>::attach(
+		revision.measured_age = GPlatesModel::RevisionedReference<GmlTimeInstant>::attach(
 				revision_handler.get_model_transaction(), *this, ti);
 	}
 
@@ -200,7 +200,7 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::measured_age_range() const
 	}
 
 	return GPlatesUtils::static_pointer_cast<const GmlTimePeriod>(
-			revision.measured_age_range->get_property_value());
+			revision.measured_age_range->get_revisionable());
 }
 
 
@@ -214,7 +214,7 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::measured_age_range()
 		return boost::none;
 	}
 
-	return revision.measured_age_range->get_property_value();
+	return revision.measured_age_range->get_revisionable();
 }
 
 
@@ -222,7 +222,7 @@ void
 GPlatesPropertyValues::GpmlHotSpotTrailMark::set_measured_age_range(
 		GmlTimePeriod::non_null_ptr_type tp)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	Revision &revision = revision_handler.get_revision<Revision>();
 
 	if (revision.measured_age_range)
@@ -231,7 +231,7 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::set_measured_age_range(
 	}
 	else
 	{
-		revision.measured_age_range = GPlatesModel::PropertyValueRevisionedReference<GmlTimePeriod>::attach(
+		revision.measured_age_range = GPlatesModel::RevisionedReference<GmlTimePeriod>::attach(
 				revision_handler.get_model_transaction(), *this, tp);
 	}
 
@@ -245,51 +245,51 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::print_to(
 {
 	const Revision &revision = get_current_revision<Revision>();
 
-	os << "[ " << *revision.position.get_property_value() << " , ";
+	os << "[ " << *revision.position.get_revisionable() << " , ";
 	if (revision.trail_width)
 	{
-		os << *revision.trail_width->get_property_value();
+		os << *revision.trail_width->get_revisionable();
 	}
 	os << " , ";
 	if (revision.measured_age)
 	{
-		os << *revision.measured_age->get_property_value();
+		os << *revision.measured_age->get_revisionable();
 	}
 	os << " , ";
 	if (revision.measured_age_range)
 	{
-		os << *revision.measured_age_range->get_property_value();
+		os << *revision.measured_age_range->get_revisionable();
 	}
 	return os << " ]";
 }
 
 
-GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesModel::Revision::non_null_ptr_type
 GPlatesPropertyValues::GpmlHotSpotTrailMark::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
-		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
 	// Bubble up to our (parent) context (if any) which creates a new revision for us.
 	Revision &revision = create_bubble_up_revision<Revision>(transaction);
 
 	// In this method we are operating on a (bubble up) cloned version of the current revision.
 
-	if (child_property_value == revision.position.get_property_value())
+	if (child_revisionable == revision.position.get_revisionable())
 	{
 		return revision.position.clone_revision(transaction);
 	}
 	if (revision.trail_width &&
-		child_property_value == revision.trail_width->get_property_value())
+		child_revisionable == revision.trail_width->get_revisionable())
 	{
 		return revision.trail_width->clone_revision(transaction);
 	}
 	if (revision.measured_age &&
-		child_property_value == revision.measured_age->get_property_value())
+		child_revisionable == revision.measured_age->get_revisionable())
 	{
 		return revision.measured_age->clone_revision(transaction);
 	}
 	if (revision.measured_age_range &&
-		child_property_value == revision.measured_age_range->get_property_value())
+		child_revisionable == revision.measured_age_range->get_revisionable())
 	{
 		return revision.measured_age_range->clone_revision(transaction);
 	}
@@ -298,36 +298,36 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::bubble_up(
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
-	return GPlatesModel::PropertyValueRevision::non_null_ptr_type(NULL);
+	return GPlatesModel::Revision::non_null_ptr_type(NULL);
 }
 
 
 GPlatesPropertyValues::GpmlHotSpotTrailMark::Revision::Revision(
 		GPlatesModel::ModelTransaction &transaction_,
-		PropertyValueRevisionContext &child_context_,
+		RevisionContext &child_context_,
 		const GmlPoint::non_null_ptr_type &position_,
 		const boost::optional<GpmlMeasure::non_null_ptr_type> &trail_width_,
 		const boost::optional<GmlTimeInstant::non_null_ptr_type> &measured_age_,
 		const boost::optional<GmlTimePeriod::non_null_ptr_type> &measured_age_range_) :
 	position(
-			GPlatesModel::PropertyValueRevisionedReference<GmlPoint>::attach(
+			GPlatesModel::RevisionedReference<GmlPoint>::attach(
 					transaction_, child_context_, position_))
 {
 	if (trail_width_)
 	{
-		trail_width = GPlatesModel::PropertyValueRevisionedReference<GpmlMeasure>::attach(
+		trail_width = GPlatesModel::RevisionedReference<GpmlMeasure>::attach(
 				transaction_, child_context_, trail_width_.get());
 	}
 
 	if (measured_age_)
 	{
-		measured_age = GPlatesModel::PropertyValueRevisionedReference<GmlTimeInstant>::attach(
+		measured_age = GPlatesModel::RevisionedReference<GmlTimeInstant>::attach(
 				transaction_, child_context_, measured_age_.get());
 	}
 
 	if (measured_age_range_)
 	{
-		measured_age_range = GPlatesModel::PropertyValueRevisionedReference<GmlTimePeriod>::attach(
+		measured_age_range = GPlatesModel::RevisionedReference<GmlTimePeriod>::attach(
 				transaction_, child_context_, measured_age_range_.get());
 	}
 }
@@ -335,9 +335,9 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::Revision::Revision(
 
 GPlatesPropertyValues::GpmlHotSpotTrailMark::Revision::Revision(
 		const Revision &other_,
-		boost::optional<PropertyValueRevisionContext &> context_,
-		PropertyValueRevisionContext &child_context_) :
-	PropertyValueRevision(context_),
+		boost::optional<RevisionContext &> context_,
+		RevisionContext &child_context_) :
+	PropertyValue::Revision(context_),
 	position(other_.position),
 	trail_width(other_.trail_width),
 	measured_age(other_.measured_age),
@@ -365,8 +365,8 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::Revision::Revision(
 
 GPlatesPropertyValues::GpmlHotSpotTrailMark::Revision::Revision(
 		const Revision &other_,
-		boost::optional<PropertyValueRevisionContext &> context_) :
-	PropertyValueRevision(context_),
+		boost::optional<RevisionContext &> context_) :
+	PropertyValue::Revision(context_),
 	position(other_.position),
 	trail_width(other_.trail_width),
 	measured_age(other_.measured_age),
@@ -377,13 +377,13 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::Revision::Revision(
 
 bool
 GPlatesPropertyValues::GpmlHotSpotTrailMark::Revision::equality(
-		const PropertyValueRevision &other) const
+		const GPlatesModel::Revision &other) const
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-	return *position.get_property_value() == *other_revision.position.get_property_value() &&
+	return *position.get_revisionable() == *other_revision.position.get_revisionable() &&
 			opt_eq(trail_width, other_revision.trail_width) &&
 			opt_eq(measured_age, other_revision.measured_age) &&
 			opt_eq(measured_age_range, other_revision.measured_age_range) &&
-			PropertyValueRevision::equality(other);
+			GPlatesModel::Revision::equality(other);
 }

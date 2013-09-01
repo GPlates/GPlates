@@ -139,16 +139,16 @@ namespace GPlatesPropertyValues
 		//! Constructor used when cloning.
 		GpmlTotalReconstructionPole(
 				const GpmlTotalReconstructionPole &other_,
-				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
 			GpmlFiniteRotation(
 					other_,
 					Revision::non_null_ptr_type(new Revision(other_.get_current_revision<Revision>(), context_)))
 		{  }
 
 		virtual
-		const PropertyValue::non_null_ptr_type
+		const Revisionable::non_null_ptr_type
 		clone_impl(
-				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
 		{
 			return non_null_ptr_type(new GpmlTotalReconstructionPole(*this, context));
 		}
@@ -174,12 +174,12 @@ namespace GPlatesPropertyValues
 			//! Clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_);
+					boost::optional<GPlatesModel::RevisionContext &> context_);
 
 			virtual
-			PropertyValueRevision::non_null_ptr_type
+			GPlatesModel::Revision::non_null_ptr_type
 			clone_revision(
-					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
+					boost::optional<GPlatesModel::RevisionContext &> context) const
 			{
 				return non_null_ptr_type(new Revision(*this, context));
 			}
@@ -187,7 +187,7 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const PropertyValueRevision &other) const;
+					const GPlatesModel::Revision &other) const;
 
 			GPlatesModel::MetadataContainer meta;
 		};

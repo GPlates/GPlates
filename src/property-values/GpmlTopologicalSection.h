@@ -78,7 +78,7 @@ namespace GPlatesPropertyValues
 		 */
 		explicit
 		GpmlTopologicalSection(
-				const GPlatesModel::PropertyValueRevision::non_null_ptr_type &revision) :
+				const GPlatesModel::Revision::non_null_ptr_type &revision) :
 			PropertyValue(revision)
 		{  }
 

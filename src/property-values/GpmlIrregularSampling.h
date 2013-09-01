@@ -40,8 +40,8 @@
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/PropertyValue.h"
-#include "model/PropertyValueRevisionContext.h"
-#include "model/PropertyValueRevisionedReference.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -54,7 +54,7 @@ namespace GPlatesPropertyValues
 
 	class GpmlIrregularSampling:
 			public GPlatesModel::PropertyValue,
-			public GPlatesModel::PropertyValueRevisionContext
+			public GPlatesModel::RevisionContext
 	{
 	public:
 
@@ -217,7 +217,7 @@ namespace GPlatesPropertyValues
 		//! Constructor used when cloning.
 		GpmlIrregularSampling(
 				const GpmlIrregularSampling &other_,
-				boost::optional<PropertyValueRevisionContext &> context_) :
+				boost::optional<RevisionContext &> context_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
 							// Use deep-clone constructor...
@@ -229,9 +229,9 @@ namespace GPlatesPropertyValues
 		contains_disabled_sequence_flag() const;
 
 		virtual
-		const PropertyValue::non_null_ptr_type
+		const Revisionable::non_null_ptr_type
 		clone_impl(
-				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
+				boost::optional<RevisionContext &> context = boost::none) const
 		{
 			return non_null_ptr_type(new GpmlIrregularSampling(*this, context));
 		}
@@ -239,13 +239,13 @@ namespace GPlatesPropertyValues
 		virtual
 		bool
 		equality(
-				const PropertyValue &other) const
+				const Revisionable &other) const
 		{
 			const GpmlIrregularSampling &other_pv = dynamic_cast<const GpmlIrregularSampling &>(other);
 
 			return d_value_type == other_pv.d_value_type &&
 					// The revisioned data comparisons are handled here...
-					PropertyValue::equality(other);
+					Revisionable::equality(other);
 		}
 
 	private:
@@ -253,16 +253,16 @@ namespace GPlatesPropertyValues
 		/**
 		 * Used when modifications bubble up to us.
 		 *
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
-		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		GPlatesModel::Revision::non_null_ptr_type
 		bubble_up(
 				GPlatesModel::ModelTransaction &transaction,
-				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
 		/**
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
 		boost::optional<GPlatesModel::Model &>
@@ -275,18 +275,18 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValueRevision
+				public PropertyValue::Revision
 		{
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
-					PropertyValueRevisionContext &child_context_,
+					RevisionContext &child_context_,
 					const std::vector<GpmlTimeSample> &time_samples_,
 					boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interpolation_function_) :
 				time_samples(time_samples_)
 			{
 				if (interpolation_function_)
 				{
-					interpolation_function = GPlatesModel::PropertyValueRevisionedReference<GpmlInterpolationFunction>::attach(
+					interpolation_function = GPlatesModel::RevisionedReference<GpmlInterpolationFunction>::attach(
 							transaction_, child_context_, interpolation_function_.get());
 				}
 			}
@@ -294,9 +294,9 @@ namespace GPlatesPropertyValues
 			//! Deep-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<PropertyValueRevisionContext &> context_,
-					PropertyValueRevisionContext &child_context_) :
-				PropertyValueRevision(context_),
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				PropertyValue::Revision(context_),
 				time_samples(other_.time_samples),
 				interpolation_function(other_.interpolation_function)
 			{
@@ -310,16 +310,16 @@ namespace GPlatesPropertyValues
 			//! Shallow-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<PropertyValueRevisionContext &> context_) :
-				PropertyValueRevision(context_),
+					boost::optional<RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
 				time_samples(other_.time_samples),
 				interpolation_function(other_.interpolation_function)
 			{  }
 
 			virtual
-			PropertyValueRevision::non_null_ptr_type
+			GPlatesModel::Revision::non_null_ptr_type
 			clone_revision(
-					boost::optional<PropertyValueRevisionContext &> context) const
+					boost::optional<RevisionContext &> context) const
 			{
 				// Use shallow-clone constructor.
 				return non_null_ptr_type(new Revision(*this, context));
@@ -328,10 +328,10 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const PropertyValueRevision &other) const;
+					const GPlatesModel::Revision &other) const;
 
 			std::vector<GpmlTimeSample> time_samples; // Internally GpmlTimeSample uses CopyOnWrite.
-			boost::optional<GPlatesModel::PropertyValueRevisionedReference<GpmlInterpolationFunction> > interpolation_function;
+			boost::optional<GPlatesModel::RevisionedReference<GpmlInterpolationFunction> > interpolation_function;
 		};
 
 		// Immutable, so doesn't need revisioning.

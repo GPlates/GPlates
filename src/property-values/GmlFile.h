@@ -44,13 +44,13 @@
 #include "global/unicode.h"
 
 #include "model/PropertyValue.h"
-#include "model/PropertyValueRevisionContext.h"
-#include "model/PropertyValueRevisionedReference.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
 
 
-// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_revisionable() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlFile, visit_gml_file)
@@ -65,7 +65,7 @@ namespace GPlatesPropertyValues
 	 */
 	class GmlFile:
 			public GPlatesModel::PropertyValue,
-			public GPlatesModel::PropertyValueRevisionContext
+			public GPlatesModel::RevisionContext
 	{
 	private:
 
@@ -154,13 +154,13 @@ namespace GPlatesPropertyValues
 		const XsString::non_null_ptr_to_const_type
 		get_file_name() const
 		{
-			return get_current_revision<Revision>().file_name.get_property_value();
+			return get_current_revision<Revision>().file_name.get_revisionable();
 		}
 
 		const XsString::non_null_ptr_type
 		get_file_name()
 		{
-			return get_current_revision<Revision>().file_name.get_property_value();
+			return get_current_revision<Revision>().file_name.get_revisionable();
 		}
 
 		void
@@ -172,13 +172,13 @@ namespace GPlatesPropertyValues
 		const XsString::non_null_ptr_to_const_type
 		get_file_structure() const
 		{
-			return get_current_revision<Revision>().file_structure.get_property_value();
+			return get_current_revision<Revision>().file_structure.get_revisionable();
 		}
 
 		const XsString::non_null_ptr_type
 		get_file_structure()
 		{
-			return get_current_revision<Revision>().file_structure.get_property_value();
+			return get_current_revision<Revision>().file_structure.get_revisionable();
 		}
 
 		void
@@ -285,7 +285,7 @@ namespace GPlatesPropertyValues
 		//! Constructor used when cloning.
 		GmlFile(
 				const GmlFile &other_,
-				boost::optional<PropertyValueRevisionContext &> context_) :
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
 							// Use deep-clone constructor...
@@ -293,9 +293,9 @@ namespace GPlatesPropertyValues
 		{  }
 
 		virtual
-		const PropertyValue::non_null_ptr_type
+		const Revisionable::non_null_ptr_type
 		clone_impl(
-				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
 		{
 			return non_null_ptr_type(new GmlFile(*this, context));
 		}
@@ -305,16 +305,16 @@ namespace GPlatesPropertyValues
 		/**
 		 * Used when modifications bubble up to us.
 		 *
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
-		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		GPlatesModel::Revision::non_null_ptr_type
 		bubble_up(
 				GPlatesModel::ModelTransaction &transaction,
-				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
 		/**
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
 		boost::optional<GPlatesModel::Model &>
@@ -327,11 +327,11 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValueRevision
+				public PropertyValue::Revision
 		{
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
-					PropertyValueRevisionContext &child_context_,
+					RevisionContext &child_context_,
 					const composite_value_type &range_parameters_,
 					const XsString::non_null_ptr_type &file_name_,
 					const XsString::non_null_ptr_type &file_structure_,
@@ -342,18 +342,18 @@ namespace GPlatesPropertyValues
 			//! Deep-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<PropertyValueRevisionContext &> context_,
-					PropertyValueRevisionContext &child_context_);
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_);
 
 			//! Shallow-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<PropertyValueRevisionContext &> context_);
+					boost::optional<RevisionContext &> context_);
 
 			virtual
-			PropertyValueRevision::non_null_ptr_type
+			GPlatesModel::Revision::non_null_ptr_type
 			clone_revision(
-					boost::optional<PropertyValueRevisionContext &> context) const
+					boost::optional<RevisionContext &> context) const
 			{
 				// Use shallow-clone constructor.
 				return non_null_ptr_type(new Revision(*this, context));
@@ -362,7 +362,7 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const PropertyValueRevision &other) const;
+					const GPlatesModel::Revision &other) const;
 
 			void
 			update_proxied_raster_cache(
@@ -370,10 +370,10 @@ namespace GPlatesPropertyValues
 
 
 			composite_value_type range_parameters;
-			GPlatesModel::PropertyValueRevisionedReference<XsString> file_name;
-			GPlatesModel::PropertyValueRevisionedReference<XsString> file_structure;
-			boost::optional<GPlatesModel::PropertyValueRevisionedReference<XsString> > mime_type;
-			boost::optional<GPlatesModel::PropertyValueRevisionedReference<XsString> > compression;
+			GPlatesModel::RevisionedReference<XsString> file_name;
+			GPlatesModel::RevisionedReference<XsString> file_structure;
+			boost::optional<GPlatesModel::RevisionedReference<XsString> > mime_type;
+			boost::optional<GPlatesModel::RevisionedReference<XsString> > compression;
 
 			// TODO: Remove caching and updating when filename changes and when image on disk is modified.
 			// The image (eg, JPEG) should be converted/updated to GPlates format during import only.

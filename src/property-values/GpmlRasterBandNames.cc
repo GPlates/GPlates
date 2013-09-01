@@ -33,15 +33,15 @@
 #include "global/GPlatesAssert.h"
 #include "global/NotYetImplementedException.h"
 
+#include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
 
 
 void
 GPlatesPropertyValues::GpmlRasterBandNames::set_band_names(
 		const band_names_list_type &band_names_)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().band_names = band_names_;
 	revision_handler.commit();
 }
@@ -66,10 +66,10 @@ GPlatesPropertyValues::GpmlRasterBandNames::print_to(
 }
 
 
-GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesModel::Revision::non_null_ptr_type
 GPlatesPropertyValues::GpmlRasterBandNames::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
-		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
 	// Currently this can't be reached because we don't attach to our children yet.
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
@@ -78,7 +78,7 @@ GPlatesPropertyValues::GpmlRasterBandNames::bubble_up(
 
 bool
 GPlatesPropertyValues::GpmlRasterBandNames::Revision::equality(
-		const PropertyValueRevision &other) const
+		const GPlatesModel::Revision &other) const
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
@@ -95,5 +95,5 @@ GPlatesPropertyValues::GpmlRasterBandNames::Revision::equality(
 		}
 	}
 
-	return PropertyValueRevision::equality(other);
+	return GPlatesModel::Revision::equality(other);
 }

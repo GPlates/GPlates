@@ -225,7 +225,7 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValueRevision
+				public PropertyValue::Revision
 		{
 			explicit
 			Revision(
@@ -236,15 +236,15 @@ namespace GPlatesPropertyValues
 			//! Clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
-				PropertyValueRevision(context_),
+					boost::optional<GPlatesModel::RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
 				finite_rotation(other_.finite_rotation)
 			{  }
 
 			virtual
-			PropertyValueRevision::non_null_ptr_type
+			GPlatesModel::Revision::non_null_ptr_type
 			clone_revision(
-					boost::optional<GPlatesModel::PropertyValueRevisionContext &> context) const
+					boost::optional<GPlatesModel::RevisionContext &> context) const
 			{
 				return non_null_ptr_type(new Revision(*this, context));
 			}
@@ -252,12 +252,12 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const PropertyValueRevision &other) const
+					const GPlatesModel::Revision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return finite_rotation == other_revision.finite_rotation &&
-						PropertyValueRevision::equality(other);
+						GPlatesModel::Revision::equality(other);
 			}
 
 			GPlatesMaths::FiniteRotation finite_rotation;
@@ -275,7 +275,7 @@ namespace GPlatesPropertyValues
 		//! Constructor used when cloning.
 		GpmlFiniteRotation(
 				const GpmlFiniteRotation &other_,
-				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context_) :
+				boost::optional<GPlatesModel::RevisionContext &> context_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
 							new Revision(other_.get_current_revision<Revision>(), context_)))
@@ -297,9 +297,9 @@ namespace GPlatesPropertyValues
 		{  }
 
 		virtual
-		const PropertyValue::non_null_ptr_type
+		const Revisionable::non_null_ptr_type
 		clone_impl(
-				boost::optional<GPlatesModel::PropertyValueRevisionContext &> context = boost::none) const
+				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
 		{
 			return non_null_ptr_type(new GpmlFiniteRotation(*this, context));
 		}

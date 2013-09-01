@@ -34,8 +34,8 @@
 
 #include "maths/LatLonPoint.h"
 
+#include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
 
 
 const GPlatesPropertyValues::GmlRectifiedGrid::non_null_ptr_type
@@ -114,7 +114,7 @@ void
 GPlatesPropertyValues::GmlRectifiedGrid::set_limits(
 		const GmlGridEnvelope::non_null_ptr_type &limits_)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().limits.change(
 			revision_handler.get_model_transaction(), limits_);
 	revision_handler.commit();
@@ -125,7 +125,7 @@ void
 GPlatesPropertyValues::GmlRectifiedGrid::set_axes(
 		const axes_list_type &axes_)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().axes = axes_;
 	revision_handler.commit();
 }
@@ -135,7 +135,7 @@ void
 GPlatesPropertyValues::GmlRectifiedGrid::set_origin(
 		GmlPoint::non_null_ptr_type origin_)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 
 	Revision &revision = revision_handler.get_revision<Revision>();
 
@@ -152,7 +152,7 @@ void
 GPlatesPropertyValues::GmlRectifiedGrid::set_offset_vectors(
 		const offset_vector_list_type &offset_vectors_)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 
 	Revision &revision = revision_handler.get_revision<Revision>();
 
@@ -169,7 +169,7 @@ void
 GPlatesPropertyValues::GmlRectifiedGrid::set_xml_attributes(
 		const xml_attributes_type &xml_attributes_)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().xml_attributes = xml_attributes_;
 	revision_handler.commit();
 }
@@ -202,7 +202,7 @@ GPlatesPropertyValues::GmlRectifiedGrid::convert_to_georeferencing() const
 	const offset_vector_type &longitude_offset_vector = revision.offset_vectors[0];
 	const offset_vector_type &latitude_offset_vector = revision.offset_vectors[1];
 
-	GPlatesMaths::LatLonPoint llp = revision.origin.get_property_value()->point_in_lat_lon();
+	GPlatesMaths::LatLonPoint llp = revision.origin.get_revisionable()->point_in_lat_lon();
 
 	Georeferencing::parameters_type params = {{{
 		llp.longitude(),
@@ -220,21 +220,21 @@ GPlatesPropertyValues::GmlRectifiedGrid::convert_to_georeferencing() const
 }
 
 
-GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesModel::Revision::non_null_ptr_type
 GPlatesPropertyValues::GmlRectifiedGrid::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
-		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
 	// Bubble up to our (parent) context (if any) which creates a new revision for us.
 	Revision &revision = create_bubble_up_revision<Revision>(transaction);
 
 	// In this method we are operating on a (bubble up) cloned version of the current revision.
 
-	if (child_property_value == revision.limits.get_property_value())
+	if (child_revisionable == revision.limits.get_revisionable())
 	{
 		return revision.limits.clone_revision(transaction);
 	}
-	if (child_property_value == revision.origin.get_property_value())
+	if (child_revisionable == revision.origin.get_revisionable())
 	{
 		// Invalidate the georeferencing cache because that's calculated using the origin.
 		revision.cached_georeferencing = boost::none;
@@ -246,20 +246,20 @@ GPlatesPropertyValues::GmlRectifiedGrid::bubble_up(
 	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
-	return GPlatesModel::PropertyValueRevision::non_null_ptr_type(NULL);
+	return GPlatesModel::Revision::non_null_ptr_type(NULL);
 }
 
 
 bool
 GPlatesPropertyValues::GmlRectifiedGrid::Revision::equality(
-		const PropertyValueRevision &other) const
+		const GPlatesModel::Revision &other) const
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-	return *limits.get_property_value() == *other_revision.limits.get_property_value() &&
+	return *limits.get_revisionable() == *other_revision.limits.get_revisionable() &&
 			axes == other_revision.axes &&
-			*origin.get_property_value() == *other_revision.origin.get_property_value() &&
+			*origin.get_revisionable() == *other_revision.origin.get_revisionable() &&
 			offset_vectors == other_revision.offset_vectors &&
 			xml_attributes == other_revision.xml_attributes &&
-			PropertyValueRevision::equality(other);
+			GPlatesModel::Revision::equality(other);
 }

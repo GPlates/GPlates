@@ -35,15 +35,15 @@
 #include "global/GPlatesAssert.h"
 #include "global/NotYetImplementedException.h"
 
+#include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
 
 
 void
 GPlatesPropertyValues::GpmlTopologicalPolygon::set_exterior_sections(
 		const sections_seq_type &exterior_sections)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().exterior_sections = exterior_sections;
 	revision_handler.commit();
 }
@@ -67,10 +67,10 @@ GPlatesPropertyValues::GpmlTopologicalPolygon::print_to(
 }
 
 
-GPlatesModel::PropertyValueRevision::non_null_ptr_type
+GPlatesModel::Revision::non_null_ptr_type
 GPlatesPropertyValues::GpmlTopologicalPolygon::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
-		const PropertyValue::non_null_ptr_to_const_type &child_property_value)
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
 	// Currently this can't be reached because we don't attach to our children yet.
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
@@ -79,7 +79,7 @@ GPlatesPropertyValues::GpmlTopologicalPolygon::bubble_up(
 
 bool
 GPlatesPropertyValues::GpmlTopologicalPolygon::Revision::equality(
-		const PropertyValueRevision &other) const
+		const GPlatesModel::Revision &other) const
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
@@ -96,7 +96,7 @@ GPlatesPropertyValues::GpmlTopologicalPolygon::Revision::equality(
 		}
 	}
 
-	return PropertyValueRevision::equality(other);
+	return GPlatesModel::Revision::equality(other);
 }
 
 

@@ -34,11 +34,11 @@
 
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
-#include "model/PropertyValueRevisionContext.h"
-#include "model/PropertyValueRevisionedReference.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
 
 
-// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_revisionable() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlConstantValue, visit_gpml_constant_value)
@@ -48,7 +48,7 @@ namespace GPlatesPropertyValues
 
 	class GpmlConstantValue :
 			public GPlatesModel::PropertyValue,
-			public GPlatesModel::PropertyValueRevisionContext
+			public GPlatesModel::RevisionContext
 	{
 
 	public:
@@ -87,7 +87,7 @@ namespace GPlatesPropertyValues
 		const PropertyValue::non_null_ptr_to_const_type
 		value() const
 		{
-			return get_current_revision<Revision>().value.get_property_value();
+			return get_current_revision<Revision>().value.get_revisionable();
 		}
 
 		/**
@@ -96,7 +96,7 @@ namespace GPlatesPropertyValues
 		const PropertyValue::non_null_ptr_type
 		value()
 		{
-			return get_current_revision<Revision>().value.get_property_value();
+			return get_current_revision<Revision>().value.get_revisionable();
 		}
 
 		/**
@@ -186,7 +186,7 @@ namespace GPlatesPropertyValues
 		//! Constructor used when cloning.
 		GpmlConstantValue(
 				const GpmlConstantValue &other_,
-				boost::optional<PropertyValueRevisionContext &> context_) :
+				boost::optional<RevisionContext &> context_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
 							// Use deep-clone constructor...
@@ -195,9 +195,9 @@ namespace GPlatesPropertyValues
 		{  }
 
 		virtual
-		const PropertyValue::non_null_ptr_type
+		const Revisionable::non_null_ptr_type
 		clone_impl(
-				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
+				boost::optional<RevisionContext &> context = boost::none) const
 		{
 			return non_null_ptr_type(new GpmlConstantValue(*this, context));
 		}
@@ -205,13 +205,13 @@ namespace GPlatesPropertyValues
 		virtual
 		bool
 		equality(
-				const PropertyValue &other) const
+				const Revisionable &other) const
 		{
 			const GpmlConstantValue &other_pv = dynamic_cast<const GpmlConstantValue &>(other);
 
 			return d_value_type == other_pv.d_value_type &&
 					// The revisioned data comparisons are handled here...
-					PropertyValue::equality(other);
+					Revisionable::equality(other);
 		}
 
 	private:
@@ -219,16 +219,16 @@ namespace GPlatesPropertyValues
 		/**
 		 * Used when modifications bubble up to us.
 		 *
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
-		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		GPlatesModel::Revision::non_null_ptr_type
 		bubble_up(
 				GPlatesModel::ModelTransaction &transaction,
-				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
 		/**
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
 		boost::optional<GPlatesModel::Model &>
@@ -242,16 +242,16 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValueRevision
+				public PropertyValue::Revision
 		{
 			//! Regular constructor.
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
-					PropertyValueRevisionContext &child_context_,
+					RevisionContext &child_context_,
 					const PropertyValue::non_null_ptr_type value_,
 					const GPlatesUtils::UnicodeString &description_) :
 				value(
-						GPlatesModel::PropertyValueRevisionedReference<PropertyValue>::attach(
+						GPlatesModel::RevisionedReference<PropertyValue>::attach(
 								transaction_, child_context_, value_)),
 				description(description_)
 			{  }
@@ -259,9 +259,9 @@ namespace GPlatesPropertyValues
 			//! Deep-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<PropertyValueRevisionContext &> context_,
-					PropertyValueRevisionContext &child_context_) :
-				PropertyValueRevision(context_),
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				PropertyValue::Revision(context_),
 				value(other_.value),
 				description(other_.description)
 			{
@@ -272,16 +272,16 @@ namespace GPlatesPropertyValues
 			//! Shallow-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<PropertyValueRevisionContext &> context_) :
-				PropertyValueRevision(context_),
+					boost::optional<RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
 				value(other_.value),
 				description(other_.description)
 			{  }
 
 			virtual
-			PropertyValueRevision::non_null_ptr_type
+			GPlatesModel::Revision::non_null_ptr_type
 			clone_revision(
-					boost::optional<PropertyValueRevisionContext &> context) const
+					boost::optional<RevisionContext &> context) const
 			{
 				// Use shallow-clone constructor.
 				return non_null_ptr_type(new Revision(*this, context));
@@ -290,17 +290,17 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const PropertyValueRevision &other) const
+					const GPlatesModel::Revision &other) const
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				// Note that we compare the property value contents (and not pointers).
-				return *value.get_property_value() == *other_revision.value.get_property_value() &&
+				return *value.get_revisionable() == *other_revision.value.get_revisionable() &&
 						description == other_revision.description &&
-						PropertyValueRevision::equality(other);
+						GPlatesModel::Revision::equality(other);
 			}
 
-			GPlatesModel::PropertyValueRevisionedReference<PropertyValue> value;
+			GPlatesModel::RevisionedReference<PropertyValue> value;
 			GPlatesUtils::UnicodeString description;
 		};
 

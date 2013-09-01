@@ -31,14 +31,14 @@
 
 #include "maths/PolylineOnSphere.h"
 
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
+#include "model/BubbleUpRevisionHandler.h"
 
 
 void
 GPlatesPropertyValues::GmlLineString::set_polyline(
 		const polyline_type &p)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().polyline = p;
 	revision_handler.commit();
 }

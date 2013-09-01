@@ -37,8 +37,8 @@
 #include "model/FeatureVisitor.h"
 #include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
-#include "model/PropertyValueRevisionContext.h"
-#include "model/PropertyValueRevisionedReference.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
 
 #include "property-values/GpmlPropertyDelegate.h"
 
@@ -57,7 +57,7 @@ namespace GPlatesPropertyValues
 	 */
 	class GpmlTopologicalNetwork :
 			public GPlatesModel::PropertyValue,
-			public GPlatesModel::PropertyValueRevisionContext
+			public GPlatesModel::RevisionContext
 	{
 
 	public:
@@ -370,7 +370,7 @@ namespace GPlatesPropertyValues
 		//! Constructor used when cloning.
 		GpmlTopologicalNetwork(
 				const GpmlTopologicalNetwork &other_,
-				boost::optional<PropertyValueRevisionContext &> context_) :
+				boost::optional<RevisionContext &> context_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
 							// Use deep-clone constructor...
@@ -378,9 +378,9 @@ namespace GPlatesPropertyValues
 		{  }
 
 		virtual
-		const PropertyValue::non_null_ptr_type
+		const Revisionable::non_null_ptr_type
 		clone_impl(
-				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
+				boost::optional<RevisionContext &> context = boost::none) const
 		{
 			return non_null_ptr_type(new GpmlTopologicalNetwork(*this, context));
 		}
@@ -390,16 +390,16 @@ namespace GPlatesPropertyValues
 		/**
 		 * Used when modifications bubble up to us.
 		 *
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
-		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		GPlatesModel::Revision::non_null_ptr_type
 		bubble_up(
 				GPlatesModel::ModelTransaction &transaction,
-				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
 		/**
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
 		boost::optional<GPlatesModel::Model &>
@@ -412,12 +412,12 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValueRevision
+				public PropertyValue::Revision
 		{
 			template <typename BoundaryTopologicalSectionsIterator>
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
-					PropertyValueRevisionContext &child_context_,
+					RevisionContext &child_context_,
 					const BoundaryTopologicalSectionsIterator &boundary_sections_begin_,
 					const BoundaryTopologicalSectionsIterator &boundary_sections_end_) :
 				boundary_sections(boundary_sections_begin_, boundary_sections_end_)
@@ -426,7 +426,7 @@ namespace GPlatesPropertyValues
 			template <typename BoundaryTopologicalSectionsIterator, typename InteriorGeometriesIterator>
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
-					PropertyValueRevisionContext &child_context_,
+					RevisionContext &child_context_,
 					const BoundaryTopologicalSectionsIterator &boundary_sections_begin_,
 					const BoundaryTopologicalSectionsIterator &boundary_sections_end_,
 					const InteriorGeometriesIterator &interior_geometries_begin_,
@@ -438,9 +438,9 @@ namespace GPlatesPropertyValues
 			//! Deep-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<PropertyValueRevisionContext &> context_,
-					PropertyValueRevisionContext &child_context_) :
-				PropertyValueRevision(context_),
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				PropertyValue::Revision(context_),
 				boundary_sections(other_.boundary_sections),
 				interior_geometries(other_.interior_geometries)
 			{
@@ -450,16 +450,16 @@ namespace GPlatesPropertyValues
 			//! Shallow-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<PropertyValueRevisionContext &> context_) :
-				PropertyValueRevision(context_),
+					boost::optional<RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
 				boundary_sections(other_.boundary_sections),
 				interior_geometries(other_.interior_geometries)
 			{  }
 
 			virtual
-			PropertyValueRevision::non_null_ptr_type
+			GPlatesModel::Revision::non_null_ptr_type
 			clone_revision(
-					boost::optional<PropertyValueRevisionContext &> context) const
+					boost::optional<RevisionContext &> context) const
 			{
 				// Use shallow-clone constructor.
 				return non_null_ptr_type(new Revision(*this, context));
@@ -468,7 +468,7 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const PropertyValueRevision &other) const;
+					const GPlatesModel::Revision &other) const;
 
 			boundary_sections_seq_type boundary_sections;
 			interior_geometry_seq_type interior_geometries;

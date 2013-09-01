@@ -29,14 +29,14 @@
 
 #include "GmlDataBlock.h"
 
-#include "model/PropertyValueBubbleUpRevisionHandler.h"
+#include "model/BubbleUpRevisionHandler.h"
 
 
 void
 GPlatesPropertyValues::GmlDataBlock::set_tuple_list(
 		const tuple_list_type &tuple_list)
 {
-	GPlatesModel::PropertyValueBubbleUpRevisionHandler revision_handler(this);
+	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().tuple_list = tuple_list;
 	revision_handler.commit();
 }

@@ -41,13 +41,13 @@
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/PropertyValue.h"
-#include "model/PropertyValueRevisionContext.h"
-#include "model/PropertyValueRevisionedReference.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
 
 
-// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
+// Enable GPlatesFeatureVisitors::get_revisionable() to work with this property value.
 // First parameter is the namespace qualified property value class.
 // Second parameter is the name of the feature visitor method that visits the property value.
 DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlRectifiedGrid, visit_gml_rectified_grid)
@@ -59,7 +59,7 @@ namespace GPlatesPropertyValues
 	 */
 	class GmlRectifiedGrid:
 			public GPlatesModel::PropertyValue,
-			public GPlatesModel::PropertyValueRevisionContext
+			public GPlatesModel::RevisionContext
 	{
 	public:
 
@@ -192,7 +192,7 @@ namespace GPlatesPropertyValues
 		const GmlGridEnvelope::non_null_ptr_to_const_type
 		limits() const
 		{
-			return get_current_revision<Revision>().limits.get_property_value();
+			return get_current_revision<Revision>().limits.get_revisionable();
 		}
 
 		/**
@@ -201,7 +201,7 @@ namespace GPlatesPropertyValues
 		const GmlGridEnvelope::non_null_ptr_type
 		limits()
 		{
-			return get_current_revision<Revision>().limits.get_property_value();
+			return get_current_revision<Revision>().limits.get_revisionable();
 		}
 
 		/**
@@ -240,7 +240,7 @@ namespace GPlatesPropertyValues
 		const GmlPoint::non_null_ptr_to_const_type
 		origin() const
 		{
-			return get_current_revision<Revision>().origin.get_property_value();
+			return get_current_revision<Revision>().origin.get_revisionable();
 		}
 
 		/**
@@ -249,7 +249,7 @@ namespace GPlatesPropertyValues
 		const GmlPoint::non_null_ptr_type
 		origin()
 		{
-			return get_current_revision<Revision>().origin.get_property_value();
+			return get_current_revision<Revision>().origin.get_revisionable();
 		}
 
 		/**
@@ -358,7 +358,7 @@ namespace GPlatesPropertyValues
 		//! Constructor used when cloning.
 		GmlRectifiedGrid(
 				const GmlRectifiedGrid &other_,
-				boost::optional<PropertyValueRevisionContext &> context_) :
+				boost::optional<RevisionContext &> context_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
 							// Use deep-clone constructor...
@@ -366,9 +366,9 @@ namespace GPlatesPropertyValues
 		{  }
 
 		virtual
-		const PropertyValue::non_null_ptr_type
+		const Revisionable::non_null_ptr_type
 		clone_impl(
-				boost::optional<PropertyValueRevisionContext &> context = boost::none) const
+				boost::optional<RevisionContext &> context = boost::none) const
 		{
 			return non_null_ptr_type(new GmlRectifiedGrid(*this, context));
 		}
@@ -378,16 +378,16 @@ namespace GPlatesPropertyValues
 		/**
 		 * Used when modifications bubble up to us.
 		 *
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
-		GPlatesModel::PropertyValueRevision::non_null_ptr_type
+		GPlatesModel::Revision::non_null_ptr_type
 		bubble_up(
 				GPlatesModel::ModelTransaction &transaction,
-				const PropertyValue::non_null_ptr_to_const_type &child_property_value);
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
 		/**
-		 * Inherited from @a PropertyValueRevisionContext.
+		 * Inherited from @a RevisionContext.
 		 */
 		virtual
 		boost::optional<GPlatesModel::Model &>
@@ -400,22 +400,22 @@ namespace GPlatesPropertyValues
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
-				public GPlatesModel::PropertyValueRevision
+				public PropertyValue::Revision
 		{
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
-					PropertyValueRevisionContext &child_context_,
+					RevisionContext &child_context_,
 					const GmlGridEnvelope::non_null_ptr_type &limits_,
 					const axes_list_type &axes_,
 					const GmlPoint::non_null_ptr_type &origin_,
 					const offset_vector_list_type &offset_vectors_,
 					const xml_attributes_type xml_attributes_) :
 				limits(
-						GPlatesModel::PropertyValueRevisionedReference<GmlGridEnvelope>::attach(
+						GPlatesModel::RevisionedReference<GmlGridEnvelope>::attach(
 								transaction_, child_context_, limits_)),
 				axes(axes_),
 				origin(
-						GPlatesModel::PropertyValueRevisionedReference<GmlPoint>::attach(
+						GPlatesModel::RevisionedReference<GmlPoint>::attach(
 								transaction_, child_context_, origin_)),
 				offset_vectors(offset_vectors_),
 				xml_attributes(xml_attributes_)
@@ -424,9 +424,9 @@ namespace GPlatesPropertyValues
 			//! Deep-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<PropertyValueRevisionContext &> context_,
-					PropertyValueRevisionContext &child_context_) :
-				PropertyValueRevision(context_),
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				PropertyValue::Revision(context_),
 				limits(other_.limits),
 				axes(other_.axes),
 				origin(other_.origin),
@@ -441,8 +441,8 @@ namespace GPlatesPropertyValues
 			//! Shallow-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<PropertyValueRevisionContext &> context_) :
-				PropertyValueRevision(context_),
+					boost::optional<RevisionContext &> context_) :
+				PropertyValue::Revision(context_),
 				limits(other_.limits),
 				axes(other_.axes),
 				origin(other_.origin),
@@ -451,9 +451,9 @@ namespace GPlatesPropertyValues
 			{  }
 
 			virtual
-			PropertyValueRevision::non_null_ptr_type
+			GPlatesModel::Revision::non_null_ptr_type
 			clone_revision(
-					boost::optional<PropertyValueRevisionContext &> context) const
+					boost::optional<RevisionContext &> context) const
 			{
 				// Use shallow-clone constructor.
 				return non_null_ptr_type(new Revision(*this, context));
@@ -462,11 +462,11 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const PropertyValueRevision &other) const;
+					const GPlatesModel::Revision &other) const;
 
-			GPlatesModel::PropertyValueRevisionedReference<GmlGridEnvelope> limits;
+			GPlatesModel::RevisionedReference<GmlGridEnvelope> limits;
 			axes_list_type axes;
-			GPlatesModel::PropertyValueRevisionedReference<GmlPoint> origin;
+			GPlatesModel::RevisionedReference<GmlPoint> origin;
 			offset_vector_list_type offset_vectors;
 
 			xml_attributes_type xml_attributes;
