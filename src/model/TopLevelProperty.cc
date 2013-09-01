@@ -29,88 +29,17 @@
 
 #include "TopLevelProperty.h"
 
+#include "BubbleUpRevisionHandler.h"
 #include "FeatureHandle.h"
-#include "TopLevelPropertyBubbleUpRevisionHandler.h"
 
 
 void
 GPlatesModel::TopLevelProperty::set_xml_attributes(
 		const xml_attributes_type &xml_attributes)
 {
-	TopLevelPropertyBubbleUpRevisionHandler revision_handler(this);
-	revision_handler.get_revision<TopLevelPropertyRevision>().xml_attributes = xml_attributes;
+	BubbleUpRevisionHandler revision_handler(this);
+	revision_handler.get_revision<Revision>().xml_attributes = xml_attributes;
 	revision_handler.commit();
-}
-
-
-bool
-GPlatesModel::TopLevelProperty::operator==(
-		const TopLevelProperty &other) const
-{
-	// Both objects must have the same type before testing for equality.
-	// This also means derived classes need no type-checking.
-	if (typeid(*this) != typeid(other))
-	{
-		return false;
-	}
-
-	// Compare the derived type objects.
-	// Since most (all) of the value data is contained in the revisions, which is handled by the
-	// base TopLevelProperty class, the derived top-level property classes don't typically do any comparison
-	// and so its usually all handled by TopLevelProperty::equality() which compares the revisions.
-	return equality(other);
-}
-
-
-bool
-GPlatesModel::TopLevelProperty::equality(
-		const TopLevelProperty &other) const
-{
-	return d_property_name == other.d_property_name &&
-			// Compare the mutable data that is contained in the revisions...
-			d_current_revision->equality(*other.d_current_revision);
-}
-
-
-boost::optional<GPlatesModel::Model &>
-GPlatesModel::TopLevelProperty::get_model()
-{
-	// TODO: Implement this once we can connect to a parent feature handle.
-	return boost::none;
-}
-
-
-boost::optional<const GPlatesModel::Model &>
-GPlatesModel::TopLevelProperty::get_model() const
-{
-	// TODO: Implement this once we can connect to a parent feature handle.
-	return boost::none;
-}
-
-
-GPlatesModel::TopLevelPropertyRevision::non_null_ptr_type
-GPlatesModel::TopLevelProperty::create_bubble_up_revision(
-		ModelTransaction &transaction) const
-{
-	// If we don't have a (parent) context then just clone the current revision without any context.
-#if 0 // TODO: Enable this when can connect to parent context.
-	if (!get_current_revision()->get_context())
-#endif
-	{
-		TopLevelPropertyRevision::non_null_ptr_type cloned_revision =
-				get_current_revision()->clone_revision();
-
-		transaction.set_top_level_property_transaction(
-				ModelTransaction::TopLevelPropertyTransaction(this, cloned_revision));
-
-		return cloned_revision;
-	}
-
-#if 0 // TODO: Enable this when can connect to parent context.
-	// We have a parent context so bubble up the revision towards the root
-	// (feature store). And our parent will create a new revision for us...
-	return get_current_revision()->get_context()->bubble_up(transaction, this);
-#endif
 }
 
 
