@@ -29,14 +29,12 @@
 #define GPLATES_MODEL_PROPERTYVALUE_H
 
 #include <iosfwd>
-#include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
-#include "PropertyValueRevision.h"
+#include "Revisionable.h"
 
 #include "property-values/StructuralType.h"
 
-#include "utils/non_null_intrusive_ptr.h"
 #include "utils/QtStreamable.h"
 #include "utils/ReferenceCount.h"
 
@@ -48,34 +46,24 @@ namespace GPlatesModel
 	template<class H> class FeatureVisitorBase;
 	typedef FeatureVisitorBase<FeatureHandle> FeatureVisitor;
 	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
-	class Model;
-	class ModelTransaction;
-	class PropertyValueBubbleUpRevisionHandler;
-	class PropertyValueRevisionContext;
-	template <class PropertyValueType> class PropertyValueRevisionedReference;
 
 
 	/**
 	 * This class is the abstract base of all property values.
 	 *
-	 * It provides pure virtual function declarations for cloning and accepting visitors.  It
-	 * also provides the functions to be used by boost::intrusive_ptr for reference-counting.
+	 * It provides pure virtual function declarations for accepting visitors.
 	 */
 	class PropertyValue :
-			public GPlatesUtils::ReferenceCount<PropertyValue>,
+			public Revisionable,
 			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
-			public GPlatesUtils::QtStreamable<PropertyValue>,
-			public boost::equality_comparable<PropertyValue>
+			public GPlatesUtils::QtStreamable<PropertyValue>
 	{
 	public:
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PropertyValue>.
-		 */
+
+		//! A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PropertyValue>.
 		typedef GPlatesUtils::non_null_intrusive_ptr<PropertyValue> non_null_ptr_type;
 
-		/**
-		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const PropertyValue>.
-		 */
+		//! A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const PropertyValue>.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const PropertyValue> non_null_ptr_to_const_type;
 
 
@@ -90,7 +78,7 @@ namespace GPlatesModel
 		const non_null_ptr_type
 		clone() const
 		{
-			return clone_impl();
+			return GPlatesUtils::dynamic_pointer_cast<PropertyValue>(clone_impl());
 		}
 
 		/**
@@ -138,155 +126,51 @@ namespace GPlatesModel
 		print_to(
 				std::ostream &os) const = 0;
 
-		/**
-		 * Value equality comparison operator.
-		 *
-		 * Returns false if the types of @a other and 'this' aren't the same type, otherwise
-		 * returns true if their values (tested recursively as needed) compare equal.
-		 *
-		 * Inequality provided by boost equality_comparable.
-		 */
-		bool
-		operator==(
-				const PropertyValue &other) const;
-
-		/**
-		 * Returns a (non-const) reference to the Model to which this property value belongs.
-		 *
-		 * Returns none if this property value is not currently attached to the model - this can happen
-		 * if this property value has no parent (eg, top-level property) or if the parent has no parent, etc.
-		 */
-		boost::optional<Model &>
-		get_model();
-
-		/**
-		 * Returns a const reference to the Model to which this property value belongs.
-		 *
-		 * Returns none if this property value is not currently attached to the model - this can happen
-		 * if this property value has no parent (eg, top-level property) or if the parent has no parent, etc.
-		 */
-		boost::optional<const Model &>
-		get_model() const;
-
 	protected:
 
 		/**
 		 * Construct a PropertyValue instance.
 		 */
+		explicit
 		PropertyValue(
-				const PropertyValueRevision::non_null_ptr_to_const_type &revision) :
-			d_current_revision(revision)
+				const Revision::non_null_ptr_to_const_type &revision) :
+			Revisionable(revision)
 		{  }
 
+
 		/**
-		 * Returns the current immutable revision as the base revision type.
-		 *
-		 * Revisions are immutable - use @a PropertyValueBubbleUpRevisionHandler to modify revisions.
+		 * Top-level property data that is mutable/revisionable.
 		 */
-		PropertyValueRevision::non_null_ptr_to_const_type
-		get_current_revision() const
+		class Revision :
+				public GPlatesModel::Revision
 		{
-			return d_current_revision;
-		}
+		public:
 
-		/**
-		 * Returns the current immutable revision as the specified derived revision type.
-		 *
-		 * Revisions are immutable - use @a PropertyValueBubbleUpRevisionHandler to modify revisions.
-		 */
-		template <class RevisionType>
-		const RevisionType &
-		get_current_revision() const
-		{
-			return dynamic_cast<const RevisionType &>(*d_current_revision);
-		}
+			typedef GPlatesUtils::non_null_intrusive_ptr<Revision> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const Revision> non_null_ptr_to_const_type;
 
-		/**
-		 * Create a new bubble-up revision by delegating to the (parent) revision context
-		 * if there is one, otherwise create a new revision without any context.
-		 */
-		PropertyValueRevision::non_null_ptr_type
-		create_bubble_up_revision(
-				ModelTransaction &transaction) const;
+		protected:
 
-		/**
-		 * Same as the other overload of @a create_bubble_up_revision but downcasts to
-		 * the specified derived revision type.
-		 */
-		template <class RevisionType>
-		RevisionType &
-		create_bubble_up_revision(
-				ModelTransaction &transaction) const
-		{
-			// The returned revision is kept alive by either the model transaction (if uncommitted),
-			// or 'this' property value (if committed).
-			return dynamic_cast<RevisionType &>(*create_bubble_up_revision(transaction));
-		}
+			/**
+			 * Constructor specified optional (parent) context in which this property value (revision) is nested.
+			 */
+			explicit
+			Revision(
+					boost::optional<RevisionContext &> context = boost::none) :
+				GPlatesModel::Revision(context)
+			{  }
 
-		/**
-		 * Create a duplicate of this PropertyValue instance, including a recursive copy
-		 * of any property values this instance might contain.
-		 *
-		 * @a context is non-null if this property value is nested within a parent
-		 * property value (or top-level property).
-		 */
-		virtual
-		const non_null_ptr_type
-		clone_impl(
-				boost::optional<PropertyValueRevisionContext &> context = boost::none) const = 0;
+			/**
+			 * Construct a Revision instance using another Revision.
+			 */
+			Revision(
+					const Revision &other,
+					boost::optional<RevisionContext &> context) :
+				GPlatesModel::Revision(context)
+			{  }
 
-		/**
-		 * Determine if two property value instances ('this' and 'other') value compare equal.
-		 *
-		 * This should recursively test for equality as needed.
-		 * Note that the revision testing is done by PropertyValue::equality(), since the revisions
-		 * are contained in class PropertyValue, so derived property values classes only need to test
-		 * any non-revisioned data that they may contain - and if there is none then this method
-		 * does not need to be implemented by that derived property value class.
-		 *
-		 * A precondition of this method is that the type of 'this' is the same as the type of 'object'
-		 * so static_cast can be used instead of dynamic_cast.
-		 */
-		virtual
-		bool
-		equality(
-				const PropertyValue &other) const;
+		};
 
-	private:
-
-		/**
-		 * NOTE: Copy-constructor is intentionally not defined anywhere (not strictly necessary to do
-		 * this since base class ReferenceCount is already non-copyable, but makes it more obvious).
-		 *
-		 * Use the constructor (accepting revision) when cloning a property value.
-		 * Note that two property value instances should not point to the same revision instance as
-		 * this will prevent the revisioning system from functioning correctly - this doesn't mean
-		 * that two property value *revision* instances can't reference the same revision instance though.
-		 */
-		PropertyValue(
-				const PropertyValue &other);
-
-		/**
-		 * The current revision of this property value.
-		 *
-		 * The current revision is immutable since it has already been initialised and once
-		 * initialised it cannot be modified. A modification involves creating a new revision object.
-		 * Keeping the current revision 'const' prevents inadvertent modifications by derived
-		 * property value classes.
-		 *
-		 * The revision also contains the current parent reference such that when a different
-		 * revision is swapped in (due to undo/redo) it will automatically reference the correct parent.
-		 *
-		 * The pointer is declared 'mutable' so that revisions can be swapped in 'const' property values.
-		 */
-		mutable PropertyValueRevision::non_null_ptr_to_const_type d_current_revision;
-
-
-		friend class ModelTransaction;
-		friend class PropertyValueBubbleUpRevisionHandler;
-
-		template <class PropertyValueType>
-		friend class PropertyValueRevisionedReference;
 	};
 
 
