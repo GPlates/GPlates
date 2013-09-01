@@ -36,37 +36,23 @@ GPlatesModel::ModelTransaction::commit()
 	// objects to reference their new (bubbled up) revisions.
 
 	BOOST_FOREACH(
-			PropertyValueTransaction &property_value_transaction,
-			d_property_value_transactions)
+			RevisionTransaction &revision_transaction,
+			d_revision_transactions)
 	{
 		// Essentially amounts to a no-throw swap of the current revision for the new revision.
-		PropertyValueTransaction current_revisioned_reference(
-				property_value_transaction.d_property_value,
-				property_value_transaction.d_property_value->d_current_revision);
+		RevisionTransaction current_revision_transaction(
+				revision_transaction.d_revisionable,
+				revision_transaction.d_revisionable->d_current_revision);
 
-		property_value_transaction.d_property_value->d_current_revision =
-				property_value_transaction.d_revision;
+		revision_transaction.d_revisionable->d_current_revision = revision_transaction.d_revision;
 
-		property_value_transaction = current_revisioned_reference;
-	}
-
-	if (d_top_level_property_transaction)
-	{
-		// Essentially amounts to a no-throw swap of the current revision for the new revision.
-		TopLevelPropertyTransaction current_revisioned_reference(
-				d_top_level_property_transaction->d_top_level_property,
-				d_top_level_property_transaction->d_top_level_property->d_current_revision);
-
-		d_top_level_property_transaction->d_top_level_property->d_current_revision =
-				d_top_level_property_transaction->d_revision;
-
-		d_top_level_property_transaction = current_revisioned_reference;
+		revision_transaction = current_revision_transaction;
 	}
 
 	// The destructor of ModelTransaction will release the old revisions which are now stored
-	// in our revision references (we swapped the new for the old).
+	// in our revision transactions (we swapped the new for the old).
 	// So if we hold the last reference then they will be destroyed and the destruction process
 	// could potentially throw an exception - if that happens then at least it won't happen
-	// during the commit of the new revision (which has already happened above) and leave us with
+	// during the commit of the new revisions (which has already happened above) and leave us with
 	// a partially committed model.
 }
