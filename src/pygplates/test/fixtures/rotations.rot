@@ -1,0 +1,2346 @@
+999  0.0   0.0    0.0    0.0  000 ! Global EarthByte Rotation File 
+999  0.0   0.0    0.0    0.0  000 ! Released with GPlates 0.9.10
+999  0.0   0.0    0.0    0.0  000 ! 
+999  0.0   0.0    0.0    0.0  000 ! Based on moving Indian/Atlantic hotspots (O'Neill et. al. 2005)
+999  0.0   0.0    0.0    0.0  000 ! to 100 Ma and fixed Indian/Atlantic hotspots (Muller et. al. 1993)
+999  0.0   0.0    0.0    0.0  000 ! from 100 - 140 Ma.  140 Ma is the extent of this rotation model.
+999  0.0   0.0    0.0    0.0  000 ! 
+999  0.0   0.0    0.0    0.0  000 ! Reference for rotation model: Muller et. al. (2008) GCubed
+999  0.0   0.0    0.0    0.0  000 !
+999  0.0   0.0    0.0    0.0  000 ! Column 1 = plateID (see attached .pdf for plateID names)
+999  0.0   0.0    0.0    0.0  000 ! Column 2 = time (Ma)
+999  0.0   0.0    0.0    0.0  000 ! Column 3,4,5 = Finite rotation (lat, long, angle)
+999  0.0   0.0    0.0    0.0  000 ! Column 6 = Fixed plateID (see attached .pdf for plateID names)
+999  0.0   0.0    0.0    0.0  000 ! Column 7 = Comment and reference
+999  0.0   0.0    0.0    0.0  000 !
+001  0.0   0.0    0.0    0.0  000 ! AHS-HOT Present day Atlantic-Indian hotspots fixed to 000          
+001 600.0   0.0    0.0    0.0  000 ! AHS-HOT                                    
+002  0.0   0.0    0.0    0.0  901 ! PHS-PAC Pacific Hotspots                    
+002  0.78  49.3  -49.5   -1.02  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002  2.58  53.72  -56.88   -2.66  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002  5.89  59.65  -66.05   -5.39  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002  8.86  62.87  -70.87   -8.23  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 12.29  65.37  -68.68  -10.3  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 17.47  68.25  -61.53  -15.5  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 24.06  68.78  -69.83  -20.4  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 28.28  67.72  -70.8  -23.6  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 33.54  66.57  -68.73  -27.7  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 40.1  65.43  -64.25  -31.6  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 47.91  63.02  -66.68  -34.6  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 53.35  60.6  -69.67  -36.1  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 61.1  56.93  -72.93  -38.4  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 74.5  50.03  -78.35  -44.0  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 83.5  47.3  -82.1  -48.8  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 95.0  46.9  -82.68  -54.1  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008         
+002 106.2  51.32  -85.12  -60.1  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008    
+002 112.3  52.17  -85.8  -62.4  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008    
+002 118.4  52.53  -80.33  -66.5  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 125.0  54.13  -88.18  -69.6  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 131.9  56.22 -112.25  -78.6  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+002 144.0  54.43 -123.57  -84.4  901 ! PHS-PAC WK08-A Wessel & Kroenke 2008
+003  0.0   0.0    0.0    0.0  000 ! PPH-HOT Present day Pacific hotspots fixed to 000          
+003 600.0   0.0    0.0    0.0  000 ! PPH-HOT                                    
+101  0.0   0.0    0.0    0.0  714 ! NAM-NWA North America-Northwest Africa
+101  2.7  78.8   38.3    0.65  714 ! NAM-NWA An2 Cande et al. 1995
+101  9.7  80.98   22.82    2.48  714 ! NAM-NWA An5 Muller et.al 1999
+101 19.0  80.89   23.28    5.24  714 ! NAM-NWA An6 Muller et.al 1999
+101 25.8  79.34   28.56    7.04  714 ! NAM-NWA An8 Muller et.al 1999
+101 33.1  75.99    5.98    9.77  714 ! NAM-NWA An13 Muller et.al 1999
+101 38.4  74.54    0.19   11.92  714 ! NAM-NWA An18 Muller et.al 1999
+101 42.5  74.38   -2.8   13.56  714 ! NAM-NWA An18 Muller et.al 1993
+101 46.3  74.23   -5.01   15.11  714 ! NAM-NWA An21 Muller et.al 1999
+101 49.0  75.29   -4.26   15.95  714 ! NAM-NWA An21 Muller et.al 1993
+101 52.4  77.34   -1.61   16.96  714 ! NAM-NWA An24 Muller et.al 1999
+101 55.9  80.64    6.57   17.9  714 ! NAM-NWA An25 Muller et.al 1999
+101 65.6  82.74    2.93   20.84  714 ! NAM-NWA An30 Muller et.al 1999
+101 71.6  81.35   -8.32   22.75  714 ! NAM-NWA An32 Muller et.al 1999
+101 73.6  81.11  -10.64   22.74  714 ! NAM-NWA An32 Muller et.al 1993
+101 79.1  78.64  -18.16   26.98  714 ! NAM-NWA An33o Muller et.al 1999
+101 83.5  76.81  -20.59   29.51  714 ! NAM-NWA An34 Muller et.al 1999
+101 89.9  74.33  -22.65   33.86  714 ! NAM-NWA Muller & Roest 1992
+101 94.1  72.0  -24.39   36.49  714 ! NAM-NWA Muller & Roest 1992
+101 100.0  69.42  -23.52   40.46  714 ! NAM-NWA Muller & Roest 1992
+101 106.9  68.08  -22.66   45.36  714 ! NAM-NWA Muller & Roest 1992
+101 118.1  66.21  -21.0   53.19  714 ! NAM-NWA Muller & Roest 1992
+101 120.4  66.28  -19.82   54.44  714 ! NAM-NWA Mueller et.al 1997
+101 126.7  66.11  -18.95   56.48  714 ! NAM-NWA Mueller et.al 1997
+101 131.9  65.95  -18.5   57.45  714 ! NAM-NWA Mueller et.al 1997
+101 139.6  66.12  -18.38   59.9  714 ! NAM-NWA Mueller et.al 1997
+101 147.7  66.54  -17.98   62.08  714 ! NAM-NWA Mueller et.al 1997
+101 154.3  67.15  -15.98   64.75  714 ! NAM-NWA Mueller et.al 1997
+101 170.0  67.02  -13.17   72.1  714 ! NAM-NWA Klitgord & Schouten 1986
+101 175.0  66.95  -12.02   75.55  714 ! NAM-NWA Klitgord & Schouten 1986
+101 215.0  67.0  -12.0   79.0  714 ! NAM-NWA Torsvik et.al 2002
+101 320.0  67.0  -12.0   79.0  714 ! NAM-NWA Torsvik et.al 2002
+102  0.0   0.0    0.0    0.0  101 ! GRN-NAM Greenland-North America
+102 33.1   0.0    0.0    0.0  101 ! GRN-NAM AN13 Derived Gaina et.al 2002 
+102 43.79  63.25  -79.58   -1.81  101 ! GRN-NAM AN20 Derived Gaina et.al 2002
+102 47.9  60.77  -96.82   -2.83  101 ! GRN-NAM AN21 Derived Gaina et.al 2002
+102 53.3  39.68 -116.16   -3.74  101 ! GRN-NAM AN24 Derived Gaina et.al 2002
+102 55.9  19.28 -136.19   -3.16  101 ! GRN-NAM AN25 Derived Gaina et.al 2002
+102 68.74  49.25 -137.47   -6.07  101 ! GRN-NAM AN31 Derived Gaina et.al 2002
+102 79.08  62.58 -125.53   -9.26  101 ! GRN-NAM AN33o Derived Gaina et.al 2002
+102 85.0  62.58 -125.53  -10.26  101 ! GRN-NAM extrapolate to match Mesozoic basins Derived Gaina et.al 2002
+102 135.0  62.58 -125.53  -14.26  101 ! GRN-NAM extrapolate to match Mesozoic basins Derived Gaina et.al 2002
+102 245.0  62.58 -125.53  -14.26  101 ! GRN-NAM Roest & Srivastava 1989
+103  0.0   0.0    0.0    0.0  101 ! NSL-NAM North Slope Alaska-North America
+103 115.0   0.0    0.0    0.0  101 ! NSL-NAM EarthByteGroup 2007
+103 144.0  69.0 -137.2  -69.5  101 ! NSL-NAM fit Lawver et al. 1990
+103 154.0  69.0 -137.2  -70.0  101 ! NSL-NAM fit Lawver et al. 1990
+103 600.0  69.0 -137.2  -82.0  101 ! NSL-NAM fit Lawver et al. 1990   
+104  0.0   0.0    0.0    0.0  101 ! MEX-NAM Mexico-North America    
+104 152.7   0.0    0.0    0.0  101 ! MEX-NAM EarthByteGroup 2007
+104 170.0  35.0  -14.0   -1.5  101 ! MEX-NAM EarthByteGroup 2007
+104 250.0  35.0  -14.0   -1.5  101 ! MEX-NAM
+105  0.0   0.0    0.0    0.0  104 ! BAJ-MEX Baja California-Mexico       
+105  6.0  57.0  -55.0    5.6  104 ! BAJ-MEX EarthByteGroup 2007           
+105 220.0  57.0  -55.0    5.6  104 ! BAJ-MEX   
+106  0.0   0.0    0.0    0.0  104 ! NBJ-MEX Northern Baja California-Mexico   
+106  2.1  52.0  -67.0    1.5  104 ! NBJ-MEX EarthByteGroup 2007
+106 220.0  52.0  -67.0    1.5  104 ! NBJ-MEX 
+107  0.0   0.0    0.0    0.0  101 ! BIS-NAM Baffin Island-North America
+107 33.5   0.0    0.0    0.0  101 ! BIS-NAM                  
+107 95.2 -69.79  101.72    5.98  101 ! BIS-NAM Lawver et al. 1990
+107 306.0 -69.79  101.72    5.98  101 ! BIS-NAM EarthByteGroup, RDM 1987         
+107 306.0 -69.79  101.72    5.98  199 ! BIS-PDM Baffin Island-Laurentia EarthByteGroup, RDM 1987 cross-over
+107 600.0 -69.79  101.72    5.98  199 ! BIS-PDM EarthByteGroup, RDM 1987         
+108  0.0   0.0    0.0    0.0  101 ! AVA-NAM Avalon/Acadia-North America
+108 600.0   0.0    0.0    0.0  101 ! AVA-NAM              
+109  0.0   0.0    0.0    0.0  101 ! PDM-NAM Piedmont-North America
+109 600.0   0.0    0.0    0.0  101 ! PDM-NAM                     
+110  0.0   0.0    0.0    0.0  101 ! ALR-NAM Alpha Cordillera-North America
+110 121.6   0.0    0.0    0.0  101 ! ALR-NAM         
+111  0.0   0.0    0.0    0.0  114 ! MNR-LMN Mendeleyev Ridge-Lomonosov Ridge
+111 57.0   0.0    0.0    0.0  114 ! MNR-LMN EarthByteGroup 2007
+111 61.0 -85.8   65.1    9.76  114 ! MNR-LMN EarthByteGroup 2007
+111 65.0 -86.2   68.1   19.51  114 ! MNR-LMN EarthByteGroup 2007
+111 67.0 -86.4   69.7   24.39  114 ! MNR-LMN EarthByteGroup 2007
+111 200.0 -86.4   69.7   24.39  114 ! MNR-LMN 
+112  0.0   0.0    0.0    0.0  113 ! CHP-NWR Chukchi Cap-Northwind Ridge
+112 160.0   0.0    0.0    0.0  113 ! CHP-NWR     
+113  0.0   0.0    0.0    0.0  103 ! NWR-NSL Northwind Ridge-North Slope Alaska
+113 118.0   0.0    0.0    0.0  103 ! NWR-NSL EarthByteGroup 2007
+113 144.0  73.0 -158.0   90.0  103 ! NWR-NSL EarthByteGroup 2007
+113 160.0  73.0 -158.0   90.0  103 ! NWR-NSL EarthByteGroup 2007
+113 204.0  73.0 -158.0   90.0  103 ! NWR-NSL
+114  0.0   0.0    0.0    0.0  101 ! LMN-EUR Lomonosov Ridge-Eurasia
+114 43.79   0.0    0.0    0.0  101 ! LMN-EUR Derived Gaina et. al. 2002
+114 43.79  66.25  140.91    9.86  301 ! LMN-EUR AN20 Derived Gaina et. al. 2002 cross-over
+114 47.91  65.38  138.44   10.96  301 ! LMN-EUR AN21 Gaina et. al. 2002
+114 49.71  64.52  138.18   11.5  301 ! LMN-EUR AN22 Gaina et. al. 2002
+114 53.35  63.07  144.26   12.82  301 ! LMN-EUR AN24b Gaina et. al. 2002
+114 55.9  62.1  143.4   13.53  301 ! LMN-EUR AN25 Derived Gaina et. al. 2002
+114 58.0  61.3  143.4   16.0  301 ! LMN-EUR Derived Gaina et. al. 2002
+114 200.0  61.3  143.4   16.0  301 ! LMN-EUR 
+115  0.0   0.0    0.0    0.0  101 ! CBM-NAM N Northwind Ridge-North America
+115 80.0   0.0    0.0    0.0  101 ! CBM-NAM EarthByteGroup 2007
+115 140.0  52.78   16.28   -7.93  101 ! CBM-NAM EarthByteGroup 2007
+116  0.0   0.0    0.0    0.0  101 ! MVR-NAM Marvin Spur-North America
+116 121.6   0.0    0.0    0.0  101 ! MVR-NAM
+119  0.0   0.0    0.0    0.0  101 ! AAB-NAM Amerasia Basin-North America
+119 118.0   0.0    0.0    0.0  101 ! AAB-NAM EarthByteGroup 2006
+119 144.0  50.6 -140.0  -25.0  101 ! AAB-NAM EarthByteGroup 2006   
+119 200.0  50.6 -140.0  -25.0  101 ! AAB-NAM EarthByteGroup 2006
+120  0.0   0.0    0.0    0.0  101 ! CAI-NAM Canadian Arctic Islands-North America
+120 33.5   0.0    0.0    0.0  101 ! CAI-NAM
+120 83.5  57.15 -137.0   -1.07  101 ! CAI-NAM fit, NW passage, Lawver et al. 1990
+120 600.0  57.15 -137.0   -1.07  101 ! CAI-NAM fit, NW passage, Lawver et al. 1990
+121  0.0   0.0    0.0    0.0  122 ! ELA-ELB East Ellesmere Island-East-Central Ellesmere Island
+121 53.3   0.0    0.0    0.0  122 ! ELA-ELB AN 24
+121 56.2  79.0    8.5    2.91  122 ! ELA-ELB Lawver et al. 1990 restore Parrish Glacier
+121 600.0  79.0    8.5    2.91  122 ! ELA-ELB Lawver et al. 1990
+122  0.0   0.0    0.0    0.0  123 ! ELB-ELC East-central Ellesmere-West-central Ellesmere Island
+122 33.2   0.0    0.0    0.0  123 ! ELB-ELC
+122 56.2  54.0 -107.0   -1.66  123 ! ELB-ELC Lawver et al. 1990
+122 83.5  64.7 -111.1   -2.91  123 ! ELB-ELC Lawver et al. 1990
+122 600.0  64.7 -111.1   -2.91  123 ! ELB-ELC
+123  0.0   0.0    0.0    0.0  124 ! ELC-ELD West-central Ellesmere-West Ellesmere Island
+123 33.2   0.0    0.0    0.0  124 ! ELC-ELD
+123 56.2  10.5  -98.8   -0.76  124 ! ELC-ELD Lawver et al. 1990
+123 83.5 -11.0 -127.9   -1.0  124 ! ELC-ELD Lawver et al. 1990
+123 600.0 -11.0 -127.9   -1.0  124 ! ELC-ELD 
+124  0.0   0.0    0.0    0.0  120 ! ELD-CAI West Ellesmere-Canadian Arctic Islands
+124 600.0   0.0    0.0    0.0  120 ! ELD-CAI fixed to Canadian Arctic Islands   
+125  0.0   0.0    0.0    0.0  101 ! STT-NAM Stikine Terrane-North America   
+125 156.6   0.0    0.0    0.0  101 ! STT-NAM
+125 200.0  -8.52  105.13  -35.32  101 ! STT-NAM EarthByteGroup 2002 after Nockleberg et al. 1998
+126  0.0   0.0    0.0    0.0  101 ! WAT-NAM Wrangelia and Alexander Terrane-North America
+126 140.0 -43.82   51.85  -24.57  101 ! WAT-NAM
+126 200.0   1.84  -70.59   44.54  101 ! WAT-NAM EarthByteGroup 2002 after Nockleberg et al. 1998
+127  0.0   0.0    0.0    0.0  301 ! FRP-EUR Faeroe Plate-Eurasia 
+127 51.0   0.0    0.0    0.0  301 ! FRP-EUR Skogseid 1993
+127 52.5  42.77  102.76    0.48  301 ! FRP-EUR An24a Skogseid 1993
+127 53.3  43.83  105.46    0.77  301 ! FRP-EUR An24b Skogseid 1993
+128  0.0   0.0    0.0    0.0  301 ! GV1-EUR Trapped Greenland crust 1-Eurasia 
+128 49.4   0.0    0.0    0.0  301 ! GV1-EUR Skogseid 1993
+128 51.0  11.76  -45.96   -0.58  301 ! GV1-EUR An23 Skogseid 1993
+128 53.3  11.76  -45.96   -0.58  301 ! GV1-EUR Skogseid 1993
+129  0.0   0.0    0.0    0.0  301 ! GV2-EUR Trapped Greenland crust 2-Eurasia 
+129 51.0   0.0    0.0    0.0  301 ! GV2-EUR Skogseid 1993
+129 52.5  32.17   78.29    0.22  301 ! GV2-EUR An24a Skogseid 1993
+129 53.3  40.27   94.9    0.49  301 ! GV2-EUR An24b Skogseid 1993
+129 55.3  40.27   94.9    0.49  301 ! GV2-EUR Skogseid 1993
+130  0.0   0.0    0.0    0.0  102 ! BAF-GRN Baffin Bay-Greenland
+130 200.0   0.0    0.0    0.0  102 ! BAF-GRN      
+199  0.0   0.0    0.0    0.0  101 ! PDM-NAM Laurentia-North America
+199 770.0   0.0    0.0    0.0  101 ! PDM-NAM
+201  0.0   0.0    0.0    0.0  701 ! SAM-AFR South America-Africa       
+201  2.7  62.2  -39.4    0.83  701 ! SAM-AFR AN 2a NUVEL-1          
+201  9.7  62.05  -40.59    3.18  701 ! SAM-AFR An5 Mueller et al. 1999
+201 19.0  58.77  -37.32    7.05  701 ! SAM-AFR An6 Mueller et al. 1999
+201 25.8  57.59  -36.27    9.96  701 ! SAM-AFR An8 Mueller et al. 1999
+201 33.1  56.17  -33.64   13.41  701 ! SAM-AFR An13 Mueller et al. 1999
+201 38.4  57.1  -33.0   15.91  701 ! SAM-AFR An18 Mueller et al. 1999
+201 46.3  56.95  -31.15   19.11  701 ! SAM-AFR An21 Mueller et al. 1999
+201 52.4  58.89  -31.18   21.38  701 ! SAM-AFR An24 Mueller et al. 1999
+201 55.9  61.35  -32.21   22.27  701 ! SAM-AFR An25 Mueller et al. 1999
+201 65.6  63.88  -33.61   24.76  701 ! SAM-AFR An30 Mueller et al. 1999
+201 71.6  63.41  -33.38   26.57  701 ! SAM-AFR An32 Mueller et al. 1999
+201 79.1  62.92  -34.36   30.99  701 ! SAM-AFR An33o Mueller et al. 1999
+201 83.5  61.88  -34.26   33.51  701 ! SAM-AFR An34 Mueller et al. 1999
+201 120.4  51.6  -35.0   52.92  701 ! SAM-AFR Nuernberg & Mueller 1991 
+201 126.7  50.4  -33.5   54.42  701 ! SAM-AFR Nuernberg & Mueller 1991
+201 131.7  50.0  -32.5   55.08  701 ! SAM-AFR Nuernberg & Mueller 1991  
+201 245.0  50.0  -32.5   55.08  701 ! SAM-AFR Nuernberg & Mueller 1991
+201 600.0  50.0  -32.5   55.08  701 ! SAM-AFR Nuernberg & Mueller 1991  
+202  0.0   0.0    0.0    0.0  201 ! PRB-SAM Parana Basin-South America  
+202 120.4   0.0    0.0    0.0  201 ! PRB-SAM                   
+202 131.7 -15.2  -73.2    1.48  201 ! PRB-SAM Nuernberg & Mueller 1991   
+202 600.0 -15.2  -73.2    1.48  201 ! PRB-SAM Nuernberg & Mueller 1991 
+204  0.0   0.0    0.0    0.0  215 ! HON-GUE Honduras/Chortis-Guerrero
+204  9.9  42.01  -95.65   -2.72  215 ! HON-GUE Ross & Scotese 1988
+204 20.2  36.06  -94.12   -6.0  215 ! HON-GUE Ross & Scotese 1988
+204 26.0 -59.2   72.95    5.84  215 ! HON-GUE Ross & Scotese 1988
+204 28.7 -36.23   86.29   10.35  215 ! HON-GUE Ross & Scotese 1988
+204 41.5 -38.48   86.72   16.41  215 ! HON-GUE Ross & Scotese 1988
+204 47.9 -36.85   86.99   21.96  215 ! HON-GUE Pindell Position Ross & Scotese 1988
+204 63.5 -35.77   86.99   28.91  215 ! HON-GUE Ross & Scotese 1988
+204 74.3 -35.77   86.99   28.91  215 ! HON-GUE Ross & Scotese 1988
+204 84.6 -35.77   87.51   34.1  215 ! HON-GUE Ross & Scotese 1988
+204 245.0 -35.77   87.51   34.1  215 ! HON-GUE Ross & Scotese 1988                     
+205  0.0   0.0    0.0    0.0  101 ! YUC-NAM Yucatan-North America
+205 140.0   0.0    0.0    0.0  101 ! YUC-NAM
+205 164.0  23.85  -84.76  -43.67  101 ! YUC-NAM based on Marton & Buffler 1994
+205 172.0  23.82  -84.31  -66.02  101 ! YUC-NAM based on Marton & Buffler 1994
+205 172.0   0.8  -80.7  -75.16  201 ! YUC-SAM Yucatan-South America cross-over
+205 245.0   0.8  -80.7  -75.16  201 ! YUC-SAM                               
+206  0.0   0.0    0.0    0.0  256 ! CUB-PDR Cuba-Pinar del Rio                 
+206 600.0   0.0    0.0    0.0  256 ! CUB-PDR
+208  0.0   0.0    0.0    0.0  205 ! CHI-YUC Chiapas-Yucatan                    
+208  9.8   0.0    0.0    0.0  205 ! CHI-YUC                                    
+208 28.5  16.22  -92.55   29.34  205 ! CHI-YUC Ross & Scotese 1988                                   
+208 143.1  16.22  -92.55   29.34  205 ! CHI-YUC Ross & Scotese 1988                
+208 150.0  16.22  -92.55   29.34  205 ! CHI-YUC Ross & Scotese 1988                
+209  0.0   0.0    0.0    0.0  205 ! CUC-YUC Cuchumantanes-Yucatan              
+209 600.0   0.0    0.0    0.0  205 ! CUC-YUC                         
+210  0.0   0.0    0.0    0.0  204 ! POM-HON Polochic/Motahua-Honduras/Chortis  
+210 600.0   0.0    0.0    0.0  204 ! POM-HON                                    
+211  0.0   0.0    0.0    0.0  204 ! SCR-HON Santa Cruz-Honduras/Chortis       
+211 600.0   0.0    0.0    0.0  204 ! SCR-HON                                 
+212  0.0   0.0    0.0    0.0  204 ! GYP-HON Guayape-Honduras/Chortis       
+212 600.0   0.0    0.0    0.0  204 ! GYP-HON                      
+213  0.0   0.0    0.0    0.0  204 ! MGJ-HON Motagua/Jocotan-Honduras/Chortis 
+213 600.0   0.0    0.0    0.0  204 ! MGJ-HON   
+215  0.0   0.0    0.0    0.0  104 ! GUE-MEX Guerrero-Mexico               
+215 143.1   0.0    0.0    0.0  104 ! GUE-MEX Ross and Scotese 1988                            
+215 156.6  79.37  -43.54   -0.44  104 ! GUE-MEX BSMA (Blake Spur Magnetic Anomaly), Ross and Scotese 1988
+215 159.4  79.37  -43.54   -2.37  104 ! GUE-MEX Ross and Scotese 1988                                
+215 169.0  79.37  -43.54   -3.92  104 ! GUE-MEX Initial Rifting, Ross and Scotese 1988               
+215 175.0  79.37  -43.54   -4.34  104 ! GUE-MEX Ross and Scotese 1988                         
+215 600.0  79.37  -43.54   -4.34  104 ! GUE-MEX                      
+216  0.0   0.0    0.0    0.0  205 ! CYR-YUC Cayman Ridge-Yucatan       
+216 63.5   0.0    0.0    0.0  205 ! CYR-YUC                           
+216 63.5  73.31 -143.21   13.35  222 ! CYR-JMC Cayman Ridge-Jamaica cross-over Ross & Scotese 1988
+216 74.3  80.93 -147.32   11.8  222 ! CYR-JMC Start of Cuban Thrusting Ross & Scotese 1988        
+216 121.6  80.93 -147.32   11.8  222 ! CYR-JMC fixed in arc at this time  Ross & Scotese 1988        
+216 149.5  80.93 -147.32   11.8  222 ! CYR-JMC               
+217  0.0   0.0    0.0    0.0  216 ! WCT-CYR West Cayman Trough-Cayman Ridge    
+217 47.6   0.0    0.0    0.0  216 ! WCT-CYR                                    
+218  0.0   0.0    0.0    0.0  216 ! ECT-CYR East Cayman Trough-Cayman Ridge    
+218 47.6   0.0    0.0    0.0  216 ! ECT-CYR                                    
+219  0.0   0.0    0.0    0.0  204 ! THK-HON Thunder Knoll-Honduras/Chortis     
+219 46.5   0.0    0.0    0.0  204 ! THK-HON                                    
+219 47.6   0.0    0.0    0.0  204 ! THK-HON                                    
+219 56.2 -23.56  -68.48    0.41  204 ! THK-HON Ross & Scotese 1988                                        
+219 600.0 -23.56  -68.48    0.41  204 ! THK-HON Ross & Scotese 1988                
+220  0.0   0.0    0.0    0.0  219 ! RSB-THK Rosalind Bank-Thunder Knoll        
+220 33.3  12.47  -84.14    7.41  219 ! RSB-THK Ross & Scotese 1988                                   
+220 47.9  13.61  -80.91   11.72  219 ! RSB-THK Ross & Scotese 1988                                   
+220 56.4  13.58  -81.39   15.27  219 ! RSB-THK Ross & Scotese 1988                                   
+220 74.3  13.58  -81.39   15.27  219 ! RSB-THK Ross & Scotese 1988                                   
+220 74.3 -16.38  105.26   13.29  222 ! RSB-JMC Rosalind Bank-Jamacia cross-over Ross & Scotese 1988                       
+220 600.0 -16.38  105.26   13.29  222 ! RSB-JMC          
+221  0.0   0.0    0.0    0.0  220 ! PDB-RSB Pedro Bank-Rosalind Bank           
+221 10.9 -22.6  112.18    0.64  220 ! PDB-RSB Ross & Scotese 1988                                   
+221 19.7 -22.31  112.36    1.24  220 ! PDB-RSB Ross & Scotese 1988                                  
+221 33.3 -21.84  112.11    2.19  220 ! PDB-RSB Ross & Scotese 1988                                   
+221 47.9 -20.76   99.9    4.37  220 ! PDB-RSB Ross & Scotese 1988                                   
+221 56.4 -18.26  100.15   11.06  220 ! PDB-RSB Ross & Scotese 1988                                   
+221 74.3 -18.26  100.15   11.06  220 ! PDB-RSB Ross & Scotese 1988                                   
+221 74.3 -17.8  102.94   23.16  222 ! PDB-JMC cross-over  Ross & Scotese 1988                       
+221 600.0 -17.8  102.94   23.16  222 ! PDB-JMC                 
+222  0.0   0.0    0.0    0.0  205 ! JMC-YUC Jamaica-Yucatan                    
+222  3.4  28.68  -84.38   -1.82  205 ! JMC-YUC AN 2A Ross & Scotese 1988          
+222  9.9  79.35 -161.3   -1.24  205 ! JMC-YUC AN 5 Ross & Scotese 1988           
+222 19.7  68.78  134.98   -2.47  205 ! JMC-YUC AN 6 Ross & Scotese 1988           
+222 25.2  69.94  137.98   -3.22  205 ! JMC-YUC AN 7 Ross & Scotese 1988           
+222 27.3  69.94  137.98   -3.64  205 ! JMC-YUC AN 9 Ross & Scotese 1988                  
+222 28.5  76.94  173.26   -4.2  205 ! JMC-YUC AN 10 Ross & Scotese 1988          
+222 33.2  76.94  179.67   -5.65  205 ! JMC-YUC AN 13 Ross & Scotese 1988          
+222 41.5  56.27  123.41   -7.75  205 ! JMC-YUC AN 19 Ross & Scotese 1988          
+222 47.9 -60.93  -47.0    9.66  205 ! JMC-YUC Ross & Scotese 1988                
+222 56.4 -63.42  -44.86   11.23  205 ! JMC-YUC Ross & Scotese 1988                
+222 63.5 -73.31   36.79   13.35  205 ! JMC-YUC Ross & Scotese 1988                
+222 74.3 -52.98   80.97   19.44  205 ! JMC-YUC Ross & Scotese 1988                
+222 83.5  34.65  -94.87  -37.86  205 ! JMC-YUC Ross & Scotese 1988                
+222 100.5  28.66  -96.81  -59.03  205 ! JMC-YUC Ross & Scotese 1988                
+222 120.4 -28.91   83.51   58.93  205 ! JMC-YUC Ross & Scotese 1988                
+222 140.9 -24.72   85.3   76.23  205 ! JMC-YUC Ross & Scotese 1988                                    
+222 140.9  16.9  -90.2  -43.22  212 ! JMC-GYP Jamaica-Guayape cross-over Ross & Scotese 1988            
+222 600.0  16.9  -90.2  -43.22  212 ! JMC-GYP                                    
+223  0.0   0.0    0.0    0.0  204 ! QSN-HON Quinto Sueno-Honduras/Chortis      
+223 56.2  18.35  -79.04   -4.77  204 ! QSN-HON Ross & Scotese 1988                                   
+223 600.0  18.35  -79.04   -4.77  204 ! QSN-HON                 
+224  0.0   0.0    0.0    0.0  252 ! COF-SHI Caribbean Ocean Floor-Southern Hispaniola
+224 52.2   0.0    0.0    0.0  252 ! COF-SHI end of seafloor spreading Ross & Scotese 1988            
+224 63.5 -39.34  -61.59    1.95  252 ! COF-SHI Ross & Scotese 1988                                  
+224 74.3   2.78  -70.0    8.23  252 ! COF-SHI start of seafloor spreading  Ross & Scotese 1988                      
+224 149.5   2.78  -70.0    8.23  252 ! COF-SHI           
+225  0.0   0.0    0.0    0.0  201 ! MRB-SAM Maricaibo-South America            
+225 10.9  -1.52  -62.24    9.5  201 ! MRB-SAM 100km slip on Bocono Fault  Ross & Scotese 1988       
+225 600.0  -1.52  -62.24    9.5  201 ! MRB-SAM                 
+226  0.0   0.0    0.0    0.0  225 ! RML-MRB Romeral-Maricaibo                  
+226 600.0   0.0    0.0    0.0  225 ! RML-MRB No motion at any time EarthByteGroup, RDM 1997     
+227  0.0   0.0    0.0    0.0  225 ! STM-MRB Santa Marta-Maricaibo              
+227 600.0   0.0    0.0    0.0  225 ! STM-MRB                                    
+228  0.0   0.0    0.0    0.0  225 ! PRJ-MRB Perija-Maricaibo                   
+228 600.0   0.0    0.0    0.0  225 ! PRJ-MRB                            
+229  0.0   0.0    0.0    0.0  230 ! EPN-CPN Eastern Panama-Central Panama      
+229  9.9   8.81  -78.45   68.84  230 ! EPN-CPN Arc Straight Ross & Scotese 1988                      
+229 20.2   9.57  -78.34   72.82  230 ! EPN-CPN Arc Straight Ross & Scotese 1988                      
+229 28.7   9.03  -78.21   72.82  230 ! EPN-CPN Arc concave Ross & Scotese 1988                       
+229 33.5   9.83  -77.85   81.55  230 ! EPN-CPN Arc concave Ross & Scotese 1988                        
+229 63.5   9.83  -77.85   81.55  230 ! EPN-CPN             
+230  0.0   0.0    0.0    0.0  231 ! CPN-WPN Central Panama-Western Panama      
+230  9.8   8.27  -81.87  -40.63  231 ! CPN-WPN Arc straight Ross & Scotese 1988   
+230 33.6  -7.29   97.84   40.63  231 ! CPN-WPN Arc straight Ross & Scotese 1988   
+230 63.5  -7.29   97.84   40.63  231 ! CPN-WPN                     
+231  0.0   0.0    0.0    0.0  224 ! WPN-COF Western Panama-Caribbean Ocean Floor
+231 71.7   0.0    0.0    0.0  224 ! WPN-COF                                   
+231 83.5 -25.53   43.92   12.39  224 ! WPN-COF Ross & Scotese 1988     
+231 100.5 -19.79   41.72   30.09  224 ! WPN-COF Ross & Scotese 1988                
+233  0.0   0.0    0.0    0.0  101 ! FLS-NAM Florida Straits Block-North America
+233 155.5   0.0    0.0    0.0  101 ! FLS-NAM Ross & Scotese 1988                                       
+233 157.7  66.78  -17.54   -1.5  101 ! FLS-NAM Ross & Scotese 1988                                       
+233 158.8  66.78  -17.54   -2.01  101 ! FLS-NAM Ross & Scotese 1988                                       
+233 175.0  66.78  -17.5   -6.16  101 ! FLS-NAM Ross & Scotese 1988            
+233 600.0  66.78  -17.5   -6.16  101 ! FLS-NAM Ross & Scotese 1988                                       
+233 600.0  66.78  -17.5   -6.16  109 ! FLS-PDM Florida Straits Block-Piedmont/Florida cross-over                                   
+234  0.0   0.0    0.0    0.0  235 ! LAA-AVR Lesser Antilles Arc-Aves Ridge     
+234 41.5   0.0    0.0    0.0  235 ! LAA-AVR Ross & Scotese 1988                                   
+234 52.2  73.31  -73.22   -1.37  235 ! LAA-AVR Ross & Scotese 1988                
+234 149.5  73.31  -73.22   -1.37  235 ! LAA-AVR                                    
+235  0.0   0.0    0.0    0.0  224 ! AVR-COF Aves Ridge-Caribbean Ocean Floor   
+235 149.5   0.0    0.0    0.0  224 ! AVR-COF                                    
+236  0.0   0.0    0.0    0.0  234 ! SCB-LAA St. Christopher Block-Lesser Antilles Arc  
+236 14.9  15.62  -61.63   -6.39  234 ! SCB-LAA closure of St. Chris Basin, Ross & Scotese 1988
+236 63.5  15.62  -61.63   -6.39  234 ! SCB-LAA Ross & Scotese 1988               
+237  0.0   0.0    0.0    0.0  255 ! PTR-NHI Puerto Rico-Northern Hispaniola    
+237 37.1  89.46 -103.11   -2.66  255 ! PTR-NHI Ross & Scotese 1988                                
+237 116.5  89.46 -103.11   -2.66  255 ! PTR-NHI Ross & Scotese 1988                                
+238  0.0   0.0    0.0    0.0  237 ! EPR-PTR East Puerto Rican Trough North-Puerto Rico
+238 47.6   0.0    0.0    0.0  237 ! EPR-PTR                                    
+239  0.0   0.0    0.0    0.0  237 ! WPR-PTR West Puerto Rican Trough North-Puerto Rico
+239 47.6   0.0    0.0    0.0  237 ! WPR-PTR                                    
+240  0.0   0.0    0.0    0.0  224 ! MUT-COF Muertos Trough-Caribbean ocean floor
+240 47.6   0.0    0.0    0.0  224 ! MUT-COF                          
+246  0.0   0.0    0.0    0.0  234 ! AAB-LAA Accreted Antilles Barbados-Lesser Antilles Arc
+246  9.8  75.19  -41.06   -3.51  234 ! AAB-LAA Ross & Scotese 1988                                                                        
+252  0.0   0.0    0.0    0.0  222 ! SHI-JMC Southern Hispaniola-Jamaica        
+252 20.2 -13.2  -62.74    1.14  222 ! SHI-JMC Ross & Scotese 1988                                   
+252 33.5   8.82  -80.95    6.31  222 ! SHI-JMC Ross & Scotese 1988                                   
+252 41.5  19.89  -24.56   -1.27  222 ! SHI-JMC Ross & Scotese 1988                                   
+252 47.9 -22.62 -110.68    2.11  222 ! SHI-JMC Ross & Scotese 1988                                   
+252 56.4 -17.74 -113.82    2.24  222 ! SHI-JMC Ross & Scotese 1988                                   
+252 74.3 -29.41  -89.16    1.89  222 ! SHI-JMC Ross & Scotese 1988                                   
+252 149.5 -29.41  -89.16    1.89  222 ! SHI-JMC                 
+253  0.0   0.0    0.0    0.0  254 ! SJH-HCO San Juan/Hispaniola-Hispaniola Cordillera
+253 33.6   0.0    0.0    0.0  254 ! SJH-HCO Ross & Scotese 1988                           
+253 52.2  42.24  -55.74   -4.37  254 ! SJH-HCO Arc Complete Ross & Scotese 1988   
+253 149.5  42.24  -55.74   -4.37  254 ! SJH-HCO No Motion                          
+254  0.0   0.0    0.0    0.0  255 ! HCO-NHI Hispaniola Cordillera-Northern Hispaniola
+254 37.1   0.0    0.0    0.0  255 ! HCO-NHI Ross & Scotese 1988                                   
+254 47.6  10.6  -75.49   17.11  255 ! HCO-NHI arc complete, Ross & Scotese 1988                     
+254 121.6  10.6  -75.49   17.11  255 ! HCO-NHI Ross & Scotese 1988            
+254 149.5  10.6  -75.49   17.11  255 ! HCO-NHI                                 
+255  0.0   0.0    0.0    0.0  216 ! NHI-CYR Northern Hispaniola-Cayman Ridge   
+255 20.2 -68.9  -44.7    2.88  216 ! NHI-CYR Ross & Scotese 1988                                    
+255 52.4  -8.73  -72.57   16.29  216 ! NHI-CYR Ross & Scotese 1988                                                 
+255 149.5  -8.73  -72.57   16.29  216 ! NHI-CYR                
+256  0.0   0.0    0.0    0.0  205 ! PDR-YUC Pinar del Rio-Yucatan              
+256 600.0   0.0    0.0    0.0  205 ! PDR-YUC                
+258  0.0   0.0    0.0    0.0  206 ! SEB-CUB Southeastern Cuba-Cuba             
+258 600.0   0.0    0.0    0.0  206 ! SEB-CUB
+259  0.0   0.0    0.0    0.0  258 ! SMC-SEB Sierra Meastra of Cuba- SE Cuba    
+259 600.0   0.0    0.0    0.0  258 ! SMC-SEB 
+264  0.0   0.0    0.0    0.0  101 ! B2N-NAM Beta=2, Northern Gulf of Mexico-North America
+264 143.1   0.0    0.0    0.0  101 ! B2N-NAM Ross & Scotese 1988                                   
+264 175.0   8.74  -80.68   -4.67  101 ! B2N-NAM Ross & Scotese 1988            
+265  0.0   0.0    0.0    0.0  101 ! B2S-NAM Beta=2,Southern Gulf of Mexico-North America
+265 143.1   0.0    0.0    0.0  101 ! B2S-NAM Ross & Scotese 1988                                   
+265 175.0  29.83  -86.92  -41.67  101 ! B2S-NAM Ross and Scotese 1988          
+266  0.0   0.0    0.0    0.0  101 ! B3N-NAM Beta=3,Northern Gulf of Mexico-North America
+266 143.1   0.0    0.0    0.0  101 ! B3N-NAM Ross & Scotese 1988                                   
+266 175.0  22.54  -81.64   -8.69  101 ! B3N-NAM Ross and Scotese 1988          
+267  0.0   0.0    0.0    0.0  101 ! B3C-NAM Beta=3,Central Gulf of Mexico-North America
+267 143.1   0.0    0.0    0.0  101 ! B3C-NAM Ross & Scotese 1988                                   
+267 175.0  26.27  -88.48  -34.35  101 ! B3C-NAM Ross and Scotese 1988          
+268  0.0   0.0    0.0    0.0  101 ! B3S-NAM Beta=3, Southern Gulf of Mexico-North America
+268 143.1   0.0    0.0    0.0  101 ! B3S-NAM Ross & Scotese 1988                                   
+268 175.0  30.11  -86.05  -39.09  101 ! B3S-NAM Ross and Scotese 1988          
+269  0.0   0.0    0.0    0.0  101 ! B4N-NAM Beta=4, Northern Gulf of Mexico-North America
+269 143.1   0.0    0.0    0.0  101 ! B4N-NAM Ross & Scotese 1988                                   
+269 175.0  27.07  -89.76  -41.68  101 ! B4N-NAM Ross and Scotese 1988          
+270  0.0   0.0    0.0    0.0  101 ! B4S-NAM Beta=4, Southern Gulf of Mexico-North America
+270 143.1   0.0    0.0    0.0  101 ! B4S-NAM Ross & Scotese 1988                                   
+270 175.0  29.26  -85.63  -39.35  101 ! B4S-NAM Ross and Scotese 1988          
+271  0.0   0.0    0.0    0.0  101 ! SIB-NAM Sigsbee Block-North America        
+271 143.1   0.0    0.0    0.0  101 ! SIB-NAM Ross & Scotese 1988                                   
+271 175.0  26.9  -89.33  -45.63  101 ! SIB-NAM Ross & Scotese 1988                                
+271 600.0  26.9  -89.33  -45.63  101 ! SIB-NAM               
+272  0.0   0.0    0.0    0.0  101 ! B4C-NAM Beta=4, Central Gulf of Mexico-North America
+272 143.1   0.0    0.0    0.0  101 ! B4C-NAM Ross & Scotese 1988                                  
+272 175.0  26.74  -90.19  -50.25  101 ! B4C-NAM Ross & Scotese 1988                                
+272 600.0  26.74  -90.19  -50.25  101 ! B4C-NAM Ross and Scotese 1988              
+273  0.0   0.0    0.0    0.0  237 ! PRT-PTR Puerto Rico Trench-Puerto Rico     
+273 47.6   0.0    0.0    0.0  237 ! PRT-PTR                           
+274  0.0   0.0    0.0    0.0  216 ! NCT-CYR North Cuban Thrust Sheets-Cayman Ridge
+274 47.9   0.0    0.0    0.0  216 ! NCT-CYR END SUTURE Ross & Scotese 1988                        
+274 63.5  18.21  -71.55   13.74  216 ! NCT-CYR open basin Ross & Scotese 1988     
+274 78.9  18.21  -71.55   13.74  216 ! NCT-CYR open basin Ross & Scotese 1988     
+275  0.0   0.0    0.0    0.0  216 ! SCT-CYR South Cuban Thrust Sheets-Cayman Ridge
+275 47.9   0.0    0.0    0.0  216 ! SCT-CYR END SUTURE Ross & Scotese 1988                        
+275 63.5  18.21  -71.55   13.74  216 ! SCT-CYR OPEN BASIN Ross & Scotese 1988  
+275 91.0  18.21  -71.55   13.74  216 ! SCT-CYR OPEN BASIN Ross & Scotese 1988  
+276  0.0   0.0    0.0    0.0  281 ! SPE-SPW Sandwich Plate East-Sandwich Plate West
+276  9.8  80.0  -16.57   -3.06  281 ! SPE-SPW Based Barker 2001 to simulate opening, no magnetics, EarthByteGroup 2002
+276 600.0  80.0  -16.57   -3.06  281 ! SPE-SPW 
+277  0.0   0.0    0.0    0.0  291 ! DPN-CSS Drake Passage North-Colorado Sub-plate
+277 600.0   0.0    0.0    0.0  291 ! DPN-CSS 
+278  0.0   0.0    0.0    0.0  280 ! CSS-BDW Central Scotia Sea South-Burdwood Plate
+278  9.8 -48.13   10.2   -2.44  280 ! CSS-BDW Based Barker 2001 to simulate opening, no magnetics, EarthByteGroup 2002
+278 20.1 -48.13   10.2   -8.05  280 ! CSS-BDW Based Barker 2001 to simulate opening, no magnetics, EarthByteGroup 2002
+278 600.0 -48.13   10.2   -8.05  280 ! CSS-BDW 
+280  0.0   0.0    0.0    0.0  277 ! BDW-DPN Burdwood Plate-Drake Passage North
+280 600.0   0.0    0.0    0.0  277 ! BDW-DPN
+281  0.0   0.0    0.0    0.0  280 ! SPW-BDW Sandwich Plate West-Burdwood Plate
+281 600.0   0.0    0.0    0.0  280 ! SPW-BDW 
+282  0.0   0.0    0.0    0.0  291 ! NSE-CSS North Scotia Ridge East Plate-Colorado sub-plate
+282 600.0   0.0    0.0    0.0  291 ! NSE-CSS
+283  0.0   0.0    0.0    0.0  284 ! SRW-SRE Shag Rock West Plate-Shag Rock East
+283 600.0   0.0    0.0    0.0  284 ! SRW-SRE
+285  0.0   0.0    0.0    0.0  820 ! SGR-WSE South Georgia-Western Scotia Sea
+285 20.2   0.0    0.0    0.0  820 ! SGR-WSE
+285 600.0   0.0    0.0    0.0  820 ! SGR-CSS
+286  0.0   0.0    0.0    0.0  285 ! NSW-SGR North Scotia Ridge West-South Georgia
+286 600.0   0.0    0.0    0.0  285 ! NSW-SGR
+287  0.0   0.0    0.0    0.0  286 ! SSI-NSW South Sandwich Islands-North Scotia Ridge West
+287  2.0 -24.2  -27.7   -0.8  286 ! SSI-NSW AN2 EarthByteGroup 2007
+287  5.2 -24.2  -27.7   -6.0  286 ! SSI-NSW AN2A EarthByteGroup 2007
+287  7.9 -24.2  -27.7   -8.0  286 ! SSI-NSW AN 3 EarthByteGroup 2007
+287 600.0 -24.2  -27.7   -8.0  286 ! SSI-NSW 
+288  0.0   0.0    0.0    0.0  291 ! FLI-CSS Falkland Islands-Colorado Subplate
+288 175.0   0.0    0.0    0.0  291 ! FLI-CSS Grunow et al 1991
+288 175.0  47.4  -33.4   55.77  701 ! FLI-AFR Grunow et al 1991 crossover
+288 200.0  45.3  169.2 -156.25  701 ! FLI-AFR Grunow et al 1991
+288 600.0  45.3  169.2 -156.25  701 ! FLI-AFR Grunow et al 1991
+290  0.0   0.0    0.0    0.0  202 ! SSS-PRB Salado Subplate-Parana Basin
+290 126.7   0.0    0.0    0.0  202 ! SSS-PRB Nuernberg & Mueller 1991
+290 131.7 -32.2  -64.5    0.73  202 ! SSS-PRB Nuernberg & Mueller 1991
+290 149.5 -32.2  -64.5    1.18  202 ! SSS-PRB Nuernberg & Mueller 1991
+290 600.0 -32.2  -64.5    1.18  202 ! SSS-PRB Nuernberg & Mueller 1991
+291  0.0   0.0    0.0    0.0  202 ! CSS-PRB Colorado Subplate-Parana Basin Plate
+291 126.7   0.0    0.0    0.0  202 ! CSS-PRB Nuernberg & Mueller 1991
+291 149.5 -18.0  -73.2    1.05  202 ! CSS-PRB Nuernberg & Mueller 1991
+291 600.0 -18.0  -73.2    1.05  202 ! CSS-PRB Nuernberg & Mueller 1991
+293  0.0   0.0    0.0    0.0  291 ! SSA-CSS Southern South America-Colorado Subplate
+293 160.0   0.0    0.0    0.0  291 ! SSA-CSS
+293 600.0   0.0    0.0    0.0  291 ! SSA-CSS
+294  0.0   0.0    0.0    0.0  201 !  FP-SAM Falkland Plateau (North Weddell Sea)-South America 
+294 83.5   0.0    0.0    0.0  201 !  FP-SAM EarthByteGroup 2007 cross-over
+294 83.5 -77.92 -113.49  -30.08  802 !  FP-EANT Falkland Plateau-Antarctica, Shaw&Cande 1990 & Royer et.al 1988
+294 93.0 -75.9 -119.0  -33.02  802 !  FP-EANT Livermore & Hunter 1996
+294 118.0 -72.96  -96.03  -45.17  802 !  FP-EANT M0 Konig & Jokat 2006
+294 122.3 -72.4  -94.7  -46.8  802 !  FP-EANT M2 Konig & Jokat 2006
+294 125.4 -71.75  -95.9  -47.1  802 !  FP-EANT M4 Konig & Jokat 2006
+294 130.0 -70.74  -97.11  -47.87  802 !  FP-EANT M10 Konig & Jokat 2006
+294 132.5 -70.26  -97.7  -48.3  802 !  FP-EANT M11 Konig & Jokat 2006
+294 134.8 -69.67  -99.35  -48.2  802 !  FP-EANT M12 Konig & Jokat 2006
+294 138.3 -69.08  -97.47  -50.85  802 !  FP-EANT M15n Konig & Jokat 2006
+294 142.3 -68.07  -99.96  -50.64  802 !  FP-EANT M17 Konig & Jokat 2006
+294 147.0 -66.81 -102.67  -50.42  802 !  FP-EANT M20 Konig & Jokat 2006
+294 160.0 -66.81 -102.67  -54.0  802 !  FP-EANT EarthByteGroup 2007
+294 180.0 -66.81 -102.67  -54.0  802 !  FP-EANT  
+299  0.0   0.0    0.0    0.0  201 ! SAS-SAM South American Subplate-South America
+299 71.1   0.0    0.0    0.0  201 ! SAS-SAM AN33 EarthByteGroup 2007                           
+299 73.6  63.0  -33.5   -1.37  201 ! SAS-SAM AN33 EarthByteGroup 2007                              
+299 79.1  63.0  -36.9   -4.48  201 ! SAS-SAM AN33r EarthByteGroup 2007                             
+299 83.5  57.0  -38.0   -6.9  201 ! SAS-SAM AN34 EarthByteGroup 2007 
+299 220.0  57.0  -38.0   -6.9  201 ! SAS-SAM             
+301  0.0   0.0    0.0    0.0  101 ! EUR-NAM Northern European Craton-North America  
+301 10.9  66.44  132.98   -2.57  101 ! EUR-NAM Gaina et al. 2002
+301 20.1  68.91  132.51   -5.09  101 ! EUR-NAM Gaina et al. 2002
+301 33.1  68.22  131.53   -7.65  101 ! EUR-NAM Gaina et al. 2002
+301 47.9  65.38  138.44  -10.96  101 ! EUR-NAM Gaina et al. 2002
+301 53.3  63.07  144.26  -12.82  101 ! EUR-NAM Gaina et al. 2002
+301 55.9  56.17  145.06  -13.24  101 ! EUR-NAM Gaina et al. 2002
+301 68.7  54.45  147.06  -15.86  101 ! EUR-NAM Gaina et al. 2002
+301 79.1  63.4  147.75  -18.48  101 ! EUR-NAM Gaina et al. 2002
+301 83.5  61.14  148.4  -18.89  101 ! EUR-NAM AN33o Derived Gaina et al. 2002
+301 92.0  66.67  150.26  -20.37  101 ! EUR-NAM Closure of LabSea, Srivastava & Roest 1989
+301 105.0  66.85  152.34  -21.49  101 ! EUR-NAM AN K Srivastava & Roest 1989
+301 118.0  68.99  154.75  -23.05  101 ! EUR-NAM M0, prerift fit of N.Atl, Srivastava & Roest 1989
+301 145.0  68.99  154.75  -23.05  101 ! EUR-NAM M18, Srivastava & Roest 1989
+301 170.0  69.1  156.7  -23.64  101 ! EUR-NAM Closure of NorthSea Grabens, EarthByteGroup, 1989
+301 200.0  68.99  154.75  -23.64  101 ! EUR-NAM Torsvik et al. Submit06
+301 240.0  88.0   27.0  -38.0  101 ! EUR-NAM Bullard et al. 1964
+301 425.0  88.0   27.0  -38.0  101 ! EUR-NAM Bullard et al. 1964
+302  0.0   0.0    0.0    0.0  301 ! BAL-EUR Baltic Shield-Europe
+302 600.0   0.0    0.0    0.0  301 ! BAL-EUR
+302 600.0  69.1  156.7  -23.64  199 ! BAL-LAR Baltic Shield-Laurasia cross-over, EarthByteGroup 
+303  0.0   0.0    0.0    0.0  331 ! NHL-EUR Northern Highlands-Europe
+303 140.0   0.0    0.0    0.0  331 ! NHL-EUR
+303 140.0  68.99  154.75  -23.08  101 ! NHL-NAM Northern Highlands-North America cross-over
+303 600.0  68.99  154.75  -23.08  101 ! NHL-NAM
+303 600.0  68.99  154.75  -23.08  199 ! NHL-PDM Northern Highlands-Laurentia cross-over
+303 750.0  68.99  154.75  -23.08  199 ! NHL-PDM
+303 800.0  68.99  154.75  -23.08  199 ! NHL-PDM
+304  0.0   0.0    0.0    0.0  301 ! SPN-EUR Iberia-Europe
+304 28.5   0.0    0.0    0.0  301 ! SPN-EUR
+304 28.5  26.6  -18.4    4.63  714 ! SPN-NWA Iberia-Northwest Africa cross-over
+304 133.0  26.6  -18.4    4.63  714 ! SPN-NWA AnM11 Srivastava & Tapscott 1986
+304 133.0  68.7  -14.2  -54.29  101 ! SPN-NAM Iberia-North America cross-over
+304 255.0  68.7  -14.2  -54.29  101 ! SPN-NAM
+304 255.0  65.0   -3.4   24.79  714 ! SPN-NWA Iberia-Northwest Africa cross-over
+304 750.0  65.0   -3.4   24.79  714 ! SPN-NWA 
+304 800.0  65.0   -3.4   24.79  714 ! SPN-NWA
+305  0.0   0.0    0.0    0.0  331 ! CEU-UKB Central Europe-United Kingdom 
+305 600.0   0.0    0.0    0.0  331 ! CEU-UKB
+305 600.0  62.8 -135.9    0.63  302 ! CEU-BAL Central Europe-Baltic Shield cross-over, EarthByteGroup
+306  0.0   0.0    0.0    0.0  331 ! CSD-UKB Corsica/Sardinia-United Kingdom
+306 16.0   0.0    0.0    0.0  331 ! CSD-UKB Speranza et.al. 2002
+306 21.0  43.5    9.0  -23.0  331 ! CSD-UKB Speranza et.al. 2002
+306 36.0  43.5    9.0  -67.5  331 ! CSD-UKB EarthByteGroup, 1988
+306 600.0  43.5    9.0  -67.5  331 ! CSD-UKB EarthByteGroup, 1988
+306 600.0  43.5    9.0  -67.5  305 ! CSD-CEU Corsica/Sardinia-Central Europe cross-over
+306 750.0  43.5    9.0  -67.5  305 ! CSD-CEU
+306 800.0  43.5    9.0  -67.5  305 ! CSD-CEU
+307  0.0   0.0    0.0    0.0  701 ! ITL-AFR Apulia (Italy)-Central Africa
+307 14.0   0.0    0.0    0.0  701 ! ITL-AFR EarthByteGroup 2007
+307 65.0  46.0   15.22  -22.82  701 ! ITL-AFR EarthByteGroup 2007
+307 100.0  47.0   21.0  -21.56  701 ! ITL-AFR EarthByteGroup 2007
+307 145.0  40.0   15.67  -58.98  701 ! ITL-AFR EarthByteGroup 2007
+307 180.0  36.0   10.17  -25.0  701 ! ITL-AFR EarthByteGroup 2007
+307 245.0  36.0   10.17  -25.0  701 ! ITL-AFR 
+308  0.0   0.0    0.0    0.0  307 ! DIN-ITL Dinardes (Greece)-Apulia (Italy)
+308 800.0   0.0    0.0    0.0  307 ! DIN-ITL 
+309  0.0   0.0    0.0    0.0  301 ! WSV-EUR West Svalbard-Europe
+309 255.0   0.0    0.0    0.0  301 ! WSV-BAL 
+309 255.0  68.8  157.0  -22.6  199 ! WSW-LAR West Svalbard-Laurentia cross-over EarthByteGroup 2007
+309 363.0  68.8  157.0  -22.6  199 ! WSW-LAR EarthByteGroup 2007
+309 425.0  81.45  -69.3  -50.1  199 ! WSV-LAR EarthByteGroup 1988
+309 800.0  81.45  -69.3  -50.1  199 ! WSV-LAR
+310  0.0   0.0    0.0    0.0  301 ! CSV-EUR Central Svalbard-Europe
+310 255.0   0.0    0.0    0.0  301 ! CSV-BAL
+310 255.0  68.8  157.0  -22.6  199 ! CSV-LAR Central Svalbard-Laurentia cross-over EarthByteGroup 2007
+310 363.0  68.8  157.0  -22.6  199 ! CSV-LAR EarthByteGroup 2007
+310 425.0  81.45  -69.3  -50.1  199 ! CSV-LAR EarthByteGroup 1988
+310 800.0  81.45  -69.3  -50.1  199 ! CSV-LAR
+311  0.0   0.0    0.0    0.0  309 ! BAR-WSW Barentsia-West Svalbard
+311 800.0   0.0    0.0    0.0  309 ! BAR-EUR
+312  0.0   0.0    0.0    0.0  303 ! GRM-NHL Grampian Highlands-Northern Highlands 
+312 390.0   0.0    0.0    0.0  303 ! GRM-NHL 
+312 425.0 -60.46  162.18    8.93  303 ! GRM-NHL Scotese 1990
+312 800.0 -60.46  162.18    8.93  303 ! GRM-NHL
+313  0.0   0.0    0.0    0.0  303 ! MDV-NHL Midland Valley-Northern Highlands 
+313 390.0   0.0    0.0    0.0  303 ! MDV-NHL
+313 425.0 -66.21  138.9   15.43  303 ! MDV-NHL Scotese 1990
+313 800.0 -66.21  138.9   15.43  303 ! MDV-NHL
+314  0.0   0.0    0.0    0.0  303 ! SUP-NHL Southern Uplands-Northern Highland
+314 390.0   0.0    0.0    0.0  303 ! SUP-NHL
+314 425.0 -65.47  138.9   19.17  303 ! SUP-NHL EarthByteGroup 2007
+314 800.0 -65.47  138.9   19.17  303 ! SUP-NHL
+315  0.0   0.0    0.0    0.0  314 ! ENG-SUP S. England-Southern Uplands
+315 600.0   0.0    0.0    0.0  314 ! ENG-SUP
+317  0.0   0.0    0.0    0.0  101 ! POR-NAM Porcupine-North America
+317  9.8  65.38  133.58   -2.44  101 ! POR-NAM An5 Lawver et al. 1990
+317 19.7  68.92  136.74   -4.97  101 ! POR-NAM An6 Lawver et al. 1990
+317 33.6  65.64  136.95   -7.51  101 ! POR-NAM An13 Lawver et al. 1990
+317 46.5  58.75  142.49  -10.01  101 ! POR-NAM Srivastava & Roest 1989
+317 53.3  59.21  143.14  -12.3  101 ! POR-NAM Srivastava & Roest 1989
+317 56.2  60.11  143.68  -13.76  101 ! POR-NAM Srivastava & Roest 1989
+317 68.3  62.31  145.52  -16.47  101 ! POR-NAM Srivastava & Roest 1989
+317 78.9  63.9  148.92  -18.51  101 ! POR-NAM Srivastava & Roest 1989
+317 83.5  64.35  149.97  -19.21  101 ! POR-NAM Srivastava & Roest 1989
+317 92.0  64.55  151.19  -19.88  101 ! POR-NAM Srivastava & Roest 1989
+317 105.0  64.82  153.08  -21.0  101 ! POR-NAM AnK Srivastava & Roest 1989
+317 118.0  67.13  155.32  -22.54  101 ! POR-NAM AnM0 Srivastava & Roest 1989
+317 600.0  67.13  155.32  -22.54  101 ! POR-NAM 
+318  0.0   0.0    0.0    0.0  101 ! RKL-NAM Rockall-North America
+318  9.8  65.38  133.58   -2.44  101 ! RKL-NAM An5 Lawver et al. 1990
+318 19.7  68.92  136.74   -4.97  101 ! RKL-NAM Lawver et al. 1990
+318 33.6  65.64  136.95   -7.51  101 ! RKL-NAM Lawver et al. 1990
+318 46.5  63.62  141.96  -10.52  101 ! RKL-NAM Srivastava & Roest 1989 
+318 53.3  54.86  143.39  -11.99  101 ! RKL-NAM Srivastava & Roest 1989
+318 56.2  56.24  143.78  -13.44  101 ! RKL-NAM Srivastava & Roest 1989 
+318 68.3  59.05  147.21  -15.56  101 ! RKL-NAM Srivastava & Roest 1989 
+318 78.9  69.31  152.06  -19.31  101 ! RKL-NAM Srivastava & Roest 1989 
+318 83.5  72.29  154.49  -20.94  101 ! RKL-NAM Srivastava & Roest 1989
+318 92.0  73.95  156.24  -22.01  101 ! RKL-NAM Srivastava & Roest 1989 
+318 118.0  75.32  159.61  -23.47  101 ! RKL-NAM Srivastava & Roest 1989
+318 600.0  75.32  159.61  -23.47  101 ! RKL-NAM Srivastava & Roest 1989
+318 600.0  75.32  159.61  -23.47  199 ! RKL-LAR cross-over
+318 800.0  75.32  159.61  -23.47  199 ! RKL-LAR
+319  0.0   0.0    0.0    0.0  301 ! MOS-EUR Mosesia-Europe
+319 600.0   0.0    0.0    0.0  301 ! MOS-EUR 
+319 600.0   0.0    0.0    0.0  302 ! MOS-BAL cross-over
+319 800.0   0.0    0.0    0.0  302 ! MOS-BAL
+320  0.0   0.0    0.0    0.0  304 ! BLE-SPN Balearics-Iberia
+320  6.0   0.0    0.0    0.0  304 ! BLE-SPN 
+320 16.0  37.56   -1.2   23.0  304 ! BLE-SPN EarthByteGroup 2007
+320 800.0  37.56   -1.2   23.0  304 ! BLE-SPN
+321  0.0   0.0    0.0    0.0  301 ! WEE-EUR Western Europe-Europe
+321 600.0   0.0    0.0    0.0  301 ! WEE-EUR 
+322  0.0   0.0    0.0    0.0  714 ! CAL-NWA Calabria/Campania-NW Africa
+322  2.0   0.0    0.0    0.0  714 ! CAL-NWA EarthByteGroup 2007
+322 10.0  46.3    9.0  -18.0  714 ! CAL-NWA EarthByteGroup 2007
+322 22.0  46.3   11.0  -52.0  714 ! CAL-NWA EarthByteGroup 2007
+322 36.0  46.3   11.0  -52.0  714 ! CAL-NWA EarthByteGroup 2007
+322 36.0  44.2    9.0  -55.0  304 ! CAL-SPN EarthByteGroup 2007 cross-over
+322 145.0  44.2    9.0  -55.0  304 ! CAL-SPN EarthByteGroup 2007
+322 180.0  51.7    0.95  -41.0  304 ! CAL-SPN EarthByteGroup 2007
+322 180.0  69.9 -138.2   -1.66  333 ! CAL-APP EarthByteGroup 2007 cross-over
+322 750.0  69.9 -138.2   -1.66  333 ! CAL-APP 
+323  0.0   0.0    0.0    0.0  307 ! SIC-ITL Sicily-Italy
+323 245.0   0.0    0.0    0.0  307 ! SIC-ITL 
+324  0.0   0.0    0.0    0.0  101 ! VPT-NAM Voring Plateau-North America 
+324 10.9  65.38  133.58   -2.44  101 ! VPT-NAM An5 EarthByteGroup, RDM 1987
+324 20.2  67.27  135.49   -4.73  101 ! VPT-NAM An6 EarthByteGroup, RDM 1987
+324 33.5  69.16  137.13   -7.93  101 ! VPT-NAM An13 EarthByteGroup, RDM 1987
+324 43.8  68.33  139.75  -10.1  101 ! VPT-NAM An20 EarthByteGroup, RDM 1987
+324 47.9  67.79  140.59  -11.04  101 ! VPT-NAM An21 EarthByteGroup, RDM 1987
+324 49.7  67.5  141.27  -11.85  101 ! VPT-NAM An22 EarthByteGroup, RDM 1987
+324 51.7  66.02  142.33  -12.45  101 ! VPT-NAM An23 EarthByteGroup, RDM 1987
+324 53.3  65.64  143.69  -12.8  101 ! VPT-NAM An24 EarthByteGroup, RDM 1987 ridge jump at 55.6 Ma
+324 600.0  65.64  143.69  -12.8  101 ! VPT-NAM EarthByteGroup, RDM ridge jump at 55.6 Ma
+327  0.0   0.0    0.0    0.0  346 ! PLG-GRC Pelagonian-Greece
+327 750.0   0.0    0.0    0.0  346 ! PLG-GRC
+328  0.0   0.0    0.0    0.0  308 ! VAR-DIN Vardar-Dinarides
+328 750.0   0.0    0.0    0.0  308 ! VAR-DIN 
+329  0.0   0.0    0.0    0.0  304 ! BET-SPN Betic (Spain)-Iberia
+329  6.0   0.0    0.0    0.0  304 ! BET-SPN EarthByteGroup 2007
+329 14.0  29.4   -6.96   -5.17  304 ! BET-SPN EarthByteGroup 2007
+329 145.0  29.4   -6.96   -5.17  304 ! BET-SPN EarthByteGroup 2007
+329 180.0   0.0    0.0    0.0  304 ! BET-SPN EarthByteGroup 2007
+329 750.0   0.0    0.0    0.0  304 ! BET-SPN 
+330  0.0   0.0    0.0    0.0  331 ! TOB-UKB Tornquist Block-United Kingdom
+330 145.0   0.0    0.0    0.0  331 ! TOB-UKB
+330 170.0  24.19   36.2    0.59  331 ! TOB-UKB EarthByteGroup 1987
+330 600.0  24.19   36.2    0.59  331 ! TOB-UKB 
+331  0.0   0.0    0.0    0.0  301 ! UKB-EUR United Kingdom Block-Europe 
+331 145.0   0.0    0.0    0.0  301 ! UKB-EUR
+331 145.0  68.99  154.75  -23.08  101 ! UKB-NAM M0 cross-over Roest & Srivastiva 1989
+331 600.0  68.99  154.75  -23.08  101 ! UKB-NAM M0 Roest & Srivastiva 1989
+333  0.0   0.0    0.0    0.0  307 ! APP-ITL Central Apennines-Apulia/Adria
+333 14.0   0.0    0.0    0.0  307 ! APP-ITL EarthByteGroup 2007
+333 180.0  39.6   14.3    7.1  307 ! APP-ITL EarthByteGroup 2007
+333 240.0  39.6   14.3    7.1  307 ! APP-ITL EarthByteGroup 2007
+333 260.0   0.0    0.0    0.0  307 ! APP-ITL EarthByteGroup 2007
+333 750.0   0.0    0.0    0.0  307 ! APP-ITL
+335  0.0   0.0    0.0    0.0  331 ! EALP-UKB Eastern (Calcareous) Alps-United Kingdom Block
+335 14.0   0.0    0.0    0.0  331 ! EALP-UKB EarthByteGroup 2007
+335 36.0  33.4   51.7    5.12  331 ! EALP-UKB EarthByteGroup 2007
+335 65.0  33.4   51.7    5.12  331 ! EALP-UKB EarthByteGroup 2007
+335 145.0  33.4   51.7   12.7  331 ! EALP-UKB EarthByteGroup 2007
+335 180.0   0.0    0.0    0.0  331 ! EALP-UKB EarthByteGroup 2007
+335 600.0   0.0    0.0    0.0  331 ! EALP-UKB crossover EarthByteGroup 2007
+335 600.0   0.0    0.0    0.0  305 ! EALP-CEU 
+336  0.0   0.0    0.0    0.0  331 ! CARP-UKB Carpathia-United Kingdom Block
+336 14.0   0.0    0.0    0.0  331 ! CARP-UKB EarthByteGroup 2007
+336 36.0  33.4   51.7    5.12  331 ! CARP-UKB EarthByteGroup 2007
+336 65.0  33.4   51.7    5.12  331 ! CARP-UKB EarthByteGroup 2007
+336 145.0  33.4   51.7   12.7  331 ! CARP-UKB EarthByteGroup 2007
+336 180.0   0.0    0.0    0.0  331 ! CARP-UKB EarthByteGroup 2007
+336 600.0   0.0    0.0    0.0  331 ! CARP-UKB crossover EarthByteGroup 2007
+336 600.0   0.0    0.0    0.0  305 ! CARP-CEU 
+337  0.0   0.0    0.0    0.0  335 ! TISA-EALP Tisa-Eastern Alps
+337 245.0   0.0    0.0    0.0  335 ! TISA-EALP
+338  0.0   0.0    0.0    0.0  302 ! ROD-BAL Rhodopes-Baltica
+338 750.0   0.0    0.0    0.0  302 ! ROD-BAL 
+344  0.0   0.0    0.0    0.0  331 ! WALP-UKB Western Alps-United Kingdom Block
+344 600.0   0.0    0.0    0.0  331 ! WALP-BAL 
+344 600.0   0.0    0.0    0.0  305 ! WALP-CEU cross-over
+344 750.0   0.0    0.0    0.0  305 ! WALP-CEU 
+345  0.0   0.0    0.0    0.0  307 ! ION-ITL Ionian-Apulia/Adria
+345 750.0   0.0    0.0    0.0  307 ! ION-AFR 
+346  0.0   0.0    0.0    0.0  345 ! GRC-ION Greece-Ionian
+346 245.0   0.0    0.0    0.0  345 ! GRC-ION
+347  0.0   0.0    0.0    0.0  346 ! CRT-AFR Crete/S. Aegean-Greece
+347 245.0   0.0    0.0    0.0  346 ! CRT-AFR
+348  0.0   0.0    0.0    0.0  302 ! TSV-BAL Transylvania-Baltica
+348 300.0   0.0    0.0    0.0  302 ! TSV-BAL 
+348 750.0   0.0    0.0    0.0  302 ! TSV-BAL 
+349  0.0   0.0    0.0    0.0  302 ! SMD-BAL Serbo/Macedonia-Baltica
+349 310.0   0.0    0.0    0.0  302 ! SMD-BAL  
+350  0.0   0.0    0.0    0.0  301 ! EPE-EUR Eastern Eurasia-Europe
+350 310.0   0.0    0.0    0.0  301 ! EPE-EUR     
+351  0.0   0.0    0.0    0.0  301 ! SEU-EUR Southern Eurasia-Eurasia
+351 310.0   0.0    0.0    0.0  301 ! SEU-EUR 
+401  0.0   0.0    0.0    0.0  301 ! SIB-EUR Siberia Craton-Europe       
+401 277.0   0.0    0.0    0.0  301 ! SIB-EUR EarthByteGroup 2007                         
+401 277.0  33.1   80.9   57.8  000 ! SIB-HOT Siberia Craton-Hotspots cross-over                  
+401 600.0  33.1   80.9   57.8  000 ! SIB-HOT        
+402  0.0   0.0    0.0    0.0  401 ! KAZ-SIB Kazakhstan-Siberian Craton    
+402 600.0   0.0    0.0    0.0  401 ! KAZ-SIB                                                                  
+403  0.0   0.0    0.0    0.0  301 ! KOL-EUR Kolyma-Europe                      
+403 137.6   0.0    0.0    0.0  301 ! KOL-EUR EarthByteGroup 2007                                    
+403 159.4  82.0  112.0   19.7  301 ! KOL-EUR EarthByteGroup 2007                                 
+403 600.0  82.0  112.0   19.7  301 ! KOL-EUR  
+405  0.0   0.0    0.0    0.0  401 ! VRK-SIB Verkhoyansk Plate-Siberian Craton  
+405 600.0   0.0    0.0    0.0  401 ! VRK-SIB      
+406  0.0   0.0    0.0    0.0  301 ! KAM-EUR Kamchatka Peninsula-Eurasia
+406 10.0   0.0    0.0    0.0  301 ! KAM-EUR EarthByteGroup 2006
+406 15.0  62.1  165.9   -5.0  301 ! KAM-EUR EarthByteGroup 2006
+406 35.0  62.1  165.9  -30.0  301 ! KAM-EUR EarthByteGroup 2006
+406 55.0  60.8  162.3  -60.0  301 ! KAM-EUR EarthByteGroup 2006
+406 600.0  60.8  162.3  -60.0  301 ! KAM-EUR                                
+407  0.0   0.0    0.0    0.0  101 ! CKP-NAM Chukotsky Peninsula-North America
+407 66.0   0.0    0.0    0.0  101 ! CKP-NAM initiation of rifting, Gaina et al 2002
+407 66.0  54.5  147.0   15.72  301 ! CKP-EUR after Gaina et al 2002
+407 600.0  54.5  147.0   15.72  301 ! CKP-EUR       
+408  0.0   0.0    0.0    0.0  412 ! OMO-UMB Omolon Block-Udo(Kony) Murgalia 
+408 170.0  72.96  126.23   25.39  412 ! OMO-UMB EarthByteGroup 2003, after Wilson 89 and Nocklberg 98          
+408 170.0  30.82   26.24    4.78  101 ! OMO-NAM crossover EarthByteGroup 2003, after Wilson 89 and Nocklberg 98
+408 260.0 -30.89 -153.71  -20.76  101 ! OMO-NAM 
+409  0.0   0.0    0.0    0.0  407 ! NES-CKP NE Siberia-Chukhotsky Peninsula
+409 115.0   0.0    0.0    0.0  407 ! NES-CKP EarthByteGroup 2007
+409 115.0  54.5  147.0   15.72  301 ! NES-EUR cross-over EarthByteGroup 2007
+409 245.0  54.5  147.0   15.72  301 ! NES-EUR
+410  0.0   0.0    0.0    0.0  401 ! MNG-SIB Mongolia-Siberia
+410 200.0   0.0    0.0    0.0  401 ! MNG-SIB suture Zhao et al. 1990
+410 255.0  24.0   84.5  -59.98  401 ! MNG-SIB EarthByteGroup 2007
+410 255.0  68.2  116.7  -71.08  000 ! MNG-HOT Mongolia-Hotspots cross-over
+410 342.0  70.0   37.9  -83.98  000 ! MNG-HOT pmag poles, Van der Voo 1993 
+410 363.0  73.7   71.8  -76.28  000 ! MNG-HOT pmag poles, Van der Voo 1993 
+410 390.0  76.59    3.49  -56.11  000 ! MNG-HOT pmag poles, Van der Voo 1993 
+410 422.0  51.61  -86.86  -56.87  000 ! MNG-HOT pmag poles, Van der Voo 1993 
+410 600.0  51.61  -86.86  -56.87  000 ! MNG-HOT
+411  0.0   0.0    0.0    0.0  401 ! OKCK-SIB Okotsk-Chukotkaia-Siberia
+411 160.0   0.0    0.0    0.0  401 ! OKCK-SIB
+412  0.0   0.0    0.0    0.0  401 ! UMB-SIB Udo(Kony) Murgalia-Siberia
+412 160.0   0.0    0.0    0.0  401 ! UMB-SIB
+413  0.0   0.0    0.0    0.0  406 ! SHR-SIB Shirshov Ridge-Kamchatka
+413 10.0   0.0    0.0    0.0  406 ! SHR-SIB EarthByteGroup2008
+413 40.0  63.21  171.96  -24.0  406 ! SHR-SIB
+413 60.0  63.21  171.96  -24.0  406 ! SHR-SIB
+414  0.0   0.0    0.0    0.0  111 ! BRR-SIB Bowers Ridge-Siberia
+414 160.0   0.0    0.0    0.0  111 ! BRR-SIB
+416  0.0   0.0    0.0    0.0  662 ! NEA-EJS Northeast Asia-East Japan Sea
+416 300.0   0.0    0.0    0.0  662 ! NEA-EJS
+417  0.0   0.0    0.0    0.0  601 ! AMU-NCH Amuria - North China after Golonka 2006 and Apel et al 2006
+417 300.0   0.0    0.0    0.0  601 ! AMU-NCH
+501  0.0   0.0    0.0    0.0  511 ! IND-CIB India Craton-Central Indian Basin
+501  9.9  -8.7   76.9    2.75  511 ! IND-CIB AN5 Muller et.al. 1997
+501 20.2  -5.2   74.3    5.93  511 ! IND-CIB Royer & Chang 1991
+501 83.5  -5.2   74.3    5.93  511 ! IND-CIB Royer & Chang 1991
+501 83.5  22.3   19.5  -51.4  702 ! IND-MAD Indian Craton-Madagascar cross-over EarthByteGroup 2006
+501 88.0  19.8   27.2  -59.16  702 ! IND-MAD EarthByteGroup 2001
+501 120.4  24.02   32.04  -53.01  702 ! IND-MAD M0 EarthByteGroup 2002
+501 124.0  23.14   33.1  -54.51  702 ! IND-MAD spreading in Enderby Basin stops EarthByteGroup 2002
+501 124.0   1.34 -165.88   79.66  514 ! IND-EBP Indian Craton-Elan Bank Plate cross-over EarthByteGroup 2002
+501 132.1   1.34 -165.88   79.66  514 ! IND-EBP EarthByteGroup 2002
+501 132.1  18.45   31.0  -61.52  702 ! IND-MAD Indian Craton-Madagascar cross-over EarthByteGroup 2002
+501 600.0  18.45   31.0  -61.52  702 ! IND-MAD India fixed to Mad before M11, EarthByteGroup 2002
+502  0.0   0.0    0.0    0.0  501 ! SLK-IND Sri Lanka-India
+502 75.0   0.0    0.0    0.0  501 ! SLK-IND       
+502 90.0  21.97   72.79  -10.13  501 ! SLK-IND M9 EarthByteGroup 2004
+502 129.5  21.97   72.79  -10.13  501 ! SLK-IND M9 FIT for spreading in Enderby, EarthByteGroup 2004
+502 140.0  21.97   72.79  -10.13  501 ! SLK-IND 
+502 600.0  21.97   72.79  -10.13  501 ! SLK-IND 
+503  0.0   0.0    0.0    0.0  701 ! ARB-AFR Arabia-Nubia (Africa)       
+503  9.9  26.1   23.1   -3.86  701 ! ARB-AFR Royer et.al 1998                    
+503 20.6  30.9   17.5   -6.32  701 ! ARB-AFR Royer et.al 1998                             
+503 600.0  30.9   17.5   -6.32  701 ! ARB-AFR               
+504  0.0   0.0    0.0    0.0  301 ! TAR-EUR Taurus (Turkey)-Eurasia
+504 245.0   0.0    0.0    0.0  301 ! TAR-EUR  
+505  0.0   0.0    0.0    0.0  301 ! IRN-EUR Iran-Eurasia
+505 180.0   0.0    0.0    0.0  301 ! IRN-EUR crossover
+505 180.0   0.0    0.0    0.0  302 ! IRN-BAL collision
+505 280.0  49.1    2.32  -67.97  302 ! IRN-BAL crossover, EarthByteGroup 2002
+505 280.0  50.7    9.52    0.03  503 ! IRN-ARB EarthByteGroup 2002
+505 750.0  50.7    9.52    0.03  503 ! IRN-ARB       
+506  0.0   0.0    0.0    0.0  505 ! AFF-IRN Afghanistan(Fara)-Iran
+506 160.0   0.0    0.0    0.0  505 ! AFF-IRN EarthByteGroup 2002  
+506 180.0  22.0   -9.4  -12.46  505 ! AFF-IRN EarthByteGroup 2002       
+506 300.0  22.0   -9.4  -12.46  505 ! AFF-IRN        
+507  0.0   0.0    0.0    0.0  701 ! AFS-AFR Afghanistan(Sistan)-Africa         
+507 600.0   0.0    0.0    0.0  701 ! AFS-AFR   
+508  0.0   0.0    0.0    0.0  701 ! SIN-AFR Sinai-Africa                       
+508 10.9   0.0    0.0    0.0  701 ! SIN-AFR AN5, EarthByteGroup 2007                
+508 24.1  34.59   30.01   -2.57  701 ! SIN-AFR EarthByteGroup 2007                       
+508 31.0  34.59   30.01   -3.57  701 ! SIN-AFR EarthByteGroup 2007                    
+508 600.0  34.59   30.01   -3.57  701 ! SIN-AFR                 
+509  0.0   0.0    0.0    0.0  701 ! LEB-AFR Lebanon-Africa                     
+509 10.9  34.59   30.01   -2.57  701 ! LEB-AFR AN5, EarthByteGroup 2007                    
+509 24.1  34.59   30.01   -3.57  701 ! LEB-AFR EarthByteGroup 2007                 
+509 600.0  34.59   30.01   -3.57  701 ! LEB-AFR                                                            
+510  0.0   0.0    0.0    0.0  501 ! GTI-IND Greater India-India                          
+510 700.0   0.0    0.0    0.0  501 ! GTI-IND                        
+511  0.0   0.0    0.0    0.0  802 ! CIB-ANT Central Indian Basin-Antarctica
+511  9.9  13.1   36.1   -6.61  802 ! CIB-ANT AN5 Royer & Chang 1991
+511 20.2  15.4   32.7  -11.97  802 ! CIB-ANT AN6 Royer & Chang 1991
+511 33.1  13.8   33.4  -20.41  802 ! CIB-ANT AN13 Royer & Chang 1991
+511 40.1  17.1   30.6  -23.68  802 ! CIB-ANT AN18 Muller et.al 1997
+511 43.8  15.5   28.9  -25.39  802 ! CIB-ANT AN20 Muller et.al 1997
+511 53.3  13.8   20.4  -33.9  802 ! CIB-ANT AN24 Muller et.al 1997
+511 57.9  11.9   17.5  -39.4  802 ! CIB-ANT AN26 Muller et.al 1997
+511 67.7   9.8   13.2  -51.49  802 ! CIB-ANT Muller et.al 1997
+511 83.5   8.7   11.2  -63.93  802 ! CIB-ANT Muller et.al 1997
+511 83.5   5.2 -105.7    5.93  501 ! CIB-IND Central Indian Basin-India cross-over Muller et.al 1997
+511 600.0   5.2 -105.7    5.93  501 ! CIB-IND 
+512  0.0   0.0    0.0    0.0  801 ! CMP-AUS Cuvier microplate-Australia                                          
+512 134.3   0.0    0.0    0.0  801 ! CMP-AUS                                
+513  0.0   0.0    0.0    0.0  801 ! GMP-AUS Gascoyne microplate-Australia                            
+513 134.3   0.0    0.0    0.0  801 ! GMP-AUS 
+514  0.0   0.0    0.0    0.0  802 ! EBP-ANT Elan Bank Plate(Enderby Basin)-Antarctica
+514 124.0   0.0    0.0    0.0  802 ! EBP-ANT spreading stops at ~124.0 if rate stays constant Gaina et.al 2003
+514 124.7  18.02  164.67    0.55  802 ! EBP-ANT M2 Gaina et.al 2003
+514 126.7  38.5 -172.21    2.33  802 ! EBP-ANT M4 Gaina et.al 2003
+514 128.9  40.58 -168.78    5.57  802 ! EBP-ANT M7 Gaina et.al 2003
+514 132.1  27.32 -178.18    9.82  802 ! EBP-ANT M11-time Gaina et.al 2003
+514 132.1   1.34 -165.88  -79.65  501 ! EBP-IND Elan Bank Plate(Enderby Basin)-India cross-over Gaina et.al 2003
+514 245.1   1.34 -165.88  -79.65  501 ! EBP-IND
+515  0.0   0.0    0.0    0.0  802 ! SKP-ANT Southern Kerguelen Plateau-Antarctica
+515 124.0   0.0    0.0    0.0  802 ! SKP-ANT Spreading in Enderby Basin stops, EarthByteGroup 2002
+515 128.9   0.0    0.0    0.0  802 ! SKP-ANT M7 EarthByteGroup 2002
+515 132.1  40.57 -168.77    5.57  802 ! SKP-ANT EarthByteGroup 2002
+515 600.0  40.57 -168.77    5.57  802 ! SKP-ANT
+516  0.0   0.0    0.0    0.0  802 ! END-ANT Enderby Basin-Antarctica
+516  9.9  14.65   32.85   -6.4  802 ! END-ANT An5 calc. Royer et al. 1997 & Royer & Chang 1991
+516 20.2  15.4   32.7  -11.97  802 ! END-ANT An6 Royer & Chang 1991
+516 33.2  13.8   33.4  -20.41  802 ! END-ANT An13 Royer & Chang 1991
+516 40.1  17.1   30.6  -23.68  802 ! END-ANT An18 JYR 1990 triple junction fit
+516 43.8  15.7   30.0  -24.59  802 ! END-ANT An20 JYR 1990 triple junction fit
+516 53.3  13.5   32.2  -25.44  802 ! END-ANT An21 JYR 1990 triple junction fit
+516 67.7   6.1   35.0  -25.62  802 ! END-ANT An31 JYR 1990 triple junction fit
+516 79.1   6.2   35.1  -26.37  802 ! END-ANT An33 Royer & Sandwell 1989
+516 83.0   4.9   35.8  -26.81  802 ! END-ANT
+516 90.0   0.0 -141.7   27.45  802 ! END-ANT
+516 124.0   0.0 -141.7   27.45  802 ! END-ANT
+516 132.1   9.32 -148.37   35.13  802 ! END-ANT
+516 200.0   9.32 -148.37   35.13  802 ! END-ANT
+519  0.0   0.0    0.0    0.0  701 ! NAF-AFR North Africa Jurassic-Africa
+519 230.0   0.0    0.0    0.0  701 ! NAF-AFR EarthByteGroup 2004
+519 230.0  50.9    4.0  -51.73  301 ! NAF-EUR North Africa Jurassic-Eurasia crossover EarthByteGroup 2004
+519 400.0  50.9    4.0  -51.73  301 ! NAF-EUR  
+520  0.0   0.0    0.0    0.0  301 ! WPT-EUR Western Pontides-Europe
+520 65.0   0.0    0.0    0.0  301 ! WPT-EUR EarthByteGroup 2002
+520 112.0  39.7   81.9   -4.62  301 ! WPT-EUR EarthByteGroup 2002
+520 160.0  39.7   81.9   -4.62  301 ! WPT-EUR EarthByteGroup 2002
+520 210.0   0.0    0.0    0.0  301 ! WPT-EUR EarthByteGroup 2002
+520 210.0   0.0    0.0    0.0  302 ! WPT-BAL cross-over, EarthByteGroup 2002
+520 260.0  39.7   81.9   -4.62  302 ! WPT-BAL EarthByteGroup 2002
+520 750.0  39.7   81.9   -4.62  302 ! WPT-BAL 
+521  0.0   0.0    0.0    0.0  520 ! SKT-WPT Sakhariya-Western Pontides
+521 70.0   0.0    0.0    0.0  520 ! SKT-WPT EarthByteGroup 2002
+521 150.0  48.5   80.8   18.87  520 ! SKT-WPT EarthByteGroup 2002
+521 200.0  37.2   13.7   -5.45  520 ! SKT-WPT EarthByteGroup 2002
+521 230.0  36.5   11.6  -33.42  520 ! SKT-WPT EarthByteGroup 2002
+521 230.0  11.7   45.45  -20.91  504 ! SKT-TAR Sakhariya-Taurus cross-over, EarthByteGroup 2002
+521 280.0  11.7   45.45  -20.91  504 ! SKT-TAR 
+522  0.0   0.0    0.0    0.0  504 ! MND-TAR Menderes-Taurus (S.Turkey)
+522 245.0   0.0    0.0    0.0  504 ! MND-TAR
+523  0.0   0.0    0.0    0.0  504 ! LYC-TAR Lycia-Taurus (S. Turkey)
+523 300.0   0.0    0.0    0.0  504 ! LYC-TAR 
+523 750.0   0.0    0.0    0.0  504 ! LYC-TAR
+524  0.0   0.0    0.0    0.0  504 ! BEY-TAR Bey Daglari-Taurus (S. Turkey)
+524 300.0   0.0    0.0    0.0  504 ! BEY-TAR 
+524 750.0   0.0    0.0    0.0  504 ! BEY-TAR
+525  0.0   0.0    0.0    0.0  520 ! KRS-WPT Kirsehir-Western Pontides
+525 750.0   0.0    0.0    0.0  520 ! KRS-AFR 
+526  0.0   0.0    0.0    0.0  301 ! EPT-EUR East Pontides-Eurasia
+526 140.0   0.0    0.0    0.0  301 ! EPT-EUR
+526 160.0  39.13   82.33   -4.25  301 ! EPT-EUR EarthByte2009, SZ09
+526 210.0  39.13   82.33   -4.25  301 ! EPT-EUR EarthByte2009, SZ09
+526 210.0  39.1   82.3   -4.25  302 ! EPT-BAL cross-over, EarthByte2009, SZ09
+526 260.0  39.1   82.3   -4.25  302 ! EPT-EUR EarthByte2009, SZ09
+526 300.0  39.1   82.3   -4.25  302 ! EPT-EUR EarthByte2009, SZ09
+526 750.0  39.1   82.3   -4.25  302 ! EPT-EUR EarthByte2009, SZ09
+530  0.0   0.0    0.0    0.0  505 ! CMT, Sabin Zahirovic 2009
+530 80.0  40.11   11.14   45.11  505 ! CMT, Sabin Zahirovic 2009
+530 90.0  42.96   12.29   33.09  505 ! CMT, Sabin Zahirovic 2009
+530 100.0  51.45   16.34   21.25  505 ! CMT, Sabin Zahirovic 2009
+530 110.0  50.76   20.21   10.49  505 ! CMT, Sabin Zahirovic 2009
+530 120.0  34.01   68.37    0.03  505 ! CMT, Sabin Zahirovic 2009
+530 132.0  33.64    0.61  -14.92  505 ! CMT, Sabin Zahirovic 2009
+530 140.0  40.21  -12.35  -28.47  505 ! CMT, Sabin Zahirovic 2009
+530 148.0  43.44  -14.2  -43.39  505 ! CMT, Sabin Zahirovic 2009
+530 150.0  45.6  -15.14  -46.77  505 ! CMT, Sabin Zahirovic 2009
+530 154.0  49.09  -17.39  -53.69  505 ! CMT, Sabin Zahirovic 2009
+530 160.0  53.54  -15.59  -60.56  505 ! CMT, Sabin Zahirovic 2009
+530 180.0  55.92   -8.94  -81.63  505 ! CMT, Sabin Zahirovic 2009
+530 200.0  56.16   -9.19  -83.25  505 ! CMT, Sabin Zahirovic 2009
+530 220.0  56.18   -9.37  -75.28  505 ! CMT, Sabin Zahirovic 2009
+530 240.0  56.67   -9.3  -66.18  505 ! CMT, Sabin Zahirovic 2009
+530 260.0  56.89  -10.05  -66.14  505 ! CMT, Sabin Zahirovic 2009
+530 280.0  55.93   -8.63  -81.24  505 ! CMT, Sabin Zahirovic 2009
+530 400.0  55.93   -8.63  -81.24  505 ! CMT, Sabin Zahirovic 2009
+531  0.0   0.0    0.0    0.0  701 ! WMT-AFR Western MesoTethys-Africa(conj. Arabia)
+531 120.0   0.0    0.0    0.0  701 ! WMT-AFR EarthByteGroup 2002
+531 140.0 -46.0 -175.9    5.52  701 ! WMT-AFR EarthByteGroup 2002
+531 154.0  47.93    3.03  -14.95  701 ! WMT-AFR EarthByteGroup 2002
+531 160.0  48.17    2.91  -18.99  701 ! WMT-AFR EarthByteGroup 2002
+531 180.0  48.54    2.64  -32.51  701 ! WMT-AFR EarthByteGroup 2002
+531 190.0  49.01    2.92  -39.3  701 ! WMT-AFR EarthByteGroup 2002
+531 200.0  49.27    3.12  -46.09  701 ! WMT-AFR EarthByteGroup 2002
+531 210.0  49.5    3.34  -52.88  701 ! WMT-AFR EarthByteGroup 2002
+531 220.0  49.67    3.44  -59.66  701 ! WMT-AFR EarthByteGroup 2002
+531 230.0  49.81    3.59  -66.45  701 ! WMT-AFR EarthByteGroup 2002
+531 240.0  49.91    3.66  -73.24  701 ! WMT-AFR EarthByteGroup 2002
+531 250.0  50.01    3.73  -80.03  701 ! WMT-AFR EarthByteGroup 2002
+531 260.0  50.09    3.8  -86.82  701 ! WMT-AFR EarthByteGroup 2002
+531 270.0  50.16    3.86  -93.61  701 ! WMT-AFR EarthByteGroup 2002
+531 280.0  50.22    3.91 -100.4  701 ! WMT-AFR EarthByteGroup 2002
+531 600.0  50.22    3.91 -100.4  701 ! WMT-AFR EarthByteGroup 2002 extended
+532  0.0   0.0    0.0    0.0  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 90.0 -43.31  -35.1   19.62  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 100.0 -50.3  -70.78   18.71  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 110.0  55.25   88.5  -21.96  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 120.0  54.8   74.85  -26.38  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 130.0  48.35   51.7  -29.86  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 140.0  49.71   26.17  -36.15  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 150.0  51.1   13.05  -46.82  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 154.0  53.45    8.54  -53.84  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 160.0  56.12    9.75  -61.36  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 175.0  55.56   11.37  -79.41  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 180.0  55.18   11.4  -83.1  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 200.0  55.33   10.95  -84.73  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 220.0  55.98   12.51  -76.92  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 240.0  57.22   15.69  -68.08  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 260.0  57.52   15.05  -68.07  505 ! EMT-EMT, Sabin Zahirovic 2009
+532 400.0  57.52   15.05  -68.07  505 ! EMT-EMT, Sabin Zahirovic 2009
+533  0.0   0.0    0.0    0.0  607 ! EMT-BMP Eastern MesoTethys-Burma Plate
+533 280.0   0.0    0.0    0.0  607 ! EMT-BMP EarthByteGroup 2002
+533 600.0   0.0    0.0    0.0  607 ! EMT-BMP EarthByteGroup 2002
+534  0.0   0.0    0.0    0.0  605 ! CMT-BUR Central MesoTethys-Burma
+534 132.1   0.0    0.0    0.0  605 ! CMT-BUR EarthByteGroup 2002
+534 160.0   0.0    0.0    0.0  605 ! CMT-BUR EarthByteGroup 2002
+534 160.0  40.1  178.6   36.79  501 ! CMT-IND Central MesoTethys-India cross-over
+534 280.0  40.1  178.6   36.79  501 ! CMT-IND EarthByteGroup 2002
+535  0.0   0.0    0.0    0.0  534 ! CNT-CMT Central NeoTethys South-Central MesoTethys
+535 135.9   0.0    0.0    0.0  534 ! CNT-CMT EarthByteGroup 2002
+535 135.9  44.4 -158.2   11.37  501 ! CNT-IND Central NeoTethys South-India cross-over
+535 200.0  44.4 -158.2   11.37  501 ! CNT-IND EarthByteGroup 2002
+537  0.0   0.0    0.0    0.0  926 ! NAB1-IZA North Australia Basin 1-Izanagi
+537 154.1   0.0    0.0    0.0  926 ! NAB1-IZA EarthByteGroup 2002
+537 154.1  12.3 -148.6 -135.47  533 ! NAB1-EMT North Australia Basin 1-Eastern MesoTethys cross-over
+537 200.0  12.3 -148.6 -135.47  533 ! NAB1-EMT EarthByteGroup 2002
+538  0.0  50.9    1.74   79.41  537 ! NAB2-NAB1 North Australia Basin 2-North Australia Basin 1
+538 154.1  50.9    1.74   79.41  537 ! NAB2-NAB1 EarthByteGroup 2002
+538 154.1   0.0    0.0    0.0  532 ! NAB2-EMT North Australia Basin 2-Eastern MesoTethys North
+538 200.0   0.0    0.0    0.0  532 ! NAB2-EMT EarthByteGroup 2002
+540  0.0   0.0    0.0    0.0  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+540 160.0  61.51  -18.55  -31.44  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+540 170.0  65.95  -19.3  -33.94  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+540 180.0  64.5  -42.51  -32.43  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+540 190.0  64.36  -41.69  -33.25  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+540 200.0  64.27  -41.09  -34.09  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+540 210.0  65.43  -47.84  -30.73  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+540 220.0  66.42  -58.14  -27.23  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+540 230.0  66.4  -73.49  -23.48  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+540 240.0 -64.28   85.56   20.26  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+540 250.0 -64.75   84.29   20.47  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+540 260.0 -64.24   83.29   20.67  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+540 270.0 -64.24   82.33   20.88  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+540 280.0  64.43  -42.75  -32.0  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+540 400.0  64.43  -42.75  -32.0  606 ! Palaeo-Tethys, Sabin Zahirovic 2009
+541  0.0   0.0    0.0    0.0  540 ! PTHN-CMT PalaeoTethys North-Central MesoTethys North
+541 260.0   0.0    0.0    0.0  540 ! PTHN-CMT MS09
+541 280.0 -61.56   57.58  -12.32  540 ! PTHN-CMT MS09
+541 300.0 -61.56   57.58  -20.32  540 ! PTHN-CMT MS09
+541 600.0  30.7   44.8   54.6  540 ! PTHN-IND MS09
+550  0.0  38.54 -160.46   -8.66  511 ! INA-CIB India-Central Indian Basin
+550 83.5  38.54 -160.46   -8.66  511 ! INA-CIB Heine et.al. 2004
+550 83.5  11.5   -7.7  -37.08  801 ! INA-AUS India-Australia cross-over Heine et.al. 2004
+550 99.0   6.89    0.33  -44.68  801 ! INA-AUS Muller et.al 2000
+550 120.4   5.26 -176.95   53.96  801 ! INA-AUS M0 Muller et.al 2000
+550 124.0   6.56 -176.61   55.28  801 ! INA-AUS M2 Muller et.al 2000
+550 124.7   6.97 -176.51   55.7  801 ! INA-AUS M3 Muller et.al 2000
+550 126.7   7.79 -176.29   56.6  801 ! INA-AUS M4 Muller et.al 2000
+550 127.7   8.18 -176.19   57.04  801 ! INA-AUS M5 Muller et.al 2000
+550 128.2   8.3 -176.18   57.24  801 ! INA-AUS M6 Muller et.al 2000
+550 128.4   8.44 -176.16   57.49  801 ! INA-AUS M7 Muller et.al 2000
+550 129.0   8.64 -176.14   57.82  801 ! INA-AUS M8 Muller et.al 2000
+550 129.5   8.89 -176.12   58.24  801 ! INA-AUS M9 Muller et.al 2000
+550 130.2   9.13 -176.09   58.66  801 ! INA-AUS M10 Muller et.al 2000
+550 130.9   9.43 -176.06   59.2  801 ! INA-AUS M10N Muller et.al 2000
+550 132.1   9.82 -176.01   59.91  801 ! INA-AUS M11 Muller et.al 2000
+550 133.4  10.3 -175.96   60.81  801 ! INA-AUS M11A Muller et.al 2000
+550 134.0  10.68 -175.92   61.54  801 ! INA-AUS M12 Muller et.al 2000
+550 135.0  10.99 -175.89   62.16  801 ! INA-AUS M12A Muller et.al 2000
+550 135.3  11.21 -175.86   62.6  801 ! INA-AUS M13 Muller et.al 2000
+550 135.9  11.54 -175.83   63.28  801 ! INA-AUS M14 Muller et.al 2000
+550 136.2  11.8 -175.8   63.81  801 ! INA-AUS based on closure IND-ANT Muller et.al 2000
+550 600.0  11.8 -175.8   63.81  801 ! INA-AUS
+551  0.0   0.0    0.0    0.0  301 ! GGS-EUR Gagra/Shatsky-Europe
+551 245.0   0.0    0.0    0.0  301 ! GGS-EUR
+551 245.0   0.0    0.0    0.0  302 ! GGS-BAL Gagra/Shatsky-Baltic Shield cross-over
+551 750.0   0.0    0.0    0.0  302 ! GGS-BAL
+552  0.0   0.0    0.0    0.0  801 ! EAR-AUS East Argo Abyssal Plain-Australia
+552 136.0   0.0    0.0    0.0  801 ! EAR-AUS EarthByteGroup 2006
+552 136.0  16.7 -178.0  -72.96  605 ! EAR-BUR East Argo Abyssal Plain-Burma cross-over EarthByteGroup 2006
+552 750.0  16.7 -178.0  -72.96  605 ! EAR-BUR 
+553  0.0   0.0    0.0    0.0  550 ! WAB-INA West Australian Basins-India
+553 200.0   0.0    0.0    0.0  550 ! WAB-INA
+560  0.0   0.0    0.0    0.0  530 ! 
+560 140.0   0.0    0.0    0.0  530 ! 
+560 140.0  19.7   17.8   84.01  534 ! 
+560 400.0  19.7   17.8   84.01  534 ! 
+561  0.0   0.0    0.0    0.0  532 ! 
+561 140.0   0.0    0.0    0.0  532 ! 
+561 140.0   8.8  115.6  -75.04  533 ! 
+561 400.0   8.8  115.6  -75.04  533 ! 
+601  0.0   0.0    0.0    0.0  410 ! NCH-MNG North China Platform-Mongolia Block
+601 150.0   0.0    0.0    0.0  410 ! NCH-MNG Cessation of subduction and closure of the Mongol-Okhotsk ocean basin, Van der Voo 1999
+601 195.0  32.78   70.36  -18.15  410 ! NCH-MNG Mongol-Okhotsk ocean basin, Van der Voo 1999
+601 200.0  32.78   70.36  -18.15  410 ! NCH-MNG Mongol-Okhotsk ocean basin, Van der Voo 1999
+601 250.0  32.78   70.36  -18.15  410 ! NCH-MNG suture Nie et al. 1990
+601 250.0  64.0  129.7  -60.53  000 ! NCH-HOT North China Platform-Hotspots cross-over
+601 275.0  78.02   84.24  -85.35  000 ! NCH-HOT EarthByteGroup 2002
+601 280.0  78.02   84.24  -85.35  000 ! NCH-HOT EarthByteGroup 2002
+601 342.0  70.0   37.9  -83.98  000 ! NCH-HOT based on Scotese & McKerrow 1990
+601 363.0  73.7   71.8  -76.28  000 ! NCH-HOT based on Scotese & McKerrow 1990
+601 485.0  52.71   27.55  -81.82  000 ! NCH-HOT Van der Voo 1993
+601 580.0  26.67 -107.83 -120.0  000 ! NCH-HOT 
+601 580.0  53.7   98.0  -93.6  401 ! NCH-SIB cross-over Dalziel 1997
+601 725.0  53.7   98.0  -93.6  401 ! NCH-SIB after Li et al. 1995
+601 800.0  53.7   98.0  -93.6  401 ! NCH-SIB
+602  0.0   0.0    0.0    0.0  601 ! SCH-NCH South China Platform-North China Platform
+602 210.0   0.0    0.0    0.0  601 ! SCH-NCH suture Chen et al. 1993
+602 250.0  31.8  122.8   41.5  601 ! SCH-NCH Yin 1993
+602 250.0  38.4  145.3   27.21  000 ! SCH-HOT South China Platform-Hotspots cross-over
+602 275.0  39.96  -85.03  -69.44  000 ! SCH-HOT EarthByteGroup 2002 after Borel 2002
+602 295.0  44.63  -85.88 -102.63  000 ! SCH-HOT Van der Voo 1993
+602 390.0  -8.39  -69.99 -100.54  000 ! SCH-HOT Van der Voo 1993
+602 422.0  12.8  -85.6  -85.59  000 ! SCH-HOT Van der Voo 1993
+602 485.0 -26.16  -46.33   56.6  000 ! SCH-HOT Van der Voo 1993
+603  0.0   0.0    0.0    0.0  604 ! SMA-ICH Sino/Malaya-Indochina
+603 11.1  26.94   96.43    0.58  604 ! SMA-ICH An5 McCabe et al. 1988 
+603 20.2  26.94   96.43    0.73  604 ! SMA-ICH An6 Lee & Lawver 1992 
+603 30.1  26.94   96.43    3.62  604 ! SMA-ICH An10 Lee & Lawver 1992
+603 44.0  31.61   82.16    1.0  604 ! SMA-ICH Lee & Lawver 1992
+603 130.0  31.61   82.16    1.0  604 ! SMA-ICH Lee & Lawver 1992
+603 160.0  31.61   82.16    1.0  604 ! SMA-ICH Lee & Lawver 1992
+603 165.0  14.5   97.5   14.62  604 ! SMA-ICH Sino/Malaya docking with Indochina, EarthByte2009, SZ09
+603 165.0  13.42   91.59   26.9  606 ! SMA-STB Sino/Malaya-South Tibet cross-over, EarthByte2009, SZ09
+603 175.0  19.85   91.65   52.17  606 ! SMA-STB EarthByte2009, SZ09
+603 190.0  21.58   93.65   76.88  606 ! SMA-STB EarthByte2009, SZ09
+603 200.0  22.07   94.23   88.34  606 ! SMA-STB EarthByte2009, SZ09
+603 300.0  27.88   98.67  -93.39  606 ! SMA-STB
+604  0.0   0.0    0.0    0.0  602 ! ICH-SCH Indochina-South China
+604 15.0  16.73  103.23   -0.9  602 ! ICH-SCH right-lateral move; Wang et al 1989
+604 20.2  16.73  103.23   -0.9  602 ! ICH-SCH Lee & Lawver 1992
+604 26.5   9.36   95.85    7.78  602 ! ICH-SCH Lee & Lawver 1992
+604 30.1   8.3   93.97   11.87  602 ! ICH-SCH Lee & Lawver 1992 major displacement event 
+604 44.0   8.74   93.89   15.72  602 ! ICH-SCH based Tapponier et al. 1990
+604 210.0   8.74   93.89   15.72  602 ! ICH-SCH Lee & Lawver 1992
+604 280.0   1.22  -83.78  -42.96  602 ! ICH-SCH EarthByteGroup 2002
+604 280.0  43.17   80.27   88.25  501 ! ICH-IND Indochina-Indian Craton EarthByteGroup 2002
+604 600.0  43.17   80.27   88.25  501 ! ICH-IND 
+605  0.0  43.77   68.7   97.41  550 ! BUR-INA Burma-India  
+605 130.9  43.77   68.7   97.41  550 ! BUR-INA Derived, Heine et.al 2004 
+605 130.9   0.0    0.0    0.0  607 ! BUR-BMP Burma-Burma Plate cross-over Derived, Heine et.al 2004  
+605 600.0   0.0    0.0    0.0  607 ! BUR-BMP Burma Pre-Collision COB
+606  0.0   0.0    0.0    0.0  616 ! STB-NTB South Tibet-North Tibet, EarthByte2009, SZ09
+606 160.0   0.0    0.0    0.0  616 ! STB-NTB EarthByte2009, SZ09
+606 164.0  15.9  107.8    3.71  616 ! STB-NTB interpolated, EarthByte2009, SZ09
+606 164.0  37.0   21.4   -3.54  505 ! STB-IRN South Tibet-Iran cross over, EarthByte2009, SZ09
+606 180.0  37.0   21.4  -27.12  505 ! STB-IRN EarthByteGroup 2002
+606 280.0  37.0   21.4  -27.12  505 ! STB-IRN
+607  0.0   0.0    0.0    0.0  603 ! BMP-SMA Burma Plate-Sino/Malaya  
+607 11.0  17.51  137.86    5.01  603 ! BMP-SMA Spreading, FROM Curray et.al 1979
+607 14.9   1.82   26.76   -6.01  603 ! BMP-SMA Rifting in Mergui Basin Lee & Lawver 1995  
+607 73.0   1.82   26.76   -6.01  603 ! BMP-SMA Lee & Lawver 1995  
+607 80.0   8.67  100.09   46.22  603 ! BMP-SMA Heine et.al 2004
+607 80.0  43.77   68.7   97.41  550 ! BMP-INA Burma Plate-India cross-over Heine et.al 2004
+607 130.9  43.77   68.7   97.41  550 ! BMP-INA Heine et.al 2004 
+607 130.9  20.4  106.86   99.67  801 ! BMP-AUS Burma Plate-Australia M10N cross-over Heine et.al 2004
+607 133.3  19.65  107.67  102.45  801 ! BMP-AUS M11A from adder. Heine et.al 2004
+607 135.3  19.09  109.4  104.39  801 ! BMP-AUS M13 Argo interpol ridge jump to S Heine et.al 2004
+607 135.8  19.01  109.61  105.11  801 ! BMP-AUS jump interp Heine et.al 2004
+607 137.9  18.04  110.32  107.06  801 ! BMP-AUS M16 Argo interp Heine et.al 2004
+607 146.7  14.11  113.15  115.81  801 ! BMP-AUS M21 Argo interp Heine et.al 2004
+607 150.4  12.58  114.21  119.54  801 ! BMP-AUS M22A Argo Heine et.al 2004
+607 152.1  11.93  114.66  121.16  801 ! BMP-AUS M24 Argo Heine et.al 2004
+607 154.1  11.1  115.23  123.31  801 ! BMP-AUS M25 Argo Heine et.al 2004
+607 155.9  10.36  115.73  125.28  801 ! BMP-AUS Heine et.al 2004
+607 600.0  10.36  115.73  125.28  801 ! BMP-AUS Fit Recon Burma-Australia
+608  0.0   0.0    0.0    0.0  301 ! SPS-EUR South Philippine Sea-Eurasia
+608  5.0  48.2  157.0    5.45  301 ! SPS-EUR Gaina & Muller 2007 based on Hall 2000
+608 25.0  19.22  158.31   38.67  301 ! SPS-EUR Gaina & Muller 2007
+608 40.0  19.22  158.31   38.67  301 ! SPS-EUR Gaina & Muller 2007 based on Hall 1995
+608 50.0   9.14  141.86   83.54  301 ! SPS-EUR Gaina & Muller 2007
+608 50.0  -5.82  122.99   95.11  901 ! SPS-PAC South Philippine Sea-Pacific crossover Gaina & Muller 2007
+608 170.0  -5.82  122.99   95.11  901 ! SPS-PAC 
+609  0.0   0.0    0.0    0.0  608 ! NPS-SPS North Philippine Sea-South Philippine Sea
+609 34.0   0.0    0.0    0.0  608 ! NPS-SPS spreading stops EarthByteGroup 2001
+609 34.9  16.81   86.12   -1.14  608 ! NPS-SPS A15  EarthByteGroup 2001
+609 35.3  13.74   86.24   -2.04  608 ! NPS-SPS A16y EarthByteGroup 2001
+609 38.1  13.74   86.24   -3.32  608 ! NPS-SPS A17o EarthByteGroup 2001
+609 39.6  13.74   86.24   -4.81  608 ! NPS-SPS A18o EarthByteGroup 2001
+609 43.8  15.19   90.74   -7.27  608 ! NPS-SPS A20o EarthByteGroup 2001
+609 47.9  17.04   90.74   -9.35  608 ! NPS-SPS A21o EarthByteGroup 2001
+609 49.7  19.73   90.13  -12.04  608 ! NPS-SPS A22o EarthByteGroup 2001
+609 53.4  22.32   94.29  -16.1  608 ! NPS-SPS A24o EarthByteGroup 2001
+609 55.9  23.91   94.07  -17.61  608 ! NPS-SPS A25y EarthByteGroup 2001
+609 57.9  26.18   94.36  -20.75  608 ! NPS-SPS A26o EarthByteGroup 2001
+609 200.0  26.18   94.36  -20.75  608 ! NPS-SPS                 
+610  0.0   0.0    0.0    0.0  611 ! EPV-WPV East Parece Vela-West Parece Vela
+610 15.0   0.0    0.0    0.0  611 ! EPV-WPV Sdrolias et.al 2004
+610 17.3  35.0   84.44   -1.34  611 ! EPV-WPV A5Dy Sdrolias et.al 2004
+610 20.1  37.46   84.27   -2.64  611 ! EPV-WPV A6No Sdrolias et.al 2004
+610 21.3  39.52   92.84   -3.99  611 ! EPV-WPV A6ANo Sdrolias et.al 2004
+610 22.6  42.08  102.55   -5.11  611 ! EPV-WPV A6By Sdrolias et.al 2004
+610 23.4  43.64  111.93   -7.02  611 ! EPV-WPV A6Cy Sdrolias et.al 2004
+610 25.2  44.26  118.69   -9.58  611 ! EPV-WPV A7o Sdrolias et.al 2004
+610 26.5  44.39  121.28  -11.15  611 ! EPV-WPV A8o Sdrolias et.al 2004
+610 28.0  44.45  123.26  -12.74  611 ! EPV-WPV A9o Sdrolias et.al 2004
+610 245.0  44.45  123.26  -12.74  611 ! EPV-WPV
+611  0.0   0.0    0.0    0.0  609 ! WPV-NPS West Parece Vela Basin-North Philippine Sea
+611 78.9   0.0    0.0    0.0  609 ! WPV-NPS bounds Phil Plate                  
+612  0.0   0.0    0.0    0.0  602 ! NCS-SCH Northside South China Sea-South China Platform
+612 600.0   0.0    0.0    0.0  602 ! NCS-SCH
+613  0.0   0.0    0.0    0.0  612 ! SCS-NCS Southside South China Sea-Northside South China Sea
+613 15.0   0.0    0.0    0.0  612 ! SCS-NCS spreading stopped Briais et.al 1993
+613 16.8  -3.0   93.6    0.7  612 ! SCS-NCS A5C Briais et.al 1993
+613 17.6   5.0  105.5    3.7  612 ! SCS-NCS A5D Briais et.al 1993
+613 18.9  -1.4   88.7    2.4  612 ! SCS-NCS A5E Briais et.al 1993
+613 20.1   0.1   83.3    2.8  612 ! SCS-NSC A6 Briais et.al 1993
+613 21.3   0.1   81.3    3.5  612 ! SCS-NSC A6A Briais et.al 1993
+613 23.1  -1.1   75.9    3.9  612 ! SCS-NSC A6B Briais et.al 1993
+613 25.2   7.0   87.8    7.5  612 ! SCS-NSC A7 Briais et.al 1993
+613 26.6   9.3   91.2   10.3  612 ! SCS-NSC A8 Briais et.al 1993
+613 28.0   8.2   87.4   10.3  612 ! SCS-NSC A9 Briais et.al 1993
+613 28.6   7.9   85.7   10.8  612 ! SCS-NSC A10 Briais et.al 1993
+613 30.1   7.9   85.7   11.1  612 ! SCS-NSC A11 Briais et.al 1993
+613 600.0   7.9   85.7   11.1  612 ! SCS-NSC      
+614  0.0   0.0    0.0    0.0  673 ! KLM-NSM Kalimantan(Borneo)-North Sumatra
+614 10.0   0.0    0.0    0.0  673 ! KLM-NSM
+614 25.0   3.03  101.54  -10.0  673 ! KLM-NSM small ccw rot according to pmag, EarthByteGroup 2006
+614 40.0   3.03  101.54  -10.4  673 ! KLM-NSM EarthByteGroup 2006
+614 50.0   3.03  101.54  -15.4  673 ! KLM-NSM EarthByteGroup 2006
+614 70.0   3.03  101.54  -15.48  673 ! KLM-NSM EarthByteGroup 2006
+614 100.0  27.39  141.79  -20.28  673 ! KLM-NSM EarthByteGroup 2006
+614 100.0  26.74  133.02  -21.75  604 ! KLM-ICH Kalimantan-Indochina cross-over EarthByteGroup 2006
+614 200.0  26.74  133.02  -21.75  604 ! KLM-ICH EarthByteGroup 2006
+614 300.0  26.74  133.02  -21.75  604 ! KLM-ICH           
+615  0.0   0.0    0.0    0.0  801 ! PNG-AUS Papua New Guinea-Australia         
+615 600.0   0.0    0.0    0.0  801 ! PNG-AUS                                    
+616  0.0   0.0    0.0    0.0  601 ! NTB-NCH North Tibet-North China Platform   
+616 230.0   0.0    0.0    0.0  601 ! NTB-NCH fixed from Smith 1988              
+616 600.0   0.0    0.0    0.0  601 ! NTB-NCH                                    
+617  0.0   0.0    0.0    0.0  613 ! RDB-SCS Reed Bank-South South China Sea       
+617 30.1   0.0    0.0    0.0  613 ! RDB-SCS from Gallagher, 1984               
+617 30.1   6.44   86.23   11.84  602 ! RDB-SCH Reed Bank-South China Platform cross-over               
+617 42.8   6.93   84.69   14.05  602 ! RDB-SCH after Lee & Lawver 1994                           
+617 63.5   6.3   87.2   16.3  602 ! RDB-SCH Lee & Lawver 1994                          
+617 600.0   6.3   87.2   16.3  602 ! RDB-SCH             
+618  0.0   0.0    0.0    0.0  602 ! MAC-NCH Macclesfield Bank-North China Platform
+618 20.2   0.0    0.0    0.0  602 ! MAC-NCH A6 Lee & Lawver 1994                      
+618 30.1   8.12   96.92    4.92  602 ! MAC-NCH Lee & Lawver 1994 
+618 42.8  11.52  105.1   13.83  602 ! MAC-NCH Lee & Lawver 1994                        
+618 63.5  11.4  104.71   15.55  602 ! MAC-NCH after Lee & Lawver 1994                         
+618 600.0  11.4  104.71   15.55  602 ! MAC-NCH                         
+619  0.0   0.0    0.0    0.0  301 ! SIK-EUR Sikhote Alin-Eurasia               
+619 89.9   0.0    0.0    0.0  301 ! SIK-EUR                                    
+619 105.8  11.79   30.53   -2.59  301 ! SIK-EUR Otsuki & Ehiro 1978               
+619 600.0  11.79   30.53   -2.59  301 ! SIK-EUR                                    
+620  0.0   0.0    0.0    0.0  301 ! VLA-EUR Vladivostok Sliver-Eurasia         
+620 89.9   0.0    0.0    0.0  301 ! VLA-EUR                                    
+620 105.8  11.79   11.98   -0.68  301 ! VLA-EUR Otsuki & Ehiro 1979               
+620 600.0  11.79   11.98   -0.68  301 ! VLA-EUR                                    
+621  0.0   0.0    0.0    0.0  619 ! CSA-SIK Central Sikhote Alin sliver-Sikhate Alin    
+621 600.0   0.0    0.0    0.0  619 ! CSA-SIK                                    
+622  0.0   0.0    0.0    0.0  301 ! NSA-EUR North Sikhote Alin sliver-Eurasia     
+622 600.0   0.0    0.0    0.0  301 ! NSA-EUR                                    
+623  0.0   0.0    0.0    0.0  301 ! NMS-EUR Northernmost Sikhote Alin Sliver-EU
+623 600.0   0.0    0.0    0.0  301 ! NMS-EUR                                   
+624  0.0   0.0    0.0    0.0  301 ! SAK-EUR Sakhalin-Eurasia                   
+624  5.4   0.0    0.0    0.0  301 ! SAK-EUR                                    
+624 24.5  57.37  137.54    7.34  301 ! SAK-EUR Kimura et al. 1983                 
+624 600.0  57.37  137.54    7.34  301 ! SAK-EUR                                    
+625  0.0   0.0    0.0    0.0  301 ! CHK-EUR Central Hokkaido-Eurasia           
+625 28.5   0.0    0.0    0.0  301 ! CHK-EUR                                    
+625 47.6  -4.5 -149.96   -2.45  301 ! CHK-EUR Otsuki & Ehiro 1979                
+625 600.0  -4.5 -149.96   -2.45  301 ! CHK-EUR                                    
+626  0.0   0.0    0.0    0.0  625 ! WHK-CHK Western Hokkaido-Central Hokkaido  
+626 600.0   0.0    0.0    0.0  625 ! WHK-CHK                                    
+627  0.0   0.0    0.0    0.0  625 ! NEH-CHK Northeast Honshu-Central Hokkaido  
+627 600.0   0.0    0.0    0.0  625 ! NEH-CHK                                    
+628  0.0   0.0    0.0    0.0  601 ! CHN-NCH Central Honshu-North China Platform   
+628 28.5   0.0    0.0    0.0  601 ! CHN-NCH                                    
+628 47.6 -13.71 -113.4   -4.45  601 ! CHN-NCH Otsuki & Ehiro 1979  
+628 89.9 -13.71 -113.4   -4.45  601 ! CHN-NCH Otsuki & Ehiro 1979                                  
+628 121.6 -13.71 -113.4   -4.06  601 ! CHN-NCH Otsuki & Ehiro 1979                                                
+628 600.0 -13.71 -113.4   -4.06  601 ! CHN-NCH                                    
+629  0.0   0.0    0.0    0.0  601 ! KAN-NCH Kanto Region-North China Platform       
+629 28.5   0.0    0.0    0.0  601 ! KAN-NCH                                    
+629 47.6 -13.71 -113.4   -4.06  601 ! KAN-NCH Otsuki & Ehiro 1979                
+629 89.9 -13.71 -113.4   -4.06  601 ! KAN-NCH Otsuki & Ehiro 1979                                   
+629 121.6 -15.4 -113.43   -3.15  601 ! KAN-NCH Otsuki & Ehiro 1979                                   
+629 600.0 -15.4 -113.43   -3.15  601 ! KAN-NCH                                    
+630  0.0   0.0    0.0    0.0  601 ! NSH-NCH North Southwest Honshu/Kyushu-North China Platform
+630 28.5   0.0    0.0    0.0  601 ! NSH-NCH                                    
+630 47.6 -13.71 -113.4   -4.06  601 ! NSH-NCH Otsuki & Ehiro 1979                
+630 89.9 -13.71 -113.4   -4.06  601 ! NSH-NCH Otsuki & Ehiro 1979                                   
+630 121.6 -13.71 -113.4   -3.62  601 ! NSH-NCH Otsuki & Ehiro 1979                                   
+630 600.0 -13.71 -113.4   -3.62  601 ! NSH-NCH                                    
+631  0.0   0.0    0.0    0.0  601 ! SSH-NCH South Southwest Honshu/Kyushu-N China Platform
+631 28.5   0.0    0.0    0.0  601 ! SSH-NCH                                    
+631 47.6 -13.71 -113.4   -4.06  601 ! SSH-NCH Otsuki & Ehiro 1979                
+631 89.9 -13.71 -113.4   -4.06  601 ! SSH-NCH Otsuki & Ehiro 1979                                   
+631 121.6 -15.4 -113.43   -3.15  601 ! SSH-NCH Otsuki & Ehiro 1979                                   
+631 600.0 -15.4 -113.43   -3.15  601 ! SSH-NCH                                    
+632  0.0   0.0    0.0    0.0  601 ! TSO-NCH Tsoshima Strait Block-North China Platform
+632 28.5   0.0    0.0    0.0  601 ! TSO-NCH                                    
+632 47.6 -13.71 -113.4   -4.06  601 ! SWH-NCH Otsuki & Ehiro 1979                
+632 89.9 -13.71 -113.4   -4.06  601 ! SWH-NCH Otsuki & Ehiro 1979                                  
+632 121.6 -13.71 -113.4   -3.62  601 ! SWH-NCH Otsuki & Ehiro 1979                                  
+632 600.0 -13.71 -113.4   -3.62  601 ! SWH-NCH                                    
+633  0.0   0.0    0.0    0.0  601 ! NKO-NCH North Korean Plate-North China Platform
+633 89.9   0.0    0.0    0.0  601 ! NKO-NCH                                    
+634  0.0   0.0    0.0    0.0  601 ! SKO-NCH South Korean Plate-North China Platform
+634 89.9   0.0    0.0    0.0  601 ! SKO-NCH                                    
+635  0.0   0.0    0.0    0.0  601 ! KYR-NCH Kita/Yamato Ridge-North China Platform 
+635 28.5   0.0    0.0    0.0  601 ! KYR-NCH                                    
+636  0.0   0.0    0.0    0.0  601 ! YAM-NCH Yamato Ridge-North China Platform  
+636 28.5   0.0    0.0    0.0  601 ! YAM-NCH                                    
+637  0.0   0.0    0.0    0.0  601 ! OKI-NCH Oki Ridge-North China Platform     
+637 28.5   0.0    0.0    0.0  601 ! OKI-NCH                                    
+637 47.6 -13.71 -113.4   -4.06  601 ! OKI-NCH Otsuki & Ehiro 1979                
+637 89.9 -13.71 -113.4   -4.06  601 ! OKI-NCH Otsuki & Ehiro 1979                                   
+637 121.6 -13.71 -113.4   -3.62  601 ! OKI-NCH Otsuki & Ehiro 1979                                   
+637 600.0 -13.71 -113.4   -3.62  601 ! OKI-NCH                                    
+638  0.0   0.0    0.0    0.0  601 ! SAD-NCH Sado Ridge-North China Platform    
+638 28.5   0.0    0.0    0.0  601 ! SAD-NCH                                    
+638 47.6 -13.71 -113.4   -4.06  601 ! SAD-NCH Otsuki & Ehiro 1979                
+638 89.9 -13.71 -113.4   -4.06  601 ! SAD-NCH Otsuki & Ehiro 1979                                   
+638 121.6 -13.71 -113.4   -3.62  601 ! SAD-NCH Otsuki & Ehiro 1979                                   
+638 600.0 -13.71 -113.4   -3.62  601 ! SAD-NCH                                    
+639  0.0   0.0    0.0    0.0  601 ! NKM-NCH North Korean Margin Banks-North China Platform
+639 89.9   0.0    0.0    0.0  601 ! NKM-NCH                                    
+640  0.0   0.0    0.0    0.0  601 ! NEM-NCH Northeast Margin Japan Basin-North China Platform
+640 28.5   0.0    0.0    0.0  601 ! NEM-NCH                                    
+641  0.0   0.0    0.0    0.0  601 ! SOJ-NCH Sea of Japan-North China Platform  
+641 600.0   0.0    0.0    0.0  601 ! SOJ-NCH                                    
+642  0.0   0.0    0.0    0.0  601 ! YBS-NCH Yamato Basin Spreading Center-North China Platform
+642 28.5   0.0    0.0    0.0  601 ! YBS-NCH                                    
+643  0.0   0.0    0.0    0.0  101 ! LSM-NAM Laptev Sea Margin-North America    
+643 600.0   0.0    0.0    0.0  101 ! LSM-NAM                                    
+644  0.0   0.0    0.0    0.0  602 ! PCI-SCH Paracel Islands-South China Platform
+644 20.2   0.0    0.0    0.0  602 ! PCI-SCH A6 Lee & Lawver 1994                      
+644 30.1   2.85  107.6    1.81  602 ! PCI-SCH closure of the Xisha N. Trough, Lee & Lawver 1994  
+644 63.5   2.85  107.6    4.82  602 ! PCI-SCH Lee & Lawver 1994                             
+644 600.0   2.85  107.6    4.82  602 ! PCI-SCH                            
+645  0.0   0.0    0.0    0.0  614 ! CEL-KLM Celebes Basin-Kalimantan
+645 20.0   0.0    0.0    0.0  614 ! CEL-KLM after Gaina & Muller 2007
+645 42.0   0.0  120.0  -20.0  614 ! CEL-KLM after Gaina & Muller 2007
+645 65.0   0.0  120.0  -20.0  614 ! CEL-KLM                  
+646  0.0   0.0    0.0    0.0  614 ! ZAM-KLM Zamboanga Peninsula (W. Philippines)-Kalimantan                             
+646 12.0  -2.18  109.12    7.09  614 ! ZAM-KLM Lee & Lawver 1994 from Mitchell et al.,1986          
+646 71.7  -2.18  109.12    7.09  614 ! ZAM-KLM                         
+647  0.0   0.0    0.0    0.0  603 ! MLP-SBM Malay Peninsula-Sino/Malaya  
+647 11.1 -28.74  130.28    0.15  603 ! MLP-SBM Lee & Lawver 1994                          
+647 20.2 -17.52  122.63    0.24  603 ! MLP-SBM Lee & Lawver 1994                             
+647 30.1  -8.62  -78.68   15.33  603 ! MLP-SBM Lee & Lawver 1994                             
+647 41.5  -7.69  -76.82   17.85  603 ! MLP-SBM Lee & Lawver 1994  
+647 72.0  20.36   72.42   -4.17  603 ! MLP-SBM EarthByteGroup 2002
+647 133.0  20.36   72.42   -4.17  603 ! MLP-SBM EarthByteGroup 2002
+647 133.0  16.7   69.89   -3.21  604 ! MLP-ICH Malay Peninsula-Indochina cross-over EarthByteGroup 2002
+647 178.0  16.7   69.89   -3.21  604 ! MLP-ICH EarthByteGroup 2002
+647 178.0  32.4   41.3   19.57  606 ! MLP-SBM Malay Peninsula-South Tibet cross-over EarthByteGroup 2002, SZ09
+647 190.0  25.35   73.24   38.83  606 ! MLP-SBM EarthByteGroup 2002, SZ09
+647 270.0  26.22   66.05   42.76  606 ! MLP-SBM EarthByteGroup 2002
+647 270.0   9.8  113.57   79.34  801 ! MLP-AUS Malay Peninsula-Australia cross-over EarthByteGroup 2002
+647 280.0   9.8  113.57   79.34  801 ! MLP-AUS
+648  0.0   0.0    0.0    0.0  602 ! SOT-SCH South Okinawa Trough-South China Platform  
+648  9.8  24.7  121.7   19.0  602 ! SOT-SCH Lee & Lawver 1995                           
+648 200.0  24.7  121.7   19.0  602 ! SOT-SCH Opening of the S. Okinawa Trough
+649  0.0   0.0    0.0    0.0  602 ! NOT-SCH North Okinawa Trough-South China Platform 
+649  9.8  32.0  130.0   -7.58  602 ! NOT-SCH Lee & Lawver 1995                          
+649 63.5  32.0  130.0   -7.58  602 ! NOT-SCH Opening of the N. Okinawa Trough   
+649 245.0  32.0  130.0   -7.58  602 ! NOT-SCH Opening of the N. Okinawa Trough   
+650  0.0   0.0    0.0    0.0  688 ! MPR-WCB Mapia Ridge-Southwest Caroline Basin 
+650 40.0   0.0    0.0    0.0  688 ! MPR-WCB                           
+651  0.0   0.0    0.0    0.0  673 ! LSI-NSM Lombok/Sumbawa Islands-North Sumatra
+651  9.8  -8.54  115.83   -3.44  673 ! LSI-NSM Lee & Lawver 1995                       
+651 57.3  -8.54  115.83   -3.44  673 ! LSI-NSM                           
+652  0.0   0.0    0.0    0.0  673 ! FAI-NSM Flores/Alor Islands-North Sumatra  
+652  9.8  -8.08  130.54    1.0  673 ! FAI-NSM Lee & Lawver 1995                            
+652 57.3  -8.08  130.54    1.0  673 ! FAI-NSM  
+653  0.0   0.0    0.0    0.0  608 ! NWC-SPS Northwest Caroline Sea-South Philippine Sea
+653 15.0   9.87  132.0  -25.0  608 ! NWC-SPS Open Ayu Trough Gaina & Muller 2007
+653 25.0   9.87  132.0  -25.0  608 ! NWC-SPS Gaina & Muller 2007
+653 35.0   9.45  135.84  -13.98  608 ! NWC-SPS Gaina & Muller 2007
+653 55.0   9.45  135.84  -13.98  608 ! NWC-SPS Gaina & Muller 2007
+654  0.0   0.0    0.0    0.0  655 ! WCS1-WCS2 Western Caroline Sea 1-Western Caroline Sea 2
+654 28.3   0.0    0.0    0.0  655 ! WCS1-WCS2 an9ro Gaina & Muller 2007
+654 28.7   0.0    0.0    0.15  655 ! WCS1-WCS2 an10ry Gaina & Muller 2007
+654 29.4  -6.58   -0.42    1.67  655 ! WCS1-WCS2 an10ro Gaina & Muller 2007
+654 29.4   2.7   92.02    3.4  653 ! WCS1-NWC Western Caroline Sea 1-Northwest Caroline Sea an12 crossover
+654 33.1   2.7   92.02    3.4  653 ! WCS1-WCS2 an12 Gaina & Muller 2007
+655  0.0   0.0    0.0    0.0  692 ! WCS2-WCS3 Western Caroline Sea 2-Western Caroline Sea 3 an8ro cross-over
+655 26.0   0.0    0.0    0.0  692 ! WCS2-WCS3 an8ro Gaina & Muller 2007
+655 26.6   0.0    0.0    0.06  692 ! WCS2-WCS3 an8ro Gaina & Muller 2007
+655 27.0   0.0    0.0    1.13  692 ! WCS2-WCS3 an8ro Gaina & Muller 2007
+655 28.0   0.0    0.0    1.33  692 ! WCS2-WCS3 an9ry Gaina & Muller 2007    
+655 28.3   0.0    0.0    2.03  692 ! WCS2-WCS3 an9ro Gaina & Muller 2007
+655 28.3   5.96  117.5    3.86  653 ! WCS2-NWC Western Caroline Sea 2-Northwest Caroline Sea Gaina & Muller 2007
+655 29.4   5.96  117.5    3.86  653 ! WCS2-NWC
+656  0.0   0.0    0.0    0.0  608 ! WAY-SPS Western Ayu Trench-South Philippine Sea
+656 35.0   0.0    0.0    0.0  608 ! WAY-SPS               
+658  0.0   0.0    0.0    0.0  613 ! SCH-SCH South China Sea-South South China Sea 
+658 258.0   0.0    0.0    0.0  613 ! SCH-SCH Briais et al 1993
+659  0.0   0.0    0.0    0.0  611 ! ESB-WSB East Shikoku Basin-West Shikoku Basin
+659 15.0   0.0    0.0    0.0  611 ! ESB-WSB Sdrolias et.al 2004
+659 17.3  35.0   84.44   -1.27  611 ! ESB-WSB Sdrolias et.al 2004
+659 18.3  36.78   84.32   -1.45  611 ! ESB-WSB Sdrolias et.al 2004
+659 20.1   8.0  154.14    3.85  611 ! ESB-WSB Sdrolias et.al 2004
+659 21.3   4.88  154.14    4.81  611 ! ESB-WSB Sdrolias et.al 2004
+659 22.6   4.88  151.58    6.8  611 ! ESB-WSB Sdrolias et.al 2004
+659 23.4   4.88  152.65    8.47  611 ! ESB-WSB Sdrolias et.al 2004
+659 25.2   4.88  152.65   10.78  611 ! ESB-WSB Sdrolias et.al 2004
+659 26.5   4.88  152.65   13.09  611 ! ESB-WSB Sdrolias et.al 2004
+659 28.0   4.88  152.65   14.52  611 ! ESB-WSB Sdrolias et.al 2004
+659 100.0   4.88  152.65   14.52  611 ! ESB-WSB
+660  0.0   0.0    0.0    0.0  612 ! NWSC-NCS Northwest South China Sea-North South China Sea
+660 28.6   0.0    0.0    0.0  612 ! NWSC-NCS 
+660 30.1  10.9   84.9    1.4  612 ! NWSC-NCS NW section Briais et. al. 1993
+660 258.0  10.9   84.9    1.4  612 ! NWSC-NCS NW section Briais et. al. 1993
+661  0.0   0.0    0.0    0.0  301 ! ESP-EUR Sundaland Piece-Eurasia
+661 600.0   0.0    0.0    0.0  301 ! ESP-EUR 
+662  0.0   0.0    0.0    0.0  641 ! EJS-SOJ Eastern Japan Sea-Japan Basin Spreading Centre
+662 15.0   0.0    0.0    0.0  641 ! EJS-SOJ Simulate opening, not based on magnetics, EarthByteGroup 2002
+662 17.3  50.0  155.0   -1.82  641 ! EJS-SOJ Simulate opening, not based on magnetics, EarthByteGroup 2002 
+662 22.6  50.0  155.0   -6.22  641 ! EJS-SOJ Simulate opening, not based on magnetics, EarthByteGroup 2002
+662 30.0  50.0  155.0   -7.5  641 ! EJS-SOJ Simulate opening, not based on magnetics, EarthByteGroup 2002
+662 258.0  50.0  155.0   -7.5  641 ! EJS-SOJ 
+663  0.0   3.9  122.5  -71.94  613 ! PSC-SCS Proto South China Sea-South South China Sea
+663 50.0   3.9  122.5  -71.94  613 ! PSC-SCS after Gaina & Muller 2007
+663 55.9   5.3  122.2  -71.88  613 ! PSC-SCS after Gaina & Muller 2007
+663 67.7   8.2  121.6  -71.87  613 ! PSC-SCS after Gaina & Muller 2007
+663 83.5  12.0  120.8  -72.07  613 ! PSC-SCS after Gaina & Muller 2007
+663 90.0  13.6  120.5  -72.23  613 ! PSC-SCS after Gaina & Muller 2007
+663 200.0  13.6  120.5  -72.23  613 ! PSC-SCS 
+664  0.0   0.0    0.0    0.0  676 ! BAN-BDA Banda Sea-Banda Arc 
+664  3.5   0.0    0.0    0.0  676 ! BAN-BDA Lucipara Arc rifted from Banda Arc EarthByteGroup 2004, after Hinshberger 2001
+664  5.9  18.31  -80.0    2.3  676 ! BAN-BDA EarthByteGroup 2004, after Hinshberger 2001
+664  6.5  20.0  -80.0    3.1  676 ! BAN-BDA EarthByteGroup 2004, after Hinshberger 2001
+664  8.0  20.0  -80.0    4.4  676 ! BAN-BDA EarthByteGroup 2004, after Hinshberger 2001
+664 200.0   0.0    0.0    0.0  676 ! BAN-BDA
+665  0.0   0.0    0.0    0.0  645 ! CLL-CEL Celebes Sea Spreading Centre-Celebes Basin
+665 34.0   0.0    0.0    0.0  645 ! CLL-CEL Spreading stopped
+665 35.6  -9.0  100.0    1.0  645 ! CLL-CEL Gaina & Muller 2007
+665 38.1  -9.0  100.0    4.5  645 ! CLL-CEL Gaina & Muller 2007
+665 40.1  -9.0  100.0    8.6  645 ! CLL-CEL Gaina & Muller 2007
+665 41.5  -9.0  100.0   11.0  645 ! CLL-CEL Gaina & Muller 2007
+665 43.8  -9.0  100.0   15.0  645 ! CLL-CEL Gaina & Muller 2007
+665 47.9  -9.0  100.0   18.3  645 ! CLL-CEL Gaina & Muller 2007
+665 50.0  -9.0  100.0   20.0  645 ! CLL-CEL Gaina & Muller 2007
+665 90.0  -9.0  100.0   20.0  645 ! CLL-CEL 
+667  0.0   0.0    0.0    0.0  669 ! ESW-NSU East Sulawesi-North Sulawesi
+667 17.0  14.7  119.0   18.11  669 ! ESW-NSU Based on Gaina & Muller 2007
+667 17.0  56.3   56.5   10.22  615 ! ESW-PNG East Sulawesi-Papua New Guinea cross-over
+667 24.5  56.3   56.5   10.22  615 ! ESW-PNG Lee & Lawver 1995
+667 78.9  56.3   56.5   10.22  615 ! ESW-PNG
+667 140.0  56.3   56.5   10.22  615 ! ESW-PNG EarthByte2009, SZ09
+668  0.0   0.0    0.0    0.0  614 ! WSW-KLM West Sulawesi-Kalimantan
+668 34.0   0.0    0.0    0.0  614 ! WSW-KLM Changed from 16.7 to 34-consistent with Celebes Based on Gaina & Muller 2007
+668 50.0   2.06  120.93  -21.2  614 ! WSW-KLM Lee & Lawver 1995
+668 600.0   2.06  120.93  -21.2  614 ! WSW-KLM 
+669  0.0   0.0    0.0    0.0  665 ! NSU-CLL North Sulawesi-Celebes Sea Spreading Centre
+669 10.0   9.0  -76.0   12.0  665 ! NSU-CLL EarthByteGroup 2002
+669 50.0   9.0  -76.0   12.0  665 ! NSU-CLL
+669 65.0   9.0  -76.0   12.0  665 ! NSU-CLL EarthByte2009, SZ09
+669 65.0   3.3  135.9  -13.38  614 ! NSU-KLM North Sulawesi-Kalimantan cross-over, EarthByte2009, SZ09
+669 140.0   3.3  135.9  -13.38  614 ! NSU-KLM EarthByte2009, SZ09
+670  0.0   0.0    0.0    0.0  667 ! SLA-ESW Sula/Banggai-East Sulawesi             
+670  5.4   1.43  -57.04   20.71  667 ! SLA-ESW Lee & Lawver 1995                          
+670  9.8   1.43  -57.71   35.42  667 ! SLA-ESW cross-over Lee & Lawver 1995                 
+670  9.8   8.8  -50.8   36.32  615 ! SLA-PNG Sula/Banggai-Papua New Guinea collision w/ Sulawesi cross-over Lee & Lawver 1995                         
+670 19.7  14.25  -47.23   31.4  615 ! SLA-PNG Lee & Lawver 1995                           
+670 24.5  30.77  -46.61   19.5  615 ! SLA-PNG Lee & Lawver 1995                          
+670 600.0  30.77  -46.61   19.5  615 ! SLA-PNG                           
+671  0.0   0.0    0.0    0.0  601 ! MCH-NCH Manchuria-North China Platform     
+671 600.0   0.0    0.0    0.0  601 ! MCH-NCH                                     
+672  0.0   0.0    0.0    0.0  673 ! BGB-NSM Bangka/Belitung-North Sumatra      
+672 600.0   0.0    0.0    0.0  673 ! BGB-NSM                                    
+673  0.0   0.0    0.0    0.0  647 ! NSM-MLP North Sumatra-Malay Peninsula      
+673 78.9   0.0    0.0    0.0  647 ! NSM-MLP                                    
+673 600.0   0.0    0.0    0.0  647 ! NSM-MLP                                    
+674  0.0   0.0    0.0    0.0  691 ! WPH-CLB West Philippines-Central Luzon Block         
+674 80.0   0.0    0.0    0.0  691 ! WPH-CLB                               
+675  0.0   0.0    0.0    0.0  652 ! SMB-FAI Sumba-Flores/Alor Islands          
+675  9.8   1.16  119.62   24.06  652 ! SMB-FAI Burke & Rutherford 1987            
+675  9.8   0.7  120.0   25.03  668 ! SMB-WSM Sumba-West Sulawesi cross-over                         
+675 14.9   0.7  120.0   25.03  668 ! SMB-WSM Lee & Lawver 1995                          
+675 19.7  -0.73  110.7    6.0  668 ! SMB-WSM Lee & Lawver 1995                          
+675 24.5  -8.76  107.29   10.1  668 ! SMB-WSM Lee & Lawver 1995                          
+675 600.0  -8.76  107.29   10.1  668 ! SMB-WSM                           
+676  0.0   0.0    0.0    0.0  673 ! BDA-NSM Banda Arc-North Sumatra            
+676 57.3   0.0    0.0    0.0  673 ! BDA-NSM                                    
+677  0.0   0.0    0.0    0.0  617 ! PAL-RDB Palawan Block-Reed Bank           
+677 90.0   0.0    0.0    0.0  617 ! PAL-RDB                                  
+678  0.0   0.0    0.0    0.0  608 ! EPH-SPS East Philippines-South Philippine Sea
+678  5.0  24.38  125.6   -9.93  608 ! EPH-SPS after Gaina & Muller 2007    
+678 14.0  22.15  125.6  -20.21  608 ! EPH-SPS after Gaina & Muller 2007                           
+678 50.0  22.15  125.6  -20.21  608 ! EPH-SPS after Gaina & Muller 2007 
+678 70.0  22.15  125.6  -20.21  608 ! EPH-SPS
+678 123.0  22.15  125.6  -20.21  608 ! EPH-SPS, extended rotation, SZ 2010
+679  0.0   0.0    0.0    0.0  680 ! WHA-EHA West Halmahera Block-East Halmahera Block after Gaina & Muller 2007 
+679 55.0   0.0    0.0    0.0  680 ! WHA-EHA Gaina & Muller 2007, after Hall 2002
+679 123.0   0.0    0.0    0.0  680 ! WHA-EHA Gaina & Muller 2007, after Hall 2002 - extended rotation, SZ 2010
+680  0.0   0.0    0.0    0.0  678 ! EHA-EPH East Halmahera-East Philippines    
+680 25.0  14.45  128.48   -4.92  678 ! EHA-EPH Gaina & Muller 2007, after Hall 2002 
+680 55.0  14.45  128.48   -4.92  678 ! EHA-EPH Gaina & Muller 2007, after Hall 2002 
+680 155.0   9.91  116.83  -10.62  678 ! EHA-EPH Gaina & Muller 2007, after Hall 2002            
+681  0.0   0.0    0.0    0.0  615 ! SER-PNG Seram-Papua New Guinea 
+681  3.0   3.27   43.16   -1.2  615 ! SER-PNG after Hall 2002   
+681  5.9   3.27   43.16   -1.2  615 ! SER-PNG after Hall 2002
+681 11.3   0.0    0.0    0.0  615 ! SER-PNG after Hall 2002                   
+681 200.0   0.0    0.0    0.0  615 ! SER-PNG after Hall 2002 
+681 600.0   0.0    0.0    0.0  615 ! SER-PNG                    
+682  0.0   0.0    0.0    0.0  684 ! KEP-TIM Kep Tanimbar-Timor                          
+682 78.9   0.0    0.0    0.0  684 ! KTB-TIM                  
+683  0.0   0.0    0.0    0.0  652 ! WET-FAI Wetar-Flores/Alor Islands    
+683  3.1  21.26   15.14   -0.32  652 ! WET-FAI after Lee & Lawver 1995                   
+683 57.3  21.26   15.14   -0.32  652 ! WET-FAI                 
+684  0.0   0.0    0.0    0.0  801 ! TIM-AUS Timor-Australia 
+684 600.0   0.0    0.0    0.0  801 ! TIM-AUS                                          
+686  0.0   0.0    0.0    0.0  673 ! BSS-NSM Barisan/South Sumatra-North Sumatra
+686 12.1  15.8  129.1    2.1  673 ! BSS-NSM from Huchon & Le Pichon, 1984      
+686 600.0  15.8  129.1    2.1  673 ! BSS-NSM                          
+687  0.0   0.0    0.0    0.0  603 ! AND-SBM Andaman/Nicobar Ridge-Sino/Malaya
+687 11.0  17.51  137.86    2.56  603 ! AND-SBM Lee & Lawver 1994                          
+687 28.5   1.82   26.76   -6.01  603 ! AND-SBM Lee & Lawver 1994                               
+687 63.5   1.82   26.76   -6.01  603 ! AND-SBM 
+688  0.0   0.0    0.0    0.0  654 ! SWCB-WCS1 Southwest Caroline Basin-Western Caroline Sea 1
+688 29.4   0.0    0.0    0.0  654 ! SWCB-WCS1 an10ro Gaina & Muller 2007
+688 30.1   0.0    0.0    0.24  654 ! SWCB-WCS1 an11ry Gaina & Muller 2007
+688 30.9   0.0    0.0    1.13  654 ! SWCB-WCS1 an12ry Gaina & Muller 2007
+688 33.1   0.0    0.0    2.8  654 ! SWCB-WCS1 an12ro Gaina & Muller 2007 
+688 33.1   2.76   94.6    6.19  653 ! SWCB-NWC Southwest Caroline Basin-Northwest Caroline Sea cross-over
+688 34.1   1.45  -85.74   -7.17  653 ! SWCB-NWC an13 Gaina & Muller 2007
+688 34.7   1.45  -85.74   -7.52  653 ! SWCB-NWC an13ro Gaina & Muller 2007
+688 34.9   1.45  -85.74   -8.01  653 ! SWCB-NWC an15ry Gaina & Muller 2007
+688 35.3   1.45  -85.74   -8.63  653 ! SWCB-NWC an15ro Gaina & Muller 2007
+688 36.6   1.45  -85.74   -9.8  653 ! SWCB-NWC an16ro Gaina & Muller 2007
+688 37.0   1.45  -85.74  -10.4  653 ! SWCB-NWC an16ro Gaina & Muller 2007
+688 40.0   1.45  -85.74  -11.2  653 ! SWCB-NWC  
+689  0.0   0.0    0.0    0.0  690 ! NEC-SEC Northeast Caroline Basin-Southeast Caroline Basin
+689 25.8   0.0    0.0    0.0  690 ! NEC-SEC
+689 26.6   4.44  169.58   -1.6  690 ! NEC_SEC An8ry Gaina & Muller 2007
+689 27.0   6.82  170.18   -1.88  690 ! NEC_SEC An8ro Gaina & Muller 2007
+689 28.0  12.07  171.21   -2.84  690 ! NEC-SEC An9ry Gaina & Muller 2007
+689 28.3  13.4  175.08   -2.84  690 ! NEC-SEC AN9ro Gaina & Muller 2007
+689 28.7  15.43 -173.9   -2.77  690 ! NEC-SEC AN10ry Gaina & Muller 2007 
+689 29.4  19.85 -153.83   -2.89  690 ! NEC-SEC AN10ro Gaina & Muller 2007 
+689 30.1  19.85 -129.3   -3.04  690 ! NEC-SEC AN11ry Gaina & Muller 2007 
+689 30.5  19.85 -129.29   -3.16  690 ! NEC-SEC AN11ro Gaina & Muller 2007
+689 30.9  19.85 -129.28   -3.74  690 ! NEC-SEC AN12ry Gaina & Muller 2007
+689 33.1  19.02 -118.23   -4.35  690 ! NEC-SEC AN12ro Gaina & Muller 2007
+689 35.3  19.02 -118.23   -5.3  690 ! NEC-SEC AN15ro Gaina & Muller 2007
+689 37.0  19.02 -118.23   -6.3  690 ! NEC-SEC breakup Gaina & Muller 2007  
+689 40.0  19.02 -118.23   -6.3  690 ! NEC-SEC 
+690  0.0   0.0    0.0    0.0  653 ! SEC-NWC Southeast Caroline Basin-Northwest Caroline Basin
+690 65.0   0.0    0.0    0.0  653 ! SEC-NWC Lee & Lawver 1995
+691  0.0   0.0    0.0    0.0  301 ! CLB-WPH Central Luzon Block-Eurasia
+691 50.0   6.83  128.15  -63.36  301 ! CLB-WPH change pole to leave room for Celebes Sea after Gaina & Muller 2007
+691 90.0  17.51  125.15  -63.36  301 ! CLB-EUR Central Luzon Block -Eurasia after Gaina & Muller 2007
+691 200.0  17.51  125.15  -63.36  301 ! CLB-WPH
+692  0.0   0.0    0.0    0.0  653 ! WCS3-NWC Western Caroline Sea 3-Northwest Caroline Basin
+692 45.0   0.0    0.0    0.0  653 ! WCS3-NWC
+693  0.0   0.0    0.0    0.0  653 ! WCR-NWC Western Caroline Ridge-Northwest Caroline Basin
+693 11.3  47.81   20.22   -1.41  653 ! WCR-NWC after Gaina & Muller 2007
+693 40.0  47.81   20.22   -1.41  653 ! WCR-NWC after Gaina & Muller 2007
+694  0.0   0.0    0.0    0.0  614 ! NLA-CLB North Luzon Arc-Central Luzon Block
+694 70.0  13.65  122.4  -32.86  614 ! NLA-CLB from Gaina & Muller 2007, after Hall 2002
+694 200.0  13.65  122.4  -32.86  614 ! NLA-CLB
+695  0.0   0.0    0.0    0.0  609 ! AMM-NPS Amami Ridge-North Philippine Sea
+695 600.0   0.0    0.0    0.0  609 ! AMM-NPS
+696  0.0   0.0    0.0    0.0  659 ! BON-ESB Bonin Ridge-East Shikoku Basin
+696 245.0   0.0    0.0    0.0  659 ! BON-ESB
+697  0.0   0.0    0.0    0.0  615 ! NNG-PNG North New Guinea-Papua New Guinea
+697  5.0   0.0    0.0    0.0  615 ! NNG-PNG Based on Gaina & Muller 2007
+697 15.0   3.6  138.4   11.97  615 ! NNG-PNG EarthByte2009, SZ09
+697 15.0  19.27  -41.08  -21.44  688 ! NNG-SWCB North New Guinea-Southwest Caroline Basin, Based on Gaina & Muller 2007
+697 40.0  19.27  -41.08  -21.44  688 ! NNG-SWCB Based on Gaina & Muller 2007
+698  0.0   0.0    0.0    0.0  801 ! CNG-AUS Central New Guinea-Australia
+698 45.0   0.0    0.0    0.0  801 ! CNG-AUS 
+698 50.0  -4.86  -68.7  -16.48  801 ! CNG-AUS EarthByteGroup 2002
+699  0.0   0.0    0.0    0.0  610 ! MAR-EPV Mariana Ridge-East Parece Vela Basin
+699  6.7  23.36  138.24  -12.53  610 ! MAR-EPV after Lee & Lawver 1995
+699 78.9  23.36  138.24  -12.53  610 ! MAR-EPV
+701  0.0   0.0    0.0    0.0  001 ! AFR-AHS Africa-Indian/Atlantic Hotspots
+701 10.0  46.19  -87.86   -1.92  001 ! AFR-AHS O'Neill et.al 2005
+701 20.0  45.23  -78.55   -3.99  001 ! AFR-AHS O'Neill et.al 2005 interpolated RDM Dec 2004
+701 30.0  43.54  -69.67   -6.05  001 ! AFR-AHS O'Neill et.al 2005
+701 40.0  44.56  -54.31   -8.08  001 ! AFR-AHS O'Neill et.al 2005
+701 50.0  36.97  -58.9  -10.26  001 ! AFR-AHS O'Neill et.al 2005
+701 60.0  23.73  -42.14  -12.53  001 ! AFR-AHS O'Neill et.al 2005
+701 70.0  20.74  -39.07  -13.77  001 ! AFR-AHS O'Neill et.al 2005 interpolated RDM Dec 2004
+701 80.0  17.69  -36.11  -15.0  001 ! AFR-AHS O'Neill et.al 2005 interpolated RDM Dec 2004
+701 90.0  14.6  -33.26  -16.24  001 ! AFR-AHS O'Neill et.al 2005
+701 100.0  14.4  -29.63  -20.08  001 ! AFR-AHS O'Neill et.al 2005
+701 110.0  12.94  -28.58  -21.61  001 ! AFR-AHS Stage rot from Muller et.al. 1993
+701 120.0  14.0  -28.85  -22.28  001 ! AFR-AHS Stage rot from Muller et.al. 1993
+701 130.0  11.89  -27.27  -23.56  001 ! AFR-AHS Stage rot from Muller et.al. 1993
+701 141.0   9.99  -25.88  -24.89  001 ! AFR-AHS Interpolated from 120-130Ma stage rotation MS06
+702  0.0   0.0    0.0    0.0  701 ! MAD-AFR Madagascar-Africa
+702 120.4   0.0    0.0    0.0  701 ! MAD-AFR
+702 124.1   2.57  -63.33    1.5  701 ! MAD-AFR M2 EarthByteGroup 2002
+702 126.7   2.57  -63.33    2.43  701 ! MAD-AFR M4 EarthByteGroup 2002
+702 128.2   2.57  -63.33    3.17  701 ! MAD-AFR M6 EarthByteGroup 2002
+702 130.2   2.57  -63.33    3.94  701 ! MAD-AFR M10 EarthByteGroup 2002
+702 132.1   2.57  -63.33    4.68  701 ! MAD-AFR M12 EarthByteGroup 2002
+702 132.1  11.34  154.17   42.6  802 ! MAD-ANT Madagascar-Antarctica cross-over
+702 145.1  10.89  153.08   43.2  802 ! MAD-ANT M20 EarthByteGroup 2002
+702 600.0  10.89  153.08   43.2  802 ! MAD-ANT
+703  0.0   0.0    0.0    0.0  702 ! MDR-MAD Madagascar Ridge-Madagascar  
+703 116.5   0.0    0.0    0.0  702 ! MDR-MAD EarthByteGroup 2002                        
+703 121.6   2.0 -168.0   -3.2  702 ! MDR-MAD EarthByteGroup 2002                    
+703 121.6   7.0  155.0   40.29  802 ! MDR-ANT crossover, EarthByteGroup 2002 
+703 170.0   7.0  155.0   40.29  802 ! MDR-ANT EarthByteGroup 2002
+704  0.0   0.0    0.0    0.0  702 ! SEY-MAD Seychelles-Madagascar
+704 64.0   0.0    0.0    0.0  702 ! SEY-MAD
+704 68.7   4.32   28.67  -12.94  702 ! SEY-MAD EarthByteGroup 2002
+704 83.5   1.69   40.73  -27.79  702 ! SEY-MAD EarthByteGroup 2002
+704 600.0   1.69   40.73  -27.79  702 ! SEY-MAD
+705  0.0   0.0    0.0    0.0  702 ! MAS-MAD Saya de Maya/Mascarene-Madagascar
+705 60.9   0.0    0.0    0.0  702 ! MAS-MAD AN 27 EarthByteGroup 1997       
+705 62.5   4.32   28.67   -2.94  702 ! MAS-MAD AN 28 EarthByteGroup 1997
+705 64.7   9.04   26.79   -5.3  702 ! MAS-MAD AN 29 EarthByteGroup 1997      
+705 68.7   4.32   28.67  -12.94  702 ! MAS-MAD AN 31 EarthByteGroup 1997
+705 73.3   4.25   30.73  -19.27  702 ! MAS-MAD AN 32 EarthByteGroup 1997 
+705 83.5  -4.5   46.0  -45.16  702 ! MAS-MAD AN 34 EarthByteGroup 1997
+705 96.3  -2.9   45.1  -50.1  702 ! MAS-MAD EarthByteGroup 1997
+705 600.0  -2.9   45.1  -50.1  702 ! MAS-MAD            
+706  0.0   0.0    0.0    0.0  714 ! ORA-NWA Oran Meseta-Northwest Africa    
+706 600.0   0.0    0.0    0.0  714 ! ORA-NWA
+707  0.0   0.0    0.0    0.0  714 ! MOR-NWA Moroccan Meseta-Northwest Africa          
+707 600.0   0.0    0.0    0.0  714 ! MOR-NWA  
+708  0.0   0.0    0.0    0.0  320 ! KAB-BLE Kalbylies-Balearics           
+708  6.7   0.0    0.0    0.0  320 ! KAB-BLE                              
+708 26.0  31.9   -1.0   23.67  320 ! KAB-BLE EarthByteGroup 2002           
+708 600.0  31.9   -1.0   23.67  320 ! KAB-BLE EarthByteGroup 2002
+709  0.0   0.0    0.0    0.0  503 ! SOM-ARA Somalia Plate-Arabia       
+709  9.9  26.09   24.4    4.22  503 ! SOM-ARA AN 5 EarthByteGroup 1997          
+709 24.1  24.58   16.99    6.22  503 ! SOM-ARA EarthByteGroup 1997       
+709 31.0  22.54   27.07    9.52  503 ! SOM-ARA EarthByteGroup 1997     
+709 600.0  22.54   27.07    9.52  503 ! SOM-ARA   
+710  0.0   0.0    0.0    0.0  701 ! DAN-AFR Danakil-Africa       
+710 24.1  15.0   37.2  -17.21  701 ! DAN-AFR EarthByteGroup 2002     
+710 31.0  15.0   37.2  -18.21  701 ! DAN-AFR EarthByteGroup 2002    
+710 600.0  15.0   37.2  -18.21  701 ! DAN-AFR 
+712  0.0   0.0    0.0    0.0  701 ! LVB-AFR Lake Victoria Block-Africa   
+712 600.0   0.0    0.0    0.0  701 ! LVB-AFR                            
+713  0.0   0.0    0.0    0.0  701 ! NMZ-AFR North Mozambique-Africa   
+713 600.0   0.0    0.0    0.0  701 ! NMZ-AFR                          
+714  0.0   0.0    0.0    0.0  701 ! NWA-AFR Northwest Africa-Africa 
+714 83.5   0.0    0.0    0.0  701 ! NWA-AFR                      
+714 120.4  16.5    6.7   -1.15  701 ! NWA-AFR Nuernberg & Mueller 1991
+714 120.4  50.8  -34.2  -53.69  201 ! NWA-SAM Northwest Africa-South America cross-over
+714 600.0  50.8  -34.2  -53.69  201 ! NWA-SAM Nuernberg & Mueller 1991
+715  0.0   0.0    0.0    0.0  701 ! NEA-AFR Northeast Africa-Africa  
+715 600.0   0.0    0.0    0.0  701 ! NEA-AFR                              
+718  0.0   0.0    0.0    0.0  714 ! TEL-NWA Tellian-Africa
+718 300.0   0.0    0.0    0.0  714 ! TEL-NWA EarthByte 2009
+718 750.0   0.0    0.0    0.0  714 ! TEL-NWA EarthByte 2009
+719  0.0   0.0    0.0    0.0  714 ! MLT-NWA Hyblean/Malta-Africa
+719  5.0  38.0   10.0  -14.2  714 ! MAL-NWA RDM 1988
+719 10.0  38.0   10.0  -29.0  714 ! MAL-NWA EarthByte 2009
+719 750.0  38.0   10.0  -29.0  714 ! MAL-NWA EarthByte 2009
+720  0.0   0.0    0.0    0.0  329 ! ALB-BET Alboran-Betic
+720  5.9   0.0    0.0    0.0  329 ! ALB-BET EarthByte 2009
+720 36.0  35.33   -5.11   53.1  329 ! ALB-BET EarthByte 2009
+720 300.0  35.33   -5.11   53.1  329 ! ALB-BET EarthByte 2009
+720 750.0  35.33   -5.11   53.1  329 ! ALB-BET EarthByte 2009
+721  0.0   0.0    0.0    0.0  714 ! RIF-NWA Rif-NW Africa
+721 300.0   0.0    0.0    0.0  714 ! RIF-NWA EarthByte 2009
+721 750.0   0.0    0.0    0.0  714 ! RIF-NWA EarthByte 2009
+750  0.0   0.0    0.0    0.0  701 ! MAL-AFR Malvinas Plate-Africa     
+750 65.6  63.0  -33.3    0.7  701 ! MAL-AFR Nuernberg & Mueller 1991                  
+750 71.1  62.9  -34.6    2.67  701 ! MAL-AFR Nuernberg & Mueller 1991                
+750 73.0  62.85  -34.75    3.59  701 ! MAL-AFR Nuernberg & Mueller 1991            
+750 79.1  62.71  -36.26    7.0  701 ! MAL-AFR Nuernberg & Mueller 1991   
+750 83.5  58.55  -33.73    9.52  701 ! MAL-AFR Nuernberg & Mueller 1991  
+750 600.0  58.55  -33.73    9.52  701 ! MAL-AFR   
+801  0.0   0.0    0.0    0.0  802 ! AUS-ANT Australia-Antarctica
+801 10.9  13.1   36.1   -6.55  802 ! AUS-ANT Royer & Chang 1991
+801 20.1  15.4   32.7  -11.97  802 ! AUS-ANT Royer & Chang 1991
+801 33.1  13.8   33.4  -20.41  802 ! AUS-ANT Royer & Chang 1991
+801 40.1  17.1   30.6  -23.68  802 ! AUS-ANT An18 Muller et.al 1997
+801 43.8  15.7   30.0  -24.59  802 ! AUS-ANT An20 Muller et.al 1997
+801 53.3  13.5   32.2  -25.44  802 ! AUS-ANT An21 Muller et.al 1997
+801 67.7   6.1   35.0  -25.62  802 ! AUS-ANT An31 Muller et.al 1997
+801 79.1   6.2   35.1  -26.37  802 ! AUS-ANT An33 Royer & Sandwell 1989
+801 83.5   2.05   40.79  -27.12  802 ! AUS-ANT 34  Tikku and Cande 2000
+801 99.0  -5.92   41.22  -28.61  802 ! AUS-ANT EarthByteGroup 2002
+801 120.4  11.1 -137.17   29.65  802 ! AUS-ANT M0 EarthByteGroup 2002
+801 600.0  11.1 -137.17   29.65  802 ! AUS-ANT
+802  0.0   0.0    0.0    0.0  701 ! ANT-AFR Antarctica-Africa
+802  9.9   8.2  -49.4    1.53  701 ! ANT-AFR AN 5 Royer & Chang 1991
+802 20.2  10.7  -47.9    2.78  701 ! ANT-AFR AN 6 Royer & Chang 1991
+802 33.2  12.0  -48.4    5.46  701 ! ANT-AFR AN 13 Royer & Chang 1991
+802 40.1  13.6  -41.4    7.47  701 ! ANT-AFR A18 Bernard et al. 2005
+802 51.7   8.5  -40.8   10.01  701 ! ANT-AFR Bernard et al. 2005
+802 63.1  11.3  -49.6   11.1  701 ! ANT-AFR A28 Bernard et al. 2005, Torsvik et al. 2006
+802 75.5  -4.0  -40.9   14.03  701 ! ANT-AFR AN 32 Bernard et al. 2005
+802 76.3  -4.6  -40.6   14.39  701 ! ANT-AFR AN 33 Bernard et al. 2005
+802 83.5  -0.45  -40.01   17.77  701 ! ANT-AFR AN 34 Nankivell 1998
+802 99.0  -2.5  -34.03   26.12  701 ! ANT-AFR Marks and Tikku 2001 (for 96 Ma in their paper)
+802 120.4  10.36  153.67  -41.56  701 ! ANT-AFR M0 to be consistent with Somali Basin EarthByteGroup 2002
+802 124.7   9.45  152.5  -42.91  701 ! ANT-AFR M2 EarthByteGroup 2002
+802 126.7   9.3  152.0  -43.71  701 ! ANT-AFR M4 EarthByteGroup 2002
+802 132.1   8.9  151.2  -46.29  701 ! ANT-AFR M11 EarthByteGroup 2002
+802 134.0   8.72  151.1  -47.27  701 ! ANT-AFR M12 EarthByteGroup 2002
+802 136.7   8.39  150.64  -48.16  701 ! ANT-AFR M15 EarthByteGroup 2002
+802 137.9   8.25  150.44  -48.55  701 ! ANT-AFR M16 EarthByteGroup 2002
+802 140.4   7.96  150.04  -49.38  701 ! ANT-AFR M17 EarthByteGroup 2002
+802 148.1   6.79  146.8  -51.55  701 ! ANT-AFR M22 EarthByteGroup 2002
+802 160.0  10.45  148.76  -58.19  701 ! ANT-AFR fit EarthByteGroup 2002
+802 360.0  10.45  148.76  -58.19  701 ! ANT-AFR fit EarthByteGroup 2002
+803  0.0   0.0    0.0    0.0  802 ! APN-ANT Antarctic Peninsula-Antarctica     
+803 111.1   0.0    0.0    0.0  802 ! APN-ANT                                    
+803 111.1  75.7   86.6  -42.89  291 ! APN-CSS Antarctic Peninsula-Colorado Subplate cross-over
+803 121.6  70.56  101.7  -55.33  291 ! APN-CSS EarthByteGroup 2007                       
+803 130.4  70.23  105.8  -61.89  291 ! APN-CSS EarthByteGroup 2007                                              
+803 137.6 -67.88  -83.76   69.87  291 ! APN-CSS EarthByteGroup 2007                          
+803 156.6 -64.88  -72.22   95.56  291 ! APN-CSS EarthByteGroup 2007                             
+803 450.0 -64.88  -72.22   95.56  291 ! APN-CSS
+804  0.0   0.0    0.0    0.0  802 ! MBL-ANT Marie Byrd Land-East Antarctica 
+804 26.55   0.0    0.0    0.0  802 ! MBL-ANT Based on Adare Trough anom 8o Cande & Stock 2004
+804 33.55 -18.15  -17.85    0.7  802 ! MBL-ANT Cande et.al 2000
+804 43.8 -18.15  -17.85    1.7  802 ! MBL-ANT Cande et.al 2000
+804 53.35 -18.15  -17.85    1.7  802 ! MBL-ANT Cande et.al 2000
+804 61.1 -18.15  -17.85    2.2  802 ! MBL-ANT Cande et.al 2000
+804 120.0 -18.15  -17.85    2.2  802 ! MBL-ANT Cande et.al 2000        
+804 156.6  72.6  -10.7   12.97  802 ! MBL-ANT EarthByteGroup 2002                         
+804 156.6  49.2   96.4  -42.73  291 ! MBL-CSS Marie Byrd Land-Colorado Subplate cross-over           
+804 600.0  49.2   96.4  -42.73  291 ! MBL-CSS             
+805  0.0   0.0    0.0    0.0  802 ! ELL-ANT Ellsworth Mountains-East Antarctic 
+805 111.1   0.0    0.0    0.0  802 ! ELL-ANT                         
+805 124.6 -62.59  -81.65   34.14  802 ! ELL-ANT Grunow et al 1991     
+805 149.5 -62.17  -88.86   33.69  802 ! ELL-ANT Grunow et al 1991    
+805 175.0 -62.14  -88.1   35.37  802 ! ELL-ANT Grunow et al 1991   
+805 200.0 -84.0  -26.9  -79.0  802 ! ELL-ANT EarthByteGroup 2007       
+805 600.0 -84.0  -26.9  -79.0  802 ! ELL-ANT  
+806  0.0   0.0    0.0    0.0  868 ! NNZ-CLP North New Zealand-Challenger Plateau 
+806 53.0   0.0    0.0    0.0  868 ! NNZ-CLP 
+806 90.0   0.0    0.0    0.0  868 ! NNZ-CLP
+806 600.0   0.0    0.0    0.0  868 ! NNZ-CLP        
+807  0.0   0.0    0.0    0.0  901 ! SNZ-PAC South New Zealand-Pacific
+807 83.0   0.0    0.0    0.0  901 ! SNZ-PAC 
+807 83.0   0.0    0.0    0.0  813 ! SNZ-CBP South New Zealand-Campbell Plateau cross-over
+807 105.0  -7.89 -155.44    4.02  813 ! SNZ-CBP EarthByteGroup 2007
+807 600.0  -7.89 -155.44    4.02  813 ! SNZ-CBP EarthByteGroup 2007
+808  0.0   0.0    0.0    0.0  803 ! THR-APN Thurston Island-Antarctic Peninsula
+808 450.0   0.0    0.0    0.0  803 ! THR-APN        
+809  0.0   0.0    0.0    0.0  805 ! WHT-ELL Whitmore Mountains-Ellworth Mountains            
+809 600.0   0.0    0.0    0.0  805 ! WHT-ELL        
+810  0.0   0.0    0.0    0.0  802 ! BRK-ANT Berkner Island-East Antarctica  
+810 89.9   0.0    0.0    0.0  802 ! BRK-ANT                             
+810 100.5  89.7   -5.6    8.6  802 ! BRK-ANT EarthByteGroup 2007  
+810 700.0  89.7   -5.6    8.6  802 ! BRK-ANT	                   
+811  0.0   0.0    0.0    0.0  803 ! STI-APN South Shetland Islands-Antarctic Peninsula
+811  4.1 -62.5  -55.91   -7.33  803 ! STI-APN EarthByteGroup 2007               
+811 600.0 -62.5  -55.91   -7.33  803 ! STI-APN                           
+812  0.0   0.0    0.0    0.0  803 ! SOB-APN South Orkney Island Block-Antarctic Peninsula
+812 24.5   0.0    0.0    0.0  803 ! SOB-APN EarthByteGroup 2007                     
+812 32.8 -66.01  -43.0   48.38  803 ! SOB-APN EarthByteGroup 2007                      
+812 600.0 -66.01  -43.0   48.38  803 ! SOB-APN              
+813  0.0   0.0    0.0    0.0  807 ! CBP-SNZ Campbell Plateau-South New Zealand
+813 83.0   0.0    0.0    0.0  807 ! CBP-SNZ fixed to PAC
+813 83.0  65.77  -47.44   67.1  804 ! CBP-MBL Campbell Plateau-Marie Byrd Land cross-over EarthByteGroup 2006
+813 500.0  65.77  -47.44   67.1  804 ! CBP-MBL 
+814  0.0  72.13  129.32    1.21  804 ! BEL-MBL Bellinghausen-Marie Byrd Land
+814 61.2  72.13  129.32    1.21  804 ! BEL-MBL AN27  Larter et.al 2002
+814 61.2  70.43  -56.55  -44.0  901 ! BEL-PAC Bellinghausen-Pacific AN27 cross over Larter et.al 2002
+814 63.8  70.43  -56.55  -46.35  901 ! BEL-PAC AN28R Larter et.al 2002
+814 67.7  70.88  -51.01  -52.48  901 ! BEL-PAC AN30R Larter et.al 2002
+814 71.5  71.4  -42.69  -59.57  901 ! BEL-PAC AN32n1r Larter et.al 2002
+814 73.6  70.98  -41.28  -62.7  901 ! BEL-PAC AN28R Larter et.al 2002
+814 150.0  70.98  -41.28  -62.7  901 ! BEL-PAC   
+815  0.0   0.0    0.0    0.0  820 ! BBK-DPS Bruce Bank Plate-Drake Passage South
+815 20.2   0.0    0.0    0.0  820 ! BBK-DPS EarthByteGroup 2002                          
+815 22.8  42.8  -45.7   -6.0  820 ! BBK-DPS EarthByteGroup 2002     
+815 600.0  42.8  -45.7   -6.0  820 ! BBK-DPS                     
+816  0.0   0.0    0.0    0.0  815 ! DBW-BBK Discovery Bank West-Bruce Bank 
+816 600.0   0.0    0.0    0.0  815 ! DBW-BBK                           
+817  0.0   0.0    0.0    0.0  815 ! DBE-BBK Discovery Bank East-Bruce Bank 
+817 600.0   0.0    0.0    0.0  815 ! DBE-BBK                       
+818  0.0   0.0    0.0    0.0  815 ! HDB-BBK Herdman Bank Plate-Bruce Bank 
+818 600.0   0.0    0.0    0.0  815 ! HDB-BBK                    
+819  0.0   0.0    0.0    0.0  812 ! OBW-SOB Orkney Bank West-South Orkney Islands Block
+819 600.0   0.0    0.0    0.0  812 ! OBW-SOB                               
+820  0.0   0.0    0.0    0.0  277 ! DPS-DPN WDrake Passage South-Drake Passage North
+820  9.8  70.0   23.36   -3.31  277 ! DPS-DPN Simulate opening, not based on magnetics EarthByteGroup 2002
+820 20.1  70.0   25.0   -4.69  277 ! DPS-DPN Simulate opening, not based on magnetics EarthByteGroup 2002
+820 26.0  68.71   26.48   -9.67  277 ! DPS-DPN Simulate opening, not based on magnetics EarthByteGroup 2002
+820 600.0  68.71   26.48   -9.67  277 ! DPS-DPN 
+821  0.0   0.0    0.0    0.0  823 ! TON-LAU Tonga Ridge-Lau Ridge
+821  0.9 -34.0 -178.5    1.12  823 ! TON-LAU An1 based on Yan & Kroenke 1993
+821  1.8 -34.0 -178.5    4.77  823 ! TON-LAU An2 Yan & Kroenke 1993
+821  7.0 -26.87 -178.28   18.5  823 ! TON-LAU Lau Basin closed EarthByteGroup 2002
+821 600.0 -26.87 -178.28   18.5  823 ! TON-LAU  
+822  0.0   0.0    0.0    0.0  821 ! NLB-TON North Lau Basin-Tonga Ridge
+822 37.1   0.0    0.0    0.0  821 ! NLB-TON  
+823  0.0   0.0    0.0    0.0  839 ! LAU-ESF  Lau Ridge-East South Fiji Basin
+823 35.0   0.0    0.0    0.0  839 ! LAU-ESF       
+823 41.0 -44.51  174.61    6.74  839 ! LAU-ESF EarthByteGroup 2002
+823 80.0 -44.51  174.61    6.74  839 ! LAU-ESF 
+824  0.0   0.0    0.0    0.0  823 ! VIT-LAU Vitiaz Trench-Lau Ridge
+824 10.0  47.67   -7.34   10.59  823 ! VIT-LAU EarthByteGroup 2001
+824 10.0  48.4  110.4   -2.61  847 ! VIT-NBK Vitiaz Trench-North Bismark Basin cross-over EarthByteGroup 2001
+824 41.0  48.4  110.4   -2.61  847 ! VIT-NBK EarthByteGroup 2001
+824 600.0  48.4  110.4   -2.61  847 ! VIT-NBK  
+825  0.0   0.0    0.0    0.0  823 ! FIJ-LAU Fiji-Lau Ridge
+825  3.0   0.0    0.0    0.0  823 ! FIJ-LAU after Taylor et al. 2000
+825 10.0 -15.88 -179.58 -135.0  823 ! FIJ-LAU after Taylor et al. 2000
+825 36.0 -15.88 -179.58 -135.0  823 ! FIJ-LAU after Taylor et al. 2000
+825 36.0  15.18   -3.36  132.15  844 ! FIJ-LYR Fiji-Loyalty Ridge cross-over EarthByteGroup 2002
+825 41.0  15.18   -3.36  132.15  844 ! FIJ-LYR EarthByteGroup 2002
+825 45.0  15.18   -3.36  132.15  844 ! FIJ-LYR    
+826  0.0   0.0    0.0    0.0  827 ! MNF-NHB Mid North Fiji Basin-New Hebrides
+826 245.0   0.0    0.0    0.0  827 ! MNF-NHB   
+827  0.0   0.0    0.0    0.0  824 ! NHB-VIT New Hebrides-Vitiaz Trench
+827  1.2   0.0    0.0    0.0  824 ! NHB-VIT Yan & Kroenke 1993
+827  1.8 -10.13  163.64    2.49  824 ! NHB-VIT An2 Yan & Kroenke 1993
+827  2.9 -10.13  163.64    5.35  824 ! NHB-VIT An2A Yan & Kroenke 1993
+827  4.5 -10.13  163.64    9.33  824 ! NHB-VIT An3 Yan & Kroenke 1993
+827  6.0 -10.13  163.64   15.75  824 ! NHB-VIT An3A Yan & Kroenke 1993
+827  7.3 -10.13  163.64   24.69  824 ! NHB-VIT An4 Yan & Kroenke 1993
+827 10.0 -10.13  163.64   40.1  824 ! NHB-VIT closure Yan & Kroenke 1993
+827 245.0 -10.13  163.64   40.1  824 ! NHB-VIT        
+828  0.0   0.0    0.0    0.0  824 ! JST-VIT Johnson Trench-Vitiaz Trench
+828 15.0  -8.73  167.6  -43.27  824 ! JST-VIT contact with Ontong Java Plateau EarthByteGroup 2002
+828 245.0  -8.73  167.6  -43.27  824 ! JST-VIT 
+829  0.0   0.0    0.0    0.0  836 ! NWB-NCS North Woodlark Basin-North Coral Sea
+829  2.0 -16.2   73.5   -0.97  836 ! NWB-NCS AN2 Lee & Lawver 1995     
+829  3.4 -16.2   73.5   -1.45  836 ! NWB-NCS AN2A Lee & Lawver 1995                
+829  5.2 -16.2   73.5   -1.51  836 ! NWB-NCS AN3 Lee & Lawver 1995                 
+829 600.0 -16.2   73.5   -1.51  836 ! NWB-NCS 
+830  0.0   0.0    0.0    0.0  847 ! SBK-NBK South Bismark Basin-North Bismark Basin
+830  5.0  -5.16  154.16  -39.77  847 ! SBK-NBK An2a after Gaina & Muller 2007
+830 40.0  -5.16  154.16  -39.77  847 ! NBK-SBK
+830 55.0  -5.16  154.16  -39.77  847 ! NBK-SBK EarthByte2009, SZ09
+831  0.0   0.0    0.0    0.0  802 ! NKG-ANT Northern Kerguelen-East Antarctica 
+831 600.0   0.0    0.0    0.0  802 ! NKG-ANT AN 27                
+832  0.0   0.0    0.0    0.0  615 ! NBK-PNG North Bismark-Papua New Guinea     
+832 600.0   0.0    0.0    0.0  615 ! NBK-PNG         
+833  0.0   0.0    0.0    0.0  801 ! LHR-AUS Lord Howe Rise-Australia
+833 52.2   0.0    0.0    0.0  801 ! LHR-AUS Gaina et.al 1998
+833 53.3 -14.19  130.41   -0.72  801 ! LHR-AUS AN24o Gaina et.al 1998
+833 55.8 -15.93  133.47   -2.11  801 ! LHR-AUS AN25y Gaina et.al 1998
+833 57.9 -16.93  136.23   -3.79  801 ! LHR-AUS AN26o Gaina et.al 1998
+833 61.2  -4.65  131.51   -4.43  801 ! LHR-AUS AN27o Gaina et.al 1998
+833 62.5  -4.71  132.68   -5.17  801 ! LHR-AUS AN28y Gaina et.al 1998
+833 64.0  -0.19  130.37   -5.46  801 ! LHR-AUS AN29y Gaina et.al 1998 
+833 65.6  -3.99  131.8   -6.73  801 ! LHR-AUS AN30y Gaina et.al 1998
+833 67.7  -9.04  134.46   -8.83  801 ! LHR-AUS AN31y Gaina et.al 1998 
+833 71.1 -14.72  139.04  -13.08  801 ! LHR-AUS AN32y Gaina et.al 1998
+833 73.6  -9.53  137.2  -12.94  801 ! LHR-AUS AN33y Gaina et.al 1998
+833 79.0   0.37  133.82  -13.0  801 ! LHR-AUS AN33o eliminated Gaina et.al 1998
+833 86.0   4.06  -42.35   15.51  801 ! LHR-AUS Gaina et.al 1998
+833 90.0   3.27  -42.59   18.34  801 ! C-LHR/AUS Gaina et.al 1998
+833 99.0   3.27  -42.59   18.34  801 ! C-LHR/AUS EarthByteGroup 2002
+833 600.0   3.27  -42.59   18.34  801 ! C-LHR/AUS EarthByteGroup 2002
+834  0.0   0.0    0.0    0.0  869 ! NFR-NLHR Norfolk Ridge-North Lord Howe Rise
+834 90.0   0.0    0.0    0.0  869 ! NFR-NLHR Yan & Kroenke 1993
+834 100.0   3.0  -20.0    4.75  869 ! NFR-NLHR after Sdrolias et.al. 2004
+834 245.0   3.0  -20.0    4.75  869 ! NFR-NLHR 
+835  0.0   0.0    0.0    0.0  844 ! TKR-LYR Three Kings Ridge-Loyalty Ridge
+835 18.0   0.0    0.0    0.0  844 ! TKR-LYR Miocene opening after Sdrolias et.al 2004
+835 25.0 -36.62   21.32    2.55  844 ! TKR-LYR Miocene opening after Sdrolias et.al 2004
+835 245.0 -36.62   21.32    2.55  844 ! TKR-LYR 
+836  0.0   0.0    0.0    0.0  801 ! LP-AUS Louisiade Plateau-Australia
+836 52.0   0.0    0.0    0.0  801 ! LP-AUS
+836 53.3  -7.75  144.57   -2.08  801 ! LP-AUS C24 Gaina et.al 1999
+836 55.8   7.15  124.35   -1.89  801 ! LP-AUS C25 Gaina et.al 1999
+836 57.9   1.14  132.09   -4.63  801 ! LP-AUS C26 Gaina et.al 1999
+836 61.2  -3.01  137.84  -10.65  801 ! LP-AUS C27 Gaina et.al 1999
+836 63.0   2.89  -43.55   11.42  801 ! LP-AUS Gaina et.al 1999
+836 95.0   2.89  -43.55   11.42  801 ! LP-AUS Gaina et.al 1999
+836 600.0   2.89  -43.55   11.42  801 ! LP-AUS  
+837  0.0   0.0    0.0    0.0  823 ! KMR-LAU Kermadec Ridge-Lau/Colville Ridge
+837  0.9 -44.42  170.9    0.94  823 ! KMR-LAU Yan & Kroenke 1993
+837  1.8 -44.42  170.9    1.89  823 ! KMR-LAU Yan & Kroenke 1993
+837 245.0 -44.42  170.9    1.89  823 ! KMR-LAU
+838  0.0   0.0    0.0    0.0  839 ! NSF-ESF Northwest South Fiji Basin-East South Fiji Basin
+838 25.0   0.0    0.0    0.0  839 ! NSF-ESF Spreading stopped
+838 25.6   0.09 -179.72    0.39  839 ! NSF-ESF Sdrolias et.al 2003
+838 25.8   0.99 -178.47    0.93  839 ! NSF-ESF Sdrolias et.al 2003
+838 26.6   8.19 -178.49    1.94  839 ! NSF-ESF Sdrolias et.al 2003
+838 28.0   3.87  179.78    3.41  839 ! NSF-ESF Sdrolias et.al 2003
+838 28.3   3.57  177.18    4.48  839 ! NSF-ESF Sdrolias et.al 2003
+838 28.7   3.41  176.86    5.1  839 ! NSF-ESF Sdrolias et.al 2003
+838 29.4   6.41 -179.89    4.98  839 ! NSF-ESF Sdrolias et.al 2003
+838 30.1  11.96 -179.48    4.94  839 ! NSF-ESF Sdrolias et.al 2003
+838 33.1  34.81 -177.48    5.29  839 ! NSF-ESF Sdrolias et.al 2003
+838 245.0  34.81 -177.48    5.29  839 ! NSF-ESF
+839  0.0   0.0    0.0    0.0  835 ! ESF-TKR East South Fiji-Three Kings Ridge
+839 25.0   0.0    0.0    0.0  835 ! ESF-TKR Spreading stopped
+839 25.6  88.13   -1.98   -0.51  835 ! ESF-TKR Sdrolias et.al 2003
+839 25.8  89.43   -0.93   -1.11  835 ! ESF-TKR Sdrolias et.al 2003
+839 26.6  87.48    5.81   -1.81  835 ! ESF-TKR Sdrolias et.al 2003
+839 27.0  82.87    5.76   -2.34  835 ! ESF-TKR Sdrolias et.al 2003
+839 28.0  76.07   17.61   -3.0  835 ! ESF-TKR Sdrolias et.al 2003
+839 28.3  74.59   18.75   -4.07  835 ! ESF-TKR Sdrolias et.al 2003
+839 29.4  75.04   32.87   -5.11  835 ! ESF-TKR Sdrolias et.al 2003
+839 33.1  74.85   42.29   -6.16  835 ! ESF-TKR Sdrolias et.al 2003      
+839 245.0  74.85   42.29   -6.16  835 ! ESF-TKR
+842  0.0   0.0    0.0    0.0  844 ! MNF-LYR Mid Norfolk Ridge-Loyalty Ridge
+842 245.0   0.0    0.0    0.0  844 ! MNF-LYR
+843  0.0   0.0    0.0    0.0  834 ! ENF-NFR East Norfolk Ridge-Norfolk Ridge
+843 45.0   0.0    0.0    0.0  834 ! ENF-NFR
+843 50.0 -23.0  167.0   -5.0  834 ! ENF-NFR EarthByteGroup 2002
+843 140.0 -23.0  167.0   -5.0  834 ! ENF-NFR
+844  0.0   0.0    0.0    0.0  834 ! LYR-NFR Loyalty Ridge-Norfolk Ridge
+844 44.0   0.0    0.0    0.0  834 ! LYR-NFR
+844 44.0  50.2   -4.0  -48.21  901 ! LYR-PAC Loyalty Ridge-Pacific cross-over
+844 83.5  50.2   -4.0  -48.21  901 ! LYR-PAC
+844 83.5  25.5  -33.0   22.85  801 ! LYR-AUS Loyalty Ridge-Australia, crossover EarthByteGroup 2002
+844 245.0  25.5  -33.0   22.85  801 ! LYR-AUS Fix LYR to AUS, no other constraints
+845  0.0   0.0    0.0    0.0  834 ! NCD-NFR New Caledonia-Norfolk Ridge
+845 140.0   0.0    0.0    0.0  834 ! NCD-NFR
+846  0.0   0.0    0.0    0.0  801 ! EPC-AUS East Papuan Composite Terrane-Australia
+846 45.0   0.0    0.0    0.0  801 ! EPC-AUS
+846 47.0  12.02  -29.58   12.63  801 ! EPC-AUS after Gaina & Muller 2007
+846 47.0   8.03  -43.54   18.05  698 ! EPC-CNG E.Papuan Terrane-Central New Guinea crossover after Gaina & Muller 2007
+846 200.0   8.03  -43.54   18.05  698 ! EPC-CNG 
+847  0.0   0.0    0.0    0.0  901 ! NBK-PAC North Bismark Basin-Pacific
+847 13.0   0.0    0.0    0.0  901 ! NBK-PAC
+847 13.0  59.21    1.22   15.86  801 ! NBK-AUS North Bismark Basin-Australia cross-over EarthByteGroup 2001
+847 27.0  59.21    1.22   15.86  801 ! NBK-AUS EarthByteGroup 2001
+847 43.0   9.59  -22.13  -16.21  801 ! NBK-AUS EarthByteGroup 2001
+847 45.0   9.59  -22.13  -16.21  801 ! NBK-AUS EarthByteGroup 2001 after Hall
+847 100.0   9.59  -22.13  -16.21  801 ! NBK-AUS 
+849  0.0   0.0    0.0    0.0  847 ! SOL-AUS Solomon sea (aus part)-Australia
+849 25.0  59.2    1.2  -15.86  847 ! SOL-AUS Gaina & Muller 2007
+849 28.7  64.3    8.0  -13.21  847 ! SOL-AUS Based on Gaina & Muller 2007
+849 30.1  69.6   19.8  -11.18  847 ! SOL-AUS Based on Gaina & Muller 2007
+849 33.0  72.1  101.7   -7.91  847 ! SOL-AUS Based on Gaina & Muller 2007
+849 35.3  46.2  139.6   -7.19  847 ! SOL-AUS Based on Gaina & Muller 2007
+849 38.1  14.7  151.5   -9.18  847 ! SOL-AUS Based on Gaina & Muller 2007
+849 39.6   4.1  154.3  -11.07  847 ! SOL-AUS Based on Gaina & Muller 2007
+849 40.1   1.3  155.0  -11.77  847 ! SOL-AUS Based on Gaina & Muller 2007
+849 45.0   9.6  -22.1   16.21  847 ! SOL-AUS Gaina & Muller 2007
+850  0.0   0.0    0.0    0.0  801 ! TSM-AUS Tasmania-Australia
+850 108.0   0.0    0.0    0.0  801 ! TSM-AUS
+850 125.0  28.0  100.0    1.0  801 ! TSM-AUS EarthByteGroup 2002
+850 800.0  28.0  100.0    1.0  801 ! TSM-AUS
+851  0.0   0.0    0.0    0.0  801 ! WSTR-AUS Western South Tasman Rise-Australia 
+851 40.1   0.0    0.0    0.0  801 ! WSTR-AUS west South Tasman rise, after Gaina et.al 1998
+851 40.1  15.0   32.45  -23.42  802 ! WSTR-ANT after Gaina et.al 1998
+851 90.0  15.0   32.45  -23.42  802 ! WSTR-ANT after Gaina et.al 1998
+851 600.0  15.0   32.45  -23.42  802 ! WSTR-ANT 
+852  0.0   0.0    0.0    0.0  801 ! ESTR-AUS Eastern South Tasman Rise-Australia
+852 60.0   0.0    0.0    0.0  801 ! ESTR-AUS after Gaina et.al 1998
+852 60.0  10.0   36.42  -25.5  802 ! ESTR-ANT east South Tasman Rise after Gaina et.al 1998
+852 600.0  11.5   33.02  -26.35  802 ! ESTR-ANT
+855  0.0   0.0    0.0    0.0  857 ! NLB-NLBN North Loyalty Basin South-North Loyalty Basin North
+855 35.0   0.0    0.0    0.0  857 ! NLB-NLBN Spreading Stopped
+855 35.3   6.0 -155.0   -1.65  857 ! SLB-NLBN An 16y Sdrolias et.al 2003
+855 38.1  -0.61 -149.64   -3.41  857 ! SLB-NLBN An 17o Sdrolias et.al 2003
+855 39.6   6.0 -155.0   -5.05  857 ! SLB-NLBN An 18o Sdrolias et.al 2003
+855 43.8   5.7 -153.1   -7.99  857 ! NLB-NLBN An 20o Sdrolias et.al 2003
+855 140.0   5.7 -153.1   -7.99  857 ! NLB-NLBN
+856  0.0   0.0    0.0    0.0  835 ! SSF-TKR South South Fiji Basin-Three Kings Ridge
+856 25.0   0.0    0.0    0.0  835 ! SSF-TKR Sdrolias et.al 2003
+856 26.6  14.18 -168.21   -1.2  835 ! SSF-TKR Sdrolias et.al 2003
+856 28.0  21.84 -156.2   -2.0  835 ! SSF-TKR Sdrolias et.al 2003
+856 30.1  21.84 -156.2   -3.2  835 ! SSF-TKR Sdrolias et.al 2003
+856 245.0  21.84 -156.2   -3.2  835 ! SSF-TKR Sdrolias et.al 2003
+857  0.0   0.0    0.0    0.0  844 ! NLBN-LYR North Loyalty Basin North-Loyalty Ridge
+857 88.0   0.0    0.0    0.0  844 ! NLBN-LYR Based on Sdrolias et.al 2003
+858  0.0   0.0    0.0    0.0  833 ! NFR2-NFR Norfolk Ridge Block 2-Norfolk Ridge
+858 90.0   0.0    0.0    0.0  833 ! NFR2-NFR Based on Sdrolias et.al 2004
+858 100.0   3.0  -20.0    2.9  833 ! NFR2-NFR Based on Sdrolias et.al 2004
+858 245.0   3.0  -20.0    2.9  833 ! NFR2-NFR 
+859  0.0   0.0    0.0    0.0  834 ! NB1-NFR Norfolk Basin Block 1-Norfolk Ridge
+859 18.0   0.0    0.0    0.0  834 ! NB1-NFR Based on Sdrolias et.al 2004
+859 25.0 -26.0  168.23  -34.24  834 ! NB1-NFR Based on Sdrolias et.al 2004
+859 100.0 -26.0  168.23  -34.24  834 ! NB1-NFR 
+860  0.0   0.0    0.0    0.0  834 ! NB2-NFR Norfolk Basin Block 2-Norfolk Ridge
+860 18.0   0.0    0.0    0.0  834 ! NB2-NFR Based on Sdrolias et.al 2004
+860 25.0 -35.0  165.0    8.37  834 ! NB2-NFR Based on Sdrolias et.al 2004
+860 100.0 -35.0  165.0    8.37  834 ! NB2-NFR 
+861  0.0   0.0    0.0    0.0  834 ! NB3-NFR Norfolk Basin Block 3-Norfolk Ridge
+861 18.0   0.0    0.0    0.0  834 ! NB3-NFR Based on Sdrolias et.al 2004
+861 25.0 -10.0  175.0   -3.41  834 ! NB3-NFR Based on Sdrolias et.al 2004
+861 100.0 -10.0  175.0   -3.41  834 ! NB3-NFR 
+862  0.0   0.0    0.0    0.0  834 ! NB4-NFR Norfolk Basin Block 4-Norfolk Ridge
+862 18.0   0.0    0.0    0.0  834 ! NB4-NFR Based on Sdrolias et.al 2004
+862 25.0 -10.54  177.89   -4.48  834 ! NB4-NFR Based on Sdrolias et.al 2004
+862 100.0 -10.54  177.89   -4.48  834 ! NB4-NFR 
+863  0.0   0.0    0.0    0.0  834 ! NB5-NFR Norfolk Basin Block 5-Norfolk Ridge
+863 18.0   0.0    0.0    0.0  834 ! NB5-NFR Based on Sdrolias et.al 2004
+863 25.0   0.0    2.52    1.93  834 ! NB5-NFR Based on Sdrolias et.al 2004
+863 100.0   0.0    2.52    1.93  834 ! NB5-NFR 
+864  0.0   0.0    0.0    0.0  823 ! NIU-LAU Niuafoou-Lau Ridge 
+864  1.0  -8.2 -170.2   -3.8  823 ! NIU-LAU Zellmer et al 2001
+864  2.0  -8.2 -170.2   -4.8  823 ! NIU-LAU EarthByteGroup 2003
+864 245.0  -8.2 -170.2   -4.8  823 ! NIU-LAU MS 10/03
+866  0.0   0.0    0.0    0.0  869 ! CS-NLHR Chesterfield Plateau-Northern Lord Howe Rise
+866 64.0   0.0    0.0    0.0  869 ! CS-NLHR Gaina et.al 1998
+866 71.6  22.48  -24.74   -8.83  869 ! CS-NLHR Gaina et.al 1998
+866 71.6   7.57  112.18   -5.03  801 ! CS-AUS Chesterfield Plateau-Australia cross-over Gaina et.al 1998
+866 90.0   7.57  112.18   -5.03  801 ! CS-AUS Gaina et.al 1998
+866 600.0   7.57  112.18   -5.03  801 ! CS-AUS  
+867  0.0   0.0    0.0    0.0  868 ! GSM-CLP Gilbert Seamount Complex-Challenger Plateau
+867 79.0   0.0    0.0    0.0  868 ! GSM-CP Gaina et.al 1998
+867 79.0   1.46 -113.93   28.45  802 ! GSM-ANT Gilbert Seamount Complex-Antarctica cross-over Gaina et.al 1998
+867 90.0   1.46 -113.93   28.45  802 ! GSM-ANT Gaina et.al 1998
+867 600.0   1.46 -113.93   28.45  802 ! GSM-ANT 
+868  0.0   0.0    0.0    0.0  833 ! CLP-LHR Challenger Plateau-Lord Howe Rise
+868 77.0   0.0    0.0    0.0  833 ! CLP-LHR Gaina et.al 1998
+868 90.0  65.04  108.97   -1.39  833 ! CLP-LHR Gaina et.al 1998
+868 600.0  65.04  108.97   -1.39  833 ! CLP-LHR   CG 13/8/96
+869  0.0   0.0    0.0    0.0  833 ! NLHR-LHR Northern Lord Howe Rise-Lord Howe Rise 
+869 64.0   0.0    0.0    0.0  833 ! NLHR-LHR Gaina et.al 1998
+869 83.5   8.1  -35.62   -2.72  833 ! NLHR-LHR Gaina et.al 1998
+869 83.5   0.9  -45.4   11.82  801 ! NLHR-AUS Northern Lord Howe Rise-Australia switchover, Gaina et.al 1998
+869 90.0   0.9  -45.4   11.82  801 ! NLHR-AUS Gaina et.al 1998
+869 600.0   0.9  -45.4   11.82  801 ! NLHR-AUS
+870  0.0   0.0    0.0    0.0  823 ! TOL-LAU Lau Basin Tonga Side-Lau Ridge 
+870  2.0   0.0    0.0    0.0  823 ! TOL-LAU Zellmer etal 2001
+870  4.0 -26.87 -178.28    7.4  823 ! TOL-LAU Zellmer etal 2001
+870 600.0 -26.87 -178.28    7.4  823 ! TOL-LAU
+871  0.0   0.0    0.0    0.0  801 ! GAS1-AUS Gascoyne Abyssal Plain 1-Australia
+871 128.2   0.0    0.0    0.0  801 ! GAS1-AUS M6 EarthByteGroup 1998 
+871 128.4  34.7  172.0    0.28  801 ! GAS1-AUS M7 EarthByteGroup 1998
+871 129.0  35.46  170.63    0.66  801 ! GAS1-AUS M8 EarthByteGroup 1998
+871 129.5  35.52  169.98    1.15  801 ! GAS1-AUS M9 EarthByteGroup 1998
+871 130.2  35.6  170.19    1.63  801 ! GAS1-AUS M10 EarthByteGroup 1998
+871 130.9  35.49  170.19    2.25  801 ! GAS1-AUS M10N EarthByteGroup 1998
+871 132.1  35.57  170.35    3.06  801 ! GAS1-AUS M11 EarthByteGroup 1998
+871 600.0  35.57  170.35    3.06  801 ! GAS1-AUS
+872  0.0   0.0    0.0    0.0  801 ! GAS2-AUS Gascoyne Abyssal Plain 2-Australia
+872 128.4   0.0    0.0    0.0  801 ! GAS2-AUS M7 EarthByteGroup 1998
+872 129.0  36.0  169.6    0.38  801 ! GAS2-AUS M8 EarthByteGroup 1998
+872 129.5  35.78  169.32    0.87  801 ! GAS2-AUS M9 EarthByteGroup 1998
+872 130.2  35.79  169.81    1.35  801 ! GAS2-AUS M10 EarthByteGroup 1998
+872 130.9  35.6  169.93    1.97  801 ! GAS2-AUS M10N EarthByteGroup 1998
+872 132.1  35.66  170.18    2.78  801 ! GAS2-AUS M11 EarthByteGroup 1998
+872 600.0  35.66  170.18    2.78  801 ! GAS2-AUS 
+873  0.0   0.0    0.0    0.0  801 ! GAS3-AUS Gascoyne Abyssal Plain 3-Australia
+873 123.0 -21.3    1.0    0.73  801 ! GAS3-AUS EarthByteGroup 1998
+873 124.0  35.86  168.5   -0.31  801 ! GAS3-AUS EarthByteGroup 1998
+873 124.7  59.02  172.2    0.28  801 ! GAS3-AUS EarthByteGroup 1998
+873 600.0  59.02  172.2    0.28  801 ! GAS3-AUS 
+874  0.0   0.0    0.0    0.0  801 ! CUV1-AUS Cuvier Abyssal Plain 1-Australia
+874 127.3   0.0    0.0    0.0  801 ! CUV1-AUS M5 EarthByteGroup 1998
+874 127.7  46.0  158.6    0.25  801 ! CUV1-AUS M5 EarthByteGroup 1998
+874 128.2  40.95  164.25    0.48  801 ! CUV1-AUS M6 EarthByteGroup 1998
+874 128.4  38.7  167.25    0.76  801 ! CUV1-AUS M7 EarthByteGroup 1998
+874 129.0  37.8  168.04    1.14  801 ! CUV1-AUS M8 EarthByteGroup 1998
+874 129.5  37.14  168.36    1.63  801 ! CUV1-AUS M9 EarthByteGroup 1998
+874 130.2  36.83  168.89    2.11  801 ! CUV1-AUS M10 EarthByteGroup 1998
+874 130.9  36.46  169.18    2.73  801 ! CUV1-AUS M10N EarthByteGroup 1998
+874 132.1  36.3  169.55    3.54  801 ! CUV1-AUS M11 EarthByteGroup 1998
+874 600.0  36.3  169.55    3.54  801 ! CUV1-AUS 
+875  0.0   0.0    0.0    0.0  801 ! CUV2-AUS Cuvier Abyssal Plain 2-Australia
+875 128.2   0.0    0.0    0.0  801 ! CUV2-AUS M6 EarthByteGroup 1998
+875 128.4  34.7  172.0    0.28  801 ! CUV2-AUS M7 EarthByteGroup 1998
+875 129.0  35.46  170.63    0.66  801 ! CUV2-AUS M8 EarthByteGroup 1998
+875 129.5  35.53  169.98    1.15  801 ! CUV2-AUS M9 EarthByteGroup 1998
+875 130.2  35.61  170.19    1.63  801 ! CUV2-AUS M10 EarthByteGroup 1998
+875 130.9  35.5  170.19    2.25  801 ! CUV2-AUS M10N EarthByteGroup 1998
+875 132.1  35.58  170.35    3.06  801 ! CUV2-AUS M11 EarthByteGroup 1998
+875 600.0  35.58  170.35    3.06  801 ! CUV2-AUS 
+876  0.0   0.0    0.0    0.0  801 ! CUV3-AUS Cuvier Abyssal Plain 3-Australia
+876 130.9   0.0    0.0    0.0  801 ! CUV3-AUS M10N EarthByteGroup 1998
+876 132.1  35.8  170.8    0.81  801 ! CUV3-AUS M11 EarthByteGroup 1998
+876 133.4  35.58  170.41    1.83  801 ! CUV3-AUS M11A EarthByteGroup 1998
+876 600.0  35.58  170.41    1.83  801 ! CUV3-AUS 
+877  0.0   0.0    0.0    0.0  801 ! CUV4-AUS Cuvier Abyssal Plain 4-Australia
+877 123.0   0.0    0.0    0.0  801 ! CUV4-AUS M2 EarthByteGroup 1998
+877 124.0  47.6  169.6    0.5  801 ! CUV4-AUS M2 EarthByteGroup 1998
+877 124.7  47.87  169.28    1.08  801 ! CUV4-AUS M3 EarthByteGroup 1998
+877 600.0  47.87  169.28    1.08  801 ! CUV4-AUS 
+878  0.0   0.0    0.0    0.0  836 ! PP-LP Papuan Plateau-Louisiade Plateau
+878 52.0   0.0    0.0    0.0  836 ! PP-LP Gaina et.al 1998
+878 63.0   2.89  -43.55   -1.28  836 ! PP-LP Gaina et.al 1998
+878 63.0   2.89  -43.55   10.14  801 ! PP-LP Papuan Plateau-Australia cross-over Gaina et.al 1998
+878 140.0   2.89  -43.55   10.14  801 ! PP-LP 
+878 600.0   2.89  -43.55   10.14  801 ! PP-LP 
+880  0.0   0.0    0.0    0.0  801 ! PER1-AUS Perth Abyssal Plain 1-Australia
+880 103.0   0.0    0.0    0.0  801 ! PER1-AUS
+880 103.0   2.8 -179.4  -52.6  550 ! PER1-INA Perth Abyssal Plain 1-India cross-over EarthByteGroup 2006
+880 106.0   2.8 -179.4  -52.6  550 ! PER1-INA EarthByteGroup 2006
+881  0.0   0.0    0.0    0.0  801 ! PER2-AUS Perth Abyssal Plain 2-Australia
+881 108.0   0.0    0.0    0.0  801 ! PER2-AUS
+881 108.0   5.2 -178.8  -54.95  550 ! PER2-INA Perth Abyssal Plain 2-India cross-over EarthByteGroup 2006
+881 114.0   5.2 -178.8  -54.95  550 ! PER2-INA EarthByteGroup 2006
+882  0.0   0.0    0.0    0.0  833 ! MPL-LHR Microplate Lord Howe Rise-Lord Howe Rise
+882 77.0   0.0    0.0    0.0  833 ! MPL-LHR Gaina et.al 1998
+882 86.0  65.08  108.98   -0.83  833 ! MPL-LHR Gaina et.al 1998
+882 86.0   0.0    0.0    0.0  868 ! MPL-CLP Microplate Lord Howe Rise-Challenger Plateau cross-over Gaina et.al 1998
+882 90.0  56.51   64.76    0.59  868 ! MPL-CLP Gaina et.al 1998
+882 600.0  56.51   64.76    0.59  868 ! MPL-CLP 
+883  0.0   0.0    0.0    0.0  869 ! NDR-NLHR North Dampier Ridge-Northern Lord Howe Rise
+883 71.4   0.0    0.0    0.0  869 ! NDR-NLHR Gaina et.al 1998
+883 71.4  11.84  -44.2   11.2  801 ! NDR-AUS North Dampier Ridge-Australia cross-over Gaina et.al 1998
+883 90.0  11.84  -44.2   11.2  801 ! NDR-AUS Gaina et.al 1998
+883 140.0  11.84  -44.2   11.2  801 ! NDR-AUS Gaina et.al 1998
+883 600.0  11.84  -44.2   11.2  801 ! NDR-AUS 
+884  0.0   0.0    0.0    0.0  869 ! M1DR-NLHR Middle 1 Dampier Ridge-Northern Lord Howe Rise
+884 72.4   0.0    0.0    0.0  869 ! M1DR-NLHR  Gaina et.al 1998
+884 72.4  13.05  -41.52   12.49  801 ! M1DR-AUS Middle 1 Dampier Ridge-Australia cross-over
+884 90.0  13.05  -41.52   12.49  801 ! M1DR-AUS Gaina et.al 1998
+884 600.0  13.05  -41.52   12.49  801 ! M1DR-AUS    
+885  0.0   0.0    0.0    0.0  869 ! M2DR-NLHR Middle 2 Dampier Ridge-Northern Lord Howe Rise
+885 74.2   0.0    0.0    0.0  869 ! M2DR-NLHR Gaina et.al 1998
+885 74.2   7.25  -44.15   11.46  801 ! M2DR-AUS Middle 2 Dampier Ridge-Australia cross-over
+885 90.0   7.25  -44.15   11.46  801 ! M2DR-AUS Gaina et.al 1998
+885 600.0   7.25  -44.15   11.46  801 ! M2DR-AUS
+886  0.0   0.0    0.0    0.0  869 ! SDR-NLHR South Dampier Ridge-Northern Lord Howe Rise
+886 79.0   0.0    0.0    0.0  869 ! SDR-NLHR Gaina et.al 1998
+886 79.0   5.28  -43.88   11.87  801 ! SDR-AUS South Dampier Ridge-Australia cross-over Gaina et.al 1998
+886 600.0   5.28  -43.88   11.87  801 ! SDR-AUS 
+887  0.0   0.0    0.0    0.0  801 ! ETP-AUS East Tasman Plateau-Australia
+887 83.5   0.0    0.0    0.0  801 ! ETP-AUS Gaina et.al 1998
+887 90.0  81.73  -40.96   -2.59  801 ! ETP-AUS Gaina et.al 1998
+887 99.0  81.73  -40.96   -2.59  801 ! ETP-AUS 
+887 600.0  81.73  -40.96   -2.59  801 ! ETP-AUS 
+888  0.0   0.0    0.0    0.0  878 ! EPP-PP Eastern Papuan Plateau-Papuan Plateau 
+888 52.0   0.0    0.0    0.0  878 ! EPP-PP Gaina et.al 1998
+888 60.0  14.03  -40.97    4.87  878 ! EPP-PP Gaina et.al 1998
+888 60.0   6.66  -43.55   11.42  801 ! EPP-AUS Eastern Papuan Plateau-Australia cross-over
+888 140.0   6.66  -43.55   11.42  801 ! EPP-AUS Gaina et.al 1998
+888 600.0   6.66  -43.55   11.42  801 ! EPP-AUS 
+889  0.0   0.0    0.0    0.0  836 ! MR-LP Mellish Rise-Louisiade Plateau
+889 52.0   0.0    0.0    0.0  836 ! MR-LP Gaina et.al 1998
+889 56.5   0.0    0.0    0.0  836 ! MR-LP Gaina et.al 1998
+889 57.0  17.78  -20.48   -1.55  836 ! MR-LP Gaina et.al 1998
+889 57.0  49.81    2.32   -1.97  890 ! MR-KP Mellish Rise-Kenn Plateau cross-over
+889 63.0  49.81    2.32   -1.97  890 ! MR-KP Gaina et.al 1998
+889 150.0  49.81    2.32   -1.97  890 ! MR-KP 
+889 600.0  49.81    2.32   -1.97  890 ! MR-KP 
+890  0.0   0.0    0.0    0.0  866 ! KP-CS Kenn Plateau-Chesterfield Plateau
+890 63.0   0.0    0.0    0.0  866 ! KP-CS Gaina et.al 1998
+890 63.0  -1.64  -52.42    4.95  801 ! KP-AUS Kenn Plateau-Australia cross-over
+890 140.0  -1.64  -52.42    4.95  801 ! KP-AUS Gaina et.al 1998
+890 600.0  -1.64  -52.42    4.95  801 ! KP-AUS 
+891  0.0   0.0    0.0    0.0  804 ! IB-MBL Iselin Bank-Marie Byrd Land
+891 53.3   0.0    0.0    0.0  804 ! IB-MBL Cande & Stock 2004
+891 61.1 -73.0  175.0   -7.0  804 ! IB-MBL Cande & Stock 2004
+891 200.0 -73.0  175.0   -7.0  804 ! IB-MBL
+892  0.0   0.0    0.0    0.0  801 ! NPNG1-AUS Northern Papua New Guinea 1-Australia
+892 86.0   0.0    0.0    0.0  801 ! NPNG1-AUS EarthByteGroup 2003
+892 86.0  47.1  -20.2  -68.43  901 ! NPNG1-PAC Northern Papua New Guinea 1-Pacific cross-over
+892 99.0  47.1  -20.2  -68.43  901 ! NPNG1-PAC EarthByteGroup 2003
+892 99.0  52.8  -94.6    3.82  801 ! NPNG1-AUS Northern Papua New Guinea 1-Australia cross-over
+892 600.0  52.8  -94.6    3.82  801 ! NPNG1-CS EarthByteGroup 2003
+893  0.0   0.0    0.0    0.0  801 ! NPNG2-AUS Northern Papua New Guinea 2-Australia
+893 35.0   7.07  121.87   13.63  801 ! NPNG2-AUS EarthByteGroup 2003
+893 40.0   7.07  121.87   21.22  801 ! NPNG2-AUS EarthByteGroup 2003
+893 50.0   7.07  121.87   30.92  801 ! NPNG2-AUS EarthByteGroup 2003
+893 50.0  39.6  -42.0  -66.63  901 ! NPNG2-PAC Northern Papua New Guinea 2-Pacific cross-over
+893 86.0  39.6  -42.0  -66.63  901 ! NPNG2-PAC EarthByteGroup 2003
+893 86.0  42.8  103.9   19.44  892 ! NPNG2-NPNG1 Northern Papua New Guinea 2-Northern Papua New Guinea 1 cross-over
+893 200.0  42.8  103.9   19.44  892 ! NPNG2-NPNG1 EarthByteGroup 2003
+894  0.0  49.08   -9.16   66.37  869 ! EAUS-NLHR Eastern Australia-Northern Lord Howe Rise
+894 86.0  49.08   -9.16   66.37  869 ! EAUS-NLHR EarthByteGroup 2003
+894 86.0   0.0    0.0    0.0  901 ! EAUS-PAC Eastern Australia-Pacific cross-over
+894 99.0   0.0    0.0    0.0  901 ! EAUS-PAC EarthByteGroup 2003
+895  0.0  18.92  109.67 -105.28  605 ! ENT-BUR Eastern NeoTethys South-Burma
+895 130.9  18.92  109.67 -105.28  605 ! ENT-BUR Heine et.al 2004
+895 130.9  18.92  109.67 -105.28  607 ! ENT-BMP Eastern NeoTethys South-Burma Plate cross-over
+895 135.9  18.92  109.67 -105.28  607 ! ENT-BMP Heine et.al 2004
+895 135.9   0.0    0.0    0.0  801 ! ENT-AUS Eastern NeoTethys South-Australia cross-over
+895 600.0   0.0    0.0    0.0  801 ! ENT-AUS Fit TransferPlate BUR-AUS ArgoAP
+896  0.0   0.0    0.0    0.0  801 ! PER-AUS Perth Abyssal Plain-Australia
+896 200.0   0.0    0.0    0.0  801 ! PER-AUS Perth Abyssal Plain-Australia
+897  0.0   0.0    0.0    0.0  801 ! NCT1-AUS North Cato Trough 1-Australia 
+897 52.0   0.0    0.0    0.0  801 ! NCT1-AUS Chron25 Based on Gaina et.al 1999
+897 53.3   0.0    0.0    0.0  801 ! NCT1-AUS Chron25 Based on Gaina et.al 1999
+897 55.8 -16.79  135.09   -1.39  801 ! NCT1-AUS Chron25 Based on Gaina et.al 1999
+897 90.0 -16.79  135.09   -1.39  801 ! NCT1-AUS Chron25 Based on Gaina et.al 1999
+897 600.0 -16.79  135.09   -1.39  801 ! NCT1-AUS Chron25 Based on Gaina et.al 1999
+898  0.0   0.0    0.0    0.0  801 ! NCT2-AUS North Cato Trough 2-Australia Chron26
+898 52.0   0.0    0.0    0.0  801 ! NCT2-AUS Chron26 Based on Gaina et.al 1999
+898 55.8   0.0    0.0    0.0  801 ! NCT2-AUS Chron26 Based on Gaina et.al 1999
+898 57.9 -18.23  139.7   -1.69  801 ! NCT2-AUS Chron26 Based on Gaina et.al 1999
+898 90.0 -18.23  139.7   -1.69  801 ! NCT2-AUS Chron26 Based on Gaina et.al 1999
+898 600.0 -18.23  139.7   -1.69  801 ! NCT2-AUS Chron26 Based on Gaina et.al 1999
+899  0.0   0.0    0.0    0.0  801 ! NAT-AUS Cato Trough-Australia
+899 52.0   0.0    0.0    0.0  801 ! NAT-AUS iso27 cato N  Based on Gaina et.al 1999
+899 57.9   0.0    0.0    0.0  801 ! NAT-AUS Based on Gaina et.al 1999
+899 61.2  40.05  109.21   -1.13  801 ! NAT-AUS Based on Gaina et.al 1999
+899 600.0  40.05  109.21   -1.13  801 ! NAT-AUS
+901  0.0   0.0    0.0    0.0  804 ! PAC-MBL Pacific-Marie Byrd Land (West Antarctica)
+901  0.78  64.25  -79.06    0.68  804 ! PAC-MBL An1 Cande et al. 1995
+901  2.58  67.03  -73.72    2.42  804 ! PAC-MBL An2a Cande et al. 1995
+901  5.89  67.91  -77.93    5.42  804 ! PAC-MBL An3a Cande et al. 1995
+901  8.86  69.68  -77.06    7.95  804 ! PAC-MBL An4a Cande et al. 1995
+901 10.9  70.86  -75.96    9.71  804 ! PAC-MBL An5o Cande et al. 1995
+901 12.29  71.75  -73.77   10.92  804 ! PAC-MBL An5a Cande et al. 1995
+901 17.47  73.68  -69.85   15.17  804 ! PAC-MBL An5d Cande et al. 1995
+901 20.1  74.15  -68.7   16.9  804 ! PAC-MBL An6o Cande et al. 1995
+901 24.06  74.72  -67.28   19.55  804 ! PAC-MBL An6c Cande et al. 1995
+901 28.28  74.55  -67.38   22.95  804 ! PAC-MBL An10 Cande et al. 1995
+901 33.54  74.38  -64.74   27.34  804 ! PAC-MBL An13 Cande et al. 1995
+901 42.54  74.9  -51.31   34.54  804 ! PAC-MBL An20 Cande et al. 1995
+901 47.91  74.52  -50.19   37.64  804 ! PAC-MBL An21 Cande et al. 1995
+901 53.35  73.62  -52.5   40.03  804 ! PAC-MBL An24 Cande et al. 1995
+901 61.1  71.38  -55.57   44.9  804 ! PAC-MBL An27 Cande et al. 1995
+901 67.7  68.94  -55.52   49.6  804 ! PAC-MBL Larter et.al 2002
+901 73.6  66.72  -55.04   53.74  804 ! PAC-MBL 33y Larter et.al 2002
+901 83.5  65.58  -52.38   63.07  804 ! PAC-MBL 34y Larter et.al 2002
+901 83.5  59.8  -59.5   61.07  003 ! PAC-PPH Pacific-Pacific Hotspots cross-over * MS recaculate using main 10/06
+901 96.0  60.99  -68.5   67.28  003 ! PAC-PPH 83.5-96Ma 901-001 stage rot from Wessel 2006
+901 110.0  64.55  -65.8   71.47  003 ! PAC-PPH 83.5-96Ma 901-001 stage rot from Wessel 2006
+901 125.0  66.33  -68.54   83.14  003 ! PAC-PPH 83.5-96Ma 901-001 stage rot from Wessel 2006
+901 140.0  66.33  -48.57   90.91  003 ! PAC-PPH 83.5-96Ma 901-001 stage rot from Wessel 2006
+901 240.0  66.33  -48.57  142.71  003 ! PAC-PPH 83.5-96Ma 901-001 stage rot from Wessel 2006
+902  0.0   0.0    0.0    0.0  901 ! FAR-PAC Pacific-Farallon
+902 10.9  60.11  -89.75  -14.88  901 ! FAR-PAC EarthByteGroup 2005
+902 23.0  73.53  -92.61  -31.08  901 ! FAR-PAC EarthByteGroup 2005
+902 33.1  76.1 -110.7  -45.27  901 ! FAR-PAC Derived from Tebbens & Cande 1997
+902 40.1  82.19 -122.97  -52.24  901 ! FAR-PAC EarthByteGroup 2005           
+902 47.9  85.24 -160.16  -62.78  901 ! FAR-PAC EarthByteGroup 2005           
+902 55.9  84.28  135.44  -71.47  901 ! FAR-PAC EarthByteGroup 2005      
+902 67.7  82.93  125.82  -80.17  901 ! FAR-PAC EarthByteGroup 2005    
+902 83.5  81.35  119.76  -93.37  901 ! FAR-PAC EarthByteGroup 2005
+902 120.4  71.12   92.43 -128.09  901 ! FAR-PAC EarthByteGroup 2005
+902 126.7  68.55   91.88 -131.5  901 ! FAR-PAC EarthByteGroup 2005
+902 131.9  66.01   91.24 -134.89  901 ! FAR-PAC EarthByteGroup 2005
+902 139.6  64.83   92.55 -141.27  901 ! FAR-PAC EarthByteGroup 2005
+902 147.7  63.46   94.64 -147.89  901 ! FAR-PAC EarthByteGroup 2005
+902 154.3  61.3   94.85 -156.46  901 ! FAR-PAC EarthByteGroup 2005
+902 160.0  61.43   96.02 -169.11  901 ! FAR-PAC EarthByteGroup 2005
+902 175.0  59.86   99.52 -181.77  901 ! FAR-PAC EarthByteGroup 2005
+902 200.0  59.86   99.52 -211.77  901 ! FAR-PAC EarthByteGroup 2005
+902 270.0  59.86   99.52 -265.77  901 ! FAR-PAC EarthByteGroup 2005
+902 340.0  59.86   99.52 -319.77  901 ! FAR-PAC EarthByteGroup 2005
+903  0.0   0.0    0.0    0.0  901 ! VAN-PAC Vancouver Plate-Pacific
+903 10.9  82.6    4.6   -7.94  901 ! VAN-PAC Muller et.al 1997
+903 20.1  82.6    4.6  -15.65  901 ! VAN-PAC Muller et.al 1997
+903 33.1  88.47 -135.73  -35.27  901 ! VAN-PAC Muller et.al 1997
+903 40.1  87.29 -163.17  -44.92  901 ! VAN-PAC Muller et.al 1997
+903 47.9  86.65 -179.21  -52.73  901 ! VAN-PAC Muller et.al 1997
+903 55.9  85.75  133.44  -57.99  901 ! VAN-PAC Muller et.al 1997
+903 67.7  82.67  109.04  -65.82  901 ! VAN-PAC Muller et.al 1997
+903 83.5  77.1   93.6  -75.91  901 ! VAN-PAC Muller et.al 1997
+903 120.4  72.2   85.9 -104.18  901 ! VAN-PAC Muller et.al 1997
+903 126.7  67.75   81.35 -106.34  901 ! VAN-PAC Muller et.al 1997
+903 131.9  64.81   79.22 -107.98  901 ! VAN-PAC Muller et.al 1997
+903 139.6  61.4   79.62 -112.88  901 ! VAN-PAC Muller et.al 1997
+903 147.7  59.22   80.42 -117.06  901 ! VAN-PAC Muller et.al 1997
+903 245.7  59.22   80.42 -120.0  901 ! VAN-PAC Muller et.al 1997
+904  0.0   0.0    0.0    0.0  804 ! ALU-MBL Aluk Plate-Marie Byrd Land 
+904 20.1   6.6  150.17   11.1  804 ! ALU-MBL Muller et.al 1997
+904 33.1   6.6  150.17   14.8  804 ! ALU-MBL Muller et.al 1997
+904 40.1   6.6  150.17   18.5  804 ! ALU-MBL Muller et.al 1997
+904 47.9   6.6  150.17   22.2  804 ! ALU-MBL Muller et.al 1997
+904 600.0   0.0    0.0    0.0  804 ! ALU-MBL (E. of extinct ridge, N. of Hero)  
+905  0.0   0.0    0.0    0.0  901 ! HIK-PAC Hikurangi (Moa) Plate-Pacific
+905 86.0   0.0    0.0    0.0  901 ! HIK-PAC EarthByteGroup 2005
+905 120.0   5.6  129.85   30.33  901 ! HIK-PAC EarthByteGroup 2005
+905 150.0   5.6  129.85   30.33  901 ! HIK-PAC EarthByteGroup 2005
+906  0.0   0.0    0.0    0.0  814 ! HHP-BEL Henry Hudson Plate-Bellinghausen   
+906 47.1   0.0    0.0    0.0  814 ! HHP-BEL                                    
+906 56.1 -65.4  130.9   -5.32  814 ! HHP-BEL AN21, EarthByteGroup 2002
+907  0.0   0.0    0.0    0.0  301 ! JMN-EUR Jan Mayen Plate-Eurasia
+907 30.0   0.0    0.0    0.0  301 ! JMN-EUR AN 13 spreading stops EarthByteGroup 2007
+907 33.1  64.9  -12.2   -8.0  301 ! JMN-EUR AN 13 EarthByteGroup 2007
+907 40.1  64.9  -12.2  -22.6  301 ! JMN-EUR AN 18 Muller et.al 1997
+907 47.9  64.3  -12.7  -37.3  301 ! JMN-EUR AN 21 Lawver et al. 1990
+907 53.3  63.0  -16.0  -47.5  301 ! JMN-EUR AN 24 EarthByteGroup 2007
+907 56.0  63.0  -16.0  -48.0  301 ! JMN-EUR EarthByteGroup 2007
+907 56.0  74.0  -14.7  -48.0  102 ! JMN-GRN Jan Mayen Plate-Greenland cross-over
+907 57.0  74.0  -14.7  -50.0  102 ! JMN-GRN EarthByteGroup 2007
+907 300.0  74.5  -14.7  -59.0  102 ! JMN-GRN  
+909  0.0   0.0    0.0    0.0  901 ! COC-PAC Cocos Plate-Pacific 
+909  5.0  39.13 -108.6  -10.25  901 ! COC-PAC AN5 EarthByteGroup 2005, based on Wilson 1996
+909 10.0  35.3 -105.6  -25.08  901 ! COC-PAC AN5 EarthByteGroup 2005, based on Wilson 1996
+909 11.94  36.0 -107.7  -30.27  901 ! COC-PAC AN5y   Wilson 1996
+909 12.99  36.7 -109.1  -32.66  901 ! COC-PAC AN5y   Wilson 1996
+909 14.8  38.3 -111.8  -36.33  901 ! COC-PAC AN5y   Wilson 1996
+909 17.28  39.3 -114.9  -42.45  901 ! COC-PAC AN5y   Wilson 1996
+909 20.0  40.42 -117.81  -47.44  901 ! COC-PAC AN6 EarthByteGroup 2005, based on Wilson 1996
+909 23.0  39.8 -119.7  -54.29  901 ! COC-PAC EarthByteGroup 2005
+909 33.1  68.83 -103.84  -50.86  901 ! COC-PAC EarthByteGroup 2005, based on Wilson 1996
+909 200.0  68.83 -103.84  -50.86  901 ! COC-PAC 
+910  0.0   0.0    0.0    0.0  901 ! JFC-PAC Juan de Fuca-Pacific   
+910 600.0   0.0    0.0    0.0  901 ! JFC-PAC     
+911  0.0   0.0    0.0    0.0  901 ! NAZ-PAC Nazca Plate-Pacific 
+911  5.0  61.0  -89.6   -7.34  901 ! NAZ-PAC Tebbens &Cande 97
+911 10.9  63.9  -91.1  -16.74  901 ! NAZ-PAC Tebbens &Cande 97
+911 15.0  65.4  -91.2  -23.01  901 ! NAZ-PAC Tebbens &Cande 97
+911 20.1  62.38  -93.02  -31.01  901 ! NAZ-PAC AN 6 Tebbens & Cande 1997 
+911 23.0  63.88  -94.75  -35.78  901 ! NAZ-PAC AN 6 Based on Tebbens & Cande 1997 
+911 23.0  19.2  -84.1   -7.27  902 ! NAZ-FAR Nazca Plate-Farallon Plate crossover 
+911 240.0  19.2  -84.1   -7.27  902 ! NAZ-FAR EarthByteGroup 2005
+912  0.0   0.0    0.0    0.0  901 ! NMG-PAC North Magellan-Pacific
+912 124.6   0.0    0.0    0.0  901 ! NMG-PAC                     
+912 133.6   0.0    0.0    0.0  901 ! NMG-PAC                    
+912 600.0   0.0    0.0    0.0  901 ! NMG-PAC                 
+913  0.0   0.0    0.0    0.0  901 ! SMG-PAC South Magellan-Pacific  
+913 124.6   0.0    0.0    0.0  901 ! SMG-PAC                      
+913 134.9   0.0    0.0    0.0  901 ! SMG-PAC                   
+913 600.0   0.0    0.0    0.0  901 ! SMG-PAC                 
+914  0.0   0.0    0.0    0.0  901 ! CNK-PAC Chinook-Pacific
+914 69.4   0.0    0.0    0.0  901 ! CNK-PAC              
+914 121.6   0.0    0.0    0.0  901 ! CNK-PAC            
+914 600.0   0.0    0.0    0.0  901 ! CNK-PAC         
+915  0.0   0.0    0.0    0.0  901 ! MTH-PAC Mathematician-Pacific     
+915 10.9   0.0    0.0    0.0  901 ! MTH-PAC                        
+915 600.0   0.0    0.0    0.0  901 ! MTH-PAC                     
+916  0.0   0.0    0.0    0.0  909 ! RIV-COC Rivera plate-Cocos plate      
+916  3.1   0.0    0.0    0.0  909 ! RIV-COC                            
+916 10.9   0.0    0.0    0.0  909 ! RIV-COC                        
+916 47.6   0.0    0.0    0.0  909 ! RIV-COC                      
+917  0.0   0.0    0.0    0.0  909 ! GLP-COC Guadelupe plate-Cocos
+917  9.8   0.0    0.0    0.0  909 ! GLP-COC                    
+917 12.7   0.0    0.0    0.0  909 ! GLP-COC                  
+917 47.6   0.0    0.0    0.0  909 ! GLP-COC
+918  0.0   0.0    0.0    0.0  901 ! KUL-PAC Kula Plate-Pacific 
+918 41.0   0.0    0.0    0.0  901 ! KUL-PAC Spreading stops EarthByteGroup 2007, based on Lonsdale 1988
+918 47.9  53.0  -82.5    4.4  901 ! KUL-PAC AN21 EarthByteGroup 2007, based on Lonsdale 1988 lineations
+918 55.9   3.44  105.95   -9.78  901 ! KUL-PAC AN29 EarthByteGroup 2007
+918 67.7  10.42  108.36  -15.7  901 ! KUL-PAC EarthByteGroup 2007
+918 79.0  10.42  108.36  -21.37  901 ! KUL-PAC An33 EarthByteGroup 2007
+918 240.0  10.42  108.36  -21.37  901 ! KUL-PAC 
+919  0.0   0.0    0.0    0.0  911 ! PHX-NAZ Phoenix Plate-Nazca Plate
+919 67.7   0.0    0.0    0.0  911 ! PHX-NAZ transfered to FAR plate EarthByteGroup 2005
+919 67.7  82.8  170.4  -82.06  901 ! PHX-PAC Phoenix Plate-Pacific cross-over McCarron & Larter 1998 
+919 83.5  76.19  -90.7  -87.96  901 ! PHX-PAC AN34 EarthByteGroup 2005
+919 86.0  75.82  -87.26  -87.78  901 ! PHX-PAC EarthByteGroup 2005
+919 86.0  75.82  -87.49  -87.77  905 ! PHX-HIK Phoenix Plate-Hikurangi(Moa) Plate cross-over EarthByteGroup 2005
+919 120.4  75.82  -87.49  -87.77  905 ! PHX-HIK EarthByteGroup 2005
+919 120.4  63.32  -36.31  -94.68  901 ! PHX-PAC Phoenix Plate-Pacific M0 NovaCanton XR cross-over EarthByteGroup 2005
+919 126.7  56.74  -43.64 -100.39  901 ! PHX-PAC  M4  EarthByteGroup 2005
+919 139.6  48.19  -49.52 -108.96  901 ! PHX-PAC  M16 EarthByteGroup 2005
+919 147.7  45.36  -51.24 -113.25  901 ! PHX-PAC  M21 EarthByteGroup 2005
+919 154.3  42.23  -53.01 -117.54  901 ! PHX-PAC  M25 EarthByteGroup 2005
+919 160.0  36.04  -55.39 -127.15  901 ! PHX-PAC  M3x EarthByteGroup 2005
+919 175.0  33.67  -56.25 -131.16  901 ! PHX-PAC  M4x EarthByteGroup 2005
+919 200.0  33.67  -56.25 -161.16  901 ! PHX-PAC  M4x EarthByteGroup 2005
+919 270.0  33.67  -56.25 -238.5  901 ! PHX-PAC EarthByteGroup 2005
+919 340.0  33.67  -56.25 -315.84  901 ! PHX-PAC EarthByteGroup 2005
+920  0.0   0.0    0.0    0.0  901 ! PXRJ-PAC Phoenix Plate Southern Ridge Jump-Pacific
+920 120.4   0.0    0.0    0.0  901 ! PXRJ-PAC
+920 126.7  17.05 -106.0  -12.66  901 ! PXRJ-PAC EarthByteGroup 2005
+920 180.0  17.05 -106.0  -12.66  901 ! PXRJ-PAC IsoM4Phx trapped on Pacific plate
+921  0.0   0.0    0.0    0.0  901 ! OTP-PAC Osbourn Trough Phoenix Plate-Pacific
+921 85.0   0.0    0.0    0.0  901 ! OTP-PAC phx crust trapped on Pac, EarthByteGroup 2005
+921 85.0  76.0  -88.6   87.85  919 ! OTP-PHX Osbourn Trough Phoenix Plate-Phoenix Plate, EarthByteGroup 2005
+921 180.0  76.0  -88.6   87.85  919 ! OTP-PHX 
+922  0.0   0.0    0.0    0.0  911 ! EAS-NAZ Easter Plate-Nazca plate  
+922  2.0   0.0    0.0    0.0  911 ! EAS-NAZ                       
+922  9.8   0.0    0.0    0.0  911 ! EAS-NAZ                    
+923  0.0   0.0    0.0    0.0  911 ! JFD-NAZ Juan Fernandez Plate-Nazca plate 
+923  9.8   0.0    0.0    0.0  911 ! JFD-NAZ  
+924  0.0   0.0    0.0    0.0  909 ! NFAR-COC Northern Farallon/Cocos-Cocos
+924 23.0   0.0    0.0    0.0  909 ! NFAR-COC EarthByteGroup 2005
+924 23.0   8.0 -111.9  -34.1  902 ! NFAR-FAR Northern Farallon/Cocos-Farallon cross-over, EarthByteGroup 2005
+924 180.0   8.0 -111.9  -34.1  902 ! NFAR-FAR part of far-> cocos, EarthByteGroup 2005
+925  0.0   0.0    0.0    0.0  102 ! LEF-GRN Leif plate-Greenland               
+925 600.0   0.0    0.0    0.0  102 ! LEF-GRN                           
+926  0.0   0.0    0.0    0.0  901 ! IZA1-PAC Izanagi Plate 1-Pacific
+926 60.0   0.0    0.0    0.0  901 ! IZA1-PAC EarthByteGroup 2005
+926 120.4  60.71 -131.38   78.02  901 ! IZA1-PAC  M0 EarthByteGroup 2005
+926 126.7  60.94 -133.76   84.97  901 ! IZA1-PAC  M4 EarthByteGroup 2005
+926 131.9  60.77 -135.76   90.92  901 ! IZA1-PAC  M10-N EarthByteGroup 2005
+926 139.6  59.85 -135.99   98.08  901 ! IZA1-PAC  M16  EarthByteGroup 2005
+926 147.7  59.09 -136.37  108.98  901 ! IZA1-PAC  M21  EarthByteGroup 2005
+926 154.3  59.39 -137.65  115.73  901 ! IZA1-PAC EarthByteGroup 2005
+926 160.0  57.2 -136.36  130.27  901 ! IZA1-PAC EarthByteGroup 2005 
+926 175.0  56.42 -135.35  143.78  901 ! IZA1-PAC EarthByteGroup 2005
+926 200.0  56.42 -135.35  173.78  901 ! IZA1-PAC EarthByteGroup 2005
+926 270.0  56.42 -135.35  238.35  901 ! IZA1-PAC EarthByteGroup 2005
+926 340.0  56.42 -135.35  302.92  901 ! IZA1-PAC EarthByteGroup 2005
+927  0.0   0.0    0.0    0.0  609 ! IZA2-NPS Izanagi Plate 2-North Philipine Sea
+927 57.9   0.0    0.0    0.0  609 ! IZA2-NPS ridge jump for WPB EarthByteGroup 2005
+927 57.9   6.25  -46.17  -80.71  901 ! IZA2-PAC Izanagi Plate 2-Pacific cross-over
+927 600.0   6.25  -46.17  -80.71  901 ! IZA2-PAC 
+928  0.0   0.0    0.0    0.0  919 ! FPX-PHX Farallon/Phoenix Plate-Phoenix Plate
+928 83.5   0.0    0.0    0.0  919 ! FPX-PHX part of Far attached to Phx, EarthByteGroup 2005
+929  0.0   0.0    0.0    0.0  919 ! ALK-PHX Aluk Plate 2-Phoenix
+929 83.5   0.0    0.0    0.0  919 ! ALK-PHX
+929 99.0   0.0    0.0    0.0  919 ! ALK-PHX
+930  0.0   0.0    0.0    0.0  911 ! PXN-NAZ Phoenix/Nazca-Nazca
+930 47.9   0.0    0.0    0.0  911 ! PXN-NAZ part of Phx attached to Farallon, EarthByteGroup 2005
+930 47.9  59.9 -153.8  -31.57  804 ! PXN-MBL Phoenix/Nazca-Marie Byrd Land cross-over
+930 99.0  59.9 -153.8  -31.57  804 ! PXN-MBL EarthByteGroup 2005
+931  0.0   0.0    0.0    0.0  804 ! BEL2-MBL Bellinghausen Plate 2-Marie Byrd Land
+931 99.0   0.0    0.0    0.0  804 ! BEL2-MBL
+932  0.0   0.0    0.0    0.0  918 ! KUL2-KUL Kula/Farallon-Kula
+932 79.0   0.0    0.0    0.0  918 ! KUL2-KUL Far iso that become Kula, EarthByteGroup 2005
+932 79.0  80.8    0.2   84.78  902 ! KUL2-FAR Kula/Farallon-Farallon crossover, EarthByteGroup 2005
+932 240.0  80.8    0.2   84.78  902 ! KUL2-FAR EarthByteGroup 2005
+933  0.0   0.0    0.0    0.0  608 ! IZA3-SPS Izanagi Plate 3-South Philippine Sea
+933 57.9   0.0    0.0    0.0  608 ! IZA3-SPS ridge jump for WPB southside, EarthByteGroup 2005
+933 57.9   5.82  -57.02  -95.11  901 ! IZA3-PAC Izanagi Plate 3-Pacific cross-over, EarthByteGroup 2005
+933 600.0   5.82  -57.02  -95.11  901 ! IZA3-PAC ridge jump for WPB southside, EarthByteGroup 2005
+934  0.0   0.0    0.0    0.0  608 ! IZA4-SPS Izanagi Plate 4-South Philippine Sea
+934 57.9   0.0    0.0    0.0  608 ! IZA4-SPS ridge jump for WPB southside, EarthByteGroup 2005
+934 57.9   5.82  -57.02  -95.11  901 ! IZA4-PAC Izanagi Plate 4-Pacific cross-over, EarthByteGroup 2005
+934 600.0   5.82  -57.02  -95.11  901 ! IZA4-PAC ridge jump for WPB southside, EarthByteGroup 2005
+935  0.0   0.0    0.0    0.0  901 ! NZP-PAC Present Day Nazca-Pacific
+935 10.9  59.64  -92.48  -15.09  901 ! NZP-PAC Nazca present day iso
+935 20.1  65.42  -91.56  -30.73  901 ! NZP-PAC Muller et.al 1997
+935 33.1  68.65 -107.69  -47.72  901 ! NZP-PAC Muller et.al 1997
+935 40.1  76.34 -107.66  -55.25  901 ! NZP-PAC Muller et.al 1997
+936  0.0   0.0    0.0    0.0  814 ! HHP-BEL Henry Hudson Plate-Bellinghausen
+936 47.1   0.0    0.0    0.0  814 ! HHP-BEL
+936 56.1 -68.4  130.4   -5.38  814 ! HHP-BEL EarthByteGroup 2002
+937  0.0   0.0    0.0    0.0  804 ! MBL2-MBL Marie Byrd Land 2-Marie Byrd Land
+937 50.0   0.0    0.0    0.0  804 ! MBL2-MBL extra MBL plateID for trapped crust
+937 50.0   0.0    0.0    0.0  801 ! MBL2-MBL
+937 250.0   0.0    0.0    0.0  801 ! MBL2-MBL
+938  0.0   0.0    0.0    0.0  918 ! KUL3-KUL Kula Plate 3-Kula Plate
+938 79.0   0.0    0.0    0.0  918 ! KUL3-KUL
+938 79.0  59.8  131.4  -31.04  926 ! KUL3-IZA Kula Plate 3-Izanagi Plate crossover, EarthByteGroup 2005
+938 250.0  59.8  131.4  -31.04  926 ! KUL3-IZA 
+939  0.0   0.0    0.0    0.0  918 ! KUL4-KUL Kula Plate 4-Kula Plate
+939 79.0   0.0    0.0    0.0  918 ! KUL4-KUL
+939 79.0  10.4  108.4  -21.37  901 ! KUL4-PAC Kula Plate 4-Pacific Plate crossover, EarthByteGroup 2005
+939 250.0  10.4  108.4  -21.37  901 ! KUL4-PAC
+940  0.0   0.0    0.0    0.0  255 ! FCAR-NHI Farallon Plate Becomes Caribbean-Lesser Antilles
+940 60.0   0.0    0.0    0.0  255 ! FCAR-NHI EarthByteGroup 2007
+940 140.0   0.0    0.0    0.0  255 ! FCAR-NHI EarthByteGroup 2007
+941  0.0   0.0    0.0    0.0  101 ! ALT-NAM Aleutian Basin-North America
+941 50.0   0.0    0.0    0.0  101 ! ALT-NAM 
+941 50.0  50.9  -68.8  -29.4  926 ! ALT-IZA Aleutian Basin-Izanagi crossover
+941 200.0  50.9  -68.8  -29.4  926 ! ALT-IZA 
+960  0.0  49.2  -84.4  -50.58  801 ! PXPH-AUS Phoenix/Philippine-Australia
+960 50.0  49.2  -84.4  -50.58  801 ! PXPH-AUS
+960 50.0  38.7  174.9  -89.19  934 ! PXPH-IZA4 Phoenix/Philippine-Izanagi Plate 4 cross-over, EarthByteGroup 2005
+960 110.0  38.7  174.9  -89.19  934 ! PXPH-IZA4 trapped PHX crust to PAC(Philippine), EarthByteGroup 2005
+960 110.0  44.4 -167.2  -82.82  927 ! PXPH-IZA2 Phoenix/Philippine-Izanagi Plate 2 cross-over, EarthByteGroup 2005
+960 110.0   0.0    0.0    0.0  919 ! PXPH-PHX Phoenix/Philippine-Phoenix cross-over, EarthByteGroup 2005
+960 200.0   0.0    0.0    0.0  919 ! PXPH-PHX trapped PHX crust to PAC(Philippine), EarthByteGroup 2005
+970  0.0   0.0    0.0    0.0  901 ! RIV-PAC Rivera Microplate-Pacific
+970  5.0   6.0 -110.0    4.8  901 ! RIV-PAC CG0806 based on Wilson 1996
+970 10.0  11.5 -110.0   28.0  901 ! RIV-PAC CG0806 based on Wilson 1996
+970 15.0  -2.0 -110.0   23.0  901 ! RIV-PAC CG0806 based on Wilson 1996
+971  0.0   0.0    0.0    0.0  911 ! BAU-NAZ Bauer Microplate-Nazca
+971  5.9   0.0    0.0    0.0  911 ! BAU-NAZ CG07 based on Eakins 2003
+971  7.4 -28.0 -103.0   -3.9  911 ! BAU-NAZ CG07 based on Eakins 2003 
+971 10.9 -27.25 -101.3  -19.3  911 ! BAU-NAZ CG07 based on Eakins 2003
+971 15.15 -24.86  -98.5  -40.63  911 ! BAU-NAZ CG07 based on Eakins 2003
+972  0.0   0.0    0.0    0.0  971 ! BAUC-BAU Bauer Microplate core
+972 15.0   0.0    0.0    0.0  971 ! BAUC-BAU CG07 based on Eakins 2003

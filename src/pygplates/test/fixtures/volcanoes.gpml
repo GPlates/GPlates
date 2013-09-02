@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0322" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+    <gml:featureMember>
+        <gpml:Volcano>
+            <gpml:identity>GPlates-d13bba7f-57f5-419d-bbd4-105a8e72e177</gpml:identity>
+            <gpml:revision>GPlates-d172eaab-931f-484e-a8b6-0605e2dacd18</gpml:revision>
+            <gml:name></gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">40</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>801</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>9.7266229621353162 -13.357882307750646</gml:pos>
+                </gml:Point>
+            </gpml:position>
+        </gpml:Volcano>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Volcano>
+            <gpml:identity>GPlates-847b6587-b022-431d-9988-88db1f867f9e</gpml:identity>
+            <gpml:revision>GPlates-1c1c327d-6453-429c-90f5-1edaf67a8d96</gpml:revision>
+            <gml:name></gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">30</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>802</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>-4.9161606068615038 -0.70405497631244285</gml:pos>
+                </gml:Point>
+            </gpml:position>
+        </gpml:Volcano>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Volcano>
+            <gpml:identity>GPlates-9e811a8f-f8f9-4810-b19f-b2e30577899c</gpml:identity>
+            <gpml:revision>GPlates-3f96399b-9a0f-4c60-a514-20fda5326bb2</gpml:revision>
+            <gml:name></gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">20</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>701</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>-16.940174137499088 8.9825707364800316</gml:pos>
+                </gml:Point>
+            </gpml:position>
+        </gpml:Volcano>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:Volcano>
+            <gpml:identity>GPlates-ead7ca31-4187-42b5-a7f6-b1f61c0ffb5b</gpml:identity>
+            <gpml:revision>GPlates-e14f4358-1ba6-481f-9a3d-bd1cbe3764ef</gpml:revision>
+            <gml:name></gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">10</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">0</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>201</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:position>
+                <gml:Point>
+                    <gml:pos>-32.095176182223071 19.764675063334519</gml:pos>
+                </gml:Point>
+            </gpml:position>
+        </gpml:Volcano>
+    </gml:featureMember>
+</gpml:FeatureCollection>
