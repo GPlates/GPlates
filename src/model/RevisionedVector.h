@@ -26,15 +26,22 @@
 #ifndef GPLATES_MODEL_REVISIONEDVECTOR_H
 #define GPLATES_MODEL_REVISIONEDVECTOR_H
 
+#include <cstddef> // std::size_t
 #include <vector>
 #include <boost/foreach.hpp>
+#include <boost/iterator/iterator_facade.hpp>
 #include <boost/mpl/bool.hpp>
 #include <boost/mpl/eval_if.hpp>
 #include <boost/mpl/identity.hpp>
+#include <boost/mpl/if.hpp>
 #include <boost/optional.hpp>
+#include <boost/pointee.hpp>
+#include <boost/type_traits/add_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
+#include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
 
+#include "BubbleUpRevisionHandler.h"
 #include "ModelTransaction.h"
 #include "Revisionable.h"
 #include "RevisionedReference.h"
@@ -55,6 +62,74 @@ namespace GPlatesModel
 	class RevisionedVector :
 			public Revisionable
 	{
+	private:
+
+		/**
+		 * Helper metafunction inherits from 'boost::true_type' if 'ElementType' is revisionable
+		 * (convertible to 'Revisionable::non_null_ptr_to_const_type').
+		 */
+		struct IsElementTypeRevisionable :
+				// Use 'const' since non-const elements are convertible to const elements...
+				boost::is_convertible<ElementType, Revisionable::non_null_ptr_to_const_type>
+		{  };
+
+		/**
+		 * Helper metafunction to convert from 'RevisionableType::non_null_ptr_type' to
+		 * 'RevisionableType::non_null_ptr_to_const_type'.
+		 */
+		template <class Type>
+		struct GetElementAsNonNullPtrToConstType
+		{
+			//! 'GPlatesUtils::non_null_intrusive_ptr' has the nested type 'element_type'.
+			typedef GPlatesUtils::non_null_intrusive_ptr<
+					typename boost::add_const<
+							typename boost::pointee<Type>::type>::type> type;
+		};
+
+		/**
+		 * Typedef for a 'const' element.
+		 *
+		 * It's either just 'const ElementType' (eg, 'const int') or
+		 * GPlatesUtils::non_null_intrusive_ptr<const ElementType::element_type>
+		 * (eg, PropertyValue::non_null_ptr_to_const_type) depending on whether the element type
+		 * is revisionable or not.
+		 */
+		typedef typename boost::mpl::eval_if<
+				IsElementTypeRevisionable,
+						// Lazy evaluation to avoid compile error if no nested type 'element_type'...
+						GetElementAsNonNullPtrToConstType<ElementType>,
+						boost::add_const<ElementType>
+								>::type const_element_type;
+
+		/**
+		 * Helper metafunction to get the @a RevisionedReferenced type from a
+		 * GPlatesUtils::non_null_intrusive_ptr<RevisionableType> type where 'RevisionableType'
+		 * derives from @a Revisionable. This helper class is needed, along with 'mpl::eval_if',
+		 * to avoid a compile error when 'ElementType' is not related to @a Revisionable (eg, an integer).
+		 * In other words this template is only instantiated by 'mpl::eval_if' if 'ElementType'
+		 * has the nested type 'element_type'.
+		 */
+		template <class Type>
+		struct GetRevisionedReferenceType
+		{
+			//! 'GPlatesUtils::non_null_intrusive_ptr' has the nested type 'element_type'.
+			typedef RevisionedReference<typename boost::pointee<Type>::type> type;
+		};
+
+		/**
+		 * Typedef for the revisioned element.
+		 *
+		 * It's either just the ElementType itself (eg, 'int') or
+		 * RevisionReference<ElementType::element_type> depending on whether the element type
+		 * is revisionable or not.
+		 */
+		typedef typename boost::mpl::eval_if<
+				IsElementTypeRevisionable,
+						// Lazy evaluation to avoid compile error if no nested type 'element_type'...
+						GetRevisionedReferenceType<ElementType>,
+						boost::mpl::identity<ElementType>
+								>::type revisioned_element_type;
+
 	public:
 
 		//! Typedef for the vector's element type.
@@ -68,6 +143,244 @@ namespace GPlatesModel
 
 
 		/**
+		 * Reference (proxied) implementation for a reference to an element.
+		 *
+		 * Using a proxy implementation enables us to remain revision-aware and enables
+		 * us to use '*iter = new_element' to replace elements in-place in the vector while
+		 * maintaining revisioning in the process.
+		 *
+		 * ElementQualifiedType can be 'element_type' or 'const_element_type'.
+		 */
+		template <typename ElementQualifiedType>
+		class Reference
+		{
+		public:
+
+			//! Typedef for the const or non-const revisioned vector pointer.
+			typedef typename boost::mpl::if_<
+					boost::is_same<ElementQualifiedType, const_element_type>,
+								const RevisionedVector<ElementType> *,
+								RevisionedVector<ElementType> *>::type
+										revisioned_vector_ptr_type;
+
+			explicit
+			Reference(
+					revisioned_vector_ptr_type revisioned_vector,
+					std::size_t index) :
+				d_revisioned_vector(revisioned_vector),
+				d_index(index)
+			{  }
+
+			/**
+			 * Element assignment operator.
+			 *
+			 * Only 'non-const' Reference's ('reference') can set the element in-place in the vector as in:
+			 *   *iter = new_element; // Where '*iter' returns 'Reference'.
+			 * 'disable_if' ensures this by removing this assignment operator from 'const_reference'.
+			 */
+			typename boost::disable_if<boost::is_same<ElementQualifiedType, const_element_type>, Reference &>::type
+			operator=(
+					const ElementQualifiedType &element)
+			{
+				d_revisioned_vector->set_element(element, d_index);
+				return *this;
+			}
+
+			/**
+			 * Copy assignment operator.
+			 *
+			 * 'disable_if' removes this assignment operator from 'const_reference'.
+			 */
+			typename boost::disable_if<boost::is_same<ElementQualifiedType, const_element_type>, Reference &>::type
+			operator=(
+					const Reference &other)
+			{
+				*this = ElementQualifiedType(other); // Use element assignment operator.
+				return *this;
+			}
+
+			operator ElementQualifiedType() const
+			{
+				return get_element_in_current_revision();
+			}
+
+		private:
+
+			revisioned_vector_ptr_type d_revisioned_vector;
+			std::size_t d_index;
+
+
+			ElementQualifiedType
+			get_element_in_current_revision() const
+			{
+				Revision &revision = d_revisioned_vector->get_current_revision<Revision>();
+
+				// Make sure we're not dereferencing out-of-bounds.
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						d_index < revision.elements.size(),
+						GPLATES_ASSERTION_SOURCE);
+
+				return get_element_in_current_revision(
+						revision.elements[d_index],
+						typename IsElementTypeRevisionable::type());
+			}
+
+			ElementQualifiedType
+			get_element_in_current_revision(
+					const revisioned_element_type &revisioned_element,
+					boost::mpl::true_/*'ElementType' is revisionable*/) const
+			{
+				return revisioned_element.get_revisionable();
+			}
+
+			ElementQualifiedType
+			get_element_in_current_revision(
+					const revisioned_element_type &revisioned_element,
+					boost::mpl::false_/*'ElementType' is not revisionable*/) const
+			{
+				return revisioned_element;
+			}
+		};
+
+		/**
+		 * Non-const reference type.
+		 *
+		 * Dereferencing will return a 'element_type'.
+		 */
+		typedef Reference<element_type> reference;
+
+		/**
+		 * Const reference type.
+		 *
+		 * Dereferencing will return a 'const_element_type' which is either
+		 * 'const ElementType', or RevisionableType::non_null_ptr_to_const_type if 'ElementType' is
+		 * RevisionableType::non_null_ptr_type (where RevisionableType inherits from @a Revisionable).
+		 */
+		typedef Reference<const_element_type> const_reference;
+
+
+		/**
+		 * Iterator implementation.
+		 *
+		 * ElementQualifiedType can be 'element_type' or 'const_element_type'.
+		 *
+		 * This iterator can also work across revisions (eg, if change an element during iteration
+		 * then can continue iteration afterwards even though a new vector revision was created).
+		 */
+		template <typename ElementQualifiedType>
+		class Iterator :
+				public boost::iterator_facade<
+						Iterator<ElementQualifiedType>,
+						ElementQualifiedType,
+						boost::random_access_traversal_tag,
+						Reference<ElementQualifiedType> >
+		{
+		public:
+
+			//! Typedef for the const or non-const revisioned vector pointer.
+			typedef typename boost::mpl::if_<
+					boost::is_same<ElementQualifiedType, const_element_type>,
+								const RevisionedVector<ElementType> *,
+								RevisionedVector<ElementType> *
+										>::type revisioned_vector_ptr_type;
+
+			Iterator() :
+				d_revisioned_vector(NULL),
+				d_index(0)
+			{  }
+
+			explicit
+			Iterator(
+					revisioned_vector_ptr_type revisioned_vector,
+					std::size_t index) :
+				d_revisioned_vector(revisioned_vector),
+				d_index(index)
+			{  }
+
+			// Template copy constructor conversion from 'iterator' to 'const_iterator'.
+			template <class OtherElementQualifiedType>
+			Iterator(
+					const Iterator<OtherElementQualifiedType> &other,
+					// Only allow conversion from 'iterator' to 'const_iterator', not vice versa...
+					typename boost::enable_if<
+							boost::is_convertible<OtherElementQualifiedType, ElementQualifiedType>
+									>::type *dummy = 0) :
+				d_revisioned_vector(other.d_revisioned_vector),
+				d_index(other.d_index)
+			{  }
+
+		private:
+
+			revisioned_vector_ptr_type d_revisioned_vector;
+			std::size_t d_index;
+
+
+			Reference<ElementQualifiedType>
+			dereference()
+			{
+				return Reference<ElementQualifiedType>(d_revisioned_vector, d_index);
+			}
+
+			// Templated because enables comparison of 'const_iterator' and 'iterator'.
+			template <class OtherElementQualifiedType>
+			bool
+			equal(
+					const Iterator<OtherElementQualifiedType> &other) const
+			{
+				return d_revisioned_vector == other.d_revisioned_vector &&
+						d_index == other.d_index;
+			}
+
+			void
+			increment()
+			{
+				++d_index;
+			}
+
+			void
+			decrement()
+			{
+				--d_index;
+			}
+
+			void
+			advance(
+					difference_type n)
+			{
+				d_index += n;
+			}
+
+			// Templated because enables distance between 'const_iterator' and 'iterator'.
+			template <class OtherElementQualifiedType>
+			difference_type
+			distance_to(
+					const Iterator<OtherElementQualifiedType> &other) const
+			{
+				return difference_type(other.d_index) - difference_type(d_index);
+			}
+
+			friend class boost::iterator_core_access;
+			template <class OtherElementQualifiedType> friend class Iterator;
+		};
+
+		/**
+		 * Non-const iterator type.
+		 *
+		 * Dereferencing will return a 'element_type'.
+		 */
+		typedef Iterator<element_type> iterator;
+
+		/**
+		 * Const iterator type.
+		 *
+		 * Dereferencing will return a 'const_element_type' which is either
+		 * 'const element_type', or RevisionableType::non_null_ptr_to_const_type if 'ElementType' is
+		 * RevisionableType::non_null_ptr_type (where RevisionableType inherits from @a Revisionable).
+		 */
+		typedef Iterator<const_element_type> const_iterator;
+
+
+		/**
 		 * Create a revisioned vector with the initial sequence of specified elements.
 		 *
 		 * NOTE: If 'ElementType' is not revisionable (convertible to 'Revisionable::non_null_ptr_to_const')
@@ -78,7 +391,7 @@ namespace GPlatesModel
 		static
 		const non_null_ptr_type
 		create(
-				const std::vector<ElementType> &elements)
+				const std::vector<ElementType> &elements = std::vector<ElementType>())
 		{
 			ModelTransaction transaction;
 			non_null_ptr_type ptr(new RevisionedVector(transaction, elements));
@@ -99,6 +412,68 @@ namespace GPlatesModel
 		clone() const
 		{
 			return GPlatesUtils::dynamic_pointer_cast<RevisionedVector>(clone_impl());
+		}
+
+
+		/**
+		 * Const iterator dereferences to give 'const ElementType', or
+		 * RevisionableType::non_null_ptr_to_const_type if 'ElementType' is
+		 * RevisionableType::non_null_ptr_type (where RevisionableType inherits from @a Revisionable).
+		 */
+		const_iterator
+		begin() const
+		{
+			return const_iterator(this, 0);
+		}
+
+		const_iterator
+		end() const
+		{
+			return const_iterator(this, size());
+		}
+
+		/**
+		 * Non-const iterator dereferences to give 'ElementType'.
+		 *
+		 * Note that this non-const iterator can also be used to replace elements in the
+		 * internal sequence using '*iter = new_element'.
+		 */
+		iterator
+		begin()
+		{
+			return iterator(this, 0);
+		}
+
+		iterator
+		end()
+		{
+			return iterator(this, size());
+		}
+
+		std::size_t
+		size() const
+		{
+			return get_current_revision<Revision>().elements.size();
+		}
+
+		bool
+		empty() const
+		{
+			return get_current_revision<Revision>().elements.empty();
+		}
+
+		const_reference
+		operator[](
+				std::size_t index) const
+		{
+			return const_reference(this, index);
+		}
+
+		reference
+		operator[](
+				std::size_t index)
+		{
+			return reference(this, index);
 		}
 
 	protected:
@@ -132,31 +507,6 @@ namespace GPlatesModel
 		}
 
 	private:
-
-		/**
-		 * Helper metafunction inherits from 'boost::true_type' if 'ElementType' is revisionable
-		 * (convertible to 'Revisionable::non_null_ptr_to_const_type').
-		 */
-		struct IsElementTypeRevisionable :
-				// Use 'const' since non-const elements are convertible to const elements...
-				boost::is_convertible<ElementType, Revisionable::non_null_ptr_to_const_type>
-		{  };
-
-		/**
-		 * Helper metafunction to get the @a RevisionedReferenced type from a
-		 * GPlatesUtils::non_null_intrusive_ptr<RevisionableType> type where 'RevisionableType'
-		 * derives from @a Revisionable. This helper class is needed, along with 'mpl::eval_if',
-		 * to avoid a compile error when 'ElementType' is not related to @a Revisionable (eg, an integer).
-		 * In other words this template is only instantiated by 'mpl::eval_if' if 'ElementType'
-		 * has the nested type 'element_type'.
-		 */
-		template <class Type>
-		struct GetRevisionedReferenceType
-		{
-			//! 'GPlatesUtils::non_null_intrusive_ptr' has the nested type 'element_type'.
-			typedef RevisionedReference<typename Type::element_type> type;
-		};
-
 
 		/**
 		 * Used when modifications bubble up to us.
@@ -200,27 +550,35 @@ namespace GPlatesModel
 
 
 		/**
+		 * Used by 'reference' to replace an element in-place.
+		 */
+		void
+		set_element(
+				const ElementType &element,
+				std::size_t element_index)
+		{
+			set_element(element, element_index, typename IsElementTypeRevisionable::type());
+		}
+
+		void
+		set_element(
+				const ElementType &element,
+				std::size_t element_index,
+				boost::mpl::true_/*'ElementType' is revisionable*/);
+
+		void
+		set_element(
+				const ElementType &element,
+				std::size_t element_index,
+				boost::mpl::false_/*'ElementType' is not revisionable*/);
+
+
+		/**
 		 * Property value data that is mutable/revisionable.
 		 */
 		struct Revision :
 				public GPlatesModel::Revision
 		{
-			/**
-			 * Typedef for the revisioned element.
-			 *
-			 * It's either just the ElementType itself (eg, 'int') or
-			 * RevisionReference<ElementType::element_type> depending on whether the element type
-			 * is revisionable or not.
-			 */
-			typedef typename boost::mpl::eval_if<
-					// Use 'const' since non-const elements are convertible to const elements...
-					IsElementTypeRevisionable,
-							// Lazy evaluation to avoid compile error if no nested type 'element_type'...
-							GetRevisionedReferenceType<ElementType>,
-							boost::mpl::identity<ElementType> >::type
-									revisioned_element_type;
-
-
 			//! Constructor for revisionable elements.
 			Revision(
 					ModelTransaction &transaction_,
@@ -257,7 +615,7 @@ namespace GPlatesModel
 				// Clone data members that were not deep copied.
 				BOOST_FOREACH(revisioned_element_type &element, elements)
 				{
-					element.clone(child_context_));
+					element.clone(child_context_);
 				}
 			}
 
@@ -368,6 +726,47 @@ namespace GPlatesModel
 
 		// To keep compiler happy - won't be able to get past 'Abort()'.
 		return GPlatesModel::Revision::non_null_ptr_type(NULL);
+	}
+
+
+	template <typename ElementType>
+	void
+	RevisionedVector<ElementType>::set_element(
+			const ElementType &element,
+			std::size_t element_index,
+			boost::mpl::true_/*'ElementType' is revisionable*/)
+	{
+		BubbleUpRevisionHandler revision_handler(this);
+		Revision &revision = revision_handler.get_revision<Revision>();
+
+		// Make sure we're not dereferencing out-of-bounds.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				element_index < revision.elements.size(),
+				GPLATES_ASSERTION_SOURCE);
+		revision.elements[element_index].change(
+				revision_handler.get_model_transaction(), element);
+
+		revision_handler.commit();
+	}
+
+
+	template <typename ElementType>
+	void
+	RevisionedVector<ElementType>::set_element(
+			const ElementType &element,
+			std::size_t element_index,
+			boost::mpl::false_/*'ElementType' is not revisionable*/)
+	{
+		BubbleUpRevisionHandler revision_handler(this);
+		Revision &revision = revision_handler.get_revision<Revision>();
+
+		// Make sure we're not dereferencing out-of-bounds.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				element_index < revision.elements.size(),
+				GPLATES_ASSERTION_SOURCE);
+		revision.elements[element_index] = element;
+
+		revision_handler.commit();
 	}
 
 

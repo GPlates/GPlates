@@ -72,19 +72,14 @@ GPlatesPropertyValues::GpmlIrregularSampling::create(
 		const StructuralType &value_type_)
 {
 	GPlatesModel::ModelTransaction transaction;
-	non_null_ptr_type ptr(new GpmlIrregularSampling(transaction, time_samples_, interp_func, value_type_));
+	non_null_ptr_type ptr(
+			new GpmlIrregularSampling(
+					transaction,
+					GPlatesModel::RevisionedVector<GpmlTimeSample>::create(time_samples_),
+					interp_func,
+					value_type_));
 	transaction.commit();
 	return ptr;
-}
-
-
-void
-GPlatesPropertyValues::GpmlIrregularSampling::set_time_samples(
-		const std::vector<GpmlTimeSample> &time_samples)
-{
-	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
-	revision_handler.get_revision<Revision>().time_samples = time_samples;
-	revision_handler.commit();
 }
 
 
@@ -157,7 +152,9 @@ void
 GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 		bool flag)
 {
-	if (get_current_revision<Revision>().time_samples.empty())
+	using namespace GPlatesModel;
+
+	if (get_current_revision<Revision>().time_samples.get_revisionable()->empty())
 	{
 		qWarning() << "No time sample found in this GpmlIrregularSampling.";
 		return;
@@ -165,17 +162,21 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 
 	// Merge model events across this scope to avoid excessive number of model callbacks
 	// when modifying the total reconstruction pole property values.
-	GPlatesModel::NotificationGuard model_notification_guard(get_model());
+	NotificationGuard model_notification_guard(get_model());
 
-	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+	BubbleUpRevisionHandler revision_handler(this);
 	Revision &revision = revision_handler.get_revision<Revision>();
 
-	using namespace GPlatesModel;
+	RevisionedVector<GpmlTimeSample> &time_samples = *revision.time_samples.get_revisionable();
+
 	//first, remove all DISABLED_SEQUENCE_FLAG
-	BOOST_FOREACH(GpmlTimeSample &sample, revision.time_samples)
+// 	RevisionedVector<GpmlTimeSample>::iterator time_samples_iter = time_samples.begin();
+// 	RevisionedVector<GpmlTimeSample>::iterator time_samples_end = time_samples.end();
+// 	for ( ; time_samples_iter != time_samples_end; ++time_samples_iter)
+	BOOST_FOREACH(RevisionedVector<GpmlTimeSample>::reference sample, time_samples)
 	{
 		GpmlTotalReconstructionPole *trs_pole = 
-			dynamic_cast<GpmlTotalReconstructionPole *>(sample.value().get());
+			dynamic_cast<GpmlTotalReconstructionPole *>(/*time_samples_iter->*/sample.value().get());
 		if(trs_pole)
 		{
 			const MetadataContainer &meta_data = trs_pole->get_metadata();
@@ -193,7 +194,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 
 	//then add new DISABLED_SEQUENCE_FLAG
 	GpmlTotalReconstructionPole *first_pole = 
-		dynamic_cast<GpmlTotalReconstructionPole *>(revision.time_samples[0].value().get());
+			dynamic_cast<GpmlTotalReconstructionPole *>(time_samples[0].value().get());
 	if(flag && first_pole)
 	{
 		MetadataContainer first_pole_meta_data = first_pole->get_metadata();

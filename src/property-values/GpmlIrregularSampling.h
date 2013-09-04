@@ -42,6 +42,7 @@
 #include "model/PropertyValue.h"
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
+#include "model/RevisionedVector.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -97,27 +98,22 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * Returns the time samples.
-		 *
-		 * To modify any time samples:
-		 * (1) make additions/removals/modifications to a copy of the returned vector, and
-		 * (2) use @a set_time_samples to set them.
-		 *
-		 * The returned time samples implement copy-on-write to promote resource sharing (until write)
-		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
+		 * Returns the 'const' vector of time samples.
 		 */
-		const std::vector<GpmlTimeSample> &
-		get_time_samples() const
+		const GPlatesModel::RevisionedVector<GpmlTimeSample>::non_null_ptr_to_const_type
+		time_samples() const
 		{
-			return get_current_revision<Revision>().time_samples;
+			return get_current_revision<Revision>().time_samples.get_revisionable();
 		}
 
 		/**
-		 * Sets the internal time samples.
+		 * Returns the 'non-const' vector of time samples.
 		 */
-		void
-		set_time_samples(
-				const std::vector<GpmlTimeSample> &time_samples);
+		const GPlatesModel::RevisionedVector<GpmlTimeSample>::non_null_ptr_type
+		time_samples()
+		{
+			return get_current_revision<Revision>().time_samples.get_revisionable();
+		}
 
 
 		/**
@@ -205,12 +201,12 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		GpmlIrregularSampling(
 				GPlatesModel::ModelTransaction &transaction_,
-				const std::vector<GpmlTimeSample> &time_samples,
+				GPlatesModel::RevisionedVector<GpmlTimeSample>::non_null_ptr_type time_samples_,
 				boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interp_func,
 				const StructuralType &value_type) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
-							new Revision(transaction_, *this, time_samples, interp_func))),
+							new Revision(transaction_, *this, time_samples_, interp_func))),
 			d_value_type(value_type)
 		{  }
 
@@ -280,9 +276,12 @@ namespace GPlatesPropertyValues
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
 					RevisionContext &child_context_,
-					const std::vector<GpmlTimeSample> &time_samples_,
+					GPlatesModel::RevisionedVector<GpmlTimeSample>::non_null_ptr_type time_samples_,
 					boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interpolation_function_) :
-				time_samples(time_samples_)
+				time_samples(
+						GPlatesModel::RevisionedReference<
+								GPlatesModel::RevisionedVector<GpmlTimeSample> >::attach(
+										transaction_, child_context_, time_samples_))
 			{
 				if (interpolation_function_)
 				{
@@ -301,6 +300,7 @@ namespace GPlatesPropertyValues
 				interpolation_function(other_.interpolation_function)
 			{
 				// Clone data members that were not deep copied.
+				time_samples.clone(child_context_);
 				if (interpolation_function)
 				{
 					interpolation_function->clone(child_context_);
@@ -330,7 +330,7 @@ namespace GPlatesPropertyValues
 			equality(
 					const GPlatesModel::Revision &other) const;
 
-			std::vector<GpmlTimeSample> time_samples; // Internally GpmlTimeSample uses CopyOnWrite.
+			GPlatesModel::RevisionedReference<GPlatesModel::RevisionedVector<GpmlTimeSample> > time_samples;
 			boost::optional<GPlatesModel::RevisionedReference<GpmlInterpolationFunction> > interpolation_function;
 		};
 

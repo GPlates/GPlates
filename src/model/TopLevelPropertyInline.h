@@ -80,7 +80,7 @@ namespace GPlatesModel
 		 * iteration then can continue iteration afterwards even though a new revision was created).
 		 */
 		template <class PropertyValueQualifiedType>
-		class Iterator:
+		class Iterator :
 				public std::iterator<
 						std::bidirectional_iterator_tag,
 						// Dereferencing returns a temporary property value pointer...
