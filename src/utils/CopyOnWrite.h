@@ -28,6 +28,7 @@
 
 #include <utility>
 #include <boost/intrusive_ptr.hpp>
+#include <boost/mpl/bool.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/type_traits/is_const.hpp>
 
