@@ -37,6 +37,9 @@
 #include "XsString.h"
 
 #include "model/PropertyValue.h"
+#include "model/Revisionable.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
 
 #include "utils/QtStreamable.h"
 
@@ -49,24 +52,28 @@ namespace GPlatesPropertyValues
 	// points to a pre-allocated node in a StringSet), none of the construction,
 	// copy-construction or copy-assignment operations for this class should throw.
 	class GpmlTimeSample :
+			public GPlatesModel::Revisionable,
+			public GPlatesModel::RevisionContext,
 			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
 			public GPlatesUtils::QtStreamable<GpmlTimeSample>
 	{
-
 	public:
 
-		GpmlTimeSample(
+		//! A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlTimeSample>.
+		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTimeSample> non_null_ptr_type;
+
+		//! A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlTimeSample>.
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTimeSample> non_null_ptr_to_const_type;
+
+
+		static
+		non_null_ptr_type
+		create(
 				GPlatesModel::PropertyValue::non_null_ptr_type value_,
 				GmlTimeInstant::non_null_ptr_type valid_time_,
 				boost::optional<XsString::non_null_ptr_type> description_,
 				const StructuralType &value_type_,
-				bool is_disabled_ = false):
-			d_value(value_),
-			d_valid_time(valid_time_),
-			d_description(description_),
-			d_value_type(value_type_),
-			d_is_disabled(is_disabled_)
-		{  }
+				bool is_disabled_ = false);
 
 		/**
 		 * Returns the 'const' time-dependent property value.
@@ -74,7 +81,7 @@ namespace GPlatesPropertyValues
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
 		value() const
 		{
-			return d_value;
+			return get_current_revision<Revision>().value.get_revisionable();
 		}
 
 		/**
@@ -83,15 +90,12 @@ namespace GPlatesPropertyValues
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		value()
 		{
-			return d_value;
+			return get_current_revision<Revision>().value.get_revisionable();
 		}
 
 		void
 		set_value(
-				GPlatesModel::PropertyValue::non_null_ptr_type v)
-		{
-			d_value = v;
-		}
+				GPlatesModel::PropertyValue::non_null_ptr_type v);
 
 		/**
 		 * Returns the 'const' time instant.
@@ -99,7 +103,7 @@ namespace GPlatesPropertyValues
 		const GmlTimeInstant::non_null_ptr_to_const_type
 		valid_time() const
 		{
-			return d_valid_time;
+			return get_current_revision<Revision>().valid_time.get_revisionable();
 		}
 
 		/**
@@ -108,50 +112,38 @@ namespace GPlatesPropertyValues
 		const GmlTimeInstant::non_null_ptr_type
 		valid_time()
 		{
-			return d_valid_time;
+			return get_current_revision<Revision>().valid_time.get_revisionable();
 		}
 
 		void
 		set_valid_time(
-				GmlTimeInstant::non_null_ptr_type vt)
-		{
-			d_valid_time = vt;
-		}
+				GmlTimeInstant::non_null_ptr_type vt);
 
 		/**
 		 * Returns the 'const' description.
 		 */
 		const boost::optional<XsString::non_null_ptr_to_const_type>
-		description() const
-		{
-			if (!d_description)
-			{
-				return boost::none;
-			}
-
-			return XsString::non_null_ptr_to_const_type(d_description.get());
-		}
+		description() const;
 
 		/**
 		 * Returns the 'non-const' description.
 		 */
 		const boost::optional<XsString::non_null_ptr_type>
-		description()
-		{
-			if (!d_description)
-			{
-				return boost::none;
-			}
-
-			return d_description.get();
-		}
+		description();
 
 		void
 		set_description(
-				boost::optional<XsString::non_null_ptr_type> d)
+				boost::optional<XsString::non_null_ptr_type> d);
+
+		bool
+		is_disabled() const
 		{
-			d_description = d;
+			return get_current_revision<Revision>().is_disabled;
 		}
+
+		void
+		set_disabled(
+				bool is_disabled_);
 
 		// Note that no "setter" is provided:  The value type of a GpmlTimeSample instance
 		// should never be changed.
@@ -161,37 +153,133 @@ namespace GPlatesPropertyValues
 			return d_value_type;
 		}
 
-		bool
-		is_disabled() const
+	protected:
+
+		// This constructor should not be public, because we don't want to allow
+		// instantiation of this type on the stack.
+		GpmlTimeSample(
+				GPlatesModel::ModelTransaction &transaction_,
+				GPlatesModel::PropertyValue::non_null_ptr_type value_,
+				GmlTimeInstant::non_null_ptr_type valid_time_,
+				boost::optional<XsString::non_null_ptr_type> description_,
+				const StructuralType &value_type_,
+				bool is_disabled_) :
+			Revisionable(
+					Revision::non_null_ptr_type(
+							new Revision(transaction_, *this, value_, valid_time_, description_, is_disabled_))),
+			d_value_type(value_type_)
+		{  }
+
+		//! Constructor used when cloning.
+		GpmlTimeSample(
+				const GpmlTimeSample &other_,
+				boost::optional<RevisionContext &> context_) :
+			Revisionable(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this))),
+			d_value_type(other_.d_value_type)
+		{  }
+
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<RevisionContext &> context = boost::none) const
 		{
-			return d_is_disabled;
+			return non_null_ptr_type(new GpmlTimeSample(*this, context));
 		}
 
-		void
-		set_disabled(
-				bool is_disabled_)
-		{
-			d_is_disabled = is_disabled_;
-		}
-
+		virtual
 		bool
-		operator==(
-				const GpmlTimeSample &other) const;
+		equality(
+				const Revisionable &other) const
+		{
+			const GpmlTimeSample &other_pv = dynamic_cast<const GpmlTimeSample &>(other);
+
+			return d_value_type == other_pv.d_value_type &&
+					// The revisioned data comparisons are handled here...
+					Revisionable::equality(other);
+		}
 
 	private:
 
-		GPlatesModel::PropertyValue::non_null_ptr_type d_value;
+		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		GPlatesModel::Revision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const GPlatesModel::Revisionable::non_null_ptr_to_const_type &child_revisionable);
 
-		GmlTimeInstant::non_null_ptr_type d_valid_time;
 
 		/**
-		 * The description is optional.
+		 * Inherited from @a RevisionContext.
 		 */
-		boost::optional<XsString::non_null_ptr_type> d_description;
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return GPlatesModel::Revisionable::get_model();
+		}
+
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::Revision
+		{
+			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					RevisionContext &child_context_,
+					GPlatesModel::PropertyValue::non_null_ptr_type value_,
+					GmlTimeInstant::non_null_ptr_type valid_time_,
+					boost::optional<XsString::non_null_ptr_type> description_,
+					bool is_disabled_);
+
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_);
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_);
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<RevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const;
+
+
+			GPlatesModel::RevisionedReference<GPlatesModel::PropertyValue> value;
+
+			GPlatesModel::RevisionedReference<GmlTimeInstant> valid_time;
+
+			/**
+			 * The description is optional.
+			 */
+			boost::optional<GPlatesModel::RevisionedReference<XsString> > description;
+
+			bool is_disabled;
+		};
+
 
 		StructuralType d_value_type;
-
-		bool d_is_disabled;
 	};
 
 	// operator<< for GpmlTimeSample.

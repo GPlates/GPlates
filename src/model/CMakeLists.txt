@@ -71,6 +71,7 @@ set(srcs
     RevisionContext.h
     RevisionedReference.cc
     RevisionedReference.h
+    RevisionedVector.h
     RevisionId.h
     StringContentTypeGenerator.h
     StringSetSingletons.cc

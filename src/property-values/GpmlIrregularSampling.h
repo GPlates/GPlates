@@ -77,17 +77,18 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const GpmlTimeSample &first_time_sample,
+				const GpmlTimeSample::non_null_ptr_type &first_time_sample,
 				boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interp_func,
 				const StructuralType &value_type_)
 		{
-			return create(std::vector<GpmlTimeSample>(1, first_time_sample), interp_func, value_type_);
+			return create(
+					std::vector<GpmlTimeSample::non_null_ptr_type>(1, first_time_sample), interp_func, value_type_);
 		}
 
 		static
 		const non_null_ptr_type
 		create(
-				const std::vector<GpmlTimeSample> &time_samples_,
+				const std::vector<GpmlTimeSample::non_null_ptr_type> &time_samples_,
 				boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interp_func,
 				const StructuralType &value_type_);
 
@@ -100,19 +101,19 @@ namespace GPlatesPropertyValues
 		/**
 		 * Returns the 'const' vector of time samples.
 		 */
-		const GPlatesModel::RevisionedVector<GpmlTimeSample>::non_null_ptr_to_const_type
+		const GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type> &
 		time_samples() const
 		{
-			return get_current_revision<Revision>().time_samples.get_revisionable();
+			return *get_current_revision<Revision>().time_samples.get_revisionable();
 		}
 
 		/**
 		 * Returns the 'non-const' vector of time samples.
 		 */
-		const GPlatesModel::RevisionedVector<GpmlTimeSample>::non_null_ptr_type
+		GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type> &
 		time_samples()
 		{
-			return get_current_revision<Revision>().time_samples.get_revisionable();
+			return *get_current_revision<Revision>().time_samples.get_revisionable();
 		}
 
 
@@ -201,7 +202,7 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		GpmlIrregularSampling(
 				GPlatesModel::ModelTransaction &transaction_,
-				GPlatesModel::RevisionedVector<GpmlTimeSample>::non_null_ptr_type time_samples_,
+				GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::non_null_ptr_type time_samples_,
 				boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interp_func,
 				const StructuralType &value_type) :
 			PropertyValue(
@@ -276,11 +277,11 @@ namespace GPlatesPropertyValues
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
 					RevisionContext &child_context_,
-					GPlatesModel::RevisionedVector<GpmlTimeSample>::non_null_ptr_type time_samples_,
+					GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::non_null_ptr_type time_samples_,
 					boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interpolation_function_) :
 				time_samples(
 						GPlatesModel::RevisionedReference<
-								GPlatesModel::RevisionedVector<GpmlTimeSample> >::attach(
+								GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type> >::attach(
 										transaction_, child_context_, time_samples_))
 			{
 				if (interpolation_function_)
@@ -330,7 +331,8 @@ namespace GPlatesPropertyValues
 			equality(
 					const GPlatesModel::Revision &other) const;
 
-			GPlatesModel::RevisionedReference<GPlatesModel::RevisionedVector<GpmlTimeSample> > time_samples;
+			GPlatesModel::RevisionedReference<
+					GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type> > time_samples;
 			boost::optional<GPlatesModel::RevisionedReference<GpmlInterpolationFunction> > interpolation_function;
 		};
 

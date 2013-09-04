@@ -389,7 +389,7 @@ namespace GPlatesModel
 
 			// Templated because enables distance between 'const_iterator' and 'iterator'.
 			template <class OtherElementQualifiedType>
-			difference_type
+			typename Iterator::difference_type
 			distance_to(
 					const Iterator<OtherElementQualifiedType> &other) const
 			{
@@ -553,6 +553,8 @@ namespace GPlatesModel
 
 		/**
 		 * Index operator returning 'non-const' element.
+		 *
+		 * Supports writing in-place via 'vector[index] = new_element'.
 		 */
 		reference
 		operator[](
@@ -841,7 +843,7 @@ namespace GPlatesModel
 		// In this method we are operating on a (bubble up) cloned version of the current revision.
 
 		// Find which element bubbled up.
-		BOOST_FOREACH(revisioned_element_type &element, elements)
+		BOOST_FOREACH(revisioned_element_type &element, revision.elements)
 		{
 			if (child_revisionable == element.get_revisionable())
 			{
