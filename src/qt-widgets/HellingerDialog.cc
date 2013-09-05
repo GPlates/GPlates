@@ -606,7 +606,13 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_segment()
 	{
 		store_expanded_status();
 		QString segment = tree_widget_picks->currentItem()->text(0);
-		int segment_int = segment.toInt();
+		unsigned int segment_int = segment.toInt();
+
+		if (d_selected_segment && *d_selected_segment == segment_int)
+		{
+			d_selected_segment.reset();
+		}
+
 		d_hellinger_model->remove_segment(segment_int);
 		button_renumber->setEnabled(true);
 		update_tree_from_model();
