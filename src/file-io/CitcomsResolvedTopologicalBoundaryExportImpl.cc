@@ -155,15 +155,15 @@ namespace GPlatesFileIO
 			visit_gpml_irregular_sampling(
 					const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 			{
-				std::vector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
-					iter = gpml_irregular_sampling.get_time_samples().begin(),
-					end = gpml_irregular_sampling.get_time_samples().end();
+				GPlatesModel::RevisionedVector< GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type >::const_iterator 
+					iter = gpml_irregular_sampling.time_samples().begin(),
+					end = gpml_irregular_sampling.time_samples().end();
 				for ( ; iter != end; ++iter)
 				{
 					// If time of time sample matches our reconstruction time then visit.
-					if (d_recon_time.is_coincident_with(iter->valid_time()->get_time_position()))
+					if (d_recon_time.is_coincident_with(iter->get()->valid_time()->get_time_position()))
 					{
-						iter->value()->accept_visitor(*this);
+						iter->get()->value()->accept_visitor(*this);
 					}
 				}
 			}
@@ -360,15 +360,15 @@ namespace GPlatesFileIO
 			visit_gpml_irregular_sampling(
 					const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 			{
-				std::vector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
-					iter = gpml_irregular_sampling.get_time_samples().begin(),
-					end = gpml_irregular_sampling.get_time_samples().end();
+				GPlatesModel::RevisionedVector< GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type >::const_iterator 
+					iter = gpml_irregular_sampling.time_samples().begin(),
+					end = gpml_irregular_sampling.time_samples().end();
 				for ( ; iter != end; ++iter)
 				{
 					// If time of time sample matches our reconstruction time then visit.
-					if (d_recon_time.is_coincident_with(iter->valid_time()->get_time_position()))
+					if (d_recon_time.is_coincident_with(iter->get()->valid_time()->get_time_position()))
 					{
-						iter->value()->accept_visitor(*this);
+						iter->get()->value()->accept_visitor(*this);
 					}
 				}
 			}

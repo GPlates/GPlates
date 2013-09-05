@@ -75,9 +75,11 @@ namespace
 		visit_gpml_irregular_sampling(
 				gpml_irregular_sampling_type &gpml_irregular_sampling)
 		{
-			BOOST_FOREACH(const GpmlTimeSample& sample, gpml_irregular_sampling.get_time_samples())
+			BOOST_FOREACH(
+					GpmlTimeSample::non_null_ptr_to_const_type sample,
+					gpml_irregular_sampling.time_samples())
 			{
-				const GpmlFiniteRotation* fr = dynamic_cast<const GpmlFiniteRotation*>(sample.value().get());
+				const GpmlFiniteRotation* fr = dynamic_cast<const GpmlFiniteRotation*>(sample->value().get());
 				if(fr)
 				{
 					d_finite_rotations.push_back(fr);
@@ -696,7 +698,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::visit(
 	if(d_current_sampling)
 	{
 		d_current_sample = create_time_sample(data);
-		GPlatesModel::PropertyValue::non_null_ptr_type fr = d_current_sample->value();
+		GPlatesModel::PropertyValue::non_null_ptr_type fr = d_current_sample.get()->value();
 		seg.set_finite_rotation(fr.get());
 	}
 		
@@ -711,7 +713,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::visit(
 	if(d_current_sample)
 	{
 		GPlatesPropertyValues::GpmlTotalReconstructionPole* trp = 
-			dynamic_cast<GPlatesPropertyValues::GpmlTotalReconstructionPole*>(d_current_sample->value().get());
+			dynamic_cast<GPlatesPropertyValues::GpmlTotalReconstructionPole*>(d_current_sample.get()->value().get());
 		if(trp)
 		{
 			std::vector<boost::shared_ptr<GPlatesModel::Metadata> > meta = trp->get_metadata();
@@ -725,9 +727,8 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::visit(
 			d_attrs.clear();
 		}
 
-		std::vector<GpmlTimeSample> time_samples = (*d_current_sampling)->get_time_samples();
+		RevisionedVector<GpmlTimeSample::non_null_ptr_type> &time_samples = (*d_current_sampling)->time_samples();
 		time_samples.push_back(*d_current_sample);
-		(*d_current_sampling)->set_time_samples(time_samples);
 	}
 
 }
@@ -813,7 +814,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::validate_pole(
 	return true;
 }
 
-GPlatesPropertyValues::GpmlTimeSample
+GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 GPlatesFileIO::PopulateReconstructionFeatureCollection::create_time_sample(
 		const RotationPoleData& data)
 {
@@ -839,9 +840,9 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_time_sample(
 		StructuralType::create_gpml("FiniteRotation");
 
 	if (data.disabled) {
-		return GpmlTimeSample(trp, valid_time, description, value_type, true);
+		return GpmlTimeSample::create(trp, valid_time, description, value_type, true);
 	} else {
-		return GpmlTimeSample(trp, valid_time, description, value_type);
+		return GpmlTimeSample::create(trp, valid_time, description, value_type);
 	}
 }
 
@@ -862,7 +863,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 						*d_current_sampling));
 	}
 
-	GpmlTimeSample time_sample = create_time_sample(RotationPoleData());//dummy sample
+	GpmlTimeSample::non_null_ptr_type time_sample = create_time_sample(RotationPoleData());//dummy sample
 
 	//create feature
 	FeatureType feature_type = FeatureType::create_gpml("TotalReconstructionSequence");
@@ -871,12 +872,12 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 	//create GpmlIrregularSampling
 	GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
 		GpmlFiniteRotationSlerp::create(
-				time_sample.get_value_type());
+				time_sample->get_value_type());
 	d_current_sampling =
 		GpmlIrregularSampling::create(
 				time_sample,
 				gpml_finite_rotation_slerp,
-				time_sample.get_value_type());
+				time_sample->get_value_type());
 	
 	//add fixed reference frame
 	GpmlPlateId::non_null_ptr_type fixed_ref_frame =
@@ -926,8 +927,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 						dictionary));
 	}
 
-	(*d_current_sampling)->set_time_samples(
-			std::vector<GpmlTimeSample>()); //clear dummy sample
+	(*d_current_sampling)->time_samples().clear(); //clear dummy sample
 }
 
 

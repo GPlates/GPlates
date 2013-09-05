@@ -47,7 +47,7 @@
 #include "EditTableActionWidget.h"
 #include "EditTotalReconstructionSequenceWidget.h"
 
-Q_DECLARE_METATYPE( boost::optional<GPlatesPropertyValues::GpmlTimeSample> )
+Q_DECLARE_METATYPE( boost::optional<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type> )
 
 namespace ColumnNames
 {
@@ -233,23 +233,23 @@ namespace
 	insert_table_row(
 			QTableWidget *table,
 			unsigned int row_count,
-			const GPlatesPropertyValues::GpmlTimeSample &time_sample,
+			const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type &time_sample,
 			const QLocale &locale_)
 	{
 		table->insertRow(row_count);
-		fill_table_with_time_instant(table,row_count,time_sample.valid_time()->get_time_position(),locale_);
+		fill_table_with_time_instant(table,row_count,time_sample->valid_time()->get_time_position(),locale_);
 		
-		fill_table_with_pole(table,row_count,time_sample.value(),locale_);
+		fill_table_with_pole(table,row_count,time_sample->value(),locale_);
 
 		QString comment;
-		if (time_sample.description())
+		if (time_sample->description())
 		{
 			comment = GPlatesUtils::make_qstring_from_icu_string(
-				time_sample.description().get()->get_value().get());
+				time_sample->description().get()->get_value().get());
 		}
 		fill_table_with_comment(table, row_count, comment);
 		
-		if(time_sample.is_disabled())
+		if(time_sample->is_disabled())
 		{
 			for (int i = 0; i < table->horizontalHeader()->count()-1; i++)
 			{
@@ -257,7 +257,7 @@ namespace
 			}
 		}
 		QVariant qv;
-		qv.setValue(boost::optional<GPlatesPropertyValues::GpmlTimeSample>(time_sample));
+		qv.setValue(boost::optional<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>(time_sample));
 		table->item(row_count, ColumnNames::TIME)->setData(Qt::UserRole,qv);
 	}
 
@@ -560,14 +560,14 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::update_table_widget_fro
 	// Note that this is clearContents() and not clear() - calling clear() will also clear the header text (which has
 	// been set up in QtDesigner) resulting in only numerical headers appearing. 
 	table_sequences->clearContents();
-	std::vector<GpmlTimeSample>::const_iterator iter =
-		irreg_sampling->get_time_samples().begin();
-	std::vector<GpmlTimeSample>::const_iterator end =
-		irreg_sampling->get_time_samples().end();
+	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::iterator iter =
+		irreg_sampling->time_samples().begin();
+	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::iterator end =
+		irreg_sampling->time_samples().end();
 
 	for ( ; iter != end; ++iter) 
 	{
-		if(dynamic_cast<const GpmlTotalReconstructionPole*>(iter->value().get()))
+		if(dynamic_cast<const GpmlTotalReconstructionPole*>(iter->get()->value().get()))
 		{
 			break;
 		}
@@ -577,12 +577,12 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::update_table_widget_fro
 		d_is_grot = true;
 		table_sequences->hideColumn(ColumnNames::COMMENT);
 	}
-	iter = irreg_sampling->get_time_samples().begin();
+	iter = irreg_sampling->time_samples().begin();
 	table_sequences->setRowCount(0);
 	unsigned int row_count = 0;
 
 	for ( ; iter != end; ++iter, ++row_count) {
-		insert_table_row(table_sequences,row_count,*iter,locale_);
+		insert_table_row(table_sequences,row_count,iter->get(),locale_);
 	}
 	table_sequences->setRowCount(row_count);
 
@@ -657,7 +657,8 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::handle_insert_new_pole(
 	trs_pole.rotation_angle =spinbox_angle->value();
 	trs_pole.comment = lineedit_comment->text();
 	
-	GpmlTimeSample time_sample = ModelUtils::create_gml_time_sample(trs_pole, d_is_grot); 
+	GpmlTimeSample::non_null_ptr_type time_sample =
+			ModelUtils::create_gml_time_sample(trs_pole, d_is_grot); 
 
 	insert_table_row(table_sequences,table_sequences->rowCount(),time_sample,locale_);
 	if (table_sequences->rowCount() > 0)
@@ -757,7 +758,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::insert_blank_row(
 	trs_pole.lon_of_euler_pole = 0; 
 	trs_pole.rotation_angle = 0;
 	qv.setValue( 
-			boost::optional<GPlatesPropertyValues::GpmlTimeSample>(
+			boost::optional<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>(
 					GPlatesModel::ModelUtils::create_gml_time_sample(trs_pole, d_is_grot)));
 	time_item->setData(Qt::UserRole, qv);
 	if (time_item != NULL) {
@@ -936,8 +937,9 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::set_action_widget_in_ro
 	bool enable_flag = false;
 	QVariant qv = table_sequences->item(row,ColumnNames::TIME)->data(Qt::UserRole);
 	using namespace GPlatesPropertyValues;
-	boost::optional<GpmlTimeSample> sample = qv.value<boost::optional<GpmlTimeSample> >();
-	if(sample && sample->is_disabled())
+	boost::optional<GpmlTimeSample::non_null_ptr_type> sample =
+			qv.value<boost::optional<GpmlTimeSample::non_null_ptr_type> >();
+	if(sample && sample.get()->is_disabled())
 	{
 		enable_flag = true;
 	}
@@ -954,10 +956,11 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::handle_disable_pole(
 	int row = get_row_for_action_widget(action_widget);
 	QVariant qv = table_sequences->item(row,ColumnNames::TIME)->data(Qt::UserRole);
 	using namespace GPlatesPropertyValues;
-	boost::optional<GpmlTimeSample> sample = qv.value<boost::optional<GpmlTimeSample> >();
+	boost::optional<GpmlTimeSample::non_null_ptr_type> sample =
+			qv.value<boost::optional<GpmlTimeSample::non_null_ptr_type> >();
 	if(sample)
 	{
-		sample->set_disabled(disable_flag);
+		sample.get()->set_disabled(disable_flag);
 	}
 	qv.setValue(sample);
 	table_sequences->item(row,ColumnNames::TIME)->setData(Qt::UserRole, qv);
@@ -985,7 +988,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::make_irregular_sampling
 	static QLocale locale_;
 	using namespace GPlatesPropertyValues;
 	using namespace GPlatesModel;
-	std::vector<GpmlTimeSample> time_samples;
+	std::vector<GpmlTimeSample::non_null_ptr_type> time_samples;
 		
 	for (int i = 0; i < table_sequences->rowCount(); ++i)
 	{
@@ -1002,17 +1005,19 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::make_irregular_sampling
 		QString comment = table_sequences->item(i,ColumnNames::COMMENT)->text();
         ModelUtils::TotalReconstructionPole pole_data = {time,lat,lon,angle,comment};
 		QVariant qv = table_sequences->item(i, ColumnNames::TIME)->data(Qt::UserRole);
-		boost::optional<GpmlTimeSample> original_sample = qv.value<boost::optional<GpmlTimeSample> >();
-		GpmlTimeSample new_time_sample = ModelUtils::create_gml_time_sample(pole_data, d_is_grot);
+		boost::optional<GpmlTimeSample::non_null_ptr_type> original_sample =
+				qv.value<boost::optional<GpmlTimeSample::non_null_ptr_type> >();
+		GpmlTimeSample::non_null_ptr_type new_time_sample =
+				ModelUtils::create_gml_time_sample(pole_data, d_is_grot);
 		if(original_sample)
 		{
-			if(original_sample->is_disabled())
+			if(original_sample.get()->is_disabled())
 			{
-				new_time_sample.set_disabled(true);
+				new_time_sample->set_disabled(true);
 			}
 			GpmlTotalReconstructionPole 
-				*new_pole =	dynamic_cast<GpmlTotalReconstructionPole*>(new_time_sample.value().get()),
-				*old_pole = dynamic_cast<GpmlTotalReconstructionPole*>(original_sample->value().get());			
+				*new_pole =	dynamic_cast<GpmlTotalReconstructionPole*>(new_time_sample->value().get()),
+				*old_pole = dynamic_cast<GpmlTotalReconstructionPole*>(original_sample.get()->value().get());			
 			if(new_pole && old_pole)
 			{
 				new_pole->set_metadata(old_pole->get_metadata());

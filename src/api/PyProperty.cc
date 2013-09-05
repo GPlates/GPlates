@@ -86,8 +86,10 @@ export_top_level_property()
 			GPlatesModel::TopLevelProperty,
 			GPlatesModel::TopLevelProperty::non_null_ptr_type,
 			boost::noncopyable>(
-					"Property", bp::no_init)
-		.def("create", &GPlatesApi::top_level_property_inline_create)
+					"Property", "Associates a property name with a property value.", bp::no_init)
+		.def("create",
+				&GPlatesApi::top_level_property_inline_create,
+				"Create a property given a :class:`PropertyName` and a :class:`PropertyValue`.")
  		.staticmethod("create")
   		.def("get_property_name",
 				&GPlatesModel::TopLevelProperty::get_property_name,

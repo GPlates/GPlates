@@ -148,7 +148,7 @@ namespace
 	 *
 	 * If parsing is unsuccessful, a PoleParsingException will be thrown.
 	 */
-	GPlatesPropertyValues::GpmlTimeSample
+	GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 	parse_pole(
 			std::istringstream &iss,
 			GPlatesModel::integer_plate_id_type &fixed_plate_id,
@@ -269,24 +269,24 @@ namespace
 		// Finally, as we're creating the GpmlTimeSample, don't forget to check whether the
 		// sample should be disabled.
 		if (moving_plate_id == 999) {
-			return GpmlTimeSample(value, valid_time, description, value_type, true);
+			return GpmlTimeSample::create(value, valid_time, description, value_type, true);
 		} else {
-			return GpmlTimeSample(value, valid_time, description, value_type);
+			return GpmlTimeSample::create(value, valid_time, description, value_type);
 		}
 	}
 
 
 	void
 	warn_user_about_new_overlapping_sequence(
-			const GPlatesPropertyValues::GpmlTimeSample &time_sample,
-			const GPlatesPropertyValues::GpmlTimeSample &prev_time_sample,
+			const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type &time_sample,
+			const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type &prev_time_sample,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
 			unsigned line_num,
 			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		using namespace GPlatesFileIO;
 
-		if (gml_time_instants_are_approx_equal(time_sample.valid_time(), prev_time_sample.valid_time())) {
+		if (gml_time_instants_are_approx_equal(time_sample->valid_time(), prev_time_sample->valid_time())) {
 			boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 			ReadErrors::Description descr = ReadErrors::SamePlateIdsButDuplicateGeoTime;
 			ReadErrors::Result res = ReadErrors::NewOverlappingSequenceBegun;
@@ -318,7 +318,7 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
 			GPlatesModel::FeatureHandle::weak_ref &current_total_recon_seq,
 			TotalReconSeqProperties &props_in_current_trs,
-			const GPlatesPropertyValues::GpmlTimeSample &time_sample,
+			const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type &time_sample,
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id)
 	{
@@ -330,11 +330,11 @@ namespace
 		current_total_recon_seq = GPlatesModel::FeatureHandle::create(rotations, feature_type);
 
 		GpmlInterpolationFunction::non_null_ptr_type gpml_finite_rotation_slerp =
-				GpmlFiniteRotationSlerp::create(time_sample.get_value_type());
+				GpmlFiniteRotationSlerp::create(time_sample->get_value_type());
 		GpmlIrregularSampling::non_null_ptr_type gpml_irregular_sampling =
 				GpmlIrregularSampling::create(time_sample,
 						gpml_finite_rotation_slerp,
-						time_sample.get_value_type());
+						time_sample->get_value_type());
 
 		// Note that the "gpml:totalReconstructionPole" property has to come first
 		// otherwise the PlatesRotationFormatWriter barfs.
@@ -371,7 +371,7 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
 			GPlatesModel::FeatureHandle::weak_ref &current_total_recon_seq,
 			TotalReconSeqProperties &props_in_current_trs,
-			const GPlatesPropertyValues::GpmlTimeSample &time_sample,
+			const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type &time_sample,
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
@@ -379,6 +379,7 @@ namespace
 			GPlatesFileIO::ReadErrorAccumulation &read_errors)
 	{
 		using namespace GPlatesFileIO;
+		using namespace GPlatesModel;
 		using namespace GPlatesPropertyValues;
 
 		// We're going to use some messy code logic to handle the rather arbitrary
@@ -450,23 +451,16 @@ namespace
 		}
 
 		// A copy of the current time samples to work with.
-		std::vector<GpmlTimeSample> time_samples =
-				props_in_current_trs.d_irregular_sampling->get_time_samples();
-#if 0
-		// This needs to be set back onto the irregular sampling property when/if we're done making
-		// modifications - we do this automatically at scope exit (to cover all the 'return' paths).
-		Loki::ScopeGuard gpml_irregular_sampling_set_time_samples_guard =
-				Loki::MakeGuard(&GPlatesPropertyValues::GpmlIrregularSampling::set_time_samples,
-						*props_in_current_trs.d_irregular_sampling, boost::cref(time_samples));
-#endif
+		RevisionedVector<GpmlTimeSample::non_null_ptr_type> &time_samples =
+				props_in_current_trs.d_irregular_sampling->time_samples();
 
 		// FIXME:  Since GpmlIrregularSampling should always contain at least one
 		// TimeSample, should we replace the std::vector (which is used to contain the
 		// GpmlTimeSample instances inside GpmlIrregularSampling) with some sort of wrapper
 		// container which can never be empty?
-		const GpmlTimeSample prev_time_sample = time_samples.back();
+		const GpmlTimeSample::non_null_ptr_type prev_time_sample = time_samples.back();
 
-		if (gml_time_instants_are_approx_equal(time_sample.valid_time(), prev_time_sample.valid_time())) {
+		if (gml_time_instants_are_approx_equal(time_sample->valid_time(), prev_time_sample->valid_time())) {
 			// We'll assume it's the start of a new sequence.  Since we're cautious
 			// programmers, let's just double-check whether the plate IDs are the same.
 
@@ -478,17 +472,15 @@ namespace
 			// previous pole is the non-commented-out one.
 			//
 			// FIXME:  Re-read that first sentence.  What does it mean?
-			if (prev_time_sample.is_disabled() &&
+			if (prev_time_sample->is_disabled() &&
 					props_in_current_trs.d_fixed_plate_id == fixed_plate_id &&
 					props_in_current_trs.d_moving_plate_id == moving_plate_id) {
 				time_samples.push_back(time_sample);
-				props_in_current_trs.d_irregular_sampling->set_time_samples(time_samples);
 			} else if (moving_plate_id == 999 &&
 					props_in_current_trs.d_fixed_plate_id == fixed_plate_id) {
 				// Let's assume the current pole was intended to be part of the
 				// sequence, but commented-out.
 				time_samples.push_back(time_sample);
-				props_in_current_trs.d_irregular_sampling->set_time_samples(time_samples);
 
 				// Don't forget to warn the user that the moving plate ID of the
 				// pole was changed as part of this interpretation.
@@ -520,8 +512,8 @@ namespace
 						props_in_current_trs, time_sample, fixed_plate_id,
 						moving_plate_id);
 			}
-		} else if (time_sample.valid_time()->get_time_position().value() <
-				prev_time_sample.valid_time()->get_time_position().value()) {
+		} else if (time_sample->valid_time()->get_time_position().value() <
+				prev_time_sample->valid_time()->get_time_position().value()) {
 			// We'll assume it's the start of a new sequence.  Since we're cautious
 			// programmers, let's just double-check whether the plate IDs are the same.
 
@@ -556,7 +548,6 @@ namespace
 				// OK, it's the special case.  Let's assume the current pole was
 				// intended to be part of the sequence, but commented-out.
 				time_samples.push_back(time_sample);
-				props_in_current_trs.d_irregular_sampling->set_time_samples(time_samples);
 
 				// Don't forget to warn the user that the moving plate ID of the
 				// pole was changed as part of this interpretation.
@@ -581,13 +572,8 @@ namespace
 						moving_plate_id);
 			} else {
 				time_samples.push_back(time_sample);
-				props_in_current_trs.d_irregular_sampling->set_time_samples(time_samples);
 			}
 		}
-
-		// Set the time samples on the irregular sampling before we, in turn, set it on the feature.
-		//gpml_irregular_sampling_set_time_samples_guard.Dismiss();
-		//props_in_current_trs.d_irregular_sampling->set_time_samples(time_samples);
 	}
 
 
@@ -596,7 +582,7 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
 			GPlatesModel::FeatureHandle::weak_ref &current_total_recon_seq,
 			TotalReconSeqProperties &props_in_current_trs,
-			const GPlatesPropertyValues::GpmlTimeSample &time_sample,
+			const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type &time_sample,
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
@@ -644,7 +630,7 @@ namespace
 			GPlatesModel::integer_plate_id_type fixed_plate_id, moving_plate_id;
 
 			try {
-				GPlatesPropertyValues::GpmlTimeSample time_sample =
+				GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type time_sample =
 						parse_pole(line_stream, fixed_plate_id, moving_plate_id,
 								data_source, line_buffer.line_number(),
 								read_errors);

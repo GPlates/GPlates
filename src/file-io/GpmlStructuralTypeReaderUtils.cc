@@ -382,7 +382,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_time_dependent_propert
 }
 
 
-GPlatesPropertyValues::GpmlTimeSample
+GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_time_sample(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
 		const GpmlPropertyStructuralTypeReader &structural_type_reader,
@@ -424,10 +424,10 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_time_sample(
 	}
 
 	if (is_disabled) {
-		return GPlatesPropertyValues::GpmlTimeSample(
+		return GPlatesPropertyValues::GpmlTimeSample::create(
 				value, valid_time, desc, type, *is_disabled);
 	}
-	return GPlatesPropertyValues::GpmlTimeSample(value, valid_time, desc, type);
+	return GPlatesPropertyValues::GpmlTimeSample::create(value, valid_time, desc, type);
 }
 
 

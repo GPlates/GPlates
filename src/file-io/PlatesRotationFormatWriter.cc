@@ -303,9 +303,9 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_irregular_sampling(
 {
 	// Iterate through the time samples (hence finite rotations) in the current
 	// total reconstruction sequence.
-	std::vector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
-		iter = gpml_irregular_sampling.get_time_samples().begin(),
-		end = gpml_irregular_sampling.get_time_samples().end();
+	GPlatesModel::RevisionedVector< GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type >::const_iterator 
+		iter = gpml_irregular_sampling.time_samples().begin(),
+		end = gpml_irregular_sampling.time_samples().end();
 	for ( ; iter != end; ++iter) {
 		write_gpml_time_sample(*iter);
 	}
@@ -338,20 +338,20 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_plate_id(
 
 void
 GPlatesFileIO::PlatesRotationFormatWriter::write_gpml_time_sample(
-		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
+		const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type &gpml_time_sample)
 {
 	// Start a new reconstruction pole
 	d_accum.reconstruction_poles.push_back(PlatesRotationFormatAccumulator::ReconstructionPoleData());
 
-	d_accum.current_pole().time = gpml_time_sample.valid_time()->get_time_position().value();
-	d_accum.current_pole().is_disabled = gpml_time_sample.is_disabled();
+	d_accum.current_pole().time = gpml_time_sample->valid_time()->get_time_position().value();
+	d_accum.current_pole().is_disabled = gpml_time_sample->is_disabled();
 	
 	// Visit the finite rotation inside this time sample.
-	gpml_time_sample.value()->accept_visitor(*this);
+	gpml_time_sample->value()->accept_visitor(*this);
 
 	// Visit the comment.
-	if (gpml_time_sample.description()) {
-		gpml_time_sample.description().get()->accept_visitor(*this);
+	if (gpml_time_sample->description()) {
+		gpml_time_sample->description().get()->accept_visitor(*this);
 	}
 }
 

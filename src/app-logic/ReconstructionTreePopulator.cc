@@ -28,7 +28,6 @@
 #include <boost/foreach.hpp>
 #include <boost/none.hpp>  // boost::none
 #include <boost/ref.hpp>
-#include <loki/ScopeGuard.h>
 	
 #include "ReconstructionTreePopulator.h"
 #include "ReconstructionGraph.h"
@@ -113,10 +112,10 @@ namespace
 				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 		{
 			BOOST_FOREACH(
-					const GPlatesPropertyValues::GpmlTimeSample &time_sample,
-					gpml_irregular_sampling.get_time_samples())
+					GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type time_sample,
+					gpml_irregular_sampling.time_samples())
 			{
-				time_sample.value()->accept_visitor(*this);
+				time_sample->value()->accept_visitor(*this);
 			}
 		}
 
@@ -256,6 +255,7 @@ void
 GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 		GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 {
+	using namespace GPlatesModel;
 	using namespace GPlatesPropertyValues;
 
 	// It is assumed that an IrregularSampling instance which has been reached by the visit
@@ -277,20 +277,13 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 	// First, let's see whether the reconstruction time matches the time of the most-recent
 	// (non-disabled) time sample.
 
-	// A copy of the current time samples to work with.
-	std::vector<GpmlTimeSample> time_samples = gpml_irregular_sampling.get_time_samples();
-	// This needs to be set back onto the irregular sampling property when/if we're done making
-	// modifications - we do this automatically at scope exit (to cover all the 'return' paths).
-	Loki::ScopeGuard gpml_irregular_sampling_set_time_samples_guard = Loki::MakeGuard(
-			&GPlatesPropertyValues::GpmlIrregularSampling::set_time_samples,
-			gpml_irregular_sampling,
-			boost::cref(time_samples));
-	gpml_irregular_sampling_set_time_samples_guard.silence_unused_variable_warning();
+	RevisionedVector<GpmlTimeSample::non_null_ptr_type> &time_samples =
+			gpml_irregular_sampling.time_samples();
 
 	// So, let's get to the most-recent non-disabled time sample.
-	std::vector<GpmlTimeSample>::iterator iter = time_samples.begin();
-	std::vector<GpmlTimeSample>::iterator end = time_samples.end();
-	while (iter != end && iter->is_disabled()) {
+	RevisionedVector<GpmlTimeSample::non_null_ptr_type>::iterator iter = time_samples.begin();
+	RevisionedVector<GpmlTimeSample::non_null_ptr_type>::iterator end = time_samples.end();
+	while (iter != end && iter->get()->is_disabled()) {
 		// This time-sample is disabled.  Let's move to the next one.
 		++iter;
 	}
@@ -302,21 +295,21 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 	}
 	// else:  'iter' points to the most-recent non-disabled time sample.
 
-	if (d_recon_time.is_strictly_later_than(iter->valid_time()->get_time_position())) {
+	if (d_recon_time.is_strictly_later_than(iter->get()->valid_time()->get_time_position())) {
 		// The requested reconstruction time is later than the time of the most-recent
 		// non-disabled time sample.  Hence, it is not valid to reconstruct to the
 		// requested reconstruction time.
 		// FIXME:  Should we complain about this?
 		return;
 	}
-	if (d_recon_time.is_coincident_with((iter->valid_time()->get_time_position()))) {
+	if (d_recon_time.is_coincident_with((iter->get()->valid_time()->get_time_position()))) {
 		// An exact match!  Hence, we can use the FiniteRotation of this time sample
 		// directly, without need for interpolation.
 
 		// Let's visit the time sample, to collect (what we expect to be) the
 		// FiniteRotation inside it.
 		d_accumulator->d_is_expecting_a_finite_rotation = true;
-		iter->value()->accept_visitor(*this);
+		iter->get()->value()->accept_visitor(*this);
 
 		// Did the visitor successfully collect the FiniteRotation?
 		if ( ! d_accumulator->d_finite_rotation) {
@@ -342,15 +335,15 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 	// remaining rails and posts.
 
 	// 'prev' is the previous non-disabled time sample.
-	std::vector<GpmlTimeSample>::iterator prev = iter;
+	RevisionedVector<GpmlTimeSample::non_null_ptr_type>::iterator prev = iter;
 	for (++iter; iter != end; ++iter) {
-		if (iter->is_disabled()) {
+		if (iter->get()->is_disabled()) {
 			// This time-sample is disabled.  Let's move to the next one.
 			continue;
 		}
 		// else:  'iter' points to the most-recent non-disabled time sample.
 
-		if (d_recon_time.is_strictly_later_than(iter->valid_time()->get_time_position())) {
+		if (d_recon_time.is_strictly_later_than(iter->get()->valid_time()->get_time_position())) {
 			// The requested reconstruction time is later than (ie, less far in the
 			// past than) the time of the current time sample, which must mean that it
 			// lies "on the rail" between the current time sample and the time sample
@@ -365,7 +358,7 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			// Let's visit the time sample, to collect (what we expect to be) the
 			// FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
-			iter->value()->accept_visitor(*this);
+			iter->get()->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_accumulator->d_finite_rotation) {
@@ -380,7 +373,7 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			// Now let's visit the _previous_ non-disabled time sample, to collect
 			// (what we expect to be) the FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
-			prev->value()->accept_visitor(*this);
+			prev->get()->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_accumulator->d_finite_rotation) {
@@ -393,9 +386,9 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 			}
 
 			GPlatesMaths::real_t current_time =
-					iter->valid_time()->get_time_position().value();
+					iter->get()->valid_time()->get_time_position().value();
 			GPlatesMaths::real_t previous_time =
-					prev->valid_time()->get_time_position().value();
+					prev->get()->valid_time()->get_time_position().value();
 			GPlatesMaths::real_t target_time =
 					d_recon_time.value();
 
@@ -415,14 +408,14 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 
 			return;
 		}
-		if (d_recon_time.is_coincident_with(iter->valid_time()->get_time_position())) {
+		if (d_recon_time.is_coincident_with(iter->get()->valid_time()->get_time_position())) {
 			// An exact match!  Hence, we can use the FiniteRotation of this time
 			// sample directly, without need for interpolation.
 
 			// Let's visit the time sample, to collect (what we expect to be) the
 			// FiniteRotation inside it.
 			d_accumulator->d_is_expecting_a_finite_rotation = true;
-			iter->value()->accept_visitor(*this);
+			iter->get()->value()->accept_visitor(*this);
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_accumulator->d_finite_rotation) {

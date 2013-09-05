@@ -78,6 +78,15 @@ void export_coregistration_layer_proxy();
 
 BOOST_PYTHON_MODULE(pygplates)
 {
+	boost::python::docstring_options module_docstring_options(
+			true/*show_user_defined*/,
+			true/*show_py_signatures*/,
+			false/*show_cpp_signatures*/);
+
+	// Set the 'pygplates' module docstring.
+	boost::python::scope().attr("__doc__") =
+			"GPlates python Application Programming Interface (API)";
+
 #ifdef GPLATES_PYTHON_EMBEDDING
 	// api directory.
 	export_console_reader();

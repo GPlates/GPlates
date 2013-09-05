@@ -823,7 +823,7 @@ GPlatesModel::ModelUtils::create_total_reconstruction_pole(
 		bool is_grot)
 {
 	using namespace GPlatesPropertyValues;
-	std::vector<GPlatesPropertyValues::GpmlTimeSample> time_samples;
+	std::vector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type> time_samples;
 	boost::optional<StructuralType> value_type;
 	if(is_grot)
 	{
@@ -930,7 +930,7 @@ GPlatesModel::ModelUtils::get_mprs_attributes(
 }
 
 
-GPlatesPropertyValues::GpmlTimeSample
+GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 GPlatesModel::ModelUtils::create_gml_time_sample(
 		const GPlatesModel::ModelUtils::TotalReconstructionPole &trp,
 		bool is_grot)
@@ -956,7 +956,7 @@ GPlatesModel::ModelUtils::create_gml_time_sample(
 
 	if(is_grot)
 	{
-		return GpmlTimeSample(
+		return GpmlTimeSample::create(
 				GpmlTotalReconstructionPole::create(gpml_finite_rotation->get_finite_rotation()),
 				gml_time_instant,
 				gml_description, 
@@ -964,7 +964,7 @@ GPlatesModel::ModelUtils::create_gml_time_sample(
 	}
 	else
 	{
-		return GpmlTimeSample(
+		return GpmlTimeSample::create(
 				gpml_finite_rotation, 
 				gml_time_instant,
 				gml_description, 

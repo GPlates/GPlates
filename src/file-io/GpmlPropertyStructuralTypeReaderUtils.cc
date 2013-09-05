@@ -701,7 +701,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_irregular_samp
 		interp_func = find_and_create_optional(elem, &create_gpml_interpolation_function, 
 				INTERPOLATION_FUNCTION, gpml_version, read_errors);
 
-	std::vector<GPlatesPropertyValues::GpmlTimeSample> time_samples;
+	std::vector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type> time_samples;
 	find_and_create_one_or_more(
 			elem, &create_gpml_time_sample, TIME_SAMPLE, time_samples,
 			structural_type_reader, gpml_version, read_errors);

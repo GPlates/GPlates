@@ -1505,14 +1505,14 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_irregular_sampling(
 		const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 {
 	d_output.writeStartGpmlElement("IrregularSampling");
-		std::vector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator iter =
-				gpml_irregular_sampling.get_time_samples().begin();
-		std::vector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator end =
-				gpml_irregular_sampling.get_time_samples().end();
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>::const_iterator iter =
+				gpml_irregular_sampling.time_samples().begin();
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>::const_iterator end =
+				gpml_irregular_sampling.time_samples().end();
 		for ( ; iter != end; ++iter) 
 		{
 			d_output.writeStartGpmlElement("timeSample");
-				write_gpml_time_sample(*iter);
+				write_gpml_time_sample(*iter->get());
 			d_output.writeEndElement();
 		}
 

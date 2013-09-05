@@ -54,18 +54,18 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 		GPlatesModel::ConstFeatureVisitor &visitor,
 		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 {
-	std::vector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
-		iter = gpml_irregular_sampling.get_time_samples().begin(),
-		end = gpml_irregular_sampling.get_time_samples().end();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>::const_iterator 
+		iter = gpml_irregular_sampling.time_samples().begin(),
+		end = gpml_irregular_sampling.time_samples().end();
 	for ( ; iter != end; ++iter)
 	{
 		// If time of time sample matches our reconstruction time then visit.
 		//
 		// FIXME: Should really visit the two closest samples and interpolate them, but
 		// that's hard to do when the property being visited is a template type.
-		if (reconstruction_time.is_coincident_with(iter->valid_time()->get_time_position()))
+		if (reconstruction_time.is_coincident_with(iter->get()->valid_time()->get_time_position()))
 		{
-			iter->value()->accept_visitor(visitor);
+			iter->get()->value()->accept_visitor(visitor);
 			return;
 		}
 	}
@@ -78,10 +78,10 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 		GPlatesModel::FeatureVisitor &visitor,
 		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 {
-	std::vector< GPlatesPropertyValues::GpmlTimeSample > time_samples =
-			gpml_irregular_sampling.get_time_samples();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type> &time_samples =
+			gpml_irregular_sampling.time_samples();
 
-	std::vector< GPlatesPropertyValues::GpmlTimeSample >::iterator 
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>::iterator 
 		iter = time_samples.begin(),
 		end = time_samples.end();
 	for ( ; iter != end; ++iter)
@@ -90,14 +90,12 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 		//
 		// FIXME: Should really visit the two closest samples and interpolate them, but
 		// that's hard to do when the property being visited is a template type.
-		if (reconstruction_time.is_coincident_with(iter->valid_time()->get_time_position()))
+		if (reconstruction_time.is_coincident_with(iter->get()->valid_time()->get_time_position()))
 		{
-			iter->value()->accept_visitor(visitor);
+			iter->get()->value()->accept_visitor(visitor);
 			return;
 		}
 	}
-
-	gpml_irregular_sampling.set_time_samples(time_samples);
 }
 
 

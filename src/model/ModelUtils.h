@@ -114,7 +114,7 @@ namespace GPlatesModel
 				const std::vector<TotalReconstructionPole> &five_tuples);
 
 
-		GPlatesPropertyValues::GpmlTimeSample
+		GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 		create_gml_time_sample(
 				const GPlatesModel::ModelUtils::TotalReconstructionPole &trp,
 				bool is_grot = false);

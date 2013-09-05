@@ -1115,19 +1115,19 @@ GPlatesQtWidgets::MetadataDialog::get_gpml_total_reconstruction_pole(
 			lon = d_trs_dlg_current_item->text(3), 
 			angle=d_trs_dlg_current_item->text(4);
 
-	std::vector<GpmlTimeSample>::const_iterator
-		iter = irreg_sampling_const->get_time_samples().begin(),
-		end = irreg_sampling_const->get_time_samples().end();
+	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator
+		iter = irreg_sampling_const->time_samples().begin(),
+		end = irreg_sampling_const->time_samples().end();
 	
 	static const double EPSILON = 1.0e-6; // I have to use a less tight precision because of qt.
 	GpmlTotalReconstructionPole *trs = NULL;
 	for ( ; iter != end; ++iter) 
 	{
-		if(std::fabs(iter->valid_time()->get_time_position().value() - time.toDouble()) < EPSILON)
+		if(std::fabs(iter->get()->valid_time()->get_time_position().value() - time.toDouble()) < EPSILON)
 		{
 			// FIXME: This const cast bypasses the model revisioning system.
 			trs = const_cast<GpmlTotalReconstructionPole *>(
-					dynamic_cast<const GpmlTotalReconstructionPole *>(iter->value().get()));
+					dynamic_cast<const GpmlTotalReconstructionPole *>(iter->get()->value().get()));
 			if(!trs)
 			{
 				qWarning() << "The time sample is not GpmlTotalReconstructionPole type.";

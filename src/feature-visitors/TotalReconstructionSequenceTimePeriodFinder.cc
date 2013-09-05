@@ -79,16 +79,18 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_gpml_
 {
 	using namespace GPlatesPropertyValues;
 
-	std::vector<GpmlTimeSample>::const_iterator iter = gpml_irregular_sampling.get_time_samples().begin();
-	std::vector<GpmlTimeSample>::const_iterator end = gpml_irregular_sampling.get_time_samples().end();
+	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator iter =
+			gpml_irregular_sampling.time_samples().begin();
+	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator end =
+			gpml_irregular_sampling.time_samples().end();
 	for ( ; iter != end; ++iter) {
 		// First, skip over any disabled time samples (if the client code wants us to).
 		if (d_skip_over_disabled_samples) {
-			if (iter->is_disabled()) {
+			if (iter->get()->is_disabled()) {
 				continue;
 			}
 		}
-		const GeoTimeInstant &gti = iter->valid_time()->get_time_position();
+		const GeoTimeInstant &gti = iter->get()->valid_time()->get_time_position();
 		if ( ! gti.is_real()) {
 			// This geo-time-instant seems to be in either the distant past or the
 			// distant future.  This should not be the case in an irregular sampling.
@@ -116,7 +118,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_gpml_
 			// geo-time-instant is earlier than it.  This is as expected, since each
 			// successive time sample should be further in the past (ie, earlier).
 			d_begin_time = gti;
-		} else if (iter->is_disabled()) {
+		} else if (iter->get()->is_disabled()) {
 			// This time sample is disabled, so we won't bother comparing its time
 			// position with that of the preceding time sample.  (This if-condition
 			// basically prevents us from proceeding into the following "else" block.)

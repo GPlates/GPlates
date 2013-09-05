@@ -551,14 +551,14 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_irregular_sampling(
 
 	d_line_stream << " IrregularSampling";
 
-	std::vector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator iter =
-		gpml_irregular_sampling.get_time_samples().begin();
-	std::vector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator end =
-		gpml_irregular_sampling.get_time_samples().end();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>::const_iterator iter =
+		gpml_irregular_sampling.time_samples().begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>::const_iterator end =
+		gpml_irregular_sampling.time_samples().end();
 	for ( ; iter != end; ++iter) 
 	{
 		d_line_stream << " <timeSample>";
-		write_gpml_time_sample(*iter);
+		write_gpml_time_sample(*iter->get());
 		d_line_stream << "</timeSample>";
 	}
 
