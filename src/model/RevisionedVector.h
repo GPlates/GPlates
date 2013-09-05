@@ -27,6 +27,7 @@
 #define GPLATES_MODEL_REVISIONEDVECTOR_H
 
 #include <cstddef> // std::size_t
+#include <iterator>
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/iterator/iterator_facade.hpp>
@@ -295,8 +296,7 @@ namespace GPlatesModel
 										// Use a proxied reference for const elements...
 										ConstReference,
 										// Use a proxied reference for non-const elements...
-										Reference>::type,
-						Reference>
+										Reference>::type>
 		{
 		public:
 
@@ -398,6 +398,7 @@ namespace GPlatesModel
 
 			friend class boost::iterator_core_access;
 			template <class OtherElementQualifiedType> friend class Iterator;
+			friend class RevisionedVector<ElementType>;
 
 			//
 			// Workaround for bug in boost 1.47 -> 1.50 when using proxy references.
@@ -445,14 +446,14 @@ namespace GPlatesModel
 		/**
 		 * Non-const iterator type.
 		 *
-		 * Dereferencing will return a 'element_type'.
+		 * Dereferencing will return a 'reference'.
 		 */
 		typedef Iterator<element_type> iterator;
 
 		/**
 		 * Const iterator type.
 		 *
-		 * Dereferencing will return a 'const_element_type' which is either
+		 * Dereferencing will return a 'const_reference' which references either a
 		 * 'const element_type', or RevisionableType::non_null_ptr_to_const_type if 'ElementType' is
 		 * RevisionableType::non_null_ptr_type (where RevisionableType inherits from @a Revisionable).
 		 */
@@ -495,7 +496,7 @@ namespace GPlatesModel
 
 
 		/**
-		 * Const iterator dereferences to give 'const ElementType', or
+		 * Const iterator dereferences to give 'const_reference' which references a 'const ElementType', or
 		 * RevisionableType::non_null_ptr_to_const_type if 'ElementType' is
 		 * RevisionableType::non_null_ptr_type (where RevisionableType inherits from @a Revisionable).
 		 */
@@ -512,7 +513,7 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Non-const iterator dereferences to give 'ElementType'.
+		 * Non-const iterator dereferences to give 'reference'.
 		 *
 		 * Note that this non-const iterator can also be used to replace elements in the
 		 * internal sequence using '*iter = new_element'.
@@ -529,21 +530,70 @@ namespace GPlatesModel
 			return iterator(this, size());
 		}
 
-		std::size_t
-		size() const
-		{
-			return get_current_revision<Revision>().elements.size();
-		}
-
 		bool
 		empty() const
 		{
 			return get_current_revision<Revision>().elements.empty();
 		}
 
-		/**
-		 * Index operator returning 'const' element.
-		 */
+		void
+		clear()
+		{
+			erase(begin(), end());
+		}
+
+		template <typename Iter>
+		void
+		assign(
+				Iter first,
+				Iter last)
+		{
+			erase(begin(), end());
+			insert(begin(), first, last);
+		}
+
+		std::size_t
+		size() const
+		{
+			return get_current_revision<Revision>().elements.size();
+		}
+
+		const_reference
+		front() const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					!empty(),
+					GPLATES_ASSERTION_SOURCE);
+			return const_reference(this, 0);
+		}
+
+		reference
+		front()
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					!empty(),
+					GPLATES_ASSERTION_SOURCE);
+			return reference(this, 0);
+		}
+
+		const_reference
+		back() const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					!empty(),
+					GPLATES_ASSERTION_SOURCE);
+			return const_reference(this, size() - 1);
+		}
+
+		reference
+		back()
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					!empty(),
+					GPLATES_ASSERTION_SOURCE);
+			return reference(this, size() - 1);
+		}
+
 		const_reference
 		operator[](
 				std::size_t index) const
@@ -551,16 +601,57 @@ namespace GPlatesModel
 			return const_reference(this, index);
 		}
 
-		/**
-		 * Index operator returning 'non-const' element.
-		 *
-		 * Supports writing in-place via 'vector[index] = new_element'.
-		 */
 		reference
 		operator[](
 				std::size_t index)
 		{
 			return reference(this, index);
+		}
+
+		void
+		push_back(
+				const ElementType &elem)
+		{
+			push_back(elem, typename IsElementTypeRevisionable::type());
+		}
+
+		void
+		pop_back()
+		{
+			pop_back(typename IsElementTypeRevisionable::type());
+		}
+
+		iterator
+		insert(
+				iterator pos,
+				const ElementType &elem)
+		{
+			return insert(pos, elem, typename IsElementTypeRevisionable::type());
+		}
+
+		template <typename Iter>
+		void
+		insert(
+				iterator pos,
+				Iter first,
+				Iter last)
+		{
+			return insert(pos, first, last, typename IsElementTypeRevisionable::type());
+		}
+
+		iterator
+		erase(
+				iterator pos)
+		{
+			return erase(pos, typename IsElementTypeRevisionable::type());
+		}
+
+		iterator
+		erase(
+				iterator first,
+				iterator last)
+		{
+			return erase(first, last, typename IsElementTypeRevisionable::type());
 		}
 
 	protected:
@@ -700,6 +791,121 @@ namespace GPlatesModel
 				const ElementType &element,
 				std::size_t element_index,
 				boost::mpl::false_/*'ElementType' is not revisionable*/);
+
+
+		void
+		push_back(
+				const ElementType &elem,
+				boost::mpl::true_/*'ElementType' is revisionable*/);
+
+		void
+		push_back(
+				const ElementType &elem,
+				boost::mpl::false_/*'ElementType' is not revisionable*/);
+
+
+		void
+		pop_back(
+				boost::mpl::true_/*'ElementType' is revisionable*/);
+
+		void
+		pop_back(
+				boost::mpl::false_/*'ElementType' is not revisionable*/);
+
+
+		iterator
+		insert(
+				iterator pos,
+				const ElementType &elem,
+				boost::mpl::true_/*'ElementType' is revisionable*/);
+
+		iterator
+		insert(
+				iterator pos,
+				const ElementType &elem,
+				boost::mpl::false_/*'ElementType' is not revisionable*/);
+
+
+		template <typename Iter>
+		void
+		insert(
+				iterator pos,
+				Iter first,
+				Iter last,
+				boost::mpl::true_/*'ElementType' is revisionable*/);
+
+		template <typename Iter>
+		void
+		insert(
+				iterator pos,
+				Iter first,
+				Iter last,
+				boost::mpl::false_/*'ElementType' is not revisionable*/);
+
+
+		iterator
+		erase(
+				iterator pos,
+				boost::mpl::true_/*'ElementType' is revisionable*/);
+
+		iterator
+		erase(
+				iterator pos,
+				boost::mpl::false_/*'ElementType' is not revisionable*/);
+
+
+		iterator
+		erase(
+				iterator first,
+				iterator last,
+				boost::mpl::true_/*'ElementType' is revisionable*/);
+
+		iterator
+		erase(
+				iterator first,
+				iterator last,
+				boost::mpl::false_/*'ElementType' is not revisionable*/);
+
+
+		//! Convert to 'std::vector<revisioned_element_type>::const_iterator' from wrapped iterator.
+		typename std::vector<revisioned_element_type>::const_iterator
+		to_internal_iterator(
+				std::vector<revisioned_element_type> &elements,
+				const_iterator iter) const
+		{
+			typename std::vector<revisioned_element_type>::const_iterator internal_iter = elements.begin();
+			std::advance(internal_iter, iter.d_index);
+			return internal_iter;
+		}
+
+		//! Convert to 'std::vector<revisioned_element_type>::iterator' from wrapped iterator.
+		typename std::vector<revisioned_element_type>::iterator
+		to_internal_iterator(
+				std::vector<revisioned_element_type> &elements,
+				iterator iter)
+		{
+			typename std::vector<revisioned_element_type>::iterator internal_iter = elements.begin();
+			std::advance(internal_iter, iter.d_index);
+			return internal_iter;
+		}
+
+		//! Convert from 'std::vector<revisioned_element_type>::const_iterator' iterator to wrapped iterator.
+		const_iterator
+		from_internal_iterator(
+				std::vector<revisioned_element_type> &elements,
+				typename std::vector<revisioned_element_type>::const_iterator internal_iter) const
+		{
+			return const_iterator(this, std::distance(elements.begin(), internal_iter));
+		}
+
+		//! Convert from 'std::vector<revisioned_element_type>::const_iterator' iterator to wrapped iterator.
+		iterator
+		from_internal_iterator(
+				std::vector<revisioned_element_type> &elements,
+				typename std::vector<revisioned_element_type>::iterator internal_iter)
+		{
+			return iterator(this, std::distance(elements.begin(), internal_iter));
+		}
 
 
 		/**
@@ -980,6 +1186,302 @@ namespace GPlatesModel
 		revision.elements[element_index] = element;
 
 		revision_handler.commit();
+	}
+
+
+	template <typename ElementType>
+	void
+	RevisionedVector<ElementType>::push_back(
+			const ElementType &elem,
+			boost::mpl::true_/*'ElementType' is revisionable*/)
+	{
+		BubbleUpRevisionHandler revision_handler(this);
+		Revision &revision = revision_handler.get_revision<Revision>();
+
+		revision.elements.push_back(
+				revisioned_element_type::attach(revision_handler.get_model_transaction(), *this, elem));
+
+		revision_handler.commit();
+	}
+
+
+	template <typename ElementType>
+	void
+	RevisionedVector<ElementType>::push_back(
+			const ElementType &elem,
+			boost::mpl::false_/*'ElementType' is not revisionable*/)
+	{
+		BubbleUpRevisionHandler revision_handler(this);
+		Revision &revision = revision_handler.get_revision<Revision>();
+
+		revision.elements.push_back(elem);
+
+		revision_handler.commit();
+	}
+
+
+	template <typename ElementType>
+	void
+	RevisionedVector<ElementType>::pop_back(
+			boost::mpl::true_/*'ElementType' is revisionable*/)
+	{
+		BubbleUpRevisionHandler revision_handler(this);
+		Revision &revision = revision_handler.get_revision<Revision>();
+
+		// Detach the element before erasing it.
+		revision.elements.back().detach(revision_handler.get_model_transaction());
+		revision.elements.pop_back();
+
+		revision_handler.commit();
+	}
+
+
+	template <typename ElementType>
+	void
+	RevisionedVector<ElementType>::pop_back(
+			boost::mpl::false_/*'ElementType' is not revisionable*/)
+	{
+		BubbleUpRevisionHandler revision_handler(this);
+		Revision &revision = revision_handler.get_revision<Revision>();
+
+		revision.elements.pop_back();
+
+		revision_handler.commit();
+	}
+
+
+	template <typename ElementType>
+	typename RevisionedVector<ElementType>::iterator
+	RevisionedVector<ElementType>::insert(
+			iterator pos,
+			const ElementType &elem,
+			boost::mpl::true_/*'ElementType' is revisionable*/)
+	{
+		BubbleUpRevisionHandler revision_handler(this);
+		Revision &revision = revision_handler.get_revision<Revision>();
+
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				pos.d_revisioned_vector == this &&
+					pos.d_index <= revision.elements.size(),
+				GPLATES_ASSERTION_SOURCE);
+
+		typename std::vector<revisioned_element_type>::iterator ret =
+				revision.elements.insert(
+						to_internal_iterator(revision.elements, pos),
+						revisioned_element_type::attach(revision_handler.get_model_transaction(), *this, elem));
+
+		revision_handler.commit();
+
+		return from_internal_iterator(revision.elements, ret);
+	}
+
+
+	template <typename ElementType>
+	typename RevisionedVector<ElementType>::iterator
+	RevisionedVector<ElementType>::insert(
+			iterator pos,
+			const ElementType &elem,
+			boost::mpl::false_/*'ElementType' is not revisionable*/)
+	{
+		BubbleUpRevisionHandler revision_handler(this);
+		Revision &revision = revision_handler.get_revision<Revision>();
+
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				pos.d_revisioned_vector == this &&
+					pos.d_index <= revision.elements.size(),
+				GPLATES_ASSERTION_SOURCE);
+
+		typename std::vector<revisioned_element_type>::iterator ret =
+				revision.elements.insert(
+						to_internal_iterator(revision.elements, pos),
+						elem);
+
+		revision_handler.commit();
+
+		return from_internal_iterator(revision.elements, ret);
+	}
+
+
+	template <typename ElementType>
+	template <typename Iter>
+	void
+	RevisionedVector<ElementType>::insert(
+			iterator pos,
+			Iter first,
+			Iter last,
+			boost::mpl::true_/*'ElementType' is revisionable*/)
+	{
+		BubbleUpRevisionHandler revision_handler(this);
+		Revision &revision = revision_handler.get_revision<Revision>();
+
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				pos.d_revisioned_vector == this &&
+					pos.d_index <= revision.elements.size(),
+				GPLATES_ASSERTION_SOURCE);
+
+		// Attach the elements before inserting them.
+		std::vector<revisioned_element_type> elements;
+		for (Iter iter = first; iter != last; ++iter)
+		{
+			elements.push_back(
+					revisioned_element_type::attach(
+							revision_handler.get_model_transaction(), *this, *iter));
+		}
+
+		// Insert the elements.
+		revision.elements.insert(
+				to_internal_iterator(revision.elements, pos),
+				elements.begin(),
+				elements.end());
+
+		revision_handler.commit();
+	}
+
+
+	template <typename ElementType>
+	template <typename Iter>
+	void
+	RevisionedVector<ElementType>::insert(
+			iterator pos,
+			Iter first,
+			Iter last,
+			boost::mpl::false_/*'ElementType' is not revisionable*/)
+	{
+		BubbleUpRevisionHandler revision_handler(this);
+		Revision &revision = revision_handler.get_revision<Revision>();
+
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				pos.d_revisioned_vector == this &&
+					pos.d_index <= revision.elements.size(),
+				GPLATES_ASSERTION_SOURCE);
+
+		// Insert the elements.
+		revision.elements.insert(
+				to_internal_iterator(revision.elements, pos),
+				first,
+				last);
+
+		revision_handler.commit();
+	}
+
+
+	template <typename ElementType>
+	typename RevisionedVector<ElementType>::iterator
+	RevisionedVector<ElementType>::erase(
+			iterator pos,
+			boost::mpl::true_/*'ElementType' is revisionable*/)
+	{
+		BubbleUpRevisionHandler revision_handler(this);
+		Revision &revision = revision_handler.get_revision<Revision>();
+
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				pos.d_revisioned_vector == this &&
+					pos.d_index < revision.elements.size(),
+				GPLATES_ASSERTION_SOURCE);
+
+		// Detach the element before erasing it.
+		typename std::vector<revisioned_element_type>::iterator erase_iter =
+				to_internal_iterator(revision.elements, pos);
+		erase_iter->detach(revision_handler.get_model_transaction());
+
+		typename std::vector<revisioned_element_type>::iterator ret =
+				revision.elements.erase(erase_iter);
+
+		revision_handler.commit();
+
+		return from_internal_iterator(revision.elements, ret);
+	}
+
+
+	template <typename ElementType>
+	typename RevisionedVector<ElementType>::iterator
+	RevisionedVector<ElementType>::erase(
+			iterator pos,
+			boost::mpl::false_/*'ElementType' is not revisionable*/)
+	{
+		BubbleUpRevisionHandler revision_handler(this);
+		Revision &revision = revision_handler.get_revision<Revision>();
+
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				pos.d_revisioned_vector == this &&
+					pos.d_index < revision.elements.size(),
+				GPLATES_ASSERTION_SOURCE);
+
+		typename std::vector<revisioned_element_type>::iterator ret =
+				revision.elements.erase(to_internal_iterator(revision.elements, pos));
+
+		revision_handler.commit();
+
+		return from_internal_iterator(revision.elements, ret);
+	}
+
+
+	template <typename ElementType>
+	typename RevisionedVector<ElementType>::iterator
+	RevisionedVector<ElementType>::erase(
+			iterator first,
+			iterator last,
+			boost::mpl::true_/*'ElementType' is revisionable*/)
+	{
+		BubbleUpRevisionHandler revision_handler(this);
+		Revision &revision = revision_handler.get_revision<Revision>();
+
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				first.d_revisioned_vector == this &&
+					last.d_revisioned_vector == this &&
+					first.d_index < revision.elements.size() &&
+					last.d_index < revision.elements.size() &&
+					first.d_index <= last.d_index,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Detach the elements before erasing them.
+		for (iterator iter = first; iter != last; ++iter)
+		{
+			typename std::vector<revisioned_element_type>::iterator erase_iter =
+					to_internal_iterator(revision.elements, iter);
+
+			erase_iter->detach(revision_handler.get_model_transaction());
+		}
+
+		// Erase the elements.
+		typename std::vector<revisioned_element_type>::iterator ret =
+				revision.elements.erase(
+						to_internal_iterator(revision.elements, first),
+						to_internal_iterator(revision.elements, last));
+
+		revision_handler.commit();
+
+		return from_internal_iterator(revision.elements, ret);
+	}
+
+
+	template <typename ElementType>
+	typename RevisionedVector<ElementType>::iterator
+	RevisionedVector<ElementType>::erase(
+			iterator first,
+			iterator last,
+			boost::mpl::false_/*'ElementType' is not revisionable*/)
+	{
+		BubbleUpRevisionHandler revision_handler(this);
+		Revision &revision = revision_handler.get_revision<Revision>();
+
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				first.d_revisioned_vector == this &&
+					last.d_revisioned_vector == this &&
+					first.d_index < revision.elements.size() &&
+					last.d_index < revision.elements.size() &&
+					first.d_index <= last.d_index,
+				GPLATES_ASSERTION_SOURCE);
+
+		// Erase the elements.
+		typename std::vector<revisioned_element_type>::iterator ret =
+				revision.elements.erase(
+						to_internal_iterator(revision.elements, first),
+						to_internal_iterator(revision.elements, last));
+
+		revision_handler.commit();
+
+		return from_internal_iterator(revision.elements, ret);
 	}
 
 
