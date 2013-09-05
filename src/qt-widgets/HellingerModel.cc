@@ -308,7 +308,7 @@ GPlatesQtWidgets::HellingerModel::set_initial_guess(const QStringList &com_list_
     if (com_list_fields.at(5).toStdString()=="y")
     {
 		d_active_com_file_struct.d_perform_grid_search = true;
-    }
+	}
     else if (com_list_fields.at(5).toStdString()=="n")
     {
 		d_active_com_file_struct.d_perform_grid_search = false;

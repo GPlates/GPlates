@@ -105,14 +105,6 @@ namespace{
 		}
 	}
 
-	void
-	update_selected_pick_in_tree(
-			QTreeWidget *tree,
-			GPlatesQtWidgets::hellinger_model_type::const_iterator selected_pick)
-	{
-
-	}
-
 	bool
 	tree_item_is_pick_item(
 			const QTreeWidgetItem *item)
@@ -273,7 +265,6 @@ namespace{
 			GPlatesQtWidgets::HellingerDialog::geometry_to_tree_item_map_type &geometry_to_tree_item_map,
 			bool set_as_selected_pick)
 	{
-		qDebug() << "add pick to tree: " << set_as_selected_pick;
 		QString segment_as_string = QString::number(segment_number);
 		QList<QTreeWidgetItem*> items = tree->findItems(
 					segment_as_string, Qt::MatchExactly, 0);
@@ -326,11 +317,11 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	// Look in system-specific locations for supplied sample scripts, site-specific scripts, etc.
 	// The default location will be platform-dependent and is currently set up in UserPreferences.cc.
-	d_python_path = d_view_state.get_application_state().get_user_preferences().get_value("paths/python_system_script_dir").toString();
+	//d_python_path = d_view_state.get_application_state().get_user_preferences().get_value("paths/python_system_script_dir").toString();
 	// d_python_path = "scripts";
 
 	// Temporary path during development
-	// d_python_path = "/home/robin/Desktop/Hellinger/scripts";
+	d_python_path = "/home/robin/Desktop/Hellinger/scripts";
 
 	qDebug() << "python path: " << d_python_path;
 
@@ -394,13 +385,15 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 	// If nothing is selected:
 	//	 disable everything (except the new pick / new segment buttons - which are always enabled anyway)
 
-	qDebug() << "handle_selection_changed 1";
 	clear_selection_layer();
 
-	if (new_selection.empty() || !tree_widget_picks->currentItem())
+	if (!tree_widget_picks->currentItem())
 	{
+		return;
+	}
 
-		qDebug() << "handle_selection_changed 2";
+	if (new_selection.empty())
+	{
 		// Nothing selected:
 		set_buttons_for_no_selection();
 		d_selected_segment.reset();
@@ -408,7 +401,6 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 	}
 	else if (tree_item_is_segment_item(tree_widget_picks->currentItem())) // Segment selected
 	{
-		qDebug() << "handle_selection_changed 3";
 		set_buttons_for_segment_selected();
 		QString segment = tree_widget_picks->currentItem()->text(0);
 		int segment_int = segment.toInt();
@@ -417,7 +409,6 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 	}
 	else // pick selected
 	{
-		qDebug() << "handle_selection_changed 4";
 		const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
 		QString segment = tree_widget_picks->currentItem()->text(0);
 		int row = index.row();
@@ -468,7 +459,6 @@ void
 GPlatesQtWidgets::HellingerDialog::highlight_selected_pick(
 		const HellingerPick &pick)
 {
-	qDebug() << "highlight_selected_pick";
 	const double lat = pick.d_lat;
 	const double lon = pick.d_lon;
 	const HellingerPickType segment_type = pick.d_segment_type;
@@ -934,11 +924,12 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 void
 GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 {
+	qDebug() << "Thread finished" << "type" << d_thread_type;
 	progress_bar->setEnabled(false);
 	progress_bar->setMaximum(1.);
 	if (d_thread_type == POLE_THREAD_TYPE)
 	{
-		QString path = d_python_path + "temp_file_temp_result";
+		QString path = d_python_path + TEMP_RESULT_FILENAME;
 		QFile data_file(path);
 		if (data_file.open(QFile::ReadOnly))
 		{
@@ -948,6 +939,7 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 			d_hellinger_model->set_fit(fields);
 			data_file.close();
 			update_result();
+			qDebug() << "updated result";
 			button_stats->setEnabled(true);
 			button_details->setEnabled(true);
 		}
@@ -1025,7 +1017,6 @@ GPlatesQtWidgets::HellingerDialog::update_result()
 	// FIXME: sort out the sequence of calling update_canvas, update_result etc... this function (update_result) is getting
 	// called 5 times after a fit is completed. On the second call, the lon is always zero for some reason. Investigate.
 	boost::optional<GPlatesQtWidgets::HellingerFitStructure> data_fit_struct = d_hellinger_model->get_fit();
-
 	if (data_fit_struct)
 	{
 		qDebug() << "Drawing pole at " << data_fit_struct.get().d_lat << ", " << data_fit_struct.get().d_lon;
@@ -1073,15 +1064,11 @@ GPlatesQtWidgets::HellingerDialog::draw_error_ellipse()
 void
 GPlatesQtWidgets::HellingerDialog::update_tree_from_model()
 {    
-	qDebug() << "update_tree_from_model 1: " << d_selected_pick;
 	QObject::disconnect(tree_widget_picks->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
 					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
 
 	tree_widget_picks->clear();
-	QObject::connect(tree_widget_picks->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
-					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
 
-	qDebug() << "update_tree_from_model 2: " << d_selected_pick;
 	d_geometry_to_tree_item_map.clear();
 	hellinger_model_type::const_iterator
 			iter = d_hellinger_model->begin(),
@@ -1099,13 +1086,11 @@ GPlatesQtWidgets::HellingerDialog::update_tree_from_model()
 
 	}
 
-	if (d_selected_pick)
-	{
-		update_selected_pick_in_tree(tree_widget_picks,*d_selected_pick);
-	}
-
 	update_canvas();
 	update_buttons();
+
+	QObject::connect(tree_widget_picks->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
+					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
 }
 
 void
