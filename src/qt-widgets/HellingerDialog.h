@@ -59,6 +59,11 @@ namespace GPlatesQtWidgets
 	class ReadErrorAccumulationDialog;
 
 
+	enum EditOperationType{
+		EDIT_POINT_OPERATION,
+		EDIT_SEGMENT_OPERATION
+	};
+
 	class HellingerDialog:
 			public GPlatesDialog,
 			protected Ui_HellingerDialog
@@ -175,13 +180,6 @@ namespace GPlatesQtWidgets
 				const double &chron_time);
 
 		void
-		highlight_selected_point(
-				const double &lat,
-				const double &lon,
-				const int &type_segment,
-				bool enabled);
-
-		void
 		highlight_selected_pick(
 				const HellingerPick& pick);
 
@@ -221,8 +219,7 @@ namespace GPlatesQtWidgets
 		void
 		draw_picks();
 
-		void
-		set_segment_colours(
+		const GPlatesGui::Colour &get_segment_colour(
 				int num_color);
 
 
@@ -325,6 +322,10 @@ namespace GPlatesQtWidgets
 		update_canvas();
 
 		void
+		update_edit_layer(
+				const EditOperationType &type);
+
+		void
 		update_selected_geometries();
 
 		/**
@@ -387,7 +388,6 @@ namespace GPlatesQtWidgets
 		double d_chron_time;
 		GPlatesGui::Symbol d_moving_symbol;
 		GPlatesGui::Symbol d_fixed_symbol;
-		GPlatesGui::Colour d_segment_colour;
 
 		ThreadType d_thread_type;
 		QString d_python_path;

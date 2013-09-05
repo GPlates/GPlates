@@ -105,6 +105,35 @@ namespace{
 		}
 	}
 
+	void
+	add_pick_geometry_to_layer(
+			const GPlatesQtWidgets::HellingerPick &pick,
+			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type &layer,
+			const GPlatesGui::Colour &colour)
+	{
+		const GPlatesMaths::LatLonPoint llp(pick.d_lat,pick.d_lon);
+		const GPlatesMaths::PointOnSphere point = make_point_on_sphere(llp);
+
+		static const GPlatesGui::Symbol moving_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, SYMBOL_SIZE, true);
+		static const GPlatesGui::Symbol fixed_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::SQUARE, SYMBOL_SIZE, false);
+
+		GPlatesViewOperations::RenderedGeometry pick_geometry =
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+					point.get_non_null_pointer(),
+					colour,
+					2, /* point thickness */
+					2, /* line thickness */
+					false, /* fill polygon */
+					false, /* fill polyline */
+					GPlatesGui::Colour::get_white(), // dummy colour argument
+					pick.d_segment_type == GPlatesQtWidgets::MOVING_PICK_TYPE ?
+						moving_symbol :
+						fixed_symbol);
+
+		layer->add_rendered_geometry(pick_geometry);
+
+	}
+
 	bool
 	tree_item_is_pick_item(
 			const QTreeWidgetItem *item)
@@ -429,57 +458,11 @@ void GPlatesQtWidgets::HellingerDialog::handle_cancel()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::highlight_selected_point(
-		const double &lat,
-		const double &lon,
-		const int &type_segment,
-		bool enabled)
-{
-
-	GPlatesGui::Symbol moving_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, SYMBOL_SIZE, true);
-	GPlatesGui::Symbol fixed_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::SQUARE, SYMBOL_SIZE, false);
-	GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
-				GPlatesMaths::LatLonPoint(lat,lon));
-	GPlatesViewOperations::RenderedGeometry pick_geometry =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				point.get_non_null_pointer(),
-				enabled ? GPlatesGui::Colour::get_yellow() : GPlatesGui::Colour::get_grey(),
-				2, /* point thickness */
-				2, /* line thickness */
-				false, /* fill polygon */
-				false, /* fill polyline */
-				GPlatesGui::Colour::get_white(), // dummy colour argument
-				type_segment == MOVING_PICK_TYPE ? moving_symbol : fixed_symbol);
-
-	d_selection_layer_ptr->add_rendered_geometry(pick_geometry);
-
-}
-
-void
 GPlatesQtWidgets::HellingerDialog::highlight_selected_pick(
 		const HellingerPick &pick)
 {
-	const double lat = pick.d_lat;
-	const double lon = pick.d_lon;
-	const HellingerPickType segment_type = pick.d_segment_type;
-	bool enabled = pick.d_is_enabled;
-
-	static const GPlatesGui::Symbol moving_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, SYMBOL_SIZE, true);
-	static const GPlatesGui::Symbol fixed_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::SQUARE, SYMBOL_SIZE, false);
-	GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
-				GPlatesMaths::LatLonPoint(lat,lon));
-	GPlatesViewOperations::RenderedGeometry pick_geometry =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				point.get_non_null_pointer(),
-				enabled ? GPlatesGui::Colour::get_yellow() : GPlatesGui::Colour::get_grey(),
-				2, /* point thickness */
-				2, /* line thickness */
-				false, /* fill polygon */
-				false, /* fill polyline */
-				GPlatesGui::Colour::get_white(), // dummy colour argument
-				segment_type == MOVING_PICK_TYPE ? moving_symbol : fixed_symbol);
-
-	d_selection_layer_ptr->add_rendered_geometry(pick_geometry);
+	GPlatesGui::Colour colour = pick.d_is_enabled ? GPlatesGui::Colour::get_yellow() : GPlatesGui::Colour::get_grey();
+	add_pick_geometry_to_layer(pick,d_selection_layer_ptr,colour);
 }
 
 void GPlatesQtWidgets::HellingerDialog::highlight_selected_segment(
@@ -522,6 +505,7 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 	int row = index.row();
 	int segment_int = segment.toInt();
 
+	update_edit_layer(EDIT_POINT_OPERATION);
 	dialog->initialise_with_pick(segment_int, row);
 	dialog->exec();
 	restore_expanded_status();
@@ -1127,6 +1111,15 @@ GPlatesQtWidgets::HellingerDialog::update_canvas()
 
 }
 
+void GPlatesQtWidgets::HellingerDialog::update_edit_layer(
+		const GPlatesQtWidgets::EditOperationType &type)
+{
+	if (type == EDIT_POINT_OPERATION)
+	{
+
+	}
+}
+
 void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
 {
 	if (d_selected_pick)
@@ -1140,36 +1133,36 @@ void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
 }
 
 
-void
-GPlatesQtWidgets::HellingerDialog::set_segment_colours(
+const GPlatesGui::Colour &
+GPlatesQtWidgets::HellingerDialog::get_segment_colour(
 		int num_colour)
 {
 	num_colour = num_colour%7;
 	switch (num_colour)
 	{
 	case 0:
-		d_segment_colour = GPlatesGui::Colour::get_green();
+		return GPlatesGui::Colour::get_green();
 		break;
 	case 1:
-		d_segment_colour = GPlatesGui::Colour::get_blue();
+		return GPlatesGui::Colour::get_blue();
 		break;
 	case 2:
-		d_segment_colour = GPlatesGui::Colour::get_maroon();
+		return GPlatesGui::Colour::get_maroon();
 		break;
 	case 3:
-		d_segment_colour = GPlatesGui::Colour::get_purple();
+		return GPlatesGui::Colour::get_purple();
 		break;
 	case 4:
-		d_segment_colour = GPlatesGui::Colour::get_fuchsia();
+		return GPlatesGui::Colour::get_fuchsia();
 		break;
 	case 5:
-		d_segment_colour = GPlatesGui::Colour::get_olive();
+		return GPlatesGui::Colour::get_olive();
 		break;
 	case 6:
-		d_segment_colour = GPlatesGui::Colour::get_navy();
+		return GPlatesGui::Colour::get_navy();
 		break;
 	default:
-		d_segment_colour = GPlatesGui::Colour::get_navy();
+		return GPlatesGui::Colour::get_navy();
 	}
 }
 
@@ -1214,8 +1207,6 @@ GPlatesQtWidgets::HellingerDialog::draw_fixed_picks()
 				++num_segment;
 			}
 
-			set_segment_colours(num_colour);
-
 			if (it->second.d_segment_type == FIXED_PICK_TYPE)
 			{
 				GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
@@ -1224,7 +1215,7 @@ GPlatesQtWidgets::HellingerDialog::draw_fixed_picks()
 				GPlatesViewOperations::RenderedGeometry pick_geometry =
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 							point.get_non_null_pointer(),
-							d_segment_colour,
+							get_segment_colour(num_colour),
 							2, /* point thickness */
 							2, /* line thickness */
 							false, /* fill polygon */
@@ -1254,8 +1245,6 @@ GPlatesQtWidgets::HellingerDialog::draw_moving_picks()
 				++num_segment;
 			}
 
-			set_segment_colours(num_colour);
-
 			if (it->second.d_segment_type == MOVING_PICK_TYPE)
 			{
 				GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
@@ -1264,7 +1253,7 @@ GPlatesQtWidgets::HellingerDialog::draw_moving_picks()
 				GPlatesViewOperations::RenderedGeometry pick_geometry =
 						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 							point.get_non_null_pointer(),
-							d_segment_colour,
+							get_segment_colour(num_colour),
 							2, /* point thickness */
 							2, /* line thickness */
 							false, /* fill polygon */
@@ -1298,15 +1287,13 @@ void GPlatesQtWidgets::HellingerDialog::draw_picks()
 				++num_segment;
 			}
 
-			set_segment_colours(num_colour);
-
 			GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
 						GPlatesMaths::LatLonPoint(it->second.d_lat,it->second.d_lon));
 
 			GPlatesViewOperations::RenderedGeometry pick_geometry =
 					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 						point.get_non_null_pointer(),
-						d_segment_colour,
+						get_segment_colour(num_colour),
 						2, /* point thickness */
 						2, /* line thickness */
 						false, /* fill polygon */
@@ -1362,8 +1349,6 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 					++num_segment;
 				}
 
-				set_segment_colours(num_colour);
-
 				if (it->second.d_segment_type == MOVING_PICK_TYPE)
 				{
 
@@ -1378,7 +1363,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 					GPlatesViewOperations::RenderedGeometry pick_geometry =
 							GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 								point_sphere.get_non_null_pointer(),
-								d_segment_colour,
+								get_segment_colour(num_colour),
 								2, /* point thickness */
 								2, /* line thickness */
 								false, /* fill polygon */
@@ -1727,21 +1712,8 @@ void GPlatesQtWidgets::HellingerDialog::set_hovered_pick(
 	const HellingerPick &pick = it->second;
 
 	d_hover_layer_ptr->clear_rendered_geometries();
-	const GPlatesMaths::LatLonPoint llp(pick.d_lat,pick.d_lon);
-	const GPlatesMaths::PointOnSphere point = make_point_on_sphere(llp);
 
-	GPlatesViewOperations::RenderedGeometry pick_geometry =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				point.get_non_null_pointer(),
-				GPlatesGui::Colour::get_silver(),
-				2, /* point thickness */
-				2, /* line thickness */
-				false, /* fill polygon */
-				false, /* fill polyline */
-				GPlatesGui::Colour::get_white(), // dummy colour argument
-				pick.d_segment_type == MOVING_PICK_TYPE ? d_moving_symbol : d_fixed_symbol);
-
-	d_hover_layer_ptr->add_rendered_geometry(pick_geometry);
+	add_pick_geometry_to_layer(pick,d_hover_layer_ptr,GPlatesGui::Colour::get_silver());
 
 	if (index > d_geometry_to_tree_item_map.size())
 	{
