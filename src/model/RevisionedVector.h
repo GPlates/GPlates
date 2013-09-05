@@ -662,7 +662,7 @@ namespace GPlatesModel
 				ModelTransaction &transaction_,
 				const std::vector<ElementType> &elements) :
 			Revisionable(
-					Revision::non_null_ptr_type(
+					typename Revision::non_null_ptr_type(
 							new Revision(transaction_, *this, elements)))
 		{  }
 
@@ -671,7 +671,7 @@ namespace GPlatesModel
 				const RevisionedVector &other_,
 				boost::optional<RevisionContext &> context_) :
 			Revisionable(
-					Revision::non_null_ptr_type(
+					typename Revision::non_null_ptr_type(
 							// Use deep-clone constructor...
 							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
