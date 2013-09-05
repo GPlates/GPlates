@@ -489,10 +489,6 @@ void GPlatesQtWidgets::HellingerDialog::highlight_selected_segment(
 
 	BOOST_FOREACH(HellingerPick pick, segment)
 	{
-//		highlight_selected_point(pick.d_lat,
-//								 pick.d_lon,
-//								 static_cast<int>(pick.d_segment_type),
-//								 pick.d_is_enabled);
 		highlight_selected_pick(pick);
 	}
 }
@@ -577,8 +573,15 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_pick()
 		QString segment = tree_widget_picks->currentItem()->text(0);
 		int row = index.row();
 		int segment_int = segment.toInt();
+
+		if (d_selected_pick && *d_selected_pick == d_hellinger_model->get_pick(segment_int,row))
+		{
+			d_selected_pick.reset();
+		}
+
 		d_hellinger_model->remove_pick(segment_int, row);
 		update_tree_from_model();
+		update_canvas();
 		restore_expanded_status();
 	}
 }
