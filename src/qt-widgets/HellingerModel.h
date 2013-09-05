@@ -179,11 +179,11 @@ namespace GPlatesQtWidgets
         HellingerModel(
 			const QString &python_path);
 
-        void
+		hellinger_model_type::const_iterator
         add_pick(
 			const QStringList &HellingerPick);
 
-		void
+		hellinger_model_type::const_iterator
 		add_pick(const HellingerPick &pick,
 				 const unsigned int &segment_number);
 

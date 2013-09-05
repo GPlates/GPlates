@@ -113,6 +113,10 @@ namespace GPlatesQtWidgets
 				const unsigned int index);
 
 		void
+		set_selected_pick(
+				hellinger_model_type::const_iterator it);
+
+		void
 		clear_hovered_layer();
 
 		void
@@ -159,13 +163,6 @@ namespace GPlatesQtWidgets
 		add_segment(
 				const QStringList &add_list);
 
-		// FIXME: what's happening here?? Where is the function body??
-		void
-		change_point(
-				const QString &point_value);
-
-
-
 		void
 		update_buttons();
 
@@ -183,6 +180,10 @@ namespace GPlatesQtWidgets
 				const double &lon,
 				const int &type_segment,
 				bool enabled);
+
+		void
+		highlight_selected_pick(
+				const HellingerPick& pick);
 
 		void
 		highlight_selected_segment(
@@ -401,6 +402,9 @@ namespace GPlatesQtWidgets
 		bool d_hovered_item_original_state;
 
 		boost::optional<QTreeWidgetItem*> d_selected_item;
+
+		boost::optional<unsigned int> d_selected_segment;
+		boost::optional<hellinger_model_type::const_iterator> d_selected_pick;
 
 	};
 }

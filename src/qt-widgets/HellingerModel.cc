@@ -231,7 +231,7 @@ GPlatesQtWidgets::HellingerModel::get_data_as_string() const
 
 
 
-void
+GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::add_pick(const QStringList &pick)
 {
 	HellingerPick new_pick;
@@ -263,17 +263,17 @@ GPlatesQtWidgets::HellingerModel::add_pick(const QStringList &pick)
 			new_pick.d_is_enabled = true;
         }
 
-		d_model.insert(hellinger_model_pair_type(pick.at(1).toInt(), new_pick));
+		return d_model.insert(hellinger_model_pair_type(pick.at(1).toInt(), new_pick));
 
 
 }
 
-void
+GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::add_pick(
 		const HellingerPick &pick,
 		const unsigned int &segment_number)
 {
-	d_model.insert(hellinger_model_pair_type(segment_number,pick));
+	return d_model.insert(hellinger_model_pair_type(segment_number,pick));
 }
 
 void

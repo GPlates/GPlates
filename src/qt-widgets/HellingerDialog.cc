@@ -385,11 +385,17 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 		// Nothing selected:
 		set_buttons_for_no_selection();
 		d_selected_item.reset();
+		d_selected_segment.reset();
+		d_selected_pick.reset();
 	}
-	else if (tree_widget_picks->currentItem()->text(1).isEmpty()) // Segment selected
+	else if (tree_item_is_segment_item(tree_widget_picks->currentItem())) // Segment selected
 	{
 		set_buttons_for_segment_selected();
+		QString segment = tree_widget_picks->currentItem()->text(0);
+		int segment_int = segment.toInt();
 		d_selected_item.reset(tree_widget_picks->currentItem());
+		d_selected_segment.reset(segment_int);
+		d_selected_pick.reset();
 	}
 	else // pick selected
 	{
@@ -401,33 +407,10 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 
 		set_buttons_for_pick_selected(state);
 		d_selected_item.reset(tree_widget_picks->currentItem());
+		d_selected_segment.reset();
 	}
 
 	update_canvas();
-
-//	if (!tree_widget_picks->currentItem()->text(1).isEmpty())
-//	{
-//		const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
-//		QString segment = tree_widget_picks->currentItem()->text(0);
-//		int row = index.row();
-//		int segment_int = segment.toInt();
-//		bool state = d_hellinger_model->get_pick_state(segment_int, row);
-
-//		double lat = tree_widget_picks->currentItem()->text(2).toDouble();
-//		double lon = tree_widget_picks->currentItem()->text(3).toDouble();
-//		HellingerPickType type =
-//				static_cast<HellingerPickType>(tree_widget_picks->currentItem()->text(1).toInt());
-//		highlight_selected_point(lat, lon, type, state);
-//	}
-//	else if (!tree_widget_picks->currentItem()->text(0).isEmpty())
-//	{
-//		// We have a segment. Highlight everything in the segment.
-//		int segment = tree_widget_picks->currentItem()->text(0).toInt();
-//		highlight_selected_segment(segment);
-//	}
-
-
-
 }
 
 void GPlatesQtWidgets::HellingerDialog::handle_cancel()
@@ -462,6 +445,33 @@ GPlatesQtWidgets::HellingerDialog::highlight_selected_point(
 
 }
 
+void
+GPlatesQtWidgets::HellingerDialog::highlight_selected_pick(
+		const HellingerPick &pick)
+{
+	const double lat = pick.d_lat;
+	const double lon = pick.d_lon;
+	const HellingerPickType segment_type = pick.d_segment_type;
+	bool enabled = pick.d_is_enabled;
+
+	static const GPlatesGui::Symbol moving_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, SYMBOL_SIZE, true);
+	static const GPlatesGui::Symbol fixed_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::SQUARE, SYMBOL_SIZE, false);
+	GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
+				GPlatesMaths::LatLonPoint(lat,lon));
+	GPlatesViewOperations::RenderedGeometry pick_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+				point.get_non_null_pointer(),
+				enabled ? GPlatesGui::Colour::get_yellow() : GPlatesGui::Colour::get_grey(),
+				2, /* point thickness */
+				2, /* line thickness */
+				false, /* fill polygon */
+				false, /* fill polyline */
+				GPlatesGui::Colour::get_white(), // dummy colour argument
+				segment_type == MOVING_PICK_TYPE ? moving_symbol : fixed_symbol);
+
+	d_selection_layer_ptr->add_rendered_geometry(pick_geometry);
+}
+
 void GPlatesQtWidgets::HellingerDialog::highlight_selected_segment(
 		const int &segment_number)
 {
@@ -469,10 +479,11 @@ void GPlatesQtWidgets::HellingerDialog::highlight_selected_segment(
 
 	BOOST_FOREACH(HellingerPick pick, segment)
 	{
-		highlight_selected_point(pick.d_lat,
-								 pick.d_lon,
-								 static_cast<int>(pick.d_segment_type),
-								 pick.d_is_enabled);
+//		highlight_selected_point(pick.d_lat,
+//								 pick.d_lon,
+//								 static_cast<int>(pick.d_segment_type),
+//								 pick.d_is_enabled);
+		highlight_selected_pick(pick);
 	}
 }
 
@@ -1090,19 +1101,21 @@ void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
 	{
 		return;
 	}
-	if (tree_item_is_pick_item(*d_selected_item))
+//	if (tree_item_is_pick_item(*d_selected_item))
+	if (d_selected_pick)
 	{
-		const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
-		QString segment = tree_widget_picks->currentItem()->text(0);
-		int row = index.row();
-		int segment_int = segment.toInt();
-		bool state = d_hellinger_model->get_pick_state(segment_int, row);
+//		const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
+//		QString segment = tree_widget_picks->currentItem()->text(0);
+//		int row = index.row();
+//		int segment_int = segment.toInt();
+//		bool state = d_hellinger_model->get_pick_state(segment_int, row);
 
-		double lat = tree_widget_picks->currentItem()->text(2).toDouble();
-		double lon = tree_widget_picks->currentItem()->text(3).toDouble();
-		HellingerPickType type =
-				static_cast<HellingerPickType>(tree_widget_picks->currentItem()->text(1).toInt());
-		highlight_selected_point(lat, lon, type, state);
+//		double lat = tree_widget_picks->currentItem()->text(2).toDouble();
+//		double lon = tree_widget_picks->currentItem()->text(3).toDouble();
+//		HellingerPickType type =
+//				static_cast<HellingerPickType>(tree_widget_picks->currentItem()->text(1).toInt());
+//		highlight_selected_point(lat, lon, type, state);
+		highlight_selected_pick((*d_selected_pick)->second);
 	}
 	else if (tree_item_is_segment_item(*d_selected_item))
 	{
@@ -1725,6 +1738,8 @@ void GPlatesQtWidgets::HellingerDialog::set_hovered_pick(
 
 }
 
+
+
 void GPlatesQtWidgets::HellingerDialog::set_selected_pick(
 		const unsigned int index)
 {
@@ -1733,10 +1748,19 @@ void GPlatesQtWidgets::HellingerDialog::set_selected_pick(
 		return;
 	}
 	update_hovered_item();
-	d_selected_item.reset(d_geometry_to_tree_item_map[index]);
+//	d_selected_item.reset(d_geometry_to_tree_item_map[index]);
+//	d_selected_pick.reset(d_geometry_to_model_map[index]);
 
 	// This will trigger an update of the canvas.
 	tree_widget_picks->setCurrentItem(*d_selected_item);
+}
+
+void GPlatesQtWidgets::HellingerDialog::set_selected_pick(
+		GPlatesQtWidgets::hellinger_model_type::const_iterator it)
+{
+	d_selected_pick.reset(it);
+	d_selected_segment.reset();
+	update_canvas();
 }
 
 void GPlatesQtWidgets::HellingerDialog::clear_hovered_layer()

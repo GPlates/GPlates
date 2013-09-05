@@ -124,7 +124,9 @@ GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 	{
 		d_hellinger_model_ptr->remove_pick(d_segment,d_row);
 	}
-	d_hellinger_model_ptr->add_pick(
+
+	hellinger_model_type::const_iterator it =
+		d_hellinger_model_ptr->add_pick(
 				HellingerPick(type,
 							  lat,
 							  lon,
@@ -135,6 +137,7 @@ GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 	d_hellinger_dialog_ptr->update_tree_from_model();
 	d_hellinger_dialog_ptr->restore_expanded_status();
 	d_hellinger_dialog_ptr->expand_segment(segment_number);
+	d_hellinger_dialog_ptr->set_selected_pick(it);
 
 	if (!d_create_new_pick)
 	{
