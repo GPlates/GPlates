@@ -1619,6 +1619,7 @@ void GPlatesQtWidgets::HellingerDialog::clear_rendered_geometries()
 	d_hover_layer_ptr->clear_rendered_geometries();
 	d_result_layer_ptr->clear_rendered_geometries();
 	d_selection_layer_ptr->clear_rendered_geometries();
+	d_editing_layer_ptr->clear_rendered_geometries();
 }
 
 void
@@ -1734,7 +1735,7 @@ void GPlatesQtWidgets::HellingerDialog::set_selected_pick(
 		return;
 	}
 	update_hovered_item();
-	//d_selected_item.reset(d_geometry_to_tree_item_map[index]);
+
 	d_selected_pick.reset(d_geometry_to_model_map[index]);
 	d_selected_segment.reset();
 
@@ -1761,6 +1762,12 @@ void GPlatesQtWidgets::HellingerDialog::clear_selection_layer()
 {
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 	d_selection_layer_ptr->clear_rendered_geometries();
+}
+
+void GPlatesQtWidgets::HellingerDialog::clear_editing_layer()
+{
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+	d_editing_layer_ptr->clear_rendered_geometries();
 }
 
 void GPlatesQtWidgets::HellingerDialog::edit_current_pick()

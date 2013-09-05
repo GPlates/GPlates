@@ -128,6 +128,9 @@ namespace GPlatesQtWidgets
 		clear_selection_layer();
 
 		void
+		clear_editing_layer();
+
+		void
 		edit_current_pick();
 
 
