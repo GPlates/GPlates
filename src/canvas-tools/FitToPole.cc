@@ -79,7 +79,7 @@ GPlatesCanvasTools::FitToPole::handle_left_click(
 				*d_hellinger_dialog_ptr->get_pick_layer()))
 	{
 		const unsigned int index = sorted_hits.front().d_rendered_geom_index;
-		d_hellinger_dialog_ptr->highlight_selected_pick(index);
+		d_hellinger_dialog_ptr->set_selected_pick(index);
 	}
 	else
 	{
@@ -105,7 +105,7 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 				*d_hellinger_dialog_ptr->get_pick_layer()))
 	{
 		const unsigned int index = sorted_hits.front().d_rendered_geom_index;
-		d_hellinger_dialog_ptr->highlight_hovered_pick(index);
+		d_hellinger_dialog_ptr->set_hovered_pick(index);
 	}
 	else
 	{
@@ -134,7 +134,7 @@ GPlatesCanvasTools::FitToPole::handle_shift_left_click(
 				*d_hellinger_dialog_ptr->get_pick_layer()))
 	{
 		const unsigned int index = sorted_hits.front().d_rendered_geom_index;
-		d_hellinger_dialog_ptr->highlight_selected_pick(index);
+		d_hellinger_dialog_ptr->set_selected_pick(index);
 		d_hellinger_dialog_ptr->edit_current_pick();
 	}
 	else

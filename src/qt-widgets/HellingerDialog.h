@@ -105,11 +105,11 @@ namespace GPlatesQtWidgets
 		get_pick_layer();
 
 		void
-		highlight_hovered_pick(
+		set_hovered_pick(
 				const unsigned int index);
 
 		void
-		highlight_selected_pick(
+		set_selected_pick(
 				const unsigned int index);
 
 		void
@@ -323,6 +323,9 @@ namespace GPlatesQtWidgets
 		void
 		update_canvas();
 
+		void
+		update_selected_geometries();
+
 		/**
 		 * Reconstruct the moving picks
 		 */
@@ -356,7 +359,7 @@ namespace GPlatesQtWidgets
 		//! For drawing picks
 		child_layer_ptr_type d_pick_layer_ptr;
 
-		//! For highlights
+		//! For highlighting picks which are hovered over.
 		child_layer_ptr_type d_hover_layer_ptr;
 
 		//! For selected pick / segment
@@ -364,6 +367,9 @@ namespace GPlatesQtWidgets
 
 		//! For fitted pole, uncertainty, and rotated picks
 		child_layer_ptr_type d_result_layer_ptr;
+
+		//! For geometries being edited
+		child_layer_ptr_type d_editing_layer_ptr;
 
 		ReadErrorAccumulationDialog &d_read_error_accumulation_dialog;
 		HellingerModel *d_hellinger_model;
@@ -391,8 +397,10 @@ namespace GPlatesQtWidgets
 		geometry_to_model_map_type d_geometry_to_model_map;
 		geometry_to_tree_item_map_type d_geometry_to_tree_item_map;
 
-		boost::optional<QTreeWidgetItem*> d_highlighted_item;
-		bool d_highlighted_item_original_state;
+		boost::optional<QTreeWidgetItem*> d_hovered_item;
+		bool d_hovered_item_original_state;
+
+		boost::optional<QTreeWidgetItem*> d_selected_item;
 
 	};
 }
