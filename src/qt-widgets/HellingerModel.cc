@@ -488,7 +488,8 @@ GPlatesQtWidgets::HellingerModel::make_space_for_new_segment(int segment)
 	d_model = result;
 }
 
-boost::optional<GPlatesQtWidgets::HellingerPick>
+
+GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::get_pick(
 		const unsigned int &segment,
 		const unsigned int &row) const
@@ -501,10 +502,10 @@ GPlatesQtWidgets::HellingerModel::get_pick(
 	{
 		if (n == row)
 		{
-            return (iter->second);
+			return iter;
 		}
 	}
-	return boost::none;
+	return d_model.end();
 }
 
 GPlatesQtWidgets::hellinger_segment_type

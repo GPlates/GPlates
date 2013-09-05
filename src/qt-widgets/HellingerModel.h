@@ -199,6 +199,11 @@ namespace GPlatesQtWidgets
 		boost::optional<const HellingerPick &> get_pick(
 			const unsigned int &index) const;
 
+		hellinger_model_type::const_iterator
+		get_pick(
+			const unsigned int &segment,
+			const unsigned int &row) const;
+
         bool
 		get_pick_state(
 			const unsigned int &segment,
@@ -210,10 +215,6 @@ namespace GPlatesQtWidgets
 			const unsigned int &row,
 			bool enabled);
 
-		boost::optional<HellingerPick>
-		get_pick(
-			const unsigned int &segment,
-			const unsigned int &row) const;
 
         QStringList
 		get_segment_as_string(

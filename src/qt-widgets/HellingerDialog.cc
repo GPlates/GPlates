@@ -105,6 +105,14 @@ namespace{
 		}
 	}
 
+	void
+	update_selected_pick_in_tree(
+			QTreeWidget *tree,
+			GPlatesQtWidgets::hellinger_model_type::const_iterator selected_pick)
+	{
+
+	}
+
 	bool
 	tree_item_is_pick_item(
 			const QTreeWidgetItem *item)
@@ -116,7 +124,7 @@ namespace{
 	tree_item_is_segment_item(
 			const QTreeWidgetItem *item)
 	{
-		return !item->text(SEGMENT_NUMBER).isEmpty();
+		return item->text(SEGMENT_TYPE).isEmpty();
 	}
 
 	/**
@@ -231,7 +239,8 @@ namespace{
 			QTreeWidgetItem *parent_item,
 			const int &segment_number,
 			const GPlatesQtWidgets::HellingerPick &pick,
-			GPlatesQtWidgets::HellingerDialog::geometry_to_tree_item_map_type &geometry_to_tree_item_map)
+			GPlatesQtWidgets::HellingerDialog::geometry_to_tree_item_map_type &geometry_to_tree_item_map,
+			bool set_as_selected)
 	{
 		QTreeWidgetItem *item = new QTreeWidgetItem();
 		item->setText(SEGMENT_NUMBER, QString::number(segment_number));
@@ -253,6 +262,7 @@ namespace{
 		{
 			geometry_to_tree_item_map.push_back(item);
 		}
+		item->setSelected(set_as_selected);
 	}
 
 	void
@@ -260,8 +270,10 @@ namespace{
 			const int &segment_number,
 			const GPlatesQtWidgets::HellingerPick &pick,
 			QTreeWidget *tree,
-			GPlatesQtWidgets::HellingerDialog::geometry_to_tree_item_map_type &geometry_to_tree_item_map)
+			GPlatesQtWidgets::HellingerDialog::geometry_to_tree_item_map_type &geometry_to_tree_item_map,
+			bool set_as_selected_pick)
 	{
+		qDebug() << "add pick to tree: " << set_as_selected_pick;
 		QString segment_as_string = QString::number(segment_number);
 		QList<QTreeWidgetItem*> items = tree->findItems(
 					segment_as_string, Qt::MatchExactly, 0);
@@ -276,7 +288,11 @@ namespace{
 		{
 			item = items.at(0);
 		}
-		add_pick_to_segment(item, segment_number, pick, geometry_to_tree_item_map);
+		add_pick_to_segment(item,
+							segment_number,
+							pick,
+							geometry_to_tree_item_map,
+							set_as_selected_pick);
 
 	}
 }
@@ -378,27 +394,30 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 	// If nothing is selected:
 	//	 disable everything (except the new pick / new segment buttons - which are always enabled anyway)
 
+	qDebug() << "handle_selection_changed 1";
 	clear_selection_layer();
 
-	if (new_selection.empty())
+	if (new_selection.empty() || !tree_widget_picks->currentItem())
 	{
+
+		qDebug() << "handle_selection_changed 2";
 		// Nothing selected:
 		set_buttons_for_no_selection();
-		d_selected_item.reset();
 		d_selected_segment.reset();
 		d_selected_pick.reset();
 	}
 	else if (tree_item_is_segment_item(tree_widget_picks->currentItem())) // Segment selected
 	{
+		qDebug() << "handle_selection_changed 3";
 		set_buttons_for_segment_selected();
 		QString segment = tree_widget_picks->currentItem()->text(0);
 		int segment_int = segment.toInt();
-		d_selected_item.reset(tree_widget_picks->currentItem());
 		d_selected_segment.reset(segment_int);
 		d_selected_pick.reset();
 	}
 	else // pick selected
 	{
+		qDebug() << "handle_selection_changed 4";
 		const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
 		QString segment = tree_widget_picks->currentItem()->text(0);
 		int row = index.row();
@@ -406,7 +425,7 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 		bool state = d_hellinger_model->get_pick_state(segment_int, row);
 
 		set_buttons_for_pick_selected(state);
-		d_selected_item.reset(tree_widget_picks->currentItem());
+		d_selected_pick.reset(d_hellinger_model->get_pick(segment_int,row));
 		d_selected_segment.reset();
 	}
 
@@ -449,6 +468,7 @@ void
 GPlatesQtWidgets::HellingerDialog::highlight_selected_pick(
 		const HellingerPick &pick)
 {
+	qDebug() << "highlight_selected_pick";
 	const double lat = pick.d_lat;
 	const double lon = pick.d_lon;
 	const HellingerPickType segment_type = pick.d_segment_type;
@@ -1053,16 +1073,35 @@ GPlatesQtWidgets::HellingerDialog::draw_error_ellipse()
 void
 GPlatesQtWidgets::HellingerDialog::update_tree_from_model()
 {    
-	tree_widget_picks->clear();
-	d_geometry_to_tree_item_map.clear();
+	qDebug() << "update_tree_from_model 1: " << d_selected_pick;
+	QObject::disconnect(tree_widget_picks->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
+					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
 
+	tree_widget_picks->clear();
+	QObject::connect(tree_widget_picks->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
+					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
+
+	qDebug() << "update_tree_from_model 2: " << d_selected_pick;
+	d_geometry_to_tree_item_map.clear();
 	hellinger_model_type::const_iterator
 			iter = d_hellinger_model->begin(),
 			end = d_hellinger_model->end();
 
 	for (; iter != end ; ++iter)
 	{
-		add_pick_to_tree(iter->first,iter->second,tree_widget_picks,d_geometry_to_tree_item_map);
+		bool set_as_selected_pick =(d_selected_pick && (*d_selected_pick == iter));
+		add_pick_to_tree(
+					iter->first,
+					iter->second,
+					tree_widget_picks,
+					d_geometry_to_tree_item_map,
+					set_as_selected_pick);
+
+	}
+
+	if (d_selected_pick)
+	{
+		update_selected_pick_in_tree(tree_widget_picks,*d_selected_pick);
 	}
 
 	update_canvas();
@@ -1085,7 +1124,6 @@ GPlatesQtWidgets::HellingerDialog::handle_close()
 void
 GPlatesQtWidgets::HellingerDialog::update_canvas()
 {
-	qDebug() << "updating canvas";
 	clear_rendered_geometries();
 	draw_picks();
 	update_result();
@@ -1097,31 +1135,13 @@ GPlatesQtWidgets::HellingerDialog::update_canvas()
 
 void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
 {
-	if(!d_selected_item)
-	{
-		return;
-	}
-//	if (tree_item_is_pick_item(*d_selected_item))
 	if (d_selected_pick)
 	{
-//		const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
-//		QString segment = tree_widget_picks->currentItem()->text(0);
-//		int row = index.row();
-//		int segment_int = segment.toInt();
-//		bool state = d_hellinger_model->get_pick_state(segment_int, row);
-
-//		double lat = tree_widget_picks->currentItem()->text(2).toDouble();
-//		double lon = tree_widget_picks->currentItem()->text(3).toDouble();
-//		HellingerPickType type =
-//				static_cast<HellingerPickType>(tree_widget_picks->currentItem()->text(1).toInt());
-//		highlight_selected_point(lat, lon, type, state);
 		highlight_selected_pick((*d_selected_pick)->second);
 	}
-	else if (tree_item_is_segment_item(*d_selected_item))
+	else if (d_selected_segment)
 	{
-		// We have a segment. Highlight everything in the segment.
-		int segment = tree_widget_picks->currentItem()->text(0).toInt();
-		highlight_selected_segment(segment);
+		highlight_selected_segment(*d_selected_segment);
 	}
 }
 
@@ -1748,15 +1768,16 @@ void GPlatesQtWidgets::HellingerDialog::set_selected_pick(
 		return;
 	}
 	update_hovered_item();
-//	d_selected_item.reset(d_geometry_to_tree_item_map[index]);
-//	d_selected_pick.reset(d_geometry_to_model_map[index]);
+	//d_selected_item.reset(d_geometry_to_tree_item_map[index]);
+	d_selected_pick.reset(d_geometry_to_model_map[index]);
+	d_selected_segment.reset();
 
 	// This will trigger an update of the canvas.
-	tree_widget_picks->setCurrentItem(*d_selected_item);
+	tree_widget_picks->setCurrentItem(d_geometry_to_tree_item_map[index]);
 }
 
 void GPlatesQtWidgets::HellingerDialog::set_selected_pick(
-		GPlatesQtWidgets::hellinger_model_type::const_iterator it)
+		const GPlatesQtWidgets::hellinger_model_type::const_iterator &it)
 {
 	d_selected_pick.reset(it);
 	d_selected_segment.reset();

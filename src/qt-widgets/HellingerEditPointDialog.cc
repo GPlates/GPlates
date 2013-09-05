@@ -69,17 +69,19 @@ void
 GPlatesQtWidgets::HellingerEditPointDialog::initialise_with_pick(
 		const int &segment, const int &row)
 {
-	boost::optional<HellingerPick> pick = d_hellinger_model_ptr->get_pick(segment,row);
+	hellinger_model_type::const_iterator it = d_hellinger_model_ptr->get_pick(segment,row);
 
-	if(pick)
+	if(it != d_hellinger_model_ptr->end())
 	{
 		// We need to store these so that we can delete the correct pick
 		// before adding the new (edited) one.
 		d_segment = segment;
 		d_row = row;
 
+		HellingerPick pick = it->second;
+
 		spinbox_segment->setValue(segment);
-		if (pick->d_segment_type == MOVING_PICK_TYPE)
+		if (pick.d_segment_type == MOVING_PICK_TYPE)
 		{
 			radio_moving->setChecked(true);
 		}
@@ -88,9 +90,9 @@ GPlatesQtWidgets::HellingerEditPointDialog::initialise_with_pick(
 			radio_fixed->setChecked(true);
 		}
 
-		spinbox_lat->setValue(pick->d_lat);
-		spinbox_lon->setValue(pick->d_lon);
-		spinbox_uncert->setValue(pick->d_uncertainty);
+		spinbox_lat->setValue(pick.d_lat);
+		spinbox_lon->setValue(pick.d_lon);
+		spinbox_uncert->setValue(pick.d_uncertainty);
 	}
 
 }
@@ -104,7 +106,6 @@ void GPlatesQtWidgets::HellingerEditPointDialog::initialise_with_segment_number(
 void
 GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 {
-	d_hellinger_dialog_ptr->store_expanded_status();
 	int segment_number = spinbox_segment->value();
 	HellingerPickType type;
 	if (radio_moving->isChecked())
@@ -134,10 +135,11 @@ GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 							  true),
 				segment_number);
 
-	d_hellinger_dialog_ptr->update_tree_from_model();
-	d_hellinger_dialog_ptr->restore_expanded_status();
-	d_hellinger_dialog_ptr->expand_segment(segment_number);
+	qDebug() << "Setting selected pick in HEPD";
 	d_hellinger_dialog_ptr->set_selected_pick(it);
+	d_hellinger_dialog_ptr->update_tree_from_model();
+	d_hellinger_dialog_ptr->expand_segment(segment_number);
+
 
 	if (!d_create_new_pick)
 	{

@@ -114,7 +114,7 @@ namespace GPlatesQtWidgets
 
 		void
 		set_selected_pick(
-				hellinger_model_type::const_iterator it);
+				const hellinger_model_type::const_iterator &it);
 
 		void
 		clear_hovered_layer();
@@ -400,8 +400,6 @@ namespace GPlatesQtWidgets
 
 		boost::optional<QTreeWidgetItem*> d_hovered_item;
 		bool d_hovered_item_original_state;
-
-		boost::optional<QTreeWidgetItem*> d_selected_item;
 
 		boost::optional<unsigned int> d_selected_segment;
 		boost::optional<hellinger_model_type::const_iterator> d_selected_pick;
