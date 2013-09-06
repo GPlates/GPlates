@@ -19,6 +19,16 @@ include (Policies_26)
 add_subdirectory(src)
 
 #
-# Recurse into documentation directory.
+# Recurse into C++ documentation directory.
 #
-add_subdirectory(doc)
+add_subdirectory(doc-cpp)
+
+#
+# Recurse into python API documentation directory.
+#
+# NOTE: We add this subdirectory after 'src' because the latter defines '${EXECUTABLE_OUTPUT_PATH}'
+# which we use to tell Sphinx (HTML document generator) where to find the 'pygplates' module
+# (because Sphinx imports 'pygplates' to search its docstrings).
+# Also we need to add a dependency to the 'pygplates' target so that it gets built first.
+#
+add_subdirectory(doc-python-api)
