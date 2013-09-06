@@ -66,7 +66,7 @@ GPlatesQtWidgets::HellingerEditPointDialog::HellingerEditPointDialog(HellingerDi
 
 
 void
-GPlatesQtWidgets::HellingerEditPointDialog::initialise_with_pick(
+GPlatesQtWidgets::HellingerEditPointDialog::update_pick_from_model(
 		const int &segment, const int &row)
 {
 	hellinger_model_type::const_iterator it = d_hellinger_model_ptr->get_pick(segment,row);
@@ -97,10 +97,22 @@ GPlatesQtWidgets::HellingerEditPointDialog::initialise_with_pick(
 
 }
 
-void GPlatesQtWidgets::HellingerEditPointDialog::initialise_with_segment_number(
+void GPlatesQtWidgets::HellingerEditPointDialog::update_segment_number(
 		const int &segment_number)
 {
 	spinbox_segment->setValue(segment_number);
+}
+
+void GPlatesQtWidgets::HellingerEditPointDialog::set_active(bool active)
+{
+	button_apply->setEnabled(active);
+	spinbox_segment->setEnabled(active);
+	spinbox_lat->setEnabled(active);
+	spinbox_lon->setEnabled(active);
+	spinbox_uncert->setEnabled(active);
+	radio_moving->setEnabled(active);
+	radio_fixed->setEnabled(active);
+	label_segment->setEnabled(active);
 }
 
 void

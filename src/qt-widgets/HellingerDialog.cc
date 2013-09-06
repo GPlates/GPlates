@@ -357,6 +357,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	d_hellinger_model = new HellingerModel(d_python_path);
 	d_hellinger_thread = new HellingerThread(this, d_hellinger_model);
+	d_hellinger_edit_point_dialog = new HellingerEditPointDialog(this,d_hellinger_model);
 
 	set_up_connections();
 
@@ -428,28 +429,41 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 		set_buttons_for_no_selection();
 		d_selected_segment.reset();
 		d_selected_pick.reset();
+		if (d_hellinger_edit_point_dialog->isVisible())
+		{
+			d_hellinger_edit_point_dialog->set_active(false);
+		}
 	}
 	else if (tree_item_is_segment_item(tree_widget_picks->currentItem())) // Segment selected
 	{
 		set_buttons_for_segment_selected();
-		QString segment = tree_widget_picks->currentItem()->text(0);
-		int segment_int = segment.toInt();
-		d_selected_segment.reset(segment_int);
+		QString segment_string = tree_widget_picks->currentItem()->text(0);
+		int segment = segment_string.toInt();
+		d_selected_segment.reset(segment);
 		d_selected_pick.reset();
+
+		if (d_hellinger_edit_point_dialog->isVisible())
+		{
+			d_hellinger_edit_point_dialog->set_active(false);
+		}
 	}
 	else // pick selected
 	{
 		const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
-		QString segment = tree_widget_picks->currentItem()->text(0);
+		QString segment_string = tree_widget_picks->currentItem()->text(0);
 		int row = index.row();
-		int segment_int = segment.toInt();
-		bool state = d_hellinger_model->get_pick_state(segment_int, row);
+		int segment = segment_string.toInt();
+		bool state = d_hellinger_model->get_pick_state(segment, row);
 
 		set_buttons_for_pick_selected(state);
-		d_selected_pick.reset(d_hellinger_model->get_pick(segment_int,row));
+		d_selected_pick.reset(d_hellinger_model->get_pick(segment,row));
 		d_selected_segment.reset();
+		if (d_hellinger_edit_point_dialog->isVisible())
+		{
+			d_hellinger_edit_point_dialog->set_active(true);
+			d_hellinger_edit_point_dialog->update_pick_from_model(segment,row);
+		}
 	}
-
 	update_canvas();
 }
 
@@ -497,18 +511,14 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 void
 GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 {
-	if (!d_hellinger_edit_point_dialog)
-	{
-		d_hellinger_edit_point_dialog = new HellingerEditPointDialog(this,d_hellinger_model);
-	}
 
 	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
-	QString segment = tree_widget_picks->currentItem()->text(0);
+	QString segment_string = tree_widget_picks->currentItem()->text(0);
 	int row = index.row();
-	int segment_int = segment.toInt();
+	int segment = segment_string.toInt();
 
 	update_edit_layer(EDIT_POINT_OPERATION);
-	d_hellinger_edit_point_dialog->initialise_with_pick(segment_int, row);
+	d_hellinger_edit_point_dialog->update_pick_from_model(segment, row);
 	d_hellinger_edit_point_dialog->show();
 	d_hellinger_edit_point_dialog->raise();
 
@@ -777,7 +787,7 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_pick()
 				new GPlatesQtWidgets::HellingerEditPointDialog(this,d_hellinger_model,true));
 	if (boost::optional<int> segment = current_segment_number(tree_widget_picks))
 	{
-		dialog->initialise_with_segment_number(segment.get());
+		dialog->update_segment_number(segment.get());
 	}
 
 	dialog->exec();
@@ -1099,6 +1109,7 @@ GPlatesQtWidgets::HellingerDialog::handle_close()
 {
 	clear_rendered_geometries();
 	activate_layers(false);
+	d_hellinger_edit_point_dialog->close();
 }
 
 void

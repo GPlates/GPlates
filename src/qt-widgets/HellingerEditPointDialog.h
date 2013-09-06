@@ -50,13 +50,21 @@ namespace GPlatesQtWidgets
 				QWidget *parent_ = NULL);
 
 		void
-		initialise_with_pick(
+		update_pick_from_model(
 				const int &segment,
 				const int &row);
 
 		void
-		initialise_with_segment_number(
+		update_segment_number(
 				const int &segment_number);
+
+		/**
+		 * @brief set_active - disable dialog except for "close" button.
+		 * @param active
+		 */
+		void
+		set_active(
+				bool active);
 
 
 
