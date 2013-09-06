@@ -54,7 +54,7 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 		GPlatesModel::ConstFeatureVisitor &visitor,
 		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 {
-	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>::const_iterator 
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator 
 		iter = gpml_irregular_sampling.time_samples().begin(),
 		end = gpml_irregular_sampling.time_samples().end();
 	for ( ; iter != end; ++iter)
@@ -78,10 +78,10 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 		GPlatesModel::FeatureVisitor &visitor,
 		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 {
-	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type> &time_samples =
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample> &time_samples =
 			gpml_irregular_sampling.time_samples();
 
-	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>::iterator 
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::iterator 
 		iter = time_samples.begin(),
 		end = time_samples.end();
 	for ( ; iter != end; ++iter)

@@ -451,7 +451,7 @@ namespace
 		}
 
 		// A copy of the current time samples to work with.
-		RevisionedVector<GpmlTimeSample::non_null_ptr_type> &time_samples =
+		RevisionedVector<GpmlTimeSample> &time_samples =
 				props_in_current_trs.d_irregular_sampling->time_samples();
 
 		// FIXME:  Since GpmlIrregularSampling should always contain at least one

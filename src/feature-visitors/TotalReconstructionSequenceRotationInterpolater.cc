@@ -144,9 +144,9 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_g
 	// (non-disabled) time sample.
 
 	// So, let's get to the most-recent non-disabled time sample.
-	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator iter =
+	GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator iter =
 			gpml_irregular_sampling.time_samples().begin();
-	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator end =
+	GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator end =
 			gpml_irregular_sampling.time_samples().end();
 	while (iter != end && iter->get()->is_disabled()) {
 		// This time-sample is disabled.  Let's move to the next one.
@@ -201,7 +201,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInterpolater::visit_g
 	// remaining rails and posts.
 
 	// 'prev' is the previous non-disabled time sample.
-	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator prev = iter;
+	GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator prev = iter;
 	for (++iter; iter != end; ++iter) {
 		if (iter->get()->is_disabled()) {
 			// This time-sample is disabled.  Let's move to the next one.

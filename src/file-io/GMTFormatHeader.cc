@@ -551,9 +551,9 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_irregular_sampling(
 
 	d_line_stream << " IrregularSampling";
 
-	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>::const_iterator iter =
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator iter =
 		gpml_irregular_sampling.time_samples().begin();
-	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>::const_iterator end =
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator end =
 		gpml_irregular_sampling.time_samples().end();
 	for ( ; iter != end; ++iter) 
 	{

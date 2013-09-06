@@ -746,9 +746,9 @@ namespace
 
         using namespace GPlatesPropertyValues;
 		// FIXME: This const cast bypasses the model revisioning system.
-		GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator iter =
+		GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator iter =
                 irreg_sampling->time_samples().begin();
-		GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator end =
+		GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator end =
                 irreg_sampling->time_samples().end();
         for ( ; iter != end; ++iter) {
             // First, append a new tree-widget-item for this TimeSample.
@@ -1689,7 +1689,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::is_grot_sequence(
 		qWarning() << "No GpmlIrregularSampling property found.";
 		return false;
 	}
-	RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator 
+	RevisionedVector<GpmlTimeSample>::const_iterator 
         iter =	irreg_sampling_const->time_samples().begin(),
         end =	irreg_sampling_const->time_samples().end();
     for ( ; iter != end; ++iter) 
@@ -1835,7 +1835,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_pole_data_from_feature
 				totalReconstructionPole_prop_name(), 
 				irreg_sampling)) 
     {
-		RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator 
+		RevisionedVector<GpmlTimeSample>::const_iterator 
             iter =	irreg_sampling->time_samples().begin(),
             end =	irreg_sampling->time_samples().end();
         for ( ; iter != end; ++iter) 
@@ -2013,7 +2013,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 		int fixed_plate_id = static_cast<int>(*plate_id_finder.fixed_ref_frame_plate_id());
 		int moving_plate_id =  static_cast<int>(*plate_id_finder.moving_ref_frame_plate_id());
 
-		const RevisionedVector<GpmlTimeSample::non_null_ptr_type> &samples =
+		const RevisionedVector<GpmlTimeSample> &samples =
 				irreg_sampling_const->time_samples();
 		BOOST_FOREACH(GpmlTimeSample::non_null_ptr_to_const_type sample, samples)
 		{

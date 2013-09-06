@@ -277,12 +277,12 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 	// First, let's see whether the reconstruction time matches the time of the most-recent
 	// (non-disabled) time sample.
 
-	RevisionedVector<GpmlTimeSample::non_null_ptr_type> &time_samples =
+	RevisionedVector<GpmlTimeSample> &time_samples =
 			gpml_irregular_sampling.time_samples();
 
 	// So, let's get to the most-recent non-disabled time sample.
-	RevisionedVector<GpmlTimeSample::non_null_ptr_type>::iterator iter = time_samples.begin();
-	RevisionedVector<GpmlTimeSample::non_null_ptr_type>::iterator end = time_samples.end();
+	RevisionedVector<GpmlTimeSample>::iterator iter = time_samples.begin();
+	RevisionedVector<GpmlTimeSample>::iterator end = time_samples.end();
 	while (iter != end && iter->get()->is_disabled()) {
 		// This time-sample is disabled.  Let's move to the next one.
 		++iter;
@@ -335,7 +335,7 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 	// remaining rails and posts.
 
 	// 'prev' is the previous non-disabled time sample.
-	RevisionedVector<GpmlTimeSample::non_null_ptr_type>::iterator prev = iter;
+	RevisionedVector<GpmlTimeSample>::iterator prev = iter;
 	for (++iter; iter != end; ++iter) {
 		if (iter->get()->is_disabled()) {
 			// This time-sample is disabled.  Let's move to the next one.

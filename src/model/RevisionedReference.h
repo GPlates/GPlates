@@ -165,7 +165,7 @@ namespace GPlatesModel
 	 * Note that the revision is not the current revision of the revisionable object until the
 	 * associated @a ModelTransaction has been committed.
 	 *
-	 * Template parameter 'RevisionableType' is Revisionable or one of its derived types and
+	 * Template parameter 'RevisionableType' is @a Revisionable or one of its derived types and
 	 * can be const or non-const (eg, 'GpmlPlateId' or 'const GpmlPlateId').
 	 */
 	template <class RevisionableType>

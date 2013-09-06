@@ -75,7 +75,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::create(
 	non_null_ptr_type ptr(
 			new GpmlIrregularSampling(
 					transaction,
-					GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::create(time_samples_),
+					GPlatesModel::RevisionedVector<GpmlTimeSample>::create(time_samples_),
 					interp_func,
 					value_type_));
 	transaction.commit();
@@ -154,7 +154,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 {
 	using namespace GPlatesModel;
 
-	RevisionedVector<GpmlTimeSample::non_null_ptr_type> &samples = time_samples();
+	RevisionedVector<GpmlTimeSample> &samples = time_samples();
 
 	if (samples.empty())
 	{
@@ -210,7 +210,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::contains_disabled_sequence_flag() 
 {
 	using namespace GPlatesModel;
 
-	const RevisionedVector<GpmlTimeSample::non_null_ptr_type> &samples = time_samples();
+	const RevisionedVector<GpmlTimeSample> &samples = time_samples();
 
 	BOOST_FOREACH(GpmlTimeSample::non_null_ptr_to_const_type sample, samples)
 	{
@@ -238,13 +238,13 @@ std::ostream &
 GPlatesPropertyValues::GpmlIrregularSampling::print_to(
 		std::ostream &os) const
 {
-	const GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type> &samples = time_samples();
+	const GPlatesModel::RevisionedVector<GpmlTimeSample> &samples = time_samples();
 
 	os << "[ ";
 
-	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator samples_iter =
+	GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator samples_iter =
 			samples.begin();
-	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator samples_end =
+	GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator samples_end =
 			samples.end();
 	for ( ; samples_iter != samples_end; ++samples_iter)
 	{

@@ -560,9 +560,9 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::update_table_widget_fro
 	// Note that this is clearContents() and not clear() - calling clear() will also clear the header text (which has
 	// been set up in QtDesigner) resulting in only numerical headers appearing. 
 	table_sequences->clearContents();
-	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::iterator iter =
+	GPlatesModel::RevisionedVector<GpmlTimeSample>::iterator iter =
 		irreg_sampling->time_samples().begin();
-	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::iterator end =
+	GPlatesModel::RevisionedVector<GpmlTimeSample>::iterator end =
 		irreg_sampling->time_samples().end();
 
 	for ( ; iter != end; ++iter) 

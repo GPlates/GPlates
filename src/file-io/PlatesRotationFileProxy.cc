@@ -727,7 +727,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::visit(
 			d_attrs.clear();
 		}
 
-		RevisionedVector<GpmlTimeSample::non_null_ptr_type> &time_samples = (*d_current_sampling)->time_samples();
+		RevisionedVector<GpmlTimeSample> &time_samples = (*d_current_sampling)->time_samples();
 		time_samples.push_back(*d_current_sample);
 	}
 

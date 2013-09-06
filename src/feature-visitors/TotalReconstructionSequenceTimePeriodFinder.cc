@@ -79,9 +79,9 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceTimePeriodFinder::visit_gpml_
 {
 	using namespace GPlatesPropertyValues;
 
-	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator iter =
+	GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator iter =
 			gpml_irregular_sampling.time_samples().begin();
-	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator end =
+	GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator end =
 			gpml_irregular_sampling.time_samples().end();
 	for ( ; iter != end; ++iter) {
 		// First, skip over any disabled time samples (if the client code wants us to).

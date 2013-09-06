@@ -230,15 +230,15 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 		return;
 	}
 
-	RevisionedVector<GpmlTimeSample::non_null_ptr_type> &time_samples = gpml_irregular_sampling.time_samples();
+	RevisionedVector<GpmlTimeSample> &time_samples = gpml_irregular_sampling.time_samples();
 
 	// Otherwise, the reconstruction time is either the present-day, or in the past.
 	// First, let's see whether the reconstruction time matches the time of the most-recent
 	// (non-disabled) time sample.
 
 	// So, let's get to the most-recent non-disabled time sample.
-	RevisionedVector<GpmlTimeSample::non_null_ptr_type>::iterator iter = time_samples.begin();
-	RevisionedVector<GpmlTimeSample::non_null_ptr_type>::iterator end = time_samples.end();
+	RevisionedVector<GpmlTimeSample>::iterator iter = time_samples.begin();
+	RevisionedVector<GpmlTimeSample>::iterator end = time_samples.end();
 	while (iter != end && iter->get()->is_disabled()) {
 		// This time-sample is disabled.  Let's move to the next one.
 		++iter;
@@ -296,7 +296,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 	// remaining rails and posts.
 
 	// 'prev' is the previous non-disabled time sample.
-	RevisionedVector<GpmlTimeSample::non_null_ptr_type>::iterator prev = iter;
+	RevisionedVector<GpmlTimeSample>::iterator prev = iter;
 	for (++iter; iter != end; ++iter) {
 		if (iter->get()->is_disabled()) {
 			// This time-sample is disabled.  Let's move to the next one.

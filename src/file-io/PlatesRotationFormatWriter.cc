@@ -303,7 +303,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_irregular_sampling(
 {
 	// Iterate through the time samples (hence finite rotations) in the current
 	// total reconstruction sequence.
-	GPlatesModel::RevisionedVector< GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type >::const_iterator 
+	GPlatesModel::RevisionedVector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
 		iter = gpml_irregular_sampling.time_samples().begin(),
 		end = gpml_irregular_sampling.time_samples().end();
 	for ( ; iter != end; ++iter) {

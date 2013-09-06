@@ -1115,7 +1115,7 @@ GPlatesQtWidgets::MetadataDialog::get_gpml_total_reconstruction_pole(
 			lon = d_trs_dlg_current_item->text(3), 
 			angle=d_trs_dlg_current_item->text(4);
 
-	GPlatesModel::RevisionedVector<GpmlTimeSample::non_null_ptr_type>::const_iterator
+	GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator
 		iter = irreg_sampling_const->time_samples().begin(),
 		end = irreg_sampling_const->time_samples().end();
 	
