@@ -1,0 +1,70 @@
+Generating GPlates python API documentation using Sphinx
+========================================================
+
+This documentation gives an overview of generating the GPlates python API documentation using Sphinx to generate HTML from the python docstrings (classes, class methods, functions, etc) in the 'pygplates' python module.
+
+
+Installing Sphinx
+-----------------
+
+The following link provides a useful summary of installing sphinx via PIP:
+  http://www.pip-installer.org/en/latest/installing.html
+  
+Essentially it involves downloading the 'ez_setup.py' and 'get-pip.py' python scripts and running them:
+  python ez_setup.py
+  python get-pip.py
+
+There's also the package manager approach on Linux.
+
+
+Installing Sphinx on Windows
+----------------------------
+
+On Windows, if you have built python from source (maybe it's also the same when python is installed from a (MSI) installer) then there are issues running the 'get-pip.py' script (this was tested using python 2.7.5) so it is probably better to find another way to install PIP.
+The following issues were encountered running the 'get-pip.py' script (using a python interpreter built from source):
+
+ * It requires the 'bzip2' library, and unless this library is installed (next to the source code of python itself) it will fail to compile (the 'bz2' project in the python Visual Studio solution).
+
+ * It requires the 'openssl' library (which should also be installed next to the source code of python itself) in order to avoid the error 'ImportError: cannot import name HTTPSHandler'.
+
+ * You need to install ActivePerl - http://www.activestate.com/activeperl
+
+ * There's a bug in the 'build_ssl.py' script in the python source code (eg, 'PC/VS8.0/build_ssl.py' if you're using Visual Studio 2005). Unfortunately the patch at http://bugs.python.org/issue10752 does not seem to allow the build system to find the Perl executable. So I ended up just hardwiring in the path to my ActivePerl executable with something like the following code in the 'find_working_perl()' function...
+    def find_working_perl(perls):
+        for perl in perls:
+            if perl == 'C:\\programs\\Perl64\\bin\\perl.exe':
+                return perl
+        print("Can not find a suitable PERL:")
+        print(" Please install ActivePerl and ensure it appears on your path")
+        return None
+
+After these steps, most of the projects in the python source code (in Visual Studio) should compile.
+Some projects don't compile but not all projects are required to compile in order to have a working python installation.
+In fact, although the documentation in the 2.7.5 python source code does not mention this, it is OK that building the entire solution fails for some projects (in fact there's a patch to the docs somewhere that explicitly states this, but it's not yet mentioned in python 2.7.5).
+
+After all that I was finally able to run...
+  python get-pip.py
+...and ended up with 'sphinx-build.exe' in the 'python-2.7.5/Scripts/' directory (which is also where the 'easy_install.exe' was installed).
+Also make sure you run the cmd shell as administrator (right click -> "Run as administrator") before executing 'python ez_setup.py' and 'python get-pip.py'. I think I also changed current working directory to the 'Scripts/' directory before running those commands.
+Note that the 'Scripts/' sub-directory should be added to the PATH environment variable.
+
+
+Building the HTML documentation
+-------------------------------
+
+To build the HTML documentation, build the 'doc-python-api' target.
+
+For example, on Linux:
+  make doc-python-api
+
+On Windows, build the 'doc-python-api' project in Visual Studio.
+
+'doc-python-api' is a CMake-generated target that uses the installed 'sphinx-build' executable to create HTML from the built 'pygplates' module.
+
+
+Viewing the HTML documentation
+------------------------------
+
+The built documentation should be in the following HTML file, relative to the cmake *build* directory corresponding to your GPlates source directory (if you are doing in-place cmake builds then the root GPlates source directory is the same as the build directory):
+
+  doc-python-api/html/index.html
