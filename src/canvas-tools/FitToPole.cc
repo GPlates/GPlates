@@ -99,6 +99,24 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 			point_on_sphere,
 			proximity_inclusion_threshold);
 	std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
+
+	// Check editing layer first
+	if (d_hellinger_dialog_ptr->get_editing_layer()->is_active())
+	{
+		if (GPlatesViewOperations::test_proximity(
+					sorted_hits,
+					proximity_criteria,
+					*d_hellinger_dialog_ptr->get_editing_layer()))
+		{
+			qDebug() <<  "Hovering over an active editing point";
+		}
+		else
+		{
+			qDebug() << "Not overing over an active editing point";
+		}
+	}
+
+	sorted_hits.clear();
 	if (GPlatesViewOperations::test_proximity(
 				sorted_hits,
 				proximity_criteria,

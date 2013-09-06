@@ -110,6 +110,9 @@ namespace GPlatesQtWidgets
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 		get_pick_layer();
 
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+		get_editing_layer();
+
 		void
 		set_hovered_pick(
 				const unsigned int index);

@@ -476,6 +476,7 @@ void GPlatesQtWidgets::HellingerDialog::handle_finished_editing()
 {
 	qDebug() << "finished_editing";
 	d_editing_layer_ptr->clear_rendered_geometries();
+	d_editing_layer_ptr->set_active(false);
 }
 
 void GPlatesQtWidgets::HellingerDialog::handle_update_editing()
@@ -527,6 +528,7 @@ void
 GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 {
 
+	d_editing_layer_ptr->set_active(true);
 	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
 	QString segment_string = tree_widget_picks->currentItem()->text(0);
 	int row = index.row();
@@ -1646,7 +1648,6 @@ void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
 	d_hover_layer_ptr->set_active(activate);
 	d_result_layer_ptr->set_active(activate);
 	d_selection_layer_ptr->set_active(activate);
-	d_editing_layer_ptr->set_active(activate);
 }
 
 void GPlatesQtWidgets::HellingerDialog::clear_rendered_geometries()
@@ -1735,6 +1736,11 @@ void GPlatesQtWidgets::HellingerDialog::expand_segment(
 GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GPlatesQtWidgets::HellingerDialog::get_pick_layer()
 {
 	return d_pick_layer_ptr;
+}
+
+GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GPlatesQtWidgets::HellingerDialog::get_editing_layer()
+{
+	return d_editing_layer_ptr;
 }
 
 void GPlatesQtWidgets::HellingerDialog::set_hovered_pick(
