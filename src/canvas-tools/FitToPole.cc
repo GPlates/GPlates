@@ -40,7 +40,9 @@ GPlatesCanvasTools::FitToPole::FitToPole(
 		GPlatesQtWidgets::HellingerDialog &hellinger_dialog) :
 	CanvasTool(status_bar_callback),
 	d_rendered_geom_collection_ptr(&rendered_geom_collection),
-	d_hellinger_dialog_ptr(&hellinger_dialog)
+	d_hellinger_dialog_ptr(&hellinger_dialog),
+	d_mouse_is_over_editable_pick(false),
+	d_pick_is_being_dragged(false)
 {
 }
 
@@ -109,10 +111,12 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 					*d_hellinger_dialog_ptr->get_editing_layer()))
 		{
 			qDebug() <<  "Hovering over an active editing point";
+			d_mouse_is_over_editable_pick = true;
 		}
 		else
 		{
-			qDebug() << "Not overing over an active editing point";
+			qDebug() << "Not hovering over an active editing point";
+			d_mouse_is_over_editable_pick = false;
 		}
 	}
 
@@ -159,6 +163,70 @@ GPlatesCanvasTools::FitToPole::handle_shift_left_click(
 	{
 		d_hellinger_dialog_ptr->clear_selection_layer();
 	}
+}
+
+void
+GPlatesCanvasTools::FitToPole::handle_left_press(
+		const GPlatesMaths::PointOnSphere &point_on_sphere,
+		bool is_on_earth,
+		double proximity_inclusion_threshold)
+{
+	qDebug() << "Left press";
+
+	if (!d_mouse_is_over_editable_pick)
+	{
+		return;
+	}
+
+
+	GPlatesMaths::ProximityCriteria proximity_criteria(
+			point_on_sphere,
+			proximity_inclusion_threshold);
+	std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
+
+	// Check editing layer first
+	if (d_hellinger_dialog_ptr->get_editing_layer()->is_active())
+	{
+		if (GPlatesViewOperations::test_proximity(
+					sorted_hits,
+					proximity_criteria,
+					*d_hellinger_dialog_ptr->get_editing_layer()))
+		{
+			qDebug() <<  "Pressed over an active editing point";
+			d_pick_is_being_dragged = true;
+		}
+		else
+		{
+			qDebug() << "Pressed, not over an active editing point";
+			d_mouse_is_over_editable_pick = false;
+		}
+	}
+}
+
+void
+GPlatesCanvasTools::FitToPole::handle_left_release_after_drag(
+		const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
+		bool was_on_earth,
+		double initial_proximity_inclusion_threshold,
+		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
+		bool is_on_earth,
+		double current_proximity_inclusion_threshold,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+{
+	qDebug() << "LEft release after drag";
+}
+
+void
+GPlatesCanvasTools::FitToPole::handle_left_drag(
+		const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
+		bool was_on_earth,
+		double initial_proximity_inclusion_threshold,
+		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
+		bool is_on_earth,
+		double current_proximity_inclusion_threshold,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+{
+	qDebug() << "left drag";
 }
 
 void

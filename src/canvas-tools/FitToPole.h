@@ -116,6 +116,34 @@ namespace GPlatesCanvasTools
 				bool is_on_earth,
 				double proximity_inclusion_threshold);
 
+		virtual
+		void
+		handle_left_drag(
+				const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
+				bool was_on_earth,
+				double initial_proximity_inclusion_threshold,
+				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
+				bool is_on_earth, double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport);
+
+		virtual
+		void
+		handle_left_release_after_drag(
+				const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
+				bool was_on_earth,
+				double initial_proximity_inclusion_threshold,
+				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
+				bool is_on_earth,
+				double current_proximity_inclusion_threshold,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport);
+
+		virtual
+		void
+		handle_left_press(
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				bool is_on_earth,
+				double proximity_inclusion_threshold);
+
 	private:
 
 		void
@@ -132,6 +160,8 @@ namespace GPlatesCanvasTools
 
 		GPlatesQtWidgets::HellingerDialog *d_hellinger_dialog_ptr;
 
+		bool d_mouse_is_over_editable_pick;
+		bool d_pick_is_being_dragged;
 	};
 }
 

@@ -60,6 +60,9 @@ const QString TEMP_PICK_FILENAME("temp_pick");
 const QString TEMP_RESULT_FILENAME("temp_result");
 const QString TEMP_PAR_FILENAME("temp_par");
 const QString TEMP_RES_FILENAME("temp_res");
+const double DEFAULT_POINT_SIZE = 2;
+const double DEFAULT_LINE_THICKNESS = 2;
+const double EDIT_POINT_THICKNESS = 3;
 
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger workflow.
@@ -109,7 +112,8 @@ namespace{
 	add_pick_geometry_to_layer(
 			const GPlatesQtWidgets::HellingerPick &pick,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type &layer,
-			const GPlatesGui::Colour &colour)
+			const GPlatesGui::Colour &colour,
+			const int &point_thickness = DEFAULT_POINT_SIZE)
 	{
 		const GPlatesMaths::LatLonPoint llp(pick.d_lat,pick.d_lon);
 		const GPlatesMaths::PointOnSphere point = make_point_on_sphere(llp);
@@ -121,8 +125,8 @@ namespace{
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 					point.get_non_null_pointer(),
 					colour,
-					2, /* point thickness */
-					2, /* line thickness */
+					point_thickness, /* point size */
+					DEFAULT_LINE_THICKNESS, /* line thickness */
 					false, /* fill polygon */
 					false, /* fill polyline */
 					GPlatesGui::Colour::get_white(), // dummy colour argument
