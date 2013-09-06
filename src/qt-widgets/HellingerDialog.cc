@@ -476,7 +476,7 @@ void
 GPlatesQtWidgets::HellingerDialog::highlight_selected_pick(
 		const HellingerPick &pick)
 {
-	GPlatesGui::Colour colour = pick.d_is_enabled ? GPlatesGui::Colour::get_yellow() : GPlatesGui::Colour::get_grey();
+	GPlatesGui::Colour colour = pick.d_is_enabled ? GPlatesGui::Colour::get_white() : GPlatesGui::Colour::get_grey();
 	add_pick_geometry_to_layer(pick,d_selection_layer_ptr,colour);
 }
 

@@ -181,17 +181,30 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::add_segment_to_model()
 void
 GPlatesQtWidgets::HellingerEditSegmentDialog::handle_add_line()
 {
+	int insertion_row;
+	if ((d_model->rowCount() == 0) ||
+		 table_new_segment->selectionModel()->selection().indexes().isEmpty())
+	{
+		insertion_row = 0;
+	}
+	else
+	{
 
-	const QModelIndex index = table_new_segment->currentIndex();
-	int row = index.row();
+		const QModelIndex index = table_new_segment->currentIndex();
+		insertion_row = index.row();
+	}
 
-	d_model->insertRow(row);
-	set_initial_row_values(row);
+	d_model->insertRow(insertion_row);
+	set_initial_row_values(insertion_row);
 }
 
 void
 GPlatesQtWidgets::HellingerEditSegmentDialog::handle_remove_line()
 {
+	if (table_new_segment->selectionModel()->selection().indexes().isEmpty())
+	{
+		return;
+	}
 	const QModelIndex index = table_new_segment->currentIndex();
 	int row = index.row();
 	d_model->removeRow(row);
