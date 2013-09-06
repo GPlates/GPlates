@@ -147,16 +147,44 @@ class PropertyNameCase(unittest.TestCase):
         self.feature_valid_time = i.next()
 
     def test_get_property_name(self):
+        # Feature property: gml:name
         self.assertTrue(isinstance(self.feature_name.get_property_name(), 
             pygplates.PropertyName))
+        self.assertEquals(self.feature_name.get_property_name().to_qualified_string(),
+                'gml:name')
+        # Feature property: gml:validTime
+        self.assertTrue(isinstance(self.feature_valid_time.get_property_name(), 
+            pygplates.PropertyName))
+        self.assertEquals(self.feature_valid_time.get_property_name().to_qualified_string(),
+                'gml:validTime')
+
+
+class PropertyValueCase(unittest.TestCase):
+
+    def setUp(self):
+        feature = iter(FileHelper().read(
+            os.path.join(FIXTURES, 'volcanoes.gpml'))).next()
+        i = iter(feature)
+        # From the first volcano: its name and valid time (name is blank)
+        self.feature_name = i.next()
+        self.feature_valid_time = i.next()
 
     def test_get_property_value(self):
         # The volcano's name is blank so we expect a null
         self.assertTrue(isinstance(self.feature_name.get_property_value(), 
             types.NoneType))
         # The volcano has a valid time, so we expect a value for this
-        self.assertTrue(isinstance(self.feature_valid_time.get_property_value(),
-            pygplates.PropertyValue))
+        valid_time = self.feature_valid_time.get_property_value()
+        self.assertTrue(isinstance(valid_time, pygplates.PropertyValue))
+        # Specifically, this should be a GmlTimePeriod value
+        self.assertTrue(isinstance(valid_time, pygplates.GmlTimePeriod))
+        begin_time = valid_time.get_begin()
+        self.assertTrue(isinstance(begin_time, pygplates.GmlTimeInstant))
+        end_time = valid_time.get_end()
+        self.assertTrue(isinstance(end_time, pygplates.GmlTimeInstant))
+        # Test the actual values of the time period
+        self.assertEquals(begin_time.get_time_position().get_value(), 40.0)
+        self.assertEquals(end_time.get_time_position().get_value(), 0.0)
 
 
 class ReconstructionTreeCase(unittest.TestCase):
