@@ -107,6 +107,14 @@ void GPlatesQtWidgets::HellingerEditPointDialog::update_segment_number(
 	spinbox_segment->setValue(segment_number);
 }
 
+void GPlatesQtWidgets::HellingerEditPointDialog::update_pick_coords(const GPlatesMaths::LatLonPoint &llp)
+{
+	spinbox_lat->setValue(llp.latitude());
+	spinbox_lon->setValue(llp.longitude());
+	update_pick_from_widgets();
+	Q_EMIT update_editing();
+}
+
 void GPlatesQtWidgets::HellingerEditPointDialog::set_active(bool active)
 {
 	button_apply->setEnabled(active);

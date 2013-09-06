@@ -214,6 +214,7 @@ GPlatesCanvasTools::FitToPole::handle_left_release_after_drag(
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 {
 	qDebug() << "LEft release after drag";
+	d_pick_is_being_dragged = false;
 }
 
 void
@@ -227,6 +228,10 @@ GPlatesCanvasTools::FitToPole::handle_left_drag(
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 {
 	qDebug() << "left drag";
+	if (d_pick_is_being_dragged)
+	{
+		d_hellinger_dialog_ptr->update_edit_layer(current_point_on_sphere);
+	}
 }
 
 void

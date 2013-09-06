@@ -137,6 +137,9 @@ namespace GPlatesQtWidgets
 		void
 		edit_current_pick();
 
+		void
+		update_edit_layer(
+				const GPlatesMaths::PointOnSphere &pos);
 
 	public Q_SLOTS:
 
@@ -334,9 +337,7 @@ namespace GPlatesQtWidgets
 		void
 		update_canvas();
 
-		void
-		update_edit_layer(
-				const EditOperationType &type);
+
 
 		void
 		update_selected_geometries();

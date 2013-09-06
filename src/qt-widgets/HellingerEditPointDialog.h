@@ -58,6 +58,10 @@ namespace GPlatesQtWidgets
 		update_segment_number(
 				const int &segment_number);
 
+		void
+		update_pick_coords(
+				const GPlatesMaths::LatLonPoint &llp);
+
 		/**
 		 * @brief set_active - disable dialog except for "close" button.
 		 * @param active

@@ -538,7 +538,6 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 	int row = index.row();
 	int segment = segment_string.toInt();
 
-	update_edit_layer(EDIT_POINT_OPERATION);
 	d_hellinger_edit_point_dialog->update_pick_from_model(segment, row);
 	d_hellinger_edit_point_dialog->show();
 	d_hellinger_edit_point_dialog->raise();
@@ -1146,13 +1145,12 @@ GPlatesQtWidgets::HellingerDialog::update_canvas()
 
 }
 
-void GPlatesQtWidgets::HellingerDialog::update_edit_layer(
-		const GPlatesQtWidgets::EditOperationType &type)
+void
+GPlatesQtWidgets::HellingerDialog::update_edit_layer(
+		const GPlatesMaths::PointOnSphere &pos_)
 {
-	if (type == EDIT_POINT_OPERATION)
-	{
-
-	}
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos_);
+	d_hellinger_edit_point_dialog->update_pick_coords(llp);
 }
 
 void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
