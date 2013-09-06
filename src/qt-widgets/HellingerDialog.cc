@@ -1601,6 +1601,11 @@ void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
 	d_hover_layer_ptr =
 		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
+
+	// Create a rendered layer to draw geometries undergoing editing.
+	d_editing_layer_ptr =
+		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
 }
 
 void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
