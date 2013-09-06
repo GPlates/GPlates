@@ -54,6 +54,7 @@ namespace GPlatesViewOperations
 namespace GPlatesQtWidgets
 {
 
+	class HellingerEditPointDialog;
 	class HellingerStatsDialog;
 	class HellingerModel;
 	class ReadErrorAccumulationDialog;
@@ -379,6 +380,7 @@ namespace GPlatesQtWidgets
 		ReadErrorAccumulationDialog &d_read_error_accumulation_dialog;
 		HellingerModel *d_hellinger_model;
 		HellingerStatsDialog *d_hellinger_stats_dialog;
+		HellingerEditPointDialog *d_hellinger_edit_point_dialog;
 		HellingerThread *d_hellinger_thread;
 		QString d_path;
 		QString d_file_name;
@@ -406,6 +408,7 @@ namespace GPlatesQtWidgets
 
 		boost::optional<unsigned int> d_selected_segment;
 		boost::optional<hellinger_model_type::const_iterator> d_selected_pick;
+
 
 	};
 }

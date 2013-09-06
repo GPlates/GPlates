@@ -106,6 +106,7 @@ void GPlatesQtWidgets::HellingerEditPointDialog::initialise_with_segment_number(
 void
 GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 {
+	d_hellinger_dialog_ptr->store_expanded_status();
 	int segment_number = spinbox_segment->value();
 	HellingerPickType type;
 	if (radio_moving->isChecked())
@@ -135,11 +136,10 @@ GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 							  true),
 				segment_number);
 
-	qDebug() << "Setting selected pick in HEPD";
 	d_hellinger_dialog_ptr->set_selected_pick(it);
 	d_hellinger_dialog_ptr->update_tree_from_model();
 	d_hellinger_dialog_ptr->expand_segment(segment_number);
-
+	d_hellinger_dialog_ptr->restore_expanded_status();
 
 	if (!d_create_new_pick)
 	{

@@ -330,6 +330,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_read_error_accumulation_dialog(read_error_accumulation_dialog),
 	d_hellinger_model(0),
 	d_hellinger_stats_dialog(0),
+	d_hellinger_edit_point_dialog(0),
 	d_hellinger_thread(0),
 	d_moving_plate_id(0),
 	d_fixed_plate_id(0),
@@ -496,9 +497,10 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 void
 GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 {
-	store_expanded_status();
-	QScopedPointer<GPlatesQtWidgets::HellingerEditPointDialog> dialog(
-			new GPlatesQtWidgets::HellingerEditPointDialog(this,d_hellinger_model));
+	if (!d_hellinger_edit_point_dialog)
+	{
+		d_hellinger_edit_point_dialog = new HellingerEditPointDialog(this,d_hellinger_model);
+	}
 
 	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
 	QString segment = tree_widget_picks->currentItem()->text(0);
@@ -506,10 +508,10 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 	int segment_int = segment.toInt();
 
 	update_edit_layer(EDIT_POINT_OPERATION);
-	dialog->initialise_with_pick(segment_int, row);
-	dialog->exec();
-	restore_expanded_status();
-	update_canvas();
+	d_hellinger_edit_point_dialog->initialise_with_pick(segment_int, row);
+	d_hellinger_edit_point_dialog->show();
+	d_hellinger_edit_point_dialog->raise();
+
 }
 
 void
