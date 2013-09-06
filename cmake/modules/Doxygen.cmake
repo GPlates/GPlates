@@ -1,4 +1,4 @@
-# Create a "make doc" target using Doxygen
+# Create a "make doc-cpp" target using Doxygen
 # Prototype:
 #     GENERATE_DOCUMENTATION(doxygen_config_file)
 # Parameters:
@@ -43,7 +43,7 @@ MACRO(GENERATE_DOCUMENTATION DOXYGEN_CONFIG_FILE_IN DOXYGEN_CONFIG_FILE)
             # Add target
             # Best to remove 'html' subdirectory before running doxygen as I've heard it can cause problems.
             # But CMake 2.4.7 cannot remove directories (only files) so we'll leave it.
-            ADD_CUSTOM_TARGET(doc
+            ADD_CUSTOM_TARGET(doc-cpp
                 #COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_SOURCE_DIR}/html
                 COMMAND ${DOXYGEN_EXECUTABLE} "${DOXYGEN_CONFIG_FILE}"
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
