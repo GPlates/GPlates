@@ -52,8 +52,7 @@ if (SPHINX_FOUND)
 	# for the release build (assuming the user is doing a 'release' build).
 	if(MSVC)
 		# NOTE: If using Visual Studio, then manually change PYGPLATES_MSVC_BUILD_TYPE if you're not doing a 'release' build.
-		#set(PYGPLATES_MSVC_BUILD_TYPE release)
-		set(PYGPLATES_MSVC_BUILD_TYPE profilegplates)
+		set(PYGPLATES_MSVC_BUILD_TYPE release)
 		string(REPLACE "$(OutDir)" "${PYGPLATES_MSVC_BUILD_TYPE}" PYGPLATES_LIBRARY_LOCATION "${PYGPLATES_LIBRARY_LOCATION}")
 	endif(MSVC)
 
@@ -66,6 +65,7 @@ if (SPHINX_FOUND)
 	# "WARNING: html_static_path entry '...doc-python-api/_build/_static' does not exist".
 	file(MAKE_DIRECTORY "${BINARY_BUILD_DIR}/_static")
 
+	# Add a dependency to the 'pygplates' library to ensure it gets built before Sphinx uses it to generate documentation.
 	add_custom_target(doc-python-api
 		${SPHINX_EXECUTABLE}
 		-q -b html
@@ -73,5 +73,6 @@ if (SPHINX_FOUND)
 		-d "${SPHINX_CACHE_DIR}"
 		"${CMAKE_CURRENT_SOURCE_DIR}"
 		"${SPHINX_HTML_DIR}"
+		DEPENDS pygplates
 		COMMENT "Building HTML documentation with Sphinx")
 endif (SPHINX_FOUND)
