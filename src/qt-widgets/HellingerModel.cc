@@ -92,18 +92,18 @@ GPlatesQtWidgets::HellingerModel::get_pick_as_string(
 	return get_data_line;
 }
 
-boost::optional<const GPlatesQtWidgets::HellingerPick &>
-GPlatesQtWidgets::HellingerModel::get_pick(
-		const unsigned int &index) const
-{
-	if (index >= d_model.size())
-	{
-		return boost::none;
-	}
-	hellinger_model_type::const_iterator it = d_model.begin();
-	std::advance(it, index);
-	return it->second;
-}
+//boost::optional<const GPlatesQtWidgets::HellingerPick &>
+//GPlatesQtWidgets::HellingerModel::get_pick(
+//		const unsigned int &index) const
+//{
+//	if (index >= d_model.size())
+//	{
+//		return boost::none;
+//	}
+//	hellinger_model_type::const_iterator it = d_model.begin();
+//	std::advance(it, index);
+//	return it->second;
+//}
 
 void
 GPlatesQtWidgets::HellingerModel::set_pick_state(

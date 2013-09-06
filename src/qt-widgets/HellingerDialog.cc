@@ -469,7 +469,22 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 
 void GPlatesQtWidgets::HellingerDialog::handle_cancel()
 {
-// TODO: This is where we would (if we can) interrupt the thread running the python code.
+	// TODO: This is where we would (if we can) interrupt the thread running the python code.
+}
+
+void GPlatesQtWidgets::HellingerDialog::handle_finished_editing()
+{
+	qDebug() << "finished_editing";
+	d_editing_layer_ptr->clear_rendered_geometries();
+}
+
+void GPlatesQtWidgets::HellingerDialog::handle_update_editing()
+{
+	d_editing_layer_ptr->clear_rendered_geometries();
+	add_pick_geometry_to_layer(
+				d_hellinger_edit_point_dialog->current_pick(),
+				d_editing_layer_ptr,
+				GPlatesGui::Colour::get_yellow());
 }
 
 void
@@ -522,6 +537,7 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 	d_hellinger_edit_point_dialog->show();
 	d_hellinger_edit_point_dialog->raise();
 
+	add_pick_geometry_to_layer((d_hellinger_model->get_pick(segment,row)->second),d_editing_layer_ptr,GPlatesGui::Colour::get_yellow());
 }
 
 void
@@ -1582,6 +1598,9 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(d_hellinger_thread, SIGNAL(finished()),this, SLOT(handle_thread_finished()));
 	QObject::connect(button_cancel,SIGNAL(clicked()),this,SLOT(handle_cancel()));
 	QObject::connect(button_clear,SIGNAL(clicked()),this,SLOT(handle_clear()));
+
+	QObject::connect(d_hellinger_edit_point_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
+	QObject::connect(d_hellinger_edit_point_dialog,SIGNAL(update_editing()),this,SLOT(handle_update_editing()));
 }
 
 void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
@@ -1627,7 +1646,7 @@ void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
 	d_hover_layer_ptr->set_active(activate);
 	d_result_layer_ptr->set_active(activate);
 	d_selection_layer_ptr->set_active(activate);
-
+	d_editing_layer_ptr->set_active(activate);
 }
 
 void GPlatesQtWidgets::HellingerDialog::clear_rendered_geometries()

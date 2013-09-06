@@ -314,6 +314,12 @@ namespace GPlatesQtWidgets
 		void
 		handle_cancel();
 
+		void
+		handle_finished_editing();
+
+		void
+		handle_update_editing();
+
 	private:
 
 		//! Convenience typedef for GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type

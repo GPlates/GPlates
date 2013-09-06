@@ -196,8 +196,8 @@ namespace GPlatesQtWidgets
 			const unsigned int &segment,
 			const unsigned int &row) const;
 
-		boost::optional<const HellingerPick &> get_pick(
-			const unsigned int &index) const;
+//		boost::optional<const HellingerPick &> get_pick(
+//			const unsigned int &index) const;
 
 		hellinger_model_type::const_iterator
 		get_pick(

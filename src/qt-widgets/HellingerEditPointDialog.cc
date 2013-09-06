@@ -24,6 +24,7 @@
  */
 
 #include <QDebug>
+#include <QObject>
 
 #include <QRadioButton>
 #include <QTextStream>
@@ -50,7 +51,10 @@ GPlatesQtWidgets::HellingerEditPointDialog::HellingerEditPointDialog(HellingerDi
 	set_initial_values();
 
 	QObject::connect(button_apply, SIGNAL(clicked()), this, SLOT(handle_apply()));
-	QObject::connect(button_cancel,SIGNAL(clicked()),this,SLOT(reject()));
+	QObject::connect(button_cancel,SIGNAL(clicked()),this,SLOT(close()));
+	QObject::connect(spinbox_lat,SIGNAL(valueChanged(double)),this,SLOT(handle_pick_changed()));
+	QObject::connect(spinbox_lon,SIGNAL(valueChanged(double)),this,SLOT(handle_pick_changed()));
+	QObject::connect(radio_moving,SIGNAL(toggled(bool)),this,SLOT(handle_pick_changed()));
 
 	if (d_create_new_pick)
 	{
@@ -115,24 +119,19 @@ void GPlatesQtWidgets::HellingerEditPointDialog::set_active(bool active)
 	label_segment->setEnabled(active);
 }
 
+const GPlatesQtWidgets::HellingerPick &
+GPlatesQtWidgets::HellingerEditPointDialog::current_pick() const
+{
+	return m_pick;
+}
+
 void
 GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 {
 	d_hellinger_dialog_ptr->store_expanded_status();
-	int segment_number = spinbox_segment->value();
-	HellingerPickType type;
-	if (radio_moving->isChecked())
-	{
-		type = MOVING_PICK_TYPE;
-	}
-	else
-	{
-		type = FIXED_PICK_TYPE;
-	}
 
-	double lat = spinbox_lat->value();
-	double lon = spinbox_lon->value();
-	double uncertainty = spinbox_uncert->value();
+	int segment_number = spinbox_segment->value();
+	update_pick_from_widgets();
 
 	if (!d_create_new_pick)
 	{
@@ -141,11 +140,7 @@ GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 
 	hellinger_model_type::const_iterator it =
 		d_hellinger_model_ptr->add_pick(
-				HellingerPick(type,
-							  lat,
-							  lon,
-							  uncertainty,
-							  true),
+				m_pick,
 				segment_number);
 
 	d_hellinger_dialog_ptr->set_selected_pick(it);
@@ -159,12 +154,36 @@ GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 	}
 }
 
+void GPlatesQtWidgets::HellingerEditPointDialog::handle_pick_changed()
+{
+	update_pick_from_widgets();
+	Q_EMIT update_editing();
+}
+
+void GPlatesQtWidgets::HellingerEditPointDialog::update_pick_from_widgets()
+{
+	m_pick.d_is_enabled = true;
+	m_pick.d_lat = spinbox_lat->value();
+	m_pick.d_lon = spinbox_lon->value();
+	m_pick.d_uncertainty = spinbox_uncert->value();
+	m_pick.d_segment_type = radio_moving->isChecked() ? MOVING_PICK_TYPE : FIXED_PICK_TYPE;
+}
+
+void GPlatesQtWidgets::HellingerEditPointDialog::close()
+{
+	Q_EMIT finished_editing();
+	QDialog::close();
+}
+
+
 void GPlatesQtWidgets::HellingerEditPointDialog::set_initial_values()
 {
 	spinbox_segment->setValue(1);
 	spinbox_lat->setValue(0.);
 	spinbox_lon->setValue(0.);
 	spinbox_uncert->setValue(0.);
+
+	update_pick_from_widgets();
 }
 
 

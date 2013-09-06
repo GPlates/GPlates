@@ -66,14 +66,36 @@ namespace GPlatesQtWidgets
 		set_active(
 				bool active);
 
+		const HellingerPick &
+		current_pick() const;
 
+
+	Q_SIGNALS:
+
+		void
+		finished_editing();
+
+		void
+		update_editing();
+
+	public Q_SLOTS:
+
+		void
+		close();
 
 	private Q_SLOTS:
 
 		void
 		handle_apply();
 
+		void
+		handle_pick_changed();
+
+
 	private:
+
+		void
+		update_pick_from_widgets();
 
 		void
 		set_initial_values();
@@ -85,6 +107,8 @@ namespace GPlatesQtWidgets
 		int d_row;
 
 		bool d_create_new_pick;
+
+		HellingerPick m_pick;
 	};
 }
 
