@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <sstream>
 #include <boost/noncopyable.hpp>
 
 #include "PythonConverterUtils.h"
@@ -91,7 +92,9 @@ namespace GPlatesApi
 template <class PythonClassType/* the boost::python::class_ type*/>
 void
 export_qualified_xml_name(
-		PythonClassType &qualified_xml_name_class)
+		PythonClassType &qualified_xml_name_class,
+		const char *class_name,
+		const char *instance_name)
 {
 	// The GPlatesModel::QualifiedXmlName<> type.
 	typedef typename PythonClassType::wrapped_type qualified_xml_name_type;
@@ -102,13 +105,21 @@ export_qualified_xml_name(
 	qualified_xml_name_class
 		.def("get_namespace",
 				&qualified_xml_name_type::get_namespace,
-				bp::return_value_policy<bp::copy_const_reference>())
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_namespace() -> string\n"
+				"  Returns the namespace URI. For example, the 'gpml' namespace alias has the namespace "
+				"'http://www.gplates.org/gplates'.\n")
 		.def("get_namespace_alias",
 				&qualified_xml_name_type::get_namespace_alias,
-				bp::return_value_policy<bp::copy_const_reference>())
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_namespace_alias() -> string\n"
+				"  Returns the namespace alias. For example, 'gpml' (if created with 'create_gpml()').\n")
 		.def("get_name",
 				&qualified_xml_name_type::get_name,
-				bp::return_value_policy<bp::copy_const_reference>())
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_name() -> string\n"
+				"  Returns the unqualified name. For example, the fully qualified name minus the "
+				"'gpml:' prefix (if created with 'create_gpml()').\n")
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 		.def(bp::self < bp::self)
@@ -124,12 +135,33 @@ export_qualified_xml_name(
 
 	// Member to-QString conversion function.
 	qualified_xml_name_class.def("to_qualified_string",
-			&GPlatesModel::convert_qualified_xml_name_to_qstring<qualified_xml_name_type>);
+			&GPlatesModel::convert_qualified_xml_name_to_qstring<qualified_xml_name_type>,
+			"to_qualified_string() -> string\n"
+			"  Returns the fully qualified name. For example, 'gml:validTime' (if created with 'create_gml()').\n");
+
+	std::stringstream from_qualified_string_docstring_stream;
+	from_qualified_string_docstring_stream <<
+			"create_from_qualified_string(name) -> " << class_name << " or None\n"
+			"  Creates a " << class_name << " instance from a fully qualified name string. "
+			"The name string should have a ':' character separating the namespace alias from the unqualified name, "
+			"for example 'gml:validTime'. If the namespace alias is not recognised (as 'gpml', 'gml' or 'xsi') "
+			"then 'gpml' is assumed.\n"
+			"\n"
+			"  An over-qualified name string (eg, containing two or more ':' characters) will result "
+			"in ``None`` being returned.\n"
+			"  ::\n"
+			"\n"
+			"    " << instance_name << " = pygplates." << class_name << ".create_from_qualified_string(name)\n"
+			"\n"
+			"  :param name: qualified name\n"
+			"  :type name: string\n"
+			"  :rtype: " << class_name << " or None\n";
 
 	// Static-member from-QString conversion function.
-	qualified_xml_name_class.def("from_qualified_string",
-			&GPlatesModel::convert_qstring_to_qualified_xml_name<qualified_xml_name_type>);
- 	qualified_xml_name_class.staticmethod("from_qualified_string");
+	qualified_xml_name_class.def("create_from_qualified_string",
+			&GPlatesModel::convert_qstring_to_qualified_xml_name<qualified_xml_name_type>,
+			from_qualified_string_docstring_stream.str().c_str());
+	qualified_xml_name_class.staticmethod("create_from_qualified_string");
 }
 
 
@@ -140,13 +172,25 @@ export_enumeration_type()
 	// EnumerationType
 	//
 	bp::class_<GPlatesPropertyValues::EnumerationType> enumeration_type_class(
-			"EnumerationType", bp::no_init/*force usage of create functions*/);
+			"EnumerationType",
+			"The namespace-qualified type of an enumeration.\n"
+			"  All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
+			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
-	enumeration_type_class.def("create_gpml", &GPlatesApi::qualified_xml_name_create_gpml<GPlatesPropertyValues::EnumerationType>);
- 	enumeration_type_class.staticmethod("create_gpml");
+	enumeration_type_class.def("create_gpml",
+			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesPropertyValues::EnumerationType>,
+			"create_gpml(name) -> EnumerationType\n"
+			"  Create an enumeration type qualified with the 'gpml:' prefix ('gpml:' + ``name``).\n"
+			"  ::\n"
+			"\n"
+			"    enumeration_type = pygplates.EnumerationType.create_gpml(name)\n"
+			"\n"
+			"  :param name: unqualified name\n"
+			"  :type name: string\n");
+	enumeration_type_class.staticmethod("create_gpml");
 
 	// Add the parts common to each GPlatesModel::QualifiedXmlName template instantiation (code re-use).
-	export_qualified_xml_name(enumeration_type_class);
+	export_qualified_xml_name(enumeration_type_class, "EnumerationType", "enumeration_type");
 }
 
 
@@ -157,33 +201,75 @@ export_feature_type()
 	// FeatureType
 	//
 	bp::class_<GPlatesModel::FeatureType> feature_type_class(
-			"FeatureType", bp::no_init/*force usage of create functions*/);
+			"FeatureType",
+			"The namespace-qualified type of a feature.\n"
+			"  All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
+			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
-	feature_type_class.def("create_gpml", &GPlatesApi::qualified_xml_name_create_gpml<GPlatesModel::FeatureType>);
- 	feature_type_class.staticmethod("create_gpml");
+	feature_type_class.def("create_gpml",
+			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesModel::FeatureType>,
+			"create_gpml(name) -> FeatureType\n"
+			"  Create a feature type qualified with the 'gpml:' prefix ('gpml:' + ``name``).\n"
+			"  ::\n"
+			"\n"
+			"    feature_type = pygplates.FeatureType.create_gpml(name)\n"
+			"\n"
+			"  :param name: unqualified name\n"
+			"  :type name: string\n");
+	feature_type_class.staticmethod("create_gpml");
 
 	// Add the parts common to each GPlatesModel::QualifiedXmlName template instantiation (code re-use).
-	export_qualified_xml_name(feature_type_class);
+	export_qualified_xml_name(feature_type_class, "FeatureType", "feature_type");
 }
 
 void
 export_property_name()
 {
 	//
-	// PropertyName
+	// PropertyName - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<GPlatesModel::PropertyName> property_name_class(
-			"PropertyName", bp::no_init/*force usage of create functions*/);
+			"PropertyName",
+			"The namespace-qualified name of a property.\n"
+			"  All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
+			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
-	property_name_class.def("create_gpml", &GPlatesApi::qualified_xml_name_create_gpml<GPlatesModel::PropertyName>);
- 	property_name_class.staticmethod("create_gpml");
-	property_name_class.def("create_gml", &GPlatesApi::qualified_xml_name_create_gml<GPlatesModel::PropertyName>);
- 	property_name_class.staticmethod("create_gml");
-	property_name_class.def("create_xsi", &GPlatesApi::qualified_xml_name_create_xsi<GPlatesModel::PropertyName>);
- 	property_name_class.staticmethod("create_xsi");
+	property_name_class.def("create_gpml",
+			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesModel::PropertyName>,
+				"create_gpml(name) -> PropertyName\n"
+				"  Create a property name qualified with the 'gpml:' prefix ('gpml:' + ``name``).\n"
+				"  ::\n"
+				"\n"
+				"    property_name = pygplates.PropertyName.create_gpml(name)\n"
+				"\n"
+				"  :param name: unqualified name\n"
+				"  :type name: string\n");
+	property_name_class.staticmethod("create_gpml");
+	property_name_class.def("create_gml",
+			&GPlatesApi::qualified_xml_name_create_gml<GPlatesModel::PropertyName>,
+				"create_gml(name) -> PropertyName\n"
+				"  Create a property name qualified with the 'gml:' prefix ('gml:' + ``name``).\n"
+				"  ::\n"
+				"\n"
+				"    property_name = pygplates.PropertyName.create_gml(name)\n"
+				"\n"
+				"  :param name: unqualified name\n"
+				"  :type name: string\n");
+	property_name_class.staticmethod("create_gml");
+	property_name_class.def("create_xsi",
+			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesModel::PropertyName>,
+				"create_xsi(name) -> PropertyName\n"
+				"  Create a property name qualified with the 'xsi:' prefix ('xsi:' + ``name``).\n"
+				"  ::\n"
+				"\n"
+				"    property_name = pygplates.PropertyName.create_xsi(name)\n"
+				"\n"
+				"  :param name: unqualified name\n"
+				"  :type name: string\n");
+	property_name_class.staticmethod("create_xsi");
 
 	// Add the parts common to each GPlatesModel::QualifiedXmlName template instantiation (code re-use).
-	export_qualified_xml_name(property_name_class);
+	export_qualified_xml_name(property_name_class, "PropertyName", "property_name");
 }
 
 

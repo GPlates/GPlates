@@ -78,14 +78,38 @@ void export_coregistration_layer_proxy();
 
 BOOST_PYTHON_MODULE(pygplates)
 {
+	//
+	// Specify the 'pygplate' module's docstring options.
+	//
+	// Note that we *disable* python and C++ signatures since we explicitly specify the
+	// signatures in the first line of each function's (or class method's) docstring.
+	// Sphinx is used to generate API documentation (see http://sphinx-doc.org) and it
+	// uses the first docstring line as the function signature (if it looks like a signature).
+	//
+	// The following limitations apply to using ReStructuredText in Sphinx's autodoc extension
+	// (autodoc imports modules and looks up there docstrings):
+	//  - '::' to indicate end-of-paragraph must be on a separate line,
+	//  - the docstrings on special methods such as '__str__', '__lt__' are ignored by Sphinx.
+	//
 	boost::python::docstring_options module_docstring_options(
 			true/*show_user_defined*/,
-			true/*show_py_signatures*/,
+			false/*show_py_signatures*/,
 			false/*show_cpp_signatures*/);
 
 	// Set the 'pygplates' module docstring.
 	boost::python::scope().attr("__doc__") =
-			"GPlates python Application Programming Interface (API)";
+			"GPlates python Application Programming Interface (API)\n"
+			"------------------------------------------------------\n"
+			"\n"
+			"  This document lists the python classes and functions that make up the 'pygplates' "
+			"module that provides the API into GPlates functionality. Within each class is a list "
+			" of class methods and a description of their usage and parameters.\n"
+			"\n"
+			"  Before GPlates functionality can be used, the 'pygplates' module "
+			"should be imported. For example:"
+			"  ::\n"
+			"\n"
+			"    import pygplates\n";
 
 #ifdef GPLATES_PYTHON_EMBEDDING
 	// api directory.

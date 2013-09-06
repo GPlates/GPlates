@@ -80,21 +80,37 @@ void
 export_top_level_property()
 {
 	//
-	// Property
+	// Property - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
 			GPlatesModel::TopLevelProperty,
 			GPlatesModel::TopLevelProperty::non_null_ptr_type,
 			boost::noncopyable>(
-					"Property", "Associates a property name with a property value.", bp::no_init)
+					"Property",
+					"Associates a property name with a property value.",
+					bp::no_init)
 		.def("create",
 				&GPlatesApi::top_level_property_inline_create,
-				"Create a property given a :class:`PropertyName` and a :class:`PropertyValue`.")
+				"create(property_name, property_value) -> Property\n"
+				"  Create a property given a property name and a property value.\n"
+				"  ::\n"
+				"\n"
+				"    property = pygplates.Property.create(property_name, property_value)\n"
+				"\n"
+				"  :param property_name: property name\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param property_value: property value\n"
+				"  :type property_value: :class:`PropertyValue`\n")
  		.staticmethod("create")
   		.def("get_property_name",
 				&GPlatesModel::TopLevelProperty::get_property_name,
-				bp::return_value_policy<bp::copy_const_reference>())
-		.def("get_property_value", &GPlatesApi::top_level_property_get_property_value)
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_property_name() -> PropertyName\n"
+				"  Returns the name of the property.")
+		.def("get_property_value",
+				&GPlatesApi::top_level_property_get_property_value,
+				"get_property_value() -> PropertyValue\n"
+				"  Returns the value of the property.")
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
