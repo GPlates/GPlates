@@ -66,6 +66,9 @@ const double DEFAULT_LINE_THICKNESS = 2;
 
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger workflow.
+// TODO: restore picks on canvas when re-opening the dialog
+// (or do we just remove the close button and keep the dialog open as long as the
+// tool is selected?)
 
 namespace{
 
@@ -181,7 +184,7 @@ namespace{
 			bool enabled)
 	{
 
-		static const Qt::GlobalColor text_colour = enabled? Qt::black : Qt::gray;
+		const Qt::GlobalColor text_colour = enabled? Qt::black : Qt::gray;
 		static const Qt::GlobalColor background_colour = Qt::white;
 
 		item->setBackgroundColor(SEGMENT_NUMBER,background_colour);
@@ -526,11 +529,17 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 	int segment = tree_widget_picks->currentItem()->text(0).toInt();
 	int row = index.row();
 
+	qDebug() << "previous state: " << 	d_hellinger_model->get_pick_state(segment, row);
 	bool new_enabled_state = !d_hellinger_model->get_pick_state(segment, row);
 
+	qDebug() << "new enabled state: " << new_enabled_state;
+
 	d_hellinger_model->set_pick_state(segment,row,new_enabled_state);
+	qDebug() << "model state now set.";
+	qDebug() << "Model state is: " << d_hellinger_model->get_pick_state(segment, row);
 
 	set_buttons_for_pick_selected(new_enabled_state);
+
 
 	set_text_colour_according_to_enabled_state(tree_widget_picks->currentItem(),new_enabled_state);
 }
