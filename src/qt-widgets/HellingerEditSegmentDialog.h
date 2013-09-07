@@ -126,6 +126,15 @@ namespace GPlatesQtWidgets
 		void
 		update_buttons();
 
+		void
+		handle_reset();
+
+		void
+		handle_enable();
+
+		void
+		handle_disable();
+
 	private:
 
 		void

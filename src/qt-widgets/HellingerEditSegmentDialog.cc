@@ -36,6 +36,66 @@
 #include "HellingerNewSegmentWarning.h"
 #include "QtWidgetUtils.h"
 
+namespace
+{
+	/**
+	 * @brief translate_segment_type
+	 *	Convert MOVING/DISABLED_MOVING types to a QString form of MOVING; similarly for FIXED/DISABLED_FIXED.
+	 *
+	 * This is copied from HellingerDialog anonymouse namespace - could be moved into a common HellingerUtils file, but
+	 * this is the only candidate for that at the moment.
+	 * @param type
+	 * @return
+	 */
+	QString
+	translate_segment_type(
+			GPlatesQtWidgets::HellingerPickType type)
+	{
+		switch(type)
+		{
+		case GPlatesQtWidgets::MOVING_PICK_TYPE:
+		case GPlatesQtWidgets::DISABLED_MOVING_PICK_TYPE:
+			return QString::number(GPlatesQtWidgets::MOVING_PICK_TYPE);
+			break;
+		case GPlatesQtWidgets::FIXED_PICK_TYPE:
+		case GPlatesQtWidgets::DISABLED_FIXED_PICK_TYPE:
+			return QString::number(GPlatesQtWidgets::FIXED_PICK_TYPE);
+			break;
+		default:
+			return QString();
+		}
+	}
+#if 0
+	/**
+	 * @brief set_text_colour_according_to_enabled_state
+	 * - copied from HellingerDialog - will need to be adapted for the table widget.
+	 * @param item
+	 * @param enabled
+	 */
+	void
+	set_text_colour_according_to_enabled_state(
+			QTreeWidgetItem *item,
+			bool enabled)
+	{
+
+		const Qt::GlobalColor text_colour = enabled? Qt::black : Qt::gray;
+		static const Qt::GlobalColor background_colour = Qt::white;
+
+		item->setBackgroundColor(SEGMENT_NUMBER,background_colour);
+		item->setBackgroundColor(SEGMENT_TYPE,background_colour);
+		item->setBackgroundColor(LAT,background_colour);
+		item->setBackgroundColor(LON,background_colour);
+		item->setBackgroundColor(UNCERTAINTY,background_colour);
+
+		item->setTextColor(SEGMENT_NUMBER,text_colour);
+		item->setTextColor(SEGMENT_TYPE,text_colour);
+		item->setTextColor(LAT,text_colour);
+		item->setTextColor(LON,text_colour);
+		item->setTextColor(UNCERTAINTY,text_colour);
+	}
+#endif
+}
+
 GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 		HellingerDialog *hellinger_dialog,
 		HellingerModel *hellinger_model,
@@ -54,6 +114,9 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 	QObject::connect(radio_moving, SIGNAL(clicked()), this, SLOT(change_pick_type_of_whole_table()));
 	QObject::connect(radio_fixed, SIGNAL(clicked()), this, SLOT(change_pick_type_of_whole_table()));
 	QObject::connect(radio_custom, SIGNAL(clicked()), this, SLOT(change_pick_type_of_whole_table()));
+	QObject::connect(button_reset,SIGNAL(clicked()), this, SLOT(handle_reset()));
+	QObject::connect(button_enable,SIGNAL(clicked()), this, SLOT(handle_enable()));
+	QObject::connect(button_disable,SIGNAL(clicked()), this, SLOT(handle_disable()));
 
 	// NOTE: I've added these two so that the "remove" button is enabled whenever a row/cell is highlighted.
 	// Initially nothing is selected so it would be unclear which row is the target of the removal operation.
@@ -237,6 +300,21 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::update_buttons()
 	QModelIndexList indices = table_new_segment->selectionModel()->selection().indexes();
 
 	button_remove_line->setEnabled(!indices.isEmpty());
+}
+
+void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_reset()
+{
+
+}
+
+void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_enable()
+{
+
+}
+
+void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_disable()
+{
+
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_edited_segment()

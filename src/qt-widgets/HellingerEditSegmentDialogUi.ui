@@ -33,7 +33,7 @@
     </layout>
    </item>
    <item row="4" column="4">
-    <widget class="QPushButton" name="button_enabled">
+    <widget class="QPushButton" name="button_enable">
      <property name="text">
       <string>&amp;Enable</string>
      </property>
