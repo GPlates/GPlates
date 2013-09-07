@@ -73,6 +73,7 @@ const double DEFAULT_LINE_THICKNESS = 2;
 // represented as "31" - should we allow enabled/disabled editing in the EditSegment window as well?
 // TODO: add "reset" button to EditPick / EditSegment dialogs - to take back to original state without
 // having to cancel (close) the whole dialog.
+// TODO: clean up the system of filenames which are passed to python.
 
 namespace{
 
