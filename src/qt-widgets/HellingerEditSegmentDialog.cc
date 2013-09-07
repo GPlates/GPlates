@@ -446,7 +446,7 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::set_row_values(
 		const GPlatesQtWidgets::HellingerPick &pick)
 {
 	QModelIndex index = d_model->index(row,COLUMN_MOVING_FIXED);
-	d_model->setData(index,pick.d_segment_type);
+	d_model->setData(index,translate_segment_type(pick.d_segment_type));
 
 	index = d_model->index(row,COLUMN_LAT);
 	d_model->setData(index,pick.d_lat);
