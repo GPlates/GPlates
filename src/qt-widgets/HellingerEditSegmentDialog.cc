@@ -38,6 +38,7 @@
 
 namespace
 {
+
 	/**
 	 * @brief translate_segment_type
 	 *	Convert MOVING/DISABLED_MOVING types to a QString form of MOVING; similarly for FIXED/DISABLED_FIXED.
@@ -161,22 +162,28 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 
 }
 
-void GPlatesQtWidgets::HellingerEditSegmentDialog::initialise_with_segment(
-		const hellinger_segment_type &picks,
+void
+GPlatesQtWidgets::HellingerEditSegmentDialog::initialise_with_segment(
+		const hellinger_model_const_range_type &picks,
 		const int &segment_number)
 {
-	spinbox_segment->setValue(segment_number);
 	d_original_segment_number.reset(segment_number);
+	d_original_segment_picks.reset(picks);
 
+	fill_widgets();
+}
+
+void GPlatesQtWidgets::HellingerEditSegmentDialog::fill_widgets()
+{
+	spinbox_segment->setValue(*d_original_segment_number);
 	d_model->removeRows(0,d_model->rowCount());
-
-	hellinger_segment_type::const_iterator
-			iter = picks.begin(),
-			iter_end = picks.end();
+	hellinger_model_type::const_iterator
+			iter = d_original_segment_picks->first,
+			iter_end = d_original_segment_picks->second;
 	for (; iter != iter_end ; ++iter)
 	{
 		d_model->insertRow(d_model->rowCount());
-		set_row_values(d_model->rowCount()-1,*iter);
+		set_row_values(d_model->rowCount()-1,iter->second);
 	}
 }
 
@@ -304,7 +311,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::update_buttons()
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_reset()
 {
-
+	fill_widgets();
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_enable()

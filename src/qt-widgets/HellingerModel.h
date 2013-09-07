@@ -224,6 +224,10 @@ namespace GPlatesQtWidgets
 		get_segment(
 			const unsigned int &segment) const;
 
+		hellinger_model_const_range_type
+		get_segment_as_range(
+			const unsigned int &segment) const;
+
         int
 		num_rows_in_segment(
 			const unsigned int &segment) const;

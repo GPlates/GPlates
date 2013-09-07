@@ -577,7 +577,7 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 	int segment_number = segment.toInt();
 
 	dialog->initialise_with_segment(
-				d_hellinger_model->get_segment(segment_number),segment_number);
+				d_hellinger_model->get_segment_as_range(segment_number),segment_number);
 
 	dialog->exec();
 	restore_expanded_status();

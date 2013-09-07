@@ -523,6 +523,12 @@ GPlatesQtWidgets::HellingerModel::get_segment(
 	return segment;
 }
 
+GPlatesQtWidgets::hellinger_model_const_range_type
+GPlatesQtWidgets::HellingerModel::get_segment_as_range(const unsigned int &segment) const
+{
+	return d_model.equal_range(segment);
+}
+
 GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::begin() const
 {

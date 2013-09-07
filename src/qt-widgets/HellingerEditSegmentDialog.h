@@ -102,7 +102,7 @@ namespace GPlatesQtWidgets
 
 		void
 		initialise_with_segment(
-				const hellinger_segment_type &picks,
+				const hellinger_model_const_range_type &picks,
 				const int &segment_number);
 
 
@@ -138,6 +138,9 @@ namespace GPlatesQtWidgets
 	private:
 
 		void
+		fill_widgets();
+
+		void
 		handle_edited_segment();
 
 		void
@@ -157,8 +160,11 @@ namespace GPlatesQtWidgets
 		bool d_creating_new_segment;
 
 		boost::optional<int> d_original_segment_number;
+		boost::optional<const hellinger_model_const_range_type &> d_original_segment_picks;
 
 		SpinBoxDelegate d_spin_box_delegate;
+
+
 	};
 }
 
