@@ -55,14 +55,14 @@
 
 
 const double SLIDER_MULTIPLIER = -10000.;
-const int SYMBOL_SIZE = 2;
+const int DEFAULT_SYMBOL_SIZE = 2;
+const int ENLARGED_SYMBOL_SIZE = 3;
 const QString TEMP_PICK_FILENAME("temp_pick");
 const QString TEMP_RESULT_FILENAME("temp_result");
 const QString TEMP_PAR_FILENAME("temp_par");
 const QString TEMP_RES_FILENAME("temp_res");
 const double DEFAULT_POINT_SIZE = 2;
 const double DEFAULT_LINE_THICKNESS = 2;
-const double EDIT_POINT_THICKNESS = 3;
 
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger workflow.
@@ -113,19 +113,24 @@ namespace{
 			const GPlatesQtWidgets::HellingerPick &pick,
 			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type &layer,
 			const GPlatesGui::Colour &colour,
-			const int &point_thickness = DEFAULT_POINT_SIZE)
+			bool use_enlarged_symbol_size = false)
 	{
 		const GPlatesMaths::LatLonPoint llp(pick.d_lat,pick.d_lon);
 		const GPlatesMaths::PointOnSphere point = make_point_on_sphere(llp);
 
-		static const GPlatesGui::Symbol moving_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, SYMBOL_SIZE, true);
-		static const GPlatesGui::Symbol fixed_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::SQUARE, SYMBOL_SIZE, false);
+		static const GPlatesGui::Symbol default_moving_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, DEFAULT_SYMBOL_SIZE, true);
+		static const GPlatesGui::Symbol default_fixed_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::SQUARE, DEFAULT_SYMBOL_SIZE, false);
+		static const GPlatesGui::Symbol enlarged_moving_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, ENLARGED_SYMBOL_SIZE, true);
+		static const GPlatesGui::Symbol enlarged_fixed_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::SQUARE, ENLARGED_SYMBOL_SIZE, false);
+
+		GPlatesGui::Symbol moving_symbol = use_enlarged_symbol_size ? enlarged_moving_symbol : default_moving_symbol;
+		GPlatesGui::Symbol fixed_symbol = use_enlarged_symbol_size ? enlarged_fixed_symbol : default_fixed_symbol;
 
 		GPlatesViewOperations::RenderedGeometry pick_geometry =
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 					point.get_non_null_pointer(),
 					colour,
-					point_thickness, /* point size */
+					DEFAULT_POINT_SIZE, /* point size */
 					DEFAULT_LINE_THICKNESS, /* line thickness */
 					false, /* fill polygon */
 					false, /* fill polyline */
@@ -340,10 +345,11 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_fixed_plate_id(0),
 	d_recon_time(0.),
 	d_chron_time(0.),
-	d_moving_symbol(GPlatesGui::Symbol::CROSS, SYMBOL_SIZE, true),
-	d_fixed_symbol(GPlatesGui::Symbol::SQUARE, SYMBOL_SIZE, false),
+	d_moving_symbol(GPlatesGui::Symbol::CROSS, DEFAULT_SYMBOL_SIZE, true),
+	d_fixed_symbol(GPlatesGui::Symbol::SQUARE, DEFAULT_SYMBOL_SIZE, false),
 	d_thread_type(POLE_THREAD_TYPE),
-	d_hovered_item_original_state(true)
+	d_hovered_item_original_state(true),
+	d_edit_point_is_enlarged(false)
 {
 	setupUi(this);
 
@@ -489,7 +495,8 @@ void GPlatesQtWidgets::HellingerDialog::handle_update_editing()
 	add_pick_geometry_to_layer(
 				d_hellinger_edit_point_dialog->current_pick(),
 				d_editing_layer_ptr,
-				GPlatesGui::Colour::get_yellow());
+				GPlatesGui::Colour::get_yellow(),
+				d_edit_point_is_enlarged);
 }
 
 void
@@ -1019,7 +1026,7 @@ GPlatesQtWidgets::HellingerDialog::draw_pole(
 		const double &lat,
 		const double &lon)
 {
-	GPlatesGui::Symbol results_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CIRCLE, 2, true);
+	GPlatesGui::Symbol results_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CIRCLE, DEFAULT_SYMBOL_SIZE, true);
 	GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
 				GPlatesMaths::LatLonPoint(lat,lon));
 	GPlatesViewOperations::RenderedGeometry pick_results =
@@ -1067,7 +1074,7 @@ GPlatesQtWidgets::HellingerDialog::draw_error_ellipse()
 			GPlatesMaths::LatLonPoint llp = *iter;
 			double lat = llp.latitude();
 			double lon = llp.longitude();
-			GPlatesGui::Symbol results_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, SYMBOL_SIZE, true);
+			GPlatesGui::Symbol results_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, DEFAULT_SYMBOL_SIZE, true);
 			GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
 						GPlatesMaths::LatLonPoint(lat,lon));
 			GPlatesViewOperations::RenderedGeometry pick_results =
@@ -1151,6 +1158,13 @@ GPlatesQtWidgets::HellingerDialog::update_edit_layer(
 {
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos_);
 	d_hellinger_edit_point_dialog->update_pick_coords(llp);
+
+}
+
+void GPlatesQtWidgets::HellingerDialog::set_enlarged_edit_geometry(bool enlarged)
+{
+	d_edit_point_is_enlarged = enlarged;
+	handle_update_editing();
 }
 
 void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()

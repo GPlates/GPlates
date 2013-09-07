@@ -110,13 +110,13 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 					proximity_criteria,
 					*d_hellinger_dialog_ptr->get_editing_layer()))
 		{
-			qDebug() <<  "Hovering over an active editing point";
 			d_mouse_is_over_editable_pick = true;
+			d_hellinger_dialog_ptr->set_enlarged_edit_geometry();
 		}
 		else
 		{
-			qDebug() << "Not hovering over an active editing point";
 			d_mouse_is_over_editable_pick = false;
+			d_hellinger_dialog_ptr->set_enlarged_edit_geometry(false);
 		}
 	}
 
@@ -171,7 +171,6 @@ GPlatesCanvasTools::FitToPole::handle_left_press(
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
 {
-	qDebug() << "Left press";
 
 	if (!d_mouse_is_over_editable_pick)
 	{
@@ -192,12 +191,10 @@ GPlatesCanvasTools::FitToPole::handle_left_press(
 					proximity_criteria,
 					*d_hellinger_dialog_ptr->get_editing_layer()))
 		{
-			qDebug() <<  "Pressed over an active editing point";
 			d_pick_is_being_dragged = true;
 		}
 		else
 		{
-			qDebug() << "Pressed, not over an active editing point";
 			d_mouse_is_over_editable_pick = false;
 		}
 	}
@@ -213,8 +210,10 @@ GPlatesCanvasTools::FitToPole::handle_left_release_after_drag(
 		double current_proximity_inclusion_threshold,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 {
-	qDebug() << "LEft release after drag";
 	d_pick_is_being_dragged = false;
+	d_hellinger_dialog_ptr->set_enlarged_edit_geometry(false);
+	d_hellinger_dialog_ptr->update_edit_layer(current_point_on_sphere);
+
 }
 
 void
@@ -227,7 +226,6 @@ GPlatesCanvasTools::FitToPole::handle_left_drag(
 		double current_proximity_inclusion_threshold,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 {
-	qDebug() << "left drag";
 	if (d_pick_is_being_dragged)
 	{
 		d_hellinger_dialog_ptr->update_edit_layer(current_point_on_sphere);

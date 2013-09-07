@@ -141,6 +141,10 @@ namespace GPlatesQtWidgets
 		update_edit_layer(
 				const GPlatesMaths::PointOnSphere &pos);
 
+		void
+		set_enlarged_edit_geometry(
+				bool enlarged = true);
+
 	public Q_SLOTS:
 
 		/**
@@ -419,6 +423,7 @@ namespace GPlatesQtWidgets
 		boost::optional<unsigned int> d_selected_segment;
 		boost::optional<hellinger_model_type::const_iterator> d_selected_pick;
 
+		bool d_edit_point_is_enlarged;
 
 	};
 }
