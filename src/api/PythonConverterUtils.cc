@@ -34,6 +34,10 @@
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
+#include "property-values/XsBoolean.h"
+#include "property-values/XsDouble.h"
+#include "property-values/XsInteger.h"
+#include "property-values/XsString.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -60,6 +64,7 @@ namespace GPlatesApi
 			return d_property_value;
 		}
 
+		virtual
 		void 
 		visit_gml_point(
 				gml_point_type &gml_point)
@@ -68,6 +73,7 @@ namespace GPlatesApi
 			d_property_value = bp::object(gml_point_type::non_null_ptr_type(&gml_point));
 		}
 
+		virtual
 		void 
 		visit_gml_time_instant(
 				gml_time_instant_type &gml_time_instant)
@@ -76,6 +82,7 @@ namespace GPlatesApi
 			d_property_value = bp::object(gml_time_instant_type::non_null_ptr_type(&gml_time_instant));
 		}
 
+		virtual
 		void
 		visit_gml_time_period(
 				gml_time_period_type &gml_time_period)
@@ -84,6 +91,7 @@ namespace GPlatesApi
 			d_property_value = bp::object(gml_time_period_type::non_null_ptr_type(&gml_time_period));
 		}
 
+		virtual
 		void
 		visit_gpml_constant_value(
 				gpml_constant_value_type &gpml_constant_value)
@@ -92,12 +100,49 @@ namespace GPlatesApi
 			d_property_value = bp::object(gpml_constant_value_type::non_null_ptr_type(&gpml_constant_value));
 		}
 
+		virtual
 		void
 		visit_gpml_plate_id(
 				gpml_plate_id_type &gpml_plate_id)
 		{
 			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
 			d_property_value = bp::object(gpml_plate_id_type::non_null_ptr_type(&gpml_plate_id));
+		}
+
+		virtual
+		void
+		visit_xs_boolean(
+				xs_boolean_type &xs_boolean)
+		{
+			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
+			d_property_value = bp::object(xs_boolean_type::non_null_ptr_type(&xs_boolean));
+		}
+
+		virtual
+		void
+		visit_xs_double(
+				xs_double_type &xs_double)
+		{
+			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
+			d_property_value = bp::object(xs_double_type::non_null_ptr_type(&xs_double));
+		}
+
+		virtual
+		void
+		visit_xs_integer(
+				xs_integer_type &xs_integer)
+		{
+			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
+			d_property_value = bp::object(xs_integer_type::non_null_ptr_type(&xs_integer));
+		}
+
+		virtual
+		void
+		visit_xs_string(
+				xs_string_type &xs_string)
+		{
+			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
+			d_property_value = bp::object(xs_string_type::non_null_ptr_type(&xs_string));
 		}
 
 	private:

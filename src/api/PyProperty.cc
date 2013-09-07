@@ -106,11 +106,15 @@ export_top_level_property()
 				&GPlatesModel::TopLevelProperty::get_property_name,
 				bp::return_value_policy<bp::copy_const_reference>(),
 				"get_property_name() -> PropertyName\n"
-				"  Returns the name of the property.")
+				"  Returns the name of the property.\n"
+				"\n"
+				"  :rtype: :class:`PropertyName`\n")
 		.def("get_property_value",
 				&GPlatesApi::top_level_property_get_property_value,
 				"get_property_value() -> PropertyValue\n"
-				"  Returns the value of the property.")
+				"  Returns the value of the property.\n"
+				"\n"
+				"  :rtype: :class:`PropertyValue`\n")
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))

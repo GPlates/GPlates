@@ -17,8 +17,16 @@ Contents:
 	pygplates
 	pygplates.EnumerationType
 	pygplates.FeatureType
+	pygplates.GpmlPlateId
+	pygplates.GpmlTimeSample
 	pygplates.Property
 	pygplates.PropertyName
+	pygplates.PropertyValue
+	pygplates.PropertyValueVisitor
+	pygplates.XsBoolean
+	pygplates.XsDouble
+	pygplates.XsInteger
+	pygplates.XsString
 
 .. NOTE: Only document the new API for now, exclude classes/functions not in the new API.
 .. NOTE: Only classes (and their methods) that are documented (that have docstrings) will appear in the generated documentation.

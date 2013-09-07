@@ -34,6 +34,10 @@
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
+#include "property-values/XsBoolean.h"
+#include "property-values/XsDouble.h"
+#include "property-values/XsInteger.h"
+#include "property-values/XsString.h"
 
 
 
@@ -176,6 +180,98 @@ namespace GPlatesApi
 		{
 			this->GPlatesModel::FeatureVisitor::visit_gpml_plate_id(gpml_plate_id);
 		}
+
+
+		virtual
+		void
+		visit_xs_boolean(
+				xs_boolean_type &xs_boolean)
+		{
+			if (bp::override visit = this->get_override("visit_xs_boolean"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(xs_boolean_type::non_null_ptr_type(&xs_boolean));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_xs_boolean(xs_boolean);
+		}
+
+		void
+		default_visit_xs_boolean(
+				xs_boolean_type &xs_boolean)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_xs_boolean(xs_boolean);
+		}
+
+
+		virtual
+		void
+		visit_xs_double(
+				xs_double_type &xs_double)
+		{
+			if (bp::override visit = this->get_override("visit_xs_double"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(xs_double_type::non_null_ptr_type(&xs_double));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_xs_double(xs_double);
+		}
+
+		void
+		default_visit_xs_double(
+				xs_double_type &xs_double)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_xs_double(xs_double);
+		}
+
+
+		virtual
+		void
+		visit_xs_integer(
+				xs_integer_type &xs_integer)
+		{
+			if (bp::override visit = this->get_override("visit_xs_integer"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(xs_integer_type::non_null_ptr_type(&xs_integer));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_xs_integer(xs_integer);
+		}
+
+		void
+		default_visit_xs_integer(
+				xs_integer_type &xs_integer)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_xs_integer(xs_integer);
+		}
+
+
+		virtual
+		void
+		visit_xs_string(
+				xs_string_type &xs_string)
+		{
+			if (bp::override visit = this->get_override("visit_xs_string"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(xs_string_type::non_null_ptr_type(&xs_string));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_xs_string(xs_string);
+		}
+
+		void
+		default_visit_xs_string(
+				xs_string_type &xs_string)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_xs_string(xs_string);
+		}
 	};
 }
 
@@ -184,24 +280,109 @@ void
 export_property_value_visitor()
 {
 	//
-	// PropertyValueVisitor
+	// PropertyValueVisitor - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
-	bp::class_<GPlatesApi::FeatureVisitorWrap, boost::noncopyable>("PropertyValueVisitor")
+	bp::class_<GPlatesApi::FeatureVisitorWrap, boost::noncopyable>(
+			"PropertyValueVisitor",
+			"The base class inherited by all derived property value *visitor* classes. "
+			"A property value visitor is used to visit a property value and discover "
+			"its derived property value class type. Note that there is no common interface "
+			"shared by all property value types, hence the visitor pattern provides one way "
+			"to find out which type of property value is being visited. A property value instance "
+			"is visited by passing an instance of a visitor to the property value's "
+			":meth:`PropertyValue.accept_visitor` method. Typically you create your own class that "
+			"inherits from :class:`PropertyValueVisitor` and implement some of the *visit* methods. "
+			"All *visit* methods default to doing nothing.\n"
+			"\n"
+			"The following example demonstrates how to implement a simple visitor class by inheriting "
+			":class:`PropertyValueVisitor` and implementing only those *visit* methods related to the "
+			":class:`GpmlPlateId` property value type (note that plate ids can be time-dependent in "
+			"some contexts so we also use :class:`GpmlConstantValue` in case the plate id property value "
+			"is wrapped in a constant value wrapper). This example retrieves the integer plate id "
+			"from a (possibly nested) :class:`GpmlPlateId` property value, or ``None`` if the visited "
+			"property value is of a different *type*.\n"
+			"  ::\n"
+			"\n"
+			"    class GetPlateIdVisitor(pygplates.PropertyValueVisitor):\n"
+			"        def __init__(self):\n"
+			"            # NOTE: You must call base class '__init__' otherwise you will\n"
+			"            # get a 'Boost.Python.ArgumentError' exception.\n"
+			"            super(GetPlateIdVisitor, self).__init__()\n"
+			"            self.plate_id = None\n"
+			"\n"
+			"        # Returns the plate id from the visited GpmlPlateId property value,\n"
+			"        # or None if property value was a different type.\n"
+			"        def get_plate_id(self):\n"
+			"            return self.plate_id\n"
+			"\n"
+			"        def visit_gpml_constant_value(self, gpml_constant_value):\n"
+			"            # Visit the GpmlConstantValue's nested property value.\n"
+			"            property_value = gpml_constant_value.get_value().accept_visitor(self)\n"
+			"\n"
+			"        def visit_gpml_plate_id(self, gpml_plate_id):\n"
+			"            self.plate_id = gpml_plate_id.get_plate_id()\n"
+			"\n"
+			"    # Visitor can extract plate id from this...\n"
+			"    property_value1 = pygplates.GpmlPlateId.create(701)\n"
+			"    # Visitor cannot extract plate id from this...\n"
+			"    property_value2 = pygplates.XsInteger.create(701)\n"
+			"\n"
+			"    plate_id_visitor = GetPlateIdVisitor()\n"
+			"    property_value1.accept_visitor(plate_id_visitor)\n"
+			"    plate_id = plate_id_visitor.get_plate_id()\n"
+			"\n"
+			"    # If we found a 'GpmlPlateId' then print its plate id.\n"
+			"    if plate_id:\n"
+			"        print 'plate id: %d' % plate_id\n"
+			"\n"
+			"NOTE: You must call the base class *__init__* otherwise you will "
+			"get a *Boost.Python.ArgumentError* exception.\n",
+			bp::no_init)
 		.def("visit_gml_point",
 				&GPlatesModel::FeatureVisitor::visit_gml_point,
-				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_point)
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_point,
+				"visit_gml_point(gml_point)\n"
+				"  Visits a :class:`GmlPoint` property value.\n")
 		.def("visit_gml_time_instant",
 				&GPlatesModel::FeatureVisitor::visit_gml_time_instant,
-				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_time_instant)
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_time_instant,
+				"visit_gml_time_instant(gml_time_instant)\n"
+				"  Visits a :class:`GmlTimeInstant` property value.\n")
 		.def("visit_gml_time_period",
 				&GPlatesModel::FeatureVisitor::visit_gml_time_period,
-				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_time_period)
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_time_period,
+				"visit_gml_time_period(gml_time_period)\n"
+				"  Visits a :class:`GmlTimePeriod` property value.\n")
 		.def("visit_gpml_constant_value",
 				&GPlatesModel::FeatureVisitor::visit_gpml_constant_value,
-				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_constant_value)
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_constant_value,
+				"visit_gpml_constant_value(gpml_constant_value)\n"
+				"  Visits a :class:`GpmlConstantValue` property value.\n")
 		.def("visit_gpml_plate_id",
 				&GPlatesModel::FeatureVisitor::visit_gpml_plate_id,
-				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_plate_id)
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_plate_id,
+				"visit_gpml_plate_id(gpml_plate_id)\n"
+				"  Visits a :class:`GpmlPlateId` property value.\n")
+		.def("visit_xs_boolean",
+				&GPlatesModel::FeatureVisitor::visit_xs_boolean,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_xs_boolean,
+				"visit_xs_boolean(xs_boolean)\n"
+				"  Visits a :class:`XsBoolean` property value.\n")
+		.def("visit_xs_double",
+				&GPlatesModel::FeatureVisitor::visit_xs_double,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_xs_double,
+				"visit_xs_double(xs_double)\n"
+				"  Visits a :class:`XsDouble` property value.\n")
+		.def("visit_xs_integer",
+				&GPlatesModel::FeatureVisitor::visit_xs_integer,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_xs_integer,
+				"visit_xs_integer(xs_integer)\n"
+				"  Visits a :class:`XsInteger` property value.\n")
+		.def("visit_xs_string",
+				&GPlatesModel::FeatureVisitor::visit_xs_string,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_xs_string,
+				"visit_xs_string(xs_string)\n"
+				"  Visits a :class:`XsString` property value.\n")
 	;
 }
 
