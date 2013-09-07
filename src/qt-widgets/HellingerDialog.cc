@@ -58,7 +58,7 @@ const double SLIDER_MULTIPLIER = -10000.;
 const int DEFAULT_SYMBOL_SIZE = 2;
 const int ENLARGED_SYMBOL_SIZE = 3;
 const QString TEMP_PICK_FILENAME("temp_pick");
-const QString TEMP_RESULT_FILENAME("temp_result");
+const QString TEMP_RESULT_FILENAME("temp_pick_temp_result");
 const QString TEMP_PAR_FILENAME("temp_par");
 const QString TEMP_RES_FILENAME("temp_res");
 const double DEFAULT_POINT_SIZE = 2;
@@ -67,8 +67,12 @@ const double DEFAULT_LINE_THICKNESS = 2;
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger workflow.
 // TODO: restore picks on canvas when re-opening the dialog
-// (or do we just remove the close button and keep the dialog open as long as the
-// tool is selected?)
+// TODO: consider removing the close button and keeping the dialog open as long as the
+// tool is selected.
+// TODO: check behaviour of table display in EditSegment mode... a disabled pole is being
+// represented as "31" - should we allow enabled/disabled editing in the EditSegment window as well?
+// TODO: add "reset" button to EditPick / EditSegment dialogs - to take back to original state without
+// having to cancel (close) the whole dialog.
 
 namespace{
 
@@ -972,6 +976,7 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 	if (d_thread_type == POLE_THREAD_TYPE)
 	{
 		QString path = d_python_path + TEMP_RESULT_FILENAME;
+		qDebug() << "Result file path: " << path;
 		QFile data_file(path);
 		if (data_file.open(QFile::ReadOnly))
 		{
@@ -1557,9 +1562,6 @@ GPlatesQtWidgets::HellingerDialog::renumber_segments()
 	tree_widget_picks->clear();
 	update_tree_from_model();
 	button_renumber->setEnabled(false);
-
-	// TODO: if we want to restore the expanded status here properly we'll need to
-	// correct it for the re-numbered segments.
 	restore_expanded_status();
 }
 

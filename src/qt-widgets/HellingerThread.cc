@@ -82,6 +82,9 @@ GPlatesQtWidgets::HellingerThread::initialise_pole_calculation(
     d_temp_result = temp_result;
     d_temp_par = temp_par;
     d_temp_res = temp_res;
+
+	qDebug() << "d_temp_Result: " << d_temp_result;
+	qDebug() << "temporary folder: " << d_temporary_folder;
 }
 
 void
@@ -161,11 +164,16 @@ GPlatesQtWidgets::HellingerThread::set_python_script_type(ThreadType thread_type
 void
 GPlatesQtWidgets::HellingerThread::run()
 {
+	// FIXME: the output file names are hard-coded in the python script, so changing these
+	// filenames here, or elsewhere in this class, will likely result in not being able to find/open
+	// the result files....
     QString temp_file = d_temporary_folder + d_temp_pick_file;
     QString temp_file_temp_result = d_temporary_folder + d_temp_result;
     QString temp_file_par = d_temporary_folder + d_temp_par;
     QString temp_file_res = d_temporary_folder + d_temp_res;
     
+	qDebug() << "about to run thread. result file: " << temp_file_temp_result;
+
 	try{
 		if (d_thread_type == POLE_THREAD_TYPE)
 		{
