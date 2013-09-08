@@ -31,6 +31,11 @@
 #include "global/CompilerWarnings.h"
 #include "global/python.h"
 
+#include "model/XmlAttributeValue.h"
+
+#include "property-values/EnumerationContent.h"
+#include "property-values/TextContent.h"
+
 #include "utils/UnicodeString.h"
 
 
@@ -185,6 +190,77 @@ ENABLE_GCC_WARNING("-Wold-style-cast")
 			data->convertible = storage;
 		}
 	};
+
+
+	/**
+	 * Enables GPlatesModel::StringContentTypeGenerator<T> to be passed to and from python.
+	 *
+	 * For more information on boost python to/from conversions, see:
+	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
+	 */
+	template <class StringContentTypeGeneratorType>
+	struct python_StringContentTypeGenerator :
+			private boost::noncopyable
+	{
+		explicit
+		python_StringContentTypeGenerator()
+		{
+			namespace bp = boost::python;
+
+			// To python conversion.
+			bp::to_python_converter<StringContentTypeGeneratorType, Conversion>();
+
+			// From python conversion.
+			bp::converter::registry::push_back(
+					&convertible,
+					&construct,
+					bp::type_id<StringContentTypeGeneratorType>());
+		}
+
+		struct Conversion
+		{
+			static
+			PyObject *
+			convert(
+					const StringContentTypeGeneratorType &string_content_type_generator)
+			{
+				namespace bp = boost::python;
+
+				// Use the converter registered for UnicodeString
+				// (StringContentTypeGeneratorType contains a UnicodeString).
+				return bp::incref(bp::object(string_content_type_generator.get()).ptr());
+			};
+		};
+
+		static
+		void *
+		convertible(
+				PyObject *obj)
+		{
+			namespace bp = boost::python;
+
+			// StringContentTypeGeneratorType is constructed from a UnicodeString.
+			return bp::extract<GPlatesUtils::UnicodeString>(obj).check() ? obj : NULL;
+		}
+
+		static
+		void
+		construct(
+				PyObject *obj,
+				boost::python::converter::rvalue_from_python_stage1_data *data)
+		{
+			namespace bp = boost::python;
+
+			void *const storage = reinterpret_cast<
+					bp::converter::rvalue_from_python_storage<StringContentTypeGeneratorType> *>(
+							data)->storage.bytes;
+
+			// StringContentTypeGeneratorType is constructed from a UnicodeString.
+			new (storage) StringContentTypeGeneratorType(bp::extract<GPlatesUtils::UnicodeString>(obj));
+
+			data->convertible = storage;
+		}
+	};
 }
 
 
@@ -211,10 +287,48 @@ export_unicode_string()
 
 
 void
+export_xml_attribute_value()
+{
+	// Registers the python to/from converters for GPlatesModel::XmlAttributeValue.
+	GPlatesApi::python_StringContentTypeGenerator<GPlatesModel::XmlAttributeValue>();
+
+	// Enable boost::optional<GPlatesModel::XmlAttributeValue> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::python_optional<GPlatesModel::XmlAttributeValue>();
+}
+
+
+void
+export_enumeration_content()
+{
+	// Registers the python to/from converters for GPlatesPropertyValues::EnumerationContent.
+	GPlatesApi::python_StringContentTypeGenerator<GPlatesPropertyValues::EnumerationContent>();
+
+	// Enable boost::optional<GPlatesPropertyValues::EnumerationContent> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::EnumerationContent>();
+}
+
+
+void
+export_text_content()
+{
+	// Registers the python to/from converters for GPlatesPropertyValues::TextContent.
+	GPlatesApi::python_StringContentTypeGenerator<GPlatesPropertyValues::TextContent>();
+
+	// Enable boost::optional<GPlatesPropertyValues::TextContent> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::TextContent>();
+}
+
+
+void
 export_strings()
 {
 	export_qstring();
 	export_unicode_string();
+
+	// Export the StringContentTypeGenerator template instantiations.
+	export_xml_attribute_value();
+	export_enumeration_content();
+	export_text_content();
 }
 
 #endif // GPLATES_NO_PYTHON
