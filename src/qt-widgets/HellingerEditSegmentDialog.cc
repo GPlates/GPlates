@@ -67,35 +67,6 @@ namespace
 			return QString();
 		}
 	}
-#if 0
-	/**
-	 * @brief set_text_colour_according_to_enabled_state
-	 * - copied from HellingerDialog - will need to be adapted for the table widget.
-	 * @param item
-	 * @param enabled
-	 */
-	void
-	set_text_colour_according_to_enabled_state(
-			QTreeWidgetItem *item,
-			bool enabled)
-	{
-
-		const Qt::GlobalColor text_colour = enabled? Qt::black : Qt::gray;
-		static const Qt::GlobalColor background_colour = Qt::white;
-
-		item->setBackgroundColor(SEGMENT_NUMBER,background_colour);
-		item->setBackgroundColor(SEGMENT_TYPE,background_colour);
-		item->setBackgroundColor(LAT,background_colour);
-		item->setBackgroundColor(LON,background_colour);
-		item->setBackgroundColor(UNCERTAINTY,background_colour);
-
-		item->setTextColor(SEGMENT_NUMBER,text_colour);
-		item->setTextColor(SEGMENT_TYPE,text_colour);
-		item->setTextColor(LAT,text_colour);
-		item->setTextColor(LON,text_colour);
-		item->setTextColor(UNCERTAINTY,text_colour);
-	}
-#endif
 }
 
 GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
@@ -133,12 +104,17 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 	d_model->setHorizontalHeaderItem(COLUMN_LON, new QStandardItem("Long"));
 	d_model->setHorizontalHeaderItem(COLUMN_UNCERTAINTY, new QStandardItem("Uncertainty (km)"));
 
+	// We need to specify this header even though we're not going to display it. If we don't
+	// provide it, the model thinks it only has 4 columns (it returns (-1,-1) as index column/row
+	// for anything in the COLUMN_ENABLED column.
+	d_model->setHorizontalHeaderItem(COLUMN_ENABLED, new QStandardItem("Enabled"));
+
 	d_model->setRowCount(1);
 
 	set_initial_row_values(0);
 
 	table_new_segment->setModel(d_model);
-
+	table_new_segment->setColumnHidden(COLUMN_ENABLED,true);
 	table_new_segment->horizontalHeader()->resizeSection(COLUMN_MOVING_FIXED,140);
 	table_new_segment->horizontalHeader()->resizeSection(COLUMN_LAT,100);
 	table_new_segment->horizontalHeader()->resizeSection(COLUMN_LON,100);
@@ -458,6 +434,9 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::set_row_values(
 	index = d_model->index(row,COLUMN_UNCERTAINTY);
 	d_model->setData(index,pick.d_uncertainty);
 
+	index = d_model->index(row,COLUMN_ENABLED);
+	d_model->setData(index,pick.d_is_enabled);
+
 }
 
 
@@ -473,7 +452,6 @@ GPlatesQtWidgets::SpinBoxDelegate::createEditor(
 {
 	int column = index.column();
 
-	qDebug() << "Creating editor";
 	switch(column){
 	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_MOVING_FIXED:
 	{
@@ -516,7 +494,6 @@ GPlatesQtWidgets::SpinBoxDelegate::setEditorData(
 		QWidget *editor,
 		const QModelIndex &index) const
 {
-	qDebug() << "Setting editor data";
 	int column = index.column();
 
 	switch(column){
@@ -548,7 +525,6 @@ GPlatesQtWidgets::SpinBoxDelegate::setModelData(
 		const QModelIndex &index) const
 {
 
-	qDebug() << "Setting model data";
 
 	int column = index.column();
 
@@ -579,7 +555,6 @@ GPlatesQtWidgets::SpinBoxDelegate::updateEditorGeometry(
 		const QStyleOptionViewItem &option,
 		const QModelIndex &/* index */) const
 {
-	qDebug() << "Updating editor geometry";
 	editor->setGeometry(option.rect);
 }
 
@@ -589,12 +564,12 @@ GPlatesQtWidgets::SpinBoxDelegate::paint(
 		const QStyleOptionViewItem &option,
 		const QModelIndex &index) const
 {
-	qDebug() << "Painting" << index;
-	static QPalette enabled_palette;
-	enabled_palette.setColor(QPalette::Text,Qt::black);
 
-	static QPalette disabled_palette;
-	disabled_palette.setColor(QPalette::Text,Qt::gray);
+	// Get the row of the current index, and then get the data in the "enabled" column for that row.
+	int row = index.row();
+	QModelIndex i = index.model()->index(row,GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_ENABLED);
+	bool enabled = index.model()->data(i).toBool();
 
-	painter->drawText(option.rect, Qt::AlignCenter,"hello");
+	painter->setPen(enabled? Qt::black : Qt::gray);
+	painter->drawText(option.rect, Qt::AlignCenter,index.data().toString());
 }

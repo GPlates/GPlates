@@ -104,6 +104,7 @@ namespace GPlatesQtWidgets
 			COLUMN_LAT,
 			COLUMN_LON,
 			COLUMN_UNCERTAINTY,
+			COLUMN_ENABLED,
 
 			NUM_COLUMNS
 		};
