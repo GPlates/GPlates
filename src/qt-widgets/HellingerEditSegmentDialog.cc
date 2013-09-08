@@ -91,6 +91,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 	QObject::connect(button_enable,SIGNAL(clicked()), this, SLOT(handle_enable()));
 	QObject::connect(button_disable,SIGNAL(clicked()), this, SLOT(handle_disable()));
 
+
 	// NOTE: I've added these two so that the "remove" button is enabled whenever a row/cell is highlighted.
 	// Initially nothing is selected so it would be unclear which row is the target of the removal operation.
 	QObject::connect(table_new_segment->verticalHeader(),SIGNAL(sectionClicked(int)),this,SLOT(update_buttons()));
@@ -137,6 +138,11 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 		setWindowTitle(QObject::tr("Edit Segment"));
 	}
 
+	QObject::connect(table_new_segment->selectionModel(),
+					 SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
+					 this,
+					 SLOT(handle_selection_changed(QItemSelection,QItemSelection)));
+
 }
 
 void
@@ -148,6 +154,11 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::initialise_with_segment(
 	d_original_segment_picks.reset(picks);
 
 	fill_widgets();
+}
+
+void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_selection_changed(QItemSelection, QItemSelection)
+{
+	qDebug() << "Selectionchanged.";
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::fill_widgets()

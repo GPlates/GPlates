@@ -124,6 +124,9 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
+		handle_selection_changed(QItemSelection,QItemSelection);
+
+		void
 		handle_add_segment();
 
 		void
