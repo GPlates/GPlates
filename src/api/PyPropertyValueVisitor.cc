@@ -336,8 +336,7 @@ export_property_value_visitor()
 			"        print 'plate id: %d' % plate_id\n"
 			"\n"
 			"NOTE: You must call the base class *__init__* otherwise you will "
-			"get a *Boost.Python.ArgumentError* exception.\n",
-			bp::no_init)
+			"get a *Boost.Python.ArgumentError* exception.\n")
 		.def("visit_gml_point",
 				&GPlatesModel::FeatureVisitor::visit_gml_point,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_point,

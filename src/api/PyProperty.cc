@@ -102,16 +102,16 @@ export_top_level_property()
 				"  :param property_value: property value\n"
 				"  :type property_value: :class:`PropertyValue`\n")
  		.staticmethod("create")
-  		.def("get_property_name",
+  		.def("get_name",
 				&GPlatesModel::TopLevelProperty::get_property_name,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_property_name() -> PropertyName\n"
+				"get_name() -> PropertyName\n"
 				"  Returns the name of the property.\n"
 				"\n"
 				"  :rtype: :class:`PropertyName`\n")
-		.def("get_property_value",
+		.def("get_value",
 				&GPlatesApi::top_level_property_get_property_value,
-				"get_property_value() -> PropertyValue\n"
+				"get_value() -> PropertyValue\n"
 				"  Returns the value of the property.\n"
 				"\n"
 				"  :rtype: :class:`PropertyValue`\n")

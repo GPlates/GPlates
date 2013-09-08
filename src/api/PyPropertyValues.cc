@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/optional.hpp>
+
 #include "PythonConverterUtils.h"
 
 #include "global/CompilerWarnings.h"
@@ -91,9 +93,31 @@ export_property_value()
 			"PropertyValue",
 			"The base class inherited by all derived property value classes. "
 			"Property values are equality (``==``) comparable. Two property values will only "
-			"compare as equal if they have the same derived property value *type* (and the same values). "
-			"For example, as :class:`GpmlPlateId` property value instance and a :class:`XsString` "
-			"property value instance will always compare as ``False``.",
+			"compare equal if they have the same derived property value *type* (and the same internal values). "
+			"For example, a :class:`GpmlPlateId` property value instance and a :class:`XsInteger` "
+			"property value instance will always compare as ``False``.\n"
+			"\n"
+			"The list of derived property value classes includes:\n"
+			"\n"
+			"* :class:`GmlPoint`\n"
+			"* :class:`GmlTimeInstant`\n"
+			"* :class:`GmlTimePeriod`\n"
+			"* :class:`GpmlConstantValue`\n"
+			"* :class:`GpmlHotSpotTrailMark`\n"
+			"* :class:`GpmlIrregularSampling`\n"
+			"* :class:`GpmlPiecewiseAggregation`\n"
+			"* :class:`GpmlPlateId`\n"
+			"* :class:`XsBoolean`\n"
+			"* :class:`XsDouble`\n"
+			"* :class:`XsInteger`\n"
+			"* :class:`XsString`\n"
+			"\n"
+			"The following subset of derived property value classes are time-dependent wrappers:\n"
+			"\n"
+			"* :class:`GpmlConstantValue`\n"
+			"* :class:`GpmlIrregularSampling`\n"
+			"* :class:`GpmlPiecewiseAggregation`\n"
+			"\n",
 			bp::no_init)
 		.def("clone",
 				&GPlatesApi::property_value_clone,
@@ -312,24 +336,89 @@ void
 export_gpml_constant_value()
 {
 	//
-	// GpmlConstantValue
+	// GpmlConstantValue - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
 			GPlatesPropertyValues::GpmlConstantValue,
 			GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type,
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
-					"GpmlConstantValue", bp::no_init)
+					"GpmlConstantValue",
+					"The most basic case of a time-dependent property value is one "
+					"that is constant for all time. The other two types are :class:`GpmlIrregularSampling` "
+					"and :class:`GpmlPiecewiseAggregation`. The GPlates Geological Information Model (GPGIM) "
+					"defines those properties that are time-dependent (see http://www.gplates.org/gpml.html) and "
+					"those that are not. For example, a :class:`GpmlPlateId` property value is used "
+					"in *gpml:reconstructionPlateId* properties, of general :class:`feature types<FeatureType>`, and also in "
+					"*gpml:relativePlate* properties of motion path features. In the former case "
+					"it is expected to be wrapped in a :class:`GpmlConstantValue` while in the latter "
+					"case it is not.\n"
+					"  ::\n"
+					"\n"
+					"    reconstruction_plate_id = pygplates.Property.create(\n"
+					"        pygplates.PropertyName.create_gpml('reconstructionPlateId'),\n"
+					"        pygplates.GpmlConstantValue.create(\n"
+					"            pygplates.GpmlPlateId.create(701)))\n"
+					"\n"
+					"    relative_plate_id = pygplates.Property.create(\n"
+					"        pygplates.PropertyName.create_gpml('relativePlate'),\n"
+					"        pygplates.GpmlPlateId.create(701))\n"
+					"\n"
+					"If a property is created without a time-dependent wrapper where one is expected, "
+					"or vice versa, then you can still save it to a GPML file and a subsequent read "
+					"of that file will attempt to correct the property when it is created during "
+					"the reading phase (by the GPML file format reader). This usually works for the "
+					"simpler :class:`GpmlConstantValue` time-dependent wrapper but does not always "
+					"work for the more advanced :class:`GpmlIrregularSampling` and "
+					":class:`GpmlPiecewiseAggregation` time-dependent wrapper types.\n",
+					bp::no_init)
 		.def("create",
 				&GPlatesApi::gpml_constant_value_create,
-				GPlatesApi::gpml_constant_value_create_overloads())
+				GPlatesApi::gpml_constant_value_create_overloads(
+					"create(property_value[, description=None]) -> GpmlConstantValue\n"
+					"  Wrap a property value in a time-dependent wrapper that identifies the "
+					"property value as constant for all time. Optionally provide a description string.\n"
+					"  ::\n"
+					"\n"
+					"    constant_property_value = pygplates.GpmlConstantValue.create(property_value)\n"
+					"\n"
+					"  If *description* is ``None`` then an empty string is used for the description.\n"
+					"\n"
+					"  :param property_value: arbitrary property value\n"
+					"  :type property_value: :class:`PropertyValue`\n"
+					"  :param description: description of this constant value wrapper\n"
+					"  :type description: string or None\n"))
 		.staticmethod("create")
-		.def("get_value", &GPlatesApi::gpml_constant_value_get_value)
-		.def("set_value", &GPlatesPropertyValues::GpmlConstantValue::set_value)
+		.def("get_value",
+				&GPlatesApi::gpml_constant_value_get_value,
+				"get_value() -> PropertyValue\n"
+				"  Returns the property value contained in this constant value wrapper.\n"
+				"\n"
+				"  :rtype: :class:`PropertyValue`\n")
+		.def("set_value",
+				&GPlatesPropertyValues::GpmlConstantValue::set_value,
+				"set_value(property_value)\n"
+				"  Sets the property value of this constant value wrapper. "
+				"This essentially replaces the previous property value. "
+				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
+				"using its property value methods.\n"
+				"\n"
+				"  :param property_value: arbitrary property value\n"
+				"  :type property_value: :class:`PropertyValue`\n")
 		.def("get_description",
 				&GPlatesPropertyValues::GpmlConstantValue::get_description,
-				bp::return_value_policy<bp::copy_const_reference>())
-		.def("set_description", &GPlatesPropertyValues::GpmlConstantValue::set_description)
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_description() -> string\n"
+				"  Returns the description of this constant value wrapper.\n"
+				"\n"
+				"  :rtype: string\n")
+		.def("set_description",
+				&GPlatesPropertyValues::GpmlConstantValue::set_description,
+				"set_description(description)\n"
+				"  Sets the description of this constant value wrapper.\n"
+				"\n"
+				"  :param description: description of this constant value wrapper\n"
+				"  :type description: string\n")
 	;
 
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
@@ -349,14 +438,16 @@ export_gpml_hot_spot_trail_mark()
 					&GPlatesPropertyValues::GpmlHotSpotTrailMark::measured_age;
 
 	//
-	// GpmlHotSpotTrailMark
+	// GpmlHotSpotTrailMark - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
 			GPlatesPropertyValues::GpmlHotSpotTrailMark,
 			GPlatesPropertyValues::GpmlHotSpotTrailMark::non_null_ptr_type,
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
-					"GpmlHotSpotTrailMark", bp::no_init)
+					"GpmlHotSpotTrailMark",
+					//"The marks that define the HotSpotTrail.\n",
+					bp::no_init)
 		//.def("create", &GPlatesPropertyValues::GpmlHotSpotTrailMark::create)
 		//.staticmethod("create")
 		//.def("position", &GPlatesPropertyValues::GpmlHotSpotTrailMark::position)
@@ -424,17 +515,24 @@ export_gpml_plate_id()
 
 namespace GPlatesApi
 {
+	// Make it easier for client by converting from XsString to a regular string.
 	const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 	gpml_time_sample_create(
 			GPlatesModel::PropertyValue::non_null_ptr_type property_value,
 			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type valid_time,
-			boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_type> description = boost::none,
+			boost::optional<GPlatesPropertyValues::TextContent> description = boost::none,
 			bool is_disabled = false)
 	{
+		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_type> description_xs_string;
+		if (description)
+		{
+			description_xs_string = GPlatesPropertyValues::XsString::create(description->get());
+		}
+
 		return GPlatesPropertyValues::GpmlTimeSample::create(
 				property_value,
 				valid_time,
-				description,
+				description_xs_string,
 				property_value->get_structural_type(),
 				is_disabled);
 	}
@@ -455,20 +553,34 @@ ENABLE_GCC_WARNING("-Wshadow")
 		return PythonConverterUtils::get_property_value_as_derived_type(gpml_time_sample->value());
 	}
 
-	// Choose the non-const overload of GPlatesPropertyValues::GpmlTimeSample::valid_time().
-	const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
-	gpml_time_sample_get_valid_time(
-			GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type gpml_time_sample)
-	{
-		return gpml_time_sample->valid_time();
-	}
-
-	// Choose the non-const overload of GPlatesPropertyValues::GpmlTimeSample::description().
-	const boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_type>
+	// Make it easier for client by converting from XsString to a regular string.
+	boost::optional<GPlatesPropertyValues::TextContent>
 	gpml_time_sample_get_description(
 			GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type gpml_time_sample)
 	{
-		return gpml_time_sample->description();
+		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_type> xs_string =
+				gpml_time_sample->description();
+		if (!xs_string)
+		{
+			return boost::none;
+		}
+
+		return xs_string.get()->get_value();
+	}
+
+	// Make it easier for client by converting from a regular string to XsString.
+	void
+	gpml_time_sample_set_description(
+			GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type gpml_time_sample,
+			boost::optional<GPlatesPropertyValues::TextContent> description)
+	{
+		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_type> xs_string;
+		if (description)
+		{
+			xs_string = GPlatesPropertyValues::XsString::create(description->get());
+		}
+
+		gpml_time_sample->set_description(xs_string);
 	}
 }
 
@@ -476,6 +588,11 @@ ENABLE_GCC_WARNING("-Wshadow")
 void
 export_gpml_time_sample()
 {
+	// Use the 'non-const' overload so GmlTimeInstant can be modified via python...
+	const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
+			(GPlatesPropertyValues::GpmlTimeSample::*get_valid_time)() =
+					&GPlatesPropertyValues::GpmlTimeSample::valid_time;
+
 	//
 	// GpmlTimeSample - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -524,7 +641,7 @@ export_gpml_time_sample()
 				"  :param property_value: arbitrary property value\n"
 				"  :type property_value: :class:`PropertyValue`\n")
 		.def("get_valid_time",
-				&GPlatesApi::gpml_time_sample_get_valid_time,
+				get_valid_time,
 				"get_valid_time() -> GmlTimeInstant\n"
 				"  Returns the time of this time sample.\n"
 				"\n"
@@ -538,17 +655,17 @@ export_gpml_time_sample()
 				"  :type valid_time: :class:`GmlTimeInstant`\n")
 		.def("get_description",
 				&GPlatesApi::gpml_time_sample_get_description,
-				"get_description() -> XsString or None\n"
+				"get_description() -> string or None\n"
 				"  Returns the description of this time sample.\n"
 				"\n"
-				"  :rtype: :class:`XsString` or None\n")
+				"  :rtype: string or None\n")
 		.def("set_description",
-				&GPlatesPropertyValues::GpmlTimeSample::set_description,
+				&GPlatesApi::gpml_time_sample_set_description,
 				"set_description([description=None])\n"
 				"  Sets the description associated with this time sample, or removes it if ``None`` specified.\n"
 				"\n"
 				"  :param description: description of the time sample\n"
-				"  :type description: :class:`XsString` or None\n")
+				"  :type description: string or None\n")
 		.def("is_disabled",
 				&GPlatesPropertyValues::GpmlTimeSample::is_disabled,
 				"is_disabled() -> bool\n"
