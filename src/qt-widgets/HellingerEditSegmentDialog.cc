@@ -24,6 +24,7 @@
  */
 
 #include <QDebug>
+#include <QPainter>
 #include <QRadioButton>
 #include <QTableView>
 #include <QTextStream>
@@ -472,6 +473,7 @@ GPlatesQtWidgets::SpinBoxDelegate::createEditor(
 {
 	int column = index.column();
 
+	qDebug() << "Creating editor";
 	switch(column){
 	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_MOVING_FIXED:
 	{
@@ -514,7 +516,7 @@ GPlatesQtWidgets::SpinBoxDelegate::setEditorData(
 		QWidget *editor,
 		const QModelIndex &index) const
 {
-
+	qDebug() << "Setting editor data";
 	int column = index.column();
 
 	switch(column){
@@ -545,6 +547,9 @@ GPlatesQtWidgets::SpinBoxDelegate::setModelData(
 		QAbstractItemModel *model,
 		const QModelIndex &index) const
 {
+
+	qDebug() << "Setting model data";
+
 	int column = index.column();
 
 	QVariant value;
@@ -574,6 +579,22 @@ GPlatesQtWidgets::SpinBoxDelegate::updateEditorGeometry(
 		const QStyleOptionViewItem &option,
 		const QModelIndex &/* index */) const
 {
+	qDebug() << "Updating editor geometry";
 	editor->setGeometry(option.rect);
 }
 
+void
+GPlatesQtWidgets::SpinBoxDelegate::paint(
+		QPainter *painter,
+		const QStyleOptionViewItem &option,
+		const QModelIndex &index) const
+{
+	qDebug() << "Painting" << index;
+	static QPalette enabled_palette;
+	enabled_palette.setColor(QPalette::Text,Qt::black);
+
+	static QPalette disabled_palette;
+	disabled_palette.setColor(QPalette::Text,Qt::gray);
+
+	painter->drawText(option.rect, Qt::AlignCenter,"hello");
+}
