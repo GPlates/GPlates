@@ -156,11 +156,8 @@ namespace GPlatesPropertyValues
 		 *
 		 * Note that this value may not be meaningful if @a is_real returns false.
 		 */
-		const double &
-		value() const
-		{
-			return d_value;
-		}
+		double
+		value() const;
 
 		/**
 		 * Return true if this instance is a time-instant in the distant past; false

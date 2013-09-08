@@ -31,6 +31,7 @@
 #include "GeoTimeInstant.h"
 
 #include "maths/MathsUtils.h"
+#include "maths/Real.h"
 
 
 const GPlatesPropertyValues::GeoTimeInstant
@@ -44,6 +45,23 @@ const GPlatesPropertyValues::GeoTimeInstant
 GPlatesPropertyValues::GeoTimeInstant::create_distant_future()
 {
 	return GeoTimeInstant(TimePositionTypes::DistantFuture);
+}
+
+
+double
+GPlatesPropertyValues::GeoTimeInstant::value() const
+{
+	if (is_real())
+	{
+		return d_value;
+	}
+
+	// Return +/- infinity.
+	// The client shouldn't get here since they should only
+	// call 'value()' if 'is_real()' returns true.
+	return is_distant_past()
+			? GPlatesMaths::positive_infinity<double>()
+			: GPlatesMaths::negative_infinity<double>();
 }
 
 

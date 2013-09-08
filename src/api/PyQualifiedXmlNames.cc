@@ -174,7 +174,8 @@ export_enumeration_type()
 	bp::class_<GPlatesPropertyValues::EnumerationType> enumeration_type_class(
 			"EnumerationType",
 			"The namespace-qualified type of an enumeration.\n"
-			"  All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
+			"\n"
+			"All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	enumeration_type_class.def("create_gpml",
@@ -203,7 +204,8 @@ export_feature_type()
 	bp::class_<GPlatesModel::FeatureType> feature_type_class(
 			"FeatureType",
 			"The namespace-qualified type of a feature.\n"
-			"  All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
+			"\n"
+			"All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	feature_type_class.def("create_gpml",
@@ -231,7 +233,8 @@ export_property_name()
 	bp::class_<GPlatesModel::PropertyName> property_name_class(
 			"PropertyName",
 			"The namespace-qualified name of a property.\n"
-			"  All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
+			"\n"
+			"All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	property_name_class.def("create_gpml",

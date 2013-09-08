@@ -151,18 +151,84 @@ void
 export_geo_time_instant()
 {
 	//
-	// GeoTimeInstant
+	// GeoTimeInstant - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
-	bp::class_<GPlatesPropertyValues::GeoTimeInstant>("GeoTimeInstant", bp::init<double>())
-		.def("create_distant_past", &GPlatesPropertyValues::GeoTimeInstant::create_distant_past)
+	bp::class_<GPlatesPropertyValues::GeoTimeInstant>(
+			"GeoTimeInstant",
+			"Represents an instant in geological time. This class is able to represent:\n"
+			"\n"
+			"* time-instants with a *specific* time-position relative to the present-day\n"
+			"* time-instants in the *distant past*\n"
+			"* time-instants in the *distant future*\n"
+			"\n"
+			"Note that *positive* values represent times in the *past* and *negative* values represent "
+			"times in the *future*. This can be confusing at first, but the reason for this is "
+			"geological times are represented by how far in the *past* to go back compared to present day.\n"
+			"\n"
+			"All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
+			bp::init<double>(
+					"GeoTimeInstant(time_value)\n"
+					"  Construct a GeoTimeInstant instance from a floating-point time position.\n"
+					"  ::\n"
+					"\n"
+					"    time_instant = pygplates.GeoTimeInstant(time_value)\n"))
+		.def("create_distant_past",
+				&GPlatesPropertyValues::GeoTimeInstant::create_distant_past,
+				"create_distant_past() -> GeoTimeInstant\n"
+				"  Create a GeoTimeInstant instance for the distant past.\n"
+				"  ::\n"
+				"\n"
+				"    distant_past = pygplates.GeoTimeInstant.create_distant_past()\n"
+				"\n"
+				"  This is basically creating a time-instant which is infinitely far in the past, "
+				"as if we'd created a GeoTimeInstant with a time-position value of infinity.\n"
+				"\n"
+				"  All distant-past time-instants will compare earlier than all non-distant-past time-instants.\n")
 		.staticmethod("create_distant_past")
-		.def("create_distant_future", &GPlatesPropertyValues::GeoTimeInstant::create_distant_future)
+		.def("create_distant_future",
+				&GPlatesPropertyValues::GeoTimeInstant::create_distant_future,
+				"create_distant_future() -> GeoTimeInstant\n"
+				"  Create a GeoTimeInstant instance for the distant future.\n"
+				"  ::\n"
+				"\n"
+				"    distant_past = pygplates.GeoTimeInstant.create_distant_past()\n"
+				"\n"
+				"  This is basically creating a time-instant which is infinitely far in the future, "
+				"as if we'd created a GeoTimeInstant with a time-position value of minus-infinity.\n"
+				"\n"
+				"  All distant-future time-instants will compare later than all non-distant-future time-instants.\n")
 		.staticmethod("create_distant_future")
 		.def("get_value",
 				&GPlatesPropertyValues::GeoTimeInstant::value,
-				bp::return_value_policy<bp::copy_const_reference>())
-		.def("is_distant_past", &GPlatesPropertyValues::GeoTimeInstant::is_distant_past)
-		.def("is_distant_future", &GPlatesPropertyValues::GeoTimeInstant::is_distant_future)
+				"get_value() -> float\n"
+				"  Access the floating-point representation of the time-position of this instance. "
+				"Units are in Ma (millions of year ago).\n"
+				"\n"
+				"  **NOTE** that this value may not be meaningful if :meth:`is_real` returns ``False``.\n"
+				"\n"
+				"  Note that positive values represent times in the past and negative values represent times in the future.\n"
+				"\n"
+				"  :rtype: float\n")
+		.def("is_distant_past",
+				&GPlatesPropertyValues::GeoTimeInstant::is_distant_past,
+				"is_distant_past() -> bool\n"
+				"  Returns ``True`` if this instance is a time-instant in the distant past.\n"
+				"\n"
+				"  :rtype: bool\n")
+		.def("is_distant_future",
+				&GPlatesPropertyValues::GeoTimeInstant::is_distant_future,
+				"is_distant_future() -> bool\n"
+				"  Returns ``True`` if this instance is a time-instant in the distant future.\n"
+				"\n"
+				"  :rtype: bool\n")
+		.def("is_real",
+				&GPlatesPropertyValues::GeoTimeInstant::is_real,
+				"is_real() -> bool\n"
+				"  Returns ``True`` if this instance is a time-instant whose time-position may be "
+				"expressed as a *real* floating-point number. If :meth:`is_real` is ``True`` then "
+				"both :meth:`is_distant_past` and :meth:`is_distant_future` will be ``False``.\n"
+				"\n"
+				"  :rtype: bool\n")
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 		.def(bp::self < bp::self)
@@ -467,7 +533,7 @@ void
 export_gpml_plate_id()
 {
 	//
-	// GpmlPlateId
+	// GpmlPlateId - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
 			GPlatesPropertyValues::GpmlPlateId,

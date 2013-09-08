@@ -17,6 +17,8 @@ Contents:
 	pygplates
 	pygplates.EnumerationType
 	pygplates.FeatureType
+	pygplates.GeoTimeInstant
+	pygplates.GpmlConstantValue
 	pygplates.GpmlPlateId
 	pygplates.GpmlTimeSample
 	pygplates.Property

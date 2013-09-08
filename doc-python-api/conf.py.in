@@ -172,3 +172,6 @@ html_static_path = ['_static']
 htmlhelp_basename = 'pygplatesdoc'
 
 autosummary_generate = True
+
+# Insert both the class and the __init__ docstrings (not just the class docstring).
+autoclass_content = 'both'
