@@ -173,8 +173,7 @@ GPlatesApi::PythonConverterUtils::get_property_value_as_derived_type(
 	{
 		// If we didn't visit a derived property value then just return the base PropertyValue to python.
 		//
-		// Only the exposed methods in the base PropertyValue class will be available to the python user
-		// via the "NotYetAvailablePropertyValue" boost-python binding in 'PyPropertyValues.cc'.
+		// Only the exposed methods in the base PropertyValue class will be available to the python user.
 		return bp::object(property_value);
 	}
 	//

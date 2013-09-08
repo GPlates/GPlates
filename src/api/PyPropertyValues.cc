@@ -38,7 +38,9 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlHotSpotTrailMark.h"
+#include "property-values/GpmlInterpolationFunction.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/XsBoolean.h"
@@ -71,31 +73,6 @@ namespace GPlatesApi
 	{
 		property_value.accept_visitor(visitor);
 	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// TEMPORARY
-	//
-	// The following handles derived property value types that have not yet been bound to python.
-	// They will only have access to the base class PropertyValue functionality.
-	//
-	// TODO: Remove when all derived PropertyValue types have been bound to python. Some derived
-	// PropertyValue types will need to have a better, more solid interface before this can happen.
-	//
-	GPlatesModel::PropertyValue::non_null_ptr_type
-	not_yet_available_property_value_clone(
-			GPlatesModel::PropertyValue::non_null_ptr_type property_value)
-	{
-		return property_value->clone();
-	}
-	void
-	not_yet_available_property_value_accept_visitor(
-			GPlatesModel::PropertyValue::non_null_ptr_type property_value,
-			GPlatesModel::FeatureVisitor &visitor)
-	{
-		property_value->accept_visitor(visitor);
-	}
-	//
-	//////////////////////////////////////////////////////////////////////////
 }
 
 
@@ -109,41 +86,44 @@ export_property_value()
 	 *
 	 * Enables 'isinstance(obj, PropertyValue)' in python - not that it's that useful.
 	 *
-	 * NOTE: We never return a 'PropertyValue::non_null_ptr_type' to python because then python is
-	 * unable to access the attributes of the derived property value type. For this reason usually
-	 * the derived property value is returned using:
+	 * NOTE: We don't normally return a 'PropertyValue::non_null_ptr_type' to python because then
+	 * python is unable to access the attributes of the derived property value type.
+	 * For this reason usually the derived property value is returned using:
 	 *   'PythonConverterUtils::get_property_value_as_derived_type()'
 	 */
-	bp::class_<GPlatesModel::PropertyValue, boost::noncopyable>(
-			"PropertyValue",
-			"The base class inherited by all derived property value classes. "
-			"Property values are equality (``==``) comparable. Two property values will only "
-			"compare equal if they have the same derived property value *type* (and the same internal values). "
-			"For example, a :class:`GpmlPlateId` property value instance and a :class:`XsInteger` "
-			"property value instance will always compare as ``False``.\n"
-			"\n"
-			"The list of derived property value classes includes:\n"
-			"\n"
-			"* :class:`GmlPoint`\n"
-			"* :class:`GmlTimeInstant`\n"
-			"* :class:`GmlTimePeriod`\n"
-			"* :class:`GpmlConstantValue`\n"
-			"* :class:`GpmlHotSpotTrailMark`\n"
-			"* :class:`GpmlIrregularSampling`\n"
-			"* :class:`GpmlPiecewiseAggregation`\n"
-			"* :class:`GpmlPlateId`\n"
-			"* :class:`XsBoolean`\n"
-			"* :class:`XsDouble`\n"
-			"* :class:`XsInteger`\n"
-			"* :class:`XsString`\n"
-			"\n"
-			"The following subset of derived property value classes are time-dependent wrappers:\n"
-			"\n"
-			"* :class:`GpmlConstantValue`\n"
-			"* :class:`GpmlIrregularSampling`\n"
-			"* :class:`GpmlPiecewiseAggregation`\n"
-			"\n",
-			bp::no_init)
+	bp::class_<
+			GPlatesModel::PropertyValue,
+			GPlatesModel::PropertyValue::non_null_ptr_type,
+			boost::noncopyable>(
+					"PropertyValue",
+					"The base class inherited by all derived property value classes. "
+					"Property values are equality (``==``) comparable. Two property values will only "
+					"compare equal if they have the same derived property value *type* (and the same internal values). "
+					"For example, a :class:`GpmlPlateId` property value instance and a :class:`XsInteger` "
+					"property value instance will always compare as ``False``.\n"
+					"\n"
+					"The list of derived property value classes includes:\n"
+					"\n"
+					"* :class:`GmlPoint`\n"
+					"* :class:`GmlTimeInstant`\n"
+					"* :class:`GmlTimePeriod`\n"
+					"* :class:`GpmlConstantValue`\n"
+					"* :class:`GpmlHotSpotTrailMark`\n"
+					"* :class:`GpmlIrregularSampling`\n"
+					"* :class:`GpmlPiecewiseAggregation`\n"
+					"* :class:`GpmlPlateId`\n"
+					"* :class:`XsBoolean`\n"
+					"* :class:`XsDouble`\n"
+					"* :class:`XsInteger`\n"
+					"* :class:`XsString`\n"
+					"\n"
+					"The following subset of derived property value classes are time-dependent wrappers:\n"
+					"\n"
+					"* :class:`GpmlConstantValue`\n"
+					"* :class:`GpmlIrregularSampling`\n"
+					"* :class:`GpmlPiecewiseAggregation`\n"
+					"\n",
+					bp::no_init)
 		.def("clone",
 				&GPlatesApi::property_value_clone,
 				"clone() -> PropertyValue\n"
@@ -166,23 +146,6 @@ export_property_value()
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
 	;
-
-	//////////////////////////////////////////////////////////////////////////
-	// TEMPORARY
-	//
-	// The following handles derived property value types that have not yet been bound to python.
-	// They will only have access to the base class PropertyValue functionality.
-	//
-	// TODO: Remove when all derived PropertyValue types have been bound to python. Some derived
-	// PropertyValue types will need to have a better, more solid interface before this can happen.
-	//
-	bp::class_<GPlatesModel::PropertyValue::non_null_ptr_type>(
-			"NotYetAvailablePropertyValue", bp::no_init)
-		.def("clone", &GPlatesApi::not_yet_available_property_value_clone)
-		.def("accept_visitor", &GPlatesApi::not_yet_available_property_value_accept_visitor)
-	;
-	//
-	//////////////////////////////////////////////////////////////////////////
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -540,6 +503,53 @@ export_gpml_constant_value()
 }
 
 
+namespace GPlatesApi
+{
+	const GPlatesPropertyValues::GpmlFiniteRotationSlerp::non_null_ptr_type
+	gpml_finite_rotation_slerp_create()
+	{
+		return GPlatesPropertyValues::GpmlFiniteRotationSlerp::create(
+				GPlatesPropertyValues::StructuralType::create_gpml("FiniteRotation"));
+	}
+}
+
+void
+export_gpml_finite_rotation_slerp()
+{
+	//
+	// GpmlFiniteRotationSlerp - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GpmlFiniteRotationSlerp,
+			GPlatesPropertyValues::GpmlFiniteRotationSlerp::non_null_ptr_type,
+			bp::bases<GPlatesPropertyValues::GpmlInterpolationFunction>,
+			boost::noncopyable>(
+					"GpmlFiniteRotationSlerp",
+					"An interpolation function designed to interpolate between finite rotations.\n"
+					"\n"
+					"There are no (non-static) methods or attributes in this class. The presence of an instance of this "
+					"property value is simply intended to signal that interpolation should be Spherical "
+					"Linear intERPolation (SLERP). Currently this is the only type of interpolation function "
+					"(the only type derived from :class:`GpmlInterpolationFunction`).\n",
+					bp::no_init)
+		.def("create",
+				&GPlatesApi::gpml_finite_rotation_slerp_create,
+				"create() -> GpmlFiniteRotationSlerp\n"
+				"  Create an instance of GpmlFiniteRotationSlerp.\n"
+				"  ::\n"
+				"\n"
+				"    finite_rotation_slerp = pygplates.GpmlFiniteRotationSlerp.create()\n")
+		.staticmethod("create")
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class GpmlInterpolationFunction.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GpmlFiniteRotationSlerp,
+			GPlatesPropertyValues::GpmlInterpolationFunction>();
+}
+
+
 void
 export_gpml_hot_spot_trail_mark()
 {
@@ -571,6 +581,33 @@ export_gpml_hot_spot_trail_mark()
 	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			GPlatesPropertyValues::GpmlHotSpotTrailMark,
 			GPlatesModel::PropertyValue>();
+}
+
+
+void
+export_gpml_interpolation_function()
+{
+	/*
+	 * GpmlInterpolationFunction - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	 *
+	 * Base class for interpolation function property values.
+	 *
+	 * Enables 'isinstance(obj, GpmlInterpolationFunction)' in python - not that it's that useful.
+	 *
+	 * NOTE: We don't return a 'GpmlInterpolationFunction::non_null_ptr_type' to python because then
+	 * python is unable to access the attributes of the derived interpolation function property value type.
+	 * For this reason usually the derived interpolation function property value is returned using:
+	 *   'PythonConverterUtils::get_property_value_as_derived_type()'
+	 */
+	bp::class_<
+			GPlatesPropertyValues::GpmlInterpolationFunction,
+			GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GpmlInterpolationFunction",
+					"The base class inherited by all derived *interpolation function* property value classes.\n",
+					bp::no_init)
+	;
 }
 
 
@@ -1012,10 +1049,12 @@ export_xs_string()
 void
 export_property_values()
 {
+	// Since PropertyValue is the base class it must be registered first to avoid runtime error.
 	export_property_value();
 
 	//////////////////////////////////////////////////////////////////////////
 	// NOTE: Please keep the property values alphabetically ordered.
+	//       Unless there are inheritance dependencies.
 	//////////////////////////////////////////////////////////////////////////
 
 	export_geo_time_instant();
@@ -1025,6 +1064,12 @@ export_property_values()
 	export_gml_time_period();
 
 	export_gpml_constant_value();
+
+	// GpmlInterpolationFunction and its derived classes.
+	// Since GpmlInterpolationFunction is the base class it must be registered first to avoid runtime error.
+	export_gpml_interpolation_function();
+	export_gpml_finite_rotation_slerp();
+
 	export_gpml_hot_spot_trail_mark();
 	export_gpml_plate_id();
 	export_gpml_time_sample(); // Not actually a property value.

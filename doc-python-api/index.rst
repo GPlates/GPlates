@@ -19,6 +19,8 @@ Contents:
 	pygplates.FeatureType
 	pygplates.GeoTimeInstant
 	pygplates.GpmlConstantValue
+	pygplates.GpmlFiniteRotationSlerp
+	pygplates.GpmlInterpolationFunction
 	pygplates.GpmlPlateId
 	pygplates.GpmlTimeSample
 	pygplates.Property
