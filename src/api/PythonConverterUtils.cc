@@ -157,7 +157,30 @@ GPlatesApi::PythonConverterUtils::get_property_value_as_derived_type(
 {
 	GetPropertyValueAsDerivedTypeVisitor visitor;
 	property_value->accept_visitor(visitor);
-	return visitor.get_property_value_as_derived_type();
+
+	bp::object derived_property_value = visitor.get_property_value_as_derived_type();
+
+	//////////////////////////////////////////////////////////////////////////
+	// TEMPORARY
+	//
+	// The following handles derived property value types that have not yet been bound to python.
+	// They will only have access to the base class PropertyValue functionality.
+	//
+	// TODO: Remove when all derived PropertyValue types have been bound to python. Some derived
+	// PropertyValue types will need to have a better, more solid interface before this can happen.
+	//
+	if (derived_property_value.is_none())
+	{
+		// If we didn't visit a derived property value then just return the base PropertyValue to python.
+		//
+		// Only the exposed methods in the base PropertyValue class will be available to the python user
+		// via the "NotYetAvailablePropertyValue" boost-python binding in 'PyPropertyValues.cc'.
+		return bp::object(property_value);
+	}
+	//
+	//////////////////////////////////////////////////////////////////////////
+
+	return derived_property_value;
 }
 
 

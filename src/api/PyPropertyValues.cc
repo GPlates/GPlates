@@ -71,6 +71,31 @@ namespace GPlatesApi
 	{
 		property_value.accept_visitor(visitor);
 	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// TEMPORARY
+	//
+	// The following handles derived property value types that have not yet been bound to python.
+	// They will only have access to the base class PropertyValue functionality.
+	//
+	// TODO: Remove when all derived PropertyValue types have been bound to python. Some derived
+	// PropertyValue types will need to have a better, more solid interface before this can happen.
+	//
+	GPlatesModel::PropertyValue::non_null_ptr_type
+	not_yet_available_property_value_clone(
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value)
+	{
+		return property_value->clone();
+	}
+	void
+	not_yet_available_property_value_accept_visitor(
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value,
+			GPlatesModel::FeatureVisitor &visitor)
+	{
+		property_value->accept_visitor(visitor);
+	}
+	//
+	//////////////////////////////////////////////////////////////////////////
 }
 
 
@@ -141,6 +166,23 @@ export_property_value()
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
 	;
+
+	//////////////////////////////////////////////////////////////////////////
+	// TEMPORARY
+	//
+	// The following handles derived property value types that have not yet been bound to python.
+	// They will only have access to the base class PropertyValue functionality.
+	//
+	// TODO: Remove when all derived PropertyValue types have been bound to python. Some derived
+	// PropertyValue types will need to have a better, more solid interface before this can happen.
+	//
+	bp::class_<GPlatesModel::PropertyValue::non_null_ptr_type>(
+			"NotYetAvailablePropertyValue", bp::no_init)
+		.def("clone", &GPlatesApi::not_yet_available_property_value_clone)
+		.def("accept_visitor", &GPlatesApi::not_yet_available_property_value_accept_visitor)
+	;
+	//
+	//////////////////////////////////////////////////////////////////////////
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -165,13 +207,16 @@ export_geo_time_instant()
 			"times in the *future*. This can be confusing at first, but the reason for this is "
 			"geological times are represented by how far in the *past* to go back compared to present day.\n"
 			"\n"
-			"All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
-			bp::init<double>(
-					"GeoTimeInstant(time_value)\n"
-					"  Construct a GeoTimeInstant instance from a floating-point time position.\n"
-					"  ::\n"
-					"\n"
-					"    time_instant = pygplates.GeoTimeInstant(time_value)\n"))
+			"All comparison operators (==, !=, <, <=, >, >=) are supported.\n"
+			"\n"
+			// Note that we put the __init__ docstring in the class docstring.
+			// See the comment in 'BOOST_PYTHON_MODULE(pygplates)' for an explanation...
+			"GeoTimeInstant(time_value)\n"
+			"  Construct a GeoTimeInstant instance from a floating-point time position.\n"
+			"  ::\n"
+			"\n"
+			"    time_instant = pygplates.GeoTimeInstant(time_value)\n",
+			bp::init<double>())
 		.def("create_distant_past",
 				&GPlatesPropertyValues::GeoTimeInstant::create_distant_past,
 				"create_distant_past() -> GeoTimeInstant\n"

@@ -89,7 +89,15 @@ BOOST_PYTHON_MODULE(pygplates)
 	// The following limitations apply to using ReStructuredText in Sphinx's autodoc extension
 	// (autodoc imports modules and looks up there docstrings):
 	//  - '::' to indicate end-of-paragraph must be on a separate line,
-	//  - the docstrings on special methods such as '__str__', '__lt__' are ignored by Sphinx.
+	//  - the docstrings on special methods such as '__init__', '__str__', '__lt__' are ignored by Sphinx.
+	//    Note that, for classes that are not boost::python::no_init, we put the __init__ docstring in the
+	//    class docstring since Sphinx autodoc, by default, ignores the former. We could use
+	//    the :special-members: directive, but it includes all special members which we don't want.
+	//    We could use the "autoclass_content='both'" setting in the 'conf.py' file, but then we get the
+	//    'Raises an exception This class cannot be instantiated from Python' in the docstring of
+	//    every boost::python::no_init class.
+	//    So the current solution is the init docstring should go at the end of the class docstring
+	//    (see GeoTimeInstant).
 	//
 	boost::python::docstring_options module_docstring_options(
 			true/*show_user_defined*/,
