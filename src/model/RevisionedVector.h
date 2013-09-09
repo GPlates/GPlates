@@ -254,7 +254,7 @@ namespace GPlatesModel
 				public boost::iterator_facade<
 						Iterator<ElementQualifiedType>,
 						ElementQualifiedType,
-						boost::random_access_traversal_tag,
+						std::random_access_iterator_tag,
 						typename boost::mpl::if_<
 								boost::is_same<ElementQualifiedType, const_element_type>,
 										// Use a proxied reference for const elements...
@@ -348,7 +348,7 @@ namespace GPlatesModel
 			advance(
 					typename Iterator::difference_type n)
 			{
-				d_index += n;
+				d_index = Iterator::difference_type(d_index) + n;
 			}
 
 			// Templated because enables distance between 'const_iterator' and 'iterator'.
