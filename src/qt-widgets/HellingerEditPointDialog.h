@@ -112,7 +112,7 @@ namespace GPlatesQtWidgets
 
 		bool d_create_new_pick;
 
-		HellingerPick m_pick;
+		HellingerPick d_pick;
 	};
 }
 

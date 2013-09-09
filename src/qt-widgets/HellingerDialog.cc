@@ -513,7 +513,7 @@ void GPlatesQtWidgets::HellingerDialog::handle_finished_editing()
 	d_editing_layer_ptr->set_active(false);
 }
 
-void GPlatesQtWidgets::HellingerDialog::handle_update_editing()
+void GPlatesQtWidgets::HellingerDialog::handle_update_point_editing()
 {
 	d_editing_layer_ptr->clear_rendered_geometries();
 	add_pick_geometry_to_layer(
@@ -521,6 +521,19 @@ void GPlatesQtWidgets::HellingerDialog::handle_update_editing()
 				d_editing_layer_ptr,
 				GPlatesGui::Colour::get_yellow(),
 				d_edit_point_is_enlarged);
+}
+
+void GPlatesQtWidgets::HellingerDialog::handle_update_segment_editing()
+{
+	if (d_hellinger_edit_segment_dialog->current_pick())
+	{
+		d_editing_layer_ptr->clear_rendered_geometries();
+		add_pick_geometry_to_layer(
+					*(d_hellinger_edit_segment_dialog->current_pick()),
+					d_editing_layer_ptr,
+					GPlatesGui::Colour::get_yellow(),
+					d_edit_point_is_enlarged);
+	}
 }
 
 void
@@ -595,6 +608,7 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 
 	d_hellinger_edit_segment_dialog->show();
 	d_hellinger_edit_segment_dialog->raise();
+
 
 
 	add_segment_geometries_to_layer(
@@ -1200,7 +1214,7 @@ GPlatesQtWidgets::HellingerDialog::update_edit_layer(
 void GPlatesQtWidgets::HellingerDialog::set_enlarged_edit_geometry(bool enlarged)
 {
 	d_edit_point_is_enlarged = enlarged;
-	handle_update_editing();
+	handle_update_point_editing();
 }
 
 void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
@@ -1651,7 +1665,7 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(button_clear,SIGNAL(clicked()),this,SLOT(handle_clear()));
 
 	QObject::connect(d_hellinger_edit_point_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
-	QObject::connect(d_hellinger_edit_point_dialog,SIGNAL(update_editing()),this,SLOT(handle_update_editing()));
+	QObject::connect(d_hellinger_edit_point_dialog,SIGNAL(update_editing()),this,SLOT(handle_update_point_editing()));
 }
 
 void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()

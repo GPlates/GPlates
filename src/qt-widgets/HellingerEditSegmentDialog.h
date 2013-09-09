@@ -120,6 +120,8 @@ namespace GPlatesQtWidgets
 				const hellinger_model_const_range_type &picks,
 				const int &segment_number);
 
+		boost::optional<GPlatesQtWidgets::HellingerPick>
+		current_pick() const;
 
 	private Q_SLOTS:
 
@@ -156,6 +158,9 @@ namespace GPlatesQtWidgets
 	private:
 
 		void
+		update_current_pick_from_widgets();
+
+		void
 		fill_widgets();
 
 		void
@@ -182,6 +187,7 @@ namespace GPlatesQtWidgets
 
 		SpinBoxDelegate d_spin_box_delegate;
 
+		boost::optional<HellingerPick> d_current_pick;
 
 	};
 }

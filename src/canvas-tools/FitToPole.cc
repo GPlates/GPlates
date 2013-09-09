@@ -110,11 +110,13 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 					proximity_criteria,
 					*d_hellinger_dialog_ptr->get_editing_layer()))
 		{
+			qDebug() << "moving over editable geom";
 			d_mouse_is_over_editable_pick = true;
 			d_hellinger_dialog_ptr->set_enlarged_edit_geometry();
 		}
 		else
 		{
+			qDebug() << "not moving over editable geom";
 			d_mouse_is_over_editable_pick = false;
 			d_hellinger_dialog_ptr->set_enlarged_edit_geometry(false);
 		}

@@ -133,7 +133,7 @@ void GPlatesQtWidgets::HellingerEditPointDialog::set_active(bool active)
 const GPlatesQtWidgets::HellingerPick &
 GPlatesQtWidgets::HellingerEditPointDialog::current_pick() const
 {
-	return m_pick;
+	return d_pick;
 }
 
 void
@@ -151,7 +151,7 @@ GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 
 	hellinger_model_type::const_iterator it =
 		d_hellinger_model_ptr->add_pick(
-				m_pick,
+				d_pick,
 				segment_number);
 
 	d_hellinger_dialog_ptr->set_selected_pick(it);
@@ -173,11 +173,11 @@ void GPlatesQtWidgets::HellingerEditPointDialog::handle_pick_changed()
 
 void GPlatesQtWidgets::HellingerEditPointDialog::update_pick_from_widgets()
 {
-	m_pick.d_is_enabled = true;
-	m_pick.d_lat = spinbox_lat->value();
-	m_pick.d_lon = spinbox_lon->value();
-	m_pick.d_uncertainty = spinbox_uncert->value();
-	m_pick.d_segment_type = radio_moving->isChecked() ? MOVING_PICK_TYPE : FIXED_PICK_TYPE;
+	d_pick.d_is_enabled = true;
+	d_pick.d_lat = spinbox_lat->value();
+	d_pick.d_lon = spinbox_lon->value();
+	d_pick.d_uncertainty = spinbox_uncert->value();
+	d_pick.d_segment_type = radio_moving->isChecked() ? MOVING_PICK_TYPE : FIXED_PICK_TYPE;
 }
 
 void GPlatesQtWidgets::HellingerEditPointDialog::close()

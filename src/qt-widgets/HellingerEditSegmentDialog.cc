@@ -173,6 +173,12 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::initialise_with_segment(
 	fill_widgets();
 }
 
+boost::optional<GPlatesQtWidgets::HellingerPick>
+GPlatesQtWidgets::HellingerEditSegmentDialog::current_pick() const
+{
+	return d_current_pick;
+}
+
 void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_selection_changed(
 		const QItemSelection &,
 		const QItemSelection &)
@@ -365,6 +371,11 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_disable()
 			index.model()->index(index.row(),GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_ENABLED);
 	d_table_model->setData(index_of_enabled_column_in_row_of_selected_cell,false);
 	update_entire_row(table_new_segment,index);
+}
+
+void GPlatesQtWidgets::HellingerEditSegmentDialog::update_current_pick_from_widgets()
+{
+
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_edited_segment()

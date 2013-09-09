@@ -329,7 +329,10 @@ namespace GPlatesQtWidgets
 		handle_finished_editing();
 
 		void
-		handle_update_editing();
+		handle_update_point_editing();
+
+		void
+		handle_update_segment_editing();
 
 	private:
 
