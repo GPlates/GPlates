@@ -34,6 +34,7 @@
 #include "model/PropertyName.h"
 
 #include "property-values/EnumerationType.h"
+#include "property-values/StructuralType.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -224,6 +225,7 @@ export_feature_type()
 	export_qualified_xml_name(feature_type_class, "FeatureType", "feature_type");
 }
 
+
 void
 export_property_name()
 {
@@ -277,11 +279,64 @@ export_property_name()
 
 
 void
+export_structural_type()
+{
+	//
+	// StructuralType - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<GPlatesPropertyValues::StructuralType> structural_type_class(
+			"StructuralType",
+			"The namespace-qualified structural type.\n"
+			"\n"
+			"All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
+			bp::no_init/*force usage of create functions*/);
+	// Select the create functions appropriate for this QualifiedXmlName type...
+	structural_type_class.def("create_gpml",
+			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesPropertyValues::StructuralType>,
+				"create_gpml(name) -> StructuralType\n"
+				"  Create a structural type qualified with the 'gpml:' prefix ('gpml:' + ``name``).\n"
+				"  ::\n"
+				"\n"
+				"    structural_type = pygplates.StructuralType.create_gpml(name)\n"
+				"\n"
+				"  :param name: unqualified name\n"
+				"  :type name: string\n");
+	structural_type_class.staticmethod("create_gpml");
+	structural_type_class.def("create_gml",
+			&GPlatesApi::qualified_xml_name_create_gml<GPlatesPropertyValues::StructuralType>,
+				"create_gml(name) -> StructuralType\n"
+				"  Create a structural type qualified with the 'gml:' prefix ('gml:' + ``name``).\n"
+				"  ::\n"
+				"\n"
+				"    structural_type = pygplates.StructuralType.create_gml(name)\n"
+				"\n"
+				"  :param name: unqualified name\n"
+				"  :type name: string\n");
+	structural_type_class.staticmethod("create_gml");
+	structural_type_class.def("create_xsi",
+			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesPropertyValues::StructuralType>,
+				"create_xsi(name) -> StructuralType\n"
+				"  Create a structural type qualified with the 'xsi:' prefix ('xsi:' + ``name``).\n"
+				"  ::\n"
+				"\n"
+				"    structural_type = pygplates.StructuralType.create_xsi(name)\n"
+				"\n"
+				"  :param name: unqualified name\n"
+				"  :type name: string\n");
+	structural_type_class.staticmethod("create_xsi");
+
+	// Add the parts common to each GPlatesModel::QualifiedXmlName template instantiation (code re-use).
+	export_qualified_xml_name(structural_type_class, "StructuralType", "structural_type");
+}
+
+
+void
 export_qualified_xml_names()
 {
 	export_enumeration_type();
 	export_feature_type();
 	export_property_name();
+	export_structural_type();
 }
 
 #endif // GPLATES_NO_PYTHON

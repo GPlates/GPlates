@@ -21,6 +21,7 @@ Contents:
 	pygplates.GpmlConstantValue
 	pygplates.GpmlFiniteRotationSlerp
 	pygplates.GpmlInterpolationFunction
+	pygplates.GpmlIrregularSampling
 	pygplates.GpmlPlateId
 	pygplates.GpmlTimeSample
 	pygplates.Property

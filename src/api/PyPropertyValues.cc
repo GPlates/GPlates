@@ -23,12 +23,19 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <iterator>
 #include <boost/optional.hpp>
 
 #include "PythonConverterUtils.h"
+#include "PyRevisionedVector.h"
 
 #include "global/CompilerWarnings.h"
+
 #include "global/python.h"
+// This is not included by <boost/python.hpp>.
+// Also we must include this after <boost/python.hpp> which means after "global/python.h".
+#include <boost/python/stl_iterator.hpp>
 
 #include "model/FeatureVisitor.h"
 #include "model/ModelUtils.h"
@@ -41,6 +48,7 @@
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlHotSpotTrailMark.h"
 #include "property-values/GpmlInterpolationFunction.h"
+#include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/XsBoolean.h"
@@ -605,9 +613,145 @@ export_gpml_interpolation_function()
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
 					"GpmlInterpolationFunction",
-					"The base class inherited by all derived *interpolation function* property value classes.\n",
+					"The base class inherited by all derived *interpolation function* property value classes.\n"
+					"\n"
+					"The list of derived interpolation function property value classes includes:\n"
+					"\n"
+					"* :class:`GpmlFiniteRotationSlerp`\n",
 					bp::no_init)
 	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GpmlInterpolationFunction,
+			GPlatesModel::PropertyValue>();
+}
+
+
+namespace GPlatesApi
+{
+	const GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
+	gpml_irregular_sampling_create(
+			bp::object time_samples, // Any python iterable (eg, list, tuple).
+			boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>
+					interpolation_function = boost::none)
+	{
+		// Begin/end iterators over the python time samples iterable.
+		bp::stl_input_iterator<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>
+				time_samples_begin(time_samples),
+				time_samples_end;
+
+		// Copy into a vector.
+		std::vector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type> time_samples_vector;
+		std::copy(time_samples_begin, time_samples_end, std::back_inserter(time_samples_vector));
+
+		// We need at least one time sample to determine the value type, otherwise we need to
+		// ask the python user for it and that might be a little confusing for them.
+		if (time_samples_vector.empty())
+		{
+			PyErr_SetString(
+					PyExc_RuntimeError,
+					"pygplates.GpmlIrregularSampling::create() requires a non-empty "
+						"sequence of GpmlTimeSample elements");
+			bp::throw_error_already_set();
+		}
+
+		return GPlatesPropertyValues::GpmlIrregularSampling::create(
+				time_samples_vector,
+				interpolation_function,
+				time_samples_vector[0]->get_value_type());
+	}
+
+DISABLE_GCC_WARNING("-Wshadow")
+	// Default argument overloads of 'GPlatesPropertyValues::v::create'.
+	BOOST_PYTHON_FUNCTION_OVERLOADS(
+			gpml_irregular_sampling_create_overloads,
+			gpml_irregular_sampling_create, 1, 2)
+ENABLE_GCC_WARNING("-Wshadow")
+
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::non_null_ptr_type
+	gpml_irregular_sampling_get_time_samples(
+			GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type gpml_irregular_sampling)
+	{
+		return &gpml_irregular_sampling->time_samples();
+	}
+}
+
+void
+export_gpml_irregular_sampling()
+{
+	// Use the 'non-const' overload...
+	const boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>
+			(GPlatesPropertyValues::GpmlIrregularSampling::*get_interpolation_function)() =
+					&GPlatesPropertyValues::GpmlIrregularSampling::interpolation_function;
+
+	// Wrap the revisioned vector of time samples returned by 'GpmlIrregularSampling::time_samples()'.
+	GPlatesApi::RevisionedVectorWrapper<GPlatesPropertyValues::GpmlTimeSample>::wrap("RevisionedVector");
+
+	//
+	// GpmlIrregularSampling - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GpmlIrregularSampling,
+			GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GpmlIrregularSampling",
+					"A time-dependent property consisting of a sequence of time samples irregularly spaced in time.\n",
+					bp::no_init)
+		.def("create",
+				&GPlatesApi::gpml_irregular_sampling_create,
+				GPlatesApi::gpml_irregular_sampling_create_overloads(
+					"create(time_samples[, interpolation_function=None]) -> GpmlIrregularSampling\n"
+					"  Create an irregularly sampled time-dependent property from a sequence of time samples. "
+					"Optionally provide an interpolation function.\n"
+					"\n"
+					"  **NOTE** that the sequence of time samples must **not** be empty (for technical implementation reasons), "
+					"otherwise a *RuntimeError* exception will be thrown.\n"
+					"  ::\n"
+					"\n"
+					"    irregular_sampling = pygplates.GpmlIrregularSampling.create(time_samples)\n"
+					"\n"
+					"  :param time_samples: A sequence of :class:`GpmlTimeSample` elements.\n"
+					"  :type time_samples: Any python iterable (eg, list, tuple).\n"
+					"  :param interpolation_function: identifies function used to interpolate\n"
+					"  :type interpolation_function: an instance derived from :class:`GpmlInterpolationFunction`\n"))
+		.staticmethod("create")
+		.def("get_time_samples",
+				&GPlatesApi::gpml_irregular_sampling_get_time_samples,
+				"get_time_samples() -> list\n"
+				"  Returns the time samples in a sequence that behaves as a python ``list``. "
+				"Modifying the returned sequence will modify the internal state of this :class:`GpmlIrregularSampling` "
+				"instance.\n"
+				"  ::\n"
+				"    time_samples = irregular_sampling.get_time_samples()\n"
+				"    del time_samples[1:3]\n"
+				"    # The number of time samples will be reduced by two.\n"
+				"    print len(irregular_sampling.get_time_samples())\n"
+				"\n"
+				"  :rtype: a list of :class:`GpmlTimeSample` elements\n")
+		.def("get_interpolation_function",
+				get_interpolation_function,
+				"get_interpolation_function() -> GpmlInterpolationFunction\n"
+				"  Returns the function used to interpolate between time samples, or ``None``.\n"
+				"\n"
+				"  :rtype: an instance derived from :class:`GpmlInterpolationFunction`, or ``None``\n")
+		.def("set_interpolation_function",
+				&GPlatesPropertyValues::GpmlIrregularSampling::set_interpolation_function,
+				"set_interpolation_function([interpolation_function=None])\n"
+				"  Sets the function used to interpolate between time samples, "
+				"or removes it if ``None`` specified.\n"
+				"\n"
+				"  :param interpolation_function: the function used to interpolate between time samples\n"
+				"  :type interpolation_function: an instance derived from :class:`GpmlInterpolationFunction`, or None\n")
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GpmlIrregularSampling,
+			GPlatesModel::PropertyValue>();
 }
 
 
@@ -1071,6 +1215,7 @@ export_property_values()
 	export_gpml_finite_rotation_slerp();
 
 	export_gpml_hot_spot_trail_mark();
+	export_gpml_irregular_sampling();
 	export_gpml_plate_id();
 	export_gpml_time_sample(); // Not actually a property value.
 

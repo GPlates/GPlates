@@ -33,6 +33,8 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlFiniteRotationSlerp.h"
+#include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
@@ -156,6 +158,52 @@ namespace GPlatesApi
 				gpml_constant_value_type &gpml_constant_value)
 		{
 			this->GPlatesModel::FeatureVisitor::visit_gpml_constant_value(gpml_constant_value);
+		}
+
+
+		virtual
+		void
+		visit_gpml_finite_rotation_slerp(
+				gpml_finite_rotation_slerp_type &gpml_finite_rotation_slerp)
+		{
+			if (bp::override visit = this->get_override("visit_gpml_finite_rotation_slerp"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gpml_finite_rotation_slerp_type::non_null_ptr_type(&gpml_finite_rotation_slerp));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gpml_finite_rotation_slerp(gpml_finite_rotation_slerp);
+		}
+
+		void
+		default_visit_gpml_finite_rotation_slerp(
+				gpml_finite_rotation_slerp_type &gpml_finite_rotation_slerp)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gpml_finite_rotation_slerp(gpml_finite_rotation_slerp);
+		}
+
+
+		virtual
+		void
+		visit_gpml_irregular_sampling(
+				gpml_irregular_sampling_type &gpml_irregular_sampling)
+		{
+			if (bp::override visit = this->get_override("visit_gpml_irregular_sampling"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gpml_irregular_sampling_type::non_null_ptr_type(&gpml_irregular_sampling));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gpml_irregular_sampling(gpml_irregular_sampling);
+		}
+
+		void
+		default_visit_gpml_irregular_sampling(
+				gpml_irregular_sampling_type &gpml_irregular_sampling)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gpml_irregular_sampling(gpml_irregular_sampling);
 		}
 
 
@@ -357,6 +405,16 @@ export_property_value_visitor()
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_constant_value,
 				"visit_gpml_constant_value(gpml_constant_value)\n"
 				"  Visits a :class:`GpmlConstantValue` property value.\n")
+		.def("visit_gpml_finite_rotation_slerp",
+				&GPlatesModel::FeatureVisitor::visit_gpml_finite_rotation_slerp,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_finite_rotation_slerp,
+				"visit_gpml_finite_rotation_slerp(gpml_finite_rotation_slerp)\n"
+				"  Visits a :class:`GpmlFiniteRotationSlerp` property value.\n")
+		.def("visit_gpml_irregular_sampling",
+				&GPlatesModel::FeatureVisitor::visit_gpml_irregular_sampling,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_irregular_sampling,
+				"visit_gpml_irregular_sampling(gpml_irregular_sampling)\n"
+				"  Visits a :class:`GpmlIrregularSampling` property value.\n")
 		.def("visit_gpml_plate_id",
 				&GPlatesModel::FeatureVisitor::visit_gpml_plate_id,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_plate_id,

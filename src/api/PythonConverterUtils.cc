@@ -33,6 +33,8 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlFiniteRotationSlerp.h"
+#include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
@@ -98,6 +100,24 @@ namespace GPlatesApi
 		{
 			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
 			d_property_value = bp::object(gpml_constant_value_type::non_null_ptr_type(&gpml_constant_value));
+		}
+
+		virtual
+		void
+		visit_gpml_finite_rotation_slerp(
+				gpml_finite_rotation_slerp_type &gpml_finite_rotation_slerp)
+		{
+			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
+			d_property_value = bp::object(gpml_finite_rotation_slerp_type::non_null_ptr_type(&gpml_finite_rotation_slerp));
+		}
+
+		virtual
+		void
+		visit_gpml_irregular_sampling(
+				gpml_irregular_sampling_type &gpml_irregular_sampling)
+		{
+			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
+			d_property_value = bp::object(gpml_irregular_sampling_type::non_null_ptr_type(&gpml_irregular_sampling));
 		}
 
 		virtual
@@ -169,7 +189,7 @@ GPlatesApi::PythonConverterUtils::get_property_value_as_derived_type(
 	// TODO: Remove when all derived PropertyValue types have been bound to python. Some derived
 	// PropertyValue types will need to have a better, more solid interface before this can happen.
 	//
-	if (derived_property_value.is_none())
+	if (derived_property_value == bp::object())
 	{
 		// If we didn't visit a derived property value then just return the base PropertyValue to python.
 		//
