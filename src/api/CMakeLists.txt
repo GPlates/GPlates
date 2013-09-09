@@ -42,6 +42,7 @@ set(srcs
     PyQualifiedXmlNames.cc
     PyReal.cc
     PyReconstructionTree.cc
+    PyRevisionedVector.h
     PyStrings.cc
     Python.cc
     PythonConverterUtils.cc
