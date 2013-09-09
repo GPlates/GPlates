@@ -146,16 +146,16 @@ class PropertyNameCase(unittest.TestCase):
         self.feature_name = i.next()
         self.feature_valid_time = i.next()
 
-    def test_get_property_name(self):
+    def test_get_name(self):
         # Feature property: gml:name
-        self.assertTrue(isinstance(self.feature_name.get_property_name(), 
+        self.assertTrue(isinstance(self.feature_name.get_name(), 
             pygplates.PropertyName))
-        self.assertEquals(self.feature_name.get_property_name().to_qualified_string(),
+        self.assertEquals(self.feature_name.get_name().to_qualified_string(),
                 'gml:name')
         # Feature property: gml:validTime
-        self.assertTrue(isinstance(self.feature_valid_time.get_property_name(), 
+        self.assertTrue(isinstance(self.feature_valid_time.get_name(), 
             pygplates.PropertyName))
-        self.assertEquals(self.feature_valid_time.get_property_name().to_qualified_string(),
+        self.assertEquals(self.feature_valid_time.get_name().to_qualified_string(),
                 'gml:validTime')
 
 
@@ -169,12 +169,12 @@ class PropertyValueCase(unittest.TestCase):
         self.feature_name = i.next()
         self.feature_valid_time = i.next()
 
-    def test_get_property_value(self):
-        # The volcano's name is blank so we expect a null
-        self.assertTrue(isinstance(self.feature_name.get_property_value(), 
-            types.NoneType))
+    def test_get_value(self):
+        # The volcano's name is blank so we expect an empty string
+        self.assertTrue(isinstance(self.feature_name.get_value(), 
+            pygplates.XsString))
         # The volcano has a valid time, so we expect a value for this
-        valid_time = self.feature_valid_time.get_property_value()
+        valid_time = self.feature_valid_time.get_value()
         self.assertTrue(isinstance(valid_time, pygplates.PropertyValue))
         # Specifically, this should be a GmlTimePeriod value
         self.assertTrue(isinstance(valid_time, pygplates.GmlTimePeriod))
