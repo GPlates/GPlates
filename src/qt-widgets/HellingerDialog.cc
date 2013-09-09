@@ -69,10 +69,6 @@ const double DEFAULT_LINE_THICKNESS = 2;
 // TODO: restore picks on canvas when re-opening the dialog
 // TODO: consider removing the close button and keeping the dialog open as long as the
 // tool is selected.
-// TODO: check behaviour of table display in EditSegment mode... a disabled pole is being
-// represented as "31" - should we allow enabled/disabled editing in the EditSegment window as well?
-// TODO: add "reset" button to EditPick / EditSegment dialogs - to take back to original state without
-// having to cancel (close) the whole dialog.
 // TODO: clean up the system of filenames which are passed to python.
 
 namespace{
@@ -116,6 +112,8 @@ namespace{
 		}
 	}
 
+
+
 	void
 	add_pick_geometry_to_layer(
 			const GPlatesQtWidgets::HellingerPick &pick,
@@ -149,6 +147,22 @@ namespace{
 
 		layer->add_rendered_geometry(pick_geometry);
 
+	}
+
+	void
+	add_segment_geometries_to_layer(
+			const GPlatesQtWidgets::hellinger_model_const_range_type &segment,
+			GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type &layer,
+			const GPlatesGui::Colour &colour)
+	{
+		GPlatesQtWidgets::hellinger_model_type::const_iterator it = segment.first;
+		for (; it != segment.second; ++it)
+		{
+			add_pick_geometry_to_layer(
+						it->second,
+						layer,
+						colour);
+		}
 	}
 
 	bool
@@ -348,6 +362,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_hellinger_model(0),
 	d_hellinger_stats_dialog(0),
 	d_hellinger_edit_point_dialog(0),
+	d_hellinger_edit_segment_dialog(0),
 	d_hellinger_thread(0),
 	d_moving_plate_id(0),
 	d_fixed_plate_id(0),
@@ -376,6 +391,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_hellinger_model = new HellingerModel(d_python_path);
 	d_hellinger_thread = new HellingerThread(this, d_hellinger_model);
 	d_hellinger_edit_point_dialog = new HellingerEditPointDialog(this,d_hellinger_model);
+	d_hellinger_edit_segment_dialog = new HellingerEditSegmentDialog(this,d_hellinger_model);
 
 	set_up_connections();
 
@@ -569,24 +585,29 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 void
 GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 {
-	store_expanded_status();
-	QScopedPointer<GPlatesQtWidgets::HellingerEditSegmentDialog> dialog(
-				new GPlatesQtWidgets::HellingerEditSegmentDialog(this,d_hellinger_model,false /* create new segment */));
+	d_editing_layer_ptr->set_active(true);
 
-	QString segment = tree_widget_picks->currentItem()->text(SEGMENT_NUMBER);
-	int segment_number = segment.toInt();
+	QString segment_string = tree_widget_picks->currentItem()->text(SEGMENT_NUMBER);
+	int segment = segment_string.toInt();
 
-	dialog->initialise_with_segment(
-				d_hellinger_model->get_segment_as_range(segment_number),segment_number);
+	d_hellinger_edit_segment_dialog->initialise_with_segment(
+				d_hellinger_model->get_segment_as_range(segment),segment);
 
-	dialog->exec();
-	restore_expanded_status();
+	d_hellinger_edit_segment_dialog->show();
+	d_hellinger_edit_segment_dialog->raise();
 
+
+	add_segment_geometries_to_layer(
+				d_hellinger_model->get_segment_as_range(segment),
+				d_editing_layer_ptr,
+				GPlatesGui::Colour::get_yellow());
+#if 0
 	if (!d_hellinger_model->segments_are_ordered())
 	{
 		button_renumber->setEnabled(true);
 	}
 	update_canvas();
+#endif
 }
 
 void

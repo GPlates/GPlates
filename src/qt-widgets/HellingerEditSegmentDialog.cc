@@ -86,7 +86,11 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 		HellingerModel *hellinger_model,
 		bool create_new_segment,
 		QWidget *parent_):
-	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
+	QDialog(parent_,
+			Qt::CustomizeWindowHint |
+			Qt::WindowTitleHint |
+			Qt::WindowSystemMenuHint |
+			Qt::WindowStaysOnTopHint),
 	d_hellinger_dialog_ptr(hellinger_dialog),
 	d_hellinger_model_ptr(hellinger_model),
 	d_hellinger_new_segment_warning(0),
