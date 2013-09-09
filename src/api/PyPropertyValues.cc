@@ -725,6 +725,7 @@ export_gpml_irregular_sampling()
 				"Modifying the returned sequence will modify the internal state of this :class:`GpmlIrregularSampling` "
 				"instance.\n"
 				"  ::\n"
+				"\n"
 				"    time_samples = irregular_sampling.get_time_samples()\n"
 				"    del time_samples[1:3]\n"
 				"    # The number of time samples will be reduced by two.\n"
