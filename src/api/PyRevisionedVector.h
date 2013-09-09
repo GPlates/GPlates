@@ -74,7 +74,7 @@ namespace GPlatesApi
 			//
 			bp::class_<
 					GPlatesModel::RevisionedVector<RevisionableType>,
-					GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type,
+					typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type,
 					boost::noncopyable>(class_name, bp::no_init)
 				.def("__len__", &GPlatesModel::RevisionedVector<RevisionableType>::size)
  				.def("__setitem__", &set_item)
@@ -160,7 +160,7 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 			}
 
 			// Begin/end iterators over the python iterable.
-			bp::stl_input_iterator<RevisionedVector<RevisionableType>::element_type>
+			bp::stl_input_iterator<typename RevisionedVector<RevisionableType>::element_type>
 					new_elements_begin(v),
 					new_elements_end;
 
@@ -193,14 +193,14 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 			}
 
 			// Attempt to extract the element.
-			bp::extract<RevisionedVector<RevisionableType>::element_type> extract_element(v);
+			bp::extract<typename RevisionedVector<RevisionableType>::element_type> extract_element(v);
 			if (!extract_element.check())
 			{
 				PyErr_SetString(PyExc_TypeError, "Invalid assignment");
 				bp::throw_error_already_set();
 				return;
 			}
-			RevisionedVector<RevisionableType>::element_type element = extract_element();
+			typename RevisionedVector<RevisionableType>::element_type element = extract_element();
 
 			// Set the new element.
 			(*revisioned_vector)[index] = element;
@@ -349,7 +349,8 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 				bp::throw_error_already_set();
 			}
 
-			RevisionedVector<RevisionableType>::element_type element = (*revisioned_vector)[index].get();
+			typename RevisionedVector<RevisionableType>::element_type element =
+					(*revisioned_vector)[index].get();
 			return bp::object(element);
 		}
 
@@ -371,16 +372,16 @@ ENABLE_GCC_WARNING("-Wold-style-cast")
 		namespace bp = boost::python;
 		using namespace GPlatesModel;
 
-		bp::extract<RevisionedVector<RevisionableType>::element_type> extract_element(element_object);
+		bp::extract<typename RevisionedVector<RevisionableType>::element_type> extract_element(element_object);
 		if (!extract_element.check())
 		{
 			return false;
 		}
-		RevisionedVector<RevisionableType>::element_type element = extract_element();
+		typename RevisionedVector<RevisionableType>::element_type element = extract_element();
 
 		// Search the revisioned vector for the element.
 		BOOST_FOREACH(
-				RevisionedVector<RevisionableType>::element_type revisioned_element,
+				typename RevisionedVector<RevisionableType>::element_type revisioned_element,
 				*revisioned_vector)
 		{
 			// Compare the pointed-to elements, not the pointers.

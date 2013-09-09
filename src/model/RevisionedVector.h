@@ -348,7 +348,7 @@ namespace GPlatesModel
 			advance(
 					typename Iterator::difference_type n)
 			{
-				d_index = Iterator::difference_type(d_index) + n;
+				d_index = typename Iterator::difference_type(d_index) + n;
 			}
 
 			// Templated because enables distance between 'const_iterator' and 'iterator'.
@@ -357,7 +357,8 @@ namespace GPlatesModel
 			distance_to(
 					const Iterator<OtherElementQualifiedType> &other) const
 			{
-				return Iterator::difference_type(other.d_index) - Iterator::difference_type(d_index);
+				return typename Iterator::difference_type(other.d_index) -
+						typename Iterator::difference_type(d_index);
 			}
 
 			friend class boost::iterator_core_access;
