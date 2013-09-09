@@ -124,7 +124,7 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
-		handle_selection_changed(QItemSelection,QItemSelection);
+		handle_selection_changed(const QItemSelection &, const QItemSelection &);
 
 		void
 		handle_add_segment();
@@ -171,7 +171,7 @@ namespace GPlatesQtWidgets
 		set_row_values(const int &row, const GPlatesQtWidgets::HellingerPick &pick);
 
 		HellingerDialog *d_hellinger_dialog_ptr;
-		QStandardItemModel *d_model;
+		QStandardItemModel *d_table_model;
 		HellingerModel *d_hellinger_model_ptr;
 		HellingerNewSegmentWarning *d_hellinger_new_segment_warning;
 

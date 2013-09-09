@@ -67,6 +67,18 @@ namespace
 			return QString();
 		}
 	}
+
+	void
+	update_entire_row(QTableView *table, const QModelIndex &index)
+	{
+		int row = index.row();
+		for (int i = 0; i < GPlatesQtWidgets::HellingerEditSegmentDialog::NUM_COLUMNS; ++i)
+		{
+			QModelIndex cell_index =  index.model()->index(row,i);
+			table->update(cell_index);
+		}
+	}
+
 }
 
 GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
@@ -99,22 +111,22 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 
 
 
-	d_model = new QStandardItemModel(NUM_COLUMNS,1, this);
-	d_model->setHorizontalHeaderItem(COLUMN_MOVING_FIXED,new QStandardItem("Moving(1)/Fixed(2)"));
-	d_model->setHorizontalHeaderItem(COLUMN_LAT, new QStandardItem("Lat"));
-	d_model->setHorizontalHeaderItem(COLUMN_LON, new QStandardItem("Long"));
-	d_model->setHorizontalHeaderItem(COLUMN_UNCERTAINTY, new QStandardItem("Uncertainty (km)"));
+	d_table_model = new QStandardItemModel(NUM_COLUMNS,1, this);
+	d_table_model->setHorizontalHeaderItem(COLUMN_MOVING_FIXED,new QStandardItem("Moving(1)/Fixed(2)"));
+	d_table_model->setHorizontalHeaderItem(COLUMN_LAT, new QStandardItem("Lat"));
+	d_table_model->setHorizontalHeaderItem(COLUMN_LON, new QStandardItem("Long"));
+	d_table_model->setHorizontalHeaderItem(COLUMN_UNCERTAINTY, new QStandardItem("Uncertainty (km)"));
 
 	// We need to specify this header even though we're not going to display it. If we don't
 	// provide it, the model thinks it only has 4 columns (it returns (-1,-1) as index column/row
 	// for anything in the COLUMN_ENABLED column.
-	d_model->setHorizontalHeaderItem(COLUMN_ENABLED, new QStandardItem("Enabled"));
+	d_table_model->setHorizontalHeaderItem(COLUMN_ENABLED, new QStandardItem("Enabled"));
 
-	d_model->setRowCount(1);
+	d_table_model->setRowCount(1);
 
 	set_initial_row_values(0);
 
-	table_new_segment->setModel(d_model);
+	table_new_segment->setModel(d_table_model);
 	table_new_segment->setColumnHidden(COLUMN_ENABLED,true);
 	table_new_segment->horizontalHeader()->resizeSection(COLUMN_MOVING_FIXED,140);
 	table_new_segment->horizontalHeader()->resizeSection(COLUMN_LAT,100);
@@ -123,13 +135,14 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 
 	table_new_segment->horizontalHeader()->setStretchLastSection(true);
 
-	update_buttons();
+	button_enable->setEnabled(false);
+	button_disable->setEnabled(false);
 
 	// The spinbox delegate lets us customise spinbox behaviour for the different cells.
 	table_new_segment->setItemDelegate(&d_spin_box_delegate);
 
 	// Mark row 0 (or at least an item in row 0) as the current index.
-	QModelIndex index = d_model->index(0,COLUMN_MOVING_FIXED);
+	QModelIndex index = d_table_model->index(0,COLUMN_MOVING_FIXED);
 	table_new_segment->selectionModel()->setCurrentIndex(index,QItemSelectionModel::NoUpdate);
 
 	if (!create_new_segment)
@@ -156,22 +169,25 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::initialise_with_segment(
 	fill_widgets();
 }
 
-void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_selection_changed(QItemSelection, QItemSelection)
+void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_selection_changed(
+		const QItemSelection &,
+		const QItemSelection &)
 {
 	qDebug() << "Selectionchanged.";
+	update_buttons();
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::fill_widgets()
 {
 	spinbox_segment->setValue(*d_original_segment_number);
-	d_model->removeRows(0,d_model->rowCount());
+	d_table_model->removeRows(0,d_table_model->rowCount());
 	hellinger_model_type::const_iterator
 			iter = d_original_segment_picks->first,
 			iter_end = d_original_segment_picks->second;
 	for (; iter != iter_end ; ++iter)
 	{
-		d_model->insertRow(d_model->rowCount());
-		set_row_values(d_model->rowCount()-1,iter->second);
+		d_table_model->insertRow(d_table_model->rowCount());
+		set_row_values(d_table_model->rowCount()-1,iter->second);
 	}
 }
 
@@ -202,33 +218,37 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::add_segment_to_model()
 	d_hellinger_dialog_ptr->store_expanded_status();
 	int segment = spinbox_segment->value();
 
-	for (int row = 0; row < d_model->rowCount(); ++row)
+	for (int row = 0; row < d_table_model->rowCount(); ++row)
 	{
 		QModelIndex index;
 		QVariant variant;
 
 		// Moving or fixed
-		index = d_model->index(row,COLUMN_MOVING_FIXED);
+		index = d_table_model->index(row,COLUMN_MOVING_FIXED);
 		variant = table_new_segment->model()->data(index);
 		// The spinboxes should already ensure valid data types/values for each column.
 		HellingerPickType type = static_cast<HellingerPickType>(variant.toInt());
 
 		// Latitude
-		index = d_model->index(row,COLUMN_LAT);
+		index = d_table_model->index(row,COLUMN_LAT);
 		variant = table_new_segment->model()->data(index);
 		double lat = variant.toDouble();
 
 		// Longitude
-		index = d_model->index(row,COLUMN_LON);
+		index = d_table_model->index(row,COLUMN_LON);
 		variant = table_new_segment->model()->data(index);
 		double lon = variant.toDouble();
 
 		// Uncertainty
-		index = d_model->index(row,COLUMN_UNCERTAINTY);
+		index = d_table_model->index(row,COLUMN_UNCERTAINTY);
 		variant = table_new_segment->model()->data(index);
 		double uncertainty = variant.toDouble();
 
-		GPlatesQtWidgets::HellingerPick pick(type,lat,lon,uncertainty,true /* enabled */);
+		// Enabled
+		index = d_table_model->index(row,COLUMN_ENABLED);
+		bool enabled = table_new_segment->model()->data(index).toBool();
+
+		GPlatesQtWidgets::HellingerPick pick(type,lat,lon,uncertainty,enabled);
 		d_hellinger_model_ptr->add_pick(pick,segment);
 	}
 	d_hellinger_dialog_ptr->update_tree_from_model();
@@ -240,7 +260,7 @@ void
 GPlatesQtWidgets::HellingerEditSegmentDialog::handle_add_line()
 {
 	int insertion_row;
-	if ((d_model->rowCount() == 0) ||
+	if ((d_table_model->rowCount() == 0) ||
 		 table_new_segment->selectionModel()->selection().indexes().isEmpty())
 	{
 		insertion_row = 0;
@@ -252,7 +272,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::handle_add_line()
 		insertion_row = index.row();
 	}
 
-	d_model->insertRow(insertion_row);
+	d_table_model->insertRow(insertion_row);
 	set_initial_row_values(insertion_row);
 }
 
@@ -265,7 +285,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::handle_remove_line()
 	}
 	const QModelIndex index = table_new_segment->currentIndex();
 	int row = index.row();
-	d_model->removeRow(row);
+	d_table_model->removeRow(row);
 }
 
 void
@@ -273,18 +293,18 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::change_pick_type_of_whole_table()
 {
 	if (radio_moving->isChecked())
 	{
-		for (int row = 0; row < d_model->rowCount(); ++row)
+		for (int row = 0; row < d_table_model->rowCount(); ++row)
 		{
-			QModelIndex index_move_fix = d_model->index(row, COLUMN_MOVING_FIXED);
-			d_model->setData(index_move_fix, GPlatesQtWidgets::MOVING_PICK_TYPE);
+			QModelIndex index_move_fix = d_table_model->index(row, COLUMN_MOVING_FIXED);
+			d_table_model->setData(index_move_fix, GPlatesQtWidgets::MOVING_PICK_TYPE);
 		}
 	}
 	else if (radio_fixed->isChecked())
 	{
-		for (int row = 0; row < d_model->rowCount(); ++row)
+		for (int row = 0; row < d_table_model->rowCount(); ++row)
 		{
-			QModelIndex index_move_fix = d_model ->index(row, COLUMN_MOVING_FIXED, QModelIndex());
-			d_model->setData(index_move_fix, GPlatesQtWidgets::FIXED_PICK_TYPE);
+			QModelIndex index_move_fix = d_table_model ->index(row, COLUMN_MOVING_FIXED, QModelIndex());
+			d_table_model->setData(index_move_fix, GPlatesQtWidgets::FIXED_PICK_TYPE);
 		}
 	}
 }
@@ -293,8 +313,19 @@ void
 GPlatesQtWidgets::HellingerEditSegmentDialog::update_buttons()
 {
 	QModelIndexList indices = table_new_segment->selectionModel()->selection().indexes();
-
 	button_remove_line->setEnabled(!indices.isEmpty());
+
+	if (indices.isEmpty())
+	{
+		return;
+	}
+
+	QModelIndex index = indices.front();
+	int selected_row = index.row();
+	QModelIndex enabled_index = d_table_model->index(selected_row,COLUMN_ENABLED);
+	bool enabled = d_table_model->data(enabled_index).toBool();
+	button_enable->setEnabled(!enabled);
+	button_disable->setEnabled(enabled);
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_reset()
@@ -304,12 +335,32 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_reset()
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_enable()
 {
+	QModelIndexList indices = table_new_segment->selectionModel()->selection().indexes();
+	if (indices.isEmpty())
+	{
+		return;
+	}
+	QModelIndex index = indices.front();
 
+	QModelIndex index_of_enabled_column_in_row_of_selected_cell =
+			index.model()->index(index.row(),GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_ENABLED);
+	d_table_model->setData(index_of_enabled_column_in_row_of_selected_cell,true);
+	update_entire_row(table_new_segment,index);
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_disable()
 {
+	QModelIndexList indices = table_new_segment->selectionModel()->selection().indexes();
+	if (indices.isEmpty())
+	{
+		return;
+	}
+	QModelIndex index = indices.front();
 
+	QModelIndex index_of_enabled_column_in_row_of_selected_cell =
+			index.model()->index(index.row(),GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_ENABLED);
+	d_table_model->setData(index_of_enabled_column_in_row_of_selected_cell,false);
+	update_entire_row(table_new_segment,index);
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_edited_segment()
@@ -418,13 +469,13 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_new_segment()
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::set_initial_row_values(const int &row)
 {
-	QModelIndex index_move_fix = d_model->index(row, COLUMN_MOVING_FIXED);
-	d_model->setData(index_move_fix, 1);
+	QModelIndex index_move_fix = d_table_model->index(row, COLUMN_MOVING_FIXED);
+	d_table_model->setData(index_move_fix, 1);
 
 	for (int col = 1; col < NUM_COLUMNS; ++col)
 	{
-		QModelIndex index = d_model->index(row, col);
-		d_model->setData(index, 0.00);
+		QModelIndex index = d_table_model->index(row, col);
+		d_table_model->setData(index, 0.00);
 	}
 
 }
@@ -433,20 +484,20 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::set_row_values(
 		const int &row,
 		const GPlatesQtWidgets::HellingerPick &pick)
 {
-	QModelIndex index = d_model->index(row,COLUMN_MOVING_FIXED);
-	d_model->setData(index,translate_segment_type(pick.d_segment_type));
+	QModelIndex index = d_table_model->index(row,COLUMN_MOVING_FIXED);
+	d_table_model->setData(index,translate_segment_type(pick.d_segment_type));
 
-	index = d_model->index(row,COLUMN_LAT);
-	d_model->setData(index,pick.d_lat);
+	index = d_table_model->index(row,COLUMN_LAT);
+	d_table_model->setData(index,pick.d_lat);
 
-	index = d_model->index(row,COLUMN_LON);
-	d_model->setData(index,pick.d_lon);
+	index = d_table_model->index(row,COLUMN_LON);
+	d_table_model->setData(index,pick.d_lon);
 
-	index = d_model->index(row,COLUMN_UNCERTAINTY);
-	d_model->setData(index,pick.d_uncertainty);
+	index = d_table_model->index(row,COLUMN_UNCERTAINTY);
+	d_table_model->setData(index,pick.d_uncertainty);
 
-	index = d_model->index(row,COLUMN_ENABLED);
-	d_model->setData(index,pick.d_is_enabled);
+	index = d_table_model->index(row,COLUMN_ENABLED);
+	d_table_model->setData(index,pick.d_is_enabled);
 
 }
 
@@ -577,9 +628,10 @@ GPlatesQtWidgets::SpinBoxDelegate::paint(
 {
 
 	// Get the row of the current index, and then get the data in the "enabled" column for that row.
-	int row = index.row();
-	QModelIndex i = index.model()->index(row,GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_ENABLED);
-	bool enabled = index.model()->data(i).toBool();
+
+	QModelIndex index_of_enabled_column_in_row_of_selected_cell =
+			index.model()->index(index.row(),GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_ENABLED);
+	bool enabled = index.model()->data(index_of_enabled_column_in_row_of_selected_cell).toBool();
 
 	painter->setPen(enabled? Qt::black : Qt::gray);
 	painter->drawText(option.rect, Qt::AlignCenter,index.data().toString());
