@@ -254,6 +254,10 @@ namespace GPlatesModel
 				public boost::iterator_facade<
 						Iterator<ElementQualifiedType>,
 						ElementQualifiedType,
+						// NOTE: This must not be 'boost::random_access_iterator_tag', otherwise std::advance()
+						// won't work properly (for negative values) - because our proxy reference is not a real
+						// reference and std::advance cannot yet take advantage of the new style iterator concepts
+						// (see - http://www.boost.org/doc/libs/1_34_1/libs/iterator/doc/new-iter-concepts.html)...
 						std::random_access_iterator_tag,
 						typename boost::mpl::if_<
 								boost::is_same<ElementQualifiedType, const_element_type>,
@@ -1003,7 +1007,7 @@ namespace GPlatesModel
 				first.d_revisioned_vector == this &&
 					last.d_revisioned_vector == this &&
 					first.d_index < revision.elements.size() &&
-					last.d_index < revision.elements.size() &&
+					last.d_index <= revision.elements.size() &&
 					first.d_index <= last.d_index,
 				GPLATES_ASSERTION_SOURCE);
 

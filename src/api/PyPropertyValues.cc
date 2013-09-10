@@ -28,7 +28,6 @@
 #include <boost/optional.hpp>
 
 #include "PythonConverterUtils.h"
-#include "PyRevisionedVector.h"
 
 #include "global/CompilerWarnings.h"
 
@@ -685,9 +684,6 @@ export_gpml_irregular_sampling()
 	const boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>
 			(GPlatesPropertyValues::GpmlIrregularSampling::*get_interpolation_function)() =
 					&GPlatesPropertyValues::GpmlIrregularSampling::interpolation_function;
-
-	// Wrap the revisioned vector of time samples returned by 'GpmlIrregularSampling::time_samples()'.
-	GPlatesApi::RevisionedVectorWrapper<GPlatesPropertyValues::GpmlTimeSample>::wrap("RevisionedVector");
 
 	//
 	// GpmlIrregularSampling - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
