@@ -223,7 +223,7 @@ namespace GPlatesApi
 			}
 
 			// Assign the new elements to the revisioned vector.
-			std::vector<element_type>::const_iterator new_elements_iter = new_elements_vector.begin();
+			typename std::vector<element_type>::const_iterator new_elements_iter = new_elements_vector.begin();
 			iter = slice_range->start;
 			for ( ; iter != slice_range->stop; std::advance(iter, slice_range->step))
 			{

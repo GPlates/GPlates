@@ -315,7 +315,7 @@ namespace GPlatesApi
 			}
 			else
 			{
-				new (storage) boost::optional<T>(bp::extract<T>(obj));
+				new (storage) boost::optional<T>(bp::extract<T>(obj)());
 			}
 
 			data->convertible = storage;
