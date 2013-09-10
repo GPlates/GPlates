@@ -274,6 +274,15 @@ GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry(
 		motion_track,
 		d_rotations);
 
+	// NOTE: We no longer require the reconstruction time to be between the end points of the times vector.
+	// This enables us to display/export at, for example, present day when the time vector does
+	// not include present day (such as a motion path representing part of a hotspot trail).
+	//
+	// This also means it's possible to not have enough points to form a polyline.
+	if (motion_track.size() < 2)
+	{
+		return;
+	}
 
 	// The reconstruction tree for the current reconstruction time.
 	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
@@ -283,7 +292,8 @@ GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry(
 		reconstruction_tree->get_composed_absolute_rotation(
 		d_motion_track_property_finder.get_relative_plate_id().get()).first;
 
-	try{
+	try
+	{
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type motion_track_points = 
 			GPlatesMaths::PolylineOnSphere::create_on_heap(motion_track.begin(),motion_track.end());
 
@@ -305,7 +315,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry(
 		d_reconstructed_feature_geometries.push_back(mtrg_ptr);
 
 	}
-	catch (std::exception &exc)
+	catch (const std::exception &exc)
 	{
 		qWarning() << exc.what();
 	}
