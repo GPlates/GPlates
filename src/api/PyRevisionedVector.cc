@@ -77,10 +77,22 @@ namespace GPlatesApi
 					typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type,
 					boost::noncopyable>(class_name, bp::no_init)
 				.def("__len__", &GPlatesModel::RevisionedVector<RevisionableType>::size)
+				// Note: We don't provide '__iter__' which means 'iter()' falls back to using '__getitem__'.
  				.def("__setitem__", &set_item)
  				.def("__delitem__", &delete_item)
  				.def("__getitem__", &get_item)
 				.def("__contains__", &contains)
+				// Note: We provide __add__ even though this creates a new revisioned vector instance
+				// (ie, doesn't belong to any parent object) and we currently don't have any parent
+				// classes (eg, GpmlIrregularSampling) that have 'set' methods for revisioned vector.
+				// However the user can use it as in 'list1 += list2 + list3' where list1 belongs
+				// to a GpmlIrregularSampling for example...
+				.def("__add__", &add)
+				.def("__iadd__", &iadd)
+				.def("append", &append)
+				.def("insert", &insert)
+				.def("remove", &remove)
+				.def("count", &count)
 			;
 		}
 
@@ -125,6 +137,43 @@ namespace GPlatesApi
 				revisioned_vector_non_null_ptr_type revisioned_vector,
 				boost::python::object element_object);
 
+		static
+		revisioned_vector_non_null_ptr_type
+		add(
+				revisioned_vector_non_null_ptr_type lhs,
+				revisioned_vector_non_null_ptr_type rhs);
+
+		static
+		void
+		iadd(
+				revisioned_vector_non_null_ptr_type revisioned_vector,
+				revisioned_vector_non_null_ptr_type other_revisioned_vector);
+
+		static
+		void
+		append(
+				revisioned_vector_non_null_ptr_type revisioned_vector,
+				const element_type &element);
+
+		static
+		void
+		insert(
+				revisioned_vector_non_null_ptr_type revisioned_vector,
+				long index,
+				const element_type &element);
+
+		static
+		void
+		remove(
+				revisioned_vector_non_null_ptr_type revisioned_vector,
+				long index);
+
+		static
+		int
+		count(
+				revisioned_vector_non_null_ptr_type revisioned_vector,
+				const element_type &element);
+
 
 		/**
 		 * Helper function to get the slice range from a slice object.
@@ -140,13 +189,16 @@ namespace GPlatesApi
 		/**
 		 * Helper function to check the integer index (and adjust if negative index).
 		 *
+		 * @a allow_index_to_last_element_plus_one is useful for getting indices of end iterators.
+		 *
 		 * Throws IndexError exception if index is out-of-range.
 		 */
 		static
 		long
 		get_index(
 				revisioned_vector_non_null_ptr_type revisioned_vector,
-				long index);
+				long index,
+				bool allow_index_to_last_element_plus_one = false);
 
 	};
 
@@ -416,6 +468,103 @@ namespace GPlatesApi
 
 
 	template <class RevisionableType>
+	typename RevisionedVectorWrapper<RevisionableType>::revisioned_vector_non_null_ptr_type
+	RevisionedVectorWrapper<RevisionableType>::add(
+			revisioned_vector_non_null_ptr_type lhs,
+			revisioned_vector_non_null_ptr_type rhs)
+	{
+		revisioned_vector_non_null_ptr_type revisioned_vector =
+				GPlatesModel::RevisionedVector<RevisionableType>::create(lhs->begin(), lhs->end());
+
+		revisioned_vector->insert(
+				revisioned_vector->end(),
+				rhs->begin(),
+				rhs->end());
+
+		return revisioned_vector;
+	}
+
+
+	template <class RevisionableType>
+	void
+	RevisionedVectorWrapper<RevisionableType>::iadd(
+			revisioned_vector_non_null_ptr_type revisioned_vector,
+			revisioned_vector_non_null_ptr_type other_revisioned_vector)
+	{
+		revisioned_vector->insert(
+				revisioned_vector->end(),
+				other_revisioned_vector->begin(),
+				other_revisioned_vector->end());
+	}
+
+
+	template <class RevisionableType>
+	void
+	RevisionedVectorWrapper<RevisionableType>::append(
+			revisioned_vector_non_null_ptr_type revisioned_vector,
+			const element_type &element)
+	{
+		revisioned_vector->push_back(element);
+	}
+
+
+	template <class RevisionableType>
+	void
+	RevisionedVectorWrapper<RevisionableType>::insert(
+			revisioned_vector_non_null_ptr_type revisioned_vector,
+			long index,
+			const element_type &element)
+	{
+		// It's OK to use an 'end' iterator when inserting.
+		index = get_index(revisioned_vector, index, true/*allow_index_to_last_element_plus_one*/);
+
+		// Create an iterator referencing the 'index'th element.
+		iterator_type iter = revisioned_vector->begin();
+		std::advance(iter, index);
+
+		revisioned_vector->insert(iter, element);
+	}
+
+
+	template <class RevisionableType>
+	void
+	RevisionedVectorWrapper<RevisionableType>::remove(
+			revisioned_vector_non_null_ptr_type revisioned_vector,
+			long index)
+	{
+		index = get_index(revisioned_vector, index);
+
+		// Create an iterator referencing the 'index'th element.
+		iterator_type iter = revisioned_vector->begin();
+		std::advance(iter, index);
+
+		revisioned_vector->erase(iter);
+	}
+
+
+	template <class RevisionableType>
+	int
+	RevisionedVectorWrapper<RevisionableType>::count(
+			revisioned_vector_non_null_ptr_type revisioned_vector,
+			const element_type &element)
+	{
+		int num_matches = 0;
+
+		// Search the revisioned vector for the element.
+		BOOST_FOREACH(element_type revisioned_element, *revisioned_vector)
+		{
+			// Compare the pointed-to elements, not the pointers.
+			if (*revisioned_element == *element)
+			{
+				++num_matches;
+			}
+		}
+
+		return num_matches;
+	}
+
+
+	template <class RevisionableType>
 	boost::optional<
 			boost::python::slice::range<
 					typename RevisionedVectorWrapper<RevisionableType>::iterator_type> >
@@ -442,7 +591,8 @@ namespace GPlatesApi
 	long
 	RevisionedVectorWrapper<RevisionableType>::get_index(
 			revisioned_vector_non_null_ptr_type revisioned_vector,
-			long index)
+			long index,
+			bool allow_index_to_last_element_plus_one)
 	{
 		namespace bp = boost::python;
 
@@ -451,7 +601,13 @@ namespace GPlatesApi
 			index += revisioned_vector->size();
 		}
 
-		if (index >= long(revisioned_vector->size()) ||
+		long highest_allowed_index = revisioned_vector->size();
+		if (!allow_index_to_last_element_plus_one)
+		{
+			--highest_allowed_index;
+		}
+
+		if (index > highest_allowed_index ||
 			index < 0)
 		{
 			PyErr_SetString(PyExc_IndexError, "Index out of range");
@@ -466,11 +622,14 @@ namespace GPlatesApi
 void
 export_revisioned_vector()
 {
+	using namespace GPlatesApi;
+	using namespace GPlatesModel;
+	using namespace GPlatesPropertyValues;
+
 	// Export all required instantiations of class template RevisionedVector...
 
 	// GpmlTimeSample.
-	GPlatesApi::RevisionedVectorWrapper<GPlatesPropertyValues::GpmlTimeSample>::wrap(
-			"RevisionedVector<GpmlTimeSample>");
+	RevisionedVectorWrapper<GpmlTimeSample>::wrap("list<GpmlTimeSample>");
 }
 
 #endif // GPLATES_NO_PYTHON

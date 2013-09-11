@@ -437,8 +437,23 @@ namespace GPlatesModel
 		create(
 				const std::vector<element_type> &elements = std::vector<element_type>())
 		{
+			return create(elements.begin(), elements.end());
+		}
+
+		/**
+		 * Create a revisioned vector with the initial sequence of elements in the specified
+		 * iteration range (where iterator dereferences to 'element_type' which is the same as
+		 * 'RevisionableType::non_null_ptr_type').
+		 */
+		template <typename ElementIter>
+		static
+		const non_null_ptr_type
+		create(
+				ElementIter elements_begin,
+				ElementIter elements_end)
+		{
 			ModelTransaction transaction;
-			non_null_ptr_type ptr(new RevisionedVector(transaction, elements));
+			non_null_ptr_type ptr(new RevisionedVector(transaction, elements_begin, elements_end));
 			transaction.commit();
 			return ptr;
 		}
@@ -601,12 +616,14 @@ namespace GPlatesModel
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
+		template <typename ElementIter>
 		RevisionedVector(
 				ModelTransaction &transaction_,
-				const std::vector<element_type> &elements) :
+				ElementIter elements_begin,
+				ElementIter elements_end) :
 			Revisionable(
 					typename Revision::non_null_ptr_type(
-							new Revision(transaction_, *this, elements)))
+							new Revision(transaction_, *this, elements_begin, elements_end)))
 		{  }
 
 		//! Constructor used when cloning.
@@ -731,12 +748,16 @@ namespace GPlatesModel
 		struct Revision :
 				public GPlatesModel::Revision
 		{
+			template <typename ElementIter>
 			Revision(
 					ModelTransaction &transaction_,
 					RevisionContext &child_context_,
-					const std::vector<element_type> &elements_)
+					ElementIter elements_begin_,
+					ElementIter elements_end_)
 			{
-				BOOST_FOREACH(const element_type &element_, elements_)
+				BOOST_FOREACH(
+						const element_type &element_,
+						std::make_pair(elements_begin_, elements_end_))
 				{
 					elements.push_back(
 							// Revisioned elements bubble up to us...
