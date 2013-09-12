@@ -87,6 +87,55 @@ DISABLE_GCC_WARNING("-Wshadow")
 		typedef typename boost::iterator_difference<iterator_type>::type iterator_difference_type;
 
 
+		/**
+		 * An iterator that checks the index is dereferenceable - we don't use bp::iterator in order
+		 * to avoid issues with C++ iterators being invalidated from the C++ side and causing issues
+		 * on the python side (eg, removing container elements on the C++ side while iterating over
+		 * the container on the python side, for example, via a pygplates call back into the C++ code).
+		 */
+		class Iterator
+		{
+		public:
+
+			explicit
+			Iterator(
+					const revisioned_vector_non_null_ptr_type &revisioned_vector) :
+				d_revisioned_vector(revisioned_vector),
+				d_index(0)
+			{  }
+
+			Iterator &
+			self()
+			{
+				return *this;
+			}
+
+			element_type
+			next()
+			{
+				if (d_index >= d_revisioned_vector->size())
+				{
+					PyErr_SetString(PyExc_StopIteration, "No more data.");
+					boost::python::throw_error_already_set();
+				}
+				return (*d_revisioned_vector)[d_index++];
+			}
+
+		private:
+			revisioned_vector_non_null_ptr_type d_revisioned_vector;
+			typename GPlatesModel::RevisionedVector<RevisionableType>::size_type d_index;
+		};
+
+
+		static
+		Iterator
+		get_iter(
+				revisioned_vector_non_null_ptr_type revisioned_vector)
+		{
+			return Iterator(revisioned_vector);
+		}
+
+
 		static
 		void
 		set_item(
@@ -115,8 +164,14 @@ DISABLE_GCC_WARNING("-Wshadow")
 		static
 		revisioned_vector_non_null_ptr_type
 		add(
-				revisioned_vector_non_null_ptr_type lhs,
-				revisioned_vector_non_null_ptr_type rhs);
+				revisioned_vector_non_null_ptr_type revisioned_vector,
+				boost::python::object iterable);
+
+		static
+		revisioned_vector_non_null_ptr_type
+		radd(
+				revisioned_vector_non_null_ptr_type revisioned_vector,
+				boost::python::object iterable);
 
 		static
 		revisioned_vector_non_null_ptr_type
@@ -217,6 +272,15 @@ ENABLE_GCC_WARNING("-Wshadow")
 	{
 		namespace bp = boost::python;
 
+		std::stringstream iterator_class_name_stream;
+		iterator_class_name_stream << class_name << "_" << "iterator";
+
+		// Note: We don't docstring this - it's not an interface the python user needs to know about.
+		bp::class_<Iterator>(iterator_class_name_stream.str().c_str(), bp::no_init)
+			.def("__iter__", &Iterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
+			.def("next", &Iterator::next)
+		;
+
 		//
 		// RevisionedVector - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 		//
@@ -224,18 +288,16 @@ ENABLE_GCC_WARNING("-Wshadow")
 				GPlatesModel::RevisionedVector<RevisionableType>,
 				typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type,
 				boost::noncopyable>(class_name, bp::no_init)
+			.def("__iter__", &get_iter)
 			.def("__len__", &GPlatesModel::RevisionedVector<RevisionableType>::size)
-			// Note: We don't provide '__iter__' which means 'iter()' falls back to using '__getitem__'.
 			.def("__setitem__", &set_item)
 			.def("__delitem__", &delete_item)
 			.def("__getitem__", &get_item)
 			.def("__contains__", &contains)
-			// Note: We provide __add__ even though this creates a new revisioned vector instance
-			// (ie, doesn't belong to any parent object) and we currently don't have any parent
-			// classes (eg, GpmlIrregularSampling) that have 'set' methods for revisioned vector.
-			// However the user can use it as in 'list1 += list2 + list3' where list1 belongs
-			// to a GpmlIrregularSampling for example...
+			// __add__ is useful for situations like 'list1 += list2 + list3' where list1 belongs
+			// to a GpmlIrregularSampling for example and the addition 'list2 + list3' does not...
 			.def("__add__", &add)
+			.def("__radd__", &radd)
 			.def("__iadd__", &iadd)
 			.def("append", &append)
 			.def("extend", &extend)
@@ -512,18 +574,50 @@ ENABLE_GCC_WARNING("-Wshadow")
 	template <class RevisionableType>
 	typename RevisionedVectorWrapper<RevisionableType>::revisioned_vector_non_null_ptr_type
 	RevisionedVectorWrapper<RevisionableType>::add(
-			revisioned_vector_non_null_ptr_type lhs,
-			revisioned_vector_non_null_ptr_type rhs)
+			revisioned_vector_non_null_ptr_type revisioned_vector,
+			boost::python::object iterable)
 	{
-		revisioned_vector_non_null_ptr_type revisioned_vector =
-				GPlatesModel::RevisionedVector<RevisionableType>::create(lhs->begin(), lhs->end());
+		namespace bp = boost::python;
 
-		revisioned_vector->insert(
-				revisioned_vector->end(),
-				rhs->begin(),
-				rhs->end());
+		revisioned_vector_non_null_ptr_type concat_revisioned_vector = revisioned_vector->clone();
 
-		return revisioned_vector;
+		// Begin/end iterators over the python iterable.
+		bp::stl_input_iterator<element_type>
+				new_elements_begin(iterable),
+				new_elements_end;
+
+		// Insert the new elements.
+		concat_revisioned_vector->insert(
+				concat_revisioned_vector->end(),
+				new_elements_begin,
+				new_elements_end);
+
+		return concat_revisioned_vector;
+	}
+
+
+	template <class RevisionableType>
+	typename RevisionedVectorWrapper<RevisionableType>::revisioned_vector_non_null_ptr_type
+	RevisionedVectorWrapper<RevisionableType>::radd(
+			revisioned_vector_non_null_ptr_type revisioned_vector,
+			boost::python::object iterable)
+	{
+		namespace bp = boost::python;
+
+		revisioned_vector_non_null_ptr_type concat_revisioned_vector = revisioned_vector->clone();
+
+		// Begin/end iterators over the python iterable.
+		bp::stl_input_iterator<element_type>
+				new_elements_begin(iterable),
+				new_elements_end;
+
+		// Insert the new elements.
+		concat_revisioned_vector->insert(
+				concat_revisioned_vector->begin(),
+				new_elements_begin,
+				new_elements_end);
+
+		return concat_revisioned_vector;
 	}
 
 

@@ -26,7 +26,7 @@
 #ifndef GPLATES_MODEL_REVISIONEDVECTOR_H
 #define GPLATES_MODEL_REVISIONEDVECTOR_H
 
-#include <cstddef> // std::size_t
+#include <cstddef> // std::size_t, std::ptrdiff_t
 #include <iterator>
 #include <vector>
 #include <boost/foreach.hpp>
@@ -107,6 +107,10 @@ namespace GPlatesModel
 		//! Typedef for a revisionable element - all @a Revisionable types use non_null_intrusive_ptr.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const RevisionableType> const_element_type;
 
+		// Common container typedefs.
+		typedef element_type value_type;
+		typedef std::size_t size_type;
+		typedef std::ptrdiff_t difference_type;
 
 		//! A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<RevisionedVector>.
 		typedef GPlatesUtils::non_null_intrusive_ptr<RevisionedVector> non_null_ptr_type;
