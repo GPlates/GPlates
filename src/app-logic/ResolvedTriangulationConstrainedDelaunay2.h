@@ -125,10 +125,16 @@ namespace GPlatesAppLogic
 		 *
 		 * NOTE: We wrap it in a CGAL::Triangulation_hierarchy_vertex_base_2 because our
 		 * constrained delaunay triangulation is wrapped in a CGAL::Triangulation_hierarchy_2.
+		 *
+		 * NOTE: Avoid compiler warning 4503 'decorated name length exceeded' in Visual Studio 2008.
+		 * Seems we get the warning, which gets (correctly) treated as error due to /WX switch,
+		 * even if we disable the 4503 warning. So prevent warning by reducing name length of
+		 * identifier - which we do by inheritance instead of using a typedef.
 		 */
-		typedef CGAL::Triangulation_hierarchy_vertex_base_2<
-				CGAL::Triangulation_vertex_base_2<constrained_delaunay_kernel_2_type> >
-						constrained_delaunay_triangulation_vertex_2_type;
+		struct constrained_delaunay_triangulation_vertex_2_type :
+				public CGAL::Triangulation_hierarchy_vertex_base_2<
+						CGAL::Triangulation_vertex_base_2<constrained_delaunay_kernel_2_type> >
+		{  };
 
 		//! Face type for constrained delaunay triangulation that are meshed.
 		typedef CGAL::Delaunay_mesh_face_base_2<constrained_delaunay_kernel_2_type>

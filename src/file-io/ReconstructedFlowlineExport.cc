@@ -26,12 +26,14 @@
 
 #include "ReconstructedFlowlineExport.h"
 
+#include "app-logic/ReconstructedFlowline.h"
+
 #include "GMTFormatFlowlineExport.h"
 #include "FeatureCollectionFileFormat.h"
 #include "FeatureCollectionFileFormatRegistry.h"
 #include "FileFormatNotSupportedException.h"
-#include "ReconstructionGeometryExportImpl.h"
 #include "OgrFormatFlowlineExport.h"
+#include "ReconstructionGeometryExportImpl.h"
 
 using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 

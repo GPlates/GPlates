@@ -25,8 +25,16 @@
 
 #include "ReconstructionGeometryUtils.h"
 
+#include "MultiPointVectorField.h"
+#include "ReconstructedFeatureGeometry.h"
+#include "ReconstructedFlowline.h"
+#include "ReconstructedMotionPath.h"
+#include "ReconstructedSmallCircle.h"
+#include "ReconstructedVirtualGeomagneticPole.h"
 #include "Reconstruction.h"
 #include "ReconstructionGeometryFinder.h"
+#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalNetwork.h"
 
 
 namespace GPlatesAppLogic
@@ -162,4 +170,249 @@ GPlatesAppLogic::ReconstructionGeometryUtils::find_reconstruction_geometries_obs
 
 	return get_reconstruction_geometries_subset(
 			reconstruction_geometries_observing_feature, reconstruction_geometries_subset, rg_finder);
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetFeatureRef::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+{
+	// A MultiPointVectorField references both a velocity point location and
+	// a plate polygon of some sort.
+	// Here we just return whichever feature reference is stored in the
+	// MultiPointVectorField object itself - currently this is velocity point location.
+	d_feature_ref = mpvf->get_feature_ref();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetFeatureRef::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+{
+	d_feature_ref = rfg->get_feature_ref();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetFeatureRef::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+{
+	d_feature_ref = rtg->get_feature_ref();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetFeatureRef::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+{
+	d_feature_ref = rtn->get_feature_ref();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetGeometryProperty::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+{
+	// A MultiPointVectorField references both a velocity point location and
+	// a plate polygon of some sort.
+	// Here we just return whichever geometry property is stored in the
+	// MultiPointVectorField object itself - currently this is velocity point location.
+	d_property = mpvf->property();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetGeometryProperty::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+{
+	d_property = rfg->property();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetGeometryProperty::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+{
+	d_property = rtg->property();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetGeometryProperty::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+{
+	d_property = rtn->property();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetPlateId::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+{
+	// A MultiPointVectorField instance does not correspond to any
+	// single plate, and hence does not contain a plate ID, so nothing
+	// to do here.
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetPlateId::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+{
+	d_plate_id = rfg->reconstruction_plate_id();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetPlateId::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+{
+	d_plate_id = rtg->plate_id();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetPlateId::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+{
+	d_plate_id = rtn->plate_id();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetTimeOfFormation::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+{
+	// A MultiPointVectorField instance does not reference a feature,
+	// and hence there is no time of formation, so nothing to do here.
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetTimeOfFormation::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+{
+	d_time_of_formation = rfg->time_of_formation();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetTimeOfFormation::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+{
+	d_time_of_formation = rtg->time_of_formation();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetTimeOfFormation::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+{
+	d_time_of_formation = rtn->time_of_formation();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTree::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+{
+	// multi_point_vector_field_type does not need/support reconstruction trees.
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTree::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+{
+	d_reconstruction_tree = d_reconstruction_time
+			? rfg->get_reconstruction_tree_creator().get_reconstruction_tree(d_reconstruction_time.get())
+			: rfg->get_reconstruction_tree();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTree::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+{
+	d_reconstruction_tree = d_reconstruction_time
+			? rtg->get_reconstruction_tree_creator().get_reconstruction_tree(d_reconstruction_time.get())
+			: rtg->get_reconstruction_tree();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTree::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+{
+	// resolved_topological_network_type does not need/support reconstruction trees.
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTreeCreator::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+{
+	// multi_point_vector_field_type does not need/support reconstruction trees.
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTreeCreator::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+{
+	d_reconstruction_tree_creator = rfg->get_reconstruction_tree_creator();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTreeCreator::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+{
+	d_reconstruction_tree_creator = rtg->get_reconstruction_tree_creator();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTreeCreator::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+{
+	// resolved_topological_network_type does not need/support reconstruction trees.
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundarySubSegmentSequence::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+{
+	// Only a resolved topological geometry with a *polygon* is a resolved topological *boundary*.
+	if (rtg->resolved_topology_boundary())
+	{
+		d_sub_segment_sequence = rtg->get_sub_segment_sequence();
+	}
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundarySubSegmentSequence::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+{
+	d_sub_segment_sequence = rtn->get_boundary_sub_segment_sequence();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundaryPolygon::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+{
+	// See if the resolved topology geometry is a polygon.
+	// It might be a polyline in which case boost::none is returned.
+	d_boundary_polygon = rtg->resolved_topology_boundary();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundaryPolygon::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+{
+	d_boundary_polygon = rtn->boundary_polygon();
 }

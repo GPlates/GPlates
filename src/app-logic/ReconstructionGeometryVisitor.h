@@ -28,13 +28,6 @@
 #ifndef GPLATES_APP_LOGIC_RECONSTRUCTIONGEOMETRYVISITOR_H
 #define GPLATES_APP_LOGIC_RECONSTRUCTIONGEOMETRYVISITOR_H
 
-// Class definitions of ReconstructedFeatureGeometry derivations are needed below for static pointer casts.
-#include "DeformedFeatureGeometry.h"
-#include "ReconstructedFlowline.h"
-#include "ReconstructedMotionPath.h"
-#include "ReconstructedSmallCircle.h"
-#include "ReconstructedVirtualGeomagneticPole.h"
-
 #include "utils/CopyConst.h"
 #include "utils/non_null_intrusive_ptr.h"
 
@@ -176,11 +169,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<deformed_feature_geometry_type> &dfg)
-		{
-			// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
-			visit(GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(dfg));
-		}
+				const GPlatesUtils::non_null_intrusive_ptr<deformed_feature_geometry_type> &dfg);
 
 		/**
 		 * Override this function in your own derived class.
@@ -197,11 +186,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
-		{
-			// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
-			visit(GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(rf));
-		}
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf);
 
 		/**
 		 * Override this function in your own derived class.
@@ -209,11 +194,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
-		{
-			// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
-			visit(GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(rmp));
-		}
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp);
 
 
 		/**
@@ -222,11 +203,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
-		{
-			// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
-			visit(GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(rvgp));
-		}
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp);
 
 
 		/**
@@ -276,11 +253,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
-		{
-			// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
-			visit(GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(rsc));
-		}
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc);
 
 
 	private:

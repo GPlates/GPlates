@@ -26,12 +26,14 @@
 
 #include "ReconstructedMotionPathExport.h"
 
+#include "app-logic/ReconstructedMotionPath.h"
+
 #include "GMTFormatMotionPathExport.h"
 #include "FeatureCollectionFileFormat.h"
 #include "FeatureCollectionFileFormatRegistry.h"
 #include "FileFormatNotSupportedException.h"
-#include "ReconstructionGeometryExportImpl.h"
 #include "OgrFormatMotionPathExport.h"
+#include "ReconstructionGeometryExportImpl.h"
 
 using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 

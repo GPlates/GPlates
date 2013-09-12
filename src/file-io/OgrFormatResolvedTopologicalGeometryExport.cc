@@ -35,8 +35,10 @@
 #include "OgrGeometryExporter.h"
 #include "OgrUtils.h"
 
+#include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ResolvedTopologicalGeometry.h"
 
 #include "feature-visitors/GeometryTypeFinder.h"
 #include "feature-visitors/KeyValueDictionaryFinder.h"

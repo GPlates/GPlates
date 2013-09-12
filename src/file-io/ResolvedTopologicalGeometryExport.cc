@@ -25,12 +25,16 @@
 
 #include "ResolvedTopologicalGeometryExport.h"
 
+#include "app-logic/ReconstructedFeatureGeometry.h"
+#include "app-logic/ResolvedTopologicalGeometry.h"
+#include "app-logic/ResolvedTopologicalNetwork.h"
+
 #include "GMTFormatResolvedTopologicalGeometryExport.h"
 #include "FeatureCollectionFileFormat.h"
 #include "FeatureCollectionFileFormatRegistry.h"
 #include "FileFormatNotSupportedException.h"
-#include "ReconstructionGeometryExportImpl.h"
 #include "OgrFormatResolvedTopologicalGeometryExport.h"
+#include "ReconstructionGeometryExportImpl.h"
 
 using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 

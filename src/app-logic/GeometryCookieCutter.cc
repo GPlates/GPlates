@@ -33,6 +33,7 @@
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalNetwork.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 

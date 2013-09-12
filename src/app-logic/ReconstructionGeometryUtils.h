@@ -32,23 +32,17 @@
 #include <boost/optional.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
 
-#include "maths/PolygonOnSphere.h"
-	
-#include "model/FeatureVisitor.h"
-
-#include "MultiPointVectorField.h"
-#include "ReconstructedFeatureGeometry.h"
-#include "ReconstructedFlowline.h"
-#include "ReconstructedMotionPath.h"
-#include "ReconstructedSmallCircle.h"
-#include "ReconstructedVirtualGeomagneticPole.h"
+#include "AppLogicFwd.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionGeometry.h"
 #include "ReconstructionGeometryVisitor.h"
 #include "ReconstructionTree.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ReconstructionTreeCreator.h"
 #include "ResolvedTopologicalGeometrySubSegment.h"
-#include "ResolvedTopologicalNetwork.h"
+
+#include "maths/PolygonOnSphere.h"
+	
+#include "model/FeatureVisitor.h"
 
 #include "property-values/GeoTimeInstant.h"
 
@@ -458,40 +452,24 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
-			{
-				// A MultiPointVectorField references both a velocity point location and
-				// a plate polygon of some sort.
-				// Here we just return whichever feature reference is stored in the
-				// MultiPointVectorField object itself - currently this is velocity point location.
-				d_feature_ref = mpvf->get_feature_ref();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 			// Derivations of ReconstructedFeatureGeometry default to its implementation...
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
-			{
-				d_feature_ref = rfg->get_feature_ref();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
-			{
-				d_feature_ref = rtg->get_feature_ref();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg);
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
-			{
-				d_feature_ref = rtn->get_feature_ref();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
 
 		private:
 			boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_feature_ref;
@@ -533,40 +511,24 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
-			{
-				// A MultiPointVectorField references both a velocity point location and
-				// a plate polygon of some sort.
-				// Here we just return whichever geometry property is stored in the
-				// MultiPointVectorField object itself - currently this is velocity point location.
-				d_property = mpvf->property();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 			// Derivations of ReconstructedFeatureGeometry default to its implementation...
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
-			{
-				d_property = rfg->property();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
-			{
-				d_property = rtg->property();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg);
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
-			{
-				d_property = rtn->property();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
 
 		private:
 			boost::optional<GPlatesModel::FeatureHandle::iterator> d_property;
@@ -608,38 +570,24 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
-			{
-				// A MultiPointVectorField instance does not correspond to any
-				// single plate, and hence does not contain a plate ID, so nothing
-				// to do here.
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 			// Derivations of ReconstructedFeatureGeometry default to its implementation...
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
-			{
-				d_plate_id = rfg->reconstruction_plate_id();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
-			{
-				d_plate_id = rtg->plate_id();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg);
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
-			{
-				d_plate_id = rtn->plate_id();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
 
 		private:
 			boost::optional<GPlatesModel::integer_plate_id_type> d_plate_id;
@@ -673,37 +621,24 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
-			{
-				// A MultiPointVectorField instance does not reference a feature,
-				// and hence there is no time of formation, so nothing to do here.
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 			// Derivations of ReconstructedFeatureGeometry default to its implementation...
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
-			{
-				d_time_of_formation = rfg->time_of_formation();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
-			{
-				d_time_of_formation = rtg->time_of_formation();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg);
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
-			{
-				d_time_of_formation = rtn->time_of_formation();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
 
 		private:
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_formation;
@@ -745,40 +680,24 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
-			{
-				// multi_point_vector_field_type does not need/support reconstruction trees.
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 			// Derivations of ReconstructedFeatureGeometry default to its implementation...
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
-			{
-				d_reconstruction_tree = d_reconstruction_time
-						? rfg->get_reconstruction_tree_creator().get_reconstruction_tree(d_reconstruction_time.get())
-						: rfg->get_reconstruction_tree();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
-			{
-				d_reconstruction_tree = d_reconstruction_time
-						? rtg->get_reconstruction_tree_creator().get_reconstruction_tree(d_reconstruction_time.get())
-						: rtg->get_reconstruction_tree();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg);
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
-			{
-				// resolved_topological_network_type does not need/support reconstruction trees.
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
 
 		private:
 			boost::optional<double> d_reconstruction_time;
@@ -804,36 +723,24 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
-			{
-				// multi_point_vector_field_type does not need/support reconstruction trees.
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 			// Derivations of ReconstructedFeatureGeometry default to its implementation...
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
-			{
-				d_reconstruction_tree_creator = rfg->get_reconstruction_tree_creator();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
-			{
-				d_reconstruction_tree_creator = rtg->get_reconstruction_tree_creator();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg);
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
-			{
-				// resolved_topological_network_type does not need/support reconstruction trees.
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
 
 		private:
 			boost::optional<ReconstructionTreeCreator> d_reconstruction_tree_creator;
@@ -881,22 +788,12 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
-			{
-				// Only a resolved topological geometry with a *polygon* is a resolved topological *boundary*.
-				if (rtg->resolved_topology_boundary())
-				{
-					d_sub_segment_sequence = rtg->get_sub_segment_sequence();
-				}
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg);
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
-			{
-				d_sub_segment_sequence = rtn->get_boundary_sub_segment_sequence();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
 
 		private:
 			boost::optional<const sub_segment_seq_type &> d_sub_segment_sequence;
@@ -931,20 +828,12 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
-			{
-				// See if the resolved topology geometry is a polygon.
-				// It might be a polyline in which case boost::none is returned.
-				d_boundary_polygon = rtg->resolved_topology_boundary();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg);
 
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
-			{
-				d_boundary_polygon = rtn->boundary_polygon();
-			}
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
 
 		private:
 			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_boundary_polygon;

@@ -39,6 +39,7 @@
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructionTree.h"
+#include "ResolvedTopologicalGeometry.h"
 #include "ResolvedTopologicalNetwork.h"
 #include "ResolvedTriangulationNetwork.h"
 #include "ResolvedTriangulationUtils.h"

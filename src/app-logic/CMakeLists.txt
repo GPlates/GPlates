@@ -117,6 +117,7 @@ set(srcs
     ReconstructionGeometryFinder.h
     ReconstructionGeometryUtils.cc
     ReconstructionGeometryUtils.h
+    ReconstructionGeometryVisitor.cc
     ReconstructionGeometryVisitor.h
     ReconstructionGraph.cc
     ReconstructionGraph.h

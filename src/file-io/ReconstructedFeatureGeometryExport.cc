@@ -26,12 +26,14 @@
 
 #include "ReconstructedFeatureGeometryExport.h"
 
+#include "app-logic/ReconstructedFeatureGeometry.h"
+
 #include "GMTFormatReconstructedFeatureGeometryExport.h"
 #include "FeatureCollectionFileFormat.h"
 #include "FeatureCollectionFileFormatRegistry.h"
 #include "FileFormatNotSupportedException.h"
-#include "ReconstructionGeometryExportImpl.h"
 #include "OgrFormatReconstructedFeatureGeometryExport.h"
+#include "ReconstructionGeometryExportImpl.h"
 
 using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 

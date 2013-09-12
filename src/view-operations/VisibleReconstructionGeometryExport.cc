@@ -35,6 +35,7 @@
 #include "RenderedGeometryCollection.h"
 
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ResolvedTopologicalGeometry.h"
 
 #include "file-io/ReconstructedFeatureGeometryExport.h"
 #include "file-io/ReconstructedFlowlineExport.h"

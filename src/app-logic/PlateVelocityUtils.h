@@ -35,8 +35,6 @@
 
 #include "AppLogicFwd.h"
 #include "ReconstructionTreeCreator.h"
-#include "ResolvedTopologicalNetwork.h"
-#include "ResolvedTriangulationNetwork.h"
 
 #include "file-io/FileInfo.h"
 

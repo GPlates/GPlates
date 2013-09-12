@@ -39,6 +39,8 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "maths/CalculateVelocity.h"
+
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
