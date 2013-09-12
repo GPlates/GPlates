@@ -33,6 +33,8 @@
 
 #include "PythonConverterUtils.h"
 
+#include "global/CompilerWarnings.h"
+
 #include "global/python.h"
 // This is not included by <boost/python.hpp>.
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
@@ -48,6 +50,8 @@
 
 namespace GPlatesApi
 {
+DISABLE_GCC_WARNING("-Wshadow")
+
 	/**
 	 * Implements wrapped functions for @a RevisionedVector and provides the wrapped class definition.
 	 *
@@ -65,36 +69,7 @@ namespace GPlatesApi
 		static
 		void
 		wrap(
-				const char *class_name)
-		{
-			namespace bp = boost::python;
-
-			//
-			// RevisionedVector - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
-			//
-			bp::class_<
-					GPlatesModel::RevisionedVector<RevisionableType>,
-					typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type,
-					boost::noncopyable>(class_name, bp::no_init)
-				.def("__len__", &GPlatesModel::RevisionedVector<RevisionableType>::size)
-				// Note: We don't provide '__iter__' which means 'iter()' falls back to using '__getitem__'.
- 				.def("__setitem__", &set_item)
- 				.def("__delitem__", &delete_item)
- 				.def("__getitem__", &get_item)
-				.def("__contains__", &contains)
-				// Note: We provide __add__ even though this creates a new revisioned vector instance
-				// (ie, doesn't belong to any parent object) and we currently don't have any parent
-				// classes (eg, GpmlIrregularSampling) that have 'set' methods for revisioned vector.
-				// However the user can use it as in 'list1 += list2 + list3' where list1 belongs
-				// to a GpmlIrregularSampling for example...
-				.def("__add__", &add)
-				.def("__iadd__", &iadd)
-				.def("append", &append)
-				.def("insert", &insert)
-				.def("remove", &remove)
-				.def("count", &count)
-			;
-		}
+				const char *class_name);
 
 	private:
 
@@ -144,16 +119,22 @@ namespace GPlatesApi
 				revisioned_vector_non_null_ptr_type rhs);
 
 		static
-		void
+		revisioned_vector_non_null_ptr_type
 		iadd(
 				revisioned_vector_non_null_ptr_type revisioned_vector,
-				revisioned_vector_non_null_ptr_type other_revisioned_vector);
+				boost::python::object iterable);
 
 		static
 		void
 		append(
 				revisioned_vector_non_null_ptr_type revisioned_vector,
 				const element_type &element);
+
+		static
+		void
+		extend(
+				revisioned_vector_non_null_ptr_type revisioned_vector,
+				boost::python::object iterable);
 
 		static
 		void
@@ -167,6 +148,30 @@ namespace GPlatesApi
 		remove(
 				revisioned_vector_non_null_ptr_type revisioned_vector,
 				long index);
+
+		static
+		element_type
+		pop(
+				revisioned_vector_non_null_ptr_type revisioned_vector,
+				// Defaults to popping the last element...
+				long index = -1);
+
+		// Default argument overloads of 'pop()'.
+		BOOST_PYTHON_FUNCTION_OVERLOADS(pop_overloads, pop, 1, 2)
+
+		static
+		long
+		index(
+				revisioned_vector_non_null_ptr_type revisioned_vector,
+				// Using bp::object instead of 'element_type' since need to throw ValueError if wrong type...
+				boost::python::object element_object,
+				// Defaults to first element...
+				long i = 0,
+				// Defaults to one past last element...
+				long j = 0);
+
+		// Default argument overloads of 'index()'.
+		BOOST_PYTHON_FUNCTION_OVERLOADS(index_overloads, index, 2, 4)
 
 		static
 		int
@@ -202,9 +207,46 @@ namespace GPlatesApi
 
 	};
 
-	////////////////////
-	// Implementation //
-	////////////////////
+ENABLE_GCC_WARNING("-Wshadow")
+
+
+	template <class RevisionableType>
+	void
+	RevisionedVectorWrapper<RevisionableType>::wrap(
+			const char *class_name)
+	{
+		namespace bp = boost::python;
+
+		//
+		// RevisionedVector - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+		//
+		bp::class_<
+				GPlatesModel::RevisionedVector<RevisionableType>,
+				typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type,
+				boost::noncopyable>(class_name, bp::no_init)
+			.def("__len__", &GPlatesModel::RevisionedVector<RevisionableType>::size)
+			// Note: We don't provide '__iter__' which means 'iter()' falls back to using '__getitem__'.
+			.def("__setitem__", &set_item)
+			.def("__delitem__", &delete_item)
+			.def("__getitem__", &get_item)
+			.def("__contains__", &contains)
+			// Note: We provide __add__ even though this creates a new revisioned vector instance
+			// (ie, doesn't belong to any parent object) and we currently don't have any parent
+			// classes (eg, GpmlIrregularSampling) that have 'set' methods for revisioned vector.
+			// However the user can use it as in 'list1 += list2 + list3' where list1 belongs
+			// to a GpmlIrregularSampling for example...
+			.def("__add__", &add)
+			.def("__iadd__", &iadd)
+			.def("append", &append)
+			.def("extend", &extend)
+			.def("insert", &insert)
+			.def("remove", &remove)
+			.def("pop", &pop, pop_overloads())
+			.def("index", &index, index_overloads())
+			.def("count", &count)
+		;
+	}
+
 
 	template <class RevisionableType>
 	void
@@ -486,15 +528,25 @@ namespace GPlatesApi
 
 
 	template <class RevisionableType>
-	void
+	typename RevisionedVectorWrapper<RevisionableType>::revisioned_vector_non_null_ptr_type
 	RevisionedVectorWrapper<RevisionableType>::iadd(
 			revisioned_vector_non_null_ptr_type revisioned_vector,
-			revisioned_vector_non_null_ptr_type other_revisioned_vector)
+			boost::python::object iterable)
 	{
+		namespace bp = boost::python;
+
+		// Begin/end iterators over the python iterable.
+		bp::stl_input_iterator<element_type>
+				new_elements_begin(iterable),
+				new_elements_end;
+
+		// Insert the new elements.
 		revisioned_vector->insert(
 				revisioned_vector->end(),
-				other_revisioned_vector->begin(),
-				other_revisioned_vector->end());
+				new_elements_begin,
+				new_elements_end);
+
+		return revisioned_vector;
 	}
 
 
@@ -505,6 +557,15 @@ namespace GPlatesApi
 			const element_type &element)
 	{
 		revisioned_vector->push_back(element);
+	}
+
+	template <class RevisionableType>
+	void
+	RevisionedVectorWrapper<RevisionableType>::extend(
+			revisioned_vector_non_null_ptr_type revisioned_vector,
+			boost::python::object iterable)
+	{
+		iadd(revisioned_vector, iterable);
 	}
 
 
@@ -539,6 +600,76 @@ namespace GPlatesApi
 		std::advance(iter, index);
 
 		revisioned_vector->erase(iter);
+	}
+
+
+	template <class RevisionableType>
+	typename RevisionedVectorWrapper<RevisionableType>::element_type
+	RevisionedVectorWrapper<RevisionableType>::pop(
+			revisioned_vector_non_null_ptr_type revisioned_vector,
+			long index)
+	{
+		index = get_index(revisioned_vector, index);
+
+		element_type element = (*revisioned_vector)[index];
+
+		// Create an iterator referencing the 'index'th element.
+		iterator_type iter = revisioned_vector->begin();
+		std::advance(iter, index);
+
+		revisioned_vector->erase(iter);
+
+		return element;
+	}
+
+
+	template <class RevisionableType>
+	long
+	RevisionedVectorWrapper<RevisionableType>::index(
+			revisioned_vector_non_null_ptr_type revisioned_vector,
+			boost::python::object element_object,
+			long i,
+			long j)
+	{
+		namespace bp = boost::python;
+
+		bp::extract<element_type> extract_element(element_object);
+		if (!extract_element.check())
+		{
+			PyErr_SetString(PyExc_TypeError, "Invalid type");
+			bp::throw_error_already_set();
+		}
+		element_type element = extract_element();
+
+		// A zero value for 'j' indicates one past the last element.
+		if (j == 0)
+		{
+			j += revisioned_vector->size();
+		}
+
+		if (i >= j)
+		{
+			PyErr_SetString(PyExc_IndexError, "Invalid index range");
+			bp::throw_error_already_set();
+		}
+
+		i = get_index(revisioned_vector, i);
+		j = get_index(revisioned_vector, j, true/*allow_index_to_last_element_plus_one*/);
+
+		// Search the specified index range for the specified element.
+		for (long k = i; k < j; ++k)
+		{
+			// Compare the pointed-to elements, not the pointers.
+			if (*(*revisioned_vector)[k].get() == *element)
+			{
+				return k;
+			}
+		}
+
+		PyErr_SetString(PyExc_ValueError, "Value not found");
+		bp::throw_error_already_set();
+
+		return -1; // Shouldn't be able to get here - but keep compiler happy.
 	}
 
 
@@ -627,6 +758,7 @@ export_revisioned_vector()
 	using namespace GPlatesPropertyValues;
 
 	// Export all required instantiations of class template RevisionedVector...
+	// Since it behaves just like a python built-in list we will call it 'list<...>'.
 
 	// GpmlTimeSample.
 	RevisionedVectorWrapper<GpmlTimeSample>::wrap("list<GpmlTimeSample>");
