@@ -105,16 +105,16 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_piecewise_aggregation_at_reco
 		GPlatesModel::ConstFeatureVisitor &visitor,
 		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 {
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-		gpml_piecewise_aggregation.get_time_windows().begin();
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-		gpml_piecewise_aggregation.get_time_windows().end();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+			gpml_piecewise_aggregation.time_windows().begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+			gpml_piecewise_aggregation.time_windows().end();
 	for ( ; iter != end; ++iter)
 	{
 		// If the time window covers our reconstruction time then visit.
-		if (iter->get_valid_time()->contains(reconstruction_time))
+		if (iter->get()->valid_time()->contains(reconstruction_time))
 		{
-			iter->get_time_dependent_value()->accept_visitor(visitor);
+			iter->get()->time_dependent_value()->accept_visitor(visitor);
 
 			// Break out of loop since time windows should be non-overlapping.
 			// If we don't break out we might visit the property value twice if it
@@ -131,19 +131,16 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_piecewise_aggregation_at_reco
 		GPlatesModel::FeatureVisitor &visitor,
 		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 {
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows =
-			gpml_piecewise_aggregation.get_time_windows();
-
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter =
-		time_windows.begin();
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end =
-		time_windows.end();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter =
+			gpml_piecewise_aggregation.time_windows().begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end =
+			gpml_piecewise_aggregation.time_windows().end();
 	for ( ; iter != end; ++iter)
 	{
 		// If the time window covers our reconstruction time then visit.
-		if (iter->get_valid_time()->contains(reconstruction_time))
+		if (iter->get()->valid_time()->contains(reconstruction_time))
 		{
-			iter->get_time_dependent_value()->accept_visitor(visitor);
+			iter->get()->time_dependent_value()->accept_visitor(visitor);
 
 			// Break out of loop since time windows should be non-overlapping.
 			// If we don't break out we might visit the property value twice if it
@@ -151,6 +148,4 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_piecewise_aggregation_at_reco
 			return;
 		}
 	}
-
-	gpml_piecewise_aggregation.set_time_windows(time_windows);
 }

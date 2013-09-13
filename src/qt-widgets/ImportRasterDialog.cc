@@ -594,7 +594,7 @@ GPlatesQtWidgets::ImportRasterDialog::create_range_set(
 		// the sequence, and all times should not be boost::none.
 		// We build the sequence from the present day, going back in time.
 		GeoTimeInstant prev_fence_post = GeoTimeInstant::create_distant_future();
-		std::vector<GpmlTimeWindow> time_windows;
+		std::vector<GpmlTimeWindow::non_null_ptr_type> time_windows;
 		for (TimeDependentRasterSequence::sequence_type::const_iterator iter = sequence.begin();
 			iter != sequence.end(); ++iter)
 		{
@@ -618,7 +618,8 @@ GPlatesQtWidgets::ImportRasterDialog::create_range_set(
 			GpmlConstantValue::non_null_ptr_type gml_file_as_constant_value =
 				GpmlConstantValue::create(gml_file, GML_FILE_VALUE_TYPE);
 
-			GpmlTimeWindow time_window(gml_file_as_constant_value, time_period, GML_FILE_VALUE_TYPE);
+			GpmlTimeWindow::non_null_ptr_type time_window =
+					GpmlTimeWindow::create(gml_file_as_constant_value, time_period, GML_FILE_VALUE_TYPE);
 			time_windows.push_back(time_window);
 
 			prev_fence_post = curr_fence_post;

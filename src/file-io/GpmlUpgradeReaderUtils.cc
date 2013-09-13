@@ -178,13 +178,13 @@ namespace GPlatesFileIO
 			visit_gpml_piecewise_aggregation(
 					const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 			{
-				if (gpml_piecewise_aggregation.get_time_windows().empty())
+				if (gpml_piecewise_aggregation.time_windows().empty())
 				{
 					return;
 				}
 
 				// Just visit the first time window - there should only be one window.
-				gpml_piecewise_aggregation.get_time_windows().front().get_time_dependent_value()->accept_visitor(*this);
+				gpml_piecewise_aggregation.time_windows().front().get()->time_dependent_value()->accept_visitor(*this);
 			}
 
 			virtual

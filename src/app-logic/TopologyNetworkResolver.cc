@@ -179,11 +179,10 @@ void
 GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_piecewise_aggregation(
 		GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 {
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows =
-			gpml_piecewise_aggregation.get_time_windows();
-
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter = time_windows.begin();
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end = time_windows.end();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::iterator iter =
+			gpml_piecewise_aggregation.time_windows().begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end =
+			gpml_piecewise_aggregation.time_windows().end();
 
 	for ( ; iter != end; ++iter) 
 	{
@@ -196,10 +195,8 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_piecewise_aggregation(
 		// the *un-adjusted* time window time period will be incorrect and hence we need to ignore it.
 		// By the way, the time window is a *sole* time window because the topology tools cannot yet
 		// create time-dependent topology (section) lists.
-		visit_gpml_time_window(*iter);
+		visit_gpml_time_window(*iter->get());
 	}
-
-	gpml_piecewise_aggregation.set_time_windows(time_windows);
 }
 
 
@@ -207,8 +204,8 @@ void
 GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_time_window(
 		GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 {
-	gpml_time_window.get_time_dependent_value()->accept_visitor(*this);
-	gpml_time_window.get_valid_time()->accept_visitor(*this);
+	gpml_time_window.time_dependent_value()->accept_visitor(*this);
+	gpml_time_window.valid_time()->accept_visitor(*this);
 }
 
 void

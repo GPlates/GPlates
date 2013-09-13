@@ -429,14 +429,14 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_piecewise_aggregation(
 			gpml_piecewise_aggregation.get_value_type().get_name())
 		<< "</valueType>";
 
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-		gpml_piecewise_aggregation.get_time_windows().begin();
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-		gpml_piecewise_aggregation.get_time_windows().end();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+			gpml_piecewise_aggregation.time_windows().begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+			gpml_piecewise_aggregation.time_windows().end();
 	for ( ; iter != end; ++iter) 
 	{
 		d_line_stream << " <timeWindow>";
-		write_gpml_time_window(*iter);
+		write_gpml_time_window(*iter->get());
 		d_line_stream << "</timeWindow>";
 	}
 
@@ -530,11 +530,11 @@ GPlatesFileIO::GMTFormatVerboseHeader::write_gpml_time_window(
 	d_line_stream << " TimeWindow";
 
 	d_line_stream << " <timeDependentPropertyValue>";
-	gpml_time_window.get_time_dependent_value()->accept_visitor(*this);
+	gpml_time_window.time_dependent_value()->accept_visitor(*this);
 	d_line_stream << "</timeDependentPropertyValue>";
 		
 	d_line_stream << " <validTime>";
-	gpml_time_window.get_valid_time()->accept_visitor(*this);
+	gpml_time_window.valid_time()->accept_visitor(*this);
 	d_line_stream << "</validTime>";
 
 	d_line_stream << " <valueType>";

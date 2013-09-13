@@ -166,15 +166,12 @@ namespace
 		visit_gpml_piecewise_aggregation(
 				GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows =
-					gpml_piecewise_aggregation.get_time_windows();
-
-			BOOST_FOREACH(GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
+			BOOST_FOREACH(
+					GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type time_window,
+					gpml_piecewise_aggregation.time_windows())
 			{
-				time_window.get_time_dependent_value()->accept_visitor(*this);
+				time_window->time_dependent_value()->accept_visitor(*this);
 			}
-
-			gpml_piecewise_aggregation.set_time_windows(time_windows);
 		}
 
 	private:

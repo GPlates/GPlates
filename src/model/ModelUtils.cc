@@ -660,18 +660,18 @@ GPlatesModel::ModelUtils::add_remove_or_convert_time_dependent_wrapper(
 		if (time_dependent_flags.test(GpgimProperty::CONSTANT_VALUE) ||
 			!time_dependent_flags.any())
 		{
-			const std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
-					gpml_piecewise_aggregation->get_time_windows();
+			const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+					gpml_piecewise_aggregation->time_windows();
 
 			// If the there's a single time window that covers all time and it's a constant-value...
 			if (time_windows.size() == 1 &&
-				time_windows.front().get_valid_time()->begin()->get_time_position().is_distant_past() &&
-				time_windows.front().get_valid_time()->end()->get_time_position().is_distant_future() &&
-				time_windows.front().get_time_dependent_value()->get_structural_type() == CONSTANT_VALUE_TYPE)
+				time_windows.front().get()->valid_time()->begin()->get_time_position().is_distant_past() &&
+				time_windows.front().get()->valid_time()->end()->get_time_position().is_distant_future() &&
+				time_windows.front().get()->time_dependent_value()->get_structural_type() == CONSTANT_VALUE_TYPE)
 			{
 				GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_to_const_type gpml_constant_value =
 						GPlatesUtils::dynamic_pointer_cast<const GPlatesPropertyValues::GpmlConstantValue>(
-								time_windows.front().get_time_dependent_value());
+								time_windows.front().get()->time_dependent_value());
 
 				// Return the constant-value wrapped property value if the GPGIM allows this.
 				if (time_dependent_flags.test(GpgimProperty::CONSTANT_VALUE))
@@ -756,14 +756,14 @@ GPlatesModel::ModelUtils::create_gpml_piecewise_aggregation(
 					GPlatesPropertyValues::GeoTimeInstant::create_distant_future());
 
 	// Create the TimeWindow.
-	const GPlatesPropertyValues::GpmlTimeWindow time_window =
-			GPlatesPropertyValues::GpmlTimeWindow(
+	const GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type time_window =
+			GPlatesPropertyValues::GpmlTimeWindow::create(
 					constant_value_property_value,
 					time_period,
 					structural_type);
 
 	// Create the TimeWindow sequence.
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows;
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type> time_windows;
 	time_windows.push_back(time_window);
 
 	// Final wrapping of the 'gpml:ConstantValue' in a 'gpml:PiecewiseAggregation'.

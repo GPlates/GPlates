@@ -843,7 +843,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_piecewise_aggr
 		type = find_and_create_one(elem, &create_template_type_parameter_type,
 				VALUE_TYPE, gpml_version, read_errors);
 
-	std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows;
+	std::vector<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type> time_windows;
 
 	find_and_create_zero_or_more(
 			elem, &create_gpml_time_window, TIME_WINDOW, time_windows,

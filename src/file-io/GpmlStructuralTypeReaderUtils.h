@@ -172,7 +172,7 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors);
 
 
-		GPlatesPropertyValues::GpmlTimeWindow
+		GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type
 		create_gpml_time_window(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 				const GpmlPropertyStructuralTypeReader &structural_type_reader,

@@ -593,16 +593,16 @@ namespace
 		visit_gpml_piecewise_aggregation(
 				const gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
 		{
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-				gpml_piecewise_aggregation.get_time_windows().begin();
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-				gpml_piecewise_aggregation.get_time_windows().end();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+					gpml_piecewise_aggregation.time_windows().begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+					gpml_piecewise_aggregation.time_windows().end();
 			for ( ; iter != end; ++iter)
 			{
 				// If the time window covers our reconstruction time then visit.
-				if (iter->get_valid_time()->contains(d_reconstruction_time.get()))
+				if (iter->get()->valid_time()->contains(d_reconstruction_time.get()))
 				{
-					iter->get_time_dependent_value()->accept_visitor(*this);
+					iter->get()->time_dependent_value()->accept_visitor(*this);
 
 					// Break out of loop since time windows should be non-overlapping.
 					return;

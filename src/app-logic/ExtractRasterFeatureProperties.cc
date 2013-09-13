@@ -108,11 +108,13 @@ namespace
 				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
 			d_inside_piecewise_aggregation = true;
-			const std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
-					gpml_piecewise_aggregation.get_time_windows();
-			BOOST_FOREACH(const GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
+			const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+					gpml_piecewise_aggregation.time_windows();
+			BOOST_FOREACH(
+					GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_to_const_type time_window,
+					time_windows)
 			{
-				time_window.get_time_dependent_value()->accept_visitor(*this);
+				time_window->time_dependent_value()->accept_visitor(*this);
 			}
 			d_inside_piecewise_aggregation = false;
 		}
@@ -282,12 +284,14 @@ GPlatesAppLogic::ExtractRasterFeatureProperties::visit_gpml_piecewise_aggregatio
 		const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 {
 	d_inside_piecewise_aggregation = true;
-	const std::vector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
-			gpml_piecewise_aggregation.get_time_windows();
-	BOOST_FOREACH(const GPlatesPropertyValues::GpmlTimeWindow &time_window, time_windows)
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+			gpml_piecewise_aggregation.time_windows();
+	BOOST_FOREACH(
+			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_to_const_type time_window,
+			time_windows)
 	{
 		const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
-				time_window.get_valid_time();
+				time_window->valid_time();
 
 		// If the time window period contains the current reconstruction time then visit.
 		// The time periods should be mutually exclusive - if we happen to be it
@@ -295,7 +299,7 @@ GPlatesAppLogic::ExtractRasterFeatureProperties::visit_gpml_piecewise_aggregatio
 		// and then it doesn't really matter which one we choose.
 		if (time_period->contains(d_reconstruction_time))
 		{
-			time_window.get_time_dependent_value()->accept_visitor(*this);
+			time_window->time_dependent_value()->accept_visitor(*this);
 		}
 	}
 	d_inside_piecewise_aggregation = false;

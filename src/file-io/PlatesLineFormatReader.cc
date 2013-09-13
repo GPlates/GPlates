@@ -406,13 +406,14 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			);
 	
 		// create the TimeWindow
-		GPlatesPropertyValues::GpmlTimeWindow tw = GPlatesPropertyValues::GpmlTimeWindow(
-				constant_value, 
-				ttpp,
-				topo_poly_type);
+		GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type tw =
+				GPlatesPropertyValues::GpmlTimeWindow::create(
+						constant_value, 
+						ttpp,
+						topo_poly_type);
 	
 		// use the time window
-		std::vector<GPlatesPropertyValues::GpmlTimeWindow> time_windows;
+		std::vector<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type> time_windows;
 	
 		time_windows.push_back(tw);
 	

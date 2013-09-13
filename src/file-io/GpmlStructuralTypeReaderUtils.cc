@@ -431,7 +431,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_time_sample(
 }
 
 
-GPlatesPropertyValues::GpmlTimeWindow
+GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type
 GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_time_window(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
 		const GpmlPropertyStructuralTypeReader &structural_type_reader,
@@ -459,7 +459,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_time_window(
 		type = find_and_create_one(elem, &create_template_type_parameter_type,
 				VALUE_TYPE, gpml_version, read_errors);
 
-	return GPlatesPropertyValues::GpmlTimeWindow(time_dep_prop_val, time_period, type);
+	return GPlatesPropertyValues::GpmlTimeWindow::create(time_dep_prop_val, time_period, type);
 }
 
 

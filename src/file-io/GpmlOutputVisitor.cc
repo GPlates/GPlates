@@ -1296,14 +1296,14 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_piecewise_aggregation(
 			writeTemplateTypeParameterType(d_output, gpml_piecewise_aggregation.get_value_type());
 		d_output.writeEndElement();
 
-		std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-				gpml_piecewise_aggregation.get_time_windows().begin();
-		std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-				gpml_piecewise_aggregation.get_time_windows().end();
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+				gpml_piecewise_aggregation.time_windows().begin();
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+				gpml_piecewise_aggregation.time_windows().end();
 		for ( ; iter != end; ++iter) 
 		{
 			d_output.writeStartGpmlElement("timeWindow");
-				write_gpml_time_window(*iter);
+				write_gpml_time_window(*iter->get());
 			d_output.writeEndElement();
 		}
 	d_output.writeEndElement();  // </gpml:IrregularSampling>
@@ -1488,10 +1488,10 @@ GPlatesFileIO::GpmlOutputVisitor::write_gpml_time_window(
 {
 	d_output.writeStartGpmlElement("TimeWindow");
 		d_output.writeStartGpmlElement("timeDependentPropertyValue");
-			gpml_time_window.get_time_dependent_value()->accept_visitor(*this);
+			gpml_time_window.time_dependent_value()->accept_visitor(*this);
 		d_output.writeEndElement();
 		d_output.writeStartGpmlElement("validTime");
-			gpml_time_window.get_valid_time()->accept_visitor(*this);
+			gpml_time_window.valid_time()->accept_visitor(*this);
 		d_output.writeEndElement();
 		d_output.writeStartGpmlElement("valueType");
 			writeTemplateTypeParameterType(d_output, gpml_time_window.get_value_type());

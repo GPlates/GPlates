@@ -109,16 +109,16 @@ namespace
 		visit_gpml_piecewise_aggregation(
 				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator begin =
-					gpml_piecewise_aggregation.get_time_windows().begin();
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-					gpml_piecewise_aggregation.get_time_windows().end();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator begin =
+					gpml_piecewise_aggregation.time_windows().begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+					gpml_piecewise_aggregation.time_windows().end();
 
 			// Only need to visit the first time window - all windows have the same template type.
 			if (begin != end)
 			{
-				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window = *begin;
-				gpml_time_window.get_time_dependent_value()->accept_visitor(*this);
+				GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_to_const_type gpml_time_window = *begin;
+				gpml_time_window->time_dependent_value()->accept_visitor(*this);
 			}
 		}
 
@@ -267,15 +267,15 @@ namespace
 		visit_gpml_piecewise_aggregation(
 				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-					gpml_piecewise_aggregation.get_time_windows().begin();
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-					gpml_piecewise_aggregation.get_time_windows().end();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+					gpml_piecewise_aggregation.time_windows().begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+					gpml_piecewise_aggregation.time_windows().end();
 
 			for ( ; iter != end; ++iter) 
 			{
-				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window = *iter;
-				gpml_time_window.get_time_dependent_value()->accept_visitor(*this);
+				GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_to_const_type gpml_time_window = *iter;
+				gpml_time_window->time_dependent_value()->accept_visitor(*this);
 
 				// Break out early if (first) time window has a topological line property.
 				// We only need to know there's a GpmlTopologicalLine present in order to reference it.
@@ -444,15 +444,15 @@ namespace
 		visit_gpml_piecewise_aggregation(
 				const GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 		{
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
-					gpml_piecewise_aggregation.get_time_windows().begin();
-			std::vector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
-					gpml_piecewise_aggregation.get_time_windows().end();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator iter =
+					gpml_piecewise_aggregation.time_windows().begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::const_iterator end =
+					gpml_piecewise_aggregation.time_windows().end();
 
 			for ( ; iter != end; ++iter) 
 			{
-				const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window = *iter;
-				gpml_time_window.get_time_dependent_value()->accept_visitor(*this);
+				GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_to_const_type gpml_time_window = *iter;
+				gpml_time_window->time_dependent_value()->accept_visitor(*this);
 
 				// Break out early if (first) time window has a topological line property.
 				// We only need to know there's a GpmlTopologicalLine present in order to reference it.
