@@ -632,11 +632,11 @@ namespace GPlatesApi
 {
 	const GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
 	gpml_irregular_sampling_create(
-			bp::object time_samples, // Any python iterable (eg, list, tuple).
+			bp::object time_samples, // Any python sequence (eg, list, tuple).
 			boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>
 					interpolation_function = boost::none)
 	{
-		// Begin/end iterators over the python time samples iterable.
+		// Begin/end iterators over the python time samples sequence.
 		bp::stl_input_iterator<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>
 				time_samples_begin(time_samples),
 				time_samples_end;
@@ -710,24 +710,24 @@ export_gpml_irregular_sampling()
 					"    irregular_sampling = pygplates.GpmlIrregularSampling.create(time_samples)\n"
 					"\n"
 					"  :param time_samples: A sequence of :class:`GpmlTimeSample` elements.\n"
-					"  :type time_samples: Any python iterable (eg, list, tuple).\n"
+					"  :type time_samples: Any python sequence such as a ``list`` or a ``tuple``\n"
 					"  :param interpolation_function: identifies function used to interpolate\n"
 					"  :type interpolation_function: an instance derived from :class:`GpmlInterpolationFunction`\n"))
 		.staticmethod("create")
 		.def("get_time_samples",
 				&GPlatesApi::gpml_irregular_sampling_get_time_samples,
-				"get_time_samples() -> list\n"
-				"  Returns the time samples in a sequence that behaves as a python ``list``. "
-				"Modifying the returned sequence will modify the internal state of this :class:`GpmlIrregularSampling` "
+				"get_time_samples() -> GpmlTimeSampleList\n"
+				"  Returns the :class:`time samples<GpmlTimeSampleList>` in a sequence that behaves as a python ``list``. "
+				"Modifying the returned sequence will modify the internal state of the *GpmlIrregularSampling* "
 				"instance.\n"
 				"  ::\n"
 				"\n"
 				"    time_samples = irregular_sampling.get_time_samples()\n"
-				"    del time_samples[1:3]\n"
-				"    # The number of time samples will be reduced by two.\n"
+				"    time_samples += [new_time_sample1, new_time_sample2]\n"
+				"    # The number of time samples in 'irregular_sampling' will be increased by two.\n"
 				"    print len(irregular_sampling.get_time_samples())\n"
 				"\n"
-				"  :rtype: a list of :class:`GpmlTimeSample` elements\n")
+				"  :rtype: :class:`GpmlTimeSampleList`\n")
 		.def("get_interpolation_function",
 				get_interpolation_function,
 				"get_interpolation_function() -> GpmlInterpolationFunction\n"

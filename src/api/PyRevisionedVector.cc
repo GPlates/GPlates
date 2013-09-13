@@ -69,7 +69,8 @@ DISABLE_GCC_WARNING("-Wshadow")
 		static
 		void
 		wrap(
-				const char *class_name);
+				const char *element_class_name,
+				const char *element_instance_name);
 
 	private:
 
@@ -165,19 +166,19 @@ DISABLE_GCC_WARNING("-Wshadow")
 		revisioned_vector_non_null_ptr_type
 		add(
 				revisioned_vector_non_null_ptr_type revisioned_vector,
-				boost::python::object iterable);
+				boost::python::object sequence);
 
 		static
 		revisioned_vector_non_null_ptr_type
 		radd(
 				revisioned_vector_non_null_ptr_type revisioned_vector,
-				boost::python::object iterable);
+				boost::python::object sequence);
 
 		static
 		revisioned_vector_non_null_ptr_type
 		iadd(
 				revisioned_vector_non_null_ptr_type revisioned_vector,
-				boost::python::object iterable);
+				boost::python::object sequence);
 
 		static
 		void
@@ -189,7 +190,7 @@ DISABLE_GCC_WARNING("-Wshadow")
 		void
 		extend(
 				revisioned_vector_non_null_ptr_type revisioned_vector,
-				boost::python::object iterable);
+				boost::python::object sequence);
 
 		static
 		void
@@ -268,17 +269,58 @@ ENABLE_GCC_WARNING("-Wshadow")
 	template <class RevisionableType>
 	void
 	RevisionedVectorWrapper<RevisionableType>::wrap(
-			const char *class_name)
+			const char *element_class_name,
+			const char *element_instance_name)
 	{
 		namespace bp = boost::python;
 
-		std::stringstream iterator_class_name_stream;
-		iterator_class_name_stream << class_name << "_" << "iterator";
+		// Since the RevisionVector wrapper behaves just like a python built-in list we will
+		// suffix it with 'List'.
+		std::string class_name = std::string(element_class_name) + "List";
+
+		// The name of the list iterator class.
+		std::string iterator_class_name = class_name + "Iterator";
 
 		// Note: We don't docstring this - it's not an interface the python user needs to know about.
-		bp::class_<Iterator>(iterator_class_name_stream.str().c_str(), bp::no_init)
+		bp::class_<Iterator>(iterator_class_name.c_str(), bp::no_init)
 			.def("__iter__", &Iterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
 			.def("next", &Iterator::next)
+		;
+
+		std::stringstream class_docstring_stream;
+		class_docstring_stream <<
+				"A list of :class:`" << element_class_name << "` instances. The list behaves like a regular "
+				"python ``list`` in that the following operations are supported:\n"
+				"\n"
+				"======================== ==========================================================\n"
+				"Operation                Result\n"
+				"======================== ==========================================================\n"
+				"``for x in s``           iterates over the elements *x* of *s*\n"
+				"``x in s``               ``True`` if *x* is an item of *s*\n"
+				"``x not in s``           ``False`` if *x* is an item of *s*\n"
+				"``s += t``               the *" << class_name << "* instance *s* is extended by sequence *t*\n"
+				"``s + t``                the concatenation of sequences *s* and *t* where either, or both, is a *" << class_name << "*\n"
+				"``s[i]``                 the item of *s* at index *i*\n"
+				"``s[i] = x``             replace the item of *s* at index *i* with *x*\n"
+				"``del s[i]``             remove the item at index *i* from *s*\n"
+				"``s[i:j]``               slice of *s* from *i* to *j*\n"
+				"``s[i:j] = t``           slice of *s* from *i* to *j* is replaced by the contents of the sequence *t* "
+				"(the slice and *t* can be different lengths)\n"
+				"``del s[i:j]``           same as ``s[i:j] = []``\n"
+				"``s[i:j:k]``             slice of *s* from *i* to *j* with step *k*\n"
+				"``del s[i:j:k]``         removes the elements of ``s[i:j:k]`` from the list\n"
+				"``s[i:j:k] = t``         the elements of ``s[i:j:k]`` are replaced by those of *t* "
+				"(the slice and *t* **must** be the same length if ``k != 1``)\n"
+				"``len(s)``               length of *s*\n"
+				"``s.append(x)``          add element *x* to the end of *s*\n"
+				"``s.extend(t)``          add the elements in sequence *t* to the end of *s*\n"
+				"``s.insert(i,x)``        insert element *x* at index *i* in *s*\n"
+				"``s.pop([i])``           removes the element at index *i* in *s* and returns it (defaults to last element)\n"
+				"``s.remove(x)``          removes the first element in *s* that equals *x* (raises ``ValueError`` if not found)\n"
+				"``s.count(x)``           number of occurrences of *x* in *s*\n"
+				"``s.index(x[,i[,j]])``   smallest *k* such that ``s[k] == x`` and ``i <= k < j`` (raises ``ValueError`` if not found)\n"
+				"======================== ==========================================================\n"
+				"\n"
 		;
 
 		//
@@ -287,18 +329,21 @@ ENABLE_GCC_WARNING("-Wshadow")
 		bp::class_<
 				GPlatesModel::RevisionedVector<RevisionableType>,
 				typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type,
-				boost::noncopyable>(class_name, bp::no_init)
+				boost::noncopyable>(
+					class_name.c_str(),
+					class_docstring_stream.str().c_str(),
+					bp::no_init)
 			.def("__iter__", &get_iter)
 			.def("__len__", &GPlatesModel::RevisionedVector<RevisionableType>::size)
 			.def("__setitem__", &set_item)
 			.def("__delitem__", &delete_item)
 			.def("__getitem__", &get_item)
 			.def("__contains__", &contains)
+			.def("__iadd__", &iadd) // +=
 			// __add__ is useful for situations like 'list1 += list2 + list3' where list1 belongs
-			// to a GpmlIrregularSampling for example and the addition 'list2 + list3' does not...
+			// to a GpmlIrregularSampling for example, but the addition 'list2 + list3' does not...
 			.def("__add__", &add)
 			.def("__radd__", &radd)
-			.def("__iadd__", &iadd)
 			.def("append", &append)
 			.def("extend", &extend)
 			.def("insert", &insert)
@@ -332,7 +377,7 @@ ENABLE_GCC_WARNING("-Wshadow")
 				return;
 			}
 
-			// Begin/end iterators over the python iterable.
+			// Begin/end iterators over the python sequence.
 			bp::stl_input_iterator<element_type>
 					new_elements_begin(v),
 					new_elements_end;
@@ -575,19 +620,20 @@ ENABLE_GCC_WARNING("-Wshadow")
 	typename RevisionedVectorWrapper<RevisionableType>::revisioned_vector_non_null_ptr_type
 	RevisionedVectorWrapper<RevisionableType>::add(
 			revisioned_vector_non_null_ptr_type revisioned_vector,
-			boost::python::object iterable)
+			boost::python::object sequence)
 	{
 		namespace bp = boost::python;
 
 		revisioned_vector_non_null_ptr_type concat_revisioned_vector = revisioned_vector->clone();
 
-		// Begin/end iterators over the python iterable.
+		// Begin/end iterators over the python sequence.
 		bp::stl_input_iterator<element_type>
-				new_elements_begin(iterable),
+				new_elements_begin(sequence),
 				new_elements_end;
 
 		// Insert the new elements.
 		concat_revisioned_vector->insert(
+				// Insert at the *end* ...
 				concat_revisioned_vector->end(),
 				new_elements_begin,
 				new_elements_end);
@@ -600,19 +646,20 @@ ENABLE_GCC_WARNING("-Wshadow")
 	typename RevisionedVectorWrapper<RevisionableType>::revisioned_vector_non_null_ptr_type
 	RevisionedVectorWrapper<RevisionableType>::radd(
 			revisioned_vector_non_null_ptr_type revisioned_vector,
-			boost::python::object iterable)
+			boost::python::object sequence)
 	{
 		namespace bp = boost::python;
 
 		revisioned_vector_non_null_ptr_type concat_revisioned_vector = revisioned_vector->clone();
 
-		// Begin/end iterators over the python iterable.
+		// Begin/end iterators over the python sequence.
 		bp::stl_input_iterator<element_type>
-				new_elements_begin(iterable),
+				new_elements_begin(sequence),
 				new_elements_end;
 
 		// Insert the new elements.
 		concat_revisioned_vector->insert(
+				// Insert at the *beginning* ...
 				concat_revisioned_vector->begin(),
 				new_elements_begin,
 				new_elements_end);
@@ -625,17 +672,18 @@ ENABLE_GCC_WARNING("-Wshadow")
 	typename RevisionedVectorWrapper<RevisionableType>::revisioned_vector_non_null_ptr_type
 	RevisionedVectorWrapper<RevisionableType>::iadd(
 			revisioned_vector_non_null_ptr_type revisioned_vector,
-			boost::python::object iterable)
+			boost::python::object sequence)
 	{
 		namespace bp = boost::python;
 
-		// Begin/end iterators over the python iterable.
+		// Begin/end iterators over the python sequence.
 		bp::stl_input_iterator<element_type>
-				new_elements_begin(iterable),
+				new_elements_begin(sequence),
 				new_elements_end;
 
 		// Insert the new elements.
 		revisioned_vector->insert(
+				// Insert at the *end* ...
 				revisioned_vector->end(),
 				new_elements_begin,
 				new_elements_end);
@@ -657,9 +705,9 @@ ENABLE_GCC_WARNING("-Wshadow")
 	void
 	RevisionedVectorWrapper<RevisionableType>::extend(
 			revisioned_vector_non_null_ptr_type revisioned_vector,
-			boost::python::object iterable)
+			boost::python::object sequence)
 	{
-		iadd(revisioned_vector, iterable);
+		iadd(revisioned_vector, sequence);
 	}
 
 
@@ -852,10 +900,9 @@ export_revisioned_vector()
 	using namespace GPlatesPropertyValues;
 
 	// Export all required instantiations of class template RevisionedVector...
-	// Since it behaves just like a python built-in list we will call it 'list<...>'.
 
 	// GpmlTimeSample.
-	RevisionedVectorWrapper<GpmlTimeSample>::wrap("list<GpmlTimeSample>");
+	RevisionedVectorWrapper<GpmlTimeSample>::wrap("GpmlTimeSample", "gpml_time_sample");
 }
 
 #endif // GPLATES_NO_PYTHON
