@@ -33,10 +33,13 @@
 
 #include "GpmlTimeWindow.h"
 #include "StructuralType.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
+#include "model/RevisionedVector.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -72,7 +75,7 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const std::vector<GpmlTimeWindow> &time_windows_,
+				const std::vector<GpmlTimeWindow::non_null_ptr_type> &time_windows_,
 				const StructuralType &value_type_);
 
 		const non_null_ptr_type
@@ -82,27 +85,22 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * Returns the time windows.
-		 *
-		 * To modify any time windows:
-		 * (1) make additions/removals/modifications to a copy of the returned vector, and
-		 * (2) use @a set_time_windows to set them.
-		 *
-		 * The returned time samples implement copy-on-write to promote resource sharing (until write)
-		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
+		 * Returns the 'const' vector of time windows.
 		 */
-		const std::vector<GpmlTimeWindow> &
-		get_time_windows() const
+		const GPlatesModel::RevisionedVector<GpmlTimeWindow> &
+		time_windows() const
 		{
-			return get_current_revision<Revision>().time_windows;
+			return *get_current_revision<Revision>().time_windows.get_revisionable();
 		}
 
 		/**
-		 * Sets the internal time windows.
+		 * Returns the 'non-const' vector of time windows.
 		 */
-		void
-		set_time_windows(
-				const std::vector<GpmlTimeWindow> &time_windows);
+		GPlatesModel::RevisionedVector<GpmlTimeWindow> &
+		time_windows()
+		{
+			return *get_current_revision<Revision>().time_windows.get_revisionable();
+		}
 
 		// Note that no "setter" is provided:  The value type of a GpmlPiecewiseAggregation
 		// instance should never be changed.
@@ -162,7 +160,7 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		GpmlPiecewiseAggregation(
 				GPlatesModel::ModelTransaction &transaction_,
-				const std::vector<GpmlTimeWindow> &time_windows_,
+				GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type time_windows_,
 				const StructuralType &value_type_):
 			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, time_windows_))),
 			d_value_type(value_type_)
@@ -232,8 +230,11 @@ namespace GPlatesPropertyValues
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
 					RevisionContext &child_context_,
-					const std::vector<GpmlTimeWindow> &time_windows_) :
-				time_windows(time_windows_)
+					GPlatesModel::RevisionedVector<GpmlTimeWindow>::non_null_ptr_type time_windows_) :
+				time_windows(
+						GPlatesModel::RevisionedReference<
+								GPlatesModel::RevisionedVector<GpmlTimeWindow> >::attach(
+										transaction_, child_context_, time_windows_))
 			{  }
 
 			//! Deep-clone constructor.
@@ -245,6 +246,7 @@ namespace GPlatesPropertyValues
 				time_windows(other_.time_windows)
 			{
 				// Clone data members that were not deep copied.
+				time_windows.clone(child_context_);
 			}
 
 			//! Shallow-clone constructor.
@@ -271,11 +273,11 @@ namespace GPlatesPropertyValues
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-				return time_windows == other_revision.time_windows &&
+				return *time_windows.get_revisionable() == *other_revision.time_windows.get_revisionable() &&
 						GPlatesModel::Revision::equality(other);
 			}
 
-			std::vector<GpmlTimeWindow> time_windows;
+			GPlatesModel::RevisionedReference<GPlatesModel::RevisionedVector<GpmlTimeWindow> > time_windows;
 		};
 
 

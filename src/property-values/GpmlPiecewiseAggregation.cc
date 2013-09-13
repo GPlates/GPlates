@@ -32,7 +32,6 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
-#include "global/NotYetImplementedException.h"
 
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
@@ -40,23 +39,17 @@
 
 const GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
 GPlatesPropertyValues::GpmlPiecewiseAggregation::create(
-		const std::vector<GpmlTimeWindow> &time_windows_,
+		const std::vector<GpmlTimeWindow::non_null_ptr_type> &time_windows_,
 		const StructuralType &value_type_)
 {
 	GPlatesModel::ModelTransaction transaction;
-	non_null_ptr_type ptr(new GpmlPiecewiseAggregation(transaction, time_windows_, value_type_));
+	non_null_ptr_type ptr(
+			new GpmlPiecewiseAggregation(
+					transaction,
+					GPlatesModel::RevisionedVector<GpmlTimeWindow>::create(time_windows_),
+					value_type_));
 	transaction.commit();
 	return ptr;
-}
-
-
-void
-GPlatesPropertyValues::GpmlPiecewiseAggregation::set_time_windows(
-		const std::vector<GpmlTimeWindow> &time_windows)
-{
-	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
-	revision_handler.get_revision<Revision>().time_windows = time_windows;
-	revision_handler.commit();
 }
 
 
@@ -64,15 +57,17 @@ std::ostream &
 GPlatesPropertyValues::GpmlPiecewiseAggregation::print_to(
 		std::ostream &os) const
 {
-	const std::vector<GpmlTimeWindow> &time_windows = get_time_windows();
+	const GPlatesModel::RevisionedVector<GpmlTimeWindow> &windows = time_windows();
 
 	os << "[ ";
 
-	for (std::vector<GpmlTimeWindow>::const_iterator time_windows_iter = time_windows.begin();
-		time_windows_iter != time_windows.end();
-		++time_windows_iter)
+	GPlatesModel::RevisionedVector<GpmlTimeWindow>::const_iterator windows_iter =
+			windows.begin();
+	GPlatesModel::RevisionedVector<GpmlTimeWindow>::const_iterator windows_end =
+			windows.end();
+	for ( ; windows_iter != windows_end; ++windows_iter)
 	{
-		os << *time_windows_iter;
+		os << *windows_iter->get();
 	}
 
 	return os << " ]";
@@ -84,6 +79,18 @@ GPlatesPropertyValues::GpmlPiecewiseAggregation::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
 		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
-	// Currently this can't be reached because we don't attach to our children yet.
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+	if (child_revisionable == revision.time_windows.get_revisionable())
+	{
+		return revision.time_windows.clone_revision(transaction);
+	}
+
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+
+	// To keep compiler happy - won't be able to get past 'Abort()'.
+	return GPlatesModel::Revision::non_null_ptr_type(NULL);
 }
