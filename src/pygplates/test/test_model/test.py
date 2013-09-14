@@ -1,10 +1,13 @@
 """
-Unit tests for the model API of the pygplates native library.
+Unit tests for the pygplates model API.
 """
 
 import os
 import unittest
 import pygplates
+
+import test_property_values
+import test_revisioned_vector
 
 # Fixture path
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
@@ -167,6 +170,7 @@ class PropertyValueCase(unittest.TestCase):
 def suite():
     suite = unittest.TestSuite()
     
+    # Add test cases from this module.
     test_cases = [
             FeatureCase,
             FeatureCollectionCase,
@@ -178,5 +182,14 @@ def suite():
 
     for test_case in test_cases:
         suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(test_case))
+    
+    # Add test suites from sibling modules.
+    test_modules = [
+            test_property_values,
+            test_revisioned_vector
+        ]
+
+    for test_module in test_modules:
+        suite.addTest(test_module.suite())
     
     return suite

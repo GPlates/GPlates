@@ -1,5 +1,5 @@
 """
-Unit tests for the application logic API of the pygplates native library.
+Unit tests for the pygplates application logic API.
 """
 
 import os
@@ -29,6 +29,7 @@ class ReconstructionTreeCase(unittest.TestCase):
 def suite():
     suite = unittest.TestSuite()
     
+    # Add test cases from this module.
     test_cases = [
             ReconstructionTreeCase
         ]

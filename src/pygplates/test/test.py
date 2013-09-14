@@ -21,13 +21,14 @@ FIXTURES = os.path.join(os.path.dirname(__file__), 'fixtures')
 def suite():
     suite = unittest.TestSuite()
     
+    # Add test suites from sibling modules.
     test_modules = [
-            test_app_logic,
-            test_model
+            test_app_logic.test,
+            test_model.test
         ]
 
     for test_module in test_modules:
-        suite.addTest(test_module.test.suite())
+        suite.addTest(test_module.suite())
     
     return suite
 
