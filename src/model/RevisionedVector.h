@@ -522,16 +522,6 @@ namespace GPlatesModel
 			erase(begin(), end());
 		}
 
-		template <typename Iter>
-		void
-		assign(
-				Iter first,
-				Iter last)
-		{
-			erase(begin(), end());
-			insert(begin(), first, last);
-		}
-
 		std::size_t
 		size() const
 		{
@@ -594,6 +584,17 @@ namespace GPlatesModel
 
 		void
 		pop_back();
+
+		template <typename Iter>
+		void
+		assign(
+				Iter first,
+				Iter last)
+		{
+			// TODO: This actually becomes two separate revisions, so make it one revision.
+			erase(begin(), end());
+			insert(begin(), first, last);
+		}
 
 		iterator
 		insert(

@@ -723,9 +723,9 @@ export_gpml_irregular_sampling()
 				"  ::\n"
 				"\n"
 				"    time_samples = irregular_sampling.get_time_samples()\n"
-				"    time_samples += [new_time_sample1, new_time_sample2]\n"
-				"    # The number of time samples in 'irregular_sampling' will be increased by two.\n"
-				"    print len(irregular_sampling.get_time_samples())\n"
+				"\n"
+				"    # Sort samples by time ('reverse=True' orders backwards in time from present day to past times)\n"
+				"    time_samples.sort(key = lambda x: x.get_valid_time().get_time_position(), reverse = True)\n"
 				"\n"
 				"  :rtype: :class:`GpmlTimeSampleList`\n")
 		.def("get_interpolation_function",

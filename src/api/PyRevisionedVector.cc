@@ -23,8 +23,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <iterator>
 #include <sstream>
+#include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/iterator/iterator_traits.hpp>
@@ -81,11 +83,36 @@ DISABLE_GCC_WARNING("-Wshadow")
 		//! Typedef for revisioned vector element type.
 		typedef typename GPlatesModel::RevisionedVector<RevisionableType>::element_type element_type;
 
+		//! Typedef for revisioned vector size type.
+		typedef typename GPlatesModel::RevisionedVector<RevisionableType>::size_type size_type;
+
 		//! Typedef for revisioned vector iterator type.
 		typedef typename GPlatesModel::RevisionedVector<RevisionableType>::iterator iterator_type;
 
 		//! Typedef for revisioned vector iterator difference type.
 		typedef typename boost::iterator_difference<iterator_type>::type iterator_difference_type;
+
+
+		/**
+		 * Sort key for the @a sort function sorts based on the result of converting 'element_type'
+		 * to an unknown key type (done by a 'key' function provided on the python side).
+		 */
+		struct SortKey
+		{
+			bool
+			operator()(
+					const std::pair<boost::python::object/*key*/, element_type> &lhs,
+					const std::pair<boost::python::object/*key*/, element_type> &rhs) const
+			{
+				// Use '__lt__', otherwise '__cmp__', for comparison.
+				// Python 'int' has no '__lt__', but 'float' does.
+				if (PyObject_HasAttrString(lhs.first.ptr(), "__lt__"))
+				{
+					return boost::python::extract<bool>(lhs.first.attr("__lt__")(rhs.first));
+				}
+				return boost::python::extract<int>(lhs.first.attr("__cmp__")(rhs.first)) < 0;
+			}
+		};
 
 
 		/**
@@ -124,7 +151,7 @@ DISABLE_GCC_WARNING("-Wshadow")
 
 		private:
 			revisioned_vector_non_null_ptr_type d_revisioned_vector;
-			typename GPlatesModel::RevisionedVector<RevisionableType>::size_type d_index;
+			size_type d_index;
 		};
 
 
@@ -203,7 +230,7 @@ DISABLE_GCC_WARNING("-Wshadow")
 		void
 		remove(
 				revisioned_vector_non_null_ptr_type revisioned_vector,
-				long index);
+				boost::python::object element_object);
 
 		static
 		element_type
@@ -234,6 +261,18 @@ DISABLE_GCC_WARNING("-Wshadow")
 		count(
 				revisioned_vector_non_null_ptr_type revisioned_vector,
 				const element_type &element);
+
+		static
+		void
+		reverse(
+				revisioned_vector_non_null_ptr_type revisioned_vector);
+
+		static
+		void
+		sort(
+				revisioned_vector_non_null_ptr_type revisioned_vector,
+				boost::python::object key_callable,
+				bool reverse_);
 
 
 		/**
@@ -292,34 +331,36 @@ ENABLE_GCC_WARNING("-Wshadow")
 				"A list of :class:`" << element_class_name << "` instances. The list behaves like a regular "
 				"python ``list`` in that the following operations are supported:\n"
 				"\n"
-				"======================== ==========================================================\n"
-				"Operation                Result\n"
-				"======================== ==========================================================\n"
-				"``for x in s``           iterates over the elements *x* of *s*\n"
-				"``x in s``               ``True`` if *x* is an item of *s*\n"
-				"``x not in s``           ``False`` if *x* is an item of *s*\n"
-				"``s += t``               the *" << class_name << "* instance *s* is extended by sequence *t*\n"
-				"``s + t``                the concatenation of sequences *s* and *t* where either, or both, is a *" << class_name << "*\n"
-				"``s[i]``                 the item of *s* at index *i*\n"
-				"``s[i] = x``             replace the item of *s* at index *i* with *x*\n"
-				"``del s[i]``             remove the item at index *i* from *s*\n"
-				"``s[i:j]``               slice of *s* from *i* to *j*\n"
-				"``s[i:j] = t``           slice of *s* from *i* to *j* is replaced by the contents of the sequence *t* "
+				"=========================== ==========================================================\n"
+				"Operation                   Result\n"
+				"=========================== ==========================================================\n"
+				"``for x in s``              iterates over the elements *x* of *s*\n"
+				"``x in s``                  ``True`` if *x* is an item of *s*\n"
+				"``x not in s``              ``False`` if *x* is an item of *s*\n"
+				"``s += t``                  the *" << class_name << "* instance *s* is extended by sequence *t*\n"
+				"``s + t``                   the concatenation of sequences *s* and *t* where either, or both, is a *" << class_name << "*\n"
+				"``s[i]``                    the item of *s* at index *i*\n"
+				"``s[i] = x``                replace the item of *s* at index *i* with *x*\n"
+				"``del s[i]``                remove the item at index *i* from *s*\n"
+				"``s[i:j]``                  slice of *s* from *i* to *j*\n"
+				"``s[i:j] = t``              slice of *s* from *i* to *j* is replaced by the contents of the sequence *t* "
 				"(the slice and *t* can be different lengths)\n"
-				"``del s[i:j]``           same as ``s[i:j] = []``\n"
-				"``s[i:j:k]``             slice of *s* from *i* to *j* with step *k*\n"
-				"``del s[i:j:k]``         removes the elements of ``s[i:j:k]`` from the list\n"
-				"``s[i:j:k] = t``         the elements of ``s[i:j:k]`` are replaced by those of *t* "
+				"``del s[i:j]``              same as ``s[i:j] = []``\n"
+				"``s[i:j:k]``                slice of *s* from *i* to *j* with step *k*\n"
+				"``del s[i:j:k]``            removes the elements of ``s[i:j:k]`` from the list\n"
+				"``s[i:j:k] = t``            the elements of ``s[i:j:k]`` are replaced by those of *t* "
 				"(the slice and *t* **must** be the same length if ``k != 1``)\n"
-				"``len(s)``               length of *s*\n"
-				"``s.append(x)``          add element *x* to the end of *s*\n"
-				"``s.extend(t)``          add the elements in sequence *t* to the end of *s*\n"
-				"``s.insert(i,x)``        insert element *x* at index *i* in *s*\n"
-				"``s.pop([i])``           removes the element at index *i* in *s* and returns it (defaults to last element)\n"
-				"``s.remove(x)``          removes the first element in *s* that equals *x* (raises ``ValueError`` if not found)\n"
-				"``s.count(x)``           number of occurrences of *x* in *s*\n"
-				"``s.index(x[,i[,j]])``   smallest *k* such that ``s[k] == x`` and ``i <= k < j`` (raises ``ValueError`` if not found)\n"
-				"======================== ==========================================================\n"
+				"``len(s)``                  length of *s*\n"
+				"``s.append(x)``             add element *x* to the end of *s*\n"
+				"``s.extend(t)``             add the elements in sequence *t* to the end of *s*\n"
+				"``s.insert(i,x)``           insert element *x* at index *i* in *s*\n"
+				"``s.pop([i])``              removes the element at index *i* in *s* and returns it (defaults to last element)\n"
+				"``s.remove(x)``             removes the first element in *s* that equals *x* (raises ``ValueError`` if not found)\n"
+				"``s.count(x)``              number of occurrences of *x* in *s*\n"
+				"``s.index(x[,i[,j]])``      smallest *k* such that ``s[k] == x`` and ``i <= k < j`` (raises ``ValueError`` if not found)\n"
+				"``s.reverse()``             reverses the items of *s* in place\n"
+				"``s.sort(key[,reverse])``   sort the items of *s* in place (note that *key* is **not** optional and, like python 3.0, we removed *cmp*)\n"
+				"=========================== ==========================================================\n"
 				"\n"
 		;
 
@@ -351,6 +392,8 @@ ENABLE_GCC_WARNING("-Wshadow")
 			.def("pop", &pop, pop_overloads())
 			.def("index", &index, index_overloads())
 			.def("count", &count)
+			.def("reverse", &reverse)
+			.def("sort", &sort, (bp::arg("key"), bp::arg("reverse")=false))
 		;
 	}
 
@@ -733,13 +776,15 @@ ENABLE_GCC_WARNING("-Wshadow")
 	void
 	RevisionedVectorWrapper<RevisionableType>::remove(
 			revisioned_vector_non_null_ptr_type revisioned_vector,
-			long index)
+			boost::python::object element_object)
 	{
-		index = get_index(revisioned_vector, index);
+		namespace bp = boost::python;
 
-		// Create an iterator referencing the 'index'th element.
+		const long element_index = index(revisioned_vector, element_object);
+
+		// Create an iterator referencing the 'element_index'th element.
 		iterator_type iter = revisioned_vector->begin();
-		std::advance(iter, index);
+		std::advance(iter, element_index);
 
 		revisioned_vector->erase(iter);
 	}
@@ -801,8 +846,10 @@ ENABLE_GCC_WARNING("-Wshadow")
 		// Search the specified index range for the specified element.
 		for (long k = i; k < j; ++k)
 		{
+			element_type revisioned_element = (*revisioned_vector)[k];
+
 			// Compare the pointed-to elements, not the pointers.
-			if (*(*revisioned_vector)[k].get() == *element)
+			if (*revisioned_element == *element)
 			{
 				return k;
 			}
@@ -834,6 +881,63 @@ ENABLE_GCC_WARNING("-Wshadow")
 		}
 
 		return num_matches;
+	}
+
+
+	template <class RevisionableType>
+	void
+	RevisionedVectorWrapper<RevisionableType>::reverse(
+			revisioned_vector_non_null_ptr_type revisioned_vector)
+	{
+		// Reverse the existing elements.
+		std::vector<element_type> reversed_elements;
+		std::copy(revisioned_vector->begin(), revisioned_vector->end(), std::back_inserter(reversed_elements));
+		std::reverse(reversed_elements.begin(), reversed_elements.end());
+
+		// Assign the reversed elements in one go (in one revision update).
+		revisioned_vector->assign(reversed_elements.begin(), reversed_elements.end());
+	}
+
+
+	template <class RevisionableType>
+	void
+	RevisionedVectorWrapper<RevisionableType>::sort(
+			revisioned_vector_non_null_ptr_type revisioned_vector,
+			boost::python::object key_callable,
+			bool reverse_)
+	{
+		namespace bp = boost::python;
+
+		typedef std::pair<bp::object/*key*/, element_type> key_element_type;
+		std::vector<key_element_type> sorted_keys;
+
+		// Decorate the elements with their keys...
+		// Extract the existing elements and associate with their key
+		// provided by the python 'key_callable' function.
+		BOOST_FOREACH(element_type element, *revisioned_vector)
+		{
+			// Convert the element to its key.
+			boost::python::object key = key_callable(element);
+			sorted_keys.push_back(key_element_type(key, element));
+		}
+
+		// Sort the elements by their key.
+		std::stable_sort(sorted_keys.begin(), sorted_keys.end(), SortKey());
+
+		// Un-decorate the elements (remove the keys).
+		std::vector<element_type> sorted_elements;
+		BOOST_FOREACH(const key_element_type &key, sorted_keys)
+		{
+			sorted_elements.push_back(key.second);
+		}
+
+		if (reverse_)
+		{
+			std::reverse(sorted_elements.begin(), sorted_elements.end());
+		}
+
+		// Assign the sorted elements in one go (in one revision update).
+		revisioned_vector->assign(sorted_elements.begin(), sorted_elements.end());
 	}
 
 
