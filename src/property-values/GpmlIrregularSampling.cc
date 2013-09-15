@@ -128,6 +128,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_interpolation_function(
 		else
 		{
 			revision.interpolation_function->detach(revision_handler.get_model_transaction());
+			revision.interpolation_function = boost::none;
 		}
 	}
 	else if (interpolation_function_)

@@ -165,6 +165,7 @@ GPlatesPropertyValues::GmlFile::set_mime_type(
 		else
 		{
 			revision.mime_type->detach(revision_handler.get_model_transaction());
+			revision.mime_type = boost::none;
 		}
 	}
 	else if (mime_type_)
@@ -223,6 +224,7 @@ GPlatesPropertyValues::GmlFile::set_compression(
 		else
 		{
 			revision.compression->detach(revision_handler.get_model_transaction());
+			revision.compression = boost::none;
 		}
 	}
 	else if (compression_)

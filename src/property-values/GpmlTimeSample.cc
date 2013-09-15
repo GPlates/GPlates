@@ -142,6 +142,7 @@ GPlatesPropertyValues::GpmlTimeSample::set_description(
 		else
 		{
 			revision.description->detach(revision_handler.get_model_transaction());
+			revision.description = boost::none;
 		}
 	}
 	else if (description_)
