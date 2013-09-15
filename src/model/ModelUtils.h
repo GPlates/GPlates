@@ -186,7 +186,7 @@ namespace GPlatesModel
 		const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 		create_gpml_constant_value(
 				const PropertyValue::non_null_ptr_type &property_value,
-				const GPlatesUtils::UnicodeString &description = "");
+				boost::optional<GPlatesUtils::UnicodeString> description = boost::none);
 
 
 		/**

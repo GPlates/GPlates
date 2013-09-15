@@ -241,22 +241,12 @@ populate_feature_store(
 	// encouraged (or even forced) to use these functions, rather than instantiating
 	// feature-collections and features (respectively) on their own?
 
-	GPlatesModel::DummyTransactionHandle transaction_iso_coll(__FILE__, __LINE__);
 	GPlatesModel::FeatureStoreRootHandle::collections_iterator isochrons_iter =
 			feature_store->root()->append_feature_collection(isochrons, transaction_iso_coll);
-	transaction_iso_coll.commit();
 
-	GPlatesModel::DummyTransactionHandle transaction_iso1(__FILE__, __LINE__);
 	isochrons->append_feature(isochron1, transaction_iso1);
-	transaction_iso1.commit();
-
-	GPlatesModel::DummyTransactionHandle transaction_iso2(__FILE__, __LINE__);
 	isochrons->append_feature(isochron2, transaction_iso2);
-	transaction_iso2.commit();
-
-	GPlatesModel::DummyTransactionHandle transaction_iso3(__FILE__, __LINE__);
 	isochrons->append_feature(isochron3, transaction_iso3);
-	transaction_iso3.commit();
 #endif
 
 	GPlatesModel::FeatureCollectionHandle::weak_ref isochrons =

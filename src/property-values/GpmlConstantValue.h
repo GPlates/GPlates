@@ -73,7 +73,7 @@ namespace GPlatesPropertyValues
 		create(
 				PropertyValue::non_null_ptr_type value_,
 				const StructuralType &value_type_,
-				const GPlatesUtils::UnicodeString &description_ = "");
+				boost::optional<GPlatesUtils::UnicodeString> description_ = boost::none);
 
 		const non_null_ptr_type
 		clone() const
@@ -114,7 +114,7 @@ namespace GPlatesPropertyValues
 			return d_value_type;
 		}
 
-		const GPlatesUtils::UnicodeString &
+		boost::optional<GPlatesUtils::UnicodeString>
 		get_description() const
 		{
 			return get_current_revision<Revision>().description;
@@ -122,7 +122,7 @@ namespace GPlatesPropertyValues
 
 		void
 		set_description(
-				const GPlatesUtils::UnicodeString &new_description);
+				boost::optional<GPlatesUtils::UnicodeString> new_description = boost::none);
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -176,7 +176,7 @@ namespace GPlatesPropertyValues
 				GPlatesModel::ModelTransaction &transaction_,
 				PropertyValue::non_null_ptr_type value_,
 				const StructuralType &value_type_,
-				const GPlatesUtils::UnicodeString &description_) :
+				boost::optional<GPlatesUtils::UnicodeString> description_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
 							new Revision(transaction_, *this, value_, description_))),
@@ -249,7 +249,7 @@ namespace GPlatesPropertyValues
 					GPlatesModel::ModelTransaction &transaction_,
 					RevisionContext &child_context_,
 					const PropertyValue::non_null_ptr_type value_,
-					const GPlatesUtils::UnicodeString &description_) :
+					boost::optional<GPlatesUtils::UnicodeString> description_) :
 				value(
 						GPlatesModel::RevisionedReference<PropertyValue>::attach(
 								transaction_, child_context_, value_)),
@@ -301,7 +301,7 @@ namespace GPlatesPropertyValues
 			}
 
 			GPlatesModel::RevisionedReference<PropertyValue> value;
-			GPlatesUtils::UnicodeString description;
+			boost::optional<GPlatesUtils::UnicodeString> description;
 		};
 
 

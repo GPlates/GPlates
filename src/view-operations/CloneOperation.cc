@@ -110,14 +110,11 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature(
 
 	GPlatesModel::FeatureHandle::non_null_ptr_type new_feature_ptr = feature_ref->clone();
 
-	// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
 	target_feature_collection->add(new_feature_ptr);
 		
 	// We release the model notification guard which will cause a reconstruction to occur
 	// because we modified the model - provided there are no nested higher-level guards.
 	model_notification_guard.release_guard();
-
-	// transaction.commit();
 
 #if 0
 	//Since the clone_feature function only does a "shallow copy" of geometry property,

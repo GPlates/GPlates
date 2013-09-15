@@ -1149,6 +1149,13 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_constant_value(
 			gpml_constant_value.value()->accept_visitor(*this);
 		d_output.writeEndElement();
 
+		// The description is optional.
+		if (gpml_constant_value.get_description())
+		{
+			d_output.writeStartGmlElement("description");
+				d_output.writeText(gpml_constant_value.get_description().get());
+			d_output.writeEndElement();
+		}
 
 		d_output.writeStartGpmlElement("valueType");
 			writeTemplateTypeParameterType(d_output, gpml_constant_value.get_value_type());

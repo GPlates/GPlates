@@ -463,7 +463,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_constant_value
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	boost::optional<QString> 
-		description = find_and_create_optional(elem, &create_string,
+		description_string = find_and_create_optional(elem, &create_string,
 				DESCRIPTION, gpml_version, read_errors);
 	GPlatesPropertyValues::StructuralType 
 		type = find_and_create_one(elem, &create_template_type_parameter_type,
@@ -472,11 +472,13 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_constant_value
 		find_and_create_from_type(elem, type, VALUE,
 				structural_type_reader, gpml_version, read_errors);
 
-	if (description) {
-		return GPlatesPropertyValues::GpmlConstantValue::create(value, type, 
-				GPlatesUtils::make_icu_string_from_qstring(*description));
+	boost::optional<GPlatesUtils::UnicodeString> description;
+	if (description_string)
+	{
+		description = GPlatesUtils::make_icu_string_from_qstring(*description_string);
 	}
-	return GPlatesPropertyValues::GpmlConstantValue::create(value, type);
+
+	return GPlatesPropertyValues::GpmlConstantValue::create(value, type, description);
 }
 
 

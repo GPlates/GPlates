@@ -241,9 +241,7 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::delete_selected_property()
 
 	// FIXME: UNDO
 	// Delete the property container for the given iterator.
-	// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
 	d_feature_ref->remove(it);
-	// transaction.commit();
 
 	// We have just changed the model. Tell anyone who cares to know.
 	// This will cause FeaturePropertyTableModel to refresh_data(), amongst other things.

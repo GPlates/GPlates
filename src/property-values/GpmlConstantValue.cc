@@ -40,7 +40,7 @@ const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 GPlatesPropertyValues::GpmlConstantValue::create(
 		PropertyValue::non_null_ptr_type value_,
 		const StructuralType &value_type_,
-		const GPlatesUtils::UnicodeString &description_)
+		boost::optional<GPlatesUtils::UnicodeString> description_)
 {
 	GPlatesModel::ModelTransaction transaction;
 	non_null_ptr_type ptr(new GpmlConstantValue(transaction, value_, value_type_, description_));
@@ -63,7 +63,7 @@ GPlatesPropertyValues::GpmlConstantValue::set_value(
 
 void
 GPlatesPropertyValues::GpmlConstantValue::set_description(
-		const GPlatesUtils::UnicodeString &new_description)
+		boost::optional<GPlatesUtils::UnicodeString> new_description)
 {
 	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().description = new_description;

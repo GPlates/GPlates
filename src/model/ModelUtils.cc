@@ -734,7 +734,7 @@ GPlatesModel::ModelUtils::add_remove_or_convert_time_dependent_wrapper(
 const GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 GPlatesModel::ModelUtils::create_gpml_constant_value(
 		const PropertyValue::non_null_ptr_type &property_value,
-		const GPlatesUtils::UnicodeString &description)
+		boost::optional<GPlatesUtils::UnicodeString> description)
 {
 	const GPlatesPropertyValues::StructuralType structural_type = property_value->get_structural_type();
 
@@ -871,9 +871,7 @@ GPlatesModel::ModelUtils::create_total_recon_seq(
 	TopLevelProperty::non_null_ptr_type total_reconstruction_pole_container =
 			create_total_reconstruction_pole(five_tuples);
 
-	// DummyTransactionHandle pc1(__FILE__, __LINE__);
 	feature->add(total_reconstruction_pole_container);
-	// pc1.commit();
 
 	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type fixed_ref_frame(
 			GPlatesPropertyValues::GpmlPlateId::create(fixed_plate_id));
