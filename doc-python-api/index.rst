@@ -18,10 +18,14 @@ Contents:
 	pygplates.EnumerationType
 	pygplates.FeatureType
 	pygplates.GeoTimeInstant
+    pygplates.GmlPoint
+    pygplates.GmlTimeInstant
+    pygplates.GmlTimePeriod
 	pygplates.GpmlConstantValue
 	pygplates.GpmlFiniteRotationSlerp
 	pygplates.GpmlInterpolationFunction
 	pygplates.GpmlIrregularSampling
+    pygplates.GpmlPiecewiseAggregation
 	pygplates.GpmlPlateId
 	pygplates.GpmlTimeSample
 	pygplates.Property
