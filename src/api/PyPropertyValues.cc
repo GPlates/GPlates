@@ -48,6 +48,7 @@
 #include "property-values/GpmlHotSpotTrailMark.h"
 #include "property-values/GpmlInterpolationFunction.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/XsBoolean.h"
@@ -104,7 +105,7 @@ export_property_value()
 			boost::noncopyable>(
 					"PropertyValue",
 					"The base class inherited by all derived property value classes. "
-					"Property values are equality (``==``) comparable. Two property values will only "
+					"Property values are equality (``==``, ``!=``) comparable. Two property values will only "
 					"compare equal if they have the same derived property value *type* (and the same internal values). "
 					"For example, a :class:`GpmlPlateId` property value instance and a :class:`XsInteger` "
 					"property value instance will always compare as ``False``.\n"
@@ -115,6 +116,7 @@ export_property_value()
 					"* :class:`GmlTimeInstant`\n"
 					"* :class:`GmlTimePeriod`\n"
 					"* :class:`GpmlConstantValue`\n"
+					"* :class:`GpmlFiniteRotationSlerp`\n"
 					"* :class:`GpmlHotSpotTrailMark`\n"
 					"* :class:`GpmlIrregularSampling`\n"
 					"* :class:`GpmlPiecewiseAggregation`\n"
@@ -152,6 +154,8 @@ export_property_value()
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
 	;
 }
 
@@ -177,7 +181,9 @@ export_geo_time_instant()
 			"times in the *future*. This can be confusing at first, but the reason for this is "
 			"geological times are represented by how far in the *past* to go back compared to present day.\n"
 			"\n"
-			"All comparison operators (==, !=, <, <=, >, >=) are supported.\n"
+			"All comparison operators (==, !=, <, <=, >, >=) are supported. The comparisons are such that "
+			"times further in the past are *less than* more recent times. Note that this is the opposite "
+			"of comparisons of floating-point values returned by :meth:`get_value`.\n"
 			"\n"
 			// Note that we put the __init__ docstring in the class docstring.
 			// See the comment in 'BOOST_PYTHON_MODULE(pygplates)' for an explanation...
@@ -219,9 +225,21 @@ export_geo_time_instant()
 				"  Access the floating-point representation of the time-position of this instance. "
 				"Units are in Ma (millions of year ago).\n"
 				"\n"
-				"  **NOTE** that this value may not be meaningful if :meth:`is_real` returns ``False``.\n"
+				"  **NOTE** that this value may not be meaningful if :meth:`is_real` returns ``False``. "
+				"Currently, if :meth:`is_distant_past` is ``True`` then *get_value* returns infinity and if "
+				":meth:`is_distant_future` is ``True`` then *get_value* returns minus-infinity.\n"
 				"\n"
-				"  Note that positive values represent times in the past and negative values represent times in the future.\n"
+				"  Note that positive values represent times in the past and negative values represent "
+				"times in the future. So comparing values returned by *get_value* will give opposite "
+				"comparison (``<``, ``>``, etc) results than comparing :class:`GeoTimeInstant` values directly. "
+				"However you should only *compare* :class:`GeoTimeInstant` objects since they handle "
+				"issues related to finite floating-point precision (most notably when comparing for equality).\n"
+				"  ::\n"
+				"\n"
+				"    time10Ma = pygplates.GeoTimeInstant(10)\n"
+				"    time20Ma = pygplates.GeoTimeInstant(20)\n"
+				"    assert(time20Ma < time10Ma)\n"
+				"    assert(time20Ma.get_value() > time10Ma.get_value())\n"
 				"\n"
 				"  :rtype: float\n")
 		.def("is_distant_past",
@@ -244,6 +262,9 @@ export_geo_time_instant()
 				"both :meth:`is_distant_past` and :meth:`is_distant_future` will be ``False``.\n"
 				"\n"
 				"  :rtype: bool\n")
+		// Generate '__str__' from 'operator<<'...
+		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
+		.def(bp::self_ns::str(bp::self))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 		.def(bp::self < bp::self)
@@ -287,18 +308,40 @@ void
 export_gml_point()
 {
 	//
-	// GmlPoint
+	// GmlPoint - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
 			GPlatesPropertyValues::GmlPoint,
 			GPlatesPropertyValues::GmlPoint::non_null_ptr_type,
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
-					"GmlPoint", bp::no_init)
-		.def("create", &GPlatesApi::gml_point_create)
+					"GmlPoint",
+					"A property value representing a point geometry.\n",
+					bp::no_init)
+		.def("create",
+				&GPlatesApi::gml_point_create,
+				"create(point) -> GmlPoint\n"
+				"  Create a property value representing a point geometry.\n"
+				"  ::\n"
+				"\n"
+				"    point_property = pygplates.GmlPoint.create(point)\n"
+				"\n"
+				"  :param point: the point geometry\n"
+				"  :type point: :class:`PointOnSphere`\n")
 		.staticmethod("create")
-		.def("get_point", &GPlatesApi::gml_point_get_point)
-		.def("set_point", &GPlatesApi::gml_point_set_point)
+		.def("get_point",
+				&GPlatesApi::gml_point_get_point,
+				"get_point() -> PointOnSphere\n"
+				"  Returns the point geometry of this property value.\n"
+				"\n"
+				"  :rtype: :class:`PointOnSphere`\n")
+		.def("set_point",
+				&GPlatesApi::gml_point_set_point,
+				"set_point(point)\n"
+				"  Sets the point geometry of this property value.\n"
+				"\n"
+				"  :param point: the point geometry\n"
+				"  :type point: :class:`PointOnSphere`\n")
 	;
 
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
@@ -309,35 +352,45 @@ export_gml_point()
 }
 
 
-namespace GPlatesApi
-{
-	const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
-	gml_time_instant_create(
-			const GPlatesPropertyValues::GeoTimeInstant &time_position)
-	{
-		// Use the default value for the second argument.
-		return GPlatesPropertyValues::GmlTimeInstant::create(time_position);
-	}
-}
-
 void
 export_gml_time_instant()
 {
 	//
-	// GmlTimeInstant
+	// GmlTimeInstant - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
 			GPlatesPropertyValues::GmlTimeInstant,
 			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type,
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
-					"GmlTimeInstant", bp::no_init)
-		.def("create", &GPlatesApi::gml_time_instant_create)
+					"GmlTimeInstant",
+					"A property value representing an instant in geological time.\n",
+					bp::no_init)
+		.def("create",
+				&GPlatesModel::ModelUtils::create_gml_time_instant,
+				"create(time_position) -> GmlTimeInstant\n"
+				"  Create a property value representing a specific time instant.\n"
+				"  ::\n"
+				"\n"
+				"    time_instant = pygplates.GmlTimeInstant.create(time_position)\n"
+				"\n"
+				"  :param time_position: the time position\n"
+				"  :type time_position: :class:`GeoTimeInstant`\n")
 		.staticmethod("create")
-		.def("get_time_position",
+		.def("get_time",
 				&GPlatesPropertyValues::GmlTimeInstant::get_time_position,
-				bp::return_value_policy<bp::copy_const_reference>())
-		.def("set_time_position", &GPlatesPropertyValues::GmlTimeInstant::set_time_position)
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_time() -> GeoTimeInstant\n"
+				"  Returns the time position of this property value.\n"
+				"\n"
+				"  :rtype: :class:`GeoTimeInstant`\n")
+		.def("set_time",
+				&GPlatesPropertyValues::GmlTimeInstant::set_time_position,
+				"set_time(time_position)\n"
+				"  Sets the time position of this property value.\n"
+				"\n"
+				"  :param time_position: the time position\n"
+				"  :type time_position: :class:`GeoTimeInstant`\n")
 	;
 
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
@@ -348,33 +401,92 @@ export_gml_time_instant()
 }
 
 
+namespace GPlatesApi
+{
+	GPlatesPropertyValues::GeoTimeInstant
+	gml_time_period_get_begin_time(
+			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period)
+	{
+		return gml_time_period->begin()->get_time_position();
+	}
+
+	void
+	gml_time_period_set_begin_time(
+			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period,
+			const GPlatesPropertyValues::GeoTimeInstant &time_position)
+	{
+		gml_time_period->begin()->set_time_position(time_position);
+	}
+
+	GPlatesPropertyValues::GeoTimeInstant
+	gml_time_period_get_end_time(
+			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period)
+	{
+		return gml_time_period->end()->get_time_position();
+	}
+
+	void
+	gml_time_period_set_end_time(
+			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period,
+			const GPlatesPropertyValues::GeoTimeInstant &time_position)
+	{
+		gml_time_period->end()->set_time_position(time_position);
+	}
+}
+
 void
 export_gml_time_period()
 {
-	// Use the 'non-const' overload so GmlTimeInstant can be modified via python...
-	const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
-			(GPlatesPropertyValues::GmlTimePeriod::*begin)() =
-					&GPlatesPropertyValues::GmlTimePeriod::begin;
-	// Use the 'non-const' overload so GmlTimeInstant can be modified via python...
-	const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
-			(GPlatesPropertyValues::GmlTimePeriod::*end)() =
-					&GPlatesPropertyValues::GmlTimePeriod::end;
-
 	//
-	// GmlTimePeriod
+	// GmlTimePeriod - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
 			GPlatesPropertyValues::GmlTimePeriod,
 			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type,
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
-					"GmlTimePeriod", bp::no_init)
-		.def("create", &GPlatesPropertyValues::GmlTimePeriod::create)
+					"GmlTimePeriod",
+					"A property value representing a period in geological time (time of appearance to time of disappearance).\n",
+					bp::no_init)
+		.def("create",
+				&GPlatesModel::ModelUtils::create_gml_time_period,
+				"create(begin_time_position, end_time_position) -> GmlTimePeriod\n"
+				"  Create a property value representing a specific time period.\n"
+				"  ::\n"
+				"\n"
+				"    time_period = pygplates.GmlTimePeriod.create(begin_time_position, end_time_position)\n"
+				"\n"
+				"  :param begin_time_position: the begin time position (time of appearance)\n"
+				"  :type begin_time_position: :class:`GeoTimeInstant`\n"
+				"  :param end_time_position: the end time position (time of disappearance)\n"
+				"  :type end_time_position: :class:`GeoTimeInstant`\n")
 		.staticmethod("create")
-		.def("get_begin", begin)
-		.def("set_begin", &GPlatesPropertyValues::GmlTimePeriod::set_begin)
-		.def("get_end", end)
-		.def("set_end", &GPlatesPropertyValues::GmlTimePeriod::set_end)
+		.def("get_begin_time",
+				&GPlatesApi::gml_time_period_get_begin_time,
+				"get_begin_time() -> GeoTimeInstant\n"
+				"  Returns the begin time position (time of appearance) of this property value.\n"
+				"\n"
+				"  :rtype: :class:`GeoTimeInstant`\n")
+		.def("set_begin_time",
+				&GPlatesApi::gml_time_period_set_begin_time,
+				"set_begin_time(time_position)\n"
+				"  Sets the begin time position (time of appearance) of this property value.\n"
+				"\n"
+				"  :param time_position: the begin time position (time of appearance)\n"
+				"  :type time_position: :class:`GeoTimeInstant`\n")
+		.def("get_end_time",
+				&GPlatesApi::gml_time_period_get_end_time,
+				"get_end_time() -> GeoTimeInstant\n"
+				"  Returns the end time position (time of disappearance) of this property value.\n"
+				"\n"
+				"  :rtype: :class:`GeoTimeInstant`\n")
+		.def("set_end_time",
+				&GPlatesApi::gml_time_period_set_end_time,
+				"set_end_time(time_position)\n"
+				"  Sets the end time position (time of disappearance) of this property value.\n"
+				"\n"
+				"  :param time_position: the end time position (time of disappearance)\n"
+				"  :type time_position: :class:`GeoTimeInstant`\n")
 	;
 
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
@@ -725,7 +837,7 @@ export_gpml_irregular_sampling()
 				"    time_samples = irregular_sampling.get_time_samples()\n"
 				"\n"
 				"    # Sort samples by time ('reverse=True' orders backwards in time from present day to past times)\n"
-				"    time_samples.sort(key = lambda x: x.get_valid_time().get_time_position(), reverse = True)\n"
+				"    time_samples.sort(key = lambda x: x.get_time(), reverse = True)\n"
 				"\n"
 				"  :rtype: :class:`GpmlTimeSampleList`\n")
 		.def("get_interpolation_function",
@@ -804,11 +916,10 @@ export_gpml_plate_id()
 
 namespace GPlatesApi
 {
-	// Make it easier for client by converting from XsString to a regular string.
 	const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 	gpml_time_sample_create(
 			GPlatesModel::PropertyValue::non_null_ptr_type property_value,
-			GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type valid_time,
+			const GPlatesPropertyValues::GeoTimeInstant &time,
 			boost::optional<GPlatesPropertyValues::TextContent> description = boost::none,
 			bool is_disabled = false)
 	{
@@ -820,7 +931,7 @@ namespace GPlatesApi
 
 		return GPlatesPropertyValues::GpmlTimeSample::create(
 				property_value,
-				valid_time,
+				GPlatesModel::ModelUtils::create_gml_time_instant(time),
 				description_xs_string,
 				property_value->get_structural_type(),
 				is_disabled);
@@ -840,6 +951,21 @@ ENABLE_GCC_WARNING("-Wshadow")
 	{
 		// The derived property value type is needed otherwise python is unable to access the derived attributes.
 		return PythonConverterUtils::get_property_value_as_derived_type(gpml_time_sample->value());
+	}
+
+	GPlatesPropertyValues::GeoTimeInstant
+	gpml_time_sample_get_time(
+			GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type gpml_time_sample)
+	{
+		return gpml_time_sample->valid_time()->get_time_position();
+	}
+
+	void
+	gpml_time_sample_set_time(
+			GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type gpml_time_sample,
+			const GPlatesPropertyValues::GeoTimeInstant &time_position)
+	{
+		gpml_time_sample->valid_time()->set_time_position(time_position);
 	}
 
 	// Make it easier for client by converting from XsString to a regular string.
@@ -873,15 +999,9 @@ ENABLE_GCC_WARNING("-Wshadow")
 	}
 }
 
-
 void
 export_gpml_time_sample()
 {
-	// Use the 'non-const' overload so GmlTimeInstant can be modified via python...
-	const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type
-			(GPlatesPropertyValues::GpmlTimeSample::*get_valid_time)() =
-					&GPlatesPropertyValues::GpmlTimeSample::valid_time;
-
 	//
 	// GpmlTimeSample - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -892,22 +1012,26 @@ export_gpml_time_sample()
 					"GpmlTimeSample",
 					"A time sample associates an arbitrary property value with a specific time instant. "
 					"Typically a sequence of time samples are used in a :class:`GpmlIrregularSampling`. "
-					"The most common example of this is a time-dependent sequence of total reconstruction poles.",
+					"The most common example of this is a time-dependent sequence of total reconstruction poles.\n"
+					"\n"
+					"Time samples are equality (``==``, ``!=``) comparable. This includes comparing the property value "
+					"in the two time samples being compared (see :class:`PropertyValue`) as well as the time instant, "
+					"description string and disabled flag.\n",
 					bp::no_init)
 		.def("create",
 				&GPlatesApi::gpml_time_sample_create,
 				GPlatesApi::gpml_time_sample_create_overloads(
-					"create(property_value, valid_time[, description=None[, is_disabled=False]]) -> GpmlTimeSample\n"
+					"create(property_value, time[, description=None[, is_disabled=False]]) -> GpmlTimeSample\n"
 					"  Create a time sample given a property value and time and optionally a description string "
 					"and disabled flag.\n"
 					"  ::\n"
 					"\n"
-					"    time_sample = pygplates.GpmlTimeSample.create(property_value, valid_time)\n"
+					"    time_sample = pygplates.GpmlTimeSample.create(property_value, time)\n"
 					"\n"
 					"  :param property_value: arbitrary property value\n"
 					"  :type property_value: :class:`PropertyValue`\n"
-					"  :param valid_time: the time instant associated with the property value\n"
-					"  :type valid_time: :class:`GmlTimeInstant`\n"
+					"  :param time: the time position associated with the property value\n"
+					"  :type time: :class:`GeoTimeInstant`\n"
 					"  :param description: description of the time sample\n"
 					"  :type description: string or None\n"
 					"  :param is_disabled: whether time sample is disabled or not\n"
@@ -929,19 +1053,19 @@ export_gpml_time_sample()
 				"\n"
 				"  :param property_value: arbitrary property value\n"
 				"  :type property_value: :class:`PropertyValue`\n")
-		.def("get_valid_time",
-				get_valid_time,
-				"get_valid_time() -> GmlTimeInstant\n"
-				"  Returns the time of this time sample.\n"
+		.def("get_time",
+				&GPlatesApi::gpml_time_sample_get_time,
+				"get_time() -> GeoTimeInstant\n"
+				"  Returns the time position of this time sample.\n"
 				"\n"
-				"  :rtype: :class:`GmlTimeInstant`\n")
-		.def("set_valid_time",
-				&GPlatesPropertyValues::GpmlTimeSample::set_valid_time,
-				"set_valid_time(valid_time)\n"
-				"  Sets the time associated with this time sample.\n"
+				"  :rtype: :class:`GeoTimeInstant`\n")
+		.def("set_time",
+				&GPlatesApi::gpml_time_sample_set_time,
+				"set_time(time)\n"
+				"  Sets the time position associated with this time sample.\n"
 				"\n"
-				"  :param valid_time: the time instant associated with the property value\n"
-				"  :type valid_time: :class:`GmlTimeInstant`\n")
+				"  :param time: the time position associated with the property value\n"
+				"  :type time: :class:`GeoTimeInstant`\n")
 		.def("get_description",
 				&GPlatesApi::gpml_time_sample_get_description,
 				"get_description() -> string or None\n"
@@ -970,6 +1094,8 @@ export_gpml_time_sample()
 				"\n"
 				"  :param is_disabled: whether time sample is disabled or not\n"
 				"  :type is_disabled: bool\n")
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
 	;
 
 	// Enable boost::optional<GpmlTimeSample::non_null_ptr_type> to be passed to and from python.
@@ -1213,6 +1339,7 @@ export_property_values()
 
 	export_gpml_hot_spot_trail_mark();
 	export_gpml_irregular_sampling();
+	//export_gpml_piecewise_aggregation();
 	export_gpml_plate_id();
 	export_gpml_time_sample(); // Not actually a property value.
 

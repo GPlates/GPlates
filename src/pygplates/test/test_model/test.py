@@ -158,13 +158,13 @@ class PropertyValueCase(unittest.TestCase):
         self.assertTrue(isinstance(valid_time, pygplates.PropertyValue))
         # Specifically, this should be a GmlTimePeriod value
         self.assertTrue(isinstance(valid_time, pygplates.GmlTimePeriod))
-        begin_time = valid_time.get_begin()
-        self.assertTrue(isinstance(begin_time, pygplates.GmlTimeInstant))
-        end_time = valid_time.get_end()
-        self.assertTrue(isinstance(end_time, pygplates.GmlTimeInstant))
+        begin_time = valid_time.get_begin_time()
+        self.assertTrue(isinstance(begin_time, pygplates.GeoTimeInstant))
+        end_time = valid_time.get_end_time()
+        self.assertTrue(isinstance(end_time, pygplates.GeoTimeInstant))
         # Test the actual values of the time period
-        self.assertAlmostEqual(begin_time.get_time_position().get_value(), 40.0)
-        self.assertAlmostEqual(end_time.get_time_position().get_value(), 0.0)
+        self.assertAlmostEqual(begin_time.get_value(), 40.0)
+        self.assertAlmostEqual(end_time.get_value(), 0.0)
 
 
 def suite():

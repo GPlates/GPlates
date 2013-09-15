@@ -21,7 +21,7 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         for i in range(0,4):
             ts = pygplates.GpmlTimeSample.create(
                 pygplates.XsInteger.create(i),
-                pygplates.GmlTimeInstant.create(pygplates.GeoTimeInstant(i)))
+                pygplates.GeoTimeInstant(i))
             self.original_time_samples.append(ts)
             
         # Store the actual GpmlTimeSampleList (ie, RevisionedVector) for use by the test cases.
@@ -45,7 +45,7 @@ class GpmlTimeSampleListCase(unittest.TestCase):
     def test_set_item(self):
         ts = pygplates.GpmlTimeSample.create(
                 pygplates.XsInteger.create(100),
-                pygplates.GmlTimeInstant.create(pygplates.GeoTimeInstant(100)))
+                pygplates.GeoTimeInstant(100))
         self.gpml_time_sample_list[2] = ts
         self.assertTrue(len(self.gpml_time_sample_list) == 4)
         self.assertTrue(self.gpml_time_sample_list[2] == ts)
@@ -53,13 +53,13 @@ class GpmlTimeSampleListCase(unittest.TestCase):
     def test_set_slice(self):
         ts1 = pygplates.GpmlTimeSample.create(
                 pygplates.XsInteger.create(100),
-                pygplates.GmlTimeInstant.create(pygplates.GeoTimeInstant(100)))
+                pygplates.GeoTimeInstant(100))
         ts2 = pygplates.GpmlTimeSample.create(
                 pygplates.XsInteger.create(200),
-                pygplates.GmlTimeInstant.create(pygplates.GeoTimeInstant(200)))
+                pygplates.GeoTimeInstant(200))
         ts3 = pygplates.GpmlTimeSample.create(
                 pygplates.XsInteger.create(300),
-                pygplates.GmlTimeInstant.create(pygplates.GeoTimeInstant(300)))
+                pygplates.GeoTimeInstant(300))
         self.gpml_time_sample_list[1:3] = [ts1, ts2, ts3]
         # The length should increase by one.
         self.assertTrue(len(self.gpml_time_sample_list) == 5)
@@ -72,13 +72,13 @@ class GpmlTimeSampleListCase(unittest.TestCase):
     def test_set_extended_slice(self):
         ts1 = pygplates.GpmlTimeSample.create(
                 pygplates.XsInteger.create(100),
-                pygplates.GmlTimeInstant.create(pygplates.GeoTimeInstant(100)))
+                pygplates.GeoTimeInstant(100))
         ts2 = pygplates.GpmlTimeSample.create(
                 pygplates.XsInteger.create(200),
-                pygplates.GmlTimeInstant.create(pygplates.GeoTimeInstant(200)))
+                pygplates.GeoTimeInstant(200))
         ts3 = pygplates.GpmlTimeSample.create(
                 pygplates.XsInteger.create(300),
-                pygplates.GmlTimeInstant.create(pygplates.GeoTimeInstant(300)))
+                pygplates.GeoTimeInstant(300))
         self.gpml_time_sample_list[1::2] = [ts1, ts2]
         self.assertTrue(len(self.gpml_time_sample_list) == 4)
         self.assertTrue(self.gpml_time_sample_list[0] == self.original_time_samples[0])
@@ -130,7 +130,7 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         
         ts = pygplates.GpmlTimeSample.create(
             pygplates.XsInteger.create(100),
-            pygplates.GmlTimeInstant.create(pygplates.GeoTimeInstant(100)))
+            pygplates.GeoTimeInstant(100))
         self.assertFalse(ts in self.gpml_time_sample_list)
 
     def test_iadd1(self):
@@ -259,13 +259,13 @@ class GpmlTimeSampleListCase(unittest.TestCase):
     def test_sort(self):
         # Change the time of one element so the sequence is no longer ordered by time.
         # Times of [0, 1, 2, 3] -> [0, 2.5, 2, 1]
-        self.gpml_time_sample_list[1].get_valid_time().set_time_position(pygplates.GeoTimeInstant(2.5))
-        self.gpml_time_sample_list[3].get_valid_time().set_time_position(pygplates.GeoTimeInstant(1))
+        self.gpml_time_sample_list[1].set_time(pygplates.GeoTimeInstant(2.5))
+        self.gpml_time_sample_list[3].set_time(pygplates.GeoTimeInstant(1))
         self.assertTrue(len(self.gpml_time_sample_list) == 4)
         # Sort by time from present day to past times ('reverse=True').
         # Times of [0, 2.5, 2, 1] -> [0, 1, 2, 2.5]
         # Note that 2Ma < 1Ma because 2Ma is further in the past (which is why we need to reverse the ordering).
-        self.gpml_time_sample_list.sort(key = lambda x: x.get_valid_time().get_time_position(), reverse=True)
+        self.gpml_time_sample_list.sort(key = lambda x: x.get_time(), reverse=True)
         self.assertTrue(len(self.gpml_time_sample_list) == 4)
         self.assertTrue(self.gpml_time_sample_list[0] == self.original_time_samples[0])
         self.assertTrue(self.gpml_time_sample_list[1] == self.original_time_samples[3])
