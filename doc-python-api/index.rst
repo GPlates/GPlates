@@ -16,6 +16,7 @@ Contents:
 
 	pygplates
 	pygplates.EnumerationType
+	pygplates.Feature
 	pygplates.FeatureId
 	pygplates.FeatureType
 	pygplates.GeoTimeInstant

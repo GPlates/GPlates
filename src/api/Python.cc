@@ -149,15 +149,15 @@ BOOST_PYTHON_MODULE(pygplates)
 	export_unit_vector_3d();
 
 	// model namespace
+	export_ids(); // Must be called before 'export_feature()'.
+	export_qualified_xml_names(); // Must be called before 'export_feature()'.
 	export_feature();
 	export_feature_collection();
 	export_feature_collection_file_format_registry();
-	export_ids();
 	export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
 	export_old_feature_collection();
 	export_property_values();
 	export_property_value_visitor();
-	export_qualified_xml_names();
 	export_reconstruction_tree();
 	export_revisioned_vector();
 	export_top_level_property();

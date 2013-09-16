@@ -21,6 +21,9 @@ class FeatureCase(unittest.TestCase):
         self.feature = iter(pygplates.FeatureCollectionFileFormatRegistry().read(
             os.path.join(FIXTURES, 'volcanoes.gpml'))).next()
 
+    def test_len(self):
+        self.assertEquals(len(self.feature), self.property_count)
+    
     def test_feature(self):
         self.assertTrue(self.feature)
 
@@ -47,12 +50,46 @@ class FeatureCase(unittest.TestCase):
 
     def test_get_features(self):
         counter = 0
-        for property in iter(self.feature):
+        for property in self.feature:
             self.assertTrue(isinstance(property, pygplates.Property))
             counter += 1
         self.assertTrue(counter == self.property_count, 
                 "Expected " + str(self.property_count) + " properties, actual " + 
                 str(counter) + " properties")
+    
+    def test_remove(self):
+        # Find the 'gml:name' property.
+        name_property = None
+        for property in self.feature:
+            if property.get_name() == pygplates.PropertyName.create_gml('name'):
+                name_property = property
+                break
+        self.assertTrue(name_property)
+        
+        # Should not raise ValueError.
+        self.feature.remove(name_property)
+        self.assertTrue(len(self.feature) == self.property_count - 1)
+        # Should not be able to find it now.
+        missing_name_property = None
+        for property in self.feature:
+            if (property.get_name() == pygplates.PropertyName.create_gml('name') or
+                property == name_property):
+                missing_name_property = property
+                break
+        self.assertFalse(missing_name_property)
+    
+    def test_add(self):
+        integer_property = pygplates.Property.create(
+                pygplates.PropertyName.create_gpml('integer'),
+                pygplates.XsInteger.create(100))
+        self.feature.add(integer_property)
+        self.assertTrue(len(self.feature) == self.property_count + 1)
+        found_integer_property = None
+        for property in self.feature:
+            if property == integer_property:
+                found_integer_property = property
+                break
+        self.assertTrue(found_integer_property)
 
 
 class FeatureCollectionCase(unittest.TestCase):
