@@ -100,6 +100,9 @@ class FeatureCollectionCase(unittest.TestCase):
         self.feature_count = 4
         self.feature_collection = pygplates.FeatureCollectionFileFormatRegistry().read(self.volcanoes_filename)
 
+    def test_len(self):
+        self.assertEquals(len(self.feature_collection), self.feature_count)
+
     def test_is_iterable(self):
         """
         Feature collections provide iteration over the features they contain.
@@ -108,12 +111,49 @@ class FeatureCollectionCase(unittest.TestCase):
 
     def test_get_features(self):
         counter = 0
-        for feature in iter(self.feature_collection):
+        for feature in self.feature_collection:
             self.assertTrue(isinstance(feature, pygplates.Feature))
             counter += 1
         self.assertTrue(counter == self.feature_count, 
                 "Expected " + str(self.feature_count) + " features, actual " + 
                 str(counter) + " features")
+    
+    def test_remove(self):
+        # Get the second feature.
+        feature_iter = iter(self.feature_collection)
+        feature_iter.next(); # Skip first feature.
+        feature_to_remove = feature_iter.next()
+        
+        # Should not raise ValueError.
+        self.feature_collection.remove(feature_to_remove)
+        self.assertTrue(len(self.feature_collection) == self.feature_count - 1)
+        # Should not be able to find it now.
+        missing_feature = None
+        for feature in self.feature_collection:
+            if feature.get_feature_id() == feature_to_remove.get_feature_id():
+                missing_feature = feature
+                break
+        self.assertFalse(missing_feature)
+    
+    def test_add(self):
+        integer_property = pygplates.Property.create(
+                pygplates.PropertyName.create_gpml('integer'),
+                pygplates.XsInteger.create(100))
+        # Create a feature with a new unique feature ID.
+        feature_with_integer_property = pygplates.Feature.create()
+        feature_with_integer_property.add(integer_property)
+        self.feature_collection.add(feature_with_integer_property)
+        self.assertTrue(len(self.feature_collection) == self.feature_count + 1)
+        # Should be able to find it in the collection.
+        found_feature_with_integer_property = None
+        for feature in self.feature_collection:
+            if feature.get_feature_id() == feature_with_integer_property.get_feature_id():
+                found_feature_with_integer_property = feature
+                break
+        self.assertTrue(found_feature_with_integer_property)
+        # Added feature should have one property.
+        self.assertTrue(len(found_feature_with_integer_property) == 1)
+        self.assertTrue(iter(found_feature_with_integer_property).next().get_value().get_integer() == 100)
 
 
 class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):

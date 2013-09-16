@@ -110,6 +110,7 @@ ENABLE_GCC_WARNING("-Wshadow")
 			}
 		}
 
+		// Raise the 'ValueError' python exception if the property was not found.
 		PyErr_SetString(PyExc_ValueError, "Property instance not found");
 		bp::throw_error_already_set();
 	}
@@ -182,6 +183,7 @@ export_feature()
 					"  :param revision_id: the current revision identifier\n"
 					"  :type revision_id: :class:`RevisionId`\n"))
  		.staticmethod("create")
+		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
 #if 0 // TODO: Add once clone does a proper deep-copy...
 		.def("clone",
 				&GPlatesApi::feature_handle_clone,
@@ -235,7 +237,6 @@ export_feature()
 				"the feature instance is modified (such as adding, removing or modifying a property).\n"
 				"\n"
 				"  :rtype: :class:`RevisionId`\n")
-		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
 	;
 
 	// Enable boost::optional<FeatureHandle::non_null_ptr_type> to be passed to and from python.

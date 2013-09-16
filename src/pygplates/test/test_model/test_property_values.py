@@ -112,6 +112,14 @@ class GpmlConstantValueCase(unittest.TestCase):
         
         self.property_value2 = pygplates.GpmlPlateId.create(201)
         self.gpml_constant_value2 = pygplates.GpmlConstantValue.create(self.property_value2)
+        
+        # Create a property value in a constant value wrapper but then lose the reference to the wrapper
+        # so that only the nested property value exists (this is to test that modifying the property value's
+        # state doesn't crash due to a dangling parent reference to the non-existent parent constant value wrapper).
+        self.property_value3 = pygplates.GpmlPlateId.create(201)
+        # Note there's no 'self.' on the constant value wrapper.
+        gpml_constant_value2 = pygplates.GpmlConstantValue.create(self.property_value3)
+        del gpml_constant_value2 # 'del' doesn't really guarantee anything though.
 
     def test_get(self):
         self.assertTrue(self.gpml_constant_value1.get_value() == self.property_value1)
@@ -131,6 +139,9 @@ class GpmlConstantValueCase(unittest.TestCase):
         new_description2 = 'Yet another plate id'
         self.gpml_constant_value1.set_description(new_description2)
         self.assertTrue(self.gpml_constant_value1.get_description() == new_description2)
+        
+        # Test that this does not crash due to dangling parent reference to non-existent constant value wrapper.
+        self.property_value3.set_plate_id(101)
 
 
 class GpmlFiniteRotationSlerpCase(unittest.TestCase):
