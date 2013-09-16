@@ -172,6 +172,40 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
 		interpolation_func = pygplates.GpmlFiniteRotationSlerp.create()
 		self.gpml_irregular_sampling.set_interpolation_function(interpolation_func)
 		self.assertTrue(self.gpml_irregular_sampling.get_interpolation_function() == interpolation_func)
+		
+		with self.assertRaises(RuntimeError):
+			# Need at least one time sample to create a GpmlIrregularSampling.
+			pygplates.GpmlIrregularSampling.create([])
+
+
+class GpmlPiecewiseAggregationCase(unittest.TestCase):
+	"""Test GpmlPiecewiseAggregation.
+	
+	NOTE: The testing of the time window list (GpmlTimeWindowList) is handled in 'test_revisioned_vector.py'."""
+	
+	def setUp(self):
+		self.original_time_windows = []
+		for i in range(0,4):
+			tw = pygplates.GpmlTimeWindow.create(
+				pygplates.XsInteger.create(i),
+				pygplates.GeoTimeInstant(i),   # begin time
+				pygplates.GeoTimeInstant(i+1)) # end time
+			self.original_time_windows.append(tw)
+		
+		self.gpml_piecewise_aggregation = pygplates.GpmlPiecewiseAggregation.create(self.original_time_windows)
+
+	def test_get(self):
+		self.assertTrue(list(self.gpml_piecewise_aggregation.get_time_windows()) == self.original_time_windows)
+
+	def test_set(self):
+		gpml_time_window_list = self.gpml_piecewise_aggregation.get_time_windows()
+		reversed_time_windows = list(reversed(self.original_time_windows))
+		gpml_time_window_list[:] = reversed_time_windows
+		self.assertTrue(list(self.gpml_piecewise_aggregation.get_time_windows()) == reversed_time_windows)
+		
+		with self.assertRaises(RuntimeError):
+			# Need at least one time sample to create a GpmlPiecewiseAggregation.
+			pygplates.GpmlPiecewiseAggregation.create([])
 
 
 class GpmlPlateIdCase(unittest.TestCase):
@@ -186,6 +220,108 @@ class GpmlPlateIdCase(unittest.TestCase):
 		new_plate_id = 201
 		self.gpml_plate_id.set_plate_id(new_plate_id)
 		self.assertTrue(self.gpml_plate_id.get_plate_id() == new_plate_id)
+
+
+class GpmlTimeSampleCase(unittest.TestCase):
+	def setUp(self):
+		self.property_value1 = pygplates.GpmlPlateId.create(701)
+		self.time1 = pygplates.GeoTimeInstant(10)
+		self.description1 = 'A plate id time sample'
+		self.is_disabled1 = True
+		self.gpml_time_sample1 = pygplates.GpmlTimeSample.create(
+				self.property_value1, self.time1, self.description1, self.is_disabled1)
+		
+		self.property_value2 = pygplates.GpmlPlateId.create(201)
+		self.time2 = pygplates.GeoTimeInstant(20)
+		self.gpml_time_sample2 = pygplates.GpmlTimeSample.create(self.property_value2, self.time2)
+
+	def test_get(self):
+		self.assertTrue(self.gpml_time_sample1.get_value() == self.property_value1)
+		self.assertTrue(self.gpml_time_sample1.get_time() == self.time1)
+		self.assertTrue(self.gpml_time_sample1.get_description() == self.description1)
+		self.assertTrue(self.gpml_time_sample1.is_disabled())
+		
+		self.assertTrue(self.gpml_time_sample2.get_value() == self.property_value2)
+		self.assertTrue(self.gpml_time_sample2.get_time() == self.time2)
+		self.assertTrue(self.gpml_time_sample2.get_description() is None)
+		self.assertTrue(not self.gpml_time_sample2.is_disabled())
+
+	def test_set(self):
+		new_property_value = pygplates.GpmlPlateId.create(801)
+		new_time = pygplates.GeoTimeInstant(30)
+		new_description = 'Another plate id time sample'
+		new_is_disabled = False
+		self.gpml_time_sample1.set_value(new_property_value)
+		self.gpml_time_sample1.set_time(new_time)
+		self.gpml_time_sample1.set_description(new_description)
+		self.gpml_time_sample1.set_disabled(new_is_disabled)
+		self.assertTrue(self.gpml_time_sample1.get_value() == new_property_value)
+		self.assertTrue(self.gpml_time_sample1.get_time() == new_time)
+		self.assertTrue(self.gpml_time_sample1.get_description() == new_description)
+		self.assertTrue(self.gpml_time_sample1.is_disabled() == new_is_disabled)
+		
+		self.gpml_time_sample1.set_description()
+		self.assertTrue(self.gpml_time_sample1.get_description() is None)
+		new_description2 = 'Yet another plate id time sample'
+		self.gpml_time_sample1.set_description(new_description2)
+		self.assertTrue(self.gpml_time_sample1.get_description() == new_description2)
+
+	def test_comparison(self):
+		self.assertTrue(self.gpml_time_sample1 == self.gpml_time_sample1)
+		self.assertTrue(self.gpml_time_sample1 != self.gpml_time_sample2)
+		
+		self.gpml_time_sample1.set_time(self.gpml_time_sample2.get_time())
+		self.gpml_time_sample1.set_description(self.gpml_time_sample2.get_description())
+		self.gpml_time_sample1.set_disabled(self.gpml_time_sample2.is_disabled())
+		# Different property value instance but same value (plate id).
+		self.gpml_time_sample1.get_value().set_plate_id(self.gpml_time_sample2.get_value().get_plate_id())
+		self.assertTrue(self.gpml_time_sample1 == self.gpml_time_sample2)
+		
+		# Same property value instance.
+		self.gpml_time_sample1.set_value(self.gpml_time_sample2.get_value())
+		self.assertTrue(self.gpml_time_sample1 == self.gpml_time_sample2)
+
+
+class GpmlTimeWindowCase(unittest.TestCase):
+	def setUp(self):
+		self.property_value = pygplates.GpmlPlateId.create(701)
+		self.begin_time = pygplates.GeoTimeInstant(20)
+		self.end_time = pygplates.GeoTimeInstant(10)
+		self.gpml_time_window = pygplates.GpmlTimeWindow.create(
+				self.property_value, self.begin_time, self.end_time)
+
+	def test_get(self):
+		self.assertTrue(self.gpml_time_window.get_value() == self.property_value)
+		self.assertTrue(self.gpml_time_window.get_begin_time() == self.begin_time)
+		self.assertTrue(self.gpml_time_window.get_end_time() == self.end_time)
+
+	def test_set(self):
+		new_property_value = pygplates.GpmlPlateId.create(801)
+		new_begin_time = pygplates.GeoTimeInstant(40)
+		new_end_time = pygplates.GeoTimeInstant(30)
+		self.gpml_time_window.set_value(new_property_value)
+		self.gpml_time_window.set_begin_time(new_begin_time)
+		self.gpml_time_window.set_end_time(new_end_time)
+		self.assertTrue(self.gpml_time_window.get_value() == new_property_value)
+		self.assertTrue(self.gpml_time_window.get_begin_time() == new_begin_time)
+		self.assertTrue(self.gpml_time_window.get_end_time() == new_end_time)
+
+	def test_comparison(self):
+		self.assertTrue(self.gpml_time_window == self.gpml_time_window)
+		
+		self.gpml_time_window2 = pygplates.GpmlTimeWindow.create(
+				pygplates.GpmlPlateId.create(201), pygplates.GeoTimeInstant(40), pygplates.GeoTimeInstant(30))
+		self.assertTrue(self.gpml_time_window != self.gpml_time_window2)
+		
+		self.gpml_time_window.set_begin_time(self.gpml_time_window2.get_begin_time())
+		self.gpml_time_window.set_end_time(self.gpml_time_window2.get_end_time())
+		# Different property value instance but same value (plate id).
+		self.gpml_time_window.get_value().set_plate_id(self.gpml_time_window2.get_value().get_plate_id())
+		self.assertTrue(self.gpml_time_window == self.gpml_time_window2)
+		
+		# Same property value instance.
+		self.gpml_time_window.set_value(self.gpml_time_window2.get_value())
+		self.assertTrue(self.gpml_time_window == self.gpml_time_window2)
 
 
 class XsBooleanCase(unittest.TestCase):
@@ -255,7 +391,10 @@ def suite():
 			GpmlConstantValueCase,
 			GpmlFiniteRotationSlerpCase,
 			GpmlIrregularSamplingCase,
+			GpmlPiecewiseAggregationCase,
 			GpmlPlateIdCase,
+			GpmlTimeSampleCase,
+			GpmlTimeWindowCase,
 			XsBooleanCase,
 			XsDoubleCase,
 			XsIntegerCase,
