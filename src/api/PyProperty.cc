@@ -87,7 +87,10 @@ export_top_level_property()
 			GPlatesModel::TopLevelProperty::non_null_ptr_type,
 			boost::noncopyable>(
 					"Property",
-					"Associates a property name with a property value.",
+					"Associates a property name with a property value.\n"
+					"\n"
+					"Properties are equality (``==``, ``!=``) comparable. This includes comparing the property value "
+					"in the two properties being compared (see :class:`PropertyValue`) as well as the property name.\n",
 					bp::no_init)
 		.def("create",
 				&GPlatesApi::top_level_property_inline_create,
@@ -118,6 +121,8 @@ export_top_level_property()
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
 	;
 
 	// Enable boost::optional<TopLevelProperty::non_null_ptr_type> to be passed to and from python.

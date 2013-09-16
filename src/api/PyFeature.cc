@@ -205,7 +205,7 @@ export_feature()
 				&GPlatesApi::feature_handle_remove,
 				(bp::arg("property")),
 				"remove(property)\n"
-				"  Removes *property* from this feature. Raises ``ValueError`` if *property* is not "
+				"  Removes *property* from this feature. Raises the ``ValueError`` exception if *property* is not "
 				"currently a property in this feature. Note that the same property *instance* must "
 				"have previously been added. In other words, *remove* does not compare the value of "
 				"*property* with the values of the properties of this feature - it actually looks for "

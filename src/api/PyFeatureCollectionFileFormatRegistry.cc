@@ -71,7 +71,8 @@ namespace GPlatesApi
 		// Both the filename and target feature collection are in 'file_ref'.
 		registry->read_feature_collection(file->get_reference(), read_errors);
 
-		return file->get_reference().get_feature_collection().handle_ptr();
+		return GPlatesModel::FeatureCollectionHandle::non_null_ptr_type(
+				file->get_reference().get_feature_collection().handle_ptr());
 	}
 }
 
