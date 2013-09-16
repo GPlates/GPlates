@@ -46,6 +46,7 @@
 #include "model/RevisionedVector.h"
 
 #include "property-values/GpmlTimeSample.h"
+#include "property-values/GpmlTimeWindow.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -1005,8 +1006,8 @@ export_revisioned_vector()
 
 	// Export all required instantiations of class template RevisionedVector...
 
-	// GpmlTimeSample.
 	RevisionedVectorWrapper<GpmlTimeSample>::wrap("GpmlTimeSample", "gpml_time_sample");
+	RevisionedVectorWrapper<GpmlTimeWindow>::wrap("GpmlTimeWindow", "gpml_time_window");
 }
 
 #endif // GPLATES_NO_PYTHON

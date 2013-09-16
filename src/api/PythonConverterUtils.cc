@@ -35,6 +35,7 @@
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
@@ -118,6 +119,15 @@ namespace GPlatesApi
 		{
 			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
 			d_property_value = bp::object(gpml_irregular_sampling_type::non_null_ptr_type(&gpml_irregular_sampling));
+		}
+
+		virtual
+		void
+		visit_gpml_piecewise_aggregation(
+				gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
+		{
+			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
+			d_property_value = bp::object(gpml_piecewise_aggregation_type::non_null_ptr_type(&gpml_piecewise_aggregation));
 		}
 
 		virtual

@@ -35,6 +35,7 @@
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
@@ -204,6 +205,29 @@ namespace GPlatesApi
 				gpml_irregular_sampling_type &gpml_irregular_sampling)
 		{
 			this->GPlatesModel::FeatureVisitor::visit_gpml_irregular_sampling(gpml_irregular_sampling);
+		}
+
+
+		virtual
+		void
+		visit_gpml_piecewise_aggregation(
+				gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
+		{
+			if (bp::override visit = this->get_override("visit_gpml_piecewise_aggregation"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gpml_piecewise_aggregation_type::non_null_ptr_type(&gpml_piecewise_aggregation));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gpml_piecewise_aggregation(gpml_piecewise_aggregation);
+		}
+
+		void
+		default_visit_gpml_piecewise_aggregation(
+				gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gpml_piecewise_aggregation(gpml_piecewise_aggregation);
 		}
 
 
@@ -415,6 +439,11 @@ export_property_value_visitor()
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_irregular_sampling,
 				"visit_gpml_irregular_sampling(gpml_irregular_sampling)\n"
 				"  Visits a :class:`GpmlIrregularSampling` property value.\n")
+		.def("visit_gpml_piecewise_aggregation",
+				&GPlatesModel::FeatureVisitor::visit_gpml_piecewise_aggregation,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_piecewise_aggregation,
+				"visit_gpml_piecewise_aggregation(gpml_piecewise_aggregation)\n"
+				"  Visits a :class:`GpmlPiecewiseAggregation` property value.\n")
 		.def("visit_gpml_plate_id",
 				&GPlatesModel::FeatureVisitor::visit_gpml_plate_id,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_plate_id,

@@ -51,6 +51,7 @@
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
+#include "property-values/GpmlTimeWindow.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
@@ -117,7 +118,7 @@ export_property_value()
 					"* :class:`GmlTimePeriod`\n"
 					"* :class:`GpmlConstantValue`\n"
 					"* :class:`GpmlFiniteRotationSlerp`\n"
-					"* :class:`GpmlHotSpotTrailMark`\n"
+					//"* :class:`GpmlHotSpotTrailMark`\n"
 					"* :class:`GpmlIrregularSampling`\n"
 					"* :class:`GpmlPiecewiseAggregation`\n"
 					"* :class:`GpmlPlateId`\n"
@@ -612,7 +613,7 @@ export_gpml_constant_value()
 		.def("get_description",
 				&GPlatesPropertyValues::GpmlConstantValue::get_description,
 				"get_description() -> string or None\n"
-				"  Returns the *optional* description of this constant value wrapper.\n"
+				"  Returns the *optional* description of this constant value wrapper, or ``None``.\n"
 				"\n"
 				"  :rtype: string or None\n")
 		.def("set_description",
@@ -882,6 +883,99 @@ export_gpml_irregular_sampling()
 }
 
 
+namespace GPlatesApi
+{
+	const GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
+	gpml_piecewise_aggregation_create(
+			bp::object time_windows) // Any python sequence (eg, list, tuple).
+	{
+		// Begin/end iterators over the python time windows sequence.
+		bp::stl_input_iterator<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type>
+				time_windows_begin(time_windows),
+				time_windows_end;
+
+		// Copy into a vector.
+		std::vector<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type> time_windows_vector;
+		std::copy(time_windows_begin, time_windows_end, std::back_inserter(time_windows_vector));
+
+		// We need at least one time sample to determine the value type, otherwise we need to
+		// ask the python user for it and that might be a little confusing for them.
+		if (time_windows_vector.empty())
+		{
+			PyErr_SetString(
+					PyExc_RuntimeError,
+					"pygplates.GpmlPiecewiseAggregation::create() requires a non-empty "
+						"sequence of GpmlTimeWindow elements");
+			bp::throw_error_already_set();
+		}
+
+		return GPlatesPropertyValues::GpmlPiecewiseAggregation::create(
+				time_windows_vector,
+				time_windows_vector[0]->get_value_type());
+	}
+
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::non_null_ptr_type
+	gpml_piecewise_aggregation_get_time_windows(
+			GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type gpml_piecewise_aggregation)
+	{
+		return &gpml_piecewise_aggregation->time_windows();
+	}
+}
+
+void
+export_gpml_piecewise_aggregation()
+{
+	//
+	// GpmlPiecewiseAggregation - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GpmlPiecewiseAggregation,
+			GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GpmlPiecewiseAggregation",
+					"A time-dependent property consisting of a sequence of time windows each with a *constant* "
+					"property value.\n",
+					bp::no_init)
+		.def("create",
+				&GPlatesApi::gpml_piecewise_aggregation_create,
+				(bp::arg("time_windows")),
+				"create(time_windows) -> GpmlPiecewiseAggregation\n"
+				"  Create a piecewise-constant time-dependent property from a sequence of time windows.\n"
+				"\n"
+				"  **NOTE** that the sequence of time windows must **not** be empty (for technical implementation reasons), "
+				"otherwise a *RuntimeError* exception will be thrown.\n"
+				"  ::\n"
+				"\n"
+				"    piecewise_aggregation = pygplates.GpmlPiecewiseAggregation.create(time_windows)\n"
+				"\n"
+				"  :param time_windows: A sequence of :class:`GpmlTimeWindow` elements.\n"
+				"  :type time_windows: Any python sequence such as a ``list`` or a ``tuple``\n")
+		.staticmethod("create")
+		.def("get_time_windows",
+				&GPlatesApi::gpml_piecewise_aggregation_get_time_windows,
+				"get_time_windows() -> GpmlTimeWindowList\n"
+				"  Returns the :class:`time windows<GpmlTimeWindowList>` in a sequence that behaves as a python ``list``. "
+				"Modifying the returned sequence will modify the internal state of the *GpmlPiecewiseAggregation* "
+				"instance.\n"
+				"  ::\n"
+				"\n"
+				"    time_windows = piecewise_aggregation.get_time_windows()\n"
+				"\n"
+				"    # Sort windows by begin time ('reverse=True' orders backwards in time from present day to past times)\n"
+				"    time_windows.sort(key = lambda x: x.get_begin_time(), reverse = True)\n"
+				"\n"
+				"  :rtype: :class:`GpmlTimeWindowList`\n")
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GpmlPiecewiseAggregation,
+			GPlatesModel::PropertyValue>();
+}
+
+
 void
 export_gpml_plate_id()
 {
@@ -1095,7 +1189,7 @@ export_gpml_time_sample()
 		.def("get_description",
 				&GPlatesApi::gpml_time_sample_get_description,
 				"get_description() -> string or None\n"
-				"  Returns the description of this time sample.\n"
+				"  Returns the description of this time sample, or ``None``.\n"
 				"\n"
 				"  :rtype: string or None\n")
 		.def("set_description",
@@ -1136,6 +1230,162 @@ export_gpml_time_sample()
 	boost::python::implicitly_convertible<
 			boost::optional<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>,
 			boost::optional<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type> >();
+}
+
+
+namespace GPlatesApi
+{
+	const GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type
+	gpml_time_window_create(
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value,
+			const GPlatesPropertyValues::GeoTimeInstant &begin_time,
+			const GPlatesPropertyValues::GeoTimeInstant &end_time)
+	{
+		return GPlatesPropertyValues::GpmlTimeWindow::create(
+				property_value,
+				GPlatesModel::ModelUtils::create_gml_time_period(begin_time, end_time),
+				property_value->get_structural_type());
+	}
+
+	// Return base property value to python as its derived property value type.
+	bp::object/*derived property value non_null_intrusive_ptr*/
+	gpml_time_window_get_value(
+			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type gpml_time_window)
+	{
+		// The derived property value type is needed otherwise python is unable to access the derived attributes.
+		return PythonConverterUtils::get_property_value_as_derived_type(gpml_time_window->time_dependent_value());
+	}
+
+	GPlatesPropertyValues::GeoTimeInstant
+	gpml_time_window_get_begin_time(
+			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type gpml_time_window)
+	{
+		return gpml_time_window->valid_time()->begin()->get_time_position();
+	}
+
+	void
+	gpml_time_window_set_begin_time(
+			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type gpml_time_window,
+			const GPlatesPropertyValues::GeoTimeInstant &begin_time)
+	{
+		gpml_time_window->valid_time()->begin()->set_time_position(begin_time);
+	}
+
+	GPlatesPropertyValues::GeoTimeInstant
+	gpml_time_window_get_end_time(
+			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type gpml_time_window)
+	{
+		return gpml_time_window->valid_time()->end()->get_time_position();
+	}
+
+	void
+	gpml_time_window_set_end_time(
+			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type gpml_time_window,
+			const GPlatesPropertyValues::GeoTimeInstant &end_time)
+	{
+		gpml_time_window->valid_time()->end()->set_time_position(end_time);
+	}
+}
+
+void
+export_gpml_time_window()
+{
+	//
+	// GpmlTimeWindow - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GpmlTimeWindow,
+			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type,
+			boost::noncopyable>(
+					"GpmlTimeWindow",
+					"A time window associates an arbitrary property value with a specific time period. "
+					"The property value does not vary over the time period of the window. "
+					"Typically a sequence of time windows are used in a :class:`GpmlPiecewiseAggregation` "
+					"where the sequence of windows form a *piecewise-constant* (staircase function) "
+					"property value over time (since each time window has a *constant* property value) "
+					"assuming the windows do not have overlaps or gaps in time.\n"
+					"\n"
+					"Time windows are equality (``==``, ``!=``) comparable. This includes comparing the property value "
+					"in the two time windows being compared (see :class:`PropertyValue`) as well as the time period.\n",
+					bp::no_init)
+		.def("create",
+				&GPlatesApi::gpml_time_window_create,
+				(bp::arg("property_value"), bp::arg("begin_time"), bp::arg("end_time")),
+				"create(property_value, begin_time, end_time) -> GpmlTimeWindow\n"
+				"  Create a time window given a property value and time range.\n"
+				"  ::\n"
+				"\n"
+				"    time_window = pygplates.GpmlTimeWindow.create(property_value, begin_time, end_time)\n"
+				"\n"
+				"  Note that *begin_time* must be further in the past than the *end_time* "
+				"``begin_time < end_time``.\n"
+				"\n"
+				"  :param property_value: arbitrary property value\n"
+				"  :type property_value: :class:`PropertyValue`\n"
+				"  :param begin_time: the begin time of the time window\n"
+				"  :type begin_time: :class:`GeoTimeInstant`\n"
+				"  :param end_time: the end time of the time window\n"
+				"  :type end_time: :class:`GeoTimeInstant`\n")
+		.staticmethod("create")
+		.def("get_value",
+				&GPlatesApi::gpml_time_window_get_value,
+				"get_value() -> PropertyValue\n"
+				"  Returns the property value of this time window.\n"
+				"\n"
+				"  :rtype: :class:`PropertyValue`\n")
+		.def("set_value",
+				&GPlatesPropertyValues::GpmlTimeWindow::set_time_dependent_value,
+				(bp::arg("property_value")),
+				"set_value(property_value)\n"
+				"  Sets the property value associated with this time window. "
+				"This essentially replaces the previous property value. "
+				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
+				"using its property value methods.\n"
+				"\n"
+				"  :param property_value: arbitrary property value\n"
+				"  :type property_value: :class:`PropertyValue`\n")
+		.def("get_begin_time",
+				&GPlatesApi::gpml_time_window_get_begin_time,
+				"get_begin_time() -> GeoTimeInstant\n"
+				"  Returns the begin time of this time window.\n"
+				"\n"
+				"  :rtype: :class:`GeoTimeInstant`\n")
+		.def("set_begin_time",
+				&GPlatesApi::gpml_time_window_set_begin_time,
+				(bp::arg("time")),
+				"set_begin_time(time)\n"
+				"  Sets the begin time of this time window.\n"
+				"\n"
+				"  :param time: the begin time of this time window\n"
+				"  :type time: :class:`GeoTimeInstant`\n")
+		.def("get_end_time",
+				&GPlatesApi::gpml_time_window_get_end_time,
+				"get_end_time() -> GeoTimeInstant\n"
+				"  Returns the end time of this time window.\n"
+				"\n"
+				"  :rtype: :class:`GeoTimeInstant`\n")
+		.def("set_end_time",
+				&GPlatesApi::gpml_time_window_set_end_time,
+				(bp::arg("time")),
+				"set_end_time(time)\n"
+				"  Sets the end time of this time window.\n"
+				"\n"
+				"  :param time: the end time of this time window\n"
+				"  :type time: :class:`GeoTimeInstant`\n")
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
+	;
+
+	// Enable boost::optional<GpmlTimeWindow::non_null_ptr_type> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type>();
+
+	// Registers 'non-const' to 'const' conversions.
+	boost::python::implicitly_convertible<
+			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type,
+			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_to_const_type>();
+	boost::python::implicitly_convertible<
+			boost::optional<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type>,
+			boost::optional<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_to_const_type> >();
 }
 
 
@@ -1375,9 +1625,10 @@ export_property_values()
 
 	export_gpml_hot_spot_trail_mark();
 	export_gpml_irregular_sampling();
-	//export_gpml_piecewise_aggregation();
+	export_gpml_piecewise_aggregation();
 	export_gpml_plate_id();
 	export_gpml_time_sample(); // Not actually a property value.
+	export_gpml_time_window(); // Not actually a property value.
 
 	export_xs_boolean();
 	export_xs_double();
