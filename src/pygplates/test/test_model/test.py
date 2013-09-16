@@ -27,14 +27,17 @@ class FeatureCase(unittest.TestCase):
     def test_feature_id(self):
         feature_id = self.feature.get_feature_id()
         self.assertTrue(isinstance(feature_id, pygplates.FeatureId))
+        self.assertEquals('GPlates-d13bba7f-57f5-419d-bbd4-105a8e72e177', feature_id.get_string())
 
     def test_feature_type(self):
         feature_type = self.feature.get_feature_type()
         self.assertTrue(isinstance(feature_type, pygplates.FeatureType))
+        self.assertEquals(feature_type, pygplates.FeatureType.create_gpml('Volcano'))
 
     def test_revision_id(self):
-        self.assertEquals('GPlates-d172eaab-931f-484e-a8b6-0605e2dacd18',
-                self.feature.get_revision_id().get_string())
+        revision_id = self.feature.get_revision_id()
+        self.assertTrue(isinstance(revision_id, pygplates.RevisionId))
+        self.assertEquals('GPlates-d172eaab-931f-484e-a8b6-0605e2dacd18', revision_id.get_string())
 
     def test_is_iterable(self):
         """
@@ -169,29 +172,29 @@ class PropertyValueCase(unittest.TestCase):
 
 
 def suite():
-	suite = unittest.TestSuite()
-	
-	# Add test cases from this module.
-	test_cases = [
-			FeatureCase,
-			FeatureCollectionCase,
-			FeatureCollectionFileFormatRegistryCase,
-			GeoTimeInstantCase,
-			PropertyNameCase,
-			PropertyValueCase
-		]
+    suite = unittest.TestSuite()
+    
+    # Add test cases from this module.
+    test_cases = [
+            FeatureCase,
+            FeatureCollectionCase,
+            FeatureCollectionFileFormatRegistryCase,
+            GeoTimeInstantCase,
+            PropertyNameCase,
+            PropertyValueCase
+        ]
 
-	for test_case in test_cases:
-		suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(test_case))
-	
-	# Add test suites from sibling modules.
-	test_modules = [
-			test_ids,
-			test_property_values,
-			test_revisioned_vector
-			]
+    for test_case in test_cases:
+        suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(test_case))
+    
+    # Add test suites from sibling modules.
+    test_modules = [
+            test_ids,
+            test_property_values,
+            test_revisioned_vector
+            ]
 
-	for test_module in test_modules:
-		suite.addTest(test_module.suite())
-	
-	return suite
+    for test_module in test_modules:
+        suite.addTest(test_module.suite())
+    
+    return suite
