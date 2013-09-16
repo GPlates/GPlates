@@ -544,7 +544,7 @@ main(int argc, char *argv[])
 
 	// Used to read structural types from a GPML file.
 	GPlatesFileIO::GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type gpml_structural_type_reader =
-			GPlatesFileIO::GpmlPropertyStructuralTypeReader::create(*gpgim);
+			GPlatesFileIO::GpmlPropertyStructuralTypeReader::create(gpgim);
 
 
 	std::pair<GPlatesModel::FeatureCollectionHandle::weak_ref,
@@ -577,7 +577,6 @@ main(int argc, char *argv[])
 		// Read new features from the file into the empty feature collection.
 		GPlatesFileIO::GpmlReader::read_file(
 				file->get_reference(),
-				new_model,
 				*gpgim,
 				gpml_structural_type_reader,
 				accum);

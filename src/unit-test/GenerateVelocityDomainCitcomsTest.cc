@@ -177,9 +177,9 @@ GPlatesUnitTest::GenerateVelocityDomainCitcomsTest::check(
 
 
 GPlatesUnitTest::GenerateVelocityDomainCitcomsTest::GenerateVelocityDomainCitcomsTest() :
-	d_gpgim(GPlatesModel::Gpgim::create())
+	d_gpgim(GPlatesModel::Gpgim::create()),
+	d_file_format_registry(d_gpgim)
 {
-	register_default_file_formats(d_file_format_registry, d_model, *d_gpgim);
 }
 
 void 
