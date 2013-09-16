@@ -6,6 +6,7 @@ import os
 import unittest
 import pygplates
 
+import test_ids
 import test_property_values
 import test_revisioned_vector
 
@@ -33,7 +34,7 @@ class FeatureCase(unittest.TestCase):
 
     def test_revision_id(self):
         self.assertEquals('GPlates-d172eaab-931f-484e-a8b6-0605e2dacd18',
-                self.feature.get_revision_id())
+                self.feature.get_revision_id().get_string())
 
     def test_is_iterable(self):
         """
@@ -168,28 +169,29 @@ class PropertyValueCase(unittest.TestCase):
 
 
 def suite():
-    suite = unittest.TestSuite()
-    
-    # Add test cases from this module.
-    test_cases = [
-            FeatureCase,
-            FeatureCollectionCase,
-            FeatureCollectionFileFormatRegistryCase,
-            GeoTimeInstantCase,
-            PropertyNameCase,
-            PropertyValueCase
-        ]
+	suite = unittest.TestSuite()
+	
+	# Add test cases from this module.
+	test_cases = [
+			FeatureCase,
+			FeatureCollectionCase,
+			FeatureCollectionFileFormatRegistryCase,
+			GeoTimeInstantCase,
+			PropertyNameCase,
+			PropertyValueCase
+		]
 
-    for test_case in test_cases:
-        suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(test_case))
-    
-    # Add test suites from sibling modules.
-    test_modules = [
-            test_property_values,
-            test_revisioned_vector
-        ]
+	for test_case in test_cases:
+		suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(test_case))
+	
+	# Add test suites from sibling modules.
+	test_modules = [
+			test_ids,
+			test_property_values,
+			test_revisioned_vector
+			]
 
-    for test_module in test_modules:
-        suite.addTest(test_module.suite())
-    
-    return suite
+	for test_module in test_modules:
+		suite.addTest(test_module.suite())
+	
+	return suite

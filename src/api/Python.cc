@@ -46,7 +46,7 @@ void export_unit_vector_3d();
 void export_feature();
 void export_feature_collection();
 void export_feature_collection_file_format_registry();
-void export_feature_id();
+void export_ids();
 void export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
 void export_old_feature_collection();
 void export_property_values();
@@ -152,7 +152,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	export_feature();
 	export_feature_collection();
 	export_feature_collection_file_format_registry();
-	export_feature_id();
+	export_ids();
 	export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
 	export_old_feature_collection();
 	export_property_values();

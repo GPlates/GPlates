@@ -16,6 +16,7 @@ Contents:
 
 	pygplates
 	pygplates.EnumerationType
+	pygplates.FeatureId
 	pygplates.FeatureType
 	pygplates.GeoTimeInstant
     pygplates.GmlPoint
@@ -28,10 +29,12 @@ Contents:
     pygplates.GpmlPiecewiseAggregation
 	pygplates.GpmlPlateId
 	pygplates.GpmlTimeSample
+	pygplates.GpmlTimeWindow
 	pygplates.Property
 	pygplates.PropertyName
 	pygplates.PropertyValue
 	pygplates.PropertyValueVisitor
+	pygplates.RevisionId
 	pygplates.XsBoolean
 	pygplates.XsDouble
 	pygplates.XsInteger

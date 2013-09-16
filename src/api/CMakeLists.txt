@@ -27,10 +27,10 @@ set(srcs
     PyFeature.cc
     PyFeatureCollection.cc
     PyFeatureCollectionFileFormatRegistry.cc
-    PyFeatureId.cc
     PyFiniteRotation.cc
     PyFunctions.cc
     PyGeometriesOnSphere.cc
+    PyIds.cc
     PyLatLonPoint.cc
     PyOldFeature.cc
     PyOldFeature.h
