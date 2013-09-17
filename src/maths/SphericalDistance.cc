@@ -311,10 +311,10 @@ GPlatesMaths::Spherical::min_dot_product_distance_between_great_circle_arcs(
 		PointOnSphere *closest_point_1,
 		PointOnSphere *closest_point_2)
 {
-	PointOnSphere arc1_to_arc2_start;
-	PointOnSphere arc1_to_arc2_end;
-	PointOnSphere arc2_to_arc1_start;
-	PointOnSphere arc2_to_arc1_end;
+	PointOnSphere arc1_to_arc2_start(UnitVector3D::zBasis());
+	PointOnSphere arc1_to_arc2_end(UnitVector3D::zBasis());
+	PointOnSphere arc2_to_arc1_start(UnitVector3D::zBasis());
+	PointOnSphere arc2_to_arc1_end(UnitVector3D::zBasis());
     real_t distance_arc1_to_arc2_start = 
 			min_dot_product_distance_between_great_circle_arc_and_point(arc1, arc2.start_point(), &arc1_to_arc2_start);
     real_t distance_arc1_to_arc2_end = 

@@ -326,12 +326,6 @@ namespace GPlatesMaths
 	cross(
 			const Vector3D &v,
 			const UnitVector3D &u);
-
-
-	/**
-	 * This routine exports the Python wrapper class and associated functionality
-	 */
-	void export_UnitVector3D();
 }
 
 #endif  // _GPLATES_MATHS_UNITVECTOR3D_H_

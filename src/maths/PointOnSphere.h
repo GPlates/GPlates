@@ -180,16 +180,6 @@ namespace GPlatesMaths
 		{  }
 
 
-		/*
-		* Create a default point on sphere.
-		*/
-		explicit 
-		PointOnSphere():
-			GeometryOnSphere(),
-			d_position_vector(UnitVector3D(1,0,0))
-		{  }
-
-
 		virtual
 		ProximityHitDetail::maybe_null_ptr_type
 		test_proximity(
@@ -518,12 +508,6 @@ namespace GPlatesMaths
 	operator <<(
 			QTextStream &stream,
 			const PointOnSphere &p);
-
-
-	/**
-	 * This routine exports the Python wrapper class and associated functionality
-	 */
-	void export_PointOnSphere();
 }
 
 
