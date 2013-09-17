@@ -25,6 +25,7 @@ sys.path.insert(1, PYGPLATES_PATH)
 import pygplates
 
 import test_app_logic.test
+import test_maths.test
 import test_model.test
 
 # Fixture path
@@ -37,6 +38,7 @@ def suite():
     # Add test suites from sibling modules.
     test_modules = [
             test_app_logic.test,
+            test_maths.test,
             test_model.test
         ]
 

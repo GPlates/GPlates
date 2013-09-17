@@ -32,6 +32,8 @@
 
 #include "global/python.h"
 
+#include "maths/GeometryOnSphere.h"
+
 #include "model/PropertyValue.h"
 
 #include "utils/non_null_intrusive_ptr.h"
@@ -53,6 +55,18 @@ namespace GPlatesApi
 		boost::python::object/*derived property value non_null_intrusive_ptr*/
 		get_property_value_as_derived_type(
 				GPlatesModel::PropertyValue::non_null_ptr_type property_value);
+
+
+		/**
+		 * Returns the actual *derived* GeometryOnSphere (converted to boost::python::object).
+		 *
+		 * The derived type is needed otherwise python is unable to access the attributes of the
+		 * derived geometry-on-sphere type. In other words 'GeometryOnSphere::non_null_ptr_to_const_type'
+		 * is never returned to python without first going through this function.
+		 */
+		boost::python::object/*derived geometry-on-sphere non_null_ptr_to_const_type*/
+		get_geometry_on_sphere_as_derived_type(
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere);
 
 
 		/**

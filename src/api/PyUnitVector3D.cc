@@ -44,10 +44,46 @@ export_unit_vector_3d()
 	//
 	// UnitVector
 	//
-	bp::class_<GPlatesMaths::UnitVector3D>("UnitVector3D", bp::no_init)
-		.def("get_x", &GPlatesMaths::UnitVector3D::x, bp::return_value_policy<bp::copy_const_reference>())
-		.def("get_y", &GPlatesMaths::UnitVector3D::y, bp::return_value_policy<bp::copy_const_reference>())
-		.def("get_z", &GPlatesMaths::UnitVector3D::z, bp::return_value_policy<bp::copy_const_reference>())
+	bp::class_<
+			GPlatesMaths::UnitVector3D>(
+					"UnitVector3D",
+					"Represents a unit length 3D vector. Unit vectors are equality (``==``, ``!=``) comparable.\n"
+					"\n"
+					// Note that we put the __init__ docstring in the class docstring.
+					// See the comment in 'BOOST_PYTHON_MODULE(pygplates)' for an explanation...
+					"UnitVector3D(x, y, z)\n"
+					"  Construct a *UnitVector3D* instance from a 3D cartesian coordinate consisting of "
+					"floating-point coordinates *x*, *y* and *z*.\n"
+					"\n"
+					"**NOTE:** The length of 3D vector (x,y,z) must be 1.0, otherwise a *RuntimeError* "
+					"is generated.\n"
+					"  ::\n"
+					"\n"
+					"    unit_vector = pygplates.UnitVector3D(x, y, z)\n",
+					bp::init<GPlatesMaths::Real, GPlatesMaths::Real, GPlatesMaths::Real>())
+		.def("get_x",
+				&GPlatesMaths::UnitVector3D::x,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_x() -> float\n"
+				"  Returns the *x* coordinate.\n"
+				"\n"
+				"  :rtype: float\n")
+		.def("get_y",
+				&GPlatesMaths::UnitVector3D::y,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_y() -> float\n"
+				"  Returns the *y* coordinate.\n"
+				"\n"
+				"  :rtype: float\n")
+		.def("get_z",
+				&GPlatesMaths::UnitVector3D::z,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_z() -> float\n"
+				"  Returns the *z* coordinate.\n"
+				"\n"
+				"  :rtype: float\n")
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))

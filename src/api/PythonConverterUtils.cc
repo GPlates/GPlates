@@ -27,6 +27,8 @@
 
 #include "global/python.h"
 
+#include "maths/ConstGeometryOnSphereVisitor.h"
+
 #include "model/FeatureVisitor.h"
 
 #include "property-values/GmlPoint.h"
@@ -178,6 +180,68 @@ namespace GPlatesApi
 	private:
 		bp::object d_property_value;
 	};
+
+
+	/**
+	 * Visits a @a GeometryOnSphere and converts from its derived type to a python object.
+	 */
+	class GetGeometryOnSphereAsDerivedTypeVisitor:
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+
+		/**
+		 * The derived geometry-on-sphere retrieved after visiting a @a GeometryOnSphere.
+		 */
+		bp::object
+		get_geometry_on_sphere_as_derived_type()
+		{
+			return d_geometry_on_sphere;
+		}
+
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			// Use to-python converter registered for derived geometry-on-sphere's 'non_null_ptr_to_const_type'.
+			d_geometry_on_sphere = bp::object(multi_point_on_sphere);
+		}
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			// Use to-python converter registered for derived geometry-on-sphere's 'non_null_ptr_to_const_type'.
+			//
+			// NOTE: We don't use a non_null_intrusive_ptr for PointOnSphere since most uses of it pass,
+			// or store, PointOnSphere instances by value. And so the python wrapper class for PointOnSphere
+			// wraps a PointOnSphere instances rather than a 'PointOnSphere::non_null_ptr_to_const_type'.
+			d_geometry_on_sphere = bp::object(*point_on_sphere);
+		}
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			// Use to-python converter registered for derived geometry-on-sphere's 'non_null_ptr_to_const_type'.
+			d_geometry_on_sphere = bp::object(polygon_on_sphere);
+		}
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			// Use to-python converter registered for derived geometry-on-sphere's 'non_null_ptr_to_const_type'.
+			d_geometry_on_sphere = bp::object(polyline_on_sphere);
+		}
+
+	private:
+		bp::object d_geometry_on_sphere;
+	};
 }
 
 
@@ -210,6 +274,17 @@ GPlatesApi::PythonConverterUtils::get_property_value_as_derived_type(
 	//////////////////////////////////////////////////////////////////////////
 
 	return derived_property_value;
+}
+
+
+boost::python::object/*derived geometry-on-sphere non_null_ptr_to_const_type*/
+GPlatesApi::PythonConverterUtils::get_geometry_on_sphere_as_derived_type(
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere)
+{
+	GetGeometryOnSphereAsDerivedTypeVisitor visitor;
+	geometry_on_sphere->accept_visitor(visitor);
+
+	return visitor.get_geometry_on_sphere_as_derived_type();
 }
 
 

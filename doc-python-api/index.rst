@@ -20,6 +20,7 @@ Contents:
 	pygplates.FeatureCollection
 	pygplates.FeatureId
 	pygplates.FeatureType
+	pygplates.GeometryOnSphere
 	pygplates.GeoTimeInstant
     pygplates.GmlPoint
     pygplates.GmlTimeInstant
@@ -32,6 +33,7 @@ Contents:
 	pygplates.GpmlPlateId
 	pygplates.GpmlTimeSample
 	pygplates.GpmlTimeWindow
+	pygplates.PointOnSphere
 	pygplates.Property
 	pygplates.PropertyName
 	pygplates.PropertyValue
@@ -41,6 +43,7 @@ Contents:
 	pygplates.XsDouble
 	pygplates.XsInteger
 	pygplates.XsString
+	pygplates.UnitVector3D
 
 .. NOTE: Only document the new API for now, exclude classes/functions not in the new API.
 .. NOTE: Only classes (and their methods) that are documented (that have docstrings) will appear in the generated documentation.
