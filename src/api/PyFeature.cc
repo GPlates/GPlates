@@ -251,4 +251,8 @@ export_feature()
 			boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_to_const_type> >();
 }
 
+// This is here at the end of the layer because the problem appears to reside
+// in a template being instantiated at the end of the compilation unit.
+DISABLE_GCC_WARNING("-Wshadow")
+
 #endif // GPLATES_NO_PYTHON

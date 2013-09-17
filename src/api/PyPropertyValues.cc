@@ -1636,4 +1636,8 @@ export_property_values()
 	export_xs_string();
 }
 
+// This is here at the end of the layer because the problem appears to reside
+// in a template being instantiated at the end of the compilation unit.
+DISABLE_GCC_WARNING("-Wshadow")
+
 #endif // GPLATES_NO_PYTHON
