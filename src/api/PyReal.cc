@@ -87,8 +87,12 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 		{
 			namespace bp = boost::python;
 
-			//return bp::extract<double>(obj).check() ? obj : NULL;
+			// Note: We now use 'bp::extract<double>', instead of explicitly checking for a
+			// python 'float', because this allows conversion of integers to 'GPlatesMaths::Real'.
+#if 0
 			return PyFloat_Check(obj) ? obj : NULL;
+#endif
+			return bp::extract<double>(obj).check() ? obj : NULL;
 		}
 
 		static
