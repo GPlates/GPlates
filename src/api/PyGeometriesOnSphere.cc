@@ -233,13 +233,19 @@ namespace GPlatesApi
 	//
 	// We can't use bp::make_constructor with a function that returns a non-pointer, so instead we
 	// return 'non_null_intrusive_ptr'.
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+	// With boost 1.42 we get the following compile error...
+	//   pointer_holder.hpp:145:66: error: invalid conversion from ‘const void*’ to ‘void*’
+	// ...if we return 'GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type' and rely on
+	// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
+	// successfully for python bindings in other source files.
+	// So we avoid it by using returning a pointer to 'non-const'.
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
 	point_on_sphere_create_xyz(
 			const GPlatesMaths::real_t &x,
 			const GPlatesMaths::real_t &y,
 			const GPlatesMaths::real_t &z)
 	{
-		return GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type(
+		return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(
 				new GPlatesMaths::PointOnSphere(GPlatesMaths::UnitVector3D(x, y, z)));
 	}
 
