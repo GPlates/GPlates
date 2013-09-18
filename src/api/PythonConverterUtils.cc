@@ -214,11 +214,7 @@ namespace GPlatesApi
 				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{
 			// Use to-python converter registered for derived geometry-on-sphere's 'non_null_ptr_to_const_type'.
-			//
-			// NOTE: We don't use a non_null_intrusive_ptr for PointOnSphere since most uses of it pass,
-			// or store, PointOnSphere instances by value. And so the python wrapper class for PointOnSphere
-			// wraps a PointOnSphere instances rather than a 'PointOnSphere::non_null_ptr_to_const_type'.
-			d_geometry_on_sphere = bp::object(*point_on_sphere);
+			d_geometry_on_sphere = bp::object(point_on_sphere);
 		}
 
 		virtual

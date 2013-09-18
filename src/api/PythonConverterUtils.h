@@ -26,9 +26,12 @@
 #ifndef GPLATES_API_PYTHONCONVERTERUTILS_H
 #define GPLATES_API_PYTHONCONVERTERUTILS_H
 
+#include <boost/mpl/bool.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <boost/type_traits/remove_const.hpp>
+#include <boost/type_traits/add_const.hpp>
+#include <boost/type_traits/is_convertible.hpp>
+#include <boost/type_traits/is_same.hpp>
 
 #include "global/python.h"
 
@@ -72,7 +75,8 @@ namespace GPlatesApi
 		/**
 		 * Register implicit conversions of non_null_intrusive_ptr for the specified derived/base classes.
 		 *
-		 * The conversions include 'non-const' to 'const' conversions.
+		 * The conversions include 'non-const' to 'const' conversions where possible (ie, when
+		 * 'SourceType' and/or 'TargetType' are non-const types, eg, 'GpmlPlateId' versus 'const GpmlPlateId').
 		 *
 		 * For example...
 		 *
@@ -101,7 +105,8 @@ namespace GPlatesApi
 		 * Register implicit conversions of boost::optional<non_null_intrusive_ptr> for the
 		 * specified derived/base classes.
 		 *
-		 * The conversions include 'non-const' to 'const' conversions.
+		 * The conversions include 'non-const' to 'const' conversions where possible (ie, when
+		 * 'SourceType' and/or 'TargetType' are non-const types, eg, 'GpmlPlateId' versus 'const GpmlPlateId').
 		 *
 		 * For example...
 		 *
@@ -180,14 +185,16 @@ namespace GPlatesApi
 
 
 		/**
-		 * Enables boost::optional<SourceType>  (with 'const' removed from 'SourceType')
-		 * to be passed to and from python.
+		 * Enables boost::optional<SourceType> to be passed to and from python.
 		 *
 		 * Also enables a python-wrapped boost::optional<SourceType::non_null_ptr_type> to be used when a
-		 * boost::optional<TargetType::non_null_ptr_type> is requested (and various 'const' conversions).
+		 * boost::optional<TargetType::non_null_ptr_type> is requested.
 		 *
 		 * Also enables a python-wrapped SourceType::non_null_ptr_type to be used when a
-		 * TargetType::non_null_ptr_type is requested (and various 'const' conversions).
+		 * TargetType::non_null_ptr_type is requested.
+		 *
+		 * The conversions include 'non-const' to 'const' conversions where possible (ie, when
+		 * 'SourceType' and/or 'TargetType' are non-const types, eg, 'GpmlPlateId' versus 'const GpmlPlateId').
 		 */
 		template <class SourceType, class TargetType>
 		void
@@ -208,29 +215,52 @@ namespace GPlatesApi
 		implicitly_convertible_non_null_intrusive_ptr(
 				bool include_non_const_source_to_const_source)
 		{
-			// Remove 'const' in case caller did not specify a 'non-const' type.
-			typedef typename boost::remove_const<SourceType>::type non_const_source_type;
-			typedef const non_const_source_type const_source_type;
-			typedef typename boost::remove_const<TargetType>::type non_const_target_type;
-			typedef const non_const_target_type const_target_type;
+			typedef SourceType source_type;
+			typedef typename boost::add_const<source_type>::type const_source_type;
+			typedef TargetType target_type;
+			typedef typename boost::add_const<target_type>::type const_target_type;
 
 			// Enable a python-wrapped non_null_intrusive_ptr<SourceType> to be used when a
 			// non_null_intrusive_ptr<TargetType> is requested.
-			boost::python::implicitly_convertible<
-					GPlatesUtils::non_null_intrusive_ptr<non_const_source_type>,
-					GPlatesUtils::non_null_intrusive_ptr<non_const_target_type> >();
-			boost::python::implicitly_convertible<
-					GPlatesUtils::non_null_intrusive_ptr<non_const_source_type>,
-					GPlatesUtils::non_null_intrusive_ptr<const_target_type> >();
-			boost::python::implicitly_convertible<
+			if (boost::is_convertible<
+					GPlatesUtils::non_null_intrusive_ptr<source_type>,
+					GPlatesUtils::non_null_intrusive_ptr<target_type> >::value &&
+				!boost::is_same<source_type, target_type>::value)
+			{
+				boost::python::implicitly_convertible<
+						GPlatesUtils::non_null_intrusive_ptr<source_type>,
+						GPlatesUtils::non_null_intrusive_ptr<target_type> >();
+			}
+			if (boost::is_convertible<
+					GPlatesUtils::non_null_intrusive_ptr<source_type>,
+					GPlatesUtils::non_null_intrusive_ptr<const_target_type> >::value &&
+				!boost::is_same<source_type, const_target_type>::value)
+			{
+				boost::python::implicitly_convertible<
+						GPlatesUtils::non_null_intrusive_ptr<source_type>,
+						GPlatesUtils::non_null_intrusive_ptr<const_target_type> >();
+			}
+			if (boost::is_convertible<
 					GPlatesUtils::non_null_intrusive_ptr<const_source_type>,
-					GPlatesUtils::non_null_intrusive_ptr<const_target_type> >();
+					GPlatesUtils::non_null_intrusive_ptr<const_target_type> >::value &&
+				!boost::is_same<const_source_type, const_target_type>::value)
+			{
+				boost::python::implicitly_convertible<
+						GPlatesUtils::non_null_intrusive_ptr<const_source_type>,
+						GPlatesUtils::non_null_intrusive_ptr<const_target_type> >();
+			}
 
 			if (include_non_const_source_to_const_source)
 			{
-				boost::python::implicitly_convertible<
-						GPlatesUtils::non_null_intrusive_ptr<non_const_source_type>,
-						GPlatesUtils::non_null_intrusive_ptr<const_source_type> >();
+				if (boost::is_convertible<
+						GPlatesUtils::non_null_intrusive_ptr<source_type>,
+						GPlatesUtils::non_null_intrusive_ptr<const_source_type> >::value &&
+					!boost::is_same<source_type, const_source_type>::value)
+				{
+					boost::python::implicitly_convertible<
+							GPlatesUtils::non_null_intrusive_ptr<source_type>,
+							GPlatesUtils::non_null_intrusive_ptr<const_source_type> >();
+				}
 			}
 		}
 
@@ -240,29 +270,52 @@ namespace GPlatesApi
 		implicitly_convertible_optional_non_null_intrusive_ptr(
 				bool include_non_const_source_to_const_source)
 		{
-			// Remove 'const' in case caller did not specify a 'non-const' type.
-			typedef typename boost::remove_const<SourceType>::type non_const_source_type;
-			typedef const non_const_source_type const_source_type;
-			typedef typename boost::remove_const<TargetType>::type non_const_target_type;
-			typedef const non_const_target_type const_target_type;
+			typedef SourceType source_type;
+			typedef typename boost::add_const<source_type>::type const_source_type;
+			typedef TargetType target_type;
+			typedef typename boost::add_const<target_type>::type const_target_type;
 
 			// Enable a python-wrapped boost::optional<non_null_intrusive_ptr<SourceType> > to be used when a
 			// boost::optional<non_null_intrusive_ptr<TargetType> > is requested.
-			boost::python::implicitly_convertible<
-					boost::optional<GPlatesUtils::non_null_intrusive_ptr<non_const_source_type> >,
-					boost::optional<GPlatesUtils::non_null_intrusive_ptr<non_const_target_type> > >();
-			boost::python::implicitly_convertible<
-					boost::optional<GPlatesUtils::non_null_intrusive_ptr<non_const_source_type> >,
-					boost::optional<GPlatesUtils::non_null_intrusive_ptr<const_target_type> > >();
-			boost::python::implicitly_convertible<
-					boost::optional<GPlatesUtils::non_null_intrusive_ptr<const_source_type> >,
-					boost::optional<GPlatesUtils::non_null_intrusive_ptr<const_target_type> > >();
+			if (boost::is_convertible<
+					GPlatesUtils::non_null_intrusive_ptr<source_type>,
+					GPlatesUtils::non_null_intrusive_ptr<target_type> >::value &&
+				!boost::is_same<source_type, target_type>::value)
+			{
+				boost::python::implicitly_convertible<
+						boost::optional<GPlatesUtils::non_null_intrusive_ptr<source_type> >,
+						boost::optional<GPlatesUtils::non_null_intrusive_ptr<target_type> > >();
+			}
+			if (boost::is_convertible<
+					GPlatesUtils::non_null_intrusive_ptr<source_type>,
+					GPlatesUtils::non_null_intrusive_ptr<const_target_type> >::value &&
+				!boost::is_same<source_type, const_target_type>::value)
+			{
+				boost::python::implicitly_convertible<
+						boost::optional<GPlatesUtils::non_null_intrusive_ptr<source_type> >,
+						boost::optional<GPlatesUtils::non_null_intrusive_ptr<const_target_type> > >();
+			}
+			if (boost::is_convertible<
+					GPlatesUtils::non_null_intrusive_ptr<const_source_type>,
+					GPlatesUtils::non_null_intrusive_ptr<const_target_type> >::value &&
+				!boost::is_same<const_source_type, const_target_type>::value)
+			{
+				boost::python::implicitly_convertible<
+						boost::optional<GPlatesUtils::non_null_intrusive_ptr<const_source_type> >,
+						boost::optional<GPlatesUtils::non_null_intrusive_ptr<const_target_type> > >();
+			}
 
 			if (include_non_const_source_to_const_source)
 			{
-				boost::python::implicitly_convertible<
-						boost::optional<GPlatesUtils::non_null_intrusive_ptr<non_const_source_type> >,
-						boost::optional<GPlatesUtils::non_null_intrusive_ptr<const_source_type> > >();
+				if (boost::is_convertible<
+						GPlatesUtils::non_null_intrusive_ptr<source_type>,
+						GPlatesUtils::non_null_intrusive_ptr<const_source_type> >::value &&
+					!boost::is_same<source_type, const_source_type>::value)
+				{
+					boost::python::implicitly_convertible<
+							boost::optional<GPlatesUtils::non_null_intrusive_ptr<source_type> >,
+							boost::optional<GPlatesUtils::non_null_intrusive_ptr<const_source_type> > >();
+				}
 			}
 		}
 
@@ -341,11 +394,7 @@ namespace GPlatesApi
 		register_optional_non_null_intrusive_ptr_and_implicit_conversions()
 		{
 			// Enable boost::optional<SourceType::non_null_ptr_type> to be passed to and from python.
-			//
-			// Remove 'const' in case caller did not specify a 'non-const' type.
-			python_optional<
-					GPlatesUtils::non_null_intrusive_ptr<
-							typename boost::remove_const<SourceType>::type> >();
+			python_optional< GPlatesUtils::non_null_intrusive_ptr<SourceType> >();
 
 			// Enable a python-wrapped boost::optional<SourceType::non_null_ptr_type> to be used when a
 			// boost::optional<TargetType::non_null_ptr_type> is requested (and various 'const' conversions).
