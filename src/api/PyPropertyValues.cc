@@ -99,6 +99,12 @@ export_property_value()
 	 * python is unable to access the attributes of the derived property value type.
 	 * For this reason usually the derived property value is returned using:
 	 *   'PythonConverterUtils::get_property_value_as_derived_type()'
+	 * which returns a 'non_null_ptr_type' to the *derived* property value type.
+	 * UPDATE: Actually boost-python will convert a 'PropertyValue::non_null_ptr_type' to a reference
+	 * to a derived property value type (eg, 'PropertyValue::non_null_ptr_type' -> 'GpmlPlateId &')
+	 * but it can't convert to a 'non_null_ptr_type' of derived property value type
+	 * (eg, 'PropertyValue::non_null_ptr_type' -> 'GpmlPlateId::non_null_ptr_type') so
+	 * 'PythonConverterUtils::get_property_value_as_derived_type()' is still needed for that.
 	 */
 	bp::class_<
 			GPlatesModel::PropertyValue,
@@ -159,6 +165,17 @@ export_property_value()
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;
+
+	// Enable boost::optional<PropertyValue::non_null_ptr_type> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::python_optional<GPlatesModel::PropertyValue::non_null_ptr_type>();
+
+	// Registers 'non-const' to 'const' conversions.
+	boost::python::implicitly_convertible<
+			GPlatesModel::PropertyValue::non_null_ptr_type,
+			GPlatesModel::PropertyValue::non_null_ptr_to_const_type>();
+	boost::python::implicitly_convertible<
+			boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>,
+			boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type> >();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -284,25 +301,10 @@ namespace GPlatesApi
 {
 	const GPlatesPropertyValues::GmlPoint::non_null_ptr_type
 	gml_point_create(
-			const GPlatesMaths::PointOnSphere &point)
+			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point)
 	{
 		// Use the default value for the second argument.
 		return GPlatesPropertyValues::GmlPoint::create(point);
-	}
-
-	const GPlatesMaths::PointOnSphere
-	gml_point_get_point(
-			GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point)
-	{
-		return *gml_point->get_point();
-	}
-
-	void
-	gml_point_set_point(
-			GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point,
-			const GPlatesMaths::PointOnSphere &point)
-	{
-		gml_point->set_point(point.clone_as_point());
 	}
 }
 
@@ -333,13 +335,13 @@ export_gml_point()
 				"  :type point: :class:`PointOnSphere`\n")
 		.staticmethod("create")
 		.def("get_point",
-				&GPlatesApi::gml_point_get_point,
+				&GPlatesPropertyValues::GmlPoint::get_point,
 				"get_point() -> PointOnSphere\n"
 				"  Returns the point geometry of this property value.\n"
 				"\n"
 				"  :rtype: :class:`PointOnSphere`\n")
 		.def("set_point",
-				&GPlatesApi::gml_point_set_point,
+				&GPlatesPropertyValues::GmlPoint::set_point,
 				(bp::arg("point")),
 				"set_point(point)\n"
 				"  Sets the point geometry of this property value.\n"
@@ -351,7 +353,7 @@ export_gml_point()
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
 	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
 	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlPlateId,
+			GPlatesPropertyValues::GmlPoint,
 			GPlatesModel::PropertyValue>();
 }
 
@@ -411,32 +413,32 @@ namespace GPlatesApi
 {
 	GPlatesPropertyValues::GeoTimeInstant
 	gml_time_period_get_begin_time(
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period)
+			const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 	{
-		return gml_time_period->begin()->get_time_position();
+		return gml_time_period.begin()->get_time_position();
 	}
 
 	void
 	gml_time_period_set_begin_time(
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period,
+			GPlatesPropertyValues::GmlTimePeriod &gml_time_period,
 			const GPlatesPropertyValues::GeoTimeInstant &time_position)
 	{
-		gml_time_period->begin()->set_time_position(time_position);
+		gml_time_period.begin()->set_time_position(time_position);
 	}
 
 	GPlatesPropertyValues::GeoTimeInstant
 	gml_time_period_get_end_time(
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period)
+			const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 	{
-		return gml_time_period->end()->get_time_position();
+		return gml_time_period.end()->get_time_position();
 	}
 
 	void
 	gml_time_period_set_end_time(
-			GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type gml_time_period,
+			GPlatesPropertyValues::GmlTimePeriod &gml_time_period,
 			const GPlatesPropertyValues::GeoTimeInstant &time_position)
 	{
-		gml_time_period->end()->set_time_position(time_position);
+		gml_time_period.end()->set_time_position(time_position);
 	}
 }
 
@@ -527,10 +529,10 @@ ENABLE_GCC_WARNING("-Wshadow")
 	// Return base property value to python as its derived property value type.
 	bp::object/*derived property value non_null_intrusive_ptr*/
 	gpml_constant_value_get_value(
-			GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type gpml_constant_value)
+			GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 	{
 		// The derived property value type is needed otherwise python is unable to access the derived attributes.
-		return PythonConverterUtils::get_property_value_as_derived_type(gpml_constant_value->value());
+		return PythonConverterUtils::get_property_value_as_derived_type(gpml_constant_value.value());
 	}
 }
 
@@ -797,9 +799,9 @@ ENABLE_GCC_WARNING("-Wshadow")
 
 	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::non_null_ptr_type
 	gpml_irregular_sampling_get_time_samples(
-			GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type gpml_irregular_sampling)
+			GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 	{
-		return &gpml_irregular_sampling->time_samples();
+		return &gpml_irregular_sampling.time_samples();
 	}
 }
 
@@ -916,9 +918,9 @@ namespace GPlatesApi
 
 	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::non_null_ptr_type
 	gpml_piecewise_aggregation_get_time_windows(
-			GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type gpml_piecewise_aggregation)
+			GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 	{
-		return &gpml_piecewise_aggregation->time_windows();
+		return &gpml_piecewise_aggregation.time_windows();
 	}
 }
 
@@ -1061,34 +1063,34 @@ ENABLE_GCC_WARNING("-Wshadow")
 	// Return base property value to python as its derived property value type.
 	bp::object/*derived property value non_null_intrusive_ptr*/
 	gpml_time_sample_get_value(
-			GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type gpml_time_sample)
+			GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
 	{
 		// The derived property value type is needed otherwise python is unable to access the derived attributes.
-		return PythonConverterUtils::get_property_value_as_derived_type(gpml_time_sample->value());
+		return PythonConverterUtils::get_property_value_as_derived_type(gpml_time_sample.value());
 	}
 
 	GPlatesPropertyValues::GeoTimeInstant
 	gpml_time_sample_get_time(
-			GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type gpml_time_sample)
+			const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
 	{
-		return gpml_time_sample->valid_time()->get_time_position();
+		return gpml_time_sample.valid_time()->get_time_position();
 	}
 
 	void
 	gpml_time_sample_set_time(
-			GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type gpml_time_sample,
+			GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample,
 			const GPlatesPropertyValues::GeoTimeInstant &time_position)
 	{
-		gpml_time_sample->valid_time()->set_time_position(time_position);
+		gpml_time_sample.valid_time()->set_time_position(time_position);
 	}
 
 	// Make it easier for client by converting from XsString to a regular string.
 	boost::optional<GPlatesPropertyValues::TextContent>
 	gpml_time_sample_get_description(
-			GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type gpml_time_sample)
+			const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
 	{
-		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_type> xs_string =
-				gpml_time_sample->description();
+		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> xs_string =
+				gpml_time_sample.description();
 		if (!xs_string)
 		{
 			return boost::none;
@@ -1100,7 +1102,7 @@ ENABLE_GCC_WARNING("-Wshadow")
 	// Make it easier for client by converting from a regular string to XsString.
 	void
 	gpml_time_sample_set_description(
-			GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type gpml_time_sample,
+			GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample,
 			boost::optional<GPlatesPropertyValues::TextContent> description)
 	{
 		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_type> xs_string;
@@ -1109,7 +1111,7 @@ ENABLE_GCC_WARNING("-Wshadow")
 			xs_string = GPlatesPropertyValues::XsString::create(description->get());
 		}
 
-		gpml_time_sample->set_description(xs_string);
+		gpml_time_sample.set_description(xs_string);
 	}
 }
 
@@ -1250,40 +1252,40 @@ namespace GPlatesApi
 	// Return base property value to python as its derived property value type.
 	bp::object/*derived property value non_null_intrusive_ptr*/
 	gpml_time_window_get_value(
-			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type gpml_time_window)
+			GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 	{
 		// The derived property value type is needed otherwise python is unable to access the derived attributes.
-		return PythonConverterUtils::get_property_value_as_derived_type(gpml_time_window->time_dependent_value());
+		return PythonConverterUtils::get_property_value_as_derived_type(gpml_time_window.time_dependent_value());
 	}
 
 	GPlatesPropertyValues::GeoTimeInstant
 	gpml_time_window_get_begin_time(
-			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type gpml_time_window)
+			const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 	{
-		return gpml_time_window->valid_time()->begin()->get_time_position();
+		return gpml_time_window.valid_time()->begin()->get_time_position();
 	}
 
 	void
 	gpml_time_window_set_begin_time(
-			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type gpml_time_window,
+			GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window,
 			const GPlatesPropertyValues::GeoTimeInstant &begin_time)
 	{
-		gpml_time_window->valid_time()->begin()->set_time_position(begin_time);
+		gpml_time_window.valid_time()->begin()->set_time_position(begin_time);
 	}
 
 	GPlatesPropertyValues::GeoTimeInstant
 	gpml_time_window_get_end_time(
-			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type gpml_time_window)
+			const GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 	{
-		return gpml_time_window->valid_time()->end()->get_time_position();
+		return gpml_time_window.valid_time()->end()->get_time_position();
 	}
 
 	void
 	gpml_time_window_set_end_time(
-			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type gpml_time_window,
+			GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window,
 			const GPlatesPropertyValues::GeoTimeInstant &end_time)
 	{
-		gpml_time_window->valid_time()->end()->set_time_position(end_time);
+		gpml_time_window.valid_time()->end()->set_time_position(end_time);
 	}
 }
 

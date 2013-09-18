@@ -15,8 +15,7 @@ class GeometryOnSphereCase(unittest.TestCase):
         self.point = pygplates.PointOnSphere(1, 0, 0)
     
     def test_clone(self):
-        cloned_point = self.point.clone()
-        self.assertEquals(cloned_point, self.point)
+        self.assertEquals(self.point.clone(), self.point)
 
 
 class PointOnSphereCase(unittest.TestCase):
