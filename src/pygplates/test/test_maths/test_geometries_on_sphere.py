@@ -30,12 +30,55 @@ class PointOnSphereCase(unittest.TestCase):
         self.assertEquals(point1.get_position_vector(), self.unit_vector_3d)
         self.assertEquals(point2.get_position_vector(), self.unit_vector_3d)
 
+
+class MultiPointOnSphereCase(unittest.TestCase):
+    def setUp(self):
+        self.points = []
+        self.points.append(pygplates.PointOnSphere(1, 0, 0))
+        self.points.append(pygplates.PointOnSphere(0, 1, 0))
+        self.points.append(pygplates.PointOnSphere(0, 0, 1))
+        self.points.append(pygplates.PointOnSphere(-1, 0, 0))
+        self.multi_point = pygplates.MultiPointOnSphere.create(self.points)
+    
+    def test_compare(self):
+        self.assertEquals(self.multi_point, pygplates.MultiPointOnSphere.create(self.points))
+    
+    def test_iter(self):
+        points = [point for point in self.multi_point]
+        self.assertEquals(self.points, points)
+    
+    def test_contains(self):
+        self.assertTrue(self.points[0] in self.multi_point)
+        self.assertTrue(pygplates.PointOnSphere(1, 0, 0) in self.multi_point)
+        self.assertTrue(pygplates.PointOnSphere(0, -1, 0) not in self.multi_point)
+
+    def test_get_item(self):
+        for i in range(0, len(self.points)):
+            self.assertTrue(self.multi_point[i] == self.points[i])
+        self.assertTrue(self.multi_point[-1] == self.points[-1])
+        with self.assertRaises(IndexError):
+            self.multi_point[len(self.multi_point)]
+
+    def test_get_slice(self):
+        slice = self.multi_point[1:3]
+        self.assertTrue(len(slice) == 2)
+        for i in range(0, len(slice)):
+            self.assertTrue(slice[i] == self.points[i+1])
+
+    def test_get_extended_slice(self):
+        slice = self.multi_point[1::2]
+        self.assertTrue(len(slice) == 2)
+        self.assertTrue(slice[0] == self.points[1])
+        self.assertTrue(slice[1] == self.points[3])
+
+
 def suite():
     suite = unittest.TestSuite()
     
     # Add test cases from this module.
     test_cases = [
             GeometryOnSphereCase,
+            MultiPointOnSphereCase,
             PointOnSphereCase
         ]
 

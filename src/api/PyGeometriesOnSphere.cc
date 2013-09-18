@@ -23,6 +23,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <iterator>
+#include <vector>
+#include <boost/cast.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -30,6 +34,10 @@
 
 #include "global/CompilerWarnings.h"
 #include "global/python.h"
+// This is not included by <boost/python.hpp>.
+// Also we must include this after <boost/python.hpp> which means after "global/python.h".
+#include <boost/python/slice.hpp>
+#include <boost/python/stl_iterator.hpp>
 
 #include "maths/GeometryOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
@@ -234,7 +242,7 @@ namespace GPlatesApi
 	// We can't use bp::make_constructor with a function that returns a non-pointer, so instead we
 	// return 'non_null_intrusive_ptr'.
 	// With boost 1.42 we get the following compile error...
-	//   pointer_holder.hpp:145:66: error: invalid conversion from ‘const void*’ to ‘void*’
+	//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 	// ...if we return 'GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type' and rely on
 	// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
 	// successfully for python bindings in other source files.
@@ -286,10 +294,18 @@ export_point_on_sphere()
 			GPlatesMaths::PointOnSphere,
 			// NOTE: See note in 'python_ConstGeometryOnSphere' for why this is 'non-const' instead of 'const'...
 			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>,
-			bp::bases<GPlatesMaths::GeometryOnSphere> >(
+			bp::bases<GPlatesMaths::GeometryOnSphere>
+			// NOTE: PointOnSphere is the only GeometryOnSphere type that is copyable.
+			// And it needs to be copyable so that MultiPointOnSphere's iterator can copy as it iterates...
+			/*boost::noncopyable*/>(
 					"PointOnSphere",
 					"Represents a point on the surface of a unit length sphere. "
-					"Points are equality (``==``, ``!=``) comparable.\n"
+					"Points are equality (``==``, ``!=``) comparable where two points are considered "
+					"equal if their coordinates match within a small numerical epsilon that accounts "
+					"for the limits of floating-point precision.\n"
+					"\n"
+					"Note that since a *PointOnSphere* is immutable it contains no operations or "
+					"methods that modify its state.\n"
 					"\n"
 					// Note that we put the __init__ docstring in the class docstring.
 					// See the comment in 'BOOST_PYTHON_MODULE(pygplates)' for an explanation...
@@ -355,12 +371,201 @@ export_point_on_sphere()
 }
 
 
+namespace GPlatesApi
+{
+	// Convenience constructor to create from (x,y,z) without having to first create a UnitVector3D.
+	//
+	// We can't use bp::make_constructor with a function that returns a non-pointer, so instead we
+	// return 'non_null_intrusive_ptr'.
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
+	multi_point_on_sphere_create(
+			bp::object points) // Any python sequence (eg, list, tuple).
+	{
+		// Begin/end iterators over the python points sequence.
+		bp::stl_input_iterator<GPlatesMaths::PointOnSphere>
+				points_begin(points),
+				points_end;
+
+		// Copy into a vector.
+		// Note: We can't pass the iterators directly to 'MultiPointOnSphere::create_on_heap'
+		// because they are *input* iterators (ie, one pass only) and 'MultiPointOnSphere' expects
+		// forward iterators (it actually makes two passes over the points).
+ 		std::vector<GPlatesMaths::PointOnSphere> points_vector;
+		std::copy(points_begin, points_end, std::back_inserter(points_vector));
+
+		return GPlatesMaths::MultiPointOnSphere::create_on_heap(
+				points_vector.begin(),
+				points_vector.end());
+	}
+
+	bool
+	multi_point_on_sphere_contains_point(
+			const GPlatesMaths::MultiPointOnSphere &multi_point_on_sphere,
+			const GPlatesMaths::PointOnSphere &point_on_sphere)
+	{
+		return std::find(multi_point_on_sphere.begin(), multi_point_on_sphere.end(), point_on_sphere) !=
+				multi_point_on_sphere.end();
+	}
+
+	//
+	// Support for "__get_item__".
+	//
+	boost::python::object
+	multi_point_on_sphere_get_item(
+			const GPlatesMaths::MultiPointOnSphere &multi_point_on_sphere,
+			boost::python::object i)
+	{
+		namespace bp = boost::python;
+
+		// Set if the index is a slice object.
+		bp::extract<bp::slice> extract_slice(i);
+		if (extract_slice.check())
+		{
+			bp::list slice_list;
+
+			try
+			{
+				// Use boost::python::slice to manage index variations such as negative indices or
+				// indices that are None.
+				bp::slice slice = extract_slice();
+				bp::slice::range<GPlatesMaths::MultiPointOnSphere::const_iterator> slice_range =
+						slice.get_indicies(multi_point_on_sphere.begin(), multi_point_on_sphere.end());
+
+				GPlatesMaths::MultiPointOnSphere::const_iterator iter = slice_range.start;
+				for ( ; iter != slice_range.stop; std::advance(iter, slice_range.step))
+				{
+					slice_list.append(*iter);
+				}
+				slice_list.append(*iter);
+			}
+			catch (std::invalid_argument)
+			{
+				// Invalid slice - return empty list.
+				return bp::list();
+			}
+
+			return slice_list;
+		}
+
+		// See if the index is an integer.
+		bp::extract<long> extract_index(i);
+		if (extract_index.check())
+		{
+			long index = extract_index();
+			if (index < 0)
+			{
+				index += multi_point_on_sphere.number_of_points();
+			}
+
+			if (index >= boost::numeric_cast<long>(multi_point_on_sphere.number_of_points()) ||
+				index < 0)
+			{
+				PyErr_SetString(PyExc_IndexError, "Index out of range");
+				bp::throw_error_already_set();
+			}
+
+			GPlatesMaths::MultiPointOnSphere::const_iterator iter = multi_point_on_sphere.begin();
+			std::advance(iter, index); // Should be fast since 'iter' is random access.
+			const GPlatesMaths::PointOnSphere &point = *iter;
+
+			return bp::object(point);
+		}
+
+		PyErr_SetString(PyExc_TypeError, "Invalid index type");
+		bp::throw_error_already_set();
+
+		return bp::object();
+	}
+}
+
+void
+export_multi_point_on_sphere()
+{
+	//
+	// MultiPointOnSphere - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	// Note that PointOnSphere (like all GeometryOnSphere types) is immutable so we can store it
+	// in the python wrapper by-value instead, of by non_null_instrusive_ptr like the other
+	// GeometryOnSphere types (which are more heavyweight), and not have to worry about modifying
+	// the wrong instance (because cannot modify).
+	//
+	bp::class_<
+			GPlatesMaths::MultiPointOnSphere,
+			// NOTE: See note in 'python_ConstGeometryOnSphere' for why this is 'non-const' instead of 'const'...
+			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere>,
+			bp::bases<GPlatesMaths::GeometryOnSphere>,
+			boost::noncopyable>(
+					"MultiPointOnSphere",
+					"Represents a multi-point (collection of points) on the surface of a unit length sphere. "
+					"Multi-points are equality (``==``, ``!=``) comparable - see :class:`PointOnSphere` "
+					"for an overview of equality in the presence of limited floating-point precision.\n"
+					"\n"
+					"A multi-point instance is iterable over its points (and supports the ``len()`` function):\n"
+					"  ::\n"
+					"\n"
+					"    num_points = len(multi_point)\n"
+					"    points_in_multi_point = [point for point in multi_point]\n"
+					"    assert(num_points == len(points_in_multi_point))\n"
+					"\n"
+					"The following operations for accessing the points are supported:\n"
+					"\n"
+					"=========================== ==========================================================\n"
+					"Operation                   Result\n"
+					"=========================== ==========================================================\n"
+					"``len(mp)``                 length of *mp*\n"
+					"``for p in mp``             iterates over the points *p* of multi-point *mp*\n"
+					"``p in mp``                 ``True`` if *p* is equal to a point in *mp*\n"
+					"``p not in mp``             ``False`` if *p* is equal to a point in *mp*\n"
+					"``mp[i]``                   the point of *mp* at index *i*\n"
+					"``mp[i:j]``                 slice of *mp* from *i* to *j*\n"
+					"``mp[i:j:k]``               slice of *mp* from *i* to *j* with step *k*\n"
+					"=========================== ==========================================================\n"
+					"\n"
+					"Note that since a *MultiPointOnSphere* is immutable it contains no operations or "
+					"methods that modify its state (such as adding or removing points).\n",
+					bp::no_init)
+		.def("create",
+				&GPlatesApi::multi_point_on_sphere_create,
+				(bp::arg("points")),
+				"create(points) -> MultiPointOnSphere\n"
+				"  Create a multi-point from a sequence of :class:`point<PointOnSphere>` instances.\n"
+				"\n"
+				"  **NOTE** that the sequence must contain at least one point, otherwise "
+				"*RuntimeError* will be raised.\n"
+				"  ::\n"
+				"\n"
+				"    multi_point = pygplates.MultiPointOnSphere.create(points)\n"
+				"\n"
+				"  :param points: A sequence of :class:`PointOnSphere` elements.\n"
+				"  :type points: Any python sequence such as a ``list`` or a ``tuple``\n")
+		.staticmethod("create")
+		.def("__iter__", bp::iterator<const GPlatesMaths::MultiPointOnSphere>())
+		.def("__len__", &GPlatesMaths::MultiPointOnSphere::number_of_points)
+		.def("__contains__", &GPlatesApi::multi_point_on_sphere_contains_point)
+		.def("__getitem__", &GPlatesApi::multi_point_on_sphere_get_item)
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
+	;
+
+	// Register to/from conversion for MultiPointOnSphere::non_null_ptr_to_const_type.
+	GPlatesApi::python_ConstGeometryOnSphere<GPlatesMaths::MultiPointOnSphere>();
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Note that we're only dealing with 'const' conversions here.
+	// The 'non-const' workaround to get boost-python to compile is handled by 'python_ConstGeometryOnSphere'.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			const GPlatesMaths::MultiPointOnSphere,
+			const GPlatesMaths::GeometryOnSphere>();
+}
+
+
 void
 export_geometries_on_sphere()
 {
 	export_geometry_on_sphere();
 
 	export_point_on_sphere();
+	export_multi_point_on_sphere();
 }
 
 #endif // GPLATES_NO_PYTHON

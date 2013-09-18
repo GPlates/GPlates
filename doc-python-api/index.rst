@@ -33,6 +33,7 @@ Contents:
 	pygplates.GpmlPlateId
 	pygplates.GpmlTimeSample
 	pygplates.GpmlTimeWindow
+	pygplates.MultiPointOnSphere
 	pygplates.PointOnSphere
 	pygplates.Property
 	pygplates.PropertyName
