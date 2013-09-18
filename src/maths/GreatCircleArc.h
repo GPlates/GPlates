@@ -199,6 +199,13 @@ namespace GPlatesMaths
 		operator==(
 				const GreatCircleArc &other) const;
 
+		bool
+		operator!=(
+				const GreatCircleArc &other) const
+		{
+			return !(*this == other);
+		}
+
 	protected:
 
 		/**

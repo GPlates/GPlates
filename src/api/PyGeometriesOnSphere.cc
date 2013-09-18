@@ -55,9 +55,6 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
-// For PyFloat_Check below.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
 	/**
 	 * Enables *const* @a GeometryOnSphere derived types to be passed to and from python.
 	 *
@@ -165,8 +162,6 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 			data->convertible = storage;
 		}
 	};
-
-ENABLE_GCC_WARNING("-Wold-style-cast")
 }
 
 
@@ -502,12 +497,12 @@ export_multi_point_on_sphere()
 					"Multi-points are equality (``==``, ``!=``) comparable - see :class:`PointOnSphere` "
 					"for an overview of equality in the presence of limited floating-point precision.\n"
 					"\n"
-					"A multi-point instance is iterable over its points (and supports the ``len()`` function):\n"
+					"A multi-point instance is iterable over its points:\n"
 					"  ::\n"
 					"\n"
-					"    num_points = len(multi_point)\n"
-					"    points_in_multi_point = [point for point in multi_point]\n"
-					"    assert(num_points == len(points_in_multi_point))\n"
+					"    multi_point = pygplates.MultiPointOnSphere.create(points)\n"
+					"    for i, point in enumerate(multi_point):\n"
+					"        assert(point == multi_point[i])\n"
 					"\n"
 					"The following operations for accessing the points are supported:\n"
 					"\n"

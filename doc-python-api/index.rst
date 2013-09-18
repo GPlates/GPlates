@@ -20,6 +20,7 @@ Contents:
 	pygplates.FeatureCollection
 	pygplates.FeatureId
 	pygplates.FeatureType
+	pygplates.FiniteRotation
 	pygplates.GeometryOnSphere
 	pygplates.GeoTimeInstant
 	pygplates.GmlMultiPoint
@@ -34,6 +35,7 @@ Contents:
 	pygplates.GpmlPlateId
 	pygplates.GpmlTimeSample
 	pygplates.GpmlTimeWindow
+	pygplates.GreatCircleArc
 	pygplates.MultiPointOnSphere
 	pygplates.PointOnSphere
 	pygplates.Property

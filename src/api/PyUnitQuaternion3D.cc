@@ -59,10 +59,8 @@ void
 export_unit_quaternion_3d()
 {
 	//
-	// UnitQuaternion3D
+	// UnitQuaternion3D - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
-	// Non-member functions.
-	bp::def("represents_identity_rotation", &GPlatesMaths::represents_identity_rotation);
 	// Class.
 	bp::scope unit_quaternion_scope = bp::class_<GPlatesMaths::UnitQuaternion3D>("UnitQuaternion3D", bp::no_init)
 		.def("get_w", &GPlatesMaths::UnitQuaternion3D::w, bp::return_value_policy<bp::copy_const_reference>())
@@ -70,6 +68,15 @@ export_unit_quaternion_3d()
 		.def("get_y", &GPlatesMaths::UnitQuaternion3D::y, bp::return_value_policy<bp::copy_const_reference>())
 		.def("get_z", &GPlatesMaths::UnitQuaternion3D::z, bp::return_value_policy<bp::copy_const_reference>())
 		.def("get_rotation_parameters", &GPlatesApi::unit_quaternion_get_rotation_params)
+		.def("represents_identity_rotation",
+				&GPlatesMaths::represents_identity_rotation,
+				"represents_identity_rotation() -> bool\n"
+				"  Return whether this unit quaternion represents an identity rotation (a rotation "
+				"which maps a vector to itself).\n"
+				"\n"
+				"  :rtype: bool\n")
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))

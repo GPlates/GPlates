@@ -56,6 +56,8 @@ class MultiPointOnSphereCase(unittest.TestCase):
         for i in range(0, len(self.points)):
             self.assertTrue(self.multi_point[i] == self.points[i])
         self.assertTrue(self.multi_point[-1] == self.points[-1])
+        for i, point in enumerate(self.multi_point):
+            self.assertTrue(point == self.multi_point[i])
         with self.assertRaises(IndexError):
             self.multi_point[len(self.multi_point)]
 

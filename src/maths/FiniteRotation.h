@@ -131,6 +131,13 @@ namespace GPlatesMaths
 		operator==(
 				const FiniteRotation &other) const;
 
+		bool
+		operator!=(
+				const FiniteRotation &other) const
+		{
+			return !(*this == other);
+		}
+
 	protected:
 
 		explicit

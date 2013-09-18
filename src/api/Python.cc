@@ -36,6 +36,7 @@ void export_strings();
 
 // maths namespace
 void export_finite_rotation();
+void export_great_circle_arc();
 void export_geometries_on_sphere();
 void export_lat_lon_point();
 void export_real();
@@ -142,6 +143,7 @@ BOOST_PYTHON_MODULE(pygplates)
 
 	// maths namespace
 	export_finite_rotation();
+	export_great_circle_arc();
 	export_geometries_on_sphere();
 	export_lat_lon_point();
 	export_real();

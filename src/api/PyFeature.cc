@@ -141,8 +141,7 @@ export_feature()
 					"\n"
 					"    num_properties = len(feature)\n"
 					"    properties_in_feature = [property for property in feature]\n"
-					"    assert(num_properties == len(properties_in_feature))\n"
-					"\n",
+					"    assert(num_properties == len(properties_in_feature))\n",
 					bp::no_init)
 		.def("create",
 				&GPlatesApi::feature_handle_create,
@@ -184,6 +183,7 @@ export_feature()
 					"  :type revision_id: :class:`RevisionId`\n"))
  		.staticmethod("create")
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
+		.def("__len__", &GPlatesModel::FeatureHandle::size)
 #if 0 // TODO: Add once clone does a proper deep-copy...
 		.def("clone",
 				&GPlatesApi::feature_handle_clone,
@@ -193,7 +193,6 @@ export_feature()
 				"\n"
 				"  :rtype: :class:`Feature`\n")
 #endif
-		.def("__len__", &GPlatesModel::FeatureHandle::size)
 		.def("add",
 				&GPlatesApi::feature_handle_add,
 				(bp::arg("property")),

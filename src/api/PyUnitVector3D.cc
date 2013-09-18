@@ -42,7 +42,7 @@ void
 export_unit_vector_3d()
 {
 	//
-	// UnitVector
+	// UnitVector3D - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
 			GPlatesMaths::UnitVector3D>(
@@ -55,7 +55,7 @@ export_unit_vector_3d()
 					"  Construct a *UnitVector3D* instance from a 3D cartesian coordinate consisting of "
 					"floating-point coordinates *x*, *y* and *z*.\n"
 					"\n"
-					"**NOTE:** The length of 3D vector (x,y,z) must be 1.0, otherwise a *RuntimeError* "
+					"  **NOTE:** The length of 3D vector (x,y,z) must be 1.0, otherwise a *RuntimeError* "
 					"is generated.\n"
 					"  ::\n"
 					"\n"
