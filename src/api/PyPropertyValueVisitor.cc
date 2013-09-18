@@ -29,6 +29,7 @@
 
 #include "model/FeatureVisitor.h"
 
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
@@ -70,6 +71,29 @@ namespace GPlatesApi
 			public GPlatesModel::FeatureVisitor,
 			public bp::wrapper<GPlatesModel::FeatureVisitor>
 	{
+		virtual
+		void
+		visit_gml_multi_point(
+				gml_multi_point_type &gml_multi_point)
+		{
+			if (bp::override visit = this->get_override("visit_gml_multi_point"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gml_multi_point_type::non_null_ptr_type(&gml_multi_point));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gml_multi_point(gml_multi_point);
+		}
+
+		void
+		default_visit_gml_multi_point(
+				gml_multi_point_type &gml_multi_point)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gml_multi_point(gml_multi_point);
+		}
+
+
 		virtual
 		void
 		visit_gml_point(
@@ -409,6 +433,11 @@ export_property_value_visitor()
 			"\n"
 			"NOTE: You must call the base class *__init__* otherwise you will "
 			"get a *Boost.Python.ArgumentError* exception.\n")
+		.def("visit_gml_multi_point",
+				&GPlatesModel::FeatureVisitor::visit_gml_multi_point,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_multi_point,
+				"visit_gml_multi_point(gml_multi_point)\n"
+				"  Visits a :class:`GmlMultiPoint` property value.\n")
 		.def("visit_gml_point",
 				&GPlatesModel::FeatureVisitor::visit_gml_point,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_point,

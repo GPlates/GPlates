@@ -245,8 +245,10 @@ namespace GPlatesApi
 	//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 	// ...if we return 'GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type' and rely on
 	// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
-	// successfully for python bindings in other source files.
-	// So we avoid it by using returning a pointer to 'non-const'.
+	// successfully for python bindings in other source files. It's possibly due to
+	// 'bp::make_constructor' which isn't used for MultiPointOnSphere which has no problem with 'const'.
+	//
+	// So we avoid it by using returning a pointer to 'non-const' PointOnSphere.
 	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
 	point_on_sphere_create_xyz(
 			const GPlatesMaths::real_t &x,

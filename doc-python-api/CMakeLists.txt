@@ -56,6 +56,7 @@ if (SPHINX_FOUND)
 		string(REPLACE "$(OutDir)" "${PYGPLATES_MSVC_BUILD_TYPE}" PYGPLATES_LIBRARY_LOCATION "${PYGPLATES_LIBRARY_LOCATION}")
 	endif(MSVC)
 
+	# Configure the Sphinx configuration file using 'PYGPLATES_LIBRARY_LOCATION' (and any other CMake variables we've put in that file).
 	configure_file(
 		"${CMAKE_CURRENT_SOURCE_DIR}/conf.py.in"
 		"${BINARY_BUILD_DIR}/conf.py"

@@ -22,6 +22,7 @@ Contents:
 	pygplates.FeatureType
 	pygplates.GeometryOnSphere
 	pygplates.GeoTimeInstant
+	pygplates.GmlMultiPoint
     pygplates.GmlPoint
     pygplates.GmlTimeInstant
     pygplates.GmlTimePeriod

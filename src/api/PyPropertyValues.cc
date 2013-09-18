@@ -40,6 +40,7 @@
 #include "model/ModelUtils.h"
 
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
@@ -119,6 +120,7 @@ export_property_value()
 					"\n"
 					"The list of derived property value classes includes:\n"
 					"\n"
+					"* :class:`GmlMultiPoint`\n"
 					"* :class:`GmlPoint`\n"
 					"* :class:`GmlTimeInstant`\n"
 					"* :class:`GmlTimePeriod`\n"
@@ -294,6 +296,66 @@ export_geo_time_instant()
 
 	// Enable boost::optional<GeoTimeInstant> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::GeoTimeInstant>();
+}
+
+
+namespace GPlatesApi
+{
+	const GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
+	gml_multi_point_create(
+			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point)
+	{
+		return GPlatesPropertyValues::GmlMultiPoint::create(multi_point);
+	}
+}
+
+void
+export_gml_multi_point()
+{
+	//
+	// GmlMultiPoint - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GmlMultiPoint,
+			GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GmlMultiPoint",
+					"A property value representing a multi-point geometry.\n",
+					bp::no_init)
+		.def("create",
+				&GPlatesApi::gml_multi_point_create,
+				(bp::arg("multi_point")),
+				"create(multi_point) -> GmlMultiPoint\n"
+				"  Create a property value representing a multi-point geometry.\n"
+				"  ::\n"
+				"\n"
+				"    multi_point_property = pygplates.GmlMultiPoint.create(multi_point)\n"
+				"\n"
+				"  :param multi_point: the multi-point geometry\n"
+				"  :type multi_point: :class:`MultiPointOnSphere`\n")
+		.staticmethod("create")
+		.def("get_multi_point",
+				&GPlatesPropertyValues::GmlMultiPoint::get_multipoint,
+				"get_multi_point() -> MultiPointOnSphere\n"
+				"  Returns the multi-point geometry of this property value.\n"
+				"\n"
+				"  :rtype: :class:`MultiPointOnSphere`\n")
+		.def("set_multi_point",
+				&GPlatesPropertyValues::GmlMultiPoint::set_multipoint,
+				(bp::arg("multi_point")),
+				"set_multi_point(multi_point)\n"
+				"  Sets the multi-point geometry of this property value.\n"
+				"\n"
+				"  :param multi_point: the multi-point geometry\n"
+				"  :type multi_point: :class:`MultiPointOnSphere`\n")
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GmlMultiPoint,
+			GPlatesModel::PropertyValue>();
 }
 
 
@@ -1614,6 +1676,7 @@ export_property_values()
 
 	export_geo_time_instant();
 
+	export_gml_multi_point();
 	export_gml_point();
 	export_gml_time_instant();
 	export_gml_time_period();
