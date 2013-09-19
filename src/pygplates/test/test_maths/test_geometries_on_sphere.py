@@ -44,6 +44,7 @@ class MultiPointOnSphereCase(unittest.TestCase):
         self.assertEquals(self.multi_point, pygplates.MultiPointOnSphere.create(self.points))
     
     def test_iter(self):
+        iter(self.multi_point)
         points = [point for point in self.multi_point]
         self.assertEquals(self.points, points)
     
@@ -87,17 +88,29 @@ class PolylineOnSphereCase(unittest.TestCase):
     def test_compare(self):
         self.assertEquals(self.polyline, pygplates.PolylineOnSphere.create(self.points))
     
-    def test_iter(self):
+    def test_points_iter(self):
+        iter(self.polyline.get_points_view())
         points = [point for point in self.polyline.get_points_view()]
         self.assertEquals(self.points, points)
         self.assertEquals(self.points, list(self.polyline.get_points_view()))
     
-    def test_contains(self):
+    def test_arcs_iter(self):
+        iter(self.polyline.get_great_circle_arcs_view())
+        arcs = [arc for arc in self.polyline.get_great_circle_arcs_view()]
+        self.assertEquals(len(self.polyline.get_great_circle_arcs_view()) + 1, len(self.polyline.get_points_view()))
+    
+    def test_contains_point(self):
         self.assertTrue(self.points[0] in self.polyline.get_points_view())
         self.assertTrue(pygplates.PointOnSphere(1, 0, 0) in self.polyline.get_points_view())
         self.assertTrue(pygplates.PointOnSphere(0, -1, 0) not in self.polyline.get_points_view())
+    
+    def test_contains_arc(self):
+        first_arc = pygplates.GreatCircleArc.create(self.points[0], self.points[1])
+        self.assertTrue(first_arc in self.polyline.get_great_circle_arcs_view())
+        second_arc = pygplates.GreatCircleArc.create(self.points[1], self.points[2])
+        self.assertTrue(second_arc in self.polyline.get_great_circle_arcs_view())
 
-    def test_get_item(self):
+    def test_get_item_point(self):
         for i in range(0, len(self.points)):
             self.assertTrue(self.polyline.get_points_view()[i] == self.points[i])
         self.assertTrue(self.polyline.get_points_view()[-1] == self.points[-1])
@@ -107,17 +120,40 @@ class PolylineOnSphereCase(unittest.TestCase):
             self.polyline.get_points_view()[len(self.polyline.get_points_view())]
         self.assertRaises(IndexError, get_point1)
 
-    def test_get_slice(self):
+    def test_get_item_arc(self):
+        for i in range(0, len(self.points)-1):
+            arc = pygplates.GreatCircleArc.create(self.points[i], self.points[i+1])
+            self.assertTrue(self.polyline.get_great_circle_arcs_view()[i] == arc)
+        last_arc = pygplates.GreatCircleArc.create(self.points[-2], self.points[-1])
+        self.assertTrue(self.polyline.get_great_circle_arcs_view()[-1] == last_arc)
+        def get_arc1():
+            self.polyline.get_great_circle_arcs_view()[len(self.polyline.get_great_circle_arcs_view())]
+        self.assertRaises(IndexError, get_arc1)
+
+    def test_get_slice_point(self):
         slice = self.polyline.get_points_view()[1:3]
         self.assertTrue(len(slice) == 2)
         for i in range(0, len(slice)):
             self.assertTrue(slice[i] == self.points[i+1])
 
-    def test_get_extended_slice(self):
+    def test_get_slice_arc(self):
+        slice = self.polyline.get_great_circle_arcs_view()[0:2]
+        self.assertTrue(len(slice) == 2)
+        for i in range(0, len(slice)):
+            arc = pygplates.GreatCircleArc.create(self.points[i], self.points[i+1])
+            self.assertTrue(slice[i] == arc)
+
+    def test_get_extended_slice_point(self):
         slice = self.polyline.get_points_view()[1::2]
         self.assertTrue(len(slice) == 2)
         self.assertTrue(slice[0] == self.points[1])
         self.assertTrue(slice[1] == self.points[3])
+
+    def test_get_extended_slice_arc(self):
+        slice = self.polyline.get_great_circle_arcs_view()[::2]
+        self.assertTrue(len(slice) == 2)
+        self.assertTrue(slice[0] == pygplates.GreatCircleArc.create(self.points[0], self.points[1]))
+        self.assertTrue(slice[1] == pygplates.GreatCircleArc.create(self.points[2], self.points[3]))
 
 
 def suite():

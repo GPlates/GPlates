@@ -19,15 +19,28 @@ class FiniteRotationCase(unittest.TestCase):
         self.angle = math.pi
         self.finite_rotation = pygplates.FiniteRotation.create(self.pole, self.angle)
     
-    def test_rotate(self):
-        # Attempt to rotate each supported geometry type - an error will be raised if not supported.
+    # Attempt to rotate each supported geometry type - an error will be raised if not supported...
+    
+    def test_rotate_unit_vector_3d(self):
         self.finite_rotation * pygplates.UnitVector3D(1, 0, 0)
+    
+    def test_rotate_great_circle_arc(self):
         self.finite_rotation * pygplates.GreatCircleArc.create(
                 pygplates.PointOnSphere(1, 0, 0),
                 pygplates.PointOnSphere(0, 1, 0))
+    
+    def test_rotate_point_on_sphere(self):
         self.finite_rotation * pygplates.PointOnSphere(0, 1, 0)
+    
+    def test_rotate_multi_point_on_sphere(self):
         self.finite_rotation * pygplates.MultiPointOnSphere.create(
                 [pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(0, 1, 0)])
+    
+    def test_rotate_polyline_on_sphere(self):
+        self.finite_rotation * pygplates.PolylineOnSphere.create(
+                [pygplates.PointOnSphere(1, 0, 0),
+                pygplates.PointOnSphere(0, 1, 0),
+                pygplates.PointOnSphere(0, 0, 1)])
 
 
 class GreatCircleArcCase(unittest.TestCase):

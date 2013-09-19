@@ -303,10 +303,14 @@ export_point_on_sphere()
 #endif
 			>(
 					"PointOnSphere",
-					"Represents a point on the surface of a unit length sphere. "
+					"Represents a point on the surface of the unit length sphere.\n"
+					"\n"
 					"Points are equality (``==``, ``!=``) comparable where two points are considered "
-					"equal if their coordinates match within a small numerical epsilon that accounts "
-					"for the limits of floating-point precision.\n"
+					"equal if their coordinates match within a *very* small numerical epsilon that accounts "
+					"for the limits of floating-point precision. Note that usually two points will only compare "
+					"equal if they are the same point or created from the exact same input data. If two "
+					"points are generated in two different ways (eg, two different processing paths) they "
+					"will most likely *not* compare equal even if mathematically they should be identical.\n"
 					"\n"
 					"Note that since a *PointOnSphere* is immutable it contains no operations or "
 					"methods that modify its state.\n"
@@ -495,7 +499,7 @@ export_multi_point_on_sphere()
 			bp::bases<GPlatesMaths::GeometryOnSphere>,
 			boost::noncopyable>(
 					"MultiPointOnSphere",
-					"Represents a multi-point (collection of points) on the surface of a unit length sphere. "
+					"Represents a multi-point (collection of points) on the surface of the unit length sphere. "
 					"Multi-points are equality (``==``, ``!=``) comparable - see :class:`PointOnSphere` "
 					"for an overview of equality in the presence of limited floating-point precision.\n"
 					"\n"
@@ -709,6 +713,135 @@ namespace GPlatesApi
 	{
 		return PolylineOnSpherePointsView(polyline_on_sphere);
 	}
+
+
+	/**
+	 * Wrapper class for functions accessing the *great circle arcs* of a PolylineOnSphere.
+	 *
+	 * This is a view into the internal arcs of a PolylineOnSphere in that an iterator
+	 * can be obtained from the view and the view supports indexing.
+	 */
+	class PolylineOnSphereArcsView
+	{
+	public:
+		explicit
+		PolylineOnSphereArcsView(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere) :
+			d_polyline_on_sphere(polyline_on_sphere)
+		{  }
+
+		typedef GPlatesMaths::PolylineOnSphere::const_iterator const_iterator;
+
+		const_iterator
+		begin() const
+		{
+			return d_polyline_on_sphere->begin();
+		}
+
+		const_iterator
+		end() const
+		{
+			return d_polyline_on_sphere->end();
+		}
+
+		GPlatesMaths::PolylineOnSphere::size_type
+		get_number_of_arcs() const
+		{
+			return d_polyline_on_sphere->number_of_segments();
+		}
+
+		bool
+		contains_arc(
+				const GPlatesMaths::GreatCircleArc &gca) const
+		{
+			return std::find(
+					d_polyline_on_sphere->begin(),
+					d_polyline_on_sphere->end(),
+					gca)
+							!= d_polyline_on_sphere->end();
+		}
+
+		//
+		// Support for "__get_item__".
+		//
+		boost::python::object
+		get_item(
+				boost::python::object i) const
+		{
+			namespace bp = boost::python;
+
+			// Set if the index is a slice object.
+			bp::extract<bp::slice> extract_slice(i);
+			if (extract_slice.check())
+			{
+				bp::list slice_list;
+
+				try
+				{
+					// Use boost::python::slice to manage index variations such as negative indices or
+					// indices that are None.
+					bp::slice slice = extract_slice();
+					bp::slice::range<GPlatesMaths::PolylineOnSphere::const_iterator> slice_range =
+							slice.get_indicies(
+									d_polyline_on_sphere->begin(),
+									d_polyline_on_sphere->end());
+
+					GPlatesMaths::PolylineOnSphere::const_iterator iter = slice_range.start;
+					for ( ; iter != slice_range.stop; std::advance(iter, slice_range.step))
+					{
+						slice_list.append(*iter);
+					}
+					slice_list.append(*iter);
+				}
+				catch (std::invalid_argument)
+				{
+					// Invalid slice - return empty list.
+					return bp::list();
+				}
+
+				return slice_list;
+			}
+
+			// See if the index is an integer.
+			bp::extract<long> extract_index(i);
+			if (extract_index.check())
+			{
+				long index = extract_index();
+				if (index < 0)
+				{
+					index += d_polyline_on_sphere->number_of_segments();
+				}
+
+				if (index >= boost::numeric_cast<long>(d_polyline_on_sphere->number_of_segments()) ||
+					index < 0)
+				{
+					PyErr_SetString(PyExc_IndexError, "Index out of range");
+					bp::throw_error_already_set();
+				}
+
+				GPlatesMaths::PolylineOnSphere::const_iterator iter = d_polyline_on_sphere->begin();
+				std::advance(iter, index); // Should be fast since 'iter' is random access.
+				const GPlatesMaths::GreatCircleArc &gca = *iter;
+
+				return bp::object(gca);
+			}
+
+			PyErr_SetString(PyExc_TypeError, "Invalid index type");
+			bp::throw_error_already_set();
+
+			return bp::object();
+		}
+
+	private:
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_polyline_on_sphere;
+	};
+
+	PolylineOnSphereArcsView
+	polyline_on_sphere_get_arcs_view(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+	{
+		return PolylineOnSphereArcsView(polyline_on_sphere);
+	}
 }
 
 void
@@ -728,6 +861,19 @@ export_polyline_on_sphere()
 	;
 
 	//
+	// A wrapper around view access to the *great circle arcs* of a PolylineOnSphere.
+	//
+	// We don't document this wrapper (using docstrings) since it's documented in "PolylineOnSphere".
+	bp::class_<GPlatesApi::PolylineOnSphereArcsView>(
+			"PolylineOnSphereArcsView",
+			bp::init<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>())
+		.def("__iter__", bp::iterator<const GPlatesApi::PolylineOnSphereArcsView>())
+		.def("__len__", &GPlatesApi::PolylineOnSphereArcsView::get_number_of_arcs)
+		.def("__contains__", &GPlatesApi::PolylineOnSphereArcsView::contains_arc)
+		.def("__getitem__", &GPlatesApi::PolylineOnSphereArcsView::get_item)
+	;
+
+	//
 	// PolylineOnSphere - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
@@ -737,13 +883,14 @@ export_polyline_on_sphere()
 			bp::bases<GPlatesMaths::GeometryOnSphere>,
 			boost::noncopyable>(
 					"PolylineOnSphere",
-					"Represents a polyline on the surface of a sphere. "
+					"Represents a polyline on the surface of the unit length sphere. "
 					"Polylines are equality (``==``, ``!=``) comparable - see :class:`PointOnSphere` "
 					"for an overview of equality in the presence of limited floating-point precision.\n"
 					"\n"
 					"A polyline instance provides two types of *views*:\n"
+					"\n"
 					"* a view of its points - see :meth:`get_points_view`, and\n"
-					"* a view of its great circle arc subsegments (between adjacent points) - see "
+					"* a view of its *great circle arc* subsegments (between adjacent points) - see "
 					":meth:`get_great_circle_arcs`.\n"
 					"\n"
 					"Note that since a *PolylineOnSphere* is immutable it contains no operations or "
@@ -774,7 +921,7 @@ export_polyline_on_sphere()
 				"polyline, otherwise *RuntimeError* will be raised.\n"
 				"\n"
 				"  It is not an error for adjacent points in the sequence to be coincident. In this "
-				"case each :class:`GreatCircleArc` between two adjacent points will have zero length "
+				"case each :class:`GreatCircleArc` between two such adjacent points will have zero length "
 				"(:meth:`GreatCircleArc.is_zero_length` will return ``True``) and will have no "
 				"rotation axis (:meth:`GreatCircleArc.get_rotation_axis` will return ``None``).\n"
 				"  ::\n"
@@ -787,21 +934,25 @@ export_polyline_on_sphere()
 		.def("get_points_view",
 				&GPlatesApi::polyline_on_sphere_get_points_view,
 				"get_points_view() -> PolylineOnSpherePointsView\n"
-				"  Returns a read-only *view* of the points of this polyline that supports iteration "
-				"over the points as well as indexing to retrieve individual points or slices or points.\n"
+				"  Returns a *view*, of the :class:`points<PointOnSphere>` of this polyline, that supports iteration "
+				"over the points as well as indexing to retrieve individual points or slices of points.\n"
+				"\n"
+				"  Note that the *view* object returned by this method is not a ``list`` or an *iterator* but, "
+				"like dictionary views in Python 3, a ``list`` or *iterator* can be obtained from the *view* "
+				"as in ``list(polyline.get_points_view())`` or ``iter(polyline.get_points_view())``.\n"
 				"\n"
 				"  The returned view provides the following operations for accessing the points:\n"
 				"\n"
 				"  =========================== ==========================================================\n"
 				"  Operation                   Result\n"
 				"  =========================== ==========================================================\n"
-				"  ``len(view)``               length of *view*\n"
-				"  ``for p in view``           iterates over the points *p* of *view*\n"
-				"  ``p in view``               ``True`` if *p* is a point in *view*\n"
-				"  ``p not in view``           ``False`` if *p* is a point in *view*\n"
-				"  ``view[i]``                 the point of *view* at index *i*\n"
-				"  ``view[i:j]``               slice of *view* from *i* to *j*\n"
-				"  ``view[i:j:k]``             slice of *view* from *i* to *j* with step *k*\n"
+				"  ``len(view)``               number of points in the polyline\n"
+				"  ``for p in view``           iterates over the points *p* in the polyline\n"
+				"  ``p in view``               ``True`` if *p* is a point in the polyline\n"
+				"  ``p not in view``           ``False`` if *p* is a point in the polyline\n"
+				"  ``view[i]``                 the point in the polyline at index *i*\n"
+				"  ``view[i:j]``               slice of points in the polyline from *i* to *j*\n"
+				"  ``view[i:j:k]``             slice of points in the polyline from *i* to *j* with step *k*\n"
 				"  =========================== ==========================================================\n"
 				"\n"
 				"  The following example demonstrates some uses of the above operations:\n"
@@ -814,6 +965,44 @@ export_polyline_on_sphere()
 				"        print point\n"
 				"    first_point = points_view[0]\n"
 				"    last_point = points_view[-1]\n")
+		.def("get_great_circle_arcs_view",
+				&GPlatesApi::polyline_on_sphere_get_arcs_view,
+				"get_great_circle_arcs_view() -> PolylineOnSphereArcsView\n"
+				"  Returns a *view*, of the :class:`great circle arcs<GreatCircleArc>` of this polyline, "
+				"that supports iteration over the arcs as well as indexing to retrieve individual arcs "
+				"or slices of arcs. Between each adjacent pair of :class:`points<PointOnSphere>` there "
+				"is an :class:`arc<GreatCircleArc>` such that the number of points exceeds the number of "
+				"arcs by one.\n"
+				"\n"
+				"  Note that the *view* object returned by this method is not a ``list`` or an *iterator* but, "
+				"like dictionary views in Python 3, a ``list`` or *iterator* can be obtained from the *view* "
+				"as in ``list(polyline.get_great_circle_arcs_view())`` or ``iter(polyline.get_great_circle_arcs_view())``.\n"
+				"\n"
+				"  The returned view provides the following operations for accessing the great circle arcs:\n"
+				"\n"
+				"  =========================== ==========================================================\n"
+				"  Operation                   Result\n"
+				"  =========================== ==========================================================\n"
+				"  ``len(view)``               number of arcs in the polyline\n"
+				"  ``for a in view``           iterates over the arcs *a* in the polyline\n"
+				"  ``a in view``               ``True`` if *a* is an arc in the polyline\n"
+				"  ``a not in view``           ``False`` if *a* is an arc in the polyline\n"
+				"  ``view[i]``                 the arc in the polyline at index *i*\n"
+				"  ``view[i:j]``               slice of arcs in the polyline from *i* to *j*\n"
+				"  ``view[i:j:k]``             slice of arcs in the polyline from *i* to *j* with step *k*\n"
+				"  =========================== ==========================================================\n"
+				"\n"
+				"  The following example demonstrates some uses of the above operations:\n"
+				"  ::\n"
+				"\n"
+				"    polyline = pygplates.PolylineOnSphere.create(points)\n"
+				"    ...\n"
+				"    arcs_view = polyline.get_great_circle_arcs_view()\n"
+				"    for arc in arcs_view:\n"
+				"        if not arc.is_zero_length():\n"
+				"            print arc.get_rotation_axis()\n"
+				"    first_arc = arcs_view[0]\n"
+				"    last_arc = arcs_view[-1]\n")
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;
