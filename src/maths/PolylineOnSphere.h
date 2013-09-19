@@ -31,14 +31,16 @@
 #ifndef GPLATES_MATHS_POLYLINEONSPHERE_H
 #define GPLATES_MATHS_POLYLINEONSPHERE_H
 
-#include <vector>
-#include <iterator>  // std::iterator, std::bidirectional_iterator_tag, std::distance
 #include <algorithm>  // std::swap
+#include <iterator>  // std::iterator, std::bidirectional_iterator_tag, std::distance
 #include <utility>  // std::pair
+#include <vector>
 #include <boost/intrusive_ptr.hpp>
+#include <boost/iterator/iterator_facade.hpp>
 
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
+
 #include "global/PreconditionViolationError.h"
 
 
@@ -163,8 +165,12 @@ namespace GPlatesMaths
 		 * assumption should be fulfilled by the PolylineOnSphere
 		 * invariant.
 		 */
-		class VertexConstIterator:
-				public std::iterator<std::bidirectional_iterator_tag, const PointOnSphere>
+		class VertexConstIterator :
+				public boost::iterator_facade<
+						VertexConstIterator,
+						const PointOnSphere,
+						// Keep the iterator as "random access" so that std::advance can do fast indexing...
+						std::random_access_iterator_tag>
 		{
 
 			enum StartOrEnd {
@@ -187,7 +193,10 @@ namespace GPlatesMaths
 			static
 			VertexConstIterator
 			create_begin(
-					const PolylineOnSphere &poly);
+					const PolylineOnSphere &poly)
+			{
+				return VertexConstIterator(poly, poly.begin(), START);
+			}
 
 
 			/**
@@ -201,7 +210,10 @@ namespace GPlatesMaths
 			static
 			VertexConstIterator
 			create_end(
-					const PolylineOnSphere &poly);
+					const PolylineOnSphere &poly)
+			{
+				return VertexConstIterator(poly, poly.end(), END);
+			}
 
 
 			/**
@@ -211,8 +223,7 @@ namespace GPlatesMaths
 			 * uninitialised.  (I don't @em like providing a
 			 * constructor which leaves an object in an
 			 * uninitialised state, but the presence of a default
-			 * constructor is mandated by the
-			 * bidirectional_iterator interface.)
+			 * constructor is mandated by the iterator interface.)
 			 *
 			 * If you attempt to dereference an uninitialised
 			 * iterator or access the members of a PointOnSphere
@@ -236,123 +247,6 @@ namespace GPlatesMaths
 				d_curr_gca(), 
 				d_gca_start_or_end(END)
 			{  }
-
-
-			/**
-			 * Copy-construct a vertex iterator.
-			 */
-			VertexConstIterator(
-					const VertexConstIterator &other):
-				d_poly_ptr(other.d_poly_ptr),
-				d_curr_gca(other.d_curr_gca),
-				d_gca_start_or_end(other.d_gca_start_or_end)
-			{  }
-
-
-			/**
-			 * Return the gca_const_iterator which points to the
-			 * current GreatCircleArc.
-			 */
-			gca_const_iterator
-			curr_gca() const
-			{
-				return d_curr_gca;
-			}
-
-
-			/**
-			 * Return whether this iterator is pointing at the
-			 * "start-point" or "end-point" of the current
-			 * GreatCircleArc.
-			 */
-			StartOrEnd
-			gca_start_or_end() const
-			{
-				return d_gca_start_or_end;
-			}
-
-
-			/**
-			 * Assign @a other to this.
-			 */
-			VertexConstIterator &
-			operator=(
-					const VertexConstIterator &other)
-			{
-				d_poly_ptr = other.d_poly_ptr;
-				d_curr_gca = other.d_curr_gca;
-				d_gca_start_or_end = other.d_gca_start_or_end;
-
-				return *this;
-			}
-
-
-			/**
-			 * Dereference this iterator to obtain the
-			 * currently-pointed-at PointOnSphere.
-			 */
-			const PointOnSphere &
-			operator*() const
-			{
-				return current_point();
-			}
-
-
-			/**
-			 * Access a member of the PointOnSphere which is
-			 * currently being pointed-at by this iterator.
-			 */
-			const PointOnSphere *
-			operator->() const
-			{
-				return &(current_point());
-			}
-
-
-			/**
-			 * Pre-increment this iterator.
-			 */
-			VertexConstIterator &
-			operator++()
-			{
-				increment();
-				return *this;
-			}
-
-
-			/**
-			 * Post-increment this iterator.
-			 */
-			const VertexConstIterator
-			operator++(int)
-			{
-				VertexConstIterator old = *this;
-				increment();
-				return old;
-			}
-
-
-			/**
-			 * Pre-decrement this iterator.
-			 */
-			VertexConstIterator &
-			operator--()
-			{
-				decrement();
-				return *this;
-			}
-
-
-			/**
-			 * Post-decrement this iterator.
-			 */
-			const VertexConstIterator
-			operator--(int)
-			{
-				VertexConstIterator old = *this;
-				decrement();
-				return old;
-			}
 
 		private:
 
@@ -378,14 +272,18 @@ namespace GPlatesMaths
 
 
 			/**
+			 * Iterator dereference - for boost::iterator_facade.
+			 *
 			 * This function performs the magic which is used to
 			 * obtain the currently-pointed-at PointOnSphere.
 			 */
 			const PointOnSphere &
-			current_point() const;
+			dereference() const;
 
 
 			/**
+			 * Iterator increment - for boost::iterator_facade.
+			 *
 			 * This function performs the magic which is used to
 			 * increment this iterator.
 			 *
@@ -399,6 +297,8 @@ namespace GPlatesMaths
 
 
 			/**
+			 * Iterator decrement - for boost::iterator_facade.
+			 *
 			 * This function performs the magic which is used to
 			 * decrement this iterator.
 			 *
@@ -409,6 +309,30 @@ namespace GPlatesMaths
 			 */
 			void
 			decrement();
+
+			/**
+			 * Iterator equality comparison - for boost::iterator_facade.
+			 */
+			bool
+			equal(
+					const VertexConstIterator &other) const;
+
+			/**
+			 * Iterator advancement - for boost::iterator_facade.
+			 */
+			void
+			advance(
+					VertexConstIterator::difference_type n);
+
+			/**
+			 * Distance between two iterators - for boost::iterator_facade.
+			 */
+			VertexConstIterator::difference_type
+			distance_to(
+					const VertexConstIterator &other) const;
+
+			// Give access to boost::iterator_facade.
+			friend class boost::iterator_core_access;
 
 
 			/**
@@ -995,52 +919,6 @@ namespace GPlatesMaths
 		 */
 		mutable boost::intrusive_ptr<PolylineOnSphereImpl::CachedCalculations> d_cached_calculations;
 	};
-
-
-	inline
-	PolylineOnSphere::VertexConstIterator
-	PolylineOnSphere::VertexConstIterator::create_begin(
-			const PolylineOnSphere &poly)
-	{
-		return VertexConstIterator(poly, poly.begin(), START);
-	}
-	
-
-	inline
-	PolylineOnSphere::VertexConstIterator
-	PolylineOnSphere::VertexConstIterator::create_end(
-			const PolylineOnSphere &poly)
-	{
-		return VertexConstIterator(poly, poly.end(), END);
-	}
-
-
-	/**
-	 * Compare @a i1 and @a i2 for equality.
-	 */
-	inline
-	bool
-	operator==(
-			const PolylineOnSphere::VertexConstIterator &i1,
-			const PolylineOnSphere::VertexConstIterator &i2)
-	{
-		return (i1.curr_gca() == i2.curr_gca() &&
-				i1.gca_start_or_end() == i2.gca_start_or_end());
-	}
-
-
-	/**
-	 * Compare @a i1 and @a i2 for inequality.
-	 */
-	inline
-	bool
-	operator!=(
-			const PolylineOnSphere::VertexConstIterator &i1,
-			const PolylineOnSphere::VertexConstIterator &i2)
-	{
-		return (i1.curr_gca() != i2.curr_gca() ||
-				i1.gca_start_or_end() != i2.gca_start_or_end());
-	}
 
 
 	/**

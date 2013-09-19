@@ -323,7 +323,7 @@ GPlatesMaths::PolylineOnSphere::get_bounding_small_circle() const
 
 
 const GPlatesMaths::PointOnSphere &
-GPlatesMaths::PolylineOnSphere::VertexConstIterator::current_point() const
+GPlatesMaths::PolylineOnSphere::VertexConstIterator::dereference() const
 {
 	if (d_poly_ptr == NULL) {
 		// I think the exception message sums it up pretty nicely...
@@ -367,6 +367,108 @@ GPlatesMaths::PolylineOnSphere::VertexConstIterator::decrement()
 	} else {
 		--d_curr_gca;
 	}
+}
+
+
+bool
+GPlatesMaths::PolylineOnSphere::VertexConstIterator::equal(
+		const VertexConstIterator &other) const
+{
+	if (d_poly_ptr == NULL || other.d_poly_ptr == NULL)
+	{
+		// We can't really return a valid comparison result.
+		throw GPlatesGlobal::UninitialisedIteratorException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Attempted to compare an uninitialised iterator.");
+	}
+
+	return d_curr_gca == other.d_curr_gca &&
+			d_gca_start_or_end == other.d_gca_start_or_end;
+}
+
+
+void
+GPlatesMaths::PolylineOnSphere::VertexConstIterator::advance(
+		VertexConstIterator::difference_type n)
+{
+	if (d_poly_ptr == NULL)
+	{
+		// This iterator is uninitialised, so this function will be a no-op.
+		return;
+	}
+
+	if (n > 0)
+	{
+		if (d_curr_gca == d_poly_ptr->begin() && d_gca_start_or_end == START)
+		{
+			// Advance by one.
+ 			d_gca_start_or_end = END;
+ 			--n;
+
+			// Advance any remaining amount.
+			if (n > 0)
+			{
+				std::advance(d_curr_gca, n);
+			}
+		}
+		else
+		{
+			std::advance(d_curr_gca, n);
+		}
+	}
+	else if (n < 0)
+	{
+		if (d_curr_gca == d_poly_ptr->begin() && d_gca_start_or_end == END)
+		{
+			// Advance by minus one.
+			d_gca_start_or_end = START;
+			++n;
+
+			// Advance any remaining amount.
+			//
+			// Actually this shouldn't be able to happen since we're already at the beginning
+			// of the sequence, but we'll advance as requested.
+			//
+			// TODO: Should we check and throw exception or assert ?
+			// The MSVC 'std' library only checks iterators in debug builds.
+			if (n < 0)
+			{
+				std::advance(d_curr_gca, n);
+			}
+		}
+		else
+		{
+			std::advance(d_curr_gca, n);
+		}
+	}
+}
+
+
+GPlatesMaths::PolylineOnSphere::VertexConstIterator::difference_type
+GPlatesMaths::PolylineOnSphere::VertexConstIterator::distance_to(
+		const VertexConstIterator &other) const
+{
+	if (d_poly_ptr == NULL || other.d_poly_ptr == NULL)
+	{
+		// We can't really return a valid distance result.
+		throw GPlatesGlobal::UninitialisedIteratorException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Attempted to compare an uninitialised iterator.");
+	}
+
+	difference_type difference = std::distance(d_curr_gca, other.d_curr_gca);
+
+	// Make adjustments if either, or both, iterators reference the first point in the sequence.
+	if (d_curr_gca == d_poly_ptr->begin() && d_gca_start_or_end == START)
+	{
+		++difference;
+	}
+	if (other.d_curr_gca == other.d_poly_ptr->begin() && other.d_gca_start_or_end == START)
+	{
+		--difference;
+	}
+
+	return difference;
 }
 
 
