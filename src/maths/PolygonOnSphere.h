@@ -468,21 +468,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Return the const_iterator that is equivalent to @a begin + @a index
-		 * to iterate over GreatCircleArc's of this polygon.
-		 * @a index must be less than or equal to @a number_of_segments.
-		 */
-		const_iterator
-		indexed_iterator(
-				std::size_t index) const
-		{
-			const_iterator iter = begin();
-			std::advance(iter, index);
-			return iter;
-		}
-
-
-		/**
 		 * Return the number of segments in this polygon.
 		 */
 		size_type
