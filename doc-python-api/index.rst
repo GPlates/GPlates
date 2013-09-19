@@ -38,6 +38,7 @@ Contents:
 	pygplates.GreatCircleArc
 	pygplates.MultiPointOnSphere
 	pygplates.PointOnSphere
+	pygplates.PolylineOnSphere
 	pygplates.Property
 	pygplates.PropertyName
 	pygplates.PropertyValue

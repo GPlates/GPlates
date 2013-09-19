@@ -282,19 +282,26 @@ export_point_on_sphere()
 	//
 	// PointOnSphere - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
-	// Note that PointOnSphere (like all GeometryOnSphere types) is immutable so we can store it
-	// in the python wrapper by-value instead, of by non_null_instrusive_ptr like the other
-	// GeometryOnSphere types (which are more heavyweight), and not have to worry about modifying
-	// the wrong instance (because cannot modify).
-	//
 	bp::class_<
 			GPlatesMaths::PointOnSphere,
 			// NOTE: See note in 'python_ConstGeometryOnSphere' for why this is 'non-const' instead of 'const'...
 			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>,
 			bp::bases<GPlatesMaths::GeometryOnSphere>
 			// NOTE: PointOnSphere is the only GeometryOnSphere type that is copyable.
-			// And it needs to be copyable so that MultiPointOnSphere's iterator can copy as it iterates...
-			/*boost::noncopyable*/>(
+			// And it needs to be copyable (in our wrapper) so that, eg, MultiPointOnSphere's iterator
+			// can copy raw PointOnSphere elements (in its vector) into 'non_null_intrusive_ptr' versions
+			// of PointOnSphere as it iterates over its collection (this conversion is one of those
+			// cool things that boost-python takes care of automatically).
+			//
+			// Also note that PointOnSphere (like all GeometryOnSphere types) is immutable so the fact
+			// that it can be copied into a python object (unlike the other GeometryOnSphere types) does
+			// not mean we have to worry about a PointOnSphere modification from the C++ side not being
+			// visible on the python side, or vice versa (because cannot modify since immutable - or at least
+			// the python interface is immutable - the C++ has an assignment operator we should be careful of).
+#if 0
+			boost::noncopyable
+#endif
+			>(
 					"PointOnSphere",
 					"Represents a point on the surface of a unit length sphere. "
 					"Points are equality (``==``, ``!=``) comparable where two points are considered "
@@ -370,10 +377,7 @@ export_point_on_sphere()
 
 namespace GPlatesApi
 {
-	// Convenience constructor to create from (x,y,z) without having to first create a UnitVector3D.
-	//
-	// We can't use bp::make_constructor with a function that returns a non-pointer, so instead we
-	// return 'non_null_intrusive_ptr'.
+	// Create a multi-point from a sequence of points.
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
 	multi_point_on_sphere_create(
 			bp::object points) // Any python sequence (eg, list, tuple).
@@ -400,8 +404,11 @@ namespace GPlatesApi
 			const GPlatesMaths::MultiPointOnSphere &multi_point_on_sphere,
 			const GPlatesMaths::PointOnSphere &point_on_sphere)
 	{
-		return std::find(multi_point_on_sphere.begin(), multi_point_on_sphere.end(), point_on_sphere) !=
-				multi_point_on_sphere.end();
+		return std::find(
+				multi_point_on_sphere.begin(),
+				multi_point_on_sphere.end(),
+				point_on_sphere)
+						!= multi_point_on_sphere.end();
 	}
 
 	//
@@ -481,11 +488,6 @@ export_multi_point_on_sphere()
 	//
 	// MultiPointOnSphere - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
-	// Note that PointOnSphere (like all GeometryOnSphere types) is immutable so we can store it
-	// in the python wrapper by-value instead, of by non_null_instrusive_ptr like the other
-	// GeometryOnSphere types (which are more heavyweight), and not have to worry about modifying
-	// the wrong instance (because cannot modify).
-	//
 	bp::class_<
 			GPlatesMaths::MultiPointOnSphere,
 			// NOTE: See note in 'python_ConstGeometryOnSphere' for why this is 'non-const' instead of 'const'...
@@ -556,6 +558,278 @@ export_multi_point_on_sphere()
 }
 
 
+namespace GPlatesApi
+{
+	// Create a polyline from a sequence of points.
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+	polyline_on_sphere_create(
+			bp::object points) // Any python sequence (eg, list, tuple).
+	{
+		// Begin/end iterators over the python points sequence.
+		bp::stl_input_iterator<GPlatesMaths::PointOnSphere>
+				points_begin(points),
+				points_end;
+
+		// Copy into a vector.
+		// Note: We can't pass the iterators directly to 'PolylineOnSphere::create_on_heap'
+		// because they are *input* iterators (ie, one pass only) and 'PolylineOnSphere' expects
+		// forward iterators (it actually makes two passes over the points).
+ 		std::vector<GPlatesMaths::PointOnSphere> points_vector;
+		std::copy(points_begin, points_end, std::back_inserter(points_vector));
+
+		return GPlatesMaths::PolylineOnSphere::create_on_heap(
+				points_vector.begin(),
+				points_vector.end());
+	}
+
+	/**
+	 * Wrapper class for functions accessing the *points* of a PolylineOnSphere.
+	 *
+	 * This is a view into the internal points of a PolylineOnSphere in that an iterator
+	 * can be obtained from the view and the view supports indexing.
+	 */
+	class PolylineOnSpherePointsView
+	{
+	public:
+		explicit
+		PolylineOnSpherePointsView(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere) :
+			d_polyline_on_sphere(polyline_on_sphere)
+		{  }
+
+		typedef GPlatesMaths::PolylineOnSphere::vertex_const_iterator const_iterator;
+
+		const_iterator
+		begin() const
+		{
+			return d_polyline_on_sphere->vertex_begin();
+		}
+
+		const_iterator
+		end() const
+		{
+			return d_polyline_on_sphere->vertex_end();
+		}
+
+		GPlatesMaths::PolylineOnSphere::size_type
+		get_number_of_points() const
+		{
+			return d_polyline_on_sphere->number_of_vertices();
+		}
+
+		bool
+		contains_point(
+				const GPlatesMaths::PointOnSphere &point_on_sphere) const
+		{
+			return std::find(
+					d_polyline_on_sphere->vertex_begin(),
+					d_polyline_on_sphere->vertex_end(),
+					point_on_sphere)
+							!= d_polyline_on_sphere->vertex_end();
+		}
+
+		//
+		// Support for "__get_item__".
+		//
+		boost::python::object
+		get_item(
+				boost::python::object i) const
+		{
+			namespace bp = boost::python;
+
+			// Set if the index is a slice object.
+			bp::extract<bp::slice> extract_slice(i);
+			if (extract_slice.check())
+			{
+				bp::list slice_list;
+
+				try
+				{
+					// Use boost::python::slice to manage index variations such as negative indices or
+					// indices that are None.
+					bp::slice slice = extract_slice();
+					bp::slice::range<GPlatesMaths::PolylineOnSphere::vertex_const_iterator> slice_range =
+							slice.get_indicies(
+									d_polyline_on_sphere->vertex_begin(),
+									d_polyline_on_sphere->vertex_end());
+
+					GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = slice_range.start;
+					for ( ; iter != slice_range.stop; std::advance(iter, slice_range.step))
+					{
+						slice_list.append(*iter);
+					}
+					slice_list.append(*iter);
+				}
+				catch (std::invalid_argument)
+				{
+					// Invalid slice - return empty list.
+					return bp::list();
+				}
+
+				return slice_list;
+			}
+
+			// See if the index is an integer.
+			bp::extract<long> extract_index(i);
+			if (extract_index.check())
+			{
+				long index = extract_index();
+				if (index < 0)
+				{
+					index += d_polyline_on_sphere->number_of_vertices();
+				}
+
+				if (index >= boost::numeric_cast<long>(d_polyline_on_sphere->number_of_vertices()) ||
+					index < 0)
+				{
+					PyErr_SetString(PyExc_IndexError, "Index out of range");
+					bp::throw_error_already_set();
+				}
+
+				GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = d_polyline_on_sphere->vertex_begin();
+				std::advance(iter, index); // Should be fast since 'iter' is random access.
+				const GPlatesMaths::PointOnSphere &point = *iter;
+
+				return bp::object(point);
+			}
+
+			PyErr_SetString(PyExc_TypeError, "Invalid index type");
+			bp::throw_error_already_set();
+
+			return bp::object();
+		}
+
+	private:
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_polyline_on_sphere;
+	};
+
+	PolylineOnSpherePointsView
+	polyline_on_sphere_get_points_view(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+	{
+		return PolylineOnSpherePointsView(polyline_on_sphere);
+	}
+}
+
+void
+export_polyline_on_sphere()
+{
+	//
+	// A wrapper around view access to the *points* of a PolylineOnSphere.
+	//
+	// We don't document this wrapper (using docstrings) since it's documented in "PolylineOnSphere".
+	bp::class_<GPlatesApi::PolylineOnSpherePointsView>(
+			"PolylineOnSpherePointsView",
+			bp::init<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>())
+		.def("__iter__", bp::iterator<const GPlatesApi::PolylineOnSpherePointsView>())
+		.def("__len__", &GPlatesApi::PolylineOnSpherePointsView::get_number_of_points)
+		.def("__contains__", &GPlatesApi::PolylineOnSpherePointsView::contains_point)
+		.def("__getitem__", &GPlatesApi::PolylineOnSpherePointsView::get_item)
+	;
+
+	//
+	// PolylineOnSphere - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesMaths::PolylineOnSphere,
+			// NOTE: See note in 'python_ConstGeometryOnSphere' for why this is 'non-const' instead of 'const'...
+			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>,
+			bp::bases<GPlatesMaths::GeometryOnSphere>,
+			boost::noncopyable>(
+					"PolylineOnSphere",
+					"Represents a polyline on the surface of a sphere. "
+					"Polylines are equality (``==``, ``!=``) comparable - see :class:`PointOnSphere` "
+					"for an overview of equality in the presence of limited floating-point precision.\n"
+					"\n"
+					"A polyline instance provides two types of *views*:\n"
+					"* a view of its points - see :meth:`get_points_view`, and\n"
+					"* a view of its great circle arc subsegments (between adjacent points) - see "
+					":meth:`get_great_circle_arcs`.\n"
+					"\n"
+					"Note that since a *PolylineOnSphere* is immutable it contains no operations or "
+					"methods that modify its state (such as adding or removing points). This is similar "
+					"to other immutable types in python such as ``str``. So instead of modifying an "
+					"existing polyline you will need to create a new :class:`PolylineOnSphere` "
+					"instance as the following example demonstrates:\n"
+					"  ::\n"
+					"\n"
+					"    # Get a list of points from 'polyline'.\n"
+					"    points = list(polyline.get_points_view())\n"
+					"\n"
+					"    # Modify the points list somehow.\n"
+					"    points[0] = pygplates.PointOnSphere(...)\n"
+					"    points.append(pygplates.PointOnSphere(...))\n"
+					"\n"
+					"    # 'polyline' now references a new PolylineOnSphere instance.\n"
+					"    polyline = pygplates.PolylineOnSphere.create(points)\n"
+					"    \n",
+					bp::no_init)
+		.def("create",
+				&GPlatesApi::polyline_on_sphere_create,
+				(bp::arg("points")),
+				"create(points) -> PolylineOnSphere\n"
+				"  Create a polyline from a sequence of :class:`point<PointOnSphere>` instances.\n"
+				"\n"
+				"  **NOTE** that the sequence must contain at least two points in order to be a valid "
+				"polyline, otherwise *RuntimeError* will be raised.\n"
+				"\n"
+				"  It is not an error for adjacent points in the sequence to be coincident. In this "
+				"case each :class:`GreatCircleArc` between two adjacent points will have zero length "
+				"(:meth:`GreatCircleArc.is_zero_length` will return ``True``) and will have no "
+				"rotation axis (:meth:`GreatCircleArc.get_rotation_axis` will return ``None``).\n"
+				"  ::\n"
+				"\n"
+				"    polyline = pygplates.PolylineOnSphere.create(points)\n"
+				"\n"
+				"  :param points: A sequence of :class:`PointOnSphere` elements.\n"
+				"  :type points: Any python sequence such as a ``list`` or a ``tuple``\n")
+		.staticmethod("create")
+		.def("get_points_view",
+				&GPlatesApi::polyline_on_sphere_get_points_view,
+				"get_points_view() -> PolylineOnSpherePointsView\n"
+				"  Returns a read-only *view* of the points of this polyline that supports iteration "
+				"over the points as well as indexing to retrieve individual points or slices or points.\n"
+				"\n"
+				"  The returned view provides the following operations for accessing the points:\n"
+				"\n"
+				"  =========================== ==========================================================\n"
+				"  Operation                   Result\n"
+				"  =========================== ==========================================================\n"
+				"  ``len(view)``               length of *view*\n"
+				"  ``for p in view``           iterates over the points *p* of *view*\n"
+				"  ``p in view``               ``True`` if *p* is a point in *view*\n"
+				"  ``p not in view``           ``False`` if *p* is a point in *view*\n"
+				"  ``view[i]``                 the point of *view* at index *i*\n"
+				"  ``view[i:j]``               slice of *view* from *i* to *j*\n"
+				"  ``view[i:j:k]``             slice of *view* from *i* to *j* with step *k*\n"
+				"  =========================== ==========================================================\n"
+				"\n"
+				"  The following example demonstrates some uses of the above operations:\n"
+				"  ::\n"
+				"\n"
+				"    polyline = pygplates.PolylineOnSphere.create(points)\n"
+				"    ...\n"
+				"    points_view = polyline.get_points_view()\n"
+				"    for point in points_view:\n"
+				"        print point\n"
+				"    first_point = points_view[0]\n"
+				"    last_point = points_view[-1]\n")
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
+	;
+
+	// Register to/from conversion for PolylineOnSphere::non_null_ptr_to_const_type.
+	GPlatesApi::python_ConstGeometryOnSphere<GPlatesMaths::PolylineOnSphere>();
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Note that we're only dealing with 'const' conversions here.
+	// The 'non-const' workaround to get boost-python to compile is handled by 'python_ConstGeometryOnSphere'.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			const GPlatesMaths::PolylineOnSphere,
+			const GPlatesMaths::GeometryOnSphere>();
+}
+
+
 void
 export_geometries_on_sphere()
 {
@@ -563,6 +837,7 @@ export_geometries_on_sphere()
 
 	export_point_on_sphere();
 	export_multi_point_on_sphere();
+	export_polyline_on_sphere();
 }
 
 #endif // GPLATES_NO_PYTHON

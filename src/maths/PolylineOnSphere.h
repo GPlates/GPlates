@@ -164,7 +164,7 @@ namespace GPlatesMaths
 		 * invariant.
 		 */
 		class VertexConstIterator:
-				public std::iterator<std::bidirectional_iterator_tag, PointOnSphere>
+				public std::iterator<std::bidirectional_iterator_tag, const PointOnSphere>
 		{
 
 			enum StartOrEnd {

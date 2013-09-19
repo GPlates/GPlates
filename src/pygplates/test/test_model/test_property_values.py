@@ -216,9 +216,8 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
         self.gpml_irregular_sampling.set_interpolation_function(interpolation_func)
         self.assertTrue(self.gpml_irregular_sampling.get_interpolation_function() == interpolation_func)
         
-        with self.assertRaises(RuntimeError):
-            # Need at least one time sample to create a GpmlIrregularSampling.
-            pygplates.GpmlIrregularSampling.create([])
+        # Need at least one time sample to create a GpmlIrregularSampling.
+        self.assertRaises(RuntimeError, pygplates.GpmlIrregularSampling.create, [])
 
 
 class GpmlPiecewiseAggregationCase(unittest.TestCase):
@@ -246,9 +245,8 @@ class GpmlPiecewiseAggregationCase(unittest.TestCase):
         gpml_time_window_list[:] = reversed_time_windows
         self.assertTrue(list(self.gpml_piecewise_aggregation.get_time_windows()) == reversed_time_windows)
         
-        with self.assertRaises(RuntimeError):
-            # Need at least one time sample to create a GpmlPiecewiseAggregation.
-            pygplates.GpmlPiecewiseAggregation.create([])
+        # Need at least one time sample to create a GpmlPiecewiseAggregation.
+        self.assertRaises(RuntimeError, pygplates.GpmlPiecewiseAggregation.create, [])
 
 
 class GpmlPlateIdCase(unittest.TestCase):

@@ -85,9 +85,10 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         self.assertTrue(self.gpml_time_sample_list[1] == ts1)
         self.assertTrue(self.gpml_time_sample_list[2] == self.original_time_samples[2])
         self.assertTrue(self.gpml_time_sample_list[3] == ts2)
-        with self.assertRaises(ValueError):
-            # Sequence size not equal to extended slice size.
+        # Sequence size not equal to extended slice size.
+        def assign_slice1():
             self.gpml_time_sample_list[1::2] = [ts1, ts2, ts3]
+        self.assertRaises(ValueError, assign_slice1)
 
     def test_get_item(self):
         self.assertTrue(self.gpml_time_sample_list[2] == self.original_time_samples[2])
@@ -238,11 +239,9 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         self.assertTrue(self.gpml_time_sample_list.index(self.original_time_samples[2], 1) == 2)
         self.assertTrue(self.gpml_time_sample_list.index(self.original_time_samples[2], 1, 3) == 2)
         # Value not in limited range.
-        with self.assertRaises(ValueError):
-            self.gpml_time_sample_list.index(self.original_time_samples[2], 1, 2)
+        self.assertRaises(ValueError, self.gpml_time_sample_list.index, self.original_time_samples[2], 1, 2)
         # Indices of limited range are incorrect.
-        with self.assertRaises(IndexError):
-            self.gpml_time_sample_list.index(self.original_time_samples[2], 2, 1)
+        self.assertRaises(IndexError, self.gpml_time_sample_list.index, self.original_time_samples[2], 2, 1)
 
     def test_count(self):
         self.assertTrue(self.gpml_time_sample_list.count(self.original_time_samples[1]) == 1)
