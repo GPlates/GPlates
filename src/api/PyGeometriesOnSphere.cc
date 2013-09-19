@@ -583,7 +583,7 @@ namespace GPlatesApi
  		std::vector<GPlatesMaths::PointOnSphere> points_vector;
 		std::copy(points_begin, points_end, std::back_inserter(points_vector));
 
-		return typename PolyGeometryOnSphereType::create_on_heap(
+		return PolyGeometryOnSphereType::create_on_heap(
 				points_vector.begin(),
 				points_vector.end());
 	}
