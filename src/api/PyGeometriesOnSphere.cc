@@ -392,7 +392,7 @@ export_point_on_sphere()
 namespace GPlatesApi
 {
 	// Create a multi-point from a sequence of points.
-	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere>
 	multi_point_on_sphere_create(
 			bp::object points) // Any python sequence (eg, list, tuple).
 	{
@@ -408,9 +408,17 @@ namespace GPlatesApi
  		std::vector<GPlatesMaths::PointOnSphere> points_vector;
 		std::copy(points_begin, points_end, std::back_inserter(points_vector));
 
-		return GPlatesMaths::MultiPointOnSphere::create_on_heap(
-				points_vector.begin(),
-				points_vector.end());
+		// With boost 1.42 we get the following compile error...
+		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
+		// ...if we return 'GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type' and rely on
+		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
+		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
+		//
+		// So we avoid it by using returning a pointer to 'non-const' MultiPointOnSphere.
+		return GPlatesUtils::const_pointer_cast<GPlatesMaths::MultiPointOnSphere>(
+				GPlatesMaths::MultiPointOnSphere::create_on_heap(
+						points_vector.begin(),
+						points_vector.end()));
 	}
 
 	bool
@@ -579,7 +587,7 @@ namespace GPlatesApi
 {
 	// Create a polyline/polygon from a sequence of points.
 	template <class PolyGeometryOnSphereType>
-	typename PolyGeometryOnSphereType::non_null_ptr_to_const_type
+	GPlatesUtils::non_null_intrusive_ptr<PolyGeometryOnSphereType>
 	poly_geometry_on_sphere_create(
 			bp::object points) // Any python sequence (eg, list, tuple).
 	{
@@ -596,9 +604,17 @@ namespace GPlatesApi
  		std::vector<GPlatesMaths::PointOnSphere> points_vector;
 		std::copy(points_begin, points_end, std::back_inserter(points_vector));
 
-		return PolyGeometryOnSphereType::create_on_heap(
-				points_vector.begin(),
-				points_vector.end());
+		// With boost 1.42 we get the following compile error...
+		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
+		// ...if we return 'GPlatesMaths::PolyGeometryOnSphereType::non_null_ptr_to_const_type' and rely on
+		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
+		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
+		//
+		// So we avoid it by using returning a pointer to 'non-const' PolyGeometryOnSphereType.
+		return GPlatesUtils::const_pointer_cast<PolyGeometryOnSphereType>(
+				PolyGeometryOnSphereType::create_on_heap(
+						points_vector.begin(),
+						points_vector.end()));
 	}
 
 	/**
