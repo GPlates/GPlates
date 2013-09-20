@@ -91,15 +91,15 @@ BOOST_PYTHON_MODULE(pygplates)
 	// The following limitations apply to using ReStructuredText in Sphinx's autodoc extension
 	// (autodoc imports modules and looks up there docstrings):
 	//  - '::' to indicate end-of-paragraph must be on a separate line,
-	//  - the docstrings on special methods such as '__init__', '__str__', '__lt__' are ignored by Sphinx.
-	//    Note that, for classes that are not boost::python::no_init, we put the __init__ docstring in the
-	//    class docstring since Sphinx autodoc, by default, ignores the former. We could use
-	//    the :special-members: directive, but it includes all special members which we don't want.
-	//    We could use the "autoclass_content='both'" setting in the 'conf.py' file, but then we get the
-	//    'Raises an exception This class cannot be instantiated from Python' in the docstring of
-	//    every boost::python::no_init class.
-	//    So the current solution is the init docstring should go at the end of the class docstring
-	//    (see GeoTimeInstant).
+	//  - the docstrings on special methods such as '__init__', '__str__', '__lt__' are ignored
+	//    by Sphinx (by default). However we use the :special-members: Sphinx directive which includes
+	//    all special members. Normally this is too much, but we ask Sphinx not to document classes
+	//    or methods that have no docstring - and our current policy is not to have docstrings for
+	//    special members other than '__init__'.
+	//    We could have used the "autoclass_content='both'" setting in the 'conf.py' file to only
+	//    include the '__init__' special method, but it concatenates '__init__'s docstring into
+	//    the class docstring and we'd rather keep it separate since ':param:', ':type:' and ':rtype:'
+	//    directives (in docstrings) only work when applied within a *method* docstring (ie, no class docstring).
 	//
 	boost::python::docstring_options module_docstring_options(
 			true/*show_user_defined*/,

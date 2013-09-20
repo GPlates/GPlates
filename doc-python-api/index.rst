@@ -24,14 +24,14 @@ Contents:
 	pygplates.GeometryOnSphere
 	pygplates.GeoTimeInstant
 	pygplates.GmlMultiPoint
-    pygplates.GmlPoint
-    pygplates.GmlTimeInstant
-    pygplates.GmlTimePeriod
+	pygplates.GmlPoint
+	pygplates.GmlTimeInstant
+	pygplates.GmlTimePeriod
 	pygplates.GpmlConstantValue
 	pygplates.GpmlFiniteRotationSlerp
 	pygplates.GpmlInterpolationFunction
 	pygplates.GpmlIrregularSampling
-    pygplates.GpmlPiecewiseAggregation
+	pygplates.GpmlPiecewiseAggregation
 	pygplates.GpmlPlateId
 	pygplates.GpmlTimeSample
 	pygplates.GpmlTimeWindow
@@ -56,10 +56,14 @@ Contents:
 ..       We could have used 'undoc-members' but this generates excessive documentation and unwanted methods/functions.
 ..       It's clearer and more succinct if we don't use 'undoc-members' and provide docstrings for all classes and their methods
 ..       (even if only to provide a function signature for Sphinx - the first line of the docstring).
+.. NOTE: We use 'special-members' to display '__init__' members - it also displays other special members but
+..       because we don't document them (no docstrings in the boost-python bindings) and because we don't use 'undoc-members'
+..       then they don't get documented by Sphinx. In other words only the '__init__' special members with docstrings will show up.
 .. automodule:: pygplates
 	:members:
 	:exclude-members: Colour, OldFeature, OldFeatureCollection, Palette, PaletteKey, reconstruct, reverse_reconstruct
 	:show-inheritance:
+	:special-members:
 
 Indices and tables
 ==================

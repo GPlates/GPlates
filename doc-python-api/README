@@ -13,6 +13,7 @@ The following link provides a useful summary of installing sphinx via PIP:
 Essentially it involves downloading the 'ez_setup.py' and 'get-pip.py' python scripts and running them:
   python ez_setup.py
   python get-pip.py
+  pip install sphinx
 
 There's also the package manager approach on Linux.
 
@@ -44,7 +45,7 @@ In fact, although the documentation in the 2.7.5 python source code does not men
 
 After all that I was finally able to run...
   python get-pip.py
-...and ended up with 'sphinx-build.exe' in the 'python-2.7.5/Scripts/' directory (which is also where the 'easy_install.exe' was installed).
+...and, after running 'pip install sphinx', ended up with 'sphinx-build.exe' in the 'python-2.7.5/Scripts/' directory (which is also where the 'easy_install.exe' was installed).
 Also make sure you run the cmd shell as administrator (right click -> "Run as administrator") before executing 'python ez_setup.py' and 'python get-pip.py'. I think I also changed current working directory to the 'Scripts/' directory before running those commands.
 Note that the 'Scripts/' sub-directory should be added to the PATH environment variable.
 
