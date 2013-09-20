@@ -17,30 +17,48 @@ class FiniteRotationCase(unittest.TestCase):
     def setUp(self):
         self.pole = pygplates.PointOnSphere(0, 0, 1)
         self.angle = math.pi
-        self.finite_rotation = pygplates.FiniteRotation.create(self.pole, self.angle)
+        self.finite_rotation = pygplates.FiniteRotation(self.pole, self.angle)
     
     # Attempt to rotate each supported geometry type - an error will be raised if not supported...
     
     def test_rotate_unit_vector_3d(self):
-        self.finite_rotation * pygplates.UnitVector3D(1, 0, 0)
+        rotated_unit_vector_3d = self.finite_rotation * pygplates.UnitVector3D(1, 0, 0)
+        self.assertTrue(isinstance(rotated_unit_vector_3d, pygplates.UnitVector3D))
     
     def test_rotate_great_circle_arc(self):
-        self.finite_rotation * pygplates.GreatCircleArc.create(
+        rotated_great_circle_arc = self.finite_rotation * pygplates.GreatCircleArc.create(
                 pygplates.PointOnSphere(1, 0, 0),
                 pygplates.PointOnSphere(0, 1, 0))
+        self.assertTrue(isinstance(rotated_great_circle_arc, pygplates.GreatCircleArc))
     
     def test_rotate_point_on_sphere(self):
-        self.finite_rotation * pygplates.PointOnSphere(0, 1, 0)
+        rotated_point = self.finite_rotation * pygplates.PointOnSphere(0, 1, 0)
+        self.assertTrue(isinstance(rotated_point, pygplates.PointOnSphere))
     
     def test_rotate_multi_point_on_sphere(self):
-        self.finite_rotation * pygplates.MultiPointOnSphere.create(
+        multi_point = pygplates.MultiPointOnSphere(
                 [pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(0, 1, 0)])
+        rotated_multi_point = self.finite_rotation * multi_point
+        self.assertTrue(isinstance(rotated_multi_point, pygplates.MultiPointOnSphere))
+        self.assertTrue(len(rotated_multi_point) == len(multi_point))
     
     def test_rotate_polyline_on_sphere(self):
-        self.finite_rotation * pygplates.PolylineOnSphere.create(
+        polyline = pygplates.PolylineOnSphere(
                 [pygplates.PointOnSphere(1, 0, 0),
                 pygplates.PointOnSphere(0, 1, 0),
                 pygplates.PointOnSphere(0, 0, 1)])
+        rotated_polyline = self.finite_rotation * polyline
+        self.assertTrue(isinstance(rotated_polyline, pygplates.PolylineOnSphere))
+        self.assertTrue(len(rotated_polyline.get_points_view()) == len(polyline.get_points_view()))
+    
+    def test_rotate_polygon_on_sphere(self):
+        polygon = pygplates.PolygonOnSphere(
+                [pygplates.PointOnSphere(1, 0, 0),
+                pygplates.PointOnSphere(0, 1, 0),
+                pygplates.PointOnSphere(0, 0, 1)])
+        rotated_polygon = self.finite_rotation * polygon
+        self.assertTrue(isinstance(rotated_polygon, pygplates.PolygonOnSphere))
+        self.assertTrue(len(rotated_polygon.get_points_view()) == len(polygon.get_points_view()))
 
 
 class GreatCircleArcCase(unittest.TestCase):

@@ -28,7 +28,6 @@
 
 #include "PythonConverterUtils.h"
 
-#include "global/CompilerWarnings.h"
 #include "global/python.h"
 
 #include "model/FeatureHandle.h"
@@ -71,13 +70,6 @@ namespace GPlatesApi
 
 		return GPlatesModel::FeatureHandle::create(feature_type.get(), feature_id.get(), revision_id.get());
 	}
-
-DISABLE_GCC_WARNING("-Wshadow")
-	// Default argument overloads of 'GPlatesModel::FeatureHandle::create'.
-	BOOST_PYTHON_FUNCTION_OVERLOADS(
-			feature_handle_create_overloads,
-			feature_handle_create, 0, 3)
-ENABLE_GCC_WARNING("-Wshadow")
 
 	void
 	feature_handle_add(
@@ -142,46 +134,48 @@ export_feature()
 					"    num_properties = len(feature)\n"
 					"    properties_in_feature = [property for property in feature]\n"
 					"    assert(num_properties == len(properties_in_feature))\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesApi::feature_handle_create,
-				GPlatesApi::feature_handle_create_overloads(
-					(bp::arg("feature_type") = boost::optional<GPlatesModel::FeatureType>(),
-						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
-						bp::arg("revision_id") = boost::optional<GPlatesModel::RevisionId>()),
-					"create([feature_type=None[, feature_id=None[, revision_id=None]]]) -> Feature\n"
-					"  Create a new feature instance that is (initially) empty (has no properties).\n"
-					"\n"
-					"  *feature_type* defaults to *gpml:UnclassifiedFeature* if not specified. "
-					"There are no restrictions on the types and number of properties that can be added "
-					"to features of type *gpml:UnclassifiedFeature*. However all other feature types "
-					"are restricted according to the GPlates Geological Information Model (GPGIM) "
-					"(see http://www.gplates.org/gpml.html). The restriction is only apparent "
-					"when the features are *read* from a GPML format file (there are no restrictions "
-					"when the features are *written* to a GPML format file). *TODO: Support GPGIM validation*.\n"
-					"\n"
-					"  If *feature_id* is not specified then a unique feature identifier is created. In most cases "
-					"a specific *feature_id* should not be specified because it avoids the possibility of "
-					"accidentally having two feature instances with the same identifier which can cause "
-					"problems with *topological* geometries.\n"
-					"\n"
-					"  If *revision_id* is not specified then a unique revision identifier is created. "
-					"In most cases a specific *revision_id* does not need to be specified.\n"
-					"  ::\n"
-					"\n"
-					"    unclassified_feature = pygplates.Feature.create()\n"
-					"\n"
-					"    # This does the same thing as the code above.\n"
-					"    unclassified_feature = pygplates.Feature.create(\n"
-					"        pygplates.FeatureType.create_gpml('UnclassifiedFeature'))\n"
-					"\n"
-					"  :param feature_type: the type of feature\n"
-					"  :type feature_type: :class:`FeatureType`\n"
-					"  :param feature_id: the feature identifier\n"
-					"  :type feature_id: :class:`FeatureId`\n"
-					"  :param revision_id: the current revision identifier\n"
-					"  :type revision_id: :class:`RevisionId`\n"))
- 		.staticmethod("create")
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::feature_handle_create,
+						bp::default_call_policies(),
+						(bp::arg("feature_type") = boost::optional<GPlatesModel::FeatureType>(),
+							bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
+							bp::arg("revision_id") = boost::optional<GPlatesModel::RevisionId>())),
+				"__init__([feature_type=None[, feature_id=None[, revision_id=None]]])\n"
+				"  Create a new feature instance that is (initially) empty (has no properties).\n"
+				"\n"
+				"  *feature_type* defaults to *gpml:UnclassifiedFeature* if not specified. "
+				"There are no restrictions on the types and number of properties that can be added "
+				"to features of type *gpml:UnclassifiedFeature*. However all other feature types "
+				"are restricted according to the GPlates Geological Information Model (GPGIM) "
+				"(see http://www.gplates.org/gpml.html). The restriction is only apparent "
+				"when the features are *read* from a GPML format file (there are no restrictions "
+				"when the features are *written* to a GPML format file). *TODO: Support GPGIM validation*.\n"
+				"\n"
+				"  If *feature_id* is not specified then a unique feature identifier is created. In most cases "
+				"a specific *feature_id* should not be specified because it avoids the possibility of "
+				"accidentally having two feature instances with the same identifier which can cause "
+				"problems with *topological* geometries.\n"
+				"\n"
+				"  If *revision_id* is not specified then a unique revision identifier is created. "
+				"In most cases a specific *revision_id* does not need to be specified.\n"
+				"  ::\n"
+				"\n"
+				"    unclassified_feature = pygplates.Feature()\n"
+				"\n"
+				"    # This does the same thing as the code above.\n"
+				"    unclassified_feature = pygplates.Feature(\n"
+				"        pygplates.FeatureType.create_gpml('UnclassifiedFeature'))\n"
+				"\n"
+				"  :param feature_type: the type of feature\n"
+				"  :type feature_type: :class:`FeatureType`\n"
+				"  :param feature_id: the feature identifier\n"
+				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param revision_id: the current revision identifier\n"
+				"  :type revision_id: :class:`RevisionId`\n")
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
 		.def("__len__", &GPlatesModel::FeatureHandle::size)
 #if 0 // TODO: Add once clone does a proper deep-copy...

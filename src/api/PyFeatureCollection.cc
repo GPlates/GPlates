@@ -104,15 +104,16 @@ export_feature_collection()
 					"    features_in_collection = [feature for feature in feature_collection]\n"
 					"    assert(num_features == len(features_in_collection))\n"
 					"\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				create,
-				"create() -> FeatureCollection\n"
+		.def("__init__",
+				bp::make_constructor(create),
+				"__init__()\n"
 				"  Create a new feature collection instance that is (initially) empty (has no features).\n"
 				"  ::\n"
 				"\n"
-				"    feature_collection = pygplates.FeatureCollection.create()\n")
- 		.staticmethod("create")
+				"    feature_collection = pygplates.FeatureCollection()\n")
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureCollectionHandle>())
 		.def("__len__", &GPlatesModel::FeatureCollectionHandle::size)
 		.def("add",

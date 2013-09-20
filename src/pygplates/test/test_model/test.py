@@ -140,7 +140,7 @@ class FeatureCollectionCase(unittest.TestCase):
                 pygplates.PropertyName.create_gpml('integer'),
                 pygplates.XsInteger.create(100))
         # Create a feature with a new unique feature ID.
-        feature_with_integer_property = pygplates.Feature.create()
+        feature_with_integer_property = pygplates.Feature()
         feature_with_integer_property.add(integer_property)
         self.feature_collection.add(feature_with_integer_property)
         self.assertTrue(len(self.feature_collection) == self.feature_count + 1)

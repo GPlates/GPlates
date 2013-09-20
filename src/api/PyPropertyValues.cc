@@ -204,16 +204,17 @@ export_geo_time_instant()
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported. The comparisons are such that "
 			"times further in the past are *less than* more recent times. Note that this is the opposite "
-			"of comparisons of floating-point values returned by :meth:`get_value`.\n"
-			"\n"
-			// Note that we put the __init__ docstring in the class docstring.
-			// See the comment in 'BOOST_PYTHON_MODULE(pygplates)' for an explanation...
-			"GeoTimeInstant(time_value)\n"
-			"  Construct a GeoTimeInstant instance from a floating-point time position.\n"
-			"  ::\n"
-			"\n"
-			"    time_instant = pygplates.GeoTimeInstant(time_value)\n",
-			bp::init<double>((bp::arg("time_value"))))
+			"of comparisons of floating-point values returned by :meth:`get_value`.\n",
+			bp::init<double>(
+					(bp::arg("time_value")),
+					"__init__(time_value)\n"
+					"  Create a GeoTimeInstant instance from *time_value*.\n"
+					"  ::\n"
+					"\n"
+					"    time_instant = pygplates.GeoTimeInstant(time_value)\n"
+					"\n"
+					"  :param time_value: the time position - positive values represent times in the *past*\n"
+					"  :type time_value: float\n"))
 		.def("create_distant_past",
 				&GPlatesPropertyValues::GeoTimeInstant::create_distant_past,
 				"create_distant_past() -> GeoTimeInstant\n"

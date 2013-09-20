@@ -38,10 +38,10 @@ class MultiPointOnSphereCase(unittest.TestCase):
         self.points.append(pygplates.PointOnSphere(0, 1, 0))
         self.points.append(pygplates.PointOnSphere(0, 0, 1))
         self.points.append(pygplates.PointOnSphere(-1, 0, 0))
-        self.multi_point = pygplates.MultiPointOnSphere.create(self.points)
+        self.multi_point = pygplates.MultiPointOnSphere(self.points)
     
     def test_compare(self):
-        self.assertEquals(self.multi_point, pygplates.MultiPointOnSphere.create(self.points))
+        self.assertEquals(self.multi_point, pygplates.MultiPointOnSphere(self.points))
     
     def test_iter(self):
         iter(self.multi_point)
@@ -82,11 +82,11 @@ class PolylineOnSphereCase(unittest.TestCase):
         self.points.append(pygplates.PointOnSphere(1, 0, 0))
         self.points.append(pygplates.PointOnSphere(0, 1, 0))
         self.points.append(pygplates.PointOnSphere(0, 0, 1))
-        self.points.append(pygplates.PointOnSphere(-1, 0, 0))
-        self.polyline = pygplates.PolylineOnSphere.create(self.points)
+        self.points.append(pygplates.PointOnSphere(0, -1, 0))
+        self.polyline = pygplates.PolylineOnSphere(self.points)
     
     def test_compare(self):
-        self.assertEquals(self.polyline, pygplates.PolylineOnSphere.create(self.points))
+        self.assertEquals(self.polyline, pygplates.PolylineOnSphere(self.points))
     
     def test_points_iter(self):
         iter(self.polyline.get_points_view())
@@ -98,11 +98,15 @@ class PolylineOnSphereCase(unittest.TestCase):
         iter(self.polyline.get_great_circle_arcs_view())
         arcs = [arc for arc in self.polyline.get_great_circle_arcs_view()]
         self.assertEquals(len(self.polyline.get_great_circle_arcs_view()) + 1, len(self.polyline.get_points_view()))
+     
+    def test_convert_polyline_to_polygon(self):
+        polygon = pygplates.PolygonOnSphere(self.polyline.get_points_view())
+        self.assertEquals(list(polygon.get_points_view()), list(self.polyline.get_points_view()))
     
     def test_contains_point(self):
         self.assertTrue(self.points[0] in self.polyline.get_points_view())
         self.assertTrue(pygplates.PointOnSphere(1, 0, 0) in self.polyline.get_points_view())
-        self.assertTrue(pygplates.PointOnSphere(0, -1, 0) not in self.polyline.get_points_view())
+        self.assertTrue(pygplates.PointOnSphere(0, 0, -1) not in self.polyline.get_points_view())
     
     def test_contains_arc(self):
         first_arc = pygplates.GreatCircleArc.create(self.points[0], self.points[1])
@@ -163,22 +167,26 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.points.append(pygplates.PointOnSphere(0, 1, 0))
         self.points.append(pygplates.PointOnSphere(0, 0, 1))
         self.points.append(pygplates.PointOnSphere(0, -1, 0))
-        self.polygon = pygplates.PolygonOnSphere.create(self.points)
+        self.polygon = pygplates.PolygonOnSphere(self.points)
     
     def test_compare(self):
-        self.assertEquals(self.polygon, pygplates.PolygonOnSphere.create(self.points))
+        self.assertEquals(self.polygon, pygplates.PolygonOnSphere(self.points))
     
     def test_points_iter(self):
         iter(self.polygon.get_points_view())
         points = [point for point in self.polygon.get_points_view()]
         self.assertEquals(self.points, points)
         self.assertEquals(self.points, list(self.polygon.get_points_view()))
+     
+    def test_convert_polygon_to_polyline(self):
+        polyline = pygplates.PolylineOnSphere(self.polygon.get_points_view())
+        self.assertEquals(list(polyline.get_points_view()), list(self.polygon.get_points_view()))
     
     def test_arcs_iter(self):
         iter(self.polygon.get_great_circle_arcs_view())
         arcs = [arc for arc in self.polygon.get_great_circle_arcs_view()]
         self.assertEquals(len(self.polygon.get_great_circle_arcs_view()), len(self.polygon.get_points_view()))
-    
+   
     def test_contains_point(self):
         self.assertTrue(self.points[0] in self.polygon.get_points_view())
         self.assertTrue(pygplates.PointOnSphere(1, 0, 0) in self.polygon.get_points_view())

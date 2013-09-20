@@ -313,28 +313,38 @@ export_point_on_sphere()
 					"will most likely *not* compare equal even if mathematically they should be identical.\n"
 					"\n"
 					"Note that since a *PointOnSphere* is immutable it contains no operations or "
-					"methods that modify its state.\n"
-					"\n"
-					// Note that we put the __init__ docstring in the class docstring.
-					// See the comment in 'BOOST_PYTHON_MODULE(pygplates)' for an explanation...
-					"PointOnSphere(x, y, z)\n"
-					"  Construct a *PointOnSphere* instance from a 3D cartesian coordinate consisting of "
-					"floating-point coordinates *x*, *y* and *z*.\n"
-					"\n"
-					"  **NOTE:** The length of 3D vector (x,y,z) must be 1.0, otherwise a *RuntimeError* "
-					"is generated. In other words the point must lie on the *unit* sphere.\n"
-					"  ::\n"
-					"\n"
-					"    point = pygplates.PointOnSphere(x, y, z)\n"
-					"\n"
-					"PointOnSphere(unit_vector)\n"
-					"  Construct a *PointOnSphere* instance from an instance of :class:`UnitVector3D`.\n"
-					"  ::\n"
-					"\n"
-					"    point = pygplates.PointOnSphere(unit_vector)\n",
-					bp::init<GPlatesMaths::UnitVector3D>())
+					"methods that modify its state.\n",
+					bp::init<GPlatesMaths::UnitVector3D>(
+							(bp::arg("unit_vector")),
+							"__init__(unit_vector)\n"
+							"  Create a *PointOnSphere* instance from a 3D unit vector.\n"
+							"  ::\n"
+							"\n"
+							"    point = pygplates.PointOnSphere(unit_vector)\n"
+							"\n"
+							"  :param unit_vector: the 3D unit vector\n"
+							"  :type unit_vector: :class:`UnitVector3D`\n"))
 		.def("__init__",
-				bp::make_constructor(&GPlatesApi::point_on_sphere_create_xyz))
+				bp::make_constructor(
+						&GPlatesApi::point_on_sphere_create_xyz,
+						bp::default_call_policies(),
+						(bp::arg("x"), bp::arg("y"), bp::arg("z"))),
+				"__init__(x, y, z)\n"
+				"  Create a *PointOnSphere* instance from a 3D cartesian coordinate consisting of "
+				"floating-point coordinates *x*, *y* and *z*.\n"
+				"\n"
+				"  **NOTE:** The length of 3D vector (x,y,z) must be 1.0, otherwise a *RuntimeError* "
+				"is generated. In other words the point must lie on the *unit* sphere.\n"
+				"  ::\n"
+				"\n"
+				"    point = pygplates.PointOnSphere(x, y, z)\n"
+				"\n"
+				"  :param x: the *x* component of the 3D unit vector\n"
+				"  :type x: float\n"
+				"  :param y: the *y* component of the 3D unit vector\n"
+				"  :type y: float\n"
+				"  :param z: the *z* component of the 3D unit vector\n"
+				"  :type z: float\n")
 		.def("get_position_vector",
 				&GPlatesMaths::PointOnSphere::position_vector,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -506,7 +516,7 @@ export_multi_point_on_sphere()
 					"A multi-point instance is iterable over its points:\n"
 					"  ::\n"
 					"\n"
-					"    multi_point = pygplates.MultiPointOnSphere.create(points)\n"
+					"    multi_point = pygplates.MultiPointOnSphere(points)\n"
 					"    for i, point in enumerate(multi_point):\n"
 					"        assert(point == multi_point[i])\n"
 					"\n"
@@ -526,22 +536,25 @@ export_multi_point_on_sphere()
 					"\n"
 					"Note that since a *MultiPointOnSphere* is immutable it contains no operations or "
 					"methods that modify its state (such as adding or removing points).\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesApi::multi_point_on_sphere_create,
-				(bp::arg("points")),
-				"create(points) -> MultiPointOnSphere\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::multi_point_on_sphere_create,
+						bp::default_call_policies(),
+						(bp::arg("points"))),
+				"__init__(points)\n"
 				"  Create a multi-point from a sequence of :class:`point<PointOnSphere>` instances.\n"
 				"\n"
 				"  **NOTE** that the sequence must contain at least one point, otherwise "
 				"*RuntimeError* will be raised.\n"
 				"  ::\n"
 				"\n"
-				"    multi_point = pygplates.MultiPointOnSphere.create(points)\n"
+				"    multi_point = pygplates.MultiPointOnSphere(points)\n"
 				"\n"
 				"  :param points: A sequence of :class:`PointOnSphere` elements.\n"
 				"  :type points: Any python sequence such as a ``list`` or a ``tuple``\n")
-		.staticmethod("create")
 		.def("__iter__", bp::iterator<const GPlatesMaths::MultiPointOnSphere>())
 		.def("__len__", &GPlatesMaths::MultiPointOnSphere::number_of_points)
 		.def("__contains__", &GPlatesApi::multi_point_on_sphere_contains_point)
@@ -924,13 +937,17 @@ export_polyline_on_sphere()
 					"    points.append(pygplates.PointOnSphere(...))\n"
 					"\n"
 					"    # 'polyline' now references a new PolylineOnSphere instance.\n"
-					"    polyline = pygplates.PolylineOnSphere.create(points)\n"
+					"    polyline = pygplates.PolylineOnSphere(points)\n"
 					"    \n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesApi::poly_geometry_on_sphere_create<GPlatesMaths::PolylineOnSphere>,
-				(bp::arg("points")),
-				"create(points) -> PolylineOnSphere\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::poly_geometry_on_sphere_create<GPlatesMaths::PolylineOnSphere>,
+						bp::default_call_policies(),
+						(bp::arg("points"))),
+				"__init__(points)\n"
 				"  Create a polyline from a sequence of :class:`point<PointOnSphere>` instances.\n"
 				"\n"
 				"  **NOTE** that the sequence must contain at least two points in order to be a valid "
@@ -945,11 +962,10 @@ export_polyline_on_sphere()
 				"rotation axis (:meth:`GreatCircleArc.get_rotation_axis` will return ``None``).\n"
 				"  ::\n"
 				"\n"
-				"    polyline = pygplates.PolylineOnSphere.create(points)\n"
+				"    polyline = pygplates.PolylineOnSphere(points)\n"
 				"\n"
 				"  :param points: A sequence of :class:`PointOnSphere` elements.\n"
 				"  :type points: Any python sequence such as a ``list`` or a ``tuple``\n")
-		.staticmethod("create")
 		.def("get_points_view",
 				&GPlatesApi::poly_geometry_on_sphere_get_points_view<GPlatesMaths::PolylineOnSphere>,
 				"get_points_view() -> PolylineOnSpherePointsView\n"
@@ -977,7 +993,7 @@ export_polyline_on_sphere()
 				"  The following example demonstrates some uses of the above operations:\n"
 				"  ::\n"
 				"\n"
-				"    polyline = pygplates.PolylineOnSphere.create(points)\n"
+				"    polyline = pygplates.PolylineOnSphere(points)\n"
 				"    ...\n"
 				"    points_view = polyline.get_points_view()\n"
 				"    for point in points_view:\n"
@@ -1014,7 +1030,7 @@ export_polyline_on_sphere()
 				"  The following example demonstrates some uses of the above operations:\n"
 				"  ::\n"
 				"\n"
-				"    polyline = pygplates.PolylineOnSphere.create(points)\n"
+				"    polyline = pygplates.PolylineOnSphere(points)\n"
 				"    ...\n"
 				"    arcs_view = polyline.get_great_circle_arcs_view()\n"
 				"    for arc in arcs_view:\n"
@@ -1110,13 +1126,25 @@ export_polygon_on_sphere()
 					"    points.append(pygplates.PointOnSphere(...))\n"
 					"\n"
 					"    # 'polygon' now references a new PolygonOnSphere instance.\n"
-					"    polygon = pygplates.PolygonOnSphere.create(points)\n"
-					"    \n",
+					"    polygon = pygplates.PolygonOnSphere(points)\n"
+					"\n"
+					"The following example demonstrates creating a :class:`PolygonOnSphere` from a "
+					":class:`PolylineOnSphere`:\n"
+					"  ::\n"
+					"\n"
+					"    polygon = pygplates.PolygonOnSphere(polyline.get_points_view())\n"
+					"    \n"
+					"...note that the polygon closes the loop between the last and first points "
+					"so there's no need to make the first and last points equal.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesApi::poly_geometry_on_sphere_create<GPlatesMaths::PolygonOnSphere>,
-				(bp::arg("points")),
-				"create(points) -> PolygonOnSphere\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::poly_geometry_on_sphere_create<GPlatesMaths::PolygonOnSphere>,
+						bp::default_call_policies(),
+						(bp::arg("points"))),
+				"__init__(points)\n"
 				"  Create a polygon from a sequence of :class:`point<PointOnSphere>` instances.\n"
 				"\n"
 				"  **NOTE** that the sequence must contain at least three points in order to be a valid "
@@ -1135,11 +1163,10 @@ export_polygon_on_sphere()
 				"rotation axis (:meth:`GreatCircleArc.get_rotation_axis` will return ``None``).\n"
 				"  ::\n"
 				"\n"
-				"    polygon = pygplates.PolygonOnSphere.create(points)\n"
+				"    polygon = pygplates.PolygonOnSphere(points)\n"
 				"\n"
 				"  :param points: A sequence of :class:`PointOnSphere` elements.\n"
 				"  :type points: Any python sequence such as a ``list`` or a ``tuple``\n")
-		.staticmethod("create")
 		.def("get_points_view",
 				&GPlatesApi::poly_geometry_on_sphere_get_points_view<GPlatesMaths::PolygonOnSphere>,
 				"get_points_view() -> PolygonOnSpherePointsView\n"
@@ -1167,7 +1194,7 @@ export_polygon_on_sphere()
 				"  The following example demonstrates some uses of the above operations:\n"
 				"  ::\n"
 				"\n"
-				"    polygon = pygplates.PolygonOnSphere.create(points)\n"
+				"    polygon = pygplates.PolygonOnSphere(points)\n"
 				"    ...\n"
 				"    points_view = polygon.get_points_view()\n"
 				"    for point in points_view:\n"
@@ -1204,14 +1231,15 @@ export_polygon_on_sphere()
 				"  The following example demonstrates some uses of the above operations:\n"
 				"  ::\n"
 				"\n"
-				"    polygon = pygplates.PolygonOnSphere.create(points)\n"
+				"    polygon = pygplates.PolygonOnSphere(points)\n"
 				"    ...\n"
 				"    arcs_view = polygon.get_great_circle_arcs_view()\n"
 				"    for arc in arcs_view:\n"
 				"        if not arc.is_zero_length():\n"
 				"            print arc.get_rotation_axis()\n"
 				"    first_arc = arcs_view[0]\n"
-				"    last_arc = arcs_view[-1]\n")
+				"    last_arc = arcs_view[-1]\n"
+				"    assert(last_arc.get_end_point() == first_arc.get_start_point())")
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;

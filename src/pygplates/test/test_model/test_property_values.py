@@ -70,7 +70,7 @@ class GeoTimeInstantCase(unittest.TestCase):
 
 class GmlMultiPointCase(unittest.TestCase):
     def setUp(self):
-        self.multi_point = pygplates.MultiPointOnSphere.create(
+        self.multi_point = pygplates.MultiPointOnSphere(
                 [pygplates.PointOnSphere(1, 0, 0),
                 pygplates.PointOnSphere(0, 1, 0),
                 pygplates.PointOnSphere(0, 0, 1)])
@@ -80,7 +80,7 @@ class GmlMultiPointCase(unittest.TestCase):
         self.assertTrue(self.gml_multi_point.get_multi_point() == self.multi_point)
 
     def test_set(self):
-        new_multi_point = pygplates.MultiPointOnSphere.create(
+        new_multi_point = pygplates.MultiPointOnSphere(
                 [pygplates.PointOnSphere(-1, 0, 0), pygplates.PointOnSphere(0, -1, 0)])
         self.gml_multi_point.set_multi_point(new_multi_point)
         self.assertTrue(self.gml_multi_point.get_multi_point() == new_multi_point)

@@ -88,8 +88,8 @@ export_feature_collection_file_format_registry()
 			boost::shared_ptr<GPlatesFileIO::FeatureCollectionFileFormat::Registry>,
 			boost::noncopyable>(
 					"FeatureCollectionFileFormatRegistry",
-					// Seems we need this (even though later define "__init__") since
-					// FeatureCollectionFileFormat::Registry has no default constructor...
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(

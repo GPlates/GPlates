@@ -25,6 +25,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "PythonConverterUtils.h"
 
@@ -47,12 +48,14 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
-	const GPlatesMaths::FiniteRotation
+	boost::shared_ptr<GPlatesMaths::FiniteRotation>
 	finite_rotation_create(
 			const GPlatesMaths::PointOnSphere &pole,
 			const GPlatesMaths::Real &angle)
 	{
-		return GPlatesMaths::FiniteRotation::create(pole, angle);
+		return boost::shared_ptr<GPlatesMaths::FiniteRotation>(
+				new GPlatesMaths::FiniteRotation(
+						GPlatesMaths::FiniteRotation::create(pole, angle)));
 	}
 
 	bool
@@ -74,7 +77,16 @@ export_finite_rotation()
 	// python side and vice versa.
 	//
 	bp::class_<
-			GPlatesMaths::FiniteRotation>(
+			GPlatesMaths::FiniteRotation,
+			// A pointer holder is required by 'bp::make_constructor'...
+			boost::shared_ptr<GPlatesMaths::FiniteRotation>
+			// Since it's immutable it can be copied without worrying that a modification from the
+			// C++ side will not be visible on the python side, or vice versa. It needs to be
+			// copyable anyway so that boost-python can copy it into a shared holder pointer...
+#if 0
+			boost::noncopyable
+#endif
+			>(
 					"FiniteRotation",
 					"Represents the motion of plates on the surface of the globe.\n"
 					"\n"
@@ -102,24 +114,27 @@ export_finite_rotation()
 					"  ::\n"
 					"\n"
 					"    point = pygplates.PointOnSphere(...)\n"
-					"    finite_rotation = pygplates.FiniteRotation.create(pole, angle)\n"
+					"    finite_rotation = pygplates.FiniteRotation(pole, angle)\n"
 					"    rotated_point = finite_rotation * point\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesApi::finite_rotation_create,
-				(bp::arg("pole"), bp::arg("angle")),
-				"create(pole, angle) -> FiniteRotation\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::finite_rotation_create,
+						bp::default_call_policies(),
+						(bp::arg("pole"), bp::arg("angle"))),
+				"__init__(pole, angle)\n"
 				"  Create a finite rotation from an Euler pole and a rotation angle (in *radians*). "
 				"Finite rotations are equality (``==``, ``!=``) comparable.\n"
 				"  ::\n"
 				"\n"
-				"    finite_rotation = pygplates.FiniteRotation.create(pole, angle)\n"
+				"    finite_rotation = pygplates.FiniteRotation(pole, angle)\n"
 				"\n"
 				"  :param pole: the Euler pole.\n"
 				"  :type pole: :class:`PointOnSphere`\n"
 				"  :param angle: the rotation angle (in *radians*).\n"
 				"  :type angle: float\n")
-		.staticmethod("create")
 		.def("get_unit_quaternion",
 				&GPlatesMaths::FiniteRotation::unit_quat,
 				bp::return_value_policy<bp::copy_const_reference>(),
