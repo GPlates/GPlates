@@ -31,6 +31,9 @@
 
 #if !defined(GPLATES_NO_PYTHON)
 
+// Exceptions
+void export_exceptions();
+
 // utils namespace
 void export_strings();
 
@@ -120,6 +123,26 @@ BOOST_PYTHON_MODULE(pygplates)
 			"  ::\n"
 			"\n"
 			"    import pygplates\n";
+
+
+	// Register python exceptions.
+	//
+	// By default our GPlates C++ exceptions are translated to python's 'RuntimeError' exception with
+	// a string message from 'exc.what()' - if they inherit (indirectly) from 'std::exception'
+	// (which they all should do) - otherwise they get translated to 'RuntimeError' with a message of
+	// "unidentifiable C++ exception".
+	// So we only need to explicitly register exceptions that we don't want translated to 'RuntimeError'.
+	// This is usually an exception we want the python user to be able to catch as a specific error,
+	// as opposed to 'RuntimeError' which could be caused by anything really. For example:
+	//
+	//   try:
+	//       feature_collection_file_format_registry.read(filename)
+	//   except pygplates.FileFormatNotSupportedError:
+	//       # Handle unrecognised file format.
+	//       ...
+	//
+	export_exceptions();
+
 
 #ifdef GPLATES_PYTHON_EMBEDDING
 	// api directory.

@@ -24,6 +24,7 @@ set(srcs
     PyColour.cc
     PyCoregistrationLayerProxy.cc
     PyCoregistrationLayerProxy.h
+    PyExceptions.cc
     PyFeature.cc
     PyFeatureCollection.cc
     PyFeatureCollectionFileFormatRegistry.cc
