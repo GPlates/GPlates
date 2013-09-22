@@ -173,12 +173,25 @@ class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):
         self.assertTrue(rotations)
 
     def test_load_invalid_name(self):
-        for name in [ "an_invalid_file_name", None ]:
-            try:
-                self.file_format_registry.read(None)
-                self.assertTrue(False, "Loading invalid file name should fail")
-            except Exception, e:
-                self.assertEquals(e.__class__.__name__, 'ArgumentError')
+        try:
+            self.file_format_registry.read(None)
+            self.assertTrue(False, "Loading invalid file name should fail")
+        except Exception, e:
+            self.assertEquals(e.__class__.__name__, 'ArgumentError')
+
+    def test_unsupported_file_format(self):
+        # Unsupported file format exception.
+        self.assertRaises(
+                pygplates.FileFormatNotSupportedError,
+                self.file_format_registry.read,
+                "this_file_format_is.unknown")
+
+    def test_unable_to_open_for_read(self):
+        # Unable to open file for reading exception (using a supported file format).
+        self.assertRaises(
+                pygplates.OpenFileForReadingError,
+                self.file_format_registry.read,
+                "this_file_does_not_exist.gpml")
 
 
 class GeoTimeInstantCase(unittest.TestCase):

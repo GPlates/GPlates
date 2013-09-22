@@ -904,7 +904,7 @@ export_gpml_irregular_sampling()
 					"    irregular_sampling = pygplates.GpmlIrregularSampling.create(time_samples)\n"
 					"\n"
 					"  :param time_samples: A sequence of :class:`GpmlTimeSample` elements.\n"
-					"  :type time_samples: Any python sequence such as a ``list`` or a ``tuple``\n"
+					"  :type time_samples: Any sequence such as a ``list`` or a ``tuple``\n"
 					"  :param interpolation_function: identifies function used to interpolate\n"
 					"  :type interpolation_function: an instance derived from :class:`GpmlInterpolationFunction`\n"))
 		.staticmethod("create")
@@ -1015,7 +1015,7 @@ export_gpml_piecewise_aggregation()
 				"    piecewise_aggregation = pygplates.GpmlPiecewiseAggregation.create(time_windows)\n"
 				"\n"
 				"  :param time_windows: A sequence of :class:`GpmlTimeWindow` elements.\n"
-				"  :type time_windows: Any python sequence such as a ``list`` or a ``tuple``\n")
+				"  :type time_windows: Any sequence such as a ``list`` or a ``tuple``\n")
 		.staticmethod("create")
 		.def("get_time_windows",
 				&GPlatesApi::gpml_piecewise_aggregation_get_time_windows,

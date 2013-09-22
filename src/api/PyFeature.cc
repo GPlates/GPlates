@@ -128,12 +128,21 @@ export_feature()
 					"Each time a property of a feature is modified, a new revision id is generated for the feature. "
 					"The concept of revisioning comes into play with model undo/redo and can generally be ignored.\n"
 					"\n"
-					"A feature instance is iterable over its properties (and supports the ``len()`` function):\n"
-					"  ::\n"
+					"The following operations for accessing the properties are supported:\n"
 					"\n"
-					"    num_properties = len(feature)\n"
-					"    properties_in_feature = [property for property in feature]\n"
-					"    assert(num_properties == len(properties_in_feature))\n",
+					"=========================== ==========================================================\n"
+					"Operation                   Result\n"
+					"=========================== ==========================================================\n"
+					"``len(f)``                  number of properties in feature *f*\n"
+					"``for p in f``              iterates over the properties *p* in feature *f*\n"
+					"=========================== ==========================================================\n"
+					"\n"
+					"For example:\n"
+					"::\n"
+					"\n"
+					"  num_properties = len(feature)\n"
+					"  properties_in_feature = [property for property in feature]\n"
+					"  assert(num_properties == len(properties_in_feature))\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -146,6 +155,13 @@ export_feature()
 							bp::arg("revision_id") = boost::optional<GPlatesModel::RevisionId>())),
 				"__init__([feature_type=None[, feature_id=None[, revision_id=None]]])\n"
 				"  Create a new feature instance that is (initially) empty (has no properties).\n"
+				"\n"
+				"  :param feature_type: the type of feature\n"
+				"  :type feature_type: :class:`FeatureType`\n"
+				"  :param feature_id: the feature identifier\n"
+				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param revision_id: the current revision identifier\n"
+				"  :type revision_id: :class:`RevisionId`\n"
 				"\n"
 				"  *feature_type* defaults to *gpml:UnclassifiedFeature* if not specified. "
 				"There are no restrictions on the types and number of properties that can be added "
@@ -168,14 +184,7 @@ export_feature()
 				"\n"
 				"    # This does the same thing as the code above.\n"
 				"    unclassified_feature = pygplates.Feature(\n"
-				"        pygplates.FeatureType.create_gpml('UnclassifiedFeature'))\n"
-				"\n"
-				"  :param feature_type: the type of feature\n"
-				"  :type feature_type: :class:`FeatureType`\n"
-				"  :param feature_id: the feature identifier\n"
-				"  :type feature_id: :class:`FeatureId`\n"
-				"  :param revision_id: the current revision identifier\n"
-				"  :type revision_id: :class:`RevisionId`\n")
+				"        pygplates.FeatureType.create_gpml('UnclassifiedFeature'))\n")
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
 		.def("__len__", &GPlatesModel::FeatureHandle::size)
 #if 0 // TODO: Add once clone does a proper deep-copy...
@@ -191,23 +200,27 @@ export_feature()
 				&GPlatesApi::feature_handle_add,
 				(bp::arg("property")),
 				"add(property)\n"
-				"  Adds a property to this feature. A feature is an *unordered* collection of properties "
-				"so there is no concept of where a property is inserted in the sequence of properties.\n"
+				"  Adds a property to this feature.\n"
 				"\n"
 				"  :param property: the property\n"
-				"  :type property: :class:`Property`\n")
+				"  :type property: :class:`Property`\n"
+				"\n"
+				"  A feature is an *unordered* collection of properties "
+				"so there is no concept of where a property is inserted in the sequence of properties.\n")
 		.def("remove",
 				&GPlatesApi::feature_handle_remove,
 				(bp::arg("property")),
 				"remove(property)\n"
-				"  Removes *property* from this feature. Raises the ``ValueError`` exception if *property* is not "
+				"  Removes *property* from this feature.\n"
+				"\n"
+				"  :param property: a property instance that currently exists inside this feature\n"
+				"  :type property: :class:`Property`\n"
+				"\n"
+				"  Raises the ``ValueError`` exception if *property* is not "
 				"currently a property in this feature. Note that the same property *instance* must "
 				"have previously been added. In other words, *remove* does not compare the value of "
 				"*property* with the values of the properties of this feature - it actually looks for "
-				"the same property *instance*.\n"
-				"\n"
-				"  :param property: a property instance that currently exists inside this feature\n"
-				"  :type property: :class:`Property`\n")
+				"the same property *instance*.\n")
 		.def("get_feature_type",
 				&GPlatesModel::FeatureHandle::feature_type,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -226,10 +239,12 @@ export_feature()
 				&GPlatesModel::FeatureHandle::revision_id,
 				bp::return_value_policy<bp::copy_const_reference>(),
 				"get_revision_id() -> RevisionId\n"
-				"  Returns the current revision identifier. The revision identifier changes each time "
-				"the feature instance is modified (such as adding, removing or modifying a property).\n"
+				"  Returns the current revision identifier.\n"
 				"\n"
-				"  :rtype: :class:`RevisionId`\n")
+				"  :rtype: :class:`RevisionId`\n"
+				"\n"
+				"  The revision identifier changes each time "
+				"the feature instance is modified (such as adding, removing or modifying a property).\n")
 	;
 
 	// Enable boost::optional<FeatureHandle::non_null_ptr_type> to be passed to and from python.

@@ -97,12 +97,21 @@ export_feature_collection()
 					"The feature collection aggregates a set of features into a collection. This is traditionally "
 					"so that a group of features can be loaded, saved or unloaded in a single operation.\n"
 					"\n"
-					"A feature collection instance is iterable over its features (and supports the ``len()`` function):\n"
-					"  ::\n"
+					"The following operations for accessing the features are supported:\n"
 					"\n"
-					"    num_features = len(feature_collection)\n"
-					"    features_in_collection = [feature for feature in feature_collection]\n"
-					"    assert(num_features == len(features_in_collection))\n"
+					"=========================== ==========================================================\n"
+					"Operation                   Result\n"
+					"=========================== ==========================================================\n"
+					"``len(fc)``                 number of features in feature collection *fc*\n"
+					"``for f in fc``             iterates over the features *f* in feature collection *fc*\n"
+					"=========================== ==========================================================\n"
+					"\n"
+					"For example:\n"
+					"::\n"
+					"\n"
+					"  num_features = len(feature_collection)\n"
+					"  features_in_collection = [feature for feature in feature_collection]\n"
+					"  assert(num_features == len(features_in_collection))\n"
 					"\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
@@ -120,23 +129,27 @@ export_feature_collection()
 				&GPlatesApi::feature_collection_handle_add,
 				(bp::arg("feature")),
 				"add(feature)\n"
-				"  Adds a feature to this collection. A feature collection is an *unordered* collection of features "
-				"so there is no concept of where a feature is inserted in the sequence of features.\n"
+				"  Adds a feature to this collection.\n"
 				"\n"
 				"  :param feature: the feature\n"
-				"  :type feature: :class:`Feature`\n")
+				"  :type feature: :class:`Feature`\n"
+				"\n"
+				"  A feature collection is an *unordered* collection of features "
+				"so there is no concept of where a feature is inserted in the sequence of features.\n")
 		.def("remove",
 				&GPlatesApi::feature_collection_handle_remove,
 				(bp::arg("feature")),
 				"remove(feature)\n"
-				"  Removes *feature* from this collection. Raises the ``ValueError`` exception if *feature* is not "
+				"  Removes *feature* from this collection.\n"
+				"\n"
+				"  :param feature: a feature instance that currently exists inside this collection\n"
+				"  :type feature: :class:`Feature`\n"
+				"\n"
+				"  Raises the ``ValueError`` exception if *feature* is not "
 				"currently a feature in this collection. Note that the same feature *instance* must "
 				"have previously been added. In other words, *remove* does not compare the value of "
 				"*feature* with the values of the features of this collection - it actually looks for "
-				"the same feature *instance*.\n"
-				"\n"
-				"  :param feature: a feature instance that currently exists inside this collection\n"
-				"  :type feature: :class:`Feature`\n")
+				"the same feature *instance*.\n")
 	;
 
 	// Enable boost::optional<FeatureCollectionHandle::non_null_ptr_type> to be passed to and from python.

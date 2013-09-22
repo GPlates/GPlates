@@ -18,6 +18,7 @@ Contents:
 	pygplates.EnumerationType
 	pygplates.Feature
 	pygplates.FeatureCollection
+	pygplates.FeatureCollectionFileFormatRegistry
 	pygplates.FeatureId
 	pygplates.FeatureType
 	pygplates.FiniteRotation

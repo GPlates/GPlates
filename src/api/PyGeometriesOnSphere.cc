@@ -209,9 +209,9 @@ export_geometry_on_sphere()
 					"\n"
 					"The list of derived geometry on sphere classes is:\n"
 					"\n"
-					"* :class:`PointOnsphere`\n"
+					"* :class:`PointOnSphere`\n"
 					"* :class:`MultiPointOnSphere`\n"
-					"* :class:`PolylineOnsphere`\n"
+					"* :class:`PolylineOnSphere`\n"
 					"* :class:`PolygonOnSphere`\n",
 					bp::no_init)
 		.def("clone",
@@ -318,12 +318,13 @@ export_point_on_sphere()
 							(bp::arg("unit_vector")),
 							"__init__(unit_vector)\n"
 							"  Create a *PointOnSphere* instance from a 3D unit vector.\n"
-							"  ::\n"
-							"\n"
-							"    point = pygplates.PointOnSphere(unit_vector)\n"
 							"\n"
 							"  :param unit_vector: the 3D unit vector\n"
-							"  :type unit_vector: :class:`UnitVector3D`\n"))
+							"  :type unit_vector: :class:`UnitVector3D`\n"
+							"\n"
+							"  ::\n"
+							"\n"
+							"    point = pygplates.PointOnSphere(unit_vector)\n"))
 		.def("__init__",
 				bp::make_constructor(
 						&GPlatesApi::point_on_sphere_create_xyz,
@@ -333,18 +334,18 @@ export_point_on_sphere()
 				"  Create a *PointOnSphere* instance from a 3D cartesian coordinate consisting of "
 				"floating-point coordinates *x*, *y* and *z*.\n"
 				"\n"
-				"  **NOTE:** The length of 3D vector (x,y,z) must be 1.0, otherwise a *RuntimeError* "
-				"is generated. In other words the point must lie on the *unit* sphere.\n"
-				"  ::\n"
-				"\n"
-				"    point = pygplates.PointOnSphere(x, y, z)\n"
-				"\n"
 				"  :param x: the *x* component of the 3D unit vector\n"
 				"  :type x: float\n"
 				"  :param y: the *y* component of the 3D unit vector\n"
 				"  :type y: float\n"
 				"  :param z: the *z* component of the 3D unit vector\n"
-				"  :type z: float\n")
+				"  :type z: float\n"
+				"\n"
+				"  **NOTE:** The length of 3D vector (x,y,z) must be 1.0, otherwise a *RuntimeError* "
+				"is generated. In other words the point must lie on the *unit* sphere.\n"
+				"  ::\n"
+				"\n"
+				"    point = pygplates.PointOnSphere(x, y, z)\n")
 		.def("get_position_vector",
 				&GPlatesMaths::PointOnSphere::position_vector,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -522,11 +523,11 @@ export_multi_point_on_sphere()
 					"for an overview of equality in the presence of limited floating-point precision.\n"
 					"\n"
 					"A multi-point instance is iterable over its points:\n"
-					"  ::\n"
+					"::\n"
 					"\n"
-					"    multi_point = pygplates.MultiPointOnSphere(points)\n"
-					"    for i, point in enumerate(multi_point):\n"
-					"        assert(point == multi_point[i])\n"
+					"  multi_point = pygplates.MultiPointOnSphere(points)\n"
+					"  for i, point in enumerate(multi_point):\n"
+					"      assert(point == multi_point[i])\n"
 					"\n"
 					"The following operations for accessing the points are supported:\n"
 					"\n"
@@ -555,14 +556,14 @@ export_multi_point_on_sphere()
 				"__init__(points)\n"
 				"  Create a multi-point from a sequence of :class:`point<PointOnSphere>` instances.\n"
 				"\n"
+				"  :param points: A sequence of :class:`PointOnSphere` elements.\n"
+				"  :type points: Any sequence such as a ``list`` or a ``tuple``\n"
+				"\n"
 				"  **NOTE** that the sequence must contain at least one point, otherwise "
 				"*RuntimeError* will be raised.\n"
 				"  ::\n"
 				"\n"
-				"    multi_point = pygplates.MultiPointOnSphere(points)\n"
-				"\n"
-				"  :param points: A sequence of :class:`PointOnSphere` elements.\n"
-				"  :type points: Any python sequence such as a ``list`` or a ``tuple``\n")
+				"    multi_point = pygplates.MultiPointOnSphere(points)\n")
 		.def("__iter__", bp::iterator<const GPlatesMaths::MultiPointOnSphere>())
 		.def("__len__", &GPlatesMaths::MultiPointOnSphere::number_of_points)
 		.def("__contains__", &GPlatesApi::multi_point_on_sphere_contains_point)
@@ -943,18 +944,17 @@ export_polyline_on_sphere()
 					"to other immutable types in python such as ``str``. So instead of modifying an "
 					"existing polyline you will need to create a new :class:`PolylineOnSphere` "
 					"instance as the following example demonstrates:\n"
-					"  ::\n"
+					"::\n"
 					"\n"
-					"    # Get a list of points from 'polyline'.\n"
-					"    points = list(polyline.get_points_view())\n"
+					"  # Get a list of points from 'polyline'.\n"
+					"  points = list(polyline.get_points_view())\n"
 					"\n"
-					"    # Modify the points list somehow.\n"
-					"    points[0] = pygplates.PointOnSphere(...)\n"
-					"    points.append(pygplates.PointOnSphere(...))\n"
+					"  # Modify the points list somehow.\n"
+					"  points[0] = pygplates.PointOnSphere(...)\n"
+					"  points.append(pygplates.PointOnSphere(...))\n"
 					"\n"
-					"    # 'polyline' now references a new PolylineOnSphere instance.\n"
-					"    polyline = pygplates.PolylineOnSphere(points)\n"
-					"    \n",
+					"  # 'polyline' now references a new PolylineOnSphere instance.\n"
+					"  polyline = pygplates.PolylineOnSphere(points)\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -965,6 +965,9 @@ export_polyline_on_sphere()
 						(bp::arg("points"))),
 				"__init__(points)\n"
 				"  Create a polyline from a sequence of :class:`point<PointOnSphere>` instances.\n"
+				"\n"
+				"  :param points: A sequence of :class:`PointOnSphere` elements.\n"
+				"  :type points: Any sequence such as a ``list`` or a ``tuple``\n"
 				"\n"
 				"  **NOTE** that the sequence must contain at least two points in order to be a valid "
 				"polyline, otherwise *RuntimeError* will be raised.\n"
@@ -978,10 +981,7 @@ export_polyline_on_sphere()
 				"rotation axis (:meth:`GreatCircleArc.get_rotation_axis` will return ``None``).\n"
 				"  ::\n"
 				"\n"
-				"    polyline = pygplates.PolylineOnSphere(points)\n"
-				"\n"
-				"  :param points: A sequence of :class:`PointOnSphere` elements.\n"
-				"  :type points: Any python sequence such as a ``list`` or a ``tuple``\n")
+				"    polyline = pygplates.PolylineOnSphere(points)\n")
 		.def("get_points_view",
 				&GPlatesApi::poly_geometry_on_sphere_get_points_view<GPlatesMaths::PolylineOnSphere>,
 				"get_points_view() -> PolylineOnSpherePointsView\n"
@@ -1132,24 +1132,24 @@ export_polygon_on_sphere()
 					"to other immutable types in python such as ``str``. So instead of modifying an "
 					"existing polygon you will need to create a new :class:`PolygonOnSphere` "
 					"instance as the following example demonstrates:\n"
-					"  ::\n"
+					"::\n"
 					"\n"
-					"    # Get a list of points from 'polygon'.\n"
-					"    points = list(polygon.get_points_view())\n"
+					"  # Get a list of points from 'polygon'.\n"
+					"  points = list(polygon.get_points_view())\n"
 					"\n"
-					"    # Modify the points list somehow.\n"
-					"    points[0] = pygplates.PointOnSphere(...)\n"
-					"    points.append(pygplates.PointOnSphere(...))\n"
+					"  # Modify the points list somehow.\n"
+					"  points[0] = pygplates.PointOnSphere(...)\n"
+					"  points.append(pygplates.PointOnSphere(...))\n"
 					"\n"
-					"    # 'polygon' now references a new PolygonOnSphere instance.\n"
-					"    polygon = pygplates.PolygonOnSphere(points)\n"
+					"  # 'polygon' now references a new PolygonOnSphere instance.\n"
+					"  polygon = pygplates.PolygonOnSphere(points)\n"
 					"\n"
 					"The following example demonstrates creating a :class:`PolygonOnSphere` from a "
 					":class:`PolylineOnSphere`:\n"
-					"  ::\n"
+					"::\n"
 					"\n"
-					"    polygon = pygplates.PolygonOnSphere(polyline.get_points_view())\n"
-					"    \n"
+					"  polygon = pygplates.PolygonOnSphere(polyline.get_points_view())\n"
+					"\n"
 					"...note that the polygon closes the loop between the last and first points "
 					"so there's no need to make the first and last points equal.\n",
 					// We need this (even though "__init__" is defined) since
@@ -1162,6 +1162,9 @@ export_polygon_on_sphere()
 						(bp::arg("points"))),
 				"__init__(points)\n"
 				"  Create a polygon from a sequence of :class:`point<PointOnSphere>` instances.\n"
+				"\n"
+				"  :param points: A sequence of :class:`PointOnSphere` elements.\n"
+				"  :type points: Any sequence such as a ``list`` or a ``tuple``\n"
 				"\n"
 				"  **NOTE** that the sequence must contain at least three points in order to be a valid "
 				"polygon, otherwise *RuntimeError* will be raised.\n"
@@ -1179,10 +1182,7 @@ export_polygon_on_sphere()
 				"rotation axis (:meth:`GreatCircleArc.get_rotation_axis` will return ``None``).\n"
 				"  ::\n"
 				"\n"
-				"    polygon = pygplates.PolygonOnSphere(points)\n"
-				"\n"
-				"  :param points: A sequence of :class:`PointOnSphere` elements.\n"
-				"  :type points: Any python sequence such as a ``list`` or a ``tuple``\n")
+				"    polygon = pygplates.PolygonOnSphere(points)\n")
 		.def("get_points_view",
 				&GPlatesApi::poly_geometry_on_sphere_get_points_view<GPlatesMaths::PolygonOnSphere>,
 				"get_points_view() -> PolygonOnSpherePointsView\n"

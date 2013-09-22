@@ -251,6 +251,7 @@ namespace GPlatesFileIO
 			 * @param file_ref both filename of file to read from and feature collection to store in.
 			 * @param read_errors to contain errors reading file.
 			 *
+			 * @throws ErrorOpeningFileForReadingException if file is not readable.
 			 * @throws FileFormatNotSupportedException if file format does not support reading
 			 * (eg, only writing) or file format is not registered.
 			 */
