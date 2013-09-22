@@ -81,14 +81,42 @@ namespace GPlatesApi
 	{
 	public:
 
-		static
-		void
-		register_exception_translator(
+		/**
+		 * Creates a new python exception that maps to C++ exception 'ExceptionType'.
+		 *
+		 * Instance can be passed to 'bp::register_exception_translator()'.
+		 */
+		explicit
+		python_Exception(
 				const char *python_exception_name,
-				PyObject* python_base_exception_type)
+				bp::object python_base_exception_type)
 		{
-			bp::register_exception_translator<ExceptionType>(
-					python_Exception(python_exception_name, python_base_exception_type));
+			std::string scope_name = bp::extract<std::string>(bp::scope().attr("__name__"));
+			std::string qualified_name = scope_name + "." + python_exception_name;
+
+			// Create a new exception on the python side that maps to C++ exception 'ExceptionType'.
+			d_python_exception_type = bp::object(bp::handle<>(
+					// Returns a new reference so no need for 'bp::borrowed'...
+					PyErr_NewException(
+							const_cast<char*>(qualified_name.c_str()),
+							python_base_exception_type.ptr(),
+							0)));
+
+			// Add the new exception name to the current scope (eg, module).
+			bp::scope().attr(python_exception_name) = d_python_exception_type;
+		}
+
+		/**
+		 * Returns the exception type.
+		 *
+		 * This is useful if need exception Derived to inherit exception Base
+		 * (which, for example, in turn inherits 'Exception') - can then specify the return
+		 * value as the Base python exception type when creating python Derived exception.
+		 */
+		bp::object
+		get_python_exception_type() const
+		{
+			return d_python_exception_type;
 		}
 
 		/**
@@ -107,27 +135,6 @@ namespace GPlatesApi
 
 	private:
 
-		explicit
-		python_Exception(
-				const char *python_exception_name,
-				PyObject* python_base_exception_type)
-		{
-			std::string scope_name = bp::extract<std::string>(bp::scope().attr("__name__"));
-			std::string qualified_name = scope_name + "." + python_exception_name;
-
-			// Create a new exception on the python side that maps to C++ exception 'ExceptionType'.
-			d_python_exception_type = bp::object(bp::handle<>(
-					// Returns a new reference so no need for 'bp::borrowed'...
-					PyErr_NewException(
-							const_cast<char*>(qualified_name.c_str()),
-							python_base_exception_type,
-							0)));
-
-			// Add the new exception name to the current scope (eg, module).
-			bp::scope().attr(python_exception_name) = d_python_exception_type;
-		}
-
-
 		/**
 		 * The type of exception on the python side (this maps to C++ exception 'ExceptionType').
 		 */
@@ -136,21 +143,35 @@ namespace GPlatesApi
 
 
 	/**
-	 * Register an exception translator for 'ExceptionType' with boost-python.
+	 * Creates a python exception with class name @a python_exception_name for C++ 'ExceptionType'
+	 * and registers an exception translator for it.
 	 *
-	 * As described above, this also creates a python-side exception that maps to 'ExceptionType'
-	 * and inherits from the python exception @a python_base_exception_type which defaults
-	 * to python's 'Exception'.
+	 * The base class of the python exception is of type @a python_base_exception_type.
+	 *
+	 * Returns the *type* of the python exception created.
+	 *
+	 * If 'ExceptionType' is a base class of another exception then the returned type can be used
+	 * when *later* exporting the derived exception type. This works out well because the order of
+	 * registration of exception translators is important as the following example demonstrates...
+	 * 'DerivedExceptionType' inherits from 'BaseExceptionType', so 'DerivedExceptionType' should be
+	 * registered *after* 'BaseExceptionType' because according to the docs:
+	 *   "Any subsequently-registered translators will be allowed to translate the exception earlier."
+	 * ...and this ensures that a (thrown) exception 'DerivedExceptionType' will be translated to
+	 * the python equivalent 'DerivedExceptionType' (instead of 'BaseExceptionType').
 	 */
 	template <class ExceptionType>
-	void
+	bp::object
 	export_exception(
 			const char *python_exception_name,
-			PyObject* python_base_exception_type = PyExc_Exception)
+			bp::object python_base_exception_type)
 	{
-		python_Exception<ExceptionType>::register_exception_translator(
+		python_Exception<ExceptionType> python_exception(
 				python_exception_name,
 				python_base_exception_type);
+
+		bp::register_exception_translator<ExceptionType>(python_exception);
+
+		return python_exception.get_python_exception_type();
 	}
 }
 
@@ -161,20 +182,29 @@ export_exceptions()
 	using namespace GPlatesApi;
 
 	//
-	// NOTE: If exception Derived inherits from exception Base (and both are registered) then
-	// exception Derived should be registered *after* exception Base because according to the docs:
-	//   "Any subsequently-registered translators will be allowed to translate the exception earlier."
-	//
-
-	//
 	// NOTE: We use the convention of replacing the "Exception" part of the C++ exception name with
 	// "Error" for the python exception name (since the standard python exceptions end with "Error").
 	//
-	export_exception<GPlatesFileIO::FileFormatNotSupportedException>("FileFormatNotSupportedError");
-	export_exception<GPlatesFileIO::ErrorOpeningFileForReadingException>("OpenFileForReadingError");
-	export_exception<GPlatesFileIO::ErrorOpeningFileForWritingException>("OpenFileForWritingError");
-	// Inherit from python's 'AssertionError'.
-	export_exception<GPlatesGlobal::AssertionFailureException>("AssertionFailureError", PyExc_AssertionError);
+
+	// The base class of all GPlates exceptions - enables python user to catch any GPlates exception.
+	// And it, in turn, inherits from python's 'Exception'.
+	bp::object gplates_exception_type =
+			export_exception<GPlatesGlobal::Exception>(
+					"GPlatesError",
+					bp::object(bp::handle<>(bp::borrowed(PyExc_Exception))));
+
+	export_exception<GPlatesGlobal::AssertionFailureException>(
+			"AssertionFailureError",
+			gplates_exception_type);
+	export_exception<GPlatesFileIO::FileFormatNotSupportedException>(
+			"FileFormatNotSupportedError",
+			gplates_exception_type);
+	export_exception<GPlatesFileIO::ErrorOpeningFileForReadingException>(
+			"OpenFileForReadingError",
+			gplates_exception_type);
+	export_exception<GPlatesFileIO::ErrorOpeningFileForWritingException>(
+			"OpenFileForWritingError",
+			gplates_exception_type);
 }
 
 #endif // GPLATES_NO_PYTHON
