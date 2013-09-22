@@ -60,11 +60,11 @@ namespace GPlatesApi
 	 */
 	bp::object/*derived property value non_null_intrusive_ptr*/
 	top_level_property_get_property_value(
-			GPlatesModel::TopLevelProperty::non_null_ptr_type top_level_property)
+			GPlatesModel::TopLevelProperty &top_level_property)
 	{
 		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> property_value =
 				// Use the default value for the second argument...
-				GPlatesModel::ModelUtils::get_property_value(*top_level_property);
+				GPlatesModel::ModelUtils::get_property_value(top_level_property);
 
 		// Should always have a valid *inline* top-level property (with a single property value).
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -91,20 +91,25 @@ export_top_level_property()
 					"\n"
 					"Properties are equality (``==``, ``!=``) comparable. This includes comparing the property value "
 					"in the two properties being compared (see :class:`PropertyValue`) as well as the property name.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesApi::top_level_property_inline_create,
-				"create(property_name, property_value) -> Property\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::top_level_property_inline_create,
+						bp::default_call_policies(),
+						(bp::arg("property_name"), bp::arg("property_value"))),
+				"__init__(property_name, property_value)\n"
 				"  Create a property given a property name and a property value.\n"
-				"  ::\n"
-				"\n"
-				"    property = pygplates.Property.create(property_name, property_value)\n"
 				"\n"
 				"  :param property_name: property name\n"
 				"  :type property_name: :class:`PropertyName`\n"
 				"  :param property_value: property value\n"
-				"  :type property_value: :class:`PropertyValue`\n")
- 		.staticmethod("create")
+				"  :type property_value: :class:`PropertyValue`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    property = pygplates.Property(property_name, property_value)\n")
   		.def("get_name",
 				&GPlatesModel::TopLevelProperty::get_property_name,
 				bp::return_value_policy<bp::copy_const_reference>(),

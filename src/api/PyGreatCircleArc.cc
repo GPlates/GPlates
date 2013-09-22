@@ -24,6 +24,7 @@
  */
 
 #include <boost/noncopyable.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "PythonConverterUtils.h"
 
@@ -39,16 +40,14 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
-	boost::optional<GPlatesMaths::UnitVector3D>
-	great_circle_arc_get_rotation_axis(
-			const GPlatesMaths::GreatCircleArc &great_circle_arc)
+	boost::shared_ptr<GPlatesMaths::GreatCircleArc>
+	great_circle_arc_create(
+			const GPlatesMaths::PointOnSphere &start_point,
+			const GPlatesMaths::PointOnSphere &end_point)
 	{
-		if (great_circle_arc.is_zero_length())
-		{
-			return boost::none;
-		}
-
-		return great_circle_arc.rotation_axis();
+		return boost::shared_ptr<GPlatesMaths::GreatCircleArc>(
+				new GPlatesMaths::GreatCircleArc(
+						GPlatesMaths::GreatCircleArc::create(start_point, end_point)));
 	}
 }
 
@@ -63,30 +62,43 @@ export_great_circle_arc()
 	// python side and vice versa.
 	//
 	bp::class_<
-			GPlatesMaths::GreatCircleArc>(
+			GPlatesMaths::GreatCircleArc,
+			// A pointer holder is required by 'bp::make_constructor'...
+			boost::shared_ptr<GPlatesMaths::GreatCircleArc>
+			// Since it's immutable it can be copied without worrying that a modification from the
+			// C++ side will not be visible on the python side, or vice versa. It needs to be
+			// copyable anyway so that boost-python can copy it into a shared holder pointer...
+#if 0
+			boost::noncopyable
+#endif
+			>(
 					"GreatCircleArc",
 					"A great-circle arc on the surface of the unit sphere. "
 					"Great circle arcs are equality (``==``, ``!=``) comparable.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesMaths::GreatCircleArc::create,
-				(bp::arg("start_point"), bp::arg("end_point")),
-				"create(start_point, end_point) -> GreatCircleArc\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::great_circle_arc_create,
+						bp::default_call_policies(),
+						(bp::arg("start_point"), bp::arg("end_point"))),
+				"__init__(start_point, end_point)\n"
 				"  Create a great circle arc from two points.\n"
-				"\n"
-				"  An arc is specified by a start-point and an end-point:  If these two points are not "
-				"antipodal, a unique great-circle arc (with angle-span less than PI radians) will be "
-				"determined between them. If they are antipodal then *RuntimeError* will be raised. "
-				"Note that an error is *not* raised if the two points are coincident.\n"
-				"  ::\n"
-				"\n"
-				"    great_circle_arc = pygplates.GreatCircleArc.create(start_point, end_point)\n"
 				"\n"
 				"  :param start_point: the start point of the arc.\n"
 				"  :type start_point: :class:`PointOnSphere`\n"
 				"  :param end_point: the end point of the arc.\n"
-				"  :type end_point: :class:`PointOnSphere`\n")
-		.staticmethod("create")
+				"  :type end_point: :class:`PointOnSphere`\n"
+				"  :raises: IndeterminateResultError if points are antipodal (opposite each other)\n"
+				"\n"
+				"  An arc is specified by a start-point and an end-point:  If these two points are not "
+				"antipodal, a unique great-circle arc (with angle-span less than PI radians) will be "
+				"determined between them. If they are antipodal then *IndeterminateResultException* will be raised. "
+				"Note that an error is *not* raised if the two points are coincident.\n"
+				"  ::\n"
+				"\n"
+				"    great_circle_arc = pygplates.GreatCircleArc(start_point, end_point)\n")
 		.def("get_start_point",
 				&GPlatesMaths::GreatCircleArc::start_point,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -106,17 +118,21 @@ export_great_circle_arc()
 				"is_zero_length() -> bool\n"
 				"  Return whether this great circle arc is of zero length.\n"
 				"\n"
+				"  :rtype: bool\n"
+				"\n"
 				"  If this arc is of zero length, it will not have a determinate rotation axis "
-				"and a call to :meth:`get_rotation_axis` will return ``None``.\n"
-				"\n"
-				"  :rtype: bool\n")
+				"and a call to :meth:`get_rotation_axis` will raise an error.\n")
 		.def("get_rotation_axis",
-				&GPlatesApi::great_circle_arc_get_rotation_axis,
+				&GPlatesMaths::GreatCircleArc::rotation_axis,
+				bp::return_value_policy<bp::copy_const_reference>(),
 				"get_rotation_axis() -> UnitVector3D\n"
-				"  Return the rotation axis of the arc, or ``None`` if the arc start and end points "
-				"are the same (if :meth:`is_zero_length` is ``True``).\n"
+				"  Return the rotation axis of the arc.\n"
 				"\n"
-				"  :rtype: :class:`UnitVector3D` or None\n")
+				"  :rtype: :class:`UnitVector3D`\n"
+				"  :raises: IndeterminateArcRotationAxisError if arc is zero length\n"
+				"\n"
+				"  If the arc start and end points are the same (if :meth:`is_zero_length` is ``True``) "
+				"then *IndeterminateArcRotationAxisError* is raised.\n")
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;

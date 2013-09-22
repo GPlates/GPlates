@@ -79,9 +79,9 @@ class FeatureCase(unittest.TestCase):
         self.assertFalse(missing_name_property)
     
     def test_add(self):
-        integer_property = pygplates.Property.create(
+        integer_property = pygplates.Property(
                 pygplates.PropertyName.create_gpml('integer'),
-                pygplates.XsInteger.create(100))
+                pygplates.XsInteger(100))
         self.feature.add(integer_property)
         self.assertTrue(len(self.feature) == self.property_count + 1)
         found_integer_property = None
@@ -136,9 +136,9 @@ class FeatureCollectionCase(unittest.TestCase):
         self.assertFalse(missing_feature)
     
     def test_add(self):
-        integer_property = pygplates.Property.create(
+        integer_property = pygplates.Property(
                 pygplates.PropertyName.create_gpml('integer'),
-                pygplates.XsInteger.create(100))
+                pygplates.XsInteger(100))
         # Create a feature with a new unique feature ID.
         feature_with_integer_property = pygplates.Feature()
         feature_with_integer_property.add(integer_property)

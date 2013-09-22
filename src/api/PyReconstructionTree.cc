@@ -106,11 +106,17 @@ export_reconstruction_tree()
 			GPlatesAppLogic::ReconstructionTree,
 			GPlatesAppLogic::ReconstructionTree::non_null_ptr_type,
 			boost::noncopyable>(
-					"ReconstructionTree", bp::no_init)
-		.def("create",
-				&GPlatesApi::reconstruction_tree_create,
-				GPlatesApi::reconstruction_tree_create_overloads())
- 		.staticmethod("create")
+					"ReconstructionTree",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::reconstruction_tree_create,
+						bp::default_call_policies(),
+						(bp::arg("feature_collections"),
+							bp::arg("reconstruction_time"),
+							bp::arg("anchor_plate_id") = 0)))
 		.def("get_equivalent_total_rotation", &GPlatesApi::reconstruction_tree_get_equivalent_total_rotation)
 	;
 

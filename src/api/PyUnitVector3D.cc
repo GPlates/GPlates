@@ -45,22 +45,34 @@ export_unit_vector_3d()
 	// UnitVector3D - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
-			GPlatesMaths::UnitVector3D>(
+			GPlatesMaths::UnitVector3D
+			// Since it's immutable it can be copied without worrying that a modification from the
+			// C++ side will not be visible on the python side, or vice versa. It needs to be
+			// copyable anyway so that boost-python can copy it into a shared holder pointer...
+#if 0
+			boost::noncopyable
+#endif
+			>(
 					"UnitVector3D",
-					"Represents a unit length 3D vector. Unit vectors are equality (``==``, ``!=``) comparable.\n"
-					"\n"
-					// Note that we put the __init__ docstring in the class docstring.
-					// See the comment in 'BOOST_PYTHON_MODULE(pygplates)' for an explanation...
-					"UnitVector3D(x, y, z)\n"
-					"  Construct a *UnitVector3D* instance from a 3D cartesian coordinate consisting of "
-					"floating-point coordinates *x*, *y* and *z*.\n"
-					"\n"
-					"  **NOTE:** The length of 3D vector (x,y,z) must be 1.0, otherwise a *RuntimeError* "
-					"is generated.\n"
-					"  ::\n"
-					"\n"
-					"    unit_vector = pygplates.UnitVector3D(x, y, z)\n",
-					bp::init<GPlatesMaths::Real, GPlatesMaths::Real, GPlatesMaths::Real>())
+					"Represents a unit length 3D vector. Unit vectors are equality (``==``, ``!=``) comparable.\n",
+					bp::init<GPlatesMaths::Real, GPlatesMaths::Real, GPlatesMaths::Real>(
+							(bp::arg("x"), bp::arg("y"), bp::arg("z")),
+							"__init__(x, y, z)\n"
+							"  Construct a *UnitVector3D* instance from a 3D cartesian coordinate consisting of "
+							"floating-point coordinates *x*, *y* and *z*.\n"
+							"\n"
+							"  :param x: the *x* component of the 3D unit vector\n"
+							"  :type x: float\n"
+							"  :param y: the *y* component of the 3D unit vector\n"
+							"  :type y: float\n"
+							"  :param z: the *z* component of the 3D unit vector\n"
+							"  :type z: float\n"
+							"\n"
+							"  **NOTE:** The length of 3D vector (x,y,z) must be 1.0, otherwise a *RuntimeError* "
+							"is generated.\n"
+							"  ::\n"
+							"\n"
+							"    unit_vector = pygplates.UnitVector3D(x, y, z)\n"))
 		.def("get_x",
 				&GPlatesMaths::UnitVector3D::x,
 				bp::return_value_policy<bp::copy_const_reference>(),

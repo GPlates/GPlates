@@ -73,23 +73,23 @@ namespace GPlatesApi
 
 	void
 	feature_handle_add(
-			GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle,
+			GPlatesModel::FeatureHandle &feature_handle,
 			GPlatesModel::TopLevelProperty::non_null_ptr_type property)
 	{
 		// Ignore the returned iterator.
-		feature_handle->add(property);
+		feature_handle.add(property);
 	}
 
 	void
 	feature_handle_remove(
-			GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle,
+			GPlatesModel::FeatureHandle &feature_handle,
 			GPlatesModel::TopLevelProperty::non_null_ptr_type property)
 	{
 		// Search for the property.
 		// Note: This searches for the same property *instance* - it does not compare values of
 		// two different property instances.
-		GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle->begin();
-		GPlatesModel::FeatureHandle::iterator properties_end = feature_handle->end();
+		GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
+		GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
 		for ( ; properties_iter != properties_end; ++properties_iter)
 		{
 			GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
@@ -97,7 +97,7 @@ namespace GPlatesApi
 			// Compare pointers not pointed-to-objects.
 			if (property == feature_property)
 			{
-				feature_handle->remove(properties_iter);
+				feature_handle.remove(properties_iter);
 				return;
 			}
 		}
@@ -153,7 +153,7 @@ export_feature()
 						(bp::arg("feature_type") = boost::optional<GPlatesModel::FeatureType>(),
 							bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
 							bp::arg("revision_id") = boost::optional<GPlatesModel::RevisionId>())),
-				"__init__([feature_type=None[, feature_id=None[, revision_id=None]]])\n"
+				"__init__([feature_type[, feature_id[, revision_id]]])\n"
 				"  Create a new feature instance that is (initially) empty (has no properties).\n"
 				"\n"
 				"  :param feature_type: the type of feature\n"

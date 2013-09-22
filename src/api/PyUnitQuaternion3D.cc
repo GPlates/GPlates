@@ -40,16 +40,10 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
-	boost::optional<GPlatesMaths::UnitQuaternion3D::RotationParams>
+	GPlatesMaths::UnitQuaternion3D::RotationParams
 	unit_quaternion_get_rotation_params(
 			const GPlatesMaths::UnitQuaternion3D &unit_quaternion)
 	{
-		if (represents_identity_rotation(unit_quaternion))
-		{
-			// 'boost::none' causes an indeterminate rotation to end up as Py_None in python.
-			return boost::none;
-		}
-
 		return unit_quaternion.get_rotation_params(boost::none/*axis_hint*/);
 	}
 }
@@ -62,7 +56,17 @@ export_unit_quaternion_3d()
 	// UnitQuaternion3D - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	// Class.
-	bp::scope unit_quaternion_scope = bp::class_<GPlatesMaths::UnitQuaternion3D>("UnitQuaternion3D", bp::no_init)
+	bp::scope unit_quaternion_scope = bp::class_<
+			GPlatesMaths::UnitQuaternion3D
+			// Since it's immutable it can be copied without worrying that a modification from the
+			// C++ side will not be visible on the python side, or vice versa. It needs to be
+			// copyable anyway so that boost-python can copy it into a shared holder pointer...
+#if 0
+			boost::noncopyable
+#endif
+			>(
+					"UnitQuaternion3D",
+					bp::no_init)
 		.def("get_w", &GPlatesMaths::UnitQuaternion3D::w, bp::return_value_policy<bp::copy_const_reference>())
 		.def("get_x", &GPlatesMaths::UnitQuaternion3D::x, bp::return_value_policy<bp::copy_const_reference>())
 		.def("get_y", &GPlatesMaths::UnitQuaternion3D::y, bp::return_value_policy<bp::copy_const_reference>())
@@ -83,7 +87,10 @@ export_unit_quaternion_3d()
 	;
 
 	// Create nested class RotationParameters inside UnitQuaternion.
-	bp::class_<GPlatesMaths::UnitQuaternion3D::RotationParams>("RotationParameters", bp::no_init)
+	bp::class_<
+			GPlatesMaths::UnitQuaternion3D::RotationParams>(
+					"RotationParameters",
+					bp::no_init)
 		.def_readonly("axis", &GPlatesMaths::UnitQuaternion3D::RotationParams::axis)
 		// RotationParams::angle uses custom-converted type 'GPlatesMaths::Real' which does not
 		// work with the 'return_internal_reference' return value policy used in 'def_readonly'...

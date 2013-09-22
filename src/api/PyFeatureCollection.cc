@@ -52,14 +52,14 @@ namespace GPlatesApi
 
 	void
 	feature_collection_handle_remove(
-			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection_handle,
+			GPlatesModel::FeatureCollectionHandle &feature_collection_handle,
 			GPlatesModel::FeatureHandle::non_null_ptr_type feature)
 	{
 		// Search for the feature.
 		// Note: This searches for the same feature *instance* - it does not compare values of
 		// two different feature instances.
-		GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle->begin();
-		GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle->end();
+		GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
+		GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
 		for ( ; features_iter != features_end; ++features_iter)
 		{
 			GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
@@ -67,7 +67,7 @@ namespace GPlatesApi
 			// Compare pointers not pointed-to-objects.
 			if (feature == collection_feature)
 			{
-				feature_collection_handle->remove(features_iter);
+				feature_collection_handle.remove(features_iter);
 				return;
 			}
 		}

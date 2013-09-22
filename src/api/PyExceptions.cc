@@ -34,7 +34,12 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
+#include "global/PreconditionViolationError.h"
 #include "global/python.h"
+
+#include "maths/IndeterminateResultException.h"
+#include "maths/IndeterminateArcRotationAxisException.h"
+#include "maths/MathematicalException.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -188,10 +193,26 @@ export_exceptions()
 
 	// The base class of all GPlates exceptions - enables python user to catch any GPlates exception.
 	// And it, in turn, inherits from python's 'Exception'.
-	bp::object gplates_exception_type =
+	const bp::object gplates_exception_type =
 			export_exception<GPlatesGlobal::Exception>(
 					"GPlatesError",
 					bp::object(bp::handle<>(bp::borrowed(PyExc_Exception))));
+
+	const bp::object precondition_violation_exception_type =
+			export_exception<GPlatesGlobal::PreconditionViolationError>(
+					"PreconditionViolationError",
+					gplates_exception_type);
+	export_exception<GPlatesMaths::IndeterminateArcRotationAxisException>(
+			"IndeterminateArcRotationAxisError",
+			precondition_violation_exception_type);
+
+	const bp::object mathematical_exception_type =
+			export_exception<GPlatesMaths::MathematicalException>(
+					"MathematicalError",
+					gplates_exception_type);
+	export_exception<GPlatesMaths::IndeterminateResultException>(
+			"IndeterminateResultError",
+			mathematical_exception_type);
 
 	export_exception<GPlatesGlobal::AssertionFailureException>(
 			"AssertionFailureError",

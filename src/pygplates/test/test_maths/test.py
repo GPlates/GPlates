@@ -26,7 +26,7 @@ class FiniteRotationCase(unittest.TestCase):
         self.assertTrue(isinstance(rotated_unit_vector_3d, pygplates.UnitVector3D))
     
     def test_rotate_great_circle_arc(self):
-        rotated_great_circle_arc = self.finite_rotation * pygplates.GreatCircleArc.create(
+        rotated_great_circle_arc = self.finite_rotation * pygplates.GreatCircleArc(
                 pygplates.PointOnSphere(1, 0, 0),
                 pygplates.PointOnSphere(0, 1, 0))
         self.assertTrue(isinstance(rotated_great_circle_arc, pygplates.GreatCircleArc))
@@ -65,12 +65,12 @@ class GreatCircleArcCase(unittest.TestCase):
     def setUp(self):
         self.start_point = pygplates.PointOnSphere(0, 0, 1)
         self.end_point = pygplates.PointOnSphere(0, 1, 0)
-        self.gca = pygplates.GreatCircleArc.create(self.start_point, self.end_point)
+        self.gca = pygplates.GreatCircleArc(self.start_point, self.end_point)
     
     def test_compare(self):
-        gca = pygplates.GreatCircleArc.create(self.start_point, self.end_point)
+        gca = pygplates.GreatCircleArc(self.start_point, self.end_point)
         self.assertTrue(self.gca == gca)
-        reverse_gca = pygplates.GreatCircleArc.create(self.end_point, self.start_point)
+        reverse_gca = pygplates.GreatCircleArc(self.end_point, self.start_point)
         self.assertTrue(self.gca != reverse_gca)
     
     def test_get(self):
@@ -80,9 +80,9 @@ class GreatCircleArcCase(unittest.TestCase):
     def test_zero_length(self):
         self.assertFalse(self.gca.is_zero_length())
         self.assertFalse(self.gca.get_rotation_axis() is None)
-        zero_length_gca = pygplates.GreatCircleArc.create(self.start_point, self.start_point)
+        zero_length_gca = pygplates.GreatCircleArc(self.start_point, self.start_point)
         self.assertTrue(zero_length_gca.is_zero_length())
-        self.assertTrue(zero_length_gca.get_rotation_axis() is None)
+        self.assertRaises(pygplates.IndeterminateArcRotationAxisError, zero_length_gca.get_rotation_axis)
 
 
 def suite():

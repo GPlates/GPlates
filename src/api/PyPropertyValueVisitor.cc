@@ -419,9 +419,9 @@ export_property_value_visitor()
 			"            self.plate_id = gpml_plate_id.get_plate_id()\n"
 			"\n"
 			"    # Visitor can extract plate id from this...\n"
-			"    property_value1 = pygplates.GpmlPlateId.create(701)\n"
+			"    property_value1 = pygplates.GpmlPlateId(701)\n"
 			"    # Visitor cannot extract plate id from this...\n"
-			"    property_value2 = pygplates.XsInteger.create(701)\n"
+			"    property_value2 = pygplates.XsInteger(701)\n"
 			"\n"
 			"    plate_id_visitor = GetPlateIdVisitor()\n"
 			"    property_value1.accept_visitor(plate_id_visitor)\n"
@@ -432,7 +432,10 @@ export_property_value_visitor()
 			"        print 'plate id: %d' % plate_id\n"
 			"\n"
 			"NOTE: You must call the base class *__init__* otherwise you will "
-			"get a *Boost.Python.ArgumentError* exception.\n")
+			"get a *Boost.Python.ArgumentError* exception.\n"
+			// NOTE: Must not define 'bp::no_init' because this base class is meant to be inherited
+			// by a python class (see http://www.boostpro.com/writing/bpl.html#inheritance).
+			)
 		.def("visit_gml_multi_point",
 				&GPlatesModel::FeatureVisitor::visit_gml_multi_point,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_multi_point,

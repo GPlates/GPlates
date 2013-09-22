@@ -204,17 +204,24 @@ export_geo_time_instant()
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported. The comparisons are such that "
 			"times further in the past are *less than* more recent times. Note that this is the opposite "
-			"of comparisons of floating-point values returned by :meth:`get_value`.\n",
+			"of comparisons of floating-point values returned by :meth:`get_value`.\n"
+			"::\n"
+			"\n"
+			"  time10Ma = pygplates.GeoTimeInstant(10)\n"
+			"  time20Ma = pygplates.GeoTimeInstant(20)\n"
+			"  assert(time20Ma < time10Ma)\n"
+			"  assert(time20Ma.get_value() > time10Ma.get_value())\n",
 			bp::init<double>(
 					(bp::arg("time_value")),
 					"__init__(time_value)\n"
 					"  Create a GeoTimeInstant instance from *time_value*.\n"
-					"  ::\n"
-					"\n"
-					"    time_instant = pygplates.GeoTimeInstant(time_value)\n"
 					"\n"
 					"  :param time_value: the time position - positive values represent times in the *past*\n"
-					"  :type time_value: float\n"))
+					"  :type time_value: float\n"
+					"\n"
+					"  ::\n"
+					"\n"
+					"    time_instant = pygplates.GeoTimeInstant(time_value)\n"))
 		.def("create_distant_past",
 				&GPlatesPropertyValues::GeoTimeInstant::create_distant_past,
 				"create_distant_past() -> GeoTimeInstant\n"
@@ -247,6 +254,8 @@ export_geo_time_instant()
 				"  Access the floating-point representation of the time-position of this instance. "
 				"Units are in Ma (millions of year ago).\n"
 				"\n"
+				"  :rtype: float\n"
+				"\n"
 				"  **NOTE** that this value may not be meaningful if :meth:`is_real` returns ``False``. "
 				"Currently, if :meth:`is_distant_past` is ``True`` then *get_value* returns infinity and if "
 				":meth:`is_distant_future` is ``True`` then *get_value* returns minus-infinity.\n"
@@ -261,9 +270,7 @@ export_geo_time_instant()
 				"    time10Ma = pygplates.GeoTimeInstant(10)\n"
 				"    time20Ma = pygplates.GeoTimeInstant(20)\n"
 				"    assert(time20Ma < time10Ma)\n"
-				"    assert(time20Ma.get_value() > time10Ma.get_value())\n"
-				"\n"
-				"  :rtype: float\n")
+				"    assert(time20Ma.get_value() > time10Ma.get_value())\n")
 		.def("is_distant_past",
 				&GPlatesPropertyValues::GeoTimeInstant::is_distant_past,
 				"is_distant_past() -> bool\n"
@@ -280,10 +287,12 @@ export_geo_time_instant()
 				&GPlatesPropertyValues::GeoTimeInstant::is_real,
 				"is_real() -> bool\n"
 				"  Returns ``True`` if this instance is a time-instant whose time-position may be "
-				"expressed as a *real* floating-point number. If :meth:`is_real` is ``True`` then "
-				"both :meth:`is_distant_past` and :meth:`is_distant_future` will be ``False``.\n"
+				"expressed as a *real* floating-point number.\n"
 				"\n"
-				"  :rtype: bool\n")
+				"  :rtype: bool\n"
+				"\n"
+				"  If :meth:`is_real` is ``True`` then both :meth:`is_distant_past` and "
+				":meth:`is_distant_future` will be ``False``.\n")
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
@@ -323,19 +332,23 @@ export_gml_multi_point()
 			boost::noncopyable>(
 					"GmlMultiPoint",
 					"A property value representing a multi-point geometry.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesApi::gml_multi_point_create,
-				(bp::arg("multi_point")),
-				"create(multi_point) -> GmlMultiPoint\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::gml_multi_point_create,
+						bp::default_call_policies(),
+						(bp::arg("multi_point"))),
+				"__init__(multi_point)\n"
 				"  Create a property value representing a multi-point geometry.\n"
-				"  ::\n"
-				"\n"
-				"    multi_point_property = pygplates.GmlMultiPoint.create(multi_point)\n"
 				"\n"
 				"  :param multi_point: the multi-point geometry\n"
-				"  :type multi_point: :class:`MultiPointOnSphere`\n")
-		.staticmethod("create")
+				"  :type multi_point: :class:`MultiPointOnSphere`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    multi_point_property = pygplates.GmlMultiPoint(multi_point)\n")
 		.def("get_multi_point",
 				&GPlatesPropertyValues::GmlMultiPoint::get_multipoint,
 				"get_multi_point() -> MultiPointOnSphere\n"
@@ -384,19 +397,23 @@ export_gml_point()
 			boost::noncopyable>(
 					"GmlPoint",
 					"A property value representing a point geometry.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesApi::gml_point_create,
-				(bp::arg("point")),
-				"create(point) -> GmlPoint\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::gml_point_create,
+						bp::default_call_policies(),
+						(bp::arg("point"))),
+				"__init__(point)\n"
 				"  Create a property value representing a point geometry.\n"
-				"  ::\n"
-				"\n"
-				"    point_property = pygplates.GmlPoint.create(point)\n"
 				"\n"
 				"  :param point: the point geometry\n"
-				"  :type point: :class:`PointOnSphere`\n")
-		.staticmethod("create")
+				"  :type point: :class:`PointOnSphere`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    point_property = pygplates.GmlPoint(point)\n")
 		.def("get_point",
 				&GPlatesPropertyValues::GmlPoint::get_point,
 				"get_point() -> PointOnSphere\n"
@@ -434,19 +451,23 @@ export_gml_time_instant()
 			boost::noncopyable>(
 					"GmlTimeInstant",
 					"A property value representing an instant in geological time.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesModel::ModelUtils::create_gml_time_instant,
-				(bp::arg("time_position")),
-				"create(time_position) -> GmlTimeInstant\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesModel::ModelUtils::create_gml_time_instant,
+						bp::default_call_policies(),
+						(bp::arg("time_position"))),
+				"__init__(time_position)\n"
 				"  Create a property value representing a specific time instant.\n"
-				"  ::\n"
-				"\n"
-				"    time_instant = pygplates.GmlTimeInstant.create(time_position)\n"
 				"\n"
 				"  :param time_position: the time position\n"
-				"  :type time_position: :class:`GeoTimeInstant`\n")
-		.staticmethod("create")
+				"  :type time_position: :class:`GeoTimeInstant`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    time_instant = pygplates.GmlTimeInstant(time_position)\n")
 		.def("get_time",
 				&GPlatesPropertyValues::GmlTimeInstant::get_time_position,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -518,21 +539,25 @@ export_gml_time_period()
 			boost::noncopyable>(
 					"GmlTimePeriod",
 					"A property value representing a period in geological time (time of appearance to time of disappearance).\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesModel::ModelUtils::create_gml_time_period,
-				(bp::arg("begin_time_position"), bp::arg("end_time_position")),
-				"create(begin_time_position, end_time_position) -> GmlTimePeriod\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesModel::ModelUtils::create_gml_time_period,
+						bp::default_call_policies(),
+						(bp::arg("begin_time_position"), bp::arg("end_time_position"))),
+				"__init__(begin_time_position, end_time_position)\n"
 				"  Create a property value representing a specific time period.\n"
-				"  ::\n"
-				"\n"
-				"    time_period = pygplates.GmlTimePeriod.create(begin_time_position, end_time_position)\n"
 				"\n"
 				"  :param begin_time_position: the begin time position (time of appearance)\n"
 				"  :type begin_time_position: :class:`GeoTimeInstant`\n"
 				"  :param end_time_position: the end time position (time of disappearance)\n"
-				"  :type end_time_position: :class:`GeoTimeInstant`\n")
-		.staticmethod("create")
+				"  :type end_time_position: :class:`GeoTimeInstant`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    time_period = pygplates.GmlTimePeriod(begin_time_position, end_time_position)\n")
 		.def("get_begin_time",
 				&GPlatesApi::gml_time_period_get_begin_time,
 				"get_begin_time() -> GeoTimeInstant\n"
@@ -582,13 +607,6 @@ namespace GPlatesApi
 		return GPlatesModel::ModelUtils::create_gpml_constant_value(property_value, description);
 	}
 
-DISABLE_GCC_WARNING("-Wshadow")
-	// Default argument overloads of 'GPlatesPropertyValues::GpmlConstantValue::create'.
-	BOOST_PYTHON_FUNCTION_OVERLOADS(
-			gpml_constant_value_create_overloads,
-			gpml_constant_value_create, 1, 2)
-ENABLE_GCC_WARNING("-Wshadow")
-
 	// Return base property value to python as its derived property value type.
 	bp::object/*derived property value non_null_intrusive_ptr*/
 	gpml_constant_value_get_value(
@@ -622,14 +640,13 @@ export_gpml_constant_value()
 					"case it is not.\n"
 					"  ::\n"
 					"\n"
-					"    reconstruction_plate_id = pygplates.Property.create(\n"
+					"    reconstruction_plate_id = pygplates.Property(\n"
 					"        pygplates.PropertyName.create_gpml('reconstructionPlateId'),\n"
-					"        pygplates.GpmlConstantValue.create(\n"
-					"            pygplates.GpmlPlateId.create(701)))\n"
+					"        pygplates.GpmlConstantValue(pygplates.GpmlPlateId(701)))\n"
 					"\n"
-					"    relative_plate_id = pygplates.Property.create(\n"
+					"    relative_plate_id = pygplates.Property(\n"
 					"        pygplates.PropertyName.create_gpml('relativePlate'),\n"
-					"        pygplates.GpmlPlateId.create(701))\n"
+					"        pygplates.GpmlPlateId(701))\n"
 					"\n"
 					"If a property is created without a time-dependent wrapper where one is expected, "
 					"or vice versa, then you can still save it to a GPML file and a subsequent read "
@@ -638,26 +655,29 @@ export_gpml_constant_value()
 					"simpler :class:`GpmlConstantValue` time-dependent wrapper but does not always "
 					"work for the more advanced :class:`GpmlIrregularSampling` and "
 					":class:`GpmlPiecewiseAggregation` time-dependent wrapper types.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesApi::gpml_constant_value_create,
-				GPlatesApi::gpml_constant_value_create_overloads(
-					(bp::arg("property_value"),
-						bp::arg("description") = boost::optional<GPlatesUtils::UnicodeString>()),
-					"create(property_value[, description=None]) -> GpmlConstantValue\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::gpml_constant_value_create,
+						bp::default_call_policies(),
+						(bp::arg("property_value"),
+							bp::arg("description") = boost::optional<GPlatesUtils::UnicodeString>())),
+					"__init__(property_value[, description])\n"
 					"  Wrap a property value in a time-dependent wrapper that identifies the "
-					"property value as constant for all time. Optionally provide a description string.\n"
-					"  ::\n"
-					"\n"
-					"    constant_property_value = pygplates.GpmlConstantValue.create(property_value)\n"
-					"\n"
-					"  If *description* is ``None`` then :meth:`get_description` will return ``None``.\n"
+					"property value as constant for all time.\n"
 					"\n"
 					"  :param property_value: arbitrary property value\n"
 					"  :type property_value: :class:`PropertyValue`\n"
 					"  :param description: description of this constant value wrapper\n"
-					"  :type description: string or None\n"))
-		.staticmethod("create")
+					"  :type description: string or None\n"
+					"\n"
+					"  Optionally provide a description string. If *description* is not specified "
+					"then :meth:`get_description` will return ``None``.\n"
+					"  ::\n"
+					"\n"
+					"    constant_property_value = pygplates.GpmlConstantValue(property_value)\n")
 		.def("get_value",
 				&GPlatesApi::gpml_constant_value_get_value,
 				"get_value() -> PropertyValue\n"
@@ -668,13 +688,14 @@ export_gpml_constant_value()
 				&GPlatesPropertyValues::GpmlConstantValue::set_value,
 				(bp::arg("property_value")),
 				"set_value(property_value)\n"
-				"  Sets the property value of this constant value wrapper. "
-				"This essentially replaces the previous property value. "
-				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
-				"using its property value methods.\n"
+				"  Sets the property value of this constant value wrapper.\n"
 				"\n"
 				"  :param property_value: arbitrary property value\n"
-				"  :type property_value: :class:`PropertyValue`\n")
+				"  :type property_value: :class:`PropertyValue`\n"
+				"\n"
+				"  This essentially replaces the previous property value. "
+				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
+				"using its property value methods.\n")
 		.def("get_description",
 				&GPlatesPropertyValues::GpmlConstantValue::get_description,
 				"get_description() -> string or None\n"
@@ -684,8 +705,8 @@ export_gpml_constant_value()
 		.def("set_description",
 				&GPlatesPropertyValues::GpmlConstantValue::set_description,
 				(bp::arg("description") = boost::optional<GPlatesUtils::UnicodeString>()),
-				"set_description([description=None])\n"
-				"  Sets the description of this constant value wrapper, or removes it if ``None`` specified.\n"
+				"set_description([description])\n"
+				"  Sets the description of this constant value wrapper, or removes it if none specified.\n"
 				"\n"
 				"  :param description: description of this constant value wrapper\n"
 				"  :type description: string or None\n")
@@ -727,15 +748,16 @@ export_gpml_finite_rotation_slerp()
 					"property value is simply intended to signal that interpolation should be Spherical "
 					"Linear intERPolation (SLERP). Currently this is the only type of interpolation function "
 					"(the only type derived from :class:`GpmlInterpolationFunction`).\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesApi::gpml_finite_rotation_slerp_create,
-				"create() -> GpmlFiniteRotationSlerp\n"
+		.def("__init__",
+				bp::make_constructor(&GPlatesApi::gpml_finite_rotation_slerp_create),
+				"__init__()\n"
 				"  Create an instance of GpmlFiniteRotationSlerp.\n"
 				"  ::\n"
 				"\n"
-				"    finite_rotation_slerp = pygplates.GpmlFiniteRotationSlerp.create()\n")
-		.staticmethod("create")
+				"    finite_rotation_slerp = pygplates.GpmlFiniteRotationSlerp()\n")
 	;
 
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
@@ -853,13 +875,6 @@ namespace GPlatesApi
 				time_samples_vector[0]->get_value_type());
 	}
 
-DISABLE_GCC_WARNING("-Wshadow")
-	// Default argument overloads of 'GPlatesPropertyValues::v::create'.
-	BOOST_PYTHON_FUNCTION_OVERLOADS(
-			gpml_irregular_sampling_create_overloads,
-			gpml_irregular_sampling_create, 1, 2)
-ENABLE_GCC_WARNING("-Wshadow")
-
 	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::non_null_ptr_type
 	gpml_irregular_sampling_get_time_samples(
 			GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
@@ -886,42 +901,46 @@ export_gpml_irregular_sampling()
 			boost::noncopyable>(
 					"GpmlIrregularSampling",
 					"A time-dependent property consisting of a sequence of time samples irregularly spaced in time.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesApi::gpml_irregular_sampling_create,
-				GPlatesApi::gpml_irregular_sampling_create_overloads(
-					(bp::arg("time_samples"),
-						bp::arg("interpolation_function") =
-							boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>()),
-					"create(time_samples[, interpolation_function=None]) -> GpmlIrregularSampling\n"
-					"  Create an irregularly sampled time-dependent property from a sequence of time samples. "
-					"Optionally provide an interpolation function.\n"
-					"\n"
-					"  **NOTE** that the sequence of time samples must **not** be empty (for technical implementation reasons), "
-					"otherwise a *RuntimeError* exception will be thrown.\n"
-					"  ::\n"
-					"\n"
-					"    irregular_sampling = pygplates.GpmlIrregularSampling.create(time_samples)\n"
-					"\n"
-					"  :param time_samples: A sequence of :class:`GpmlTimeSample` elements.\n"
-					"  :type time_samples: Any sequence such as a ``list`` or a ``tuple``\n"
-					"  :param interpolation_function: identifies function used to interpolate\n"
-					"  :type interpolation_function: an instance derived from :class:`GpmlInterpolationFunction`\n"))
-		.staticmethod("create")
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::gpml_irregular_sampling_create,
+						bp::default_call_policies(),
+						(bp::arg("time_samples"),
+							bp::arg("interpolation_function") =
+								boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>())),
+				"__init__(time_samples[, interpolation_function])\n"
+				"  Create an irregularly sampled time-dependent property from a sequence of time samples. "
+				"Optionally provide an interpolation function.\n"
+				"\n"
+				"  :param time_samples: A sequence of :class:`GpmlTimeSample` elements.\n"
+				"  :type time_samples: Any sequence such as a ``list`` or a ``tuple``\n"
+				"  :param interpolation_function: identifies function used to interpolate\n"
+				"  :type interpolation_function: an instance derived from :class:`GpmlInterpolationFunction`\n"
+				"  :raises: RuntimeError if time sample sequence is empty\n"
+				"\n"
+				"  **NOTE** that the sequence of time samples must **not** be empty (for technical implementation reasons), "
+				"otherwise a *RuntimeError* exception will be thrown.\n"
+				"  ::\n"
+				"\n"
+				"    irregular_sampling = pygplates.GpmlIrregularSampling(time_samples)\n")
 		.def("get_time_samples",
 				&GPlatesApi::gpml_irregular_sampling_get_time_samples,
 				"get_time_samples() -> GpmlTimeSampleList\n"
-				"  Returns the :class:`time samples<GpmlTimeSampleList>` in a sequence that behaves as a python ``list``. "
-				"Modifying the returned sequence will modify the internal state of the *GpmlIrregularSampling* "
+				"  Returns the :class:`time samples<GpmlTimeSampleList>` in a sequence that behaves as a python ``list``.\n"
+				"\n"
+				"  :rtype: :class:`GpmlTimeSampleList`\n"
+				"\n"
+				"  Modifying the returned sequence will modify the internal state of the *GpmlIrregularSampling* "
 				"instance.\n"
 				"  ::\n"
 				"\n"
 				"    time_samples = irregular_sampling.get_time_samples()\n"
 				"\n"
 				"    # Sort samples by time ('reverse=True' orders backwards in time from present day to past times)\n"
-				"    time_samples.sort(key = lambda x: x.get_time(), reverse = True)\n"
-				"\n"
-				"  :rtype: :class:`GpmlTimeSampleList`\n")
+				"    time_samples.sort(key = lambda x: x.get_time(), reverse = True)\n")
 		.def("get_interpolation_function",
 				get_interpolation_function,
 				"get_interpolation_function() -> GpmlInterpolationFunction\n"
@@ -932,9 +951,9 @@ export_gpml_irregular_sampling()
 				&GPlatesPropertyValues::GpmlIrregularSampling::set_interpolation_function,
 				(bp::arg("interpolation_function") =
 					boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>()),
-				"set_interpolation_function([interpolation_function=None])\n"
+				"set_interpolation_function([interpolation_function])\n"
 				"  Sets the function used to interpolate between time samples, "
-				"or removes it if ``None`` specified.\n"
+				"or removes it if none specified.\n"
 				"\n"
 				"  :param interpolation_function: the function used to interpolate between time samples\n"
 				"  :type interpolation_function: an instance derived from :class:`GpmlInterpolationFunction`, or None\n")
@@ -1001,36 +1020,41 @@ export_gpml_piecewise_aggregation()
 					"GpmlPiecewiseAggregation",
 					"A time-dependent property consisting of a sequence of time windows each with a *constant* "
 					"property value.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesApi::gpml_piecewise_aggregation_create,
-				(bp::arg("time_windows")),
-				"create(time_windows) -> GpmlPiecewiseAggregation\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::gpml_piecewise_aggregation_create,
+						bp::default_call_policies(),
+						(bp::arg("time_windows"))),
+				"__init__(time_windows)\n"
 				"  Create a piecewise-constant time-dependent property from a sequence of time windows.\n"
+				"\n"
+				"  :param time_windows: A sequence of :class:`GpmlTimeWindow` elements.\n"
+				"  :type time_windows: Any sequence such as a ``list`` or a ``tuple``\n"
+				"  :raises: RuntimeError if time window sequence is empty\n"
 				"\n"
 				"  **NOTE** that the sequence of time windows must **not** be empty (for technical implementation reasons), "
 				"otherwise a *RuntimeError* exception will be thrown.\n"
 				"  ::\n"
 				"\n"
-				"    piecewise_aggregation = pygplates.GpmlPiecewiseAggregation.create(time_windows)\n"
-				"\n"
-				"  :param time_windows: A sequence of :class:`GpmlTimeWindow` elements.\n"
-				"  :type time_windows: Any sequence such as a ``list`` or a ``tuple``\n")
-		.staticmethod("create")
+				"    piecewise_aggregation = pygplates.GpmlPiecewiseAggregation(time_windows)\n")
 		.def("get_time_windows",
 				&GPlatesApi::gpml_piecewise_aggregation_get_time_windows,
 				"get_time_windows() -> GpmlTimeWindowList\n"
-				"  Returns the :class:`time windows<GpmlTimeWindowList>` in a sequence that behaves as a python ``list``. "
-				"Modifying the returned sequence will modify the internal state of the *GpmlPiecewiseAggregation* "
+				"  Returns the :class:`time windows<GpmlTimeWindowList>` in a sequence that behaves as a python ``list``.\n"
+				"\n"
+				"  :rtype: :class:`GpmlTimeWindowList`\n"
+				"\n"
+				"  Modifying the returned sequence will modify the internal state of the *GpmlPiecewiseAggregation* "
 				"instance.\n"
 				"  ::\n"
 				"\n"
 				"    time_windows = piecewise_aggregation.get_time_windows()\n"
 				"\n"
 				"    # Sort windows by begin time ('reverse=True' orders backwards in time from present day to past times)\n"
-				"    time_windows.sort(key = lambda x: x.get_begin_time(), reverse = True)\n"
-				"\n"
-				"  :rtype: :class:`GpmlTimeWindowList`\n")
+				"    time_windows.sort(key = lambda x: x.get_begin_time(), reverse = True)\n")
 	;
 
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
@@ -1056,19 +1080,23 @@ export_gpml_plate_id()
 					"A property value that represents a plate id. A plate id is an integer that "
 					"identifies a particular tectonic plate and is typically used to look up a "
 					"rotation in a :class:`ReconstructionTree`.",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesPropertyValues::GpmlPlateId::create,
-				(bp::arg("plate_id")),
-				"create(plate_id) -> GpmlPlateId\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesPropertyValues::GpmlPlateId::create,
+						bp::default_call_policies(),
+						(bp::arg("plate_id"))),
+				"__init__(plate_id)\n"
 				"  Create a plate id property value from an integer plate id.\n"
-				"  ::\n"
-				"\n"
-				"    plate_id_property = pygplates.GpmlPlateId.create(plate_id)\n"
 				"\n"
 				"  :param plate_id: integer plate id\n"
-				"  :type plate_id: int\n")
-		.staticmethod("create")
+				"  :type plate_id: int\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    plate_id_property = pygplates.GpmlPlateId(plate_id)\n")
 		.def("get_plate_id",
 				&GPlatesPropertyValues::GpmlPlateId::get_value,
 				"get_plate_id() -> int\n"
@@ -1115,13 +1143,6 @@ namespace GPlatesApi
 				property_value->get_structural_type(),
 				is_disabled);
 	}
-
-DISABLE_GCC_WARNING("-Wshadow")
-	// Default argument overloads of 'GPlatesPropertyValues::GpmlTimeSample::create'.
-	BOOST_PYTHON_FUNCTION_OVERLOADS(
-			gpml_time_sample_create_overloads,
-			gpml_time_sample_create, 2, 4)
-ENABLE_GCC_WARNING("-Wshadow")
 
 	// Return base property value to python as its derived property value type.
 	bp::object/*derived property value non_null_intrusive_ptr*/
@@ -1196,30 +1217,33 @@ export_gpml_time_sample()
 					"Time samples are equality (``==``, ``!=``) comparable. This includes comparing the property value "
 					"in the two time samples being compared (see :class:`PropertyValue`) as well as the time instant, "
 					"description string and disabled flag.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesApi::gpml_time_sample_create,
-				GPlatesApi::gpml_time_sample_create_overloads(
-					(bp::arg("property_value"),
-						bp::arg("time"),
-						bp::arg("description") = boost::optional<GPlatesPropertyValues::TextContent>(),
-						bp::arg("is_disabled") = false),
-					"create(property_value, time[, description=None[, is_disabled=False]]) -> GpmlTimeSample\n"
-					"  Create a time sample given a property value and time and optionally a description string "
-					"and disabled flag.\n"
-					"  ::\n"
-					"\n"
-					"    time_sample = pygplates.GpmlTimeSample.create(property_value, time)\n"
-					"\n"
-					"  :param property_value: arbitrary property value\n"
-					"  :type property_value: :class:`PropertyValue`\n"
-					"  :param time: the time position associated with the property value\n"
-					"  :type time: :class:`GeoTimeInstant`\n"
-					"  :param description: description of the time sample\n"
-					"  :type description: string or None\n"
-					"  :param is_disabled: whether time sample is disabled or not\n"
-					"  :type is_disabled: bool\n"))
-		.staticmethod("create")
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::gpml_time_sample_create,
+						bp::default_call_policies(),
+						(bp::arg("property_value"),
+							bp::arg("time"),
+							bp::arg("description") = boost::optional<GPlatesPropertyValues::TextContent>(),
+							bp::arg("is_disabled") = false)),
+				"__init__(property_value, time[, description[, is_disabled=False]])\n"
+				"  Create a time sample given a property value and time and optionally a description string "
+				"and disabled flag.\n"
+				"\n"
+				"  :param property_value: arbitrary property value\n"
+				"  :type property_value: :class:`PropertyValue`\n"
+				"  :param time: the time position associated with the property value\n"
+				"  :type time: :class:`GeoTimeInstant`\n"
+				"  :param description: description of the time sample\n"
+				"  :type description: string or None\n"
+				"  :param is_disabled: whether time sample is disabled or not\n"
+				"  :type is_disabled: bool\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    time_sample = pygplates.GpmlTimeSample(property_value, time)\n")
 		.def("get_value",
 				&GPlatesApi::gpml_time_sample_get_value,
 				"get_value() -> PropertyValue\n"
@@ -1230,13 +1254,14 @@ export_gpml_time_sample()
 				&GPlatesPropertyValues::GpmlTimeSample::set_value,
 				(bp::arg("property_value")),
 				"set_value(property_value)\n"
-				"  Sets the property value associated with this time sample. "
-				"This essentially replaces the previous property value. "
-				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
-				"using its property value methods.\n"
+				"  Sets the property value associated with this time sample.\n"
 				"\n"
 				"  :param property_value: arbitrary property value\n"
-				"  :type property_value: :class:`PropertyValue`\n")
+				"  :type property_value: :class:`PropertyValue`\n"
+				"\n"
+				"  This essentially replaces the previous property value. "
+				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
+				"using its property value methods.\n")
 		.def("get_time",
 				&GPlatesApi::gpml_time_sample_get_time,
 				"get_time() -> GeoTimeInstant\n"
@@ -1260,19 +1285,20 @@ export_gpml_time_sample()
 		.def("set_description",
 				&GPlatesApi::gpml_time_sample_set_description,
 				(bp::arg("description") = boost::optional<GPlatesPropertyValues::TextContent>()),
-				"set_description([description=None])\n"
-				"  Sets the description associated with this time sample, or removes it if ``None`` specified.\n"
+				"set_description([description])\n"
+				"  Sets the description associated with this time sample, or removes it if none specified.\n"
 				"\n"
 				"  :param description: description of the time sample\n"
 				"  :type description: string or None\n")
 		.def("is_disabled",
 				&GPlatesPropertyValues::GpmlTimeSample::is_disabled,
 				"is_disabled() -> bool\n"
-				"  Returns whether this time sample is disabled or not. "
-				"For example, a disabled total reconstruction pole (in a GpmlIrregularSampling sequence) "
-				"is ignored when interpolating rotations at some arbitrary time.\n"
+				"  Returns whether this time sample is disabled or not.\n"
 				"\n"
-				"  :rtype: bool\n")
+				"  :rtype: bool\n"
+				"\n"
+				"  For example, a disabled total reconstruction pole (in a GpmlIrregularSampling sequence) "
+				"is ignored when interpolating rotations at some arbitrary time.\n")
 		.def("set_disabled",
 				&GPlatesPropertyValues::GpmlTimeSample::set_disabled,
 				(bp::arg("is_disabled")),
@@ -1372,26 +1398,30 @@ export_gpml_time_window()
 					"\n"
 					"Time windows are equality (``==``, ``!=``) comparable. This includes comparing the property value "
 					"in the two time windows being compared (see :class:`PropertyValue`) as well as the time period.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesApi::gpml_time_window_create,
-				(bp::arg("property_value"), bp::arg("begin_time"), bp::arg("end_time")),
-				"create(property_value, begin_time, end_time) -> GpmlTimeWindow\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::gpml_time_window_create,
+						bp::default_call_policies(),
+						(bp::arg("property_value"), bp::arg("begin_time"), bp::arg("end_time"))),
+				"__init__(property_value, begin_time, end_time)\n"
 				"  Create a time window given a property value and time range.\n"
-				"  ::\n"
-				"\n"
-				"    time_window = pygplates.GpmlTimeWindow.create(property_value, begin_time, end_time)\n"
-				"\n"
-				"  Note that *begin_time* must be further in the past than the *end_time* "
-				"``begin_time < end_time``.\n"
 				"\n"
 				"  :param property_value: arbitrary property value\n"
 				"  :type property_value: :class:`PropertyValue`\n"
 				"  :param begin_time: the begin time of the time window\n"
 				"  :type begin_time: :class:`GeoTimeInstant`\n"
 				"  :param end_time: the end time of the time window\n"
-				"  :type end_time: :class:`GeoTimeInstant`\n")
-		.staticmethod("create")
+				"  :type end_time: :class:`GeoTimeInstant`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    time_window = pygplates.GpmlTimeWindow(property_value, begin_time, end_time)\n"
+				"\n"
+				"  Note that *begin_time* must be further in the past than the *end_time* "
+				"``begin_time < end_time``.\n")
 		.def("get_value",
 				&GPlatesApi::gpml_time_window_get_value,
 				"get_value() -> PropertyValue\n"
@@ -1402,13 +1432,14 @@ export_gpml_time_window()
 				&GPlatesPropertyValues::GpmlTimeWindow::set_time_dependent_value,
 				(bp::arg("property_value")),
 				"set_value(property_value)\n"
-				"  Sets the property value associated with this time window. "
-				"This essentially replaces the previous property value. "
-				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
-				"using its property value methods.\n"
+				"  Sets the property value associated with this time window.\n"
 				"\n"
 				"  :param property_value: arbitrary property value\n"
-				"  :type property_value: :class:`PropertyValue`\n")
+				"  :type property_value: :class:`PropertyValue`\n"
+				"\n"
+				"  This essentially replaces the previous property value. "
+				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
+				"using its property value methods.\n")
 		.def("get_begin_time",
 				&GPlatesApi::gpml_time_window_get_begin_time,
 				"get_begin_time() -> GeoTimeInstant\n"
@@ -1469,19 +1500,23 @@ export_xs_boolean()
 					"A property value that represents a boolean value. "
 					"The 'Xs' prefix is there since this type of property value is associated with the "
 					"*XML Schema Instance Namespace*.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesPropertyValues::XsBoolean::create,
-				(bp::arg("boolean_value")),
-				"create(boolean_value) -> XsBoolean\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesPropertyValues::XsBoolean::create,
+						bp::default_call_policies(),
+						(bp::arg("boolean_value"))),
+				"__init__(boolean_value)\n"
 				"  Create a boolean property value from a boolean value.\n"
-				"  ::\n"
-				"\n"
-				"    boolean_property = pygplates.XsBoolean.create(boolean_value)\n"
 				"\n"
 				"  :param boolean_value: the boolean value\n"
-				"  :type boolean_value: bool\n")
-		.staticmethod("create")
+				"  :type boolean_value: bool\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    boolean_property = pygplates.XsBoolean(boolean_value)\n")
 		.def("get_boolean",
 				&GPlatesPropertyValues::XsBoolean::get_value,
 				"get_boolean() -> bool\n"
@@ -1522,19 +1557,23 @@ export_xs_double()
 					"Note that, in python, the ``float`` built-in type is double-precision. "
 					"The 'Xs' prefix is there since this type of property value is associated with the "
 					"*XML Schema Instance Namespace*.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesPropertyValues::XsDouble::create,
-				(bp::arg("float_value")),
-				"create(float_value) -> XsDouble\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesPropertyValues::XsDouble::create,
+						bp::default_call_policies(),
+						(bp::arg("float_value"))),
+				"__init__(float_value)\n"
 				"  Create a floating-point property value from a ``float``.\n"
-				"  ::\n"
-				"\n"
-				"    float_property = pygplates.XsDouble.create(float_value)\n"
 				"\n"
 				"  :param float_value: the floating-point value\n"
-				"  :type float_value: float\n")
-		.staticmethod("create")
+				"  :type float_value: float\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    float_property = pygplates.XsDouble(float_value)\n")
 		.def("get_double",
 				&GPlatesPropertyValues::XsDouble::get_value,
 				"get_double() -> float\n"
@@ -1574,19 +1613,23 @@ export_xs_integer()
 					"A property value that represents an integer number. "
 					"The 'Xs' prefix is there since this type of property value is associated with the "
 					"*XML Schema Instance Namespace*.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesPropertyValues::XsInteger::create,
-				(bp::arg("integer_value")),
-				"create(integer_value) -> XsInteger\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesPropertyValues::XsInteger::create,
+						bp::default_call_policies(),
+						(bp::arg("integer_value"))),
+				"__init__(integer_value)\n"
 				"  Create an integer property value from an ``int``.\n"
-				"  ::\n"
-				"\n"
-				"    integer_property = pygplates.XsInteger.create(integer_value)\n"
 				"\n"
 				"  :param integer_value: the integer value\n"
-				"  :type integer_value: int\n")
-		.staticmethod("create")
+				"  :type integer_value: int\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    integer_property = pygplates.XsInteger(integer_value)\n")
 		.def("get_integer",
 				&GPlatesPropertyValues::XsInteger::get_value,
 				"get_integer() -> int\n"
@@ -1626,19 +1669,23 @@ export_xs_string()
 					"A property value that represents a string. "
 					"The 'Xs' prefix is there since this type of property value is associated with the "
 					"*XML Schema Instance Namespace*.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
 					bp::no_init)
-		.def("create",
-				&GPlatesPropertyValues::XsString::create,
-				(bp::arg("string")),
-				"create(string) -> XsString\n"
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesPropertyValues::XsString::create,
+						bp::default_call_policies(),
+						(bp::arg("string"))),
+				"__init__(string)\n"
 				"  Create a string property value from a string.\n"
-				"  ::\n"
-				"\n"
-				"    string_property = pygplates.XsString.create(string)\n"
 				"\n"
 				"  :param string: the string\n"
-				"  :type string: string\n")
-		.staticmethod("create")
+				"  :type string: string\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    string_property = pygplates.XsString(string)\n")
 		.def("get_string",
 				&GPlatesPropertyValues::XsString::get_value,
 				bp::return_value_policy<bp::copy_const_reference>(),

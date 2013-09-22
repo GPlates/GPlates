@@ -57,7 +57,7 @@ namespace GPlatesApi
 	 */
 	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 	feature_collection_file_format_registry_read(
-			boost::shared_ptr<GPlatesFileIO::FeatureCollectionFileFormat::Registry> registry,
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
 			const QString &filename)
 	{
 		const GPlatesFileIO::FileInfo file_info(filename);
@@ -68,7 +68,7 @@ namespace GPlatesApi
 		// TODO: Return the read errors to the python caller.
 		GPlatesFileIO::ReadErrorAccumulation read_errors;
 		// Read new features from the file into the feature collection.
-		registry->read_feature_collection(file->get_reference(), read_errors);
+		registry.read_feature_collection(file->get_reference(), read_errors);
 
 		return GPlatesModel::FeatureCollectionHandle::non_null_ptr_type(
 				file->get_reference().get_feature_collection().handle_ptr());
@@ -79,7 +79,7 @@ namespace GPlatesApi
 	 */
 	void
 	feature_collection_file_format_registry_write(
-			boost::shared_ptr<GPlatesFileIO::FeatureCollectionFileFormat::Registry> registry,
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
 			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
 			const QString &filename)
 	{
@@ -90,7 +90,7 @@ namespace GPlatesApi
 				GPlatesFileIO::File::create_file(file_info, feature_collection);
 
 		// Write the features from the feature collection to the file.
-		registry->write_feature_collection(file->get_reference());
+		registry.write_feature_collection(file->get_reference());
 	}
 }
 
@@ -148,8 +148,8 @@ export_feature_collection_file_format_registry()
 				"  :param filename: the name of the file to read\n"
 				"  :type filename: string\n"
 				"  :rtype: :class:`FeatureCollection`\n"
-				"  :raises OpenFileForReadingError: if the file is not readable\n"
-				"  :raises FileFormatNotSupportedError: if the file format (identified by the filename "
+				"  :raises: OpenFileForReadingError if the file is not readable\n"
+				"  :raises: FileFormatNotSupportedError if the file format (identified by the filename "
 				"extension) does not support reading\n"
 				"\n"
 				"  For example:\n"
@@ -176,8 +176,8 @@ export_feature_collection_file_format_registry()
 				"  :type feature_collection: :class:`FeatureCollection`\n"
 				"  :param filename: the name of the file to write\n"
 				"  :type filename: string\n"
-				"  :raises OpenFileForWritingError: if the file is not writable\n"
-				"  :raises FileFormatNotSupportedError: if the file format (identified by the filename "
+				"  :raises: OpenFileForWritingError if the file is not writable\n"
+				"  :raises: FileFormatNotSupportedError if the file format (identified by the filename "
 				"extension) does not support writing\n"
 				"\n"
 				"  For example:\n"
