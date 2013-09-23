@@ -125,6 +125,7 @@ export_property_value()
 					"\n"
 					"* :class:`GmlLineString`\n"
 					"* :class:`GmlMultiPoint`\n"
+					"* :class:`GmlOrientableCurve`\n"
 					"* :class:`GmlPoint`\n"
 					"* :class:`GmlPolygon`\n"
 					"* :class:`GmlTimeInstant`\n"
@@ -428,6 +429,81 @@ export_gml_multi_point()
 	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
 	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			GPlatesPropertyValues::GmlMultiPoint,
+			GPlatesModel::PropertyValue>();
+}
+
+
+namespace GPlatesApi
+{
+	const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
+	gml_orientable_curve_create(
+			GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string)
+	{
+		// Ignore the reverse flag for now - it never gets used by any client code.
+		return GPlatesModel::ModelUtils::create_gml_orientable_curve(gml_line_string);
+	}
+}
+
+void
+export_gml_orientable_curve()
+{
+	// Use the 'non-const' overload so GmlOrientableCurve can be modified via python...
+	const GPlatesPropertyValues::GmlLineString::non_null_ptr_type
+			(GPlatesPropertyValues::GmlOrientableCurve::*base_curve)() =
+					&GPlatesPropertyValues::GmlOrientableCurve::base_curve;
+
+	//
+	// GmlOrientableCurve - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GmlOrientableCurve,
+			GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GmlOrientableCurve",
+					"A property value representing a polyline geometry with a positive or negative orientation. "
+					"However, currently the orientation is always positive so this is essentially no different "
+					"than a :class:`GmlLineString`.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::gml_orientable_curve_create,
+						bp::default_call_policies(),
+						(bp::arg("gml_line_string")/*, bp::arg(reverse_orientation)=false)*/)),
+				//"__init__(gml_line_string[, reverse_orientation=False])\n"
+				"__init__(gml_line_string)\n"
+				"  Create an orientable polyline property value that wraps a polyline geometry and "
+				"gives it an orientation - **NOTE** currently the orientation is always *positive* "
+				"so this is essentially no different than a :class:`GmlLineString`.\n"
+				"\n"
+				"  :param gml_line_string: the line string (polyline) property value\n"
+				"  :type gml_line_string: :class:`GmlLineString`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    orientable_curve_property = pygplates.GmlOrientableCurve(gml_line_string)\n")
+		.def("get_base_curve",
+				base_curve,
+				"get_base_curve() -> GmlLineString\n"
+				"  Returns the line string (polyline) property value of this wrapped property value.\n"
+				"\n"
+				"  :rtype: :class:`GmlLineString`\n")
+		.def("set_base_curve",
+				&GPlatesPropertyValues::GmlOrientableCurve::set_base_curve,
+				(bp::arg("base_curve")),
+				"set_base_curve(base_curve)\n"
+				"  Sets the line string (polyline) property value of this wrapped property value.\n"
+				"\n"
+				"  :param base_curve: the line string (polyline) property value\n"
+				"  :type base_curve: :class:`GmlLineString`\n")
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GmlOrientableCurve,
 			GPlatesModel::PropertyValue>();
 }
 
@@ -1852,6 +1928,7 @@ export_property_values()
 
 	export_gml_line_string();
 	export_gml_multi_point();
+	export_gml_orientable_curve();
 	export_gml_point();
 	export_gml_polygon();
 	export_gml_time_instant();

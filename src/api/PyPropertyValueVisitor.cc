@@ -31,6 +31,7 @@
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
+#include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
 #include "property-values/GmlTimeInstant.h"
@@ -117,6 +118,29 @@ namespace GPlatesApi
 				gml_multi_point_type &gml_multi_point)
 		{
 			this->GPlatesModel::FeatureVisitor::visit_gml_multi_point(gml_multi_point);
+		}
+
+
+		virtual
+		void
+		visit_gml_orientable_curve(
+				gml_orientable_curve_type &gml_orientable_curve)
+		{
+			if (bp::override visit = this->get_override("visit_gml_orientable_curve"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gml_orientable_curve_type::non_null_ptr_type(&gml_orientable_curve));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gml_orientable_curve(gml_orientable_curve);
+		}
+
+		void
+		default_visit_gml_orientable_curve(
+				gml_orientable_curve_type &gml_orientable_curve)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gml_orientable_curve(gml_orientable_curve);
 		}
 
 
@@ -495,6 +519,11 @@ export_property_value_visitor()
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_multi_point,
 				"visit_gml_multi_point(gml_multi_point)\n"
 				"  Visits a :class:`GmlMultiPoint` property value.\n")
+		.def("visit_gml_orientable_curve",
+				&GPlatesModel::FeatureVisitor::visit_gml_orientable_curve,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_orientable_curve,
+				"visit_gml_orientable_curve(gml_orientable_curve)\n"
+				"  Visits a :class:`GmlOrientableCurve` property value.\n")
 		.def("visit_gml_point",
 				&GPlatesModel::FeatureVisitor::visit_gml_point,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_point,

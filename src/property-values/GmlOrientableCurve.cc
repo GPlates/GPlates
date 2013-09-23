@@ -36,7 +36,7 @@
 
 const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
 GPlatesPropertyValues::GmlOrientableCurve::create(
-		GPlatesModel::PropertyValue::non_null_ptr_type base_curve_,
+		GmlLineString::non_null_ptr_type base_curve_,
 		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &xml_attributes_)
 {
 	GPlatesModel::ModelTransaction transaction;
@@ -49,7 +49,7 @@ GPlatesPropertyValues::GmlOrientableCurve::create(
 
 void
 GPlatesPropertyValues::GmlOrientableCurve::set_base_curve(
-		GPlatesModel::PropertyValue::non_null_ptr_type bc)
+		GmlLineString::non_null_ptr_type bc)
 {
 	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().base_curve.change(

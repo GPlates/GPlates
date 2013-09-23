@@ -68,6 +68,26 @@ class GeoTimeInstantCase(unittest.TestCase):
         self.assertTrue(self.distant_future.get_value() < self.distant_past.get_value())
 
 
+class GmlLineStringCase(unittest.TestCase):
+    def setUp(self):
+        self.polyline = pygplates.PolylineOnSphere(
+                [pygplates.PointOnSphere(1, 0, 0),
+                pygplates.PointOnSphere(0, 1, 0),
+                pygplates.PointOnSphere(0, 0, 1)])
+        self.gml_line_string = pygplates.GmlLineString(self.polyline)
+
+    def test_get(self):
+        self.assertTrue(self.gml_line_string.get_polyline() == self.polyline)
+
+    def test_set(self):
+        new_polyline = pygplates.PolylineOnSphere(
+                [pygplates.PointOnSphere(-1, 0, 0),
+                pygplates.PointOnSphere(0, -1, 0),
+                pygplates.PointOnSphere(0, 0, 1)])
+        self.gml_line_string.set_polyline(new_polyline)
+        self.assertTrue(self.gml_line_string.get_polyline() == new_polyline)
+
+
 class GmlMultiPointCase(unittest.TestCase):
     def setUp(self):
         self.multi_point = pygplates.MultiPointOnSphere(
@@ -84,6 +104,28 @@ class GmlMultiPointCase(unittest.TestCase):
                 [pygplates.PointOnSphere(-1, 0, 0), pygplates.PointOnSphere(0, -1, 0)])
         self.gml_multi_point.set_multi_point(new_multi_point)
         self.assertTrue(self.gml_multi_point.get_multi_point() == new_multi_point)
+
+
+class GmlOrientableCurveCase(unittest.TestCase):
+    def setUp(self):
+        self.polyline = pygplates.PolylineOnSphere(
+                [pygplates.PointOnSphere(1, 0, 0),
+                pygplates.PointOnSphere(0, 1, 0),
+                pygplates.PointOnSphere(0, 0, 1)])
+        self.gml_line_string = pygplates.GmlLineString(self.polyline)
+        self.gml_orientable_curve = pygplates.GmlOrientableCurve(self.gml_line_string)
+
+    def test_get(self):
+        self.assertTrue(self.gml_orientable_curve.get_base_curve() == self.gml_line_string)
+
+    def test_set(self):
+        new_polyline = pygplates.PolylineOnSphere(
+                [pygplates.PointOnSphere(-1, 0, 0),
+                pygplates.PointOnSphere(0, -1, 0),
+                pygplates.PointOnSphere(0, 0, 1)])
+        new_gml_line_string = pygplates.GmlLineString(new_polyline)
+        self.gml_orientable_curve.set_base_curve(new_gml_line_string)
+        self.assertTrue(self.gml_orientable_curve.get_base_curve() == new_gml_line_string)
 
 
 class GmlPointCase(unittest.TestCase):
@@ -118,26 +160,6 @@ class GmlPolygonCase(unittest.TestCase):
                 pygplates.PointOnSphere(0, 0, 1)])
         self.gml_polygon.set_polygon(new_polygon)
         self.assertTrue(self.gml_polygon.get_polygon() == new_polygon)
-
-
-class GmlLineStringCase(unittest.TestCase):
-    def setUp(self):
-        self.polyline = pygplates.PolylineOnSphere(
-                [pygplates.PointOnSphere(1, 0, 0),
-                pygplates.PointOnSphere(0, 1, 0),
-                pygplates.PointOnSphere(0, 0, 1)])
-        self.gml_line_string = pygplates.GmlLineString(self.polyline)
-
-    def test_get(self):
-        self.assertTrue(self.gml_line_string.get_polyline() == self.polyline)
-
-    def test_set(self):
-        new_polyline = pygplates.PolylineOnSphere(
-                [pygplates.PointOnSphere(-1, 0, 0),
-                pygplates.PointOnSphere(0, -1, 0),
-                pygplates.PointOnSphere(0, 0, 1)])
-        self.gml_line_string.set_polyline(new_polyline)
-        self.assertTrue(self.gml_line_string.get_polyline() == new_polyline)
 
 
 class GmlTimeInstantCase(unittest.TestCase):
@@ -469,6 +491,7 @@ def suite():
             GeoTimeInstantCase,
             GmlLineStringCase,
             GmlMultiPointCase,
+            GmlOrientableCurveCase,
             GmlPointCase,
             GmlPolygonCase,
             GmlTimeInstantCase,

@@ -30,7 +30,10 @@
 
 #include <map>
 
+#include "GmlLineString.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
@@ -83,7 +86,7 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				GPlatesModel::PropertyValue::non_null_ptr_type base_curve_,
+				GmlLineString::non_null_ptr_type base_curve_,
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &xml_attributes_);
 
 		const non_null_ptr_type
@@ -95,7 +98,7 @@ namespace GPlatesPropertyValues
 		/**
 		 * Access the 'const' PropertyValue which is the "base curve" of this instance.
 		 */
-		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
+		const GmlLineString::non_null_ptr_to_const_type
 		base_curve() const
 		{
 			return get_current_revision<Revision>().base_curve.get_revisionable();
@@ -104,7 +107,7 @@ namespace GPlatesPropertyValues
 		/**
 		 * Access the 'non-const' PropertyValue which is the "base curve" of this instance.
 		 */
-		const GPlatesModel::PropertyValue::non_null_ptr_type
+		const GmlLineString::non_null_ptr_type
 		base_curve()
 		{
 			return get_current_revision<Revision>().base_curve.get_revisionable();
@@ -115,7 +118,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_base_curve(
-				GPlatesModel::PropertyValue::non_null_ptr_type bc);
+				GmlLineString::non_null_ptr_type bc);
 
 		/**
 		 * Return the map of XML attributes contained by this instance.
@@ -187,7 +190,7 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		GmlOrientableCurve(
 				GPlatesModel::ModelTransaction &transaction_,
-				GPlatesModel::PropertyValue::non_null_ptr_type base_curve_,
+				GmlLineString::non_null_ptr_type base_curve_,
 				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &xml_attributes_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
@@ -244,10 +247,10 @@ namespace GPlatesPropertyValues
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
 					RevisionContext &child_context_,
-					GPlatesModel::PropertyValue::non_null_ptr_type base_curve_,
+					GmlLineString::non_null_ptr_type base_curve_,
 					const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &xml_attributes_):
 				base_curve(
-						GPlatesModel::RevisionedReference<PropertyValue>::attach(
+						GPlatesModel::RevisionedReference<GmlLineString>::attach(
 								transaction_, child_context_, base_curve_)),
 				xml_attributes(xml_attributes_)
 			{  }
@@ -295,7 +298,7 @@ namespace GPlatesPropertyValues
 						GPlatesModel::Revision::equality(other);
 			}
 
-			GPlatesModel::RevisionedReference<PropertyValue> base_curve;
+			GPlatesModel::RevisionedReference<GmlLineString> base_curve;
 			std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes;
 		};
 

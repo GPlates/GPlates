@@ -25,6 +25,7 @@ Contents:
 	pygplates.GeometryOnSphere
 	pygplates.GeoTimeInstant
 	pygplates.GmlMultiPoint
+	pygplates.GmlOrientableCurve
 	pygplates.GmlPoint
 	pygplates.GmlPolygon
 	pygplates.GmlTimeInstant

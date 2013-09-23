@@ -33,6 +33,7 @@
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
+#include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
 #include "property-values/GmlTimeInstant.h"
@@ -88,6 +89,15 @@ namespace GPlatesApi
 		{
 			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
 			d_property_value = bp::object(gml_multi_point_type::non_null_ptr_type(&gml_multi_point));
+		}
+
+		virtual
+		void 
+		visit_gml_orientable_curve(
+				gml_orientable_curve_type &gml_orientable_curve)
+		{
+			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
+			d_property_value = bp::object(gml_orientable_curve_type::non_null_ptr_type(&gml_orientable_curve));
 		}
 
 		virtual
