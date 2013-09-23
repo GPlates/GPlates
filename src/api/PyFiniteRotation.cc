@@ -58,17 +58,43 @@ namespace GPlatesApi
 						GPlatesMaths::FiniteRotation::create(pole, angle)));
 	}
 
-	bool
-	finite_rotation_represents_identity_rotation(
-			const GPlatesMaths::FiniteRotation &finite_rotation)
+	GPlatesMaths::FiniteRotation
+	finite_rotation_interpolate(
+			const GPlatesMaths::FiniteRotation &finite_rotation1,
+			const GPlatesMaths::FiniteRotation &finite_rotation2,
+			const GPlatesMaths::Real &time1,
+			const GPlatesMaths::Real &time2,
+			const GPlatesMaths::Real &target_time)
 	{
-		return represents_identity_rotation(finite_rotation.unit_quat());
+		// If either of the finite rotations has an axis hint, use it.
+		boost::optional<GPlatesMaths::UnitVector3D> axis_hint;
+		if (finite_rotation1.axis_hint())
+		{
+			axis_hint = finite_rotation1.axis_hint();
+		}
+		else if (finite_rotation2.axis_hint())
+		{
+			axis_hint = finite_rotation2.axis_hint();
+		}
+
+		return GPlatesMaths::interpolate(
+				finite_rotation1, finite_rotation2,
+				time1, time2,
+				target_time,
+				axis_hint);
 	}
 }
 
 void
 export_finite_rotation()
 {
+	// Select correct 'compose' overload of FiniteRotation...
+	const GPlatesMaths::FiniteRotation
+			(*compose)(
+					const GPlatesMaths::FiniteRotation &,
+					const GPlatesMaths::FiniteRotation &) =
+							&GPlatesMaths::compose;
+
 	//
 	// FiniteRotation - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -101,7 +127,7 @@ export_finite_rotation()
 					"* a positive angle represents an anti-clockwise rotation around the rotation vector,\n"
 					"* a negative angle corresponds to a clockwise rotation.\n"
 					"\n"
-					"The multiplication operations can be used to rotate various geometry types:\n"
+					"Multiplication operations can be used to rotate various geometry types:\n"
 					"\n"
 					"=========================== =======================================================================\n"
 					"Operation                    Result\n"
@@ -115,11 +141,106 @@ export_finite_rotation()
 					"=========================== =======================================================================\n"
 					"\n"
 					"For example, the rotation of a :class:`PolylineOnSphere`:\n"
-					"  ::\n"
+					"::\n"
 					"\n"
-					"    polyline = pygplates.PolylineOnSphere(...)\n"
-					"    finite_rotation = pygplates.FiniteRotation(pole, angle)\n"
-					"    rotated_polyline = finite_rotation * polyline\n",
+					"  polyline = pygplates.PolylineOnSphere(...)\n"
+					"  finite_rotation = pygplates.FiniteRotation(pole, angle)\n"
+					"  rotated_polyline = finite_rotation * polyline\n"
+					"\n"
+					"Two finite rotations can be interpolated using the :func:`interpolate` function:\n"
+					"::\n"
+					"\n"
+					"  interpolated_rotation = pygplates.interpolate(finite_rotation1, finite_rotation2, "
+					"time1, time2, target_time)\n"
+					"\n"
+					"Two finite rotations can be composed in either of the following equivalent ways:\n"
+					"\n"
+					"* ``composed_finite_rotation = finite_rotation1 * finite_rotation2``\n"
+					"* ``composed_finite_rotation = pygplates.compose(finite_rotation1, finite_rotation2)``\n"
+					"\n"
+					"The latter technique uses the :func:`compose` function.\n"
+					"\n"
+					"**The following is general information on composing finite rotations in various "
+					"plate tectonic scenarios**...\n"
+					"\n"
+					"Rotation from present day (0Ma) to time 't2' (via time 't1'):\n"
+					"\n"
+					"|  R(0->t2)  = R(t1->t2) * R(0->t1)\n"
+					"\n"
+					"...or by post-multiplying both sides by R(t1->0), and then swapping sides, this becomes...\n"
+					"\n"
+					"|  R(t1->t2) = R(0->t2) * R(t1->0)\n"
+					"\n"
+					"Rotation from anchor plate 'A' to moving plate 'M' (via fixed plate 'F'):\n"
+					"\n"
+					"|  R(A->M) = R(A->F) * R(F->M)\n"
+					"\n"
+					"...or by pre-multiplying both sides by R(F->A) this becomes...\n"
+					"\n"
+					"|  R(F->M) = R(F->A) * R(A->M)\n"
+					"\n"
+					"NOTE: The rotations for relative times and for relative plates have the opposite order of each other !\n"
+					"\n"
+					"In other words:\n"
+					"\n"
+					"* For times 0->t1->t2 you apply the '0->t1' rotation first followed by the 't1->t2' rotation:\n"
+					"\n"
+					"  | R(0->t2)  = R(t1->t2) * R(0->t1)\n"
+					"\n"
+					"* For plate circuit A->F->M you apply the 'F->M' rotation first followed by the 'A->F' rotation:\n"
+					"\n"
+					"  | R(A->M) = R(A->F) * R(F->M)\n"
+					"\n"
+					"  Note that this is not 'A->F' followed by 'F->M' as you might expect (looking at the time example).\n"
+					"\n"
+					"This is probably best explained by the difference between thinking in terms of the grand fixed "
+					"coordinate system and local coordinate system (see http://glprogramming.com/red/chapter03.html#name2). "
+					"Essentially, in the plate circuit A->F->M, the 'F->M' rotation can be thought of as a rotation "
+					"within the local coordinate system of 'A->F'. In other words 'F->M' is not a rotation that "
+					"occurs relative to the global spin axis but a rotation relative to the local coordinate system "
+					"of plate 'F' *after* it has been rotated relative to the anchor plate 'A'.\n"
+					"\n"
+					"For the times 0->t1->t2 this local/relative coordinate system concept does not apply.\n"
+					"\n"
+					"NOTE: A rotation must be relative to present day (0Ma) before it can be separated into "
+					"a (plate circuit) chain of moving/fixed plate pairs.\n"
+					"For example, the following is correct...\n"
+					"\n"
+					"|  R(t1->t2,A->C)\n"
+					"|     = R(0->t2,A->C) * R(t1->0,A->C)\n"
+					"|     = R(0->t2,A->C) * inverse[R(0->t1,A->C)]\n"
+					"|     // Now that all times are relative to 0Ma we can split A->C into A->B->C...\n"
+					"|     = R(0->t2,A->B) * R(0->t2,B->C) * inverse[R(0->t1,A->B) * R(0->t1,B->C)]\n"
+					"|     = R(0->t2,A->B) * R(0->t2,B->C) * inverse[R(0->t1,B->C)] * inverse[R(0->t1,A->B)]\n"
+					"\n"
+					"...but the following is *incorrect*...\n"
+					"\n"
+					"|  R(t1->t2,A->C)\n"
+					"|     = R(t1->t2,A->B) * R(t1->t2,B->C)   // <-- This line is *incorrect*\n"
+					"|     = R(0->t2,A->B) * R(t1->0,A->B) * R(0->t2,B->C) * R(t1->0,B->C)\n"
+					"|     = R(0->t2,A->B) * inverse[R(0->t1,A->B)] * R(0->t2,B->C) * inverse[R(0->t1,B->C)]\n"
+					"\n"
+					"...as can be seen above this gives two different results - the same four rotations are "
+					"present in each result but in a different order.\n"
+					"\n"
+					"A->B->C means B->C is the rotation of C relative to B and A->B is the rotation of B relative to A. "
+					"The need for rotation A->C to be relative to present day (0Ma) before it can be split into "
+					"A->B and B->C is because A->B and B->C are defined (in the rotation file) as total reconstruction "
+					"poles which are always relative to present day.\n"
+					"\n"
+					"\n"
+					"An example that combines all this is the stage rotation of a moving plate relative "
+					"to a fixed plate and from time 't1' to time 't2':\n"
+					"\n"
+					"| R(t1->t2,F->M)\n"
+					"|   = R(0->t2,F->M) * R(t1->0,F->M)\n"
+					"|   = R(0->t2,F->M) * inverse[R(0->t1,F->M)]\n"
+					"|   = R(0->t2,F->A) * R(0->t2,A->M) * inverse[R(0->t1,F->A) * R(0->t1,A->M)]\n"
+					"|   = inverse[R(0->t2,A->F)] * R(0->t2,A->M) * inverse[inverse[R(0->t1,A->F)] * R(0->t1,A->M)]\n"
+					"|   = inverse[R(0->t2,A->F)] * R(0->t2,A->M) * inverse[R(0->t1,A->M)] * R(0->t1,A->F)\n"
+					"\n"
+					"...where 'A' is the anchor plate, 'F' is the fixed plate and 'M' is the moving plate.\n"
+					"\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -139,6 +260,18 @@ export_finite_rotation()
 				"  :type pole: :class:`PointOnSphere`\n"
 				"  :param angle: the rotation angle (in *radians*).\n"
 				"  :type angle: float\n")
+		.def("get_inverse",
+				&GPlatesMaths::get_reverse,
+				"get_inverse() -> FiniteRotation\n"
+				"  Return the inverse of this finite rotation.\n"
+				"\n"
+				"  :rtype: :class:`FiniteRotation`\n"
+				"\n"
+				"  The inverse represents the reverse rotation as the following code demonstrates:\n"
+				"  ::\n"
+				"\n"
+				"    rotated_point = finite_rotation * point\n"
+				"    original_point = finite_rotation.get_inverse() * rotated_point\n")
 		.def("get_unit_quaternion",
 				&GPlatesMaths::FiniteRotation::unit_quat,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -146,6 +279,8 @@ export_finite_rotation()
 				"  Return the internal unit quaternion which effects the rotation of this finite rotation.\n"
 				"\n"
 				"  :rtype: :class:`UnitQuaternion3D`\n")
+		// Multiply two finite rotations...
+		.def("__mul__", compose)
 		// Rotations...
 		.def(bp::self * bp::other<GPlatesMaths::UnitVector3D>())
 		.def(bp::self * bp::other<GPlatesMaths::GreatCircleArc>())
@@ -161,6 +296,57 @@ export_finite_rotation()
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
 	;
+
+	// Non-member conversion function...
+	bp::def("compose",
+			compose,
+			(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
+			"compose(finite_rotation1, finite_rotation2) -> FiniteRotation\n"
+			"  Composes two finite rotations and returns the composed finite rotation.\n"
+			"\n"
+			"  :param finite_rotation1: the left-hand-side finite rotation\n"
+			"  :type finite_rotation1: :class:`FiniteRotation`\n"
+			"  :param finite_rotation2: the right-hand-side finite rotation\n"
+			"  :type finite_rotation2: :class:`FiniteRotation`\n"
+			"  :rtype: :class:`FiniteRotation`\n"
+			"\n"
+			"  This method does the same as ``finite_rotation1 * finite_rotation2``.\n"
+			"\n"
+			"  See :class:`FiniteRotation` for more details on composing finite rotations.\n");
+
+	// Non-member interpolation function...
+	bp::def("interpolate",
+			&GPlatesApi::finite_rotation_interpolate,
+			(bp::arg("finite_rotation1"),
+				bp::arg("finite_rotation2"),
+				bp::arg("time1"),
+				bp::arg("time2"),
+				bp::arg("target_time")),
+			"interpolate(finite_rotation1, finite_rotation2, time1, time2, target_time) -> FiniteRotation\n"
+			"  Calculate the finite rotation which is the interpolation of two finite rotations. "
+			"The finite rotations *finite_rotation1* and *finite_rotation2* are associated with "
+			"times *time1* and *time2*, respectively. The result of the interpolation is associated "
+			"with *target_time*. The interpolated finite rotation is generated using Spherical Linear "
+			"intERPolation (SLERP) with the interpolation factor ``(target_time - time1) / (time2 - time1)``.\n"
+			"\n"
+			"  :param finite_rotation1: the left-hand-side finite rotation\n"
+			"  :type finite_rotation1: :class:`FiniteRotation`\n"
+			"  :param finite_rotation2: the right-hand-side finite rotation\n"
+			"  :type finite_rotation2: :class:`FiniteRotation`\n"
+			"  :param time1: the time associated with the left-hand-side finite rotation\n"
+			"  :type time1: float\n"
+			"  :param time2: the time associated with the right-hand-side finite rotation\n"
+			"  :type time2: float\n"
+			"  :param time2: the time associated with the result of the interpolation\n"
+			"  :type time2: float\n"
+			"  :rtype: :class:`FiniteRotation`\n"
+			"  :raises: IndeterminateResultException if *time1* and *time2* are equal\n"
+			"\n"
+			"  *target_time* can be any time - it does not have to be between *time1* and *time2*.\n"
+			"  ::\n"
+			"\n"
+			"    interpolated_rotation = pygplates.interpolate(finite_rotation1, finite_rotation2, "
+			"time1, time2, target_time)\n");
 
 	// Enable boost::optional<FiniteRotation> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::python_optional<GPlatesMaths::FiniteRotation>();

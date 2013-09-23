@@ -977,7 +977,7 @@ export_polyline_on_sphere()
 				"\n"
 				"  :param points: A sequence of :class:`PointOnSphere` elements.\n"
 				"  :type points: Any sequence such as a ``list`` or a ``tuple``\n"
-				"  :raises: InvalidPointsForPolylineConstructionError if sequence has less than two points"
+				"  :raises: InvalidPointsForPolylineConstructionError if sequence has less than two points\n"
 				"\n"
 				"  **NOTE** that the sequence must contain at least two points in order to be a valid "
 				"polyline, otherwise *InvalidPointsForPolylineConstructionError* will be raised.\n"

@@ -59,6 +59,31 @@ class FiniteRotationCase(unittest.TestCase):
         rotated_polygon = self.finite_rotation * polygon
         self.assertTrue(isinstance(rotated_polygon, pygplates.PolygonOnSphere))
         self.assertTrue(len(rotated_polygon.get_points_view()) == len(polygon.get_points_view()))
+    
+    def test_inverse(self):
+        inverse_rotation = self.finite_rotation.get_inverse()
+        self.assertTrue(isinstance(inverse_rotation, pygplates.FiniteRotation))
+    
+    def test_compose_rotations(self):
+        inverse_rotation = self.finite_rotation.get_inverse()
+        # Compose two finite rotations.
+        composed_rotation = inverse_rotation * self.finite_rotation
+        self.assertTrue(isinstance(composed_rotation, pygplates.FiniteRotation))
+        # Another way to compose.
+        composed_rotation = pygplates.compose(inverse_rotation, self.finite_rotation)
+        self.assertTrue(isinstance(composed_rotation, pygplates.FiniteRotation))
+    
+    def test_interpolate(self):
+        finite_rotation2 = pygplates.FiniteRotation(pygplates.PointOnSphere(0, 1, 0), 0.5 * math.pi)
+        interpolated_rotation = pygplates.interpolate(
+                self.finite_rotation, finite_rotation2,
+                10, 20, 15)
+        self.assertTrue(isinstance(interpolated_rotation, pygplates.FiniteRotation))
+        # The times to interpolate between cannot be the same.
+        self.assertRaises(
+                pygplates.IndeterminateResultError,
+                pygplates.interpolate,
+                self.finite_rotation, finite_rotation2, 10, 10, 15)
 
 
 class GreatCircleArcCase(unittest.TestCase):
