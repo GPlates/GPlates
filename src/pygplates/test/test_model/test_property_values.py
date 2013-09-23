@@ -120,6 +120,26 @@ class GmlPolygonCase(unittest.TestCase):
         self.assertTrue(self.gml_polygon.get_polygon() == new_polygon)
 
 
+class GmlLineStringCase(unittest.TestCase):
+    def setUp(self):
+        self.polyline = pygplates.PolylineOnSphere(
+                [pygplates.PointOnSphere(1, 0, 0),
+                pygplates.PointOnSphere(0, 1, 0),
+                pygplates.PointOnSphere(0, 0, 1)])
+        self.gml_line_string = pygplates.GmlLineString(self.polyline)
+
+    def test_get(self):
+        self.assertTrue(self.gml_line_string.get_polyline() == self.polyline)
+
+    def test_set(self):
+        new_polyline = pygplates.PolylineOnSphere(
+                [pygplates.PointOnSphere(-1, 0, 0),
+                pygplates.PointOnSphere(0, -1, 0),
+                pygplates.PointOnSphere(0, 0, 1)])
+        self.gml_line_string.set_polyline(new_polyline)
+        self.assertTrue(self.gml_line_string.get_polyline() == new_polyline)
+
+
 class GmlTimeInstantCase(unittest.TestCase):
     def setUp(self):
         self.geo_time_instant = pygplates.GeoTimeInstant(10)
@@ -447,6 +467,7 @@ def suite():
     # Add test cases from this module.
     test_cases = [
             GeoTimeInstantCase,
+            GmlLineStringCase,
             GmlMultiPointCase,
             GmlPointCase,
             GmlPolygonCase,

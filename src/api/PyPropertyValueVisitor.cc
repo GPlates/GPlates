@@ -29,6 +29,7 @@
 
 #include "model/FeatureVisitor.h"
 
+#include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
@@ -72,6 +73,30 @@ namespace GPlatesApi
 			public GPlatesModel::FeatureVisitor,
 			public bp::wrapper<GPlatesModel::FeatureVisitor>
 	{
+
+		virtual
+		void
+		visit_gml_line_string(
+				gml_line_string_type &gml_line_string)
+		{
+			if (bp::override visit = this->get_override("visit_gml_line_string"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gml_line_string_type::non_null_ptr_type(&gml_line_string));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gml_line_string(gml_line_string);
+		}
+
+		void
+		default_visit_gml_line_string(
+				gml_line_string_type &gml_line_string)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gml_line_string(gml_line_string);
+		}
+
+
 		virtual
 		void
 		visit_gml_multi_point(
@@ -460,6 +485,11 @@ export_property_value_visitor()
 			// NOTE: Must not define 'bp::no_init' because this base class is meant to be inherited
 			// by a python class (see http://www.boostpro.com/writing/bpl.html#inheritance).
 			)
+		.def("visit_gml_line_string",
+				&GPlatesModel::FeatureVisitor::visit_gml_line_string,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_line_string,
+				"visit_gml_line_string(gml_line_string)\n"
+				"  Visits a :class:`GmlLineString` property value.\n")
 		.def("visit_gml_multi_point",
 				&GPlatesModel::FeatureVisitor::visit_gml_multi_point,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_multi_point,

@@ -31,6 +31,7 @@
 
 #include "model/FeatureVisitor.h"
 
+#include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
@@ -69,6 +70,15 @@ namespace GPlatesApi
 		get_property_value_as_derived_type()
 		{
 			return d_property_value;
+		}
+
+		virtual
+		void 
+		visit_gml_line_string(
+				gml_line_string_type &gml_line_string)
+		{
+			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
+			d_property_value = bp::object(gml_line_string_type::non_null_ptr_type(&gml_line_string));
 		}
 
 		virtual

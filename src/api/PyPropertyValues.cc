@@ -40,7 +40,9 @@
 #include "model/ModelUtils.h"
 
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
+#include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
 #include "property-values/GmlTimeInstant.h"
@@ -121,6 +123,7 @@ export_property_value()
 					"\n"
 					"The list of derived property value classes includes:\n"
 					"\n"
+					"* :class:`GmlLineString`\n"
 					"* :class:`GmlMultiPoint`\n"
 					"* :class:`GmlPoint`\n"
 					"* :class:`GmlPolygon`\n"
@@ -308,6 +311,60 @@ export_geo_time_instant()
 
 	// Enable boost::optional<GeoTimeInstant> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::GeoTimeInstant>();
+}
+
+
+void
+export_gml_line_string()
+{
+	//
+	// GmlLineString - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GmlLineString,
+			GPlatesPropertyValues::GmlLineString::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GmlLineString",
+					"A property value representing a polyline geometry.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesPropertyValues::GmlLineString::create,
+						bp::default_call_policies(),
+						(bp::arg("polyline"))),
+				"__init__(polyline)\n"
+				"  Create a property value representing a polyline geometry.\n"
+				"\n"
+				"  :param polyline: the polyline geometry\n"
+				"  :type polyline: :class:`PolylineOnSphere`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"   line_string_property = pygplates.GmlLineString(polyline)\n")
+		.def("get_polyline",
+				&GPlatesPropertyValues::GmlLineString::get_polyline,
+				"get_polyline() -> PolylineOnSphere\n"
+				"  Returns the polyline geometry of this property value.\n"
+				"\n"
+				"  :rtype: :class:`PolylineOnSphere`\n")
+		.def("set_polyline",
+				&GPlatesPropertyValues::GmlLineString::set_polyline,
+				(bp::arg("polyline")),
+				"set_polyline(polyline)\n"
+				"  Sets the polyline geometry of this property value.\n"
+				"\n"
+				"  :param polyline: the polyline geometry\n"
+				"  :type polyline: :class:`PolylineOnSphere`\n")
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GmlLineString,
+			GPlatesModel::PropertyValue>();
 }
 
 
@@ -1793,6 +1850,7 @@ export_property_values()
 
 	export_geo_time_instant();
 
+	export_gml_line_string();
 	export_gml_multi_point();
 	export_gml_point();
 	export_gml_polygon();
