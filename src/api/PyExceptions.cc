@@ -39,6 +39,7 @@
 
 #include "maths/IndeterminateResultException.h"
 #include "maths/IndeterminateArcRotationAxisException.h"
+#include "maths/InvalidLatLonException.h"
 #include "maths/MathematicalException.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -202,6 +203,25 @@ export_exceptions()
 					"GPlatesError",
 					bp::object(bp::handle<>(bp::borrowed(PyExc_Exception))));
 
+	//
+	// Direct subclasses of GPlatesGlobal::Exception.
+	//
+	export_exception<GPlatesGlobal::AssertionFailureException>(
+			"AssertionFailureError",
+			gplates_exception_type);
+	export_exception<GPlatesFileIO::FileFormatNotSupportedException>(
+			"FileFormatNotSupportedError",
+			gplates_exception_type);
+	export_exception<GPlatesFileIO::ErrorOpeningFileForReadingException>(
+			"OpenFileForReadingError",
+			gplates_exception_type);
+	export_exception<GPlatesFileIO::ErrorOpeningFileForWritingException>(
+			"OpenFileForWritingError",
+			gplates_exception_type);
+
+	//
+	// PreconditionViolationError and direct subclasses.
+	//
 	const bp::object precondition_violation_exception_type =
 			export_exception<GPlatesGlobal::PreconditionViolationError>(
 					"PreconditionViolationError",
@@ -218,7 +238,13 @@ export_exceptions()
 	export_exception<GPlatesMaths::InvalidPointsForPolylineConstructionError>(
 			"InvalidPointsForPolylineConstructionError",
 			precondition_violation_exception_type);
+	export_exception<GPlatesMaths::InvalidLatLonException>(
+			"InvalidLatLonError",
+			precondition_violation_exception_type);
 
+	//
+	// MathematicalException and direct subclasses.
+	//
 	const bp::object mathematical_exception_type =
 			export_exception<GPlatesMaths::MathematicalException>(
 					"MathematicalError",
@@ -229,19 +255,6 @@ export_exceptions()
 	export_exception<GPlatesMaths::ViolatedUnitVectorInvariantException>(
 			"ViolatedUnitVectorInvariantError",
 			mathematical_exception_type);
-
-	export_exception<GPlatesGlobal::AssertionFailureException>(
-			"AssertionFailureError",
-			gplates_exception_type);
-	export_exception<GPlatesFileIO::FileFormatNotSupportedException>(
-			"FileFormatNotSupportedError",
-			gplates_exception_type);
-	export_exception<GPlatesFileIO::ErrorOpeningFileForReadingException>(
-			"OpenFileForReadingError",
-			gplates_exception_type);
-	export_exception<GPlatesFileIO::ErrorOpeningFileForWritingException>(
-			"OpenFileForWritingError",
-			gplates_exception_type);
 }
 
 #endif // GPLATES_NO_PYTHON

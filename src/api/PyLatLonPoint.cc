@@ -43,28 +43,96 @@ void
 export_lat_lon_point()
 {
 	//
-	// LatLonPoint
+	// LatLonPoint - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
-	bp::class_<GPlatesMaths::LatLonPoint>("LatLonPoint", bp::init<double,double>())
-		.def("is_valid_latitude", &GPlatesMaths::LatLonPoint::is_valid_latitude)
+	bp::class_<
+			GPlatesMaths::LatLonPoint>(
+					"LatLonPoint",
+					"Represents a point in 2D geographic coordinates (latitude and longitude).\n"
+					"\n"
+					"The following functions convert between :class:`LatLonPoint` and :class:`PointOnSphere`:\n"
+					"\n"
+					"* :func:`convert_point_on_sphere_to_lat_lon_point` - "
+					"convert *from* a :class:`PointOnSphere`: *to* a :class:`LatLonPoint`.\n"
+					"* :func:`convert_point_on_sphere_to_lat_lon_point` - "
+					"convert *from* a :class:`LatLonPoint`: *to* a :class:`PointOnSphere`.\n",
+					bp::init<double,double>(
+							(bp::arg("latitude"), bp::arg("longitude")),
+							"__init__(latitude, longitude)\n"
+							"  Create a *LatLonPoint* instance from a *latitude* and *longitude*.\n"
+							"\n"
+							"  :param latitude: the latitude\n"
+							"  :type latitude: float\n"
+							"  :param longitude: the longitude\n"
+							"  :type longitude: float\n"
+							"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
+							"\n"
+							"  **NOTE** that *latitude* must satisfy :meth:`is_valid_latitude` and "
+							"*longitude* must satisfy :meth:`is_valid_longitude`, otherwise "
+							"*InvalidLatLonError* will be raised.\n"
+							"  ::\n"
+							"\n"
+							"    point = pygplates.LatLonPoint(latitude, longitude)\n"))
+		.def("is_valid_latitude",
+				&GPlatesMaths::LatLonPoint::is_valid_latitude,
+				(bp::arg("latitude")),
+				"is_valid_latitude() -> bool\n"
+				"  Returns ``True`` if *latitude* is in the range [-90, 90].\n"
+				"\n"
+				"  :param latitude: the latitude\n"
+				"  :rtype: bool\n")
 		.staticmethod("is_valid_latitude")
-		.def("is_valid_longitude", &GPlatesMaths::LatLonPoint::is_valid_longitude)
+		.def("is_valid_longitude",
+				&GPlatesMaths::LatLonPoint::is_valid_longitude,
+				(bp::arg("longitude")),
+				"is_valid_longitude() -> bool\n"
+				"  Returns ``True`` if *longitude* is in the range [-360, 360].\n"
+				"\n"
+				"  :param longitude: the longitude\n"
+				"  :rtype: bool\n"
+				"\n"
+				"  GPlates uses the half-open range (-180.0, 180.0], but accepts [-360.0, 360.0] as input\n")
 		.staticmethod("is_valid_longitude")
 		.def("get_latitude",
 				&GPlatesMaths::LatLonPoint::latitude,
-				bp::return_value_policy<bp::copy_const_reference>())
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_latitude() -> float\n"
+				"  Returns the latitude.\n"
+				"\n"
+				"  :rtype: float\n")
 		.def("get_longitude",
 				&GPlatesMaths::LatLonPoint::longitude,
-				bp::return_value_policy<bp::copy_const_reference>())
-		// Member to-PointOnSphere conversion function...
-		.def("to_point_on_sphere", &GPlatesMaths::make_point_on_sphere)
-		// Static-member from-PointOnSphere conversion function...
-		.def("from_point_on_sphere", &GPlatesMaths::make_lat_lon_point)
- 		.staticmethod("from_point_on_sphere")
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_longitude() -> float\n"
+				"  Returns the longitude.\n"
+				"\n"
+				"  :rtype: float\n")
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
 	;
+
+	// Non-member conversion function...
+	bp::def("convert_lat_lon_point_to_point_on_sphere",
+			&GPlatesMaths::make_point_on_sphere,
+			(bp::arg("lat_lon_point")),
+			"convert_lat_lon_point_to_point_on_sphere(lat_lon_point) -> PointOnSphere\n"
+			"  Converts a 2D latitude/longitude point to a 3D cartesian point.\n"
+			"\n"
+			"  :param lat_lon_point: the 2D latitude/longitude point\n"
+			"  :rtype: :class:`PointOnSphere`\n"
+			"\n");
+
+	// Non-member conversion function...
+	bp::def("convert_point_on_sphere_to_lat_lon_point",
+			&GPlatesMaths::make_lat_lon_point,
+			(bp::arg("point")),
+			"convert_point_on_sphere_to_lat_lon_point(point) -> LatLonPoint\n"
+			"  Converts a 3D cartesian point to a 2D latitude/longitude point.\n"
+			"\n"
+			"  :param point: the 3D cartesian point\n"
+			"  :rtype: :class:`LatLonPoint`\n"
+			"\n");
 
 	// Enable boost::optional<LatLonPoint> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::python_optional<GPlatesMaths::LatLonPoint>();

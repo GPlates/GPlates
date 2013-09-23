@@ -39,6 +39,7 @@ Contents:
 	pygplates.GpmlTimeSample
 	pygplates.GpmlTimeWindow
 	pygplates.GreatCircleArc
+	pygplates.LatLonPoint
 	pygplates.MultiPointOnSphere
 	pygplates.PointOnSphere
 	pygplates.PolygonOnSphere
@@ -53,6 +54,9 @@ Contents:
 	pygplates.XsInteger
 	pygplates.XsString
 	pygplates.UnitVector3D
+	
+	pygplates.convert_lat_lon_point_to_point_on_sphere
+	pygplates.convert_point_on_sphere_to_lat_lon_point
 
 .. NOTE: Only document the new API for now, exclude classes/functions not in the new API.
 .. NOTE: Only classes (and their methods) that are documented (that have docstrings) will appear in the generated documentation.

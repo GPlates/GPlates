@@ -303,7 +303,14 @@ export_point_on_sphere()
 #endif
 			>(
 					"PointOnSphere",
-					"Represents a point on the surface of the unit length sphere.\n"
+					"Represents a point on the surface of the unit length sphere in 3D cartesian coordinates.\n"
+					"\n"
+					"The following functions convert between :class:`LatLonPoint` and :class:`PointOnSphere`:\n"
+					"\n"
+					"* :func:`convert_point_on_sphere_to_lat_lon_point` - "
+					"convert *from* a :class:`PointOnSphere`: *to* a :class:`LatLonPoint`.\n"
+					"* :func:`convert_point_on_sphere_to_lat_lon_point` - "
+					"convert *from* a :class:`LatLonPoint`: *to* a :class:`PointOnSphere`.\n"
 					"\n"
 					"Points are equality (``==``, ``!=``) comparable where two points are considered "
 					"equal if their coordinates match within a *very* small numerical epsilon that accounts "

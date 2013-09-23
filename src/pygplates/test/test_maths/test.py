@@ -85,13 +85,44 @@ class GreatCircleArcCase(unittest.TestCase):
         self.assertRaises(pygplates.IndeterminateArcRotationAxisError, zero_length_gca.get_rotation_axis)
 
 
+class LatLonPointCase(unittest.TestCase):
+    def setUp(self):
+        self.latitude = 50
+        self.longitude = 145
+        self.lat_lon_point = pygplates.LatLonPoint(self.latitude, self.longitude)
+
+    def test_get(self):
+        self.assertTrue(self.lat_lon_point.get_latitude() == self.latitude)
+        self.assertTrue(self.lat_lon_point.get_longitude() == self.longitude)
+
+    def test_is_valid(self):
+        self.assertTrue(pygplates.LatLonPoint.is_valid_latitude(self.lat_lon_point.get_latitude()))
+        self.assertTrue(pygplates.LatLonPoint.is_valid_longitude(self.lat_lon_point.get_longitude()))
+
+    def test_is_invalid(self):
+        # Latitude outside range [-90,90].
+        self.assertFalse(pygplates.LatLonPoint.is_valid_latitude(100))
+        self.assertRaises(pygplates.InvalidLatLonError, pygplates.LatLonPoint, 100, 0)
+        self.assertRaises(pygplates.InvalidLatLonError, pygplates.LatLonPoint, -100, 0)
+        # Longitude outside range [-360,360].
+        self.assertFalse(pygplates.LatLonPoint.is_valid_longitude(370))
+        self.assertRaises(pygplates.InvalidLatLonError, pygplates.LatLonPoint, 0, 370)
+        self.assertRaises(pygplates.InvalidLatLonError, pygplates.LatLonPoint, 0, -370)
+
+    def test_convert(self):
+        point_on_sphere = pygplates.convert_lat_lon_point_to_point_on_sphere(pygplates.LatLonPoint(10, 20))
+        self.assertTrue(isinstance(point_on_sphere, pygplates.PointOnSphere))
+        lat_lon_point = pygplates.convert_point_on_sphere_to_lat_lon_point(pygplates.PointOnSphere(1, 0, 0))
+        self.assertTrue(isinstance(lat_lon_point, pygplates.LatLonPoint))
+
 def suite():
     suite = unittest.TestSuite()
     
     # Add test cases from this module.
     test_cases = [
             FiniteRotationCase,
-            GreatCircleArcCase
+            GreatCircleArcCase,
+            LatLonPointCase
         ]
 
     for test_case in test_cases:
