@@ -40,6 +40,10 @@
 #include "maths/IndeterminateResultException.h"
 #include "maths/IndeterminateArcRotationAxisException.h"
 #include "maths/MathematicalException.h"
+#include "maths/MultiPointOnSphere.h"
+#include "maths/PolygonOnSphere.h"
+#include "maths/PolylineOnSphere.h"
+#include "maths/ViolatedUnitVectorInvariantException.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -205,6 +209,15 @@ export_exceptions()
 	export_exception<GPlatesMaths::IndeterminateArcRotationAxisException>(
 			"IndeterminateArcRotationAxisError",
 			precondition_violation_exception_type);
+	export_exception<GPlatesMaths::InsufficientPointsForMultiPointConstructionError>(
+			"InsufficientPointsForMultiPointConstructionError",
+			precondition_violation_exception_type);
+	export_exception<GPlatesMaths::InvalidPointsForPolygonConstructionError>(
+			"InvalidPointsForPolygonConstructionError",
+			precondition_violation_exception_type);
+	export_exception<GPlatesMaths::InvalidPointsForPolylineConstructionError>(
+			"InvalidPointsForPolylineConstructionError",
+			precondition_violation_exception_type);
 
 	const bp::object mathematical_exception_type =
 			export_exception<GPlatesMaths::MathematicalException>(
@@ -212,6 +225,9 @@ export_exceptions()
 					gplates_exception_type);
 	export_exception<GPlatesMaths::IndeterminateResultException>(
 			"IndeterminateResultError",
+			mathematical_exception_type);
+	export_exception<GPlatesMaths::ViolatedUnitVectorInvariantException>(
+			"ViolatedUnitVectorInvariantError",
 			mathematical_exception_type);
 
 	export_exception<GPlatesGlobal::AssertionFailureException>(

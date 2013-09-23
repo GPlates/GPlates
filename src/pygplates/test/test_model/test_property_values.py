@@ -100,6 +100,26 @@ class GmlPointCase(unittest.TestCase):
         self.assertTrue(self.gml_point.get_point() == new_point)
 
 
+class GmlPolygonCase(unittest.TestCase):
+    def setUp(self):
+        self.polygon = pygplates.PolygonOnSphere(
+                [pygplates.PointOnSphere(1, 0, 0),
+                pygplates.PointOnSphere(0, 1, 0),
+                pygplates.PointOnSphere(0, 0, 1)])
+        self.gml_polygon = pygplates.GmlPolygon(self.polygon)
+
+    def test_get(self):
+        self.assertTrue(self.gml_polygon.get_polygon() == self.polygon)
+
+    def test_set(self):
+        new_polygon = pygplates.PolygonOnSphere(
+                [pygplates.PointOnSphere(-1, 0, 0),
+                pygplates.PointOnSphere(0, -1, 0),
+                pygplates.PointOnSphere(0, 0, 1)])
+        self.gml_polygon.set_polygon(new_polygon)
+        self.assertTrue(self.gml_polygon.get_polygon() == new_polygon)
+
+
 class GmlTimeInstantCase(unittest.TestCase):
     def setUp(self):
         self.geo_time_instant = pygplates.GeoTimeInstant(10)
@@ -429,6 +449,7 @@ def suite():
             GeoTimeInstantCase,
             GmlMultiPointCase,
             GmlPointCase,
+            GmlPolygonCase,
             GmlTimeInstantCase,
             GmlTimePeriodCase,
             GpmlConstantValueCase,

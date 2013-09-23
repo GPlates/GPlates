@@ -29,6 +29,8 @@ class PointOnSphereCase(unittest.TestCase):
         self.assertEquals(point1, point2)
         self.assertEquals(point1.get_position_vector(), self.unit_vector_3d)
         self.assertEquals(point2.get_position_vector(), self.unit_vector_3d)
+        # A non-unit length vector raises error.
+        self.assertRaises(pygplates.ViolatedUnitVectorInvariantError, pygplates.PointOnSphere, 1, 1, 1)
 
 
 class MultiPointOnSphereCase(unittest.TestCase):
@@ -39,6 +41,13 @@ class MultiPointOnSphereCase(unittest.TestCase):
         self.points.append(pygplates.PointOnSphere(0, 0, 1))
         self.points.append(pygplates.PointOnSphere(-1, 0, 0))
         self.multi_point = pygplates.MultiPointOnSphere(self.points)
+
+    def test_construct(self):
+        # Need at least one point.
+        self.assertRaises(
+                pygplates.InsufficientPointsForMultiPointConstructionError,
+                pygplates.MultiPointOnSphere,
+                [])
     
     def test_compare(self):
         self.assertEquals(self.multi_point, pygplates.MultiPointOnSphere(self.points))
@@ -84,7 +93,14 @@ class PolylineOnSphereCase(unittest.TestCase):
         self.points.append(pygplates.PointOnSphere(0, 0, 1))
         self.points.append(pygplates.PointOnSphere(0, -1, 0))
         self.polyline = pygplates.PolylineOnSphere(self.points)
-    
+
+    def test_construct(self):
+        # Need at least two points.
+        self.assertRaises(
+                pygplates.InvalidPointsForPolylineConstructionError,
+                pygplates.PolylineOnSphere,
+                [pygplates.PointOnSphere(1, 0, 0)])
+
     def test_compare(self):
         self.assertEquals(self.polyline, pygplates.PolylineOnSphere(self.points))
     
@@ -168,7 +184,14 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.points.append(pygplates.PointOnSphere(0, 0, 1))
         self.points.append(pygplates.PointOnSphere(0, -1, 0))
         self.polygon = pygplates.PolygonOnSphere(self.points)
-    
+
+    def test_construct(self):
+        # Need at least three points.
+        self.assertRaises(
+                pygplates.InvalidPointsForPolygonConstructionError,
+                pygplates.PolygonOnSphere,
+                [pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(0, 1, 0)])
+
     def test_compare(self):
         self.assertEquals(self.polygon, pygplates.PolygonOnSphere(self.points))
     

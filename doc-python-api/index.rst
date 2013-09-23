@@ -26,6 +26,7 @@ Contents:
 	pygplates.GeoTimeInstant
 	pygplates.GmlMultiPoint
 	pygplates.GmlPoint
+	pygplates.GmlPolygon
 	pygplates.GmlTimeInstant
 	pygplates.GmlTimePeriod
 	pygplates.GpmlConstantValue

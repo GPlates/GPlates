@@ -31,6 +31,7 @@
 
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
@@ -114,6 +115,29 @@ namespace GPlatesApi
 				gml_point_type &gml_point)
 		{
 			this->GPlatesModel::FeatureVisitor::visit_gml_point(gml_point);
+		}
+
+
+		virtual
+		void
+		visit_gml_polygon(
+				gml_polygon_type &gml_polygon)
+		{
+			if (bp::override visit = this->get_override("visit_gml_polygon"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gml_polygon_type::non_null_ptr_type(&gml_polygon));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gml_polygon(gml_polygon);
+		}
+
+		void
+		default_visit_gml_polygon(
+				gml_polygon_type &gml_polygon)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gml_polygon(gml_polygon);
 		}
 
 
@@ -446,6 +470,11 @@ export_property_value_visitor()
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_point,
 				"visit_gml_point(gml_point)\n"
 				"  Visits a :class:`GmlPoint` property value.\n")
+		.def("visit_gml_polygon",
+				&GPlatesModel::FeatureVisitor::visit_gml_polygon,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_polygon,
+				"visit_gml_polygon(gml_polygon)\n"
+				"  Visits a :class:`GmlPolygon` property value.\n")
 		.def("visit_gml_time_instant",
 				&GPlatesModel::FeatureVisitor::visit_gml_time_instant,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_time_instant,

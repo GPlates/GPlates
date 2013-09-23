@@ -42,6 +42,7 @@
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
@@ -122,6 +123,7 @@ export_property_value()
 					"\n"
 					"* :class:`GmlMultiPoint`\n"
 					"* :class:`GmlPoint`\n"
+					"* :class:`GmlPolygon`\n"
 					"* :class:`GmlTimeInstant`\n"
 					"* :class:`GmlTimePeriod`\n"
 					"* :class:`GpmlConstantValue`\n"
@@ -313,9 +315,9 @@ namespace GPlatesApi
 {
 	const GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
 	gml_multi_point_create(
-			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point)
+			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
 	{
-		return GPlatesPropertyValues::GmlMultiPoint::create(multi_point);
+		return GPlatesPropertyValues::GmlMultiPoint::create(multi_point_on_sphere);
 	}
 }
 
@@ -377,10 +379,10 @@ namespace GPlatesApi
 {
 	const GPlatesPropertyValues::GmlPoint::non_null_ptr_type
 	gml_point_create(
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point)
+			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 	{
 		// Use the default value for the second argument.
-		return GPlatesPropertyValues::GmlPoint::create(point);
+		return GPlatesPropertyValues::GmlPoint::create(point_on_sphere);
 	}
 }
 
@@ -434,6 +436,73 @@ export_gml_point()
 	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
 	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			GPlatesPropertyValues::GmlPoint,
+			GPlatesModel::PropertyValue>();
+}
+
+
+namespace GPlatesApi
+{
+	const GPlatesPropertyValues::GmlPolygon::non_null_ptr_type
+	gml_polygon_create(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+	{
+		// We ignore interior polygons for now - later they will get stored a single PolygonOnSphere...
+		return GPlatesPropertyValues::GmlPolygon::create(polygon_on_sphere);
+	}
+}
+
+void
+export_gml_polygon()
+{
+	//
+	// GmlPolygon - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GmlPolygon,
+			GPlatesPropertyValues::GmlPolygon::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GmlPolygon",
+					"A property value representing a polygon geometry.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::gml_polygon_create,
+						bp::default_call_policies(),
+						(bp::arg("polygon"))),
+				"__init__(polygon)\n"
+				"  Create a property value representing a polygon geometry.\n"
+				"\n"
+				"  :param polygon: the polygon geometry\n"
+				"  :type polygon: :class:`PolygonOnSphere`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"   polygon_property = pygplates.GmlPolygon(polygon)\n")
+		.def("get_polygon",
+				// We ignore interior polygons for now - later they will get stored in a single PolygonOnSphere...
+				&GPlatesPropertyValues::GmlPolygon::get_exterior,
+				"get_polygon() -> PolygonOnSphere\n"
+				"  Returns the polygon geometry of this property value.\n"
+				"\n"
+				"  :rtype: :class:`PolygonOnSphere`\n")
+		.def("set_polygon",
+				// We ignore interior polygons for now - later they will get stored in a single PolygonOnSphere...
+				&GPlatesPropertyValues::GmlPolygon::set_exterior,
+				(bp::arg("polygon")),
+				"set_polygon(polygon)\n"
+				"  Sets the polygon geometry of this property value.\n"
+				"\n"
+				"  :param polygon: the polygon geometry\n"
+				"  :type polygon: :class:`PolygonOnSphere`\n")
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GmlPolygon,
 			GPlatesModel::PropertyValue>();
 }
 
@@ -1726,6 +1795,7 @@ export_property_values()
 
 	export_gml_multi_point();
 	export_gml_point();
+	export_gml_polygon();
 	export_gml_time_instant();
 	export_gml_time_period();
 

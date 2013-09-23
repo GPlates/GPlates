@@ -33,6 +33,7 @@
 
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
+#include "property-values/GmlPolygon.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
@@ -86,6 +87,15 @@ namespace GPlatesApi
 		{
 			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
 			d_property_value = bp::object(gml_point_type::non_null_ptr_type(&gml_point));
+		}
+
+		virtual
+		void 
+		visit_gml_polygon(
+				gml_polygon_type &gml_polygon)
+		{
+			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
+			d_property_value = bp::object(gml_polygon_type::non_null_ptr_type(&gml_polygon));
 		}
 
 		virtual

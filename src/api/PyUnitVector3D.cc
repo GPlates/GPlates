@@ -67,9 +67,10 @@ export_unit_vector_3d()
 							"  :type y: float\n"
 							"  :param z: the *z* component of the 3D unit vector\n"
 							"  :type z: float\n"
+							"  :raises: ViolatedUnitVectorInvariantError if resulting vector does not have unit magnitude\n"
 							"\n"
-							"  **NOTE:** The length of 3D vector (x,y,z) must be 1.0, otherwise a *RuntimeError* "
-							"is generated.\n"
+							"  **NOTE:** The length of 3D vector (x,y,z) must be 1.0, otherwise "
+							"*ViolatedUnitVectorInvariantError* is raised.\n"
 							"  ::\n"
 							"\n"
 							"    unit_vector = pygplates.UnitVector3D(x, y, z)\n"))
