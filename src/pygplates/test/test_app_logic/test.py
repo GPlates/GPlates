@@ -15,20 +15,20 @@ class InterpolateTotalReconstructionPolesTest(unittest.TestCase):
         self.rotations = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'rotations.rot'))
 
-    def test_foo(self):
+    def test_interpolate(self):
         # Get the third rotation feature (contains more interesting poles).
         feature_iter = iter(self.rotations)
         feature_iter.next();
         feature_iter.next();
         feature = feature_iter.next()
         
-        f, m, fr = pygplates.interpolate_total_reconstruction_poles(feature, pygplates.GeoTimeInstant(10))
-        print "f=", f, " m=", m, " fr=", fr
-        for r in self.rotations:
-            for p in r:
-                if p.get_name() == pygplates.PropertyName.create_gpml('movingReferenceFrame'):
-                    print p.get_value().get_plate_id()
-                    return
+        trp = pygplates.interpolate_total_reconstruction_sequence(feature, 12.2)
+        self.assertTrue(trp)
+        self.assertEquals(trp[0], 901) # Fixed plate id
+        self.assertEquals(trp[1], 2)   # Moving plate id
+        angle = trp[2].get_unit_quaternion().get_rotation_parameters().angle
+        self.assertTrue(abs(angle) > 0.1785 and abs(angle) < 0.179)
+        # TODO: Compare axis.
 
 
 class ReconstructionTreeCase(unittest.TestCase):

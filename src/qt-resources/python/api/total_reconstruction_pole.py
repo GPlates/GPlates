@@ -1,15 +1,26 @@
-def interpolate_total_reconstruction_poles(total_reconstruction_sequence_feature, time):
-    """interpolate_total_reconstruction_poles(total_reconstruction_sequence_feature, time) -> (int, int, FiniteRotation) or None
-    Searches a 
+def interpolate_total_reconstruction_sequence(total_reconstruction_sequence_feature, time):
+    """interpolate_total_reconstruction_sequence(total_reconstruction_sequence_feature, time) -> (int, int, FiniteRotation) or None
+    Interpolates the total reconstruction poles in a *total reconstruction sequence* feature at the specified time.
     
+    Features of type *total reconstruction sequence* are usually read from a GPML rotation file or a PLATES4 rotation ('.rot') file.
+    
+    :param total_reconstruction_sequence_feature: the rotation feature with :class:`feature type<FeatureType>` 'gpml:TotalReconstructionSequence'
+    :type total_reconstruction_sequence_feature: :class:`Feature`
     :param time: the time at which to interpolate
-    :param type: :class:`GeoTimeInstant`
-    :rtype: tuple or None
-    :return: A tuple containing (fixed plate id, moving plate id, interpolated rotation)
+    :type time: float
+    :rtype: tuple(int, int, :class:`FiniteRotation`) or None
+    :return: A tuple containing (fixed plate id, moving plate id, interpolated rotation) or None
     
-    Returns ``None`` if the feature does not contain a :class:`GpmlIrregularSampling` of
-    :class:`GpmlFiniteRotation` instances, or 
+    Returns ``None`` if the feature does not contain a 'gpml:fixedReferenceFrame' plate id,
+    a 'gpml:movingReferenceFrame' plate id and a 'gpml:totalReconstructionPole' :class:`GpmlIrregularSampling` with
+    time samples containing :class:`GpmlFiniteRotation` instances (or *time* is not spanned by any time samples).
+    
+    A feature with :class:`feature type<FeatureType>` 'gpml:TotalReconstructionSequence' should have these properties
+    if it conforms to the GPlates Geological Information Model (GPGIM).
     """
+    
+    # Convert 'float' to 'GeoTimeInstant' (for time comparisons).
+    time = GeoTimeInstant(time)
 
     fixed_plate_id = None
     moving_plate_id = None
@@ -57,10 +68,10 @@ def interpolate_total_reconstruction_poles(total_reconstruction_sequence_feature
             # Note that "time < time_samples[i-1].get_time()" rather than '<='
             # which means "time_samples[i-1].get_value() != time_samples[i].get_value()"
             # which means interpolate will not throw an exception for equal times.
-            interpolated_rotation = interpolate(
-                    time_samples[i-1].get_value(),
-                    time_samples[i].get_value(),
+            interpolated_rotation = interpolate_finite_rotations(
+                    time_samples[i-1].get_value().get_finite_rotation(),
+                    time_samples[i].get_value().get_finite_rotation(),
                     time_samples[i-1].get_time().get_value(),
                     time_samples[i].get_time().get_value(),
-                    time)
+                    time.get_value())
             return (fixed_plate_id, moving_plate_id, interpolated_rotation)
