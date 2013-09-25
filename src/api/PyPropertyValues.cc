@@ -48,6 +48,7 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlHotSpotTrailMark.h"
 #include "property-values/GpmlInterpolationFunction.h"
@@ -131,6 +132,7 @@ export_property_value()
 					"* :class:`GmlTimeInstant`\n"
 					"* :class:`GmlTimePeriod`\n"
 					"* :class:`GpmlConstantValue`\n"
+					"* :class:`GpmlFiniteRotation`\n"
 					"* :class:`GpmlFiniteRotationSlerp`\n"
 					//"* :class:`GpmlHotSpotTrailMark`\n"
 					"* :class:`GpmlIrregularSampling`\n"
@@ -189,6 +191,101 @@ export_property_value()
 //////////////////////////////////////////////////////////////////////////
 // NOTE: Please keep the property values alphabetically ordered.
 //////////////////////////////////////////////////////////////////////////
+
+namespace GPlatesApi
+{
+	//
+	// To prevent fallback to default scheme of comparing object addresses we raise TypeError
+	// if both objects are not of type 'GeoTimeInstant'.
+	//
+	// This prevents situations like '20 < GeoTimeInstant(10)' comparing false (due to object address
+	// comparison) when it should compare true ('20Ma < 10Ma' because 20Ma is further in past).
+	//
+
+	bool
+	geo_time_instant_eq(
+			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
+			bp::object other)
+	{
+		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other(other);
+		if (!extract_other.check())
+		{
+			PyErr_SetString(PyExc_TypeError, "Can only '==' compare GeoTimeInstant with another GeoTimeInstant");
+			bp::throw_error_already_set();
+		}
+		return geo_time_instant == extract_other();
+	}
+
+	bool
+	geo_time_instant_ne(
+			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
+			bp::object other)
+	{
+		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other(other);
+		if (!extract_other.check())
+		{
+			PyErr_SetString(PyExc_TypeError, "Can only '!=' compare GeoTimeInstant with another GeoTimeInstant");
+			bp::throw_error_already_set();
+		}
+		return geo_time_instant != extract_other();
+	}
+
+	bool
+	geo_time_instant_lt(
+			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
+			bp::object other)
+	{
+		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other(other);
+		if (!extract_other.check())
+		{
+			PyErr_SetString(PyExc_TypeError, "Can only '<' compare GeoTimeInstant with another GeoTimeInstant");
+			bp::throw_error_already_set();
+		}
+		return geo_time_instant < extract_other();
+	}
+
+	bool
+	geo_time_instant_le(
+			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
+			bp::object other)
+	{
+		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other(other);
+		if (!extract_other.check())
+		{
+			PyErr_SetString(PyExc_TypeError, "Can only '<=' compare GeoTimeInstant with another GeoTimeInstant");
+			bp::throw_error_already_set();
+		}
+		return geo_time_instant <= extract_other();
+	}
+
+	bool
+	geo_time_instant_gt(
+			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
+			bp::object other)
+	{
+		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other(other);
+		if (!extract_other.check())
+		{
+			PyErr_SetString(PyExc_TypeError, "Can only '>' compare GeoTimeInstant with another GeoTimeInstant");
+			bp::throw_error_already_set();
+		}
+		return geo_time_instant > extract_other();
+	}
+
+	bool
+	geo_time_instant_ge(
+			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
+			bp::object other)
+	{
+		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other(other);
+		if (!extract_other.check())
+		{
+			PyErr_SetString(PyExc_TypeError, "Can only '>=' compare GeoTimeInstant with another GeoTimeInstant");
+			bp::throw_error_already_set();
+		}
+		return geo_time_instant >= extract_other();
+	}
+}
 
 void
 export_geo_time_instant()
@@ -302,12 +399,12 @@ export_geo_time_instant()
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
-		.def(bp::self == bp::self)
-		.def(bp::self != bp::self)
-		.def(bp::self < bp::self)
-		.def(bp::self <= bp::self)
-		.def(bp::self > bp::self)
-		.def(bp::self >= bp::self)
+		.def("__eq__", &GPlatesApi::geo_time_instant_eq)
+		.def("__ne__", &GPlatesApi::geo_time_instant_ne)
+		.def("__lt__", &GPlatesApi::geo_time_instant_lt)
+		.def("__le__", &GPlatesApi::geo_time_instant_le)
+		.def("__gt__", &GPlatesApi::geo_time_instant_gt)
+		.def("__ge__", &GPlatesApi::geo_time_instant_ge)
 	;
 
 	// Enable boost::optional<GeoTimeInstant> to be passed to and from python.
@@ -918,6 +1015,66 @@ export_gpml_constant_value()
 	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
 	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			GPlatesPropertyValues::GpmlConstantValue,
+			GPlatesModel::PropertyValue>();
+}
+
+
+void
+export_gpml_finite_rotation()
+{
+	// Select the desired overload of GpmlFiniteRotation::create...
+	const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
+			(*create)(const GPlatesMaths::FiniteRotation &) =
+					&GPlatesPropertyValues::GpmlFiniteRotation::create;
+
+	//
+	// GpmlFiniteRotation - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GpmlFiniteRotation,
+			GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GpmlFiniteRotation",
+					"A property value that represents a finite rotation.",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						create,
+						bp::default_call_policies(),
+						(bp::arg("finite_rotation"))),
+				"__init__(finite_rotation)\n"
+				"  Create a finite rotation property value from a finite rotation.\n"
+				"\n"
+				"  :param finite_rotation: the finite rotation\n"
+				"  :type finite_rotation: :class:`FiniteRotation`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    finite_rotation_property = pygplates.GpmlFiniteRotation(finite_rotation)\n")
+		.def("get_finite_rotation",
+				&GPlatesPropertyValues::GpmlFiniteRotation::get_finite_rotation,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_finite_rotation() -> FiniteRotation\n"
+				"  Returns the finite rotation.\n"
+				"\n"
+				"  :rtype: :class:`FiniteRotation`\n")
+		.def("set_finite_rotation",
+				&GPlatesPropertyValues::GpmlFiniteRotation::set_finite_rotation,
+				(bp::arg("finite_rotation")),
+				"set_finite_rotation(finite_rotation)\n"
+				"  Sets the finite rotation.\n"
+				"\n"
+				"  :param finite_rotation: the finite rotation\n"
+				"  :type finite_rotation: :class:`FiniteRotation`\n")
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GpmlFiniteRotation,
 			GPlatesModel::PropertyValue>();
 }
 
@@ -1941,6 +2098,7 @@ export_property_values()
 	export_gpml_interpolation_function();
 	export_gpml_finite_rotation_slerp();
 
+	export_gpml_finite_rotation();
 	export_gpml_hot_spot_trail_mark();
 	export_gpml_irregular_sampling();
 	export_gpml_piecewise_aggregation();
