@@ -646,9 +646,10 @@ internal_main(int argc, char* argv[])
 	// externally (ie, used by an external python interpreter not the GPlates embedded interpreter)
 	// and so the resources are only accessed internally by the shared library.
 	//
+	Q_INIT_RESOURCE(opengl);
+	Q_INIT_RESOURCE(python);
 	Q_INIT_RESOURCE(gpgim);
 	Q_INIT_RESOURCE(qt_widgets);
-	Q_INIT_RESOURCE(opengl);
 
 	//on Ubuntu Natty, we need to set this env variable to avoid the funny looking of spherical grid.
 	#if defined(linux) || defined(__linux__) || defined(__linux)

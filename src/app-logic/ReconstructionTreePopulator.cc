@@ -277,8 +277,7 @@ GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 	// First, let's see whether the reconstruction time matches the time of the most-recent
 	// (non-disabled) time sample.
 
-	RevisionedVector<GpmlTimeSample> &time_samples =
-			gpml_irregular_sampling.time_samples();
+	RevisionedVector<GpmlTimeSample> &time_samples = gpml_irregular_sampling.time_samples();
 
 	// So, let's get to the most-recent non-disabled time sample.
 	RevisionedVector<GpmlTimeSample>::iterator iter = time_samples.begin();

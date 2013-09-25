@@ -81,50 +81,13 @@ void export_topology_tools();
 
 void export_coregistration_layer_proxy();
 
-BOOST_PYTHON_MODULE(pygplates)
+
+/**
+ * Export the part of the python API consisting of C++ python bindings (ie, not pure python).
+ */
+void
+export_cpp_python_api()
 {
-	//
-	// Specify the 'pygplate' module's docstring options.
-	//
-	// Note that we *disable* python and C++ signatures since we explicitly specify the
-	// signatures in the first line of each function's (or class method's) docstring.
-	// Sphinx is used to generate API documentation (see http://sphinx-doc.org) and it
-	// uses the first docstring line as the function signature (if it looks like a signature).
-	//
-	// The following limitations apply to using ReStructuredText in Sphinx's autodoc extension
-	// (autodoc imports modules and looks up there docstrings):
-	//  - '::' to indicate end-of-paragraph must be on a separate line,
-	//  - the docstrings on special methods such as '__init__', '__str__', '__lt__' are ignored
-	//    by Sphinx (by default). However we use the :special-members: Sphinx directive which includes
-	//    all special members. Normally this is too much, but we ask Sphinx not to document classes
-	//    or methods that have no docstring - and our current policy is not to have docstrings for
-	//    special members other than '__init__'.
-	//    We could have used the "autoclass_content='both'" setting in the 'conf.py' file to only
-	//    include the '__init__' special method, but it concatenates '__init__'s docstring into
-	//    the class docstring and we'd rather keep it separate since ':param:', ':type:' and ':rtype:'
-	//    directives (in docstrings) only work when applied within a *method* docstring (ie, no class docstring).
-	//
-	boost::python::docstring_options module_docstring_options(
-			true/*show_user_defined*/,
-			false/*show_py_signatures*/,
-			false/*show_cpp_signatures*/);
-
-	// Set the 'pygplates' module docstring.
-	boost::python::scope().attr("__doc__") =
-			"GPlates python Application Programming Interface (API)\n"
-			"------------------------------------------------------\n"
-			"\n"
-			"  This document lists the python classes and functions that make up the 'pygplates' "
-			"module that provides the API into GPlates functionality. Within each class is a list "
-			" of class methods and a description of their usage and parameters.\n"
-			"\n"
-			"  Before GPlates functionality can be used, the 'pygplates' module "
-			"should be imported. For example:"
-			"  ::\n"
-			"\n"
-			"    import pygplates\n";
-
-
 	// Register python exceptions.
 	//
 	// By default our GPlates C++ exceptions are translated to python's 'RuntimeError' exception with
@@ -190,6 +153,82 @@ BOOST_PYTHON_MODULE(pygplates)
 	//export_co_registration();
 	export_functions();
 	export_colour();
+}
+
+
+
+// Export the part of the python API that is *pure* python code (ie, not C++ python bindings).
+void export_pure_python_api();
+
+
+BOOST_PYTHON_MODULE(pygplates)
+{
+	namespace bp = boost::python;
+
+	//
+	// Specify the 'pygplate' module's docstring options.
+	//
+	// Note that we *disable* python and C++ signatures since we explicitly specify the
+	// signatures in the first line of each function's (or class method's) docstring.
+	// Sphinx is used to generate API documentation (see http://sphinx-doc.org) and it
+	// uses the first docstring line as the function signature (if it looks like a signature).
+	//
+	// The following limitations apply to using ReStructuredText in Sphinx's autodoc extension
+	// (autodoc imports modules and looks up there docstrings):
+	//  - '::' to indicate end-of-paragraph must be on a separate line,
+	//  - the docstrings on special methods such as '__init__', '__str__', '__lt__' are ignored
+	//    by Sphinx (by default). However we use the :special-members: Sphinx directive which includes
+	//    all special members. Normally this is too much, but we ask Sphinx not to document classes
+	//    or methods that have no docstring - and our current policy is not to have docstrings for
+	//    special members other than '__init__'.
+	//    We could have used the "autoclass_content='both'" setting in the 'conf.py' file to only
+	//    include the '__init__' special method, but it concatenates '__init__'s docstring into
+	//    the class docstring and we'd rather keep it separate since ':param:', ':type:' and ':rtype:'
+	//    directives (in docstrings) only work when applied within a *method* docstring (ie, no class docstring).
+	//
+	bp::docstring_options module_docstring_options(
+			true/*show_user_defined*/,
+			false/*show_py_signatures*/,
+			false/*show_cpp_signatures*/);
+
+	// Set the 'pygplates' module docstring.
+	bp::scope().attr("__doc__") =
+			"GPlates python Application Programming Interface (API)\n"
+			"------------------------------------------------------\n"
+			"\n"
+			"  This document lists the python classes and functions that make up the 'pygplates' "
+			"module that provides the API into GPlates functionality. Within each class is a list "
+			" of class methods and a description of their usage and parameters.\n"
+			"\n"
+			"  Before GPlates functionality can be used, the 'pygplates' module "
+			"should be imported. For example:"
+			"  ::\n"
+			"\n"
+			"    import pygplates\n";
+
+	// Export the part of the python API that consists of C++ python bindinds (ie, not pure python).
+	export_cpp_python_api();
+
+	// Inject the __builtin__ module into the 'pygplates' module's __dict__.
+	//
+	// This enables us to pass the 'pygplates' __dict__ as the globals/locals parameter
+	// of 'bp::exec' in order to add pure python source code to the python API (to complement our
+	// our C++ bindings API). The reason for injecting __builtin__ is our boost-python 'pygplates'
+	// module doesn't have it by default (like pure python modules do) and it is needed if
+	// our pure python code is using the 'import' statement for example.
+	// And by using 'pygplates's __dict__ instead of __main__'s __dict__ the classes/functions
+	// in our pure python code will get automatically added to the 'pygplates' module, whereas this
+	// would need to be done explicitly for each pure python function/class defined if we used __main__.
+	// It also means our pure python API code does not need to prefix 'pygplates.' when it calls the
+	// 'pygplates' API (whether that is, in turn, pure python or C++ bindings doesn't matter).
+	bp::scope().attr("__dict__")["__builtins__"] = bp::import("__builtin__");
+
+	// Export any *pure* python code that contributes to the python API.
+	//
+	// We've already exported all the C++ python bindings - although I don't think the order
+	// matters (pure python code can contain functions/classes that call the C++-bound API before
+	// it has been bound).
+	export_pure_python_api();
 }
 
 #else

@@ -13,6 +13,7 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     gpgim.qrc
     opengl.qrc
+    python.qrc
     qt_widgets.qrc
 )
 

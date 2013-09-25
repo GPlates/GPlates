@@ -116,9 +116,10 @@ init_unit_test_suite(
 		int argc, char* argv[])
 {
 	// Initialise Qt resources that exist in the static 'qt-resources' library.
+	Q_INIT_RESOURCE(opengl);
+	Q_INIT_RESOURCE(python);
 	Q_INIT_RESOURCE(gpgim);
 	Q_INIT_RESOURCE(qt_widgets);
-	Q_INIT_RESOURCE(opengl);
 
 	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler("GPlates_unit_test_QT.log");
 

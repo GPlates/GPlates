@@ -41,6 +41,7 @@ set(srcs
     PyProperty.cc
     PyPropertyValues.cc
     PyPropertyValueVisitor.cc
+    PyPurePython.cc
     PyQualifiedXmlNames.cc
     PyReal.cc
     PyReconstructionTree.cc
