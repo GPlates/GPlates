@@ -9,11 +9,6 @@ import pygplates
 # Fixture path
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 
-class FooTest(unittest.TestCase):
-    def test_foo(self):
-        print "greet..."
-        print pygplates.greet()
-        #print pygplates.greet2()
 
 class GeoTimeInstantCase(unittest.TestCase):
     def setUp(self):
@@ -511,8 +506,7 @@ def suite():
             XsBooleanCase,
             XsDoubleCase,
             XsIntegerCase,
-            XsStringCase,
-            FooTest
+            XsStringCase
         ]
 
     for test_case in test_cases:

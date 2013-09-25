@@ -38,11 +38,16 @@ namespace bp = boost::python;
 
 namespace
 {
+	/**
+	 * Read the specified file (which will be a Qt resource) containing python source code and
+	 * essentially import it into the current namespace/scope (which is currently the 'pygplates' module).
+	 */
 	void
 	export_pure_python_code(
 			QString python_code_filename)
 	{
 		QFile python_code_file(python_code_filename);
+		// This should never fail since we are reading from files that are embedded Qt resources.
 		if (!python_code_file.open(QIODevice::ReadOnly | QIODevice::Text))
 		{
 			throw GPlatesFileIO::ErrorOpeningFileForReadingException(
@@ -53,7 +58,7 @@ namespace
 		// Read the entire file.
 		const QByteArray python_code = python_code_file.readAll();
 
-		// Essentially imports the python code into the current module/scope which is 'pygplates'.
+		// Essentially imports the python code into the current module/scope (which is 'pygplates').
 		bp::exec(
 				python_code.constData(),
 				bp::scope().attr("__dict__"));
@@ -64,6 +69,23 @@ namespace
 void
 export_pure_python_api()
 {
+	//
+	// Any pure python source code files (Qt resources) should be exported here.
+	//
+	// NOTE: These should be Qt resources that get embedded in the GPlates executable or
+	// 'pygplates' shared library/DLL.
+	//
+	// To add a source code file as a Qt resource:
+	// (1) place the python source code file in the 'src/qt-resources/python/api/' directory,
+	// (2) add the file to the 'src/qt-resources/python.qrc' file,
+	// (3) add a call to 'export_pure_python_code()' below and use the ':/' prefix in the filename
+	//     (signals a Qt resource) plus the file's path relative to the 'src/qt-resources/' directory,
+	// (4) add/commit the changes to Subversion.
+	//
+	// Note that since the pure python code is part of the 'pygplates' module, its source code
+	// does not need to prefix 'pygplates.' if it calls the GPlates python API.
+	//
+
 	export_pure_python_code(":/python/api/total_reconstruction_pole.py");
 }
 

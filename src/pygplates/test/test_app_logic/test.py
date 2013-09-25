@@ -10,8 +10,28 @@ import pygplates
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 
 
-class ReconstructionTreeCase(unittest.TestCase):
+class InterpolateTotalReconstructionPolesTest(unittest.TestCase):
+    def setUp(self):
+        self.rotations = pygplates.FeatureCollectionFileFormatRegistry().read(
+                os.path.join(FIXTURES, 'rotations.rot'))
 
+    def test_foo(self):
+        # Get the third rotation feature (contains more interesting poles).
+        feature_iter = iter(self.rotations)
+        feature_iter.next();
+        feature_iter.next();
+        feature = feature_iter.next()
+        
+        f, m, fr = pygplates.interpolate_total_reconstruction_poles(feature, pygplates.GeoTimeInstant(10))
+        print "f=", f, " m=", m, " fr=", fr
+        for r in self.rotations:
+            for p in r:
+                if p.get_name() == pygplates.PropertyName.create_gpml('movingReferenceFrame'):
+                    print p.get_value().get_plate_id()
+                    return
+
+
+class ReconstructionTreeCase(unittest.TestCase):
     def setUp(self):
         self.rotations = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'rotations.rot'))
@@ -31,6 +51,7 @@ def suite():
     
     # Add test cases from this module.
     test_cases = [
+            InterpolateTotalReconstructionPolesTest,
             ReconstructionTreeCase
         ]
 

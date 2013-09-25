@@ -218,7 +218,8 @@ BOOST_PYTHON_MODULE(pygplates)
 	// our pure python code is using the 'import' statement for example.
 	// And by using 'pygplates's __dict__ instead of __main__'s __dict__ the classes/functions
 	// in our pure python code will get automatically added to the 'pygplates' module, whereas this
-	// would need to be done explicitly for each pure python function/class defined if we used __main__.
+	// would need to be done explicitly for each pure python function/class defined (if we used __main__).
+	// It also means our pure python functions/classes have a '__module__' attribute of 'pygplates'.
 	// It also means our pure python API code does not need to prefix 'pygplates.' when it calls the
 	// 'pygplates' API (whether that is, in turn, pure python or C++ bindings doesn't matter).
 	bp::scope().attr("__dict__")["__builtins__"] = bp::import("__builtin__");
@@ -227,7 +228,10 @@ BOOST_PYTHON_MODULE(pygplates)
 	//
 	// We've already exported all the C++ python bindings - although I don't think the order
 	// matters (pure python code can contain functions/classes that call the C++-bound API before
-	// it has been bound).
+	// it has been bound - the order only matters when the pure python code is actually used).
+	// But we'll define it after the C++ bindings in case there's any set up code within the pure
+	// python code (ie, code other than simply defining functions and classes) that calls the
+	// C++ python bindings (which there shouldn't be - should just be function/class definitions).
 	export_pure_python_api();
 }
 
