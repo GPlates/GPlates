@@ -70,19 +70,19 @@ class FiniteRotationCase(unittest.TestCase):
         composed_rotation = inverse_rotation * self.finite_rotation
         self.assertTrue(isinstance(composed_rotation, pygplates.FiniteRotation))
         # Another way to compose.
-        composed_rotation = pygplates.compose(inverse_rotation, self.finite_rotation)
+        composed_rotation = pygplates.compose_finite_rotations(inverse_rotation, self.finite_rotation)
         self.assertTrue(isinstance(composed_rotation, pygplates.FiniteRotation))
     
     def test_interpolate(self):
         finite_rotation2 = pygplates.FiniteRotation(pygplates.PointOnSphere(0, 1, 0), 0.5 * math.pi)
-        interpolated_rotation = pygplates.interpolate(
+        interpolated_rotation = pygplates.interpolate_finite_rotations(
                 self.finite_rotation, finite_rotation2,
                 10, 20, 15)
         self.assertTrue(isinstance(interpolated_rotation, pygplates.FiniteRotation))
         # The times to interpolate between cannot be the same.
         self.assertRaises(
                 pygplates.IndeterminateResultError,
-                pygplates.interpolate,
+                pygplates.interpolate_finite_rotations,
                 self.finite_rotation, finite_rotation2, 10, 10, 15)
 
 

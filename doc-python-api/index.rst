@@ -31,6 +31,7 @@ Contents:
 	pygplates.GmlTimeInstant
 	pygplates.GmlTimePeriod
 	pygplates.GpmlConstantValue
+	pygplates.GpmlFiniteRotation
 	pygplates.GpmlFiniteRotationSlerp
 	pygplates.GpmlInterpolationFunction
 	pygplates.GpmlIrregularSampling
@@ -55,10 +56,11 @@ Contents:
 	pygplates.XsString
 	pygplates.UnitVector3D
 	
-	pygplates.compose
+	pygplates.compose_finite_rotations
 	pygplates.convert_lat_lon_point_to_point_on_sphere
 	pygplates.convert_point_on_sphere_to_lat_lon_point
-	pygplates.interpolate
+	pygplates.interpolate_finite_rotations
+	pygplates.interpolate_total_reconstruction_sequence
 
 .. NOTE: Only document the new API for now, exclude classes/functions not in the new API.
 .. NOTE: Only classes (and their methods) that are documented (that have docstrings) will appear in the generated documentation.

@@ -39,6 +39,7 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
@@ -143,6 +144,15 @@ namespace GPlatesApi
 		{
 			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
 			d_property_value = bp::object(gpml_constant_value_type::non_null_ptr_type(&gpml_constant_value));
+		}
+
+		virtual
+		void
+		visit_gpml_finite_rotation(
+				gpml_finite_rotation_type &gpml_finite_rotation)
+		{
+			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
+			d_property_value = bp::object(gpml_finite_rotation_type::non_null_ptr_type(&gpml_finite_rotation));
 		}
 
 		virtual

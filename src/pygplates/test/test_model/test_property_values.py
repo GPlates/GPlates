@@ -238,6 +238,20 @@ class GpmlConstantValueCase(unittest.TestCase):
         self.property_value3.set_plate_id(101)
 
 
+class GpmlFiniteRotationCase(unittest.TestCase):
+    def setUp(self):
+        self.finite_rotation = pygplates.FiniteRotation(pygplates.PointOnSphere(1,0,0), 0.3)
+        self.gpml_finite_rotation = pygplates.GpmlFiniteRotation(self.finite_rotation)
+
+    def test_get(self):
+        self.assertTrue(self.gpml_finite_rotation.get_finite_rotation() == self.finite_rotation)
+
+    def test_set(self):
+        new_finite_rotation = pygplates.FiniteRotation(pygplates.PointOnSphere(0,1,0), 0.4)
+        self.gpml_finite_rotation.set_finite_rotation(new_finite_rotation)
+        self.assertTrue(self.gpml_finite_rotation.get_finite_rotation() == new_finite_rotation)
+
+
 class GpmlFiniteRotationSlerpCase(unittest.TestCase):
     def test_create(self):
         gpml_finite_rotation_slerp = pygplates.GpmlFiniteRotationSlerp()
@@ -497,6 +511,7 @@ def suite():
             GmlTimeInstantCase,
             GmlTimePeriodCase,
             GpmlConstantValueCase,
+            GpmlFiniteRotationCase,
             GpmlFiniteRotationSlerpCase,
             GpmlIrregularSamplingCase,
             GpmlPiecewiseAggregationCase,

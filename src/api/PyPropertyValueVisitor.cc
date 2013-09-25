@@ -37,6 +37,7 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlConstantValue.h"
+#include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
@@ -256,6 +257,29 @@ namespace GPlatesApi
 				gpml_constant_value_type &gpml_constant_value)
 		{
 			this->GPlatesModel::FeatureVisitor::visit_gpml_constant_value(gpml_constant_value);
+		}
+
+
+		virtual
+		void
+		visit_gpml_finite_rotation(
+				gpml_finite_rotation_type &gpml_finite_rotation)
+		{
+			if (bp::override visit = this->get_override("visit_gpml_finite_rotation"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gpml_finite_rotation_type::non_null_ptr_type(&gpml_finite_rotation));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gpml_finite_rotation(gpml_finite_rotation);
+		}
+
+		void
+		default_visit_gpml_finite_rotation(
+				gpml_finite_rotation_type &gpml_finite_rotation)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gpml_finite_rotation(gpml_finite_rotation);
 		}
 
 
@@ -549,6 +573,11 @@ export_property_value_visitor()
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_constant_value,
 				"visit_gpml_constant_value(gpml_constant_value)\n"
 				"  Visits a :class:`GpmlConstantValue` property value.\n")
+		.def("visit_gpml_finite_rotation",
+				&GPlatesModel::FeatureVisitor::visit_gpml_finite_rotation,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_finite_rotation,
+				"visit_gpml_finite_rotation(ppml_finite_rotation)\n"
+				"  Visits a :class:`GpmlFiniteRotation` property value.\n")
 		.def("visit_gpml_finite_rotation_slerp",
 				&GPlatesModel::FeatureVisitor::visit_gpml_finite_rotation_slerp,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_finite_rotation_slerp,

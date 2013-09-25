@@ -127,6 +127,8 @@ export_finite_rotation()
 					"* a positive angle represents an anti-clockwise rotation around the rotation vector,\n"
 					"* a negative angle corresponds to a clockwise rotation.\n"
 					"\n"
+					"Finite rotations are equality (``==``, ``!=``) comparable.\n"
+					"\n"
 					"Multiplication operations can be used to rotate various geometry types:\n"
 					"\n"
 					"=========================== =======================================================================\n"
@@ -147,18 +149,19 @@ export_finite_rotation()
 					"  finite_rotation = pygplates.FiniteRotation(pole, angle)\n"
 					"  rotated_polyline = finite_rotation * polyline\n"
 					"\n"
-					"Two finite rotations can be interpolated using the :func:`interpolate` function:\n"
+					"Two finite rotations can be interpolated using the :func:`interpolate_finite_rotations` function:\n"
 					"::\n"
 					"\n"
-					"  interpolated_rotation = pygplates.interpolate(finite_rotation1, finite_rotation2, "
-					"time1, time2, target_time)\n"
+					"  interpolated_rotation = pygplates.interpolate_finite_rotations("
+					"finite_rotation1, finite_rotation2, time1, time2, target_time)\n"
 					"\n"
 					"Two finite rotations can be composed in either of the following equivalent ways:\n"
 					"\n"
 					"* ``composed_finite_rotation = finite_rotation1 * finite_rotation2``\n"
-					"* ``composed_finite_rotation = pygplates.compose(finite_rotation1, finite_rotation2)``\n"
+					"* ``composed_finite_rotation = pygplates.compose_finite_rotations("
+					"finite_rotation1, finite_rotation2)``\n"
 					"\n"
-					"The latter technique uses the :func:`compose` function.\n"
+					"The latter technique uses the :func:`_finite_rotations` function.\n"
 					"\n"
 					"**The following is general information on composing finite rotations in various "
 					"plate tectonic scenarios**...\n"
@@ -250,8 +253,7 @@ export_finite_rotation()
 						bp::default_call_policies(),
 						(bp::arg("pole"), bp::arg("angle"))),
 				"__init__(pole, angle)\n"
-				"  Create a finite rotation from an Euler pole and a rotation angle (in *radians*). "
-				"Finite rotations are equality (``==``, ``!=``) comparable.\n"
+				"  Create a finite rotation from an Euler pole and a rotation angle (in *radians*).\n"
 				"  ::\n"
 				"\n"
 				"    finite_rotation = pygplates.FiniteRotation(pole, angle)\n"
@@ -298,10 +300,10 @@ export_finite_rotation()
 	;
 
 	// Non-member conversion function...
-	bp::def("compose",
+	bp::def("compose_finite_rotations",
 			compose,
 			(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
-			"compose(finite_rotation1, finite_rotation2) -> FiniteRotation\n"
+			"compose_finite_rotations(finite_rotation1, finite_rotation2) -> FiniteRotation\n"
 			"  Composes two finite rotations and returns the composed finite rotation.\n"
 			"\n"
 			"  :param finite_rotation1: the left-hand-side finite rotation\n"
@@ -315,14 +317,14 @@ export_finite_rotation()
 			"  See :class:`FiniteRotation` for more details on composing finite rotations.\n");
 
 	// Non-member interpolation function...
-	bp::def("interpolate",
+	bp::def("interpolate_finite_rotations",
 			&GPlatesApi::finite_rotation_interpolate,
 			(bp::arg("finite_rotation1"),
 				bp::arg("finite_rotation2"),
 				bp::arg("time1"),
 				bp::arg("time2"),
 				bp::arg("target_time")),
-			"interpolate(finite_rotation1, finite_rotation2, time1, time2, target_time) -> FiniteRotation\n"
+			"interpolate_finite_rotations(finite_rotation1, finite_rotation2, time1, time2, target_time) -> FiniteRotation\n"
 			"  Calculate the finite rotation which is the interpolation of two finite rotations. "
 			"The finite rotations *finite_rotation1* and *finite_rotation2* are associated with "
 			"times *time1* and *time2*, respectively. The result of the interpolation is associated "
@@ -345,8 +347,8 @@ export_finite_rotation()
 			"  *target_time* can be any time - it does not have to be between *time1* and *time2*.\n"
 			"  ::\n"
 			"\n"
-			"    interpolated_rotation = pygplates.interpolate(finite_rotation1, finite_rotation2, "
-			"time1, time2, target_time)\n");
+			"    interpolated_rotation = pygplates.interpolate_finite_rotations("
+			"finite_rotation1, finite_rotation2, time1, time2, target_time)\n");
 
 	// Enable boost::optional<FiniteRotation> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::python_optional<GPlatesMaths::FiniteRotation>();
