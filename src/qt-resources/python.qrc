@@ -1,5 +1,5 @@
 <RCC>
   <qresource prefix="/">
-    <file>python/api/total_reconstruction_pole.py</file>
+    <file>python/api/interpolate_total_reconstruction_pole.py</file>
   </qresource>
 </RCC>

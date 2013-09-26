@@ -60,6 +60,7 @@ Contents:
 	pygplates.convert_lat_lon_point_to_point_on_sphere
 	pygplates.convert_point_on_sphere_to_lat_lon_point
 	pygplates.interpolate_finite_rotations
+	pygplates.interpolate_total_reconstruction_pole
 	pygplates.interpolate_total_reconstruction_sequence
 
 .. NOTE: Only document the new API for now, exclude classes/functions not in the new API.

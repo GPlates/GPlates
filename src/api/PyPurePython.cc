@@ -105,7 +105,7 @@ export_pure_python_api()
 	// does not need to prefix 'pygplates.' if it calls the GPlates python API.
 	//
 
-	export_pure_python_code(":/python/api/total_reconstruction_pole.py");
+	export_pure_python_code(":/python/api/interpolate_total_reconstruction_pole.py");
 }
 
 #endif // GPLATES_NO_PYTHON
