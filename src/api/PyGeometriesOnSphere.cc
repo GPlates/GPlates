@@ -900,7 +900,7 @@ export_polyline_on_sphere()
 	// We don't document this wrapper (using docstrings) since it's documented in "PolylineOnSphere".
 	bp::class_< GPlatesApi::PolyGeometryOnSpherePointsView<GPlatesMaths::PolylineOnSphere> >(
 			"PolylineOnSpherePointsView",
-			bp::init<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>())
+			bp::no_init)
 		.def("__iter__",
 				bp::iterator< const GPlatesApi::PolyGeometryOnSpherePointsView<GPlatesMaths::PolylineOnSphere> >())
 		.def("__len__",
@@ -917,7 +917,7 @@ export_polyline_on_sphere()
 	// We don't document this wrapper (using docstrings) since it's documented in "PolylineOnSphere".
 	bp::class_< GPlatesApi::PolyGeometryOnSphereArcsView<GPlatesMaths::PolylineOnSphere> >(
 			"PolylineOnSphereArcsView",
-			bp::init<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>())
+			bp::no_init)
 		.def("__iter__",
 				bp::iterator< const GPlatesApi::PolyGeometryOnSphereArcsView<GPlatesMaths::PolylineOnSphere> >())
 		.def("__len__",

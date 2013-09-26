@@ -58,7 +58,7 @@ namespace
 		// Read the entire file.
 		const QByteArray python_code = python_code_file.readAll();
 
-		// Essentially imports the python code into the current module/scope (which is 'pygplates').
+		// Essentially means the python code will get imported into the current module/scope (which is 'pygplates').
 		bp::object pygplates_globals = bp::scope().attr("__dict__");
 
 		// These two code segments essentially do the same thing.

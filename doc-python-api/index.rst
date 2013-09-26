@@ -49,6 +49,8 @@ Contents:
 	pygplates.PropertyName
 	pygplates.PropertyValue
 	pygplates.PropertyValueVisitor
+	pygplates.ReconstructionTree
+	pygplates.ReconstructionTreeEdge
 	pygplates.RevisionId
 	pygplates.XsBoolean
 	pygplates.XsDouble

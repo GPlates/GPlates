@@ -55,7 +55,6 @@ export_unit_quaternion_3d()
 	//
 	// UnitQuaternion3D - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
-	// Class.
 	bp::scope unit_quaternion_scope = bp::class_<
 			GPlatesMaths::UnitQuaternion3D
 			// Since it's immutable it can be copied without worrying that a modification from the
@@ -87,6 +86,7 @@ export_unit_quaternion_3d()
 	;
 
 	// Create nested class RotationParameters inside UnitQuaternion.
+	// It's nested because we set the current scope was set to the "UnitQuaternion3D" class above.
 	bp::class_<
 			GPlatesMaths::UnitQuaternion3D::RotationParams>(
 					"RotationParameters",

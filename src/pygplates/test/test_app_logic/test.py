@@ -59,15 +59,73 @@ class ReconstructionTreeCase(unittest.TestCase):
     def setUp(self):
         self.rotations = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'rotations.rot'))
+        self.reconstruction_tree = pygplates.ReconstructionTree([ self.rotations ], 10.0)
 
     def test_create(self):
-        reconstruction_tree = pygplates.ReconstructionTree([ self.rotations ], 10.0)
-        self.assertTrue(isinstance(reconstruction_tree, pygplates.ReconstructionTree))
+        self.assertTrue(isinstance(self.reconstruction_tree, pygplates.ReconstructionTree))
+        self.assertEqual(self.reconstruction_tree.get_anchor_plate_id(), 0)
+        self.assertTrue(self.reconstruction_tree.get_reconstruction_time() > 9.9999 and
+                self.reconstruction_tree.get_reconstruction_time() < 10.00001)
 
-    def test_get_equivalent_total_rotation(self):
-        reconstruction_tree = pygplates.ReconstructionTree([ self.rotations ], 10.0)
-        finite_rotation = reconstruction_tree.get_equivalent_total_rotation(801)
-        self.assertTrue(isinstance(finite_rotation, pygplates.FiniteRotation))
+    def test_get_edge(self):
+        edge = self.reconstruction_tree.get_edge(101)
+        self.assertTrue(edge.get_moving_plate_id() == 101)
+        self.assertTrue(edge.get_fixed_plate_id() == 714)
+        self.assertTrue(isinstance(edge.get_equivalent_total_rotation(), pygplates.FiniteRotation))
+        self.assertTrue(isinstance(edge.get_relative_total_rotation(), pygplates.FiniteRotation))
+        
+        child_edges = edge.get_child_edges()
+        self.assertTrue(len(child_edges) == 33)
+        chld_edge_count = 0
+        for child_edge in child_edges:
+            self.assertTrue(child_edge.get_fixed_plate_id() == edge.get_moving_plate_id())
+            chld_edge_count += 1
+        self.assertEquals(chld_edge_count, len(child_edges))
+    
+    def test_anchor_plate_edges(self):
+        anchor_plate_edges = self.reconstruction_tree.get_anchor_plate_edges()
+        for i in range(0, len(anchor_plate_edges)):
+            self.assertTrue(anchor_plate_edges[i].get_fixed_plate_id() == self.reconstruction_tree.get_anchor_plate_id())
+        self.assertTrue(len(anchor_plate_edges) == 2)
+        
+        edge_count = 0
+        for edge in anchor_plate_edges:
+            self.assertTrue(edge.get_fixed_plate_id() == self.reconstruction_tree.get_anchor_plate_id())
+            edge_count += 1
+        self.assertEquals(edge_count, len(anchor_plate_edges))
+    
+    def test_edges(self):
+        edges = self.reconstruction_tree.get_edges()
+        for i in range(0, len(edges)):
+            self.assertTrue(isinstance(edges[i], pygplates.ReconstructionTreeEdge))
+        self.assertTrue(len(edges) == 447)
+        
+        edge_count = 0
+        for edge in edges:
+            edge_count += 1
+        self.assertEquals(edge_count, len(edges))
+
+    def test_get_parent_traversal(self):
+        edge = self.reconstruction_tree.get_edge(907)
+        edge = edge.get_parent_edge()
+        self.assertTrue(edge.get_moving_plate_id() == 301)
+        edge = edge.get_parent_edge()
+        self.assertTrue(edge.get_moving_plate_id() == 101)
+        edge = edge.get_parent_edge()
+        self.assertTrue(edge.get_moving_plate_id() == 714)
+        edge = edge.get_parent_edge()
+        self.assertTrue(edge.get_moving_plate_id() == 701)
+        edge = edge.get_parent_edge()
+        self.assertTrue(edge.get_moving_plate_id() == 1)
+        self.assertTrue(edge.get_fixed_plate_id() == 0)
+        edge = edge.get_parent_edge()
+        # Reached anchor plate.
+        self.assertFalse(edge)
+
+    def test_get_total_rotation(self):
+        self.assertTrue(isinstance(
+                self.reconstruction_tree.get_equivalent_total_rotation(801),
+                pygplates.FiniteRotation))
 
 
 def suite():
