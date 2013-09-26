@@ -59,9 +59,28 @@ namespace
 		const QByteArray python_code = python_code_file.readAll();
 
 		// Essentially imports the python code into the current module/scope (which is 'pygplates').
-		bp::exec(
-				python_code.constData(),
-				bp::scope().attr("__dict__"));
+		bp::object pygplates_globals = bp::scope().attr("__dict__");
+
+		// These two code segments essentially do the same thing.
+		// The difference is the latter includes the filename in the exception traceback output
+		// which is helpful when locating errors in the pure python API or errors in API usage
+		// by python users (that only manifests inside the pure python API implementation).
+#if 0
+		bp::exec(python_code.constData(), pygplates_globals);
+#else
+		bp::object compiled_object = bp::object(bp::handle<>(
+				// Returns a new reference so no need for 'bp::borrowed'...
+				Py_CompileString(
+						python_code.constData(),
+						python_code_filename.toLatin1().constData(),
+						Py_file_input)));
+		bp::object eval_object = bp::object(bp::handle<>(
+				// Returns a new reference so no need for 'bp::borrowed'...
+				PyEval_EvalCode(
+						reinterpret_cast<PyCodeObject *>(compiled_object.ptr()),
+						pygplates_globals.ptr(),
+						pygplates_globals.ptr())));
+#endif
 	}
 }
 

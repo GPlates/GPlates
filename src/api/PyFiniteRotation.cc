@@ -161,7 +161,7 @@ export_finite_rotation()
 					"* ``composed_finite_rotation = pygplates.compose_finite_rotations("
 					"finite_rotation1, finite_rotation2)``\n"
 					"\n"
-					"The latter technique uses the :func:`_finite_rotations` function.\n"
+					"The latter technique uses the :func:`compose_finite_rotations` function.\n"
 					"\n"
 					"**The following is general information on composing finite rotations in various "
 					"plate tectonic scenarios**...\n"

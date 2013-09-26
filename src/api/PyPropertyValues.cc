@@ -1259,7 +1259,10 @@ export_gpml_irregular_sampling()
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
 					"GpmlIrregularSampling",
-					"A time-dependent property consisting of a sequence of time samples irregularly spaced in time.\n",
+					"A time-dependent property consisting of a sequence of time samples irregularly spaced in time.\n"
+					"\n"
+					"The function :func:`interpolate_total_reconstruction_sequence` interpolates a "
+					"*GpmlIrregularSampling* with time samples containing :class:`GpmlFiniteRotation` instances\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
