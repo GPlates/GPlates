@@ -381,7 +381,7 @@ namespace GPlatesApi
 				reconstruction_tree->rootmost_edges_end());
 	}
 
-	const GPlatesMaths::FiniteRotation
+	boost::optional<GPlatesMaths::FiniteRotation>
 	reconstruction_tree_get_equivalent_total_rotation(
 			const GPlatesAppLogic::ReconstructionTree &reconstruction_tree,
 			GPlatesModel::integer_plate_id_type moving_plate_id)
@@ -390,10 +390,48 @@ namespace GPlatesApi
 				GPlatesMaths::FiniteRotation,
 				GPlatesAppLogic::ReconstructionTree::ReconstructionCircumstance> result =
 						reconstruction_tree.get_composed_absolute_rotation(moving_plate_id);
+		if (result.second == GPlatesAppLogic::ReconstructionTree::NoPlateIdMatchesFound)
+		{
+			return boost::none;
+		}
 
-		// Currently only returning finite rotation (and not whether 0, 1 or more moving plate id
-		// matches were found). Zero matches returns identity rotation. Two or more return first match.
+		// Currently ignoring difference between 'one' and 'one or more' moving plate id matches.
 		return result.first;
+	}
+
+	boost::optional<GPlatesMaths::FiniteRotation>
+	reconstruction_tree_get_relative_total_rotation(
+			const GPlatesAppLogic::ReconstructionTree &reconstruction_tree,
+			GPlatesModel::integer_plate_id_type plate_id,
+			GPlatesModel::integer_plate_id_type relative_plate_id)
+	{
+		boost::optional<GPlatesMaths::FiniteRotation> equivalent_plate_rotation =
+				reconstruction_tree_get_equivalent_total_rotation(reconstruction_tree, plate_id);
+		if (!equivalent_plate_rotation)
+		{
+			return boost::none;
+		}
+
+		boost::optional<GPlatesMaths::FiniteRotation> equivalent_relative_plate_rotation =
+				reconstruction_tree_get_equivalent_total_rotation(reconstruction_tree, relative_plate_id);
+		if (!equivalent_relative_plate_rotation)
+		{
+			return boost::none;
+		}
+
+		// Rotation from anchor plate 'A' to plate 'M' (via plate 'F'):
+		//
+		// R(A->M) = R(A->F) * R(F->M)
+		// ...or by pre-multiplying both sides by R(F->A) this becomes...
+		// R(F->M) = R(F->A) * R(A->M)
+		// R(F->M) = inverse[R(A->F)] * R(A->M)
+		//
+		// See comments in implementation of 'GPlatesAppLogic::ReconstructUtils::get_stage_pole()'
+		// for a more in-depth coverage of the above.
+		//
+		return compose(
+				get_reverse(equivalent_relative_plate_rotation.get()),
+				equivalent_plate_rotation.get());
 	}
 }
 
@@ -464,7 +502,51 @@ export_reconstruction_tree()
 			boost::noncopyable>(
 					"ReconstructionTree",
 					"Represents the plate-reconstruction hierarchy of total reconstruction poles at "
-					"an instant in geological time.\n",
+					"an instant in geological time.\n"
+					"\n"
+					"Plate motions are described in terms of relative rotations between pairs of plates. "
+					"Every plate in the model moves relative to some other plate where, within each "
+					"of these plate pairs, one plate is considered the *moving* plate relative to the "
+					"other *fixed* plate. That *fixed* plate, in turn, moves relative to another plate "
+					"thus forming a tree-like structure known as the *reconstruction tree*. "
+					"Each of these *relative* rotations is an *edge* in the tree.\n"
+					"\n"
+					"The following diagram shows a subset of the hierarchy of relative rotations used in GPlates:\n"
+					"::\n"
+					"\n"
+					"                  000\n"
+					"                   |\n"
+					"                   |  finite rotation (001 rel. 000)\n"
+					"                   |\n"
+					"                  001\n"
+					"                   |\n"
+					"                   |  finite rotation (701 rel. 001)\n"
+					"                   |\n"
+					"                  701(AFR)\n"
+					"                  /|\\\n"
+					"                 / | \\  finite rotation (802 rel. 701)\n"
+					"                /  |  \\\n"
+					"             201  702  802(ANT)\n"
+					"              /   / \\   \\\n"
+					"             /   /   \\   \\  finite rotation (801 rel. 802)\n"
+					"            /   /     \\   \\\n"
+					"         202  704     705  801(AUS)\n"
+					"         / \\\n"
+					"        /   \\\n"
+					"       /     \\\n"
+					"     290     291\n"
+					"\n"
+					"...where *000* is the anchored plate (the top of the reconstruction tree). "
+					"The :class:`edge<ReconstructionTreeEdge>` *802 rel. 701* contains the rotation "
+					"of *802* (the moving plate in the pair) relative to *701* (the fixed plate in the pair). "
+					"An *equivalent* rotation is the rotation of a plate relative to the *anchored* "
+					"plate. So the equivalent rotation of plate *802* is the "
+					":func:`composition<compose_finite_rotations>` of relative rotations follwing the "
+					"plate circuit from *802* to the anchored plate *000*.\n"
+					"\n"
+					"For more information on the rotation hierarchy please see "
+					"`Next-generation plate-tectonic reconstructions using GPlates "
+					"<http://www.gplates.org/publications.html>`_\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -487,6 +569,8 @@ export_reconstruction_tree()
 				"are calculated with respect to\n"
 				"  :type anchor_plate_id: int\n"
 				"\n"
+				"  *NOTE:* the anchored plate id can be any plate id (does not have to be zero). "
+				"All *equivalent* rotations are calculated relative to the *anchored* plate id.\n"
 				"  ::\n"
 				"\n"
 				"    reconstruction_tree = pygplates.ReconstructionTree(feature_collections, reconstruction_time)\n")
@@ -505,20 +589,57 @@ export_reconstruction_tree()
 				"  :rtype: int\n")
 		.def("get_equivalent_total_rotation",
 				&GPlatesApi::reconstruction_tree_get_equivalent_total_rotation,
-				"get_equivalent_total_rotation(plate_id) -> FiniteRotation\n"
-				"  Return *equivalent* finite rotation of the *plate_id* plate relative to the anchor plate.\n"
+				"get_equivalent_total_rotation(plate_id) -> FiniteRotation or None\n"
+				"  Return the *equivalent* finite rotation of the *plate_id* plate relative to the "
+				"*anchored* plate, or ``None`` if *plate_id* is not in this reconstruction tree.\n"
 				"\n"
 				"  :param plate_id: the plate id of plate to calculate the equivalent rotation\n"
 				"  :type plate_id: int\n"
-				"  :rtype: :class:`FiniteRotation`\n"
+				"  :rtype: :class:`FiniteRotation` or None\n"
 				"\n"
 				"  The *total* in the method name indicates that the rotation is also relative to *present day*.\n"
 				"\n"
-				"  If *plate_id* is not found (because a total reconstruction pole with that moving "
+				"  If *plate_id* is not found (because a total reconstruction pole with that moving or fixed "
 				"plate id was not inserted into the :class:`ReconstructionTreeBuilder` used to build "
-				"this reconstruction tree) then the returned finite rotation represents the identity rotation "
-				"(zero-angle rotation). If *plate_id* matches more than one moving plate id in this "
-				"*ReconstructionTree* then the first match is returned.\n")
+				"this reconstruction tree) then ``None`` is returned. If *plate_id* matches more than "
+				"one plate id in this *ReconstructionTree* then the first match is returned.\n"
+				"\n"
+				"  This method essentially does the following:\n"
+				"  ::\n"
+				"\n"
+				"    def get_equivalent_total_rotation(reconstruction_tree, plate_id):\n"
+				"        edge = reconstruction_tree.get_edge(plate_id)\n"
+				"        if edge:\n"
+				"            return edge.get_equivalent_total_rotation()\n")
+		.def("get_relative_total_rotation",
+				&GPlatesApi::reconstruction_tree_get_relative_total_rotation,
+				"get_relative_total_rotation(plate_id, relative_plate_id) -> FiniteRotation or None\n"
+				"  Return the finite rotation of the *plate_id* plate relative to the "
+				"*relative_plate_id* plate, or ``None`` if either *plate_id* or *relative_plate_id* "
+				"are not in this reconstruction tree.\n"
+				"\n"
+				"  :param plate_id: the plate id of plate to calculate the relative rotation\n"
+				"  :type plate_id: int\n"
+				"  :param relative_plate_id: the plate id of plate that the rotation is relative *to*\n"
+				"  :type relative_plate_id: int\n"
+				"  :rtype: :class:`FiniteRotation` or None\n"
+				"\n"
+				"  The *total* in the method name indicates that the rotation is also relative to *present day*.\n"
+				"\n"
+				"  This method is useful if *plate_id* and *relative_plate_id* have more than one "
+				"edge between them. If *relative_plate_id* is the *anchored* plate then this method gives the same "
+				"result as :meth:`get_equivalent_total_rotation`. Another way to calculate this result "
+				"is to create a new *ReconstructionTree* using *relative_plate_id* as the *anchored* plate.\n"
+				"\n"
+				"  This method essentially does the following (see :class:`FiniteRotation` for the maths):\n"
+				"  ::\n"
+				"\n"
+				"    def get_relative_total_rotation(reconstruction_tree, plate_id, relative_plate_id):\n"
+				"        edge = reconstruction_tree.get_edge(plate_id)\n"
+				"        relative_edge = reconstruction_tree.get_edge(relative_plate_id)\n"
+				"        if edge and relative_edge:\n"
+				"            return relative_edge.get_equivalent_total_rotation().get_inverse() * "
+				"edge.get_equivalent_total_rotation()\n")
 		.def("get_edge",
 				&GPlatesApi::reconstruction_tree_get_edge,
 				"get_edge(moving_plate_id) -> ReconstructionTreeEdge or None\n"
@@ -553,11 +674,25 @@ export_reconstruction_tree()
 				"  ``edges[i]``                     the edge at index *i*\n"
 				"  ================================ ==========================================================\n"
 				"\n"
-				"  The following example demonstrates some uses of the above operations:\n"
+				"  The following example demonstrates iteration over all edges in the reconstruction tree "
+				"to export relative rotations:\n"
 				"  ::\n"
 				"\n"
-				"    for edge in reconstruction_tree.get_edges():\n"
-				"        ...\n")
+				"    with open('export.txt', 'w') as file: \n"
+				"        for edge in reconstruction_tree.get_edges():\n"
+				"            relative_rotation = edge.get_relative_total_rotation()\n"
+				"            if relative_rotation.represents_identity_rotation():\n"
+				"                # Use north pole with zero rotation to indicate identity rotation.\n"
+				"                lat_lon_pole = pygplates.LatLonPoint(90, 0)\n"
+				"                angle = 0\n"
+				"            else:\n"
+				"                pole, angle = relative_rotation.get_euler_pole_and_angle()\n"
+				"                lat_lon_pole = pygplates.convert_point_on_sphere_to_lat_lon_point(pole)\n"
+				"            file.write('%f %f %f %f %f\\n' % (\n"
+				"                edge.get_moving_plate_id(),\n"
+				"                lat_lon_pole.get_latitude(), lat_lon_pole.get_longitude(),\n"
+				"                math.degrees(angle),\n"
+				"                edge.get_fixed_plate_id()))\n")
 		.def("get_anchor_plate_edges",
 				&GPlatesApi::reconstruction_tree_get_anchor_plate_edges,
 				"get_anchor_plate_edges() -> ReconstructionTreeEdgesView\n"
@@ -569,7 +704,8 @@ export_reconstruction_tree()
 				"\n"
 				"  Note that the *view* object returned by this method is not a ``list`` or an *iterator* but, "
 				"like dictionary views in Python 3, a ``list`` or *iterator* can be obtained from the *view* "
-				"as in ``list(reconstruction_tree.get_child_edges())`` or ``iter(reconstruction_tree.get_child_edges())``.\n"
+				"as in ``list(reconstruction_tree.get_anchor_plate_edges())`` or "
+				"``iter(reconstruction_tree.get_anchor_plate_edges())``.\n"
 				"\n"
 				"  The returned view provides the following operations for accessing the points:\n"
 				"\n"
@@ -581,11 +717,19 @@ export_reconstruction_tree()
 				"  ``anchor_plate_edges[i]``        the anchor plate edge at index *i*\n"
 				"  ================================ ==========================================================\n"
 				"\n"
-				"  The following example demonstrates some uses of the above operations:\n"
+				"  The following example demonstrates top-down (starting at the anchored plate) "
+				"traversal of the reconstruction tree:\n"
 				"  ::\n"
 				"\n"
+				"    def traverse_sub_tree(edge):\n"
+				"        print 'Parent plate: %d, child plate:%d' % ("
+				"edge.get_fixed_plate_id(), edge.get_moving_plate_id())\n"
+				"        # Recurse into the children sub-trees.\n"
+				"        for child_edge in edge.get_child_edges():\n"
+				"            traverse_sub_tree(child_edge)\n"
+				"\n"
 				"    for anchor_plate_edge in reconstruction_tree.get_anchor plate_edges():\n"
-				"        ...\n")
+				"        traverse_sub_tree(anchor_plate_edge)\n")
 	;
 
 	// Enable boost::optional<ReconstructionTree::non_null_ptr_type> to be passed to and from python.
@@ -638,7 +782,17 @@ export_reconstruction_tree()
 				"\n"
 				"  :rtype: :class:`FiniteRotation`\n"
 				"\n"
-				"  The *total* in the method name indicates that the rotation is also relative to *present day*.\n")
+				"  The *total* in the method name indicates that the rotation is also relative to *present day*.\n"
+				"\n"
+				"  This method returns the *precomputed* equivalent of the following:\n"
+				"  ::\n"
+				"\n"
+				"    def get_equivalent_total_rotation(edge):\n"
+				"        finite_rotation = pygplates.FiniteRotation.create_identity_rotation()\n"
+				"        while edge:\n"
+				"            finite_rotation = edge.get_relative_total_rotation() * finite_rotation\n"
+				"            edge = edge.get_parent_edge()\n"
+				"        return finite_rotation\n")
 		.def("get_parent_edge",
 				&GPlatesApi::reconstruction_tree_edge_get_parent_edge,
 				"get_parent_edge() -> ReconstructionTreeEdge or None\n"
@@ -655,7 +809,18 @@ export_reconstruction_tree()
 				"fixed plate id of this edge.\n"
 				"\n"
 				"  ``None`` is returned if this edge is already at the top of the reconstruction tree "
-				"(if its fixed plate id is the anchor plate id).\n")
+				"(if its fixed plate id is the anchor plate id).\n"
+				"\n"
+				"  The following example demonstrates following the plate circuit path from a plate "
+				"(moving plate of an edge) to the anchor plate (at the top/root of the reconstruction tree):\n"
+				"  ::\n"
+				"\n"
+				"    while True:\n"
+				"        print 'Plate: %d' % edge.get_moving_plate_id()\n"
+				"        if not edge.get_parent_edge():\n"
+				"            print 'Anchored plate: %d' % edge.get_fixed_plate_id()\n"
+				"            break\n"
+				"        edge = edge.get_parent_edge()\n")
 		.def("get_child_edges",
 				&GPlatesApi::reconstruction_tree_edge_get_child_edges,
 				"get_child_edges() -> ReconstructionTreeEdgesView\n"
@@ -680,11 +845,19 @@ export_reconstruction_tree()
 				"  ``child_edges[i]``           the child edge at index *i*\n"
 				"  =========================== ==========================================================\n"
 				"\n"
-				"  The following example demonstrates some uses of the above operations:\n"
+				"  The following example demonstrates top-down (starting at the anchored plate) "
+				"traversal of the reconstruction tree:\n"
 				"  ::\n"
 				"\n"
-				"    for child_edge in edge.get_child_edges():\n"
-				"        ...\n")
+				"    def traverse_sub_tree(edge):\n"
+				"        print 'Parent plate: %d, child plate:%d' % ("
+				"edge.get_fixed_plate_id(), edge.get_moving_plate_id())\n"
+				"        # Recurse into the children sub-trees.\n"
+				"        for child_edge in edge.get_child_edges():\n"
+				"            traverse_sub_tree(child_edge)\n"
+				"\n"
+				"    for anchor_plate_edge in reconstruction_tree.get_anchor plate_edges():\n"
+				"        traverse_sub_tree(anchor_plate_edge)\n")
 	;
 
 	// Enable boost::optional<GPlatesApi::ReconstructionTreeEdge> to be passed to and from python.

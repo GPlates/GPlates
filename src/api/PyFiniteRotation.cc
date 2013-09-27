@@ -318,6 +318,7 @@ export_finite_rotation()
 				"\n"
 				"  An alternative way to create an identity rotation is with *any* Euler pole and a *zero* angle:\n"
 				"  ::\n"
+				"\n"
 				"    identity_finite_rotation = pygplates.FiniteRotation(any_euler_pole, 0)\n")
 		.staticmethod("create_identity_rotation")
 		.def("represents_identity_rotation",
@@ -341,7 +342,7 @@ export_finite_rotation()
 				"    original_point = finite_rotation.get_inverse() * rotated_point\n")
 		.def("get_euler_pole_and_angle",
 				&GPlatesApi::finite_rotation_get_euler_pole_and_angle,
-				"get_euler_pole_and_angle() -> (PointOnSphere, float)\n"
+				"get_euler_pole_and_angle() -> tuple\n"
 				"  Return the (pole, angle) representing finite rotation.\n"
 				"\n"
 				"  *NOTE* the angle is in *radians*.\n"
@@ -349,6 +350,12 @@ export_finite_rotation()
 				"  :rtype: tuple (:class:`PointOnSphere`, float)\n"
 				"  :returns: the tuple of (pole, angle)\n"
 				"  :raises: IndeterminateResultError if this finite rotation represents the identity rotation\n"
+				"\n"
+				"  If :meth:`represents_identity_rotation` returns ``True`` then this method will "
+				"raise *IndeterminateResultError*.\n"
+				"\n"
+				"  The function :func:`convert_point_on_sphere_to_lat_lon_point` can be used to "
+				"convert the returned pole to latitude/longitude.\n"
 				"\n"
 				"  Note that (pole, angle) and (-pole, -angle) represent equivalent rotations "
 				"(see :func:`represent_equivalent_rotations`) and either could be returned. "

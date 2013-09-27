@@ -2,6 +2,7 @@
 Unit tests for the pygplates application logic API.
 """
 
+import math
 import os
 import unittest
 import pygplates
@@ -125,8 +126,23 @@ class ReconstructionTreeCase(unittest.TestCase):
 
     def test_get_total_rotation(self):
         self.assertTrue(isinstance(
-                self.reconstruction_tree.get_equivalent_total_rotation(801),
+                self.reconstruction_tree.get_equivalent_total_rotation(802),
                 pygplates.FiniteRotation))
+        self.assertTrue(isinstance(
+                # Pick plates that are in different sub-trees.
+                self.reconstruction_tree.get_relative_total_rotation(802, 291),
+                pygplates.FiniteRotation))
+        self.assertTrue(pygplates.represent_equivalent_rotations(
+                self.reconstruction_tree.get_equivalent_total_rotation(802),
+                self.reconstruction_tree.get_relative_total_rotation(802, 0)))
+        # The edge (802 rel. 701).
+        self.assertTrue(pygplates.represent_equivalent_rotations(
+                self.reconstruction_tree.get_edge(802).get_relative_total_rotation(),
+                self.reconstruction_tree.get_relative_total_rotation(802, 701)))
+        # Should return None for an unknown plate id.
+        self.assertFalse(self.reconstruction_tree.get_equivalent_total_rotation(10000))
+        # Should return None for an unknown relative plate id.
+        self.assertFalse(self.reconstruction_tree.get_relative_total_rotation(802, 10000))
 
 
 def suite():

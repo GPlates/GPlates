@@ -16,7 +16,7 @@ FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 class FiniteRotationCase(unittest.TestCase):
     def setUp(self):
         self.pole = pygplates.PointOnSphere(0, 0, 1)
-        self.angle = math.pi
+        self.angle = 0.5 * math.pi
         self.finite_rotation = pygplates.FiniteRotation(self.pole, self.angle)
     
     # Attempt to rotate each supported geometry type - an error will be raised if not supported...
@@ -63,15 +63,23 @@ class FiniteRotationCase(unittest.TestCase):
     def test_get_pole_and_angle(self):
         pole, angle = self.finite_rotation.get_euler_pole_and_angle()
         self.assertTrue(isinstance(pole, pygplates.PointOnSphere))
-        self.assertTrue(abs(angle) > math.pi - 0.00001 and abs(angle) < math.pi + 0.00001)
+        self.assertTrue(abs(angle) > 0.5 * math.pi - 0.00001 and abs(angle) < 0.5 * math.pi + 0.00001)
     
     def test_identity(self):
         # Create identity rotation explicitly.
         identity_finite_rotation = pygplates.FiniteRotation.create_identity_rotation()
         self.assertTrue(identity_finite_rotation.represents_identity_rotation())
+        self.assertRaises(pygplates.IndeterminateResultError, identity_finite_rotation.get_euler_pole_and_angle)
         # Create identity rotation using zero angle.
         identity_finite_rotation = pygplates.FiniteRotation(self.pole, 0)
         self.assertTrue(identity_finite_rotation.represents_identity_rotation())
+        self.assertRaises(pygplates.IndeterminateResultError, identity_finite_rotation.get_euler_pole_and_angle)
+    
+    def test_equivalent(self):
+        reverse_pole = pygplates.PointOnSphere(-self.pole.get_x(), -self.pole.get_y(), -self.pole.get_z())
+        reverse_angle = -self.angle
+        finite_rotation = pygplates.FiniteRotation(reverse_pole, reverse_angle)
+        self.assertTrue(pygplates.represent_equivalent_rotations(self.finite_rotation, finite_rotation))
     
     def test_inverse(self):
         inverse_rotation = self.finite_rotation.get_inverse()
@@ -87,7 +95,7 @@ class FiniteRotationCase(unittest.TestCase):
         self.assertTrue(isinstance(composed_rotation, pygplates.FiniteRotation))
     
     def test_interpolate(self):
-        finite_rotation2 = pygplates.FiniteRotation(pygplates.PointOnSphere(0, 1, 0), 0.5 * math.pi)
+        finite_rotation2 = pygplates.FiniteRotation(pygplates.PointOnSphere(0, 1, 0), 0.25 * math.pi)
         interpolated_rotation = pygplates.interpolate_finite_rotations(
                 self.finite_rotation, finite_rotation2,
                 10, 20, 15)

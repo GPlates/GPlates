@@ -53,17 +53,17 @@ export_lat_lon_point()
 					"The following functions convert between :class:`LatLonPoint` and :class:`PointOnSphere`:\n"
 					"\n"
 					"* :func:`convert_point_on_sphere_to_lat_lon_point` - "
-					"convert *from* a :class:`PointOnSphere`: *to* a :class:`LatLonPoint`.\n"
+					"convert *from* a :class:`PointOnSphere` *to* a :class:`LatLonPoint`.\n"
 					"* :func:`convert_point_on_sphere_to_lat_lon_point` - "
-					"convert *from* a :class:`LatLonPoint`: *to* a :class:`PointOnSphere`.\n",
+					"convert *from* a :class:`LatLonPoint` *to* a :class:`PointOnSphere`.\n",
 					bp::init<double,double>(
 							(bp::arg("latitude"), bp::arg("longitude")),
 							"__init__(latitude, longitude)\n"
 							"  Create a *LatLonPoint* instance from a *latitude* and *longitude*.\n"
 							"\n"
-							"  :param latitude: the latitude\n"
+							"  :param latitude: the latitude (in degrees)\n"
 							"  :type latitude: float\n"
-							"  :param longitude: the longitude\n"
+							"  :param longitude: the longitude (in degrees)\n"
 							"  :type longitude: float\n"
 							"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
 							"\n"
@@ -79,7 +79,7 @@ export_lat_lon_point()
 				"is_valid_latitude() -> bool\n"
 				"  Returns ``True`` if *latitude* is in the range [-90, 90].\n"
 				"\n"
-				"  :param latitude: the latitude\n"
+				"  :param latitude: the latitude (in degrees)\n"
 				"  :rtype: bool\n")
 		.staticmethod("is_valid_latitude")
 		.def("is_valid_longitude",
@@ -88,7 +88,7 @@ export_lat_lon_point()
 				"is_valid_longitude() -> bool\n"
 				"  Returns ``True`` if *longitude* is in the range [-360, 360].\n"
 				"\n"
-				"  :param longitude: the longitude\n"
+				"  :param longitude: the longitude (in degrees)\n"
 				"  :rtype: bool\n"
 				"\n"
 				"  GPlates uses the half-open range (-180.0, 180.0], but accepts [-360.0, 360.0] as input\n")
@@ -97,14 +97,14 @@ export_lat_lon_point()
 				&GPlatesMaths::LatLonPoint::latitude,
 				bp::return_value_policy<bp::copy_const_reference>(),
 				"get_latitude() -> float\n"
-				"  Returns the latitude.\n"
+				"  Returns the latitude (in degrees).\n"
 				"\n"
 				"  :rtype: float\n")
 		.def("get_longitude",
 				&GPlatesMaths::LatLonPoint::longitude,
 				bp::return_value_policy<bp::copy_const_reference>(),
 				"get_longitude() -> float\n"
-				"  Returns the longitude.\n"
+				"  Returns the longitude (in degrees).\n"
 				"\n"
 				"  :rtype: float\n")
 		// Generate '__str__' from 'operator<<'...
@@ -120,6 +120,7 @@ export_lat_lon_point()
 			"  Converts a 2D latitude/longitude point to a 3D cartesian point.\n"
 			"\n"
 			"  :param lat_lon_point: the 2D latitude/longitude point\n"
+			"  :type lat_lon_point: :class:`LatLonPoint`\n"
 			"  :rtype: :class:`PointOnSphere`\n"
 			"\n");
 
@@ -131,6 +132,7 @@ export_lat_lon_point()
 			"  Converts a 3D cartesian point to a 2D latitude/longitude point.\n"
 			"\n"
 			"  :param point: the 3D cartesian point\n"
+			"  :type point: :class:`PointOnSphere`\n"
 			"  :rtype: :class:`LatLonPoint`\n"
 			"\n");
 
