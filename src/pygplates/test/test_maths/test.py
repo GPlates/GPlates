@@ -60,6 +60,19 @@ class FiniteRotationCase(unittest.TestCase):
         self.assertTrue(isinstance(rotated_polygon, pygplates.PolygonOnSphere))
         self.assertTrue(len(rotated_polygon.get_points_view()) == len(polygon.get_points_view()))
     
+    def test_get_pole_and_angle(self):
+        pole, angle = self.finite_rotation.get_euler_pole_and_angle()
+        self.assertTrue(isinstance(pole, pygplates.PointOnSphere))
+        self.assertTrue(abs(angle) > math.pi - 0.00001 and abs(angle) < math.pi + 0.00001)
+    
+    def test_identity(self):
+        # Create identity rotation explicitly.
+        identity_finite_rotation = pygplates.FiniteRotation.create_identity_rotation()
+        self.assertTrue(identity_finite_rotation.represents_identity_rotation())
+        # Create identity rotation using zero angle.
+        identity_finite_rotation = pygplates.FiniteRotation(self.pole, 0)
+        self.assertTrue(identity_finite_rotation.represents_identity_rotation())
+    
     def test_inverse(self):
         inverse_rotation = self.finite_rotation.get_inverse()
         self.assertTrue(isinstance(inverse_rotation, pygplates.FiniteRotation))

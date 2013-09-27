@@ -59,6 +59,14 @@ namespace GPlatesApi
 	}
 
 	GPlatesMaths::FiniteRotation
+	finite_rotation_create_identity_rotation()
+	{
+		return GPlatesMaths::FiniteRotation::create(
+				GPlatesMaths::UnitQuaternion3D::create_identity_rotation(),
+				boost::none);
+	}
+
+	GPlatesMaths::FiniteRotation
 	finite_rotation_interpolate(
 			const GPlatesMaths::FiniteRotation &finite_rotation1,
 			const GPlatesMaths::FiniteRotation &finite_rotation2,
@@ -82,6 +90,37 @@ namespace GPlatesApi
 				time1, time2,
 				target_time,
 				axis_hint);
+	}
+
+	bool
+	finite_rotation_represents_identity_rotation(
+			const GPlatesMaths::FiniteRotation &finite_rotation)
+	{
+		return GPlatesMaths::represents_identity_rotation(finite_rotation.unit_quat());
+	}
+
+	bool
+	finite_rotation_represent_equivalent_rotations(
+			const GPlatesMaths::FiniteRotation &finite_rotation1,
+			const GPlatesMaths::FiniteRotation &finite_rotation2)
+	{
+		return GPlatesMaths::represent_equiv_rotations(
+				finite_rotation1.unit_quat(),
+				finite_rotation2.unit_quat());
+	}
+
+	// Return the Euler (pole, angle) tuple.
+	bp::tuple
+	finite_rotation_get_euler_pole_and_angle(
+			const GPlatesMaths::FiniteRotation &finite_rotation)
+	{
+		const GPlatesMaths::UnitQuaternion3D::RotationParams rotation_params =
+				finite_rotation.unit_quat().get_rotation_params(
+						finite_rotation.axis_hint());
+
+		return bp::make_tuple(
+				GPlatesMaths::PointOnSphere(rotation_params.axis),
+				rotation_params.angle);
 	}
 }
 
@@ -127,7 +166,8 @@ export_finite_rotation()
 					"* a positive angle represents an anti-clockwise rotation around the rotation vector,\n"
 					"* a negative angle corresponds to a clockwise rotation.\n"
 					"\n"
-					"Finite rotations are equality (``==``, ``!=``) comparable.\n"
+					"To compare finite rotations use the function :func:`represent_equivalent_rotations` "
+					"- finite rotations are *not* equality (``==``, ``!=``) comparable.\n"
 					"\n"
 					"Multiplication operations can be used to rotate various geometry types:\n"
 					"\n"
@@ -161,7 +201,8 @@ export_finite_rotation()
 					"* ``composed_finite_rotation = pygplates.compose_finite_rotations("
 					"finite_rotation1, finite_rotation2)``\n"
 					"\n"
-					"The latter technique uses the :func:`compose_finite_rotations` function.\n"
+					"The latter technique uses the :func:`compose_finite_rotations` function. "
+					"Note that rotation composition is *not* commutative (``A*B != B*A``)\n"
 					"\n"
 					"**The following is general information on composing finite rotations in various "
 					"plate tectonic scenarios**...\n"
@@ -262,6 +303,30 @@ export_finite_rotation()
 				"  :type pole: :class:`PointOnSphere`\n"
 				"  :param angle: the rotation angle (in *radians*).\n"
 				"  :type angle: float\n")
+		.def("create_identity_rotation",
+				&GPlatesApi::finite_rotation_create_identity_rotation,
+				"create_identity_rotation() -> FiniteRotation\n"
+				"  Creates a finite rotation that does not rotate (it maps a vector to itself).\n"
+				"\n"
+				"  :rtype: :class:`FiniteRotation`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    identity_finite_rotation = pygplates.create_identity_rotation()\n"
+				"    # The rotated point and original point are at the same position.\n"
+				"    rotated_point = identity_finite_rotation * point\n"
+				"\n"
+				"  An alternative way to create an identity rotation is with *any* Euler pole and a *zero* angle:\n"
+				"  ::\n"
+				"    identity_finite_rotation = pygplates.FiniteRotation(any_euler_pole, 0)\n")
+		.staticmethod("create_identity_rotation")
+		.def("represents_identity_rotation",
+				&GPlatesApi::finite_rotation_represents_identity_rotation,
+				"represents_identity_rotation() -> bool\n"
+				"  Return whether this finite rotation represents an identity rotation (a rotation "
+				"which maps a vector to itself).\n"
+				"\n"
+				"  :rtype: bool\n")
 		.def("get_inverse",
 				&GPlatesMaths::get_reverse,
 				"get_inverse() -> FiniteRotation\n"
@@ -274,13 +339,21 @@ export_finite_rotation()
 				"\n"
 				"    rotated_point = finite_rotation * point\n"
 				"    original_point = finite_rotation.get_inverse() * rotated_point\n")
-		.def("get_unit_quaternion",
-				&GPlatesMaths::FiniteRotation::unit_quat,
-				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_unit_quaternion() -> UnitQuaternion3D\n"
-				"  Return the internal unit quaternion which effects the rotation of this finite rotation.\n"
+		.def("get_euler_pole_and_angle",
+				&GPlatesApi::finite_rotation_get_euler_pole_and_angle,
+				"get_euler_pole_and_angle() -> (PointOnSphere, float)\n"
+				"  Return the (pole, angle) representing finite rotation.\n"
 				"\n"
-				"  :rtype: :class:`UnitQuaternion3D`\n")
+				"  *NOTE* the angle is in *radians*.\n"
+				"\n"
+				"  :rtype: tuple (:class:`PointOnSphere`, float)\n"
+				"  :returns: the tuple of (pole, angle)\n"
+				"  :raises: IndeterminateResultError if this finite rotation represents the identity rotation\n"
+				"\n"
+				"  Note that (pole, angle) and (-pole, -angle) represent equivalent rotations "
+				"(see :func:`represent_equivalent_rotations`) and either could be returned. "
+				"However, if this finite rotation was created with *__init__(pole, angle)* then the "
+				"same pole and angle will be returned here.\n")
 		// Multiply two finite rotations...
 		.def("__mul__", compose)
 		// Rotations...
@@ -292,12 +365,34 @@ export_finite_rotation()
 		.def(bp::self * bp::other<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>())
 		.def(bp::self * bp::other<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>())
 		// Comparison operators...
+		// NOTE: We don't currently include these since equality also compares the internal axis hint which
+		// could be misleading for users. Instead it's better if they use 'represent_equivalent_rotations()'...
+#if 0
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
+#endif
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
 	;
+
+	// Non-member equivalent rotations function...
+	bp::def("represent_equivalent_rotations",
+			&GPlatesApi::finite_rotation_represent_equivalent_rotations,
+			(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
+			"represent_equivalent_rotations(finite_rotation1, finite_rotation2) -> bool\n"
+			"  Return whether two finite rotations represent equivalent rotations.\n"
+			"\n"
+			"  :param finite_rotation1: the first finite rotation\n"
+			"  :type finite_rotation1: :class:`FiniteRotation`\n"
+			"  :param finite_rotation2: the second finite rotation\n"
+			"  :type finite_rotation2: :class:`FiniteRotation`\n"
+			"  :rtype: bool\n"
+			"\n"
+			"  For example, negating both a finite rotation's Euler pole (making it antipodal) and its angle "
+			"will generate the same equivalent rotation (even though the underlying pole/angle will be "
+			"different). They are both the same equivalent rotation because they both rotate a geometry "
+			"to the same final location.\n");
 
 	// Non-member conversion function...
 	bp::def("compose_finite_rotations",

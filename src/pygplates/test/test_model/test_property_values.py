@@ -244,12 +244,14 @@ class GpmlFiniteRotationCase(unittest.TestCase):
         self.gpml_finite_rotation = pygplates.GpmlFiniteRotation(self.finite_rotation)
 
     def test_get(self):
-        self.assertTrue(self.gpml_finite_rotation.get_finite_rotation() == self.finite_rotation)
+        self.assertTrue(pygplates.represent_equivalent_rotations(
+                self.gpml_finite_rotation.get_finite_rotation(), self.finite_rotation))
 
     def test_set(self):
         new_finite_rotation = pygplates.FiniteRotation(pygplates.PointOnSphere(0,1,0), 0.4)
         self.gpml_finite_rotation.set_finite_rotation(new_finite_rotation)
-        self.assertTrue(self.gpml_finite_rotation.get_finite_rotation() == new_finite_rotation)
+        self.assertTrue(pygplates.represent_equivalent_rotations(
+                self.gpml_finite_rotation.get_finite_rotation(), new_finite_rotation))
 
 
 class GpmlFiniteRotationSlerpCase(unittest.TestCase):

@@ -214,8 +214,6 @@ namespace GPlatesApi
 		get_item(
 				boost::python::object i) const
 		{
-			namespace bp = boost::python;
-
 			// Note: not supporting slices - only integer indices.
 
 			// See if the index is an integer.

@@ -63,7 +63,6 @@ set(srcs
     PythonUtils.cc
     PythonUtils.h
     PyTopologyTools.cc
-    PyUnitQuaternion3D.cc
     PyUnitVector3D.cc
     PyViewportWindow.cc
     Sleeper.cc

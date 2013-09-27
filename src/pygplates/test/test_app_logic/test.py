@@ -48,11 +48,12 @@ class InterpolateTotalReconstructionSequenceTest(unittest.TestCase):
         
         trp = pygplates.interpolate_total_reconstruction_sequence(feature, 12.2)
         self.assertTrue(trp)
-        self.assertEquals(trp[0], 901) # Fixed plate id
-        self.assertEquals(trp[1], 2)   # Moving plate id
-        angle = trp[2].get_unit_quaternion().get_rotation_parameters().angle
+        fixed_plate_id, moving_plate_id, interpolated_finite_rotation = trp
+        self.assertEquals(fixed_plate_id, 901)
+        self.assertEquals(moving_plate_id, 2)
+        pole, angle = interpolated_finite_rotation.get_euler_pole_and_angle()
         self.assertTrue(abs(angle) > 0.1785 and abs(angle) < 0.179)
-        # TODO: Compare axis.
+        # TODO: Compare pole.
 
 
 class ReconstructionTreeCase(unittest.TestCase):
