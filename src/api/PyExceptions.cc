@@ -26,6 +26,7 @@
 #include <sstream>
 #include <string>
 
+#include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"
 
 #include "file-io/ErrorOpeningFileForReadingException.h"
@@ -240,6 +241,9 @@ export_exceptions()
 			precondition_violation_exception_type);
 	export_exception<GPlatesMaths::InvalidLatLonException>(
 			"InvalidLatLonError",
+			precondition_violation_exception_type);
+	export_exception<DifferentAnchoredPlatesInReconstructionTreesException>(
+			"DifferentAnchoredPlatesInReconstructionTreesError",
 			precondition_violation_exception_type);
 
 	//

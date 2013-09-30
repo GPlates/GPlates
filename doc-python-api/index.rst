@@ -64,6 +64,8 @@ Contents:
 	pygplates.interpolate_finite_rotations
 	pygplates.interpolate_total_reconstruction_pole
 	pygplates.interpolate_total_reconstruction_sequence
+	pygplates.get_equivalent_stage_rotation
+	pygplates.get_relative_stage_rotation
 
 .. NOTE: Only document the new API for now, exclude classes/functions not in the new API.
 .. NOTE: Only classes (and their methods) that are documented (that have docstrings) will appear in the generated documentation.

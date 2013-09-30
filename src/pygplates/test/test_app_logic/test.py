@@ -70,6 +70,8 @@ class ReconstructionTreeCase(unittest.TestCase):
                 self.reconstruction_tree.get_reconstruction_time() < 10.00001)
 
     def test_get_edge(self):
+        # Should not be able to get an edge for the anchor plate id.
+        self.assertFalse(self.reconstruction_tree.get_edge(self.reconstruction_tree.get_anchor_plate_id()))
         edge = self.reconstruction_tree.get_edge(101)
         self.assertTrue(edge.get_moving_plate_id() == 101)
         self.assertTrue(edge.get_fixed_plate_id() == 714)
@@ -124,25 +126,70 @@ class ReconstructionTreeCase(unittest.TestCase):
         # Reached anchor plate.
         self.assertFalse(edge)
 
-    def test_get_total_rotation(self):
+    def test_total_rotation(self):
         self.assertTrue(isinstance(
                 self.reconstruction_tree.get_equivalent_total_rotation(802),
                 pygplates.FiniteRotation))
         self.assertTrue(isinstance(
                 # Pick plates that are in different sub-trees.
-                self.reconstruction_tree.get_relative_total_rotation(802, 291),
+                self.reconstruction_tree.get_relative_total_rotation(291, 802),
                 pygplates.FiniteRotation))
         self.assertTrue(pygplates.represent_equivalent_rotations(
                 self.reconstruction_tree.get_equivalent_total_rotation(802),
-                self.reconstruction_tree.get_relative_total_rotation(802, 0)))
-        # The edge (802 rel. 701).
+                self.reconstruction_tree.get_relative_total_rotation(0, 802)))
         self.assertTrue(pygplates.represent_equivalent_rotations(
                 self.reconstruction_tree.get_edge(802).get_relative_total_rotation(),
-                self.reconstruction_tree.get_relative_total_rotation(802, 701)))
+                self.reconstruction_tree.get_relative_total_rotation(
+                        self.reconstruction_tree.get_edge(802).get_fixed_plate_id(),
+                        802)))
+        # Should return identity rotation.
+        self.assertTrue(self.reconstruction_tree.get_equivalent_total_rotation(
+                self.reconstruction_tree.get_anchor_plate_id()).represents_identity_rotation())
+        self.assertTrue(self.reconstruction_tree.get_relative_total_rotation(
+                self.reconstruction_tree.get_anchor_plate_id(),
+                self.reconstruction_tree.get_anchor_plate_id()).represents_identity_rotation())
         # Should return None for an unknown plate id.
         self.assertFalse(self.reconstruction_tree.get_equivalent_total_rotation(10000))
         # Should return None for an unknown relative plate id.
-        self.assertFalse(self.reconstruction_tree.get_relative_total_rotation(802, 10000))
+        self.assertFalse(self.reconstruction_tree.get_relative_total_rotation(10000, 802))
+    
+    def test_stage_rotation(self):
+        from_reconstruction_tree = pygplates.ReconstructionTree(
+                [ self.rotations ],
+                # Further in the past...
+                self.reconstruction_tree.get_reconstruction_time() + 1)
+        
+        equivalent_stage_rotation = pygplates.get_equivalent_stage_rotation(from_reconstruction_tree, self.reconstruction_tree, 802)
+        self.assertTrue(isinstance(equivalent_stage_rotation, pygplates.FiniteRotation))
+        # Should return identity rotation.
+        self.assertTrue(pygplates.get_equivalent_stage_rotation(
+                from_reconstruction_tree,
+                self.reconstruction_tree,
+                self.reconstruction_tree.get_anchor_plate_id())
+                        .represents_identity_rotation())
+        # Should return None for an unknown plate id.
+        self.assertFalse(pygplates.get_equivalent_stage_rotation(from_reconstruction_tree, self.reconstruction_tree, 10000))
+        # Should raise error for differing anchor plate ids (0 versus 291).
+        self.assertRaises(
+                pygplates.DifferentAnchoredPlatesInReconstructionTreesError,
+                pygplates.get_equivalent_stage_rotation,
+                pygplates.ReconstructionTree([self.rotations], 11, 291),
+                self.reconstruction_tree,
+                802)
+        
+        relative_stage_rotation = pygplates.get_relative_stage_rotation(from_reconstruction_tree, self.reconstruction_tree, 291, 802)
+        self.assertTrue(isinstance(relative_stage_rotation, pygplates.FiniteRotation))
+        # Should return identity rotation.
+        self.assertTrue(pygplates.get_relative_stage_rotation(
+                from_reconstruction_tree,
+                self.reconstruction_tree,
+                self.reconstruction_tree.get_anchor_plate_id(),
+                self.reconstruction_tree.get_anchor_plate_id())
+                        .represents_identity_rotation())
+        # Should return None for an unknown plate id.
+        self.assertFalse(pygplates.get_relative_stage_rotation(from_reconstruction_tree, self.reconstruction_tree, 10000, 802))
+        # Should return None for an unknown relative plate id.
+        self.assertFalse(pygplates.get_relative_stage_rotation(from_reconstruction_tree, self.reconstruction_tree, 291, 10000))
 
 
 def suite():

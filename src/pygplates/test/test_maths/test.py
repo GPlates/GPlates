@@ -84,6 +84,8 @@ class FiniteRotationCase(unittest.TestCase):
     def test_inverse(self):
         inverse_rotation = self.finite_rotation.get_inverse()
         self.assertTrue(isinstance(inverse_rotation, pygplates.FiniteRotation))
+        self.assertTrue((self.finite_rotation * inverse_rotation).represents_identity_rotation())
+        self.assertTrue((inverse_rotation * self.finite_rotation).represents_identity_rotation())
     
     def test_compose_rotations(self):
         inverse_rotation = self.finite_rotation.get_inverse()
