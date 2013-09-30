@@ -41,7 +41,6 @@ namespace
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id,
 			const GPlatesMaths::FiniteRotation &pole,
-			const GPlatesModel::FeatureHandle::weak_ref &originating_feature,
 			bool finite_rotation_was_interpolated)
 	{
 		using namespace GPlatesModel;
@@ -123,7 +122,6 @@ GPlatesAppLogic::ReconstructionGraph::insert_total_reconstruction_pole(
 		GPlatesModel::integer_plate_id_type fixed_plate_id_,
 		GPlatesModel::integer_plate_id_type moving_plate_id_,
 		const GPlatesMaths::FiniteRotation &pole,
-		const GPlatesModel::FeatureHandle::weak_ref &originating_feature,
 		bool finite_rotation_was_interpolated)
 {
 	// FIXME:  Confirm that 'fixed_plate_id' and 'moving_plate_id' are not equal
@@ -131,7 +129,7 @@ GPlatesAppLogic::ReconstructionGraph::insert_total_reconstruction_pole(
 	using namespace GPlatesUtils::OverloadResolution;
 
 	if (edge_is_already_in_graph(*this, fixed_plate_id_, moving_plate_id_, pole,
-				originating_feature, finite_rotation_was_interpolated)) {
+				finite_rotation_was_interpolated)) {
 		// FIXME:  Should we complain?
 		return;
 	}
@@ -139,13 +137,13 @@ GPlatesAppLogic::ReconstructionGraph::insert_total_reconstruction_pole(
 	// This is an edge for the "original" pole.
 	edge_ref_type original_edge =
 			ReconstructionTreeEdge::create(fixed_plate_id_, moving_plate_id_,
-					pole, originating_feature, finite_rotation_was_interpolated,
+					pole, finite_rotation_was_interpolated,
 					ReconstructionTreeEdge::PoleTypes::ORIGINAL);
 
 	// This is an edge for the "reversed" pole.
 	edge_ref_type reversed_edge =
 			ReconstructionTreeEdge::create(moving_plate_id_, fixed_plate_id_,
-					GPlatesMaths::get_reverse(pole), originating_feature,
+					GPlatesMaths::get_reverse(pole),
 					finite_rotation_was_interpolated,
 					ReconstructionTreeEdge::PoleTypes::REVERSED);
 
@@ -179,9 +177,15 @@ GPlatesAppLogic::ReconstructionGraph::insert_total_reconstruction_pole(
 
 GPlatesUtils::non_null_intrusive_ptr<GPlatesAppLogic::ReconstructionTree>
 GPlatesAppLogic::ReconstructionGraph::build_tree(
-		GPlatesModel::integer_plate_id_type root_plate_id)
+		GPlatesModel::integer_plate_id_type root_plate_id,
+		const double &reconstruction_time,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features)
 {
-	return ReconstructionTree::create(*this, root_plate_id);
+	return ReconstructionTree::create(
+			*this,
+			root_plate_id,
+			reconstruction_time,
+			reconstruction_features);
 }
 
 

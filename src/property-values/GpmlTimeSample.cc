@@ -273,5 +273,12 @@ GPlatesPropertyValues::operator<<(
 		std::ostream &os,
 		const GpmlTimeSample &time_sample)
 {
-	return os << *time_sample.value();
+	os << "{ " << *time_sample.valid_time() << ": " << *time_sample.value();
+	if (time_sample.is_disabled())
+	{
+		os << " <disabled>";
+	}
+	os << " }";
+
+	return os;
 }

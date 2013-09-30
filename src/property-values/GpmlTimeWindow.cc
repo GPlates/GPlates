@@ -155,5 +155,7 @@ GPlatesPropertyValues::operator<<(
 		std::ostream &os,
 		const GpmlTimeWindow &time_window)
 {
-	return os << *time_window.time_dependent_value();
+	os << "{ " << *time_window.valid_time() << ": " << *time_window.time_dependent_value() << " }";
+
+	return os;
 }

@@ -220,7 +220,6 @@ GPlatesAppLogic::ReconstructionTreePopulator::finalise_post_feature_properties(
 			*(d_accumulator->d_fixed_ref_frame),
 			*(d_accumulator->d_moving_ref_frame),
 			*(d_accumulator->d_finite_rotation),
-			feature_handle.reference(),
 			d_accumulator->d_finite_rotation_was_interpolated);
 
 	d_accumulator = boost::none;

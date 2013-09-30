@@ -50,6 +50,7 @@ Contents:
 	pygplates.PropertyValue
 	pygplates.PropertyValueVisitor
 	pygplates.ReconstructionTree
+	pygplates.ReconstructionTreeBuilder
 	pygplates.ReconstructionTreeEdge
 	pygplates.RevisionId
 	pygplates.XsBoolean

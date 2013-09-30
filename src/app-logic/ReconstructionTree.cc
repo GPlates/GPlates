@@ -56,7 +56,9 @@ namespace
 const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type
 GPlatesAppLogic::ReconstructionTree::create(
 		ReconstructionGraph &graph,
-		GPlatesModel::integer_plate_id_type anchor_plate_id_)
+		GPlatesModel::integer_plate_id_type anchor_plate_id_,
+		const double &reconstruction_time_,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_)
 {
 
 	//std::cerr << std::endl << "Starting new tree... " << std::endl;
@@ -65,9 +67,8 @@ GPlatesAppLogic::ReconstructionTree::create(
 	ReconstructionTree::non_null_ptr_type tree(
 			new ReconstructionTree(
 					anchor_plate_id_,
-					graph.reconstruction_time(),
-					graph.get_reconstruction_features()),
-			GPlatesUtils::NullIntrusivePointerHandler());
+					reconstruction_time_,
+					reconstruction_features_));
 
 	// We *could* do this recursively, but to minimise the chance that pathological input data
 	// (eg, trees which are actually linear, like lists) could kill the program, let's use a

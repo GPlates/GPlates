@@ -442,9 +442,7 @@ output_reconstructions(
 
 		const GPlatesModel::integer_plate_id_type anchor_plate_id = 501;
 
-		GPlatesAppLogic::ReconstructionGraph graph(
-				recon_time,
-				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>()/*empty*/);
+		GPlatesAppLogic::ReconstructionGraph graph;
 		GPlatesAppLogic::ReconstructionTreePopulator rtp(recon_time, graph);
 
 		std::cout << "\n===> Reconstruction time: " << recon_time << std::endl;
@@ -456,7 +454,11 @@ output_reconstructions(
 		}
 
 		std::cout << "\n--> Building tree, root node: " << anchor_plate_id << " \n";
-		GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree = graph.build_tree(anchor_plate_id);
+		GPlatesAppLogic::ReconstructionTree::non_null_ptr_type tree =
+				graph.build_tree(
+						anchor_plate_id,
+						recon_time,
+						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(1, total_recon_seqs));
 
 		traverse_recon_tree(*tree);
 

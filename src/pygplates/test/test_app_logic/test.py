@@ -68,6 +68,23 @@ class ReconstructionTreeCase(unittest.TestCase):
         self.assertEqual(self.reconstruction_tree.get_anchor_plate_id(), 0)
         self.assertTrue(self.reconstruction_tree.get_reconstruction_time() > 9.9999 and
                 self.reconstruction_tree.get_reconstruction_time() < 10.00001)
+        
+        # Build using a ReconstructionTreeBuilder.
+        builder = pygplates.ReconstructionTreeBuilder()
+        for rotation_feature in self.rotations:
+            trp = pygplates.interpolate_total_reconstruction_sequence(
+                    rotation_feature, self.reconstruction_tree.get_reconstruction_time())
+            if trp:
+                fixed_plate_id, moving_plate_id, interpolated_rotation = trp
+                builder.insert_total_reconstruction_pole(fixed_plate_id, moving_plate_id, interpolated_rotation)
+        built_reconstruction_tree = builder.build_reconstruction_tree(
+                self.reconstruction_tree.get_anchor_plate_id(),
+                self.reconstruction_tree.get_reconstruction_time())
+        self.assertTrue(isinstance(built_reconstruction_tree, pygplates.ReconstructionTree))
+        self.assertEqual(built_reconstruction_tree.get_anchor_plate_id(), 0)
+        self.assertTrue(built_reconstruction_tree.get_reconstruction_time() > 9.9999 and
+                built_reconstruction_tree.get_reconstruction_time() < 10.00001)
+        self.assertTrue(len(built_reconstruction_tree.get_edges()) == 447)
 
     def test_get_edge(self):
         # Should not be able to get an edge for the anchor plate id.

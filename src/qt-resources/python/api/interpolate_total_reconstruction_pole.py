@@ -25,6 +25,10 @@ def interpolate_total_reconstruction_pole(total_reconstruction_pole, time):
         # The property value type is unexpected.
         return
     
+    # Return early if all time samples are disabled.
+    if not time_samples:
+        return
+    
     # If the requested time is later than the first (most-recent) time sample then
     # it is outside the time range of the time sample sequence.
     if time > time_samples[0].get_time():
@@ -32,7 +36,7 @@ def interpolate_total_reconstruction_pole(total_reconstruction_pole, time):
     
     # If time matches first time sample then no interpolation is required.
     if time == time_samples[0].get_time():
-        return time_samples[0].get_value()
+        return time_samples[0].get_value().get_finite_rotation()
     
     # Find adjacent time samples that span the requested time.
     for i in range(1, len(time_samples)):
@@ -52,7 +56,7 @@ def interpolate_total_reconstruction_pole(total_reconstruction_pole, time):
 
 def interpolate_total_reconstruction_sequence(total_reconstruction_sequence_feature, time):
     """interpolate_total_reconstruction_sequence(total_reconstruction_sequence_feature, time) -> (int, int, FiniteRotation) or None
-    Interpolates the total reconstruction poles in a *total reconstruction sequence* feature at the specified time.
+    Interpolates the *time-dependent* total reconstruction pole in a *total reconstruction sequence* feature at the specified time.
     
     Features of type *total reconstruction sequence* are usually read from a GPML rotation file or a PLATES4 rotation ('.rot') file.
     
@@ -95,13 +99,13 @@ def interpolate_total_reconstruction_sequence(total_reconstruction_sequence_feat
             # This indicates the data does not conform to the GPlates Geological Information Model (GPGIM).
             return
 
-    if not (fixed_plate_id and moving_plate_id and total_reconstruction_pole):
+    if fixed_plate_id is None or moving_plate_id is None or total_reconstruction_pole is None:
         return
     
     # Interpolate the 'GpmlIrregularSampling' of 'GpmlFiniteRotations'.
     interpolated_rotation = interpolate_total_reconstruction_pole(total_reconstruction_pole, time)
     
-    if not interpolated_rotation:
+    if interpolated_rotation is None:
         return
     
     return (fixed_plate_id, moving_plate_id, interpolated_rotation)
