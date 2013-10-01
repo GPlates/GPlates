@@ -106,6 +106,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 	QObject::connect(button_reset,SIGNAL(clicked()), this, SLOT(handle_reset()));
 	QObject::connect(button_enable,SIGNAL(clicked()), this, SLOT(handle_enable()));
 	QObject::connect(button_disable,SIGNAL(clicked()), this, SLOT(handle_disable()));
+	QObject::connect(button_cancel,SIGNAL(clicked()),this,SLOT(close()));
 
 
 	// NOTE: I've added these two so that the "remove" button is enabled whenever a row/cell is highlighted.
@@ -375,6 +376,7 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_disable()
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::close()
 {
+	qDebug() << "Closing edit segment dialog";
 	Q_EMIT finished_editing();
 	QDialog::close();
 }
