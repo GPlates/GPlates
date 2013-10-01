@@ -373,6 +373,12 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_disable()
 	update_entire_row(table_new_segment,index);
 }
 
+void GPlatesQtWidgets::HellingerEditSegmentDialog::close()
+{
+	Q_EMIT finished_editing();
+	QDialog::close();
+}
+
 void GPlatesQtWidgets::HellingerEditSegmentDialog::update_current_pick_from_widgets()
 {
 
@@ -430,7 +436,7 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_edited_segment()
 		d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
 		add_segment_to_model();
 	}
-	reject();
+	close();
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_new_segment()
@@ -479,7 +485,7 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_new_segment()
 		// Everything was cool.
 		add_segment_to_model();
 	}
-	reject();
+	close();
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::set_initial_row_values(const int &row)

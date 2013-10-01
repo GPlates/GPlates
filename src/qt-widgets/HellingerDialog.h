@@ -61,9 +61,12 @@ namespace GPlatesQtWidgets
 	class ReadErrorAccumulationDialog;
 
 
-	enum EditOperationType{
+	enum CanvasOperationType{
+		SELECT_OPERATION,
 		EDIT_POINT_OPERATION,
-		EDIT_SEGMENT_OPERATION
+		NEW_POINT_OPERATION,
+		EDIT_SEGMENT_OPERATION,
+		NEW_SEGMENT_OPERATION
 	};
 
 	class HellingerDialog:
@@ -399,6 +402,7 @@ namespace GPlatesQtWidgets
 		HellingerModel *d_hellinger_model;
 		HellingerStatsDialog *d_hellinger_stats_dialog;
 		HellingerEditPointDialog *d_hellinger_edit_point_dialog;
+		HellingerEditPointDialog *d_hellinger_new_point_dialog;
 		HellingerEditSegmentDialog *d_hellinger_edit_segment_dialog;
 		HellingerThread *d_hellinger_thread;
 		QString d_path;
@@ -430,6 +434,7 @@ namespace GPlatesQtWidgets
 
 		bool d_edit_point_is_enlarged;
 
+		CanvasOperationType d_canvas_operation_type;
 	};
 }
 

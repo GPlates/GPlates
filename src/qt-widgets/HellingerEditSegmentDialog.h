@@ -123,6 +123,12 @@ namespace GPlatesQtWidgets
 		boost::optional<GPlatesQtWidgets::HellingerPick>
 		current_pick() const;
 
+
+	Q_SIGNALS:
+
+		void
+		finished_editing();
+
 	private Q_SLOTS:
 
 		void
@@ -154,6 +160,9 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_disable();
+
+		void
+		close();
 
 	private:
 

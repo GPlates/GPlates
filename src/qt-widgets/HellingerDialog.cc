@@ -99,6 +99,15 @@ namespace{
 		NUM_STATES
 	};
 
+
+	bool
+	edit_operation_active(const GPlatesQtWidgets::CanvasOperationType &type)
+	{
+		bool result = type != GPlatesQtWidgets::SELECT_OPERATION;
+		qDebug() << "edit operation active: " << result;
+		return type != GPlatesQtWidgets::SELECT_OPERATION;
+	}
+
 	/**
 	 * For debugging.
 	 */
@@ -362,6 +371,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_hellinger_model(0),
 	d_hellinger_stats_dialog(0),
 	d_hellinger_edit_point_dialog(0),
+	d_hellinger_new_point_dialog(0),
 	d_hellinger_edit_segment_dialog(0),
 	d_hellinger_thread(0),
 	d_moving_plate_id(0),
@@ -372,7 +382,8 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_fixed_symbol(GPlatesGui::Symbol::SQUARE, DEFAULT_SYMBOL_SIZE, false),
 	d_thread_type(POLE_THREAD_TYPE),
 	d_hovered_item_original_state(true),
-	d_edit_point_is_enlarged(false)
+	d_edit_point_is_enlarged(false),
+	d_canvas_operation_type(SELECT_OPERATION)
 {
 	setupUi(this);
 
@@ -390,7 +401,8 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	d_hellinger_model = new HellingerModel(d_python_path);
 	d_hellinger_thread = new HellingerThread(this, d_hellinger_model);
-	d_hellinger_edit_point_dialog = new HellingerEditPointDialog(this,d_hellinger_model);
+	d_hellinger_edit_point_dialog = new HellingerEditPointDialog(this,d_hellinger_model,false,this);
+	d_hellinger_new_point_dialog = new HellingerEditPointDialog(this,d_hellinger_model,true /* create new point */,this);
 	d_hellinger_edit_segment_dialog = new HellingerEditSegmentDialog(this,d_hellinger_model);
 
 	set_up_connections();
@@ -509,6 +521,8 @@ void GPlatesQtWidgets::HellingerDialog::handle_cancel()
 void GPlatesQtWidgets::HellingerDialog::handle_finished_editing()
 {
 	qDebug() << "finished_editing";
+	d_canvas_operation_type = SELECT_OPERATION;
+	update_buttons();
 	d_editing_layer_ptr->clear_rendered_geometries();
 	d_editing_layer_ptr->set_active(false);
 }
@@ -581,6 +595,8 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 void
 GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 {
+	d_canvas_operation_type = EDIT_POINT_OPERATION;
+	update_buttons();
 
 	d_editing_layer_ptr->set_active(true);
 	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
@@ -598,6 +614,9 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 void
 GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 {
+	d_canvas_operation_type = EDIT_SEGMENT_OPERATION;
+	update_buttons();
+
 	d_editing_layer_ptr->set_active(true);
 
 	QString segment_string = tree_widget_picks->currentItem()->text(SEGMENT_NUMBER);
@@ -860,20 +879,29 @@ GPlatesQtWidgets::HellingerDialog::show_stat_details()
 void
 GPlatesQtWidgets::HellingerDialog::handle_add_new_pick()
 {    
-	QScopedPointer<GPlatesQtWidgets::HellingerEditPointDialog> dialog(
-				new GPlatesQtWidgets::HellingerEditPointDialog(this,d_hellinger_model,true));
+	d_canvas_operation_type = NEW_POINT_OPERATION;
+	update_buttons();
+
+	d_editing_layer_ptr->set_active(true);
+
 	if (boost::optional<int> segment = current_segment_number(tree_widget_picks))
 	{
-		dialog->update_segment_number(segment.get());
+		d_hellinger_new_point_dialog->update_segment_number(segment.get());
 	}
 
-	dialog->exec();
+	d_hellinger_new_point_dialog->update_pick_coords(
+				GPlatesMaths::LatLonPoint(0,0));
+	d_hellinger_new_point_dialog->show();
+	d_hellinger_new_point_dialog->raise();
 
 }
 
 void
 GPlatesQtWidgets::HellingerDialog::handle_add_new_segment()
 {
+	d_canvas_operation_type = NEW_SEGMENT_OPERATION;
+	update_buttons();
+
 	QScopedPointer<GPlatesQtWidgets::HellingerEditSegmentDialog> dialog(
 				new GPlatesQtWidgets::HellingerEditSegmentDialog(this,
 																d_hellinger_model,
@@ -1038,21 +1066,19 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 void
 GPlatesQtWidgets::HellingerDialog::update_buttons()
 {
+	button_expand_all->setEnabled(false);
+	button_collapse_all->setEnabled(false);
+	button_export_pick_file->setEnabled(false);
+	button_export_com_file->setEnabled(false);
+	button_calculate_fit->setEnabled(false);
+	button_details->setEnabled(false);
+	button_remove_segment->setEnabled(false);
+	button_remove_point->setEnabled(false);
+	button_stats->setEnabled(false);
+	button_clear->setEnabled(false);
+
 	// Update based on if we have some picks loaded or not.
-	if (!picks_loaded())
-	{
-		button_expand_all->setEnabled(false);
-		button_collapse_all->setEnabled(false);
-		button_export_pick_file->setEnabled(false);
-		button_export_com_file->setEnabled(false);
-		button_calculate_fit->setEnabled(false);
-		button_details->setEnabled(false);
-		button_remove_segment->setEnabled(false);
-		button_remove_point->setEnabled(false);
-		button_stats->setEnabled(false);
-		button_clear->setEnabled(false);
-	}
-	else
+	if (picks_loaded())
 	{
 		button_expand_all->setEnabled(true);
 		button_collapse_all->setEnabled(true);
@@ -1061,6 +1087,20 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 		button_calculate_fit->setEnabled(spinbox_radius->value() > 0.0);
 		button_clear->setEnabled(true);
 	}
+
+
+	// Disable some edit / fit buttons if we are in the middle of an editing/creation operation
+	// It's simpler to disable the whole main dialog, but this also disables the child dialogs (e.g. the
+	// edit dialogs) so we'd be stuck in that state.
+	bool new_button_state = !edit_operation_active(d_canvas_operation_type);
+	button_calculate_fit->setEnabled(new_button_state);
+	button_edit_point->setEnabled(new_button_state);
+	button_new_pick->setEnabled(new_button_state);
+	button_edit_segment->setEnabled(new_button_state);
+	button_new_segment->setEnabled(new_button_state);
+
+
+
 }
 
 void
@@ -1665,6 +1705,7 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(button_clear,SIGNAL(clicked()),this,SLOT(handle_clear()));
 
 	QObject::connect(d_hellinger_edit_point_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
+	QObject::connect(d_hellinger_edit_segment_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
 	QObject::connect(d_hellinger_edit_point_dialog,SIGNAL(update_editing()),this,SLOT(handle_update_point_editing()));
 }
 
