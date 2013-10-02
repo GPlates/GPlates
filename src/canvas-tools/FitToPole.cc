@@ -87,6 +87,13 @@ GPlatesCanvasTools::FitToPole::handle_left_click(
 	{
 		d_hellinger_dialog_ptr->clear_selection_layer();
 	}
+
+	if (d_hellinger_dialog_ptr->is_in_new_point_state())
+	{
+		//Place the new point here.
+		qDebug() << "HLC: updating edit layer";
+		d_hellinger_dialog_ptr->update_edit_layer(point_on_sphere);
+	}
 }
 
 

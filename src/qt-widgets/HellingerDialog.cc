@@ -155,7 +155,6 @@ namespace{
 						fixed_symbol);
 
 		layer->add_rendered_geometry(pick_geometry);
-
 	}
 
 	void
@@ -530,11 +529,23 @@ void GPlatesQtWidgets::HellingerDialog::handle_finished_editing()
 void GPlatesQtWidgets::HellingerDialog::handle_update_point_editing()
 {
 	d_editing_layer_ptr->clear_rendered_geometries();
-	add_pick_geometry_to_layer(
+	if (is_in_edit_point_state())
+	{
+		add_pick_geometry_to_layer(
 				d_hellinger_edit_point_dialog->current_pick(),
 				d_editing_layer_ptr,
 				GPlatesGui::Colour::get_yellow(),
 				d_edit_point_is_enlarged);
+	}
+	else if (is_in_new_point_state())
+	{
+		qDebug() << "Adding new point to layer";
+		add_pick_geometry_to_layer(
+				d_hellinger_new_point_dialog->current_pick(),
+				d_editing_layer_ptr,
+				GPlatesGui::Colour::get_yellow(),
+				d_edit_point_is_enlarged);
+	}
 }
 
 void GPlatesQtWidgets::HellingerDialog::handle_update_segment_editing()
@@ -889,11 +900,13 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_pick()
 		d_hellinger_new_point_dialog->update_segment_number(segment.get());
 	}
 
-	d_hellinger_new_point_dialog->update_pick_coords(
-				GPlatesMaths::LatLonPoint(0,0));
+
+
 	d_hellinger_new_point_dialog->show();
 	d_hellinger_new_point_dialog->raise();
 
+	d_hellinger_new_point_dialog->update_pick_coords(
+				GPlatesMaths::LatLonPoint(0,0));
 }
 
 void
@@ -1229,6 +1242,7 @@ GPlatesQtWidgets::HellingerDialog::handle_close()
 	clear_rendered_geometries();
 	activate_layers(false);
 	d_hellinger_edit_point_dialog->close();
+	d_hellinger_new_point_dialog->close();
 }
 
 void
@@ -1248,7 +1262,15 @@ GPlatesQtWidgets::HellingerDialog::update_edit_layer(
 		const GPlatesMaths::PointOnSphere &pos_)
 {
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos_);
-	d_hellinger_edit_point_dialog->update_pick_coords(llp);
+	if (is_in_edit_point_state())
+	{
+		d_hellinger_edit_point_dialog->update_pick_coords(llp);
+	}
+	if (is_in_new_point_state())
+	{
+		qDebug() << "HD::UEL new_point_state";
+		d_hellinger_new_point_dialog->update_pick_coords(llp);
+	}
 
 }
 
@@ -1256,6 +1278,18 @@ void GPlatesQtWidgets::HellingerDialog::set_enlarged_edit_geometry(bool enlarged
 {
 	d_edit_point_is_enlarged = enlarged;
 	handle_update_point_editing();
+}
+
+bool GPlatesQtWidgets::HellingerDialog::is_in_edit_point_state()
+{
+	return ((d_canvas_operation_type == EDIT_POINT_OPERATION) ||
+			(d_canvas_operation_type == EDIT_SEGMENT_OPERATION));
+}
+
+bool GPlatesQtWidgets::HellingerDialog::is_in_new_point_state()
+{
+	return ((d_canvas_operation_type == NEW_POINT_OPERATION) ||
+			(d_canvas_operation_type == NEW_SEGMENT_OPERATION));
 }
 
 void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
@@ -1706,9 +1740,13 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(button_clear,SIGNAL(clicked()),this,SLOT(handle_clear()));
 
 	QObject::connect(d_hellinger_edit_point_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
-	QObject::connect(d_hellinger_edit_segment_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
-	QObject::connect(d_hellinger_edit_point_dialog,SIGNAL(update_editing()),this,SLOT(handle_update_point_editing()));
 	QObject::connect(d_hellinger_new_point_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
+
+	QObject::connect(d_hellinger_edit_point_dialog,SIGNAL(update_editing()),this,SLOT(handle_update_point_editing()));
+	QObject::connect(d_hellinger_new_point_dialog,SIGNAL(update_editing()),this,SLOT(handle_update_point_editing()));
+
+	QObject::connect(d_hellinger_edit_segment_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
+
 }
 
 void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()

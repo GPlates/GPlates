@@ -161,6 +161,7 @@ namespace GPlatesCanvasTools
 		GPlatesQtWidgets::HellingerDialog *d_hellinger_dialog_ptr;
 
 		bool d_mouse_is_over_editable_pick;
+		bool d_mouse_is_over_selectable_pick;
 		bool d_pick_is_being_dragged;
 	};
 }

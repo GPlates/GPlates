@@ -149,6 +149,12 @@ namespace GPlatesQtWidgets
 		set_enlarged_edit_geometry(
 				bool enlarged = true);
 
+		bool
+		is_in_edit_point_state();
+
+		bool
+		is_in_new_point_state();
+
 	public Q_SLOTS:
 
 		/**
