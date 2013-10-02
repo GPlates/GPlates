@@ -41,6 +41,8 @@
 
 #include "property-values/GeoTimeInstant.h"
 
+#include "utils/CopyConst.h"
+
 
 namespace GPlatesFeatureVisitors
 {
@@ -53,8 +55,8 @@ namespace GPlatesFeatureVisitors
 	 *
 	 * If true then the derived class (@a PropertyValueType) property value is returned in @a property_value.
 	 *
-	 * NOTE: @a PropertyValueType must be 'const' due to the way the 'non-const' feature visitor
-	 * is implemented (see the DECLARE_PROPERTY_VALUE_FINDER macro below for more details).
+	 * @a PropertyValueType and @a PropertyValueBaseType can be either const or non-const types
+	 * but, of course, you cannot get a non-const PropertyValueType from a const PropertyValueBaseType.
 	 *
 	 * @a reconstruction_time only applies to time-dependent properties in which case the
 	 * value of the property at the specified time is returned.
@@ -68,10 +70,10 @@ namespace GPlatesFeatureVisitors
 	 *       ...
 	 *    }
 	 */
-	template <class PropertyValueType>
+	template <class PropertyValueType, class PropertyValueBaseType>
 	bool
 	get_property_value(
-			const GPlatesModel::PropertyValue &property_value_base,
+			PropertyValueBaseType &property_value_base,
 			PropertyValueType *&property_value,
 			const double &reconstruction_time = 0);
 
@@ -82,8 +84,8 @@ namespace GPlatesFeatureVisitors
 	 * If true then property value is returned in @a property_value.
 	 * If has more than one property matching criteria then only first is returned.
 	 *
-	 * NOTE: @a PropertyValueType must be 'const' due to the way the 'non-const' feature visitor
-	 * is implemented (see the DECLARE_PROPERTY_VALUE_FINDER macro below for more details).
+	 * @a PropertyValueType and @a FeatureOrPropertyType can be either const or non-const types
+	 * but, of course, you cannot get a non-const PropertyValueType from a const FeatureOrPropertyType.
 	 *
 	 * @a FeatureOrPropertyType can be any of the following types:
 	 *
@@ -121,8 +123,8 @@ namespace GPlatesFeatureVisitors
 	 * If true then property value is returned in @a property_value.
 	 * If has more than one property matching criteria then only first is returned.
 	 *
-	 * NOTE: @a PropertyValueType must be 'const' due to the way the 'non-const' feature visitor
-	 * is implemented (see the DECLARE_PROPERTY_VALUE_FINDER macro below for more details).
+	 * @a PropertyValueType and @a FeatureOrPropertyType can be either const or non-const types
+	 * but, of course, you cannot get a non-const PropertyValueType from a const FeatureOrPropertyType.
 	 *
 	 * @a FeatureOrPropertyType can be any of the following types:
 	 *
@@ -162,8 +164,8 @@ namespace GPlatesFeatureVisitors
 	 *
 	 * If so then the property values are returned in @a property_values.
 	 *
-	 * NOTE: @a PropertyValueType must be 'const' due to the way the 'non-const' feature visitor
-	 * is implemented (see the DECLARE_PROPERTY_VALUE_FINDER macro below for more details).
+	 * @a PropertyValueType and @a FeatureOrPropertyType can be either const or non-const types
+	 * but, of course, you cannot get a non-const PropertyValueType from a const FeatureOrPropertyType.
 	 *
 	 * @a FeatureOrPropertyType can be any of the following types:
 	 *
@@ -200,8 +202,8 @@ namespace GPlatesFeatureVisitors
 	 *
 	 * If so then the property values are returned in @a property_values.
 	 *
-	 * NOTE: @a PropertyValueType must be 'const' due to the way the 'non-const' feature visitor
-	 * is implemented (see the DECLARE_PROPERTY_VALUE_FINDER macro below for more details).
+	 * @a PropertyValueType and @a FeatureOrPropertyType can be either const or non-const types
+	 * but, of course, you cannot get a non-const PropertyValueType from a const FeatureOrPropertyType.
 	 *
 	 * @a FeatureOrPropertyType can be any of the following types:
 	 *
@@ -415,15 +417,7 @@ namespace GPlatesFeatureVisitors
 					/* Returns begin/end iterator to any found property values. */ \
 					property_value_container_range \
 					find_property_values( \
-							const GPlatesModel::FeatureHandle::const_weak_ref &feature_weak_ref) \
-					{ \
-						d_found_property_values.clear(); \
-						visit_feature(feature_weak_ref); \
-						return std::make_pair(d_found_property_values.begin(), d_found_property_values.end()); \
-					} \
-					property_value_container_range \
-					find_property_values( \
-							const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref) \
+							const feature_weak_ref_type &feature_weak_ref) \
 					{ \
 						d_found_property_values.clear(); \
 						visit_feature(feature_weak_ref); \
@@ -433,15 +427,7 @@ namespace GPlatesFeatureVisitors
 					/* Returns begin/end iterator to any found property values. */ \
 					property_value_container_range \
 					find_property_values( \
-							const GPlatesModel::FeatureCollectionHandle::const_iterator &feature_collection_iterator) \
-					{ \
-						d_found_property_values.clear(); \
-						visit_feature(feature_collection_iterator); \
-						return std::make_pair(d_found_property_values.begin(), d_found_property_values.end()); \
-					} \
-					property_value_container_range \
-					find_property_values( \
-							const GPlatesModel::FeatureCollectionHandle::iterator &feature_collection_iterator) \
+							const feature_collection_iterator_type &feature_collection_iterator) \
 					{ \
 						d_found_property_values.clear(); \
 						visit_feature(feature_collection_iterator); \
@@ -451,15 +437,7 @@ namespace GPlatesFeatureVisitors
 					/* Returns begin/end iterator to any found property values. */ \
 					property_value_container_range \
 					find_property_values( \
-							const GPlatesModel::FeatureHandle::const_iterator &feature_iterator) \
-					{ \
-						d_found_property_values.clear(); \
-						visit_feature_property(feature_iterator); \
-						return std::make_pair(d_found_property_values.begin(), d_found_property_values.end()); \
-					} \
-					property_value_container_range \
-					find_property_values( \
-							const GPlatesModel::FeatureHandle::iterator &feature_iterator) \
+							const feature_iterator_type &feature_iterator) \
 					{ \
 						d_found_property_values.clear(); \
 						visit_feature_property(feature_iterator); \
@@ -469,15 +447,8 @@ namespace GPlatesFeatureVisitors
 					/* Returns begin/end iterator to any found property values. */ \
 					property_value_container_range \
 					find_property_values( \
-							const GPlatesModel::PropertyValue &property_value_base) \
-					{ \
-						d_found_property_values.clear(); \
-						property_value_base.accept_visitor(*this); \
-						return std::make_pair(d_found_property_values.begin(), d_found_property_values.end()); \
-					} \
-					property_value_container_range \
-					find_property_values( \
-							GPlatesModel::PropertyValue &property_value_base) \
+							/* Using PropertyValue instead of derived property value type to avoid undefined class error... */ \
+							GPlatesUtils::CopyConst<property_value_type, GPlatesModel::PropertyValue>::type &property_value_base) \
 					{ \
 						d_found_property_values.clear(); \
 						property_value_base.accept_visitor(*this); \
@@ -510,47 +481,29 @@ namespace GPlatesFeatureVisitors
 		// For example:
 		//    DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::Enumeration, visit_enumeration)
 		//
+		// NOTE: There is no longer any deep-cloning of property values within a *non-const*
+		// feature visitor (since it is no longer required to ensure changes to the model are tracked).
+		// So we no longer need to worry that property value references will become invalid immediately
+		// after visiting a property value (with a non-const visitor).
+		//
 #define DECLARE_PROPERTY_VALUE_FINDER(property_value_type, visit_property_value_method) \
 		/* for const property-value */ \
 		DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
 				const property_value_type, \
 				visit_property_value_method, \
 				GPlatesModel::ConstFeatureVisitor) \
-
-		// NOTE: Currently removing the version that returns a non-const property-value.
-		//
-		// When using a non-const feature visitor the top-level properties are currently deep cloned in
-		// visit_feature_properties() so that changes to the model can be tracked (for JC's unsaved changes).
-		// The result is references cannot be kept to the property values because they are released when
-		// committed back the model inside visit_feature_properties().
-		// The function 'get_property_value()' uses both non-const and const visitors internally to
-		// retrieve property values and return them to the caller.
-		// And for the non-const visitor the property value raw pointer that 'get_property_value()'
-		// returns to its caller is pointing to an object that has been deallocated.
-		// The design of 'get_property_value()' itself is ok in that it's returning a raw pointer to
-		// the caller with the understanding that the pointer only be used locally by the caller.
-		// However the new way of keeping track of changes to the model means that property value
-		// references now become invalid immediately after visiting that property value with a
-		// non-const visitor which is necessary to track changes to the model.
-		// The const visitor does not clone because const property values cannot be modified and
-		// so it doesn't exhibit this problem.
-		//
-		// So this only breaks for the non-const version of 'get_property_value()' so
-		// it is disabled to prevent caller's using it.
-		// There's currently no code that uses the non-const version.
-		//
-		// // For non-const property-value.
-		//DECLARE_PROPERTY_VALUE_FINDER_CLASS(
-		//		property_value_type,
-		//		visit_property_value_method,
-		//		GPlatesModel::FeatureVisitor)
+		/* For non-const property-value */ \
+		DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
+				property_value_type, \
+				visit_property_value_method, \
+				GPlatesModel::FeatureVisitor)
 	}
 
 
-	template <class PropertyValueType>
+	template <class PropertyValueType, class PropertyValueBaseType>
 	bool
 	get_property_value(
-			const GPlatesModel::PropertyValue &property_value_base,
+			PropertyValueBaseType &property_value_base,
 			PropertyValueType *&property_value,
 			const double &reconstruction_time)
 	{
