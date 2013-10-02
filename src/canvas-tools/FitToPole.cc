@@ -181,7 +181,18 @@ GPlatesCanvasTools::FitToPole::handle_shift_left_click(
 		{
 			// ...and if we do have the new-point-dialog open, use the coordinates
 			// of the clicked geometry as the new point.
+			GeometryFinder finder;
+			GPlatesViewOperations::RenderedGeometry rg = d_hellinger_dialog_ptr->get_pick_layer()->get_rendered_geometry(
+						sorted_hits.front().d_rendered_geom_index);
+			rg.accept_visitor(finder);
+			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> pos =
+					finder.get_geometry();
 
+			if (pos)
+			{
+				qDebug() << "Found point-on-sphere";
+				d_hellinger_dialog_ptr->update_edit_layer(**pos);
+			}
 		}
 	}
 	else

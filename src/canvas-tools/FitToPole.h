@@ -31,6 +31,10 @@
 #include "CanvasTool.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
+#include "view-operations/RenderedGeometryVisitor.h"
+#include "view-operations/RenderedCrossSymbol.h"
+#include "view-operations/RenderedPointOnSphere.h"
+
 
 // TODO: Check if we need any of these "inherited" includes/forward-declarations.
 namespace GPlatesGui
@@ -65,6 +69,52 @@ namespace GPlatesCanvasTools
 		Q_OBJECT
 
 	public:
+
+		/**
+		 * Visitor to find a rendered geometry's point-on-sphere, if it has one.
+		 */
+		class GeometryFinder:
+			public GPlatesViewOperations::ConstRenderedGeometryVisitor
+		{
+		public:
+
+			GeometryFinder()
+			{  }
+
+			virtual
+			void
+			visit_rendered_point_on_sphere(
+				const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
+			{
+				d_geometry.reset(
+					rendered_point_on_sphere.get_point_on_sphere().get_non_null_pointer());
+			}
+
+
+			virtual
+			void
+			visit_rendered_cross_symbol(
+					const GPlatesViewOperations::RenderedCrossSymbol &rendered_cross_symbol)
+			{
+				d_geometry.reset(
+							rendered_cross_symbol.get_centre().get_non_null_pointer());
+			}
+
+			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
+			get_geometry()
+			{
+				return d_geometry;
+			}
+
+		private:
+
+			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
+				d_geometry;
+
+		};
+
+
+
 
 		/**
 		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<FitToPole>.
