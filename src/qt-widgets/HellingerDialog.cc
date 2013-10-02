@@ -1093,6 +1093,7 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 	// It's simpler to disable the whole main dialog, but this also disables the child dialogs (e.g. the
 	// edit dialogs) so we'd be stuck in that state.
 	bool new_button_state = !edit_operation_active(d_canvas_operation_type);
+	qDebug() << "new button state: " << new_button_state;
 	button_calculate_fit->setEnabled(new_button_state);
 	button_edit_point->setEnabled(new_button_state);
 	button_new_pick->setEnabled(new_button_state);
@@ -1707,6 +1708,7 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(d_hellinger_edit_point_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
 	QObject::connect(d_hellinger_edit_segment_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
 	QObject::connect(d_hellinger_edit_point_dialog,SIGNAL(update_editing()),this,SLOT(handle_update_point_editing()));
+	QObject::connect(d_hellinger_new_point_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
 }
 
 void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()

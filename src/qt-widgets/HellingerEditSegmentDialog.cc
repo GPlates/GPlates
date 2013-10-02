@@ -378,7 +378,7 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::close()
 {
 	qDebug() << "Closing edit segment dialog";
 	Q_EMIT finished_editing();
-	QDialog::close();
+	reject();
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::update_current_pick_from_widgets()

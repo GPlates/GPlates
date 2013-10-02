@@ -183,7 +183,7 @@ void GPlatesQtWidgets::HellingerEditPointDialog::update_pick_from_widgets()
 void GPlatesQtWidgets::HellingerEditPointDialog::close()
 {
 	Q_EMIT finished_editing();
-	QDialog::close();
+	reject();
 }
 
 
