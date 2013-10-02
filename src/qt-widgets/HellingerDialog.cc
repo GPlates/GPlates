@@ -1261,6 +1261,8 @@ void
 GPlatesQtWidgets::HellingerDialog::update_edit_layer(
 		const GPlatesMaths::PointOnSphere &pos_)
 {
+	// TODO: see if we can use a single instance of HellingerEditPointDialog and
+	// so prevent having to check here (and elsewhere) for the operation type.
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos_);
 	if (is_in_edit_point_state())
 	{

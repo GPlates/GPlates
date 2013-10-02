@@ -166,7 +166,11 @@ GPlatesCanvasTools::FitToPole::handle_shift_left_click(
 	{
 		const unsigned int index = sorted_hits.front().d_rendered_geom_index;
 		d_hellinger_dialog_ptr->set_selected_pick(index);
-		d_hellinger_dialog_ptr->edit_current_pick();
+
+		if (!d_hellinger_dialog_ptr->is_in_new_point_state())
+		{
+			d_hellinger_dialog_ptr->edit_current_pick();
+		}
 	}
 	else
 	{
