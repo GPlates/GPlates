@@ -27,11 +27,16 @@
 #include <QObject>
 
 #include "qt-widgets/HellingerDialog.h"
+#include "view-operations/RenderedGeometry.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryProximity.h"
 #include "FitToPole.h"
 
+namespace
+{
+
+}
 
 GPlatesCanvasTools::FitToPole::FitToPole(
 		const status_bar_callback_type &status_bar_callback,
@@ -169,7 +174,14 @@ GPlatesCanvasTools::FitToPole::handle_shift_left_click(
 
 		if (!d_hellinger_dialog_ptr->is_in_new_point_state())
 		{
+			//Only allow shift-click to edit if we don't have the new-point dialog open...
 			d_hellinger_dialog_ptr->edit_current_pick();
+		}
+		else
+		{
+			// ...and if we do have the new-point-dialog open, use the coordinates
+			// of the clicked geometry as the new point.
+
 		}
 	}
 	else
