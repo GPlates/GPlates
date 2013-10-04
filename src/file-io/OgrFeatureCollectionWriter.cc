@@ -504,18 +504,18 @@ namespace
 		static const GPlatesModel::PropertyName old_plates_header_property_name =
 				GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
 
-		const GPlatesPropertyValues::GpmlOldPlatesHeader *old_plates_header;
-
-		if (GPlatesFeatureVisitors::get_property_value(feature_handle.reference(),old_plates_header_property_name,
-													   old_plates_header))
+		boost::optional<GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_to_const_type> old_plates_header =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlOldPlatesHeader>(
+						feature_handle.reference(), old_plates_header_property_name);
+		if (old_plates_header)
 		{
-			add_region_to_kvd(old_plates_header,dictionary);
-			add_reference_number_to_kvd(old_plates_header,dictionary);
-			add_string_number_to_kvd(old_plates_header,dictionary);
-			add_data_type_code_number_to_kvd(old_plates_header,dictionary);
-			add_data_type_code_number_additional_to_kvd(old_plates_header,dictionary);
-			add_colour_code_to_kvd(old_plates_header,dictionary);
-			add_number_of_points_to_kvd(old_plates_header,dictionary);
+			add_region_to_kvd(old_plates_header.get().get(), dictionary);
+			add_reference_number_to_kvd(old_plates_header.get().get(), dictionary);
+			add_string_number_to_kvd(old_plates_header.get().get(), dictionary);
+			add_data_type_code_number_to_kvd(old_plates_header.get().get(), dictionary);
+			add_data_type_code_number_additional_to_kvd(old_plates_header.get().get(), dictionary);
+			add_colour_code_to_kvd(old_plates_header.get().get(), dictionary);
+			add_number_of_points_to_kvd(old_plates_header.get().get(), dictionary);
 		}
 	}
 
@@ -718,15 +718,16 @@ namespace
 		static const GPlatesModel::PropertyName plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
-		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
-
-		if (GPlatesFeatureVisitors::get_property_value(feature,plate_id_property_name,recon_plate_id))
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						feature, plate_id_property_name);
+		if (recon_plate_id)
 		{
 			// The feature has a reconstruction plate ID.
 			//qDebug() << "fill_kvd: found plate-id " << recon_plate_id->value();
 
 			GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
-					GPlatesPropertyValues::XsInteger::create(recon_plate_id->get_value());
+					GPlatesPropertyValues::XsInteger::create(recon_plate_id.get()->get_value());
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::PLATEID]);
@@ -758,13 +759,14 @@ namespace
 		static const GPlatesModel::PropertyName conjugate_plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
 
-		const GPlatesPropertyValues::GpmlPlateId *conjugate_plate_id;
-
-		if (GPlatesFeatureVisitors::get_property_value(feature,conjugate_plate_id_property_name,conjugate_plate_id))
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> conjugate_plate_id =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						feature, conjugate_plate_id_property_name);
+		if (conjugate_plate_id)
 		{
 			// The feature has a conjugate plate ID
 			GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
-					GPlatesPropertyValues::XsInteger::create(conjugate_plate_id->get_value());
+					GPlatesPropertyValues::XsInteger::create(conjugate_plate_id.get()->get_value());
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::CONJUGATE_PLATE_ID]);
@@ -796,13 +798,14 @@ namespace
 		static const GPlatesModel::PropertyName left_plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("leftPlate");
 
-		const GPlatesPropertyValues::GpmlPlateId *left_plate_id;
-
-		if (GPlatesFeatureVisitors::get_property_value(feature,left_plate_id_property_name,left_plate_id))
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> left_plate_id =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						feature, left_plate_id_property_name);
+		if (left_plate_id)
 		{
 			// The feature has a left plate ID
 			GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
-					GPlatesPropertyValues::XsInteger::create(left_plate_id->get_value());
+					GPlatesPropertyValues::XsInteger::create(left_plate_id.get()->get_value());
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::LEFT_PLATE]);
@@ -833,13 +836,14 @@ namespace
 		static const GPlatesModel::PropertyName right_plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("rightPlate");
 
-		const GPlatesPropertyValues::GpmlPlateId *right_plate_id;
-
-		if (GPlatesFeatureVisitors::get_property_value(feature,right_plate_id_property_name,right_plate_id))
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> right_plate_id =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						feature, right_plate_id_property_name);
+		if (right_plate_id)
 		{
 			// The feature has a right plate ID
 			GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
-					GPlatesPropertyValues::XsInteger::create(right_plate_id->get_value());
+					GPlatesPropertyValues::XsInteger::create(right_plate_id.get()->get_value());
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::RIGHT_PLATE]);
@@ -872,13 +876,12 @@ namespace
 		static const GPlatesModel::PropertyName recon_method_property_name =
 				GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
 
-		const GPlatesPropertyValues::Enumeration *recon_method;
-
-		if (GPlatesFeatureVisitors::get_property_value(
-					feature,recon_method_property_name,recon_method)) {
-
-			GPlatesModel::PropertyValue::non_null_ptr_type value =
-					recon_method->clone();
+		boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> recon_method =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(
+						feature, recon_method_property_name);
+		if (recon_method)
+		{
+			GPlatesModel::PropertyValue::non_null_ptr_type value = recon_method.get()->clone();
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::RECONSTRUCTION_METHOD]);
@@ -988,14 +991,14 @@ namespace
 		static const GPlatesModel::PropertyName valid_time_property_name =
 				GPlatesModel::PropertyName::create_gml("validTime");
 
-		const GPlatesPropertyValues::GmlTimePeriod *time_period;
-
-		if (GPlatesFeatureVisitors::get_property_value(
-					feature,valid_time_property_name,time_period))
+		boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+						feature, valid_time_property_name);
+		if (time_period)
 		{
 
-			double begin_time = get_time_from_time_period(*(time_period->begin()));
-			double end_time = get_time_from_time_period(*(time_period->end()));
+			double begin_time = get_time_from_time_period(*(time_period.get()->begin()));
+			double end_time = get_time_from_time_period(*(time_period.get()->end()));
 
 			GPlatesPropertyValues::XsDouble::non_null_ptr_type begin_value =
 					GPlatesPropertyValues::XsDouble::create(begin_time);
@@ -1054,13 +1057,12 @@ namespace
 		static const GPlatesModel::PropertyName name_property_name =
 				GPlatesModel::PropertyName::create_gml("name");
 
-		const GPlatesPropertyValues::XsString *name;
-
-		if (GPlatesFeatureVisitors::get_property_value(
-					feature,name_property_name,name)) {
-
-			GPlatesModel::PropertyValue::non_null_ptr_type value =
-					name->clone();
+		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+						feature, name_property_name);
+		if (name)
+		{
+			GPlatesModel::PropertyValue::non_null_ptr_type value = name.get()->clone();
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::NAME]);
@@ -1094,13 +1096,12 @@ namespace
 		static const GPlatesModel::PropertyName description_property_name =
 				GPlatesModel::PropertyName::create_gml("description");
 
-		const GPlatesPropertyValues::XsString *description;
-
-		if (GPlatesFeatureVisitors::get_property_value(
-					feature,description_property_name,description)) {
-
-			GPlatesModel::PropertyValue::non_null_ptr_type value =
-					description->clone();
+		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> description =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+						feature, description_property_name);
+		if (description)
+		{
+			GPlatesModel::PropertyValue::non_null_ptr_type value = description.get()->clone();
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::DESCRIPTION]);

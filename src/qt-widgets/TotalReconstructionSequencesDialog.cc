@@ -727,11 +727,12 @@ namespace
         bool found_non_disabled_pole = false;
 
         // Obtain the IrregularSampling that contains the TimeSamples.
-        const GPlatesPropertyValues::GpmlIrregularSampling *irreg_sampling = NULL;
-        if ( ! GPlatesFeatureVisitors::get_property_value(
-					feature_ref, 
-					totalReconstructionPole_prop_name(), 
-					irreg_sampling)) {
+		boost::optional<GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_to_const_type> irreg_sampling =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlIrregularSampling>(
+						feature_ref, 
+						totalReconstructionPole_prop_name());
+        if (!irreg_sampling)
+		{
             // For some reason, we can't find an IrregularSampling.
             // This is particularly strange, because we should already have invoked
             // TotalReconstructionSequenceTimePeriodFinder, which should have obtained
@@ -747,9 +748,9 @@ namespace
         using namespace GPlatesPropertyValues;
 		// FIXME: This const cast bypasses the model revisioning system.
 		GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator iter =
-                irreg_sampling->time_samples().begin();
+                irreg_sampling.get()->time_samples().begin();
 		GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator end =
-                irreg_sampling->time_samples().end();
+                irreg_sampling.get()->time_samples().end();
         for ( ; iter != end; ++iter) {
             // First, append a new tree-widget-item for this TimeSample.
             QTreeWidgetItem *item_for_pole = new QTreeWidgetItem(
@@ -768,7 +769,7 @@ namespace
             }
 #endif
             // Colour the background if the pole is disabled.
-            if (iter->get()->is_disabled() || irreg_sampling->is_disabled()) {
+            if (iter->get()->is_disabled() || irreg_sampling.get()->is_disabled()) {
                 set_row_background_to_show_disabled_pole(item_for_pole);
             } else {
                 // OK, we've found at least one non-disabled pole.
@@ -797,7 +798,7 @@ namespace
             }
         }
 
-        if ( ! found_non_disabled_pole || irreg_sampling->is_disabled()) {
+        if ( ! found_non_disabled_pole || irreg_sampling.get()->is_disabled()) {
             set_colspan_background_to_show_disabled_seq(parent_item_for_sequence);
         }
     }
@@ -1680,18 +1681,18 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::is_grot_sequence(
     using namespace GPlatesPropertyValues;
     using namespace GPlatesFeatureVisitors;
     
-    const GpmlIrregularSampling *irreg_sampling_const = NULL;
-    if (!get_property_value(
-				feature_ref, 
-				totalReconstructionPole_prop_name(), 
-				irreg_sampling_const)) 
+	boost::optional<GpmlIrregularSampling::non_null_ptr_to_const_type> irreg_sampling_const =
+			get_property_value<GpmlIrregularSampling>(
+					feature_ref, 
+					totalReconstructionPole_prop_name());
+    if (!irreg_sampling_const)
     {
 		qWarning() << "No GpmlIrregularSampling property found.";
 		return false;
 	}
 	RevisionedVector<GpmlTimeSample>::const_iterator 
-        iter =	irreg_sampling_const->time_samples().begin(),
-        end =	irreg_sampling_const->time_samples().end();
+        iter =	irreg_sampling_const.get()->time_samples().begin(),
+        end =	irreg_sampling_const.get()->time_samples().end();
     for ( ; iter != end; ++iter) 
     {
         if(!dynamic_cast<const GpmlTotalReconstructionPole *>(iter->get()->value().get()))
@@ -1829,15 +1830,15 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_pole_data_from_feature
         fixed_plate_id = id_finder.fixed_ref_frame_plate_id() ? 
 			*id_finder.fixed_ref_frame_plate_id() : 0;
 
-    const GpmlIrregularSampling *irreg_sampling = NULL;
-    if (get_property_value(
-				feature_ref, 
-				totalReconstructionPole_prop_name(), 
-				irreg_sampling)) 
+	boost::optional<GpmlIrregularSampling::non_null_ptr_to_const_type> irreg_sampling =
+			get_property_value<GpmlIrregularSampling>(
+					feature_ref, 
+					totalReconstructionPole_prop_name());
+    if (irreg_sampling)
     {
 		RevisionedVector<GpmlTimeSample>::const_iterator 
-            iter =	irreg_sampling->time_samples().begin(),
-            end =	irreg_sampling->time_samples().end();
+            iter =	irreg_sampling.get()->time_samples().begin(),
+            end =	irreg_sampling.get()->time_samples().end();
         for ( ; iter != end; ++iter) 
         {
             const GpmlFiniteRotation *time_sample_value =
@@ -1942,13 +1943,13 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::is_seq_disabled(
 	bool ret = false;
 	if(feature_ref.is_valid())
 	{
-		const GPlatesPropertyValues::GpmlIrregularSampling *irreg_sampling_const = NULL;
-		if (GPlatesFeatureVisitors::get_property_value(
-					feature_ref, 
-					totalReconstructionPole_prop_name(), 
-					irreg_sampling_const)) 
+		boost::optional<GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_to_const_type> irreg_sampling_const =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlIrregularSampling>(
+						feature_ref,
+						totalReconstructionPole_prop_name());
+		if (irreg_sampling_const)
 		{
-			return irreg_sampling_const->is_disabled();
+			return irreg_sampling_const.get()->is_disabled();
 		}
 	}
 	return ret;
@@ -1993,11 +1994,11 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 	GPlatesFileIO::PlatesRotationFileProxy *proxy = get_current_rotation_file_proxy();
 	if(proxy)
 	{
-		const GpmlIrregularSampling *irreg_sampling_const = NULL;
-		if (!get_property_value(
-				feature_ref, 
-				totalReconstructionPole_prop_name(), 
-				irreg_sampling_const)) 
+		boost::optional<GpmlIrregularSampling::non_null_ptr_to_const_type> irreg_sampling_const =
+				get_property_value<GpmlIrregularSampling>(
+						feature_ref, 
+						totalReconstructionPole_prop_name());
+		if (!irreg_sampling_const)
 		{
 			qWarning() << "Failed to get GpmlIrregularSampling value. This is an impossible situation.";
 			return;
@@ -2014,7 +2015,7 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::set_seq_disabled(
 		int moving_plate_id =  static_cast<int>(*plate_id_finder.moving_ref_frame_plate_id());
 
 		const RevisionedVector<GpmlTimeSample> &samples =
-				irreg_sampling_const->time_samples();
+				irreg_sampling_const.get()->time_samples();
 		BOOST_FOREACH(GpmlTimeSample::non_null_ptr_to_const_type sample, samples)
 		{
 			const GpmlTotalReconstructionPole *trs_pole = 

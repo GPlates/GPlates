@@ -162,11 +162,12 @@ namespace
 					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 			// Get the property value from the domain feature.
-			const GPlatesPropertyValues::GpmlPlateId *domain_reconstruction_plate_id_property_value = NULL;
-			if (GPlatesFeatureVisitors::get_property_value(
-				domain_feature_ref,
-				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME,
-				domain_reconstruction_plate_id_property_value))
+			boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type>
+					domain_reconstruction_plate_id_property_value =
+							GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+									domain_feature_ref,
+									RECONSTRUCTION_PLATE_ID_PROPERTY_NAME);
+			if (domain_reconstruction_plate_id_property_value)
 			{
 				static const GPlatesModel::PropertyName DOMAIN_RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
 						GPlatesModel::PropertyName::create_gpml("domainReconstructionPlateId");
@@ -174,7 +175,7 @@ namespace
 				feature->add(
 						GPlatesModel::TopLevelPropertyInline::create(
 								DOMAIN_RECONSTRUCTION_PLATE_ID_PROPERTY_NAME,
-								domain_reconstruction_plate_id_property_value->clone()));
+								domain_reconstruction_plate_id_property_value.get()->clone()));
 			}
 		}
 
@@ -191,11 +192,11 @@ namespace
 					GPlatesModel::PropertyName::create_gml("name");
 
 			// Get the property value from the domain feature.
-			const GPlatesPropertyValues::XsString *name_property_value = NULL;
-			if (GPlatesFeatureVisitors::get_property_value(
-				domain_feature_ref,
-				NAME_PROPERTY_NAME,
-				name_property_value))
+			boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name_property_value =
+					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+							domain_feature_ref,
+							NAME_PROPERTY_NAME);
+			if (name_property_value)
 			{
 				static const GPlatesModel::PropertyName DOMAIN_NAME_PROPERTY_NAME =
 						GPlatesModel::PropertyName::create_gpml("domainName");
@@ -203,7 +204,7 @@ namespace
 				feature->add(
 						GPlatesModel::TopLevelPropertyInline::create(
 								DOMAIN_NAME_PROPERTY_NAME,
-								name_property_value->clone()));
+								name_property_value.get()->clone()));
 			}
 		}
 

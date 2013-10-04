@@ -3645,11 +3645,12 @@ GPlatesGui::TopologyTools::show_numbers()
 		static const GPlatesModel::PropertyName name_property_name = 
 			GPlatesModel::PropertyName::create_gml("name");
 
-		const GPlatesPropertyValues::XsString *name;
-		if ( GPlatesFeatureVisitors::get_property_value(
-			d_feature_focus_ptr->focused_feature(), name_property_name, name) )
+		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+						d_feature_focus_ptr->focused_feature(), name_property_name);
+		if (name)
 		{
-			qDebug() << "d_feature_focus_ptr name = " << GPlatesUtils::make_qstring(name->get_value());
+			qDebug() << "d_feature_focus_ptr name = " << GPlatesUtils::make_qstring(name.get()->get_value());
 		}
 		else 
 		{

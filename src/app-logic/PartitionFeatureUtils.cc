@@ -740,17 +740,16 @@ boost::optional<GPlatesModel::integer_plate_id_type>
 GPlatesAppLogic::PartitionFeatureUtils::get_reconstruction_plate_id_from_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 {
-	const GPlatesPropertyValues::GpmlPlateId *recon_plate_id = NULL;
-	boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id;
-	if (!GPlatesFeatureVisitors::get_property_value(
-			feature_ref,
-			get_reconstruction_plate_id_property_name(),
-			recon_plate_id))
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					feature_ref,
+					get_reconstruction_plate_id_property_name());
+	if (!recon_plate_id)
 	{
 		return boost::none;
 	}
 
-	return recon_plate_id->get_value();
+	return recon_plate_id.get()->get_value();
 }
 
 
@@ -785,16 +784,16 @@ boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type
 GPlatesAppLogic::PartitionFeatureUtils::get_valid_time_from_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 {
-	const GPlatesPropertyValues::GmlTimePeriod *time_period = NULL;
-	if (!GPlatesFeatureVisitors::get_property_value(
-			feature_ref,
-			get_valid_time_property_name(),
-			time_period))
+	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					feature_ref,
+					get_valid_time_property_name());
+	if (!time_period)
 	{
 		return boost::none;
 	}
 
-	return GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type(time_period);
+	return time_period.get();
 }
 
 

@@ -53,13 +53,12 @@ namespace
 			GPlatesModel::PropertyName::create_gpml("isActive");
 
 		// See if active or not.
-		// Note: set to NULL due to "may be used uninitialized in this function"
-		// error on g++ 4.3.3-3.
-		const GPlatesPropertyValues::XsBoolean *is_active_property_value = NULL;
-		if (GPlatesFeatureVisitors::get_property_value(
-				feature, is_active_property_name, is_active_property_value))
+		boost::optional<GPlatesPropertyValues::XsBoolean::non_null_ptr_to_const_type> is_active_property_value =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsBoolean>(
+						feature, is_active_property_name);
+		if (is_active_property_value)
 		{
-			return is_active_property_value->get_value() ? active_data_type_code : inactive_data_type_code;
+			return is_active_property_value.get()->get_value() ? active_data_type_code : inactive_data_type_code;
 		}
 
 		// No "isActive" property on feature so assume inactive.
@@ -134,9 +133,10 @@ namespace
 		static const GPlatesModel::PropertyName dipslip_property_name = 
 			GPlatesModel::PropertyName::create_gpml("dipSlip");
 
-		const GPlatesPropertyValues::Enumeration *dipslip_property_value;
-		if (GPlatesFeatureVisitors::get_property_value(
-				feature, dipslip_property_name, dipslip_property_value))
+		boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> dipslip_property_value =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(
+						feature, dipslip_property_name);
+		if (dipslip_property_value)
 		{
 			static const GPlatesPropertyValues::EnumerationType dipslip_enumeration_type =
 					GPlatesPropertyValues::EnumerationType::create_gpml("DipSlipEnumeration");
@@ -145,24 +145,25 @@ namespace
 			static const GPlatesPropertyValues::EnumerationContent
 					dipslip_enumeration_value_extension("Extension");
 
-			if (dipslip_enumeration_type.is_equal_to(dipslip_property_value->get_type()))
+			if (dipslip_enumeration_type.is_equal_to(dipslip_property_value.get()->get_type()))
 			{
-				if (dipslip_enumeration_value_compression.is_equal_to(dipslip_property_value->get_value()))
+				if (dipslip_enumeration_value_compression.is_equal_to(dipslip_property_value.get()->get_value()))
 				{
 					return "NF";
 				}
-				if (dipslip_enumeration_value_extension.is_equal_to(dipslip_property_value->get_value()))
+				if (dipslip_enumeration_value_extension.is_equal_to(dipslip_property_value.get()->get_value()))
 				{
 					static const GPlatesModel::PropertyName subcategory_property_name = 
 						GPlatesModel::PropertyName::create_gpml("subcategory");
 
-					const GPlatesPropertyValues::XsString *subcategory_property_value;
-					if (GPlatesFeatureVisitors::get_property_value(
-							feature, subcategory_property_name, subcategory_property_value))
+					boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> subcategory_property_value =
+							GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+									feature, subcategory_property_name);
+					if (subcategory_property_value)
 					{
 						static const GPlatesPropertyValues::TextContent thrust_string("Thrust");
 
-						if (subcategory_property_value->get_value().is_equal_to(thrust_string))
+						if (subcategory_property_value.get()->get_value().is_equal_to(thrust_string))
 						{
 							return "TH";
 						}
@@ -176,18 +177,19 @@ namespace
 		static const GPlatesModel::PropertyName strike_slip_property_name = 
 			GPlatesModel::PropertyName::create_gpml("strikeSlip");
 
-		const GPlatesPropertyValues::Enumeration *strike_slip_property_value;
-		if (GPlatesFeatureVisitors::get_property_value(
-				feature, strike_slip_property_name, strike_slip_property_value))
+		boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> strike_slip_property_value =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(
+						feature, strike_slip_property_name);
+		if (strike_slip_property_value)
 		{
 			static const GPlatesPropertyValues::EnumerationType strike_slip_enumeration_type =
 					GPlatesPropertyValues::EnumerationType::create_gpml("StrikeSlipEnumeration");
 			static const GPlatesPropertyValues::EnumerationContent
 					strike_slip_enumeration_value_unknown("Unknown");
 
-			if (strike_slip_enumeration_type.is_equal_to(strike_slip_property_value->get_type()))
+			if (strike_slip_enumeration_type.is_equal_to(strike_slip_property_value.get()->get_type()))
 			{
-				if (strike_slip_enumeration_value_unknown.is_equal_to(strike_slip_property_value->get_value()))
+				if (strike_slip_enumeration_value_unknown.is_equal_to(strike_slip_property_value.get()->get_value()))
 				{
 					return "SS";
 				}
@@ -380,9 +382,10 @@ namespace
 		static const GPlatesModel::PropertyName subduction_polarity_property_name = 
 			GPlatesModel::PropertyName::create_gpml("subductionPolarity");
 
-		const GPlatesPropertyValues::Enumeration *subduction_polarity_property_value = NULL;
-		if (GPlatesFeatureVisitors::get_property_value(
-				feature, subduction_polarity_property_name, subduction_polarity_property_value))
+		boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> subduction_polarity_property_value =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(
+						feature, subduction_polarity_property_name);
+		if (subduction_polarity_property_value)
 		{
 			static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type =
 					GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration");
@@ -391,15 +394,15 @@ namespace
 			static const GPlatesPropertyValues::EnumerationContent
 					subduction_polarity_enumeration_value_right("Right");
 
-			if (subduction_polarity_enumeration_type.is_equal_to(subduction_polarity_property_value->get_type()))
+			if (subduction_polarity_enumeration_type.is_equal_to(subduction_polarity_property_value.get()->get_type()))
 			{
 				if (subduction_polarity_enumeration_value_left.is_equal_to(
-						subduction_polarity_property_value->get_value()))
+						subduction_polarity_property_value.get()->get_value()))
 				{
 					return "sL";
 				}
 				if (subduction_polarity_enumeration_value_right.is_equal_to(
-						subduction_polarity_property_value->get_value()))
+						subduction_polarity_property_value.get()->get_value()))
 				{
 					return "sR";
 				}
@@ -410,13 +413,12 @@ namespace
 			GPlatesModel::PropertyName::create_gpml("isActive");
 
 		// See if active or not.
-		// Note: set to NULL due to "may be used uninitialized in this function"
-		// error on g++ 4.3.3-3.
-		const GPlatesPropertyValues::XsBoolean *is_active_property_value = NULL;
-		if (GPlatesFeatureVisitors::get_property_value(
-				feature, is_active_property_name, is_active_property_value))
+		boost::optional<GPlatesPropertyValues::XsBoolean::non_null_ptr_to_const_type> is_active_property_value =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsBoolean>(
+						feature, is_active_property_name);
+		if (is_active_property_value)
 		{
-			return is_active_property_value->get_value() ? "TR" : "XT";
+			return is_active_property_value.get()->get_value() ? "TR" : "XT";
 		}
 
 		// No "isActive" property on feature so assume inactive.

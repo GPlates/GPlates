@@ -388,14 +388,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		static const GPlatesModel::PropertyName valid_time_property_name =
 			GPlatesModel::PropertyName::create_gml("validTime");
 
-		const GPlatesPropertyValues::GmlTimePeriod *time_period;
-
-		GPlatesFeatureVisitors::get_property_value(
-			feature_ref, valid_time_property_name, time_period);
+		boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+				feature_ref, valid_time_property_name);
 	
 		// Casting time details
 		GPlatesPropertyValues::GmlTimePeriod* tp = 
-		const_cast<GPlatesPropertyValues::GmlTimePeriod *>( time_period );
+		const_cast<GPlatesPropertyValues::GmlTimePeriod *>( time_period.get().get() );
 	
 		// GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type ttpp =
 		GPlatesUtils::non_null_intrusive_ptr<

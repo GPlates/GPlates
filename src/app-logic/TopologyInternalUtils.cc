@@ -527,10 +527,15 @@ namespace
 				qWarning() << "  feature id =" 
 					<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
 				static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
-				const GPlatesPropertyValues::XsString *name;
-				if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
-					qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name->get_value() );
-				} else {
+				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+								feature_ref, prop);
+				if (name)
+				{
+					qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name.get()->get_value() );
+				}
+				else
+				{
 					qWarning() << "  feature name = UNKNOWN";
 				}
 				qWarning() << "  property name =" << property_name.get_name().qstring();
@@ -548,10 +553,15 @@ namespace
 			qWarning() << "  feature id =" 
 				<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
 			static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
-			const GPlatesPropertyValues::XsString *name;
-			if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
-				qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name->get_value() );
-			} else {
+			boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+								feature_ref, prop);
+			if (name)
+			{
+				qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name.get()->get_value() );
+			}
+			else
+			{
 				qWarning() << "  feature name = UNKNOWN";
 			}
 			qWarning() << "  property name =" << property_name.get_name().qstring();
@@ -986,11 +996,13 @@ GPlatesAppLogic::TopologyInternalUtils::get_finite_rotation(
 	// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
 	// which can still give a non-identity rotation if the anchor plate id is non-zero.
 	GPlatesModel::integer_plate_id_type reconstruction_plate_id = 0;
-	const GPlatesPropertyValues::GpmlPlateId *recon_plate_id = NULL;
-	if ( GPlatesFeatureVisitors::get_property_value(
-		reconstruction_plateid_feature, plate_id_property_name, recon_plate_id ) )
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
+		GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+				reconstruction_plateid_feature,
+				plate_id_property_name);
+	if (recon_plate_id)
 	{
-		reconstruction_plate_id = recon_plate_id->get_value();
+		reconstruction_plate_id = recon_plate_id.get()->get_value();
 	}
 
 	// The feature has a reconstruction plate ID.

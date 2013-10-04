@@ -1353,11 +1353,11 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			GPlatesModel::PropertyName::create_gml("name");
 
 	// Get the reconstruction plate id from the isochron feature.
-	const GPlatesPropertyValues::GpmlPlateId *reconstruction_plate_id = NULL;
-	if (!GPlatesFeatureVisitors::get_property_value(
-		isochron_feature,
-		RECONSTRUCTION_PLATE_ID,
-		reconstruction_plate_id))
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> reconstruction_plate_id =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					isochron_feature,
+					RECONSTRUCTION_PLATE_ID);
+	if (!reconstruction_plate_id)
 	{
 		QMessageBox::critical(this,
 				tr("Failed to access isochron property."),
@@ -1367,11 +1367,11 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 	}
 
 	// Get the conjugate plate id from the isochron feature.
-	const GPlatesPropertyValues::GpmlPlateId *conjugate_plate_id = NULL;
-	if (!GPlatesFeatureVisitors::get_property_value(
-		isochron_feature,
-		CONJUGATE_PLATE_ID,
-		conjugate_plate_id))
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> conjugate_plate_id =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					isochron_feature,
+					CONJUGATE_PLATE_ID);
+	if (!conjugate_plate_id)
 	{
 		QMessageBox::critical(this,
 				tr("Failed to access isochron property."),
@@ -1381,11 +1381,11 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 	}
 
 	// Get the name from the isochron feature.
-	const GPlatesPropertyValues::XsString *name = NULL;
-	if (!GPlatesFeatureVisitors::get_property_value(
-		isochron_feature,
-		NAME,
-		name))
+	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+					isochron_feature,
+					NAME);
+	if (!name)
 	{
 		QMessageBox::critical(this,
 				tr("Failed to access isochron property."),
@@ -1419,7 +1419,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			if (!GPlatesModel::ModelUtils::add_property(
 					conjugate_isochron_feature->reference(),
 					property_name,
-					conjugate_plate_id->clone(),
+					conjugate_plate_id.get()->clone(),
 					d_gpgim,
 					true/*check_property_name_allowed_for_feature_type*/,
 					&add_property_error_code))
@@ -1442,7 +1442,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			if (!GPlatesModel::ModelUtils::add_property(
 					conjugate_isochron_feature->reference(),
 					property_name,
-					reconstruction_plate_id->clone(),
+					reconstruction_plate_id.get()->clone(),
 					d_gpgim,
 					true/*check_property_name_allowed_for_feature_type*/,
 					&add_property_error_code))
@@ -1463,7 +1463,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			// Change the "gml:name" property.
 			// FIXME: we should give the user the chance to enter a new name.
 			QString conjugate_name_string =
-					GPlatesUtils::make_qstring_from_icu_string(name->get_value().get());
+					GPlatesUtils::make_qstring_from_icu_string(name.get()->get_value().get());
 			conjugate_name_string.prepend("Conjugate of ");
 			GPlatesModel::PropertyValue::non_null_ptr_type conjugate_name_property_value =
 					GPlatesPropertyValues::XsString::create(
@@ -1548,7 +1548,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type conjugate_present_day_geometry =
 			GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 					reconstructed_geometry,
-					conjugate_plate_id->get_value(),
+					conjugate_plate_id.get()->get_value(),
 					*default_reconstruction_tree,
 					true /*reverse_reconstruct*/);
 

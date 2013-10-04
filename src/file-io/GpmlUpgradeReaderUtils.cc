@@ -641,19 +641,28 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 					const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type &interior_topological_section,
 					interior_topological_sections)
 			{
-				const GPlatesPropertyValues::GpmlTopologicalLineSection *topological_line_section = NULL;
-				const GPlatesPropertyValues::GpmlTopologicalPoint *topological_point = NULL;
-				if (GPlatesFeatureVisitors::get_property_value(*interior_topological_section, topological_line_section))
+				boost::optional<GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_to_const_type>
+						topological_line_section =
+								GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlTopologicalLineSection>(
+										*interior_topological_section);
+				if (topological_line_section)
 				{
 					topological_interiors->push_back(
 							GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(
-									topological_line_section->source_geometry()->clone()));
+									topological_line_section.get()->source_geometry()->clone()));
 				}
-				else if (GPlatesFeatureVisitors::get_property_value(*interior_topological_section, topological_point))
+				else
 				{
-					topological_interiors->push_back(
-							GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(
-									topological_point->source_geometry()->clone()));
+					boost::optional<GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_to_const_type>
+							topological_point =
+									GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlTopologicalPoint>(
+											*interior_topological_section);
+					if (topological_point)
+					{
+						topological_interiors->push_back(
+								GPlatesPropertyValues::GpmlTopologicalNetwork::Interior(
+										topological_point.get()->source_geometry()->clone()));
+					}
 				}
 			}
 		}

@@ -197,11 +197,9 @@ namespace GPlatesFileIO
 						// and if it's a point then we've found a deforming point that can be merged. 
 						static const GPlatesModel::PropertyName unclassified_geometry_property_name =
 								GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry");
-						const GPlatesPropertyValues::GmlPoint *deforming_point_geom = NULL;
-						if (GPlatesFeatureVisitors::get_property_value(
+						if (GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlPoint>(
 								sub_segment.get_feature_ref(),
 								unclassified_geometry_property_name,
-								deforming_point_geom,
 								reconstruction_time))
 						{
 							found_deforming_points = true;

@@ -77,17 +77,18 @@ namespace
 		static const GPlatesModel::PropertyName plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
-		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
-
 		// If we found a plate id, add it. 
-		if (GPlatesFeatureVisitors::get_property_value(feature,plate_id_property_name,recon_plate_id))
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						feature, plate_id_property_name);
+		if (recon_plate_id)
 		{
 			// Shapefile attribute field names are limited to 10 characters in length 
 			// and should not contain spaces.
 			GPlatesPropertyValues::XsString::non_null_ptr_type key = 
 				GPlatesPropertyValues::XsString::create("PLATE_ID");
 			GPlatesPropertyValues::XsInteger::non_null_ptr_type plateid_value = 
-				GPlatesPropertyValues::XsInteger::create(recon_plate_id->get_value());	
+				GPlatesPropertyValues::XsInteger::create(recon_plate_id.get()->get_value());	
 
 			GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
 				key,

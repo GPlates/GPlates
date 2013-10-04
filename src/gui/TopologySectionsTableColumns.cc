@@ -77,11 +77,12 @@ namespace
 		// of the referenced feature instead.
 		if (table_row.get_feature_ref().is_valid())
 		{
-			const GPlatesPropertyValues::GmlTimePeriod *time_period = NULL;
-			if (GPlatesFeatureVisitors::get_property_value(
-					table_row.get_feature_ref(), valid_time_property_name, time_period))
+			boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
+					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+							table_row.get_feature_ref(), valid_time_property_name);
+			if (time_period)
 			{
-				return time_period->begin()->get_time_position();
+				return time_period.get()->begin()->get_time_position();
 			}
 		}
 
@@ -112,11 +113,12 @@ namespace
 		// of the referenced feature instead.
 		if (table_row.get_feature_ref().is_valid())
 		{
-			const GPlatesPropertyValues::GmlTimePeriod *time_period = NULL;
-			if (GPlatesFeatureVisitors::get_property_value(
-					table_row.get_feature_ref(), valid_time_property_name, time_period))
+			boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
+					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+							table_row.get_feature_ref(), valid_time_property_name);
+			if (time_period)
 			{
-				return time_period->end()->get_time_position();
+				return time_period.get()->end()->get_time_position();
 			}
 		}
 
@@ -221,20 +223,19 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 		
 		if (row_data.get_feature_ref().is_valid()) {
-			// Declare a pointer to a const GpmlPlateId. This is used as a return value;
-			// It is passed by reference into the get_property_value() call below,
-			// which sets it.
-			const GPlatesPropertyValues::GpmlPlateId *property_return_value = NULL;
-			
 			// Attempt to find the property name and value we are interested in.
-			if (GPlatesFeatureVisitors::get_property_value(
-					row_data.get_feature_ref(),
-					plate_id_property_name,
-					property_return_value)) {
+			boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> property_return_value =
+					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+							row_data.get_feature_ref(),
+							plate_id_property_name);
+			if (property_return_value)
+			{
 				// Convert it to something Qt can display.
-				const GPlatesModel::integer_plate_id_type &plate_id = property_return_value->get_value();
+				const GPlatesModel::integer_plate_id_type &plate_id = property_return_value.get()->get_value();
 				cell.setData(Qt::DisplayRole, QVariant(static_cast<quint32>(plate_id)));
-			} else {
+			}
+			else
+			{
 				// Feature resolves, but no reconstructionPlateId.
 				cell.setData(Qt::DisplayRole, QObject::tr("<none>"));
 			}
@@ -254,20 +255,19 @@ namespace
 			// FIXME: As in other situations involving gml:name, we -do- want to
 			// address the gml:codeSpace issue someday.
 			
-			// Declare a pointer to a const XsString. This is used as a return value;
-			// It is passed by reference into the get_property_value() call below,
-			// which sets it.
-			const GPlatesPropertyValues::XsString *property_return_value = NULL;
-			
 			// Attempt to find the property name and value we are interested in.
-			if (GPlatesFeatureVisitors::get_property_value(
-					row_data.get_feature_ref(),
-					gml_name_property_name,
-					property_return_value)) {
+			boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> property_return_value =
+					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+							row_data.get_feature_ref(),
+							gml_name_property_name);
+			if (property_return_value)
+			{
 				// Convert it to something Qt can display.
-				QString name_qstr = GPlatesUtils::make_qstring(property_return_value->get_value());
+				QString name_qstr = GPlatesUtils::make_qstring(property_return_value.get()->get_value());
 				cell.setData(Qt::DisplayRole, name_qstr);
-			} else {
+			}
+			else
+			{
 				// Feature resolves, but no name property.
 				cell.setData(Qt::DisplayRole, QString(""));
 			}

@@ -128,32 +128,34 @@ GPlatesAppLogic::TopologyNetworkResolver::initialise_pre_feature_properties(
 	{
 		static const GPlatesModel::PropertyName property_name =
 			GPlatesModel::PropertyName::create_gpml("networkShapeFactor");
-		const GPlatesPropertyValues::XsDouble *property_value = NULL;
-
-		if (!GPlatesFeatureVisitors::get_property_value( 
-			feature_handle.reference(), property_name, property_value))
+		boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+						feature_handle.reference(),
+						property_name);
+		if (!property_value)
 		{
 			d_shape_factor = 0.125;
 		}
 		else
 		{
-			d_shape_factor = property_value->get_value();
+			d_shape_factor = property_value.get()->get_value();
 		}
 	}
 	// 
 	{
 		static const GPlatesModel::PropertyName property_name =
 			GPlatesModel::PropertyName::create_gpml("networkMaxEdge");
-		const GPlatesPropertyValues::XsDouble *property_value = NULL;
-
-		if (!GPlatesFeatureVisitors::get_property_value( 
-			feature_handle.reference(), property_name, property_value))
+		boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+						feature_handle.reference(),
+						property_name);
+		if (!property_value)
 		{
 			d_max_edge = 300000000.0;
 		}
 		else
 		{
-			d_max_edge = property_value->get_value();
+			d_max_edge = property_value.get()->get_value();
 // FIXME: this is to account for older files with values like 3.0 
 			if (d_max_edge < 10000)
 			{
@@ -1709,9 +1711,10 @@ GPlatesAppLogic::TopologyNetworkResolver::debug_output_topological_source_featur
 	// get the name
 	s.append ( "SOURCE name = '" );
 	static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
- 	const GPlatesPropertyValues::XsString *name;
- 	if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
-		s.append(GPlatesUtils::make_qstring( name->get_value() ));
+	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(feature_ref, prop);
+ 	if (name) {
+		s.append(GPlatesUtils::make_qstring( name.get()->get_value() ));
  	} else {
  		s.append("UNKNOWN");
  	}

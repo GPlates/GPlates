@@ -97,13 +97,14 @@ namespace
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
 			const GPlatesModel::PropertyName &property_name)
 	{
-		const GPlatesPropertyValues::GpmlPlateId *plate_id = NULL;
-		if (GPlatesFeatureVisitors::get_property_value(
-				feature_ref, property_name, plate_id))
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> plate_id =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						feature_ref, property_name);
+		if (plate_id)
 		{
 			// The feature has a plate ID of the desired kind.
 			
-			field->setText(QString::number(plate_id->get_value()));
+			field->setText(QString::number(plate_id.get()->get_value()));
 		}
 	}
 
@@ -367,14 +368,15 @@ GPlatesQtWidgets::TopologyToolsWidget::activate(
 		static const GPlatesModel::PropertyName valid_time_property_name =
 				GPlatesModel::PropertyName::create_gml("validTime");
 
-		const GPlatesPropertyValues::GmlTimePeriod *edit_topology_time_period = NULL;
-		if (GPlatesFeatureVisitors::get_property_value(
-				d_edit_topology_feature_ref.get(), valid_time_property_name, edit_topology_time_period))
+		boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> edit_topology_time_period =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+						d_edit_topology_feature_ref.get(), valid_time_property_name);
+		if (edit_topology_time_period)
 		{
 			// Activate the topology tool for *editing*.
 			d_topology_tools_ptr->activate_edit_mode(
 					topology_geometry_type,
-					GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type(edit_topology_time_period));
+					edit_topology_time_period.get());
 		}
 		else // Edit topology feature has no time period property...
 		{
@@ -440,11 +442,13 @@ GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 	static const GPlatesModel::PropertyName name_property_name = 
 		GPlatesModel::PropertyName::create_gml("name");
 
-	const GPlatesPropertyValues::XsString *name = NULL;
-	if (GPlatesFeatureVisitors::get_property_value(feature_ref, name_property_name, name))
+	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+					feature_ref, name_property_name);
+	if (name)
 	{
 		// The feature has one or more name properties. Use the first one for now.
-		lineedit_name->setText(GPlatesUtils::make_qstring(name->get_value()));
+		lineedit_name->setText(GPlatesUtils::make_qstring(name.get()->get_value()));
 		lineedit_name->setCursorPosition(0);
 	}
 
@@ -457,13 +461,14 @@ GPlatesQtWidgets::TopologyToolsWidget::display_topology(
 	static const GPlatesModel::PropertyName valid_time_property_name =
 		GPlatesModel::PropertyName::create_gml("validTime");
 
-	const GPlatesPropertyValues::GmlTimePeriod *time_period = NULL;
-	if (GPlatesFeatureVisitors::get_property_value(
-			feature_ref, valid_time_property_name, time_period))
+	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					feature_ref, valid_time_property_name);
+	if (time_period)
 	{
 		// The feature has a gml:validTime property.
-		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->begin())));
-		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->end())));
+		lineedit_time_of_appearance->setText(format_time_instant(*(time_period.get()->begin())));
+		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period.get()->end())));
 	}
 }
 
