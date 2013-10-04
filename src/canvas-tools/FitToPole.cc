@@ -163,41 +163,53 @@ GPlatesCanvasTools::FitToPole::handle_shift_left_click(
 	GPlatesMaths::ProximityCriteria proximity_criteria(
 			point_on_sphere,
 			proximity_inclusion_threshold);
-	std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
-	if (GPlatesViewOperations::test_proximity(
-				sorted_hits,
-				proximity_criteria,
-				*d_hellinger_dialog_ptr->get_pick_layer()))
-	{
-		const unsigned int index = sorted_hits.front().d_rendered_geom_index;
-		d_hellinger_dialog_ptr->set_selected_pick(index);
 
-		if (!d_hellinger_dialog_ptr->is_in_new_point_state())
+
+
+	if (!d_hellinger_dialog_ptr->is_in_new_point_state())
+	{
+		// Check the hellinger pick layer. The shift-left-click action takes us direct to
+		// editing mode.
+		std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
+		if (GPlatesViewOperations::test_proximity(
+					sorted_hits,
+					proximity_criteria,
+					*d_hellinger_dialog_ptr->get_pick_layer()))
 		{
-			//Only allow shift-click to edit if we don't have the new-point dialog open...
+			const unsigned int index = sorted_hits.front().d_rendered_geom_index;
+			d_hellinger_dialog_ptr->set_selected_pick(index);
 			d_hellinger_dialog_ptr->edit_current_pick();
+
 		}
 		else
 		{
-			// ...and if we do have the new-point-dialog open, use the coordinates
-			// of the clicked geometry as the new point.
-			GeometryFinder finder;
-			GPlatesViewOperations::RenderedGeometry rg = d_hellinger_dialog_ptr->get_pick_layer()->get_rendered_geometry(
-						sorted_hits.front().d_rendered_geom_index);
-			rg.accept_visitor(finder);
-			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> pos =
-					finder.get_geometry();
-
-			if (pos)
-			{
-				qDebug() << "Found point-on-sphere";
-				d_hellinger_dialog_ptr->update_edit_layer(**pos);
-			}
+			d_hellinger_dialog_ptr->clear_selection_layer();
 		}
 	}
 	else
 	{
-		d_hellinger_dialog_ptr->clear_selection_layer();
+		// If we are in "new point" mode, check the feature geometries.
+		std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
+		if (GPlatesViewOperations::test_vertex_proximity(
+					sorted_hits,
+					*d_rendered_geom_collection_ptr,
+					GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER,
+					proximity_criteria))
+		{
+			GPlatesViewOperations::RenderedGeometryProximityHit hit = sorted_hits.front();
+			GeometryFinder finder;
+			GPlatesViewOperations::RenderedGeometry rg =
+					hit.d_rendered_geom_layer->get_rendered_geometry(
+						hit.d_rendered_geom_index);
+			rg.accept_visitor(finder);
+			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> pos =
+					finder.get_geometry();
+			if (pos)
+			{
+				qDebug() << "Found vertex";
+				d_hellinger_dialog_ptr->update_edit_layer(**pos);
+			}
+		}
 	}
 }
 
