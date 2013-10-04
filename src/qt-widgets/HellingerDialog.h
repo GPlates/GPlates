@@ -142,6 +142,9 @@ namespace GPlatesQtWidgets
 		clear_editing_layer();
 
 		void
+		clear_feature_highlight_layer();
+
+		void
 		edit_current_pick();
 
 		void
@@ -157,6 +160,10 @@ namespace GPlatesQtWidgets
 
 		bool
 		is_in_new_point_state();
+
+		void
+		set_feature_highlight(
+				const GPlatesMaths::PointOnSphere &pos);
 
 	public Q_SLOTS:
 

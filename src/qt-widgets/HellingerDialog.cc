@@ -1296,6 +1296,23 @@ bool GPlatesQtWidgets::HellingerDialog::is_in_new_point_state()
 			(d_canvas_operation_type == NEW_SEGMENT_OPERATION));
 }
 
+void GPlatesQtWidgets::HellingerDialog::set_feature_highlight(
+		const GPlatesMaths::PointOnSphere &point)
+{
+	GPlatesViewOperations::RenderedGeometry highlight_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+				point.get_non_null_pointer(),
+				GPlatesGui::Colour::get_yellow(),
+				4, /* point thickness */
+				2, /* line thickness */
+				false, /* fill polygon */
+				false, /* fill polyline */
+				GPlatesGui::Colour::get_white() // dummy colour argument
+				);
+
+	d_feature_highlight_layer_ptr->add_rendered_geometry(highlight_geometry);
+}
+
 void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
 {
 	if (d_selected_pick)
@@ -1969,6 +1986,12 @@ void GPlatesQtWidgets::HellingerDialog::clear_editing_layer()
 {
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 	d_editing_layer_ptr->clear_rendered_geometries();
+}
+
+void GPlatesQtWidgets::HellingerDialog::clear_feature_highlight_layer()
+{
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+	d_feature_highlight_layer_ptr->clear_rendered_geometries();
 }
 
 void GPlatesQtWidgets::HellingerDialog::edit_current_pick()

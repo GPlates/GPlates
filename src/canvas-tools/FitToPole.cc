@@ -134,7 +134,12 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 			if (pos)
 			{
 				qDebug() << "Found existing vertex";
+				d_hellinger_dialog_ptr->set_feature_highlight(**pos);
 			}
+		}
+		else
+		{
+			d_hellinger_dialog_ptr->clear_feature_highlight_layer();
 		}
 	}
 
