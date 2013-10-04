@@ -524,6 +524,7 @@ void GPlatesQtWidgets::HellingerDialog::handle_finished_editing()
 	update_buttons();
 	d_editing_layer_ptr->clear_rendered_geometries();
 	d_editing_layer_ptr->set_active(false);
+	d_feature_highlight_layer_ptr->set_active(false);
 }
 
 void GPlatesQtWidgets::HellingerDialog::handle_update_point_editing()
@@ -894,6 +895,7 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_pick()
 	update_buttons();
 
 	d_editing_layer_ptr->set_active(true);
+	d_feature_highlight_layer_ptr->set_active(true);
 
 	if (boost::optional<int> segment = current_segment_number(tree_widget_picks))
 	{
@@ -1108,9 +1110,9 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 	bool new_button_state = !edit_operation_active(d_canvas_operation_type);
 	qDebug() << "new button state: " << new_button_state;
 	button_calculate_fit->setEnabled(new_button_state);
-	button_edit_point->setEnabled(new_button_state);
+	button_edit_point->setEnabled(new_button_state && d_selected_pick);
 	button_new_pick->setEnabled(new_button_state);
-	button_edit_segment->setEnabled(new_button_state);
+	button_edit_segment->setEnabled(new_button_state && d_selected_segment);
 	button_new_segment->setEnabled(new_button_state);
 
 
@@ -1786,6 +1788,11 @@ void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
 	d_editing_layer_ptr =
 		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
+
+	// Create a rendered layer to highlight feature geometries which can be selected.
+	d_feature_highlight_layer_ptr =
+			d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
 }
 
 void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
@@ -1887,6 +1894,11 @@ GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GP
 GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GPlatesQtWidgets::HellingerDialog::get_editing_layer()
 {
 	return d_editing_layer_ptr;
+}
+
+GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GPlatesQtWidgets::HellingerDialog::get_feature_highlight_layer()
+{
+	return d_feature_highlight_layer_ptr;
 }
 
 void GPlatesQtWidgets::HellingerDialog::set_hovered_pick(

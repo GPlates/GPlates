@@ -117,6 +117,9 @@ namespace GPlatesQtWidgets
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 		get_editing_layer();
 
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+		get_feature_highlight_layer();
+
 		void
 		set_hovered_pick(
 				const unsigned int index);
@@ -403,6 +406,9 @@ namespace GPlatesQtWidgets
 
 		//! For geometries being edited
 		child_layer_ptr_type d_editing_layer_ptr;
+
+		//! For highlighting feature geometries which can be selected
+		child_layer_ptr_type d_feature_highlight_layer_ptr;
 
 		ReadErrorAccumulationDialog &d_read_error_accumulation_dialog;
 		HellingerModel *d_hellinger_model;

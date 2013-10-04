@@ -114,8 +114,32 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 			proximity_inclusion_threshold);
 	std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
 
-	// Check editing layer first
-	if (d_hellinger_dialog_ptr->get_editing_layer()->is_active())
+	if (d_hellinger_dialog_ptr->is_in_new_point_state())
+	{
+		if (GPlatesViewOperations::test_vertex_proximity(
+					sorted_hits,
+					*d_rendered_geom_collection_ptr,
+					GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER,
+					proximity_criteria))
+		{
+			// highlight the vertex
+			GPlatesViewOperations::RenderedGeometryProximityHit hit = sorted_hits.front();
+			GeometryFinder finder;
+			GPlatesViewOperations::RenderedGeometry rg =
+					hit.d_rendered_geom_layer->get_rendered_geometry(
+						hit.d_rendered_geom_index);
+			rg.accept_visitor(finder);
+			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> pos =
+					finder.get_geometry();
+			if (pos)
+			{
+				qDebug() << "Found existing vertex";
+			}
+		}
+	}
+
+	// Check editing layer
+	else if (d_hellinger_dialog_ptr->is_in_edit_point_state())
 	{
 		if (GPlatesViewOperations::test_proximity(
 					sorted_hits,
@@ -133,9 +157,7 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 			d_hellinger_dialog_ptr->set_enlarged_edit_geometry(false);
 		}
 	}
-
-	sorted_hits.clear();
-	if (GPlatesViewOperations::test_proximity(
+	else if (GPlatesViewOperations::test_proximity(
 				sorted_hits,
 				proximity_criteria,
 				*d_hellinger_dialog_ptr->get_pick_layer()))
