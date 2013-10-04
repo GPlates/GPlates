@@ -529,10 +529,10 @@ namespace GPlatesFeatureVisitors
 		// not match any of the sample times) - and modifying that will not insert the interpolated
 		// property value in the irregularly sampled sequence.
 		//
-		/* For non-const property-value */ \
-		//DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
-		//		boost::remove_const<property_value_type>::type, \
-		//		visit_property_value_method, \
+		/* For non-const property-value */
+		//DECLARE_PROPERTY_VALUE_FINDER_CLASS(
+		//		boost::remove_const<property_value_type>::type,
+		//		visit_property_value_method,
 		//		GPlatesModel::FeatureVisitor)
 	}
 
@@ -543,7 +543,7 @@ namespace GPlatesFeatureVisitors
 			const GPlatesModel::PropertyValue &property_value_base,
 			const double &reconstruction_time)
 	{
-		typedef Implementation::PropertyValueFinder<boost::add_const<PropertyValueType>::type>
+		typedef Implementation::PropertyValueFinder<typename boost::add_const<PropertyValueType>::type>
 				property_value_finder_type;
 
 		property_value_finder_type property_value_finder(reconstruction_time);
@@ -568,7 +568,7 @@ namespace GPlatesFeatureVisitors
 			const GPlatesModel::PropertyName &property_name,
 			const double &reconstruction_time)
 	{
-		typedef Implementation::PropertyValueFinder<boost::add_const<PropertyValueType>::type>
+		typedef Implementation::PropertyValueFinder<typename boost::add_const<PropertyValueType>::type>
 				property_value_finder_type;
 
 		property_value_finder_type property_value_finder(property_name, reconstruction_time);
@@ -590,7 +590,7 @@ namespace GPlatesFeatureVisitors
 			PropertyNamesForwardIter property_names_end,
 			const double &reconstruction_time)
 	{
-		typedef Implementation::PropertyValueFinder<boost::add_const<PropertyValueType>::type>
+		typedef Implementation::PropertyValueFinder<typename boost::add_const<PropertyValueType>::type>
 				property_value_finder_type;
 
 		property_value_finder_type property_value_finder(reconstruction_time);
@@ -618,7 +618,7 @@ namespace GPlatesFeatureVisitors
 			const GPlatesModel::PropertyName &property_name,
 			const double &reconstruction_time)
 	{
-		typedef Implementation::PropertyValueFinder<boost::add_const<PropertyValueType>::type>
+		typedef Implementation::PropertyValueFinder<typename boost::add_const<PropertyValueType>::type>
 				property_value_finder_type;
 
 		property_value_finder_type property_value_finder(property_name, reconstruction_time);
@@ -644,7 +644,7 @@ namespace GPlatesFeatureVisitors
 			PropertyNamesForwardIter property_names_end,
 			const double &reconstruction_time)
 	{
-		typedef Implementation::PropertyValueFinder<boost::add_const<PropertyValueType>::type>
+		typedef Implementation::PropertyValueFinder<typename boost::add_const<PropertyValueType>::type>
 				property_value_finder_type;
 
 		property_value_finder_type property_value_finder(reconstruction_time);
