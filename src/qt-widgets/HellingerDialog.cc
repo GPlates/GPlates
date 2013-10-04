@@ -63,6 +63,7 @@ const QString TEMP_PAR_FILENAME("temp_par");
 const QString TEMP_RES_FILENAME("temp_res");
 const double DEFAULT_POINT_SIZE = 2;
 const double DEFAULT_LINE_THICKNESS = 2;
+const double ENLARGED_POINT_SIZE = 4;
 
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger workflow.
@@ -1303,12 +1304,10 @@ void GPlatesQtWidgets::HellingerDialog::set_feature_highlight(
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				point.get_non_null_pointer(),
 				GPlatesGui::Colour::get_yellow(),
-				4, /* point thickness */
-				2, /* line thickness */
+				ENLARGED_POINT_SIZE,
+				DEFAULT_LINE_THICKNESS,
 				false, /* fill polygon */
-				false, /* fill polyline */
-				GPlatesGui::Colour::get_white() // dummy colour argument
-				);
+				false /* fill polyline */ );
 
 	d_feature_highlight_layer_ptr->add_rendered_geometry(highlight_geometry);
 }
