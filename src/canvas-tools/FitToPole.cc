@@ -223,7 +223,12 @@ GPlatesCanvasTools::FitToPole::handle_shift_left_click(
 					GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER,
 					proximity_criteria))
 		{
+			qDebug() << "Hit a feature geometry";
 			GPlatesViewOperations::RenderedGeometryProximityHit hit = sorted_hits.front();
+
+			// TODO: I think the vertex index is stored in the hit's "ProximityHitDetail"; probably
+			// I want to pass this info to the Finder so that I can extract the correct vertex
+			// geometry.
 			GeometryFinder finder;
 			GPlatesViewOperations::RenderedGeometry rg =
 					hit.d_rendered_geom_layer->get_rendered_geometry(
