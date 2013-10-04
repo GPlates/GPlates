@@ -249,6 +249,19 @@ GPlatesCanvasTools::FitToPole::handle_left_press(
 }
 
 void
+GPlatesCanvasTools::FitToPole::handle_shift_left_drag(
+		const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
+		bool was_on_earth,
+		double initial_proximity_inclusion_threshold,
+		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
+		bool is_on_earth,
+		double current_proximity_inclusion_threshold,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+{
+
+}
+
+void
 GPlatesCanvasTools::FitToPole::handle_left_release_after_drag(
 		const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
 		bool was_on_earth,
