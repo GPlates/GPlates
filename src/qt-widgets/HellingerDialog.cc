@@ -63,7 +63,7 @@ const QString TEMP_PAR_FILENAME("temp_par");
 const QString TEMP_RES_FILENAME("temp_res");
 const double DEFAULT_POINT_SIZE = 2;
 const double DEFAULT_LINE_THICKNESS = 2;
-const double ENLARGED_POINT_SIZE = 4;
+const double ENLARGED_POINT_SIZE = 6;
 
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger workflow.
