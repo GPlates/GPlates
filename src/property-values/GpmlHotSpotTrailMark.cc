@@ -385,5 +385,5 @@ GPlatesPropertyValues::GpmlHotSpotTrailMark::Revision::equality(
 			opt_eq(trail_width, other_revision.trail_width) &&
 			opt_eq(measured_age, other_revision.measured_age) &&
 			opt_eq(measured_age_range, other_revision.measured_age_range) &&
-			GPlatesModel::Revision::equality(other);
+			PropertyValue::Revision::equality(other);
 }

@@ -241,7 +241,7 @@ namespace GPlatesPropertyValues
 
 				return feature == other_revision.feature &&
 						revision == other_revision.revision &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			GPlatesModel::FeatureId feature;

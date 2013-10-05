@@ -293,7 +293,7 @@ namespace GPlatesPropertyValues
 				return *point == *other_revision.point &&
 						gml_property == other_revision.gml_property &&
 						original_longitude == other_revision.original_longitude &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			// PointOnSphere is inherently immutable so we can share it across revisions.

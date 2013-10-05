@@ -234,7 +234,7 @@ namespace GPlatesPropertyValues
 
 				return time_position == other_revision.time_position &&
 						time_position_xml_attributes == other_revision.time_position_xml_attributes &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			GeoTimeInstant time_position;

@@ -319,7 +319,7 @@ namespace GPlatesPropertyValues
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return strings == other_revision.strings &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			string_list_type strings;

@@ -297,7 +297,7 @@ namespace GPlatesPropertyValues
 				// Note that we compare the property value contents (and not pointers).
 				return *value.get_revisionable() == *other_revision.value.get_revisionable() &&
 						description == other_revision.description &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			GPlatesModel::RevisionedReference<PropertyValue> value;

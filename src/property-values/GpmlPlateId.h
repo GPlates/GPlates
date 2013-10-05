@@ -205,7 +205,7 @@ namespace GPlatesPropertyValues
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return value == other_revision.value &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			GPlatesModel::integer_plate_id_type value;

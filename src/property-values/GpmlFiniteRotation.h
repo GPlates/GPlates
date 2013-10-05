@@ -257,7 +257,7 @@ namespace GPlatesPropertyValues
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return finite_rotation == other_revision.finite_rotation &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			GPlatesMaths::FiniteRotation finite_rotation;

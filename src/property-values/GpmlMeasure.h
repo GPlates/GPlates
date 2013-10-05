@@ -235,7 +235,7 @@ namespace GPlatesPropertyValues
 
 				return GPlatesMaths::are_almost_exactly_equal(quantity, other_revision.quantity) &&
 						quantity_xml_attributes == other_revision.quantity_xml_attributes &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			double quantity;

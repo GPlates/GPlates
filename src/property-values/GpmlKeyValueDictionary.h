@@ -258,7 +258,7 @@ namespace GPlatesPropertyValues
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return elements == other_revision.elements &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			std::vector<GpmlKeyValueDictionaryElement> elements;

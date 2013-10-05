@@ -387,7 +387,7 @@ GPlatesPropertyValues::GmlFile::Revision::equality(
 			*file_structure.get_revisionable() == *other_revision.file_structure.get_revisionable() &&
 			opt_eq(mime_type, other_revision.mime_type) &&
 			opt_eq(compression, other_revision.compression) &&
-			GPlatesModel::Revision::equality(other);
+			PropertyValue::Revision::equality(other);
 }
 
 

@@ -291,5 +291,5 @@ GPlatesPropertyValues::GpmlIrregularSampling::Revision::equality(
 
 	return *time_samples.get_revisionable() == *other_revision.time_samples.get_revisionable() &&
 			opt_eq(interpolation_function, other_revision.interpolation_function) &&
-			GPlatesModel::Revision::equality(other);
+			PropertyValue::Revision::equality(other);
 }

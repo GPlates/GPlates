@@ -473,7 +473,7 @@ namespace GPlatesPropertyValues
 						conjugate_plate_id_number == other_revision.conjugate_plate_id_number &&
 						colour_code == other_revision.colour_code &&
 						number_of_points == other_revision.number_of_points &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			unsigned int region_number;

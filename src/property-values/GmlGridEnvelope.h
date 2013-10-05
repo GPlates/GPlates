@@ -215,7 +215,7 @@ namespace GPlatesPropertyValues
 
 				return low == other_revision.low &&
 						high == other_revision.high &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			integer_list_type low;

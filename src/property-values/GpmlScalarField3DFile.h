@@ -244,7 +244,7 @@ namespace GPlatesPropertyValues
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
 				return *filename.get_revisionable() == *other_revision.filename.get_revisionable() &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			GPlatesModel::RevisionedReference<XsString> filename;

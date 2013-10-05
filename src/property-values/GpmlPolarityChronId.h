@@ -252,7 +252,7 @@ namespace GPlatesPropertyValues
 				return era == other_revision.era &&
 						major_region == other_revision.major_region &&
 						minor_region == other_revision.minor_region &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			boost::optional<QString> era;

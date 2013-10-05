@@ -261,5 +261,5 @@ GPlatesPropertyValues::GmlRectifiedGrid::Revision::equality(
 			*origin.get_revisionable() == *other_revision.origin.get_revisionable() &&
 			offset_vectors == other_revision.offset_vectors &&
 			xml_attributes == other_revision.xml_attributes &&
-			GPlatesModel::Revision::equality(other);
+			PropertyValue::Revision::equality(other);
 }

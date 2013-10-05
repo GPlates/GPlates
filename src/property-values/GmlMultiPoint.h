@@ -275,7 +275,7 @@ namespace GPlatesPropertyValues
 
 				return *multipoint == *other_revision.multipoint &&
 						gml_properties == other_revision.gml_properties &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			multipoint_type multipoint;

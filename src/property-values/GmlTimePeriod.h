@@ -342,7 +342,7 @@ namespace GPlatesPropertyValues
 
 				return *begin.get_revisionable() == *other_revision.begin.get_revisionable() &&
 						*end.get_revisionable() == *other_revision.end.get_revisionable() &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			GPlatesModel::RevisionedReference<GmlTimeInstant> begin;

@@ -265,7 +265,7 @@ namespace GPlatesPropertyValues
 				// Compare property delegate objects not pointers.
 				return *source_geometry.get_revisionable() == *other_revision.source_geometry.get_revisionable() &&
 						reverse_order == other_revision.reverse_order &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			GPlatesModel::RevisionedReference<GpmlPropertyDelegate> source_geometry;

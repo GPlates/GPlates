@@ -93,5 +93,5 @@ GPlatesPropertyValues::GpmlArray::Revision::equality(
 		}
 	}
 
-	return GPlatesModel::Revision::equality(other);
+	return PropertyValue::Revision::equality(other);
 }

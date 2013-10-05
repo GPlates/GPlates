@@ -295,7 +295,7 @@ namespace GPlatesPropertyValues
 
 				return *base_curve.get_revisionable() == *other_revision.base_curve.get_revisionable() &&
 						xml_attributes == other_revision.xml_attributes &&
-						GPlatesModel::Revision::equality(other);
+						PropertyValue::Revision::equality(other);
 			}
 
 			GPlatesModel::RevisionedReference<GmlLineString> base_curve;
