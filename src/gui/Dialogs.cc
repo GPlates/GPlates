@@ -461,6 +461,7 @@ void
 GPlatesGui::Dialogs::pop_up_hellinger_dialog()
 {
 	hellinger_dialog().pop_up();
+	hellinger_dialog().restore();
 }
 
 GPlatesQtWidgets::LicenseDialog &

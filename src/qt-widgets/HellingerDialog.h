@@ -92,6 +92,12 @@ namespace GPlatesQtWidgets
 		initialise();
 
 		/**
+		 * Set the pick layer active, and draw the model contents on the canvas
+		 */
+		void
+		restore();
+
+		/**
 		 * Update whole dialog from model, and then update the canvas
 		 */
 		void
@@ -189,7 +195,7 @@ namespace GPlatesQtWidgets
 
 		void
 		activate_layers(
-				bool activate);
+				bool activate = true);
 
 		void
 		clear_rendered_geometries();

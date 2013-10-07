@@ -732,9 +732,13 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_segment()
 void
 GPlatesQtWidgets::HellingerDialog::initialise()
 {
-	update_buttons();
 	update_from_model();
 }
+
+void GPlatesQtWidgets::HellingerDialog::restore()
+{
+	activate_layers();
+	update_from_model();}
 
 void
 GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
@@ -1123,8 +1127,8 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 void
 GPlatesQtWidgets::HellingerDialog::update_from_model()
 {
+	d_pick_layer_ptr->set_active(true);
 	update_tree_from_model();
-
 	update_initial_guess();
 }
 
@@ -1251,6 +1255,7 @@ GPlatesQtWidgets::HellingerDialog::handle_close()
 void
 GPlatesQtWidgets::HellingerDialog::update_canvas()
 {
+	qDebug() << "update_canvas";
 	clear_rendered_geometries();
 	draw_picks();
 	update_result();
