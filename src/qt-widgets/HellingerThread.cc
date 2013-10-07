@@ -35,11 +35,11 @@
 #include <QTextStream>
 #include <QThread>
 
-#include <boost/python.hpp>
 
 #include "api/PythonInterpreterLocker.h"
 #include "api/PythonUtils.h"
 #include "global/CompilerWarnings.h"
+#include "global/python.h"
 #include "HellingerDialog.h"
 #include "HellingerDialogUi.h"
 #include "HellingerModel.h"
