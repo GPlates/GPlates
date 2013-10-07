@@ -35,6 +35,8 @@
 
 #include "QtWidgetUtils.h"
 
+const double INITIAL_UNCERTAINTY = 5.;
+
 GPlatesQtWidgets::HellingerEditPointDialog::HellingerEditPointDialog(HellingerDialog *hellinger_dialog,
 		HellingerModel *hellinger_model,
 		bool create_new_pick,
@@ -192,7 +194,7 @@ void GPlatesQtWidgets::HellingerEditPointDialog::set_initial_values()
 	spinbox_segment->setValue(1);
 	spinbox_lat->setValue(0.);
 	spinbox_lon->setValue(0.);
-	spinbox_uncert->setValue(0.);
+	spinbox_uncert->setValue(INITIAL_UNCERTAINTY);
 
 	update_pick_from_widgets();
 }

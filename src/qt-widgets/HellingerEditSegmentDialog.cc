@@ -527,7 +527,9 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::set_row_values(
 
 GPlatesQtWidgets::SpinBoxDelegate::SpinBoxDelegate(QObject *parent_):
 	QItemDelegate(parent_)
-{}
+{
+	qDebug() << "SPinboxdelegate constructor";
+}
 
 QWidget*
 GPlatesQtWidgets::SpinBoxDelegate::createEditor(
@@ -579,6 +581,7 @@ GPlatesQtWidgets::SpinBoxDelegate::setEditorData(
 		QWidget *editor,
 		const QModelIndex &index) const
 {
+	qDebug() << "set editor data";
 	int column = index.column();
 
 	switch(column){
@@ -610,7 +613,7 @@ GPlatesQtWidgets::SpinBoxDelegate::setModelData(
 		const QModelIndex &index) const
 {
 
-
+	qDebug() << "set model data";
 	int column = index.column();
 
 	QVariant value;
