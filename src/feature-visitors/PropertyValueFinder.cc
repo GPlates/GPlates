@@ -28,6 +28,8 @@
 
 #include "PropertyValueFinder.h"
 
+#include "maths/MathsUtils.h"
+
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlIrregularSampling.h"
@@ -85,6 +87,15 @@ namespace GPlatesFeatureVisitors
 			visit_gpml_finite_rotation(
 					gpml_finite_rotation_type &gpml_finite_rotation1)
 			{
+				// We can't interpolate if both times are equal.
+				if (GPlatesMaths::are_almost_exactly_equal(d_time1, d_time2))
+				{
+					d_interpolated_property_value =
+							GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_to_const_type(
+									&gpml_finite_rotation1);
+					return;
+				}
+
 				// Get the second property value.
 				boost::optional<GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_to_const_type>
 						gpml_finite_rotation2 =
@@ -120,6 +131,15 @@ namespace GPlatesFeatureVisitors
 			visit_xs_double(
 					xs_double_type &xs_double1)
 			{
+				// We can't interpolate if both times are equal.
+				if (GPlatesMaths::are_almost_exactly_equal(d_time1, d_time2))
+				{
+					d_interpolated_property_value =
+							GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type(
+									&xs_double1);
+					return;
+				}
+
 				// Get the second property value.
 				boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type>
 						xs_double2 = get_property_value<GPlatesPropertyValues::XsDouble>(d_property_value2);
@@ -165,18 +185,28 @@ void
 GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconstruction_time(
 		GPlatesModel::ConstFeatureVisitor::gpml_irregular_sampling_type &gpml_irregular_sampling,
 		GPlatesModel::ConstFeatureVisitor &property_value_finder_visitor,
-		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
+		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+		const std::type_info &property_value_type_info)
 {
 	//
 	// Interpolates an irregularly-sampled property value if it's interpolable, otherwise returns
 	// property value at nearest time sample (to reconstruction time).
 	//
 
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample> &time_samples =
+			gpml_irregular_sampling.time_samples();
+
+	// Optimisation to avoid interpolating a property value when it's the
+	// wrong type and will just get discarded anyway.
+	if (time_samples.empty() ||
+		typeid(*time_samples.front().get()->value()) != property_value_type_info)
+	{
+		return;
+	}
+
 	// Get a list of the *enabled* time samples.
 	std::vector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type> enabled_time_samples;
 
-	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample> &time_samples =
-			gpml_irregular_sampling.time_samples();
 	for (GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator iter = time_samples.begin();
 		iter != time_samples.end();
 		++iter)
@@ -194,69 +224,42 @@ GPlatesFeatureVisitors::Implementation::visit_gpml_irregular_sampling_at_reconst
 		return;
 	}
 
-	// If the requested time matches, or is later than, the first (most-recent) time sample then
-	// it is outside the time range of the time sample sequence - so use nearest sample.
-	if (reconstruction_time >= enabled_time_samples[0]->valid_time()->get_time_position())
+	// If the requested time is later than the first (most-recent) time sample then
+	// it is outside the time range of the time sample sequence.
+	if (reconstruction_time > enabled_time_samples[0]->valid_time()->get_time_position())
 	{
-		// Add the property value to the list of found property values.
-		enabled_time_samples[0]->value()->accept_visitor(property_value_finder_visitor);
 		return;
 	}
 
 	// Find adjacent time samples that span the requested time.
 	for (unsigned int i = 1; i < enabled_time_samples.size(); ++i)
 	{
-		if (reconstruction_time < enabled_time_samples[i]->valid_time()->get_time_position())
+		if (reconstruction_time >= enabled_time_samples[i]->valid_time()->get_time_position())
 		{
-			continue;
+			// The requested time is later than (more recent) or equal to the sample's time...
+
+			const double time1 = enabled_time_samples[i-1]->valid_time()->get_time_position().value();
+			const double time2 = enabled_time_samples[i]->valid_time()->get_time_position().value();
+			const double target_time = reconstruction_time.value();
+
+			InterpolateIrregularSamplingVisitor interpolate_visitor(
+					*enabled_time_samples[i-1]->value(),
+					*enabled_time_samples[i]->value(),
+					time1,
+					time2,
+					target_time);
+			boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type>
+					interpolated_property_value = interpolate_visitor.interpolate();
+
+			// If property value 'type' is interpolable...
+			if (interpolated_property_value)
+			{
+				// Add the interpolated property value to the list of found property values
+				// (if it's the correct property value type).
+				interpolated_property_value.get()->accept_visitor(property_value_finder_visitor);
+			}
 		}
-		// The requested time is later than (more recent) or equal to the sample's time...
-
-		// Note that "reconstruction_time < enabled_time_samples[i-1].get_time()" rather than '<='
-		// which means "enabled_time_samples[i-1].get_value() != enabled_time_samples[i].get_value()"
-		// which means interpolate will not throw an exception for equal times.
-
-		const double time1 = enabled_time_samples[i-1]->valid_time()->get_time_position().value();
-		const double time2 = enabled_time_samples[i]->valid_time()->get_time_position().value();
-		const double target_time = reconstruction_time.value();
-
-		InterpolateIrregularSamplingVisitor interpolate_visitor(
-				*enabled_time_samples[i-1]->value(),
-				*enabled_time_samples[i]->value(),
-				time1,
-				time2,
-				target_time);
-		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type>
-				interpolated_property_value = interpolate_visitor.interpolate();
-
-		// If property value 'type' is interpolable...
-		if (interpolated_property_value)
-		{
-			// Add the interpolated property value to the list of found property values.
-			interpolated_property_value.get()->accept_visitor(property_value_finder_visitor);
-			return;
-		}
-
-		// The property value 'type' is not interpolable - so use nearest sample instead.
-		if (time2 - target_time < target_time - time1)
-		{
-			// Add the property value to the list of found property values.
-			enabled_time_samples[i]->value()->accept_visitor(property_value_finder_visitor);
-		}
-		else
-		{
-			// Add the property value to the list of found property values.
-			enabled_time_samples[i-1]->value()->accept_visitor(property_value_finder_visitor);
-		}
-
-		return;
 	}
-
-	// The requested time earlier than the last (least-recent) time sample so it is
-	// outside the time range of the time sample sequence - so use nearest sample.
-	//
-	// Add the property value to the list of found property values.
-	enabled_time_samples.back()->value()->accept_visitor(property_value_finder_visitor);
 }
 
 

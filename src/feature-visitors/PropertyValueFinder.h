@@ -28,6 +28,7 @@
 #define GPLATES_FEATUREVISITORS_PROPERTYVALUEFINDER_H
 
 #include <algorithm>  // std::find
+#include <typeinfo>
 #include <utility>
 #include <vector>
 #include <boost/bind.hpp>
@@ -292,7 +293,8 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_irregular_sampling_at_reconstruction_time(
 				GPlatesModel::ConstFeatureVisitor::gpml_irregular_sampling_type &gpml_irregular_sampling,
 				GPlatesModel::ConstFeatureVisitor &property_value_finder_visitor,
-				const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time);
+				const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+				const std::type_info &property_value_type_info);
 		void
 		visit_gpml_piecewise_aggregation_at_reconstruction_time(
 				GPlatesModel::ConstFeatureVisitor::gpml_piecewise_aggregation_type &gpml_piecewise_aggregation,
@@ -308,9 +310,9 @@ namespace GPlatesFeatureVisitors
 		 * NOTE: The property values can be constant over time or time-dependent - in the latter
 		 * case the reconstruction time is used to lookup the property value.
 		 */
-		template <class FeatureVisitorType>
+		template <class PropertyValueType>
 		class PropertyValueFinderBase :
-				public FeatureVisitorType
+				public GPlatesModel::ConstFeatureVisitor
 		{
 		public:
 			virtual
@@ -328,7 +330,7 @@ namespace GPlatesFeatureVisitors
 			virtual
 			bool
 			initialise_pre_property_values(
-					typename FeatureVisitorType::top_level_property_inline_type &top_level_property_inline)
+					top_level_property_inline_type &top_level_property_inline)
 			{
 				const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.get_property_name();
 
@@ -348,7 +350,7 @@ namespace GPlatesFeatureVisitors
 			virtual
 			void
 			visit_gpml_constant_value(
-					typename FeatureVisitorType::gpml_constant_value_type &gpml_constant_value)
+					gpml_constant_value_type &gpml_constant_value)
 			{
 				Implementation::visit_gpml_constant_value(gpml_constant_value, *this);
 			}
@@ -357,18 +359,24 @@ namespace GPlatesFeatureVisitors
 			virtual
 			void
 			visit_gpml_irregular_sampling(
-					typename FeatureVisitorType::gpml_irregular_sampling_type &gpml_irregular_sampling)
+					gpml_irregular_sampling_type &gpml_irregular_sampling)
 			{
 				Implementation::visit_gpml_irregular_sampling_at_reconstruction_time(
-						gpml_irregular_sampling, *this, d_reconstruction_time);
+						gpml_irregular_sampling, *this, d_reconstruction_time,
+						// Optimisation to avoid interpolating a property value when it's the
+						// wrong type and will just get discarded anyway...
+						typeid(PropertyValueType));
 			}
 
 			// In case property value is time-dependent.
 			virtual
 			void
 			visit_gpml_piecewise_aggregation(
-					typename FeatureVisitorType::gpml_piecewise_aggregation_type &gpml_piecewise_aggregation) 
+					gpml_piecewise_aggregation_type &gpml_piecewise_aggregation) 
 			{
+				// No optimisation here (like with 'visit_gpml_irregular_sampling') because
+				// nested property value type could be another time-dependent wrapper type.
+
 				Implementation::visit_gpml_piecewise_aggregation_at_reconstruction_time(
 						gpml_piecewise_aggregation, *this, d_reconstruction_time);
 			}
@@ -397,8 +405,7 @@ namespace GPlatesFeatureVisitors
 
 
 		// Declare template class PropertyValueFinder but never define it.
-		// We will rely on specialisations of this class for each property value type and
-		// feature visitor type.
+		// We will rely on specialisations of this class for each property value type.
 		template <class PropertyValueType>
 		class PropertyValueFinder;
 
@@ -408,11 +415,9 @@ namespace GPlatesFeatureVisitors
 		// of 'visit_gpml_plate_id' for example - in which case a simple template class would suffice.
 		// However having "visit" methods named as they are probably help readability and avoids needing
 		// 'using ConstFeatureVisitor::visit;" declarations in derived visitor classes.
-		//
 #define DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
 			property_value_type, \
-			visit_property_value_method, \
-			feature_visitor_type \
+			visit_property_value_method \
 		) \
 		namespace GPlatesFeatureVisitors \
 		{ \
@@ -420,7 +425,7 @@ namespace GPlatesFeatureVisitors
 			{ \
 				template <> \
 				class PropertyValueFinder<property_value_type> : \
-						public PropertyValueFinderBase<feature_visitor_type> \
+						public PropertyValueFinderBase<property_value_type> \
 				{ \
 				public: \
 					typedef std::vector<GPlatesUtils::non_null_intrusive_ptr<property_value_type> > property_value_container_type; \
@@ -430,14 +435,14 @@ namespace GPlatesFeatureVisitors
 					\
 					PropertyValueFinder( \
 							const double &reconstruction_time = 0) : \
-						PropertyValueFinderBase<feature_visitor_type>(reconstruction_time) \
+						PropertyValueFinderBase<property_value_type>(reconstruction_time) \
 					{  } \
 			 \
 					explicit \
 					PropertyValueFinder( \
 							const GPlatesModel::PropertyName &property_name_to_allow, \
 							const double &reconstruction_time = 0) : \
-						PropertyValueFinderBase<feature_visitor_type>(property_name_to_allow, reconstruction_time) \
+						PropertyValueFinderBase<property_value_type>(property_name_to_allow, reconstruction_time) \
 					{ \
 					} \
 			 \
@@ -508,32 +513,11 @@ namespace GPlatesFeatureVisitors
 		// For example:
 		//    DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::Enumeration, visit_enumeration)
 		//
-		// NOTE: There is no longer any deep-cloning of property values within a *non-const*
-		// feature visitor (since it is no longer required to ensure changes to the model are tracked).
-		// So we no longer need to worry that property value references will become invalid immediately
-		// after visiting a property value (with a non-const visitor).
-		//
 #define DECLARE_PROPERTY_VALUE_FINDER(property_value_type, visit_property_value_method) \
 		/* for const property-value */ \
 		DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
 				boost::add_const<property_value_type>::type, \
-				visit_property_value_method, \
-				GPlatesModel::ConstFeatureVisitor) \
-
-		//
-		// We no longer support retrieval of *non-const* property values because
-		// the client will presume that modifying a retrieved property value will change the
-		// original property (eg, if it belongs to a feature). But this is not the case for
-		// time-dependent properties where, for example, a new *interpolated* property value is
-		// returned for an irregularly sampled property value (when the reconstruction time does
-		// not match any of the sample times) - and modifying that will not insert the interpolated
-		// property value in the irregularly sampled sequence.
-		//
-		/* For non-const property-value */
-		//DECLARE_PROPERTY_VALUE_FINDER_CLASS(
-		//		boost::remove_const<property_value_type>::type,
-		//		visit_property_value_method,
-		//		GPlatesModel::FeatureVisitor)
+				visit_property_value_method)
 	}
 
 
