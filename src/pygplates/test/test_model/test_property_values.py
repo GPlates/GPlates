@@ -308,8 +308,8 @@ class GpmlPiecewiseAggregationCase(unittest.TestCase):
         for i in range(0,4):
             tw = pygplates.GpmlTimeWindow(
                 pygplates.XsInteger(i),
-                pygplates.GeoTimeInstant(i),   # begin time
-                pygplates.GeoTimeInstant(i+1)) # end time
+                pygplates.GeoTimeInstant(i+1), # begin time - earlier
+                pygplates.GeoTimeInstant(i))   # end time - later
             self.original_time_windows.append(tw)
         
         self.gpml_piecewise_aggregation = pygplates.GpmlPiecewiseAggregation(self.original_time_windows)

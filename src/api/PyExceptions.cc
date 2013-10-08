@@ -113,7 +113,7 @@ namespace GPlatesApi
 							python_base_exception_type.ptr(),
 							0)));
 
-			// Add the new exception name to the current scope (eg, module).
+			// Add the new exception name to the current scope (should be the 'pygplates' module).
 			bp::scope().attr(python_exception_name) = d_python_exception_type;
 		}
 

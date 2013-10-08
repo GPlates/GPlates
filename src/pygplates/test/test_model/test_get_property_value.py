@@ -47,9 +47,9 @@ class GetTimeSamplesCase(unittest.TestCase):
 class GetTimeWindowsCase(unittest.TestCase):
     def setUp(self):
         self.gpml_piecewise_aggregation = pygplates.GpmlPiecewiseAggregation([
-                pygplates.GpmlTimeWindow(pygplates.XsInteger(0), pygplates.GeoTimeInstant(0), pygplates.GeoTimeInstant(1)),
-                pygplates.GpmlTimeWindow(pygplates.XsInteger(1), pygplates.GeoTimeInstant(1), pygplates.GeoTimeInstant(2)),
-                pygplates.GpmlTimeWindow(pygplates.XsInteger(2), pygplates.GeoTimeInstant(2), pygplates.GeoTimeInstant(3))])
+                pygplates.GpmlTimeWindow(pygplates.XsInteger(0), pygplates.GeoTimeInstant(1), pygplates.GeoTimeInstant(0)),
+                pygplates.GpmlTimeWindow(pygplates.XsInteger(1), pygplates.GeoTimeInstant(2), pygplates.GeoTimeInstant(1)),
+                pygplates.GpmlTimeWindow(pygplates.XsInteger(2), pygplates.GeoTimeInstant(3), pygplates.GeoTimeInstant(2))])
 
     def test_get(self):
         time_window = pygplates.get_time_window_containing_time(self.gpml_piecewise_aggregation, 1.5)
