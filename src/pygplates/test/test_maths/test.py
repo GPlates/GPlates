@@ -102,11 +102,6 @@ class FiniteRotationCase(unittest.TestCase):
                 self.finite_rotation, finite_rotation2,
                 10, 20, 15)
         self.assertTrue(isinstance(interpolated_rotation, pygplates.FiniteRotation))
-        # The times to interpolate between cannot be the same.
-        self.assertRaises(
-                pygplates.IndeterminateResultError,
-                pygplates.interpolate_finite_rotations,
-                self.finite_rotation, finite_rotation2, 10, 10, 15)
 
 
 class GreatCircleArcCase(unittest.TestCase):

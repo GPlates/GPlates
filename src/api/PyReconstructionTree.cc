@@ -960,7 +960,7 @@ export_reconstruction_tree()
 			"\n"
 			"    def get_equivalent_stage_rotation(from_reconstruction_tree, to_reconstruction_tree, plate_id):\n"
 			"        if from_reconstruction_tree.get_anchor_plate_id() != to_reconstruction_tree.get_anchor_plate_id():\n"
-			"            raise DifferentAnchoredPlatesInReconstructionTreesError\n"
+			"            raise pygplates.DifferentAnchoredPlatesInReconstructionTreesError\n"
 			"        from_plate_rotation = from_reconstruction_tree.get_equivalent_total_rotation(plate_id)\n"
 			"        to_plate_rotation = to_reconstruction_tree.get_equivalent_total_rotation(plate_id)\n"
 			"        if from_plate_rotation and to_plate_rotation:\n"

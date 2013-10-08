@@ -6,6 +6,7 @@ import os
 import unittest
 import pygplates
 
+import test_get_property_value
 import test_ids
 import test_property_values
 import test_revisioned_vector
@@ -279,6 +280,7 @@ def suite():
     
     # Add test suites from sibling modules.
     test_modules = [
+            test_get_property_value,
             test_ids,
             test_property_values,
             test_revisioned_vector

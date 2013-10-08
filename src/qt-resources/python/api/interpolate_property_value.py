@@ -1,3 +1,41 @@
+# This function is private in this 'pygplates' module (function name prefixed with a single underscore).
+# It's used by other sections of the 'pygplates' module, but not meant for public use.
+# It's only in this code section because it does interpolation.
+def _interpolate_property_value(property_value1, property_value2, time1, time2, target_time):
+    class InterpolateVisitor(PropertyValueVisitor):
+        def __init__(self, property_value1, property_value2, time1, time2, target_time):
+            super(InterpolateVisitor, self).__init__()
+            self.property_value1 = property_value1
+            self.property_value2 = property_value2
+            self.time1 = time1
+            self.time2 = time2
+            self.target_time = target_time
+            self.interpolated_property_value = None
+        
+        def interpolate(self):
+            self.interpolated_property_value = None
+            # Visit the first property value.
+            self.property_value1.accept_visitor(self)
+            return self.interpolated_property_value
+        
+        # Currently on GpmlFiniteRotation and XsDouble can be interpolated...
+        
+        def visit_gpml_finite_rotation(self, gpml_finite_rotation1):
+            # Second property value should also be the same type.
+            self.interpolated_property_value = interpolate_finite_rotations(
+                gpml_finite_rotation1.get_finite_rotation(), self.property_value2.get_finite_rotation(),
+                self.time1, self.time2, self.target_time)
+        
+        def visit_xs_double(self, xs_double1):
+            # Second property value should also be the same type.
+            self.interpolated_property_value = interpolate_finite_rotations(
+                xs_double1.get_double(), self.property_value2.get_double(),
+                self.time1, self.time2, self.target_time)
+    
+    visitor = InterpolateVisitor(property_value1, property_value2, time1, time2, target_time)
+    return visitor.interpolate()
+
+
 def interpolate_total_reconstruction_pole(total_reconstruction_pole, time):
     """interpolate_total_reconstruction_pole(total_reconstruction_pole, time) -> FiniteRotation or None
     Interpolates the *total reconstruction pole* property value at the specified time.
@@ -9,49 +47,29 @@ def interpolate_total_reconstruction_pole(total_reconstruction_pole, time):
     :rtype: :class:`FiniteRotation` or None
     :return: the interpolated rotation or None
     
-    Returns ``None`` if the *total_reconstruction_pole* property value is not a :class:`GpmlIrregularSampling` with
-    time samples containing :class:`GpmlFiniteRotation` instances (or *time* is not spanned by any time samples).
+    Returns ``None`` if *time* is not spanned by any time samples in the *total reconstruction pole*, or
+    if all time samples are disabled.
     
     See :func:`interpolate_total_reconstruction_sequence` and :func:`interpolate_finite_rotations` for a similar functions.
     """
     
-    # Convert 'float' to 'GeoTimeInstant' (for time comparisons).
-    time = GeoTimeInstant(time)
+    # Get the time samples bounding the time (and filter out the disabled time samples).
+    adjacent_time_samples = get_time_samples_bounding_time(total_reconstruction_pole, time)
     
-    try:
-        # Filter out the disabled time samples.
-        time_samples = filter(lambda ts: not ts.is_disabled(), total_reconstruction_pole.get_time_samples())
-    except AttributeError:
-        # The property value type is unexpected.
+    # Return early if all time samples are disabled or time is outside time samples range.
+    if not adjacent_time_samples:
         return
     
-    # Return early if all time samples are disabled.
-    if not time_samples:
-        return
+    # The first time sample is further in the past (less recent).
+    # Although it doesn't really matter for our interpolation.
+    begin_time_sample, end_time_sample = adjacent_time_samples
     
-    # If the requested time is later than the first (most-recent) time sample then
-    # it is outside the time range of the time sample sequence.
-    if time > time_samples[0].get_time():
-        return
-    
-    # If time matches first time sample then no interpolation is required.
-    if time == time_samples[0].get_time():
-        return time_samples[0].get_value().get_finite_rotation()
-    
-    # Find adjacent time samples that span the requested time.
-    for i in range(1, len(time_samples)):
-        # If the requested time is later than (more recent) or equal to the sample's time.
-        if time >= time_samples[i].get_time():
-            # Note that "time < time_samples[i-1].get_time()" rather than '<='
-            # which means "time_samples[i-1].get_value() != time_samples[i].get_value()"
-            # which means interpolate will not throw an exception for equal times.
-            interpolated_rotation = interpolate_finite_rotations(
-                    time_samples[i-1].get_value().get_finite_rotation(),
-                    time_samples[i].get_value().get_finite_rotation(),
-                    time_samples[i-1].get_time().get_value(),
-                    time_samples[i].get_time().get_value(),
-                    time.get_value())
-            return interpolated_rotation
+    return interpolate_finite_rotations(
+            begin_time_sample.get_value().get_finite_rotation(),
+            end_time_sample.get_value().get_finite_rotation(),
+            begin_time_sample.get_time().get_value(),
+            end_time_sample.get_time().get_value(),
+            time)
 
 
 def interpolate_total_reconstruction_sequence(total_reconstruction_sequence_feature, time):
@@ -69,7 +87,8 @@ def interpolate_total_reconstruction_sequence(total_reconstruction_sequence_feat
     
     Returns ``None`` if the feature does not contain a 'gpml:fixedReferenceFrame' plate id,
     a 'gpml:movingReferenceFrame' plate id and a 'gpml:totalReconstructionPole' :class:`GpmlIrregularSampling` with
-    time samples containing :class:`GpmlFiniteRotation` instances (or *time* is not spanned by any time samples).
+    time samples containing :class:`GpmlFiniteRotation` instances (or *time* is not spanned by any time samples, or
+    all time samples are disabled).
     
     A feature with :class:`feature type<FeatureType>` 'gpml:TotalReconstructionSequence' should have these properties
     if it conforms to the GPlates Geological Information Model (GPGIM).

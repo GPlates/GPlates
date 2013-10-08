@@ -74,6 +74,12 @@ namespace GPlatesApi
 			const GPlatesMaths::Real &time2,
 			const GPlatesMaths::Real &target_time)
 	{
+		// We can't interpolate if both times are equal.
+		if (time1 == time2)
+		{
+			return finite_rotation1;
+		}
+
 		// If either of the finite rotations has an axis hint, use it.
 		boost::optional<GPlatesMaths::UnitVector3D> axis_hint;
 		if (finite_rotation1.axis_hint())
@@ -470,7 +476,6 @@ export_finite_rotation()
 			"  :param target_time: the time associated with the result of the interpolation\n"
 			"  :type target_time: float\n"
 			"  :rtype: :class:`FiniteRotation`\n"
-			"  :raises: IndeterminateResultException if *time1* and *time2* are equal\n"
 			"\n"
 			"  *target_time* can be any time - it does not have to be between *time1* and *time2*.\n"
 			"  ::\n"
