@@ -21,16 +21,25 @@ def _interpolate_property_value(property_value1, property_value2, time1, time2, 
         # Currently on GpmlFiniteRotation and XsDouble can be interpolated...
         
         def visit_gpml_finite_rotation(self, gpml_finite_rotation1):
+            # No need to test 'time1==time2' since 'interpolate_finite_rotations()' does that for us.
+            
             # Second property value should also be the same type.
-            self.interpolated_property_value = interpolate_finite_rotations(
-                gpml_finite_rotation1.get_finite_rotation(), self.property_value2.get_finite_rotation(),
-                self.time1, self.time2, self.target_time)
+            self.interpolated_property_value = GpmlFiniteRotation(
+                interpolate_finite_rotations(
+                    gpml_finite_rotation1.get_finite_rotation(), self.property_value2.get_finite_rotation(),
+                    self.time1, self.time2, self.target_time))
         
         def visit_xs_double(self, xs_double1):
+            # Use epsilon comparision of GeoTimeInstant.
+            if GeoTimeInstant(time2) == GeoTimeInstant(time1):
+                return xs_double1
+            
+            interpolation = (self.target_time - self.time1) / (self.time2 - self.time1)
+            
             # Second property value should also be the same type.
-            self.interpolated_property_value = interpolate_finite_rotations(
-                xs_double1.get_double(), self.property_value2.get_double(),
-                self.time1, self.time2, self.target_time)
+            self.interpolated_property_value = XsDouble(
+                (1 - interpolation) * xs_double1.get_double() +
+                    interpolation * self.property_value2.get_double())
     
     visitor = InterpolateVisitor(property_value1, property_value2, time1, time2, target_time)
     return visitor.interpolate()

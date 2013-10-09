@@ -90,7 +90,7 @@ def get_time_window_containing_time(gpml_piecewise_aggregation, time):
     # Find the time window containing the time.
     for window in gpml_piecewise_aggregation.get_time_windows():
         # Time period includes begin time but not end time.
-        if time >= window.get_begin_time() and time < window.get_end_time():
+        if time >= window.get_begin_time() and time <= window.get_end_time():
             return window
 
 

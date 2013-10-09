@@ -23,7 +23,7 @@ class InterpolateTotalReconstructionPoleTest(unittest.TestCase):
                 pygplates.GpmlTimeSample(
                         pygplates.GpmlFiniteRotation(
                                 pygplates.FiniteRotation(
-                                        pygplates.PointOnSphere(1,0,0),
+                                        pygplates.PointOnSphere(0,1,0),
                                         0.5)),
                         pygplates.GeoTimeInstant(10))])
 
@@ -31,6 +31,8 @@ class InterpolateTotalReconstructionPoleTest(unittest.TestCase):
         interpolated_finite_rotation = pygplates.interpolate_total_reconstruction_pole(self.gpml_irregular_sampling, 5)
         self.assertTrue(interpolated_finite_rotation)
         self.assertTrue(isinstance(interpolated_finite_rotation, pygplates.FiniteRotation))
+        interpolated_pole, interpolated_angle = interpolated_finite_rotation.get_euler_pole_and_angle()
+        self.assertTrue(abs(interpolated_angle) > 0.322 and abs(interpolated_angle) < 0.323)
         # Time outside range of time samples.
         self.assertFalse(pygplates.interpolate_total_reconstruction_pole(self.gpml_irregular_sampling, 15))
 

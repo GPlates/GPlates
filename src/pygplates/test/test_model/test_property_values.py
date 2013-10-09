@@ -196,6 +196,12 @@ class GmlTimePeriodCase(unittest.TestCase):
         self.gml_time_period.set_end_time(new_end_geo_time_instant)
         self.assertTrue(self.gml_time_period.get_begin_time() == new_begin_geo_time_instant)
         self.assertTrue(self.gml_time_period.get_end_time() == new_end_geo_time_instant)
+        
+        # Violate the begin/end time class invariant.
+        self.assertRaises(pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError,
+                self.gml_time_period.set_begin_time, pygplates.GeoTimeInstant(1.0))
+        self.assertRaises(pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError,
+                self.gml_time_period.set_end_time, pygplates.GeoTimeInstant(5.5))
 
 
 class GpmlConstantValueCase(unittest.TestCase):

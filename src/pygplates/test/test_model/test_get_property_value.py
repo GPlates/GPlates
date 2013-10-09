@@ -10,6 +10,79 @@ import pygplates
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 
 
+class GetPropertyValueCase(unittest.TestCase):
+    def setUp(self):
+        self.gpml_irregular_sampling = pygplates.GpmlIrregularSampling(
+                [pygplates.GpmlTimeSample(
+                        pygplates.GpmlFiniteRotation(
+                                pygplates.FiniteRotation(
+                                        pygplates.PointOnSphere(1,0,0),
+                                        0.4)),
+                        pygplates.GeoTimeInstant(0)),
+                pygplates.GpmlTimeSample(
+                        pygplates.GpmlFiniteRotation(
+                                pygplates.FiniteRotation(
+                                        pygplates.PointOnSphere(0,1,0),
+                                        0.5)),
+                        pygplates.GeoTimeInstant(10))])
+        self.gpml_irregular_sampling2 = pygplates.GpmlIrregularSampling(
+                [pygplates.GpmlTimeSample(pygplates.XsDouble(100), pygplates.GeoTimeInstant(5)),
+                pygplates.GpmlTimeSample( pygplates.XsDouble(200), pygplates.GeoTimeInstant(10))])
+        self.gpml_plate_id1 = pygplates.GpmlPlateId(1)
+        self.gpml_plate_id2 = pygplates.GpmlPlateId(2)
+        self.gpml_constant_value = pygplates.GpmlConstantValue(self.gpml_plate_id1)
+        self.gpml_piecewise_aggregation = pygplates.GpmlPiecewiseAggregation([
+                pygplates.GpmlTimeWindow(self.gpml_plate_id1, pygplates.GeoTimeInstant(1), pygplates.GeoTimeInstant(0)),
+                pygplates.GpmlTimeWindow(self.gpml_plate_id2, pygplates.GeoTimeInstant(2), pygplates.GeoTimeInstant(1))])
+
+    def test_get(self):
+        interpolated_gpml_finite_rotation = pygplates.get_property_value(self.gpml_irregular_sampling, 5)
+        self.assertTrue(interpolated_gpml_finite_rotation)
+        interpolated_pole, interpolated_angle = interpolated_gpml_finite_rotation.get_finite_rotation().get_euler_pole_and_angle()
+        self.assertTrue(abs(interpolated_angle) > 0.322 and abs(interpolated_angle) < 0.323)
+        # XsDouble can be interpolated.
+        interpolated_double = pygplates.get_property_value(self.gpml_irregular_sampling2, 7)
+        self.assertTrue(interpolated_double)
+        self.assertTrue(abs(interpolated_double.get_double() - 140) < 1e-10)
+        self.assertTrue(pygplates.get_property_value(self.gpml_plate_id1) == self.gpml_plate_id1)
+        self.assertTrue(pygplates.get_property_value(self.gpml_constant_value) == self.gpml_plate_id1)
+        self.assertTrue(pygplates.get_property_value(self.gpml_piecewise_aggregation, 1.5) == self.gpml_plate_id2)
+        # Outside time range.
+        self.assertFalse(pygplates.get_property_value(self.gpml_irregular_sampling, 20))
+
+    def test_get_by_type(self):
+        interpolated_gpml_finite_rotation = pygplates.get_property_value_by_type(
+                self.gpml_irregular_sampling, pygplates.GpmlFiniteRotation, 5)
+        interpolated_pole, interpolated_angle = interpolated_gpml_finite_rotation.get_finite_rotation().get_euler_pole_and_angle()
+        self.assertTrue(abs(interpolated_angle) > 0.322 and abs(interpolated_angle) < 0.323)
+        # XsDouble can be interpolated.
+        interpolated_double = pygplates.get_property_value_by_type(self.gpml_irregular_sampling2, pygplates.XsDouble, 7)
+        self.assertTrue(interpolated_double)
+        self.assertTrue(abs(interpolated_double.get_double() - 140) < 1e-10)
+        self.assertTrue(pygplates.get_property_value_by_type(self.gpml_plate_id1, pygplates.GpmlPlateId) == self.gpml_plate_id1)
+        self.assertTrue(pygplates.get_property_value_by_type(self.gpml_constant_value, pygplates.GpmlPlateId) == self.gpml_plate_id1)
+        self.assertTrue(pygplates.get_property_value_by_type(self.gpml_constant_value, pygplates.GpmlConstantValue) == self.gpml_constant_value)
+        self.assertTrue(pygplates.get_property_value_by_type(self.gpml_piecewise_aggregation, pygplates.GpmlPlateId))
+        self.assertTrue(pygplates.get_property_value_by_type(
+                self.gpml_piecewise_aggregation, pygplates.GpmlPlateId, 1.5) == self.gpml_plate_id2)
+        self.assertTrue(pygplates.get_property_value_by_type(
+                self.gpml_piecewise_aggregation, pygplates.GpmlPlateId, 0.5) == self.gpml_plate_id1)
+        self.assertTrue(pygplates.get_property_value_by_type(
+                self.gpml_piecewise_aggregation, pygplates.GpmlPiecewiseAggregation) == self.gpml_piecewise_aggregation)
+        # Time makes no difference in this case.
+        self.assertTrue(pygplates.get_property_value_by_type(
+                self.gpml_piecewise_aggregation, pygplates.GpmlPiecewiseAggregation, 0.5) == self.gpml_piecewise_aggregation)
+        # Should fail to extract incorrectly specified nested type.
+        self.assertFalse(pygplates.get_property_value_by_type(self.gpml_irregular_sampling, pygplates.GpmlPlateId))
+        self.assertFalse(pygplates.get_property_value_by_type(self.gpml_irregular_sampling2, pygplates.XsInteger))
+        self.assertFalse(pygplates.get_property_value_by_type(self.gpml_plate_id1, pygplates.GpmlConstantValue))
+        self.assertFalse(pygplates.get_property_value_by_type(self.gpml_plate_id1, pygplates.XsInteger))
+        self.assertFalse(pygplates.get_property_value_by_type(self.gpml_constant_value, pygplates.XsInteger))
+        self.assertFalse(pygplates.get_property_value_by_type(self.gpml_piecewise_aggregation, pygplates.GpmlConstantValue))
+        self.assertFalse(pygplates.get_property_value_by_type(self.gpml_piecewise_aggregation, pygplates.GpmlIrregularSampling))
+        self.assertFalse(pygplates.get_property_value_by_type(self.gpml_piecewise_aggregation, pygplates.XsInteger))
+
+
 class GetTimeSamplesCase(unittest.TestCase):
     def setUp(self):
         self.gpml_irregular_sampling = pygplates.GpmlIrregularSampling([
@@ -62,6 +135,7 @@ def suite():
     
     # Add test cases from this module.
     test_cases = [
+            GetPropertyValueCase,
             GetTimeSamplesCase,
             GetTimeWindowsCase
         ]
