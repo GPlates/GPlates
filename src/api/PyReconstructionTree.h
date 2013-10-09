@@ -34,17 +34,18 @@ namespace GPlatesApi
 	/**
 	 * The anchored plates of two reconstruction trees are not the same.
 	 */
-	class DifferentAnchoredPlatesInReconstructionTreesException:
+	class DifferentAnchoredPlatesInReconstructionTreesException :
 			public GPlatesGlobal::PreconditionViolationError
 	{
 	public:
 		explicit
 		DifferentAnchoredPlatesInReconstructionTreesException(
-				const GPlatesUtils::CallStack::Trace &exception_source):
+				const GPlatesUtils::CallStack::Trace &exception_source) :
 			GPlatesGlobal::PreconditionViolationError(exception_source)
 		{  }
 
-		~DifferentAnchoredPlatesInReconstructionTreesException() throw(){}
+		~DifferentAnchoredPlatesInReconstructionTreesException() throw()
+		{  }
 
 	protected:
 

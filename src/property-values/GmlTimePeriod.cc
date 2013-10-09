@@ -41,6 +41,10 @@ GPlatesPropertyValues::GmlTimePeriod::create(
 		GmlTimeInstant::non_null_ptr_type begin_,
 		GmlTimeInstant::non_null_ptr_type end_)
 {
+	GPlatesGlobal::Assert<BeginTimeLaterThanEndTimeException>(
+			begin_->get_time_position() <= end_->get_time_position(),
+			GPLATES_ASSERTION_SOURCE);
+
 	GPlatesModel::ModelTransaction transaction;
 	non_null_ptr_type ptr(new GmlTimePeriod(transaction, begin_, end_));
 	transaction.commit();

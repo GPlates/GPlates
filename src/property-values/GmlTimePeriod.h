@@ -32,6 +32,8 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "global/PreconditionViolationError.h"
+
 #include "model/PropertyValue.h"
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
@@ -69,6 +71,32 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod> non_null_ptr_to_const_type;
 
 
+		/**
+		 * A time period's begin time should be earlier than its end time.
+		 */
+		class BeginTimeLaterThanEndTimeException :
+				public GPlatesGlobal::PreconditionViolationError
+		{
+		public:
+			explicit
+			BeginTimeLaterThanEndTimeException(
+					const GPlatesUtils::CallStack::Trace &exception_source) :
+				GPlatesGlobal::PreconditionViolationError(exception_source)
+			{  }
+
+			~BeginTimeLaterThanEndTimeException() throw()
+			{  }
+
+		protected:
+			virtual
+			const char *
+			exception_name() const
+			{
+				return "BeginTimeLaterThanEndTimeException";
+			}
+		};
+
+
 		virtual
 		~GmlTimePeriod()
 		{  }
@@ -79,7 +107,7 @@ namespace GPlatesPropertyValues
 		 * Note that the time instant represented by @a begin_ must not be later than (ie,
 		 * more recent than) the time instant represented by @a end_.
 		 *
-		 * FIXME:  Check this as a precondition, and throw an exception if it's violated.
+		 * @throws BeginTimeLaterThanEndTimeException if begin time is later than end time.
 		 */
 		static
 		const non_null_ptr_type

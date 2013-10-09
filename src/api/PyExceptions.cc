@@ -47,6 +47,8 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/ViolatedUnitVectorInvariantException.h"
 
+#include "property-values/GmlTimePeriod.h"
+
 
 #if !defined(GPLATES_NO_PYTHON)
 
@@ -227,6 +229,12 @@ export_exceptions()
 			export_exception<GPlatesGlobal::PreconditionViolationError>(
 					"PreconditionViolationError",
 					gplates_exception_type);
+	export_exception<GPlatesPropertyValues::GmlTimePeriod::BeginTimeLaterThanEndTimeException>(
+			"GmlTimePeriodBeginTimeLaterThanEndTimeError",
+			precondition_violation_exception_type);
+	export_exception<DifferentAnchoredPlatesInReconstructionTreesException>(
+			"DifferentAnchoredPlatesInReconstructionTreesError",
+			precondition_violation_exception_type);
 	export_exception<GPlatesMaths::IndeterminateArcRotationAxisException>(
 			"IndeterminateArcRotationAxisError",
 			precondition_violation_exception_type);
@@ -241,9 +249,6 @@ export_exceptions()
 			precondition_violation_exception_type);
 	export_exception<GPlatesMaths::InvalidLatLonException>(
 			"InvalidLatLonError",
-			precondition_violation_exception_type);
-	export_exception<DifferentAnchoredPlatesInReconstructionTreesException>(
-			"DifferentAnchoredPlatesInReconstructionTreesError",
 			precondition_violation_exception_type);
 
 	//

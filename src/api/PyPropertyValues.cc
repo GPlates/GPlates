@@ -804,9 +804,15 @@ namespace GPlatesApi
 	void
 	gml_time_period_set_begin_time(
 			GPlatesPropertyValues::GmlTimePeriod &gml_time_period,
-			const GPlatesPropertyValues::GeoTimeInstant &time_position)
+			const GPlatesPropertyValues::GeoTimeInstant &begin_time_position)
 	{
-		gml_time_period.begin()->set_time_position(time_position);
+		// We can check begin/end time class invariant due to our restricted (python) interface whereas
+		// the C++ GmlTimePeriod cannot because clients can modify indirectly via 'GmlTimeInstant'.
+		GPlatesGlobal::Assert<GPlatesPropertyValues::GmlTimePeriod::BeginTimeLaterThanEndTimeException>(
+				begin_time_position <= gml_time_period.end()->get_time_position(),
+				GPLATES_ASSERTION_SOURCE);
+
+		gml_time_period.begin()->set_time_position(begin_time_position);
 	}
 
 	GPlatesPropertyValues::GeoTimeInstant
@@ -819,9 +825,15 @@ namespace GPlatesApi
 	void
 	gml_time_period_set_end_time(
 			GPlatesPropertyValues::GmlTimePeriod &gml_time_period,
-			const GPlatesPropertyValues::GeoTimeInstant &time_position)
+			const GPlatesPropertyValues::GeoTimeInstant &end_time_position)
 	{
-		gml_time_period.end()->set_time_position(time_position);
+		// We can check begin/end time class invariant due to our restricted (python) interface whereas
+		// the C++ GmlTimePeriod cannot because clients can modify indirectly via 'GmlTimeInstant'.
+		GPlatesGlobal::Assert<GPlatesPropertyValues::GmlTimePeriod::BeginTimeLaterThanEndTimeException>(
+				gml_time_period.begin()->get_time_position() <= end_time_position,
+				GPLATES_ASSERTION_SOURCE);
+
+		gml_time_period.end()->set_time_position(end_time_position);
 	}
 }
 
@@ -853,6 +865,7 @@ export_gml_time_period()
 				"  :type begin_time_position: :class:`GeoTimeInstant`\n"
 				"  :param end_time_position: the end time position (time of disappearance)\n"
 				"  :type end_time_position: :class:`GeoTimeInstant`\n"
+				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -870,7 +883,8 @@ export_gml_time_period()
 				"  Sets the begin time position (time of appearance) of this property value.\n"
 				"\n"
 				"  :param time_position: the begin time position (time of appearance)\n"
-				"  :type time_position: :class:`GeoTimeInstant`\n")
+				"  :type time_position: :class:`GeoTimeInstant`\n"
+				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 		.def("get_end_time",
 				&GPlatesApi::gml_time_period_get_end_time,
 				"get_end_time() -> GeoTimeInstant\n"
@@ -884,7 +898,8 @@ export_gml_time_period()
 				"  Sets the end time position (time of disappearance) of this property value.\n"
 				"\n"
 				"  :param time_position: the end time position (time of disappearance)\n"
-				"  :type time_position: :class:`GeoTimeInstant`\n")
+				"  :type time_position: :class:`GeoTimeInstant`\n"
+				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 	;
 
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
@@ -1721,7 +1736,9 @@ namespace GPlatesApi
 			GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window,
 			const GPlatesPropertyValues::GeoTimeInstant &begin_time)
 	{
-		gpml_time_window.valid_time()->begin()->set_time_position(begin_time);
+		// Use 'assert' protected function to ensure proper exception is raised if GmlTimePeriod
+		// class invariant is violated.
+		gml_time_period_set_begin_time(*gpml_time_window.valid_time(), begin_time);
 	}
 
 	GPlatesPropertyValues::GeoTimeInstant
@@ -1736,7 +1753,9 @@ namespace GPlatesApi
 			GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window,
 			const GPlatesPropertyValues::GeoTimeInstant &end_time)
 	{
-		gpml_time_window.valid_time()->end()->set_time_position(end_time);
+		// Use 'assert' protected function to ensure proper exception is raised if GmlTimePeriod
+		// class invariant is violated.
+		gml_time_period_set_end_time(*gpml_time_window.valid_time(), end_time);
 	}
 }
 
@@ -1777,6 +1796,7 @@ export_gpml_time_window()
 				"  :type begin_time: :class:`GeoTimeInstant`\n"
 				"  :param end_time: the end time of the time window\n"
 				"  :type end_time: :class:`GeoTimeInstant`\n"
+				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -1815,7 +1835,8 @@ export_gpml_time_window()
 				"  Sets the begin time of this time window.\n"
 				"\n"
 				"  :param time: the begin time of this time window\n"
-				"  :type time: :class:`GeoTimeInstant`\n")
+				"  :type time: :class:`GeoTimeInstant`\n"
+				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 		.def("get_end_time",
 				&GPlatesApi::gpml_time_window_get_end_time,
 				"get_end_time() -> GeoTimeInstant\n"
@@ -1829,7 +1850,8 @@ export_gpml_time_window()
 				"  Sets the end time of this time window.\n"
 				"\n"
 				"  :param time: the end time of this time window\n"
-				"  :type time: :class:`GeoTimeInstant`\n")
+				"  :type time: :class:`GeoTimeInstant`\n"
+				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;
