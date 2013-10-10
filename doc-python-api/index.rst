@@ -24,6 +24,7 @@ Contents:
 	pygplates.FiniteRotation
 	pygplates.GeometryOnSphere
 	pygplates.GeoTimeInstant
+	pygplates.GmlLineString
 	pygplates.GmlMultiPoint
 	pygplates.GmlOrientableCurve
 	pygplates.GmlPoint
@@ -62,19 +63,22 @@ Contents:
 	pygplates.compose_finite_rotations
 	pygplates.convert_lat_lon_point_to_point_on_sphere
 	pygplates.convert_point_on_sphere_to_lat_lon_point
+	pygplates.get_feature_geometry_properties
+	pygplates.get_feature_geometry_properties_by_name
 	pygplates.get_feature_properties_by_name
 	pygplates.get_feature_properties_by_name_and_value_type
 	pygplates.get_feature_properties_by_value_type
-	pygplates.interpolate_finite_rotations
-	pygplates.interpolate_total_reconstruction_pole
-	pygplates.interpolate_total_reconstruction_sequence
 	pygplates.get_enabled_time_samples
 	pygplates.get_equivalent_stage_rotation
+	pygplates.get_geometry_from_property_value
 	pygplates.get_property_value
 	pygplates.get_property_value_by_type
 	pygplates.get_relative_stage_rotation
 	pygplates.get_time_samples_bounding_time
 	pygplates.get_time_window_containing_time
+	pygplates.interpolate_finite_rotations
+	pygplates.interpolate_total_reconstruction_pole
+	pygplates.interpolate_total_reconstruction_sequence
 
 .. NOTE: Only document the new API for now, exclude classes/functions not in the new API.
 .. NOTE: Only classes (and their methods) that are documented (that have docstrings) will appear in the generated documentation.
