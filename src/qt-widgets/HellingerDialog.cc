@@ -373,6 +373,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_hellinger_edit_point_dialog(0),
 	d_hellinger_new_point_dialog(0),
 	d_hellinger_edit_segment_dialog(0),
+	d_hellinger_new_segment_dialog(0),
 	d_hellinger_thread(0),
 	d_moving_plate_id(0),
 	d_fixed_plate_id(0),
@@ -404,6 +405,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_hellinger_edit_point_dialog = new HellingerEditPointDialog(this,d_hellinger_model,false,this);
 	d_hellinger_new_point_dialog = new HellingerEditPointDialog(this,d_hellinger_model,true /* create new point */,this);
 	d_hellinger_edit_segment_dialog = new HellingerEditSegmentDialog(this,d_hellinger_model);
+	d_hellinger_new_segment_dialog = new HellingerEditSegmentDialog(this,d_hellinger_model,true,this);
 
 	set_up_connections();
 
@@ -617,6 +619,11 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 
 	d_editing_layer_ptr->set_active(true);
 	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
+	qDebug() << "index: " << index;
+	if (!index.isValid())
+	{
+		return;
+	}
 	QString segment_string = tree_widget_picks->currentItem()->text(0);
 	int row = index.row();
 	int segment = segment_string.toInt();
@@ -926,12 +933,11 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_segment()
 	d_canvas_operation_type = NEW_SEGMENT_OPERATION;
 	update_buttons();
 
-	QScopedPointer<GPlatesQtWidgets::HellingerEditSegmentDialog> dialog(
-				new GPlatesQtWidgets::HellingerEditSegmentDialog(this,
-																d_hellinger_model,
-																true /*create new segment */));
+	// TODO: Here we should activate the relevant layers, once "new segment"
+	// functionality is working on the canvas.
 
-	dialog->exec();
+	d_hellinger_new_segment_dialog->show();
+	d_hellinger_new_segment_dialog->raise();
 }
 
 void
@@ -1775,6 +1781,7 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(d_hellinger_new_point_dialog,SIGNAL(update_editing()),this,SLOT(handle_update_point_editing()));
 
 	QObject::connect(d_hellinger_edit_segment_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
+	QObject::connect(d_hellinger_new_segment_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
 
 }
 

@@ -164,6 +164,8 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 					status_bar_callback,
 					view_state.get_rendered_geometry_collection(),
 					WORKFLOW_RENDER_LAYER,
+					//Note that this tool uses a stand-alone dialog rather than
+					//a task-panel widget.
 					viewport_window.dialogs().hellinger_dialog());
 	// For the globe view.
 	d_globe_fit_to_pole_tool.reset(

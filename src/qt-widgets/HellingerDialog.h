@@ -429,6 +429,7 @@ namespace GPlatesQtWidgets
 		HellingerEditPointDialog *d_hellinger_edit_point_dialog;
 		HellingerEditPointDialog *d_hellinger_new_point_dialog;
 		HellingerEditSegmentDialog *d_hellinger_edit_segment_dialog;
+		HellingerEditSegmentDialog *d_hellinger_new_segment_dialog;
 		HellingerThread *d_hellinger_thread;
 		QString d_path;
 		QString d_file_name;
