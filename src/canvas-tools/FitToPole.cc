@@ -60,7 +60,7 @@ GPlatesCanvasTools::FitToPole::handle_activation()
 void
 GPlatesCanvasTools::FitToPole::handle_deactivation()
 {
-
+	d_hellinger_dialog_ptr->close();
 }
 
 

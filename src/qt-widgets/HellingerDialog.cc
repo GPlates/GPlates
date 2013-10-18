@@ -422,6 +422,10 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	update_from_model();
 
+	// As we are moving towards canvas tool behaviour, the dialog will be
+	// closed by switching tool/workflow. Hide the "close" button for now.
+	button_close->hide();
+
 	// For eventual insertion of generated pole into the model.
 	groupbox_rotation->hide();
 
