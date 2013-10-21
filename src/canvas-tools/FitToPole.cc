@@ -133,7 +133,7 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 					finder.get_geometry();
 			if (pos)
 			{
-				qDebug() << "Found existing vertex";
+				//qDebug() << "Found existing vertex";
 				d_hellinger_dialog_ptr->set_feature_highlight(**pos);
 			}
 		}
@@ -151,13 +151,13 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 					proximity_criteria,
 					*d_hellinger_dialog_ptr->get_editing_layer()))
 		{
-			qDebug() << "moving over editable geom";
+			//qDebug() << "moving over editable geom";
 			d_mouse_is_over_editable_pick = true;
 			d_hellinger_dialog_ptr->set_enlarged_edit_geometry();
 		}
 		else
 		{
-			qDebug() << "not moving over editable geom";
+			//qDebug() << "not moving over editable geom";
 			d_mouse_is_over_editable_pick = false;
 			d_hellinger_dialog_ptr->set_enlarged_edit_geometry(false);
 		}
@@ -223,7 +223,7 @@ GPlatesCanvasTools::FitToPole::handle_shift_left_click(
 					GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER,
 					proximity_criteria))
 		{
-			qDebug() << "Hit a feature geometry";
+			//qDebug() << "Hit a feature geometry";
 			GPlatesViewOperations::RenderedGeometryProximityHit hit = sorted_hits.front();
 
 			// TODO: I think the vertex index is stored in the hit's "ProximityHitDetail"; probably
@@ -238,7 +238,7 @@ GPlatesCanvasTools::FitToPole::handle_shift_left_click(
 					finder.get_geometry();
 			if (pos)
 			{
-				qDebug() << "Found vertex";
+				//qDebug() << "Found vertex";
 				d_hellinger_dialog_ptr->update_edit_layer(**pos);
 			}
 		}

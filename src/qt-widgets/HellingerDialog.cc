@@ -104,8 +104,6 @@ namespace{
 	bool
 	edit_operation_active(const GPlatesQtWidgets::CanvasOperationType &type)
 	{
-		bool result = type != GPlatesQtWidgets::SELECT_OPERATION;
-		qDebug() << "edit operation active: " << result;
 		return type != GPlatesQtWidgets::SELECT_OPERATION;
 	}
 
@@ -392,11 +390,11 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	// Look in system-specific locations for supplied sample scripts, site-specific scripts, etc.
 	// The default location will be platform-dependent and is currently set up in UserPreferences.cc.
-	//d_python_path = d_view_state.get_application_state().get_user_preferences().get_value("paths/python_system_script_dir").toString();
+	d_python_path = d_view_state.get_application_state().get_user_preferences().get_value("paths/python_system_script_dir").toString();
 	// d_python_path = "scripts";
 
 	// Temporary path during development
-	d_python_path = "/home/robin/Desktop/Hellinger/scripts";
+	//d_python_path = "/home/robin/Desktop/Hellinger/scripts";
 
 	qDebug() << "python path: " << d_python_path;
 
@@ -513,7 +511,6 @@ void GPlatesQtWidgets::HellingerDialog::handle_cancel()
 
 void GPlatesQtWidgets::HellingerDialog::handle_finished_editing()
 {
-	qDebug() << "finished_editing";
 	d_canvas_operation_type = SELECT_OPERATION;
 	update_buttons();
 	d_editing_layer_ptr->clear_rendered_geometries();
@@ -534,7 +531,6 @@ void GPlatesQtWidgets::HellingerDialog::handle_update_point_editing()
 	}
 	else if (is_in_new_point_state())
 	{
-		qDebug() << "Adding new point to layer";
 		add_pick_geometry_to_layer(
 				d_hellinger_new_point_dialog->current_pick(),
 				d_editing_layer_ptr,
@@ -587,14 +583,9 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 	int segment = tree_widget_picks->currentItem()->text(0).toInt();
 	int row = index.row();
 
-	qDebug() << "previous state: " << 	d_hellinger_model->get_pick_state(segment, row);
 	bool new_enabled_state = !d_hellinger_model->get_pick_state(segment, row);
 
-	qDebug() << "new enabled state: " << new_enabled_state;
-
 	d_hellinger_model->set_pick_state(segment,row,new_enabled_state);
-	qDebug() << "model state now set.";
-	qDebug() << "Model state is: " << d_hellinger_model->get_pick_state(segment, row);
 
 	set_buttons_for_pick_selected(new_enabled_state);
 
@@ -609,7 +600,6 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 
 	d_editing_layer_ptr->set_active(true);
 	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
-	qDebug() << "index: " << index;
 	if (!index.isValid())
 	{
 		return;
@@ -1061,13 +1051,13 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 void
 GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 {
-	qDebug() << "Thread finished" << "type" << d_thread_type;
+	//qDebug() << "Thread finished" << "type" << d_thread_type;
 	progress_bar->setEnabled(false);
 	progress_bar->setMaximum(1.);
 	if (d_thread_type == POLE_THREAD_TYPE)
 	{
 		QString path = d_python_path + TEMP_RESULT_FILENAME;
-		qDebug() << "Result file path: " << path;
+		//qDebug() << "Result file path: " << path;
 		QFile data_file(path);
 		if (data_file.open(QFile::ReadOnly))
 		{
@@ -1077,7 +1067,6 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 			d_hellinger_model->set_fit(fields);
 			data_file.close();
 			update_result();
-			qDebug() << "updated result";
 			button_stats->setEnabled(true);
 			button_details->setEnabled(true);
 		}
@@ -1163,7 +1152,7 @@ GPlatesQtWidgets::HellingerDialog::update_result()
 	boost::optional<GPlatesQtWidgets::HellingerFitStructure> data_fit_struct = d_hellinger_model->get_fit();
 	if (data_fit_struct)
 	{
-		qDebug() << "Drawing pole at " << data_fit_struct.get().d_lat << ", " << data_fit_struct.get().d_lon;
+		//qDebug() << "Drawing pole at " << data_fit_struct.get().d_lat << ", " << data_fit_struct.get().d_lon;
 		spinbox_result_lat->setValue(data_fit_struct.get().d_lat);
 		spinbox_result_lon->setValue(data_fit_struct.get().d_lon);
 		spinbox_result_angle->setValue(data_fit_struct.get().d_angle);
@@ -1255,7 +1244,6 @@ GPlatesQtWidgets::HellingerDialog::handle_close()
 void
 GPlatesQtWidgets::HellingerDialog::update_canvas()
 {
-	qDebug() << "update_canvas";
 	clear_rendered_geometries();
 	draw_picks();
 	update_result();
@@ -1278,7 +1266,6 @@ GPlatesQtWidgets::HellingerDialog::update_edit_layer(
 	}
 	if (is_in_new_point_state())
 	{
-		qDebug() << "HD::UEL new_point_state";
 		d_hellinger_new_point_dialog->update_pick_coords(llp);
 	}
 
