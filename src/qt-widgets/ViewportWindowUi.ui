@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>780</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -199,7 +199,6 @@
     <addaction name="action_Finite_Rotation_Calculator"/>
     <addaction name="separator"/>
     <addaction name="action_Open_Python_Console"/>
-    <addaction name="action_Open_Hellinger_Fitting_Tool"/>
    </widget>
    <widget class="QMenu" name="menu_Window">
     <property name="title">
