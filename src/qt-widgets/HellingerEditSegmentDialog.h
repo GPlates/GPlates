@@ -120,6 +120,9 @@ namespace GPlatesQtWidgets
 				const hellinger_model_const_range_type &picks,
 				const int &segment_number);
 
+		void
+		initialise();
+
 		boost::optional<GPlatesQtWidgets::HellingerPick>
 		current_pick() const;
 

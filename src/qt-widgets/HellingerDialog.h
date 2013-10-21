@@ -395,6 +395,13 @@ namespace GPlatesQtWidgets
 				bool state_is_active);
 
 		void
+		set_buttons_for_child_dialog_open();
+
+		void
+		update_enable_disable_buttons();
+
+
+		void
 		update_hovered_item(
 				boost::optional<QTreeWidgetItem*> item = boost::none,
 				bool current_state = true);

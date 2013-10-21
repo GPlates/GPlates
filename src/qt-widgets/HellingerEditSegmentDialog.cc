@@ -174,6 +174,13 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::initialise_with_segment(
 	fill_widgets();
 }
 
+void GPlatesQtWidgets::HellingerEditSegmentDialog::initialise()
+{
+	d_table_model->setRowCount(1);
+
+	set_initial_row_values(0);
+}
+
 boost::optional<GPlatesQtWidgets::HellingerPick>
 GPlatesQtWidgets::HellingerEditSegmentDialog::current_pick() const
 {
@@ -495,7 +502,10 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::set_initial_row_values(const 
 	QModelIndex index_move_fix = d_table_model->index(row, COLUMN_MOVING_FIXED);
 	d_table_model->setData(index_move_fix, 1);
 
-	for (int col = 1; col < NUM_COLUMNS; ++col)
+	QModelIndex index_enabled = d_table_model->index(row, COLUMN_ENABLED);
+	d_table_model->setData(index_enabled, true);
+
+	for (int col = 1; col < NUM_COLUMNS-1; ++col)
 	{
 		QModelIndex index = d_table_model->index(row, col);
 		d_table_model->setData(index, 0.00);
