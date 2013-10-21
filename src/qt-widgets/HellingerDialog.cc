@@ -593,6 +593,10 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 {
 
 	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
+	if (!index.isValid())
+	{
+		return;
+	}
 	int segment = tree_widget_picks->currentItem()->text(0).toInt();
 	int row = index.row();
 
@@ -686,6 +690,10 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_pick()
 	else
 	{
 		const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
+		if (!index.isValid())
+		{
+			return;
+		}
 		QString segment = tree_widget_picks->currentItem()->text(0);
 		int row = index.row();
 		int segment_int = segment.toInt();
