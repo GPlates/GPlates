@@ -5,7 +5,7 @@
  * File specific comments.
  *
  * Most recent change:
- *   $Date: 2010-08-23 05:33:53 +0200 (ma, 23 aug 2010) $
+ *   $Date$
  * 
  * Copyright (C) 2010, 2011 Geological Survey of Norway
  *
