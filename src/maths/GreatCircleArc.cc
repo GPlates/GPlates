@@ -455,6 +455,134 @@ GPlatesMaths::arcs_are_near_each_other(
 }
 
 
+boost::optional<GPlatesMaths::PointOnSphere>
+GPlatesMaths::arcs_intersect_each_other(
+		const GreatCircleArc &arc1,
+		const GreatCircleArc &arc2)
+{
+	// Test most common case first (both arcs are not zero length).
+	if (!arc1.is_zero_length() && !arc2.is_zero_length())
+	{
+		const Vector3D cross_arc_rotation_axes = cross(arc1.rotation_axis(), arc2.rotation_axis());
+
+		const real_t arc1_length = dot(arc1.start_point().position_vector(), arc1.end_point().position_vector());
+		const real_t arc2_length = dot(arc2.start_point().position_vector(), arc2.end_point().position_vector());
+
+		// If both arcs are *not* on the same great circle - this is the most common case.
+		if (cross_arc_rotation_axes.magSqrd() > 0)
+		{
+			const UnitVector3D normalised_cross_arc_rotation_axes = cross_arc_rotation_axes.get_normalisation();
+
+			const real_t arc1_start_distance =
+					dot(arc1.start_point().position_vector(), normalised_cross_arc_rotation_axes);
+			const real_t arc1_end_distance =
+					dot(arc1.end_point().position_vector(), normalised_cross_arc_rotation_axes);
+			const real_t arc2_start_distance =
+					dot(arc2.start_point().position_vector(), normalised_cross_arc_rotation_axes);
+			const real_t arc2_end_distance =
+					dot(arc2.end_point().position_vector(), normalised_cross_arc_rotation_axes);
+
+			// Normalised cross product of arc rotation axes lies on the *great circles* of both arcs.
+			// See if also lies within both *arcs*.
+			if (arc1_start_distance.is_precisely_greater_than(arc1_length.dval()) &&
+				arc1_end_distance.is_precisely_greater_than(arc1_length.dval()) &&
+				arc2_start_distance.is_precisely_greater_than(arc2_length.dval()) &&
+				arc2_end_distance.is_precisely_greater_than(arc2_length.dval()))
+			{
+				return PointOnSphere(normalised_cross_arc_rotation_axes);
+			}
+
+			// Test the antipodal of the normalised cross product of arc rotation axes.
+			// This just amounts to a negation which can be done by inverting the comparison.
+			if (arc1_start_distance.is_precisely_less_than(arc1_length.dval()) &&
+				arc1_end_distance.is_precisely_less_than(arc1_length.dval()) &&
+				arc2_start_distance.is_precisely_less_than(arc2_length.dval()) &&
+				arc2_end_distance.is_precisely_less_than(arc2_length.dval()))
+			{
+				return PointOnSphere(-normalised_cross_arc_rotation_axes);
+			}
+
+			// No intersection found.
+			return boost::none;
+		}
+
+		// Both arcs are on the same great circle since have same (or opposite) rotation axis...
+
+		// See if arc1's start point is on arc2.
+		if (dot(arc2.start_point().position_vector(), arc1.start_point().position_vector())
+				.is_precisely_greater_than(arc2_length.dval()) &&
+			dot(arc2.end_point().position_vector(), arc1.start_point().position_vector())
+				.is_precisely_greater_than(arc2_length.dval()))
+		{
+			return arc1.start_point();
+		}
+
+		// See if arc1's end point is on arc2.
+		if (dot(arc2.start_point().position_vector(), arc1.end_point().position_vector())
+				.is_precisely_greater_than(arc2_length.dval()) &&
+			dot(arc2.end_point().position_vector(), arc1.end_point().position_vector())
+				.is_precisely_greater_than(arc2_length.dval()))
+		{
+			return arc1.end_point();
+		}
+
+		// See if arc2's start point is on arc1.
+		if (dot(arc1.start_point().position_vector(), arc2.start_point().position_vector())
+				.is_precisely_greater_than(arc1_length.dval()) &&
+			dot(arc1.end_point().position_vector(), arc2.start_point().position_vector())
+				.is_precisely_greater_than(arc1_length.dval()))
+		{
+			return arc2.start_point();
+		}
+
+		// See if arc2's end point is on arc1.
+		if (dot(arc1.start_point().position_vector(), arc2.end_point().position_vector())
+				.is_precisely_greater_than(arc1_length.dval()) &&
+			dot(arc1.end_point().position_vector(), arc2.end_point().position_vector())
+				.is_precisely_greater_than(arc1_length.dval()))
+		{
+			return arc2.end_point();
+		}
+
+		// No overlap found.
+		return boost::none;
+	}
+
+	// If both arcs are zero length...
+	if (arc1.is_zero_length() && arc2.is_zero_length())
+	{
+		if (arc1.start_point() == arc2.start_point())
+		{
+			return arc1.start_point();
+		}
+
+		// No intersection found.
+		return boost::none;
+	}
+
+	// If only arc1 is zero length...
+	if (arc1.is_zero_length())
+	{
+		if (arc1.start_point().lies_on_gca(arc2))
+		{
+			return arc1.start_point();
+		}
+
+		// No intersection found.
+		return boost::none;
+	}
+
+	// else only arc2 is zero length...
+	if (arc2.start_point().lies_on_gca(arc1))
+	{
+		return arc2.start_point();
+	}
+
+	// No intersection found.
+	return boost::none;
+}
+
+
 bool
 GPlatesMaths::arcs_lie_on_same_great_circle(
 		const GreatCircleArc &arc1,

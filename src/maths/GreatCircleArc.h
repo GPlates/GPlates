@@ -339,6 +339,19 @@ namespace GPlatesMaths
 
 
 	/**
+	 * Determine whether the two great-circle arcs @a arc1 and @a arc2 intersect each other.
+	 *
+	 * Returns the intersection point if the arcs intersected.
+	 * If both arcs lie on the same great circle, and they overlap each other, then the returned
+	 * intersection point will be an arbitrary arc end point of one of the arcs.
+	 */
+	boost::optional<GPlatesMaths::PointOnSphere>
+	arcs_intersect_each_other(
+			const GreatCircleArc &arc1,
+			const GreatCircleArc &arc2);
+
+
+	/**
 	 * Determine whether the two great-circle arcs @a arc1 and @a arc2 lie on the same
 	 * great-circle.  This test ignores the directedness of the arcs.
 	 *

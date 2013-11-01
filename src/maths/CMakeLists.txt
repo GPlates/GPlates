@@ -111,7 +111,6 @@ set(srcs
     SphereSettings.h
     SphericalArea.cc
     SphericalArea.h
-    SphericalCollection.h
     SphericalDistance.cc
     SphericalDistance.h
     TrailingLatLonCoordinateException.cc

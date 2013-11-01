@@ -70,7 +70,8 @@ GPlatesDataMining::DataSelector::select(
 {
 	if (!is_config_table_valid(target_layer_proxies))
 	{
-		qWarning() << "Co-registration configuration table invalid - skipping.";
+		qWarning() << "Co-registration configuration table references target layers that are currently disabled "
+				"or not connected to his co-registration layer - skipping co-registration altogether.";
 		return;
 	}
 		
@@ -97,7 +98,7 @@ GPlatesDataMining::DataSelector::select(
 	// Handle the configuration rows that co-register target *rasters*.
 	//
 
-	// If the necessary OpenGL extensions for raster co-registration are available the co-register,
+	// If the necessary OpenGL extensions for raster co-registration are available then co-register,
 	// otherwise leave the result data table entries are they are.
 	if (co_register_rasters)
 	{
