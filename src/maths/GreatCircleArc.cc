@@ -253,8 +253,7 @@ GPlatesMaths::GreatCircleArc::rotation_axis() const
 bool
 GPlatesMaths::GreatCircleArc::is_close_to(
 		const PointOnSphere &test_point,
-		const real_t &closeness_inclusion_threshold,
-		const real_t &latitude_exclusion_threshold,
+		const AngularExtent &closeness_angular_extent_threshold,
 		real_t &closeness) const
 {
 	/*
@@ -269,12 +268,21 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 	if ( ! is_zero_length()) {
 		// The arc has a determinate rotation axis.
 
-		if( is_strictly_positive(closeness_inclusion_threshold) )
+		if( is_strictly_positive(closeness_angular_extent_threshold.get_cosine()) )
 		{
 			real_t closeness_to_poles = abs(dot(test_point.position_vector(), rotation_axis()));
 
 			// This first if-statement should weed out most of the no-hopers.
-			if (closeness_to_poles.is_precisely_greater_than(latitude_exclusion_threshold.dval())) 
+			//
+			// This is designed to enable a quick elimination of "no-hopers" (test-points
+			// which can easily be determined to have no chance of being
+			// "close"), leaving only plausible test-points to proceed to
+			// the more expensive proximity tests.  If you imagine a
+			// line-segment of this polyline as an arc along the equator,
+			// then there will be a threshold latitude above and below the
+			// equator, beyond which there is no chance of a test-point
+			// being "close" to that segment.
+			if (closeness_to_poles.is_precisely_greater_than(closeness_angular_extent_threshold.get_sine())) 
 			{
 
 				/*
@@ -291,12 +299,12 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 		calculate_closest_feature(
 				*this, test_point, closest_point_on_great_circle_arc, closeness);
 		
-		return closeness.is_precisely_greater_than(closeness_inclusion_threshold.dval());
+		return closeness.is_precisely_greater_than(closeness_angular_extent_threshold.get_cosine());
 		
 	}
 
 	// The arc is point-like.
-	return start_point().is_close_to(test_point, closeness_inclusion_threshold, closeness);
+	return start_point().is_close_to(test_point, closeness_angular_extent_threshold.get_cosine(), closeness);
 }
 
 GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type

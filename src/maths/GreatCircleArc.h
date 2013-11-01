@@ -35,6 +35,7 @@
 #include <boost/optional.hpp>  /* boost::optional */
 #include <boost/none.hpp>  /* boost::none */
 
+#include "AngularExtent.h"
 #include "PointOnSphere.h"
 
 #include "global/PointerTraits.h"
@@ -171,21 +172,15 @@ namespace GPlatesMaths
 		/**
 		 * Evaluate whether @a test_point is "close" to this arc.
 		 *
-		 * The measure of what is "close" is provided by
-		 * @a closeness_inclusion_threshold.
+		 * The measure of what is "close" is provided by @a closeness_angular_extent_threshold.
 		 *
 		 * If @a test_point is "close", the function will calculate
-		 * exactly @em how close, and store that value in
-		 * @a closeness.
-		 *
-		 * For more information, read the comment before
-		 * @a GPlatesState::Layout::find_close_data.
+		 * exactly @em how close, and store that value in @a closeness.
 		 */
 		bool
 		is_close_to(
 				const PointOnSphere &test_point,
-				const real_t &closeness_inclusion_threshold,
-				const real_t &latitude_exclusion_threshold,
+				const AngularExtent &closeness_angular_extent_threshold,
 				real_t &closeness) const;
 
 		/**

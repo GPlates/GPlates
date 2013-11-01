@@ -1690,25 +1690,21 @@ GPlatesAppLogic::TopologyInternalUtils::find_closest_intersected_segment_to_refe
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_intersected_segment)
 {
 	// Setup up proximity test parameters.
-	static GPlatesMaths::real_t closeness_inclusion_threshold = 0.9;
-	static const GPlatesMaths::real_t cit_sqrd =
-		closeness_inclusion_threshold * closeness_inclusion_threshold;
-	static const GPlatesMaths::real_t latitude_exclusion_threshold = sqrt(1.0 - cit_sqrd);
+	static GPlatesMaths::AngularExtent closeness_angular_extent_threshold =
+			GPlatesMaths::AngularExtent::create_from_cosine(0.9);
 
 	// Determine closeness to first intersected segment.
 	GPlatesMaths::real_t closeness_first_segment = -1/*least close*/;
 	const bool is_reference_point_close_to_first_segment = first_intersected_segment->is_close_to(
 		section_reference_point,
-		closeness_inclusion_threshold,
-		latitude_exclusion_threshold,
+		closeness_angular_extent_threshold,
 		closeness_first_segment);
 
 	// Determine closeness to second intersected segment.
 	GPlatesMaths::real_t closeness_second_segment = -1/*least close*/;
 	const bool is_reference_point_close_to_second_segment = second_intersected_segment->is_close_to(
 		section_reference_point,
-		closeness_inclusion_threshold,
-		latitude_exclusion_threshold,
+		closeness_angular_extent_threshold,
 		closeness_second_segment);
 
 	// Make sure that the reference point is close to one of the segments.

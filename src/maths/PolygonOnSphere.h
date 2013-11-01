@@ -563,32 +563,15 @@ namespace GPlatesMaths
 		 * Note: This function currently only tests whether
 		 * @a test_point is "close" to the polygon @em boundary.
 		 *
-		 * The measure of what is "close" is provided by
-		 * @a closeness_inclusion_threshold.
+		 * The measure of what is "close" is provided by @a closeness_angular_extent_threshold.
 		 *
 		 * If @a test_point is "close", the function will calculate
 		 * exactly @em how close, and store that value in @a closeness.
-		 *
-		 * The value of @a latitude_exclusion_threshold should be equal
-		 * to \f$\sqrt{1 - {t_c}^2}\f$ (where \f$t_c\f$ is the
-		 * closeness inclusion threshold).  This parameter is designed
-		 * to enable a quick elimination of "no-hopers" (test-points
-		 * which can easily be determined to have no chance of being
-		 * "close"), leaving only plausible test-points to proceed to
-		 * the more expensive proximity tests.  If you imagine a
-		 * line-segment of this polygon as an arc along the equator,
-		 * then there will be a threshold latitude above and below the
-		 * equator, beyond which there is no chance of a test-point
-		 * being "close" to that segment.
-		 *
-		 * For more information, read the comment before
-		 * @a GPlatesGui::ProximityTests::find_close_rfgs.
 		 */
 		bool
 		is_close_to(
 				const PointOnSphere &test_point,
-				const real_t &closeness_inclusion_threshold,
-				const real_t &latitude_exclusion_threshold,
+				const AngularExtent &closeness_angular_extent_threshold,
 				real_t &closeness) const;
 
 

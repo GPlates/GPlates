@@ -129,8 +129,7 @@ GPlatesMaths::PolylineOnSphere::test_proximity(
 	// a segment was hit).
 
 	real_t closeness;  // Don't bother initialising this.
-	if (this->is_close_to(criteria.test_point(), criteria.closeness_inclusion_threshold(),
-			criteria.latitude_exclusion_threshold(), closeness)) {
+	if (this->is_close_to(criteria.test_point(), criteria.closeness_angular_extent_threshold(), closeness)) {
 		// OK, this polyline is close to the test point.
 		return make_maybe_null_ptr(PolylineProximityHitDetail::create(
 				this->get_non_null_pointer(),
@@ -193,37 +192,9 @@ GPlatesMaths::PolylineOnSphere::accept_visitor(
 bool
 GPlatesMaths::PolylineOnSphere::is_close_to(
 		const PointOnSphere &test_point,
-		const real_t &closeness_inclusion_threshold,
-		const real_t &latitude_exclusion_threshold,
+		const AngularExtent &closeness_angular_extent_threshold,
 		real_t &closeness) const
 {
-	// First, ensure the parameters are valid.
-	if (((closeness_inclusion_threshold * closeness_inclusion_threshold) +
-			(latitude_exclusion_threshold * latitude_exclusion_threshold))
-			!= 1.0)
-	{
-		/*
-		 * Well, *duh*, they *should* equal 1.0: those two thresholds
-		 * are supposed to form the non-hypotenuse legs (the "catheti")
-		 * of a right-angled triangle inscribed in a unit circle.
-		 */
-		real_t calculated_hypotenuse =
-				closeness_inclusion_threshold * closeness_inclusion_threshold +
-				latitude_exclusion_threshold * latitude_exclusion_threshold;
-
-		std::ostringstream oss;
-		oss << "The squares of the closeness inclusion threshold ("
-				<< HighPrecision< real_t >(closeness_inclusion_threshold)
-				<< ")\nand the latitude exclusion threshold ("
-				<< HighPrecision< real_t >(latitude_exclusion_threshold)
-				<< ") sum to ("
-				<< HighPrecision< real_t >(calculated_hypotenuse)
-				<< ")\nrather than the expected value of 1.";
-
-		throw GPlatesGlobal::InvalidParametersException(GPLATES_EXCEPTION_SOURCE,
-				oss.str().c_str());
-	}
-
 	real_t &closest_closeness_so_far = closeness;  // A descriptive alias.
 	bool have_already_found_a_close_gca = false;
 
@@ -234,9 +205,7 @@ GPlatesMaths::PolylineOnSphere::is_close_to(
 		// Don't bother initialising this.
 		real_t gca_closeness;
 
-		if (the_gca.is_close_to(test_point,
-				closeness_inclusion_threshold,
-				latitude_exclusion_threshold, gca_closeness))
+		if (the_gca.is_close_to(test_point, closeness_angular_extent_threshold, gca_closeness))
 		{
 			if (have_already_found_a_close_gca) {
 				if (gca_closeness.is_precisely_greater_than(

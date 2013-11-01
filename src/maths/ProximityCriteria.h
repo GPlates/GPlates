@@ -28,6 +28,7 @@
 #ifndef GPLATES_MATHS_PROXIMITYCRITERIA_H
 #define GPLATES_MATHS_PROXIMITYCRITERIA_H
 
+#include "AngularExtent.h"
 #include "PointOnSphere.h"
 
 
@@ -52,19 +53,28 @@ namespace GPlatesMaths
 		const double &
 		closeness_inclusion_threshold() const
 		{
-			return d_closeness_inclusion_threshold;
+			return d_closeness_angular_extent_threshold.get_cosine();
 		}
 
 		const double &
 		latitude_exclusion_threshold() const
 		{
-			return d_latitude_exclusion_threshold;
+			return d_closeness_angular_extent_threshold.get_sine();
+		}
+
+		/**
+		 * Get the closeness inclusion threshold (cosine) and latitude exclusion threshold (sine)
+		 * in one angular extent object.
+		 */
+		const AngularExtent &
+		closeness_angular_extent_threshold() const
+		{
+			return d_closeness_angular_extent_threshold;
 		}
 
 	private:
 		PointOnSphere d_test_point;
-		double d_closeness_inclusion_threshold;
-		double d_latitude_exclusion_threshold;
+		AngularExtent d_closeness_angular_extent_threshold;
 	};
 
 }

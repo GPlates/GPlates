@@ -1372,12 +1372,11 @@ GPlatesOpenGL::GLRasterCoRegistration::create_reconstructed_seed_geometries_spat
 							seed_geometries_spatial_partition_depth);
 
 	// Each operation specifies a region-of-interest radius so convert this to a bounding circle expansion.
-	std::vector<seed_geometries_spatial_partition_type::BoundingCircleExtent> operation_regions_of_interest;
+	std::vector<GPlatesMaths::AngularExtent> operation_regions_of_interest;
 	BOOST_FOREACH(const Operation &operation, operations)
 	{
 		operation_regions_of_interest.push_back(
-				seed_geometries_spatial_partition_type::BoundingCircleExtent(
-						std::cos(operation.d_region_of_interest_radius)/*cosine_extend_angle_*/));
+			GPlatesMaths::AngularExtent::create_from_angle(operation.d_region_of_interest_radius));
 	}
 
 	// Add the seed feature geometries to the spatial partition.
