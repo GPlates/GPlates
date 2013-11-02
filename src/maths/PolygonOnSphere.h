@@ -692,8 +692,8 @@ namespace GPlatesMaths
 		 * @a is_point_in_polygon or if you increase the speed.
 		 *
 		 * You can increase the speed but you cannot reduce it - this is because it takes
-		 * longer to set up for the higher speed tests and reduces back to lower speeds
-		 * effectively removes the advantages gained.
+		 * longer to set up for the higher speed tests and reducing back to lower speeds
+		 * would effectively remove any advantages gained.
 		 */
 		PointInPolygon::Result
 		is_point_in_polygon(

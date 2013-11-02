@@ -27,6 +27,7 @@
 
 #include <ostream>
 #include <sstream>
+#include <boost/utility/in_place_factory.hpp>
 
 #include "Centroid.h"
 #include "ConstGeometryOnSphereVisitor.h"
@@ -283,16 +284,7 @@ GPlatesMaths::PolygonOnSphere::get_centroid() const
 	// Calculate the centroid if it's not cached.
 	if (!d_cached_calculations->centroid)
 	{
-		// The centroid is also the bounding small circle centre so see if that's been generated.
-		if (d_cached_calculations->inner_outer_bounding_small_circle)
-		{
-			d_cached_calculations->centroid =
-					d_cached_calculations->inner_outer_bounding_small_circle->get_centre();
-		}
-		else
-		{
-			d_cached_calculations->centroid = Centroid::calculate_points_centroid(*this);
-		}
+		d_cached_calculations->centroid = Centroid::calculate_centroid(*this);
 	}
 
 	return d_cached_calculations->centroid.get();
@@ -403,7 +395,7 @@ GPlatesMaths::PolygonOnSphere::is_point_in_polygon(
 	}
 
 	// The low speed test doesn't require any cached structures - it's just a function call.
-	// Note that if the caller requests a low speed test but we have cache a medium or high
+	// Note that if the caller requests a low speed test but we have cached a medium or high
 	// speed test then we'll use the latter since it's already there and it's faster.
 	if (d_cached_calculations->point_in_polygon_speed_and_memory == LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE)
 	{

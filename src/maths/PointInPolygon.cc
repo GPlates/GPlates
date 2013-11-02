@@ -91,20 +91,13 @@ namespace GPlatesMaths
 			const PolygonOnSphere::vertex_const_iterator vertex_end = polygon.vertex_end();
 			for ( ; vertex_iter != vertex_end; ++vertex_iter)
 			{
-				const boost::optional<GPlatesMaths::UnitVector3D> centroid =
+				const GPlatesMaths::UnitVector3D centroid =
 						Centroid::calculate_centroid(
 								polygon,
 								0.3/*polygon forms cone of roughly 145 degrees*/);
 
-				if (!centroid)
-				{
-					// FIXME: Either all point-in-polygon tests will be wrong or they
-					// will all be right and either way is equally likely at this point.
-					return UnitVector3D(0, 0, 1);
-				}
-
 				// Return the centroid.
-				return centroid.get();
+				return centroid;
 			}
 
 			// Return the centroid.
