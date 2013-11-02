@@ -31,6 +31,8 @@ set(srcs
     DateLineWrapper.h
     EllipseGenerator.cc
     EllipseGenerator.h
+    FastMaths.cc
+    FastMaths.h
     FiniteRotation.cc
     FiniteRotation.h
     FiniteRotationSnapshotTable.h
