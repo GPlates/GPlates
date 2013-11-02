@@ -128,11 +128,17 @@ namespace GPlatesMaths
 	{
 	public:
 		/**
-		 * Use @a BoundingSmallCircleBuilder to construct this.
+		 * Ideally use @a BoundingSmallCircleBuilder to construct this.
+		 *
+		 * @a cosine_colatitude is the cosine of the "colatitude" of the small circle around the
+		 * "North Pole" of its axis (from the small circle centre to the
+		 * boundary of the small circle - the radius angle).
+		 * This is also the minimum dot product of any geometry, bounded by this small circle,
+		 * with the small circle centre.
 		 */
 		BoundingSmallCircle(
 				const UnitVector3D &small_circle_centre,
-				const double &min_dot_product);
+				const double &cosine_colatitude);
 
 
 		/**
@@ -275,6 +281,7 @@ namespace GPlatesMaths
 			// avoid recalculating every time it's queried.
 			if (!d_magnitude_boundary_cross_product)
 			{
+				// For 0 <= theta <= PI; sin(theta) = sqrt[1 - cos(theta)^2]
 				const double cosine_square = d_min_dot_product * d_min_dot_product;
 				if (cosine_square < 1)
 				{
@@ -325,7 +332,7 @@ namespace GPlatesMaths
 		 */
 		BoundingSmallCircle(
 				const UnitVector3D &small_circle_centre,
-				const double &min_dot_product,
+				const double &cosine_colatitude,
 				const boost::optional<double> &magnitude_boundary_cross_product);
 
 		friend class InnerOuterBoundingSmallCircle;
@@ -351,6 +358,18 @@ namespace GPlatesMaths
 	operator*(
 			const Rotation &rotation,
 			const BoundingSmallCircle &bounding_small_circle);
+
+
+	/**
+	 * Creates the optimal small circle that bounds the two specified bounding small circles.
+	 *
+	 * Returns the tightest fitting bounding small circle.
+	 * This is useful when building a bounding binary tree in a bottom-up fashion (from leaves to root).
+	 */
+	BoundingSmallCircle
+	create_optimal_bounding_small_circle(
+			const BoundingSmallCircle &bounding_small_circle_1,
+			const BoundingSmallCircle &bounding_small_circle_2);
 
 
 	namespace SmallCircleBoundsImpl
@@ -500,11 +519,17 @@ namespace GPlatesMaths
 	public:
 		/**
 		 * Use @a InnerOuterBoundingSmallCircleBuilder to construct this.
+		 *
+		 * @a outer_cosine_colatitude and @a inner_cosine_colatitude are cosines of the "colatitude"
+		 * of the small circles around the "North Pole" of its axis to the inner and outer bounds
+		 * of this small circle.
+		 * These are also the minimum and maximum dot products of any geometry, bounded by these
+		 * small circles, with the small circle(s) common centre.
 		 */
 		InnerOuterBoundingSmallCircle(
 				const UnitVector3D &small_circle_centre,
-				const double &min_dot_product,
-				const double &max_dot_product);
+				const double &outer_cosine_colatitude,
+				const double &inner_cosine_colatitude);
 
 		/**
 		 * The result of testing a primitive against the bounding region
@@ -642,6 +667,7 @@ namespace GPlatesMaths
 			// avoid recalculating every time it's queried.
 			if (!d_magnitude_inner_boundary_cross_product)
 			{
+				// For 0 <= theta <= PI; sin(theta) = sqrt[1 - cos(theta)^2]
 				const double cosine_square = d_max_dot_product * d_max_dot_product;
 				if (cosine_square < 1)
 				{

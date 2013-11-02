@@ -36,22 +36,24 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "utils/Profile.h"
+
 
 GPlatesMaths::BoundingSmallCircle::BoundingSmallCircle(
 		const UnitVector3D &small_circle_centre,
-		const double &min_dot_product) :
+		const double &cosine_colatitude) :
 	d_small_circle_centre(small_circle_centre),
-	d_min_dot_product(min_dot_product)
+	d_min_dot_product(cosine_colatitude)
 {
 }
 
 
 GPlatesMaths::BoundingSmallCircle::BoundingSmallCircle(
 		const UnitVector3D &small_circle_centre,
-		const double &min_dot_product,
+		const double &cosine_colatitude,
 		const boost::optional<double> &magnitude_boundary_cross_product) :
 	d_small_circle_centre(small_circle_centre),
-	d_min_dot_product(min_dot_product),
+	d_min_dot_product(cosine_colatitude),
 	d_magnitude_boundary_cross_product(magnitude_boundary_cross_product)
 {
 }
@@ -277,6 +279,132 @@ GPlatesMaths::operator*(
 }
 
 
+GPlatesMaths::BoundingSmallCircle
+GPlatesMaths::create_optimal_bounding_small_circle(
+		const BoundingSmallCircle &bounding_small_circle_1,
+		const BoundingSmallCircle &bounding_small_circle_2)
+{
+	PROFILE_FUNC();
+
+	//
+	// NOTE: We don't optimise away 'acos' in this function (using cosine and sine) because
+	// it's a bit difficult since it involves (see below) half angle trigonometric identities
+	// and clamping the final small circle bounds angle to PI.
+	//
+
+	const double angle_between_centres = acos(dot(
+			bounding_small_circle_1.get_centre(),
+			bounding_small_circle_2.get_centre())).dval();
+
+	// We could cache the results of 'acos' angle with each bounding small circle but this
+	// function is only really needed when building a bounding small circle binary tree
+	// (in a bottom-up fashion) in which case the 'acos' angle is only queried once per
+	// bounding small circle so there's currently no real need to cache it.
+	const double angle_bounding_small_circle_1 =
+			std::acos(bounding_small_circle_1.get_small_circle_boundary_cosine());
+	const double angle_bounding_small_circle_2 =
+			std::acos(bounding_small_circle_2.get_small_circle_boundary_cosine());
+
+	// If the second small circle is inside the first small circle then the optimal bounding
+	// small circle is just the first small circle.
+	//
+	// bounding_angle = angle_between_centres + small_circle_2_bounding_angle
+	if (angle_between_centres + angle_bounding_small_circle_2 <= angle_bounding_small_circle_1)
+	{
+		return bounding_small_circle_1;
+	}
+
+	// If the first small circle is inside the second small circle then the optimal bounding
+	// small circle is just the second small circle.
+	//
+	// bounding_angle = angle_between_centres + small_circle_1_bounding_angle
+	if (angle_between_centres + angle_bounding_small_circle_1 <= angle_bounding_small_circle_2)
+	{
+		return bounding_small_circle_2;
+	}
+
+	//
+	// Neither small circle is bounded by the other so we need to find the optimal centre and radius
+	// for the new bounding small circle.
+	//
+
+	//
+	// The bounding small circle centre is on the great circle arc whose end points are the two
+	// small circle centres (C1 and C2).
+	//
+	// If that great circle arc spans an angle of A (from globe centre) then the total angle that
+	// includes that great circle arc *and* both small circles is...
+	//    A + R1 + R2
+	// ...where R1 and R2 are the small circle angles (radii) of the two small circles.
+	// Therefore the bounding small circle radius is...
+	//    R = min[PI, (A + R1 + R2)/2]
+	// ...and the 'min' is necessary because a small circle angle cannot be larger than PI since
+	// PI means covering the entire globe and each of A, R1 and R2 can be PI so (A+R1+R2)/2 can
+	// be 1.5 * PI.
+	//
+	// The bounding small circle centre position C is at the following angle relative to the
+	// first small circle centre position C1...
+	//    theta = R - R1
+	//          = (A + R1 + R2)/2 - R1
+	//          = (A + R2 - R1)/2
+	// ...and the centre position is...
+	//    C = cos(theta) * C1 + sin(theta) * normalise((C1 x C2) x C1)
+	// ...where C2 is the second small circle centre position and 'x' is the vector cross product.
+	// The term 'normalise((C1 x C2) x C1)' is the unit vector orthogonal to C1 that lies on the
+	// great circle containing the great circle arc (C1,C2).
+	//
+	// If we got here then 'A + R2 > R1' because second small circle is not *inside* first small circle
+	// and 'A + R1 > R2' because first small circle is not *inside* second small circle.
+	// This means that...
+	//    (A + R2 - R1)/2 > 0 because 'A + R2 > R1'
+	//    (A + R2 - R1)/2 < A because 'A + R1 > R2' -> 'R2 - R1 < A'
+	// ...which means that...
+	//    0 < theta < A
+	// ...thus the bounding small circle centre lies on the great circle arc (C1,C2).
+	//
+
+	const double theta = 0.5 * (
+			angle_between_centres + angle_bounding_small_circle_2 - angle_bounding_small_circle_1);
+
+	const Vector3D c1_cross_c2 = cross(
+			bounding_small_circle_1.get_centre(),
+			bounding_small_circle_2.get_centre());
+	// If both bounding small circles centres are coincident then once small circle should have
+	// been inside the other (because one will have a greater radius angle).
+	// This might not have been caught above due to numerical precision issues so we'll just
+	// return the small circle with the largest radius here.
+	if (c1_cross_c2.magSqrd() <= 0)
+	{
+		return (angle_bounding_small_circle_1 > angle_bounding_small_circle_2)
+				? bounding_small_circle_1
+				: bounding_small_circle_2;
+	}
+
+	// Get the direction orthogonal to the first bounding small circle centre but pointing
+	// towards the second bounding small circle centre (point on sphere).
+	Vector3D orthogonal_vector = cross(c1_cross_c2, bounding_small_circle_1.get_centre());
+
+	const UnitVector3D bounding_small_circle_centre = (
+				std::cos(theta) * Vector3D(bounding_small_circle_1.get_centre()) +
+				// We need to normalise the orthogonal vector before we use it...
+				std::sin(theta) * (1.0 / orthogonal_vector.magnitude()) * orthogonal_vector
+			// The new bounding small circle centre should have unit length but we normalize it
+			// anyway due to numerical precision issues (otherwise UnitVector constructor might throw)...
+			).get_normalisation();
+
+	const double bounding_small_circle_angle = 0.5 * (
+			angle_between_centres + angle_bounding_small_circle_1 + angle_bounding_small_circle_2);
+	// Clamp to maximum possible bounding radius angle (PI) that covers the entire globe.
+	const double cosine_bounding_small_circle_angle = (bounding_small_circle_angle < PI)
+			? std::cos(bounding_small_circle_angle)
+			: -1;
+
+	return BoundingSmallCircle(
+			bounding_small_circle_centre,
+			cosine_bounding_small_circle_angle);
+}
+
+
 bool
 GPlatesMaths::SmallCircleBoundsImpl::intersect(
 		const BoundingSmallCircle &bounding_small_circle_1,
@@ -369,6 +497,7 @@ GPlatesMaths::BoundingSmallCircleBuilder::add(
 	const double cosine = dot(d_small_circle_centre, bounding_small_circle.get_centre()).dval();
 	const double cosine_square = cosine * cosine;
 	// Use epsilon test (real_t) to avoid sqrt calculation when small circle centres coincide.
+	// For 0 <= theta <= PI; sin(theta) = sqrt[1 - cos(theta)^2]
 	const double sine = (real_t(cosine_square) < 1) ? std::sqrt(1 - cosine_square) : 0;
 
 	// The cosine of the angle from our small circle centre to the small circle that encompasses
@@ -393,18 +522,22 @@ GPlatesMaths::BoundingSmallCircleBuilder::get_bounding_small_circle(
 	// The epsilon expands the dot product range covered
 	// as a protection against numerical precision.
 	// This epsilon should be larger than used in class Real (which is about 1e-12).
-	return BoundingSmallCircle(
-			d_small_circle_centre,
-			d_min_dot_product - expand_bound_delta_dot_product);
+	double expanded_min_dot_product = d_min_dot_product - expand_bound_delta_dot_product;
+	if (expanded_min_dot_product < -1)
+	{
+		expanded_min_dot_product = -1;
+	}
+
+	return BoundingSmallCircle(d_small_circle_centre, expanded_min_dot_product);
 }
 
 
 GPlatesMaths::InnerOuterBoundingSmallCircle::InnerOuterBoundingSmallCircle(
 		const UnitVector3D &small_circle_centre,
-		const double &min_dot_product,
-		const double &max_dot_product) :
-	d_outer_small_circle(small_circle_centre, min_dot_product),
-	d_max_dot_product(max_dot_product)
+		const double &outer_cosine_colatitude,
+		const double &inner_cosine_colatitude) :
+	d_outer_small_circle(small_circle_centre, outer_cosine_colatitude),
+	d_max_dot_product(inner_cosine_colatitude)
 {
 }
 
@@ -726,6 +859,7 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::add(
 	const double cosine = dot(d_small_circle_centre, bounding_small_circle.get_centre()).dval();
 	const double cosine_square = cosine * cosine;
 	// Use epsilon test (real_t) to avoid sqrt calculation when small circle centres coincide.
+	// For 0 <= theta <= PI; sin(theta) = sqrt[1 - cos(theta)^2]
 	const double sine = (real_t(cosine_square) < 1) ? std::sqrt(1 - cosine_square) : 0;
 
 	// The cosine of the angle from our small circle centre to the outer small circle that encompasses
@@ -794,6 +928,7 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::add(
 	const double cosine = dot(d_small_circle_centre, inner_outer_bounding_small_circle.get_centre()).dval();
 	const double cosine_square = cosine * cosine;
 	// Use epsilon test (real_t) to avoid sqrt calculation when small circle centres coincide.
+	// For 0 <= theta <= PI; sin(theta) = sqrt[1 - cos(theta)^2]
 	const double sine = (real_t(cosine_square) < 1) ? std::sqrt(1 - cosine_square) : 0;
 
 	// The cosine of the angle from our small circle centre to the outer small circle that encompasses
@@ -890,10 +1025,21 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::get_inner_outer_bounding_sma
 	// The epsilon expands the dot product range covered
 	// as a protection against numerical precision.
 	// This epsilon should be larger than used in class Real (which is about 1e-12).
+	double expanded_min_dot_product = d_min_dot_product - expand_outer_bound_delta_dot_product;
+	if (expanded_min_dot_product < -1)
+	{
+		expanded_min_dot_product = -1;
+	}
+	double expanded_max_dot_product = d_max_dot_product + contract_inner_bound_delta_dot_product;
+	if (expanded_max_dot_product > 1)
+	{
+		expanded_max_dot_product = 1;
+	}
+
 	return InnerOuterBoundingSmallCircle(
 			d_small_circle_centre,
-			d_min_dot_product - expand_outer_bound_delta_dot_product, 
-			d_max_dot_product + contract_inner_bound_delta_dot_product);
+			expanded_min_dot_product,
+			expanded_max_dot_product);
 }
 
 
