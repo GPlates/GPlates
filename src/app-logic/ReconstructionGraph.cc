@@ -26,6 +26,7 @@
  */
 
 #include <loki/ScopeGuard.h>
+#include <QDebug>
 
 #include "ReconstructionGraph.h"
 #include "ReconstructionTree.h"
@@ -62,7 +63,10 @@ namespace
 				iter != fixed_plate_id_match_range.second;
 				++iter) {
 			if (iter->second->moving_plate() == moving_plate_id) {
-#if 0  // Silence these warnings for the release.
+				// Output warning message to console.
+				qWarning() << "Duplicate reconstruction tree edge with plate ids (moving="
+					<< moving_plate_id << ", fixed=" << fixed_plate_id << ")";
+#if 0
 				std::cerr << "Warning: Duplicate edges detected:\n";
 				ReconstructionGraph::edge_ref_type edge =
 						ReconstructionTreeEdge::create(fixed_plate_id,
@@ -92,7 +96,10 @@ namespace
 				iter != moving_plate_id_match_range.second;
 				++iter) {
 			if (iter->second->moving_plate() == fixed_plate_id) {
-#if 0  // Silence these warnings for the release.
+				// Output warning message to console.
+				qWarning() << "Duplicate reconstruction tree edge with plate ids (moving="
+					<< moving_plate_id << ", fixed=" << fixed_plate_id << ")";
+#if 0
 				std::cerr << "Warning: Duplicate edges detected:\n";
 				ReconstructionGraph::edge_ref_type edge =
 						ReconstructionTreeEdge::create(fixed_plate_id,

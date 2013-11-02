@@ -28,6 +28,8 @@
 #ifndef GPLATES_MODEL_STRINGCONTENTTYPEGENERATOR_H
 #define GPLATES_MODEL_STRINGCONTENTTYPEGENERATOR_H
 
+#include "utils/StringSet.h"
+#include "utils/UnicodeString.h"
 
 namespace GPlatesModel
 {

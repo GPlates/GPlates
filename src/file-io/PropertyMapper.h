@@ -28,6 +28,9 @@
 #ifndef GPLATES_FILEIO_PROPERTYMAPPER_H
 #define GPLATES_FILEIO_PROPERTYMAPPER_H
 
+#include <QMap>
+#include <QString>
+
 typedef QMap< QString, QString > model_to_attribute_map_type;
 
 namespace ShapefileAttributes {

@@ -213,9 +213,13 @@ namespace GPlatesGui
 			explicit
 			TerraTextConfiguration(
 					const QString &filename_template_,
-					const QString &terra_grid_filename_template_) :
+					const QString &terra_grid_filename_template_,
+					bool is_boundary_smoothing_enabled_ = false,
+					const double &boundary_smoothing_angular_half_extent_degrees_ = 1.0) :
 				Configuration(filename_template_, TERRA_TEXT),
-				terra_grid_filename_template(terra_grid_filename_template_)
+				terra_grid_filename_template(terra_grid_filename_template_),
+				is_boundary_smoothing_enabled(is_boundary_smoothing_enabled_),
+				boundary_smoothing_angular_half_extent_degrees(boundary_smoothing_angular_half_extent_degrees_)
 			{  }
 
 			virtual
@@ -226,6 +230,8 @@ namespace GPlatesGui
 			}
 
 			QString terra_grid_filename_template;
+			bool is_boundary_smoothing_enabled;
+			double boundary_smoothing_angular_half_extent_degrees;
 		};
 
 

@@ -49,6 +49,8 @@ namespace GPlatesGlobal
 				_msg(msg)
 			{  }
 
+			~NullParameterException() throw() { }
+
 		protected:
 			virtual const char *
 			exception_name() const {

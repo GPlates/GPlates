@@ -175,9 +175,10 @@ namespace GPlatesMaths
 		 * The measure of what is "close" is provided by @a closeness_angular_extent_threshold.
 		 *
 		 * If @a test_point is "close", the function will calculate
-		 * exactly @em how close, and store that value in @a closeness.
+		 * exactly @em how close, and store that value in @a closeness and
+		 * return the closest point on the GreatCircleArc.
 		 */
-		bool
+		boost::optional<GPlatesMaths::PointOnSphere>
 		is_close_to(
 				const PointOnSphere &test_point,
 				const AngularExtent &closeness_angular_extent_threshold,

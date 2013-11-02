@@ -349,7 +349,19 @@ GPlatesFileIO::CptParser::CptParser(const QString& file_path) :
 	{
 		QString line = in.readLine().simplified();
 		if(line.length() > 0)
+		{
+			try
+			{
 			process_line(line);
+	}
+			catch (GPlatesGlobal::LogException& e)
+			{
+				std::ostringstream ostr;
+				e.write(ostr);
+				qWarning() << ostr.str().c_str();
+			}
+					
+		}
 	}
 }
 
@@ -631,8 +643,11 @@ GPlatesFileIO::CptParser::ColourData
 GPlatesFileIO::CptParser::parse_gmt_fill(
 		const QString& token)
 {
-	if(token.startsWith('p'))
+	QRegExp rx("p\\d+/");
+	if(rx.indexIn(token) != -1)
 	{
+		//We don't support "fill pattern" yet. 
+		//It looks something like "p200/16". 
 		throw GPlatesGlobal::LogException(
 			GPLATES_EXCEPTION_SOURCE,
 			("Do not support pattern yet: " + token));

@@ -50,6 +50,8 @@ namespace GPlatesGlobal
 				_msg(msg)
 			{  }
 
+            ~ControlFlowException() throw() { }
+
 		protected:
 			virtual const char *
 			exception_name() const {

@@ -41,6 +41,7 @@
 
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
+#include "maths/PointOnSphere.h"
 #include "maths/UnitVector3D.h"
 #include "maths/types.h"
 

@@ -1608,6 +1608,13 @@ GPlatesFileIO::GpmlOutputVisitor::write_gpml_time_sample(
 			d_output.writeEndElement();
 		}
 
+		if(gpml_time_sample.is_disabled())
+		{
+			d_output.writeStartGpmlElement("isDisabled");
+			d_output.writeBoolean(true);
+			d_output.writeEndElement();
+		}
+
 		d_output.writeStartGpmlElement("valueType");
 			writeTemplateTypeParameterType(d_output, gpml_time_sample.get_value_type());
 		d_output.writeEndElement();

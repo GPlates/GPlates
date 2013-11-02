@@ -33,6 +33,7 @@
 #include <boost/type_traits/remove_pointer.hpp>
 
 #include "AppLogicFwd.h"
+#include "GeometryUtils.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionGeometry.h"
 #include "ReconstructionGeometryVisitor.h"
@@ -239,6 +240,19 @@ namespace GPlatesAppLogic
 		template <typename ReconstructionGeometryPointer>
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
 		get_resolved_topological_boundary_polygon(
+				ReconstructionGeometryPointer reconstruction_geom_ptr);
+
+		/**
+		 * Returns the boundary polygon of the specified reconstruction geometry.
+		 *
+		 * @a reconstruction_geom_ptr can be a @a ReconstructedFeatureGeometry (or derived from it),
+		 * a @a ResolvedTopologicalGeometry or a @a ResolvedTopologicalNetwork.
+		 *
+		 * Returns boost::none if the specified reconstruction geometry does not contain a *polygon* geometry.
+		 */
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+		get_boundary_polygon(
 				ReconstructionGeometryPointer reconstruction_geom_ptr);
 
 
@@ -837,15 +851,6 @@ namespace GPlatesAppLogic
 
 		private:
 			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_boundary_polygon;
-
-
-			virtual
-			void
-			visit_polygon_on_sphere(
-					GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
-			{
-				d_boundary_polygon = polygon_on_sphere;
-			}
 		};
 
 
@@ -855,6 +860,51 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryPointer reconstruction_geom_ptr)
 		{
 			GetResolvedTopologicalBoundaryPolygon visitor;
+			reconstruction_geom_ptr->accept_visitor(visitor);
+
+			return visitor.get_boundary_polygon();
+		}
+
+
+		class GetBoundaryPolygon :
+				public ConstReconstructionGeometryVisitor
+		{
+		public:
+			// Bring base class visit methods into scope of current class.
+			using ConstReconstructionGeometryVisitor::visit;
+
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+			get_boundary_polygon() const
+			{
+				return d_boundary_polygon;
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg);
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
+
+		private:
+			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_boundary_polygon;
+		};
+
+
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
+		get_boundary_polygon(
+				ReconstructionGeometryPointer reconstruction_geom_ptr)
+		{
+			GetBoundaryPolygon visitor;
 			reconstruction_geom_ptr->accept_visitor(visitor);
 
 			return visitor.get_boundary_polygon();

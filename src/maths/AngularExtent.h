@@ -38,9 +38,9 @@ namespace GPlatesMaths
 	 * An angular extent stored as cosine and sine instead of the actual angle.
 	 *
 	 * Use of cosine and sine is more efficient in some situations such as comparing angular
-	 * distances between two unit vectors using a dot product (cosine) and adding two angular
+	 * distances (between two unit vectors using a dot product - cosine) and adding two angular
 	 * extents (using trigonometric angle sum identities). This can avoid calculating
-	 * 'acos', etc, which are generally slower calculate.
+	 * 'acos', which is generally slower to calculate (about 100 cycles on a circa 2011 CPU).
 	 *
 	 * Note: This is also useful for region-of-interest queries.
 	 * For example, determining which geometries from one spatial partition are within a

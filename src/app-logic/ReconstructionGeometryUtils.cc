@@ -416,3 +416,31 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundaryPoly
 {
 	d_boundary_polygon = rtn->boundary_polygon();
 }
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetBoundaryPolygon::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+{
+	// See if the reconstructed feature geometry is a polygon.
+	// It might be a polyline in which case boost::none is returned.
+	d_boundary_polygon = GeometryUtils::get_polygon_on_sphere(*rfg->reconstructed_geometry());
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetBoundaryPolygon::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+{
+	// See if the resolved topology geometry is a polygon.
+	// It might be a polyline in which case boost::none is returned.
+	d_boundary_polygon = rtg->resolved_topology_boundary();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetBoundaryPolygon::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+{
+	d_boundary_polygon = rtn->boundary_polygon();
+}

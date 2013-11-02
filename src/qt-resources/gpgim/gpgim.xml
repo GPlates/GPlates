@@ -996,7 +996,7 @@
 			<Name>gpml:relativePlate</Name>
 			<Description>The plate that something is relative to.</Description>
 			<Type>gpml:plateId</Type>
-			<Multiplicity>0..1</Multiplicity>
+			<Multiplicity>1</Multiplicity>
 			<Comment>This is currently used in MotionPath features as the plate that the motion is relative to.</Comment>
 		</Property>
 		<Property>

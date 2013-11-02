@@ -83,6 +83,13 @@ GLEW
   2. Add the \include directory to the CMAKE_INCLUDE_PATH environment variable.
   3. Add the GLEW \Bin directory to the PATH environment variable (see above).
 
+Python
+  1. Download, and extract, the latest 2.7 release source code (eg, 'http://www.python.org/download/releases/2.7.5/').
+  2. In the 'PCBuild' (for Visual Studio 9.0) or 'PC/VS8.0' open the 'pcbuild.sln' Visual Studio solution.
+  3. Build both release and debug configurations (build solution 'F7').
+     * Note that not all projects will compile (eg, sqlite and some others) but they are not needed.
+  4. Copy the relevant 'pyconfig.h' file (eg, from 'PC' directory) to the 'Include' directory.
+
 Boost
 
   1. Download and extract the source code for boost 1.39 or higher from http://www.boost.org/users/download/
@@ -104,6 +111,16 @@ Boost
      variable.
   3. Add the C:\SDK\boost\boost_1_xx\lib directory to the CMAKE_LIBRARY_PATH
      environment variable.
+  Note that the boost-python (sub)library will link against your python installation
+  and, at runtime, will expect a DLL of that python version. For example, if you build boost with python version 2.7
+  then, at runtime, the python DLL (version 2.7) should exist in the PATH.
+  Note if you are using python 2.6.3 or above then you need a boost version greater than 1.40 otherwise you'll get the following
+  exception during GPlates startup 'AttributeError: 'Boost.Python.StaticProperty' object attribute '__doc__' is read-only'
+  - see https://bugs.launchpad.net/ubuntu/+source/boost1.38/+bug/457688
+  Also you'll need to avoid boost 1.48 and above since they don't work well with Qt.
+  If you compile boost 1.47 with Visual Studio 2005 and get a compile warning/error in 'large_arithmetic.hpp' then
+  you can apply this small patch directly to that header file - https://svn.boost.org/trac/boost/changeset/82940
+  Also if you upgrade your boost version you'll need to re-compile the CGAL library (since it uses boost thread).
 
 Proj4
 
@@ -179,6 +196,9 @@ CGAL
 	   GPlates can find the CGAL library of the correct build type).
 	 * Build the 'INSTALL' project.
   When GPlates is built it should find CGAL via the "CGAL_DIR" environment variable.
+  Note: If you are compiling CGAL 3.7 or above using Visual Studio 2005 then you'll need to modify
+  a few CGAL headers to get it to compile (because VS2005 no longer supported) - see the last post at
+    http://cgal-discuss.949826.n4.nabble.com/Error-in-Delaunay-traingulation-2-h-td3063834.html
 
 gzip
 

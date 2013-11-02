@@ -187,7 +187,6 @@ set(srcs
     PythonManager.h
     RasterColourPalette.cc
     RasterColourPalette.h
-    ReconstructionGeometrySequence.h
     RenderSettings.h
     SceneLightingParameters.h
     SessionMenu.cc

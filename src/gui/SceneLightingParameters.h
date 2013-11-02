@@ -35,6 +35,7 @@
 
 #include "maths/types.h"
 #include "maths/MathsUtils.h"
+#include "maths/UnitVector3D.h"
 
 
 namespace GPlatesGui
