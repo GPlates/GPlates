@@ -34,6 +34,7 @@
 #include "HighPrecision.h"
 #include "PolygonOnSphere.h"
 #include "PolygonProximityHitDetail.h"
+#include "PolyGreatCircleArcBoundingTree.h"
 #include "ProximityCriteria.h"
 #include "SmallCircleBounds.h"
 #include "SphericalArea.h"
@@ -77,6 +78,7 @@ namespace GPlatesMaths
 
 			PolygonOnSphere::PointInPolygonSpeedAndMemory point_in_polygon_speed_and_memory;
 			boost::optional<PointInPolygon::Polygon> point_in_polygon_tester;
+			boost::optional<PolygonOnSphere::bounding_tree_type> polygon_bounding_tree;
 		};
 	}
 }
@@ -319,6 +321,26 @@ GPlatesMaths::PolygonOnSphere::get_inner_outer_bounding_small_circle() const
 	}
 
 	return d_cached_calculations->inner_outer_bounding_small_circle.get();
+}
+
+
+const GPlatesMaths::PolygonOnSphere::bounding_tree_type &
+GPlatesMaths::PolygonOnSphere::get_bounding_tree() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the small circle bounding tree if it's not cached.
+	if (!d_cached_calculations->polygon_bounding_tree)
+	{
+		// Pass the PolyGreatCircleArcBoundingTree constructor parameters to construct a new object
+		// directly in-place inside the boost::optional since PolyGreatCircleArcBoundingTree is non-copyable.
+		d_cached_calculations->polygon_bounding_tree = boost::in_place(begin(), end());
+	}
+
+	return d_cached_calculations->polygon_bounding_tree.get();
 }
 
 

@@ -55,6 +55,9 @@ namespace GPlatesMaths
 	class BoundingSmallCircle;
 	class InnerOuterBoundingSmallCircle;
 
+	template <typename GreatCircleArcConstIteratorType>
+	class PolyGreatCircleArcBoundingTree;
+
 
 	/** 
 	 * Represents a polygon on the surface of a sphere. 
@@ -148,6 +151,12 @@ namespace GPlatesMaths
 		 * The type used to describe collection sizes.
 		 */
 		typedef seq_type::size_type size_type;
+
+
+		/**
+		 * Typedef for the bounding tree of great circle arcs in a polyline.
+		 */
+		typedef PolyGreatCircleArcBoundingTree<const_iterator> bounding_tree_type;
 
 	private:
 
@@ -628,6 +637,15 @@ namespace GPlatesMaths
 		 */
 		const InnerOuterBoundingSmallCircle &
 		get_inner_outer_bounding_small_circle() const;
+
+
+		/**
+		 * Returns the small circle bounding tree over of great circle arc segments of this polygon.
+		 *
+		 * The result is cached on first call.
+		 */
+		const bounding_tree_type &
+		get_bounding_tree() const;
 
 
 		/**

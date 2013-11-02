@@ -36,6 +36,7 @@
 #include "HighPrecision.h"
 #include "PolylineOnSphere.h"
 #include "PolylineProximityHitDetail.h"
+#include "PolyGreatCircleArcBoundingTree.h"
 #include "ProximityCriteria.h"
 #include "SmallCircleBounds.h"
 
@@ -58,6 +59,7 @@ namespace GPlatesMaths
 		{
 			boost::optional<UnitVector3D> centroid;
 			boost::optional<BoundingSmallCircle> bounding_small_circle;
+			boost::optional<PolylineOnSphere::bounding_tree_type> polyline_bounding_tree;
 		};
 	}
 }
@@ -298,6 +300,26 @@ GPlatesMaths::PolylineOnSphere::get_bounding_small_circle() const
 	}
 
 	return d_cached_calculations->bounding_small_circle.get();
+}
+
+
+const GPlatesMaths::PolylineOnSphere::bounding_tree_type &
+GPlatesMaths::PolylineOnSphere::get_bounding_tree() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolylineOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the small circle bounding tree if it's not cached.
+	if (!d_cached_calculations->polyline_bounding_tree)
+	{
+		// Pass the PolyGreatCircleArcBoundingTree constructor parameters to construct a new object
+		// directly in-place inside the boost::optional since PolyGreatCircleArcBoundingTree is non-copyable.
+		d_cached_calculations->polyline_bounding_tree = boost::in_place(begin(), end());
+	}
+
+	return d_cached_calculations->polyline_bounding_tree.get();
 }
 
 

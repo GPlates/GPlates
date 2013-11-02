@@ -85,6 +85,7 @@ set(srcs
     PolygonOrientation.cc
     PolygonOrientation.h
     PolygonProximityHitDetail.h
+    PolyGreatCircleArcBoundingTree.h
     PolylineEquivalencePredicates.h
     PolylineIntersections.cc
     PolylineIntersections.h
