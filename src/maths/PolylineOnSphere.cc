@@ -30,6 +30,7 @@
 
 #include <list>
 #include <sstream>
+#include <boost/utility/in_place_factory.hpp>
 
 #include "Centroid.h"
 #include "ConstGeometryOnSphereVisitor.h"
