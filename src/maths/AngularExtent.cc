@@ -25,27 +25,52 @@
 
 #include "AngularExtent.h"
 
-#include "SmallCircleBounds.h"
-
 
 GPlatesMaths::AngularExtent
-GPlatesMaths::AngularExtent::create_from_cosine(
-		const double &cosine_angle)
+GPlatesMaths::AngularExtent::operator+(
+		const AngularExtent &rhs) const
 {
-	const double cosine_angle_square = cosine_angle * cosine_angle;
-	const double sine_angle = (cosine_angle_square < 1)
-			? std::sqrt(1 - cosine_angle_square)
-			: 0;
+	// If 'angular_extent_1 + angular_extent_2' exceeds PI then comparing cosine(angle) doesn't work
+	// because cosine starts to repeat itself. The easiest way to detect this without calculating
+	// angles using 'acos' is to see if either angle exceeds PI/2 (hemisphere small circle) and then
+	// revert to using 'acos' in that case (it should be relatively rare to have angular extents that big).
+	if (is_strictly_negative(get_cosine()) ||
+		is_strictly_negative(rhs.get_cosine()))
+	{
+		// Use expensive 'acos' function.
+		const real_t angular_extent = acos(get_cosine()) + acos(rhs.get_cosine());
+		if (angular_extent.is_precisely_greater_than(PI))
+		{
+			// Clamp to PI.
+			return AngularExtent(real_t(-1.0), real_t(0.0));
+		}
 
-	return AngularExtent(cosine_angle, sine_angle);
+		return AngularExtent(cos(angular_extent), sin(angular_extent));
+	}
+
+	return AngularExtent(
+			// cos(a+b) = cos(a)cos(b) - sin(a)sin(b)
+			get_cosine() * rhs.get_cosine() - get_sine() * rhs.get_sine(),
+			// sin(a+b) = sin(a)cos(b) + cos(a)sin(b)
+			get_sine() * rhs.get_cosine() + get_cosine() * rhs.get_sine());
 }
 
 
 GPlatesMaths::AngularExtent
-GPlatesMaths::AngularExtent::create(
-		const BoundingSmallCircle &bounding_small_circle)
+GPlatesMaths::AngularExtent::operator-(
+		const AngularExtent &rhs) const
 {
+	// If 'angular_extent_2' exceeds 'angular_extent_1' then clamp to zero.
+	// This is same test as 'cos(angular_extent_2) < cos(angular_extent_1)'.
+	if (rhs.get_cosine().is_precisely_less_than(get_cosine().dval()))
+	{
+		// Clamp to zero.
+		return AngularExtent(real_t(1.0), real_t(0.0));
+	}
+
 	return AngularExtent(
-			bounding_small_circle.get_small_circle_boundary_cosine(),
-			bounding_small_circle.get_small_circle_boundary_sine());
+			// cos(a-b) = cos(a)cos(b) + sin(a)sin(b)
+			get_cosine() * rhs.get_cosine() + get_sine() * rhs.get_sine(),
+			// sin(a-b) = sin(a)cos(b) - cos(a)sin(b)
+			get_sine() * rhs.get_cosine() - get_cosine() * rhs.get_sine());
 }

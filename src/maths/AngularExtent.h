@@ -29,13 +29,22 @@
 #include <cmath>
 #include <boost/optional.hpp>
 
+#include "MathsUtils.h"
+#include "types.h"
+
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
+
 
 namespace GPlatesMaths
 {
-	class BoundingSmallCircle;
-
 	/**
 	 * An angular extent stored as cosine and sine instead of the actual angle.
+	 *
+	 * Note that, as with great circle arcs, the angular extent is limited to the range [0,PI].
+	 * So that angular extent only covers up to half the globe (like great circle arcs).
+	 * When used as a small circle radius angle this is fine since a small circle with PI radius
+	 * angle will cover the entire globe (because radius is half the diameter).
 	 *
 	 * Use of cosine and sine is more efficient in some situations such as comparing angular
 	 * distances (between two unit vectors using a dot product - cosine) and adding two angular
@@ -50,9 +59,31 @@ namespace GPlatesMaths
 	 * a region-of-interest query of 10kms you would extend the bounding circle extent by
 	 * the angle subtended by those 10kms.
 	 */
-	class AngularExtent
+	class AngularExtent :
+			// NOTE: Base class chaining is used to avoid increasing sizeof(AngularExtent) due to multiple
+			// inheritance from several empty base classes...
+			public boost::less_than_comparable<AngularExtent,
+					boost::equivalent<AngularExtent,
+					boost::equality_comparable<AngularExtent> > >
 	{
 	public:
+
+		/**
+		 * Create from the cosine of the angular extent - the sine will be calculated when/if needed.
+		 *
+		 * @a cosine_colatitude is the cosine of the "colatitude" of the small circle around the
+		 * "North Pole" of its axis (from the small circle centre to the
+		 * boundary of the small circle - the radius angle).
+		 *
+		 * Note that the cosine can be efficiently calculated as the dot product of two unit vectors.
+		 */
+		static
+		AngularExtent
+		create_from_cosine(
+				const real_t &cosine_colatitude)
+		{
+			return AngularExtent(cosine_colatitude);
+		}
 
 		/**
 		 * Create from the cosine and sine of the angular extent.
@@ -66,51 +97,36 @@ namespace GPlatesMaths
 		static
 		AngularExtent
 		create_from_cosine_and_sine(
-				const double &cosine_angle,
-				const double &sine_angle)
+				const real_t &cosine_colatitude,
+				const real_t &sine_colatitude)
 		{
-			return AngularExtent(cosine_angle, sine_angle);
+			return AngularExtent(cosine_colatitude, sine_colatitude);
 		}
 
-
 		/**
-		 * Create from only the cosine of the angular extent - the sine will be calculated.
+		 * Create from an angular extent (radians) in the range [0, PI].
 		 *
-		 * Note that the cosine can be efficiently calculated as the dot product of two unit vectors.
-		 */
-		static
-		AngularExtent
-		create_from_cosine(
-				const double &cosine_angle);
-
-
-		/**
-		 * Create from only the angular extent (radians) - both the cosine and the sine will be calculated.
+		 * The cosine (and the sine when/if needed) will be calculated.
+		 *
+		 * @throws PreconditionViolationError exception if @a angle is not in range [0, PI].
 		 */
 		static
 		AngularExtent
 		create_from_angle(
-				const double &angle)
+				const real_t &colatitude)
 		{
-			return create_from_cosine(std::cos(angle));
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					0 <= colatitude && colatitude <= PI,
+					GPLATES_ASSERTION_SOURCE);
+
+			return create_from_cosine(cos(colatitude));
 		}
-
-
-		/**
-		 * Create from only the extents are specified by @a bounding_small_circle.
-		 *
-		 * NOTE: The small circle centre is not needed or used here (only the extents are used).
-		 */
-		static
-		AngularExtent
-		create(
-				const BoundingSmallCircle &bounding_small_circle);
 
 
 		/**
 		 * Returns the cosine of the angular extent (radians).
 		 */
-		const double &
+		const real_t &
 		get_cosine() const
 		{
 			return d_cosine;
@@ -120,16 +136,28 @@ namespace GPlatesMaths
 		/**
 		 * Returns the sine of the angular extent (radians).
 		 */
-		const double &
+		const real_t &
 		get_sine() const
 		{
-			return d_sine;
+			if (!d_sine)
+			{
+				// Real takes care of very slightly negative arguments to 'sqrt'.
+				d_sine = sqrt(1 - d_cosine * d_cosine);
+			}
+
+			return d_sine.get();
 		}
 
 
 		/**
 		 * A member function for adding two angular extents such that the returned
 		 * angular extent is the sum of the angles.
+		 *
+		 * NOTE: If the sum of the angles exceeds PI then the sum is clamped to PI (cosine set to -1).
+		 * This is because cosine repeats itself when its angle exceeds PI and there's no longer
+		 * a unique one-to-one mapping from cosine to its angle and vice versa.
+		 * Also this clamping works when angular extent is used as a bounding small circle radius
+		 * because a radius angle of PI represents a bounding small circle covering the entire globe.
 		 *
 		 * Even though it works with cosines and sines it effectively adds
 		 * the two angular extents as angles.
@@ -138,26 +166,71 @@ namespace GPlatesMaths
 		 */
 		AngularExtent
 		operator+(
+				const AngularExtent &rhs) const;
+
+
+		/**
+		 * A member function for subtracting two angular extents.
+		 *
+		 * NOTE: If the subtraction of the angles is less than zero then it is clamped to zero (cosine set to 1).
+		 *
+		 * Even though it works with cosines and sines it effectively subtracts
+		 * the two angular extents as angles.
+		 * For example, an extent with 'a' radians minus an extent with 'b' radians
+		 * gives an extent with 'a-b' radians.
+		 */
+		AngularExtent
+		operator-(
+				const AngularExtent &rhs) const;
+
+
+		/**
+		 * Less than operator - all other operators (<=, >, >=, ==, !=) provided by
+		 * boost::less_than_comparable, boost::equivalent and boost::equality_comparable.
+		 *
+		 * This comparison can be done cheaply using cosines and sines as opposed to using inverse
+		 * cosine (acos) to get the angles (inverse cosine is quite expensive even on modern CPUs).
+		 * So instead of testing...
+		 *
+		 * angular_extent_1 < angular_extent_2
+		 *
+		 * ...we can test...
+		 *
+		 * cos(angular_extent_1) > cos(angular_extent_2)
+		 *
+		 * ...where we can use cos(A+B) = cos(A) * cos(B) - sin(A) * sin(B).
+		 *
+		 * Whereas using angles would require calculating:
+		 *
+		 * angular_extent = acos(dot(start_point_angular_extent, end_point_angular_extent))
+		 *
+		 * Note that 'dot' is significantly cheaper than 'acos'.
+		 *
+		 */
+		bool
+		operator<(
 				const AngularExtent &rhs) const
 		{
-			return AngularExtent(
-					// cos(a+b) = cos(a)cos(b) - sin(a)sin(b)
-					d_cosine * rhs.d_cosine - d_sine * rhs.d_sine,
-					// sin(a+b) = sin(a)cos(b) + cos(a)sin(b)
-					d_sine * rhs.d_cosine + d_cosine * rhs.d_sine);
+			// NOTE: We're using 'real_t' which does epsilon test required for boost::equivalent to work.
+			// Also note reversal of comparison since comparing cosine(angle) instead of angle.
+			return d_cosine > rhs.d_cosine;
 		}
 
 	private:
 
+		real_t d_cosine;
+
+		//! Sine of angular extent - only calculated when needed.
+		mutable boost::optional<real_t> d_sine;
+
+
+		explicit
 		AngularExtent(
-				const double &cosine,
-				const double &sine) :
+				const real_t &cosine,
+				boost::optional<real_t> sine = boost::none) :
 			d_cosine(cosine),
 			d_sine(sine)
 		{  }
-
-		double d_cosine;
-		double d_sine;
 	};
 }
 
