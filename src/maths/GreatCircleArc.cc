@@ -283,7 +283,7 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 			// then there will be a threshold latitude above and below the
 			// equator, beyond which there is no chance of a test-point
 			// being "close" to that segment.
-			if (closeness_to_poles.is_precisely_greater_than(closeness_angular_extent_threshold.get_sine())) 
+			if (closeness_to_poles.is_precisely_greater_than(closeness_angular_extent_threshold.get_sine().dval())) 
 			{
 
 				/*
@@ -300,7 +300,7 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 		calculate_closest_feature(
 				*this, test_point, closest_point_on_great_circle_arc, closeness);
 		
-		if (!closeness.is_precisely_greater_than(closeness_angular_extent_threshold.get_cosine()))
+		if (!closeness.is_precisely_greater_than(closeness_angular_extent_threshold.get_cosine().dval()))
 		{
 			return boost::none;
 		}

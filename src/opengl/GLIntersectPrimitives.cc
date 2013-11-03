@@ -158,7 +158,7 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::OrientedBoundingBoxBuild
 	d_z_axis(bounding_small_circle.get_centre())
 {
 	// The z-axis bounds are determined by directly the small circle.
-	d_min_dot_z_axis = bounding_small_circle.get_small_circle_boundary_cosine();
+	d_min_dot_z_axis = bounding_small_circle.get_angular_extent().get_cosine().dval();
 	d_max_dot_z_axis = 1.0;
 
 	// If the small circle extends past the hemisphere (centred on the small circle centre)

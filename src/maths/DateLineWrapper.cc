@@ -212,6 +212,13 @@ GPlatesMaths::DateLineWrapper::intersects_dateline(
 		// This avoids the expensive 'acos' function.
 
 		const real_t dot_centroid_and_front_half_space_normal = dot(geometry_centroid, FRONT_HALF_SPACE_NORMAL);
+		// For 'cos(A+B) < 0' to work we must ensure that 'A+B' do not become large enough that
+		// 'cos(A+B)' becomes greater than zero again - ie, we must ensure 'A+B < 1.5 * PI'.
+		// 'angle_geometry_small_circle' can be in the range [0,PI] but we can make
+		// 'angle_from_geometry_centroid_to_front_half_space_normal' be in the range [0,PI/2]
+		// (thus ensuring 'A+B < 1.5 * PI') if we make its cosine (or dot product) stay positive.
+		// This is the equivalent of calculating the minimum of the angles from centroid to front and
+		// back half space normals.
 		const real_t dot_centroid_and_closest_of_front_or_back_half_space_normal =
 				// NOTE: 'dval' means not using epsilon test here...
 				(dot_centroid_and_front_half_space_normal.dval() > 0)
@@ -219,20 +226,20 @@ GPlatesMaths::DateLineWrapper::intersects_dateline(
 				: -dot_centroid_and_front_half_space_normal;
 
 		// We only used 'real_t' to take advantage of range testing in 'sqrt'.
-		const double sine_angle_from_geometry_centroid_to_dateline_arc_normal =
+		const double sine_angle_from_geometry_centroid_to_closest_of_front_or_back_half_space_normal =
 				sqrt(1 - dot_centroid_and_closest_of_front_or_back_half_space_normal *
 						dot_centroid_and_closest_of_front_or_back_half_space_normal).dval();
 
 		// cosine(angle_from_geometry_centroid_to_front_half_space_normal)...
-		const double &cosine_angle_from_geometry_centroid_to_dateline_arc_normal =
+		const double &cosine_angle_from_geometry_centroid_to_closest_of_front_or_back_half_space_normal =
 				dot_centroid_and_closest_of_front_or_back_half_space_normal.dval();
 
 		// NOTE: No epsilon testing here...
 		return 0 >=
-				geometry_bounding_small_circle.get_small_circle_boundary_cosine() *
-					cosine_angle_from_geometry_centroid_to_dateline_arc_normal -
-				geometry_bounding_small_circle.get_small_circle_boundary_sine() *
-					sine_angle_from_geometry_centroid_to_dateline_arc_normal;
+				geometry_bounding_small_circle.get_angular_extent().get_cosine().dval() *
+					cosine_angle_from_geometry_centroid_to_closest_of_front_or_back_half_space_normal -
+				geometry_bounding_small_circle.get_angular_extent().get_sine().dval() *
+					sine_angle_from_geometry_centroid_to_closest_of_front_or_back_half_space_normal;
 	}
 	else
 	{

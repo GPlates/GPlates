@@ -53,13 +53,13 @@ namespace GPlatesMaths
 		const double &
 		closeness_inclusion_threshold() const
 		{
-			return d_closeness_angular_extent_threshold.get_cosine();
+			return d_closeness_angular_extent_threshold.get_cosine().dval();
 		}
 
 		const double &
 		latitude_exclusion_threshold() const
 		{
-			return d_closeness_angular_extent_threshold.get_sine();
+			return d_closeness_angular_extent_threshold.get_sine().dval();
 		}
 
 		/**

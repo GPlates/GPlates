@@ -72,7 +72,8 @@ namespace GPlatesMaths
 			: _dval(0.0)
 		{  }
 
-		Real(double d)
+		Real(
+				const double &d)
 			: _dval(d)
 		{  }
 
@@ -83,41 +84,47 @@ namespace GPlatesMaths
 		}
 
 		Real &
-		operator+=(Real other)
+		operator+=(
+				const Real &other)
 		{
 			_dval += other._dval;
 			return *this;
 		}
 
 		Real &
-		operator-=(Real other)
+		operator-=(
+				const Real &other)
 		{
 			_dval -= other._dval;
 			return *this;
 		}
 
 		Real &
-		operator*=(Real other)
+		operator*=(
+				const Real &other)
 		{
 			_dval *= other._dval;
 			return *this;
 		}
 
 		Real &
-		operator/=(Real other)
+		operator/=(
+				const Real &other)
 		{
 			_dval /= other._dval;
 			return *this;
 		}
 
 		bool
-		is_precisely_greater_than(double d) const
+		is_precisely_greater_than(
+				const double &d) const
 		{
 			return _dval > d;
 		}
 
 		bool
-		is_precisely_less_than(double d) const
+		is_precisely_less_than(
+				const double &d) const
 		{
 			return _dval < d;
 		}

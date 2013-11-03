@@ -113,7 +113,7 @@ namespace GPlatesAppLogic
 		 * static polygons and resolved topological plates/networks and the velocities then depend
 		 * on these surfaces.
 		 *
-		 * If @a boundary_smoothing_angular_half_extent_radians is specified it provides the angular
+		 * If @a boundary_smoothing_half_angle_radians is specified it provides the angular
 		 * distance (radians) over which velocities are smoothed across a plate/network boundary.
 		 * If any points of the reconstructed velocity domain lie within this distance from a
 		 * boundary then their velocity is interpolated between the domain point's calculated velocity
@@ -147,7 +147,7 @@ namespace GPlatesAppLogic
 				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
 				const std::vector<resolved_topological_geometry_non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
 				const std::vector<resolved_topological_network_non_null_ptr_type> &velocity_surface_resolved_topological_networks,
-				boost::optional<double> boundary_smoothing_angular_half_extent_radians = boost::none);
+				boost::optional<double> boundary_smoothing_half_angle_radians = boost::none);
 
 
 		//////////////////////////////

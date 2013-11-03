@@ -39,26 +39,6 @@
 #include "utils/Profile.h"
 
 
-GPlatesMaths::BoundingSmallCircle::BoundingSmallCircle(
-		const UnitVector3D &small_circle_centre,
-		const double &cosine_colatitude) :
-	d_small_circle_centre(small_circle_centre),
-	d_min_dot_product(cosine_colatitude)
-{
-}
-
-
-GPlatesMaths::BoundingSmallCircle::BoundingSmallCircle(
-		const UnitVector3D &small_circle_centre,
-		const double &cosine_colatitude,
-		const boost::optional<double> &magnitude_boundary_cross_product) :
-	d_small_circle_centre(small_circle_centre),
-	d_min_dot_product(cosine_colatitude),
-	d_magnitude_boundary_cross_product(magnitude_boundary_cross_product)
-{
-}
-
-
 GPlatesMaths::BoundingSmallCircle::Result
 GPlatesMaths::BoundingSmallCircle::test(
 		const UnitVector3D &test_point) const
@@ -67,7 +47,7 @@ GPlatesMaths::BoundingSmallCircle::test(
 			dot(d_small_circle_centre, test_point).dval();
 
 	// See if the test point is clearly outside the bound.
-	if (point_dot_small_circle_centre < d_min_dot_product)
+	if (point_dot_small_circle_centre < d_angular_extent.get_cosine().dval())
 	{
 		return OUTSIDE_BOUNDS;
 	}
@@ -87,12 +67,12 @@ GPlatesMaths::BoundingSmallCircle::test(
 	update_min_max_dot_product(
 		d_small_circle_centre, gca, gca_min_dot_product, gca_max_dot_product);
 
-	if (gca_max_dot_product < d_min_dot_product)
+	if (gca_max_dot_product < d_angular_extent.get_cosine().dval())
 	{
 		return OUTSIDE_BOUNDS;
 	}
 
-	if (gca_min_dot_product > d_min_dot_product)
+	if (gca_min_dot_product > d_angular_extent.get_cosine().dval())
 	{
 		return INSIDE_BOUNDS;
 	}
@@ -114,7 +94,7 @@ GPlatesMaths::BoundingSmallCircle::test(
 			dot(d_small_circle_centre, first_point.position_vector()).dval();
 
 	// See if the test point is clearly outside the bound.
-	if (first_point_dot_small_circle_centre < d_min_dot_product)
+	if (first_point_dot_small_circle_centre < d_angular_extent.get_cosine().dval())
 	{
 		// We only need to test for intersection now.
 		MultiPointOnSphere::const_iterator multi_point_iter = multi_point.begin();
@@ -125,7 +105,7 @@ GPlatesMaths::BoundingSmallCircle::test(
 			const double point_dot_small_circle_centre =
 					dot(d_small_circle_centre, multi_point_iter->position_vector()).dval();
 
-			if (point_dot_small_circle_centre >= d_min_dot_product)
+			if (point_dot_small_circle_centre >= d_angular_extent.get_cosine().dval())
 			{
 				return INTERSECTING_BOUNDS;
 			}
@@ -144,7 +124,7 @@ GPlatesMaths::BoundingSmallCircle::test(
 		const double point_dot_small_circle_centre =
 				dot(d_small_circle_centre, multi_point_iter->position_vector()).dval();
 
-		if (point_dot_small_circle_centre <= d_min_dot_product)
+		if (point_dot_small_circle_centre <= d_angular_extent.get_cosine().dval())
 		{
 			return INTERSECTING_BOUNDS;
 		}
@@ -183,72 +163,6 @@ GPlatesMaths::BoundingSmallCircle::test_filled_polygon(
 }
 
 
-GPlatesMaths::BoundingSmallCircle
-GPlatesMaths::BoundingSmallCircle::extend(
-		const double &cosine_extend_angle,
-		boost::optional<double> sine_extend_angle) const
-{
-	// Calculate sine if not provided.
-	if (!sine_extend_angle)
-	{
-		const double cosine_extend_angle_squared = cosine_extend_angle * cosine_extend_angle;
-		if (cosine_extend_angle_squared < 1)
-		{
-			sine_extend_angle = std::sqrt(1 - cosine_extend_angle_squared);
-		}
-		else
-		{
-			sine_extend_angle = 0;
-		}
-	}
-
-	return BoundingSmallCircle(
-			get_centre(),
-			// cos(a+b) = cos(a)cos(b) - sin(a)sin(b)
-			get_small_circle_boundary_cosine() * cosine_extend_angle -
-				get_small_circle_boundary_sine() * sine_extend_angle.get(),
-			// sin(a+b) = sin(a)cos(b) + cos(a)sin(b)
-			get_small_circle_boundary_sine() * cosine_extend_angle +
-				get_small_circle_boundary_cosine() * sine_extend_angle.get());
-}
-
-
-GPlatesMaths::BoundingSmallCircle
-GPlatesMaths::BoundingSmallCircle::contract(
-		const double &cosine_contract_angle,
-		boost::optional<double> sine_contract_angle) const
-{
-	// Return a small circle of zero radius if the contract angle is too large.
-	if (cosine_contract_angle < get_small_circle_boundary_cosine())
-	{
-		return BoundingSmallCircle(get_centre(), 1.0, 0.0);
-	}
-
-	// Calculate sine if not provided.
-	if (!sine_contract_angle)
-	{
-		const double cosine_contract_angle_squared = cosine_contract_angle * cosine_contract_angle;
-		if (cosine_contract_angle_squared < 1)
-		{
-			sine_contract_angle = std::sqrt(1 - cosine_contract_angle_squared);
-		}
-		else
-		{
-			sine_contract_angle = 0;
-		}
-	}
-
-	return BoundingSmallCircle(
-			get_centre(),
-			// cos(a-b) = cos(a)cos(b) + sin(a)sin(b)
-			get_small_circle_boundary_cosine() * cosine_contract_angle +
-				get_small_circle_boundary_sine() * sine_contract_angle.get(),
-			// sin(a-b) = sin(a)cos(b) - cos(a)sin(b)
-			get_small_circle_boundary_sine() * cosine_contract_angle -
-				get_small_circle_boundary_cosine() * sine_contract_angle.get());
-}
-
-
 const GPlatesMaths::BoundingSmallCircle
 GPlatesMaths::operator*(
 		const FiniteRotation &rotation,
@@ -284,7 +198,7 @@ GPlatesMaths::create_optimal_bounding_small_circle(
 		const BoundingSmallCircle &bounding_small_circle_1,
 		const BoundingSmallCircle &bounding_small_circle_2)
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	//
 	// NOTE: We don't optimise away 'acos' in this function (using cosine and sine) because
@@ -301,9 +215,9 @@ GPlatesMaths::create_optimal_bounding_small_circle(
 	// (in a bottom-up fashion) in which case the 'acos' angle is only queried once per
 	// bounding small circle so there's currently no real need to cache it.
 	const double angle_bounding_small_circle_1 =
-			std::acos(bounding_small_circle_1.get_small_circle_boundary_cosine());
+			std::acos(bounding_small_circle_1.get_angular_extent().get_cosine().dval());
 	const double angle_bounding_small_circle_2 =
-			std::acos(bounding_small_circle_2.get_small_circle_boundary_cosine());
+			std::acos(bounding_small_circle_2.get_angular_extent().get_cosine().dval());
 
 	// If the second small circle is inside the first small circle then the optimal bounding
 	// small circle is just the first small circle.
@@ -401,46 +315,7 @@ GPlatesMaths::create_optimal_bounding_small_circle(
 
 	return BoundingSmallCircle(
 			bounding_small_circle_centre,
-			cosine_bounding_small_circle_angle);
-}
-
-
-bool
-GPlatesMaths::SmallCircleBoundsImpl::intersect(
-		const BoundingSmallCircle &bounding_small_circle_1,
-		const BoundingSmallCircle &bounding_small_circle_2,
-		const double &dot_product_circle_centres)
-{
-	//
-	// Two small circles intersect (or overlap) if the angle between their centres
-	// is less than the sum of their interior angles.
-	// This can be done cheaply using cosines and sines compared to using inverse cosine
-	// to get the angles (inverse cosine is quite expensive even on modern CPUs).
-	// So instead of testing...
-	//
-	// angle_between_centres < angle_circle_1 + angle_circle_2
-	//
-	// ...we can test...
-	//
-	// cos(angle_between_centres) > cos(angle_circle_1 + angle_circle_2)
-	//
-	// ...where we can use cos(A+B) = cos(A) * cos(B) - sin(A) * sin(B)
-	// and we can use cos(angle_between_centres) = dot(centre_circle_1, centre_circle_2).
-	//
-	// sin(A) does require a 'sqrt' (involving cos(A)) but it can be cached with each small circle
-	// and hence reused for many small circle intersection calculations.
-	// Whereas using angles would require calculating:
-	//
-	// angle_between_centres = acos(dot(centre_circle_1, centre_circle_2))
-	//
-	// ...for every pair of small circles being tested and this cannot be cached with each small circle.
-	// Note that 'dot' is significantly cheaper than 'acos'.
-	//
-	return dot_product_circle_centres >
-		bounding_small_circle_1.get_small_circle_boundary_cosine() *
-			bounding_small_circle_2.get_small_circle_boundary_cosine() -
-		bounding_small_circle_1.get_small_circle_boundary_sine() *
-			bounding_small_circle_2.get_small_circle_boundary_sine();
+			AngularExtent::create_from_cosine(cosine_bounding_small_circle_angle));
 }
 
 
@@ -486,31 +361,23 @@ GPlatesMaths::BoundingSmallCircleBuilder::add(
 {
 	//
 	// new_bounding_angle = angle_between_centres + other_small_circle_bounding_angle
-	// cos(new_bounding_angle) = cos(angle_between_centres + other_small_circle_bounding_angle)
-	//                         = cos(angle_between_centres) * cos(other_small_circle_bounding_angle) -
-	//                           sin(angle_between_centres) * sin(other_small_circle_bounding_angle)
 	//
 	// ...and where cos(angle_between_centres) = dot(centre_circle_1, centre_circle_2).
 	//
 
 	// Get the cosine/sine of angle between the centres of both small circles.
-	const double cosine = dot(d_small_circle_centre, bounding_small_circle.get_centre()).dval();
-	const double cosine_square = cosine * cosine;
-	// Use epsilon test (real_t) to avoid sqrt calculation when small circle centres coincide.
-	// For 0 <= theta <= PI; sin(theta) = sqrt[1 - cos(theta)^2]
-	const double sine = (real_t(cosine_square) < 1) ? std::sqrt(1 - cosine_square) : 0;
+	const AngularExtent angular_extent_between_small_circle_centres =
+			AngularExtent::create_from_cosine(
+					dot(d_small_circle_centre, bounding_small_circle.get_centre()));
 
-	// The cosine of the angle from our small circle centre to the small circle that encompasses
-	// the other small circle.
-	const double min_dot_product_bounding_other_small_circle =
-			cosine * bounding_small_circle.get_small_circle_boundary_cosine() -
-			sine * bounding_small_circle.get_small_circle_boundary_sine();
+	const AngularExtent angular_extent_new_bounding_angle =
+			angular_extent_between_small_circle_centres + bounding_small_circle.get_angular_extent();
 
-	// If the other small circle bound intersects or is outside our small circle then expand our
+	// If the other small circle bound intersects, or is outside, our small circle then expand our
 	// small circle to include it.
-	if (min_dot_product_bounding_other_small_circle < d_min_dot_product)
+	if (angular_extent_new_bounding_angle.get_cosine().dval() < d_min_dot_product)
 	{
-		d_min_dot_product = min_dot_product_bounding_other_small_circle;
+		d_min_dot_product = angular_extent_new_bounding_angle.get_cosine().dval();
 	}
 }
 
@@ -528,17 +395,9 @@ GPlatesMaths::BoundingSmallCircleBuilder::get_bounding_small_circle(
 		expanded_min_dot_product = -1;
 	}
 
-	return BoundingSmallCircle(d_small_circle_centre, expanded_min_dot_product);
-}
-
-
-GPlatesMaths::InnerOuterBoundingSmallCircle::InnerOuterBoundingSmallCircle(
-		const UnitVector3D &small_circle_centre,
-		const double &outer_cosine_colatitude,
-		const double &inner_cosine_colatitude) :
-	d_outer_small_circle(small_circle_centre, outer_cosine_colatitude),
-	d_max_dot_product(inner_cosine_colatitude)
-{
+	return BoundingSmallCircle(
+			d_small_circle_centre,
+			AngularExtent::create_from_cosine(expanded_min_dot_product));
 }
 
 
@@ -550,13 +409,13 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 			dot(d_outer_small_circle.d_small_circle_centre, test_point).dval();
 
 	// See if the test point is clearly outside the outer small circle.
-	if (point_dot_small_circle_centre < d_outer_small_circle.d_min_dot_product)
+	if (point_dot_small_circle_centre < d_outer_small_circle.get_angular_extent().get_cosine().dval())
 	{
 		return OUTSIDE_OUTER_BOUNDS;
 	}
 
 	// See if the test point is clearly inside the inner small circle.
-	if (point_dot_small_circle_centre > d_max_dot_product)
+	if (point_dot_small_circle_centre > d_inner_angular_extent.get_cosine().dval())
 	{
 		return INSIDE_INNER_BOUNDS;
 	}
@@ -575,12 +434,12 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 	update_min_max_dot_product(
 		d_outer_small_circle.d_small_circle_centre, gca, gca_min_dot_product, gca_max_dot_product);
 
-	if (gca_max_dot_product < d_outer_small_circle.d_min_dot_product)
+	if (gca_max_dot_product < d_outer_small_circle.get_angular_extent().get_cosine().dval())
 	{
 		return OUTSIDE_OUTER_BOUNDS;
 	}
 
-	if (gca_min_dot_product > d_max_dot_product)
+	if (gca_min_dot_product > d_inner_angular_extent.get_cosine().dval())
 	{
 		return INSIDE_INNER_BOUNDS;
 	}
@@ -602,7 +461,7 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 			dot(d_outer_small_circle.d_small_circle_centre, first_point.position_vector()).dval();
 
 	// See if the test point is clearly outside the outer small circle.
-	if (first_point_dot_small_circle_centre < d_outer_small_circle.d_min_dot_product)
+	if (first_point_dot_small_circle_centre < d_outer_small_circle.get_angular_extent().get_cosine().dval())
 	{
 		// We only need to test for intersection now.
 		MultiPointOnSphere::const_iterator multi_point_iter = multi_point.begin();
@@ -613,7 +472,7 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 			const double point_dot_small_circle_centre =
 					dot(d_outer_small_circle.d_small_circle_centre, multi_point_iter->position_vector()).dval();
 
-			if (point_dot_small_circle_centre >= d_outer_small_circle.d_min_dot_product)
+			if (point_dot_small_circle_centre >= d_outer_small_circle.get_angular_extent().get_cosine().dval())
 			{
 				return INTERSECTING_BOUNDS;
 			}
@@ -623,7 +482,7 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 	}
 
 	// See if the test point is clearly inside the inner small circle.
-	if (first_point_dot_small_circle_centre > d_max_dot_product)
+	if (first_point_dot_small_circle_centre > d_inner_angular_extent.get_cosine().dval())
 	{
 		// We only need to test for intersection now.
 		MultiPointOnSphere::const_iterator multi_point_iter = multi_point.begin();
@@ -634,7 +493,7 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 			const double point_dot_small_circle_centre =
 					dot(d_outer_small_circle.d_small_circle_centre, multi_point_iter->position_vector()).dval();
 
-			if (point_dot_small_circle_centre <= d_max_dot_product)
+			if (point_dot_small_circle_centre <= d_inner_angular_extent.get_cosine().dval())
 			{
 				return INTERSECTING_BOUNDS;
 			}
@@ -730,41 +589,6 @@ GPlatesMaths::SmallCircleBoundsImpl::intersect(
 
 
 bool
-GPlatesMaths::SmallCircleBoundsImpl::is_inside_inner_bounding_small_circle(
-		const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle,
-		const BoundingSmallCircle &bounding_small_circle,
-		const double &dot_product_circle_centres)
-{
-	// To be contained inside the inner small circle the angle of the inner small circle must be
-	// larger (smaller cosine) than the angle of the small circle (of 'bounding_small_circle').
-	if (inner_outer_bounding_small_circle.get_inner_small_circle_boundary_cosine() <
-				bounding_small_circle.get_small_circle_boundary_cosine())
-	{
-		// Now we can test...
-		//
-		// angle_between_centres + angle_small_circle < angle_inner_circle
-		//
-		// ...which is...
-		//
-		// angle_between_centres < angle_inner_circle - angle_small_circle
-		//
-		// ...which is...
-		//
-		// cos(angle_between_centres) > cos(angle_inner_circle - angle_small_circle)
-		//
-		// ...where we can use cos(A-B) = cos(A) * cos(B) + sin(A) * sin(B).
-		return dot_product_circle_centres >
-			inner_outer_bounding_small_circle.get_inner_small_circle_boundary_cosine() *
-				bounding_small_circle.get_small_circle_boundary_cosine() +
-			inner_outer_bounding_small_circle.get_inner_small_circle_boundary_sine() *
-				bounding_small_circle.get_small_circle_boundary_sine();
-	}
-
-	return false;
-}
-
-
-bool
 GPlatesMaths::SmallCircleBoundsImpl::intersect(
 		const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle_1,
 		const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle_2,
@@ -848,58 +672,46 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::add(
 {
 	//
 	// new_outer_bounding_angle = angle_between_centres + other_small_circle_bounding_angle
-	// cos(new_outer_bounding_angle) = cos(angle_between_centres + other_small_circle_bounding_angle)
-	//                         = cos(angle_between_centres) * cos(other_small_circle_bounding_angle) -
-	//                           sin(angle_between_centres) * sin(other_small_circle_bounding_angle)
 	//
 	// ...and where cos(angle_between_centres) = dot(centre_circle_1, centre_circle_2).
 	//
 
 	// Get the cosine/sine of angle between the centres of both small circles.
-	const double cosine = dot(d_small_circle_centre, bounding_small_circle.get_centre()).dval();
-	const double cosine_square = cosine * cosine;
-	// Use epsilon test (real_t) to avoid sqrt calculation when small circle centres coincide.
-	// For 0 <= theta <= PI; sin(theta) = sqrt[1 - cos(theta)^2]
-	const double sine = (real_t(cosine_square) < 1) ? std::sqrt(1 - cosine_square) : 0;
+	const AngularExtent angular_extent_between_small_circle_centres =
+			AngularExtent::create_from_cosine(
+					dot(d_small_circle_centre, bounding_small_circle.get_centre()));
 
-	// The cosine of the angle from our small circle centre to the outer small circle that encompasses
-	// the other small circle.
-	const double min_dot_product_bounding_other_small_circle =
-			cosine * bounding_small_circle.get_small_circle_boundary_cosine() -
-			sine * bounding_small_circle.get_small_circle_boundary_sine();
+	const AngularExtent angular_extent_new_outer_bounding_angle =
+			angular_extent_between_small_circle_centres + bounding_small_circle.get_angular_extent();
 
 	// If the other small circle bound intersects or is outside our outer small circle then expand
 	// our outer small circle to include it.
-	if (min_dot_product_bounding_other_small_circle < d_min_dot_product)
+	if (angular_extent_new_outer_bounding_angle.get_cosine().dval() < d_min_dot_product)
 	{
-		d_min_dot_product = min_dot_product_bounding_other_small_circle;
+		d_min_dot_product = angular_extent_new_outer_bounding_angle.get_cosine().dval();
 	}
 
 	// First test to see if the other small circle overlaps our small circle centre...
-	if (cosine < bounding_small_circle.get_small_circle_boundary_cosine())
+	if (angular_extent_between_small_circle_centres > bounding_small_circle.get_angular_extent())
 	{
 		// Our small circle centre is *not* contained within the other small circle.
 
 		//
 		// new_inner_bounding_angle = angle_between_centres - other_small_circle_bounding_angle
-		// cos(new_inner_bounding_angle) = cos(angle_between_centres - other_small_circle_bounding_angle)
-		//                         = cos(angle_between_centres) * cos(other_small_circle_bounding_angle) +
-		//                           sin(angle_between_centres) * sin(other_small_circle_bounding_angle)
 		//
 		// ...and where cos(angle_between_centres) = dot(centre_circle_1, centre_circle_2).
 		//
 
-		// The cosine of the angle from our small circle centre to the inner small circle that
+		// The angle from our small circle centre to the inner small circle that
 		// puts the other small circle outside of it.
-		const double max_dot_product_excluding_other_small_circle =
-				cosine * bounding_small_circle.get_small_circle_boundary_cosine() +
-				sine * bounding_small_circle.get_small_circle_boundary_sine();
+		const AngularExtent angular_extent_new_inner_bounding_angle =
+				angular_extent_between_small_circle_centres - bounding_small_circle.get_angular_extent();
 
 		// If the other small circle bound intersects or is inside our inner small circle then
 		// contract our inner small circle to exclude it.
-		if (max_dot_product_excluding_other_small_circle > d_max_dot_product)
+		if (angular_extent_new_inner_bounding_angle.get_cosine().dval() > d_max_dot_product)
 		{
-			d_max_dot_product = max_dot_product_excluding_other_small_circle;
+			d_max_dot_product = angular_extent_new_inner_bounding_angle.get_cosine().dval();
 		}
 	}
 	else
@@ -917,85 +729,74 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::add(
 {
 	//
 	// new_outer_bounding_angle = angle_between_centres + other_small_circle_outer_bounding_angle
-	// cos(new_outer_bounding_angle) = cos(angle_between_centres + other_small_circle_outer_bounding_angle)
-	//                         = cos(angle_between_centres) * cos(other_small_circle_outer_bounding_angle) -
-	//                           sin(angle_between_centres) * sin(other_small_circle_outer_bounding_angle)
 	//
 	// ...and where cos(angle_between_centres) = dot(centre_circle_1, centre_circle_2).
 	//
 
 	// Get the cosine/sine of angle between the centres of both small circles.
-	const double cosine = dot(d_small_circle_centre, inner_outer_bounding_small_circle.get_centre()).dval();
-	const double cosine_square = cosine * cosine;
-	// Use epsilon test (real_t) to avoid sqrt calculation when small circle centres coincide.
-	// For 0 <= theta <= PI; sin(theta) = sqrt[1 - cos(theta)^2]
-	const double sine = (real_t(cosine_square) < 1) ? std::sqrt(1 - cosine_square) : 0;
+	const AngularExtent angular_extent_between_small_circle_centres =
+			AngularExtent::create_from_cosine(
+					dot(d_small_circle_centre, inner_outer_bounding_small_circle.get_centre()));
 
-	// The cosine of the angle from our small circle centre to the outer small circle that encompasses
+	// The angle from our small circle centre to the outer small circle that encompasses
 	// the other outer small circle.
-	const double min_dot_product_bounding_other_small_circle =
-			cosine * inner_outer_bounding_small_circle.get_outer_bounding_small_circle().get_small_circle_boundary_cosine() -
-			sine * inner_outer_bounding_small_circle.get_outer_bounding_small_circle().get_small_circle_boundary_sine();
+	const AngularExtent angular_extent_new_outer_bounding_angle =
+			angular_extent_between_small_circle_centres +
+				inner_outer_bounding_small_circle.get_outer_angular_extent();
 
 	// If the other small circle outer bound intersects or is outside our outer small circle then expand
 	// our outer small circle to include it.
-	if (min_dot_product_bounding_other_small_circle < d_min_dot_product)
+	if (angular_extent_new_outer_bounding_angle.get_cosine().dval() < d_min_dot_product)
 	{
-		d_min_dot_product = min_dot_product_bounding_other_small_circle;
+		d_min_dot_product = angular_extent_new_outer_bounding_angle.get_cosine().dval();
 	}
 
 	// First test to see if the other small circle *inner* bound overlaps our small circle centre...
-	if (cosine > inner_outer_bounding_small_circle.get_inner_small_circle_boundary_cosine())
+	if (angular_extent_between_small_circle_centres < inner_outer_bounding_small_circle.get_inner_angular_extent())
 	{
 		// Our small circle centre is *inside* the other small circle's inner bound.
 
 		//
 		// new_inner_bounding_angle = other_small_circle_inner_bounding_angle - angle_between_centres
-		// cos(new_inner_bounding_angle) = cos(other_small_circle_inner_bounding_angle - angle_between_centres)
-		//                         = cos(other_small_circle_inner_bounding_angle) * cos(angle_between_centres) +
-		//                           sin(other_small_circle_inner_bounding_angle) * sin(angle_between_centres)
 		//
 		// ...and where cos(angle_between_centres) = dot(centre_circle_1, centre_circle_2).
 		//
 
-		// The cosine of the angle from our small circle centre to the inner small circle that
+		// The angle from our small circle centre to the inner small circle that
 		// excludes the other small circle inner bound.
-		const double max_dot_product_excluding_other_small_circle =
-				cosine * inner_outer_bounding_small_circle.get_inner_small_circle_boundary_cosine() +
-				sine * inner_outer_bounding_small_circle.get_inner_small_circle_boundary_sine();
+		const AngularExtent angular_extent_new_inner_bounding_angle =
+				inner_outer_bounding_small_circle.get_inner_angular_extent() -
+					angular_extent_between_small_circle_centres;
 
 		// If the other small circle inner bound intersects or is inside our inner small circle then
 		// contract our inner small circle to exclude it.
-		if (max_dot_product_excluding_other_small_circle > d_max_dot_product)
+		if (angular_extent_new_inner_bounding_angle.get_cosine().dval() > d_max_dot_product)
 		{
-			d_max_dot_product = max_dot_product_excluding_other_small_circle;
+			d_max_dot_product = angular_extent_new_inner_bounding_angle.get_cosine().dval();
 		}
 	}
 	// Next test to see if the other small circle *outer* bound overlaps our small circle centre...
-	else if (cosine < inner_outer_bounding_small_circle.get_outer_bounding_small_circle().get_small_circle_boundary_cosine())
+	else if (angular_extent_between_small_circle_centres > inner_outer_bounding_small_circle.get_outer_angular_extent())
 	{
 		// Our small circle centre is *outside* the other small circle's outer bound.
 
 		//
 		// new_inner_bounding_angle = angle_between_centres - other_small_circle_outer_bounding_angle
-		// cos(new_inner_bounding_angle) = cos(angle_between_centres - other_small_circle_bounding_angle)
-		//                         = cos(angle_between_centres) * cos(other_small_circle_bounding_angle) +
-		//                           sin(angle_between_centres) * sin(other_small_circle_bounding_angle)
 		//
 		// ...and where cos(angle_between_centres) = dot(centre_circle_1, centre_circle_2).
 		//
 
-		// The cosine of the angle from our small circle centre to the inner small circle that
+		// The angle from our small circle centre to the inner small circle that
 		// excludes the other small circle outer bound.
-		const double max_dot_product_excluding_other_small_circle =
-				cosine * inner_outer_bounding_small_circle.get_outer_bounding_small_circle().get_small_circle_boundary_cosine() +
-				sine * inner_outer_bounding_small_circle.get_outer_bounding_small_circle().get_small_circle_boundary_sine();
+		const AngularExtent angular_extent_new_inner_bounding_angle =
+				angular_extent_between_small_circle_centres -
+					inner_outer_bounding_small_circle.get_outer_angular_extent();
 
 		// If the other small circle outer bound intersects or is inside our inner small circle then
 		// contract our inner small circle to exclude it.
-		if (max_dot_product_excluding_other_small_circle > d_max_dot_product)
+		if (angular_extent_new_inner_bounding_angle.get_cosine().dval() > d_max_dot_product)
 		{
-			d_max_dot_product = max_dot_product_excluding_other_small_circle;
+			d_max_dot_product = angular_extent_new_inner_bounding_angle.get_cosine().dval();
 		}
 	}
 	else
@@ -1019,7 +820,10 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::get_inner_outer_bounding_sma
 	if (d_min_dot_product - d_max_dot_product > 1)
 	{
 		qWarning() << "InnerOuterBoundingSmallCircleBuilder: no primitives added";
-		return InnerOuterBoundingSmallCircle(d_small_circle_centre, 1.0,  1.0);
+		return InnerOuterBoundingSmallCircle(
+				d_small_circle_centre,
+				AngularExtent::create_from_cosine(1.0),
+				AngularExtent::create_from_cosine(1.0));
 	}
 
 	// The epsilon expands the dot product range covered
@@ -1038,8 +842,8 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::get_inner_outer_bounding_sma
 
 	return InnerOuterBoundingSmallCircle(
 			d_small_circle_centre,
-			expanded_min_dot_product,
-			expanded_max_dot_product);
+			AngularExtent::create_from_cosine(expanded_min_dot_product),
+			AngularExtent::create_from_cosine(expanded_max_dot_product));
 }
 
 

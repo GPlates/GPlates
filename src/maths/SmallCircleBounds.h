@@ -31,19 +31,20 @@
 #include <utility>
 #include <boost/optional.hpp>
 
-#include "types.h"
-#include "UnitVector3D.h"
 
+#include "AngularExtent.h"
 #include "MultiPointOnSphere.h"
 #include "PointOnSphere.h"
 #include "PolygonOnSphere.h"
 #include "PolylineOnSphere.h"
+#include "types.h"
+#include "UnitVector3D.h"
 
 
 namespace GPlatesMaths
 {
-	class Rotation;
 	class FiniteRotation;
+	class Rotation;
 
 	/**
 	 * Returns the minimum and maximum dot product of a point and a great circle arc.
@@ -127,18 +128,22 @@ namespace GPlatesMaths
 	class BoundingSmallCircle
 	{
 	public:
+
 		/**
 		 * Ideally use @a BoundingSmallCircleBuilder to construct this.
 		 *
-		 * @a cosine_colatitude is the cosine of the "colatitude" of the small circle around the
-		 * "North Pole" of its axis (from the small circle centre to the
-		 * boundary of the small circle - the radius angle).
+		 * @a angular_extent_radius is the angular extent (radius) of the small circle boundary
+		 * with the small circle centre.
+		 *
 		 * This is also the minimum dot product of any geometry, bounded by this small circle,
 		 * with the small circle centre.
 		 */
 		BoundingSmallCircle(
 				const UnitVector3D &small_circle_centre,
-				const double &cosine_colatitude);
+				const AngularExtent &angular_extent_radius) :
+			d_small_circle_centre(small_circle_centre),
+			d_angular_extent(angular_extent_radius)
+		{  }
 
 
 		/**
@@ -256,84 +261,45 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Returns the cosine of any part of the small circle boundary with the small circle centre.
+		 * Returns the angular extent (radius) of the small circle boundary with the small circle centre.
 		 *
 		 * This gives a measure of the minimum dot product of any part of any geometry,
 		 * bounded by this small circle, with the small circle centre.
 		 */
-		const double &
-		get_small_circle_boundary_cosine() const
+		const AngularExtent &
+		get_angular_extent() const
 		{
-			return d_min_dot_product;
+			return d_angular_extent;
 		}
 
 
 		/**
-		 * Returns the sine of any part of the small circle boundary with the small circle centre.
-		 *
-		 * This gives a measure of the magnitude of the cross product of any point *on* the
-		 * bounding small circle with the small circle centre.
-		 */
-		const double &
-		get_small_circle_boundary_sine() const
-		{
-			// Since we're calculating the square root we'll cache the value to
-			// avoid recalculating every time it's queried.
-			if (!d_magnitude_boundary_cross_product)
-			{
-				// For 0 <= theta <= PI; sin(theta) = sqrt[1 - cos(theta)^2]
-				const double cosine_square = d_min_dot_product * d_min_dot_product;
-				if (cosine_square < 1)
-				{
-					d_magnitude_boundary_cross_product = std::sqrt(1 - cosine_square);
-				}
-				else
-				{
-					d_magnitude_boundary_cross_product = 0;
-				}
-			}
-
-			return d_magnitude_boundary_cross_product.get();
-		}
-
-
-		/**
-		 * Creates a bounding small circle extended by the specified angle - specified as cosine(angle).
-		 *
-		 * @a sine_extend_angle can be provided (as an optimisation) if it already available.
+		 * Creates a bounding small circle extended by the specified angle.
 		 */
 		BoundingSmallCircle
 		extend(
-				const double &cosine_extend_angle,
-				boost::optional<double> sine_extend_angle = boost::none) const;
+				const AngularExtent &angular_extension) const
+		{
+			return BoundingSmallCircle(get_centre(), d_angular_extent + angular_extension);
+		}
 
 
 		/**
-		 * Creates a bounding small circle contracted by the specified angle - specified as cosine(angle).
+		 * Creates a bounding small circle contracted by the specified angle.
 		 *
 		 * Returns a small circle of zero radius if the contract angle is larger then the angle
 		 * of 'this' bounding small circle.
-		 *
-		 * @a sine_contract_angle can be provided (as an optimisation) if it already available.
 		 */
 		BoundingSmallCircle
 		contract(
-				const double &cosine_contract_angle,
-				boost::optional<double> sine_contract_angle = boost::none) const;
+				const AngularExtent &angular_contraction) const
+		{
+			return BoundingSmallCircle(get_centre(), d_angular_extent - angular_contraction);
+		}
 
 	private:
 		UnitVector3D d_small_circle_centre;
-		double d_min_dot_product;
-		mutable boost::optional<double> d_magnitude_boundary_cross_product;
-
-
-		/**
-		 * Private constructor only used by @a InnerOuterBoundingSmallCircle.
-		 */
-		BoundingSmallCircle(
-				const UnitVector3D &small_circle_centre,
-				const double &cosine_colatitude,
-				const boost::optional<double> &magnitude_boundary_cross_product);
+		AngularExtent d_angular_extent;
 
 		friend class InnerOuterBoundingSmallCircle;
 	};
@@ -374,11 +340,18 @@ namespace GPlatesMaths
 
 	namespace SmallCircleBoundsImpl
 	{
+		inline
 		bool
 		intersect(
 				const BoundingSmallCircle &bounding_small_circle_1,
 				const BoundingSmallCircle &bounding_small_circle_2,
-				const double &dot_product_circle_centres);
+				const double &dot_product_circle_centres)
+		{
+			// Two small circles intersect (or overlap) if the angle between their centres
+			// is less than the sum of their interior angles.
+			return AngularExtent::create_from_cosine(dot_product_circle_centres) <
+					bounding_small_circle_1.get_angular_extent() + bounding_small_circle_2.get_angular_extent();
+		}
 	}
 
 
@@ -517,19 +490,25 @@ namespace GPlatesMaths
 	class InnerOuterBoundingSmallCircle
 	{
 	public:
+
 		/**
 		 * Use @a InnerOuterBoundingSmallCircleBuilder to construct this.
 		 *
-		 * @a outer_cosine_colatitude and @a inner_cosine_colatitude are cosines of the "colatitude"
-		 * of the small circles around the "North Pole" of its axis to the inner and outer bounds
-		 * of this small circle.
+		 * @a outer_angular_extent_radius is the angular extent (radius) of the *outer* small circle
+		 * boundary with the small circle centre.
+		 * @a inner_angular_extent_radius is the angular extent (radius) of the *inner* small circle
+		 * boundary with the small circle centre.
+
 		 * These are also the minimum and maximum dot products of any geometry, bounded by these
 		 * small circles, with the small circle(s) common centre.
 		 */
 		InnerOuterBoundingSmallCircle(
 				const UnitVector3D &small_circle_centre,
-				const double &outer_cosine_colatitude,
-				const double &inner_cosine_colatitude);
+				const AngularExtent &outer_angular_extent_radius,
+				const AngularExtent &inner_angular_extent_radius) :
+			d_outer_small_circle(small_circle_centre, outer_angular_extent_radius),
+			d_inner_angular_extent(inner_angular_extent_radius)
+		{  }
 
 		/**
 		 * The result of testing a primitive against the bounding region
@@ -637,75 +616,33 @@ namespace GPlatesMaths
 		const UnitVector3D &
 		get_centre() const
 		{
-			return d_outer_small_circle.d_small_circle_centre;
+			return d_outer_small_circle.get_centre();
 		}
 
 
 		/**
-		 * Returns the cosine of any part of the inner small circle boundary with the small circle centre.
+		 * Returns the angular extent (radius) of the *inner* small circle boundary with the small circle centre.
 		 *
 		 * This gives a measure of the maximum dot product of any part of any geometry,
 		 * bounded by the annular region, with the small circle centre.
 		 */
-		const double &
-		get_inner_small_circle_boundary_cosine() const
+		const AngularExtent &
+		get_inner_angular_extent() const
 		{
-			return d_max_dot_product;
+			return d_inner_angular_extent;
 		}
 
 
 		/**
-		 * Returns the sine of any part of the inner small circle boundary with the small circle centre.
-		 *
-		 * This gives a measure of the magnitude of the cross product of any point *on* the
-		 * inner bounding small circle with the small circle centre.
-		 */
-		const double &
-		get_inner_small_circle_boundary_sine() const
-		{
-			// Since we're calculating the square root we'll cache the value to
-			// avoid recalculating every time it's queried.
-			if (!d_magnitude_inner_boundary_cross_product)
-			{
-				// For 0 <= theta <= PI; sin(theta) = sqrt[1 - cos(theta)^2]
-				const double cosine_square = d_max_dot_product * d_max_dot_product;
-				if (cosine_square < 1)
-				{
-					d_magnitude_inner_boundary_cross_product = std::sqrt(1 - cosine_square);
-				}
-				else
-				{
-					d_magnitude_inner_boundary_cross_product = 0;
-				}
-			}
-
-			return d_magnitude_inner_boundary_cross_product.get();
-		}
-
-
-		/**
-		 * Returns the cosine of any part of the outer small circle boundary with the small circle centre.
+		 * Returns the angular extent (radius) of the *outer* small circle boundary with the small circle centre.
 		 *
 		 * This gives a measure of the minimum dot product of any part of any geometry,
 		 * bounded by the annular region, with the small circle centre.
 		 */
-		const double &
-		get_outer_small_circle_boundary_cosine() const
+		const AngularExtent &
+		get_outer_angular_extent() const
 		{
-			return d_outer_small_circle.get_small_circle_boundary_cosine();
-		}
-
-
-		/**
-		 * Returns the sine of any part of the outer small circle boundary with the small circle centre.
-		 *
-		 * This gives a measure of the magnitude of the cross product of any point *on* the
-		 * outer bounding small circle with the small circle centre.
-		 */
-		const double &
-		get_outer_small_circle_boundary_sine() const
-		{
-			return d_outer_small_circle.get_small_circle_boundary_sine();
+			return d_outer_small_circle.get_angular_extent();
 		}
 
 
@@ -717,8 +654,7 @@ namespace GPlatesMaths
 		{
 			return BoundingSmallCircle(
 					d_outer_small_circle.get_centre(),
-					d_max_dot_product, // Becomes the min dot product of the returned small circle.
-					d_magnitude_inner_boundary_cross_product);
+					d_inner_angular_extent);
 		}
 
 
@@ -735,8 +671,7 @@ namespace GPlatesMaths
 
 	private:
 		BoundingSmallCircle d_outer_small_circle;
-		double d_max_dot_product;
-		mutable boost::optional<double> d_magnitude_inner_boundary_cross_product;
+		AngularExtent d_inner_angular_extent;
 	};
 
 
@@ -769,11 +704,20 @@ namespace GPlatesMaths
 				const BoundingSmallCircle &bounding_small_circle,
 				const double &dot_product_circle_centres);
 
+		inline
 		bool
 		is_inside_inner_bounding_small_circle(
 				const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle,
 				const BoundingSmallCircle &bounding_small_circle,
-				const double &dot_product_circle_centres);
+				const double &dot_product_circle_centres)
+		{
+			//
+			// angle_between_centres + angle_small_circle < angle_inner_circle
+			//
+			return AngularExtent::create_from_cosine(dot_product_circle_centres) +
+					bounding_small_circle.get_angular_extent() <
+						inner_outer_bounding_small_circle.get_inner_angular_extent();
+		}
 
 		bool
 		intersect(
@@ -1060,7 +1004,7 @@ namespace GPlatesMaths
 		update_min_max_dot_product(
 				d_small_circle_centre, first_gca, gca_min_dot_product, gca_max_dot_product);
 
-		if (gca_max_dot_product < d_min_dot_product)
+		if (gca_max_dot_product < d_angular_extent.get_cosine().dval())
 		{
 			// The first GCA is fully outside the bound.
 			// Since the client has promised that the remaining GCA's are sequentially
@@ -1074,7 +1018,7 @@ namespace GPlatesMaths
 
 				update_max_dot_product(d_small_circle_centre, gca, gca_max_dot_product);
 
-				if (gca_max_dot_product >= d_min_dot_product)
+				if (gca_max_dot_product >= d_angular_extent.get_cosine().dval())
 				{
 					return INTERSECTING_BOUNDS;
 				}
@@ -1083,7 +1027,7 @@ namespace GPlatesMaths
 			return OUTSIDE_BOUNDS;
 		}
 
-		if (gca_min_dot_product > d_min_dot_product)
+		if (gca_min_dot_product > d_angular_extent.get_cosine().dval())
 		{
 			// The first GCA is fully inside the bound.
 			// Since the client has promised that the remaining GCA's are sequentially
@@ -1097,7 +1041,7 @@ namespace GPlatesMaths
 
 				update_min_dot_product(d_small_circle_centre, gca, gca_min_dot_product);
 
-				if (gca_min_dot_product <= d_min_dot_product)
+				if (gca_min_dot_product <= d_angular_extent.get_cosine().dval())
 				{
 					return INTERSECTING_BOUNDS;
 				}
@@ -1146,7 +1090,7 @@ namespace GPlatesMaths
 		update_min_max_dot_product(
 				d_outer_small_circle.d_small_circle_centre, first_gca, gca_min_dot_product, gca_max_dot_product);
 
-		if (gca_max_dot_product < d_outer_small_circle.d_min_dot_product)
+		if (gca_max_dot_product < d_outer_small_circle.d_angular_extent.get_cosine().dval())
 		{
 			// The first GCA is fully outside the outer bound.
 			// Since the client has promised that the remaining GCA's are sequentially
@@ -1160,7 +1104,7 @@ namespace GPlatesMaths
 
 				update_max_dot_product(d_outer_small_circle.d_small_circle_centre, gca, gca_max_dot_product);
 
-				if (gca_max_dot_product >= d_outer_small_circle.d_min_dot_product)
+				if (gca_max_dot_product >= d_outer_small_circle.d_angular_extent.get_cosine().dval())
 				{
 					return INTERSECTING_BOUNDS;
 				}
@@ -1169,7 +1113,7 @@ namespace GPlatesMaths
 			return OUTSIDE_OUTER_BOUNDS;
 		}
 
-		if (gca_min_dot_product > d_max_dot_product)
+		if (gca_min_dot_product > d_inner_angular_extent.get_cosine().dval())
 		{
 			// The first GCA is fully inside the inner bound.
 			// Since the client has promised that the remaining GCA's are sequentially
@@ -1183,7 +1127,7 @@ namespace GPlatesMaths
 
 				update_min_dot_product(d_outer_small_circle.d_small_circle_centre, gca, gca_min_dot_product);
 
-				if (gca_min_dot_product <= d_max_dot_product)
+				if (gca_min_dot_product <= d_inner_angular_extent.get_cosine().dval())
 				{
 					return INTERSECTING_BOUNDS;
 				}

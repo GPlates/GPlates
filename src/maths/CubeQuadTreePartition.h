@@ -925,7 +925,11 @@ namespace GPlatesMaths
 				location_type *location_added = NULL)
 		{
 			const BoundingSmallCircle &bounding_small_circle = multi_point_on_sphere.get_bounding_small_circle();
-			add(element, bounding_small_circle.get_centre(), AngularExtent::create(bounding_small_circle), location_added);
+			add(
+					element,
+					bounding_small_circle.get_centre(),
+					bounding_small_circle.get_angular_extent(),
+					location_added);
 		}
 
 		/**
@@ -943,7 +947,12 @@ namespace GPlatesMaths
 		{
 			// Rotate only the geometry's bounding circle centre to avoid rotating the entire geometry.
 			const BoundingSmallCircle &bounding_small_circle = multi_point_on_sphere.get_bounding_small_circle();
-			add(element, bounding_small_circle.get_centre(), AngularExtent::create(bounding_small_circle), finite_rotation, location_added);
+			add(
+					element,
+					bounding_small_circle.get_centre(),
+					bounding_small_circle.get_angular_extent(),
+					finite_rotation,
+					location_added);
 		}
 
 		/**
@@ -963,7 +972,7 @@ namespace GPlatesMaths
 			add(
 					element,
 					bounding_small_circle.get_centre(),
-					AngularExtent::create(bounding_small_circle) + region_of_interest,
+					bounding_small_circle.get_angular_extent() + region_of_interest,
 					location_added);
 		}
 
@@ -986,7 +995,7 @@ namespace GPlatesMaths
 			add(
 					element,
 					bounding_small_circle.get_centre(),
-					AngularExtent::create(bounding_small_circle) + region_of_interest,
+					bounding_small_circle.get_angular_extent() + region_of_interest,
 					finite_rotation,
 					location_added);
 		}
@@ -1005,7 +1014,11 @@ namespace GPlatesMaths
 				location_type *location_added = NULL)
 		{
 			const BoundingSmallCircle &bounding_small_circle = polyline_on_sphere.get_bounding_small_circle();
-			add(element, bounding_small_circle.get_centre(), AngularExtent::create(bounding_small_circle), location_added);
+			add(
+					element,
+					bounding_small_circle.get_centre(),
+					bounding_small_circle.get_angular_extent(),
+					location_added);
 		}
 
 		/**
@@ -1023,7 +1036,12 @@ namespace GPlatesMaths
 		{
 			// Rotate only the geometry's bounding circle centre to avoid rotating the entire geometry.
 			const BoundingSmallCircle &bounding_small_circle = polyline_on_sphere.get_bounding_small_circle();
-			add(element, bounding_small_circle.get_centre(), AngularExtent::create(bounding_small_circle), finite_rotation, location_added);
+			add(
+					element,
+					bounding_small_circle.get_centre(),
+					bounding_small_circle.get_angular_extent(),
+					finite_rotation,
+					location_added);
 		}
 
 		/**
@@ -1043,7 +1061,7 @@ namespace GPlatesMaths
 			add(
 					element,
 					bounding_small_circle.get_centre(),
-					AngularExtent::create(bounding_small_circle) + region_of_interest,
+					bounding_small_circle.get_angular_extent() + region_of_interest,
 					location_added);
 		}
 
@@ -1066,7 +1084,7 @@ namespace GPlatesMaths
 			add(
 					element,
 					bounding_small_circle.get_centre(),
-					AngularExtent::create(bounding_small_circle) + region_of_interest,
+					bounding_small_circle.get_angular_extent() + region_of_interest,
 					finite_rotation,
 					location_added);
 		}
@@ -1085,7 +1103,11 @@ namespace GPlatesMaths
 				location_type *location_added = NULL)
 		{
 			const BoundingSmallCircle &bounding_small_circle = polygon_on_sphere.get_bounding_small_circle();
-			add(element, bounding_small_circle.get_centre(), AngularExtent::create(bounding_small_circle), location_added);
+			add(
+					element,
+					bounding_small_circle.get_centre(),
+					bounding_small_circle.get_angular_extent(),
+					location_added);
 		}
 
 		/**
@@ -1103,7 +1125,12 @@ namespace GPlatesMaths
 		{
 			// Rotate only the geometry's bounding circle centre to avoid rotating the entire geometry.
 			const BoundingSmallCircle &bounding_small_circle = polygon_on_sphere.get_bounding_small_circle();
-			add(element, bounding_small_circle.get_centre(), AngularExtent::create(bounding_small_circle), finite_rotation, location_added);
+			add(
+					element,
+					bounding_small_circle.get_centre(),
+					bounding_small_circle.get_angular_extent(),
+					finite_rotation,
+					location_added);
 		}
 
 		/**
@@ -1123,7 +1150,7 @@ namespace GPlatesMaths
 			add(
 					element,
 					bounding_small_circle.get_centre(),
-					AngularExtent::create(bounding_small_circle) + region_of_interest,
+					bounding_small_circle.get_angular_extent() + region_of_interest,
 					location_added);
 		}
 
@@ -1146,7 +1173,7 @@ namespace GPlatesMaths
 			add(
 					element,
 					bounding_small_circle.get_centre(),
-					AngularExtent::create(bounding_small_circle) + region_of_interest,
+					bounding_small_circle.get_angular_extent() + region_of_interest,
 					finite_rotation,
 					location_added);
 		}
@@ -1674,7 +1701,7 @@ namespace GPlatesMaths
 
 		// See if the bounding circle is larger than a hemi-sphere.
 		// If it is then it's too big to project onto the cube face.
-		if (bounding_circle_extent.get_cosine() < 1e-4)
+		if (bounding_circle_extent.get_cosine().is_precisely_less_than(1e-4))
 		{
 			add(element, d_cube_quad_tree->get_or_create_root_element());
 
@@ -1689,11 +1716,11 @@ namespace GPlatesMaths
 
 		const double sin_e =
 				std::sqrt(1+1e-12f - circle_centre_z_in_global_coords * circle_centre_z_in_global_coords);
-		const double sin_a = bounding_circle_extent.get_sine();
+		const double sin_a = bounding_circle_extent.get_sine().dval();
 
 		const double sin_e_sin_a = sin_e * sin_a;
 		const double cos_e_cos_a =
-				circle_centre_z_in_global_coords * bounding_circle_extent.get_cosine();
+				circle_centre_z_in_global_coords * bounding_circle_extent.get_cosine().dval();
 
 		// See if we can even calculate the maximum projected radius on the cube face.
 		// If we can't then it means the bounding circle has a position and extent that
