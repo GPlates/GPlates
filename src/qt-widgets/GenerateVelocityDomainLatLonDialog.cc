@@ -66,9 +66,9 @@ namespace
 	const char *HELP_DIALOG_TEXT_CONFIGURATION = QT_TR_NOOP(
 			"<html><body>"
 			"<p/>"
-			"<p>The <i>'number of grid intervals along latitude'</i> parameter specifies the number of "
-			"intervals in the latitude direction (along meridian lines). The number of grid nodes "
-			"(points) along the latitude direction will be the number of grid intervals plus one. "
+			"<p>The <i>'number of latitudinal grid intervals'</i> parameter specifies the number of "
+			"intervals in the latitude direction (along meridians). The number of latitudinal grid nodes "
+			"(points) will be the number of grid intervals plus one. "
 			"The top and bottom points will lie on the north and south poles.</p>"
 			"<p>The latitude and longitude grid <i>spacings</i> are the same, resulting in roughly "
 			"twice the number of nodes along longitudes - it is actually '2 * (NUM_LATITUDE_NODES - 1)' "
