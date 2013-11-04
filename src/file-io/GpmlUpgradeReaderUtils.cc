@@ -258,6 +258,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::rename_gpgim_feature_class_properties(
 			original_gpgim_feature_class.get()->get_feature_description(),
 			gpgim_feature_properties.begin(),
 			gpgim_feature_properties.end(),
+			original_gpgim_feature_class.get()->get_default_geometry_feature_property(),
 			original_gpgim_feature_class.get()->get_parent_feature_class());
 }
 
@@ -334,6 +335,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::remove_gpgim_feature_class_properties(
 			original_gpgim_feature_class.get()->get_feature_description(),
 			gpgim_feature_properties.begin(),
 			gpgim_feature_properties.end(),
+			original_gpgim_feature_class.get()->get_default_geometry_feature_property(),
 			original_gpgim_feature_class.get()->get_parent_feature_class());
 }
 

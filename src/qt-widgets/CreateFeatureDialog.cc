@@ -73,6 +73,7 @@
 #include "model/FeatureType.h"
 #include "model/Gpgim.h"
 #include "model/GpgimFeatureClass.h"
+#include "model/GpgimProperty.h"
 #include "model/Model.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
@@ -659,6 +660,47 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_geometric_property_list()
 
 	// Populate the listwidget_geometry_destinations based on what is legal right now.
 	d_listwidget_geometry_destinations->populate(feature_type_opt.get(), geometric_property_type);
+
+	//
+	// Set the default geometry property name (if there is one) for the feature type.
+	//
+
+	// Get the GPGIM feature class for the feature type.
+	boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class_opt =
+			d_gpgim.get_feature_class(feature_type_opt.get());
+	// Our list of features was obtained from the GPGIM so we should be able to find it.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			gpgim_feature_class_opt,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Get the default geometry property for the feature type.
+	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_gpgim_geometry_property =
+			gpgim_feature_class_opt.get()->get_default_geometry_feature_property();
+	if (default_gpgim_geometry_property)
+	{
+		const GPlatesModel::PropertyName &default_geometry_property_name =
+				default_gpgim_geometry_property.get()->get_property_name();
+
+		// Get the list of geometry properties actually populated in the list widget.
+		std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_geometry_properties;
+		ChoosePropertyWidget::get_properties_to_populate(
+				gpgim_geometry_properties,
+				d_gpgim,
+				feature_type_opt.get(),
+				geometric_property_type);
+
+		// If the default geometry property name appears in the list then select it.
+		BOOST_FOREACH(
+				const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &gpgim_geometry_property,
+				gpgim_geometry_properties)
+		{
+			if (gpgim_geometry_property->get_property_name() == default_geometry_property_name)
+			{
+				d_listwidget_geometry_destinations->set_property_name(default_geometry_property_name);
+				break;
+			}
+		}
+	}
 }
 
 
