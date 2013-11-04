@@ -1,11 +1,11 @@
-/* $Id: OgrReader.cc 13710 2012-12-14 14:16:34Z rwatson $ */
+/* $Id$ */
 
 /**
  * \file 
  * File specific comments.
  *
  * Most recent change:
- *   $Date: 2012-12-14 15:16:34 +0100 (Fri, 14 Dec 2012) $
+ *   $Date$
  * 
  * Copyright (C) 2007, 2008, 2009 Geological Survey of Norway (under the name "ShapefileReader.h")
  * Copyright (C) 2010 The University of Sydney, Australia (under the name "ShapefileReader.h")
