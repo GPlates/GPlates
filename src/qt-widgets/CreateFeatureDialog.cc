@@ -231,6 +231,41 @@ namespace
 	}	
 
 	/**
+	 * Query the GPGIM to determine whether we should present the user
+	 * with a relativePlate property value edit widget.
+	 * This is based on FeatureType.
+	 */
+	bool
+	should_offer_relative_plate_id_prop(
+			const GPlatesQtWidgets::ChooseFeatureTypeWidget *choose_feature_type_widget,
+			const GPlatesModel::Gpgim &gpgim)
+	{
+		// Get currently selected feature type.
+		boost::optional<GPlatesModel::FeatureType> feature_type =
+				choose_feature_type_widget->get_feature_type();
+		if (!feature_type)
+		{
+			return false;
+		}
+
+		// Exclude unclassified feature type because it supports *all* properties and, since
+		// we don't set the relative plate id widget to null (like conjugate plate id), then
+		// it will add the default relative plate id zero as a property value which we don't want.
+		static const GPlatesModel::FeatureType UNCLASSIFIED_FEATURE_TYPE =
+				GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature");
+		if (feature_type.get() == UNCLASSIFIED_FEATURE_TYPE)
+		{
+			return false;
+		}
+
+		static const GPlatesModel::PropertyName RELATIVE_PLATE_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("relativePlate");
+
+		// See if the feature type supports a relative plate id property.
+		return gpgim.get_feature_property(feature_type.get(), RELATIVE_PLATE_PROPERTY_NAME);
+	}
+
+	/**
 	 * Set some default states and/or restrictions on the reconstruction method, depending on the selected feature type.
 	 */
 	void
@@ -354,6 +389,7 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	d_viewport_window_ptr(&viewport_window_),
 	d_plate_id_widget(new EditPlateIdWidget(this)),
 	d_conjugate_plate_id_widget(new EditPlateIdWidget(this)),
+	d_relative_plate_id_widget(new EditPlateIdWidget(this)),
 	d_time_period_widget(new EditTimePeriodWidget(this)),
 	d_name_widget(new EditStringWidget(this)),
 	d_choose_feature_type_widget(
@@ -510,6 +546,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 	
 	// Reconfigure some accelerator keys that conflict.
 	d_plate_id_widget->label()->setText(tr("Plate &ID:"));
+	d_relative_plate_id_widget->label()->setText(tr("R&elative Plate ID:"));
 	d_conjugate_plate_id_widget->label()->setText(tr("C&onjugate ID:"));
 	// Conjugate Plate IDs are optional.
 	d_conjugate_plate_id_widget->set_null_value_permitted(true);
@@ -548,6 +585,9 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 	plate_id_layout->setMargin(0);
 	plate_id_layout->addWidget(d_plate_id_widget);
 	plate_id_layout->addWidget(d_conjugate_plate_id_widget);
+	plate_id_layout->addWidget(d_relative_plate_id_widget);
+	// Relative plate id widget invisible by default since only used for MotionPath feature type.
+	d_relative_plate_id_widget->setVisible(false);
 
 	//Add right and left plate id widgets
 	//these widgets are invisible by default
@@ -770,6 +810,16 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties()
 					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
 					d_plate_id_widget->create_property_value_from_widget(),
 					feature_type);
+
+			// Add a gpml:relativePlate Property.
+			if (should_offer_relative_plate_id_prop(d_choose_feature_type_widget, d_gpgim))
+			{
+				add_common_feature_property_to_list(
+						common_feature_properties,
+						GPlatesModel::PropertyName::create_gpml("relativePlate"),
+						d_relative_plate_id_widget->create_property_value_from_widget(),
+						feature_type);
+			}
 		}
 
 		// Add a gpml:conjugatePlateId Property.
@@ -966,6 +1016,11 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 		d_conjugate_plate_id_widget->setVisible(
 			d_recon_method_combobox->currentIndex() == 0 /* plate id */ &&
 				should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget, d_gpgim));
+		// Set the relative plate id to zero.
+		d_relative_plate_id_widget->set_null(false);
+		d_relative_plate_id_widget->setVisible(
+			d_recon_method_combobox->currentIndex() == 0 /* plate id */ &&
+				should_offer_relative_plate_id_prop(d_choose_feature_type_widget, d_gpgim));
 		// Make sure it's unchecked because it's accessed programmatically even when it's not visible.
 		d_create_conjugate_isochron_checkbox->setChecked(false);
 		d_create_conjugate_isochron_checkbox->setVisible(
@@ -1147,6 +1202,7 @@ GPlatesQtWidgets::CreateFeatureDialog::recon_method_changed(int index)
 		case GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION:
 			d_plate_id_widget->setVisible(false);
 			d_conjugate_plate_id_widget->setVisible(false);
+			d_relative_plate_id_widget->setVisible(false);
 			d_right_plate_id->setVisible(true);
 			d_left_plate_id->setVisible(true);
 			d_recon_method = GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION;
@@ -1158,6 +1214,8 @@ GPlatesQtWidgets::CreateFeatureDialog::recon_method_changed(int index)
 			d_plate_id_widget->setVisible(true);
 			d_conjugate_plate_id_widget->setVisible(
 					should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget, d_gpgim));
+			d_relative_plate_id_widget->setVisible(
+					should_offer_relative_plate_id_prop(d_choose_feature_type_widget, d_gpgim));
 			d_recon_method = GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID;
 			break;
 	}

@@ -285,6 +285,11 @@ namespace GPlatesQtWidgets
 		EditPlateIdWidget *d_conjugate_plate_id_widget;
 
 		/**
+		 * The custom edit widget for 'relative plate' id (for MotionPath feature type). Memory managed by Qt.
+		 */
+		EditPlateIdWidget *d_relative_plate_id_widget;
+
+		/**
 		 * The custom edit widget for GmlTimePeriod. Memory managed by Qt.
 		 */
 		EditTimePeriodWidget *d_time_period_widget;
