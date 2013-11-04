@@ -99,7 +99,7 @@ namespace GPlatesFileIO
 			explicit
 			OutputOptions(
 					// Wrap polyline/polygon geometries to the dateline (mainly useful for ArcGIS shapefile users)...
-					bool wrap_geometries_to_the_dateline_ = false,
+					bool wrap_geometries_to_the_dateline_ = true,
 
 					// plate polygon options
 					bool export_individual_plate_polygon_files_         = false,

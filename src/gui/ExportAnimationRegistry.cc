@@ -364,7 +364,7 @@ GPlatesGui::register_default_export_animation_types(
 	const ExportOptionsUtils::ExportFileOptions default_reconstructed_geometry_file_export_options(
 			/*export_to_a_single_file_*/true,
 			/*export_to_multiple_files_*/true);
-	const bool default_reconstructed_geometry_wrap_to_dateline = false;
+	const bool default_reconstructed_geometry_wrap_to_dateline = true;
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
@@ -576,7 +576,7 @@ GPlatesGui::register_default_export_animation_types(
 			/*export_to_multiple_files_*/true);
 	const bool default_resolved_topology_export_lines = true;
 	const bool default_resolved_topology_export_polygons = true;
-	const bool default_resolved_topology_wrap_to_dateline = false;
+	const bool default_resolved_topology_wrap_to_dateline = true;
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
@@ -652,7 +652,7 @@ GPlatesGui::register_default_export_animation_types(
 	// Set defaults 
 	const GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::OutputOptions
 			default_citcoms_resolved_topology_export_options(
-					/*wrap_geometries_to_the_dateline*/false,
+					/*wrap_geometries_to_the_dateline*/true,
 
 					/*export_individual_plate_polygon_files*/false,
 					/*export_all_plate_polygons_to_a_single_file*/true,
@@ -1227,7 +1227,7 @@ GPlatesGui::register_default_export_animation_types(
 	const ExportOptionsUtils::ExportFileOptions default_flowline_file_export_options(
 			/*export_to_a_single_file_*/false,
 			/*export_to_multiple_files_*/true);
-	const bool default_flowline_wrap_to_dateline = false;
+	const bool default_flowline_wrap_to_dateline = true;
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
@@ -1299,7 +1299,7 @@ GPlatesGui::register_default_export_animation_types(
 	const ExportOptionsUtils::ExportFileOptions default_motion_path_file_export_options(
 			/*export_to_a_single_file_*/false,
 			/*export_to_multiple_files_*/true);
-	const bool default_motion_path_wrap_to_dateline = false;
+	const bool default_motion_path_wrap_to_dateline = true;
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(

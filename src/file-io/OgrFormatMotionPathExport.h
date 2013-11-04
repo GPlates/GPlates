@@ -65,7 +65,7 @@ namespace GPlatesFileIO
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool should_export_referenced_files = true,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 
 
 	}

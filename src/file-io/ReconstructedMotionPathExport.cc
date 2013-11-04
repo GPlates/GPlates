@@ -1,9 +1,9 @@
-/* $Id: ReconstructedFeatureGeometryExport.cc -1   $ */
+/* $Id$ */
 
 /**
  * \file Exports reconstructed feature geometries to a file.
- * $Revision: -1 $
- * $Date: $
+ * $Revision$
+ * $Date$
  * 
  * Copyright (C) 2009 The University of Sydney, Australia
  * Copyright (C) 2010, 2011 Geological Survey of Norway
