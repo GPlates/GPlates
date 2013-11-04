@@ -98,22 +98,54 @@
 namespace
 {
 	bool
-	is_topological_geometry(
+	is_topological_line(
 			const GPlatesModel::PropertyValue &property_value)
 	{
 		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_LINE =
 				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalLine");
+
+		const GPlatesPropertyValues::StructuralType property_type =
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
+
+		return property_type == GPML_TOPOLOGICAL_LINE;
+	}
+
+
+	bool
+	is_topological_polygon(
+			const GPlatesModel::PropertyValue &property_value)
+	{
 		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_POLYGON =
 				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalPolygon");
+
+		const GPlatesPropertyValues::StructuralType property_type =
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
+
+		return property_type == GPML_TOPOLOGICAL_POLYGON;
+	}
+
+
+	bool
+	is_topological_network(
+			const GPlatesModel::PropertyValue &property_value)
+	{
 		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_NETWORK =
 				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalNetwork");
 
 		const GPlatesPropertyValues::StructuralType property_type =
 				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
 
-		return property_type == GPML_TOPOLOGICAL_LINE ||
-			property_type == GPML_TOPOLOGICAL_POLYGON ||
-			property_type == GPML_TOPOLOGICAL_NETWORK;
+		return property_type == GPML_TOPOLOGICAL_NETWORK;
+	}
+
+
+	bool
+	is_topological_geometry(
+			const GPlatesModel::PropertyValue &property_value)
+	{
+		return is_topological_line(property_value) ||
+				is_topological_polygon(property_value) ||
+				is_topological_network(property_value);
 	}
 
 
@@ -582,7 +614,29 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_list()
 	// Default to 'gpml:UnclassifiedFeature' (if it supports the geometric property type).
 	static const GPlatesModel::FeatureType UNCLASSIFIED_FEATURE_TYPE =
 			GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature");
-	d_choose_feature_type_widget->set_feature_type(UNCLASSIFIED_FEATURE_TYPE);
+	GPlatesModel::FeatureType default_feature_type = UNCLASSIFIED_FEATURE_TYPE;
+
+	// Change the default feature types for topological polygons and networks (requested by Dietmar and Sabin).
+	// It is not needed for topological lines since they were added later when pretty much any
+	// feature type could have topological geometries and hence there was no feature type
+	// designated as a 'topological line'.
+	if (d_geometry_property_value)
+	{
+		if (is_topological_polygon(*d_geometry_property_value.get()))
+		{
+			static const GPlatesModel::FeatureType TOPOLOGICAL_CLOSED_PLATE_BOUNDARY_FEATURE_TYPE =
+					GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary");
+			default_feature_type = TOPOLOGICAL_CLOSED_PLATE_BOUNDARY_FEATURE_TYPE;
+		}
+		else if (is_topological_network(*d_geometry_property_value.get()))
+		{
+			static const GPlatesModel::FeatureType TOPOLOGICAL_NETWORK_FEATURE_TYPE =
+					GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
+			default_feature_type = TOPOLOGICAL_NETWORK_FEATURE_TYPE;
+		}
+	}
+
+	d_choose_feature_type_widget->set_feature_type(default_feature_type);
 }
 
 
