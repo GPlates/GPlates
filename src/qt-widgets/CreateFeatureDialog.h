@@ -195,6 +195,9 @@ namespace GPlatesQtWidgets
 		set_up_feature_list();
 
 		void
+		select_default_feature_type();
+
+		void
 		set_up_geometric_property_list();
 
 		void

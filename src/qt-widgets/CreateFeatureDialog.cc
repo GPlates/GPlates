@@ -652,7 +652,16 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_list()
 	// If no geometric property type (not selected by user yet) then select all feature types.
 	d_choose_feature_type_widget->populate(geometric_property_type);
 
-	// Default to 'gpml:UnclassifiedFeature' (if it supports the geometric property type).
+	// Note that we don't set the feature type selection.
+	// If the previously selected feature type is in the new list of feature types then
+	// the selection will be retained (ie, we'll remember the last selection).
+}
+
+
+void
+GPlatesQtWidgets::CreateFeatureDialog::select_default_feature_type()
+{
+	// Default feature type 'gpml:UnclassifiedFeature' (if it supports the geometric property type).
 	static const GPlatesModel::FeatureType UNCLASSIFIED_FEATURE_TYPE =
 			GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature");
 	GPlatesModel::FeatureType default_feature_type = UNCLASSIFIED_FEATURE_TYPE;
@@ -921,12 +930,16 @@ GPlatesQtWidgets::CreateFeatureDialog::display()
 	//
 	// NOTE: If the dialog was last left on the first page (by the user) then just selecting
 	// the first page will not result in a page change and hence no event.
-	// So we need to explicitly set up the feature type list (normally done in the first page
+	// So we need to explicitly set up the feature type list - normally done in the first page
 	// (the feature type page).
 	set_up_feature_list();
 
 	// Set the stack back to the first page.
 	stack->setCurrentIndex(FEATURE_TYPE_PAGE);
+
+	// Select the default feature type based on the geometry property type.
+	// We only do this once for each time this dialog is invoked.
+	select_default_feature_type();
 
 	// The Feature Collections list needs to be repopulated each time.
 	d_choose_feature_collection_widget->initialise();
@@ -1016,8 +1029,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 		d_conjugate_plate_id_widget->setVisible(
 			d_recon_method_combobox->currentIndex() == 0 /* plate id */ &&
 				should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget, d_gpgim));
-		// Set the relative plate id to zero.
-		d_relative_plate_id_widget->set_null(false);
+		// Note that we don't set the relative plate id to zero - we remember the last set plate id.
 		d_relative_plate_id_widget->setVisible(
 			d_recon_method_combobox->currentIndex() == 0 /* plate id */ &&
 				should_offer_relative_plate_id_prop(d_choose_feature_type_widget, d_gpgim));
