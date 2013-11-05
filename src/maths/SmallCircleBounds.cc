@@ -588,6 +588,43 @@ GPlatesMaths::SmallCircleBoundsImpl::intersect(
 }
 
 
+GPlatesMaths::AngularDistance
+GPlatesMaths::SmallCircleBoundsImpl::minimum_distance(
+		const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle,
+		const BoundingSmallCircle &bounding_small_circle,
+		const double &dot_product_circle_centres)
+{
+	// If 'bounding_small_circle' is completely outside the outer bounds
+	// of 'inner_outer_bounding_small_circle' or completely inside its inner bounds
+	// then there's no intersection and the minimum distance will be non-zero.
+
+	const AngularExtent distance_circle_centres =
+			AngularExtent::create_from_cosine(dot_product_circle_centres);
+
+	const AngularExtent sum_radii_circle_and_outer_circle =
+			bounding_small_circle.get_angular_extent() +
+				inner_outer_bounding_small_circle.get_outer_angular_extent();
+
+	// If 'bounding_small_circle' is completely outside the outer bounds.
+	if (distance_circle_centres > sum_radii_circle_and_outer_circle)
+	{
+		return (distance_circle_centres - sum_radii_circle_and_outer_circle).get_angular_distance();
+	}
+
+	// The bounding small circle intersects the outer bounds of 'inner_outer_bounding_small_circle'.
+	// So it's either completely inside the inner bounds or it intersects 'inner_outer_bounding_small_circle'.
+
+	// angle_inner_circle - angle_between_centres - angle_small_circle
+	//
+	// Note that this clamps to zero if not completely inside inner bounding small circle.
+	return (
+			inner_outer_bounding_small_circle.get_inner_angular_extent() -
+			distance_circle_centres -
+			bounding_small_circle.get_angular_extent()
+		).get_angular_distance();
+}
+
+
 bool
 GPlatesMaths::SmallCircleBoundsImpl::intersect(
 		const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle_1,
@@ -622,6 +659,51 @@ GPlatesMaths::SmallCircleBoundsImpl::intersect(
 	}
 
 	return true;
+}
+
+
+GPlatesMaths::AngularDistance
+GPlatesMaths::SmallCircleBoundsImpl::minimum_distance(
+		const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle_1,
+		const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle_2,
+		const double &dot_product_circle_centres)
+{
+	const AngularExtent distance_circle_centres =
+			AngularExtent::create_from_cosine(dot_product_circle_centres);
+
+	const AngularExtent sum_radii_outer_circles =
+			inner_outer_bounding_small_circle_1.get_outer_angular_extent() +
+			inner_outer_bounding_small_circle_2.get_outer_angular_extent();
+
+	// Detect most likely case first - that both outer small circles do not intersect.
+	if (distance_circle_centres > sum_radii_outer_circles)
+	{
+		return (distance_circle_centres - sum_radii_outer_circles).get_angular_distance();
+	}
+
+	const AngularExtent sum_distance_circle_centres_and_outer_radius_2 =
+			distance_circle_centres +
+			inner_outer_bounding_small_circle_2.get_outer_angular_extent();
+
+	// See if the outer small circle 2 is inside the inner small circle 1.
+	if (inner_outer_bounding_small_circle_1.get_inner_angular_extent() >
+		sum_distance_circle_centres_and_outer_radius_2)
+	{
+		return (inner_outer_bounding_small_circle_1.get_inner_angular_extent() -
+				sum_distance_circle_centres_and_outer_radius_2).get_angular_distance();
+	}
+
+	// The outer small circle 1 can still be inside the inner small circle 2.
+	// If not then both inner-outer bounding small circles intersect each other.
+
+	// angle_inner_circle2 - angle_between_centres - angle_outer_circle1
+	//
+	// Note that this clamps to zero if not completely inside inner bounding small circle.
+	return (
+			inner_outer_bounding_small_circle_2.get_inner_angular_extent() -
+			distance_circle_centres -
+			inner_outer_bounding_small_circle_1.get_outer_angular_extent()
+		).get_angular_distance();
 }
 
 

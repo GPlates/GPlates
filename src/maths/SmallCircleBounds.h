@@ -32,6 +32,7 @@
 #include <boost/optional.hpp>
 
 
+#include "AngularDistance.h"
 #include "AngularExtent.h"
 #include "MultiPointOnSphere.h"
 #include "PointOnSphere.h"
@@ -352,6 +353,23 @@ namespace GPlatesMaths
 			return AngularExtent::create_from_cosine(dot_product_circle_centres) <
 					bounding_small_circle_1.get_angular_extent() + bounding_small_circle_2.get_angular_extent();
 		}
+
+		inline
+		AngularDistance
+		minimum_distance(
+				const BoundingSmallCircle &bounding_small_circle_1,
+				const BoundingSmallCircle &bounding_small_circle_2,
+				const double &dot_product_circle_centres)
+		{
+			// Minimum distance between two small circles is the angle between their centres
+			// is less than the sum of their interior angles.
+			// Note that (AngularExtent - AngularExtent) clamps to zero (eg, if circles intersect).
+			return (
+					AngularExtent::create_from_cosine(dot_product_circle_centres) -
+					bounding_small_circle_1.get_angular_extent() -
+					bounding_small_circle_2.get_angular_extent()
+				).get_angular_distance();
+		}
 	}
 
 
@@ -365,6 +383,24 @@ namespace GPlatesMaths
 			const BoundingSmallCircle &bounding_small_circle_2)
 	{
 		return SmallCircleBoundsImpl::intersect(
+				bounding_small_circle_1,
+				bounding_small_circle_2,
+				dot(bounding_small_circle_1.get_centre(), bounding_small_circle_2.get_centre()).dval());
+	}
+
+
+	/**
+	 * Returns the minimum angular distance between two bounding small circles.
+	 *
+	 * If they intersect then the returned angular distance will be zero.
+	 */
+	inline
+	AngularDistance
+	minimum_distance(
+			const BoundingSmallCircle &bounding_small_circle_1,
+			const BoundingSmallCircle &bounding_small_circle_2)
+	{
+		return SmallCircleBoundsImpl::minimum_distance(
 				bounding_small_circle_1,
 				bounding_small_circle_2,
 				dot(bounding_small_circle_1.get_centre(), bounding_small_circle_2.get_centre()).dval());
@@ -704,6 +740,12 @@ namespace GPlatesMaths
 				const BoundingSmallCircle &bounding_small_circle,
 				const double &dot_product_circle_centres);
 
+		AngularDistance
+		minimum_distance(
+				const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle,
+				const BoundingSmallCircle &bounding_small_circle,
+				const double &dot_product_circle_centres);
+
 		inline
 		bool
 		is_inside_inner_bounding_small_circle(
@@ -721,6 +763,12 @@ namespace GPlatesMaths
 
 		bool
 		intersect(
+				const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle_1,
+				const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle_2,
+				const double &dot_product_circle_centres);
+
+		AngularDistance
+		minimum_distance(
 				const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle_1,
 				const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle_2,
 				const double &dot_product_circle_centres);
@@ -768,12 +816,7 @@ namespace GPlatesMaths
 	/**
 	 * Returns true if a bounding small circle intersects an inner-outer bounding small circle.
 	 *
-	 * Note that if @a bounding_small_circle is completely inside the inner bounding small circle
-	 * of @a inner_outer_bounding_small_circle then false is returned.
-	 *
-	 * This is useful for testing if a geometry can possibly intersect the line geometry of
-	 * a polygon (the inner-outer bounds are for the polygon) which is useful when
-	 * clipping geometries to a polygon.
+	 * This function simply reverses the arguments of the other @a intersect overload.
 	 */
 	inline
 	bool
@@ -782,6 +825,50 @@ namespace GPlatesMaths
 			const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle)
 	{
 		return intersect(inner_outer_bounding_small_circle, bounding_small_circle);
+	}
+
+
+	/**
+	 * Returns the minimum angular distance of a bounding small circle to an inner-outer
+	 * bounding small circle.
+	 *
+	 * If they intersect then the returned angular distance will be zero.
+	 *
+	 * Note that if @a bounding_small_circle is completely inside the inner bounding small circle
+	 * of @a inner_outer_bounding_small_circle then a non-zero distance will be returned.
+	 *
+	 * This is useful for testing how close a geometry can possibly get to the line geometry of
+	 * a polygon (the inner-outer bounds are for the polygon) which is useful when determining
+	 * whether or not to calculate the actual minimum distance of the geometry to the polygon.
+	 */
+	inline
+	AngularDistance
+	minimum_distance(
+			const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle,
+			const BoundingSmallCircle &bounding_small_circle)
+	{
+		return SmallCircleBoundsImpl::minimum_distance(
+				inner_outer_bounding_small_circle,
+				bounding_small_circle,
+				dot(
+					inner_outer_bounding_small_circle.get_centre(),
+					bounding_small_circle.get_centre()).dval());
+	}
+
+
+	/**
+	 * Returns the minimum angular distance of a bounding small circle to an inner-outer
+	 * bounding small circle.
+	 *
+	 * This function simply reverses the arguments of the other @a intersect overload.
+	 */
+	inline
+	AngularDistance
+	minimum_distance(
+			const BoundingSmallCircle &bounding_small_circle,
+			const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle)
+	{
+		return minimum_distance(inner_outer_bounding_small_circle, bounding_small_circle);
 	}
 
 
@@ -820,6 +907,29 @@ namespace GPlatesMaths
 			const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle_2)
 	{
 		return SmallCircleBoundsImpl::intersect(
+				inner_outer_bounding_small_circle_1,
+				inner_outer_bounding_small_circle_2,
+				dot(
+					inner_outer_bounding_small_circle_1.get_centre(),
+					inner_outer_bounding_small_circle_2.get_centre()).dval());
+	}
+
+
+	/**
+	 * Returns the minimum angular distance between two inner-outer bounding small circles.
+	 *
+	 * If they intersect then the returned angular distance will be zero.
+	 *
+	 * Note that if the outer bounds of either is completely inside the inner bounds of the
+	 * other then a non-zero distance will be returned.
+	 */
+	inline
+	AngularDistance
+	minimum_distance(
+			const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle_1,
+			const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle_2)
+	{
+		return SmallCircleBoundsImpl::minimum_distance(
 				inner_outer_bounding_small_circle_1,
 				inner_outer_bounding_small_circle_2,
 				dot(
