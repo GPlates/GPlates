@@ -45,7 +45,7 @@ GPlatesMaths::AngularExtent::operator+(
 			return AngularExtent(real_t(-1.0), real_t(0.0));
 		}
 
-		return AngularExtent(cos(angular_extent), sin(angular_extent));
+		return AngularExtent(cos(angular_extent));
 	}
 
 	return AngularExtent(

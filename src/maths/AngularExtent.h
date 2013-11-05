@@ -26,9 +26,9 @@
 #ifndef GPLATES_MATHS_ANGULAREXTENT_H
 #define GPLATES_MATHS_ANGULAREXTENT_H
 
-#include <cmath>
 #include <boost/optional.hpp>
 
+#include "AngularDistance.h"
 #include "MathsUtils.h"
 #include "types.h"
 
@@ -40,6 +40,9 @@ namespace GPlatesMaths
 {
 	/**
 	 * An angular extent stored as cosine and sine instead of the actual angle.
+	 *
+	 * All comparison operators (<, >, <=, >=, ==, !=) are supported.
+	 * In addition all comparison operators (<, >, <=, >=, ==, !=) with @a AngularDistance are supported.
 	 *
 	 * Note that, as with great circle arcs, the angular extent is limited to the range [0,PI].
 	 * So that angular extent only covers up to half the globe (like great circle arcs).
@@ -64,7 +67,10 @@ namespace GPlatesMaths
 			// inheritance from several empty base classes...
 			public boost::less_than_comparable<AngularExtent,
 					boost::equivalent<AngularExtent,
-					boost::equality_comparable<AngularExtent> > >
+					boost::equality_comparable<AngularExtent,
+					boost::less_than_comparable<AngularExtent, AngularDistance,
+					boost::equivalent<AngularExtent, AngularDistance,
+					boost::equality_comparable<AngularExtent, AngularDistance> > > > > >
 	{
 	public:
 
@@ -150,6 +156,20 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Convenience method to create a lightweight version of @a AngularExtent
+		 * known as @a AngularDistance.
+		 *
+		 * This is useful for those functions that accept @a AngularDistance as a parameter.
+		 * Note that @a AngularDistance does not support addition/subtraction.
+		 */
+		AngularDistance
+		get_angular_distance() const
+		{
+			return AngularDistance::create_from_cosine(d_cosine);
+		}
+
+
+		/**
 		 * A member function for adding two angular extents such that the returned
 		 * angular extent is the sum of the angles.
 		 *
@@ -184,12 +204,25 @@ namespace GPlatesMaths
 				const AngularExtent &rhs) const;
 
 
+		//
+		// The following operators are provided by boost::less_than_comparable,
+		// boost::equivalent and boost::equality_comparable:
+		//
+		// AngularExtent <= AngularExtent
+		// AngularExtent >= AngularExtent
+		// AngularExtent > AngularExtent
+		// AngularExtent == AngularExtent
+		// AngularExtent != AngularExtent
+		//
+		// ...based on 'AngularExtent < AngularExtent' which we explicitly provide below.
+		//
+
+
 		/**
-		 * Less than operator - all other operators (<=, >, >=, ==, !=) provided by
-		 * boost::less_than_comparable, boost::equivalent and boost::equality_comparable.
+		 * Less than operator comparison with another @a AngularExtent.
 		 *
-		 * This comparison can be done cheaply using cosines and sines as opposed to using inverse
-		 * cosine (acos) to get the angles (inverse cosine is quite expensive even on modern CPUs).
+		 * This comparison can be done cheaply using cosines as opposed to using inverse cosine (acos)
+		 * to get the angles (inverse cosine is quite expensive even on modern CPUs).
 		 * So instead of testing...
 		 *
 		 * angular_extent_1 < angular_extent_2
@@ -197,8 +230,6 @@ namespace GPlatesMaths
 		 * ...we can test...
 		 *
 		 * cos(angular_extent_1) > cos(angular_extent_2)
-		 *
-		 * ...where we can use cos(A+B) = cos(A) * cos(B) - sin(A) * sin(B).
 		 *
 		 * Whereas using angles would require calculating:
 		 *
@@ -214,6 +245,52 @@ namespace GPlatesMaths
 			// NOTE: We're using 'real_t' which does epsilon test required for boost::equivalent to work.
 			// Also note reversal of comparison since comparing cosine(angle) instead of angle.
 			return d_cosine > rhs.d_cosine;
+		}
+
+
+		//
+		// The following operators are provided by boost::less_than_comparable,
+		// boost::equivalent and boost::equality_comparable:
+		//
+		// AngularExtent <= AngularDistance
+		// AngularExtent >= AngularDistance
+		// AngularExtent == AngularDistance
+		// AngularExtent != AngularDistance
+		//
+		// AngularDistance <= AngularExtent
+		// AngularDistance >= AngularExtent
+		// AngularDistance < AngularExtent
+		// AngularDistance > AngularExtent
+		// AngularDistance == AngularExtent
+		// AngularDistance != AngularExtent
+		//
+		// ...based on 'AngularExtent < AngularDistance' and 'AngularExtent > AngularDistance'
+		// which we explicitly provide below.
+		//
+
+
+		/**
+		 * Less than operator comparison with @a AngularDistance.
+		 */
+		bool
+		operator<(
+				const AngularDistance &rhs) const
+		{
+			// NOTE: We're using 'real_t' which does epsilon test required for boost::equivalent to work.
+			// Also note reversal of comparison since comparing cosine(angle) instead of angle.
+			return d_cosine > rhs.get_cosine();
+		}
+
+		/**
+		 * Greater than operator comparison with @a AngularDistance.
+		 */
+		bool
+		operator>(
+				const AngularDistance &rhs) const
+		{
+			// NOTE: We're using 'real_t' which does epsilon test required for boost::equivalent to work.
+			// Also note reversal of comparison since comparing cosine(angle) instead of angle.
+			return d_cosine < rhs.get_cosine();
 		}
 
 	private:
