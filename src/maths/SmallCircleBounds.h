@@ -1052,9 +1052,6 @@ namespace GPlatesMaths
 			return OUTSIDE_BOUNDS;
 		}
 
-		AngularDistance min_distance = AngularDistance::PI;
-		AngularDistance max_distance = AngularDistance::ZERO;
-
 		const GreatCircleArc &first_gca = *great_circle_arc_begin;
 
 		const AngularDistance min_distance_to_first_gca = minimum_distance(d_small_circle_centre, first_gca);
@@ -1136,9 +1133,6 @@ namespace GPlatesMaths
 		{
 			return OUTSIDE_OUTER_BOUNDS;
 		}
-
-		double gca_min_dot_product = 1.0;
-		double gca_max_dot_product = -1.0;
 
 		const GreatCircleArc &first_gca = *great_circle_arc_begin;
 
