@@ -43,11 +43,11 @@ GPlatesMaths::BoundingSmallCircle::Result
 GPlatesMaths::BoundingSmallCircle::test(
 		const UnitVector3D &test_point) const
 {
-	const double point_dot_small_circle_centre =
-			dot(d_small_circle_centre, test_point).dval();
+	const AngularDistance distance_point_to_small_circle_centre =
+			AngularDistance::create_from_cosine(dot(d_small_circle_centre, test_point));
 
 	// See if the test point is clearly outside the bound.
-	if (point_dot_small_circle_centre < d_angular_extent.get_cosine().dval())
+	if (distance_point_to_small_circle_centre.is_precisely_greater_than(d_angular_extent))
 	{
 		return OUTSIDE_BOUNDS;
 	}
@@ -61,18 +61,14 @@ GPlatesMaths::BoundingSmallCircle::Result
 GPlatesMaths::BoundingSmallCircle::test(
 		const GreatCircleArc &gca) const
 {
-	double gca_min_dot_product = 1.0;
-	double gca_max_dot_product = -1.0;
-
-	update_min_max_dot_product(
-		d_small_circle_centre, gca, gca_min_dot_product, gca_max_dot_product);
-
-	if (gca_max_dot_product < d_angular_extent.get_cosine().dval())
+	const AngularDistance min_distance_to_gca = minimum_distance(d_small_circle_centre, gca);
+	if (min_distance_to_gca.is_precisely_greater_than(d_angular_extent))
 	{
 		return OUTSIDE_BOUNDS;
 	}
 
-	if (gca_min_dot_product > d_angular_extent.get_cosine().dval())
+	const AngularDistance max_distance_to_gca = maximum_distance(d_small_circle_centre, gca);
+	if (max_distance_to_gca.is_precisely_less_than(d_angular_extent))
 	{
 		return INSIDE_BOUNDS;
 	}
@@ -85,16 +81,14 @@ GPlatesMaths::BoundingSmallCircle::Result
 GPlatesMaths::BoundingSmallCircle::test(
 		const MultiPointOnSphere &multi_point) const
 {
-	//double point_min_dot_product = 1.0;
-	//double point_max_dot_product = -1.0;
-
 	const PointOnSphere &first_point = *multi_point.begin();
 
-	const double first_point_dot_small_circle_centre =
-			dot(d_small_circle_centre, first_point.position_vector()).dval();
+	const AngularDistance distance_first_point_to_small_circle_centre =
+			AngularDistance::create_from_cosine(
+					dot(d_small_circle_centre, first_point.position_vector()));
 
 	// See if the test point is clearly outside the bound.
-	if (first_point_dot_small_circle_centre < d_angular_extent.get_cosine().dval())
+	if (distance_first_point_to_small_circle_centre.is_precisely_greater_than(d_angular_extent))
 	{
 		// We only need to test for intersection now.
 		MultiPointOnSphere::const_iterator multi_point_iter = multi_point.begin();
@@ -102,10 +96,11 @@ GPlatesMaths::BoundingSmallCircle::test(
 			multi_point_iter != multi_point.end();
 			++multi_point_iter)
 		{
-			const double point_dot_small_circle_centre =
-					dot(d_small_circle_centre, multi_point_iter->position_vector()).dval();
+			const AngularDistance distance_point_to_small_circle_centre =
+					AngularDistance::create_from_cosine(
+							dot(d_small_circle_centre, multi_point_iter->position_vector()));
 
-			if (point_dot_small_circle_centre >= d_angular_extent.get_cosine().dval())
+			if (distance_point_to_small_circle_centre.is_precisely_less_than(d_angular_extent))
 			{
 				return INTERSECTING_BOUNDS;
 			}
@@ -121,10 +116,11 @@ GPlatesMaths::BoundingSmallCircle::test(
 		multi_point_iter != multi_point.end();
 		++multi_point_iter)
 	{
-		const double point_dot_small_circle_centre =
-				dot(d_small_circle_centre, multi_point_iter->position_vector()).dval();
+		const AngularDistance distance_point_to_small_circle_centre =
+				AngularDistance::create_from_cosine(
+						dot(d_small_circle_centre, multi_point_iter->position_vector()));
 
-		if (point_dot_small_circle_centre <= d_angular_extent.get_cosine().dval())
+		if (distance_point_to_small_circle_centre.is_precisely_greater_than(d_angular_extent))
 		{
 			return INTERSECTING_BOUNDS;
 		}
@@ -322,7 +318,7 @@ GPlatesMaths::create_optimal_bounding_small_circle(
 GPlatesMaths::BoundingSmallCircleBuilder::BoundingSmallCircleBuilder(
 		const UnitVector3D &small_circle_centre) :
 	d_small_circle_centre(small_circle_centre),
-	d_min_dot_product(1.0)
+	d_maximum_distance(AngularDistance::ZERO)
 {
 }
 
@@ -331,13 +327,13 @@ void
 GPlatesMaths::BoundingSmallCircleBuilder::add(
 		const UnitVector3D &point)
 {
-	const double point_dot_small_circle_centre =
-			dot(point, d_small_circle_centre).dval();
+	const AngularDistance distance_point_to_small_circle_centre =
+			AngularDistance::create_from_cosine(dot(point, d_small_circle_centre));
 
 	// See if the point is further than the current furthest so far.
-	if (point_dot_small_circle_centre < d_min_dot_product)
+	if (distance_point_to_small_circle_centre.is_precisely_greater_than(d_maximum_distance))
 	{
-		d_min_dot_product = point_dot_small_circle_centre;
+		d_maximum_distance = distance_point_to_small_circle_centre;
 	}
 }
 
@@ -375,9 +371,9 @@ GPlatesMaths::BoundingSmallCircleBuilder::add(
 
 	// If the other small circle bound intersects, or is outside, our small circle then expand our
 	// small circle to include it.
-	if (angular_extent_new_bounding_angle.get_cosine().dval() < d_min_dot_product)
+	if (angular_extent_new_bounding_angle.is_precisely_greater_than(d_maximum_distance))
 	{
-		d_min_dot_product = angular_extent_new_bounding_angle.get_cosine().dval();
+		d_maximum_distance = angular_extent_new_bounding_angle.get_angular_distance();
 	}
 }
 
@@ -389,7 +385,7 @@ GPlatesMaths::BoundingSmallCircleBuilder::get_bounding_small_circle(
 	// The epsilon expands the dot product range covered
 	// as a protection against numerical precision.
 	// This epsilon should be larger than used in class Real (which is about 1e-12).
-	double expanded_min_dot_product = d_min_dot_product - expand_bound_delta_dot_product;
+	double expanded_min_dot_product = d_maximum_distance.get_cosine().dval() - expand_bound_delta_dot_product;
 	if (expanded_min_dot_product < -1)
 	{
 		expanded_min_dot_product = -1;
@@ -405,17 +401,18 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::Result
 GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 		const UnitVector3D &test_point) const
 {
-	const double point_dot_small_circle_centre =
-			dot(d_outer_small_circle.d_small_circle_centre, test_point).dval();
+	const AngularDistance distance_point_to_small_circle_centre =
+			AngularDistance::create_from_cosine(
+					dot(d_outer_small_circle.d_small_circle_centre, test_point));
 
 	// See if the test point is clearly outside the outer small circle.
-	if (point_dot_small_circle_centre < d_outer_small_circle.get_angular_extent().get_cosine().dval())
+	if (distance_point_to_small_circle_centre.is_precisely_greater_than(d_outer_small_circle.get_angular_extent()))
 	{
 		return OUTSIDE_OUTER_BOUNDS;
 	}
 
 	// See if the test point is clearly inside the inner small circle.
-	if (point_dot_small_circle_centre > d_inner_angular_extent.get_cosine().dval())
+	if (distance_point_to_small_circle_centre.is_precisely_less_than(d_inner_angular_extent))
 	{
 		return INSIDE_INNER_BOUNDS;
 	}
@@ -428,18 +425,14 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::Result
 GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 		const GreatCircleArc &gca) const
 {
-	double gca_min_dot_product = 1.0;
-	double gca_max_dot_product = -1.0;
-
-	update_min_max_dot_product(
-		d_outer_small_circle.d_small_circle_centre, gca, gca_min_dot_product, gca_max_dot_product);
-
-	if (gca_max_dot_product < d_outer_small_circle.get_angular_extent().get_cosine().dval())
+	const AngularDistance min_distance_to_gca = minimum_distance(d_outer_small_circle.d_small_circle_centre, gca);
+	if (min_distance_to_gca.is_precisely_greater_than(d_outer_small_circle.get_angular_extent()))
 	{
 		return OUTSIDE_OUTER_BOUNDS;
 	}
 
-	if (gca_min_dot_product > d_inner_angular_extent.get_cosine().dval())
+	const AngularDistance max_distance_to_gca = maximum_distance(d_outer_small_circle.d_small_circle_centre, gca);
+	if (max_distance_to_gca.is_precisely_less_than(d_inner_angular_extent))
 	{
 		return INSIDE_INNER_BOUNDS;
 	}
@@ -452,16 +445,14 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::Result
 GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 		const MultiPointOnSphere &multi_point) const
 {
-	//double point_min_dot_product = 1.0;
-	//double point_max_dot_product = -1.0;
-
 	const PointOnSphere &first_point = *multi_point.begin();
 
-	const double first_point_dot_small_circle_centre =
-			dot(d_outer_small_circle.d_small_circle_centre, first_point.position_vector()).dval();
+	const AngularDistance distance_first_point_to_small_circle_centre =
+			AngularDistance::create_from_cosine(
+					dot(d_outer_small_circle.d_small_circle_centre, first_point.position_vector()));
 
 	// See if the test point is clearly outside the outer small circle.
-	if (first_point_dot_small_circle_centre < d_outer_small_circle.get_angular_extent().get_cosine().dval())
+	if (distance_first_point_to_small_circle_centre.is_precisely_greater_than(d_outer_small_circle.get_angular_extent()))
 	{
 		// We only need to test for intersection now.
 		MultiPointOnSphere::const_iterator multi_point_iter = multi_point.begin();
@@ -469,10 +460,11 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 			multi_point_iter != multi_point.end();
 			++multi_point_iter)
 		{
-			const double point_dot_small_circle_centre =
-					dot(d_outer_small_circle.d_small_circle_centre, multi_point_iter->position_vector()).dval();
+			const AngularDistance distance_point_to_small_circle_centre =
+					AngularDistance::create_from_cosine(
+							dot(d_outer_small_circle.d_small_circle_centre, multi_point_iter->position_vector()));
 
-			if (point_dot_small_circle_centre >= d_outer_small_circle.get_angular_extent().get_cosine().dval())
+			if (distance_point_to_small_circle_centre.is_precisely_less_than(d_outer_small_circle.get_angular_extent()))
 			{
 				return INTERSECTING_BOUNDS;
 			}
@@ -482,7 +474,7 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 	}
 
 	// See if the test point is clearly inside the inner small circle.
-	if (first_point_dot_small_circle_centre > d_inner_angular_extent.get_cosine().dval())
+	if (distance_first_point_to_small_circle_centre.is_precisely_less_than(d_inner_angular_extent))
 	{
 		// We only need to test for intersection now.
 		MultiPointOnSphere::const_iterator multi_point_iter = multi_point.begin();
@@ -490,10 +482,11 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::test(
 			multi_point_iter != multi_point.end();
 			++multi_point_iter)
 		{
-			const double point_dot_small_circle_centre =
-					dot(d_outer_small_circle.d_small_circle_centre, multi_point_iter->position_vector()).dval();
+			const AngularDistance distance_point_to_small_circle_centre =
+					AngularDistance::create_from_cosine(
+							dot(d_outer_small_circle.d_small_circle_centre, multi_point_iter->position_vector()));
 
-			if (point_dot_small_circle_centre <= d_inner_angular_extent.get_cosine().dval())
+			if (distance_point_to_small_circle_centre.is_precisely_greater_than(d_inner_angular_extent))
 			{
 				return INTERSECTING_BOUNDS;
 			}
@@ -606,7 +599,7 @@ GPlatesMaths::SmallCircleBoundsImpl::minimum_distance(
 				inner_outer_bounding_small_circle.get_outer_angular_extent();
 
 	// If 'bounding_small_circle' is completely outside the outer bounds.
-	if (distance_circle_centres > sum_radii_circle_and_outer_circle)
+	if (distance_circle_centres.is_precisely_greater_than(sum_radii_circle_and_outer_circle))
 	{
 		return (distance_circle_centres - sum_radii_circle_and_outer_circle).get_angular_distance();
 	}
@@ -676,7 +669,7 @@ GPlatesMaths::SmallCircleBoundsImpl::minimum_distance(
 			inner_outer_bounding_small_circle_2.get_outer_angular_extent();
 
 	// Detect most likely case first - that both outer small circles do not intersect.
-	if (distance_circle_centres > sum_radii_outer_circles)
+	if (distance_circle_centres.is_precisely_greater_than(sum_radii_outer_circles))
 	{
 		return (distance_circle_centres - sum_radii_outer_circles).get_angular_distance();
 	}
@@ -686,8 +679,8 @@ GPlatesMaths::SmallCircleBoundsImpl::minimum_distance(
 			inner_outer_bounding_small_circle_2.get_outer_angular_extent();
 
 	// See if the outer small circle 2 is inside the inner small circle 1.
-	if (inner_outer_bounding_small_circle_1.get_inner_angular_extent() >
-		sum_distance_circle_centres_and_outer_radius_2)
+	if (inner_outer_bounding_small_circle_1.get_inner_angular_extent()
+		.is_precisely_greater_than(sum_distance_circle_centres_and_outer_radius_2))
 	{
 		return (inner_outer_bounding_small_circle_1.get_inner_angular_extent() -
 				sum_distance_circle_centres_and_outer_radius_2).get_angular_distance();
@@ -710,8 +703,8 @@ GPlatesMaths::SmallCircleBoundsImpl::minimum_distance(
 GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::InnerOuterBoundingSmallCircleBuilder(
 		const UnitVector3D &small_circle_centre) :
 	d_small_circle_centre(small_circle_centre),
-	d_min_dot_product(1.0),
-	d_max_dot_product(-1.0)
+	d_minimum_distance(AngularDistance::PI),
+	d_maximum_distance(AngularDistance::ZERO)
 {
 }
 
@@ -720,17 +713,17 @@ void
 GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::add(
 		const UnitVector3D &point)
 {
-	const double point_dot_small_circle_centre =
-			dot(point, d_small_circle_centre).dval();
+	const AngularDistance distance_point_to_small_circle_centre =
+			AngularDistance::create_from_cosine(dot(point, d_small_circle_centre));
 
 	// See if the point is closer/further than the current closest/furthest so far.
-	if (point_dot_small_circle_centre > d_max_dot_product)
+	if (distance_point_to_small_circle_centre.is_precisely_less_than(d_minimum_distance))
 	{
-		d_max_dot_product = point_dot_small_circle_centre;
+		d_minimum_distance = distance_point_to_small_circle_centre;
 	}
-	if (point_dot_small_circle_centre < d_min_dot_product)
+	if (distance_point_to_small_circle_centre.is_precisely_greater_than(d_maximum_distance))
 	{
-		d_min_dot_product = point_dot_small_circle_centre;
+		d_maximum_distance = distance_point_to_small_circle_centre;
 	}
 }
 
@@ -768,13 +761,13 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::add(
 
 	// If the other small circle bound intersects or is outside our outer small circle then expand
 	// our outer small circle to include it.
-	if (angular_extent_new_outer_bounding_angle.get_cosine().dval() < d_min_dot_product)
+	if (angular_extent_new_outer_bounding_angle.is_precisely_greater_than(d_maximum_distance))
 	{
-		d_min_dot_product = angular_extent_new_outer_bounding_angle.get_cosine().dval();
+		d_maximum_distance = angular_extent_new_outer_bounding_angle.get_angular_distance();
 	}
 
 	// First test to see if the other small circle overlaps our small circle centre...
-	if (angular_extent_between_small_circle_centres > bounding_small_circle.get_angular_extent())
+	if (angular_extent_between_small_circle_centres.is_precisely_greater_than(bounding_small_circle.get_angular_extent()))
 	{
 		// Our small circle centre is *not* contained within the other small circle.
 
@@ -791,16 +784,16 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::add(
 
 		// If the other small circle bound intersects or is inside our inner small circle then
 		// contract our inner small circle to exclude it.
-		if (angular_extent_new_inner_bounding_angle.get_cosine().dval() > d_max_dot_product)
+		if (angular_extent_new_inner_bounding_angle.is_precisely_less_than(d_minimum_distance))
 		{
-			d_max_dot_product = angular_extent_new_inner_bounding_angle.get_cosine().dval();
+			d_minimum_distance = angular_extent_new_inner_bounding_angle.get_angular_distance();
 		}
 	}
 	else
 	{
 		// The other small circle overlaps our small circle centre which effectively removes
 		// our inner small circle (shrinks it to a radius of zero).
-		d_max_dot_product = 1;
+		d_minimum_distance = AngularDistance::ZERO;
 	}
 }
 
@@ -828,13 +821,14 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::add(
 
 	// If the other small circle outer bound intersects or is outside our outer small circle then expand
 	// our outer small circle to include it.
-	if (angular_extent_new_outer_bounding_angle.get_cosine().dval() < d_min_dot_product)
+	if (angular_extent_new_outer_bounding_angle.is_precisely_greater_than(d_maximum_distance))
 	{
-		d_min_dot_product = angular_extent_new_outer_bounding_angle.get_cosine().dval();
+		d_maximum_distance = angular_extent_new_outer_bounding_angle.get_angular_distance();
 	}
 
 	// First test to see if the other small circle *inner* bound overlaps our small circle centre...
-	if (angular_extent_between_small_circle_centres < inner_outer_bounding_small_circle.get_inner_angular_extent())
+	if (angular_extent_between_small_circle_centres.is_precisely_less_than(
+		inner_outer_bounding_small_circle.get_inner_angular_extent()))
 	{
 		// Our small circle centre is *inside* the other small circle's inner bound.
 
@@ -852,13 +846,14 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::add(
 
 		// If the other small circle inner bound intersects or is inside our inner small circle then
 		// contract our inner small circle to exclude it.
-		if (angular_extent_new_inner_bounding_angle.get_cosine().dval() > d_max_dot_product)
+		if (angular_extent_new_inner_bounding_angle.is_precisely_less_than(d_minimum_distance))
 		{
-			d_max_dot_product = angular_extent_new_inner_bounding_angle.get_cosine().dval();
+			d_minimum_distance = angular_extent_new_inner_bounding_angle.get_angular_distance();
 		}
 	}
 	// Next test to see if the other small circle *outer* bound overlaps our small circle centre...
-	else if (angular_extent_between_small_circle_centres > inner_outer_bounding_small_circle.get_outer_angular_extent())
+	else if (angular_extent_between_small_circle_centres.is_precisely_greater_than(
+		inner_outer_bounding_small_circle.get_outer_angular_extent()))
 	{
 		// Our small circle centre is *outside* the other small circle's outer bound.
 
@@ -876,16 +871,16 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::add(
 
 		// If the other small circle outer bound intersects or is inside our inner small circle then
 		// contract our inner small circle to exclude it.
-		if (angular_extent_new_inner_bounding_angle.get_cosine().dval() > d_max_dot_product)
+		if (angular_extent_new_inner_bounding_angle.is_precisely_less_than(d_minimum_distance))
 		{
-			d_max_dot_product = angular_extent_new_inner_bounding_angle.get_cosine().dval();
+			d_minimum_distance = angular_extent_new_inner_bounding_angle.get_angular_distance();
 		}
 	}
 	else
 	{
 		// The other small circle region (between its inner and outer small circles) overlaps our small
 		// circle centre which effectively removes our inner small circle (shrinks it to a radius of zero).
-		d_max_dot_product = 1;
+		d_minimum_distance = AngularDistance::ZERO;
 	}
 }
 
@@ -899,24 +894,21 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::get_inner_outer_bounding_sma
 	// that has zero radius for both inner and outer small circles.
 	// We can detect this by testing any min/max dot product is not its initial value of 1/-1.
 	// Choose a difference half-way between (1 - (-1) = 2) of one to avoid numerical issues.
-	if (d_min_dot_product - d_max_dot_product > 1)
+	if (d_maximum_distance.get_cosine() - d_minimum_distance.get_cosine() > 1)
 	{
 		qWarning() << "InnerOuterBoundingSmallCircleBuilder: no primitives added";
-		return InnerOuterBoundingSmallCircle(
-				d_small_circle_centre,
-				AngularExtent::create_from_cosine(1.0),
-				AngularExtent::create_from_cosine(1.0));
+		return InnerOuterBoundingSmallCircle(d_small_circle_centre, AngularExtent::ZERO, AngularExtent::ZERO);
 	}
 
 	// The epsilon expands the dot product range covered
 	// as a protection against numerical precision.
 	// This epsilon should be larger than used in class Real (which is about 1e-12).
-	double expanded_min_dot_product = d_min_dot_product - expand_outer_bound_delta_dot_product;
+	double expanded_min_dot_product = d_maximum_distance.get_cosine().dval() - expand_outer_bound_delta_dot_product;
 	if (expanded_min_dot_product < -1)
 	{
 		expanded_min_dot_product = -1;
 	}
-	double expanded_max_dot_product = d_max_dot_product + contract_inner_bound_delta_dot_product;
+	double expanded_max_dot_product = d_minimum_distance.get_cosine().dval() + contract_inner_bound_delta_dot_product;
 	if (expanded_max_dot_product > 1)
 	{
 		expanded_max_dot_product = 1;
@@ -926,268 +918,4 @@ GPlatesMaths::InnerOuterBoundingSmallCircleBuilder::get_inner_outer_bounding_sma
 			d_small_circle_centre,
 			AngularExtent::create_from_cosine(expanded_min_dot_product),
 			AngularExtent::create_from_cosine(expanded_max_dot_product));
-}
-
-
-void
-GPlatesMaths::update_min_max_dot_product(
-		const UnitVector3D &small_circle_centre,
-		const GreatCircleArc &gca,
-		double &min_dot_product,
-		double &max_dot_product)
-{
-	const UnitVector3D &edge_start_point = gca.start_point().position_vector();
-	const UnitVector3D &edge_end_point = gca.end_point().position_vector();
-
-	const double edge_start_dot_small_circle_centre =
-			dot(edge_start_point, small_circle_centre).dval();
-	const double edge_end_dot_small_circle_centre =
-			dot(edge_end_point, small_circle_centre).dval();
-
-	// See if the great circle arc endpoints are closer/further than
-	// the current closest/furthest so far.
-	if (edge_start_dot_small_circle_centre > max_dot_product)
-	{
-		max_dot_product = edge_start_dot_small_circle_centre;
-	}
-	if (edge_start_dot_small_circle_centre < min_dot_product)
-	{
-		min_dot_product = edge_start_dot_small_circle_centre;
-	}
-	if (edge_end_dot_small_circle_centre > max_dot_product)
-	{
-		max_dot_product = edge_end_dot_small_circle_centre;
-	}
-	if (edge_end_dot_small_circle_centre < min_dot_product)
-	{
-		min_dot_product = edge_end_dot_small_circle_centre;
-	}
-
-	if (gca.is_zero_length())
-	{
-		return;
-	}
-
-	// Great circle arc is not zero length and hence has a rotation axis...
-	const UnitVector3D &edge_plane_normal = gca.rotation_axis();
-
-	const Vector3D small_circle_centre_cross_edge_plane_normal =
-			cross(small_circle_centre, edge_plane_normal);
-	if (small_circle_centre_cross_edge_plane_normal.magSqrd() <= 0)
-	{
-		// The great circle arc rotation axis is aligned, within numerical precision,
-		// with the small circle centre axis. Therefore the dot product
-		// distance of all points on the great circle arc to the small circle centre
-		// are the same (within numerical precision).
-		// And we've already covered this case above.
-		// The issue of precision can be covered by subtracting/adding an
-		// epsilon to the min/max dot product to expand the region covered
-		// by the great circle arc slightly.
-		return;
-	}
-
-	// See if the great circle arc forms a local minima or maxima between
-	// its endpoints. This happens if its endpoints are on opposite sides
-	// of the dividing plane.
-	const bool edge_start_point_on_negative_side = dot(
-			small_circle_centre_cross_edge_plane_normal,
-			edge_start_point).dval() <= 0;
-	const bool edge_end_point_on_negative_side = dot(
-			small_circle_centre_cross_edge_plane_normal,
-			edge_end_point).dval() <= 0;
-
-	// If endpoints on opposite sides of the plane.
-	if (edge_start_point_on_negative_side ^ edge_end_point_on_negative_side)
-	{
-		if (edge_start_point_on_negative_side)
-		{
-			// The arc forms a local maxima...
-
-			const UnitVector3D maxima_point = cross(
-					small_circle_centre_cross_edge_plane_normal,
-					edge_plane_normal)
-				.get_normalisation();
-			const double maxima_point_dot_small_circle_centre =
-					dot(maxima_point, small_circle_centre).dval();
-			// See if the current arc is the furthest so far from the
-			// small circle centre point.
-			if (maxima_point_dot_small_circle_centre < min_dot_product)
-			{
-				min_dot_product = maxima_point_dot_small_circle_centre;
-			}
-		}
-		else
-		{
-			// The arc forms a local minima...
-
-			const UnitVector3D minima_point = cross(
-					edge_plane_normal,
-					small_circle_centre_cross_edge_plane_normal)
-				.get_normalisation();
-			const double minima_point_dot_small_circle_centre =
-					dot(minima_point, small_circle_centre).dval();
-			// See if the current arc is the closest so far to the
-			// small circle centre point.
-			if (minima_point_dot_small_circle_centre > max_dot_product)
-			{
-				max_dot_product = minima_point_dot_small_circle_centre;
-			}
-		}
-	}
-}
-
-
-void
-GPlatesMaths::update_min_dot_product(
-		const UnitVector3D &small_circle_centre,
-		const GreatCircleArc &gca,
-		double &min_dot_product)
-{
-	const UnitVector3D &edge_start_point = gca.start_point().position_vector();
-	const UnitVector3D &edge_end_point = gca.end_point().position_vector();
-
-	const double edge_start_dot_small_circle_centre =
-			dot(edge_start_point, small_circle_centre).dval();
-	const double edge_end_dot_small_circle_centre =
-			dot(edge_end_point, small_circle_centre).dval();
-
-	// See if the great circle arc endpoints are further than
-	// the current furthest so far.
-	if (edge_start_dot_small_circle_centre < min_dot_product)
-	{
-		min_dot_product = edge_start_dot_small_circle_centre;
-	}
-	if (edge_end_dot_small_circle_centre < min_dot_product)
-	{
-		min_dot_product = edge_end_dot_small_circle_centre;
-	}
-
-	if (gca.is_zero_length())
-	{
-		return;
-	}
-
-	// Great circle arc is not zero length and hence has a rotation axis...
-	const UnitVector3D &edge_plane_normal = gca.rotation_axis();
-
-	const Vector3D small_circle_centre_cross_edge_plane_normal =
-			cross(small_circle_centre, edge_plane_normal);
-	if (small_circle_centre_cross_edge_plane_normal.magSqrd() <= 0)
-	{
-		// The great circle arc rotation axis is aligned, within numerical precision,
-		// with the small circle centre axis. Therefore the dot product
-		// distance of all points on the great circle arc to the small circle centre
-		// are the same (within numerical precision).
-		// And we've already covered this case above.
-		// The issue of precision can be covered by subtracting/adding an
-		// epsilon to the min/max dot product to expand the region covered
-		// by the great circle arc slightly.
-		return;
-	}
-
-	// See if the great circle arc forms a local maxima between its endpoints.
-	// This happens if its endpoints are on opposite sides of the dividing plane *and*
-	// the edge start point is on the negative side of the dividing plane.
-	if (dot(
-			small_circle_centre_cross_edge_plane_normal,
-			edge_start_point).dval() <= 0)
-	{
-		if (dot(
-				small_circle_centre_cross_edge_plane_normal,
-				edge_end_point).dval() >= 0)
-		{
-			// The arc forms a local maxima...
-
-			const UnitVector3D maxima_point = cross(
-					small_circle_centre_cross_edge_plane_normal,
-					edge_plane_normal)
-				.get_normalisation();
-			const double maxima_point_dot_small_circle_centre =
-					dot(maxima_point, small_circle_centre).dval();
-			// See if the current arc is the furthest so far from the
-			// small circle centre point.
-			if (maxima_point_dot_small_circle_centre < min_dot_product)
-			{
-				min_dot_product = maxima_point_dot_small_circle_centre;
-			}
-		}
-	}
-}
-
-
-void
-GPlatesMaths::update_max_dot_product(
-		const UnitVector3D &small_circle_centre,
-		const GreatCircleArc &gca,
-		double &max_dot_product)
-{
-	const UnitVector3D &edge_start_point = gca.start_point().position_vector();
-	const UnitVector3D &edge_end_point = gca.end_point().position_vector();
-
-	const double edge_start_dot_small_circle_centre =
-			dot(edge_start_point, small_circle_centre).dval();
-	const double edge_end_dot_small_circle_centre =
-			dot(edge_end_point, small_circle_centre).dval();
-
-	// See if the great circle arc endpoints are closer than
-	// the current closest so far.
-	if (edge_start_dot_small_circle_centre > max_dot_product)
-	{
-		max_dot_product = edge_start_dot_small_circle_centre;
-	}
-	if (edge_end_dot_small_circle_centre > max_dot_product)
-	{
-		max_dot_product = edge_end_dot_small_circle_centre;
-	}
-
-	if (gca.is_zero_length())
-	{
-		return;
-	}
-
-	// Great circle arc is not zero length and hence has a rotation axis...
-	const UnitVector3D &edge_plane_normal = gca.rotation_axis();
-
-	const Vector3D small_circle_centre_cross_edge_plane_normal =
-			cross(small_circle_centre, edge_plane_normal);
-	if (small_circle_centre_cross_edge_plane_normal.magSqrd() <= 0)
-	{
-		// The great circle arc rotation axis is aligned, within numerical precision,
-		// with the small circle centre axis. Therefore the dot product
-		// distance of all points on the great circle arc to the small circle centre
-		// are the same (within numerical precision).
-		// And we've already covered this case above.
-		// The issue of precision can be covered by subtracting/adding an
-		// epsilon to the min/max dot product to expand the region covered
-		// by the great circle arc slightly.
-		return;
-	}
-
-	// See if the great circle arc forms a local minima between its endpoints.
-	// This happens if its endpoints are on opposite sides of the dividing plane *and*
-	// the edge start point is on the positive side of the dividing plane.
-	if (dot(
-			small_circle_centre_cross_edge_plane_normal,
-			edge_start_point).dval() >= 0)
-	{
-		if (dot(
-				small_circle_centre_cross_edge_plane_normal,
-				edge_end_point).dval() <= 0)
-		{
-			// The arc forms a local minima...
-
-			const UnitVector3D minima_point = cross(
-					edge_plane_normal,
-					small_circle_centre_cross_edge_plane_normal)
-				.get_normalisation();
-			const double minima_point_dot_small_circle_centre =
-					dot(minima_point, small_circle_centre).dval();
-			// See if the current arc is the closest so far to the
-			// small circle centre point.
-			if (minima_point_dot_small_circle_centre > max_dot_product)
-			{
-				max_dot_product = minima_point_dot_small_circle_centre;
-			}
-		}
-	}
 }

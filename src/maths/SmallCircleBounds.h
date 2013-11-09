@@ -47,81 +47,6 @@ namespace GPlatesMaths
 	class FiniteRotation;
 	class Rotation;
 
-	/**
-	 * Returns the minimum and maximum dot product of a point and a great circle arc.
-	 *
-	 * FIXME: Refactor this into "SphericalDistance.h".
-	 */
-	std::pair<real_t/*minimum dot product*/, real_t/*maximum dot product*/>
-	get_min_max_dot_product(
-			const UnitVector3D &small_circle_centre,
-			const GreatCircleArc &gca);
-
-
-	/**
-	 * Updates the minimum and maximum dot product of a point and a great circle arc.
-	 *
-	 * NOTE: You must have initialised @a min_dot_product and @a max_dot_product before calling.
-	 *
-	 * FIXME: Refactor this into "SphericalDistance.h".
-	 */
-	void
-	update_min_max_dot_product(
-			const UnitVector3D &small_circle_centre,
-			const GreatCircleArc &gca,
-			double &min_dot_product,
-			double &max_dot_product);
-
-
-	/**
-	 * Returns the minimum dot product of a point and a great circle arc.
-	 *
-	 * FIXME: Refactor this into "SphericalDistance.h".
-	 */
-	real_t
-	get_min_dot_product(
-			const UnitVector3D &small_circle_centre,
-			const GreatCircleArc &gca);
-
-
-	/**
-	 * Updates the minimum dot product of a point and a great circle arc.
-	 *
-	 * NOTE: You must have initialised @a min_dot_product before calling.
-	 *
-	 * FIXME: Refactor this into "SphericalDistance.h".
-	 */
-	void
-	update_min_dot_product(
-			const UnitVector3D &small_circle_centre,
-			const GreatCircleArc &gca,
-			double &min_dot_product);
-
-
-	/**
-	 * Returns the maximum dot product of a point and a great circle arc.
-	 *
-	 * FIXME: Refactor this into "SphericalDistance.h".
-	 */
-	real_t
-	get_max_dot_product(
-			const UnitVector3D &small_circle_centre,
-			const GreatCircleArc &gca);
-
-
-	/**
-	 * Updates the maximum dot product of a point and a great circle arc.
-	 *
-	 * NOTE: You must have initialised @a max_dot_product before calling.
-	 *
-	 * FIXME: Refactor this into "SphericalDistance.h".
-	 */
-	void
-	update_max_dot_product(
-			const UnitVector3D &small_circle_centre,
-			const GreatCircleArc &gca,
-			double &max_dot_product);
-
 
 	/**
 	 * A small circle that encloses a region.
@@ -174,7 +99,7 @@ namespace GPlatesMaths
 		/**
 		 * Test a sequence of great circle arcs against the bounding region.
 		 *
-		 * NOTE: The sequence of great circle arcs must form an continuous connected sequence -
+		 * NOTE: The sequence of great circle arcs must form a continuous connected sequence -
 		 * in other words the end of one arc must be the beginning of the next, etc, as is
 		 * the case for a subsection of a polygon or polyline.
 		 */
@@ -433,7 +358,11 @@ namespace GPlatesMaths
 		add(
 				const GreatCircleArc &gca)
 		{
-			update_min_dot_product(d_small_circle_centre, gca, d_min_dot_product);
+			const AngularDistance max_distance_to_gca = maximum_distance(d_small_circle_centre, gca);
+			if (max_distance_to_gca.is_precisely_greater_than(d_maximum_distance))
+			{
+				d_maximum_distance = max_distance_to_gca;
+			}
 		}
 
 
@@ -503,12 +432,15 @@ namespace GPlatesMaths
 		 *
 		 * @a expand_bound_delta_dot_product is used to expand the bound to
 		 * account for numerical precision (a negative value can be used to contract instead).
+		 * NOTE: We don't use @a AngularDistance here because the expansion is to the cosine
+		 * (or dot product) and not the angle.
 		 *
 		 * This means tests for intersection/inclusion can return false positives but in most
 		 * situations this is desirable because then a more accurate test will reveal there's
 		 * no intersection/inclusion - whereas the other way around can give the wrong result.
 		 *
-		 * A value of 1e-6 means a bounding small circle of zero radius will be expanded to ~9km (on earth's surface).
+		 * A value of 1e-6 means a bounding small circle of zero radius will be expanded to ~9km
+		 * (on earth's surface) and much less at a radius of PI/2 giving an upper limit at zero radius.
 		 */
 		BoundingSmallCircle
 		get_bounding_small_circle(
@@ -516,7 +448,7 @@ namespace GPlatesMaths
 
 	private:
 		UnitVector3D d_small_circle_centre;
-		double d_min_dot_product;
+		AngularDistance d_maximum_distance;
 	};
 
 
@@ -574,7 +506,7 @@ namespace GPlatesMaths
 		/**
 		 * Test a sequence of great circle arcs against the bounding region.
 		 *
-		 * NOTE: The sequence of great circle arcs must form an continuous connected sequence -
+		 * NOTE: The sequence of great circle arcs must form a continuous connected sequence -
 		 * in other words the end of one arc must be the beginning of the next, etc, as is
 		 * the case for a subsection of a polygon or polyline.
 		 */
@@ -987,8 +919,17 @@ namespace GPlatesMaths
 		add(
 				const GreatCircleArc &gca)
 		{
-			update_min_max_dot_product(
-					d_small_circle_centre, gca, d_min_dot_product, d_max_dot_product);
+			const AngularDistance min_distance_to_gca = minimum_distance(d_small_circle_centre, gca);
+			if (min_distance_to_gca.is_precisely_less_than(d_minimum_distance))
+			{
+				d_minimum_distance = min_distance_to_gca;
+			}
+
+			const AngularDistance max_distance_to_gca = maximum_distance(d_small_circle_centre, gca);
+			if (max_distance_to_gca.is_precisely_greater_than(d_maximum_distance))
+			{
+				d_maximum_distance = max_distance_to_gca;
+			}
 		}
 
 
@@ -1070,10 +1011,15 @@ namespace GPlatesMaths
 		 * account for numerical precision (a negative value can be used to expand instead).
 		 * @a expand_outer_bound_delta_dot_product is used to expand the *outer* bound to
 		 * account for numerical precision (a negative value can be used to contract instead).
+		 * NOTE: We don't use @a AngularDistance here because the expansion is to the cosine
+		 * (or dot product) and not the angle.
 		 *
 		 * This means tests for intersection/inclusion can return false positives but in most
 		 * situations this is desirable because then a more accurate test will reveal there's
 		 * no intersection/inclusion - whereas the other way around can give the wrong result.
+		 *
+		 * A value of 1e-6 means a bounding small circle of zero radius will be expanded to ~9km
+		 * (on earth's surface) and much less at a radius of PI/2 giving an upper limit at zero radius.
 		 *
 		 * @throws @a PreconditionViolationError if no @a add overloads have been called so far.
 		 */
@@ -1084,8 +1030,8 @@ namespace GPlatesMaths
 
 	private:
 		UnitVector3D d_small_circle_centre;
-		double d_min_dot_product;
-		double d_max_dot_product;
+		AngularDistance d_minimum_distance;
+		AngularDistance d_maximum_distance;
 	};
 
 
@@ -1106,15 +1052,13 @@ namespace GPlatesMaths
 			return OUTSIDE_BOUNDS;
 		}
 
-		double gca_min_dot_product = 1.0;
-		double gca_max_dot_product = -1.0;
+		AngularDistance min_distance = AngularDistance::PI;
+		AngularDistance max_distance = AngularDistance::ZERO;
 
 		const GreatCircleArc &first_gca = *great_circle_arc_begin;
 
-		update_min_max_dot_product(
-				d_small_circle_centre, first_gca, gca_min_dot_product, gca_max_dot_product);
-
-		if (gca_max_dot_product < d_angular_extent.get_cosine().dval())
+		const AngularDistance min_distance_to_first_gca = minimum_distance(d_small_circle_centre, first_gca);
+		if (min_distance_to_first_gca.is_precisely_greater_than(d_angular_extent))
 		{
 			// The first GCA is fully outside the bound.
 			// Since the client has promised that the remaining GCA's are sequentially
@@ -1126,9 +1070,9 @@ namespace GPlatesMaths
 			{
 				const GreatCircleArc &gca = *great_circle_arc_iter;
 
-				update_max_dot_product(d_small_circle_centre, gca, gca_max_dot_product);
+				const AngularDistance min_gca_distance = minimum_distance(d_small_circle_centre, gca);
 
-				if (gca_max_dot_product >= d_angular_extent.get_cosine().dval())
+				if (min_gca_distance.is_precisely_less_than(d_angular_extent))
 				{
 					return INTERSECTING_BOUNDS;
 				}
@@ -1137,7 +1081,8 @@ namespace GPlatesMaths
 			return OUTSIDE_BOUNDS;
 		}
 
-		if (gca_min_dot_product > d_angular_extent.get_cosine().dval())
+		const AngularDistance max_distance_to_first_gca = maximum_distance(d_small_circle_centre, first_gca);
+		if (max_distance_to_first_gca.is_precisely_less_than(d_angular_extent))
 		{
 			// The first GCA is fully inside the bound.
 			// Since the client has promised that the remaining GCA's are sequentially
@@ -1149,9 +1094,9 @@ namespace GPlatesMaths
 			{
 				const GreatCircleArc &gca = *great_circle_arc_iter;
 
-				update_min_dot_product(d_small_circle_centre, gca, gca_min_dot_product);
+				const AngularDistance max_gca_distance = maximum_distance(d_small_circle_centre, gca);
 
-				if (gca_min_dot_product <= d_angular_extent.get_cosine().dval())
+				if (max_gca_distance.is_precisely_greater_than(d_angular_extent))
 				{
 					return INTERSECTING_BOUNDS;
 				}
@@ -1160,7 +1105,7 @@ namespace GPlatesMaths
 			return INSIDE_BOUNDS;
 		}
 
-		// If any great circle arcs intersect the small circle then the entire sequence intersects.
+		// The first great circle arc intersects the small circle.
 		return INTERSECTING_BOUNDS;
 	}
 
@@ -1197,10 +1142,8 @@ namespace GPlatesMaths
 
 		const GreatCircleArc &first_gca = *great_circle_arc_begin;
 
-		update_min_max_dot_product(
-				d_outer_small_circle.d_small_circle_centre, first_gca, gca_min_dot_product, gca_max_dot_product);
-
-		if (gca_max_dot_product < d_outer_small_circle.d_angular_extent.get_cosine().dval())
+		const AngularDistance min_distance_to_first_gca = minimum_distance(d_outer_small_circle.d_small_circle_centre, first_gca);
+		if (min_distance_to_first_gca.is_precisely_greater_than(d_outer_small_circle.d_angular_extent))
 		{
 			// The first GCA is fully outside the outer bound.
 			// Since the client has promised that the remaining GCA's are sequentially
@@ -1212,9 +1155,10 @@ namespace GPlatesMaths
 			{
 				const GreatCircleArc &gca = *great_circle_arc_iter;
 
-				update_max_dot_product(d_outer_small_circle.d_small_circle_centre, gca, gca_max_dot_product);
+				const AngularDistance min_gca_distance =
+						minimum_distance(d_outer_small_circle.d_small_circle_centre, gca);
 
-				if (gca_max_dot_product >= d_outer_small_circle.d_angular_extent.get_cosine().dval())
+				if (min_gca_distance.is_precisely_less_than(d_outer_small_circle.d_angular_extent))
 				{
 					return INTERSECTING_BOUNDS;
 				}
@@ -1223,7 +1167,8 @@ namespace GPlatesMaths
 			return OUTSIDE_OUTER_BOUNDS;
 		}
 
-		if (gca_min_dot_product > d_inner_angular_extent.get_cosine().dval())
+		const AngularDistance max_distance_to_first_gca = maximum_distance(d_outer_small_circle.d_small_circle_centre, first_gca);
+		if (max_distance_to_first_gca.is_precisely_less_than(d_inner_angular_extent))
 		{
 			// The first GCA is fully inside the inner bound.
 			// Since the client has promised that the remaining GCA's are sequentially
@@ -1235,9 +1180,10 @@ namespace GPlatesMaths
 			{
 				const GreatCircleArc &gca = *great_circle_arc_iter;
 
-				update_min_dot_product(d_outer_small_circle.d_small_circle_centre, gca, gca_min_dot_product);
+				const AngularDistance max_gca_distance =
+						maximum_distance(d_outer_small_circle.d_small_circle_centre, gca);
 
-				if (gca_min_dot_product <= d_inner_angular_extent.get_cosine().dval())
+				if (max_gca_distance.is_precisely_greater_than(d_inner_angular_extent))
 				{
 					return INTERSECTING_BOUNDS;
 				}
@@ -1263,49 +1209,6 @@ namespace GPlatesMaths
 		{
 			add(*great_circle_arc_iter);
 		}
-	}
-
-
-	inline
-	std::pair<real_t/*minimum dot product*/, real_t/*maximum dot product*/>
-	get_min_max_dot_product(
-			const UnitVector3D &small_circle_centre,
-			const GreatCircleArc &gca)
-	{
-		double min_dot_product = 1.0;
-		double max_dot_product = -1.0;
-
-		update_min_max_dot_product(small_circle_centre, gca, min_dot_product, max_dot_product);
-
-		return std::make_pair(min_dot_product, max_dot_product);
-	}
-
-
-	inline
-	real_t
-	get_min_dot_product(
-			const UnitVector3D &small_circle_centre,
-			const GreatCircleArc &gca)
-	{
-		double min_dot_product = 1.0;
-
-		update_min_dot_product(small_circle_centre, gca, min_dot_product);
-
-		return min_dot_product;
-	}
-
-
-	inline
-	real_t
-	get_max_dot_product(
-			const UnitVector3D &small_circle_centre,
-			const GreatCircleArc &gca)
-	{
-		double max_dot_product = -1.0;
-
-		update_max_dot_product(small_circle_centre, gca, max_dot_product);
-
-		return max_dot_product;
 	}
 }
 
