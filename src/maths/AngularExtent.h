@@ -74,6 +74,16 @@ namespace GPlatesMaths
 	{
 	public:
 
+		//! Angular extent of zero (radians).
+		static const AngularExtent ZERO;
+
+		//! Angular extent of PI/2 radians (90 degrees).
+		static const AngularExtent HALF_PI;
+
+		//! Angular extent of PI radians (180 degrees).
+		static const AngularExtent PI;
+
+
 		/**
 		 * Create from the cosine of the angular extent - the sine will be calculated when/if needed.
 		 *
@@ -110,6 +120,17 @@ namespace GPlatesMaths
 		}
 
 		/**
+		 * Create from the @a AngularDistance (containing the cosine) - the sine will be calculated when/if needed.
+		 */
+		static
+		AngularExtent
+		create_from_angular_distance(
+				const AngularDistance &angular_distance)
+		{
+			return AngularExtent(angular_distance.get_cosine());
+		}
+
+		/**
 		 * Create from an angular extent (radians) in the range [0, PI].
 		 *
 		 * The cosine (and the sine when/if needed) will be calculated.
@@ -122,10 +143,10 @@ namespace GPlatesMaths
 				const real_t &colatitude)
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					0 <= colatitude && colatitude <= PI,
+					0 <= colatitude && colatitude <= GPlatesMaths::PI,
 					GPLATES_ASSERTION_SOURCE);
 
-			return create_from_cosine(cos(colatitude));
+			return AngularExtent(cos(colatitude));
 		}
 
 
@@ -152,6 +173,20 @@ namespace GPlatesMaths
 			}
 
 			return d_sine.get();
+		}
+
+
+		/**
+		 * Calculates the angular extent (angle in radians) from the cosine of the angular distance.
+		 *
+		 * Note: The angle is not cached internally and so must be calculated each time.
+		 * This calculation can be relatively expensive (~100 cycles on a circa 2011 CPU) 
+		 * which is the main reason for this class (to use cosine until/if angle is actually needed).
+		 */
+		real_t
+		calculate_angle() const
+		{
+			return acos(d_cosine);
 		}
 
 
@@ -291,6 +326,35 @@ namespace GPlatesMaths
 			// NOTE: We're using 'real_t' which does epsilon test required for boost::equivalent to work.
 			// Also note reversal of comparison since comparing cosine(angle) instead of angle.
 			return d_cosine < rhs.get_cosine();
+		}
+
+
+		/**
+		 * Similar to 'operator<' except does not have an epsilon test.
+		 *
+		 * AngularExtentOrDistance can be @a AngularExtent or @a AngularDistance.
+		 */
+		template <class AngularExtentOrDistance>
+		bool
+		is_precisely_less_than(
+				const AngularExtentOrDistance &rhs) const
+		{
+			// Also note reversal of comparison since comparing cosine(angle) instead of angle.
+			return d_cosine.dval() > rhs.get_cosine().dval();
+		}
+
+		/**
+		 * Similar to 'operator>' except does not have an epsilon test.
+		 *
+		 * AngularExtentOrDistance can be @a AngularExtent or @a AngularDistance.
+		 */
+		template <class AngularExtentOrDistance>
+		bool
+		is_precisely_greater_than(
+				const AngularExtentOrDistance &rhs) const
+		{
+			// Also note reversal of comparison since comparing cosine(angle) instead of angle.
+			return d_cosine.dval() < rhs.get_cosine().dval();
 		}
 
 	private:

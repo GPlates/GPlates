@@ -26,6 +26,16 @@
 #include "AngularExtent.h"
 
 
+const GPlatesMaths::AngularExtent GPlatesMaths::AngularExtent::ZERO =
+		GPlatesMaths::AngularExtent::create_from_cosine_and_sine(real_t(1.0), real_t(0.0));
+
+const GPlatesMaths::AngularExtent GPlatesMaths::AngularExtent::HALF_PI =
+		GPlatesMaths::AngularExtent::create_from_cosine_and_sine(real_t(0.0), real_t(1.0));
+
+const GPlatesMaths::AngularExtent GPlatesMaths::AngularExtent::PI =
+		GPlatesMaths::AngularExtent::create_from_cosine_and_sine(real_t(-1.0), real_t(0.0));
+
+
 GPlatesMaths::AngularExtent
 GPlatesMaths::AngularExtent::operator+(
 		const AngularExtent &rhs) const
@@ -39,10 +49,10 @@ GPlatesMaths::AngularExtent::operator+(
 	{
 		// Use expensive 'acos' function.
 		const real_t angular_extent = acos(get_cosine()) + acos(rhs.get_cosine());
-		if (angular_extent.is_precisely_greater_than(PI))
+		if (angular_extent.is_precisely_greater_than(GPlatesMaths::PI))
 		{
 			// Clamp to PI.
-			return AngularExtent(real_t(-1.0), real_t(0.0));
+			return AngularExtent::PI;
 		}
 
 		return AngularExtent(cos(angular_extent));
@@ -65,7 +75,7 @@ GPlatesMaths::AngularExtent::operator-(
 	if (rhs.get_cosine().is_precisely_less_than(get_cosine().dval()))
 	{
 		// Clamp to zero.
-		return AngularExtent(real_t(1.0), real_t(0.0));
+		return AngularExtent::ZERO;
 	}
 
 	return AngularExtent(

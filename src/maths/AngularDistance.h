@@ -63,6 +63,16 @@ namespace GPlatesMaths
 	{
 	public:
 
+		//! Angular distance of zero (radians).
+		static const AngularDistance ZERO;
+
+		//! Angular distance of PI/2 radians (90 degrees).
+		static const AngularDistance HALF_PI;
+
+		//! Angular distance of PI radians (180 degrees).
+		static const AngularDistance PI;
+
+
 		/**
 		 * Create from the cosine of the angular distance.
 		 *
@@ -93,7 +103,7 @@ namespace GPlatesMaths
 				const real_t &colatitude)
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					0 <= colatitude && colatitude <= PI,
+					0 <= colatitude && colatitude <= GPlatesMaths::PI,
 					GPLATES_ASSERTION_SOURCE);
 
 			return create_from_cosine(cos(colatitude));
@@ -116,7 +126,7 @@ namespace GPlatesMaths
 		 * Note: The angle is not cached internally and so must be calculated each time.
 		 * This calculation can be relatively expensive (~100 cycles on a circa 2011 CPU) 
 		 * which is the main reason for this class (to use cosine until/if angle is actually needed).
-		 * The angle is not cached in order to keep this class the lightweigth (about the same
+		 * The angle is not cached in order to keep this class the lightweight (about the same
 		 * size as a 'double').
 		 */
 		real_t
@@ -154,6 +164,35 @@ namespace GPlatesMaths
 			// NOTE: We're using 'real_t' which does epsilon test required for boost::equivalent to work.
 			// Also note reversal of comparison since comparing cosine(angle) instead of angle.
 			return d_cosine > rhs.d_cosine;
+		}
+
+
+		/**
+		 * Similar to 'operator<' except does not have an epsilon test.
+		 *
+		 * AngularExtentOrDistance can be @a AngularExtent or @a AngularDistance.
+		 */
+		template <class AngularExtentOrDistance>
+		bool
+		is_precisely_less_than(
+				const AngularExtentOrDistance &rhs) const
+		{
+			// Also note reversal of comparison since comparing cosine(angle) instead of angle.
+			return d_cosine.dval() > rhs.get_cosine().dval();
+		}
+
+		/**
+		 * Similar to 'operator>' except does not have an epsilon test.
+		 *
+		 * AngularExtentOrDistance can be @a AngularExtent or @a AngularDistance.
+		 */
+		template <class AngularExtentOrDistance>
+		bool
+		is_precisely_greater_than(
+				const AngularExtentOrDistance &rhs) const
+		{
+			// Also note reversal of comparison since comparing cosine(angle) instead of angle.
+			return d_cosine.dval() < rhs.get_cosine().dval();
 		}
 
 	private:
