@@ -32,8 +32,9 @@
 #include <utility>  /* std::pair */
 #include <vector>
 #include <boost/cstdint.hpp>
-#include <boost/optional.hpp>  /* boost::optional */
 #include <boost/none.hpp>  /* boost::none */
+#include <boost/optional.hpp>  /* boost::optional */
+#include <boost/tuple/tuple.hpp>
 
 #include "AngularDistance.h"
 #include "AngularExtent.h"
@@ -350,48 +351,59 @@ namespace GPlatesMaths
 	/**
 	 * Determine whether the two great-circle arcs @a arc1 and @a arc2 intersect each other.
 	 *
-	 * Returns the intersection point if the arcs intersected.
-	 * If both arcs lie on the same great circle, and they overlap each other, then the returned
-	 * intersection point will be an arbitrary arc end point of one of the arcs.
+	 * If @a intersection is specified then returns the intersection position (if the arcs intersected).
+	 *
+	 * Note that if both arcs lie on the same great circle, and they overlap each other, then the
+	 * returned intersection point will be an arbitrary arc end point of one of the arcs.
 	 */
-	boost::optional<GPlatesMaths::PointOnSphere>
-	arcs_intersect_each_other(
+	bool
+	intersect(
 			const GreatCircleArc &arc1,
-			const GreatCircleArc &arc2);
+			const GreatCircleArc &arc2,
+			boost::optional<UnitVector3D &> intersection = boost::none);
 
 
 	/**
 	 * Returns the minimum angular distance between two great circle arcs.
 	 *
 	 * If they intersect then the returned angular distance will be zero.
+	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * @a closest_positions_on_arcs (even if it's not none).
+	 *
+	 * If @a closest_positions_on_arcs is specified then the closest point on each arc is stored in
+	 * the unit vector it references (unless the threshold is exceeded, if specified).
 	 */
 	AngularDistance
 	minimum_distance(
 			const GreatCircleArc &arc1,
 			const GreatCircleArc &arc2,
-			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none);
+			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
+			boost::optional<
+					boost::tuple<UnitVector3D &/*closest point on arc1*/, UnitVector3D &/*closest point on arc2*/>
+							> closest_positions_on_arcs = boost::none);
 
 
 	/**
 	 * Returns the minimum angular distance between a unit vector and a great circle arc, and
 	 * optionally the closest point on the arc - optionally within a minimum threshold distance.
 	 *
-	 * If @a closest_position_on_great_circle_arc is specified then the closest point on the arc
-	 * is stored in the unit vector it references (unless the threshold is exceeded, if specified).
-	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
 	 * If the threshold is exceeded then then closest point is *not* stored in
 	 * @a closest_position_on_great_circle_arc (even if it's not none).
+	 *
+	 * If @a closest_position_on_great_circle_arc is specified then the closest point on the arc
+	 * is stored in the unit vector it references (unless the threshold is exceeded, if specified).
 	 */
 	AngularDistance
 	minimum_distance(
 			const UnitVector3D &position_vector,
 			const GreatCircleArc &arc,
-			boost::optional<UnitVector3D &> closest_position_on_great_circle_arc = boost::none,
-			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none);
+			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
+			boost::optional<UnitVector3D &> closest_position_on_great_circle_arc = boost::none);
 
 	/**
 	 * Overload of @a minimum_distance between a point and a great circle arc.
@@ -401,14 +413,14 @@ namespace GPlatesMaths
 	minimum_distance(
 			const GreatCircleArc &arc,
 			const UnitVector3D &position_vector,
-			boost::optional<UnitVector3D &> closest_position_on_great_circle_arc = boost::none,
-			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none)
+			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
+			boost::optional<UnitVector3D &> closest_position_on_great_circle_arc = boost::none)
 	{
 		return minimum_distance(
 				position_vector,
 				arc,
-				closest_position_on_great_circle_arc,
-				minimum_distance_threshold);
+				minimum_distance_threshold,
+				closest_position_on_great_circle_arc);
 	}
 
 	/**
@@ -419,14 +431,14 @@ namespace GPlatesMaths
 	minimum_distance(
 			const PointOnSphere &point,
 			const GreatCircleArc &arc,
-			boost::optional<UnitVector3D &> closest_position_on_great_circle_arc = boost::none,
-			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none)
+			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
+			boost::optional<UnitVector3D &> closest_position_on_great_circle_arc = boost::none)
 	{
 		return minimum_distance(
 				point.position_vector(),
 				arc,
-				closest_position_on_great_circle_arc,
-				minimum_distance_threshold);
+				minimum_distance_threshold,
+				closest_position_on_great_circle_arc);
 	}
 
 	/**
@@ -437,14 +449,14 @@ namespace GPlatesMaths
 	minimum_distance(
 			const GreatCircleArc &arc,
 			const PointOnSphere &point,
-			boost::optional<UnitVector3D &> closest_position_on_great_circle_arc = boost::none,
-			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none)
+			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
+			boost::optional<UnitVector3D &> closest_position_on_great_circle_arc = boost::none)
 	{
 		return minimum_distance(
 				point.position_vector(),
 				arc,
-				closest_position_on_great_circle_arc,
-				minimum_distance_threshold);
+				minimum_distance_threshold,
+				closest_position_on_great_circle_arc);
 	}
 
 
@@ -453,32 +465,40 @@ namespace GPlatesMaths
 	 *
 	 * If @a maximum_distance_threshold is specified then the returned distance will either be greater
 	 * than the threshold or AngularDistance::ZERO (minimum possible distance) to signify threshold not exceeded.
+	 * If the threshold is not exceeded then then furthest points are *not* stored in
+	 * @a furthest_positions_on_arcs (even if it's not none).
+	 *
+	 * If @a furthest_positions_on_arcs is specified then the furthest point on each arc is stored in
+	 * the unit vector it references (unless the threshold is not exceeded, if specified).
 	 */
 	AngularDistance
 	maximum_distance(
 			const GreatCircleArc &arc1,
 			const GreatCircleArc &arc2,
-			boost::optional<const AngularExtent &> maximum_distance_threshold = boost::none);
+			boost::optional<const AngularExtent &> maximum_distance_threshold = boost::none,
+			boost::optional<
+					boost::tuple<UnitVector3D &/*furthest point on arc1*/, UnitVector3D &/*furthest point on arc2*/>
+							> furthest_positions_on_arcs = boost::none);
 
 
 	/**
 	 * Returns the maximum angular distance between a unit vector and a great circle arc, and
 	 * optionally the furthest point on the arc - optionally exceeding a maximum threshold distance.
 	 *
-	 * If @a furthest_position_on_great_circle_arc is specified then the furthest point on the arc
-	 * is stored in the unit vector it references (unless the threshold is not exceeded, if specified).
-	 *
 	 * If @a maximum_distance_threshold is specified then the returned distance will either be greater
 	 * than the threshold or AngularDistance::ZERO (minimum possible distance) to signify threshold not exceeded.
 	 * If the threshold is not exceeded then then furthest point is *not* stored in
 	 * @a furthest_position_on_great_circle_arc (even if it's not none).
+	 *
+	 * If @a furthest_position_on_great_circle_arc is specified then the furthest point on the arc
+	 * is stored in the unit vector it references (unless the threshold is not exceeded, if specified).
 	 */
 	AngularDistance
 	maximum_distance(
 			const UnitVector3D &position_vector,
 			const GreatCircleArc &arc,
-			boost::optional<UnitVector3D &> furthest_position_on_great_circle_arc = boost::none,
-			boost::optional<const AngularExtent &> maximum_distance_threshold = boost::none);
+			boost::optional<const AngularExtent &> maximum_distance_threshold = boost::none,
+			boost::optional<UnitVector3D &> furthest_position_on_great_circle_arc = boost::none);
 
 	/**
 	 * Overload of @a maximum_distance between a point and a great circle arc.
@@ -488,14 +508,14 @@ namespace GPlatesMaths
 	maximum_distance(
 			const GreatCircleArc &arc,
 			const UnitVector3D &position_vector,
-			boost::optional<UnitVector3D &> furthest_position_on_great_circle_arc = boost::none,
-			boost::optional<const AngularExtent &> maximum_distance_threshold = boost::none)
+			boost::optional<const AngularExtent &> maximum_distance_threshold = boost::none,
+			boost::optional<UnitVector3D &> furthest_position_on_great_circle_arc = boost::none)
 	{
 		return maximum_distance(
 				position_vector,
 				arc,
-				furthest_position_on_great_circle_arc,
-				maximum_distance_threshold);
+				maximum_distance_threshold,
+				furthest_position_on_great_circle_arc);
 	}
 
 	/**
@@ -506,14 +526,14 @@ namespace GPlatesMaths
 	maximum_distance(
 			const PointOnSphere &point,
 			const GreatCircleArc &arc,
-			boost::optional<UnitVector3D &> furthest_position_on_great_circle_arc = boost::none,
-			boost::optional<const AngularExtent &> maximum_distance_threshold = boost::none)
+			boost::optional<const AngularExtent &> maximum_distance_threshold = boost::none,
+			boost::optional<UnitVector3D &> furthest_position_on_great_circle_arc = boost::none)
 	{
 		return maximum_distance(
 				point.position_vector(),
 				arc,
-				furthest_position_on_great_circle_arc,
-				maximum_distance_threshold);
+				maximum_distance_threshold,
+				furthest_position_on_great_circle_arc);
 	}
 
 	/**
@@ -524,14 +544,14 @@ namespace GPlatesMaths
 	maximum_distance(
 			const GreatCircleArc &arc,
 			const PointOnSphere &point,
-			boost::optional<UnitVector3D &> furthest_position_on_great_circle_arc = boost::none,
-			boost::optional<const AngularExtent &> maximum_distance_threshold = boost::none)
+			boost::optional<const AngularExtent &> maximum_distance_threshold = boost::none,
+			boost::optional<UnitVector3D &> furthest_position_on_great_circle_arc = boost::none)
 	{
 		return maximum_distance(
 				point.position_vector(),
 				arc,
-				furthest_position_on_great_circle_arc,
-				maximum_distance_threshold);
+				maximum_distance_threshold,
+				furthest_position_on_great_circle_arc);
 	}
 
 
