@@ -46,8 +46,8 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 			boost::dynamic_pointer_cast<
 					GPlatesGui::ExportVelocityAnimationStrategy::Configuration>(
 							export_configuration->clone())),
-	d_export_file_options_widget(NULL),
-	d_export_velocity_smoothing_options_widget(NULL)
+	d_export_velocity_smoothing_options_widget(NULL),
+	d_export_file_options_widget(NULL)
 {
 	setupUi(this);
 
