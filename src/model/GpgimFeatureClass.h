@@ -150,6 +150,18 @@ namespace GPlatesModel
 
 
 		/**
+		 * Returns the GPGIM properties of only this feature class (excluding ancestor feature classes).
+		 *
+		 * Only properties from this feature class (superclass) are included.
+		 */
+		const gpgim_property_seq_type &
+		get_feature_properties_excluding_ancestor_classes() const
+		{
+			return d_feature_properties;
+		}
+
+
+		/**
 		 * Convenience method returns the GPGIM property of the specified property name.
 		 *
 		 * Returns boost::none if the specified property name is not recognised for this feature class
@@ -176,14 +188,15 @@ namespace GPlatesModel
 
 
 		/**
-		 * Returns the GPGIM properties of only this feature class (excluding ancestor feature classes).
+		 * Same as @a get_default_geometry_feature_property but excludes ancestor feature classes.
 		 *
-		 * Only properties from this feature class (superclass) are included.
+		 * Only if this feature class (ie, not superclasses) has a default geometry property
+		 * will one be returned. This is useful when converting one feature class into another.
 		 */
-		const gpgim_property_seq_type &
-		get_feature_properties_excluding_ancestor_classes() const
+		boost::optional<GpgimProperty::non_null_ptr_to_const_type>
+		get_default_geometry_feature_property_excluding_ancestor_classes() const
 		{
-			return d_feature_properties;
+			return d_default_geometry_property;
 		}
 
 

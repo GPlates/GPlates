@@ -226,6 +226,11 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::rename_gpgim_feature_class_properties(
 	GPlatesModel::GpgimFeatureClass::gpgim_property_seq_type gpgim_feature_properties =
 			original_gpgim_feature_class.get()->get_feature_properties_excluding_ancestor_classes();
 
+	// We'll need to update the default GPGIM geometry property.
+	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_original_gpgim_geometry_property =
+			original_gpgim_feature_class.get()->get_default_geometry_feature_property_excluding_ancestor_classes();
+	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_gpgim_geometry_property;
+
 	// Find GPGIM feature property(s) with matching property name(s).
 	GPlatesModel::GpgimFeatureClass::gpgim_property_seq_type::iterator gpgim_feature_property_iter =
 			gpgim_feature_properties.begin();
@@ -233,7 +238,9 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::rename_gpgim_feature_class_properties(
 			gpgim_feature_properties.end();
 	for ( ; gpgim_feature_property_iter != gpgim_feature_property_end; ++gpgim_feature_property_iter)
 	{
-		const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &gpgim_feature_property =
+		// NOTE: We copy non_null_intrusive_ptr (instead of referencing it) because we might access
+		// it after the iteration sequence has been modified.
+		const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type gpgim_feature_property =
 				*gpgim_feature_property_iter;
 
 		// If we've found a matching property name then rename the property so that we read the old property name.
@@ -250,6 +257,16 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::rename_gpgim_feature_class_properties(
 				break;
 			}
 		}
+
+		// Update the default geometry property if it matches.
+		// The default GPGIM geometry property must be one of the new/changed properties.
+		if (gpgim_feature_property == default_original_gpgim_geometry_property)
+		{
+			const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &old_gpgim_feature_property =
+					*gpgim_feature_property_iter;
+
+			default_gpgim_geometry_property = old_gpgim_feature_property;
+		}
 	}
 
 	// Create the GPGIM feature class with the old-name GPGIM property(s).
@@ -258,7 +275,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::rename_gpgim_feature_class_properties(
 			original_gpgim_feature_class.get()->get_feature_description(),
 			gpgim_feature_properties.begin(),
 			gpgim_feature_properties.end(),
-			original_gpgim_feature_class.get()->get_default_geometry_feature_property(),
+			default_gpgim_geometry_property,
 			original_gpgim_feature_class.get()->get_parent_feature_class());
 }
 
@@ -301,6 +318,9 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::remove_gpgim_feature_class_properties(
 	GPlatesModel::GpgimFeatureClass::gpgim_property_seq_type gpgim_feature_properties =
 			original_gpgim_feature_class.get()->get_feature_properties_excluding_ancestor_classes();
 
+	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_gpgim_geometry_property =
+			original_gpgim_feature_class.get()->get_default_geometry_feature_property_excluding_ancestor_classes();
+
 	// Find GPGIM feature property(s) with matching property name(s).
 	GPlatesModel::GpgimFeatureClass::gpgim_property_seq_type::iterator gpgim_feature_property_iter =
 			gpgim_feature_properties.begin();
@@ -308,7 +328,9 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::remove_gpgim_feature_class_properties(
 		// NOTE: Don't cache this in a variable - we're iterating over a std::vector and calling 'erase()'...
 		gpgim_feature_properties.end())
 	{
-		const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &gpgim_feature_property =
+		// NOTE: We copy non_null_intrusive_ptr (instead of referencing it) because we might access
+		// it after it has been removed from the iteration sequence.
+		const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type gpgim_feature_property =
 				*gpgim_feature_property_iter;
 
 		// If we've found a matching property name then remove the GPGIM property.
@@ -323,7 +345,15 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::remove_gpgim_feature_class_properties(
 			}
 		}
 
-		if (!removed_gpgim_property)
+		if (removed_gpgim_property)
+		{
+			// If removed default GPGIM geometry property then set it to none.
+			if (gpgim_feature_property == default_gpgim_geometry_property)
+			{
+				default_gpgim_geometry_property = boost::none;
+			}
+		}
+		else
 		{
 			++gpgim_feature_property_iter;
 		}
@@ -335,7 +365,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::remove_gpgim_feature_class_properties(
 			original_gpgim_feature_class.get()->get_feature_description(),
 			gpgim_feature_properties.begin(),
 			gpgim_feature_properties.end(),
-			original_gpgim_feature_class.get()->get_default_geometry_feature_property(),
+			default_gpgim_geometry_property,
 			original_gpgim_feature_class.get()->get_parent_feature_class());
 }
 
