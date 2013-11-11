@@ -776,6 +776,17 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 					range_element,
 					GPLATES_ASSERTION_SOURCE);
 
+			// If the domain point is inside a deforming region (or micro-block within a deforming region)
+			// then it does not need smoothing so just use the already calculated velocity at the domain point.
+			// The reason smoothing is not needed is because a deforming region linearly interpolates
+			// velocities and hence domain points near the deforming region boundary will have velocities
+			// similar to those at the boundary, hence smoothing has essentially already been done.
+			if (range_element->d_reason == MultiPointVectorField::CodomainElement::InNetworkDeformingRegion ||
+				range_element->d_reason == MultiPointVectorField::CodomainElement::InNetworkRigidBlock)
+			{
+				return true;
+			}
+
 			// If we don't have a reconstruction geometry then the point was inside a boundary but
 			// we couldn't find the plate id of the boundary (and hence reverted to zero velocity).
 			if (!range_element->d_plate_id_reconstruction_geometry)
