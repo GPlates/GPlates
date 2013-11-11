@@ -28,6 +28,7 @@
 #include "ExportVelocityOptionsWidget.h"
 
 #include "ExportFileOptionsWidget.h"
+#include "ExportVelocitySmoothingOptionsWidget.h"
 #include "QtWidgetUtils.h"
 
 #include "file-io/ExportTemplateFilenameSequence.h"
@@ -45,12 +46,22 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 			boost::dynamic_pointer_cast<
 					GPlatesGui::ExportVelocityAnimationStrategy::Configuration>(
 							export_configuration->clone())),
-	d_export_file_options_widget(NULL)
+	d_export_file_options_widget(NULL),
+	d_export_velocity_smoothing_options_widget(NULL)
 {
 	setupUi(this);
 
 	// Delegate to the export file options widget to collect the file options.
 	// Note that not all formats support this.
+
+	// All velocity layers have velocity smoothing options.
+	d_export_velocity_smoothing_options_widget =
+			ExportVelocitySmoothingOptionsWidget::create(
+					parent_,
+					d_export_configuration->velocity_smoothing_options);
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_export_velocity_smoothing_options_widget,
+			widget_velocity_smoothing_options);
 
 	if (d_export_configuration->file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GPML)
 	{
@@ -162,19 +173,10 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 						.arg(GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::MT_PLACE_HOLDER)
 						.arg(GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::NT_PLACE_HOLDER)
 						.arg(GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration::ND_PLACE_HOLDER));
-
-		// Set the default smoothing control's values.
-		terra_velocity_smoothing_check_box->setChecked(configuration.is_boundary_smoothing_enabled);
-		terra_velocity_smoothing_distance_spinbox->setValue(
-				configuration.boundary_smoothing_angular_half_extent_degrees);
-
-		// Only enable velocity smoothing controls if velocity smoothing is enabled.
-		terra_velocity_smoothing_controls->setEnabled(configuration.is_boundary_smoothing_enabled);
 	}
 	else
 	{
 		terra_grid_filename_template_group_box->hide();
-		terra_velocity_smoothing_group_box->hide();
 	}
 
 	// Only CitcomS global format has a CitcomS grid filename template option.
@@ -217,6 +219,13 @@ GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr
 GPlatesQtWidgets::ExportVelocityOptionsWidget::create_export_animation_strategy_configuration(
 		const QString &filename_template)
 {
+	// Get the export velocity smoothing options from the export velocity smoothing options widget.
+	if (d_export_velocity_smoothing_options_widget)
+	{
+		d_export_configuration->velocity_smoothing_options =
+				d_export_velocity_smoothing_options_widget->get_export_velocity_smoothing_options();
+	}
+
 	// Get the export file options from the export file options widget, if any.
 	if (d_export_file_options_widget)
 	{
@@ -321,12 +330,6 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::make_signal_slot_connections()
 			SIGNAL(editingFinished()),
 			this,
 			SLOT(handle_terra_grid_filename_template_changed()));
-	QObject::connect(
-			terra_velocity_smoothing_check_box, SIGNAL(stateChanged(int)),
-			this, SLOT(handle_terra_velocity_smoothing_check_box_changed()));
-	QObject::connect(
-			terra_velocity_smoothing_distance_spinbox, SIGNAL(valueChanged(double)),
-			this, SLOT(handle_terra_velocity_smoothing_distance_spinbox_changed(double)));
 
 	//
 	// CitcomS global format connections.
@@ -532,34 +535,6 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::handle_terra_grid_filename_templa
 	}
 
 	configuration.terra_grid_filename_template = text;
-}
-
-
-void
-GPlatesQtWidgets::ExportVelocityOptionsWidget::handle_terra_velocity_smoothing_check_box_changed()
-{
-	// Throws bad_cast if fails.
-	GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration &configuration =
-			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration &>(
-					*d_export_configuration);
-
-	configuration.is_boundary_smoothing_enabled = terra_velocity_smoothing_check_box->isChecked();
-
-	// Only enable velocity smoothing controls if velocity smoothing is enabled.
-	terra_velocity_smoothing_controls->setEnabled(configuration.is_boundary_smoothing_enabled);
-}
-
-
-void
-GPlatesQtWidgets::ExportVelocityOptionsWidget::handle_terra_velocity_smoothing_distance_spinbox_changed(
-		double value)
-{
-	// Throws bad_cast if fails.
-	GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration &configuration =
-			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::TerraTextConfiguration &>(
-					*d_export_configuration);
-
-	configuration.boundary_smoothing_angular_half_extent_degrees = value;
 }
 
 

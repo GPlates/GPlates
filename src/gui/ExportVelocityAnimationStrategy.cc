@@ -114,7 +114,8 @@ namespace
 	void
 	populate_vector_field_seq(
 			vector_field_seq_type &vector_field_seq,
-			const GPlatesAppLogic::ApplicationState &application_state)
+			const GPlatesAppLogic::ApplicationState &application_state,
+			const GPlatesGui::ExportOptionsUtils::ExportVelocitySmoothingOptions &velocity_smoothing_options)
 	{
 		using namespace GPlatesAppLogic;
 
@@ -128,7 +129,17 @@ namespace
 				const VelocityFieldCalculatorLayerProxy::non_null_ptr_type &velocity_field_output,
 				velocity_field_outputs)
 		{
-			velocity_field_output->get_velocity_multi_point_vector_fields(multi_point_velocity_fields);
+			VelocityParams velocity_params = velocity_field_output->get_current_velocity_params();
+
+			// Override with any layer velocity params explicitly set in the export options.
+			velocity_params.set_is_boundary_smoothing_enabled(
+					velocity_smoothing_options.is_boundary_smoothing_enabled);
+			velocity_params.set_boundary_smoothing_angular_half_extent_degrees(
+					velocity_smoothing_options.boundary_smoothing_angular_half_extent_degrees);
+
+			velocity_field_output->get_velocity_multi_point_vector_fields(
+					multi_point_velocity_fields,
+					velocity_params);
 		}
 
 		// Convert sequence of non_null_ptr_type's to a sequence of raw pointers expected by the caller.
@@ -212,7 +223,8 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 				vector_field_seq_type velocity_vector_field_seq;
 				populate_vector_field_seq(
 						velocity_vector_field_seq,
-						d_export_animation_context_ptr->view_state().get_application_state());
+						d_export_animation_context_ptr->view_state().get_application_state(),
+						configuration.velocity_smoothing_options);
 
 				GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gpml_format(
 					full_filename,
@@ -238,7 +250,8 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 				vector_field_seq_type velocity_vector_field_seq;
 				populate_vector_field_seq(
 						velocity_vector_field_seq,
-						d_export_animation_context_ptr->view_state().get_application_state());
+						d_export_animation_context_ptr->view_state().get_application_state(),
+						configuration.velocity_smoothing_options);
 
 				GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gmt_format(
 					full_filename,
@@ -266,35 +279,11 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 						dynamic_cast<const TerraTextConfiguration &>(*d_configuration);
 
 				// Get all the MultiPointVectorFields from the current reconstruction.
-				// Get the velocity field calculator layer outputs.
-				std::vector<GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::non_null_ptr_type> velocity_field_outputs;
-				get_velocity_field_calculator_layer_proxies(
-						velocity_field_outputs,
-						d_export_animation_context_ptr->view_state().get_application_state());
-
-				// Iterate over the layers that have velocity field calculator outputs.
-				std::vector<GPlatesAppLogic::multi_point_vector_field_non_null_ptr_type> multi_point_velocity_fields;
-				BOOST_FOREACH(
-						const GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::non_null_ptr_type &velocity_field_output,
-						velocity_field_outputs)
-				{
-					GPlatesAppLogic::VelocityParams velocity_params =
-							velocity_field_output->get_current_velocity_params();
-
-					// Override with any layer velocity params explicitly set in the export options.
-					velocity_params.set_is_boundary_smoothing_enabled(
-							configuration.is_boundary_smoothing_enabled);
-					velocity_params.set_boundary_smoothing_angular_half_extent_degrees(
-							configuration.boundary_smoothing_angular_half_extent_degrees);
-
-					velocity_field_output->get_velocity_multi_point_vector_fields(
-							multi_point_velocity_fields,
-							velocity_params);
-				}
-
-				// Convert sequence of non_null_ptr_type's to a sequence of raw pointers.
 				vector_field_seq_type velocity_vector_field_seq;
-				get_vector_field_seq(velocity_vector_field_seq, multi_point_velocity_fields);
+				populate_vector_field_seq(
+						velocity_vector_field_seq,
+						d_export_animation_context_ptr->view_state().get_application_state(),
+						configuration.velocity_smoothing_options);
 
 				GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_terra_text_format(
 					configuration.terra_grid_filename_template,
@@ -320,7 +309,8 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 				vector_field_seq_type velocity_vector_field_seq;
 				populate_vector_field_seq(
 						velocity_vector_field_seq,
-						d_export_animation_context_ptr->view_state().get_application_state());
+						d_export_animation_context_ptr->view_state().get_application_state(),
+						configuration.velocity_smoothing_options);
 
 				// Export the raw CitcomS velocity files.
 				// Also export CitcomS-compatible GMT format files, if requested.

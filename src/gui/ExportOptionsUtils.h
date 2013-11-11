@@ -152,6 +152,24 @@ namespace GPlatesGui
 			//! The stage rotation time interval (in My).
 			double time_interval;
 		};
+
+
+		/**
+		 * Velocity smoothing options.
+		 */
+		struct ExportVelocitySmoothingOptions
+		{
+			explicit
+			ExportVelocitySmoothingOptions(
+					bool is_boundary_smoothing_enabled_,
+					const double &boundary_smoothing_angular_half_extent_degrees_) :
+				is_boundary_smoothing_enabled(is_boundary_smoothing_enabled_),
+				boundary_smoothing_angular_half_extent_degrees(boundary_smoothing_angular_half_extent_degrees_)
+			{  }
+
+			bool is_boundary_smoothing_enabled;
+			double boundary_smoothing_angular_half_extent_degrees;
+		};
 	}
 }
 

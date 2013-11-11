@@ -36,6 +36,7 @@
 namespace GPlatesQtWidgets
 {
 	class ExportFileOptionsWidget;
+	class ExportVelocitySmoothingOptionsWidget;
 
 	/**
 	 * General (non-CitcomS-specific) resolved topology export options.
@@ -101,13 +102,6 @@ namespace GPlatesQtWidgets
 		handle_terra_grid_filename_template_changed();
 
 		void
-		handle_terra_velocity_smoothing_check_box_changed();
-
-		void
-		handle_terra_velocity_smoothing_distance_spinbox_changed(
-				double value);
-
-		void
 		handle_citcoms_grid_filename_template_changed();
 
 		void
@@ -138,6 +132,7 @@ namespace GPlatesQtWidgets
 
 		GPlatesGui::ExportVelocityAnimationStrategy::configuration_ptr d_export_configuration;
 
+		ExportVelocitySmoothingOptionsWidget *d_export_velocity_smoothing_options_widget;
 		ExportFileOptionsWidget *d_export_file_options_widget;
 	};
 }
