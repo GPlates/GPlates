@@ -32,21 +32,24 @@ namespace GPlatesMaths
 {
 	namespace
 	{
+		template <typename GreatCircleArcConstIteratorType>
 		void
-		minimum_distance_between_point_and_polyline_bounding_tree_node(
+		minimum_distance_between_point_and_poly_geometry_bounding_tree_node(
 				const PointOnSphere &point,
-				const PolylineOnSphere::bounding_tree_type &polyline_bounding_tree,
-				const PolylineOnSphere::bounding_tree_type::node_type &polyline_sub_tree_node,
+				const PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType> &polyline_bounding_tree,
+				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::node_type &polyline_sub_tree_node,
 				AngularDistance &min_distance,
 				AngularExtent &min_distance_threshold,
 				boost::optional<UnitVector3D &> closest_position_on_polyline)
 		{
+			typedef PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType> bounding_tree_type;
+
 			if (polyline_sub_tree_node.is_leaf_node())
 			{
 				// Iterate over the great circle arcs of the leaf node.
-				PolylineOnSphere::bounding_tree_type::great_circle_arc_const_iterator_type
+				typename bounding_tree_type::great_circle_arc_const_iterator_type
 						gca_iter = polyline_sub_tree_node.get_bounded_great_circle_arcs_begin();
-				PolylineOnSphere::bounding_tree_type::great_circle_arc_const_iterator_type
+				typename bounding_tree_type::great_circle_arc_const_iterator_type
 						gca_end = polyline_sub_tree_node.get_bounded_great_circle_arcs_end();
 				for ( ; gca_iter != gca_end; ++gca_iter)
 				{
@@ -72,7 +75,7 @@ namespace GPlatesMaths
 			}
 			// else is an internal node...
 
-			const PolylineOnSphere::bounding_tree_type::node_type child_nodes[2] =
+			const typename bounding_tree_type::node_type child_nodes[2] =
 			{
 				polyline_bounding_tree.get_child_node(polyline_sub_tree_node, 0),
 				polyline_bounding_tree.get_child_node(polyline_sub_tree_node, 1)
@@ -112,7 +115,7 @@ namespace GPlatesMaths
 					continue;
 				}
 
-				minimum_distance_between_point_and_polyline_bounding_tree_node(
+				minimum_distance_between_point_and_poly_geometry_bounding_tree_node(
 						point,
 						polyline_bounding_tree,
 						child_nodes[child_offset],
@@ -228,13 +231,81 @@ GPlatesMaths::minimum_distance(
 		}
 	}
 
-	minimum_distance_between_point_and_polyline_bounding_tree_node(
+	minimum_distance_between_point_and_poly_geometry_bounding_tree_node(
 			point,
 			polyline_bounding_tree,
 			polyline_bounding_tree_root_node,
 			min_distance,
 			min_distance_threshold,
 			closest_position_on_polyline);
+
+	return min_distance;
+}
+
+
+GPlatesMaths::AngularDistance
+GPlatesMaths::minimum_distance(
+		const PointOnSphere &point,
+		const PolygonOnSphere &polygon,
+		bool polygon_interior_is_solid,
+		boost::optional<const AngularExtent &> minimum_distance_threshold_opt,
+		boost::optional<UnitVector3D &> closest_position_on_polygon)
+{
+	if (polygon_interior_is_solid)
+	{
+		if (polygon.is_point_in_polygon(point) == PointInPolygon::POINT_INSIDE_POLYGON)
+		{
+			if (closest_position_on_polygon)
+			{
+				// The closest position in the solid interior of a polygon is the point itself.
+				closest_position_on_polygon.get() = point.position_vector();
+			}
+
+			// Anything intersecting the polygon interior is considered zero distance
+			// which is also below any possible minimum distance threshold.
+			return AngularDistance::ZERO;
+		}
+	}
+
+	const PolygonOnSphere::bounding_tree_type &polygon_bounding_tree = polygon.get_bounding_tree();
+
+	const PolygonOnSphere::bounding_tree_type::node_type polygon_bounding_tree_root_node =
+			polygon_bounding_tree.get_root_node();
+
+	// The (maximum possible) distance to return if shortest distance between both geometries
+	// is not within the minimum distance threshold (if any).
+	AngularDistance min_distance = AngularDistance::PI;
+
+	// Note that after each minimum distance component calculation we update the threshold
+	// with the updated minimum distance.
+	//
+	// This avoids overwriting the closest point (so far) with a point that is further away.
+	//
+	// This is also an optimisation that can avoid calculating the closest point in some situations
+	// where the next component minimum distance is greater than the current minimum distance.
+	AngularExtent min_distance_threshold = AngularExtent::PI;
+	
+	// If caller specified a threshold.
+	if (minimum_distance_threshold_opt)
+	{
+		min_distance_threshold = minimum_distance_threshold_opt.get();
+
+		// If the point is further away (from the root node's bounding small circle) than the
+		// threshold then return the maximum possible distance (PI) to signal this.
+		if (minimum_distance(point, polygon_bounding_tree_root_node.get_bounding_small_circle())
+			.is_precisely_greater_than(min_distance_threshold))
+		{
+			return AngularDistance::PI;
+		}
+	}
+
+	minimum_distance_between_point_and_poly_geometry_bounding_tree_node(
+			point,
+			polygon_bounding_tree,
+			polygon_bounding_tree_root_node,
+			min_distance,
+			min_distance_threshold,
+			closest_position_on_polygon);
 
 	return min_distance;
 }
