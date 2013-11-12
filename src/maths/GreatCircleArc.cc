@@ -850,8 +850,8 @@ GPlatesMaths::minimum_distance(
 					arc2,
 					min_point_to_arc_distance_threshold,
 					closest_position_on_arc2);
-	// If shortest distance so far (within threshold) - this is an epsilon angle comparison...
-	if (min_distance_arc1_start_point_to_arc2 < min_point_to_arc_distance)
+	// If shortest distance so far (within threshold)...
+	if (min_distance_arc1_start_point_to_arc2.is_precisely_less_than(min_point_to_arc_distance))
 	{
 		min_point_to_arc_distance = min_distance_arc1_start_point_to_arc2;
 		min_point_to_arc_distance_threshold =
@@ -870,8 +870,8 @@ GPlatesMaths::minimum_distance(
 					arc2,
 					min_point_to_arc_distance_threshold,
 					closest_position_on_arc2);
-	// If shortest distance so far (within threshold) - this is an epsilon angle comparison...
-	if (min_distance_arc1_end_point_to_arc2 < min_point_to_arc_distance)
+	// If shortest distance so far (within threshold)...
+	if (min_distance_arc1_end_point_to_arc2.is_precisely_less_than(min_point_to_arc_distance))
 	{
 		min_point_to_arc_distance = min_distance_arc1_end_point_to_arc2;
 		min_point_to_arc_distance_threshold =
@@ -890,8 +890,8 @@ GPlatesMaths::minimum_distance(
 					arc1,
 					min_point_to_arc_distance_threshold,
 					closest_position_on_arc1);
-	// If shortest distance so far (within threshold) - this is an epsilon angle comparison...
-	if (min_distance_arc2_start_point_to_arc1 < min_point_to_arc_distance)
+	// If shortest distance so far (within threshold)...
+	if (min_distance_arc2_start_point_to_arc1.is_precisely_less_than(min_point_to_arc_distance))
 	{
 		min_point_to_arc_distance = min_distance_arc2_start_point_to_arc1;
 		min_point_to_arc_distance_threshold =
@@ -910,8 +910,8 @@ GPlatesMaths::minimum_distance(
 					arc1,
 					min_point_to_arc_distance_threshold,
 					closest_position_on_arc1);
-	// If shortest distance so far (within threshold) - this is an epsilon angle comparison...
-	if (min_distance_arc2_end_point_to_arc1 < min_point_to_arc_distance)
+	// If shortest distance so far (within threshold)...
+	if (min_distance_arc2_end_point_to_arc1.is_precisely_less_than(min_point_to_arc_distance))
 	{
 		min_point_to_arc_distance = min_distance_arc2_end_point_to_arc1;
 		min_point_to_arc_distance_threshold =

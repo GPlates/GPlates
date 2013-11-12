@@ -40,6 +40,8 @@ set(srcs
     FiniteRotationSnapshotTable.h
     FunctionDomainException.h
     GenericVectorOps3D.h
+    GeometryDistance.cc
+    GeometryDistance.h
     GeometryForwardDeclarations.h
     GeometryOnSphere.h
     GeometryType.h
@@ -118,8 +120,6 @@ set(srcs
     SphereSettings.h
     SphericalArea.cc
     SphericalArea.h
-    SphericalDistance.cc
-    SphericalDistance.h
     TrailingLatLonCoordinateException.cc
     TrailingLatLonCoordinateException.h
     types.h

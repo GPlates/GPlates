@@ -153,6 +153,17 @@ namespace GPlatesMaths
 				return d_node_impl->child_node_indices[0] == INVALID_NODE_INDEX;
 			}
 
+			/**
+			 * Returns true if this node has children.
+			 *
+			 * If true is returned then 'this' node has two children.
+			 */
+			bool
+			is_internal_node() const
+			{
+				return !is_leaf_node();
+			}
+
 		private:
 			const NodeImpl *d_node_impl;
 
@@ -176,6 +187,9 @@ namespace GPlatesMaths
 			friend class PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>;
 		};
 
+		//! Typedef for bounding tree node.
+		typedef Node node_type;
+
 
 		/**
 		 * Constructs a binary bounding tree over the specified iteration sequence of great circle arcs.
@@ -194,20 +208,20 @@ namespace GPlatesMaths
 		/**
 		 * Returns the root node of the binary bounding tree.
 		 */
-		Node
+		node_type
 		get_root_node() const;
 
 
 		/**
 		 * Returns the specified child node of the specified parent node.
 		 *
-		 * NOTE: You should check Node::is_leaf_node() before calling this to ensure @a parent_node has child nodes.
+		 * NOTE: You should check node_type::is_leaf_node() before calling this to ensure @a parent_node has child nodes.
 		 *
 		 * @a child_offset should be either 0 or 1.
 		 */
-		Node
+		node_type
 		get_child_node(
-				const Node &parent_node,
+				const node_type &parent_node,
 				unsigned int child_offset) const;
 
 	private:
@@ -337,12 +351,12 @@ namespace GPlatesMaths
 
 
 	template <typename GreatCircleArcConstIteratorType>
-	typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::Node
+	typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::node_type
 	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::get_root_node() const
 	{
 		const NodeImpl &root_node_impl = d_nodes[d_root_node_index];
 
-		return Node(
+		return node_type(
 				root_node_impl,
 				d_begin_great_circle_arcs,
 				// We're expecting a random access iterator since much faster - will fail to compile otherwise...
@@ -351,9 +365,9 @@ namespace GPlatesMaths
 
 
 	template <typename GreatCircleArcConstIteratorType>
-	typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::Node
+	typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::node_type
 	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::get_child_node(
-			const Node &parent_node,
+			const node_type &parent_node,
 			unsigned int child_offset) const
 	{
 		//GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -365,7 +379,7 @@ namespace GPlatesMaths
 			const int first_child_node_index = parent_node.d_node_impl->child_node_indices[0];
 			const NodeImpl &first_child_node_impl = d_nodes[first_child_node_index];
 
-			return Node(
+			return node_type(
 					first_child_node_impl,
 					parent_node.d_bounded_great_circle_arcs_begin,
 					// We're expecting a random access iterator since much faster - will fail to compile otherwise...
@@ -379,7 +393,7 @@ namespace GPlatesMaths
 			const int second_child_node_index = parent_node.d_node_impl->child_node_indices[1];
 			const NodeImpl &second_child_node_impl = d_nodes[second_child_node_index];
 
-			return Node(
+			return node_type(
 					second_child_node_impl,
 					// We're expecting a random access iterator since much faster - will fail to compile otherwise...
 					parent_node.d_bounded_great_circle_arcs_begin +
