@@ -60,14 +60,16 @@ namespace GPlatesMaths
 		{
 			explicit
 			CachedCalculations() :
-				// Start off with low speed for point-in-polygon tests - user can increase as needed.
-				point_in_polygon_speed_and_memory(PolygonOnSphere::LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE)
+				// Start off in low-speed mode for point-in-polygon tests.
+				// The user can specify faster speeds if they want (or used adaptive mode).
+				point_in_polygon_speed_and_memory(PolygonOnSphere::LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE),
+				num_point_in_polygon_calls(0)
 			{
-				// Currently the speed has to be the lowest speed because otherwise the
+				// Currently the speed has to be less than medium speed because otherwise the
 				// point-in-polygon test will dereference the point-in-polygon tester which won't
 				// be initialised - the lowest speed test requires no point-in-polygon tester.
 				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						point_in_polygon_speed_and_memory == PolygonOnSphere::LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE,
+						point_in_polygon_speed_and_memory < PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE,
 						GPLATES_ASSERTION_SOURCE);
 			}
 
@@ -77,9 +79,38 @@ namespace GPlatesMaths
 			boost::optional<PolygonOrientation::Orientation> orientation;
 
 			PolygonOnSphere::PointInPolygonSpeedAndMemory point_in_polygon_speed_and_memory;
+			unsigned int num_point_in_polygon_calls;
 			boost::optional<PointInPolygon::Polygon> point_in_polygon_tester;
 			boost::optional<PolygonOnSphere::bounding_tree_type> polygon_bounding_tree;
 		};
+
+
+		/**
+		 * Build a point-in-polygon tester of medium or high (if @a high_speed is true) speed
+		 * and cache the result in @a cached_calculations.
+		 */
+		void
+		build_and_cache_point_in_polygon_tester(
+				const PolygonOnSphere &polygon,
+				CachedCalculations &cached_calculations,
+				bool high_speed)
+		{
+			// Build an O(log N) point-in-polygon structure for the fastest point-in-polygon test.
+			const bool build_ologn_hint = high_speed;
+
+			// Note that we ask the point-in-polygon structure *not* to keep a shared reference
+			// to us otherwise we get circular shared pointer references and a memory leak.
+			cached_calculations.point_in_polygon_tester =
+					PointInPolygon::Polygon(
+							GPlatesUtils::get_non_null_pointer(&polygon),
+							build_ologn_hint,
+							false/*keep_shared_reference_to_polygon*/);
+
+			cached_calculations.point_in_polygon_speed_and_memory =
+					high_speed
+					? PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE
+					: PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE;
+		}
 	}
 }
 
@@ -397,34 +428,79 @@ GPlatesMaths::PolygonOnSphere::is_point_in_polygon(
 		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
 	}
 
-	// Set up the point-in-polygon structure if the caller has requested medium or high speed testing.
-	// We only need to build a point-in-polygon structure if the caller has requested a speed
-	// above the default low-speed test (which doesn't require a cached structure).
-	if (speed_and_memory > d_cached_calculations->point_in_polygon_speed_and_memory)
+	// Keep track of the total number of calls for the adaptive speed mode.
+	++d_cached_calculations->num_point_in_polygon_calls;
+
+	switch (speed_and_memory)
 	{
-		// Build an O(log N) point-in-polygon structure for the fastest point-in-polygon test.
-		const bool build_ologn_hint = (speed_and_memory == HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
+	case MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE:
+	case HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE:
+		// Set up the point-in-polygon structure if the caller has requested medium or high speed testing.
+		// We only need to build a point-in-polygon structure if the caller has requested a speed
+		// above the current speed setting.
+		if (speed_and_memory > d_cached_calculations->point_in_polygon_speed_and_memory)
+		{
+			build_and_cache_point_in_polygon_tester(
+					*this,
+					*d_cached_calculations,
+					speed_and_memory == HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
+		}
+		break;
 
-		// Note that we ask the point-in-polygon structure *not* to keep a shared reference
-		// to us otherwise we get circular shared pointer references and a memory leak.
-		d_cached_calculations->point_in_polygon_tester =
-				PointInPolygon::Polygon(
-						GPlatesUtils::get_non_null_pointer(this),
-						build_ologn_hint,
-						false/*keep_shared_reference_to_polygon*/);
+	case ADAPTIVE:
+		// Adapt the speed according to the number of point-in-polygon calls made so far.
+		//
+		// This is based on:
+		//
+		// LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE              0 < N < 4     points tested per polygon,
+		// MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE   4 < N < 200   points tested per polygon,
+		// HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE         N > 200       points tested per polygon.
+		if (d_cached_calculations->num_point_in_polygon_calls >= 200)
+		{
+			if (d_cached_calculations->point_in_polygon_speed_and_memory < HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE)
+			{
+				// High speed...
+				build_and_cache_point_in_polygon_tester(*this, *d_cached_calculations, true/*high_speed*/);
+			}
+		}
+		else if (d_cached_calculations->num_point_in_polygon_calls >= 4)
+		{
+			if (d_cached_calculations->point_in_polygon_speed_and_memory < MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE)
+			{
+				// Medium speed...
+				build_and_cache_point_in_polygon_tester(*this, *d_cached_calculations, false/*high_speed*/);
+			}
+		}
+		break;
 
-		d_cached_calculations->point_in_polygon_speed_and_memory = speed_and_memory;
+	case LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE:
+	default:
+		// Do nothing.
+		//
+		// Note that if the caller requests a low speed test but we have cached a medium or high
+		// speed test then we'll use that since it's already there and it's faster.
+		break;
 	}
 
-	// The low speed test doesn't require any cached structures - it's just a function call.
-	// Note that if the caller requests a low speed test but we have cached a medium or high
-	// speed test then we'll use the latter since it's already there and it's faster.
-	if (d_cached_calculations->point_in_polygon_speed_and_memory == LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE)
+	// If we have an optimised point-in-polygon tester then use it.
+	if (d_cached_calculations->point_in_polygon_tester)
 	{
-		return PointInPolygon::is_point_in_polygon(point, *this);
+		return d_cached_calculations->point_in_polygon_tester->is_point_in_polygon(point);
 	}
 
-	return d_cached_calculations->point_in_polygon_tester->is_point_in_polygon(point);
+	// Since the low-speed test does not include a bounds test we will perform one here
+	// (provided we have a bounding small circle) for quick rejection of points outside polygon.
+	if (d_cached_calculations->inner_outer_bounding_small_circle)
+	{
+		if (d_cached_calculations->inner_outer_bounding_small_circle
+			->get_outer_bounding_small_circle().test(point) == BoundingSmallCircle::OUTSIDE_BOUNDS)
+		{
+			return PointInPolygon::POINT_OUTSIDE_POLYGON;
+		}
+	}
+
+	// The low speed test doesn't have any cached structures - it's just a function call.
+	return PointInPolygon::is_point_in_polygon(point, *this);
 }
 
 

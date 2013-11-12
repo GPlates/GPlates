@@ -683,7 +683,7 @@ namespace GPlatesMaths
 		/**
 		 * Determines the speed versus memory trade-off of point-in-polygon tests.
 		 *
-		 * NOTE: This set up cost is a once-off cost that happens in the first call to
+		 * NOTE: The set up cost is a once-off cost that happens in the first call to
 		 * @a is_point_in_polygon or if you increase the speed.
 		 *
 		 * See PointInPolygon for more details. But in summary...
@@ -692,21 +692,28 @@ namespace GPlatesMaths
 		 * LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE              0 < N < 4     points tested per polygon,
 		 * MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE   4 < N < 200   points tested per polygon,
 		 * HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE         N > 200       points tested per polygon.
+		 *
+		 * Or just use ADAPTIVE to progressively switch through the above stages as the number
+		 * of calls to @a is_point_in_polygon increases, eventually ending up at
+		 * HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE if enough calls are made.
 		 */
 		enum PointInPolygonSpeedAndMemory
 		{
-			LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE = 0,
-			MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE = 1,
-			HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE = 2
+			ADAPTIVE = 0,
+			LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE = 1,
+			MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE = 2,
+			HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE = 3
 		};
 
 		/**
 		 * Tests whether the specified point is inside this polygon.
 		 *
+		 * The default @a speed_and_memory is adaptive.
+		 *
 		 * @a speed_and_memory determines how fast the point-in-polygon test should be
 		 * and how much memory it uses.
 		 *
-		 * NOTE: This set up cost is a once-off cost that happens in the first call to
+		 * NOTE: The set up cost is a once-off cost that happens in the first call to
 		 * @a is_point_in_polygon or if you increase the speed.
 		 *
 		 * You can increase the speed but you cannot reduce it - this is because it takes
@@ -716,8 +723,7 @@ namespace GPlatesMaths
 		PointInPolygon::Result
 		is_point_in_polygon(
 				const PointOnSphere &point,
-				PointInPolygonSpeedAndMemory speed_and_memory =
-						MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) const;
+				PointInPolygonSpeedAndMemory speed_and_memory = ADAPTIVE) const;
 
 	private:
 
