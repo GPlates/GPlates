@@ -374,7 +374,7 @@ namespace GPlatesMaths
 	 * @a closest_positions_on_arcs (even if it's not none).
 	 *
 	 * If @a closest_positions_on_arcs is specified then the closest point on each arc is stored in
-	 * the unit vector it references (unless the threshold is exceeded, if specified).
+	 * the unit vectors it references (unless the threshold is exceeded, if specified).
 	 */
 	AngularDistance
 	minimum_distance(
@@ -469,7 +469,7 @@ namespace GPlatesMaths
 	 * @a furthest_positions_on_arcs (even if it's not none).
 	 *
 	 * If @a furthest_positions_on_arcs is specified then the furthest point on each arc is stored in
-	 * the unit vector it references (unless the threshold is not exceeded, if specified).
+	 * the unit vectors it references (unless the threshold is not exceeded, if specified).
 	 */
 	AngularDistance
 	maximum_distance(

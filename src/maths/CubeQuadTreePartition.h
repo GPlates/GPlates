@@ -750,12 +750,8 @@ namespace GPlatesMaths
 		 * Add an element, to the spatial partition, that has a finite spatial extent.
 		 *
 		 * The location at which the element is added in the spatial partition
-		 * is determined by the small circle bounding the element's geometry - both
-		 * the small circle centre and the small circle radius (in the form of a dot product).
-		 *
-		 * NOTE: This can also be used for region-of-interest queries if you add the
-		 * bounding circle extent to the region-of-interest extent and pass that into this method.
-		 * Although there are also @a add methods taking a 'region_of-interest' parameter that are easier to use.
+		 * is determined by the small circle bounding the element's geometry - determined by
+		 * @a bounding_circle_centre and @a bounding_circle_extent.
 		 */
 		void
 		add(

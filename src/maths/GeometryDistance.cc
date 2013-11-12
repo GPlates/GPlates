@@ -150,6 +150,48 @@ GPlatesMaths::minimum_distance(
 GPlatesMaths::AngularDistance
 GPlatesMaths::minimum_distance(
 		const PointOnSphere &point,
+		const MultiPointOnSphere &multipoint,
+		boost::optional<const AngularExtent &> minimum_distance_threshold_opt,
+		boost::optional<UnitVector3D &> closest_position_in_multipoint)
+{
+	// The (maximum possible) distance to return if shortest distance between both geometries
+	// is not within the minimum distance threshold (if any).
+	AngularDistance min_distance = AngularDistance::PI;
+
+	AngularExtent min_distance_threshold = minimum_distance_threshold_opt
+			? minimum_distance_threshold_opt.get()
+			: AngularExtent::PI;
+
+	// Iterate over the points in the multi-point.
+	MultiPointOnSphere::const_iterator multipoint_iter = multipoint.begin();
+	MultiPointOnSphere::const_iterator multipoint_end = multipoint.end();
+	for ( ; multipoint_iter != multipoint_end; ++multipoint_iter)
+	{
+		const PointOnSphere &multipoint_point = *multipoint_iter;
+
+		const AngularDistance min_distance_point_to_multipoint_point =
+				AngularDistance::create_from_cosine(
+						dot(point.position_vector(), multipoint_point.position_vector()));
+
+		// If shortest distance so far (within threshold)...
+		if (min_distance_point_to_multipoint_point.is_precisely_less_than(min_distance) &&
+			min_distance_point_to_multipoint_point.is_precisely_less_than(min_distance_threshold))
+		{
+			min_distance = min_distance_point_to_multipoint_point;
+			if (closest_position_in_multipoint)
+			{
+				closest_position_in_multipoint.get() = multipoint_point.position_vector();
+			}
+		}
+	}
+
+	return min_distance;
+}
+
+
+GPlatesMaths::AngularDistance
+GPlatesMaths::minimum_distance(
+		const PointOnSphere &point,
 		const PolylineOnSphere &polyline,
 		boost::optional<const AngularExtent &> minimum_distance_threshold_opt,
 		boost::optional<UnitVector3D &> closest_position_on_polyline)
@@ -193,6 +235,58 @@ GPlatesMaths::minimum_distance(
 			min_distance,
 			min_distance_threshold,
 			closest_position_on_polyline);
+
+	return min_distance;
+}
+
+
+GPlatesMaths::AngularDistance
+GPlatesMaths::minimum_distance(
+		const MultiPointOnSphere &multipoint1,
+		const MultiPointOnSphere &multipoint2,
+		boost::optional<const AngularExtent &> minimum_distance_threshold_opt,
+		boost::optional< boost::tuple<UnitVector3D &/*multipoint1*/, UnitVector3D &/*multipoint2*/> > closest_positions)
+{
+	// The (maximum possible) distance to return if shortest distance between both geometries
+	// is not within the minimum distance threshold (if any).
+	AngularDistance min_distance = AngularDistance::PI;
+
+	AngularExtent min_distance_threshold = minimum_distance_threshold_opt
+			? minimum_distance_threshold_opt.get()
+			: AngularExtent::PI;
+
+	// Iterate over the points in the first multi-point.
+	MultiPointOnSphere::const_iterator multipoint1_iter = multipoint1.begin();
+	MultiPointOnSphere::const_iterator multipoint1_end = multipoint1.end();
+	for ( ; multipoint1_iter != multipoint1_end; ++multipoint1_iter)
+	{
+		const PointOnSphere &multipoint1_point = *multipoint1_iter;
+
+
+		// Iterate over the points in the second multi-point.
+		MultiPointOnSphere::const_iterator multipoint2_iter = multipoint2.begin();
+		MultiPointOnSphere::const_iterator multipoint2_end = multipoint2.end();
+		for ( ; multipoint2_iter != multipoint2_end; ++multipoint2_iter)
+		{
+			const PointOnSphere &multipoint2_point = *multipoint2_iter;
+
+			const AngularDistance min_distance_between_points =
+					AngularDistance::create_from_cosine(
+							dot(multipoint1_point.position_vector(), multipoint2_point.position_vector()));
+
+			// If shortest distance so far (within threshold)...
+			if (min_distance_between_points.is_precisely_less_than(min_distance) &&
+				min_distance_between_points.is_precisely_less_than(min_distance_threshold))
+			{
+				min_distance = min_distance_between_points;
+				if (closest_positions)
+				{
+					boost::get<0>(closest_positions.get()) = multipoint1_point.position_vector();
+					boost::get<1>(closest_positions.get()) = multipoint2_point.position_vector();
+				}
+			}
+		}
+	}
 
 	return min_distance;
 }
