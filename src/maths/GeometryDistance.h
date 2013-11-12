@@ -42,7 +42,7 @@
 namespace GPlatesMaths
 {
 	/**
-	 * Returns the minimum angular distance between two points - optionally within a minimum threshold distance.
+	 * Returns the minimum angular distance between two points.
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
@@ -55,8 +55,7 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Returns the minimum angular distance between a point and a multi-point, and optionally the
-	 * closest point in the multi-point - optionally within a minimum threshold distance.
+	 * Returns the minimum angular distance between a point and a multi-point.
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
@@ -75,8 +74,7 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Returns the minimum angular distance between a point and a polyline, and optionally the
-	 * closest point on the polyline - optionally within a minimum threshold distance.
+	 * Returns the minimum angular distance between a point and a polyline.
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
@@ -95,8 +93,7 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Returns the minimum angular distance between a point and a polygon, and optionally the
-	 * closest point on the polygon - optionally within a minimum threshold distance.
+	 * Returns the minimum angular distance between a point and a polygon.
 	 *
 	 * If @a polygon_interior_is_solid is true then anything intersecting the interior of @a polygon
 	 * has a distance of zero, otherwise the distance to the polygon outline.
@@ -121,8 +118,7 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Returns the minimum angular distance between a point and a multi-point, and optionally the
-	 * closest point in the multi-point - optionally within a minimum threshold distance.
+	 * Returns the minimum angular distance between a point and a multi-point.
 	 *
 	 * This function simply reverses the arguments of the other @a minimum_distance overload.
 	 */
@@ -160,8 +156,55 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Returns the minimum angular distance between a point and a polyline, and optionally the
-	 * closest point on the polyline - optionally within a minimum threshold distance.
+	 * Returns the minimum angular distance between a multi-point and a polyline.
+	 *
+	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
+	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * @a closest_positions (even if it's not none).
+	 *
+	 * If @a closest_positions is specified then the closest point in the multi-point and on the polyline
+	 * is stored in the unit vectors it references (unless the threshold is exceeded, if specified).
+	 */
+	AngularDistance
+	minimum_distance(
+			const MultiPointOnSphere &multipoint,
+			const PolylineOnSphere &polyline,
+			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
+			boost::optional<
+					boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polyline*/>
+							> closest_positions = boost::none);
+
+
+	/**
+	 * Returns the minimum angular distance between a multi-point and a polygon.
+	 *
+	 * If @a polygon_interior_is_solid is true then anything intersecting the interior of @a polygon
+	 * has a distance of zero, otherwise the distance to the polygon outline.
+	 *
+	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
+	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * @a closest_positions (even if it's not none).
+	 *
+	 * If @a closest_positions is specified then the closest point in the multi-point and in/on the polygon
+	 * is stored in the unit vectors it references (unless the threshold is exceeded, if specified).
+	 * If @a polygon_interior_is_solid is true and any point is inside the polygon interior then
+	 * that point position itself is returned as the closest point.
+	 */
+	AngularDistance
+	minimum_distance(
+			const MultiPointOnSphere &multipoint,
+			const PolygonOnSphere &polygon,
+			bool polygon_interior_is_solid = false,
+			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
+			boost::optional<
+					boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polygon*/>
+							> closest_positions = boost::none);
+
+
+	/**
+	 * Returns the minimum angular distance between a point and a polyline.
 	 *
 	 * This function simply reverses the arguments of the other @a minimum_distance overload.
 	 */
@@ -178,8 +221,22 @@ namespace GPlatesMaths
 
 
 	/**
-	 * Returns the minimum angular distance between a point and a polygon, and optionally the
-	 * closest point on the polygon - optionally within a minimum threshold distance.
+	 * Returns the minimum angular distance between a multi-point and a polyline.
+	 *
+	 * This function simply reverses the arguments of the other @a minimum_distance overload.
+	 */
+	AngularDistance
+	minimum_distance(
+			const PolylineOnSphere &polyline,
+			const MultiPointOnSphere &multipoint,
+			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
+			boost::optional<
+					boost::tuple<UnitVector3D &/*polyline*/, UnitVector3D &/*multipoint*/>
+							> closest_positions = boost::none);
+
+
+	/**
+	 * Returns the minimum angular distance between a point and a polygon.
 	 *
 	 * This function simply reverses the arguments of the other @a minimum_distance overload.
 	 */
@@ -199,6 +256,22 @@ namespace GPlatesMaths
 				minimum_distance_threshold,
 				closest_position_on_polygon);
 	}
+
+
+	/**
+	 * Returns the minimum angular distance between a multi-point and a polygon.
+	 *
+	 * This function simply reverses the arguments of the other @a minimum_distance overload.
+	 */
+	AngularDistance
+	minimum_distance(
+			const PolygonOnSphere &polygon,
+			const MultiPointOnSphere &multipoint,
+			bool polygon_interior_is_solid = false,
+			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
+			boost::optional<
+					boost::tuple<UnitVector3D &/*polygon*/, UnitVector3D &/*multipoint*/>
+							> closest_positions = boost::none);
 }
 
 #endif // GPLATES_MATHS_GEOMETRYDISTANCE_H

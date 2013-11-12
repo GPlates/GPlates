@@ -333,7 +333,6 @@ GPlatesMaths::minimum_distance(
 	{
 		const PointOnSphere &multipoint1_point = *multipoint1_iter;
 
-
 		// Iterate over the points in the second multi-point.
 		MultiPointOnSphere::const_iterator multipoint2_iter = multipoint2.begin();
 		MultiPointOnSphere::const_iterator multipoint2_end = multipoint2.end();
@@ -360,4 +359,162 @@ GPlatesMaths::minimum_distance(
 	}
 
 	return min_distance;
+}
+
+
+GPlatesMaths::AngularDistance
+GPlatesMaths::minimum_distance(
+		const MultiPointOnSphere &multipoint,
+		const PolylineOnSphere &polyline,
+		boost::optional<const AngularExtent &> minimum_distance_threshold_opt,
+		boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polyline*/> > closest_positions)
+{
+	// The (maximum possible) distance to return if shortest distance between both geometries
+	// is not within the minimum distance threshold (if any).
+	AngularDistance min_distance = AngularDistance::PI;
+
+	AngularExtent min_distance_threshold = minimum_distance_threshold_opt
+			? minimum_distance_threshold_opt.get()
+			: AngularExtent::PI;
+
+	boost::optional<UnitVector3D &> closest_position_in_multipoint;
+	boost::optional<UnitVector3D &> closest_position_on_polyline;
+	if (closest_positions)
+	{
+		closest_position_in_multipoint = boost::get<0>(closest_positions.get());
+		closest_position_on_polyline = boost::get<1>(closest_positions.get());
+	}
+
+	// Iterate over the points in the multi-point.
+	MultiPointOnSphere::const_iterator multipoint_iter = multipoint.begin();
+	MultiPointOnSphere::const_iterator multipoint_end = multipoint.end();
+	for ( ; multipoint_iter != multipoint_end; ++multipoint_iter)
+	{
+		const PointOnSphere &multipoint_point = *multipoint_iter;
+
+		const AngularDistance min_distance_multipoint_point_to_polyline =
+				minimum_distance(
+						multipoint_point,
+						polyline,
+						min_distance_threshold,
+						closest_position_on_polyline);
+
+		// If shortest distance so far (within threshold)...
+		if (min_distance_multipoint_point_to_polyline.is_precisely_less_than(min_distance) &&
+			min_distance_multipoint_point_to_polyline.is_precisely_less_than(min_distance_threshold))
+		{
+			min_distance = min_distance_multipoint_point_to_polyline;
+			min_distance_threshold = AngularExtent::create_from_angular_distance(min_distance);
+			if (closest_position_in_multipoint)
+			{
+				closest_position_in_multipoint.get() = multipoint_point.position_vector();
+			}
+		}
+	}
+
+	return min_distance;
+}
+
+
+GPlatesMaths::AngularDistance
+GPlatesMaths::minimum_distance(
+		const MultiPointOnSphere &multipoint,
+		const PolygonOnSphere &polygon,
+		bool polygon_interior_is_solid,
+		boost::optional<const AngularExtent &> minimum_distance_threshold_opt,
+		boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polygon*/> > closest_positions)
+{
+	// The (maximum possible) distance to return if shortest distance between both geometries
+	// is not within the minimum distance threshold (if any).
+	AngularDistance min_distance = AngularDistance::PI;
+
+	AngularExtent min_distance_threshold = minimum_distance_threshold_opt
+			? minimum_distance_threshold_opt.get()
+			: AngularExtent::PI;
+
+	boost::optional<UnitVector3D &> closest_position_in_multipoint;
+	boost::optional<UnitVector3D &> closest_position_on_polygon;
+	if (closest_positions)
+	{
+		closest_position_in_multipoint = boost::get<0>(closest_positions.get());
+		closest_position_on_polygon = boost::get<1>(closest_positions.get());
+	}
+
+	// Iterate over the points in the multi-point.
+	MultiPointOnSphere::const_iterator multipoint_iter = multipoint.begin();
+	MultiPointOnSphere::const_iterator multipoint_end = multipoint.end();
+	for ( ; multipoint_iter != multipoint_end; ++multipoint_iter)
+	{
+		const PointOnSphere &multipoint_point = *multipoint_iter;
+
+		const AngularDistance min_distance_multipoint_point_to_polygon =
+				minimum_distance(
+						multipoint_point,
+						polygon,
+						polygon_interior_is_solid,
+						min_distance_threshold,
+						closest_position_on_polygon);
+
+		// If shortest distance so far (within threshold)...
+		if (min_distance_multipoint_point_to_polygon.is_precisely_less_than(min_distance) &&
+			min_distance_multipoint_point_to_polygon.is_precisely_less_than(min_distance_threshold))
+		{
+			min_distance = min_distance_multipoint_point_to_polygon;
+			min_distance_threshold = AngularExtent::create_from_angular_distance(min_distance);
+			if (closest_position_in_multipoint)
+			{
+				closest_position_in_multipoint.get() = multipoint_point.position_vector();
+			}
+		}
+	}
+
+	return min_distance;
+}
+
+
+GPlatesMaths::AngularDistance
+GPlatesMaths::minimum_distance(
+		const PolylineOnSphere &polyline,
+		const MultiPointOnSphere &multipoint,
+		boost::optional<const AngularExtent &> minimum_distance_threshold,
+		boost::optional< boost::tuple<UnitVector3D &/*polyline*/, UnitVector3D &/*multipoint*/> > closest_positions)
+{
+	// Since we're swapping the order of the geometries we also need to swap the closest position references.
+	boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polyline*/> >
+			closest_positions_reversed;
+	if (closest_positions)
+	{
+		closest_positions_reversed = boost::make_tuple(
+				boost::ref(boost::get<1>(closest_positions.get())),
+				boost::ref(boost::get<0>(closest_positions.get())));
+	}
+
+	return minimum_distance(multipoint, polyline, minimum_distance_threshold, closest_positions_reversed);
+}
+
+
+GPlatesMaths::AngularDistance
+GPlatesMaths::minimum_distance(
+		const PolygonOnSphere &polygon,
+		const MultiPointOnSphere &multipoint,
+		bool polygon_interior_is_solid,
+		boost::optional<const AngularExtent &> minimum_distance_threshold,
+		boost::optional< boost::tuple<UnitVector3D &/*polygon*/, UnitVector3D &/*multipoint*/> > closest_positions)
+{
+	// Since we're swapping the order of the geometries we also need to swap the closest position references.
+	boost::optional< boost::tuple<UnitVector3D &/*multipoint*/, UnitVector3D &/*polygon*/> >
+			closest_positions_reversed;
+	if (closest_positions)
+	{
+		closest_positions_reversed = boost::make_tuple(
+				boost::ref(boost::get<1>(closest_positions.get())),
+				boost::ref(boost::get<0>(closest_positions.get())));
+	}
+
+	return minimum_distance(
+			multipoint,
+			polygon,
+			polygon_interior_is_solid,
+			minimum_distance_threshold,
+			closest_positions_reversed);
 }
