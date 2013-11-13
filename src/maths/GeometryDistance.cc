@@ -27,11 +27,17 @@
 
 #include "PolyGreatCircleArcBoundingTree.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 
 namespace GPlatesMaths
 {
 	namespace
 	{
+		/**
+		 * Calculate (and update) the minimum distance between a point and a polyline or polygon.
+		 */
 		template <typename GreatCircleArcConstIteratorType>
 		void
 		minimum_distance_between_point_and_poly_geometry_bounding_tree_node(
@@ -40,7 +46,7 @@ namespace GPlatesMaths
 				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::node_type &polyline_sub_tree_node,
 				AngularDistance &min_distance,
 				AngularExtent &min_distance_threshold,
-				boost::optional<UnitVector3D &> closest_position_on_polyline)
+				const boost::optional<UnitVector3D &> &closest_position_on_polyline)
 		{
 			typedef PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType> bounding_tree_type;
 
@@ -67,7 +73,7 @@ namespace GPlatesMaths
 					if (min_distance_point_to_gca.is_precisely_less_than(min_distance))
 					{
 						min_distance = min_distance_point_to_gca;
-						min_distance_threshold = AngularExtent::create_from_angular_distance(min_distance);
+						min_distance_threshold = AngularExtent(min_distance);
 					}
 				}
 
@@ -122,6 +128,278 @@ namespace GPlatesMaths
 						min_distance,
 						min_distance_threshold,
 						closest_position_on_polyline);
+			}
+		}
+
+
+		// Forward declaration.
+		template <typename GreatCircleArcConstIterator1Type, typename GreatCircleArcConstIterator2Type>
+		void
+		minimum_distance_between_bounding_tree_node_of_geometry1_and_two_child_nodes_of_geometry2(
+				const PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator1Type> &geometry1_bounding_tree,
+				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator1Type>::node_type &geometry1_sub_tree_node,
+				const PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type> &geometry2_bounding_tree,
+				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type>::node_type &geometry2_sub_tree_node,
+				AngularDistance &min_distance,
+				AngularExtent &min_distance_threshold,
+				const boost::optional< boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/> > &closest_positions);
+
+
+		/**
+		 * Calculate (and update) the minimum distance between a bounding tree node of one polyline or polygon,
+		 * and the bounding tree node of another polyline or polygon.
+		 */
+		template <typename GreatCircleArcConstIterator1Type, typename GreatCircleArcConstIterator2Type>
+		void
+		minimum_distance_between_bounding_tree_nodes_of_two_geometries(
+				const PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator1Type> &geometry1_bounding_tree,
+				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator1Type>::node_type &geometry1_sub_tree_node,
+				const PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type> &geometry2_bounding_tree,
+				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type>::node_type &geometry2_sub_tree_node,
+				AngularDistance &min_distance,
+				AngularExtent &min_distance_threshold,
+				const boost::optional< boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/> > &closest_positions)
+		{
+			typedef PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator1Type> geometry1_bounding_tree_type;
+			typedef PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type> geometry2_bounding_tree_type;
+
+			// If both geometries are at one of their leaf nodes then calculate N*M distances
+			// between the N great circle arcs in first geometry's leaf node and the M great
+			// circle arcs in the second geometry's leaf node.
+			if (geometry1_sub_tree_node.is_leaf_node() &&
+				geometry2_sub_tree_node.is_leaf_node())
+			{
+				// Iterate over the great circle arcs of the leaf node of the first geometry.
+				typename geometry1_bounding_tree_type::great_circle_arc_const_iterator_type
+						gca1_iter = geometry1_sub_tree_node.get_bounded_great_circle_arcs_begin();
+				typename geometry1_bounding_tree_type::great_circle_arc_const_iterator_type
+						gca1_end = geometry1_sub_tree_node.get_bounded_great_circle_arcs_end();
+				for ( ; gca1_iter != gca1_end; ++gca1_iter)
+				{
+					const GreatCircleArc &gca1 = *gca1_iter;
+
+					// Iterate over the great circle arcs of the leaf node of the second geometry.
+					typename geometry2_bounding_tree_type::great_circle_arc_const_iterator_type
+							gca2_iter = geometry2_sub_tree_node.get_bounded_great_circle_arcs_begin();
+					typename geometry2_bounding_tree_type::great_circle_arc_const_iterator_type
+							gca2_end = geometry2_sub_tree_node.get_bounded_great_circle_arcs_end();
+					for ( ; gca2_iter != gca2_end; ++gca2_iter)
+					{
+						const GreatCircleArc &gca2 = *gca2_iter;
+
+						// Calculate minimum distance between the current great circle arcs of the
+						// two geometries.
+						const AngularDistance min_distance_between_gcas =
+								minimum_distance(
+										gca1,
+										gca2,
+										min_distance_threshold,
+										closest_positions);
+
+						// If shortest distance so far (within threshold)...
+						if (min_distance_between_gcas.is_precisely_less_than(min_distance))
+						{
+							min_distance = min_distance_between_gcas;
+							min_distance_threshold = AngularExtent(min_distance);
+						}
+					}
+				}
+
+				return;
+			}
+
+			if (geometry1_sub_tree_node.is_internal_node() &&
+				geometry2_sub_tree_node.is_internal_node())
+			{
+				// Recurse into the largest internal node first. This can result in fewer
+				// minimum distance tests between bounding small circles of sub-tree nodes.
+				if (geometry1_sub_tree_node.get_bounding_small_circle().get_angular_extent().is_precisely_greater_than(
+					geometry2_sub_tree_node.get_bounding_small_circle().get_angular_extent()))
+				{
+					// Since we're swapping the order of the geometries we also need to swap the closest position references.
+					boost::optional< boost::tuple<UnitVector3D &/*geometry2*/, UnitVector3D &/*geometry1*/> >
+							closest_positions_reversed;
+					if (closest_positions)
+					{
+						closest_positions_reversed = boost::make_tuple(
+								boost::ref(boost::get<1>(closest_positions.get())),
+								boost::ref(boost::get<0>(closest_positions.get())));
+					}
+
+					// Recurse into the child nodes of the first geometry.
+					minimum_distance_between_bounding_tree_node_of_geometry1_and_two_child_nodes_of_geometry2(
+							geometry2_bounding_tree,
+							geometry2_sub_tree_node,
+							geometry1_bounding_tree,
+							geometry1_sub_tree_node,
+							min_distance,
+							min_distance_threshold,
+							closest_positions_reversed);
+				}
+				else // second geometry's internal node is larger...
+				{
+					// Recurse into the child nodes of the second geometry.
+					minimum_distance_between_bounding_tree_node_of_geometry1_and_two_child_nodes_of_geometry2(
+							geometry1_bounding_tree,
+							geometry1_sub_tree_node,
+							geometry2_bounding_tree,
+							geometry2_sub_tree_node,
+							min_distance,
+							min_distance_threshold,
+							closest_positions);
+				}
+
+				return;
+			}
+			// else one geometry is at a leaf node and the other is at an internal node...
+
+			if (geometry1_sub_tree_node.is_internal_node())
+			{
+				// The second geometry is at a leaf node.
+
+				// Since we're swapping the order of the geometries we also need to swap the closest position references.
+				boost::optional< boost::tuple<UnitVector3D &/*geometry2*/, UnitVector3D &/*geometry1*/> >
+						closest_positions_reversed;
+				if (closest_positions)
+				{
+					closest_positions_reversed = boost::make_tuple(
+							boost::ref(boost::get<1>(closest_positions.get())),
+							boost::ref(boost::get<0>(closest_positions.get())));
+				}
+
+				// Recurse into the child nodes of the first geometry.
+				minimum_distance_between_bounding_tree_node_of_geometry1_and_two_child_nodes_of_geometry2(
+						geometry2_bounding_tree,
+						geometry2_sub_tree_node,
+						geometry1_bounding_tree,
+						geometry1_sub_tree_node,
+						min_distance,
+						min_distance_threshold,
+						closest_positions_reversed);
+
+				return;
+			}
+			// else the first geometry is at a leaf node and the second is at an internal node...
+
+			// Recurse into the child nodes of the second geometry.
+			minimum_distance_between_bounding_tree_node_of_geometry1_and_two_child_nodes_of_geometry2(
+					geometry1_bounding_tree,
+					geometry1_sub_tree_node,
+					geometry2_bounding_tree,
+					geometry2_sub_tree_node,
+					min_distance,
+					min_distance_threshold,
+					closest_positions);
+		}
+
+
+		/**
+		 * Calculate (and update) the minimum distance between a bounding tree node of the first polyline or polygon,
+		 * and two child bounding tree nodes of the second polyline or polygon.
+		 *
+		 * This is essentially a recursion into the bounding tree of the second geometry.
+		 */
+		template <typename GreatCircleArcConstIterator1Type, typename GreatCircleArcConstIterator2Type>
+		void
+		minimum_distance_between_bounding_tree_node_of_geometry1_and_two_child_nodes_of_geometry2(
+				const PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator1Type> &geometry1_bounding_tree,
+				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator1Type>::node_type &geometry1_sub_tree_node,
+				const PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type> &geometry2_bounding_tree,
+				const typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type>::node_type &geometry2_sub_tree_node,
+				AngularDistance &min_distance,
+				AngularExtent &min_distance_threshold,
+				const boost::optional< boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/> > &closest_positions)
+		{
+			typedef PolyGreatCircleArcBoundingTree<GreatCircleArcConstIterator2Type> geometry2_bounding_tree_type;
+
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					geometry2_sub_tree_node.is_internal_node(),
+					GPLATES_ASSERTION_SOURCE);
+
+			// The child nodes of the second geometry.
+			const typename geometry2_bounding_tree_type::node_type geometry2_child_nodes[2] =
+			{
+				geometry2_bounding_tree.get_child_node(geometry2_sub_tree_node, 0),
+				geometry2_bounding_tree.get_child_node(geometry2_sub_tree_node, 1)
+			};
+
+			// The minimum distance between the (bounding small circle) centre of node of the first geometry
+			// and the bounding small circles of the child nodes of the second geometry.
+			//
+			// We could have found the minimum distance to the 'bounding small circle' of the node
+			// of the first geometry instead of its 'centre' but it doesn't change the relative difference
+			// between the minimum distances to each child node (of the second geometry) - also less
+			// likely to clamp minimum distances to zero which makes it harder to determine which
+			// child node is closer.
+			const AngularDistance min_distance_geometry1_node_centre_to_geometry2_child_node_bounding_small_circles[2] =
+			{
+				minimum_distance(
+						geometry1_sub_tree_node.get_bounding_small_circle().get_centre(),
+						geometry2_child_nodes[0].get_bounding_small_circle()),
+				minimum_distance(
+						geometry1_sub_tree_node.get_bounding_small_circle().get_centre(),
+						geometry2_child_nodes[1].get_bounding_small_circle())
+			};
+
+			// Visit the closest child node (of the second geometry) first since it can avoid unnecessary
+			// calculations when visiting the furthest child node (because more likely to exceed the threshold).
+			unsigned int geometry2_child_node_visit_indices[2];
+			if (min_distance_geometry1_node_centre_to_geometry2_child_node_bounding_small_circles[0] <
+				min_distance_geometry1_node_centre_to_geometry2_child_node_bounding_small_circles[1])
+			{
+				geometry2_child_node_visit_indices[0] = 0;
+				geometry2_child_node_visit_indices[1] = 1;
+			}
+			else if (min_distance_geometry1_node_centre_to_geometry2_child_node_bounding_small_circles[0] >
+				min_distance_geometry1_node_centre_to_geometry2_child_node_bounding_small_circles[1])
+			{
+				geometry2_child_node_visit_indices[0] = 1;
+				geometry2_child_node_visit_indices[1] = 0;
+			}
+			else
+			{
+				// Both child node bounding small circles are the same distance (within epsilon)
+				// from the centre of the first geometry's node. Most likely the centre of first
+				// geometry's node is inside the bounding small circles of both nodes (ie, both
+				// angular distances got clamped to AngularDistance::ZERO).
+				// In this case we'll visit the largest child node first since this can result in
+				// fewer minimum distance tests between bounding small circles of sub-tree nodes.
+				if (geometry2_child_nodes[0].get_bounding_small_circle().get_angular_extent().is_precisely_greater_than(
+					geometry2_child_nodes[1].get_bounding_small_circle().get_angular_extent()))
+				{
+					geometry2_child_node_visit_indices[0] = 0;
+					geometry2_child_node_visit_indices[1] = 1;
+				}
+				else
+				{
+					geometry2_child_node_visit_indices[0] = 1;
+					geometry2_child_node_visit_indices[1] = 0;
+				}
+			}
+
+			// Iterate over the child nodes.
+			for (unsigned int n = 0; n < 2; ++n)
+			{
+				const unsigned int geometry2_child_offset = geometry2_child_node_visit_indices[n];
+
+				// If the minimum distance between the node of the first geometry and the current child node
+				// of the second geometry exceeds the current threshold then skip the current child node.
+				const AngularExtent min_distance_geometry1_node_to_geometry2_child_node =
+						min_distance_geometry1_node_centre_to_geometry2_child_node_bounding_small_circles[geometry2_child_offset] -
+							geometry1_sub_tree_node.get_bounding_small_circle().get_angular_extent();
+				if (min_distance_geometry1_node_to_geometry2_child_node.is_precisely_greater_than(min_distance_threshold))
+				{
+					continue;
+				}
+
+				minimum_distance_between_bounding_tree_nodes_of_two_geometries(
+						geometry1_bounding_tree,
+						geometry1_sub_tree_node,
+						geometry2_bounding_tree,
+						geometry2_child_nodes[geometry2_child_offset],
+						min_distance,
+						min_distance_threshold,
+						closest_positions);
 			}
 		}
 	}
@@ -404,7 +682,7 @@ GPlatesMaths::minimum_distance(
 			min_distance_multipoint_point_to_polyline.is_precisely_less_than(min_distance_threshold))
 		{
 			min_distance = min_distance_multipoint_point_to_polyline;
-			min_distance_threshold = AngularExtent::create_from_angular_distance(min_distance);
+			min_distance_threshold = AngularExtent(min_distance);
 			if (closest_position_in_multipoint)
 			{
 				closest_position_in_multipoint.get() = multipoint_point.position_vector();
@@ -460,7 +738,7 @@ GPlatesMaths::minimum_distance(
 			min_distance_multipoint_point_to_polygon.is_precisely_less_than(min_distance_threshold))
 		{
 			min_distance = min_distance_multipoint_point_to_polygon;
-			min_distance_threshold = AngularExtent::create_from_angular_distance(min_distance);
+			min_distance_threshold = AngularExtent(min_distance);
 			if (closest_position_in_multipoint)
 			{
 				closest_position_in_multipoint.get() = multipoint_point.position_vector();
@@ -490,6 +768,63 @@ GPlatesMaths::minimum_distance(
 	}
 
 	return minimum_distance(multipoint, polyline, minimum_distance_threshold, closest_positions_reversed);
+}
+
+
+GPlatesMaths::AngularDistance
+GPlatesMaths::minimum_distance(
+		const PolylineOnSphere &polyline1,
+		const PolylineOnSphere &polyline2,
+		boost::optional<const AngularExtent &> minimum_distance_threshold_opt,
+		boost::optional< boost::tuple<UnitVector3D &/*polyline1*/, UnitVector3D &/*polyline2*/> > closest_positions)
+{
+	const PolylineOnSphere::bounding_tree_type &polyline1_bounding_tree = polyline1.get_bounding_tree();
+	const PolylineOnSphere::bounding_tree_type &polyline2_bounding_tree = polyline2.get_bounding_tree();
+
+	const PolylineOnSphere::bounding_tree_type::node_type polyline1_bounding_tree_root_node =
+			polyline1_bounding_tree.get_root_node();
+	const PolylineOnSphere::bounding_tree_type::node_type polyline2_bounding_tree_root_node =
+			polyline2_bounding_tree.get_root_node();
+
+	// The (maximum possible) distance to return if shortest distance between both geometries
+	// is not within the minimum distance threshold (if any).
+	AngularDistance min_distance = AngularDistance::PI;
+
+	// Note that after each minimum distance component calculation we update the threshold
+	// with the updated minimum distance.
+	//
+	// This avoids overwriting the closest point (so far) with a point that is further away.
+	//
+	// This is also an optimisation that can avoid calculating the closest point in some situations
+	// where the next component minimum distance is greater than the current minimum distance.
+	AngularExtent min_distance_threshold = AngularExtent::PI;
+	
+	// If caller specified a threshold.
+	if (minimum_distance_threshold_opt)
+	{
+		min_distance_threshold = minimum_distance_threshold_opt.get();
+
+		// If the root node bounding small circles of the two geometries are further away than the
+		// threshold then return the maximum possible distance (PI) to signal this.
+		if (minimum_distance(
+				polyline1_bounding_tree_root_node.get_bounding_small_circle(),
+				polyline2_bounding_tree_root_node.get_bounding_small_circle())
+			.is_precisely_greater_than(min_distance_threshold))
+		{
+			return AngularDistance::PI;
+		}
+	}
+
+	minimum_distance_between_bounding_tree_nodes_of_two_geometries(
+			polyline1_bounding_tree,
+			polyline1_bounding_tree_root_node,
+			polyline2_bounding_tree,
+			polyline2_bounding_tree_root_node,
+			min_distance,
+			min_distance_threshold,
+			closest_positions);
+
+	return min_distance;
 }
 
 

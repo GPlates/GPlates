@@ -236,6 +236,27 @@ namespace GPlatesMaths
 
 
 	/**
+	 * Returns the minimum angular distance between two polylines.
+	 *
+	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
+	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * @a closest_positions (even if it's not none).
+	 *
+	 * If @a closest_positions is specified then the closest point on each polyline
+	 * is stored in the unit vectors it references (unless the threshold is exceeded, if specified).
+	 */
+	AngularDistance
+	minimum_distance(
+			const PolylineOnSphere &polyline1,
+			const PolylineOnSphere &polyline2,
+			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
+			boost::optional<
+					boost::tuple<UnitVector3D &/*polyline1*/, UnitVector3D &/*polyline2*/>
+							> closest_positions = boost::none);
+
+
+	/**
 	 * Returns the minimum angular distance between a point and a polygon.
 	 *
 	 * This function simply reverses the arguments of the other @a minimum_distance overload.

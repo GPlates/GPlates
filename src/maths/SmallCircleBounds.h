@@ -355,6 +355,37 @@ namespace GPlatesMaths
 
 
 	/**
+	 * Returns true if the position intersects (is inside) the bounding small circle.
+	 *
+	 * This function is a convenience overload using @a UnitVector3D instead of @a PointOnSphere.
+	 */
+	inline
+	bool
+	intersect(
+			const UnitVector3D &position,
+			const BoundingSmallCircle &bounding_small_circle)
+	{
+		return SmallCircleBoundsImpl::intersect(
+				bounding_small_circle,
+				dot(position, bounding_small_circle.get_centre()).dval());
+	}
+
+	/**
+	 * Returns true if the position intersects (is inside) the bounding small circle.
+	 *
+	 * This function simply reverses the arguments of the other @a intersect overload.
+	 */
+	inline
+	bool
+	intersect(
+			const BoundingSmallCircle &bounding_small_circle,
+			const UnitVector3D &position)
+	{
+		return intersect(position, bounding_small_circle);
+	}
+
+
+	/**
 	 * Returns true if the two bounding small circles intersect each other.
 	 */
 	inline
@@ -398,6 +429,37 @@ namespace GPlatesMaths
 			const PointOnSphere &point)
 	{
 		return minimum_distance(point, bounding_small_circle);
+	}
+
+
+	/**
+	 * Returns the minimum angular distance between a position and a bounding small circle.
+	 *
+	 * This function is a convenience overload using @a UnitVector3D instead of @a PointOnSphere.
+	 */
+	inline
+	AngularDistance
+	minimum_distance(
+			const UnitVector3D &position,
+			const BoundingSmallCircle &bounding_small_circle)
+	{
+		return SmallCircleBoundsImpl::minimum_distance(
+				bounding_small_circle,
+				dot(position, bounding_small_circle.get_centre()).dval());
+	}
+
+	/**
+	 * Returns the minimum angular distance between a position and a bounding small circle.
+	 *
+	 * This function simply reverses the arguments of the other @a minimum_distance overload.
+	 */
+	inline
+	AngularDistance
+	minimum_distance(
+			const BoundingSmallCircle &bounding_small_circle,
+			const UnitVector3D &position)
+	{
+		return minimum_distance(position, bounding_small_circle);
 	}
 
 
@@ -849,6 +911,37 @@ namespace GPlatesMaths
 
 
 	/**
+	 * Returns true if the position intersects the inner-outer bounding small circle.
+	 *
+	 * This function is a convenience overload using @a UnitVector3D instead of @a PointOnSphere.
+	 */
+	inline
+	bool
+	intersect(
+			const UnitVector3D &position,
+			const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle)
+	{
+		return SmallCircleBoundsImpl::intersect(
+				inner_outer_bounding_small_circle,
+				dot(position, inner_outer_bounding_small_circle.get_centre()).dval());
+	}
+
+	/**
+	 * Returns true if the position intersects the inner-outer bounding small circle.
+	 *
+	 * This function simply reverses the arguments of the other @a intersect overload.
+	 */
+	inline
+	bool
+	intersect(
+			const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle,
+			const UnitVector3D &position)
+	{
+		return intersect(position, inner_outer_bounding_small_circle);
+	}
+
+
+	/**
 	 * Returns true if a bounding small circle intersects an inner-outer bounding small circle.
 	 *
 	 * Note that if @a bounding_small_circle is completely inside the inner bounding small circle
@@ -937,6 +1030,37 @@ namespace GPlatesMaths
 			const PointOnSphere &point)
 	{
 		return minimum_distance(point, inner_outer_bounding_small_circle);
+	}
+
+
+	/**
+	 * Returns the minimum angular distance between a position and an inner-outer bounding small circle.
+	 *
+	 * This function is a convenience overload using @a UnitVector3D instead of @a PointOnSphere.
+	 */
+	inline
+	AngularDistance
+	minimum_distance(
+			const UnitVector3D &position,
+			const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle)
+	{
+		return SmallCircleBoundsImpl::minimum_distance(
+				inner_outer_bounding_small_circle,
+				dot(position, inner_outer_bounding_small_circle.get_centre()).dval());
+	}
+
+	/**
+	 * Returns the minimum angular distance between a position and an inner-outer bounding small circle.
+	 *
+	 * This function simply reverses the arguments of the other @a minimum_distance overload.
+	 */
+	inline
+	AngularDistance
+	minimum_distance(
+			const InnerOuterBoundingSmallCircle &inner_outer_bounding_small_circle,
+			const UnitVector3D &position)
+	{
+		return minimum_distance(position, inner_outer_bounding_small_circle);
 	}
 
 
