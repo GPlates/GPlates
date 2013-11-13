@@ -257,6 +257,33 @@ namespace GPlatesMaths
 
 
 	/**
+	 * Returns the minimum angular distance between a polyline and a polygon.
+	 *
+	 * If @a polygon_interior_is_solid is true then anything intersecting the interior of @a polygon
+	 * has a distance of zero, otherwise the distance to the polygon outline.
+	 *
+	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
+	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * @a closest_positions (even if it's not none).
+	 *
+	 * If @a closest_positions is specified then the closest points on the polyline and polygon
+	 * are stored in the unit vectors it references (unless the threshold is exceeded, if specified).
+	 * If @a polygon_interior_is_solid is true and the polyline is entirely inside the polygon interior
+	 * then any point on the polyline could be returned as the closest point.
+	 */
+	AngularDistance
+	minimum_distance(
+			const PolylineOnSphere &polyline,
+			const PolygonOnSphere &polygon,
+			bool polygon_interior_is_solid = false,
+			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
+			boost::optional<
+					boost::tuple<UnitVector3D &/*polyline*/, UnitVector3D &/*polygon*/>
+							> closest_positions = boost::none);
+
+
+	/**
 	 * Returns the minimum angular distance between a point and a polygon.
 	 *
 	 * This function simply reverses the arguments of the other @a minimum_distance overload.
@@ -292,6 +319,54 @@ namespace GPlatesMaths
 			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
 			boost::optional<
 					boost::tuple<UnitVector3D &/*polygon*/, UnitVector3D &/*multipoint*/>
+							> closest_positions = boost::none);
+
+
+	/**
+	 * Returns the minimum angular distance between a polyline and a polygon.
+	 *
+	 * This function simply reverses the arguments of the other @a minimum_distance overload.
+	 */
+	AngularDistance
+	minimum_distance(
+			const PolygonOnSphere &polygon,
+			const PolylineOnSphere &polyline,
+			bool polygon_interior_is_solid = false,
+			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
+			boost::optional<
+					boost::tuple<UnitVector3D &/*polygon*/, UnitVector3D &/*polyline*/>
+							> closest_positions = boost::none);
+
+
+	/**
+	 * Returns the minimum angular distance between two polygons.
+	 *
+	 * If @a polygon1_interior_is_solid is true then if boundary of @a polygon2 intersects the interior
+	 * of @a polygon1 the returned distance will be zero, otherwise the distance to the outline of @a polygon1.
+	 * If @a polygon2_interior_is_solid is true then if boundary of @a polygon1 intersects the interior
+	 * of @a polygon2 the returned distance will be zero, otherwise the distance to the outline of @a polygon2.
+	 *
+	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
+	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * @a closest_positions (even if it's not none).
+	 *
+	 * If @a closest_positions is specified then the closest point on each polygon
+	 * is stored in the unit vectors it references (unless the threshold is exceeded, if specified).
+	 * If @a polygon1_interior_is_solid is true and @a polyline2 is entirely inside @a polygon1
+	 * then any point on @a polyline2 could be returned as the closest point.
+	 * If @a polygon2_interior_is_solid is true and @a polyline1 is entirely inside @a polygon2
+	 * then any point on @a polyline1 could be returned as the closest point.
+	 */
+	AngularDistance
+	minimum_distance(
+			const PolygonOnSphere &polygon1,
+			const PolygonOnSphere &polygon2,
+			bool polygon1_interior_is_solid = false,
+			bool polygon2_interior_is_solid = false,
+			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
+			boost::optional<
+					boost::tuple<UnitVector3D &/*polygon1*/, UnitVector3D &/*polygon2*/>
 							> closest_positions = boost::none);
 }
 

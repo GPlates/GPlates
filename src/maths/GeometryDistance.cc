@@ -529,22 +529,6 @@ GPlatesMaths::minimum_distance(
 		boost::optional<const AngularExtent &> minimum_distance_threshold_opt,
 		boost::optional<UnitVector3D &> closest_position_on_polygon)
 {
-	if (polygon_interior_is_solid)
-	{
-		if (polygon.is_point_in_polygon(point) == PointInPolygon::POINT_INSIDE_POLYGON)
-		{
-			if (closest_position_on_polygon)
-			{
-				// The closest position in the solid interior of a polygon is the point itself.
-				closest_position_on_polygon.get() = point.position_vector();
-			}
-
-			// Anything intersecting the polygon interior is considered zero distance
-			// which is also below any possible minimum distance threshold.
-			return AngularDistance::ZERO;
-		}
-	}
-
 	const PolygonOnSphere::bounding_tree_type &polygon_bounding_tree = polygon.get_bounding_tree();
 
 	const PolygonOnSphere::bounding_tree_type::node_type polygon_bounding_tree_root_node =
@@ -574,6 +558,24 @@ GPlatesMaths::minimum_distance(
 			.is_precisely_greater_than(min_distance_threshold))
 		{
 			return AngularDistance::PI;
+		}
+	}
+
+	// Test point-in-polygon-interior after testing against root node bounding small circle since
+	// the latter is a lot cheaper to test.
+	if (polygon_interior_is_solid)
+	{
+		if (polygon.is_point_in_polygon(point) == PointInPolygon::POINT_INSIDE_POLYGON)
+		{
+			if (closest_position_on_polygon)
+			{
+				// The closest position in the solid interior of a polygon is the point itself.
+				closest_position_on_polygon.get() = point.position_vector();
+			}
+
+			// Anything intersecting the polygon interior is considered zero distance
+			// which is also below any possible minimum distance threshold.
+			return AngularDistance::ZERO;
 		}
 	}
 
@@ -830,6 +832,87 @@ GPlatesMaths::minimum_distance(
 
 GPlatesMaths::AngularDistance
 GPlatesMaths::minimum_distance(
+		const PolylineOnSphere &polyline,
+		const PolygonOnSphere &polygon,
+		bool polygon_interior_is_solid,
+		boost::optional<const AngularExtent &> minimum_distance_threshold_opt,
+		boost::optional< boost::tuple<UnitVector3D &/*polyline*/, UnitVector3D &/*polygon*/> > closest_positions)
+{
+	const PolylineOnSphere::bounding_tree_type &polyline_bounding_tree = polyline.get_bounding_tree();
+	const PolygonOnSphere::bounding_tree_type &polygon_bounding_tree = polygon.get_bounding_tree();
+
+	const PolylineOnSphere::bounding_tree_type::node_type polyline_bounding_tree_root_node =
+			polyline_bounding_tree.get_root_node();
+	const PolygonOnSphere::bounding_tree_type::node_type polygon_bounding_tree_root_node =
+			polygon_bounding_tree.get_root_node();
+
+	// The (maximum possible) distance to return if shortest distance between both geometries
+	// is not within the minimum distance threshold (if any).
+	AngularDistance min_distance = AngularDistance::PI;
+
+	// Note that after each minimum distance component calculation we update the threshold
+	// with the updated minimum distance.
+	//
+	// This avoids overwriting the closest point (so far) with a point that is further away.
+	//
+	// This is also an optimisation that can avoid calculating the closest point in some situations
+	// where the next component minimum distance is greater than the current minimum distance.
+	AngularExtent min_distance_threshold = AngularExtent::PI;
+	
+	// If caller specified a threshold.
+	if (minimum_distance_threshold_opt)
+	{
+		min_distance_threshold = minimum_distance_threshold_opt.get();
+
+		// If the root node bounding small circles of the two geometries are further away than the
+		// threshold then return the maximum possible distance (PI) to signal this.
+		if (minimum_distance(
+				polyline_bounding_tree_root_node.get_bounding_small_circle(),
+				polygon_bounding_tree_root_node.get_bounding_small_circle())
+			.is_precisely_greater_than(min_distance_threshold))
+		{
+			return AngularDistance::PI;
+		}
+	}
+
+	minimum_distance_between_bounding_tree_nodes_of_two_geometries(
+			polyline_bounding_tree,
+			polyline_bounding_tree_root_node,
+			polygon_bounding_tree,
+			polygon_bounding_tree_root_node,
+			min_distance,
+			min_distance_threshold,
+			closest_positions);
+
+	// If the polygon interior is solid and the polyline has not intersected the polygon boundary then
+	// it's possible the polyline is completely inside the polygon which also counts as an intersection.
+	if (polygon_interior_is_solid &&
+		min_distance != AngularDistance::ZERO /*epsilon comparison*/)
+	{
+		// If the polyline is completely inside the polygon then we only need to test if one of
+		// the polyline's points (any arbitrary point) is inside the polygon (because we know the
+		// polyline did not intersect the polygon boundary).
+		const PointOnSphere &polyline_test_point = polyline.start_point(); // arbitrary
+		if (polygon.is_point_in_polygon(polyline_test_point) == PointInPolygon::POINT_INSIDE_POLYGON)
+		{
+			if (closest_positions)
+			{
+				boost::get<0>(closest_positions.get()) = polyline_test_point.position_vector();
+				boost::get<1>(closest_positions.get()) = polyline_test_point.position_vector();
+			}
+
+			// Anything intersecting the polygon interior is considered zero distance
+			// which is also below any possible minimum distance threshold.
+			return AngularDistance::ZERO;
+		}
+	}
+
+	return min_distance;
+}
+
+
+GPlatesMaths::AngularDistance
+GPlatesMaths::minimum_distance(
 		const PolygonOnSphere &polygon,
 		const MultiPointOnSphere &multipoint,
 		bool polygon_interior_is_solid,
@@ -852,4 +935,136 @@ GPlatesMaths::minimum_distance(
 			polygon_interior_is_solid,
 			minimum_distance_threshold,
 			closest_positions_reversed);
+}
+
+
+GPlatesMaths::AngularDistance
+GPlatesMaths::minimum_distance(
+		const PolygonOnSphere &polygon,
+		const PolylineOnSphere &polyline,
+		bool polygon_interior_is_solid,
+		boost::optional<const AngularExtent &> minimum_distance_threshold,
+		boost::optional< boost::tuple<UnitVector3D &/*polygon*/, UnitVector3D &/*polyline*/> > closest_positions)
+{
+	// Since we're swapping the order of the geometries we also need to swap the closest position references.
+	boost::optional< boost::tuple<UnitVector3D &/*polyline*/, UnitVector3D &/*polygon*/> >
+			closest_positions_reversed;
+	if (closest_positions)
+	{
+		closest_positions_reversed = boost::make_tuple(
+				boost::ref(boost::get<1>(closest_positions.get())),
+				boost::ref(boost::get<0>(closest_positions.get())));
+	}
+
+	return minimum_distance(
+			polyline,
+			polygon,
+			polygon_interior_is_solid,
+			minimum_distance_threshold,
+			closest_positions_reversed);
+}
+
+
+GPlatesMaths::AngularDistance
+GPlatesMaths::minimum_distance(
+		const PolygonOnSphere &polygon1,
+		const PolygonOnSphere &polygon2,
+		bool polygon1_interior_is_solid,
+		bool polygon2_interior_is_solid,
+		boost::optional<const AngularExtent &> minimum_distance_threshold_opt,
+		boost::optional< boost::tuple<UnitVector3D &/*polygon1*/, UnitVector3D &/*polygon2*/> > closest_positions)
+{
+	const PolygonOnSphere::bounding_tree_type &polygon1_bounding_tree = polygon1.get_bounding_tree();
+	const PolygonOnSphere::bounding_tree_type &polygon2_bounding_tree = polygon2.get_bounding_tree();
+
+	const PolygonOnSphere::bounding_tree_type::node_type polygon1_bounding_tree_root_node =
+			polygon1_bounding_tree.get_root_node();
+	const PolygonOnSphere::bounding_tree_type::node_type polygon2_bounding_tree_root_node =
+			polygon2_bounding_tree.get_root_node();
+
+	// The (maximum possible) distance to return if shortest distance between both geometries
+	// is not within the minimum distance threshold (if any).
+	AngularDistance min_distance = AngularDistance::PI;
+
+	// Note that after each minimum distance component calculation we update the threshold
+	// with the updated minimum distance.
+	//
+	// This avoids overwriting the closest point (so far) with a point that is further away.
+	//
+	// This is also an optimisation that can avoid calculating the closest point in some situations
+	// where the next component minimum distance is greater than the current minimum distance.
+	AngularExtent min_distance_threshold = AngularExtent::PI;
+	
+	// If caller specified a threshold.
+	if (minimum_distance_threshold_opt)
+	{
+		min_distance_threshold = minimum_distance_threshold_opt.get();
+
+		// If the root node bounding small circles of the two geometries are further away than the
+		// threshold then return the maximum possible distance (PI) to signal this.
+		if (minimum_distance(
+				polygon1_bounding_tree_root_node.get_bounding_small_circle(),
+				polygon2_bounding_tree_root_node.get_bounding_small_circle())
+			.is_precisely_greater_than(min_distance_threshold))
+		{
+			return AngularDistance::PI;
+		}
+	}
+
+	minimum_distance_between_bounding_tree_nodes_of_two_geometries(
+			polygon1_bounding_tree,
+			polygon1_bounding_tree_root_node,
+			polygon2_bounding_tree,
+			polygon2_bounding_tree_root_node,
+			min_distance,
+			min_distance_threshold,
+			closest_positions);
+
+	// If polygon1's interior is solid and polygon2 has not intersected polygon1's boundary then
+	// it's possible polygon2 is completely inside polygon1 which also counts as an intersection.
+	if (polygon1_interior_is_solid &&
+		min_distance != AngularDistance::ZERO /*epsilon comparison*/)
+	{
+		// If polygon2 is completely inside polygon1 then we only need to test if one of
+		// the polygon2's points (any arbitrary point) is inside polygon1 (because we know that
+		// polygon2 did not intersect polygon1's boundary).
+		const PointOnSphere &polygon2_test_point = polygon2.first_vertex(); // arbitrary
+		if (polygon1.is_point_in_polygon(polygon2_test_point) == PointInPolygon::POINT_INSIDE_POLYGON)
+		{
+			if (closest_positions)
+			{
+				boost::get<0>(closest_positions.get()) = polygon2_test_point.position_vector();
+				boost::get<1>(closest_positions.get()) = polygon2_test_point.position_vector();
+			}
+
+			// Anything intersecting polygon1's interior is considered zero distance
+			// which is also below any possible minimum distance threshold.
+			return AngularDistance::ZERO;
+		}
+	}
+
+	// If polygon2's interior is solid and polygon1 has not intersected polygon2's boundary then
+	// it's possible polygon1 is completely inside polygon2 which also counts as an intersection.
+	if (polygon2_interior_is_solid &&
+		min_distance != AngularDistance::ZERO /*epsilon comparison*/)
+	{
+		// If polygon1 is completely inside polygon2 then we only need to test if one of
+		// the polygon1's points (any arbitrary point) is inside polygon2 (because we know that
+		// polygon1 did not intersect polygon2's boundary).
+		const PointOnSphere &polygon1_test_point = polygon1.first_vertex(); // arbitrary
+		if (polygon2.is_point_in_polygon(polygon1_test_point) == PointInPolygon::POINT_INSIDE_POLYGON)
+		{
+			if (closest_positions)
+			{
+				boost::get<0>(closest_positions.get()) = polygon1_test_point.position_vector();
+				boost::get<1>(closest_positions.get()) = polygon1_test_point.position_vector();
+			}
+
+			// Anything intersecting polygon1's interior is considered zero distance
+			// which is also below any possible minimum distance threshold.
+			return AngularDistance::ZERO;
+		}
+	}
+
+	return min_distance;
 }
