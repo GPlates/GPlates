@@ -36,9 +36,9 @@ const GPlatesMaths::AngularExtent GPlatesMaths::AngularExtent::PI =
 		GPlatesMaths::AngularExtent::create_from_cosine_and_sine(real_t(-1.0), real_t(0.0));
 
 
-GPlatesMaths::AngularExtent
-GPlatesMaths::AngularExtent::operator+(
-		const AngularExtent &rhs) const
+GPlatesMaths::AngularExtent &
+GPlatesMaths::AngularExtent::operator+=(
+		const AngularExtent &rhs)
 {
 	// If 'angular_extent_1 + angular_extent_2' exceeds PI then comparing cosine(angle) doesn't work
 	// because cosine starts to repeat itself. The easiest way to detect this without calculating
@@ -52,35 +52,52 @@ GPlatesMaths::AngularExtent::operator+(
 		if (angular_extent.is_precisely_greater_than(GPlatesMaths::PI))
 		{
 			// Clamp to PI.
-			return AngularExtent::PI;
+			d_cosine = AngularExtent::PI.get_cosine();
+			d_sine = AngularExtent::PI.get_sine();
+
+			return *this;
 		}
 
-		return AngularExtent(cos(angular_extent));
+		d_cosine = cos(angular_extent);
+		d_sine = boost::none; // Will get calculated if/when needed.
+
+		return *this;
 	}
 
-	return AngularExtent(
-			// cos(a+b) = cos(a)cos(b) - sin(a)sin(b)
-			get_cosine() * rhs.get_cosine() - get_sine() * rhs.get_sine(),
-			// sin(a+b) = sin(a)cos(b) + cos(a)sin(b)
-			get_sine() * rhs.get_cosine() + get_cosine() * rhs.get_sine());
+	// cos(a+b) = cos(a)cos(b) - sin(a)sin(b)
+	const real_t cosine = get_cosine() * rhs.get_cosine() - get_sine() * rhs.get_sine();
+	// sin(a+b) = sin(a)cos(b) + cos(a)sin(b)
+	const real_t sine = get_sine() * rhs.get_cosine() + get_cosine() * rhs.get_sine();
+
+	d_cosine = cosine;
+	d_sine = sine;
+
+	return *this;
 }
 
 
-GPlatesMaths::AngularExtent
-GPlatesMaths::AngularExtent::operator-(
-		const AngularExtent &rhs) const
+GPlatesMaths::AngularExtent &
+GPlatesMaths::AngularExtent::operator-=(
+		const AngularExtent &rhs)
 {
 	// If 'angular_extent_2' exceeds 'angular_extent_1' then clamp to zero.
 	// This is same test as 'cos(angular_extent_2) < cos(angular_extent_1)'.
 	if (rhs.get_cosine().is_precisely_less_than(get_cosine().dval()))
 	{
 		// Clamp to zero.
-		return AngularExtent::ZERO;
+		d_cosine = AngularExtent::ZERO.get_cosine();
+		d_sine = AngularExtent::ZERO.get_sine();
+
+		return *this;
 	}
 
-	return AngularExtent(
-			// cos(a-b) = cos(a)cos(b) + sin(a)sin(b)
-			get_cosine() * rhs.get_cosine() + get_sine() * rhs.get_sine(),
-			// sin(a-b) = sin(a)cos(b) - cos(a)sin(b)
-			get_sine() * rhs.get_cosine() - get_cosine() * rhs.get_sine());
+	// cos(a-b) = cos(a)cos(b) + sin(a)sin(b)
+	const real_t cosine = get_cosine() * rhs.get_cosine() + get_sine() * rhs.get_sine();
+	// sin(a-b) = sin(a)cos(b) - cos(a)sin(b)
+	const real_t sine = get_sine() * rhs.get_cosine() - get_cosine() * rhs.get_sine();
+
+	d_cosine = cosine;
+	d_sine = sine;
+
+	return *this;
 }

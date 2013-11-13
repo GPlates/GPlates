@@ -854,8 +854,7 @@ GPlatesMaths::minimum_distance(
 	if (min_distance_arc1_start_point_to_arc2.is_precisely_less_than(min_point_to_arc_distance))
 	{
 		min_point_to_arc_distance = min_distance_arc1_start_point_to_arc2;
-		min_point_to_arc_distance_threshold =
-				AngularExtent::create_from_angular_distance(min_point_to_arc_distance);
+		min_point_to_arc_distance_threshold = AngularExtent(min_point_to_arc_distance);
 
 		if (closest_position_on_arc1)
 		{
@@ -874,8 +873,7 @@ GPlatesMaths::minimum_distance(
 	if (min_distance_arc1_end_point_to_arc2.is_precisely_less_than(min_point_to_arc_distance))
 	{
 		min_point_to_arc_distance = min_distance_arc1_end_point_to_arc2;
-		min_point_to_arc_distance_threshold =
-				AngularExtent::create_from_angular_distance(min_point_to_arc_distance);
+		min_point_to_arc_distance_threshold = AngularExtent(min_point_to_arc_distance);
 
 		if (closest_position_on_arc1)
 		{
@@ -894,8 +892,7 @@ GPlatesMaths::minimum_distance(
 	if (min_distance_arc2_start_point_to_arc1.is_precisely_less_than(min_point_to_arc_distance))
 	{
 		min_point_to_arc_distance = min_distance_arc2_start_point_to_arc1;
-		min_point_to_arc_distance_threshold =
-				AngularExtent::create_from_angular_distance(min_point_to_arc_distance);
+		min_point_to_arc_distance_threshold = AngularExtent(min_point_to_arc_distance);
 
 		if (closest_position_on_arc2)
 		{
@@ -914,8 +911,7 @@ GPlatesMaths::minimum_distance(
 	if (min_distance_arc2_end_point_to_arc1.is_precisely_less_than(min_point_to_arc_distance))
 	{
 		min_point_to_arc_distance = min_distance_arc2_end_point_to_arc1;
-		min_point_to_arc_distance_threshold =
-				AngularExtent::create_from_angular_distance(min_point_to_arc_distance);
+		min_point_to_arc_distance_threshold = AngularExtent(min_point_to_arc_distance);
 
 		if (closest_position_on_arc2)
 		{
@@ -1030,9 +1026,7 @@ GPlatesMaths::maximum_distance(
 	}
 
 	// Convert from minimum distance to maximum distance.
-	return (
-			AngularExtent::PI - AngularExtent::create_from_angular_distance(min_distance)
-		).get_angular_distance();
+	return (AngularExtent::PI - min_distance).get_angular_distance();
 }
 
 
@@ -1071,9 +1065,7 @@ GPlatesMaths::maximum_distance(
 					furthest_position_on_great_circle_arc);
 
 	// Convert from minimum distance to maximum distance.
-	return (
-			AngularExtent::PI - AngularExtent::create_from_angular_distance(min_distance)
-		).get_angular_distance();
+	return (AngularExtent::PI - min_distance).get_angular_distance();
 }
 
 

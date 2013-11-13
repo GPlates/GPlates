@@ -262,7 +262,7 @@ namespace GPlatesMaths
 		/**
 		 * Returns the specified child node of the specified parent node.
 		 *
-		 * NOTE: You should check node_type::is_leaf_node() before calling this to ensure @a parent_node has child nodes.
+		 * NOTE: You should check node_type::is_internal_node() before calling this to ensure @a parent_node has child nodes.
 		 *
 		 * @a child_offset should be either 0 or 1.
 		 */
@@ -477,7 +477,7 @@ namespace GPlatesMaths
 			unsigned int child_offset) const
 	{
 		//GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-		//		child_offset < 2 && !parent_node.is_leaf_node(),
+		//		child_offset < 2 && parent_node.is_internal_node(),
 		//		GPLATES_ASSERTION_SOURCE);
 
 		if (child_offset == 0)

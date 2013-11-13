@@ -65,12 +65,17 @@ namespace GPlatesMaths
 	class AngularExtent :
 			// NOTE: Base class chaining is used to avoid increasing sizeof(AngularExtent) due to multiple
 			// inheritance from several empty base classes...
-			public boost::less_than_comparable<AngularExtent,
-					boost::equivalent<AngularExtent,
-					boost::equality_comparable<AngularExtent,
+			public boost::addable<AngularExtent,
+					boost::addable<AngularExtent, AngularDistance,
+					boost::subtractable<AngularExtent,
+					boost::subtractable<AngularExtent, AngularDistance,
+					boost::subtractable2_left<AngularExtent, AngularDistance,
+					boost::less_than_comparable<AngularExtent,
 					boost::less_than_comparable<AngularExtent, AngularDistance,
+					boost::equivalent<AngularExtent,
 					boost::equivalent<AngularExtent, AngularDistance,
-					boost::equality_comparable<AngularExtent, AngularDistance> > > > > >
+					boost::equality_comparable<AngularExtent,
+					boost::equality_comparable<AngularExtent, AngularDistance> > > > > > > > > > >
 	{
 	public:
 
@@ -120,17 +125,6 @@ namespace GPlatesMaths
 		}
 
 		/**
-		 * Create from the @a AngularDistance (containing the cosine) - the sine will be calculated when/if needed.
-		 */
-		static
-		AngularExtent
-		create_from_angular_distance(
-				const AngularDistance &angular_distance)
-		{
-			return AngularExtent(angular_distance.get_cosine());
-		}
-
-		/**
 		 * Create from an angular extent (radians) in the range [0, PI].
 		 *
 		 * The cosine (and the sine when/if needed) will be calculated.
@@ -148,6 +142,16 @@ namespace GPlatesMaths
 
 			return AngularExtent(cos(colatitude));
 		}
+
+
+		/**
+		 * Create from the @a AngularDistance (containing the cosine) - the sine will be calculated when/if needed.
+		 */
+		explicit
+		AngularExtent(
+				const AngularDistance &angular_distance) :
+			d_cosine(angular_distance.get_cosine())
+		{  }
 
 
 		/**
@@ -204,9 +208,16 @@ namespace GPlatesMaths
 		}
 
 
+		//
+		// The following operators are provided by boost::addable:
+		//
+		// AngularExtent + AngularExtent
+		//
+		// ...based on 'AngularExtent += AngularExtent' which we explicitly provide below.
+		//
+
 		/**
-		 * A member function for adding two angular extents such that the returned
-		 * angular extent is the sum of the angles.
+		 * A member function for adding an angular extent to 'this' angular extent.
 		 *
 		 * NOTE: If the sum of the angles exceeds PI then the sum is clamped to PI (cosine set to -1).
 		 * This is because cosine repeats itself when its angle exceeds PI and there's no longer
@@ -219,13 +230,44 @@ namespace GPlatesMaths
 		 * For example, an extent with 'a' radians plus an extent with 'b' radians
 		 * gives an extent with 'a+b' radians.
 		 */
-		AngularExtent
-		operator+(
-				const AngularExtent &rhs) const;
+		AngularExtent &
+		operator+=(
+				const AngularExtent &rhs);
 
+
+		//
+		// The following operators are provided by boost::addable (and return AngularExtent):
+		//
+		// AngularExtent + AngularDistance
+		// AngularDistance + AngularExtent
+		//
+		// ...based on 'AngularExtent += AngularDistance' which we explicitly provide below.
+		//
 
 		/**
-		 * A member function for subtracting two angular extents.
+		 * A member function for adding an angular distance to 'this' angular extent.
+		 *
+		 * This is a convenient overload to 'AngularExtent += AngularExtent' but it is less efficient
+		 * since the addition will require calculation of sine which AngularDistance does not contain.
+		 */
+		AngularExtent &
+		operator+=(
+				const AngularDistance &rhs)
+		{
+			return operator+=(AngularExtent(rhs));
+		}
+
+
+		//
+		// The following operators are provided by boost::subtractable:
+		//
+		// AngularExtent - AngularExtent
+		//
+		// ...based on 'AngularExtent -= AngularExtent' which we explicitly provide below.
+		//
+
+		/**
+		 * A member function for subtracting an angular extent from 'this' angular extent.
 		 *
 		 * NOTE: If the subtraction of the angles is less than zero then it is clamped to zero (cosine set to 1).
 		 *
@@ -234,9 +276,37 @@ namespace GPlatesMaths
 		 * For example, an extent with 'a' radians minus an extent with 'b' radians
 		 * gives an extent with 'a-b' radians.
 		 */
-		AngularExtent
-		operator-(
-				const AngularExtent &rhs) const;
+		AngularExtent &
+		operator-=(
+				const AngularExtent &rhs);
+
+
+		//
+		// The following operators are provided by boost::subtractable and boost::subtractable2_left
+		// (and return AngularExtent):
+		//
+		// AngularExtent - AngularDistance
+		// AngularDistance - AngularExtent
+		//
+		// ...based on 'AngularExtent -= AngularDistance' which we explicitly provide below.
+		//
+		// Note: Also required by boost::subtractable2_left is a conversion constructor from
+		// AngularDistance to AngularExtent (which we provide above) and
+		// 'AngularExtent -= AngularExtent' (which we provide above).
+		//
+
+		/**
+		 * A member function for subtracting an angular distance to 'this' angular extent.
+		 *
+		 * This is a convenient overload to 'AngularExtent -= AngularExtent' but it is less efficient
+		 * since the subtraction will require calculation of sine which AngularDistance does not contain.
+		 */
+		AngularExtent &
+		operator-=(
+				const AngularDistance &rhs)
+		{
+			return operator-=(AngularExtent(rhs));
+		}
 
 
 		//
@@ -251,7 +321,6 @@ namespace GPlatesMaths
 		//
 		// ...based on 'AngularExtent < AngularExtent' which we explicitly provide below.
 		//
-
 
 		/**
 		 * Less than operator comparison with another @a AngularExtent.
@@ -302,7 +371,6 @@ namespace GPlatesMaths
 		// ...based on 'AngularExtent < AngularDistance' and 'AngularExtent > AngularDistance'
 		// which we explicitly provide below.
 		//
-
 
 		/**
 		 * Less than operator comparison with @a AngularDistance.
