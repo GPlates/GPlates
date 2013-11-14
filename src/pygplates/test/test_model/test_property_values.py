@@ -304,6 +304,66 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
         self.assertRaises(RuntimeError, pygplates.GpmlIrregularSampling, [])
 
 
+class GpmlKeyValueDictionaryCase(unittest.TestCase):
+    def setUp(self):
+        self.original_elements = []
+        for i in range(0,4):
+            element = pygplates. GpmlKeyValueDictionaryElement(
+                str(i),
+                pygplates.XsInteger(i))
+            self.original_elements.append(element)
+        
+        self.gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary(self.original_elements)
+
+    def test_get(self):
+        self.assertTrue(list(self.gpml_key_value_dictionary.get_elements()) == self.original_elements)
+
+    def test_set(self):
+        gpml_key_value_dictionary_element_list = self.gpml_key_value_dictionary.get_elements()
+        reversed_elements = list(reversed(self.original_elements))
+        gpml_key_value_dictionary_element_list[:] = reversed_elements
+        self.assertTrue(list(self.gpml_key_value_dictionary.get_elements()) == reversed_elements)
+
+
+class GpmlKeyValueDictionaryElementCase(unittest.TestCase):
+    def setUp(self):
+        self.key1 = "701"
+        self.property_value1 = pygplates.GpmlPlateId(701)
+        self.gpml_key_value_dictionary_element1 = pygplates.GpmlKeyValueDictionaryElement(self.key1, self.property_value1)
+        
+        self.key2 = "201"
+        self.property_value2 = pygplates.GpmlPlateId(201)
+        self.gpml_key_value_dictionary_element2 = pygplates.GpmlKeyValueDictionaryElement(self.key2, self.property_value2)
+
+    def test_get(self):
+        self.assertTrue(self.gpml_key_value_dictionary_element1.get_key() == self.key1)
+        self.assertTrue(self.gpml_key_value_dictionary_element1.get_value() == self.property_value1)
+        
+        self.assertTrue(self.gpml_key_value_dictionary_element2.get_key() == self.key2)
+        self.assertTrue(self.gpml_key_value_dictionary_element2.get_value() == self.property_value2)
+
+    def test_set(self):
+        new_key = "801"
+        new_property_value = pygplates.GpmlPlateId(801)
+        self.gpml_key_value_dictionary_element1.set_key(new_key)
+        self.gpml_key_value_dictionary_element1.set_value(new_property_value)
+        self.assertTrue(self.gpml_key_value_dictionary_element1.get_key() == new_key)
+        self.assertTrue(self.gpml_key_value_dictionary_element1.get_value() == new_property_value)
+
+    def test_comparison(self):
+        self.assertTrue(self.gpml_key_value_dictionary_element1 == self.gpml_key_value_dictionary_element1)
+        self.assertTrue(self.gpml_key_value_dictionary_element1 != self.gpml_key_value_dictionary_element2)
+        
+        self.gpml_key_value_dictionary_element1.set_key(self.gpml_key_value_dictionary_element2.get_key())
+        # Different property value instance but same value (plate id).
+        self.gpml_key_value_dictionary_element1.get_value().set_plate_id(self.gpml_key_value_dictionary_element2.get_value().get_plate_id())
+        self.assertTrue(self.gpml_key_value_dictionary_element1 == self.gpml_key_value_dictionary_element2)
+        
+        # Same property value instance.
+        self.gpml_key_value_dictionary_element1.set_value(self.gpml_key_value_dictionary_element2.get_value())
+        self.assertTrue(self.gpml_key_value_dictionary_element1 == self.gpml_key_value_dictionary_element2)
+
+
 class GpmlPiecewiseAggregationCase(unittest.TestCase):
     """Test GpmlPiecewiseAggregation.
     
@@ -522,6 +582,8 @@ def suite():
             GpmlFiniteRotationCase,
             GpmlFiniteRotationSlerpCase,
             GpmlIrregularSamplingCase,
+            GpmlKeyValueDictionaryCase,
+            GpmlKeyValueDictionaryElementCase,
             GpmlPiecewiseAggregationCase,
             GpmlPlateIdCase,
             GpmlTimeSampleCase,

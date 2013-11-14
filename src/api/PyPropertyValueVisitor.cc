@@ -40,6 +40,7 @@
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/XsBoolean.h"
@@ -331,6 +332,29 @@ namespace GPlatesApi
 
 		virtual
 		void
+		visit_gpml_key_value_dictionary(
+				gpml_key_value_dictionary_type &gpml_key_value_dictionary)
+		{
+			if (bp::override visit = this->get_override("visit_gpml_key_value_dictionary"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gpml_key_value_dictionary_type::non_null_ptr_type(&gpml_key_value_dictionary));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gpml_key_value_dictionary(gpml_key_value_dictionary);
+		}
+
+		void
+		default_visit_gpml_key_value_dictionary(
+				gpml_key_value_dictionary_type &gpml_key_value_dictionary)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gpml_key_value_dictionary(gpml_key_value_dictionary);
+		}
+
+
+		virtual
+		void
 		visit_gpml_piecewise_aggregation(
 				gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
 		{
@@ -588,6 +612,11 @@ export_property_value_visitor()
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_irregular_sampling,
 				"visit_gpml_irregular_sampling(gpml_irregular_sampling)\n"
 				"  Visits a :class:`GpmlIrregularSampling` property value.\n")
+		.def("visit_gpml_key_value_dictionary",
+				&GPlatesModel::FeatureVisitor::visit_gpml_key_value_dictionary,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_key_value_dictionary,
+				"visit_gpml_key_value_dictionary(gpml_key_value_dictionary)\n"
+				"  Visits a :class:`GpmlKeyValueDictionary` property value.\n")
 		.def("visit_gpml_piecewise_aggregation",
 				&GPlatesModel::FeatureVisitor::visit_gpml_piecewise_aggregation,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_piecewise_aggregation,

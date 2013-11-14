@@ -36,6 +36,8 @@ Contents:
 	pygplates.GpmlFiniteRotationSlerp
 	pygplates.GpmlInterpolationFunction
 	pygplates.GpmlIrregularSampling
+	pygplates.GpmlKeyValueDictionary
+	pygplates.GpmlKeyValueDictionaryElement
 	pygplates.GpmlPiecewiseAggregation
 	pygplates.GpmlPlateId
 	pygplates.GpmlTimeSample

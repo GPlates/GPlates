@@ -45,6 +45,7 @@
 
 #include "model/RevisionedVector.h"
 
+#include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"
 
@@ -72,8 +73,7 @@ DISABLE_GCC_WARNING("-Wshadow")
 		static
 		void
 		wrap(
-				const char *element_class_name,
-				const char *element_instance_name);
+				const char *element_class_name);
 
 	private:
 
@@ -309,8 +309,7 @@ ENABLE_GCC_WARNING("-Wshadow")
 	template <class RevisionableType>
 	void
 	RevisionedVectorWrapper<RevisionableType>::wrap(
-			const char *element_class_name,
-			const char *element_instance_name)
+			const char *element_class_name)
 	{
 		namespace bp = boost::python;
 
@@ -1006,8 +1005,9 @@ export_revisioned_vector()
 
 	// Export all required instantiations of class template RevisionedVector...
 
-	RevisionedVectorWrapper<GpmlTimeSample>::wrap("GpmlTimeSample", "gpml_time_sample");
-	RevisionedVectorWrapper<GpmlTimeWindow>::wrap("GpmlTimeWindow", "gpml_time_window");
+	RevisionedVectorWrapper<GpmlKeyValueDictionaryElement>::wrap("GpmlKeyValueDictionaryElement");
+	RevisionedVectorWrapper<GpmlTimeSample>::wrap("GpmlTimeSample");
+	RevisionedVectorWrapper<GpmlTimeWindow>::wrap("GpmlTimeWindow");
 }
 
 #endif // GPLATES_NO_PYTHON

@@ -53,6 +53,8 @@
 #include "property-values/GpmlHotSpotTrailMark.h"
 #include "property-values/GpmlInterpolationFunction.h"
 #include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlKeyValueDictionary.h"
+#include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
@@ -136,6 +138,7 @@ export_property_value()
 					"* :class:`GpmlFiniteRotationSlerp`\n"
 					//"* :class:`GpmlHotSpotTrailMark`\n"
 					"* :class:`GpmlIrregularSampling`\n"
+					"* :class:`GpmlKeyValueDictionary`\n"
 					"* :class:`GpmlPiecewiseAggregation`\n"
 					"* :class:`GpmlPlateId`\n"
 					"* :class:`XsBoolean`\n"
@@ -1277,7 +1280,7 @@ export_gpml_irregular_sampling()
 					"A time-dependent property consisting of a sequence of time samples irregularly spaced in time.\n"
 					"\n"
 					"The function :func:`interpolate_total_reconstruction_sequence` interpolates a "
-					"*GpmlIrregularSampling* with time samples containing :class:`GpmlFiniteRotation` instances\n",
+					"*GpmlIrregularSampling* with time samples containing :class:`GpmlFiniteRotation` instances.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1341,6 +1344,218 @@ export_gpml_irregular_sampling()
 	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			GPlatesPropertyValues::GpmlIrregularSampling,
 			GPlatesModel::PropertyValue>();
+}
+
+
+namespace GPlatesApi
+{
+	const GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
+	gpml_key_value_dictionary_create(
+			bp::object elements) // Any python sequence (eg, list, tuple).
+	{
+		// Begin/end iterators over the python dictionary elements sequence.
+		bp::stl_input_iterator<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type>
+				elements_begin(elements),
+				elements_end;
+
+		// Copy into a vector.
+		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type> elements_vector;
+		std::copy(elements_begin, elements_end, std::back_inserter(elements_vector));
+
+		return GPlatesPropertyValues::GpmlKeyValueDictionary::create(elements_vector);
+	}
+
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::non_null_ptr_type
+	gpml_key_value_dictionary_get_elements(
+			GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
+	{
+		return &gpml_key_value_dictionary.elements();
+	}
+}
+
+void
+export_gpml_key_value_dictionary()
+{
+	//
+	// GpmlKeyValueDictionary - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GpmlKeyValueDictionary,
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GpmlKeyValueDictionary",
+					"A dictionary of key/value pairs that associates property values with key strings.\n"
+					"\n"
+					"This is typically used to stored attributes imported from a Shapefile so that they "
+					"are available for querying and so that they get written back out when saving to Shapefile. ",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::gpml_key_value_dictionary_create,
+						bp::default_call_policies(),
+						(bp::arg("elements"))),
+				"__init__(elements)\n"
+				"  Create a dictionary of key/value elements.\n"
+				"\n"
+				"  :param elements: A sequence of :class:`GpmlKeyValueDictionaryElement` elements.\n"
+				"  :type elements: Any sequence such as a ``list`` or a ``tuple``\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    key_value_dictionary = pygplates.GpmlKeyValueDictionary(elements)\n")
+		.def("get_elements",
+				&GPlatesApi::gpml_key_value_dictionary_get_elements,
+				"get_elements() -> GpmlKeyValueDictionaryElementList\n"
+				"  Returns the :class:`dictionary elements<GpmlKeyValueDictionaryElementList>` in a "
+				"sequence that behaves as a python ``list``.\n"
+				"\n"
+				"  :rtype: :class:`GpmlKeyValueDictionaryElementList`\n"
+				"\n"
+				"  Modifying the returned sequence will modify the internal state of the *GpmlKeyValueDictionary* "
+				"instance.\n"
+				"  ::\n"
+				"\n"
+				"    elements = key_value_dictionary.get_elements()\n"
+				"\n"
+				"    # Sort samples by key\n"
+				"    elements.sort(key = lambda x: x.get_key())\n")
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GpmlKeyValueDictionary,
+			GPlatesModel::PropertyValue>();
+}
+
+
+namespace GPlatesApi
+{
+	// Make it easier for client by converting from a regular string to XsString.
+	const GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type
+	gpml_key_value_dictionary_element_create(
+			const GPlatesPropertyValues::TextContent &key,
+			GPlatesModel::PropertyValue::non_null_ptr_type value)
+	{
+		return GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+				GPlatesPropertyValues::XsString::create(key.get()),
+				value,
+				value->get_structural_type());
+	}
+
+	// Make it easier for client by converting from XsString to a regular string.
+	GPlatesPropertyValues::TextContent
+	gpml_key_value_dictionary_element_get_key(
+			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &gpml_key_value_dictionary_element)
+	{
+		return gpml_key_value_dictionary_element.key()->get_value();
+	}
+
+	// Make it easier for client by converting from a regular string to XsString.
+	void
+	gpml_key_value_dictionary_element_set_key(
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement &gpml_key_value_dictionary_element,
+			const GPlatesPropertyValues::TextContent &key)
+	{
+		gpml_key_value_dictionary_element.set_key(
+				GPlatesPropertyValues::XsString::create(key.get()));
+	}
+
+	// Return base property value to python as its derived property value type.
+	bp::object/*derived property value non_null_intrusive_ptr*/
+	gpml_key_value_dictionary_element_get_value(
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement &gpml_key_value_dictionary_element)
+	{
+		// The derived property value type is needed otherwise python is unable to access the derived attributes.
+		return PythonConverterUtils::get_property_value_as_derived_type(gpml_key_value_dictionary_element.value());
+	}
+}
+
+void
+export_gpml_key_value_dictionary_element()
+{
+	//
+	// GpmlKeyValueDictionaryElement - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement,
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type,
+			boost::noncopyable>(
+					"GpmlKeyValueDictionaryElement",
+					"An entry in a dictionary of key/value pairs. The value is an arbitrary "
+					"property value that is associated with a specific key string.\n"
+					"\n"
+					"Dictionary elements are equality (``==``, ``!=``) comparable. "
+					"This includes comparing the property value in the two elements being compared "
+					"(see :class:`PropertyValue`) as well as the key string.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::gpml_key_value_dictionary_element_create,
+						bp::default_call_policies(),
+						(bp::arg("key"), bp::arg("value"))),
+				"__init__(key, value)\n"
+				"  Create a key/value dictionary element given a key string and a property value.\n"
+				"\n"
+				"  :param key: key\n"
+				"  :type key: string\n"
+				"  :param value: arbitrary property value\n"
+				"  :type value: :class:`PropertyValue`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    key_value_dictionary_element = pygplates.GpmlKeyValueDictionaryElement(key, property_value)\n")
+		.def("get_key",
+				&GPlatesApi::gpml_key_value_dictionary_element_get_key,
+				"get_key() -> string\n"
+				"  Returns the key of this dictionary element.\n"
+				"\n"
+				"  :rtype: string\n")
+		.def("set_key",
+				&GPlatesApi::gpml_key_value_dictionary_element_set_key,
+				(bp::arg("key")),
+				"set_key(key)\n"
+				"  Sets the key associated with the property value of this dictionary element.\n"
+				"\n"
+				"  :param key: key\n"
+				"  :type key: string\n")
+		.def("get_value",
+				&GPlatesApi::gpml_key_value_dictionary_element_get_value,
+				"get_value() -> PropertyValue\n"
+				"  Returns the property value of this dictionary element.\n"
+				"\n"
+				"  :rtype: :class:`PropertyValue`\n")
+		.def("set_value",
+				&GPlatesPropertyValues::GpmlKeyValueDictionaryElement::set_value,
+				(bp::arg("value")),
+				"set_value(value)\n"
+				"  Sets the property value associated with the key of this dictionary element.\n"
+				"\n"
+				"  :param value: arbitrary property value\n"
+				"  :type value: :class:`PropertyValue`\n"
+				"\n"
+				"  This essentially replaces the previous property value. "
+				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
+				"using its property value methods.\n")
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
+	;
+
+	// Enable boost::optional<GpmlKeyValueDictionaryElement::non_null_ptr_type> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type>();
+
+	// Registers 'non-const' to 'const' conversions.
+	boost::python::implicitly_convertible<
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type,
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_to_const_type>();
+	boost::python::implicitly_convertible<
+			boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type>,
+			boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_to_const_type> >();
 }
 
 
@@ -2126,6 +2341,8 @@ export_property_values()
 	export_gpml_finite_rotation();
 	export_gpml_hot_spot_trail_mark();
 	export_gpml_irregular_sampling();
+	export_gpml_key_value_dictionary();
+	export_gpml_key_value_dictionary_element(); // Not actually a property value.
 	export_gpml_piecewise_aggregation();
 	export_gpml_plate_id();
 	export_gpml_time_sample(); // Not actually a property value.
