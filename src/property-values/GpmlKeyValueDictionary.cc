@@ -31,46 +31,25 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
-#include "global/NotYetImplementedException.h"
 
 #include "model/BubbleUpRevisionHandler.h"
-#include "model/ModelTransaction.h"
-
-
-const GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
-GPlatesPropertyValues::GpmlKeyValueDictionary::create(
-	const std::vector<GpmlKeyValueDictionaryElement> &elements)
-{
-	GPlatesModel::ModelTransaction transaction;
-	non_null_ptr_type ptr(new GpmlKeyValueDictionary(transaction, elements));
-	transaction.commit();
-	return ptr;
-}
-
-
-void
-GPlatesPropertyValues::GpmlKeyValueDictionary::set_elements(
-		const std::vector<GpmlKeyValueDictionaryElement> &elements)
-{
-	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
-	revision_handler.get_revision<Revision>().elements = elements;
-	revision_handler.commit();
-}
 
 
 std::ostream &
 GPlatesPropertyValues::GpmlKeyValueDictionary::print_to(
 		std::ostream &os) const
 {
-	const std::vector<GpmlKeyValueDictionaryElement> &elements = get_elements();
+	const GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement> &elements_ = elements();
 
 	os << "[ ";
 
-	for (std::vector<GpmlKeyValueDictionaryElement>::const_iterator elements_iter = elements.begin();
-		elements_iter != elements.end();
-		++elements_iter)
+	GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement>::const_iterator elements_iter =
+			elements_.begin();
+	GPlatesModel::RevisionedVector<GpmlKeyValueDictionaryElement>::const_iterator elements_end =
+			elements_.end();
+	for ( ; elements_iter != elements_end; ++elements_iter)
 	{
-		os << *elements_iter;
+		os << *elements_iter->get();
 	}
 
 	return os << " ]";
@@ -82,6 +61,18 @@ GPlatesPropertyValues::GpmlKeyValueDictionary::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
 		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
-	// Currently this can't be reached because we don't attach to our children yet.
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+	if (child_revisionable == revision.elements.get_revisionable())
+	{
+		return revision.elements.clone_revision(transaction);
+	}
+
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+
+	// To keep compiler happy - won't be able to get past 'Abort()'.
+	return GPlatesModel::Revision::non_null_ptr_type(NULL);
 }
