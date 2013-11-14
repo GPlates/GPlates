@@ -156,6 +156,7 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalcul
 	push_button_help_arrow_scale->setCursor(QCursor(Qt::ArrowCursor));
 	velocity_smoothing_check_box->setCursor(QCursor(Qt::ArrowCursor));
 	velocity_smoothing_distance_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	exclude_smoothing_in_deforming_regions_check_box->setCursor(QCursor(Qt::ArrowCursor));
 	push_button_help_velocity_smoothing->setCursor(QCursor(Qt::ArrowCursor));
 
 	QObject::connect(
@@ -179,6 +180,9 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalcul
 	QObject::connect(
 			velocity_smoothing_distance_spinbox, SIGNAL(valueChanged(double)),
 			this, SLOT(handle_velocity_smoothing_distance_spinbox_changed(double)));
+	QObject::connect(
+			exclude_smoothing_in_deforming_regions_check_box, SIGNAL(stateChanged(int)),
+			this, SLOT(handle_exclude_smoothing_in_deforming_regions_check_box_changed()));
 
 	// Connect the help dialogs.
 	QObject::connect(
@@ -257,6 +261,15 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::set_data(
 			QObject::connect(
 					velocity_smoothing_distance_spinbox, SIGNAL(valueChanged(double)),
 					this, SLOT(handle_velocity_smoothing_distance_spinbox_changed(double)));
+
+			QObject::disconnect(
+					exclude_smoothing_in_deforming_regions_check_box, SIGNAL(stateChanged(int)),
+					this, SLOT(handle_exclude_smoothing_in_deforming_regions_check_box_changed()));
+			exclude_smoothing_in_deforming_regions_check_box->setChecked(
+					velocity_params.get_exclude_deforming_regions_from_smoothing());
+			QObject::connect(
+					exclude_smoothing_in_deforming_regions_check_box, SIGNAL(stateChanged(int)),
+					this, SLOT(handle_exclude_smoothing_in_deforming_regions_check_box_changed()));
 
 			// Only enable velocity smoothing controls if velocity smoothing is enabled.
 			velocity_smoothing_controls->setEnabled(velocity_params.get_is_boundary_smoothing_enabled());
@@ -462,6 +475,29 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_velocity_smo
 			GPlatesAppLogic::VelocityParams velocity_params = layer_task_params->get_velocity_params();
 
 			velocity_params.set_boundary_smoothing_angular_half_extent_degrees(value);
+
+			layer_task_params->set_velocity_params(velocity_params);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_exclude_smoothing_in_deforming_regions_check_box_changed()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *>(
+					&layer.get_layer_task_params());
+		if (layer_task_params)
+		{
+			GPlatesAppLogic::VelocityParams velocity_params = layer_task_params->get_velocity_params();
+
+			velocity_params.set_exclude_deforming_regions_from_smoothing(
+					exclude_smoothing_in_deforming_regions_check_box->isChecked());
 
 			layer_task_params->set_velocity_params(velocity_params);
 		}

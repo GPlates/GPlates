@@ -104,6 +104,9 @@ namespace GPlatesQtWidgets
 		handle_velocity_smoothing_distance_spinbox_changed(
 				double value);
 
+		void
+		handle_exclude_smoothing_in_deforming_regions_check_box_changed();
+
 	private:
 
 		VelocityFieldCalculatorLayerOptionsWidget(

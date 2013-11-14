@@ -162,13 +162,16 @@ namespace GPlatesGui
 			explicit
 			ExportVelocitySmoothingOptions(
 					bool is_boundary_smoothing_enabled_,
-					const double &boundary_smoothing_angular_half_extent_degrees_) :
+					const double &boundary_smoothing_angular_half_extent_degrees_,
+					bool exclude_deforming_regions_) :
 				is_boundary_smoothing_enabled(is_boundary_smoothing_enabled_),
-				boundary_smoothing_angular_half_extent_degrees(boundary_smoothing_angular_half_extent_degrees_)
+				boundary_smoothing_angular_half_extent_degrees(boundary_smoothing_angular_half_extent_degrees_),
+				exclude_deforming_regions(exclude_deforming_regions_)
 			{  }
 
 			bool is_boundary_smoothing_enabled;
 			double boundary_smoothing_angular_half_extent_degrees;
+			bool exclude_deforming_regions;
 		};
 	}
 }

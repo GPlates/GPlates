@@ -136,6 +136,8 @@ namespace
 					velocity_smoothing_options.is_boundary_smoothing_enabled);
 			velocity_params.set_boundary_smoothing_angular_half_extent_degrees(
 					velocity_smoothing_options.boundary_smoothing_angular_half_extent_degrees);
+			velocity_params.set_exclude_deforming_regions_from_smoothing(
+					velocity_smoothing_options.exclude_deforming_regions);
 
 			velocity_field_output->get_velocity_multi_point_vector_fields(
 					multi_point_velocity_fields,

@@ -460,7 +460,8 @@ GPlatesGui::register_default_export_animation_types(
 	// Default velocity smoothing options for all velocity exports.
 	const ExportOptionsUtils::ExportVelocitySmoothingOptions default_velocity_smoothing_export_options(
 			/*is_boundary_smoothing_enabled_*/false,
-			/*boundary_smoothing_angular_half_extent_degrees_*/1.0);
+			/*boundary_smoothing_angular_half_extent_degrees_*/1.0,
+			/*exclude_deforming_regions_*/true);
 
 	// By default only export to multiple files (one output file per input file).
 	const ExportOptionsUtils::ExportFileOptions default_velocity_file_export_options(

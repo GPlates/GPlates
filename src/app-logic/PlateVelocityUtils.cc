@@ -758,7 +758,8 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
 				const double &boundary_smoothing_angular_half_extent,
 				const double &cosine_boundary_smoothing_angular_half_extent,
-				const double &sine_boundary_smoothing_angular_half_extent)
+				const double &sine_boundary_smoothing_angular_half_extent,
+				bool exclude_deforming_regions_from_smoothing)
 		{
 			// First solve the velocity at the domain point.
 			if (!solve_velocity_on_surfaces(
@@ -776,15 +777,18 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 					range_element,
 					GPLATES_ASSERTION_SOURCE);
 
-			// If the domain point is inside a deforming region (or micro-block within a deforming region)
-			// then it does not need smoothing so just use the already calculated velocity at the domain point.
-			// The reason smoothing is not needed is because a deforming region linearly interpolates
-			// velocities and hence domain points near the deforming region boundary will have velocities
-			// similar to those at the boundary, hence smoothing has essentially already been done.
-			if (range_element->d_reason == MultiPointVectorField::CodomainElement::InNetworkDeformingRegion ||
-				range_element->d_reason == MultiPointVectorField::CodomainElement::InNetworkRigidBlock)
+			if (exclude_deforming_regions_from_smoothing)
 			{
-				return true;
+				// If the domain point is inside a deforming region (or micro-block within a deforming region)
+				// then it does not need smoothing so just use the already calculated velocity at the domain point.
+				// One reason smoothing might not be needed is because a deforming region linearly interpolates
+				// velocities and hence domain points near the deforming region boundary will have velocities
+				// similar to those at the boundary, hence smoothing has essentially already been done.
+				if (range_element->d_reason == MultiPointVectorField::CodomainElement::InNetworkDeformingRegion ||
+					range_element->d_reason == MultiPointVectorField::CodomainElement::InNetworkRigidBlock)
+				{
+					return true;
+				}
 			}
 
 			// If we don't have a reconstruction geometry then the point was inside a boundary but
@@ -948,7 +952,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
 		const std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
 		const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &velocity_surface_resolved_topological_networks,
-		boost::optional<double> boundary_smoothing_angular_half_extent)
+		const boost::optional<VelocitySmoothingOptions> &velocity_smoothing_options)
 {
 	PROFILE_FUNC();
 
@@ -980,6 +984,13 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 
 	// Calculate cosine and sine of the angular half extent.
 	// Note: This is only used if an angular half extent was specified.
+	boost::optional<double> boundary_smoothing_angular_half_extent;
+	bool exclude_deforming_regions_from_smoothing = true;
+	if (velocity_smoothing_options)
+	{
+		boundary_smoothing_angular_half_extent = velocity_smoothing_options->angular_half_extent_radians;
+		exclude_deforming_regions_from_smoothing = velocity_smoothing_options->exclude_deforming_regions;
+	}
 	const double cosine_boundary_smoothing_angular_half_extent =
 			boundary_smoothing_angular_half_extent
 			? std::cos(boundary_smoothing_angular_half_extent.get())
@@ -1040,7 +1051,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 			const GPlatesMaths::PointOnSphere &domain_point = *domain_iter;
 			boost::optional<MultiPointVectorField::CodomainElement> &range_element = *field_iter;
 
-			if (boundary_smoothing_angular_half_extent)
+			if (velocity_smoothing_options)
 			{
 				solve_velocity_on_surfaces_with_boundary_smoothing(
 						domain_point,
@@ -1050,7 +1061,8 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 						resolved_networks_query,
 						boundary_smoothing_angular_half_extent.get(),
 						cosine_boundary_smoothing_angular_half_extent,
-						sine_boundary_smoothing_angular_half_extent);
+						sine_boundary_smoothing_angular_half_extent,
+						exclude_deforming_regions_from_smoothing);
 			}
 			else
 			{

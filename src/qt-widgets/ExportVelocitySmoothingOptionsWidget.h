@@ -95,6 +95,13 @@ namespace GPlatesQtWidgets
 			d_export_velocity_smoothing_options.boundary_smoothing_angular_half_extent_degrees = value;
 		}
 
+		void
+		react_exclude_smoothing_in_deforming_regions_check_box_changed()
+		{
+			d_export_velocity_smoothing_options.exclude_deforming_regions =
+					exclude_smoothing_in_deforming_regions_check_box->isChecked();
+		}
+
 	private:
 
 		explicit
@@ -117,7 +124,12 @@ namespace GPlatesQtWidgets
 					: Qt::Unchecked);
 			velocity_smoothing_distance_spinbox->setValue(
 					d_export_velocity_smoothing_options.boundary_smoothing_angular_half_extent_degrees);
-			// Enable velocity smoothing controls is smoothing is enabled.
+			exclude_smoothing_in_deforming_regions_check_box->setCheckState(
+					d_export_velocity_smoothing_options.exclude_deforming_regions
+					? Qt::Checked
+					: Qt::Unchecked);
+
+			// Enable velocity smoothing controls if smoothing is enabled.
 			velocity_smoothing_controls->setEnabled(
 					d_export_velocity_smoothing_options.is_boundary_smoothing_enabled);
 
@@ -134,6 +146,9 @@ namespace GPlatesQtWidgets
 			QObject::connect(
 					velocity_smoothing_distance_spinbox, SIGNAL(valueChanged(double)),
 					this, SLOT(react_velocity_smoothing_distance_spinbox_changed(double)));
+			QObject::connect(
+					exclude_smoothing_in_deforming_regions_check_box, SIGNAL(stateChanged(int)),
+					this, SLOT(react_exclude_smoothing_in_deforming_regions_check_box_changed()));
 		}
 
 		GPlatesGui::ExportOptionsUtils::ExportVelocitySmoothingOptions d_export_velocity_smoothing_options;
