@@ -71,6 +71,12 @@ namespace GPlatesPropertyValues
 				GmlTimePeriod::non_null_ptr_type valid_time_,
 				const StructuralType &value_type_);
 
+		const non_null_ptr_type
+		clone() const
+		{
+			return GPlatesUtils::dynamic_pointer_cast<GpmlTimeWindow>(clone_impl());
+		}
+
 		/**
 		 * Returns the 'const' time-dependent property value.
 		 */

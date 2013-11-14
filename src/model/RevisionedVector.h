@@ -785,7 +785,7 @@ namespace GPlatesModel
 				}
 			}
 
-			//! Shallow-clone constructor (same for revisionable and non-revisionable elements).
+			//! Shallow-clone constructor.
 			Revision(
 					const Revision &other_,
 					boost::optional<RevisionContext &> context_) :

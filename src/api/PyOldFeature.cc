@@ -190,14 +190,16 @@ GPlatesApi::OldFeature::get_all_property_names()
 				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type dictionary =
 					*(finder.found_key_value_dictionaries_begin());
 
-				std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-					iter = dictionary->get_elements().begin(),
-					end = dictionary->get_elements().end();
+				const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+						elements = dictionary->elements();
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+						iter = elements.begin(),
+						end = elements.end();
 
 				for (; iter != end; ++iter)
 				{
 					const QByteArray buf = (shape_file_attr_name.build_aliased_name().qstring() + ":" + 
-						GPlatesUtils::make_qstring_from_icu_string(iter->key()->get_value().get())).toUtf8();
+						GPlatesUtils::make_qstring_from_icu_string(iter->get()->key()->get_value().get())).toUtf8();
 					//qDebug() << "name: " << QString(buf);
 					ret.append(bp::str(buf.data()));
 				}

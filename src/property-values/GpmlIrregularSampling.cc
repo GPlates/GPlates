@@ -37,7 +37,6 @@
 
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/Metadata.h"
-#include "model/ModelTransaction.h"
 #include "model/NotificationGuard.h"
 
 
@@ -62,24 +61,6 @@ namespace
 			return !opt2;
 		}
 	}
-}
-
-
-const GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
-GPlatesPropertyValues::GpmlIrregularSampling::create(
-		const std::vector<GpmlTimeSample::non_null_ptr_type> &time_samples_,
-		boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interp_func,
-		const StructuralType &value_type_)
-{
-	GPlatesModel::ModelTransaction transaction;
-	non_null_ptr_type ptr(
-			new GpmlIrregularSampling(
-					transaction,
-					GPlatesModel::RevisionedVector<GpmlTimeSample>::create(time_samples_),
-					interp_func,
-					value_type_));
-	transaction.commit();
-	return ptr;
 }
 
 
@@ -269,7 +250,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::bubble_up(
 	{
 		return revision.time_samples.clone_revision(transaction);
 	}
-	else if (revision.interpolation_function &&
+	if (revision.interpolation_function &&
 		child_revisionable == revision.interpolation_function->get_revisionable())
 	{
 		return revision.interpolation_function->clone_revision(transaction);

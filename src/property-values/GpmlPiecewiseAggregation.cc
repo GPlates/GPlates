@@ -34,23 +34,6 @@
 #include "global/GPlatesAssert.h"
 
 #include "model/BubbleUpRevisionHandler.h"
-#include "model/ModelTransaction.h"
-
-
-const GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
-GPlatesPropertyValues::GpmlPiecewiseAggregation::create(
-		const std::vector<GpmlTimeWindow::non_null_ptr_type> &time_windows_,
-		const StructuralType &value_type_)
-{
-	GPlatesModel::ModelTransaction transaction;
-	non_null_ptr_type ptr(
-			new GpmlPiecewiseAggregation(
-					transaction,
-					GPlatesModel::RevisionedVector<GpmlTimeWindow>::create(time_windows_),
-					value_type_));
-	transaction.commit();
-	return ptr;
-}
 
 
 std::ostream &

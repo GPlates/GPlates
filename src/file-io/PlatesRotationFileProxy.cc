@@ -769,10 +769,11 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::visit(
 				GPlatesPropertyValues::XsString::create(
 						GPlatesUtils::make_icu_string_from_qstring(attr->get_value()));
 				
-			GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-					key,
-					value,
-					GPlatesPropertyValues::StructuralType::create_xsi("string"));
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+					GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+							key,
+							value,
+							GPlatesPropertyValues::StructuralType::create_xsi("string"));
 			d_mprs_attrs.push_back(element);
 		}
 	}
@@ -916,10 +917,11 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 				GPlatesUtils::make_icu_string_from_qstring(
 						QString().setNum(moving_plate_id)));
 
-		GpmlKeyValueDictionaryElement element(
-				key,
-				value,
-				StructuralType::create_xsi("string"));
+		GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+				GpmlKeyValueDictionaryElement::create(
+						key,
+						value,
+						StructuralType::create_xsi("string"));
 		d_mprs_attrs.push_back(element);
 	}
 
@@ -929,7 +931,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_new_trs_feature(
 
 	d_last_mprs = d_mprs_attrs;
 	d_mprs_attrs.clear();
-	if (dictionary->get_elements().size() > 0)
+	if (dictionary->elements().size() > 0)
 	{
 		d_current_feature->add(
 				TopLevelPropertyInline::create(
@@ -1073,13 +1075,15 @@ GPlatesFileIO::GrotWriterWithoutCfg::initialise_pre_feature_properties(
 	try
 	{
 		using namespace GPlatesPropertyValues;
-		GpmlKeyValueDictionary::non_null_ptr_type mprs_values = 
-		ModelUtils::get_mprs_attributes(feature_handle.reference());
-		BOOST_FOREACH(const GpmlKeyValueDictionaryElement& element, mprs_values->get_elements())
+		GpmlKeyValueDictionary::non_null_ptr_to_const_type mprs_values =
+				ModelUtils::get_mprs_attributes(feature_handle.reference());
+		BOOST_FOREACH(
+				GpmlKeyValueDictionaryElement::non_null_ptr_to_const_type element,
+				mprs_values->elements())
 		{
 			QString output_str;
-			const XsString *key_val = element.key().get(),
-				*val = dynamic_cast<const XsString*>(element.value().get());
+			const XsString *key_val = element->key().get(),
+				*val = dynamic_cast<const XsString*>(element->value().get());
 			
 			//Check if the MPRS metadata has already been written out. If so, skip this iteration.
 			if("MPRS:pid" == key_val->get_value().get().qstring())

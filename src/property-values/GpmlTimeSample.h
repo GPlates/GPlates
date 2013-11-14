@@ -75,6 +75,12 @@ namespace GPlatesPropertyValues
 				const StructuralType &value_type_,
 				bool is_disabled_ = false);
 
+		const non_null_ptr_type
+		clone() const
+		{
+			return GPlatesUtils::dynamic_pointer_cast<GpmlTimeSample>(clone_impl());
+		}
+
 		/**
 		 * Returns the 'const' time-dependent property value.
 		 */

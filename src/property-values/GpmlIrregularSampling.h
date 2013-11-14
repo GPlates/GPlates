@@ -39,6 +39,7 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
@@ -53,7 +54,7 @@ DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlIrregularSampling, visi
 namespace GPlatesPropertyValues
 {
 
-	class GpmlIrregularSampling:
+	class GpmlIrregularSampling :
 			public GPlatesModel::PropertyValue,
 			public GPlatesModel::RevisionContext
 	{
@@ -75,7 +76,7 @@ namespace GPlatesPropertyValues
 		{  }
 
 		static
-		const non_null_ptr_type
+		non_null_ptr_type
 		create(
 				const GpmlTimeSample::non_null_ptr_type &first_time_sample,
 				boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interp_func,
@@ -86,11 +87,36 @@ namespace GPlatesPropertyValues
 		}
 
 		static
-		const non_null_ptr_type
+		non_null_ptr_type
 		create(
 				const std::vector<GpmlTimeSample::non_null_ptr_type> &time_samples_,
 				boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interp_func,
-				const StructuralType &value_type_);
+				const StructuralType &value_type_)
+		{
+			return create(time_samples_.begin(), time_samples_.end(), interp_func, value_type_);
+		}
+
+		template <typename GpmlTimeSampleIter>
+		static
+		non_null_ptr_type
+		create(
+				GpmlTimeSampleIter time_samples_begin,
+				GpmlTimeSampleIter time_samples_end,
+				boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interp_func,
+				const StructuralType &value_type_)
+		{
+			GPlatesModel::ModelTransaction transaction;
+			non_null_ptr_type ptr(
+					new GpmlIrregularSampling(
+							transaction,
+							GPlatesModel::RevisionedVector<GpmlTimeSample>::create(
+									time_samples_begin,
+									time_samples_end),
+							interp_func,
+							value_type_));
+			transaction.commit();
+			return ptr;
+		}
 
 		const non_null_ptr_type
 		clone() const

@@ -86,11 +86,13 @@ GPlatesFeatureVisitors::ShapefileAttributeFinder::visit_gpml_key_value_dictionar
 		const GPlatesPropertyValues::GpmlKeyValueDictionary &dictionary)
 {
 
-	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-		iter = dictionary.get_elements().begin(),
-		end = dictionary.get_elements().end();
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = dictionary.elements();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator
+		 iter = elements.begin(),
+		 end = elements.end();
 	for ( ; iter != end; ++iter) {
-		find_shapefile_attribute_in_element(*iter);
+		find_shapefile_attribute_in_element(*iter->get());
 	}
 
 }

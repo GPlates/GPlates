@@ -89,7 +89,7 @@ namespace
 		// complicated if features came from shapefiles with different attribute fields. 
 		// For now, I'm just adding plateID, anchor plate, time, and referenced files to the kvd. 
 	
-		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements;
+		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type> elements;
 
 		static const GPlatesModel::PropertyName plate_id_property_name =
 			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
@@ -107,10 +107,11 @@ namespace
 			GPlatesPropertyValues::XsInteger::non_null_ptr_type plateid_value = 
 				GPlatesPropertyValues::XsInteger::create(recon_plate_id.get()->get_value());	
 
-			GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-				key,
-				plateid_value,
-				GPlatesPropertyValues::StructuralType::create_xsi("integer"));
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+					GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+							key,
+							plateid_value,
+							GPlatesPropertyValues::StructuralType::create_xsi("integer"));
 			elements.push_back(element);
 		}
 
@@ -122,10 +123,11 @@ namespace
 		GPlatesPropertyValues::XsInteger::non_null_ptr_type anchor_value = 
 			GPlatesPropertyValues::XsInteger::create(reconstruction_anchor_plate_id);	
 
-		GPlatesPropertyValues::GpmlKeyValueDictionaryElement anchor_element(
-			key,
-			anchor_value,
-			GPlatesPropertyValues::StructuralType::create_xsi("integer"));
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type anchor_element =
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+						key,
+						anchor_value,
+						GPlatesPropertyValues::StructuralType::create_xsi("integer"));
 		elements.push_back(anchor_element);	
 
 		// Reconstruction time.
@@ -133,10 +135,11 @@ namespace
 		GPlatesPropertyValues::XsDouble::non_null_ptr_type time_value = 
 			GPlatesPropertyValues::XsDouble::create(reconstruction_time);	
 
-		GPlatesPropertyValues::GpmlKeyValueDictionaryElement time_element(
-			key,
-			time_value,
-			GPlatesPropertyValues::StructuralType::create_xsi("double"));
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type time_element =
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+						key,
+						time_value,
+						GPlatesPropertyValues::StructuralType::create_xsi("double"));
 		elements.push_back(time_element);	
 
 		// Referenced files.
@@ -172,10 +175,11 @@ namespace
 			GPlatesPropertyValues::XsString::non_null_ptr_type file_value = 
 				GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(filename));
 
-			GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-				key,
-				file_value,
-				GPlatesPropertyValues::StructuralType::create_xsi("string"));
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+					GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+							key,
+							file_value,
+							GPlatesPropertyValues::StructuralType::create_xsi("string"));
 			elements.push_back(element);	
 		}
 
@@ -189,18 +193,17 @@ namespace
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type &output_kvd,
 		const GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type &feature_kvd)
 	{
-		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> output_elements =
-				output_kvd->get_elements();
-
-		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-			it = feature_kvd->get_elements().begin(),
-			end = feature_kvd->get_elements().end();
-		for (; it != end ; ++it)
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+				output_elements = output_kvd->elements();
+		const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+				feature_kvd_elements = feature_kvd->elements();
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+				feature_kvd_it = feature_kvd_elements.begin(),
+				feature_kvd_end = feature_kvd_elements.end();
+		for (; feature_kvd_it != feature_kvd_end ; ++feature_kvd_it)
 		{
-			output_elements.push_back(*it);
+			output_elements.push_back(feature_kvd_it->get()->clone());
 		}
-
-		output_kvd->set_elements(output_elements);
 	}
 		
 }

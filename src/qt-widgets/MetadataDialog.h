@@ -476,7 +476,7 @@ namespace GPlatesQtWidgets
 
 		GPlatesPropertyValues::GpmlTotalReconstructionPole *
 		get_gpml_total_reconstruction_pole(
-				GPlatesModel::PropertyValue::non_null_ptr_to_const_type);
+				GPlatesModel::PropertyValue::non_null_ptr_type);
 
 		void
 		hide_all_opt_gui_widget()

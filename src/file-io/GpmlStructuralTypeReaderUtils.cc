@@ -270,7 +270,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_interpolation_function
 }
 
 
-GPlatesPropertyValues::GpmlKeyValueDictionaryElement
+GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type
 GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_key_value_dictionary_element(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
 		const GpmlPropertyStructuralTypeReader &structural_type_reader,
@@ -298,7 +298,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_key_value_dictionary_e
 				&GpmlPropertyStructuralTypeReaderUtils::create_xs_string,
 				KEY, gpml_version, read_errors);
 
-	return GPlatesPropertyValues::GpmlKeyValueDictionaryElement(key, value, type);
+	return GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(key, value, type);
 }
 
 

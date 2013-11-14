@@ -36,6 +36,7 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "model/ModelTransaction.h"
 #include "model/PropertyValue.h"
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
@@ -73,10 +74,33 @@ namespace GPlatesPropertyValues
 		{  }
 
 		static
-		const non_null_ptr_type
+		non_null_ptr_type
 		create(
 				const std::vector<GpmlTimeWindow::non_null_ptr_type> &time_windows_,
-				const StructuralType &value_type_);
+				const StructuralType &value_type_)
+		{
+			return create(time_windows_.begin(), time_windows_.end(), value_type_);
+		}
+
+		template <typename GpmlTimeWindowIter>
+		static
+		non_null_ptr_type
+		create(
+				GpmlTimeWindowIter time_windows_begin,
+				GpmlTimeWindowIter time_windows_end,
+				const StructuralType &value_type_)
+		{
+			GPlatesModel::ModelTransaction transaction;
+			non_null_ptr_type ptr(
+					new GpmlPiecewiseAggregation(
+							transaction,
+							GPlatesModel::RevisionedVector<GpmlTimeWindow>::create(
+									time_windows_begin,
+									time_windows_end),
+							value_type_));
+			transaction.commit();
+			return ptr;
+		}
 
 		const non_null_ptr_type
 		clone() const

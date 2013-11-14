@@ -566,11 +566,13 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_key_va
 			add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:elements"));
 	d_tree_widget_builder.push_current_item(item_handle);
 
-	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-		iter = gpml_key_value_dictionary.get_elements().begin(),
-		end = gpml_key_value_dictionary.get_elements().end();
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &elements =
+			gpml_key_value_dictionary.elements();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+			iter = elements.begin(),
+			end = elements.end();
 	for ( ; iter != end; ++iter) {
-		add_gpml_key_value_dictionary_element(*iter);
+		add_gpml_key_value_dictionary_element(*iter->get());
 	}
 	d_tree_widget_builder.pop_current_item();
 }

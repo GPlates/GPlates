@@ -404,12 +404,14 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_key_value_dictionary(
 
 	d_line_stream << " KeyValueDictionary";
 
-	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-		iter = gpml_key_value_dictionary.get_elements().begin(),
-		end = gpml_key_value_dictionary.get_elements().end();
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &elements =
+			gpml_key_value_dictionary.elements();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+			iter = elements.begin(),
+			end = elements.end();
 	for ( ; iter != end; ++iter)
 	{
-		write_gpml_key_value_dictionary_element(*iter);
+		write_gpml_key_value_dictionary_element(*iter->get());
 	}
 
 	end_header_line();

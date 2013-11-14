@@ -1313,7 +1313,7 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 	if (n == 0) return;
 
 	// The key-value dictionary elements.
-	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> dictionary_elements;
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type> dictionary_elements;
 
 	// If for any reason we've found more attributes than we have field names, only 
 	// go as far as the number of field names. 
@@ -1343,10 +1343,11 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 				{
 					GPlatesPropertyValues::XsInteger::non_null_ptr_type value = 
 						GPlatesPropertyValues::XsInteger::create(i);
-					GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-						key,
-						value,
-						GPlatesPropertyValues::StructuralType::create_xsi("integer"));
+					GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+							GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+									key,
+									value,
+									GPlatesPropertyValues::StructuralType::create_xsi("integer"));
 					dictionary_elements.push_back(element);
 				}
 			}
@@ -1358,10 +1359,11 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 				{
 					GPlatesPropertyValues::XsDouble::non_null_ptr_type value = 
 						GPlatesPropertyValues::XsDouble::create(d);
-					GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-						key,
-						value,
-						GPlatesPropertyValues::StructuralType::create_xsi("double"));
+					GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+							GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+									key,
+									value,
+									GPlatesPropertyValues::StructuralType::create_xsi("double"));
 					dictionary_elements.push_back(element);
 				}
 			}
@@ -1371,10 +1373,11 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 				GPlatesPropertyValues::XsString::non_null_ptr_type value = 
 					GPlatesPropertyValues::XsString::create(
 							GPlatesUtils::make_icu_string_from_qstring(attribute.toString()));
-				GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-					key,
-					value,
-					GPlatesPropertyValues::StructuralType::create_xsi("string"));
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+						GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+								key,
+								value,
+								GPlatesPropertyValues::StructuralType::create_xsi("string"));
 				dictionary_elements.push_back(element);
 				break;
 		}

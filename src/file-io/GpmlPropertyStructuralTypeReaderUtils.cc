@@ -730,7 +730,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_key_value_dict
 	GPlatesModel::XmlElementNode::non_null_ptr_type 
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
-	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> elements;
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type> elements;
 	find_and_create_one_or_more(
 			elem, &create_gpml_key_value_dictionary_element, ELEMENT, elements,
 			structural_type_reader, gpml_version, read_errors);

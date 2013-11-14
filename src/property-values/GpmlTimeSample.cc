@@ -29,6 +29,9 @@
 
 #include "GpmlTimeSample.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
 

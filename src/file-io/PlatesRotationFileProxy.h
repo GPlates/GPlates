@@ -65,7 +65,7 @@ namespace GPlatesFileIO
 		{ }
 
 		RotationPoleData(
-				GPlatesMaths::FiniteRotation fr,
+				const GPlatesMaths::FiniteRotation &fr,
 				int m_plate_id,
 				int f_plate_id,
 				double time_,
@@ -611,7 +611,7 @@ namespace GPlatesFileIO
 		boost::optional<GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type> d_current_sampling;
 		boost::optional<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type> d_current_sample;
 		RotationPoleData d_last_pole;
-		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> d_mprs_attrs, d_last_mprs;
+		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type> d_mprs_attrs, d_last_mprs;
 		std::vector<AttributeSegment> d_attrs;
 		GPlatesModel::FeatureCollectionMetadata d_fc_metadata;
 	};

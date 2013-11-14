@@ -1282,12 +1282,14 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_key_value_dictionary(
 {
 	d_output.writeStartGpmlElement("KeyValueDictionary");
 		//d_output.writeStartGpmlElement("elements");
-			std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-				iter = gpml_key_value_dictionary.get_elements().begin(),
-				end = gpml_key_value_dictionary.get_elements().end();
+			const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+					elements = gpml_key_value_dictionary.elements();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+					iter = elements.begin(),
+					end = elements.end();
 			for ( ; iter != end; ++iter) {
 				d_output.writeStartGpmlElement("element");
-				write_gpml_key_value_dictionary_element(*iter);
+				write_gpml_key_value_dictionary_element(*iter->get());
 				d_output.writeEndElement();
 			}
 		//d_output.writeEndElement();
@@ -1775,7 +1777,7 @@ GPlatesFileIO::GpmlOutputVisitor::write_gpml_key_value_dictionary_element(
 		d_output.writeStartGpmlElement("valueType");
 			writeTemplateTypeParameterType(
 				d_output,
-				element.value_type());
+				element.get_value_type());
 		d_output.writeEndElement();
 		d_output.writeStartGpmlElement("value");
 			element.value()->accept_visitor(*this);

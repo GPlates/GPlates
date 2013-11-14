@@ -64,12 +64,14 @@ void
 GPlatesDataMining::PopulateShapeFileAttributesVisitor::visit_gpml_key_value_dictionary(
 		const GPlatesPropertyValues::GpmlKeyValueDictionary &dictionary)
 {
-	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
-		iter = dictionary.get_elements().begin(),
-		end = dictionary.get_elements().end();
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &elements =
+			dictionary.elements();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+			iter = elements.begin(),
+			end = elements.end();
 	for ( ; iter != end; ++iter) 
 	{
-		d_names.push_back(iter->key()->get_value().get().qstring() );
+		d_names.push_back(iter->get()->key()->get_value().get().qstring() );
 	}
 }
 
