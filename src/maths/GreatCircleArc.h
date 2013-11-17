@@ -100,18 +100,22 @@ namespace GPlatesMaths
 		}
 
 		/**
-		 * Make a great circle arc beginning at @a p1 and
-		 * ending at @a p2.
+		 * Make a great circle arc beginning at @a p1 and ending at @a p2.
 		 *
-		 * @throws IndeterminateResultException when one of the 
-		 *   following occurs:
+		 * NOTE: Only set @a check_validity to false if you are sure that construction parameter
+		 * validity will not be violated. This is *only* useful in areas of code that require
+		 * efficiency and where we are certain that @a IndeterminateResultException will not be thrown
+		 * (for example because we've already called @a evaluate_construction_parameter_validity).
+		 *
+		 * @throws IndeterminateResultException when one of the following occurs:
 		 *   - @a p1 and @a p2 are antipodal (that is, they are diametrically opposite on the globe).
 		 */
 		static
 		const GreatCircleArc
 		create(
 				const PointOnSphere &p1,
-				const PointOnSphere &p2);
+				const PointOnSphere &p2,
+				bool check_validity = true);
 
 
 		static

@@ -29,6 +29,7 @@
 
 #include "GreatCircleArc.h"
 #include "PolygonOnSphere.h"
+#include "Rotation.h"
 #include "Vector3D.h"
 
 
@@ -143,13 +144,69 @@ GPlatesMaths::SphericalArea::calculate_polygon_signed_area(
 		// thus forming a continuous loop.
 		const GreatCircleArc &polygon_edge = *polygon_edges_iter;
 
+		const GreatCircleArc::ConstructionParameterValidity centroid_to_start_point_validity =
+				GreatCircleArc::evaluate_construction_parameter_validity(
+						polygon_centroid,
+						polygon_edge.start_point());
+		const GreatCircleArc::ConstructionParameterValidity end_point_to_centroid_validity =
+				GreatCircleArc::evaluate_construction_parameter_validity(
+						polygon_edge.end_point(),
+						polygon_centroid);
+
+		// Detect and handle case where an arc end point is antipodal with respect to the centroid.
+		if (centroid_to_start_point_validity != GreatCircleArc::VALID ||
+			end_point_to_centroid_validity != GreatCircleArc::VALID)
+		{
+			// If polygon edge is zero length then both edge end points are antipodal to the
+			// centroid, but the triangle area will be zero anyway so just skip it.
+			if (polygon_edge.is_zero_length())
+			{
+				continue;
+			}
+
+			// Rotate the polygon centroid slightly so that's it's no longer antipodal.
+			// This will introduce a small error to the final polygon area though.
+			// An angle of 1e-4 radians equates to a dot product (cosine) deviation of 5e-9 which is
+			// less than the 1e-12 epsilon used in dot product to determine if two points are antipodal.
+			// So this should be enough to prevent the same thing happening again.
+			// Note that it's still possible that the *other* edge end point is now antipodal
+			// to the rotated centroid - to avoid this we rotate the centroid *away* from the
+			// antipodal edge such that it cannot lie on the antipodal arc.
+			const Rotation centroid_rotation =
+					Rotation::create(
+							polygon_edge.rotation_axis(),
+							(centroid_to_start_point_validity == GreatCircleArc::VALID) ? 1e-4 : -1e-4);
+			const PointOnSphere rotated_polygon_centroid(centroid_rotation * polygon_centroid);
+
+			const GreatCircleArc centroid_to_edge_start =
+					GreatCircleArc::create(rotated_polygon_centroid, polygon_edge.start_point());
+
+			const GreatCircleArc edge_end_to_centroid =
+					GreatCircleArc::create(polygon_edge.end_point(), rotated_polygon_centroid);
+
+			total_signed_area +=
+					calculate_spherical_triangle_signed_area(
+							centroid_to_edge_start, polygon_edge, edge_end_to_centroid);
+
+			continue;
+		}
+
 		const GreatCircleArc centroid_to_edge_start =
-				GreatCircleArc::create(polygon_centroid, polygon_edge.start_point());
+				GreatCircleArc::create(
+						polygon_centroid,
+						polygon_edge.start_point(),
+						// No need to check construction parameter validity - we've already done so...
+						false/*check_validity*/);
 
 		const GreatCircleArc edge_end_to_centroid =
-				GreatCircleArc::create(polygon_edge.end_point(), polygon_centroid);
+				GreatCircleArc::create(
+						polygon_edge.end_point(),
+						polygon_centroid,
+						// No need to check construction parameter validity - we've already done so...
+						false/*check_validity*/);
 
 		total_signed_area +=
+				// Returns zero area if any triangles edges are zero length...
 				calculate_spherical_triangle_signed_area(
 						centroid_to_edge_start, polygon_edge, edge_end_to_centroid);
 	}

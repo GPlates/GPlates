@@ -297,33 +297,38 @@ namespace GPlatesMaths
 const GPlatesMaths::GreatCircleArc
 GPlatesMaths::GreatCircleArc::create(
 		const PointOnSphere &p1,
-		const PointOnSphere &p2)
+		const PointOnSphere &p2,
+		bool check_validity)
 {
 	const UnitVector3D &u1 = p1.position_vector();
 	const UnitVector3D &u2 = p2.position_vector();
 
 	const real_t dot_p1_p2 = dot(u1, u2);
 
-	const ConstructionParameterValidity cpv = evaluate_construction_parameter_validity(u1, u2, dot_p1_p2);
+	if (check_validity)
+	{
+		const ConstructionParameterValidity cpv = evaluate_construction_parameter_validity(u1, u2, dot_p1_p2);
 
-	/*
-	 * First, we ensure that these two endpoints do in fact define a single
-	 * unique great-circle arc.
-	 */
-	if (cpv == INVALID_ANTIPODAL_ENDPOINTS) {
+		/*
+		 * First, we ensure that these two endpoints do in fact define a single
+		 * unique great-circle arc.
+		 */
+		if (cpv == INVALID_ANTIPODAL_ENDPOINTS)
+		{
 
-		// start-point and end-point antipodal => indeterminate arc
-		std::ostringstream oss;
+			// start-point and end-point antipodal => indeterminate arc
+			std::ostringstream oss;
 
-		oss
-		 << "Attempted to calculate a great-circle arc from "
-		 << "antipodal endpoints "
-		 << p1
-		 << " and "
-		 << p2
-		 << ".";
-		throw IndeterminateResultException(GPLATES_EXCEPTION_SOURCE,
-				oss.str().c_str());
+			oss
+			 << "Attempted to calculate a great-circle arc from "
+			 << "antipodal endpoints "
+			 << p1
+			 << " and "
+			 << p2
+			 << ".";
+			throw IndeterminateResultException(GPLATES_EXCEPTION_SOURCE,
+					oss.str().c_str());
+		}
 	}
 
 	return GreatCircleArc(p1, p2, dot_p1_p2);
