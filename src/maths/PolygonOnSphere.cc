@@ -32,6 +32,7 @@
 #include "Centroid.h"
 #include "ConstGeometryOnSphereVisitor.h"
 #include "HighPrecision.h"
+#include "PointInPolygon.h"
 #include "PolygonOnSphere.h"
 #include "PolygonProximityHitDetail.h"
 #include "PolyGreatCircleArcBoundingTree.h"
@@ -73,6 +74,7 @@ namespace GPlatesMaths
 						GPLATES_ASSERTION_SOURCE);
 			}
 
+			boost::optional<real_t> arc_length;
 			boost::optional<UnitVector3D> boundary_centroid;
 			boost::optional<UnitVector3D> interior_centroid;
 			boost::optional<InnerOuterBoundingSmallCircle> inner_outer_bounding_small_circle;
@@ -307,6 +309,165 @@ GPlatesMaths::PolygonOnSphere::create_segment_and_append_to_seq(
 }
 
 
+const GPlatesMaths::real_t &
+GPlatesMaths::PolygonOnSphere::get_arc_length() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the total arc length if it's not cached.
+	if (!d_cached_calculations->arc_length)
+	{
+		real_t arc_length(0);
+
+		const_iterator gca_iter = begin();
+		const_iterator gca_end = end();
+		for ( ; gca_iter != gca_end; ++gca_iter)
+		{
+			const GreatCircleArc &gca = *gca_iter;
+
+			arc_length += acos(gca.dot_of_endpoints());
+		}
+
+		d_cached_calculations->arc_length = arc_length;
+	}
+
+	return d_cached_calculations->arc_length.get();
+}
+
+
+GPlatesMaths::real_t
+GPlatesMaths::PolygonOnSphere::get_area() const
+{
+	return abs(get_signed_area());
+}
+
+
+const GPlatesMaths::real_t &
+GPlatesMaths::PolygonOnSphere::get_signed_area() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the area of this polygon if it's not cached.
+	if (!d_cached_calculations->area)
+	{
+		d_cached_calculations->area = SphericalArea::calculate_polygon_signed_area(*this);
+	}
+
+	return d_cached_calculations->area.get();
+}
+
+
+GPlatesMaths::PolygonOrientation::Orientation
+GPlatesMaths::PolygonOnSphere::get_orientation() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the orientation of this polygon if it's not cached.
+	if (!d_cached_calculations->orientation)
+	{
+		d_cached_calculations->orientation = PolygonOrientation::calculate_polygon_orientation(*this);
+	}
+
+	return d_cached_calculations->orientation.get();
+}
+
+
+bool
+GPlatesMaths::PolygonOnSphere::is_point_in_polygon(
+		const PointOnSphere &point,
+		PointInPolygonSpeedAndMemory speed_and_memory) const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	// Keep track of the total number of calls for the adaptive speed mode.
+	++d_cached_calculations->num_point_in_polygon_calls;
+
+	switch (speed_and_memory)
+	{
+	case MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE:
+	case HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE:
+		// Set up the point-in-polygon structure if the caller has requested medium or high speed testing.
+		// We only need to build a point-in-polygon structure if the caller has requested a speed
+		// above the current speed setting.
+		if (speed_and_memory > d_cached_calculations->point_in_polygon_speed_and_memory)
+		{
+			build_and_cache_point_in_polygon_tester(
+					*this,
+					*d_cached_calculations,
+					speed_and_memory == HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
+		}
+		break;
+
+	case ADAPTIVE:
+		// Adapt the speed according to the number of point-in-polygon calls made so far.
+		//
+		// This is based on:
+		//
+		// LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE              0 < N < 4     points tested per polygon,
+		// MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE   4 < N < 200   points tested per polygon,
+		// HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE         N > 200       points tested per polygon.
+		if (d_cached_calculations->num_point_in_polygon_calls >= 200)
+		{
+			if (d_cached_calculations->point_in_polygon_speed_and_memory < HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE)
+			{
+				// High speed...
+				build_and_cache_point_in_polygon_tester(*this, *d_cached_calculations, true/*high_speed*/);
+			}
+		}
+		else if (d_cached_calculations->num_point_in_polygon_calls >= 4)
+		{
+			if (d_cached_calculations->point_in_polygon_speed_and_memory < MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE)
+			{
+				// Medium speed...
+				build_and_cache_point_in_polygon_tester(*this, *d_cached_calculations, false/*high_speed*/);
+			}
+		}
+		break;
+
+	case LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE:
+	default:
+		// Do nothing.
+		//
+		// Note that if the caller requests a low speed test but we have cached a medium or high
+		// speed test then we'll use that since it's already there and it's faster.
+		break;
+	}
+
+	// If we have an optimised point-in-polygon tester then use it.
+	if (d_cached_calculations->point_in_polygon_tester)
+	{
+		return d_cached_calculations->point_in_polygon_tester->is_point_in_polygon(point);
+	}
+
+	// Since the low-speed test does not include a bounds test we will perform one here
+	// (provided we have a bounding small circle) for quick rejection of points outside polygon.
+	if (d_cached_calculations->inner_outer_bounding_small_circle)
+	{
+		if (d_cached_calculations->inner_outer_bounding_small_circle
+			->get_outer_bounding_small_circle().test(point) == BoundingSmallCircle::OUTSIDE_BOUNDS)
+		{
+			// Point is outside polygon.
+			return false;
+		}
+	}
+
+	// The low speed test doesn't have any cached structures - it's just a function call.
+	return PointInPolygon::is_point_in_polygon(point, *this);
+}
+
+
 const GPlatesMaths::UnitVector3D &
 GPlatesMaths::PolygonOnSphere::get_boundary_centroid() const
 {
@@ -397,135 +558,6 @@ GPlatesMaths::PolygonOnSphere::get_bounding_tree() const
 	}
 
 	return d_cached_calculations->polygon_bounding_tree.get();
-}
-
-
-GPlatesMaths::real_t
-GPlatesMaths::PolygonOnSphere::get_area() const
-{
-	return abs(get_signed_area());
-}
-
-
-GPlatesMaths::real_t
-GPlatesMaths::PolygonOnSphere::get_signed_area() const
-{
-	if (!d_cached_calculations)
-	{
-		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
-	}
-
-	// Calculate the area of this polygon if it's not cached.
-	if (!d_cached_calculations->area)
-	{
-		d_cached_calculations->area = SphericalArea::calculate_polygon_signed_area(*this);
-	}
-
-	return d_cached_calculations->area.get();
-}
-
-
-GPlatesMaths::PolygonOrientation::Orientation
-GPlatesMaths::PolygonOnSphere::get_orientation() const
-{
-	if (!d_cached_calculations)
-	{
-		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
-	}
-
-	// Calculate the orientation of this polygon if it's not cached.
-	if (!d_cached_calculations->orientation)
-	{
-		d_cached_calculations->orientation = PolygonOrientation::calculate_polygon_orientation(*this);
-	}
-
-	return d_cached_calculations->orientation.get();
-}
-
-
-GPlatesMaths::PointInPolygon::Result
-GPlatesMaths::PolygonOnSphere::is_point_in_polygon(
-		const PointOnSphere &point,
-		PointInPolygonSpeedAndMemory speed_and_memory) const
-{
-	if (!d_cached_calculations)
-	{
-		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
-	}
-
-	// Keep track of the total number of calls for the adaptive speed mode.
-	++d_cached_calculations->num_point_in_polygon_calls;
-
-	switch (speed_and_memory)
-	{
-	case MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE:
-	case HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE:
-		// Set up the point-in-polygon structure if the caller has requested medium or high speed testing.
-		// We only need to build a point-in-polygon structure if the caller has requested a speed
-		// above the current speed setting.
-		if (speed_and_memory > d_cached_calculations->point_in_polygon_speed_and_memory)
-		{
-			build_and_cache_point_in_polygon_tester(
-					*this,
-					*d_cached_calculations,
-					speed_and_memory == HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
-		}
-		break;
-
-	case ADAPTIVE:
-		// Adapt the speed according to the number of point-in-polygon calls made so far.
-		//
-		// This is based on:
-		//
-		// LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE              0 < N < 4     points tested per polygon,
-		// MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE   4 < N < 200   points tested per polygon,
-		// HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE         N > 200       points tested per polygon.
-		if (d_cached_calculations->num_point_in_polygon_calls >= 200)
-		{
-			if (d_cached_calculations->point_in_polygon_speed_and_memory < HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE)
-			{
-				// High speed...
-				build_and_cache_point_in_polygon_tester(*this, *d_cached_calculations, true/*high_speed*/);
-			}
-		}
-		else if (d_cached_calculations->num_point_in_polygon_calls >= 4)
-		{
-			if (d_cached_calculations->point_in_polygon_speed_and_memory < MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE)
-			{
-				// Medium speed...
-				build_and_cache_point_in_polygon_tester(*this, *d_cached_calculations, false/*high_speed*/);
-			}
-		}
-		break;
-
-	case LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE:
-	default:
-		// Do nothing.
-		//
-		// Note that if the caller requests a low speed test but we have cached a medium or high
-		// speed test then we'll use that since it's already there and it's faster.
-		break;
-	}
-
-	// If we have an optimised point-in-polygon tester then use it.
-	if (d_cached_calculations->point_in_polygon_tester)
-	{
-		return d_cached_calculations->point_in_polygon_tester->is_point_in_polygon(point);
-	}
-
-	// Since the low-speed test does not include a bounds test we will perform one here
-	// (provided we have a bounding small circle) for quick rejection of points outside polygon.
-	if (d_cached_calculations->inner_outer_bounding_small_circle)
-	{
-		if (d_cached_calculations->inner_outer_bounding_small_circle
-			->get_outer_bounding_small_circle().test(point) == BoundingSmallCircle::OUTSIDE_BOUNDS)
-		{
-			return PointInPolygon::POINT_OUTSIDE_POLYGON;
-		}
-	}
-
-	// The low speed test doesn't have any cached structures - it's just a function call.
-	return PointInPolygon::is_point_in_polygon(point, *this);
 }
 
 

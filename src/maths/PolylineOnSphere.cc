@@ -58,6 +58,7 @@ namespace GPlatesMaths
 		struct CachedCalculations :
 				public GPlatesUtils::ReferenceCount<CachedCalculations>
 		{
+			boost::optional<real_t> arc_length;
 			boost::optional<UnitVector3D> centroid;
 			boost::optional<BoundingSmallCircle> bounding_small_circle;
 			boost::optional<PolylineOnSphere::bounding_tree_type> polyline_bounding_tree;
@@ -253,6 +254,35 @@ GPlatesMaths::PolylineOnSphere::create_segment_and_append_to_seq(
 }
 
 
+const GPlatesMaths::real_t &
+GPlatesMaths::PolylineOnSphere::get_arc_length() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolylineOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the total arc length if it's not cached.
+	if (!d_cached_calculations->arc_length)
+	{
+		real_t arc_length(0);
+
+		const_iterator gca_iter = begin();
+		const_iterator gca_end = end();
+		for ( ; gca_iter != gca_end; ++gca_iter)
+		{
+			const GreatCircleArc &gca = *gca_iter;
+
+			arc_length += acos(gca.dot_of_endpoints());
+		}
+
+		d_cached_calculations->arc_length = arc_length;
+	}
+
+	return d_cached_calculations->arc_length.get();
+}
+
+
 const GPlatesMaths::UnitVector3D &
 GPlatesMaths::PolylineOnSphere::get_centroid() const
 {
@@ -264,16 +294,7 @@ GPlatesMaths::PolylineOnSphere::get_centroid() const
 	// Calculate the centroid if it's not cached.
 	if (!d_cached_calculations->centroid)
 	{
-		// The centroid is also the bounding small circle centre so see if that's been generated.
-		if (d_cached_calculations->bounding_small_circle)
-		{
-			d_cached_calculations->centroid =
-					d_cached_calculations->bounding_small_circle->get_centre();
-		}
-		else
-		{
-			d_cached_calculations->centroid = Centroid::calculate_outline_centroid(*this);
-		}
+		d_cached_calculations->centroid = Centroid::calculate_outline_centroid(*this);
 	}
 
 	return d_cached_calculations->centroid.get();

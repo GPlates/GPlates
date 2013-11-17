@@ -804,6 +804,18 @@ namespace GPlatesMaths
 		// The following are cached calculations on the geometry data.
 		//
 
+
+		/**
+		 * Returns the total arc-length of the sequence of @a GreatCirclArc which defines this polyline.
+		 *
+		 * The result is in radians and represents the distance on the unit radius sphere.
+		 *
+		 * The result is cached on first call.
+		 */
+		const real_t &
+		get_arc_length() const;
+
+
 		/**
 		 * Returns the centroid of the edges of this polyline (see @a Centroid::calculate_outline_centroid).
 		 *

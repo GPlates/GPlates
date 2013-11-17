@@ -39,7 +39,6 @@
 
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
-#include "PointInPolygon.h"
 #include "PolygonOrientation.h"
 
 #include "global/PreconditionViolationError.h"
@@ -610,6 +609,96 @@ namespace GPlatesMaths
 		// The following are cached calculations on the geometry data.
 		//
 
+
+		/**
+		 * Returns the total arc-length of the sequence of @a GreatCirclArc which defines this polygon.
+		 *
+		 * The result is in radians and represents the distance on the unit radius sphere.
+		 *
+		 * The result is cached on first call.
+		 */
+		const real_t &
+		get_arc_length() const;
+
+
+		/**
+		 * Returns the area of this polygon.
+		 *
+		 * See 'SphericalArea::calculate_polygon_area' for details.
+		 *
+		 * The result is cached on first call.
+		 */
+		real_t
+		get_area() const;
+
+		/**
+		 * Returns the signed area of this polygon.
+		 *
+		 * See 'SphericalArea::calculate_polygon_signed_area' for details.
+		 *
+		 * The result is cached on first call.
+		 */
+		const real_t &
+		get_signed_area() const;
+
+
+		/**
+		 * Returns the orientation of this polygon.
+		 *
+		 * See 'PolygonOrientation::calculate_polygon_orientation' for details.
+		 *
+		 * The result is cached on first call.
+		 */
+		PolygonOrientation::Orientation
+		get_orientation() const;
+
+
+		/**
+		 * Determines the speed versus memory trade-off of point-in-polygon tests.
+		 *
+		 * NOTE: The set up cost is a once-off cost that happens in the first call to
+		 * @a is_point_in_polygon or if you increase the speed.
+		 *
+		 * See PointInPolygon for more details. But in summary...
+		 *
+		 * Use:
+		 * LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE              0 < N < 4     points tested per polygon,
+		 * MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE   4 < N < 200   points tested per polygon,
+		 * HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE         N > 200       points tested per polygon.
+		 *
+		 * Or just use ADAPTIVE to progressively switch through the above stages as the number
+		 * of calls to @a is_point_in_polygon increases, eventually ending up at
+		 * HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE if enough calls are made.
+		 */
+		enum PointInPolygonSpeedAndMemory
+		{
+			ADAPTIVE = 0,
+			LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE = 1,
+			MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE = 2,
+			HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE = 3
+		};
+
+		/**
+		 * Tests whether the specified point is inside this polygon.
+		 *
+		 * The default @a speed_and_memory is adaptive.
+		 *
+		 * @a speed_and_memory determines how fast the point-in-polygon test should be
+		 * and how much memory it uses.
+		 *
+		 * NOTE: The set up cost is a once-off cost that happens in the first call to
+		 * @a is_point_in_polygon, or if you increase the speed.
+		 *
+		 * You can increase the speed but you cannot reduce it - this is because it takes
+		 * longer to set up for the higher speed tests and reducing back to lower speeds
+		 * would effectively remove any advantages gained.
+		 */
+		bool
+		is_point_in_polygon(
+				const PointOnSphere &point,
+				PointInPolygonSpeedAndMemory speed_and_memory = ADAPTIVE) const;
+
+
 		/**
 		 * Returns the centroid of the *edges* of this polygon (see @a Centroid::calculate_outline_centroid).
 		 *
@@ -660,84 +749,6 @@ namespace GPlatesMaths
 		 */
 		const bounding_tree_type &
 		get_bounding_tree() const;
-
-
-		/**
-		 * Returns the area of this polygon.
-		 *
-		 * See 'SphericalArea::calculate_polygon_area' for details.
-		 *
-		 * The result is cached on first call.
-		 */
-		real_t
-		get_area() const;
-
-		/**
-		 * Returns the signed area of this polygon.
-		 *
-		 * See 'SphericalArea::calculate_polygon_signed_area' for details.
-		 *
-		 * The result is cached on first call.
-		 */
-		real_t
-		get_signed_area() const;
-
-
-		/**
-		 * Returns the orientation of this polygon.
-		 *
-		 * See 'PolygonOrientation::calculate_polygon_orientation' for details.
-		 *
-		 * The result is cached on first call.
-		 */
-		PolygonOrientation::Orientation
-		get_orientation() const;
-
-
-		/**
-		 * Determines the speed versus memory trade-off of point-in-polygon tests.
-		 *
-		 * NOTE: The set up cost is a once-off cost that happens in the first call to
-		 * @a is_point_in_polygon or if you increase the speed.
-		 *
-		 * See PointInPolygon for more details. But in summary...
-		 *
-		 * Use:
-		 * LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE              0 < N < 4     points tested per polygon,
-		 * MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE   4 < N < 200   points tested per polygon,
-		 * HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE         N > 200       points tested per polygon.
-		 *
-		 * Or just use ADAPTIVE to progressively switch through the above stages as the number
-		 * of calls to @a is_point_in_polygon increases, eventually ending up at
-		 * HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE if enough calls are made.
-		 */
-		enum PointInPolygonSpeedAndMemory
-		{
-			ADAPTIVE = 0,
-			LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE = 1,
-			MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE = 2,
-			HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE = 3
-		};
-
-		/**
-		 * Tests whether the specified point is inside this polygon.
-		 *
-		 * The default @a speed_and_memory is adaptive.
-		 *
-		 * @a speed_and_memory determines how fast the point-in-polygon test should be
-		 * and how much memory it uses.
-		 *
-		 * NOTE: The set up cost is a once-off cost that happens in the first call to
-		 * @a is_point_in_polygon or if you increase the speed.
-		 *
-		 * You can increase the speed but you cannot reduce it - this is because it takes
-		 * longer to set up for the higher speed tests and reducing back to lower speeds
-		 * would effectively remove any advantages gained.
-		 */
-		PointInPolygon::Result
-		is_point_in_polygon(
-				const PointOnSphere &point,
-				PointInPolygonSpeedAndMemory speed_and_memory = ADAPTIVE) const;
 
 	private:
 
