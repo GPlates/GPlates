@@ -169,15 +169,12 @@ GPlatesAppLogic::ResolvedTriangulation::Network::is_point_in_network(
 	// Note that the medium and high speed point-in-polygon tests include a quick small circle
 	// bounds test so we don't need to perform that test before the point-in-polygon test.
 
-	const GPlatesMaths::PointInPolygon::Result point_in_network_boundary_result =
-			d_network_boundary_polygon->is_point_in_polygon(
-					point,
-					// Use high speed point-in-poly testing since we're being used for
-					// we could be asked to test lots of points.
-					// For example, very dense velocity meshes go through this path.
-					GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
-
-	return point_in_network_boundary_result == GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON;
+	return d_network_boundary_polygon->is_point_in_polygon(
+			point,
+			// Use high speed point-in-poly testing since we're being used for
+			// we could be asked to test lots of points.
+			// For example, very dense velocity meshes go through this path.
+			GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
 }
 
 
@@ -208,15 +205,12 @@ GPlatesAppLogic::ResolvedTriangulation::Network::is_point_in_a_rigid_block(
 			// Note that the medium and high speed point-in-polygon tests include a quick small circle
 			// bounds test so we don't need to perform that test before the point-in-polygon test.
 
-			const GPlatesMaths::PointInPolygon::Result point_in_rigid_block_result =
-					interior_polygon.get()->is_point_in_polygon(
-							point,
-							// Use high speed point-in-poly testing since we're being used for
-							// we could be asked to test lots of points.
-							// For example, very dense velocity meshes go through this path.
-							GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
-
-			if (point_in_rigid_block_result == GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+			if (interior_polygon.get()->is_point_in_polygon(
+					point,
+					// Use high speed point-in-poly testing since we're being used for
+					// we could be asked to test lots of points.
+					// For example, very dense velocity meshes go through this path.
+					GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE))
 			{
 				return rigid_block;
 			}

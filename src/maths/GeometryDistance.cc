@@ -565,7 +565,7 @@ GPlatesMaths::minimum_distance(
 	// the latter is a lot cheaper to test.
 	if (polygon_interior_is_solid)
 	{
-		if (polygon.is_point_in_polygon(point) == PointInPolygon::POINT_INSIDE_POLYGON)
+		if (polygon.is_point_in_polygon(point))
 		{
 			if (closest_position_on_polygon)
 			{
@@ -893,7 +893,7 @@ GPlatesMaths::minimum_distance(
 		// the polyline's points (any arbitrary point) is inside the polygon (because we know the
 		// polyline did not intersect the polygon boundary).
 		const PointOnSphere &polyline_test_point = polyline.start_point(); // arbitrary
-		if (polygon.is_point_in_polygon(polyline_test_point) == PointInPolygon::POINT_INSIDE_POLYGON)
+		if (polygon.is_point_in_polygon(polyline_test_point))
 		{
 			if (closest_positions)
 			{
@@ -1029,7 +1029,7 @@ GPlatesMaths::minimum_distance(
 		// the polygon2's points (any arbitrary point) is inside polygon1 (because we know that
 		// polygon2 did not intersect polygon1's boundary).
 		const PointOnSphere &polygon2_test_point = polygon2.first_vertex(); // arbitrary
-		if (polygon1.is_point_in_polygon(polygon2_test_point) == PointInPolygon::POINT_INSIDE_POLYGON)
+		if (polygon1.is_point_in_polygon(polygon2_test_point))
 		{
 			if (closest_positions)
 			{
@@ -1052,7 +1052,7 @@ GPlatesMaths::minimum_distance(
 		// the polygon1's points (any arbitrary point) is inside polygon2 (because we know that
 		// polygon1 did not intersect polygon2's boundary).
 		const PointOnSphere &polygon1_test_point = polygon1.first_vertex(); // arbitrary
-		if (polygon2.is_point_in_polygon(polygon1_test_point) == PointInPolygon::POINT_INSIDE_POLYGON)
+		if (polygon2.is_point_in_polygon(polygon1_test_point))
 		{
 			if (closest_positions)
 			{

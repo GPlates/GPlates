@@ -1018,8 +1018,7 @@ qDebug() << "create_resolved_topology_network: boundary_points.size(): " << boun
 				if (interior_polygon.get()->is_point_in_polygon(
 						*seed_points_iter,
 						// Specify same usage that's used for this polygon inside ResolvedTriangulation::Network...
-						GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE) ==
-					GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+						GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE))
 				{
 					all_rigid_blocks.push_back(
 							ResolvedTriangulation::Network::RigidBlock(interior_rfg_polygon));

@@ -145,11 +145,8 @@ GPlatesMaths::BoundingSmallCircle::test_filled_polygon(
 	{
 		const PointOnSphere small_circle_centre_point(d_small_circle_centre);
 
-		const PointInPolygon::Result point_in_polygon_result =
-				polygon.is_point_in_polygon(small_circle_centre_point);
-
 		// If the small circle centre point is inside the polygon then the polygon is intersecting.
-		if (point_in_polygon_result == PointInPolygon::POINT_INSIDE_POLYGON)
+		if (polygon.is_point_in_polygon(small_circle_centre_point))
 		{
 			result = INTERSECTING_BOUNDS;
 		}
@@ -514,11 +511,8 @@ GPlatesMaths::InnerOuterBoundingSmallCircle::test_filled_polygon(
 	{
 		const PointOnSphere small_circle_centre_point(d_outer_small_circle.d_small_circle_centre);
 
-		const PointInPolygon::Result point_in_polygon_result =
-				polygon.is_point_in_polygon(small_circle_centre_point);
-
 		// If the small circle centre point is inside the polygon then the polygon is intersecting.
-		if (point_in_polygon_result == PointInPolygon::POINT_INSIDE_POLYGON)
+		if (polygon.is_point_in_polygon(small_circle_centre_point))
 		{
 			result = INTERSECTING_BOUNDS;
 		}

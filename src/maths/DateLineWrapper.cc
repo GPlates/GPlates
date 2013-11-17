@@ -985,7 +985,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::generate_entry_exit_flags_for_
 	if (!d_geometry_intersected_north_pole)
 	{
 		// See if the north pole is inside or outside the geometry polygon.
-		const PointInPolygon::Result north_pole_in_geometry_polygon_result =
+		const bool north_pole_is_in_geometry_polygon =
 				input_polygon->is_point_in_polygon(
 						PointOnSphere(NORTH_POLE),
 						PolygonOnSphere::LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE);
@@ -994,14 +994,14 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::generate_entry_exit_flags_for_
 		generate_entry_exit_flags_for_dateline_polygon(
 				// Arbitrarily choose an original (non-intersection) dateline vertex that maps to the north pole...
 				vertex_list_type::iterator(*d_dateline_corner_north_front),
-				north_pole_in_geometry_polygon_result == PointInPolygon::POINT_INSIDE_POLYGON);
+				north_pole_is_in_geometry_polygon);
 	}
 	// Else if the geometry polygon does *not* intersect the south pole then we can accurately determine
 	// whether the south pole is inside/outside the geometry polygon.
 	else if (!d_geometry_intersected_south_pole)
 	{
 		// See if the south pole is inside or outside the geometry polygon.
-		const PointInPolygon::Result south_pole_in_geometry_polygon_result =
+		const bool south_pole_is_in_geometry_polygon =
 				input_polygon->is_point_in_polygon(
 						PointOnSphere(SOUTH_POLE),
 						PolygonOnSphere::LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE);
@@ -1010,7 +1010,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::generate_entry_exit_flags_for_
 		generate_entry_exit_flags_for_dateline_polygon(
 				// Arbitrarily choose an original (non-intersection) dateline vertex that maps to the south pole...
 				vertex_list_type::iterator(*d_dateline_corner_south_front),
-				south_pole_in_geometry_polygon_result == PointInPolygon::POINT_INSIDE_POLYGON);
+				south_pole_is_in_geometry_polygon);
 	}
 	else
 	{

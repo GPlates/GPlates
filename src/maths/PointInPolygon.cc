@@ -1545,7 +1545,7 @@ namespace GPlatesMaths
 }
 
 
-GPlatesMaths::PointInPolygon::Result
+bool
 GPlatesMaths::PointInPolygon::is_point_in_polygon(
 		const PointOnSphere &point,
 		const PolygonOnSphere &polygon)
@@ -1568,7 +1568,7 @@ GPlatesMaths::PointInPolygon::is_point_in_polygon(
 			crossings_arc_plane_normal, dot_crossings_arc_end_points);
 
 	// If number of edges crossed is even then point is outside the polygon.
-	return ((num_polygon_edges_crossed & 1) == 0) ? POINT_OUTSIDE_POLYGON : POINT_INSIDE_POLYGON;
+	return (num_polygon_edges_crossed & 1) == 1;
 }
 
 
@@ -1583,7 +1583,7 @@ GPlatesMaths::PointInPolygon::Polygon::Polygon(
 }
 
 
-GPlatesMaths::PointInPolygon::Result
+bool
 GPlatesMaths::PointInPolygon::Polygon::is_point_in_polygon(
 		const PointOnSphere &test_point) const
 {
@@ -1592,5 +1592,5 @@ GPlatesMaths::PointInPolygon::Polygon::is_point_in_polygon(
 		d_spherical_lune_tree->get_num_polygon_edges_crossed(test_point.position_vector());
 
 	// If number of edges crossed is even then point is outside the polygon.
-	return ((num_polygon_edges_crossed & 1) == 0) ? POINT_OUTSIDE_POLYGON : POINT_INSIDE_POLYGON;
+	return (num_polygon_edges_crossed & 1) == 1;
 }

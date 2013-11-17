@@ -92,12 +92,9 @@ namespace GPlatesViewOperations
 
 				// We don't need a fast point-in-polygon test since this is typically a user click
 				// point (ie, a single point tested against the polygon)...
-				const GPlatesMaths::PointInPolygon::Result point_in_polygon_result =
-						GPlatesMaths::PointInPolygon::is_point_in_polygon(
-								criteria.test_point(),
-								*filled_polyline);
-
-				if (point_in_polygon_result == GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+				if (GPlatesMaths::PointInPolygon::is_point_in_polygon(
+						criteria.test_point(),
+						*filled_polyline))
 				{
 					// The point is inside the filled polygon, hence it touches the fill region and
 					// therefore has a closeness distance of zero (which is a dot product closeness of 1.0).

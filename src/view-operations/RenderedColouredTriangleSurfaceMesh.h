@@ -169,15 +169,12 @@ namespace GPlatesViewOperations
 
 				// The mesh is filled (see comment in @a get_mesh_triangles) so see if the test point
 				// is inside the current triangle's interior.
-				const GPlatesMaths::PointInPolygon::Result point_in_polygon_result =
-						triangle_polygon->is_point_in_polygon(
-								criteria.test_point(),
-								// We don't need anything fast since this is typically a user click point
-								// (ie, a single point tested against the polygon). In any case the
-								// polygon is going to be destroyed after this test...
-								GPlatesMaths::PolygonOnSphere::LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE);
-
-				if (point_in_polygon_result == GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+				if (triangle_polygon->is_point_in_polygon(
+						criteria.test_point(),
+						// We don't need anything fast since this is typically a user click point
+						// (ie, a single point tested against the polygon). In any case the
+						// polygon is going to be destroyed after this test...
+						GPlatesMaths::PolygonOnSphere::LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE))
 				{
 					// The point is inside the polygon, hence it touches the polygon and therefore
 					// has a closeness distance of zero (which is a dot product closeness of 1.0).

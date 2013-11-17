@@ -302,45 +302,39 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add_filled_polygon(
 
 	if (polygon->is_point_in_polygon(
 			GPlatesMaths::PointOnSphere(d_x_axis),
-			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
-		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE))
 	{
 		d_max_dot_x_axis = 1.0;
 	}
 	if (polygon->is_point_in_polygon(
 			GPlatesMaths::PointOnSphere(-d_x_axis),
-			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
-		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE))
 	{
 		d_min_dot_x_axis = -1.0;
 	}
 
 	if (polygon->is_point_in_polygon(
 			GPlatesMaths::PointOnSphere(d_y_axis),
-			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
-		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE))
 	{
 		d_max_dot_y_axis = 1.0;
 	}
 	if (polygon->is_point_in_polygon(
 			GPlatesMaths::PointOnSphere(-d_y_axis),
-			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
-		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE))
 	{
 		d_min_dot_y_axis = -1.0;
 	}
 
 	if (polygon->is_point_in_polygon(
 			GPlatesMaths::PointOnSphere(d_z_axis),
-			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
-		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE))
 	{
 		d_max_dot_z_axis = 1.0;
 	}
 	if (polygon->is_point_in_polygon(
 			GPlatesMaths::PointOnSphere(-d_z_axis),
-			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
-		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE))
 	{
 		d_min_dot_z_axis = -1.0;
 	}
