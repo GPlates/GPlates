@@ -583,6 +583,14 @@ namespace GPlatesMaths
 				return edges_begin->start_point().position_vector();
 			}
 
+			// A negative polygon total area means the polygon orientation is clockwise which
+			// means the triangle-area-weighted centroid will be on the opposite side of the globe
+			// from the polygon, so we negate it to bring it onto the same side.
+			if (total_area.is_precisely_less_than(0))
+			{
+				area_weighted_centroid = -area_weighted_centroid;
+			}
+
 			return area_weighted_centroid.get_normalisation();
 		}
 
