@@ -82,7 +82,7 @@ GPlatesMaths::PolygonOrientation::calculate_polygon_orientation(
 		// If in doubt call 'SphericalArea::calculate_polygon_signed_area()' directly.
 		const real_t polygon_signed_area = polygon.get_signed_area();
 
-		return (polygon_signed_area < 0) ? CLOCKWISE : COUNTERCLOCKWISE;
+		return polygon_signed_area.is_precisely_less_than(0) ? CLOCKWISE : COUNTERCLOCKWISE;
 	}
 
 	// Calculate a unit vector from the sum to use as our plane normal.

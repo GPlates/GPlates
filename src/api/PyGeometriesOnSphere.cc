@@ -511,6 +511,13 @@ namespace GPlatesApi
 
 		return bp::object();
 	}
+
+	GPlatesMaths::PointOnSphere
+	multi_point_on_sphere_get_centroid(
+			const GPlatesMaths::MultiPointOnSphere &multi_point_on_sphere)
+	{
+		return GPlatesMaths::PointOnSphere(multi_point_on_sphere.get_centroid());
+	}
 }
 
 void
@@ -573,6 +580,15 @@ export_multi_point_on_sphere()
 				"  ::\n"
 				"\n"
 				"    multi_point = pygplates.MultiPointOnSphere(points)\n")
+		.def("get_centroid",
+				&GPlatesApi::multi_point_on_sphere_get_centroid,
+				"get_centroid() -> PointOnSphere\n"
+				"  Returns the centroid of this multi-point.\n"
+				"\n"
+				"  :rtype: :class:`PointOnSphere`\n"
+				"\n"
+				"  The centroid is calculated as the sum of the points of the multi-point with the "
+				"result normalized to a vector of unit length.\n")
 		.def("__iter__", bp::iterator<const GPlatesMaths::MultiPointOnSphere>())
 		.def("__len__", &GPlatesMaths::MultiPointOnSphere::number_of_points)
 		.def("__contains__", &GPlatesApi::multi_point_on_sphere_contains_point)
@@ -888,6 +904,13 @@ namespace GPlatesApi
 	{
 		return PolyGeometryOnSphereArcsView<PolyGeometryOnSphereType>(poly_geometry_on_sphere);
 	}
+
+	GPlatesMaths::PointOnSphere
+	polyline_on_sphere_get_centroid(
+			const GPlatesMaths::PolylineOnSphere &polyline_on_sphere)
+	{
+		return GPlatesMaths::PointOnSphere(polyline_on_sphere.get_centroid());
+	}
 }
 
 
@@ -1007,13 +1030,13 @@ export_polyline_on_sphere()
 				"  =========================== ==========================================================\n"
 				"  Operation                   Result\n"
 				"  =========================== ==========================================================\n"
-				"  ``len(view)``               number of points on the polyline\n"
-				"  ``for p in view``           iterates over the points *p* on the polyline\n"
-				"  ``p in view``               ``True`` if *p* is a point on the polyline\n"
-				"  ``p not in view``           ``False`` if *p* is a point on the polyline\n"
-				"  ``view[i]``                 the point on the polyline at index *i*\n"
-				"  ``view[i:j]``               slice of points on the polyline from *i* to *j*\n"
-				"  ``view[i:j:k]``             slice of points on the polyline from *i* to *j* with step *k*\n"
+				"  ``len(view)``               number of points of the polyline\n"
+				"  ``for p in view``           iterates over the points *p* of the polyline\n"
+				"  ``p in view``               ``True`` if *p* is a point of the polyline\n"
+				"  ``p not in view``           ``False`` if *p* is a point of the polyline\n"
+				"  ``view[i]``                 the point of the polyline at index *i*\n"
+				"  ``view[i:j]``               slice of points of the polyline from *i* to *j*\n"
+				"  ``view[i:j:k]``             slice of points of the polyline from *i* to *j* with step *k*\n"
 				"  =========================== ==========================================================\n"
 				"\n"
 				"  The following example demonstrates some uses of the above operations:\n"
@@ -1044,13 +1067,13 @@ export_polyline_on_sphere()
 				"  =========================== ==========================================================\n"
 				"  Operation                   Result\n"
 				"  =========================== ==========================================================\n"
-				"  ``len(view)``               number of arcs on the polyline\n"
-				"  ``for a in view``           iterates over the arcs *a* on the polyline\n"
-				"  ``a in view``               ``True`` if *a* is an arc on the polyline\n"
-				"  ``a not in view``           ``False`` if *a* is an arc on the polyline\n"
-				"  ``view[i]``                 the arc on the polyline at index *i*\n"
-				"  ``view[i:j]``               slice of arcs on the polyline from *i* to *j*\n"
-				"  ``view[i:j:k]``             slice of arcs on the polyline from *i* to *j* with step *k*\n"
+				"  ``len(view)``               number of arcs of the polyline\n"
+				"  ``for a in view``           iterates over the arcs *a* of the polyline\n"
+				"  ``a in view``               ``True`` if *a* is an arc of the polyline\n"
+				"  ``a not in view``           ``False`` if *a* is an arc of the polyline\n"
+				"  ``view[i]``                 the arc of the polyline at index *i*\n"
+				"  ``view[i:j]``               slice of arcs of the polyline from *i* to *j*\n"
+				"  ``view[i:j:k]``             slice of arcs of the polyline from *i* to *j* with step *k*\n"
 				"  =========================== ==========================================================\n"
 				"\n"
 				"  The following example demonstrates some uses of the above operations:\n"
@@ -1064,6 +1087,27 @@ export_polyline_on_sphere()
 				"            print arc.get_rotation_axis()\n"
 				"    first_arc = arcs_view[0]\n"
 				"    last_arc = arcs_view[-1]\n")
+		.def("get_arc_length",
+				&GPlatesMaths::PolylineOnSphere::get_arc_length,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_arc_length() -> float\n"
+				"  Returns the total arc length of this polyline (in radians).\n"
+				"\n"
+				"  :rtype: float\n"
+				"\n"
+				"  This is the sum of the arc lengths of each individual "
+				":class:`great circle arc<GreatCircleArc>` of this polyline. "
+				"To convert to distance, multiply the result by the Earth radius.\n")
+		.def("get_centroid",
+				&GPlatesApi::polyline_on_sphere_get_centroid,
+				"get_centroid() -> PointOnSphere\n"
+				"  Returns the centroid of this polyline.\n"
+				"\n"
+				"  :rtype: :class:`PointOnSphere`\n"
+				"\n"
+				"  The centroid is calculated as a weighted average of the mid-points of the "
+				":class:`great circle arcs<GreatCircleArc>` of this polyline with weighting "
+				"proportional to the individual arc lengths.\n")
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;
@@ -1077,6 +1121,32 @@ export_polyline_on_sphere()
 	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			const GPlatesMaths::PolylineOnSphere,
 			const GPlatesMaths::GeometryOnSphere>();
+}
+
+
+namespace GPlatesApi
+{
+	bool
+	polygon_on_sphere_is_point_in_polygon(
+			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
+			const GPlatesMaths::PointOnSphere &point)
+	{
+		return polygon_on_sphere.is_point_in_polygon(point);
+	}
+
+	GPlatesMaths::PointOnSphere
+	polygon_on_sphere_get_boundary_centroid(
+			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere)
+	{
+		return GPlatesMaths::PointOnSphere(polygon_on_sphere.get_boundary_centroid());
+	}
+
+	GPlatesMaths::PointOnSphere
+	polygon_on_sphere_get_interior_centroid(
+			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere)
+	{
+		return GPlatesMaths::PointOnSphere(polygon_on_sphere.get_interior_centroid());
+	}
 }
 
 
@@ -1120,7 +1190,7 @@ export_polygon_on_sphere()
 	//
 	// PolygonOnSphere - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
-	bp::class_<
+	bp::scope polygon_on_sphere_class = bp::class_<
 			GPlatesMaths::PolygonOnSphere,
 			// NOTE: See note in 'python_ConstGeometryOnSphere' for why this is 'non-const' instead of 'const'...
 			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>,
@@ -1209,13 +1279,13 @@ export_polygon_on_sphere()
 				"  =========================== ==========================================================\n"
 				"  Operation                   Result\n"
 				"  =========================== ==========================================================\n"
-				"  ``len(view)``               number of points on the polygon\n"
-				"  ``for p in view``           iterates over the points *p* on the polygon\n"
-				"  ``p in view``               ``True`` if *p* is a point on the polygon\n"
-				"  ``p not in view``           ``False`` if *p* is a point on the polygon\n"
-				"  ``view[i]``                 the point on the polygon at index *i*\n"
-				"  ``view[i:j]``               slice of points on the polygon from *i* to *j*\n"
-				"  ``view[i:j:k]``             slice of points on the polygon from *i* to *j* with step *k*\n"
+				"  ``len(view)``               number of points of the polygon\n"
+				"  ``for p in view``           iterates over the points *p* of the polygon\n"
+				"  ``p in view``               ``True`` if *p* is a point of the polygon\n"
+				"  ``p not in view``           ``False`` if *p* is a point of the polygon\n"
+				"  ``view[i]``                 the point of the polygon at index *i*\n"
+				"  ``view[i:j]``               slice of points of the polygon from *i* to *j*\n"
+				"  ``view[i:j:k]``             slice of points of the polygon from *i* to *j* with step *k*\n"
 				"  =========================== ==========================================================\n"
 				"\n"
 				"  The following example demonstrates some uses of the above operations:\n"
@@ -1246,13 +1316,13 @@ export_polygon_on_sphere()
 				"  =========================== ==========================================================\n"
 				"  Operation                   Result\n"
 				"  =========================== ==========================================================\n"
-				"  ``len(view)``               number of arcs on the polygon\n"
-				"  ``for a in view``           iterates over the arcs *a* on the polygon\n"
-				"  ``a in view``               ``True`` if *a* is an arc on the polygon\n"
-				"  ``a not in view``           ``False`` if *a* is an arc on the polygon\n"
-				"  ``view[i]``                 the arc on the polygon at index *i*\n"
-				"  ``view[i:j]``               slice of arcs on the polygon from *i* to *j*\n"
-				"  ``view[i:j:k]``             slice of arcs on the polygon from *i* to *j* with step *k*\n"
+				"  ``len(view)``               number of arcs of the polygon\n"
+				"  ``for a in view``           iterates over the arcs *a* of the polygon\n"
+				"  ``a in view``               ``True`` if *a* is an arc of the polygon\n"
+				"  ``a not in view``           ``False`` if *a* is an arc of the polygon\n"
+				"  ``view[i]``                 the arc of the polygon at index *i*\n"
+				"  ``view[i:j]``               slice of arcs of the polygon from *i* to *j*\n"
+				"  ``view[i:j:k]``             slice of arcs of the polygon from *i* to *j* with step *k*\n"
 				"  =========================== ==========================================================\n"
 				"\n"
 				"  The following example demonstrates some uses of the above operations:\n"
@@ -1267,9 +1337,106 @@ export_polygon_on_sphere()
 				"    first_arc = arcs_view[0]\n"
 				"    last_arc = arcs_view[-1]\n"
 				"    assert(last_arc.get_end_point() == first_arc.get_start_point())")
+		.def("get_arc_length",
+				&GPlatesMaths::PolygonOnSphere::get_arc_length,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_arc_length() -> float\n"
+				"  Returns the total arc length of this polygon (in radians).\n"
+				"\n"
+				"  :rtype: float\n"
+				"\n"
+				"  This is the sum of the arc lengths of each individual "
+				":class:`great circle arc<GreatCircleArc>` of this polygon. "
+				"To convert to distance, multiply the result by the Earth radius.\n")
+		.def("get_area",
+				&GPlatesMaths::PolygonOnSphere::get_area,
+				"get_area() -> float\n"
+				"  Returns the area of this polygon (on a sphere of unit radius).\n"
+				"\n"
+				"  :rtype: float\n"
+				"\n"
+				"  The area is essentially the absolute value of the :meth:`signed area<get_signed_area>`.\n"
+				"\n"
+				"  To convert to area on the Earth's surface, multiply the result by the Earth radius squared.\n")
+		.def("get_signed_area",
+				&GPlatesMaths::PolygonOnSphere::get_signed_area,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_signed_area() -> float\n"
+				"  Returns the *signed* area of this polygon (on a sphere of unit radius).\n"
+				"\n"
+				"  :rtype: float\n"
+				"\n"
+				"  If this polygon is clockwise (when viewed from above the surface of the sphere) "
+				"then the returned area will be negative, otherwise it will be positive. "
+				"However if you only want to determine the orientation of this polygon then "
+				":meth:`get_orientation` is more efficient than comparing the sign of the area.\n"
+				"\n"
+				"  To convert to *signed* area on the Earth's surface, multiply the result by the "
+				"Earth radius squared.\n")
+		.def("get_orientation",
+				&GPlatesMaths::PolygonOnSphere::get_orientation,
+				"get_orientation() -> PolygonOnSphere.Orientation\n"
+				"  Returns whether this polygon is clockwise or counter-clockwise.\n"
+				"\n"
+				"  :rtype: PolygonOnSphere.Orientation (with values PolygonOnSphere.Orientation.clockwise and "
+				"PolygonOnSphere.Orientation.counter_clockwise)\n"
+				"\n"
+				"  If this polygon is clockwise (when viewed from above the surface of the sphere) "
+				"then *PolygonOnSphere.clockwise* is returned, otherwise "
+				"*PolygonOnSphere.counter_clockwise* is returned.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    if polygon.get_orientation() == pygplates.PolygonOnSphere.Orientation.clockwise:\n"
+				"      print 'Orientation is clockwise'\n"
+				"    else:\n"
+				"      print 'Orientation is counter-clockwise'\n")
+		.def("is_point_in_polygon",
+				&GPlatesApi::polygon_on_sphere_is_point_in_polygon,
+				"is_point_in_polygon(point) -> bool\n"
+				"  Determines whether the specified point lies within the interior of this polygon.\n"
+				"\n"
+				"  :param point: the point to be tested\n"
+				"  :type point: :class:`PointOnSphere`\n"
+				"  :rtype: bool\n")
+		.def("get_boundary_centroid",
+				&GPlatesApi::polygon_on_sphere_get_boundary_centroid,
+				"get_boundary_centroid() -> PointOnSphere\n"
+				"  Returns the *boundary* centroid of this polygon.\n"
+				"\n"
+				"  :rtype: :class:`PointOnSphere`\n"
+				"\n"
+				"  The *boundary* centroid is calculated as a weighted average of the mid-points of the "
+				":class:`great circle arcs<GreatCircleArc>` of this polygon with weighting "
+				"proportional to the individual arc lengths.\n"
+				"\n"
+				"  Note that if you want a centroid closer to the centre-of-mass of the polygon interior "
+				"then use :meth:`get_interior_centroid` instead.\n")
+		.def("get_interior_centroid",
+				&GPlatesApi::polygon_on_sphere_get_interior_centroid,
+				"get_interior_centroid() -> PointOnSphere\n"
+				"  Returns the *interior* centroid of this polygon.\n"
+				"\n"
+				"  :rtype: :class:`PointOnSphere`\n"
+				"\n"
+				"  The *interior* centroid is calculated as a weighted average of the centroids of "
+				"spherical triangles formed by the :class:`great circle arcs<GreatCircleArc>` of this polygon "
+				"and its (boundary) centroid with weighting proportional to the signed area of each individual "
+				"spherical triangle. The three vertices of each spherical triangle consist of the "
+				"polygon (boundary) centroid and the two end points of a great circle arc.\n"
+				"\n"
+				"  This centroid is useful when the centre-of-mass of the polygon interior is desired. "
+				"For example, the *interior* centroid of a bottom-heavy, pear-shaped polygon will be "
+				"closer to the bottom of the polygon. This centroid is not exactly at the centre-of-mass, "
+				"but it will be a lot closer to the real centre-of-mass than :meth:`get_boundary_centroid`.\n")
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;
+
+	// An enumeration nested within python class PolygonOnSphere (due to above 'bp::scope').
+	bp::enum_<GPlatesMaths::PolygonOrientation::Orientation>("Orientation")
+			.value("clockwise", GPlatesMaths::PolygonOrientation::CLOCKWISE)
+			.value("counter_clockwise", GPlatesMaths::PolygonOrientation::COUNTERCLOCKWISE);
 
 	// Register to/from conversion for PolygonOnSphere::non_null_ptr_to_const_type.
 	GPlatesApi::python_ConstGeometryOnSphere<GPlatesMaths::PolygonOnSphere>();

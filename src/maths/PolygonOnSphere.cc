@@ -78,7 +78,7 @@ namespace GPlatesMaths
 			boost::optional<UnitVector3D> boundary_centroid;
 			boost::optional<UnitVector3D> interior_centroid;
 			boost::optional<InnerOuterBoundingSmallCircle> inner_outer_bounding_small_circle;
-			boost::optional<real_t> area;
+			boost::optional<real_t> signed_area;
 			boost::optional<PolygonOrientation::Orientation> orientation;
 
 			PolygonOnSphere::PointInPolygonSpeedAndMemory point_in_polygon_speed_and_memory;
@@ -354,12 +354,12 @@ GPlatesMaths::PolygonOnSphere::get_signed_area() const
 	}
 
 	// Calculate the area of this polygon if it's not cached.
-	if (!d_cached_calculations->area)
+	if (!d_cached_calculations->signed_area)
 	{
-		d_cached_calculations->area = SphericalArea::calculate_polygon_signed_area(*this);
+		d_cached_calculations->signed_area = SphericalArea::calculate_polygon_signed_area(*this);
 	}
 
-	return d_cached_calculations->area.get();
+	return d_cached_calculations->signed_area.get();
 }
 
 
@@ -374,7 +374,19 @@ GPlatesMaths::PolygonOnSphere::get_orientation() const
 	// Calculate the orientation of this polygon if it's not cached.
 	if (!d_cached_calculations->orientation)
 	{
-		d_cached_calculations->orientation = PolygonOrientation::calculate_polygon_orientation(*this);
+		// If we already have the signed area then just use that.
+		if (d_cached_calculations->signed_area)
+		{
+			d_cached_calculations->orientation =
+					d_cached_calculations->signed_area->is_precisely_less_than(0)
+					? PolygonOrientation::CLOCKWISE
+					: PolygonOrientation::COUNTERCLOCKWISE;
+		}
+		else
+		{
+			d_cached_calculations->orientation =
+					PolygonOrientation::calculate_polygon_orientation(*this);
+		}
 	}
 
 	return d_cached_calculations->orientation.get();

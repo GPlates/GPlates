@@ -2,6 +2,7 @@
 Unit tests for the pygplates geometries on sphere.
 """
 
+import math
 import os
 import unittest
 import pygplates
@@ -83,6 +84,9 @@ class MultiPointOnSphereCase(unittest.TestCase):
         self.assertTrue(len(slice) == 2)
         self.assertTrue(slice[0] == self.points[1])
         self.assertTrue(slice[1] == self.points[3])
+    
+    def test_centroid(self):
+        self.assertTrue(isinstance(self.multi_point.get_centroid(), pygplates.PointOnSphere))
 
 
 class PolylineOnSphereCase(unittest.TestCase):
@@ -174,6 +178,12 @@ class PolylineOnSphereCase(unittest.TestCase):
         self.assertTrue(len(slice) == 2)
         self.assertTrue(slice[0] == pygplates.GreatCircleArc(self.points[0], self.points[1]))
         self.assertTrue(slice[1] == pygplates.GreatCircleArc(self.points[2], self.points[3]))
+    
+    def test_arc_length(self):
+        self.assertTrue(isinstance(self.polyline.get_arc_length(), float))
+    
+    def test_centroid(self):
+        self.assertTrue(isinstance(self.polyline.get_centroid(), pygplates.PointOnSphere))
 
 
 class PolygonOnSphereCase(unittest.TestCase):
@@ -267,6 +277,37 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertTrue(slice[0] == pygplates.GreatCircleArc(self.points[1], self.points[2]))
         # Wrap around arc.
         self.assertTrue(slice[1] == pygplates.GreatCircleArc(self.points[3], self.points[0]))
+    
+    def test_arc_length(self):
+        self.assertTrue(isinstance(self.polygon.get_arc_length(), float))
+    
+    def test_area(self):
+        area = self.polygon.get_area()
+        signed_area = self.polygon.get_signed_area()
+        # Polygon covers exactly a quarter of the unit sphere.
+        self.assertTrue(area > math.pi - 1e-6 and area < math.pi + 1e-6)
+        # Counter-clockwise polygon.
+        ccw_polygon = pygplates.PolygonOnSphere(reversed(self.polygon.get_points_view()))
+        ccw_area = ccw_polygon.get_area()
+        ccw_signed_area = ccw_polygon.get_signed_area()
+        self.assertTrue(area > ccw_area - 1e-6 and area < ccw_area + 1e-6)
+        self.assertTrue(signed_area > ccw_signed_area - 1e-6 and signed_area < -ccw_signed_area + 1e-6)
+    
+    def test_orientation(self):
+        self.assertTrue(self.polygon.get_orientation() == pygplates.PolygonOnSphere.Orientation.counter_clockwise)
+        self.assertTrue(pygplates.PolygonOnSphere(reversed(self.polygon.get_points_view())).get_orientation() ==
+                pygplates.PolygonOnSphere.Orientation.clockwise)
+    
+    def test_point_in_polygon(self):
+        inv_sqrt_two = 1.0 / math.sqrt(2.0)
+        self.assertTrue(self.polygon.is_point_in_polygon(
+                pygplates.PointOnSphere(inv_sqrt_two, 0, inv_sqrt_two)))
+        self.assertFalse(self.polygon.is_point_in_polygon(
+                pygplates.PointOnSphere(-inv_sqrt_two, 0, inv_sqrt_two)))
+    
+    def test_centroid(self):
+        self.assertTrue(isinstance(self.polygon.get_boundary_centroid(), pygplates.PointOnSphere))
+        self.assertTrue(isinstance(self.polygon.get_interior_centroid(), pygplates.PointOnSphere))
 
 
 def suite():
