@@ -440,7 +440,7 @@ namespace GPlatesMaths
 
 		// Use the centroid of the node edges as the centre of the node's bounding small circle.
 		BoundingSmallCircleBuilder bounding_small_circle_builder(
-				Centroid::calculate_edges_centroid(begin_node_great_circle_arcs, end_node_great_circle_arcs));
+				Centroid::calculate_outline_centroid(begin_node_great_circle_arcs, end_node_great_circle_arcs));
 
 		// Add the edges (great circle arcs) for the current node.
 		bounding_small_circle_builder.add(begin_node_great_circle_arcs, end_node_great_circle_arcs);

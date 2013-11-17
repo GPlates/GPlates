@@ -4300,7 +4300,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 		vertex.initialise_seed_geometry_constants(seed_co_registration);
 
 		// The first vertex is the polygon centroid.
-		const GPlatesMaths::UnitVector3D &centroid = polygon_on_sphere.get_centroid();
+		const GPlatesMaths::UnitVector3D &centroid = polygon_on_sphere.get_boundary_centroid();
 		vertex.fill_position[0] = centroid.x().dval();
 		vertex.fill_position[1] = centroid.y().dval();
 		vertex.fill_position[2] = centroid.z().dval();

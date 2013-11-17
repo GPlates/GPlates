@@ -48,74 +48,6 @@ namespace GPlatesMaths
 	namespace Centroid
 	{
 		/**
-		 * Calculates the centroid of @a geometry_on_sphere.
-		 *
-		 * This delegates to the appropriate @a calculate_centroid below depending on geometry type.
-		 */
-		UnitVector3D
-		calculate_centroid(
-				const GeometryOnSphere &geometry_on_sphere);
-
-		/**
-		 * Calculates the centroid of @a point - which is just @a point.
-		 *
-		 * This is here only for completeness for generic (template) clients.
-		 */
-		inline
-		UnitVector3D
-		calculate_centroid(
-				const PointOnSphere &point)
-		{
-			return point.position_vector();
-		}
-
-		/**
-		 * Calculates the centroid of @a multi_point.
-		 *
-		 * NOTE: Returns first point if centroid cannot be determined because points sum to the zero vector.
-		 *
-		 * @throws @a PreconditionViolationError if @a begin equals @a end.
-		 */
-		UnitVector3D
-		calculate_centroid(
-				const MultiPointOnSphere &multi_point);
-
-		/**
-		 * Calculates the centroid of @a polyline.
-		 *
-		 * Attempts to use the faster edge centroid calculation otherwise uses
-		 * more expensive spherical centroid calculation if the average of the sum
-		 * of the polygon vertices has a magnitude less than @a min_average_point_magnitude.
-		 *
-		 * The default value of @a min_average_point_magnitude of zero means the faster edge
-		 * centroid calculation is used except when the average point vector is the zero vector.
-		 *
-		 * NOTE: Returns the first point of the first arc if the calculated centroid is the zero vector.
-		 */
-		UnitVector3D
-		calculate_centroid(
-				const PolylineOnSphere &polyline,
-				const double &min_average_point_magnitude = 0.0);
-
-		/**
-		 * Calculates the centroid of @a polygon.
-		 *
-		 * Attempts to use the faster edge centroid calculation otherwise uses
-		 * more expensive spherical centroid calculation if the average of the sum
-		 * of the polygon vertices has a magnitude less than @a min_average_point_magnitude.
-		 *
-		 * The default value of @a min_average_point_magnitude of zero means the faster edge
-		 * centroid calculation is used except when the average point vector is the zero vector.
-		 *
-		 * NOTE: Returns the first point of the first arc if the calculated centroid is the zero vector.
-		 */
-		UnitVector3D
-		calculate_centroid(
-				const PolygonOnSphere &polygon,
-				const double &min_average_point_magnitude = 0.0);
-
-
-		/**
 		 * Returns the sum of the sequence of @a PointOnSphere objects.
 		 *
 		 * NOTE: Returned vector could be zero length if points sum to the zero vector.
@@ -194,6 +126,8 @@ namespace GPlatesMaths
 		/**
 		 * Calculates the centroid of the points in @a polyline.
 		 *
+		 * Note that a better centroid calculation for polylines is @a calculate_outline_centroid.
+		 *
 		 * NOTE: Returns the first point of the first arc if the calculated centroid is the zero vector.
 		 */
 		inline
@@ -206,6 +140,9 @@ namespace GPlatesMaths
 
 		/**
 		 * Calculates the centroid of the points in @a polygon.
+		 *
+		 * Note that a better centroid calculation for polygons is @a calculate_outline_centroid or
+		 * @a calculate_interior_centroid.
 		 *
 		 * NOTE: Returns the first point of the first arc if the calculated centroid is the zero vector.
 		 */
@@ -222,13 +159,16 @@ namespace GPlatesMaths
 		 * Calculates the centroid of a sequence of @a GreatCircleArc objects using
 		 * an approximate arc-length weighted average of the arc centroids.
 		 *
+		 * This generally produces a better centroid for bounding polylines and polygons
+		 * (with a bounding small circle) than @a calculate_points_centroid.
+		 *
 		 * NOTE: Returns the first point of the first arc if the weighted average centroid is the zero vector.
 		 *
 		 * @throws @a PreconditionViolationError if @a begin equals @a end.
 		 */
 		template <typename EdgeForwardIter>
 		UnitVector3D
-		calculate_edges_centroid(
+		calculate_outline_centroid(
 				EdgeForwardIter begin,
 				EdgeForwardIter end);
 
@@ -239,29 +179,40 @@ namespace GPlatesMaths
 		 */
 		inline
 		UnitVector3D
-		calculate_edges_centroid(
+		calculate_outline_centroid(
 				const PolylineOnSphere &polyline)
 		{
-			return calculate_edges_centroid(polyline.begin(), polyline.end());
+			return calculate_outline_centroid(polyline.begin(), polyline.end());
 		}
 
 		/**
 		 * Calculates the centroid of the great circle arc edges in @a polygon.
 		 *
+		 * This calculates a centroid that is more suitable for a bounding small circle than
+		 * @a calculate_interior_centroid - in other words the bounding small circle will generally
+		 * be a tighter fit.
+		 *
 		 * NOTE: Returns the first point of the first arc if the weighted average centroid is the zero vector.
 		 */
 		inline
 		UnitVector3D
-		calculate_edges_centroid(
+		calculate_outline_centroid(
 				const PolygonOnSphere &polygon)
 		{
-			return calculate_edges_centroid(polygon.begin(), polygon.end());
+			return calculate_outline_centroid(polygon.begin(), polygon.end());
 		}
 
 
 		/**
 		 * Calculates the centroid of a sequence of @a GreatCircleArc objects using
-		 * spherical area weighting to get a more accurate result.
+		 * spherical area weighting.
+		 *
+		 * This centroid can be considered a centre-of-mass type of centroid since it considers
+		 * the sequence of edges as a contiguous boundary with an interior region and the calculated
+		 * centroid is weighted according to the area coverage of the interior region.
+		 * For example a bottom-heavy pear-shaped polygon will have a spherical centroid closer
+		 * to the bottom whereas a the outline centroid (see @a calculate_outline_centroid) will
+		 * be closer to the middle of the pear.
 		 *
 		 * NOTE: Returns the first point of the first arc if the area weighted triangle centroids
 		 * sum to the zero vector.
@@ -270,36 +221,22 @@ namespace GPlatesMaths
 		 */
 		template <typename EdgeForwardIter>
 		UnitVector3D
-		calculate_spherical_centroid(
+		calculate_interior_centroid(
 				EdgeForwardIter begin,
 				EdgeForwardIter end);
 
 		/**
-		 * Calculates the centroid of @a polyline using spherical area weighting to get a more accurate result.
+		 * Calculates the centroid of @a polygon using spherical area weighting.
 		 *
 		 * NOTE: Returns the first point of the first arc if centroid cannot be determined because
 		 * area weighted triangle centroids sum to the zero vector.
 		 */
 		inline
 		UnitVector3D
-		calculate_spherical_centroid(
-				const PolylineOnSphere &polyline)
-		{
-			return calculate_spherical_centroid(polyline.begin(), polyline.end());
-		}
-
-		/**
-		 * Calculates the centroid of @a polygon using spherical area weighting to get a more accurate result.
-		 *
-		 * NOTE: Returns the first point of the first arc if centroid cannot be determined because
-		 * area weighted triangle centroids sum to the zero vector.
-		 */
-		inline
-		UnitVector3D
-		calculate_spherical_centroid(
+		calculate_interior_centroid(
 				const PolygonOnSphere &polygon)
 		{
-			return calculate_spherical_centroid(polygon.begin(), polygon.end());
+			return calculate_interior_centroid(polygon.begin(), polygon.end());
 		}
 	}
 }
@@ -436,7 +373,7 @@ namespace GPlatesMaths
 
 		template <typename EdgeForwardIter>
 		UnitVector3D
-		calculate_edges_centroid(
+		calculate_outline_centroid(
 				EdgeForwardIter edges_begin,
 				EdgeForwardIter edges_end)
 		{
@@ -495,7 +432,7 @@ namespace GPlatesMaths
 
 		template <typename EdgeForwardIter>
 		UnitVector3D
-		calculate_spherical_centroid(
+		calculate_interior_centroid(
 				EdgeForwardIter edges_begin,
 				EdgeForwardIter edges_end)
 		{
@@ -650,14 +587,6 @@ namespace GPlatesMaths
 			}
 
 			return area_weighted_centroid.get_normalisation();
-		}
-
-		inline
-		UnitVector3D
-		calculate_centroid(
-				const MultiPointOnSphere &multi_point)
-		{
-			return calculate_points_centroid(multi_point.begin(), multi_point.end());
 		}
 	}
 }

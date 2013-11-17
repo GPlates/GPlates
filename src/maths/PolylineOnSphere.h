@@ -805,7 +805,7 @@ namespace GPlatesMaths
 		//
 
 		/**
-		 * Returns the sum of the points in this polyline (normalised).
+		 * Returns the centroid of the edges of this polyline (see @a Centroid::calculate_outline_centroid).
 		 *
 		 * The result is cached on first call.
 		 */

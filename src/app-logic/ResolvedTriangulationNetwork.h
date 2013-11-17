@@ -541,7 +541,7 @@ namespace GPlatesAppLogic
 				d_network_boundary_polygon(network_boundary_polygon),
 				d_rigid_blocks(rigid_blocks_begin, rigid_blocks_end),
 				d_projection(
-						GPlatesMaths::PointOnSphere(network_boundary_polygon->get_centroid()),
+						GPlatesMaths::PointOnSphere(network_boundary_polygon->get_boundary_centroid()),
 						EARTH_RADIUS_METRES),
 				d_build_info(
 						delaunay_points_begin, delaunay_points_end,

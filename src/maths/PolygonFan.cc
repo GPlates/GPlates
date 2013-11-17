@@ -148,7 +148,7 @@ GPlatesMaths::PolygonFan::create(
 	polygon_fan->initialise(
 			polygon->vertex_begin(),
 			polygon->number_of_vertices(),
-			polygon->get_centroid());
+			polygon->get_boundary_centroid());
 
 	return non_null_ptr_to_const_type(polygon_fan);
 }

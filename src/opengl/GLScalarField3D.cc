@@ -3662,7 +3662,7 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::visit_po
 	render_surface_fill_mask(
 			polygon_on_sphere->vertex_begin(),
 			polygon_on_sphere->number_of_vertices(),
-			polygon_on_sphere->get_centroid());
+			polygon_on_sphere->get_boundary_centroid());
 }
 
 
@@ -3977,7 +3977,7 @@ GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::visit
 	render_volume_fill_boundary(
 			polygon_on_sphere->begin(),
 			polygon_on_sphere->end(),
-			polygon_on_sphere->get_centroid());
+			polygon_on_sphere->get_boundary_centroid());
 }
 
 

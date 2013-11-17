@@ -272,7 +272,7 @@ GPlatesMaths::PolylineOnSphere::get_centroid() const
 		}
 		else
 		{
-			d_cached_calculations->centroid = Centroid::calculate_centroid(*this);
+			d_cached_calculations->centroid = Centroid::calculate_outline_centroid(*this);
 		}
 	}
 

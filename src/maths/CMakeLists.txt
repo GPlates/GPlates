@@ -19,7 +19,6 @@ set(srcs
     CalculateVelocity.h
     CartesianConvMatrix3D.cc
     CartesianConvMatrix3D.h
-    Centroid.cc
     Centroid.h
     ConstGeometryOnSphereVisitor.h
     CubeCoordinateFrame.cc

@@ -73,7 +73,8 @@ namespace GPlatesMaths
 						GPLATES_ASSERTION_SOURCE);
 			}
 
-			boost::optional<UnitVector3D> centroid;
+			boost::optional<UnitVector3D> boundary_centroid;
+			boost::optional<UnitVector3D> interior_centroid;
 			boost::optional<InnerOuterBoundingSmallCircle> inner_outer_bounding_small_circle;
 			boost::optional<real_t> area;
 			boost::optional<PolygonOrientation::Orientation> orientation;
@@ -307,7 +308,7 @@ GPlatesMaths::PolygonOnSphere::create_segment_and_append_to_seq(
 
 
 const GPlatesMaths::UnitVector3D &
-GPlatesMaths::PolygonOnSphere::get_centroid() const
+GPlatesMaths::PolygonOnSphere::get_boundary_centroid() const
 {
 	if (!d_cached_calculations)
 	{
@@ -315,12 +316,30 @@ GPlatesMaths::PolygonOnSphere::get_centroid() const
 	}
 
 	// Calculate the centroid if it's not cached.
-	if (!d_cached_calculations->centroid)
+	if (!d_cached_calculations->boundary_centroid)
 	{
-		d_cached_calculations->centroid = Centroid::calculate_centroid(*this);
+		d_cached_calculations->boundary_centroid = Centroid::calculate_outline_centroid(*this);
 	}
 
-	return d_cached_calculations->centroid.get();
+	return d_cached_calculations->boundary_centroid.get();
+}
+
+
+const GPlatesMaths::UnitVector3D &
+GPlatesMaths::PolygonOnSphere::get_interior_centroid() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the centroid if it's not cached.
+	if (!d_cached_calculations->interior_centroid)
+	{
+		d_cached_calculations->interior_centroid = Centroid::calculate_interior_centroid(*this);
+	}
+
+	return d_cached_calculations->interior_centroid.get();
 }
 
 
@@ -342,8 +361,9 @@ GPlatesMaths::PolygonOnSphere::get_inner_outer_bounding_small_circle() const
 	// Calculate the inner/outer bounding small circle if it's not cached.
 	if (!d_cached_calculations->inner_outer_bounding_small_circle)
 	{
-		// The centroid will be the bounding small circle centre.
-		InnerOuterBoundingSmallCircleBuilder inner_outer_bounding_small_circle_builder(get_centroid());
+		// The boundary centroid will be the bounding small circle centre.
+		InnerOuterBoundingSmallCircleBuilder inner_outer_bounding_small_circle_builder(
+				get_boundary_centroid());
 		// Add the polygon great-circle-arc sections to define the inner/outer bounds.
 		inner_outer_bounding_small_circle_builder.add(*this);
 

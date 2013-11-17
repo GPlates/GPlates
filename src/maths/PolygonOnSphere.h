@@ -611,17 +611,31 @@ namespace GPlatesMaths
 		//
 
 		/**
-		 * Returns the sum of the points in this polygon (normalised).
+		 * Returns the centroid of the *edges* of this polygon (see @a Centroid::calculate_outline_centroid).
+		 *
+		 * This centroid is useful for the centre of a small circle that bounds this polygon.
 		 *
 		 * The result is cached on first call.
 		 */
 		const UnitVector3D &
-		get_centroid() const;
+		get_boundary_centroid() const;
+
+
+		/**
+		 * Returns the centroid of the *interior* of this polygon (see @a Centroid::calculate_outline_centroid).
+		 *
+		 * This centroid is useful when the centroid should be closer to the centre-of-mass of
+		 * the polygon interior.
+		 *
+		 * The result is cached on first call.
+		 */
+		const UnitVector3D &
+		get_interior_centroid() const;
 
 
 		/**
 		 * Returns the small circle that bounds this polygon - the small circle centre
-		 * is the same as calculated by @a get_centroid.
+		 * is the same as calculated by @a get_boundary_centroid.
 		 *
 		 * The result is cached on first call.
 		 */
@@ -631,7 +645,7 @@ namespace GPlatesMaths
 
 		/**
 		 * Returns the inner and outer small circle bounds of this polygon - the small circle centre
-		 * is the same as calculated by @a get_centroid.
+		 * is the same as calculated by @a get_boundary_centroid.
 		 *
 		 * The result is cached on first call.
 		 */

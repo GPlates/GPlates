@@ -55,13 +55,7 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Finds the point antipodal to the centroid (average vertex) of the polygon.
-		 *
-		 * If the centroid is the origin then attempts to recalculate centroid by summing
-		 * the edge midpoints.
-		 *
-		 * FIXME: Use a more accurate heuristic to determine the antipodal point such as
-		 * using area of spherical polygon.
+		 * Finds the point antipodal to the centroid of the polygon boundary.
 		 *
 		 * FIXME: It is still possible for the antipodal point of the polygon centroid
 		 * to be inside the polygon for some polygon arrangements. Simply assuming it's
@@ -85,23 +79,7 @@ namespace GPlatesMaths
 		get_polygon_centroid(
 				const PolygonOnSphere &polygon)
 		{
-			// Iterate through the polygon vertices and calculate the sum of vertex positions.
-			Vector3D summed_position(0,0,0);
-			PolygonOnSphere::vertex_const_iterator vertex_iter = polygon.vertex_begin();
-			const PolygonOnSphere::vertex_const_iterator vertex_end = polygon.vertex_end();
-			for ( ; vertex_iter != vertex_end; ++vertex_iter)
-			{
-				const GPlatesMaths::UnitVector3D centroid =
-						Centroid::calculate_centroid(
-								polygon,
-								0.3/*polygon forms cone of roughly 145 degrees*/);
-
-				// Return the centroid.
-				return centroid;
-			}
-
-			// Return the centroid.
-			return summed_position.get_normalisation();
+			return polygon.get_boundary_centroid();
 		}
 
 

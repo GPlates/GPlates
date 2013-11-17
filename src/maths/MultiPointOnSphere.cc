@@ -220,7 +220,7 @@ GPlatesMaths::MultiPointOnSphere::get_centroid() const
 	// Calculate the centroid if it's not cached.
 	if (!d_cached_calculations->centroid)
 	{
-		d_cached_calculations->centroid = Centroid::calculate_centroid(*this);
+		d_cached_calculations->centroid = Centroid::calculate_points_centroid(*this);
 	}
 
 	return d_cached_calculations->centroid.get();
