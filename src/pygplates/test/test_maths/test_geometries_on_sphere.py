@@ -279,7 +279,9 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertTrue(slice[1] == pygplates.GreatCircleArc(self.points[3], self.points[0]))
     
     def test_arc_length(self):
-        self.assertTrue(isinstance(self.polygon.get_arc_length(), float))
+        arc_length = self.polygon.get_arc_length()
+        # Polygon boundary is exactly four times 90 degrees.
+        self.assertTrue(arc_length > 2 * math.pi - 1e-6 and arc_length < 2 * math.pi + 1e-6)
     
     def test_area(self):
         area = self.polygon.get_area()

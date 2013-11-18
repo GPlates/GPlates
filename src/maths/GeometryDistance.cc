@@ -25,6 +25,7 @@
 
 #include "GeometryDistance.h"
 
+#include "ConstGeometryOnSphereVisitor.h"
 #include "PolyGreatCircleArcBoundingTree.h"
 
 #include "global/AssertionFailureException.h"
@@ -35,6 +36,520 @@ namespace GPlatesMaths
 {
 	namespace
 	{
+		/**
+		 * Find the minimum distance between two derived @a GeometryOnSphere objects.
+		 */
+		class MinimumDistanceBetweenGeometryOnSpheres :
+				public ConstGeometryOnSphereVisitor
+		{
+		public:
+
+			explicit
+			MinimumDistanceBetweenGeometryOnSpheres(
+					const GeometryOnSphere &second_geometry,
+					bool geometry1_interior_is_solid,
+					bool geometry2_interior_is_solid,
+					AngularDistance &minimum_distance,
+					const boost::optional<const AngularExtent &> &minimum_distance_threshold,
+					const boost::optional<
+							boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
+									> &closest_positions) :
+				d_second_geometry(second_geometry),
+				d_geometry1_interior_is_solid(geometry1_interior_is_solid),
+				d_geometry2_interior_is_solid(geometry2_interior_is_solid),
+				d_minimum_distance(minimum_distance),
+				d_minimum_distance_threshold(minimum_distance_threshold),
+				d_closest_positions(closest_positions)
+			{  }
+
+			virtual
+			void
+			visit_point_on_sphere(
+					PointOnSphere::non_null_ptr_to_const_type point_on_sphere1)
+			{
+				/**
+				 * Minimum distance between a PointOnSphere and a GeometryOnSphere.
+				 */
+				class PointOnSphereVisitor :
+						public ConstGeometryOnSphereVisitor
+				{
+				public:
+
+					explicit
+					PointOnSphereVisitor(
+							const PointOnSphere &point_on_sphere1,
+							bool geometry2_interior_is_solid,
+							AngularDistance &minimum_distance,
+							const boost::optional<const AngularExtent &> &minimum_distance_threshold,
+							const boost::optional<
+									boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
+											> &closest_positions) :
+						d_point_on_sphere1(point_on_sphere1),
+						d_geometry2_interior_is_solid(geometry2_interior_is_solid),
+						d_minimum_distance(minimum_distance),
+						d_minimum_distance_threshold(minimum_distance_threshold),
+						d_closest_positions(closest_positions)
+					{  }
+
+					virtual
+					void
+					visit_point_on_sphere(
+							PointOnSphere::non_null_ptr_to_const_type point_on_sphere2)
+					{
+						d_minimum_distance = minimum_distance(
+								d_point_on_sphere1,
+								*point_on_sphere2,
+								d_minimum_distance_threshold);
+
+						if (d_closest_positions)
+						{
+							boost::get<0>(d_closest_positions.get()) = d_point_on_sphere1.position_vector();
+							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position_vector();
+						}
+					}
+
+					virtual
+					void
+					visit_multi_point_on_sphere(
+							MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere2)
+					{
+						boost::optional<UnitVector3D &> closest_position_in_multipoint2;
+						if (d_closest_positions)
+						{
+							closest_position_in_multipoint2 = boost::get<1>(d_closest_positions.get());
+						}
+
+						d_minimum_distance = minimum_distance(
+								d_point_on_sphere1,
+								*multi_point_on_sphere2,
+								d_minimum_distance_threshold,
+								closest_position_in_multipoint2);
+
+						if (d_closest_positions)
+						{
+							boost::get<0>(d_closest_positions.get()) = d_point_on_sphere1.position_vector();
+						}
+					}
+
+					virtual
+					void
+					visit_polygon_on_sphere(
+							PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere2)
+					{
+						boost::optional<UnitVector3D &> closest_position_on_polygon2;
+						if (d_closest_positions)
+						{
+							closest_position_on_polygon2 = boost::get<1>(d_closest_positions.get());
+						}
+
+						d_minimum_distance = minimum_distance(
+								d_point_on_sphere1,
+								*polygon_on_sphere2,
+								d_geometry2_interior_is_solid,
+								d_minimum_distance_threshold,
+								closest_position_on_polygon2);
+
+						if (d_closest_positions)
+						{
+							boost::get<0>(d_closest_positions.get()) = d_point_on_sphere1.position_vector();
+						}
+					}
+
+					virtual
+					void
+					visit_polyline_on_sphere(
+							PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere2)
+					{
+						boost::optional<UnitVector3D &> closest_position_on_polyline2;
+						if (d_closest_positions)
+						{
+							closest_position_on_polyline2 = boost::get<1>(d_closest_positions.get());
+						}
+
+						d_minimum_distance = minimum_distance(
+								d_point_on_sphere1,
+								*polyline_on_sphere2,
+								d_minimum_distance_threshold,
+								closest_position_on_polyline2);
+
+						if (d_closest_positions)
+						{
+							boost::get<0>(d_closest_positions.get()) = d_point_on_sphere1.position_vector();
+						}
+					}
+
+				private:
+
+					const PointOnSphere &d_point_on_sphere1;
+					bool d_geometry2_interior_is_solid;
+					AngularDistance &d_minimum_distance;
+					const boost::optional<const AngularExtent &> &d_minimum_distance_threshold;
+					const boost::optional<
+							boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
+									> &d_closest_positions;
+				};
+
+				PointOnSphereVisitor visitor(
+						*point_on_sphere1,
+						d_geometry2_interior_is_solid,
+						d_minimum_distance,
+						d_minimum_distance_threshold,
+						d_closest_positions);
+
+				d_second_geometry.accept_visitor(visitor);
+			}
+
+			virtual
+			void
+			visit_multi_point_on_sphere(
+					MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere1)
+			{
+				/**
+				 * Minimum distance between a MultiPointOnSphere and a GeometryOnSphere.
+				 */
+				class MultiPointOnSphereVisitor :
+						public ConstGeometryOnSphereVisitor
+				{
+				public:
+
+					explicit
+					MultiPointOnSphereVisitor(
+							const MultiPointOnSphere &multi_point_on_sphere1,
+							bool geometry2_interior_is_solid,
+							AngularDistance &minimum_distance,
+							const boost::optional<const AngularExtent &> &minimum_distance_threshold,
+							const boost::optional<
+									boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
+											> &closest_positions) :
+						d_multi_point_on_sphere1(multi_point_on_sphere1),
+						d_geometry2_interior_is_solid(geometry2_interior_is_solid),
+						d_minimum_distance(minimum_distance),
+						d_minimum_distance_threshold(minimum_distance_threshold),
+						d_closest_positions(closest_positions)
+					{  }
+
+					virtual
+					void
+					visit_point_on_sphere(
+							PointOnSphere::non_null_ptr_to_const_type point_on_sphere2)
+					{
+						boost::optional<UnitVector3D &> closest_position_in_multipoint1;
+						if (d_closest_positions)
+						{
+							closest_position_in_multipoint1 = boost::get<0>(d_closest_positions.get());
+						}
+
+						d_minimum_distance = minimum_distance(
+								d_multi_point_on_sphere1,
+								*point_on_sphere2,
+								d_minimum_distance_threshold,
+								closest_position_in_multipoint1);
+
+						if (d_closest_positions)
+						{
+							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position_vector();
+						}
+					}
+
+					virtual
+					void
+					visit_multi_point_on_sphere(
+							MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere2)
+					{
+						d_minimum_distance = minimum_distance(
+								d_multi_point_on_sphere1,
+								*multi_point_on_sphere2,
+								d_minimum_distance_threshold,
+								d_closest_positions);
+					}
+
+					virtual
+					void
+					visit_polygon_on_sphere(
+							PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere2)
+					{
+						d_minimum_distance = minimum_distance(
+								d_multi_point_on_sphere1,
+								*polygon_on_sphere2,
+								d_geometry2_interior_is_solid,
+								d_minimum_distance_threshold,
+								d_closest_positions);
+					}
+
+					virtual
+					void
+					visit_polyline_on_sphere(
+							PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere2)
+					{
+						d_minimum_distance = minimum_distance(
+								d_multi_point_on_sphere1,
+								*polyline_on_sphere2,
+								d_minimum_distance_threshold,
+								d_closest_positions);
+					}
+
+				private:
+
+					const MultiPointOnSphere &d_multi_point_on_sphere1;
+					bool d_geometry2_interior_is_solid;
+					AngularDistance &d_minimum_distance;
+					const boost::optional<const AngularExtent &> &d_minimum_distance_threshold;
+					const boost::optional<
+							boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
+									> &d_closest_positions;
+				};
+
+				MultiPointOnSphereVisitor visitor(
+						*multi_point_on_sphere1,
+						d_geometry2_interior_is_solid,
+						d_minimum_distance,
+						d_minimum_distance_threshold,
+						d_closest_positions);
+
+				d_second_geometry.accept_visitor(visitor);
+			}
+
+			virtual
+			void
+			visit_polygon_on_sphere(
+					PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere1)
+			{
+				/**
+				 * Minimum distance between a PolygonOnSphere and a GeometryOnSphere.
+				 */
+				class PolygonOnSphereVisitor :
+						public ConstGeometryOnSphereVisitor
+				{
+				public:
+
+					explicit
+					PolygonOnSphereVisitor(
+							const PolygonOnSphere &polygon_on_sphere1,
+							bool geometry1_interior_is_solid,
+							bool geometry2_interior_is_solid,
+							AngularDistance &minimum_distance,
+							const boost::optional<const AngularExtent &> &minimum_distance_threshold,
+							const boost::optional<
+									boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
+											> &closest_positions) :
+						d_polygon_on_sphere1(polygon_on_sphere1),
+						d_geometry1_interior_is_solid(geometry1_interior_is_solid),
+						d_geometry2_interior_is_solid(geometry2_interior_is_solid),
+						d_minimum_distance(minimum_distance),
+						d_minimum_distance_threshold(minimum_distance_threshold),
+						d_closest_positions(closest_positions)
+					{  }
+
+					virtual
+					void
+					visit_point_on_sphere(
+							PointOnSphere::non_null_ptr_to_const_type point_on_sphere2)
+					{
+						boost::optional<UnitVector3D &> closest_position_on_polygon1;
+						if (d_closest_positions)
+						{
+							closest_position_on_polygon1 = boost::get<0>(d_closest_positions.get());
+						}
+
+						d_minimum_distance = minimum_distance(
+								d_polygon_on_sphere1,
+								*point_on_sphere2,
+								d_geometry1_interior_is_solid,
+								d_minimum_distance_threshold,
+								closest_position_on_polygon1);
+
+						if (d_closest_positions)
+						{
+							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position_vector();
+						}
+					}
+
+					virtual
+					void
+					visit_multi_point_on_sphere(
+							MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere2)
+					{
+						d_minimum_distance = minimum_distance(
+								d_polygon_on_sphere1,
+								*multi_point_on_sphere2,
+								d_geometry1_interior_is_solid,
+								d_minimum_distance_threshold,
+								d_closest_positions);
+					}
+
+					virtual
+					void
+					visit_polygon_on_sphere(
+							PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere2)
+					{
+						d_minimum_distance = minimum_distance(
+								d_polygon_on_sphere1,
+								*polygon_on_sphere2,
+								d_geometry1_interior_is_solid,
+								d_geometry2_interior_is_solid,
+								d_minimum_distance_threshold,
+								d_closest_positions);
+					}
+
+					virtual
+					void
+					visit_polyline_on_sphere(
+							PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere2)
+					{
+						d_minimum_distance = minimum_distance(
+								d_polygon_on_sphere1,
+								*polyline_on_sphere2,
+								d_geometry1_interior_is_solid,
+								d_minimum_distance_threshold,
+								d_closest_positions);
+					}
+
+				private:
+
+					const PolygonOnSphere &d_polygon_on_sphere1;
+					bool d_geometry1_interior_is_solid;
+					bool d_geometry2_interior_is_solid;
+					AngularDistance &d_minimum_distance;
+					const boost::optional<const AngularExtent &> &d_minimum_distance_threshold;
+					const boost::optional<
+							boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
+									> &d_closest_positions;
+				};
+
+				PolygonOnSphereVisitor visitor(
+						*polygon_on_sphere1,
+						d_geometry1_interior_is_solid,
+						d_geometry2_interior_is_solid,
+						d_minimum_distance,
+						d_minimum_distance_threshold,
+						d_closest_positions);
+
+				d_second_geometry.accept_visitor(visitor);
+			}
+
+			virtual
+			void
+			visit_polyline_on_sphere(
+					PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere1)
+			{
+				/**
+				 * Minimum distance between a PolylineOnSphere and a GeometryOnSphere.
+				 */
+				class PolylineOnSphereVisitor :
+						public ConstGeometryOnSphereVisitor
+				{
+				public:
+
+					explicit
+					PolylineOnSphereVisitor(
+							const PolylineOnSphere &polyline_on_sphere1,
+							bool geometry2_interior_is_solid,
+							AngularDistance &minimum_distance,
+							const boost::optional<const AngularExtent &> &minimum_distance_threshold,
+							const boost::optional<
+									boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
+											> &closest_positions) :
+						d_polyline_on_sphere1(polyline_on_sphere1),
+						d_geometry2_interior_is_solid(geometry2_interior_is_solid),
+						d_minimum_distance(minimum_distance),
+						d_minimum_distance_threshold(minimum_distance_threshold),
+						d_closest_positions(closest_positions)
+					{  }
+
+					virtual
+					void
+					visit_point_on_sphere(
+							PointOnSphere::non_null_ptr_to_const_type point_on_sphere2)
+					{
+						boost::optional<UnitVector3D &> closest_position_on_polyline1;
+						if (d_closest_positions)
+						{
+							closest_position_on_polyline1 = boost::get<0>(d_closest_positions.get());
+						}
+
+						d_minimum_distance = minimum_distance(
+								d_polyline_on_sphere1,
+								*point_on_sphere2,
+								d_minimum_distance_threshold,
+								closest_position_on_polyline1);
+
+						if (d_closest_positions)
+						{
+							boost::get<1>(d_closest_positions.get()) = point_on_sphere2->position_vector();
+						}
+					}
+
+					virtual
+					void
+					visit_multi_point_on_sphere(
+							MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere2)
+					{
+						d_minimum_distance = minimum_distance(
+								d_polyline_on_sphere1,
+								*multi_point_on_sphere2,
+								d_minimum_distance_threshold,
+								d_closest_positions);
+					}
+
+					virtual
+					void
+					visit_polygon_on_sphere(
+							PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere2)
+					{
+						d_minimum_distance = minimum_distance(
+								d_polyline_on_sphere1,
+								*polygon_on_sphere2,
+								d_geometry2_interior_is_solid,
+								d_minimum_distance_threshold,
+								d_closest_positions);
+					}
+
+					virtual
+					void
+					visit_polyline_on_sphere(
+							PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere2)
+					{
+						d_minimum_distance = minimum_distance(
+								d_polyline_on_sphere1,
+								*polyline_on_sphere2,
+								d_minimum_distance_threshold,
+								d_closest_positions);
+					}
+
+				private:
+
+					const PolylineOnSphere &d_polyline_on_sphere1;
+					bool d_geometry2_interior_is_solid;
+					AngularDistance &d_minimum_distance;
+					const boost::optional<const AngularExtent &> &d_minimum_distance_threshold;
+					const boost::optional<
+							boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
+									> &d_closest_positions;
+				};
+
+				PolylineOnSphereVisitor visitor(
+						*polyline_on_sphere1,
+						d_geometry2_interior_is_solid,
+						d_minimum_distance,
+						d_minimum_distance_threshold,
+						d_closest_positions);
+
+				d_second_geometry.accept_visitor(visitor);
+			}
+
+		private:
+
+			const GeometryOnSphere &d_second_geometry;
+			bool d_geometry1_interior_is_solid;
+			bool d_geometry2_interior_is_solid;
+			AngularDistance &d_minimum_distance;
+			const boost::optional<const AngularExtent &> &d_minimum_distance_threshold;
+			const boost::optional<
+					boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
+							> &d_closest_positions;
+		};
+
+
 		/**
 		 * Calculate (and update) the minimum distance between a point and a polyline or polygon.
 		 */
@@ -408,6 +923,31 @@ namespace GPlatesMaths
 
 GPlatesMaths::AngularDistance
 GPlatesMaths::minimum_distance(
+		const GeometryOnSphere &geometry1,
+		const GeometryOnSphere &geometry2,
+		bool geometry1_interior_is_solid,
+		bool geometry2_interior_is_solid,
+		boost::optional<const AngularExtent &> minimum_distance_threshold,
+		boost::optional< boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/> > closest_positions)
+{
+	AngularDistance minimum_distance(AngularDistance::PI);
+
+	MinimumDistanceBetweenGeometryOnSpheres visitor(
+			geometry2,
+			geometry1_interior_is_solid,
+			geometry2_interior_is_solid,
+			minimum_distance,
+			minimum_distance_threshold,
+			closest_positions);
+
+	geometry1.accept_visitor(visitor);
+
+	return minimum_distance;
+}
+
+
+GPlatesMaths::AngularDistance
+GPlatesMaths::minimum_distance(
 		const PointOnSphere &point1,
 		const PointOnSphere &point2,
 		boost::optional<const AngularExtent &> minimum_distance_threshold)
@@ -439,9 +979,21 @@ GPlatesMaths::minimum_distance(
 	// is not within the minimum distance threshold (if any).
 	AngularDistance min_distance = AngularDistance::PI;
 
-	AngularExtent min_distance_threshold = minimum_distance_threshold_opt
-			? minimum_distance_threshold_opt.get()
-			: AngularExtent::PI;
+	AngularExtent min_distance_threshold = AngularExtent::PI;
+	
+	// If caller specified a threshold.
+	if (minimum_distance_threshold_opt)
+	{
+		min_distance_threshold = minimum_distance_threshold_opt.get();
+
+		// If the point is further away, from the multi-point's bounding small circle, than the
+		// threshold then return the maximum possible distance (PI) to signal this.
+		if (minimum_distance(point, multipoint.get_bounding_small_circle())
+			.is_precisely_greater_than(min_distance_threshold))
+		{
+			return AngularDistance::PI;
+		}
+	}
 
 	// Iterate over the points in the multi-point.
 	MultiPointOnSphere::const_iterator multipoint_iter = multipoint.begin();
@@ -602,38 +1154,79 @@ GPlatesMaths::minimum_distance(
 	// is not within the minimum distance threshold (if any).
 	AngularDistance min_distance = AngularDistance::PI;
 
-	AngularExtent min_distance_threshold = minimum_distance_threshold_opt
-			? minimum_distance_threshold_opt.get()
-			: AngularExtent::PI;
-
-	// Iterate over the points in the first multi-point.
-	MultiPointOnSphere::const_iterator multipoint1_iter = multipoint1.begin();
-	MultiPointOnSphere::const_iterator multipoint1_end = multipoint1.end();
-	for ( ; multipoint1_iter != multipoint1_end; ++multipoint1_iter)
+	AngularExtent min_distance_threshold = AngularExtent::PI;
+	
+	// If caller specified a threshold.
+	if (minimum_distance_threshold_opt)
 	{
-		const PointOnSphere &multipoint1_point = *multipoint1_iter;
+		min_distance_threshold = minimum_distance_threshold_opt.get();
 
-		// Iterate over the points in the second multi-point.
-		MultiPointOnSphere::const_iterator multipoint2_iter = multipoint2.begin();
-		MultiPointOnSphere::const_iterator multipoint2_end = multipoint2.end();
-		for ( ; multipoint2_iter != multipoint2_end; ++multipoint2_iter)
+		// If the bounding small circles of the two multi-points are further away than the
+		// threshold then return the maximum possible distance (PI) to signal this.
+		if (minimum_distance(
+				multipoint1.get_bounding_small_circle(),
+				multipoint2.get_bounding_small_circle())
+			.is_precisely_greater_than(min_distance_threshold))
 		{
-			const PointOnSphere &multipoint2_point = *multipoint2_iter;
+			return AngularDistance::PI;
+		}
+	}
 
-			const AngularDistance min_distance_between_points =
-					AngularDistance::create_from_cosine(
-							dot(multipoint1_point.position_vector(), multipoint2_point.position_vector()));
+	boost::optional<UnitVector3D &> closest_position_in_smaller_multipoint;
+	boost::optional<UnitVector3D &> closest_position_in_larger_multipoint;
 
-			// If shortest distance so far (within threshold)...
-			if (min_distance_between_points.is_precisely_less_than(min_distance) &&
-				min_distance_between_points.is_precisely_less_than(min_distance_threshold))
+	const MultiPointOnSphere *larger_multipoint = NULL;
+	const MultiPointOnSphere *smaller_multipoint = NULL;
+
+	// Recurse into the larger multi-point first.
+	// This gives the greatest chance of early rejection of point-to-multi-point minimum distances.
+	if (multipoint1.get_bounding_small_circle().get_angular_extent().is_precisely_greater_than(
+		multipoint2.get_bounding_small_circle().get_angular_extent()))
+	{
+		larger_multipoint = &multipoint1;
+		smaller_multipoint = &multipoint2;
+
+		if (closest_positions)
+		{
+			closest_position_in_larger_multipoint = boost::get<0>(closest_positions.get());
+			closest_position_in_smaller_multipoint = boost::get<1>(closest_positions.get());
+		}
+	}
+	else // second multi-point is larger...
+	{
+		larger_multipoint = &multipoint2;
+		smaller_multipoint = &multipoint1;
+
+		if (closest_positions)
+		{
+			closest_position_in_larger_multipoint = boost::get<1>(closest_positions.get());
+			closest_position_in_smaller_multipoint = boost::get<0>(closest_positions.get());
+		}
+	}
+
+	// Iterate over the points in the larger multi-point.
+	MultiPointOnSphere::const_iterator larger_multipoint_iter = larger_multipoint->begin();
+	MultiPointOnSphere::const_iterator larger_multipoint_end = larger_multipoint->end();
+	for ( ; larger_multipoint_iter != larger_multipoint_end; ++larger_multipoint_iter)
+	{
+		const PointOnSphere &larger_multipoint_point = *larger_multipoint_iter;
+
+		const AngularDistance min_distance_larger_multipoint_point_to_smaller_multipoint =
+				minimum_distance(
+						larger_multipoint_point,
+						*smaller_multipoint,
+						min_distance_threshold,
+						closest_position_in_smaller_multipoint);
+
+		// If shortest distance so far (within threshold)...
+		if (min_distance_larger_multipoint_point_to_smaller_multipoint.is_precisely_less_than(min_distance) &&
+			min_distance_larger_multipoint_point_to_smaller_multipoint.is_precisely_less_than(min_distance_threshold))
+		{
+			min_distance = min_distance_larger_multipoint_point_to_smaller_multipoint;
+			min_distance_threshold = AngularExtent(min_distance);
+			if (closest_position_in_larger_multipoint)
 			{
-				min_distance = min_distance_between_points;
-				if (closest_positions)
-				{
-					boost::get<0>(closest_positions.get()) = multipoint1_point.position_vector();
-					boost::get<1>(closest_positions.get()) = multipoint2_point.position_vector();
-				}
+				closest_position_in_larger_multipoint.get() = larger_multipoint_point.position_vector();
 			}
 		}
 	}
@@ -653,9 +1246,23 @@ GPlatesMaths::minimum_distance(
 	// is not within the minimum distance threshold (if any).
 	AngularDistance min_distance = AngularDistance::PI;
 
-	AngularExtent min_distance_threshold = minimum_distance_threshold_opt
-			? minimum_distance_threshold_opt.get()
-			: AngularExtent::PI;
+	AngularExtent min_distance_threshold = AngularExtent::PI;
+	
+	// If caller specified a threshold.
+	if (minimum_distance_threshold_opt)
+	{
+		min_distance_threshold = minimum_distance_threshold_opt.get();
+
+		// If the bounding small circles of the multi-point and the polyline are further away than
+		// the threshold then return the maximum possible distance (PI) to signal this.
+		if (minimum_distance(
+				multipoint.get_bounding_small_circle(),
+				polyline.get_bounding_small_circle())
+			.is_precisely_greater_than(min_distance_threshold))
+		{
+			return AngularDistance::PI;
+		}
+	}
 
 	boost::optional<UnitVector3D &> closest_position_in_multipoint;
 	boost::optional<UnitVector3D &> closest_position_on_polyline;
@@ -708,9 +1315,23 @@ GPlatesMaths::minimum_distance(
 	// is not within the minimum distance threshold (if any).
 	AngularDistance min_distance = AngularDistance::PI;
 
-	AngularExtent min_distance_threshold = minimum_distance_threshold_opt
-			? minimum_distance_threshold_opt.get()
-			: AngularExtent::PI;
+	AngularExtent min_distance_threshold = AngularExtent::PI;
+	
+	// If caller specified a threshold.
+	if (minimum_distance_threshold_opt)
+	{
+		min_distance_threshold = minimum_distance_threshold_opt.get();
+
+		// If the bounding small circles of the multi-point and the polygon are further away than
+		// the threshold then return the maximum possible distance (PI) to signal this.
+		if (minimum_distance(
+				multipoint.get_bounding_small_circle(),
+				polygon.get_bounding_small_circle())
+			.is_precisely_greater_than(min_distance_threshold))
+		{
+			return AngularDistance::PI;
+		}
+	}
 
 	boost::optional<UnitVector3D &> closest_position_in_multipoint;
 	boost::optional<UnitVector3D &> closest_position_on_polygon;

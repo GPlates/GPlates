@@ -42,6 +42,41 @@
 namespace GPlatesMaths
 {
 	/**
+	 * Returns the minimum angular distance between two @a GeometryOnSphere objects.
+	 *
+	 * Each geometry can be any of the four derived geometry types (PointOnSphere, MultiPointOnSphere,
+	 * PolylineOnSphere and PolygonOnSphere) and they don't have to be the same type.
+	 *
+	 * If @a geometry1_interior_is_solid is true (and @a geometry1 is a PolygonOnSphere) then if any
+	 * part of @a geometry2 intersects the interior of the @a geometry1 PolygonOnSphere the returned
+	 * distance will be zero, otherwise the distance to the outline of the @a geometry1 PolygonOnSphere.
+	 * If @a geometry2_interior_is_solid is true (and @a geometry2 is a PolygonOnSphere) then if any
+	 * part of @a geometry1 intersects the interior of the @a geometry2 PolygonOnSphere the returned
+	 * distance will be zero, otherwise the distance to the outline of the @a geometry2 PolygonOnSphere.
+	 * NOTE: @a geometry1_interior_is_solid (@a geometry2_interior_is_solid) is ignored if
+	 * @a geometry1 (@a geometry2) is not a PolygonOnSphere.
+	 *
+	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
+	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
+	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * @a closest_positions (even if it's not none).
+	 *
+	 * If @a closest_positions is specified then the closest point on each geometry
+	 * is stored in the unit vectors it references (unless the threshold is exceeded, if specified).
+	 */
+	AngularDistance
+	minimum_distance(
+			const GeometryOnSphere &geometry1,
+			const GeometryOnSphere &geometry2,
+			bool geometry1_interior_is_solid = false,
+			bool geometry2_interior_is_solid = false,
+			boost::optional<const AngularExtent &> minimum_distance_threshold = boost::none,
+			boost::optional<
+					boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
+							> closest_positions = boost::none);
+
+
+	/**
 	 * Returns the minimum angular distance between two points.
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
