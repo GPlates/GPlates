@@ -77,14 +77,14 @@ namespace GPlatesMaths
 
 					explicit
 					PointOnSphereVisitor(
-							const PointOnSphere &point_on_sphere1,
+							const PointOnSphere &point_on_sphere1_,
 							bool geometry2_interior_is_solid,
 							AngularDistance &minimum_distance,
 							const boost::optional<const AngularExtent &> &minimum_distance_threshold,
 							const boost::optional<
 									boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
 											> &closest_positions) :
-						d_point_on_sphere1(point_on_sphere1),
+						d_point_on_sphere1(point_on_sphere1_),
 						d_geometry2_interior_is_solid(geometry2_interior_is_solid),
 						d_minimum_distance(minimum_distance),
 						d_minimum_distance_threshold(minimum_distance_threshold),
@@ -214,14 +214,14 @@ namespace GPlatesMaths
 
 					explicit
 					MultiPointOnSphereVisitor(
-							const MultiPointOnSphere &multi_point_on_sphere1,
+							const MultiPointOnSphere &multi_point_on_sphere1_,
 							bool geometry2_interior_is_solid,
 							AngularDistance &minimum_distance,
 							const boost::optional<const AngularExtent &> &minimum_distance_threshold,
 							const boost::optional<
 									boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
 											> &closest_positions) :
-						d_multi_point_on_sphere1(multi_point_on_sphere1),
+						d_multi_point_on_sphere1(multi_point_on_sphere1_),
 						d_geometry2_interior_is_solid(geometry2_interior_is_solid),
 						d_minimum_distance(minimum_distance),
 						d_minimum_distance_threshold(minimum_distance_threshold),
@@ -324,7 +324,7 @@ namespace GPlatesMaths
 
 					explicit
 					PolygonOnSphereVisitor(
-							const PolygonOnSphere &polygon_on_sphere1,
+							const PolygonOnSphere &polygon_on_sphere1_,
 							bool geometry1_interior_is_solid,
 							bool geometry2_interior_is_solid,
 							AngularDistance &minimum_distance,
@@ -332,7 +332,7 @@ namespace GPlatesMaths
 							const boost::optional<
 									boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
 											> &closest_positions) :
-						d_polygon_on_sphere1(polygon_on_sphere1),
+						d_polygon_on_sphere1(polygon_on_sphere1_),
 						d_geometry1_interior_is_solid(geometry1_interior_is_solid),
 						d_geometry2_interior_is_solid(geometry2_interior_is_solid),
 						d_minimum_distance(minimum_distance),
@@ -442,14 +442,14 @@ namespace GPlatesMaths
 
 					explicit
 					PolylineOnSphereVisitor(
-							const PolylineOnSphere &polyline_on_sphere1,
+							const PolylineOnSphere &polyline_on_sphere1_,
 							bool geometry2_interior_is_solid,
 							AngularDistance &minimum_distance,
 							const boost::optional<const AngularExtent &> &minimum_distance_threshold,
 							const boost::optional<
 									boost::tuple<UnitVector3D &/*geometry1*/, UnitVector3D &/*geometry2*/>
 											> &closest_positions) :
-						d_polyline_on_sphere1(polyline_on_sphere1),
+						d_polyline_on_sphere1(polyline_on_sphere1_),
 						d_geometry2_interior_is_solid(geometry2_interior_is_solid),
 						d_minimum_distance(minimum_distance),
 						d_minimum_distance_threshold(minimum_distance_threshold),
