@@ -610,6 +610,19 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::update_table_widget_fro
 		table_sequences->hideColumn(ColumnNames::COMMENT);
 	}
 	iter = irreg_sampling->time_samples().begin();
+	for ( ; iter != end; ++iter) 
+	{
+		if(dynamic_cast<const GpmlTotalReconstructionPole*>(iter->value().get()))
+		{
+			break;
+		}
+	}
+	if(iter != end)
+	{
+		d_is_grot = true;
+		table_sequences->hideColumn(ColumnNames::COMMENT);
+	}
+	iter = irreg_sampling->time_samples().begin();
 	table_sequences->setRowCount(0);
 	unsigned int row_count = 0;
 
@@ -937,7 +950,7 @@ void
 GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::set_action_widget_in_row(
 		int row)
 {
-	if (row < 0)
+	if (row < 0 )
 	{
 		return;
 	}

@@ -36,6 +36,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "AppLogicFwd.h"
+#include "ReconstructContext.h"
 #include "ReconstructParams.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
@@ -163,7 +164,32 @@ namespace GPlatesAppLogic
 		reconstruct(
 				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
 				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchor_plate_id,
+				const ReconstructMethodRegistry &reconstruct_method_registry,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const ReconstructParams &reconstruct_params = ReconstructParams());
+
+		/**
+		 * Same as @a reconstruct overload for @a ReconstructedFeatureGeometry except generates
+		 * ReconstructContext::Reconstruction instances instead.
+		 */
+		ReconstructHandle::type
+		reconstruct(
+				std::vector<ReconstructContext::Reconstruction> &reconstructions,
+				const double &reconstruction_time,
+				const ReconstructMethodRegistry &reconstruct_method_registry,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const ReconstructParams &reconstruct_params = ReconstructParams());
+
+		/**
+		 * Same as @a reconstruct overload for @a ReconstructedFeatureGeometry except generates
+		 * ReconstructContext::ReconstructedFeature instances instead.
+		 */
+		ReconstructHandle::type
+		reconstruct(
+				std::vector<ReconstructContext::ReconstructedFeature> &reconstructed_features,
+				const double &reconstruction_time,
 				const ReconstructMethodRegistry &reconstruct_method_registry,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
@@ -187,6 +213,36 @@ namespace GPlatesAppLogic
 		ReconstructHandle::type
 		reconstruct(
 				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchor_plate_id,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection =
+						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(),
+				const ReconstructParams &reconstruct_params = ReconstructParams(),
+				unsigned int reconstruction_tree_cache_size = 1);
+
+		/**
+		 * Same as @a reconstruct overload for @a ReconstructedFeatureGeometry except generates
+		 * ReconstructContext::Reconstruction instances instead.
+		 */
+		ReconstructHandle::type
+		reconstruct(
+				std::vector<ReconstructContext::Reconstruction> &reconstructions,
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchor_plate_id,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection =
+						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(),
+				const ReconstructParams &reconstruct_params = ReconstructParams(),
+				unsigned int reconstruction_tree_cache_size = 1);
+
+		/**
+		 * Same as @a reconstruct overload for @a ReconstructedFeatureGeometry except generates
+		 * ReconstructContext::ReconstructedFeature instances instead.
+		 */
+		ReconstructHandle::type
+		reconstruct(
+				std::vector<ReconstructContext::ReconstructedFeature> &reconstructed_features,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,

@@ -292,7 +292,75 @@ GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructUtils::reconstruct(
 		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
 		const double &reconstruction_time,
-		GPlatesModel::integer_plate_id_type anchor_plate_id,
+		const ReconstructMethodRegistry &reconstruct_method_registry,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const ReconstructParams &reconstruct_params)
+{
+	std::vector<ReconstructContext::ReconstructedFeature> reconstructed_features;
+	const ReconstructHandle::type reconstruct_handle = reconstruct(
+			reconstructed_features,
+			reconstruction_time,
+			reconstruct_method_registry,
+			reconstructable_features_collection,
+			reconstruction_tree_creator,
+			reconstruct_params);
+
+	// Copy the RFGs in the ReconstructContext::ReconstructedFeature's.
+	// The ReconstructContext::ReconstructedFeature's store RFGs and geometry property handles.
+	// This format only needs the RFG.
+	BOOST_FOREACH(const ReconstructContext::ReconstructedFeature &reconstructed_feature, reconstructed_features)
+	{
+		const ReconstructContext::ReconstructedFeature::reconstruction_seq_type &reconstructed_feature_reconstructions =
+				reconstructed_feature.get_reconstructions();
+		BOOST_FOREACH(const ReconstructContext::Reconstruction &reconstruction, reconstructed_feature_reconstructions)
+		{
+			reconstructed_feature_geometries.push_back(
+					reconstruction.get_reconstructed_feature_geometry());
+		}
+	}
+
+	return reconstruct_handle;
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::ReconstructUtils::reconstruct(
+		std::vector<ReconstructContext::Reconstruction> &reconstructions,
+		const double &reconstruction_time,
+		const ReconstructMethodRegistry &reconstruct_method_registry,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const ReconstructParams &reconstruct_params)
+{
+	std::vector<ReconstructContext::ReconstructedFeature> reconstructed_features;
+	const ReconstructHandle::type reconstruct_handle = reconstruct(
+			reconstructed_features,
+			reconstruction_time,
+			reconstruct_method_registry,
+			reconstructable_features_collection,
+			reconstruction_tree_creator,
+			reconstruct_params);
+
+	// Copy the ReconstructContext::Reconstruction's in the ReconstructContext::ReconstructedFeature's.
+	BOOST_FOREACH(const ReconstructContext::ReconstructedFeature &reconstructed_feature, reconstructed_features)
+	{
+		const ReconstructContext::ReconstructedFeature::reconstruction_seq_type &reconstructed_feature_reconstructions =
+				reconstructed_feature.get_reconstructions();
+		BOOST_FOREACH(const ReconstructContext::Reconstruction &reconstruction, reconstructed_feature_reconstructions)
+		{
+			reconstructions.push_back(reconstruction);
+		}
+	}
+
+	return reconstruct_handle;
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::ReconstructUtils::reconstruct(
+		std::vector<ReconstructContext::ReconstructedFeature> &reconstructed_features,
+		const double &reconstruction_time,
 		const ReconstructMethodRegistry &reconstruct_method_registry,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
@@ -312,7 +380,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 
 	// Reconstruct the reconstructable features.
 	return reconstruct_context.reconstruct_feature_geometries(
-			reconstructed_feature_geometries,
+			reconstructed_features,
 			context_state,
 			reconstruction_time);
 }
@@ -321,6 +389,79 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructUtils::reconstruct(
 		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchor_plate_id,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		const ReconstructParams &reconstruct_params,
+		unsigned int reconstruction_tree_cache_size)
+{
+	std::vector<ReconstructContext::ReconstructedFeature> reconstructed_features;
+	const ReconstructHandle::type reconstruct_handle = reconstruct(
+			reconstructed_features,
+			reconstruction_time,
+			anchor_plate_id,
+			reconstructable_features_collection,
+			reconstruction_features_collection,
+			reconstruct_params,
+			reconstruction_tree_cache_size);
+
+	// Copy the RFGs in the ReconstructContext::ReconstructedFeature's.
+	// The ReconstructContext::ReconstructedFeature's store RFGs and geometry property handles.
+	// This format only needs the RFG.
+	BOOST_FOREACH(const ReconstructContext::ReconstructedFeature &reconstructed_feature, reconstructed_features)
+	{
+		const ReconstructContext::ReconstructedFeature::reconstruction_seq_type &reconstructed_feature_reconstructions =
+				reconstructed_feature.get_reconstructions();
+		BOOST_FOREACH(const ReconstructContext::Reconstruction &reconstruction, reconstructed_feature_reconstructions)
+		{
+			reconstructed_feature_geometries.push_back(
+					reconstruction.get_reconstructed_feature_geometry());
+		}
+	}
+
+	return reconstruct_handle;
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::ReconstructUtils::reconstruct(
+		std::vector<ReconstructContext::Reconstruction> &reconstructions,
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchor_plate_id,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
+		const ReconstructParams &reconstruct_params,
+		unsigned int reconstruction_tree_cache_size)
+{
+	std::vector<ReconstructContext::ReconstructedFeature> reconstructed_features;
+	const ReconstructHandle::type reconstruct_handle = reconstruct(
+			reconstructed_features,
+			reconstruction_time,
+			anchor_plate_id,
+			reconstructable_features_collection,
+			reconstruction_features_collection,
+			reconstruct_params,
+			reconstruction_tree_cache_size);
+
+	// Copy the ReconstructContext::Reconstruction's in the ReconstructContext::ReconstructedFeature's.
+	BOOST_FOREACH(const ReconstructContext::ReconstructedFeature &reconstructed_feature, reconstructed_features)
+	{
+		const ReconstructContext::ReconstructedFeature::reconstruction_seq_type &reconstructed_feature_reconstructions =
+				reconstructed_feature.get_reconstructions();
+		BOOST_FOREACH(const ReconstructContext::Reconstruction &reconstruction, reconstructed_feature_reconstructions)
+		{
+			reconstructions.push_back(reconstruction);
+		}
+	}
+
+	return reconstruct_handle;
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::ReconstructUtils::reconstruct(
+		std::vector<ReconstructContext::ReconstructedFeature> &reconstructed_features,
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
@@ -338,9 +479,8 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 					reconstruction_tree_cache_size);
 
 	return reconstruct(
-			reconstructed_feature_geometries,
+			reconstructed_features,
 			reconstruction_time,
-			anchor_plate_id,
 			reconstruct_method_registry,
 			reconstructable_features_collection,
 			reconstruction_tree_creator,

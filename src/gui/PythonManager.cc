@@ -1,9 +1,9 @@
-/* $Id: ApplicationState.cc 11614 2011-05-20 15:10:51Z jcannon $ */
+/* $Id$ */
 
 /**
  * \file 
- * $Revision: 11614 $
- * $Date: 2011-05-21 01:10:51 +1000 (Sat, 21 May 2011) $
+ * $Revision$
+ * $Date$
  * 
  * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
@@ -70,8 +70,10 @@ GPlatesGui::PythonManager::PythonManager() :
 }
 
 void
-GPlatesGui::PythonManager::initialize() 
+GPlatesGui::PythonManager::initialize(
+		GPlatesPresentation::Application *app) 
 {
+	d_application = app;
 	if(d_inited)
 	{
 		qWarning() << "The embedded python interpret has been initialized already.";
@@ -87,9 +89,10 @@ GPlatesGui::PythonManager::initialize()
 	// all parts of GPlates.
 	try
 	{
-		GPlatesApi::PythonInterpreterLocker interpreter_locker;
-		d_python_main_thread_runner = new GPlatesApi::PythonRunner(d_python_main_namespace,this);
-		d_python_execution_thread = new GPlatesApi::PythonExecutionThread(d_python_main_namespace, this);
+		using namespace GPlatesApi;
+		PythonInterpreterLocker interpreter_locker;
+		d_python_main_thread_runner = new PythonRunner(d_python_main_namespace,this);
+		d_python_execution_thread = new PythonExecutionThread(d_python_main_namespace, this);
 		d_python_execution_thread->start(QThread::IdlePriority);
 		check_python_capability();
 
@@ -140,58 +143,57 @@ GPlatesGui::PythonManager::check_python_capability()
 void
 GPlatesGui::PythonManager::set_python_home()
 {
+	const char  *PYTHON_HOME_ENV_NAME="PYTHONHOME",
+				*PYTHON_PATH_ENV_NAME="PYTHONPATH";
 	if(validate_python_home())
 	{
 		//Use QDir to determine if python prefix in preference equals the python home we are going to use.
 		//WARNING! LOOK HERE PLS! ***DON'T COMPARE THE TWO QSTRINGS***
 		//because the GPlates' Preference code might add extra "\" on some platforms.
-		//if python prefix equals python home, it means we have tried this python home and it doesn't work. So, skip it.
-		if( QDir(get_python_prefix_from_preferences()) != QDir(d_python_home))
+		if( QDir(get_python_prefix_from_preferences()) == QDir(d_python_home))
 		{
-			set_python_prefix(d_python_home);
-#ifndef __WINDOWS__
-			QString tmp = QString("PYTHONHOME=") + d_python_home;
-			//qDebug() << "set python home: " << tmp;
-			char* v = tmp.toAscii().data();
-			putenv(v);
-#else
-			_putenv_s("PYTHONHOME", d_python_home.toAscii().data());
-#endif
-			d_clear_python_prefix_flag = false;
-			QProcess::startDetached(QCoreApplication::applicationFilePath(), QStringList());
-			throw GPlatesGlobal::NeedExitException(GPLATES_EXCEPTION_SOURCE);
+			//if python prefix equals python home, it means we have 
+			//set the PYTHONHOME according to Preference.
+			// So, we do not need to do anything here.
+			return;
 		}
-		//std::cout << getenv("PYTHONHOME") << std::endl;
-	}
-
-	return;
-}
-
-void
-GPlatesGui::PythonManager::find_python()
-{
-#ifdef __APPLE__
-	const char* python_home_dirs[] = 
+	}else
 	{
-		"/opt/local/Library/Frameworks/Python.framework/Versions/",
-		"/System/Library/Frameworks/Python.framework/Versions/",
-		"/Library/Frameworks/Python.framework/Versions/"
-	};
-
-	for(int i=0; i< sizeof(python_home_dirs)/sizeof(char*); i++)
-	{
-		QString h = QString(python_home_dirs[i]) + "/" + d_python_version;
-		if(validate_python_home(h))
+		//If the python path in GPlates preference is not a valid python home or 
+		//empty, we use the python libs in GPlates bundle.
+		//However, we have to unset the  PYTHONHOME and PYTHONPATH env variables so that
+		//python interpreter will not look for python modules there.
+		//We don't want to use the python modules in PYTHONHOME or PYTHONPATH because 
+		//they might not compatible with GPlates python binding.
+		char *python_path_env = getenv(PYTHON_PATH_ENV_NAME),
+			 *python_home_env = getenv(PYTHON_HOME_ENV_NAME);
+		if( !QString(python_path_env).simplified().isEmpty() ||
+			!QString(python_home_env).simplified().isEmpty())
 		{
-			d_python_home = h;
-			break;
+			d_python_home.clear();
 		}
 		else
 		{
-			continue;
+			//No valid python path in Preference.
+			//No PYTHONHOME or PYTHONPATH has been set.
+			//No need to do anything, just return
+			return;
 		}
 	}
+	set_python_prefix(d_python_home);
+#ifndef __WINDOWS__
+	putenv((QString(PYTHON_HOME_ENV_NAME) + "=" + d_python_home).toAscii().data());
+	//We don't need PYTHONPATH. So, empty it in case it causes problems.
+	putenv((QString(PYTHON_PATH_ENV_NAME) + "=").toAscii().data());
+#else
+	_putenv_s(PYTHON_HOME_ENV_NAME, d_python_home.toAscii().data());
+	//We don't need PYTHONPATH. So, empty it in case it causes problems.
+	_putenv_s(PYTHON_PATH_ENV_NAME, QString("").toAscii().data());
 #endif
+	d_clear_python_prefix_flag = false;
+	//restart GPlates here.
+	QProcess::startDetached(QCoreApplication::applicationFilePath(), QStringList());
+	throw GPlatesGlobal::NeedExitException(GPLATES_EXCEPTION_SOURCE);
 }
 
 
@@ -222,12 +224,12 @@ GPlatesGui::PythonManager::~PythonManager()
 
 void
 GPlatesGui::PythonManager::set_show_init_fail_dlg(
-		bool b) 
+		bool flag) 
 {
-	d_show_python_init_fail_dlg = b;
+	d_show_python_init_fail_dlg = flag;
 	GPlatesAppLogic::UserPreferences(NULL).set_value(
 			"python/show_python_init_fail_dialog",
-			b);
+			flag);
 }
 
 
@@ -262,12 +264,12 @@ GPlatesGui::PythonManager::init_python_interpreter(
 		std::string program_name)
 {
 	using namespace boost::python;
-
-	// Initialise the embedded Python interpreter.
+	using namespace GPlatesApi;
+	// Initialize the embedded Python interpreter.
 	char GPLATES_MODULE_NAME[] = "pygplates";
 	if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
 	{
-		qWarning() << GPlatesApi::PythonUtils::get_error_message();
+		qWarning() << PythonUtils::get_error_message();
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
 	}
 
@@ -285,7 +287,7 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	// But then we give up the GIL, so that PythonInterpreterLocker may now be used.
 	PyEval_SaveThread();
 
-	GPlatesApi::PythonInterpreterLocker interpreter_locker;
+	PythonInterpreterLocker interpreter_locker;
 
 	// Load the pygplates module.
 	try
@@ -298,7 +300,7 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	catch (const error_already_set &)
 	{
 		std::cerr << "Fatal error while loading pygplates module" << std::endl;
-		qWarning() << GPlatesApi::PythonUtils::get_error_message();
+		qWarning() << PythonUtils::get_error_message();
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
 	}
 
@@ -329,11 +331,16 @@ GPlatesGui::PythonManager::init_python_interpreter(
 
 
 void
-GPlatesGui::PythonManager::recycle_python_object(const boost::python::object& obj)
+GPlatesGui::PythonManager::recycle_python_object(
+		const boost::python::object& obj)
 {
-	//leave these memory here. it doesn't matter.
-	static std::vector<boost::python::object>* python_object_bin = new std::vector<boost::python::object>;
+	//The static vector pointer is initialized only once.
+	//The memory allocated here does not have to be freed. 
+	static std::vector<boost::python::object>* python_object_bin = 
+		new std::vector<boost::python::object>;
 	GPlatesApi::PythonInterpreterLocker lock;
+	//Free the previous python objects in the bin and
+	//put the new object into it.
 	python_object_bin->clear();
 	python_object_bin->push_back(obj);
 }
@@ -343,7 +350,7 @@ QFileInfoList
 GPlatesGui::PythonManager::get_scripts()
 {
 	GPlatesAppLogic::UserPreferences& user_prefs = 
-		GPlatesPresentation::Application::instance().get_application_state().get_user_preferences();
+		d_application->get_application_state().get_user_preferences();
 	QFileInfoList file_list;
 	QStringList filters = (QStringList() << "*.py" << "*.pyc");
 
@@ -454,10 +461,11 @@ GPlatesGui::PythonManager::init_python_console()
 	using namespace GPlatesPresentation;
 	if(!d_python_console_dialog_ptr)
 	{
-		d_python_console_dialog_ptr = new GPlatesQtWidgets::PythonConsoleDialog(
-				Application::instance().get_application_state(),
-				Application::instance().get_view_state(),
-				&Application::instance().get_main_window());
+		d_python_console_dialog_ptr = 
+			new GPlatesQtWidgets::PythonConsoleDialog(
+					d_application->get_application_state(),
+					d_application->get_view_state(),
+					&d_application->get_main_window());
 		d_event_blackout.add_blackout_exemption(d_python_console_dialog_ptr);
 	}
 }

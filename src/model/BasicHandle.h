@@ -209,15 +209,19 @@ namespace GPlatesModel
 		index_in_container();
 
 		/**
-		 * Returns a (non-const) pointer to the Model to which this Handle belongs. Returns NULL
-		 * if this Handle has no parent set.
+		 * Returns a (non-const) pointer to the Model to which this Handle belongs.
+		 *
+		 * Returns NULL if this Handle is not currently attached to the model - this can happen
+		 * if this Handle has no parent or if this Handle's parent has no parent, etc.
 		 */
 		Model *
 		model_ptr();
 
 		/**
-		 * Returns a const pointer to the Model to which this handle belongs. Returns NULL
-		 * if this Handle has no parent set.
+		 * Returns a const pointer to the Model to which this handle belongs.
+		 *
+		 * Returns NULL if this Handle is not currently attached to the model - this can happen
+		 * if this Handle has no parent or if this Handle's parent has no parent, etc.
 		 */
 		const Model *
 		model_ptr() const;
@@ -256,7 +260,7 @@ namespace GPlatesModel
 		/**
 		 * Flushes pending notifications that were held up due to an active NotificationGuard.
 		 *
-		 * This will call flush_children_pending_notifications() to recurively call
+		 * This will call flush_children_pending_notifications() to recursively call
 		 * flush_pending_notifications() in children objects.
 		 */
 		void
@@ -425,6 +429,12 @@ namespace GPlatesModel
 		flush_children_pending_notifications();
 
 		/**
+		 * Set the parent pointers of our children to NULL (eg, we're being destroyed).
+		 */
+		void
+		remove_child_parent_pointers();
+
+		/**
 		 * This constructor should not be defined, because we don't want to be able
 		 * to copy construct one of these objects.
 		 */
@@ -482,7 +492,31 @@ namespace GPlatesModel
 	BasicHandle<HandleType>::~BasicHandle()
 	{
 		notify_listeners_of_impending_destruction();
+
+		remove_child_parent_pointers();
 	}
+
+
+	template<class HandleType>
+	void
+	BasicHandle<HandleType>::remove_child_parent_pointers()
+	{
+		// Set the parent pointers of our children to NULL to avoid dangling references.
+		// It's possible for clients to have shared owning pointers to child objects after
+		// their parent has been destroyed.
+		for (const_iterator iter = begin(); iter != end(); ++iter)
+		{
+			BasicHandle<child_type> &child = dynamic_cast<BasicHandle<child_type> &>(
+					*current_revision()->get(iter.index()));
+			child.set_parent_ptr(NULL, iter.index());
+		}
+	}
+
+
+	// Template specialisations are in the .cc file.
+	template<>
+	void
+	BasicHandle<FeatureHandle>::remove_child_parent_pointers();
 
 
 	template<class HandleType>

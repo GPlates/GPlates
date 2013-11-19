@@ -31,6 +31,12 @@
 
 namespace GPlatesModel
 {
+	template<>
+	void
+	BasicHandle<FeatureHandle>::remove_child_parent_pointers()
+	{
+		// Do nothing.
+	}
 
 	template<>
 	container_size_type

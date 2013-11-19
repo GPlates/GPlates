@@ -1,11 +1,11 @@
-/* $Id: CommandLineParser.h 7795 2010-03-16 04:26:54Z jcannon $ */
+/* $Id$ */
 
 /**
 * \file
 * File specific comments.
 *
 * Most recent change:
-*   $Date: 2010-03-16 15:26:54 +1100 (Tue, 16 Mar 2010) $
+*   $Date$
 *
 * Copyright (C) 2010 The University of Sydney, Australia
 *
@@ -118,8 +118,14 @@ namespace GPlatesGui
 		Q_OBJECT
 
 	public:
-		void initialize();
-		bool is_initialized(){return d_inited;}
+		void initialize(
+				GPlatesPresentation::Application *app=NULL);
+
+		bool is_initialized()
+		{
+			return d_inited;
+		}
+		
 		~PythonManager();
 		
 		static
@@ -140,7 +146,8 @@ namespace GPlatesGui
 		* Put all python object which is not needed anymore in this recycle bin.
 		*/
 		void
-		recycle_python_object(const boost::python::object& obj);
+		recycle_python_object(
+				const boost::python::object& obj);
 
 
 		void
@@ -160,7 +167,8 @@ namespace GPlatesGui
 		get_scripts();
 
 		void
-		register_script(const QString& name);
+		register_script(
+				const QString& name);
 
 		/**
 		 * Returns a thread on which Python code can be run off the main thread.
@@ -220,18 +228,15 @@ namespace GPlatesGui
 			d_python_home = str;
 		}
 
-		inline
 		void
 		set_python_prefix(
 				const QString& str);
 
 
-		inline
 		void
 		set_python_prefix();
 
 
-		inline
 		QString
 		get_python_prefix_from_preferences();
 
@@ -390,6 +395,12 @@ namespace GPlatesGui
 		QString d_python_home;
 		
 		QString d_python_version;
+
+		/*
+		* Keep a pointer of GPlatesPresentation::Application here.
+		* It is initialized when calling PythonManager::initialize().
+		*/
+		GPlatesPresentation::Application *d_application;
 	};
 }
 #else

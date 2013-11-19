@@ -30,6 +30,7 @@
 
 #include "FeatureCollectionHandle.h"
 #include "FeatureHandle.h"
+#include "FeatureId.h"
 #include "FeatureType.h"
 #include "ModelInterface.h"
 #include "PropertyName.h"
@@ -413,6 +414,24 @@ namespace GPlatesModel
 				const TopLevelProperty &top_level_property,
 				const GpgimProperty &new_gpgim_property,
 				TopLevelPropertyError::Type *error_code = NULL);
+		
+		/*
+		* Find the FeatureHandle weak ref given the feature id as GPlatesModel::FeatureId.
+		*/
+		GPlatesModel::FeatureHandle::weak_ref
+		find_feature(
+				const GPlatesModel::FeatureId &id);
+
+		/*
+		* Find the FeatureHandle weak ref given the feature id as QString.
+		*/
+		inline
+		GPlatesModel::FeatureHandle::weak_ref
+		find_feature(
+				const QString &id)
+		{
+			return find_feature(GPlatesModel::FeatureId(GPlatesUtils::UnicodeString(id)));
+		}
 	}
 }
 

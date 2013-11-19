@@ -579,29 +579,30 @@ namespace
 	}
 
 	void
-	initialise_python()
+	initialise_python(
+			GPlatesPresentation::Application *app)
 	{
-		GPlatesGui::PythonManager* mgr = GPlatesGui::PythonManager::instance();
-
+		using namespace GPlatesGui;
+		PythonManager* mgr = PythonManager::instance();
 #ifndef GPLATES_NO_PYTHON
 		try
 		{
-			mgr->initialize();
+			mgr->initialize(app);
 		}
-		catch(const GPlatesGui::PythonInitFailed& ex)
+		catch(const PythonInitFailed& ex)
 		{
 			std::stringstream ss;
 			ex.write(ss);
 			qWarning() << ss.str().c_str();
 			
 			//try our best to find python installation.
-			mgr->find_python();
 			mgr->set_python_home();
 
 			if(mgr->show_init_fail_dlg())
 			{
-				boost::scoped_ptr<GPlatesQtWidgets::PythonInitFailedDialog> python_fail_dlg(
-					new GPlatesQtWidgets::PythonInitFailedDialog);
+				using namespace GPlatesQtWidgets;
+				boost::scoped_ptr<PythonInitFailedDialog> python_fail_dlg(
+					new PythonInitFailedDialog);
 
 				python_fail_dlg->exec();
 				mgr->set_show_init_fail_dlg(python_fail_dlg->show_again());
@@ -617,11 +618,12 @@ namespace
 	clean_up()
 	{
 		// FIXME: If we can merge multiple singletons into a single singleton that would be better
-		// from a management/organisation point-of-view and also when destructor of single singleton
+		// from a management/organization point-of-view and also when destructor of single singleton
 		// is called then contained objects are destroyed in correct order.
 		// Also we should be careful about excessive use of singletons because they are essentially global data.
 
-		if(GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::python()))
+		if(GPlatesUtils::ComponentManager::instance().is_enabled(
+				GPlatesUtils::ComponentManager::Component::python()))
 		{
 	#if !defined(GPLATES_NO_PYTHON)
 			GPlatesApi::PythonInterpreterLocker lock;
@@ -635,8 +637,8 @@ namespace
 int
 internal_main(int argc, char* argv[])
 {
-	// Initialise Qt resources that exist in the static 'qt-resources' library.
-	// NOTE: This is done here so that both the GUI and command-line-only paths have initialised resources.
+	// Initialize Qt resources that exist in the static 'qt-resources' library.
+	// NOTE: This is done here so that both the GUI and command-line-only paths have initialized resources.
 	Q_INIT_RESOURCE(gpgim);
 	Q_INIT_RESOURCE(qt_widgets);
 	Q_INIT_RESOURCE(opengl);
@@ -723,7 +725,7 @@ internal_main(int argc, char* argv[])
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
 			GPlatesUtils::ComponentManager::Component::python()))
 	{
-		initialise_python();
+		initialise_python(&application);
 	}
 
 	// Also load any feature collection files specified on the command-line.
