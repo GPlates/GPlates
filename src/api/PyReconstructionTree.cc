@@ -57,42 +57,6 @@
 namespace bp = boost::python;
 
 
-
-namespace GPlatesApi
-{
-	template <class T>
-	struct to_python_ConstToNonConst :
-			private boost::noncopyable
-	{
-		explicit
-		to_python_ConstToNonConst()
-		{
-			namespace bp = boost::python;
-
-			// To python conversion.
-			bp::to_python_converter<
-					GPlatesUtils::non_null_intrusive_ptr<const T>,
-					Conversion>();
-		}
-
-		struct Conversion
-		{
-			static
-			PyObject *
-			convert(
-					const GPlatesUtils::non_null_intrusive_ptr<const T> &value)
-			{
-				namespace bp = boost::python;
-
-				// 'GPlatesUtils::non_null_intrusive_ptr<T>' is the HeldType of the
-				// 'bp::class_' wrapper of the T type so it will be used to complete
-				// the conversion to a python-wrapped object. See note above about casting away const.
-				return bp::incref(bp::object(GPlatesUtils::const_pointer_cast<T>(value)).ptr());
-			};
-		};
-	};
-}
-
 namespace GPlatesApi
 {
 	/**
@@ -1233,8 +1197,9 @@ export_reconstruction_tree()
 			boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type> >();
 
 	// Register to-python conversion from ReconstructionTree::non_null_ptr_to_const_type to
-	// ReconstructionTree::non_null_ptr_type.
-	GPlatesApi::to_python_ConstToNonConst<GPlatesAppLogic::ReconstructionTree>();
+	// ReconstructionTree::non_null_ptr_type since some functions return a 'const' reconstruction tree.
+	GPlatesApi::PythonConverterUtils::register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion<
+			GPlatesAppLogic::ReconstructionTree>();
 
 	//
 	// ReconstructionTreeEdge - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).

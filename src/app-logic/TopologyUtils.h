@@ -105,7 +105,7 @@ namespace GPlatesAppLogic
 		 * NOTE: The sections are resolved by referencing already reconstructed topological section
 		 * features which in turn must have already have been reconstructed.
 		 *
-		 * @param reconstruction_tree is associated with the output resolved topological boundaries.
+		 * @param reconstruction_tree is associated with the output resolved topological lines.
 		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that
 		 *        identifies the subset, of all RFGs observing the topological section features,
 		 *        that should be searched when resolving the topological lines.
