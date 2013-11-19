@@ -49,6 +49,13 @@ namespace GPlatesApi
 				new GPlatesMaths::GreatCircleArc(
 						GPlatesMaths::GreatCircleArc::create(start_point, end_point)));
 	}
+
+	GPlatesMaths::real_t
+	great_circle_arc_get_arc_length(
+			const GPlatesMaths::GreatCircleArc &great_circle_arc)
+	{
+		return acos(great_circle_arc.dot_of_endpoints());
+	}
 }
 
 void
@@ -122,6 +129,14 @@ export_great_circle_arc()
 				"\n"
 				"  If this arc is of zero length, it will not have a determinate rotation axis "
 				"and a call to :meth:`get_rotation_axis` will raise an error.\n")
+		.def("get_arc_length",
+				&GPlatesApi::great_circle_arc_get_arc_length,
+				"get_arc_length() -> float\n"
+				"  Returns the arc length of this great circle arc (in radians).\n"
+				"\n"
+				"  :rtype: float\n"
+				"\n"
+				"  To convert to distance, multiply the result by the Earth radius.\n")
 		.def("get_rotation_axis",
 				&GPlatesMaths::GreatCircleArc::rotation_axis,
 				bp::return_value_policy<bp::copy_const_reference>(),

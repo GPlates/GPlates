@@ -76,22 +76,32 @@ export_lat_lon_point()
 		.def("is_valid_latitude",
 				&GPlatesMaths::LatLonPoint::is_valid_latitude,
 				(bp::arg("latitude")),
-				"is_valid_latitude() -> bool\n"
+				"is_valid_latitude(latitude) -> bool\n"
 				"  Returns ``True`` if *latitude* is in the range [-90, 90].\n"
 				"\n"
 				"  :param latitude: the latitude (in degrees)\n"
-				"  :rtype: bool\n")
+				"  :type latitude: float\n"
+				"  :rtype: bool\n"
+				"  ::\n"
+				"\n"
+				"    if pygplates.LatLonPoint.is_valid_latitude(latitude):\n"
+				"      ...\n")
 		.staticmethod("is_valid_latitude")
 		.def("is_valid_longitude",
 				&GPlatesMaths::LatLonPoint::is_valid_longitude,
 				(bp::arg("longitude")),
-				"is_valid_longitude() -> bool\n"
+				"is_valid_longitude(longitude) -> bool\n"
 				"  Returns ``True`` if *longitude* is in the range [-360, 360].\n"
 				"\n"
 				"  :param longitude: the longitude (in degrees)\n"
+				"  :type longitude: float\n"
 				"  :rtype: bool\n"
 				"\n"
-				"  GPlates uses the half-open range (-180.0, 180.0], but accepts [-360.0, 360.0] as input\n")
+				"  GPlates uses the half-open range (-180.0, 180.0], but accepts [-360.0, 360.0] as input\n"
+				"  ::\n"
+				"\n"
+				"    if pygplates.LatLonPoint.is_valid_longitude(longitude):\n"
+				"      ...\n")
 		.staticmethod("is_valid_longitude")
 		.def("get_latitude",
 				&GPlatesMaths::LatLonPoint::latitude,

@@ -119,6 +119,8 @@ class GreatCircleArcCase(unittest.TestCase):
     def test_get(self):
         self.assertEquals(self.gca.get_start_point(), self.start_point)
         self.assertEquals(self.gca.get_end_point(), self.end_point)
+        arc_length = self.gca.get_arc_length()
+        self.assertTrue(arc_length > 0.5 * math.pi - 1e-6 and arc_length < 0.5 * math.pi + 1e-6)
     
     def test_zero_length(self):
         self.assertFalse(self.gca.is_zero_length())

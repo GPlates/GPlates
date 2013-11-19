@@ -46,6 +46,8 @@
 #include "app-logic/ReconstructionTreeEdge.h"
 #include "app-logic/ReconstructUtils.h"
 
+#include "maths/MathsUtils.h"
+
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
 
@@ -54,6 +56,42 @@
 
 namespace bp = boost::python;
 
+
+
+namespace GPlatesApi
+{
+	template <class T>
+	struct to_python_ConstToNonConst :
+			private boost::noncopyable
+	{
+		explicit
+		to_python_ConstToNonConst()
+		{
+			namespace bp = boost::python;
+
+			// To python conversion.
+			bp::to_python_converter<
+					GPlatesUtils::non_null_intrusive_ptr<const T>,
+					Conversion>();
+		}
+
+		struct Conversion
+		{
+			static
+			PyObject *
+			convert(
+					const GPlatesUtils::non_null_intrusive_ptr<const T> &value)
+			{
+				namespace bp = boost::python;
+
+				// 'GPlatesUtils::non_null_intrusive_ptr<T>' is the HeldType of the
+				// 'bp::class_' wrapper of the T type so it will be used to complete
+				// the conversion to a python-wrapped object. See note above about casting away const.
+				return bp::incref(bp::object(GPlatesUtils::const_pointer_cast<T>(value)).ptr());
+			};
+		};
+	};
+}
 
 namespace GPlatesApi
 {
@@ -342,6 +380,14 @@ namespace GPlatesApi
 			feature_collection_refs.push_back(feature_collection->reference());
 		}
 
+		// NOTE: Since the feature collections are stored in the reconstruction tree as weak refs
+		// it's possible that the caller will not keep the feature collections alive (eg, they get
+		// garbage collected if caller no longer has references to them) in which case the weak
+		// references stored in the reconstruction tree will become invalid. However currently this
+		// is not a problem because we don't use them or expose them to the python user in any way.
+		//
+		// In fact the whole idea of storing weak refs in the reconstruction tree is debatable.
+
 		return GPlatesAppLogic::create_reconstruction_tree(
 				reconstruction_time,
 				anchor_plate_id,
@@ -572,6 +618,129 @@ namespace GPlatesApi
 				reconstruction_time,
 				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>()/*empty*/);
 	}
+
+
+	/**
+	 * Creates reconstruction trees and provides easy way to query equivalent/relative,
+	 * total/stage rotations.
+	 */
+	class Reconstruction :
+			public GPlatesUtils::ReferenceCount<Reconstruction>
+	{
+	public:
+
+		typedef GPlatesUtils::non_null_intrusive_ptr<Reconstruction> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const Reconstruction> non_null_ptr_to_const_type;
+
+
+		static
+		non_null_ptr_type
+		create(
+				bp::object feature_collection_seq, // Any python iterable (eg, list, tuple).
+				unsigned int reconstruction_tree_cache_size)
+		{
+			// Begin/end iterators over the python feature collections iterable.
+			bp::stl_input_iterator<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>
+					feature_collection_seq_iter(feature_collection_seq),
+					feature_collection_seq_end;
+
+			// Convert the feature collections to weak refs.
+			std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collections;
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
+			for ( ; feature_collection_seq_iter != feature_collection_seq_end; ++feature_collection_seq_iter)
+			{
+				GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
+						*feature_collection_seq_iter;
+
+				feature_collections.push_back(feature_collection);
+				feature_collection_refs.push_back(feature_collection->reference());
+			}
+
+			// Create a cached reconstruction tree creator.
+			GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
+					GPlatesAppLogic::create_cached_reconstruction_tree_creator(
+							feature_collection_refs,
+							0/*default_anchor_plate_id*/,
+							reconstruction_tree_cache_size);
+
+			return non_null_ptr_type(new Reconstruction(feature_collections, reconstruction_tree_creator));
+		}
+
+		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type
+		get_reconstruction_tree(
+				const double &reconstruction_time)
+		{
+			return d_reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
+		}
+
+		/**
+		 * Handle the four combinations of total/stage and equivalent/relative rotations in one place.
+		 */
+		boost::optional<GPlatesMaths::FiniteRotation>
+		get_rotation(
+				const double &to_time,
+				GPlatesModel::integer_plate_id_type moving_plate_id,
+				const double &from_time,
+				GPlatesModel::integer_plate_id_type fixed_plate_id)
+		{
+			GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type to_reconstruction_tree =
+					get_reconstruction_tree(to_time);
+
+			if (GPlatesMaths::are_almost_exactly_equal(from_time, 0))
+			{
+				if (fixed_plate_id == 0)
+				{
+					return reconstruction_tree_get_equivalent_total_rotation(
+							*to_reconstruction_tree,
+							moving_plate_id);
+				}
+
+				return reconstruction_tree_get_relative_total_rotation(
+						*to_reconstruction_tree,
+						fixed_plate_id,
+						moving_plate_id);
+			}
+
+			const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type from_reconstruction_tree =
+					get_reconstruction_tree(from_time);
+
+			if (fixed_plate_id == 0)
+			{
+				return get_equivalent_stage_rotation(
+						*from_reconstruction_tree,
+						*to_reconstruction_tree,
+						moving_plate_id);
+			}
+
+			return get_relative_stage_rotation(
+					*from_reconstruction_tree,
+					*to_reconstruction_tree,
+					fixed_plate_id,
+					moving_plate_id);
+		}
+
+	private:
+
+		Reconstruction(
+				const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
+				const GPlatesAppLogic::ReconstructionTreeCreator &reconstruction_tree_creator) :
+			d_feature_collections(feature_collections),
+			d_reconstruction_tree_creator(reconstruction_tree_creator)
+		{  }
+
+
+		/**
+		 * Keep the feature collections alive (by using intrusive pointers instead of weak refs)
+		 * since @a ReconstructionTreeCreator only stores weak references.
+		 */
+		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> d_feature_collections;
+
+		/**
+		 * Cached reconstruction tree creator.
+		 */
+		GPlatesAppLogic::ReconstructionTreeCreator d_reconstruction_tree_creator;
+
+	};
 }
 
 
@@ -699,6 +868,10 @@ export_reconstruction_tree()
 					"in the past. *Stage* rotations are handled by the functions "
 					":func:`get_equivalent_stage_rotation` and :func:`get_relative_stage_rotation`.\n"
 					"\n"
+					"Alternatively all four combinations of total/stage and equivalent/relative rotations "
+					"can be obtained more easily from class :class:`Reconstruction` using its method "
+					":meth:`Reconstruction.get_rotation`.\n"
+					"\n"
 					"For more information on the rotation hierarchy please see "
 					"`Next-generation plate-tectonic reconstructions using GPlates "
 					"<http://www.gplates.org/publications.html>`_\n",
@@ -777,11 +950,11 @@ export_reconstruction_tree()
 				"  This method essentially does the following:\n"
 				"  ::\n"
 				"\n"
-				"    def get_equivalent_total_rotation(reconstruction_tree, plate_id):\n"
-				"        edge = reconstruction_tree.get_edge(plate_id)\n"
+				"    def get_equivalent_total_rotation(self, plate_id):\n"
+				"        edge = self.get_edge(plate_id)\n"
 				"        if edge:\n"
 				"            return edge.get_equivalent_total_rotation()\n"
-				"        elif plate_id == reconstruction_tree.get_anchor_plate_id():\n"
+				"        elif plate_id == self.get_anchor_plate_id():\n"
 				"            return pygplates.FiniteRotation.create_identity_rotation()\n")
 		.def("get_relative_total_rotation",
 				&GPlatesApi::reconstruction_tree_get_relative_total_rotation,
@@ -807,9 +980,9 @@ export_reconstruction_tree()
 				"  This method essentially does the following:\n"
 				"  ::\n"
 				"\n"
-				"    def get_relative_total_rotation(reconstruction_tree, fixed_plate_id, moving_plate_id):\n"
-				"        fixed_plate_rotation = reconstruction_tree.get_equivalent_total_rotation(fixed_plate_id)\n"
-				"        moving_plate_rotation = reconstruction_tree.get_equivalent_total_rotation(moving_plate_id)\n"
+				"    def get_relative_total_rotation(self, fixed_plate_id, moving_plate_id):\n"
+				"        fixed_plate_rotation = self.get_equivalent_total_rotation(fixed_plate_id)\n"
+				"        moving_plate_rotation = self.get_equivalent_total_rotation(moving_plate_id)\n"
 				"        if fixed_plate_rotation and moving_plate_rotation:\n"
 				"            return fixed_plate_rotation.get_inverse() * moving_plate_rotation\n"
 				"\n"
@@ -955,7 +1128,7 @@ export_reconstruction_tree()
 			"  The only real advantage of this function over :func:`get_relative_stage_rotation` is "
 			"it is a bit faster when the *fixed* plate is the *anchored* plate.\n"
 			"\n"
-			"  This method essentially does the following:\n"
+			"  This function essentially does the following:\n"
 			"  ::\n"
 			"\n"
 			"    def get_equivalent_stage_rotation(from_reconstruction_tree, to_reconstruction_tree, plate_id):\n"
@@ -997,7 +1170,7 @@ export_reconstruction_tree()
 			"get_relative_stage_rotation(from_reconstruction_tree, to_reconstruction_tree, "
 			"fixed_plate_id, moving_plate_id) -> FiniteRotation or None\n"
 			"  Return the finite rotation that rotates from the *fixed_plate_id* plate to the *moving_plate_id* "
-			" plate and from the time of *from_reconstruction_tree* to the time of *to_reconstruction_tree*.\n"
+			"plate and from the time of *from_reconstruction_tree* to the time of *to_reconstruction_tree*.\n"
 			"\n"
 			"  Returns ``None`` if *fixed_plate_id* and *moving_plate_id* are not in both reconstruction trees.\n"
 			"\n"
@@ -1014,7 +1187,7 @@ export_reconstruction_tree()
 			"  Note that this function will still work correctly if the *anchored* plate of both "
 			"reconstruction trees differ.\n"
 			"\n"
-			"  This method essentially does the following:\n"
+			"  This function essentially does the following:\n"
 			"  ::\n"
 			"\n"
 			"    def get_relative_stage_rotation(from_reconstruction_tree, to_reconstruction_tree, "
@@ -1058,6 +1231,10 @@ export_reconstruction_tree()
 	boost::python::implicitly_convertible<
 			boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_type>,
 			boost::optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type> >();
+
+	// Register to-python conversion from ReconstructionTree::non_null_ptr_to_const_type to
+	// ReconstructionTree::non_null_ptr_type.
+	GPlatesApi::to_python_ConstToNonConst<GPlatesAppLogic::ReconstructionTree>();
 
 	//
 	// ReconstructionTreeEdge - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
@@ -1219,7 +1396,7 @@ export_reconstruction_tree()
 				"  :type total_reconstruction_pole: :class:`FiniteRotation`\n"
 				"\n"
 				"  The *total reconstruction pole* is also associated with the reconstruction time of "
-				"the :class:`ReconstructionTree` that will be built by meth:`build_reconstruction_tree`.\n"
+				"the :class:`ReconstructionTree` that will be built by :meth:`build_reconstruction_tree`.\n"
 				"\n"
 				"  See the functions :func:`interpolate_finite_rotations`, "
 				":func:`interpolate_total_reconstruction_pole` and "
@@ -1245,6 +1422,133 @@ export_reconstruction_tree()
 
 	// Enable boost::optional<ReconstructionGraph> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::python_optional<GPlatesAppLogic::ReconstructionGraph>();
+
+	//
+	// Reconstruction - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesApi::Reconstruction,
+			GPlatesApi::Reconstruction::non_null_ptr_type,
+			boost::noncopyable>(
+					"Reconstruction",
+					"Query a finite rotation of a moving plate relative to any other plate and between two "
+					"instants in geological time.\n"
+					"\n"
+					"This class provides an easy way to query rotations in any of the four combinations of "
+					"total/stage and equivalent/relative rotations using :meth:`get_rotation`. "
+					":class:`Reconstruction trees<ReconstructionTree>` can also be created at any instant "
+					"of geological time and these are cached internally depending on a user-specified "
+					"cache size parameter pass to :meth:`create`.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::Reconstruction::create,
+						bp::default_call_policies(),
+						(bp::arg("feature_collections"),
+							bp::arg("reconstruction_tree_cache_size") = 1)),
+				"__init__(feature_collections[, reconstruction_tree_cache_size=1])\n"
+				"  Create a reconstruction from a sequence of rotation feature collections and an "
+				"optional reconstruction tree cache size.\n"
+				"\n"
+				"  :param feature_collections: A sequence of :class:`FeatureCollection` instances\n"
+				"  :type feature_collections: Any sequence such as a ``list`` or a ``tuple``\n"
+				"  :param reconstruction_tree_cache_size: number of reconstruction trees to cache internally\n"
+				"  :type reconstruction_tree_cache_size: int\n"
+				"  :rtype: :class:`Reconstruction`\n"
+				"\n"
+				"  The *reconstruction_tree_cache_size* parameter controls the size of an internal "
+				"least-recently-used cache of reconstruction trees (evicts least recently requested "
+				"reconstruction tree when a new reconstruction time is requested that does not "
+				"currently exist in the cache). This enables reconstruction trees spanning different "
+				"reconstruction times to be re-used instead of re-creating them, provided they "
+				"have not been evicted from the cache. This benefit also applies when querying "
+				"rotations with :meth:`get_rotation` since it, in turn, requests reconstruction trees. "
+				"The default cache size is one.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    reconstruction = pygplates.Reconstruction.create(feature_collections)\n")
+		.def("get_rotation",
+				&GPlatesApi::Reconstruction::get_rotation,
+				(bp::arg("to_time"),
+					bp::arg("moving_plate_id"),
+					bp::arg("from_time") = 0,
+					bp::arg("fixed_plate_id") = 0),
+				"get_rotation(to_time, moving_plate_id[, from_time=0[, fixed_plate_id=0]]) -> FiniteRotation or None\n"
+				"  Return the finite rotation that rotates from the *fixed_plate_id* plate to the *moving_plate_id* "
+				"plate and from the time *from_time* to the time *to_time*.\n"
+				"\n"
+				"  Returns ``None`` if *fixed_plate_id* and *moving_plate_id* does not exist at both reconstruction times.\n"
+				"\n"
+				"  :param to_time: time at which the moving plate is being rotated *to* (in Ma)\n"
+				"  :type to_time: float\n"
+				"  :param moving_plate_id: the plate id of the moving plate\n"
+				"  :type moving_plate_id: int\n"
+				"  :param from_time: time at which the moving plate is being rotated *from* (in Ma)\n"
+				"  :type from_time: float\n"
+				"  :param fixed_plate_id: the plate id of the fixed plate\n"
+				"  :type fixed_plate_id: int\n"
+				"  :rtype: FiniteRotation or None\n"
+				"\n"
+				"  This method conveniently handles all four combinations of total/stage and "
+				"equivalent/relative rotations (see :class:`ReconstructionTree` for details) normally handled by "
+				":meth:`ReconstructionTree.get_equivalent_total_rotation`, "
+				":meth:`ReconstructionTree.get_relative_total_rotation`, "
+				":func:`get_equivalent_stage_rotation` and "
+				":func:`get_relative_stage_rotation`.\n"
+				"\n"
+				"  This method essentially does the following:\n"
+				"  ::\n"
+				"\n"
+				"    def get_rotation(self, to_time, moving_plate_id[, from_time=0[, fixed_plate_id=0]]):\n"
+				"        if from_time == 0:\n"
+				"            if fixed_plate_id == 0:\n"
+				"                return self.get_reconstruction_tree(to_time).get_equivalent_total_rotation(moving_plate_id)\n"
+				"            \n"
+				"            return self.get_reconstruction_tree(to_time).get_relative_total_rotation(fixed_plate_id, moving_plate_id)\n"
+				"        \n"
+				"        if fixed_plate_id == 0:\n"
+				"            return pygplates.get_equivalent_stage_rotation(\n"
+				"                self.get_reconstruction_tree(from_time),\n"
+				"                self.get_reconstruction_tree(to_time),\n"
+				"                moving_plate_id)\n"
+				"        \n"
+				"        return pygplates.get_relative_stage_rotation(\n"
+				"            self.get_reconstruction_tree(from_time),\n"
+				"            self.get_reconstruction_tree(to_time),\n"
+				"            fixed_plate_id,\n"
+				"            moving_plate_id)\n"
+				"\n"
+				"  Note that this method is optimised for the cases when either, or both, *from_time* and "
+				"*fixed_plate_id* have their default values of zero.\n")
+		.def("get_reconstruction_tree",
+				&GPlatesApi::Reconstruction::get_reconstruction_tree,
+				(bp::arg("reconstruction_time")),
+				"get_reconstruction_tree(reconstruction_time) -> ReconstructionTree\n"
+				"  Return the reconstruction tree associated with the specified instant of geological time.\n"
+				"\n"
+				"  :param reconstruction_time: time at which to create a reconstruction tree (in Ma)\n"
+				"  :type reconstruction_time: float\n"
+				"  :rtype: :class:`ReconstructionTree`\n"
+				"\n"
+				"  If the reconstruction tree for the specified reconstruction time is currently in "
+				"the internal cache then it is returned, otherwise a new reconstruction tree is created "
+				"and stored in the cache (after evicting the reconstruction tree associated with the "
+				"least recently requested reconstruction time).\n")
+	;
+
+	// Enable boost::optional<Reconstruction::non_null_ptr_type> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::python_optional<GPlatesApi::Reconstruction::non_null_ptr_type>();
+
+	// Registers 'non-const' to 'const' conversions.
+	boost::python::implicitly_convertible<
+			GPlatesApi::Reconstruction::non_null_ptr_type,
+			GPlatesApi::Reconstruction::non_null_ptr_to_const_type>();
+	boost::python::implicitly_convertible<
+			boost::optional<GPlatesApi::Reconstruction::non_null_ptr_type>,
+			boost::optional<GPlatesApi::Reconstruction::non_null_ptr_to_const_type> >();
 }
 
 #endif // GPLATES_NO_PYTHON
