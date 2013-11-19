@@ -147,7 +147,7 @@ export_lat_lon_point()
 			"\n");
 
 	// Enable boost::optional<LatLonPoint> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesMaths::LatLonPoint>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::LatLonPoint>();
 }
 
 #endif // GPLATES_NO_PYTHON

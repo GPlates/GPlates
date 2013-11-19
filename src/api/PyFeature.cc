@@ -248,7 +248,7 @@ export_feature()
 	;
 
 	// Enable boost::optional<FeatureHandle::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesModel::FeatureHandle::non_null_ptr_type>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesModel::FeatureHandle::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
 	boost::python::implicitly_convertible<

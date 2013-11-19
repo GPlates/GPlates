@@ -124,7 +124,7 @@ export_real()
 	GPlatesApi::python_Real();
 
 	// Enable boost::optional<GPlatesMaths::Real> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesMaths::Real>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::Real>();
 }
 
 #endif // GPLATES_NO_PYTHON

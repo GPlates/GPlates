@@ -131,7 +131,7 @@ export_top_level_property()
 	;
 
 	// Enable boost::optional<TopLevelProperty::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesModel::TopLevelProperty::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
 	boost::python::implicitly_convertible<

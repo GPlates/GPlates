@@ -153,7 +153,7 @@ export_great_circle_arc()
 	;
 
 	// Enable boost::optional<GreatCircleArc> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesMaths::GreatCircleArc>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::GreatCircleArc>();
 }
 
 #endif // GPLATES_NO_PYTHON

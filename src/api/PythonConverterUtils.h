@@ -129,7 +129,7 @@ namespace GPlatesApi
 		 *     -> 'boost::optional<GpmlPlateId::non_null_ptr_to_const_type>'
 		 *
 		 * NOTE: You'll also need to register a conversion for boost::optional<SourceType::non_null_ptr_type>
-		 * using class @a python_optional.
+		 * using @a register_optional_conversion.
 		 *
 		 * Note that these registrations need to be done explicitly, however boost python does treat
 		 * boost::shared_ptr as a special case (where base/derived conversions are registered/handled automatically).
@@ -145,9 +145,9 @@ namespace GPlatesApi
 		 *
 		 * A python object that is None will become boost::none and vice versa.
 		 *
-		 * To register the to/from converters, for boost::optional<T>, simply specify:
+		 * To register the to/from converters, for boost::optional<T>, simply call:
 		 *
-		 *   python_optional<T>();
+		 *   register_optional_conversion<T>();
 		 *
 		 * ...in the module initialisation code for the desired type 'T'.
 		 *
@@ -157,31 +157,8 @@ namespace GPlatesApi
 		 *   http://mail.python.org/pipermail/cplusplus-sig/2007-May/012003.html
 		 */
 		template <typename T>
-		struct python_optional :
-				private boost::noncopyable
-		{
-			explicit
-			python_optional();
-
-			struct Conversion
-			{
-				static
-				PyObject *
-				convert(
-						const boost::optional<T> &value);
-			};
-
-			static
-			void *
-			convertible(
-					PyObject *obj);
-
-			static
-			void
-			construct(
-					PyObject *obj,
-					boost::python::converter::rvalue_from_python_stage1_data *data);
-		};
+		void
+		register_optional_conversion();
 
 
 		/**
@@ -320,72 +297,85 @@ namespace GPlatesApi
 		}
 
 
+		namespace Implementation
+		{
+			template <typename T>
+			struct python_optional :
+					private boost::noncopyable
+			{
+				struct Conversion
+				{
+					static
+					PyObject *
+					convert(
+							const boost::optional<T> &value)
+					{
+						namespace bp = boost::python;
+
+						return bp::incref((value ? bp::object(value.get()) : bp::object()).ptr());
+					}
+				};
+
+				static
+				void *
+				convertible(
+						PyObject *obj)
+				{
+					namespace bp = boost::python;
+
+					if (obj == Py_None ||
+						bp::extract<T>(obj).check())
+					{
+						return obj;
+					}
+
+					return NULL;
+				}
+
+				static
+				void
+				construct(
+						PyObject *obj,
+						boost::python::converter::rvalue_from_python_stage1_data *data)
+				{
+					namespace bp = boost::python;
+
+					void *const storage = reinterpret_cast<
+							bp::converter::rvalue_from_python_storage<boost::optional<T> > *>(
+									data)->storage.bytes;
+
+					if (obj == Py_None)
+					{
+						new (storage) boost::optional<T>();
+					}
+					else
+					{
+						new (storage) boost::optional<T>(bp::extract<T>(obj)());
+					}
+
+					data->convertible = storage;
+				}
+			};
+		}
+
+
 		template <typename T>
-		python_optional<T>::python_optional()
+		void
+		register_optional_conversion()
 		{
 			namespace bp = boost::python;
 
 			if (!bp::extract<boost::optional<T> >(bp::object()).check())
 			{
 				// To python conversion.
-				bp::to_python_converter<boost::optional<T>, Conversion>();
+				bp::to_python_converter<boost::optional<T>, Implementation::python_optional<T>::Conversion>();
 
 				// From python conversion.
 				bp::converter::registry::push_back(
-						&convertible,
-						&construct,
+						&Implementation::python_optional<T>::convertible,
+						&Implementation::python_optional<T>::construct,
 						bp::type_id<boost::optional<T> >());
 			}
-		}
-
-		template <typename T>
-		PyObject *
-		python_optional<T>::Conversion::convert(
-				const boost::optional<T> &value)
-		{
-			namespace bp = boost::python;
-
-			return bp::incref((value ? bp::object(value.get()) : bp::object()).ptr());
-		}
-
-		template <typename T>
-		void *
-		python_optional<T>::convertible(
-				PyObject *obj)
-		{
-			namespace bp = boost::python;
-
-			if (obj == Py_None ||
-				bp::extract<T>(obj).check())
-			{
-				return obj;
-			}
-
-			return NULL;
-		}
-
-		template <typename T>
-		void
-		python_optional<T>::construct(
-				PyObject *obj,
-				boost::python::converter::rvalue_from_python_stage1_data *data)
-		{
-			namespace bp = boost::python;
-
-			void *const storage = reinterpret_cast<
-					bp::converter::rvalue_from_python_storage<boost::optional<T> > *>(
-							data)->storage.bytes;
-
-			if (obj == Py_None)
-			{
-				new (storage) boost::optional<T>();
-			}
-			else
-			{
-				new (storage) boost::optional<T>(bp::extract<T>(obj)());
-			}
-
-			data->convertible = storage;
 		}
 
 
@@ -394,7 +384,7 @@ namespace GPlatesApi
 		register_optional_non_null_intrusive_ptr_and_implicit_conversions()
 		{
 			// Enable boost::optional<SourceType::non_null_ptr_type> to be passed to and from python.
-			python_optional< GPlatesUtils::non_null_intrusive_ptr<SourceType> >();
+			register_optional_conversion< GPlatesUtils::non_null_intrusive_ptr<SourceType> >();
 
 			// Enable a python-wrapped boost::optional<SourceType::non_null_ptr_type> to be used when a
 			// boost::optional<TargetType::non_null_ptr_type> is requested (and various 'const' conversions).

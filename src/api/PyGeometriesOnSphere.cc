@@ -226,7 +226,7 @@ export_geometry_on_sphere()
 	GPlatesApi::python_ConstGeometryOnSphere<GPlatesMaths::GeometryOnSphere>();
 
 	// Enable boost::optional<GeometryOnSphere::non_null_ptr_to_const_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>();
 }
 
 

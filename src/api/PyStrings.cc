@@ -271,7 +271,7 @@ export_qstring()
 	GPlatesApi::python_QString();
 
 	// Enable boost::optional<QString> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<QString>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<QString>();
 }
 
 
@@ -282,7 +282,7 @@ export_unicode_string()
 	GPlatesApi::python_UnicodeString();
 
 	// Enable boost::optional<GPlatesUtils::UnicodeString> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesUtils::UnicodeString>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesUtils::UnicodeString>();
 }
 
 
@@ -293,7 +293,7 @@ export_xml_attribute_value()
 	GPlatesApi::python_StringContentTypeGenerator<GPlatesModel::XmlAttributeValue>();
 
 	// Enable boost::optional<GPlatesModel::XmlAttributeValue> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesModel::XmlAttributeValue>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesModel::XmlAttributeValue>();
 }
 
 
@@ -304,7 +304,7 @@ export_enumeration_content()
 	GPlatesApi::python_StringContentTypeGenerator<GPlatesPropertyValues::EnumerationContent>();
 
 	// Enable boost::optional<GPlatesPropertyValues::EnumerationContent> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::EnumerationContent>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::EnumerationContent>();
 }
 
 
@@ -315,7 +315,7 @@ export_text_content()
 	GPlatesApi::python_StringContentTypeGenerator<GPlatesPropertyValues::TextContent>();
 
 	// Enable boost::optional<GPlatesPropertyValues::TextContent> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::TextContent>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::TextContent>();
 }
 
 

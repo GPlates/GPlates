@@ -180,7 +180,7 @@ export_property_value()
 	;
 
 	// Enable boost::optional<PropertyValue::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesModel::PropertyValue::non_null_ptr_type>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesModel::PropertyValue::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
 	boost::python::implicitly_convertible<
@@ -411,7 +411,7 @@ export_geo_time_instant()
 	;
 
 	// Enable boost::optional<GeoTimeInstant> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::GeoTimeInstant>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::GeoTimeInstant>();
 }
 
 
@@ -1547,7 +1547,7 @@ export_gpml_key_value_dictionary_element()
 	;
 
 	// Enable boost::optional<GpmlKeyValueDictionaryElement::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
 	boost::python::implicitly_convertible<
@@ -1904,7 +1904,7 @@ export_gpml_time_sample()
 	;
 
 	// Enable boost::optional<GpmlTimeSample::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
 	boost::python::implicitly_convertible<
@@ -2072,7 +2072,7 @@ export_gpml_time_window()
 	;
 
 	// Enable boost::optional<GpmlTimeWindow::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
 	boost::python::implicitly_convertible<

@@ -89,7 +89,7 @@ export_feature_id()
 	;
 
 	// Enable boost::optional<FeatureId> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesModel::FeatureId>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesModel::FeatureId>();
 }
 
 
@@ -140,7 +140,7 @@ export_revision_id()
 	;
 
 	// Enable boost::optional<RevisionId> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesModel::RevisionId>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesModel::RevisionId>();
 }
 
 void

@@ -132,7 +132,7 @@ export_qualified_xml_name(
 	;
 
 	// Enable boost::optional<GPlatesModel::QualifiedXmlName<> > to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<qualified_xml_name_type>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<qualified_xml_name_type>();
 
 	// Member to-QString conversion function.
 	qualified_xml_name_class.def("to_qualified_string",

@@ -1222,7 +1222,7 @@ export_reconstruction_tree()
 			"plates (not that this is usually the case - just that it's allowed).\n");
 
 	// Enable boost::optional<ReconstructionTree::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesAppLogic::ReconstructionTree::non_null_ptr_type>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::ReconstructionTree::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
 	boost::python::implicitly_convertible<
@@ -1355,7 +1355,7 @@ export_reconstruction_tree()
 	;
 
 	// Enable boost::optional<GPlatesApi::ReconstructionTreeEdge> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesApi::ReconstructionTreeEdge>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::ReconstructionTreeEdge>();
 
 	//
 	// ReconstructionTreeBuilder - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
@@ -1421,7 +1421,7 @@ export_reconstruction_tree()
 	;
 
 	// Enable boost::optional<ReconstructionGraph> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesAppLogic::ReconstructionGraph>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::ReconstructionGraph>();
 
 	//
 	// Reconstruction - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
@@ -1540,7 +1540,7 @@ export_reconstruction_tree()
 	;
 
 	// Enable boost::optional<Reconstruction::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesApi::Reconstruction::non_null_ptr_type>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::Reconstruction::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
 	boost::python::implicitly_convertible<

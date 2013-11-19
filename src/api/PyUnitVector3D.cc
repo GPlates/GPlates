@@ -103,7 +103,7 @@ export_unit_vector_3d()
 	;
 
 	// Enable boost::optional<UnitVector3D> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesMaths::UnitVector3D>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::UnitVector3D>();
 }
 
 #endif // GPLATES_NO_PYTHON

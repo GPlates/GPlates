@@ -487,7 +487,7 @@ export_finite_rotation()
 			"finite_rotation1, finite_rotation2, time1, time2, target_time)\n");
 
 	// Enable boost::optional<FiniteRotation> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::python_optional<GPlatesMaths::FiniteRotation>();
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::FiniteRotation>();
 }
 
 #endif // GPLATES_NO_PYTHON
