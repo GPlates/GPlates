@@ -158,8 +158,7 @@ namespace
 	 */
 	bool
 	should_offer_conjugate_plate_id_prop(
-			const GPlatesQtWidgets::ChooseFeatureTypeWidget *choose_feature_type_widget,
-			const GPlatesModel::Gpgim &gpgim)
+			const GPlatesQtWidgets::ChooseFeatureTypeWidget *choose_feature_type_widget)
 	{
 		// Get currently selected feature type.
 		boost::optional<GPlatesModel::FeatureType> feature_type =
@@ -173,7 +172,9 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
 
 		// See if the feature type supports a conjugate plate id property.
-		return gpgim.get_feature_property(feature_type.get(), CONJUGATE_PLATE_ID_PROPERTY_NAME);
+		return GPlatesModel::Gpgim::instance().get_feature_property(
+				feature_type.get(),
+				CONJUGATE_PLATE_ID_PROPERTY_NAME);
 	}
 
 	/**
@@ -204,8 +205,7 @@ namespace
 	set_recon_method_state(
 			QWidget *recon_method_widget,
 			QComboBox *recon_method_combo_box,
-			const GPlatesQtWidgets::ChooseFeatureTypeWidget *choose_feature_type_widget,
-			const GPlatesModel::Gpgim &gpgim)
+			const GPlatesQtWidgets::ChooseFeatureTypeWidget *choose_feature_type_widget)
 	{
 		// Get currently selected feature type.
 		boost::optional<GPlatesModel::FeatureType> feature_type =
@@ -222,7 +222,9 @@ namespace
 				GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
 
 		// See if the feature type supports a reconstruction method property.
-		if (!gpgim.get_feature_property(feature_type.get(), RECONSTRUCTION_METHOD_PROPERTY_NAME))
+		if (!GPlatesModel::Gpgim::instance().get_feature_property(
+				feature_type.get(),
+				RECONSTRUCTION_METHOD_PROPERTY_NAME))
 		{
 			recon_method_widget->setVisible(false); // Invisible reconstruction method widget.
 			recon_method_combo_box->setEnabled(false); // Disable combo box.
@@ -313,7 +315,6 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		QWidget *parent_):
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-	d_gpgim(view_state_.get_application_state().get_gpgim()),
 	d_model_ptr(view_state_.get_application_state().get_model_interface()),
 	d_file_state(view_state_.get_application_state().get_feature_collection_file_state()),
 	d_file_io(view_state_.get_application_state().get_feature_collection_file_io()),
@@ -325,7 +326,6 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	d_name_widget(new EditStringWidget(this)),
 	d_choose_feature_type_widget(
 			new ChooseFeatureTypeWidget(
-				view_state_.get_application_state().get_gpgim(),
 				SelectionWidget::Q_LIST_WIDGET,
 				this)),
 	d_feature_type_description_widget(
@@ -345,12 +345,10 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	d_left_plate_id(new EditPlateIdWidget(this)),
 	d_create_feature_properties_page(
 			new CreateFeaturePropertiesPage(
-				view_state_.get_application_state().get_gpgim(),
 				view_state_,
 				this)),
 	d_listwidget_geometry_destinations(
 			new ChoosePropertyWidget(
-				view_state_.get_application_state().get_gpgim(),
 				SelectionWidget::Q_LIST_WIDGET,
 				this)),
 	d_recon_method(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID),
@@ -678,7 +676,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties()
 
 		// Add a gpml:conjugatePlateId Property.
 		if (!d_conjugate_plate_id_widget->is_null() &&
-				should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget, d_gpgim))
+				should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget))
 		{
 			add_common_feature_property_to_list(
 					common_feature_properties,
@@ -728,7 +726,6 @@ GPlatesQtWidgets::CreateFeatureDialog::add_common_feature_property_to_list(
 			GPlatesModel::ModelUtils::create_top_level_property(
 					property_name,
 					property_value,
-					d_gpgim,
 					feature_type,
 					&error_code);
 	if (!top_level_property)
@@ -869,7 +866,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 		d_conjugate_plate_id_widget->set_null(true);
 		d_conjugate_plate_id_widget->setVisible(
 			d_recon_method_combobox->currentIndex() == 0 /* plate id */ &&
-				should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget, d_gpgim));
+				should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget));
 		// Make sure it's unchecked because it's accessed programmatically even when it's not visible.
 		d_create_conjugate_isochron_checkbox->setChecked(false);
 		d_create_conjugate_isochron_checkbox->setVisible(
@@ -880,8 +877,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 		set_recon_method_state(
 			d_recon_method_widget,
 			d_recon_method_combobox,
-			d_choose_feature_type_widget,
-			d_gpgim);
+			d_choose_feature_type_widget);
 		break;
 
 	case ALL_PROPERTIES_PAGE:
@@ -1061,7 +1057,7 @@ GPlatesQtWidgets::CreateFeatureDialog::recon_method_changed(int index)
 			d_left_plate_id->setVisible(false);
 			d_plate_id_widget->setVisible(true);
 			d_conjugate_plate_id_widget->setVisible(
-					should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget, d_gpgim));
+					should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget));
 			d_recon_method = GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID;
 			break;
 	}
@@ -1112,7 +1108,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_feature_type_changed()
 	{
 		// Get the GPGIM feature class.
 		boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
-				d_gpgim.get_feature_class(feature_type.get());
+				GPlatesModel::Gpgim::instance().get_feature_class(feature_type.get());
 		if (gpgim_feature_class)
 		{
 			feature_type_description_string = gpgim_feature_class.get()->get_feature_description();
@@ -1196,7 +1192,6 @@ GPlatesQtWidgets::CreateFeatureDialog::add_geometry_property(
 			GPlatesModel::ModelUtils::create_top_level_property(
 					geometry_property_name,
 					geometry_property_value,
-					d_gpgim,
 					feature->feature_type(),
 					&add_property_error_code);
 	if (!geometry_property)
@@ -1420,7 +1415,6 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 					conjugate_isochron_feature->reference(),
 					property_name,
 					conjugate_plate_id.get()->clone(),
-					d_gpgim,
 					true/*check_property_name_allowed_for_feature_type*/,
 					&add_property_error_code))
 			{
@@ -1443,7 +1437,6 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 					conjugate_isochron_feature->reference(),
 					property_name,
 					reconstruction_plate_id.get()->clone(),
-					d_gpgim,
 					true/*check_property_name_allowed_for_feature_type*/,
 					&add_property_error_code))
 			{
@@ -1474,7 +1467,6 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 					conjugate_isochron_feature->reference(),
 					property_name,
 					conjugate_name_property_value,
-					d_gpgim,
 					true/*check_property_name_allowed_for_feature_type*/,
 					&add_property_error_code))
 			{
@@ -1567,7 +1559,6 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			conjugate_isochron_feature->reference(),
 			(*geometry_property_iterator)->get_property_name(),
 			conjugate_geometry_property_value.get(),
-			d_gpgim,
 			true/*check_property_name_allowed_for_feature_type*/,
 			&add_property_error_code))
 	{

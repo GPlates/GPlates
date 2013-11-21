@@ -55,7 +55,6 @@
 
 namespace GPlatesModel
 {
-	class Gpgim;
 	class GpgimProperty;
 
 	namespace ModelUtils
@@ -292,7 +291,6 @@ namespace GPlatesModel
 		create_top_level_property(
 				const PropertyName& property_name,
 				const PropertyValue::non_null_ptr_type &property_value,
-				const Gpgim &gpgim,
 				boost::optional<FeatureType> feature_type = boost::none,
 				TopLevelPropertyError::Type *error_code = NULL);
 
@@ -332,7 +330,6 @@ namespace GPlatesModel
 				const FeatureHandle::weak_ref &feature,
 				const PropertyName& property_name,
 				const PropertyValue::non_null_ptr_type &property_value,
-				const Gpgim &gpgim,
 				bool check_property_name_allowed_for_feature_type = true,
 				TopLevelPropertyError::Type *error_code = NULL);
 
@@ -352,24 +349,6 @@ namespace GPlatesModel
 				TopLevelPropertyError::Type *error_code = NULL);
 
 
-		/**
-		 * Creates a TopLevelPropertyInline from the specified property value and
-		 * adds it into the specified feature.
-		 *
-		 * NOTE: This does not check against the GPGIM or convert the time-dependent wrapper (if any)
-		 * by querying the GPGIM. See the other overload of @a add_property for that.
-		 */
-		inline
-		void
-		add_property(
-				const FeatureHandle::weak_ref &feature,
-				const PropertyName& property_name,
-				const PropertyValue::non_null_ptr_type &property_value)
-		{
-			feature->add(TopLevelPropertyInline::create(property_name, property_value));
-		}
-
-
 		/*
 		* Given the feature reference, 
 		* return the MPRS(Moving Plate Rotation Sequence) metadata as a GpmlKeyValueDictionary.
@@ -385,7 +364,7 @@ namespace GPlatesModel
 		 *
 		 * Properties with a name not matching @a old_property_name are left alone.
 		 *
-		 * The GPGIM, @a gpgim, is used to determine the time-dependent wrapper (if any) required
+		 * The GPGIM is used to determine the time-dependent wrapper (if any) required
 		 * for the property name @a new_property_name.
 		 *
 		 * NOTE: If @a check_new_property_name_allowed_for_feature_type is true then the new property
@@ -400,7 +379,6 @@ namespace GPlatesModel
 				FeatureHandle &feature,
 				const PropertyName &old_property_name,
 				const PropertyName &new_property_name,
-				const Gpgim &gpgim,
 				bool check_new_property_name_allowed_for_feature_type = true,
 				TopLevelPropertyError::Type *error_code = NULL);
 
@@ -410,14 +388,13 @@ namespace GPlatesModel
 		 * property object with the same property value (aside from time-dependent differences)
 		 * as @a top_level_property but with the @a new_property_name.
 		 *
-		 * The GPGIM, @a gpgim, is used to determine the time-dependent wrapper (if any) required
+		 * The GPGIM is used to determine the time-dependent wrapper (if any) required
 		 * for the specified property name.
 		 */
 		boost::optional<TopLevelProperty::non_null_ptr_type>
 		rename_property(
 				const TopLevelProperty &top_level_property,
 				const PropertyName &new_property_name,
-				const Gpgim &gpgim,
 				TopLevelPropertyError::Type *error_code = NULL);
 
 		/**

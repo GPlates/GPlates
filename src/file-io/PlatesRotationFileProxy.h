@@ -761,11 +761,9 @@ namespace GPlatesFileIO
 	public:
 		explicit
 		GrotWriterWithCfg(
-				File::Reference &file_ref,
-				const GPlatesModel::Gpgim& gpgim) : 
-			PlatesRotationFormatWriter(file_ref.get_file_info(), gpgim),
+				File::Reference &file_ref) : 
+			PlatesRotationFormatWriter(file_ref.get_file_info()),
 			d_file_ref(file_ref)
-			
 		{ }
 			
 		bool
@@ -807,9 +805,8 @@ namespace GPlatesFileIO
 	public:
 		explicit
 		GrotWriterWithoutCfg(
-				File::Reference &file_ref,
-				const GPlatesModel::Gpgim& gpgim) : 
-			PlatesRotationFormatWriter(file_ref.get_file_info(), gpgim),
+				File::Reference &file_ref) : 
+			PlatesRotationFormatWriter(file_ref.get_file_info()),
 			d_file_ref(file_ref),
 			d_mprs_id(0)
 		{ }
@@ -885,11 +882,10 @@ namespace GPlatesFileIO
 
 		boost::shared_ptr<GrotWriterWithCfg>
 		create_file_writer(
-				File::Reference &file_ref,
-				const GPlatesModel::Gpgim& gpgim)
+				File::Reference &file_ref)
 		{
 			//qWarning() << "TODO: create writer according to the file version.";
-			return boost::shared_ptr<GrotWriterWithCfg>(new GrotWriterWithCfg(file_ref, gpgim));
+			return boost::shared_ptr<GrotWriterWithCfg>(new GrotWriterWithCfg(file_ref));
 		}
 
 		void

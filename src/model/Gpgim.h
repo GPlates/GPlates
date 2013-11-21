@@ -34,7 +34,6 @@
 #include <QXmlStreamReader>
 
 #include "FeatureType.h"
-#include "Gpgim.h"
 #include "GpgimEnumerationType.h"
 #include "GpgimFeatureClass.h"
 #include "GpgimProperty.h"
@@ -46,6 +45,7 @@
 #include "property-values/StructuralType.h"
 
 #include "utils/ReferenceCount.h"
+#include "utils/Singleton.h"
 
 
 namespace GPlatesModel
@@ -54,10 +54,24 @@ namespace GPlatesModel
 	 * The GPlates Geological Information Model (GPGIM) main query point.
 	 *
 	 * Only the current (latest) version of the GPGIM is available.
+	 *
+	 * This is a singleton that can be accessed via 'Gpgim::instance()':
+	 *
+	 *   Currently this loads the 'core' GPGIM resource XML file.
+	 *   In the future there will be the option to also load one or more 'extension' GPGIM
+	 *   resource files that are created by the external community and that model data outside
+	 *   the core Geological information model.
+	 *
+	 *   Throws @a ErrorOpeningFileForReadingException upon failure to open XML file for reading.
+	 *
+	 *   Throws @a GpgimInitialisationException upon failure to properly initialise the GPGIM
+	 *   when reading/parsing the XML file.
 	 */
 	class Gpgim :
-			public GPlatesUtils::ReferenceCount<Gpgim>
+			public GPlatesUtils::Singleton<Gpgim>
 	{
+		GPLATES_SINGLETON_CONSTRUCTOR_DECL(Gpgim)
+
 	public:
 
 		//! A convenience typedef for a shared pointer to a non-const @a Gpgim.
@@ -77,31 +91,6 @@ namespace GPlatesModel
 
 		//! Typedef for a sequence of properties.
 		typedef std::vector<GpgimProperty::non_null_ptr_to_const_type> property_seq_type;
-
-
-		/**
-		 * The default filename for the GPGIM resource XML file.
-		 *
-		 * This is loaded into the GPlates executable as a Qt resource via the 'qt-resources' library.
-		 */
-		static const QString DEFAULT_GPGIM_RESOURCE_FILENAME;
-
-
-		/**
-		 * Creates a @a Gpgim from the specified GPGIM resource XML file.
-		 *
-		 * @throws @a ErrorOpeningFileForReadingException upon failure to open XML file for reading.
-		 *
-		 * @throws @a GpgimInitialisationException upon failure to properly initialise the GPGIM
-		 * when reading/parsing the XML file.
-		 */
-		static
-		non_null_ptr_type
-		create(
-				const QString &gpgim_resource_filename = DEFAULT_GPGIM_RESOURCE_FILENAME)
-		{
-			return non_null_ptr_type(new Gpgim(gpgim_resource_filename));
-		}
 
 
 		/**
@@ -235,6 +224,14 @@ namespace GPlatesModel
 
 	private:
 
+		/**
+		 * The filename for the 'core' GPGIM resource XML file.
+		 *
+		 * This is loaded into the GPlates executable as a Qt resource via the 'qt-resources' library.
+		 */
+		static const QString CORE_GPGIM_RESOURCE_FILENAME;
+
+
 		//! Typedef for mapping from feature type to associated feature class XML element nodes.
 		typedef std::map<FeatureType, XmlElementNode::non_null_ptr_type> feature_class_xml_element_node_map_type;
 
@@ -311,7 +308,14 @@ namespace GPlatesModel
 		feature_type_seq_type d_concrete_feature_types;
 
 
-		Gpgim(
+		/**
+		 * Loads a GPGIM resource XML file.
+		 *
+		 * Currently there is only the 'core' GPGIM, but in the future there will also be
+		 * 'extension' GPGIMs that model data outside the core geological information model.
+		 */
+		void
+		load_gpgim_resource(
 				const QString &gpgim_resource_filename);
 
 		/**

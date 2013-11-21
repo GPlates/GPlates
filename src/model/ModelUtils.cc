@@ -165,9 +165,10 @@ namespace
 	get_gpgim_property(
 			boost::optional<GPlatesModel::FeatureType> feature_type,
 			const GPlatesModel::PropertyName& property_name,
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::ModelUtils::TopLevelPropertyError::Type *error_code)
 	{
+		const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
+
 		// Get the GPGIM property using the property name (and optionally the feature type).
 		// Using the feature type results in stricter conformance to the GPGIM.
 		boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
@@ -283,7 +284,6 @@ boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
 GPlatesModel::ModelUtils::create_top_level_property(
 		const PropertyName& property_name,
 		const PropertyValue::non_null_ptr_type &property_value,
-		const Gpgim &gpgim,
 		boost::optional<FeatureType> feature_type,
 		TopLevelPropertyError::Type *error_code)
 {
@@ -293,7 +293,6 @@ GPlatesModel::ModelUtils::create_top_level_property(
 			get_gpgim_property(
 					feature_type,
 					property_name,
-					gpgim,
 					error_code);
 	if (!gpgim_property)
 	{
@@ -334,7 +333,6 @@ GPlatesModel::ModelUtils::add_property(
 		const FeatureHandle::weak_ref &feature,
 		const PropertyName& property_name,
 		const PropertyValue::non_null_ptr_type &property_value,
-		const Gpgim &gpgim,
 		bool check_property_name_allowed_for_feature_type,
 		TopLevelPropertyError::Type *error_code)
 {
@@ -348,7 +346,6 @@ GPlatesModel::ModelUtils::add_property(
 			create_top_level_property(
 					property_name,
 					property_value,
-					gpgim,
 					feature_type,
 					error_code);
 	if (!top_level_property)
@@ -392,7 +389,6 @@ GPlatesModel::ModelUtils::rename_feature_properties(
 		FeatureHandle &feature,
 		const PropertyName &old_property_name,
 		const PropertyName &new_property_name,
-		const Gpgim &gpgim,
 		bool check_new_property_name_allowed_for_feature_type,
 		TopLevelPropertyError::Type *error_code)
 {
@@ -408,7 +404,6 @@ GPlatesModel::ModelUtils::rename_feature_properties(
 			get_gpgim_property(
 					feature_type,
 					new_property_name,
-					gpgim,
 					error_code);
 	if (!new_gpgim_property)
 	{
@@ -474,11 +469,10 @@ boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
 GPlatesModel::ModelUtils::rename_property(
 		const TopLevelProperty &top_level_property,
 		const PropertyName &new_property_name,
-		const Gpgim &gpgim,
 		TopLevelPropertyError::Type *error_code)
 {
 	boost::optional<GpgimProperty::non_null_ptr_to_const_type> new_gpgim_property =
-			gpgim.get_property(new_property_name);
+			GPlatesModel::Gpgim::instance().get_property(new_property_name);
 	if (!new_gpgim_property)
 	{
 		if (error_code)

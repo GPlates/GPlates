@@ -48,11 +48,6 @@ namespace GPlatesGui
 	class FeatureFocus;
 }
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesQtWidgets
 {
 	class ChangePropertyWidget;
@@ -112,7 +107,6 @@ namespace GPlatesQtWidgets
 		};
 
 		GPlatesAppLogic::ApplicationState &d_application_state;
-		const GPlatesModel::Gpgim &d_gpgim;
 		GPlatesGui::FeatureFocus &d_feature_focus;
 
 		/**

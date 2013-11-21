@@ -47,11 +47,6 @@
 #include "property-values/GpmlTotalReconstructionPole.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesPropertyValues
 {
 	class GpmlTimeWindow;
@@ -66,8 +61,7 @@ namespace GPlatesFileIO
 
 		explicit
 		PlatesRotationFormatWriter(
-				const FileInfo &file_info,
-				const GPlatesModel::Gpgim &gpgim);
+				const FileInfo &file_info);
 
 	protected:
 

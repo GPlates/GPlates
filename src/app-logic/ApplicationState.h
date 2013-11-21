@@ -55,11 +55,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesFileIO
 {
 	namespace FeatureCollectionFileFormat
@@ -94,15 +89,6 @@ namespace GPlatesAppLogic
 		ApplicationState();
 
 		~ApplicationState();
-
-		/**
-		 * Returns the centralised query point for the GPGIM.
-		 */
-		const GPlatesModel::Gpgim &
-		get_gpgim()
-		{
-			return *d_gpgim;
-		}
 
 		GPlatesModel::ModelInterface &
 		get_model_interface()
@@ -393,11 +379,6 @@ namespace GPlatesAppLogic
 			ApplicationState *d_application_state;
 		};
 
-
-		/**
-		 * The GPGIM.
-		 */
-		GPlatesGlobal::PointerTraits<const GPlatesModel::Gpgim>::non_null_ptr_type d_gpgim;
 
 		//! The model store.
 		GPlatesModel::ModelInterface d_model;

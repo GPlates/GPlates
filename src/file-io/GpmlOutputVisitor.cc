@@ -511,8 +511,7 @@ GPlatesFileIO::GpmlOutputVisitor::gzip_program()
 GPlatesFileIO::GpmlOutputVisitor::GpmlOutputVisitor(
 		const FileInfo &file_info,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-		const GPlatesModel::Gpgim &gpgim,
-		bool use_gzip):
+		bool use_gzip) :
 	d_qfile_ptr(new QFile(file_info.get_qfileinfo().filePath())),
 	d_qprocess_ptr(new QProcess),
 	d_gzip_afterwards(false),
@@ -577,28 +576,26 @@ GPlatesFileIO::GpmlOutputVisitor::GpmlOutputVisitor(
 		
 	}
 	
-	start_writing_document(d_output, feature_collection_ref, gpgim);
+	start_writing_document(d_output, feature_collection_ref);
 }
 
 
 GPlatesFileIO::GpmlOutputVisitor::GpmlOutputVisitor(
 		QIODevice *target,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-		const GPlatesModel::Gpgim &gpgim):
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref) :
 	d_qfile_ptr(),
 	d_qprocess_ptr(),
 	d_output(target),
 	d_gzip_afterwards(false)
 {
-	start_writing_document(d_output, feature_collection_ref, gpgim);
+	start_writing_document(d_output, feature_collection_ref);
 }
 
 
 void
 GPlatesFileIO::GpmlOutputVisitor::start_writing_document(
 		XmlWriter &writer,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-		const GPlatesModel::Gpgim &gpgim)
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref)
 {
 	writer.writeStartDocument();
 
@@ -615,7 +612,7 @@ GPlatesFileIO::GpmlOutputVisitor::start_writing_document(
 	writer.writeStartGpmlElement("FeatureCollection");
 
 	// The version of the GPGIM built into the current GPlates.
-	const GPlatesModel::GpgimVersion &gpgim_version = gpgim.get_version();
+	const GPlatesModel::GpgimVersion &gpgim_version = GPlatesModel::Gpgim::instance().get_version();
 
 	writer.writeGpmlAttribute("version", gpgim_version.version_string());
 	writer.writeAttribute(

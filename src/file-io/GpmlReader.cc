@@ -270,7 +270,6 @@ namespace
 	boost::optional<Model::GpgimVersion>
 	read_root_element(
 			Utils::ReaderParams &params,
-			const Model::Gpgim &gpgim,
 			boost::shared_ptr<Model::XmlElementNode::AliasToNamespaceMap> alias_map)
 	{
 		QXmlStreamReader &reader = params.reader;
@@ -356,7 +355,7 @@ namespace
 			else
 			{
 				// Append warning if the GPML file was created by a more recent version of GPlates.
-				append_warning_if(gpml_version.get() > gpgim.get_version(),
+				append_warning_if(gpml_version.get() > GPlatesModel::Gpgim::instance().get_version(),
 						params,
 						IO::ReadErrors::PartiallySupportedVersionAttribute,
 						IO::ReadErrors::AssumingCurrentVersion);
@@ -377,7 +376,6 @@ namespace
 void
 GPlatesFileIO::GpmlReader::read_file(
 		File::Reference &file,
-		const GPlatesModel::Gpgim &gpgim,
 		const GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type &property_structural_type_reader,
 		ReadErrorAccumulation &read_errors,
 		bool use_gzip)
@@ -429,7 +427,7 @@ GPlatesFileIO::GpmlReader::read_file(
 
 	// Read the root element and get the GPGIM version that was used to write the GPML file.
 	const boost::optional<GPlatesModel::GpgimVersion> gpml_version =
-			read_root_element(params, gpgim, alias_map);
+			read_root_element(params, alias_map);
 	if (gpml_version)
 	{
 		// Store the GPGIM version in the feature collection as a tag.
@@ -443,7 +441,7 @@ GPlatesFileIO::GpmlReader::read_file(
 
 		// Create a GPML feature reader factory that matches the GPGIM version in the GPML file.
 		const GpmlFeatureReaderFactory feature_reader_factory(
-				gpgim, property_structural_type_reader, gpml_version.get());
+				property_structural_type_reader, gpml_version.get());
 
 		// .atEnd() can not be relied upon when reading a QProcess,
 		// so we must make sure we block for a moment to make sure

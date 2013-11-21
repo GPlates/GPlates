@@ -45,7 +45,6 @@
 #include "model/FeatureCollectionRevision.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
-#include "model/Gpgim.h"
 #include "model/Model.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
@@ -405,12 +404,11 @@ populate_feature_store(
 
 void
 output_as_gpml(
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &features,
-		const GPlatesModel::Gpgim &gpgim)
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &features)
 {
 	QFile standard_output;
 	standard_output.open(stdout, QIODevice::WriteOnly);
-	GPlatesFileIO::GpmlOutputVisitor v(&standard_output, features, gpgim);
+	GPlatesFileIO::GpmlOutputVisitor v(&standard_output, features);
 
 	GPlatesModel::FeatureCollectionHandle::iterator begin = features->begin();
 	GPlatesModel::FeatureCollectionHandle::iterator end = features->end();
@@ -542,11 +540,9 @@ main(int argc, char *argv[])
 
 	GPlatesModel::ModelInterface model;
 
-	GPlatesModel::Gpgim::non_null_ptr_to_const_type gpgim = GPlatesModel::Gpgim::create();
-
 	// Used to read structural types from a GPML file.
 	GPlatesFileIO::GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type gpml_structural_type_reader =
-			GPlatesFileIO::GpmlPropertyStructuralTypeReader::create(gpgim);
+			GPlatesFileIO::GpmlPropertyStructuralTypeReader::create();
 
 
 	std::pair<GPlatesModel::FeatureCollectionHandle::weak_ref,
@@ -559,7 +555,7 @@ main(int argc, char *argv[])
 	GPlatesModel::FeatureCollectionHandle::weak_ref total_recon_seqs =
 			isochrons_and_total_recon_seqs.second;
 
-	::output_as_gpml(isochrons, *gpgim);
+	::output_as_gpml(isochrons);
 	//::output_reconstructions(isochrons, total_recon_seqs);
 
 	// Test GPML 1.6 reader.
@@ -579,13 +575,12 @@ main(int argc, char *argv[])
 		// Read new features from the file into the empty feature collection.
 		GPlatesFileIO::GpmlReader::read_file(
 				file->get_reference(),
-				*gpgim,
 				gpml_structural_type_reader,
 				accum);
 
 		GPlatesModel::FeatureCollectionHandle::weak_ref features =
 				file->get_reference().get_feature_collection();
-		::output_as_gpml(features, *gpgim);
+		::output_as_gpml(features);
 
 #if 0
 		QFile file(filename);

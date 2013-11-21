@@ -655,7 +655,6 @@ namespace
 void
 GPlatesFileIO::PlatesRotationFormatReader::read_file(
 		File::Reference &file,
-		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors)
 {
 	PROFILE_FUNC();

@@ -1455,7 +1455,6 @@ void
 GPlatesFileIO::OgrReader::read_file(
 		GPlatesFileIO::File::Reference &file_ref,
 		const FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_file_configuration,
-		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors)
 {
 	PROFILE_FUNC();

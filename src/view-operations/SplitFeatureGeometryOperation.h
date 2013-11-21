@@ -54,11 +54,6 @@ namespace GPlatesMaths
 	class PointOnSphere;
 }
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesGui
 {
 	class CanvasToolWorkflows;
@@ -83,7 +78,6 @@ namespace GPlatesViewOperations
 	public:
 		SplitFeatureGeometryOperation(
 				GPlatesGui::FeatureFocus &feature_focus,
-				const GPlatesModel::Gpgim &gpgim,
 				GPlatesModel::ModelInterface model_interface,
 				GeometryBuilder &geometry_builder,
 				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
@@ -127,8 +121,6 @@ namespace GPlatesViewOperations
 	private:
 
 		GPlatesGui::FeatureFocus &d_feature_focus;
-
-		const GPlatesModel::Gpgim &d_gpgim;
 
 		GPlatesModel::ModelInterface d_model_interface;
 

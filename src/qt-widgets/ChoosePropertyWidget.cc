@@ -76,14 +76,13 @@ Q_DECLARE_METATYPE( user_data_type )
 bool
 GPlatesQtWidgets::ChoosePropertyWidget::get_properties_to_populate(
 		std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &gpgim_properties,
-		const GPlatesModel::Gpgim &gpgim,
 		const GPlatesModel::FeatureType &target_feature_type,
 		const GPlatesPropertyValues::StructuralType &target_property_type,
 		const GPlatesModel::FeatureHandle::weak_ref &source_feature_ref)
 {
 	// Get the GPGIM feature properties for the target feature type and target property type.
 	GPlatesModel::Gpgim::property_seq_type gpgim_feature_properties;
-	if (!gpgim.get_feature_properties(
+	if (!GPlatesModel::Gpgim::instance().get_feature_properties(
 			target_feature_type,
 			target_property_type,
 			gpgim_feature_properties))
@@ -115,11 +114,9 @@ GPlatesQtWidgets::ChoosePropertyWidget::get_properties_to_populate(
 
 
 GPlatesQtWidgets::ChoosePropertyWidget::ChoosePropertyWidget(
-		const GPlatesModel::Gpgim &gpgim,
 		SelectionWidget::DisplayWidget display_widget,
 		QWidget *parent_) :
 	QWidget(parent_),
-	d_gpgim(gpgim),
 	d_selection_widget(new SelectionWidget(display_widget, this))
 {
 	QtWidgetUtils::add_widget_to_placeholder(d_selection_widget, this);
@@ -166,7 +163,6 @@ GPlatesQtWidgets::ChoosePropertyWidget::populate(
 	std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_feature_properties;
 	get_properties_to_populate(
 			gpgim_feature_properties,
-			d_gpgim,
 			target_feature_type,
 			target_property_type,
 			source_feature_ref);

@@ -48,8 +48,6 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#include "model/Gpgim.h"
-
 #include "utils/Profile.h"
 
 namespace
@@ -76,14 +74,12 @@ namespace
 
 
 GPlatesAppLogic::ApplicationState::ApplicationState() :
-	d_gpgim(GPlatesModel::Gpgim::create()),
 	d_feature_collection_file_state(
 			new FeatureCollectionFileState(d_model)),
 	d_feature_collection_file_format_registry(
-			new GPlatesFileIO::FeatureCollectionFileFormat::Registry(d_gpgim)),
+			new GPlatesFileIO::FeatureCollectionFileFormat::Registry()),
 	d_feature_collection_file_io(
 			new FeatureCollectionFileIO(
-					d_gpgim,
 					d_model,
 					*d_feature_collection_file_format_registry,
 					*d_feature_collection_file_state)),

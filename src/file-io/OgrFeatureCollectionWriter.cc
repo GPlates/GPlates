@@ -1501,9 +1501,8 @@ namespace
 }
 
 GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
-	File::Reference &file_ref,
-	const FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_ogr_file_configuration,
-	const GPlatesModel::Gpgim &gpgim)
+		File::Reference &file_ref,
+		const FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_ogr_file_configuration)
 {
 
 	/**

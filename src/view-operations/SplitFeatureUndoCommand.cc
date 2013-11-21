@@ -105,8 +105,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	d_old_geometry_property = 
 		GPlatesModel::ModelUtils::create_top_level_property(
 				property_name,
-				old_geometry_property_value,
-				d_gpgim);
+				old_geometry_property_value);
 	// If that fails (eg, because property name not recognised) then just add an unwrapped property value.
 	if (!d_old_geometry_property)
 	{
@@ -221,8 +220,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> before_split_point_geometry_property = 
 		GPlatesModel::ModelUtils::create_top_level_property(
 				property_name,
-				before_split_point_geometry_property_value,
-				d_gpgim);
+				before_split_point_geometry_property_value);
 	// If that fails (eg, because property name not recognised) then just add an unwrapped property value.
 	if (!before_split_point_geometry_property)
 	{
@@ -247,8 +245,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> after_split_point_geometry_property = 
 		GPlatesModel::ModelUtils::create_top_level_property(
 				property_name,
-				after_split_point_geometry_property_value,
-				d_gpgim);
+				after_split_point_geometry_property_value);
 	// If that fails (eg, because property name not recognised) then just add an unwrapped property value.
 	if (!after_split_point_geometry_property)
 	{

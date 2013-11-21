@@ -66,13 +66,12 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_) :
 	QGroupBox(parent_),
-	d_gpgim(view_state_.get_application_state().get_gpgim()),
 	d_active_widget_ptr(NULL),
 	d_edit_time_instant_widget_ptr(new EditTimeInstantWidget(this)),
 	d_edit_time_period_widget_ptr(new EditTimePeriodWidget(this)),
 	d_edit_old_plates_header_widget_ptr(new EditOldPlatesHeaderWidget(this)),
 	d_edit_double_widget_ptr(new EditDoubleWidget(this)),
-	d_edit_enumeration_widget_ptr(new EditEnumerationWidget(d_gpgim, this)),
+	d_edit_enumeration_widget_ptr(new EditEnumerationWidget(this)),
 	d_edit_geometry_widget_ptr(new EditGeometryWidget(this)),
 	d_edit_integer_widget_ptr(new EditIntegerWidget(this)),
 	d_edit_plate_id_widget_ptr(new EditPlateIdWidget(this)),
@@ -193,7 +192,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map()
 	//
 
 	const GPlatesModel::Gpgim::property_enumeration_type_seq_type &gpgim_property_enumeration_types =
-			d_gpgim.get_property_enumeration_types();
+			GPlatesModel::Gpgim::instance().get_property_enumeration_types();
 	BOOST_FOREACH(
 			const GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type &gpgim_property_enumeration_type,
 			gpgim_property_enumeration_types)

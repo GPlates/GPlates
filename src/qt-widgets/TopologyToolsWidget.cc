@@ -52,7 +52,6 @@
 #include "gui/TopologyTools.h"
 
 #include "model/FeatureHandle.h"
-#include "model/Gpgim.h"
 #include "model/GpgimProperty.h"
 #include "model/ModelUtils.h"
 #include "model/PropertyName.h"
@@ -158,7 +157,6 @@ GPlatesQtWidgets::TopologyToolsWidget::TopologyToolsWidget(
 	TaskPanelWidget(parent_),
 	d_view_state(view_state_),
 	d_viewport_window(viewport_window_),
-	d_gpgim(view_state_.get_application_state().get_gpgim()),
 	d_feature_focus_ptr(&view_state_.get_feature_focus()),
 	d_model_interface(&view_state_.get_application_state().get_model_interface()),
 	d_canvas_tool_workflows(&canvas_tool_workflows),
@@ -600,7 +598,6 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_apply()
 			GPlatesModel::ModelUtils::create_top_level_property(
 					topological_geometry_property_name.get(),
 					topological_geometry_property_value,
-					d_gpgim,
 					d_edit_topology_feature_ref.get()->feature_type(),
 					&add_property_error_code);
 	if (!top_level_property)

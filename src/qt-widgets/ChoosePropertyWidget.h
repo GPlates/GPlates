@@ -39,12 +39,6 @@
 #include "property-values/StructuralType.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
-
 namespace GPlatesQtWidgets
 {
 	/**
@@ -69,7 +63,6 @@ namespace GPlatesQtWidgets
 		bool
 		get_properties_to_populate(
 				std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &gpgim_properties,
-				const GPlatesModel::Gpgim &gpgim,
 				const GPlatesModel::FeatureType &target_feature_type,
 				const GPlatesPropertyValues::StructuralType &target_property_type,
 				const GPlatesModel::FeatureHandle::weak_ref &source_feature_ref =
@@ -78,7 +71,6 @@ namespace GPlatesQtWidgets
 
 		explicit
 		ChoosePropertyWidget(
-				const GPlatesModel::Gpgim &gpgim,
 				SelectionWidget::DisplayWidget display_widget,
 				QWidget *parent_ = NULL);
 
@@ -114,8 +106,6 @@ namespace GPlatesQtWidgets
 				int index);
 
 	private:
-
-		const GPlatesModel::Gpgim &d_gpgim;
 
 		SelectionWidget *d_selection_widget;
 

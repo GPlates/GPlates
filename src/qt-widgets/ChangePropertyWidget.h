@@ -43,12 +43,6 @@ namespace GPlatesGui
 }
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
-
 namespace GPlatesQtWidgets
 {
 	class ChoosePropertyWidget;
@@ -69,7 +63,6 @@ namespace GPlatesQtWidgets
 
 		explicit
 		ChangePropertyWidget(
-				const GPlatesModel::Gpgim &gpgim,
 				const GPlatesGui::FeatureFocus &feature_focus,
 				QWidget *parent_ = NULL);
 
@@ -103,7 +96,6 @@ namespace GPlatesQtWidgets
 
 	private:
 
-		const GPlatesModel::Gpgim &d_gpgim;
 		const GPlatesGui::FeatureFocus &d_feature_focus;
 
 		ChoosePropertyWidget *d_property_destinations_widget;

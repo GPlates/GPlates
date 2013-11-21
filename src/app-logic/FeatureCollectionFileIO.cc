@@ -64,11 +64,9 @@ namespace
 
 
 GPlatesAppLogic::FeatureCollectionFileIO::FeatureCollectionFileIO(
-		const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim,
 		GPlatesModel::ModelInterface &model,
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 		GPlatesAppLogic::FeatureCollectionFileState &file_state) :
-	d_gpgim(gpgim),
 	d_model(model),
 	d_file_format_registry(file_format_registry),
 	d_file_state(file_state)
@@ -268,7 +266,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::count_features_in_xml_data(
 	int i = ArbitraryXmlReader::instance()->count_features(
 			boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()), 
 			data,
-			*d_gpgim,
 			read_errors);
 
 	emit_handle_read_errors_signal(read_errors);
@@ -298,7 +295,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
 			file->get_reference(), 
 			boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()), 
 			data,
-			*d_gpgim,
 			read_errors);
 	d_file_state.add_file(file);
 

@@ -143,11 +143,9 @@ Q_DECLARE_METATYPE(DefaultConstructibleNonNullPtrType<const GPlatesModel::GpgimP
 
 
 GPlatesQtWidgets::CreateFeaturePropertiesPage::CreateFeaturePropertiesPage(
-		const GPlatesModel::Gpgim &gpgim,
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_gpgim(gpgim),
 	// Start off with the most basic feature type.
 	// It's actually an 'abstract' feature but it'll get reset to a 'concrete' feature...
 	d_feature_type(GPlatesModel::FeatureType::create_gml("AbstractFeature")),
@@ -310,7 +308,7 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::update_available_properties_table
 
 	// Query the GPGIM for the feature class associated with the feature type.
 	boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
-			d_gpgim.get_feature_class(d_feature_type);
+			GPlatesModel::Gpgim::instance().get_feature_class(d_feature_type);
 	if (!gpgim_feature_class)
 	{
 		QMessageBox::warning(this,

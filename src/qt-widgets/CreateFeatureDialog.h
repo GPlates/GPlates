@@ -61,11 +61,6 @@ namespace GPlatesAppLogic
 	class FeatureCollectionFileIO;
 }
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesPresentation
 {
 	class ViewState;
@@ -233,11 +228,6 @@ namespace GPlatesQtWidgets
 				const GPlatesModel::FeatureHandle::weak_ref &isochron_feature,
 				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator);
 
-
-		/**
-		 * The GPGIM contains information about the feature types and their properties.
-		 */
-		const GPlatesModel::Gpgim &d_gpgim;
 
 		/**
 		 * The Model interface, used to create new features.

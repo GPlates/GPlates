@@ -97,7 +97,6 @@ GPlatesQtWidgets::AddPropertyDialog::AddPropertyDialog(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_):
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-	d_gpgim(view_state_.get_application_state().get_gpgim()),
 	d_feature_focus(feature_focus_),
 	// Start off with the most basic feature type.
 	// It's actually an 'abstract' feature but it'll get reset to a 'concrete' feature...
@@ -257,7 +256,7 @@ GPlatesQtWidgets::AddPropertyDialog::check_property_name_validity()
 	}
 
 	// Check whether the selected property name is valid for the feature type.
-	if (!d_gpgim.get_feature_property(d_feature_type, property_name.get()))
+	if (!GPlatesModel::Gpgim::instance().get_feature_property(d_feature_type, property_name.get()))
 	{
 		static const char *WARNING_TEXT = "'%1' is not a valid property for a '%2' feature.";
 		label_warning->setText(tr(WARNING_TEXT)
@@ -301,7 +300,6 @@ GPlatesQtWidgets::AddPropertyDialog::add_property()
 						d_feature_ref,
 						property_name.get(),
 						property_value,
-						d_gpgim,
 						// We're allowing *any* property to be added to the feature...
 						false/*check_property_name_allowed_for_feature_type*/,
 						&add_property_error_code))
@@ -368,7 +366,7 @@ GPlatesQtWidgets::AddPropertyDialog::populate_property_name_combobox()
 	//
 	// Query the GPGIM for the feature class.
 	boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
-			d_gpgim.get_feature_class(d_feature_type);
+			GPlatesModel::Gpgim::instance().get_feature_class(d_feature_type);
 	if (gpgim_feature_class)
 	{
 		// Get allowed properties for the feature type.
@@ -416,7 +414,8 @@ GPlatesQtWidgets::AddPropertyDialog::populate_property_name_combobox()
 	// Then add all property names present in the GPGIM.
 	// This will also duplicate the feature properties added above (but this time they'll only have
 	// a blank icon to indicate they are not allowed by the GPGIM for the current feature type).
-	const GPlatesModel::Gpgim::property_seq_type &gpgim_properties = d_gpgim.get_properties();
+	const GPlatesModel::Gpgim::property_seq_type &gpgim_properties =
+			GPlatesModel::Gpgim::instance().get_properties();
 	BOOST_FOREACH(
 			const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &gpgim_property,
 			gpgim_properties)
@@ -465,7 +464,7 @@ GPlatesQtWidgets::AddPropertyDialog::populate_property_type_combobox()
 
 	// Query the GPGIM for the property definition.
 	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
-			d_gpgim.get_property(property_name.get());
+			GPlatesModel::Gpgim::instance().get_property(property_name.get());
 	if (!gpgim_property)
 	{
 		// FIXME: Is this an exceptional state?

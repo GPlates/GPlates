@@ -311,7 +311,6 @@ void
 GPlatesFileIO::GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fields(
 		const std::list<multi_point_vector_field_group_type> &velocity_vector_field_group_seq,
 		const QFileInfo& file_info,
-		const GPlatesModel::Gpgim &gpgim,
 		GPlatesModel::ModelInterface &model,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -362,6 +361,6 @@ GPlatesFileIO::GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fie
 	FileInfo output_file(file_info.filePath());
 
 	// Write the output file by visiting the feature collection with the new velocity fields.
-	GpmlOutputVisitor gpml_writer(output_file, feature_collection_ref, gpgim, false);
+	GpmlOutputVisitor gpml_writer(output_file, feature_collection_ref, false);
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(feature_collection_ref, gpml_writer);
 }

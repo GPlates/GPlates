@@ -229,11 +229,10 @@ namespace
 	get_files_with_different_gpgim_version(
 			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
 			bool only_unsaved_changes,
-			const GPlatesModel::Gpgim &gpgim,
 			QStringList &older_version_filenames,
 			QStringList &newer_version_filenames)
 	{
-		const GPlatesModel::GpgimVersion &current_gpgim_version = gpgim.get_version();
+		const GPlatesModel::GpgimVersion &current_gpgim_version = GPlatesModel::Gpgim::instance().get_version();
 
 		// Iterate over the files.
 		BOOST_FOREACH(const GPlatesAppLogic::FeatureCollectionFileState::file_reference &file, files)
@@ -300,8 +299,7 @@ namespace
 	show_save_files_gpgim_version_dialog_if_necessary(
 			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
 			bool only_unsaved_changes,
-			GPlatesQtWidgets::GpgimVersionWarningDialog *gpgim_version_warning_dialog,
-			const GPlatesModel::Gpgim &gpgim)
+			GPlatesQtWidgets::GpgimVersionWarningDialog *gpgim_version_warning_dialog)
 	{
 		QStringList older_version_filenames;
 		QStringList newer_version_filenames;
@@ -310,7 +308,6 @@ namespace
 		if (!get_files_with_different_gpgim_version(
 			files,
 			only_unsaved_changes,
-			gpgim,
 			older_version_filenames,
 			newer_version_filenames))
 		{
@@ -335,8 +332,7 @@ namespace
 	void
 	show_open_files_gpgim_version_dialog_if_necessary(
 			const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> &files,
-			GPlatesQtWidgets::GpgimVersionWarningDialog *gpgim_version_warning_dialog,
-			const GPlatesModel::Gpgim &gpgim)
+			GPlatesQtWidgets::GpgimVersionWarningDialog *gpgim_version_warning_dialog)
 	{
 		// Do not warn the user if requested us to stop bothering them.
 		// Not that we only have this option for loading files.
@@ -353,7 +349,6 @@ namespace
 		if (!get_files_with_different_gpgim_version(
 			files,
 			false/*only_unsaved_changes*/, // Include all files (saved or unsaved).
-			gpgim,
 			older_version_filenames,
 			newer_version_filenames))
 		{
@@ -402,7 +397,6 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 			view_state_),
 	d_gpgim_version_warning_dialog_ptr(
 			new GPlatesQtWidgets::GpgimVersionWarningDialog(
-					app_state_.get_gpgim(),
 					&viewport_window()))
 {
 	setObjectName("FileIOFeedback");
@@ -441,8 +435,7 @@ GPlatesGui::FileIOFeedback::open_files(
 	// other (older) versions of GPlates.
 	show_open_files_gpgim_version_dialog_if_necessary(
 			collect_loaded_files_scope.get_loaded_files(),
-			d_gpgim_version_warning_dialog_ptr,
-			d_app_state_ptr->get_gpgim());
+			d_gpgim_version_warning_dialog_ptr);
 }
 
 
@@ -497,8 +490,7 @@ GPlatesGui::FileIOFeedback::open_previous_session(
 		// other (older) versions of GPlates.
 		show_open_files_gpgim_version_dialog_if_necessary(
 				collect_loaded_files_scope.get_loaded_files(),
-				d_gpgim_version_warning_dialog_ptr,
-				d_app_state_ptr->get_gpgim());
+				d_gpgim_version_warning_dialog_ptr);
 	}
 }
 
@@ -588,8 +580,7 @@ GPlatesGui::FileIOFeedback::save_file_in_place(
 			std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>(1, file),
 			// We're saving whether the file has unsaved changes or not...
 			false/*only_unsaved_changes*/,
-			d_gpgim_version_warning_dialog_ptr,
-			d_app_state_ptr->get_gpgim()))
+			d_gpgim_version_warning_dialog_ptr))
 	{
 		// Return without saving.
 		return false;
@@ -843,8 +834,7 @@ GPlatesGui::FileIOFeedback::save_files(
 	if (!show_save_files_gpgim_version_dialog_if_necessary(
 			files,
 			only_unsaved_changes,
-			d_gpgim_version_warning_dialog_ptr,
-			d_app_state_ptr->get_gpgim()))
+			d_gpgim_version_warning_dialog_ptr))
 	{
 		// Return without saving.
 		//

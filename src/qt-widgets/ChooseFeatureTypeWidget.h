@@ -37,12 +37,6 @@
 #include "property-values/StructuralType.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
-
 namespace GPlatesQtWidgets
 {
 	class ChooseFeatureTypeWidget :
@@ -54,7 +48,6 @@ namespace GPlatesQtWidgets
 
 		explicit
 		ChooseFeatureTypeWidget(
-				const GPlatesModel::Gpgim &gpgim,
 				SelectionWidget::DisplayWidget display_widget,
 				QWidget *parent_ = NULL);
 
@@ -114,8 +107,6 @@ namespace GPlatesQtWidgets
 
 		void
 		make_signal_slot_connections();
-
-		const GPlatesModel::Gpgim &d_gpgim;
 
 		SelectionWidget *d_selection_widget;
 	};

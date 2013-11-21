@@ -494,7 +494,6 @@ namespace
 void
 GPlatesFileIO::GmapReader::read_file(
 		File::Reference &file_ref,
-		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors)
 {
 	PROFILE_FUNC();

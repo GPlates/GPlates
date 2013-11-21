@@ -44,6 +44,7 @@
 
 #include "property-values/StructuralType.h"
 
+#include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
 #include "utils/XmlNamespaces.h"
 
@@ -253,12 +254,21 @@ namespace GPlatesModel
 }
 
 
-const QString GPlatesModel::Gpgim::DEFAULT_GPGIM_RESOURCE_FILENAME = ":/gpgim/gpgim.xml";
+const QString GPlatesModel::Gpgim::CORE_GPGIM_RESOURCE_FILENAME = ":/gpgim/gpgim.xml";
 
 
-GPlatesModel::Gpgim::Gpgim(
+GPlatesModel::Gpgim::Gpgim()
+{
+	load_gpgim_resource(CORE_GPGIM_RESOURCE_FILENAME);
+}
+
+
+void
+GPlatesModel::Gpgim::load_gpgim_resource(
 		const QString &gpgim_resource_filename)
 {
+	PROFILE_FUNC();
+
 	QXmlStreamReader xml_reader;
 
 	QFile input_file(gpgim_resource_filename);

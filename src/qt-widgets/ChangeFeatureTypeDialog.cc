@@ -58,11 +58,9 @@ GPlatesQtWidgets::ChangeFeatureTypeDialog::ChangeFeatureTypeDialog(
 		QWidget *parent_) :
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_application_state(application_state),
-	d_gpgim(application_state.get_gpgim()),
 	d_feature_focus(feature_focus),
 	d_new_feature_type_widget(
 			new ChooseFeatureTypeWidget(
-				application_state.get_gpgim(),
 				SelectionWidget::Q_COMBO_BOX,
 				this)),
 	d_widget_container(new QWidget(this)),
@@ -168,7 +166,7 @@ GPlatesQtWidgets::ChangeFeatureTypeDialog::handle_feature_type_changed(
 					curr_top_level_property.get_property_name();
 
 			// Check whether the current property *name* is valid for the new feature type.
-			if (d_gpgim.get_feature_property(new_feature_type, curr_property_name))
+			if (GPlatesModel::Gpgim::instance().get_feature_property(new_feature_type, curr_property_name))
 			{
 				// The current property is supported by the new feature type.
 				// So nothing needs to be done for the current property.
@@ -192,7 +190,6 @@ GPlatesQtWidgets::ChangeFeatureTypeDialog::handle_feature_type_changed(
 			std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_target_properties;
 			if (!ChoosePropertyWidget::get_properties_to_populate(
 					gpgim_target_properties,
-					d_gpgim,
 					new_feature_type,
 					curr_property_type,
 					d_feature_ref))
@@ -210,7 +207,7 @@ GPlatesQtWidgets::ChangeFeatureTypeDialog::handle_feature_type_changed(
 			{
 				// Pool doesn't have enough widgets; let's create a new one.
 				ChangePropertyWidget *new_widget =
-					new ChangePropertyWidget(d_gpgim, d_feature_focus, this);
+					new ChangePropertyWidget(d_feature_focus, this);
 				d_change_property_widget_pool.push_back(new_widget);
 				d_widget_container_layout->addWidget(new_widget);
 				next_widget = d_change_property_widget_pool.end() - 1;

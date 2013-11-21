@@ -39,11 +39,6 @@
 #include "model/FeatureCollectionHandle.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesFileIO
 {
 	/**
@@ -63,7 +58,6 @@ namespace GPlatesFileIO
 		void
 		read_file(
 				File::Reference &file,
-				const GPlatesModel::Gpgim &gpgim,
 				ReadErrorAccumulation &read_errors);
 	};
 }

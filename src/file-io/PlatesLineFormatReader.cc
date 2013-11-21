@@ -2109,7 +2109,6 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 void
 GPlatesFileIO::PlatesLineFormatReader::read_file(
 		File::Reference &file,
-		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors)
 {
 	PROFILE_FUNC();

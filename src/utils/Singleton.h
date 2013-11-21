@@ -279,28 +279,20 @@ namespace GPlatesUtils
  *
  * Clients *can* instantiate singleton objects 'T' on the C runtime stack.
  * This is useful as a means to control singleton lifetime to a specific scope.
- *
- * Use this when the 'CreationPolicy' template parameter is the default 'CreateUsingNew<T>'.
- * Otherwise you'll need to explicitly add the constructor and friend declarations.
  */
 #define GPLATES_SINGLETON_PUBLIC_CONSTRUCTOR_DECL(T) \
 	public: \
-		T(); \
-		friend class GPlatesUtils::CreateUsingNew<T>;
+		T();
 
 /**
  * Adds a default (public) constructor implementation and friend declaration.
  *
  * Clients *can* instantiate singleton objects 'T' on the C runtime stack.
  * This is useful as a means to control singleton lifetime to a specific scope.
- *
- * Use this when the 'CreationPolicy' template parameter is the default 'CreateUsingNew<T>'.
- * Otherwise you'll need to explicitly add the constructor and friend declarations.
  */
 #define GPLATES_SINGLETON_PUBLIC_CONSTRUCTOR_DEF(T) \
 	public: \
-		T() { } \
-		friend class GPlatesUtils::CreateUsingNew<T>;
+		T() { }
 
 
 //

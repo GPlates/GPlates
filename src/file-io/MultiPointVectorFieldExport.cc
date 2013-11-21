@@ -69,7 +69,6 @@ void
 GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gpml_format(
 		const QString &filename,
 		const std::vector<const GPlatesAppLogic::MultiPointVectorField *> &velocity_vector_field_seq,
-		const GPlatesModel::Gpgim &gpgim,
 		GPlatesModel::ModelInterface &model,
 		const std::vector<const File::Reference *> &active_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -99,7 +98,6 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gpm
 		GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fields(
 				grouped_velocity_vector_field_seq,
 				filename,
-				gpgim,
 				model,
 				referenced_files,
 				reconstruction_anchor_plate_id,
@@ -131,7 +129,6 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gpm
 			GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fields(
 					grouped_features_iter->feature_geometry_groups,
 					*output_filename_iter,
-					gpgim,
 					model,
 					referenced_files,
 					reconstruction_anchor_plate_id,

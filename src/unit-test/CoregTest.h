@@ -34,7 +34,6 @@
 #include "file-io/FileInfo.h"
 #include "file-io/File.h"
 
-#include "model/Gpgim.h"
 #include "model/ModelInterface.h"
 
 namespace GPlatesDataMining
@@ -124,7 +123,6 @@ namespace GPlatesUnitTest
 		}
 
 		GPlatesModel::ModelInterface d_model;
-		GPlatesModel::Gpgim::non_null_ptr_to_const_type d_gpgim;
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry d_file_format_registry;
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_loaded_files;
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_rotation_fc;

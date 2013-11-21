@@ -43,7 +43,6 @@
 
 namespace GPlatesModel
 {
-	class Gpgim;
 	class GpgimProperty;
 }
 
@@ -452,9 +451,6 @@ namespace GPlatesQtWidgets
 		get_widget_by_property_value_type(
 				const GPlatesPropertyValues::StructuralType &property_value_type);
 
-
-		//! Used to query available property enumeration types from the GPGIM.
-		const GPlatesModel::Gpgim &d_gpgim;
 
 		/**
 		 * This pointer always refers to the one edit widget which is currently active

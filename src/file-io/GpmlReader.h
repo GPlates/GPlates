@@ -36,11 +36,6 @@
 #include "model/FeatureCollectionHandle.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesFileIO
 {
 	class ExternalProgram;
@@ -53,7 +48,6 @@ namespace GPlatesFileIO
 		void
 		read_file(
 				File::Reference &file,
-				const GPlatesModel::Gpgim &gpgim,
 				const GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type &property_structural_type_reader,
 				ReadErrorAccumulation &read_errors,
 				bool use_gzip = false);

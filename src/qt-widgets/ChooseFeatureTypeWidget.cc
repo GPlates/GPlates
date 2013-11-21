@@ -72,11 +72,9 @@ Q_DECLARE_METATYPE( DefaultConstructibleFeatureType )
 
 
 GPlatesQtWidgets::ChooseFeatureTypeWidget::ChooseFeatureTypeWidget(
-		const GPlatesModel::Gpgim &gpgim,
 		SelectionWidget::DisplayWidget display_widget,
 		QWidget *parent_) :
 	QWidget(parent_),
-	d_gpgim(gpgim),
 	d_selection_widget(new SelectionWidget(display_widget, this))
 {
 	QtWidgetUtils::add_widget_to_placeholder(d_selection_widget, this);
@@ -91,8 +89,10 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::populate(
 {
 	d_selection_widget->clear();
 
+	const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
+
 	const GPlatesModel::Gpgim::feature_type_seq_type &all_feature_types =
-			d_gpgim.get_concrete_feature_types();
+			gpgim.get_concrete_feature_types();
 
 	// Iterate over all the feature types.
 	BOOST_FOREACH(const GPlatesModel::FeatureType &feature_type, all_feature_types)
@@ -100,7 +100,7 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::populate(
 		// Filter out feature types that don't have properties matching the target property type (if specified).
 		if (property_type &&
 			// Do any of the current feature's properties match the target property type ?
-			!d_gpgim.get_feature_properties(feature_type, property_type.get()))
+			!gpgim.get_feature_properties(feature_type, property_type.get()))
 		{
 			continue;
 		}

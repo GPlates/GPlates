@@ -50,8 +50,7 @@
 
 GPlatesFileIO::GMTFormatWriter::GMTFormatWriter(
 	File::Reference &file_ref,
-	const FeatureCollectionFileFormat::GMTConfiguration::shared_ptr_to_const_type &default_gmt_file_configuration,
-	const GPlatesModel::Gpgim &gpgim)
+	const FeatureCollectionFileFormat::GMTConfiguration::shared_ptr_to_const_type &default_gmt_file_configuration)
 {
 	const FileInfo &file_info = file_ref.get_file_info();
 

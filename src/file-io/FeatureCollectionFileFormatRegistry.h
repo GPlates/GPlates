@@ -42,7 +42,6 @@
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureVisitor.h"
-#include "model/Gpgim.h"
 
 
 namespace GPlatesFileIO
@@ -80,7 +79,6 @@ namespace GPlatesFileIO
 			typedef boost::function<
 					void (
 							File::Reference &,
-							const GPlatesModel::Gpgim &,
 							ReadErrorAccumulation &)>
 									read_feature_collection_function_type;
 
@@ -94,8 +92,7 @@ namespace GPlatesFileIO
 			 */
 			typedef boost::function<
 					boost::shared_ptr<GPlatesModel::ConstFeatureVisitor> (
-							File::Reference &,
-							GPlatesModel::Gpgim::non_null_ptr_to_const_type)>
+							File::Reference &)>
 									create_feature_collection_writer_function_type;
 
 
@@ -106,7 +103,6 @@ namespace GPlatesFileIO
 			 */
 			explicit
 			Registry(
-					const GPlatesModel::Gpgim::non_null_ptr_to_const_type &gpgim,
 					bool register_default_file_formats_ = true);
 
 
@@ -329,11 +325,6 @@ namespace GPlatesFileIO
 
 			typedef std::map<Format, FileFormatInfo> file_format_info_map_type;
 
-
-			/**
-			 * The GPGIM is used to validate feature collections read from file.
-			 */
-			GPlatesModel::Gpgim::non_null_ptr_to_const_type d_gpgim;
 
 			/**
 			 * Stores a struct of information for each file format.

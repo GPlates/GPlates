@@ -404,7 +404,9 @@ namespace GPlatesApi
 			if (!bp::extract<boost::optional<T> >(bp::object()).check())
 			{
 				// To python conversion.
-				bp::to_python_converter<boost::optional<T>, Implementation::python_optional<T>::Conversion>();
+				bp::to_python_converter<
+						boost::optional<T>,
+						typename Implementation::python_optional<T>::Conversion>();
 
 				// From python conversion.
 				bp::converter::registry::push_back(
@@ -466,7 +468,7 @@ namespace GPlatesApi
 			// To python conversion.
 			bp::to_python_converter<
 					GPlatesUtils::non_null_intrusive_ptr<const T>,
-					Implementation::to_python_ConstToNonConst<T>::Conversion>();
+					typename Implementation::to_python_ConstToNonConst<T>::Conversion>();
 		}
 	}
 }

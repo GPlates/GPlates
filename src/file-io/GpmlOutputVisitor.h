@@ -43,11 +43,6 @@
 #include "property-values/GpmlTopologicalNetwork.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesPropertyValues
 {
 	class GpmlKeyValueDictionaryElement;
@@ -84,7 +79,6 @@ namespace GPlatesFileIO
 		GpmlOutputVisitor(
 				const FileInfo &file_info,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-				const GPlatesModel::Gpgim &gpgim,
 				bool use_gzip);
 
 
@@ -101,8 +95,7 @@ namespace GPlatesFileIO
 		explicit
 		GpmlOutputVisitor(
 				QIODevice *target,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-				const GPlatesModel::Gpgim &gpgim);
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref);
 
 
 		virtual
@@ -116,8 +109,7 @@ namespace GPlatesFileIO
 		void
 		start_writing_document(
 				XmlWriter &writer,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-				const GPlatesModel::Gpgim &gpgim);
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref);
 
 	protected:
 

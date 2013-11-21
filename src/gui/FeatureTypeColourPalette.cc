@@ -94,20 +94,18 @@ namespace
 
 
 GPlatesGui::FeatureTypeColourPalette::non_null_ptr_type
-GPlatesGui::FeatureTypeColourPalette::create(
-		const GPlatesModel::Gpgim &gpgim)
+GPlatesGui::FeatureTypeColourPalette::create()
 {
-	return new FeatureTypeColourPalette(gpgim);
+	return new FeatureTypeColourPalette();
 }
 
 
-GPlatesGui::FeatureTypeColourPalette::FeatureTypeColourPalette(
-		const GPlatesModel::Gpgim &gpgim)
+GPlatesGui::FeatureTypeColourPalette::FeatureTypeColourPalette()
 {
 	// Populate the colours map with FeatureTypes that we know about.
 
 	const GPlatesModel::Gpgim::feature_type_seq_type &feature_types =
-			gpgim.get_concrete_feature_types();
+			GPlatesModel::Gpgim::instance().get_concrete_feature_types();
 
 	unsigned int count = 0;
 	BOOST_FOREACH(const GPlatesModel::FeatureType &feature_type, feature_types)
