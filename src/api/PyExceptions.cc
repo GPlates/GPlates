@@ -318,6 +318,9 @@ GPlatesApi::PythonExceptionHandler::PythonExceptionHandler() :
 }
 
 
+// For Py_XDECREF below.
+DISABLE_GCC_WARNING("-Wold-style-cast")
+
 GPlatesApi::PythonExceptionHandler::~PythonExceptionHandler()
 {
 	if (d_restore_exception)
@@ -333,6 +336,8 @@ GPlatesApi::PythonExceptionHandler::~PythonExceptionHandler()
 		Py_XDECREF(d_traceback);
 	}
 }
+
+ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 bool
