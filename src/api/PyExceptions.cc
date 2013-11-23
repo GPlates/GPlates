@@ -26,6 +26,8 @@
 #include <sstream>
 #include <string>
 
+#include "PyExceptions.h"
+
 #include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"
 
@@ -186,6 +188,28 @@ namespace GPlatesApi
 
 		return python_exception.get_python_exception_type();
 	}
+
+
+	//
+	// GPlates C++ exceptions translated to python errors.
+	//
+
+	bp::object GPlatesError;
+	bp::object AssertionFailureError;
+	bp::object FileFormatNotSupportedError;
+	bp::object OpenFileForReadingError;
+	bp::object OpenFileForWritingError;
+	bp::object PreconditionViolationError;
+	bp::object GmlTimePeriodBeginTimeLaterThanEndTimeError;
+	bp::object DifferentAnchoredPlatesInReconstructionTreesError;
+	bp::object IndeterminateArcRotationAxisError;
+	bp::object InsufficientPointsForMultiPointConstructionError;
+	bp::object InvalidPointsForPolygonConstructionError;
+	bp::object InvalidPointsForPolylineConstructionError;
+	bp::object InvalidLatLonError;
+	bp::object MathematicalError;
+	bp::object IndeterminateResultError;
+	bp::object ViolatedUnitVectorInvariantError;
 }
 
 
@@ -201,7 +225,7 @@ export_exceptions()
 
 	// The base class of all GPlates exceptions - enables python user to catch any GPlates exception.
 	// And it, in turn, inherits from python's 'Exception'.
-	const bp::object gplates_exception_type =
+	GPlatesApi::GPlatesError =
 			export_exception<GPlatesGlobal::Exception>(
 					"GPlatesError",
 					bp::object(bp::handle<>(bp::borrowed(PyExc_Exception))));
@@ -209,61 +233,174 @@ export_exceptions()
 	//
 	// Direct subclasses of GPlatesGlobal::Exception.
 	//
-	export_exception<GPlatesGlobal::AssertionFailureException>(
-			"AssertionFailureError",
-			gplates_exception_type);
-	export_exception<GPlatesFileIO::FileFormatNotSupportedException>(
-			"FileFormatNotSupportedError",
-			gplates_exception_type);
-	export_exception<GPlatesFileIO::ErrorOpeningFileForReadingException>(
-			"OpenFileForReadingError",
-			gplates_exception_type);
-	export_exception<GPlatesFileIO::ErrorOpeningFileForWritingException>(
-			"OpenFileForWritingError",
-			gplates_exception_type);
+	GPlatesApi::AssertionFailureError =
+			export_exception<GPlatesGlobal::AssertionFailureException>(
+					"AssertionFailureError",
+					GPlatesApi::GPlatesError);
+	GPlatesApi::FileFormatNotSupportedError =
+			export_exception<GPlatesFileIO::FileFormatNotSupportedException>(
+					"FileFormatNotSupportedError",
+					GPlatesApi::GPlatesError);
+	GPlatesApi::OpenFileForReadingError =
+			export_exception<GPlatesFileIO::ErrorOpeningFileForReadingException>(
+					"OpenFileForReadingError",
+					GPlatesApi::GPlatesError);
+	GPlatesApi::OpenFileForWritingError =
+			export_exception<GPlatesFileIO::ErrorOpeningFileForWritingException>(
+					"OpenFileForWritingError",
+					GPlatesApi::GPlatesError);
 
 	//
 	// PreconditionViolationError and direct subclasses.
 	//
-	const bp::object precondition_violation_exception_type =
+	GPlatesApi::PreconditionViolationError =
 			export_exception<GPlatesGlobal::PreconditionViolationError>(
 					"PreconditionViolationError",
-					gplates_exception_type);
-	export_exception<GPlatesPropertyValues::GmlTimePeriod::BeginTimeLaterThanEndTimeException>(
-			"GmlTimePeriodBeginTimeLaterThanEndTimeError",
-			precondition_violation_exception_type);
-	export_exception<DifferentAnchoredPlatesInReconstructionTreesException>(
-			"DifferentAnchoredPlatesInReconstructionTreesError",
-			precondition_violation_exception_type);
-	export_exception<GPlatesMaths::IndeterminateArcRotationAxisException>(
-			"IndeterminateArcRotationAxisError",
-			precondition_violation_exception_type);
-	export_exception<GPlatesMaths::InsufficientPointsForMultiPointConstructionError>(
-			"InsufficientPointsForMultiPointConstructionError",
-			precondition_violation_exception_type);
-	export_exception<GPlatesMaths::InvalidPointsForPolygonConstructionError>(
-			"InvalidPointsForPolygonConstructionError",
-			precondition_violation_exception_type);
-	export_exception<GPlatesMaths::InvalidPointsForPolylineConstructionError>(
-			"InvalidPointsForPolylineConstructionError",
-			precondition_violation_exception_type);
-	export_exception<GPlatesMaths::InvalidLatLonException>(
-			"InvalidLatLonError",
-			precondition_violation_exception_type);
+					GPlatesApi::GPlatesError);
+	GPlatesApi::GmlTimePeriodBeginTimeLaterThanEndTimeError =
+			export_exception<GPlatesPropertyValues::GmlTimePeriod::BeginTimeLaterThanEndTimeException>(
+					"GmlTimePeriodBeginTimeLaterThanEndTimeError",
+					GPlatesApi::PreconditionViolationError);
+	GPlatesApi::DifferentAnchoredPlatesInReconstructionTreesError =
+			export_exception<DifferentAnchoredPlatesInReconstructionTreesException>(
+					"DifferentAnchoredPlatesInReconstructionTreesError",
+					GPlatesApi::PreconditionViolationError);
+	GPlatesApi::IndeterminateArcRotationAxisError =
+			export_exception<GPlatesMaths::IndeterminateArcRotationAxisException>(
+					"IndeterminateArcRotationAxisError",
+					GPlatesApi::PreconditionViolationError);
+	GPlatesApi::InsufficientPointsForMultiPointConstructionError =
+			export_exception<GPlatesMaths::InsufficientPointsForMultiPointConstructionError>(
+					"InsufficientPointsForMultiPointConstructionError",
+					GPlatesApi::PreconditionViolationError);
+	GPlatesApi::InvalidPointsForPolygonConstructionError =
+			export_exception<GPlatesMaths::InvalidPointsForPolygonConstructionError>(
+					"InvalidPointsForPolygonConstructionError",
+					GPlatesApi::PreconditionViolationError);
+	GPlatesApi::InvalidPointsForPolylineConstructionError =
+			export_exception<GPlatesMaths::InvalidPointsForPolylineConstructionError>(
+					"InvalidPointsForPolylineConstructionError",
+					GPlatesApi::PreconditionViolationError);
+	GPlatesApi::InvalidLatLonError =
+			export_exception<GPlatesMaths::InvalidLatLonException>(
+					"InvalidLatLonError",
+					GPlatesApi::PreconditionViolationError);
 
 	//
 	// MathematicalException and direct subclasses.
 	//
-	const bp::object mathematical_exception_type =
+	GPlatesApi::MathematicalError =
 			export_exception<GPlatesMaths::MathematicalException>(
 					"MathematicalError",
-					gplates_exception_type);
-	export_exception<GPlatesMaths::IndeterminateResultException>(
-			"IndeterminateResultError",
-			mathematical_exception_type);
-	export_exception<GPlatesMaths::ViolatedUnitVectorInvariantException>(
-			"ViolatedUnitVectorInvariantError",
-			mathematical_exception_type);
+					GPlatesApi::GPlatesError);
+	GPlatesApi::IndeterminateResultError =
+			export_exception<GPlatesMaths::IndeterminateResultException>(
+					"IndeterminateResultError",
+					GPlatesApi::MathematicalError);
+	GPlatesApi::ViolatedUnitVectorInvariantError =
+			export_exception<GPlatesMaths::ViolatedUnitVectorInvariantException>(
+					"ViolatedUnitVectorInvariantError",
+					GPlatesApi::MathematicalError);
+}
+
+
+GPlatesApi::PythonExceptionHandler::PythonExceptionHandler() :
+	d_restore_exception(false)
+{
+	PyErr_Fetch(&d_type, &d_value, &d_traceback);
+
+	// Make sure the error condition was set prior to this constructor.
+	// If it wasn't set then all three PyObject's will be NULL.
+	// In particular, if the error condition was set, then the exception type can never be NULL.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_type,
+			GPLATES_ASSERTION_SOURCE);
+}
+
+
+GPlatesApi::PythonExceptionHandler::~PythonExceptionHandler()
+{
+	if (d_restore_exception)
+	{
+		// Transfer ownership of PyObject's back to python.
+		PyErr_Restore(d_type, d_value, d_traceback);
+	}
+	else
+	{
+		// We have ownership of PyObject's so make sure reference counts get decremented.
+		Py_XDECREF(d_type);
+		Py_XDECREF(d_value);
+		Py_XDECREF(d_traceback);
+	}
+}
+
+
+bool
+GPlatesApi::PythonExceptionHandler::exception_matches(
+		PyObject *exception) const
+{
+	return PyErr_GivenExceptionMatches(d_type, exception);
+}
+
+
+void
+GPlatesApi::PythonExceptionHandler::restore_exception()
+{
+	// Make sure the error status gets restored (in the destructor)
+	// when we throw the error_already_set exception.
+	d_restore_exception = true;
+	bp::throw_error_already_set();
+}
+
+
+QString
+GPlatesApi::PythonExceptionHandler::get_exception_message() const
+{
+	bp::object exception_value = get_exception_value();
+
+	bp::extract<QString> extract_message(exception_value);
+	if (!extract_message.check())
+	{
+		return QString();
+	}
+
+	return extract_message();
+}
+
+
+bp::object
+GPlatesApi::PythonExceptionHandler::get_exception_type() const
+{
+	// Exception type is not a NULL PyObject pointer.
+	return bp::object(bp::handle<>(bp::borrowed(d_type)));
+}
+
+
+bp::object
+GPlatesApi::PythonExceptionHandler::get_exception_value() const
+{
+	// Could be a NULL PyObject pointer.
+	bp::handle<> value(bp::borrowed(bp::allow_null(d_value)));
+	if (!value)
+	{
+		return bp::object(); // Py_None
+	}
+
+	return bp::object(value);
+}
+
+
+bp::object
+GPlatesApi::PythonExceptionHandler::get_exception_traceback() const
+{
+	// Could be a NULL PyObject pointer.
+	bp::handle<> traceback(bp::borrowed(bp::allow_null(d_traceback)));
+	if (!traceback)
+	{
+		return bp::object(); // Py_None
+	}
+
+	return bp::object(traceback);
 }
 
 #endif // GPLATES_NO_PYTHON
