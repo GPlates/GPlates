@@ -226,6 +226,7 @@ class RotationModelCase(unittest.TestCase):
                 pygplates.OpenFileForReadingError,
                 pygplates.RotationModel.create_from_files,
                 [ 'non_existent_file.rot' ])
+        # Create using feature collections instead of filenames.
         rotation_model = pygplates.RotationModel([self.rotations])
     
     def test_get_reconstruction_tree(self):

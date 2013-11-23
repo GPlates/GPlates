@@ -32,7 +32,7 @@
 
 #include "PyReconstructionTree.h"
 
-#include "PyExceptions.h"
+#include "PyFeatureCollectionFileFormatRegistry.h"
 #include "PyGPlatesModule.h"
 #include "PythonConverterUtils.h"
 
@@ -47,8 +47,6 @@
 #include "app-logic/ReconstructionTreeCreator.h"
 #include "app-logic/ReconstructionTreeEdge.h"
 #include "app-logic/ReconstructUtils.h"
-
-#include "file-io/ErrorOpeningFileForReadingException.h"
 
 #include "maths/MathsUtils.h"
 
@@ -615,16 +613,7 @@ GPlatesApi::RotationModel::create_from_files(
 		bp::object filename_seq, // Any python iterable (eg, list, tuple).
 		unsigned int reconstruction_tree_cache_size)
 {
-	// Here we take the unusual step of using the pygplates class
-	// "FeatureCollectionFileFormatRegistry" to read the feature collections.
-	// This is because it takes care of some set up code, etc.
-	// Usually we'll call C++ code (instead of calling into python though).
-	//
-
-	// Create a temporary object to read feature collections with.
-	bp::object file_registry_object = get_pygplates_module().attr("FeatureCollectionFileFormatRegistry")();
-	// Get the read method on the file registry object.
-	bp::object file_registry_read_method = file_registry_object.attr("read");
+	GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
 
 	// Begin/end iterators over the python filenames iterable.
 	bp::stl_input_iterator<QString> filename_seq_iter(filename_seq);
@@ -632,48 +621,15 @@ GPlatesApi::RotationModel::create_from_files(
 
 	// Read the feature collections from the files.
 	std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collections;
-	try
-	{
 	for ( ; filename_seq_iter != filename_seq_end; ++filename_seq_iter)
 	{
 		const QString filename = *filename_seq_iter;
 
-		// Use our python file registry object to read a feature collection.
-		// If a python exception is thrown (such as "pygplates.OpenFileForReadingError")
-		// then it will get propagated back through to us (via bp::error_already_set)
-		// and we'll let it go back to python (our caller) where it will remain intact
-		// due to the fact that the python error will remain set all the way back up
-		// (because PyErr_Occurred() remains non-null since it was initially set when
-		// 'FeatureCollectionFileFormatRegistry.read()' was called).
+		// Use the API function in "PyFeatureCollectionFileFormatRegistry.h" to read the file.
 		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
-				bp::extract<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(
-						file_registry_read_method(filename));
+				GPlatesApi::read_feature_collection(file_registry, filename);
 
 		feature_collections.push_back(feature_collection);
-	}
-	}
-	catch (const bp::error_already_set &)
-	{
-		PythonExceptionHandler handler;
-		if (handler.exception_matches(PyExc_RuntimeError))
-		{
-			qWarning() << "PyExc_RuntimeError";
-		}
-		else if (handler.exception_matches(GPlatesError.ptr()))
-		{
-			qWarning() << "GPlatesError";
-			handler.restore_exception();
-		}
-		else if (handler.exception_matches(OpenFileForReadingError.ptr()))
-		{
-			qWarning() << "OpenFileForReadingError";
-			handler.restore_exception();
-		}
-		else
-		{
-			qWarning() << "re-throwing bp::error_already_set";
-			handler.restore_exception();
-		}
 	}
 
 	return create(feature_collections, reconstruction_tree_cache_size);

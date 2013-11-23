@@ -26,14 +26,14 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "PyFeatureCollectionFileFormatRegistry.h"
+
 #include "global/python.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
 #include "file-io/FileInfo.h"
 #include "file-io/ReadErrorAccumulation.h"
-
-#include "model/Gpgim.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -47,16 +47,11 @@ namespace GPlatesApi
 	feature_collection_file_format_registry_create()
 	{
 		return boost::shared_ptr<GPlatesFileIO::FeatureCollectionFileFormat::Registry>(
-				new GPlatesFileIO::FeatureCollectionFileFormat::Registry(
-						// Create a GPGIM from its XML file...
-						GPlatesModel::Gpgim::create()));
+				new GPlatesFileIO::FeatureCollectionFileFormat::Registry());
 	}
 
-	/**
-	 * Read a feature collection from the specified file.
-	 */
 	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
-	feature_collection_file_format_registry_read(
+	read_feature_collection(
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
 			const QString &filename)
 	{
@@ -74,11 +69,8 @@ namespace GPlatesApi
 				file->get_reference().get_feature_collection().handle_ptr());
 	}
 
-	/**
-	 * Write a feature collection to the specified file.
-	 */
 	void
-	feature_collection_file_format_registry_write(
+	write_feature_collection(
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
 			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
 			const QString &filename)
@@ -140,7 +132,7 @@ export_feature_collection_file_format_registry()
 				"    feature_collection_file_format_registry = "
 				"pygplates.FeatureCollectionFileFormatRegistry()\n")
 		.def("read",
-				&GPlatesApi::feature_collection_file_format_registry_read,
+				&GPlatesApi::read_feature_collection,
 				(bp::arg("filename")),
 				"read(filename) -> FeatureCollection\n"
 				"  Reads a feature collection from the file with name *filename*.\n"
@@ -167,7 +159,7 @@ export_feature_collection_file_format_registry()
 				"  Note that the returned *feature collection* may contain fewer features than are "
 				"stored in the file if there were read errors. *TODO:* return read errors.\n")
 		.def("write",
-				&GPlatesApi::feature_collection_file_format_registry_write,
+				&GPlatesApi::write_feature_collection,
 				(bp::arg("feature_collection"), bp::arg("filename")),
 				"write(feature_collection, filename)\n"
 				"  Writes a feature collection to the file with name *filename*.\n"
