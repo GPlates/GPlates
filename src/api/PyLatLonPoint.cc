@@ -82,6 +82,7 @@ export_lat_lon_point()
 				"  :param latitude: the latitude (in degrees)\n"
 				"  :type latitude: float\n"
 				"  :rtype: bool\n"
+				"\n"
 				"  ::\n"
 				"\n"
 				"    if pygplates.LatLonPoint.is_valid_latitude(latitude):\n"
