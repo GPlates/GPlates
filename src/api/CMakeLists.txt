@@ -25,12 +25,15 @@ set(srcs
     PyCoregistrationLayerProxy.cc
     PyCoregistrationLayerProxy.h
     PyExceptions.cc
+    PyExceptions.h
     PyFeature.cc
     PyFeatureCollection.cc
     PyFeatureCollectionFileFormatRegistry.cc
     PyFiniteRotation.cc
     PyFunctions.cc
     PyGeometriesOnSphere.cc
+    PyGPlatesModule.cc
+    PyGPlatesModule.h
     PyGreatCircleArc.cc
     PyIds.cc
     PyLatLonPoint.cc
@@ -48,7 +51,6 @@ set(srcs
     PyReconstructionTree.h
     PyRevisionedVector.cc
     PyStrings.cc
-    Python.cc
     PythonConverterUtils.cc
     PythonConverterUtils.h
     PythonExecutionMonitor.cc

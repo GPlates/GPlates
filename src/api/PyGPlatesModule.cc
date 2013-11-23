@@ -25,9 +25,8 @@
 
 #include "global/python.h"
 
-//
-// Note: this .cc file has no corresponding .h file.
-//
+#include "PyGPlatesModule.h"
+
 
 #if !defined(GPLATES_NO_PYTHON)
 
@@ -159,9 +158,26 @@ export_cpp_python_api()
 void export_pure_python_api();
 
 
+namespace
+{
+	boost::python::object pygplates_module;
+}
+
+
+boost::python::object
+GPlatesApi::get_pygplates_module()
+{
+	return pygplates_module;
+}
+
+
 BOOST_PYTHON_MODULE(pygplates)
 {
 	namespace bp = boost::python;
+
+	// The 'pygplates' module is the current scope.
+	pygplates_module = bp::scope();
+
 
 	//
 	// Specify the 'pygplate' module's docstring options.
@@ -190,7 +206,7 @@ BOOST_PYTHON_MODULE(pygplates)
 			false/*show_cpp_signatures*/);
 
 	// Set the 'pygplates' module docstring.
-	bp::scope().attr("__doc__") =
+	pygplates_module.attr("__doc__") =
 			"GPlates python Application Programming Interface (API)\n"
 			"------------------------------------------------------\n"
 			"\n"
@@ -220,7 +236,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	// It also means our pure python functions/classes have a '__module__' attribute of 'pygplates'.
 	// It also means our pure python API code does not need to prefix 'pygplates.' when it calls the
 	// 'pygplates' API (whether that is, in turn, pure python or C++ bindings doesn't matter).
-	bp::scope().attr("__dict__")["__builtins__"] = bp::import("__builtin__");
+	pygplates_module.attr("__dict__")["__builtins__"] = bp::import("__builtin__");
 
 	// Export any *pure* python code that contributes to the python API.
 	//
