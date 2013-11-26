@@ -580,14 +580,15 @@ namespace
 
 	void
 	initialise_python(
-			GPlatesPresentation::Application *app)
+			GPlatesPresentation::Application *app,
+			char* argv[])
 	{
 		using namespace GPlatesGui;
 		PythonManager* mgr = PythonManager::instance();
 #ifndef GPLATES_NO_PYTHON
 		try
 		{
-			mgr->initialize(app);
+			mgr->initialize(argv,app);
 		}
 		catch(const PythonInitFailed& ex)
 		{
@@ -595,9 +596,6 @@ namespace
 			ex.write(ss);
 			qWarning() << ss.str().c_str();
 			
-			//try our best to find python installation.
-			mgr->set_python_home();
-
 			if(mgr->show_init_fail_dlg())
 			{
 				using namespace GPlatesQtWidgets;
@@ -725,7 +723,7 @@ internal_main(int argc, char* argv[])
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
 			GPlatesUtils::ComponentManager::Component::python()))
 	{
-		initialise_python(&application);
+		initialise_python(&application,argv);
 	}
 
 	// Also load any feature collection files specified on the command-line.

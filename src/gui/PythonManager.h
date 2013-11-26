@@ -119,6 +119,7 @@ namespace GPlatesGui
 
 	public:
 		void initialize(
+				char* argv[],
 				GPlatesPresentation::Application *app=NULL);
 
 		bool is_initialized()
@@ -152,7 +153,7 @@ namespace GPlatesGui
 
 		void
 		init_python_interpreter(
-				std::string program_name = "gplates");
+				char* argv[]);
 
 		void
 		init_python_console();
@@ -202,16 +203,6 @@ namespace GPlatesGui
 		}
 
 
-		/*
-		* Validate the python home setting in preference,
-		* and try the best to find a valid python installation.
-		* If a good python has been found, set the PYTHONHOME env variable.
-		* On Windows, GPlates needs to restart to make env variable effective.
-		*/
-		void
-		set_python_home();
-
-
 		void
 		find_python();
 		
@@ -220,13 +211,6 @@ namespace GPlatesGui
 		set_show_init_fail_dlg(
 				bool b);
 
-
-		void
-		set_python_home(
-				const QString& str) 
-		{
-			d_python_home = str;
-		}
 
 		void
 		set_python_prefix(

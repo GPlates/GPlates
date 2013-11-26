@@ -71,6 +71,7 @@ GPlatesGui::PythonManager::PythonManager() :
 
 void
 GPlatesGui::PythonManager::initialize(
+		char* argv[],
 		GPlatesPresentation::Application *app) 
 {
 	d_application = app;
@@ -80,11 +81,8 @@ GPlatesGui::PythonManager::initialize(
 		return;
 	}
 
-	//the python home in gplates preference has priority.
-	set_python_home();
-
 	using namespace boost::python;
-	init_python_interpreter();
+	init_python_interpreter(argv);
 	// Hold references to the main module and its namespace for easy access from
 	// all parts of GPlates.
 	try
@@ -117,19 +115,22 @@ GPlatesGui::PythonManager::check_python_capability()
 			"import sys;" +
 			"import code;"  +
 			"import math;"  +
-			"import platform; " +
-			"import pygplates; " +
-			"print \'python import test passed.\'; " +
-			"math.log(12); " +
-			"print \'python math test passed.\'; " +
-			"sys.version_info; " +
-			"sys.platform; " +
-			"platform.uname(); " +
-			"print \'python system test passed.\'; " +
-			"print \'******End of testing python capability******\'; ";
+			"import platform;" +
+			"import pygplates;" +
+			"print \'python import test passed.\';" +
+			"math.log(12);" +
+			"print \'python math test passed.\';" +
+			"print \'Version: \'; print sys.version_info;" +
+			"sys.platform;" +
+			"platform.uname();" +
+			"print \'Prefix: \' +sys.prefix;" +
+			"print \'Exec Prefix: \'+sys.exec_prefix;" +
+			"print \'python system test passed.\';" +
+			"print \'******End of testing python capability******\';";
 
 	bool result = true;
 	GPlatesApi::PythonInterpreterLocker l;
+
 	result &= (0 == PyRun_SimpleString(test_code.toStdString().c_str()));
 	
 	if(!result)
@@ -137,63 +138,6 @@ GPlatesGui::PythonManager::check_python_capability()
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
 	}
 
-}
-
-
-void
-GPlatesGui::PythonManager::set_python_home()
-{
-	const char  *PYTHON_HOME_ENV_NAME="PYTHONHOME",
-				*PYTHON_PATH_ENV_NAME="PYTHONPATH";
-	if(validate_python_home())
-	{
-		//Use QDir to determine if python prefix in preference equals the python home we are going to use.
-		//WARNING! LOOK HERE PLS! ***DON'T COMPARE THE TWO QSTRINGS***
-		//because the GPlates' Preference code might add extra "\" on some platforms.
-		if( QDir(get_python_prefix_from_preferences()) == QDir(d_python_home))
-		{
-			//if python prefix equals python home, it means we have 
-			//set the PYTHONHOME according to Preference.
-			// So, we do not need to do anything here.
-			return;
-		}
-	}else
-	{
-		//If the python path in GPlates preference is not a valid python home or 
-		//empty, we use the python libs in GPlates bundle.
-		//However, we have to unset the  PYTHONHOME and PYTHONPATH env variables so that
-		//python interpreter will not look for python modules there.
-		//We don't want to use the python modules in PYTHONHOME or PYTHONPATH because 
-		//they might not compatible with GPlates python binding.
-		char *python_path_env = getenv(PYTHON_PATH_ENV_NAME),
-			 *python_home_env = getenv(PYTHON_HOME_ENV_NAME);
-		if( !QString(python_path_env).simplified().isEmpty() ||
-			!QString(python_home_env).simplified().isEmpty())
-		{
-			d_python_home.clear();
-		}
-		else
-		{
-			//No valid python path in Preference.
-			//No PYTHONHOME or PYTHONPATH has been set.
-			//No need to do anything, just return
-			return;
-		}
-	}
-	set_python_prefix(d_python_home);
-#ifndef __WINDOWS__
-	putenv((QString(PYTHON_HOME_ENV_NAME) + "=" + d_python_home).toAscii().data());
-	//We don't need PYTHONPATH. So, empty it in case it causes problems.
-	putenv((QString(PYTHON_PATH_ENV_NAME) + "=").toAscii().data());
-#else
-	_putenv_s(PYTHON_HOME_ENV_NAME, d_python_home.toAscii().data());
-	//We don't need PYTHONPATH. So, empty it in case it causes problems.
-	_putenv_s(PYTHON_PATH_ENV_NAME, QString("").toAscii().data());
-#endif
-	d_clear_python_prefix_flag = false;
-	//restart GPlates here.
-	QProcess::startDetached(QCoreApplication::applicationFilePath(), QStringList());
-	throw GPlatesGlobal::NeedExitException(GPLATES_EXCEPTION_SOURCE);
 }
 
 
@@ -261,7 +205,7 @@ GPlatesGui::PythonManager::get_python_prefix_from_preferences()
 
 void
 GPlatesGui::PythonManager::init_python_interpreter(
-		std::string program_name)
+		char* argv[])
 {
 	using namespace boost::python;
 	using namespace GPlatesApi;
@@ -273,13 +217,47 @@ GPlatesGui::PythonManager::init_python_interpreter(
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
 	}
 
-	const std::size_t MaxProgramNameLen = 256; 
-	char name[MaxProgramNameLen];
-	program_name.copy(name,(program_name.size() < MaxProgramNameLen ? program_name.size() : MaxProgramNameLen));
+	/*
+	Set the Program name properly.
+	The following info is taken from Python manual.
+	This function should be called before Py_Initialize() is called for the first time, 
+	if it is called at all. It tells the interpreter the value of the argv[0] argument to 
+	the main() function of the program. This is used by Py_GetPath() and some other functions 
+	below to find the Python run-time libraries relative to the interpreter executable. 
+	The default value is 'python'. The argument should point to a zero-terminated character 
+	string in static storage whose contents will not change for the duration of the program’s 
+	execution. No code in the Python interpreter will change the contents of this storage.
+	*/
+	Py_SetProgramName(argv[0]);
+	/*
+	Ignore the environment variables. This is necessary because GPlates only works with the *correct* python version, 
+	which is the version that boost python uses. So, the python version has been determined when compiling 
+	GPlates. A copy of the python standard library files have been included in GPlates package. It is always 
+	safer to use the files in the bundle. However, the PYTHONHOME and PYTHONPATH environment variable setting on user's computer
+	could point	to a *wrong* python installation, which could cause GPlates failed to initialize embeded python 
+	interpreter. We force GPlates to use the directory which contains GPlates executable binary as the python home 
+	by setting Py_IgnoreEnvironmentFlag flag. On Mac OS, it is the python framework inside application bundle.
+	*/
 
-	Py_SetProgramName(name);
+	/*
+	* Due to the CRT mismatch, putenv cannot set environment variables without restarting. Use this flag for now.
+	* The CRT mismatch problem maybe need to be addressed in the future, but not now.
+	*/
+	Py_IgnoreEnvironmentFlag = 1;
+
+	/* 
+	Info from Python manual.
+	Initialize the Python interpreter. In an application embedding Python, this should be called before 
+	using any other Python/C API functions; with the exception of Py_SetProgramName(), 
+	Py_SetPythonHome(), PyEval_InitThreads(), PyEval_ReleaseLock(), and PyEval_AcquireLock(). 
+	This initializes the table of loaded modules (sys.modules), and creates the fundamental 
+	modules __builtin__, __main__ and sys. It also initializes the module search path (sys.path). 
+	It does not set sys.argv; use PySys_SetArgvEx() for that. This is a no-op when called for a 
+	second time (without calling Py_Finalize() first). There is no return value; it is a fatal error 
+	if the initialization fails.
+	*/
 	Py_Initialize();
-
+		
 	// Initialise Python threading support; this grabs the Global Interpreter Lock
 	// for this thread.
 	PyEval_InitThreads();
