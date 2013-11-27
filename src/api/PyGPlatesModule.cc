@@ -44,10 +44,12 @@ void export_lat_lon_point();
 void export_real();
 void export_unit_vector_3d();
 
+// file-io namespace
+void export_feature_collection_file_format_registry();
+
 // model namespace
 void export_feature();
 void export_feature_collection();
-void export_feature_collection_file_format_registry();
 void export_ids();
 void export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
 void export_old_feature_collection();
@@ -57,6 +59,9 @@ void export_qualified_xml_names();
 void export_revisioned_vector();
 void export_reconstruction_tree();
 void export_top_level_property();
+
+// app-logic namespace
+void export_reconstruct();
 
 // api directory.
 void export_console_reader();
@@ -71,8 +76,6 @@ void export_style();
 void export_main_window();
 
 void export_co_registration();
-
-void export_functions();
 
 void export_colour();
 void export_topology_tools();
@@ -133,12 +136,14 @@ export_cpp_python_api()
 	export_real();
 	export_unit_vector_3d();
 
+	// file-io namespace
+	export_feature_collection_file_format_registry();
+
 	// model namespace
 	export_ids(); // Must be called before 'export_feature()'.
 	export_qualified_xml_names(); // Must be called before 'export_feature()'.
 	export_feature();
 	export_feature_collection();
-	export_feature_collection_file_format_registry();
 	export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
 	export_old_feature_collection();
 	export_property_values();
@@ -147,8 +152,10 @@ export_cpp_python_api()
 	export_revisioned_vector();
 	export_top_level_property();
 
+	// app-logic namespace
+	export_reconstruct();
+
 	//export_co_registration();
-	export_functions();
 	export_colour();
 }
 

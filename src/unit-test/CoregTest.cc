@@ -74,6 +74,13 @@ GPlatesUnitTest::CoregTest::CoregTest()
 void
 GPlatesUnitTest::CoregTest::load_test_data()
 {
+#if 1
+	// TODO: Re-implement this test when the lower-level python API is implemented.
+	// This will use the same functionality to access co-registration without reference to layers.
+	qWarning() << "GPlatesUnitTest::CoregTest::test: not implemented.";
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+
+#else
 	d_rotation_fc = 
 		DataMiningUtils::load_files(
 				load_cfg(
@@ -110,6 +117,7 @@ GPlatesUnitTest::CoregTest::load_test_data()
 				unit_test_data_path + cfg_file,
 				"output path");
 	d_output_path = tmp.size() ? tmp : "./";
+#endif
 }
 
 void

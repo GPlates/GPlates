@@ -769,7 +769,7 @@ export_reconstruction_tree()
 		.def("create_from_files",
 				&GPlatesApi::RotationModel::create_from_files,
 				(bp::arg("filenames"), bp::arg("reconstruction_tree_cache_size") = 1),
-				"create_from_files(filenames[, reconstruction_tree_cache_size=1])\n"
+				"create_from_files(filenames[, reconstruction_tree_cache_size=1]) -> RotationModel\n"
 				"  Create from a sequence of rotation files and an optional reconstruction tree cache size.\n"
 				"\n"
 				"  :param filenames: A sequence of filename strings of the rotation files\n"

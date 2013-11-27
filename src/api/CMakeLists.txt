@@ -31,7 +31,6 @@ set(srcs
     PyFeatureCollectionFileFormatRegistry.cc
     PyFeatureCollectionFileFormatRegistry.h
     PyFiniteRotation.cc
-    PyFunctions.cc
     PyGeometriesOnSphere.cc
     PyGPlatesModule.cc
     PyGPlatesModule.h
@@ -48,6 +47,7 @@ set(srcs
     PyPurePython.cc
     PyQualifiedXmlNames.cc
     PyReal.cc
+    PyReconstruct.cc
     PyReconstructionTree.cc
     PyReconstructionTree.h
     PyRevisionedVector.cc

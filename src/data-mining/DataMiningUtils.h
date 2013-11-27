@@ -139,42 +139,7 @@ namespace GPlatesDataMining
 		std::vector<GPlatesModel::FeatureHandle::weak_ref>
 		get_all_seed_features(
 				GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type);
-		
 
-		GPlatesFileIO::File::non_null_ptr_type 
-		load_file(
-				const QString fn,
-				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
-				GPlatesFileIO::ReadErrorAccumulation* read_errors = NULL);
-		
-		/*
-		* Given a list of file names, load all the files and
-		* return a vector of weak reference of feature collection handle
-		*/
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-		load_files(
-				const std::vector<QString>& filenames,
-				std::vector<GPlatesFileIO::File::non_null_ptr_type>& files,
-				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
-				GPlatesFileIO::ReadErrorAccumulation* read_errors = NULL);
-
-		
-		inline
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>
-		load_files(
-				const std::vector<const char*>& filenames,
-				std::vector<GPlatesFileIO::File::non_null_ptr_type>& files,
-				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
-				GPlatesFileIO::ReadErrorAccumulation* read_errors = NULL)
-		{
-			std::vector<QString> new_filenames;
-			BOOST_FOREACH(const char* filename, filenames)
-			{
-				new_filenames.push_back(QString(filename));
-			}
-			return load_files(new_filenames,files,file_format_registry);
-		}
-		
 		/*
 		* Return particular section of configuration file. 
 		*/

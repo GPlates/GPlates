@@ -59,6 +59,15 @@ class InterpolateTotalReconstructionSequenceTest(unittest.TestCase):
         # TODO: Compare pole.
 
 
+class ReconstructTest(unittest.TestCase):
+    def test_reconstruct(self):
+        pygplates.reconstruct(
+            [os.path.join(FIXTURES, 'volcanoes.gpml')],
+            [os.path.join(FIXTURES, 'rotations.rot')],
+            10,
+            0,
+            'test.xy')
+
 class ReconstructionTreeCase(unittest.TestCase):
     def setUp(self):
         self.rotations = pygplates.FeatureCollectionFileFormatRegistry().read(
@@ -271,6 +280,7 @@ def suite():
     test_cases = [
             InterpolateTotalReconstructionPoleTest,
             InterpolateTotalReconstructionSequenceTest,
+            ReconstructTest,
             ReconstructionTreeCase,
             RotationModelCase
         ]
