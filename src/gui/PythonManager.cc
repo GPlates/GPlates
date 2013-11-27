@@ -243,7 +243,10 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	* Due to the CRT mismatch, putenv cannot set environment variables without restarting. Use this flag for now.
 	* The CRT mismatch problem maybe need to be addressed in the future, but not now.
 	*/
+	// The GPLATES_IGNORE_PYTHON_ENVIRONMENT is defined in 'ConfigDefault.cmake' and 'src/global/config.h.in'
+	#ifdef GPLATES_IGNORE_PYTHON_ENVIRONMENT
 	Py_IgnoreEnvironmentFlag = 1;
+	#endif
 
 	/* 
 	Info from Python manual.
