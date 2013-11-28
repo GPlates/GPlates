@@ -26,6 +26,7 @@
 #ifndef GPLATES_FILE_IO_FEATURECOLLECTIONFILEFORMATCONFIGURATIONS_H
 #define GPLATES_FILE_IO_FEATURECOLLECTIONFILEFORMATCONFIGURATIONS_H
 
+#include <string>
 #include <boost/shared_ptr.hpp>
 #include <QMap>
 #include <QString>
@@ -33,6 +34,8 @@
 #include "FeatureCollectionFileFormatConfiguration.h"
 #include "FeatureCollectionFileFormatRegistry.h"
 #include "GMTFormatWriter.h"
+
+#include "model/FeatureCollectionHandle.h"
 
 
 namespace GPlatesFileIO
@@ -90,8 +93,9 @@ namespace GPlatesFileIO
 			//! Typedef for a model-to-attribute mapping.
 			typedef QMap<QString, QString> model_to_attribute_map_type;
 
+
 			/**
-			 * Constructor - the default model-to-attribute map is empty.
+			 * Constructor.
 			 *
 			 * NOTE: @a file_format must currently be either OGRGMT or SHAPEFILE.
 			 *
@@ -100,10 +104,8 @@ namespace GPlatesFileIO
 			explicit
 			OGRConfiguration(
 					Format file_format,
-					bool wrap_to_dateline = false,
-					const model_to_attribute_map_type model_to_shapefile_map = model_to_attribute_map_type()) :
-				d_wrap_to_dateline(wrap_to_dateline),
-				d_model_to_attribute_map(model_to_shapefile_map)
+					bool wrap_to_dateline = false) :
+				d_wrap_to_dateline(wrap_to_dateline)
 			{  }
 
 
@@ -123,23 +125,31 @@ namespace GPlatesFileIO
 			}
 
 
-			//! Returns the 'const' model-to-attribute map.
-			const model_to_attribute_map_type &
-			get_model_to_attribute_map() const
-			{
-				return d_model_to_attribute_map;
-			}
-
-			//! Returns the 'non-const' model-to-attribute map.
+			/**
+			 * Returns the model-to-attribute map.
+			 *
+			 * NOTE: The model-to-attribute map is no longer stored in the file configuration,
+			 * but in the feature collection itself (as a tag).
+			 * This ensures the mapping is retained when the feature collection gets separated
+			 * from its file container.
+			 * Also the model-to-attribute map is persistent (stored in shapefile mapping file)
+			 * whereas the file configuration parameters specified by the user within GPlates and
+			 * not stored to disk.
+			 */
+			static
 			model_to_attribute_map_type &
-			get_model_to_attribute_map()
-			{
-				return d_model_to_attribute_map;
-			}
+			get_model_to_attribute_map(
+					GPlatesModel::FeatureCollectionHandle &feature_collection);
 
 		private:
+
+			/**
+			 * The key string used when storing the model-to-attribute map as a tag in a FeatureCollectionHandle.
+			 */
+			static const std::string FEATURE_COLLECTION_TAG;
+
+
 			bool d_wrap_to_dateline;
-			model_to_attribute_map_type d_model_to_attribute_map;
 		};
 	}
 }

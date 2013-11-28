@@ -1566,7 +1566,10 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	// might have originated from a plates file, for example. If we don't have one,
 	// create a default map, using the names define in PropertyMapper.h
 
-	d_model_to_shapefile_map = ogr_file_configuration.get()->get_model_to_attribute_map();
+	d_model_to_shapefile_map =
+			FeatureCollectionFileFormat::OGRConfiguration::get_model_to_attribute_map(
+					*file_ref.get_feature_collection());
+
 
 	if (d_model_to_shapefile_map.isEmpty())
 	{
@@ -1632,9 +1635,11 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 											 d_model_to_shapefile_map);
 
 
-	// Store the (potentially) modified model-to-shapefile map back to the file configuration on the file reference.
-	// Store the map back into the file configuration.
-	ogr_file_configuration.get()->get_model_to_attribute_map() = d_model_to_shapefile_map;
+	// Store the (potentially) modified model-to-shapefile map back to the feature collection in the
+	// file reference - assign through the reference returned by 'get_model_to_attribute_map()'.
+	FeatureCollectionFileFormat::OGRConfiguration::get_model_to_attribute_map(
+			*file_ref.get_feature_collection()) =
+					d_model_to_shapefile_map;
 
 	// Store the file configuration in the file reference.
 	FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type

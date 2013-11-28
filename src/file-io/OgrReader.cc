@@ -784,56 +784,34 @@ namespace
 			QMap<QString, QString> &model_to_attribute_map,
 			GPlatesFileIO::File::Reference &file_ref)
 	{
-		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type>
-				ogr_file_configuration =
-						GPlatesFileIO::FeatureCollectionFileFormat::dynamic_cast_configuration<
-								const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration>(
-										file_ref.get_file_configuration());
-		// If we don't have a file configuration then return early and emit a warning message.
-		if (!ogr_file_configuration)
+		if (!file_ref.get_feature_collection().is_valid())
 		{
-			qWarning() << "ERROR: Unable to load a model-to-attribute mapping from file.";
+			qWarning() << "ERROR: Unable to load a model-to-attribute mapping from file: invalid feature collection.";
 			return;
 		}
 
-		// Load the map from the file configuration.
-		model_to_attribute_map = ogr_file_configuration.get()->get_model_to_attribute_map();
+		model_to_attribute_map =
+				GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::get_model_to_attribute_map(
+						*file_ref.get_feature_collection());
 	}
 
 
 	/**
-	 * Stores the specified model-to-attribute map in the specified file reference object.
+	 * Stores the specified model-to-attribute map in the feature collection of the
+	 * specified file reference object.
 	 */
 	void
 	store_model_to_attribute_map_in_file_reference(
 			const QMap<QString, QString> &model_to_attribute_map,
-			GPlatesFileIO::File::Reference &file_ref,
-			const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &
-					default_ogr_file_configuration)
+			GPlatesFileIO::File::Reference &file_ref)
 	{
-		// Create a new file configuration that is a copy of the current one, if there is one.
-		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type>
-				ogr_file_configuration =
-						GPlatesFileIO::FeatureCollectionFileFormat::copy_cast_configuration<
-								GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration>(
-										file_ref.get_file_configuration());
-		// Otherwise use the default ogr configuration.
-		if (!ogr_file_configuration)
-		{
-			// We have to copy the default configuration since we're going to modify it.
-			ogr_file_configuration =
-					GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type(
-							new GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration(
-									*default_ogr_file_configuration));
-		}
+		// Get a reference to the existing model-to-attribute map in the feature collection of the file.
+		QMap<QString, QString> &existing_model_to_attribute_map =
+				GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::get_model_to_attribute_map(
+						*file_ref.get_feature_collection());
 
-		// Store the map in the new file configuration.
-		ogr_file_configuration.get()->get_model_to_attribute_map() = model_to_attribute_map;
-
-		// Store the new file configuration in the file object.
-		GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
-				file_configuration = ogr_file_configuration.get();
-		file_ref.set_file_info(file_ref.get_file_info(), file_configuration);
+		// Overwrite the existing map.
+		existing_model_to_attribute_map = model_to_attribute_map;
 	}
 }
 
@@ -1494,10 +1472,8 @@ GPlatesFileIO::OgrReader::read_file(
 		OgrUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,reader.d_model_to_attribute_map);
 	}
 
-	// Store the model-to-attribute map in the file reference object so we can access it if the
-	// file gets written back out.
-	store_model_to_attribute_map_in_file_reference(
-			reader.d_model_to_attribute_map, file_ref, default_file_configuration);
+	// Store the model-to-attribute map so we can access it if the feature collection gets written back out.
+	store_model_to_attribute_map_in_file_reference(reader.d_model_to_attribute_map, file_ref);
 
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection = file_ref.get_feature_collection();
 

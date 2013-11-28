@@ -104,12 +104,10 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors);
 
 		/**
-		 * Remaps the attributes stored in the file configuration of @a file to the
+		 * Remaps the attributes stored in the feature collection of @a file to the
 		 * mapped feature properties of the features in the feature collection in @a file.
 		 *
 		 * NOTE: This does not pop-up a remapper dialog anymore. That must already have been done.
-		 * Instead, @a file *must* have a valid file configuration - this is now the source of the
-		 * model-to-attribute mapping.
 		 */
 		static
 		void
