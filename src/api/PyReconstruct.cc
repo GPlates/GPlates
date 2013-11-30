@@ -34,6 +34,7 @@
 #include <QString>
 
 #include "PythonUtils.h"
+#include "PythonVariableFunctionArguments.h"
 
 #include "app-logic/ReconstructUtils.h"
 
@@ -47,6 +48,7 @@
 #include "global/python.h"
 // This is not included by <boost/python.hpp>.
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
+#include <boost/python/raw_function.hpp>
 #include <boost/python/stl_iterator.hpp>
 
 #include "model/FeatureCollectionHandle.h"
@@ -63,18 +65,27 @@ namespace GPlatesApi
 	namespace
 	{
 		GPlatesFileIO::ReconstructedFeatureGeometryExport::Format
-		get_format(QString file_name)
+		get_format(
+				QString file_name)
 		{
-			//it seems currently only support xy and shp.
-			QString f_type = file_name.right(file_name.lastIndexOf('.'));
-			if(f_type.contains("xy"))
+			static const QString GMT_EXT = ".xy";
+			static const QString SHP_EXT = ".shp";
+			static const QString OGRGMT_EXT = ".gmt";
+
+			if (file_name.endsWith(GMT_EXT))
+			{
 				return GPlatesFileIO::ReconstructedFeatureGeometryExport::GMT;
-			if(f_type.contains("shp"))
+			}
+			if (file_name.endsWith(SHP_EXT))
+			{
 				return GPlatesFileIO::ReconstructedFeatureGeometryExport::SHAPEFILE;
-			if(f_type.contains("gmt"))
+			}
+			if (file_name.endsWith(OGRGMT_EXT))
+			{
 				return GPlatesFileIO::ReconstructedFeatureGeometryExport::OGRGMT;
-			else
-				return  GPlatesFileIO::ReconstructedFeatureGeometryExport::UNKNOWN;
+			}
+
+			return GPlatesFileIO::ReconstructedFeatureGeometryExport::UNKNOWN;
 		}
 
 		void
@@ -106,14 +117,91 @@ namespace GPlatesApi
 		}
 	}
 
-	void
-	recontruct(
-			bp::object reconstruct_filenames,
-			bp::object rotation_filenames,
-			const double &reconstruction_time,
-			GPlatesModel::integer_plate_id_type anchor_plate_id,
-			QString export_file_name)
+
+	/**
+	 * Reconstruct feature collections, loaded from files, to a specific geological time and export to file(s).
+	 *
+	 * The function signature enables us to use bp::raw_function to get variable keyword arguments.
+	 *
+	 * We must return a value (required by 'bp::raw_function') so we just return Py_None.
+	 */
+	bp::object
+	reconstruct(
+			bp::tuple positional_args,
+			bp::dict keyword_args)
 	{
+		//
+		// Get the explicit function arguments from the variable argument list.
+		//
+
+		// The non-explicit function arguments.
+		// These are our variable number of export parameters.
+		VariableArguments::keyword_arguments_type unused_keyword_args;
+
+		bp::object reconstruct_filenames;
+		bp::object rotation_filenames;
+		double reconstruction_time;
+		GPlatesModel::integer_plate_id_type anchor_plate_id;
+		QString export_file_name;
+
+		// Define the number of explicit arguments and their types.
+		typedef boost::tuple<
+				bp::object,
+				bp::object,
+				double,
+				GPlatesModel::integer_plate_id_type,
+				QString
+		> function_explicit_args_type;
+
+		boost::tie(
+				reconstruct_filenames,
+				rotation_filenames,
+				reconstruction_time,
+				anchor_plate_id,
+				export_file_name) =
+						VariableArguments::get_explicit_args<function_explicit_args_type>(
+								positional_args,
+								keyword_args,
+								boost::make_tuple(
+										"reconstruct_filenames",
+										"rotation_filenames",
+										"reconstruction_time",
+										"anchor_plate_id",
+										"export_file_name"),
+								boost::tuples::make_tuple(),
+								boost::none/*unused_positional_args*/,
+								unused_keyword_args);
+
+		//
+		// Get the optional non-explicit export parameters from the variable argument list.
+		//
+
+		bool export_single_output_file =
+				VariableArguments::extract_and_remove_or_default<bool>(
+						unused_keyword_args,
+						"export_single_output_file",
+						true);
+		bool export_per_input_file =
+				VariableArguments::extract_and_remove_or_default<bool>(
+						unused_keyword_args,
+						"export_per_input_file",
+						false);
+		bool export_output_directory_per_input_file =
+				VariableArguments::extract_and_remove_or_default<bool>(
+						unused_keyword_args,
+						"export_output_directory_per_input_file",
+						false);
+		bool export_wrap_to_dateline =
+				VariableArguments::extract_and_remove_or_default<bool>(
+						unused_keyword_args,
+						"export_wrap_to_dateline",
+						true);
+
+		// Raise a python error if there are any unused keyword arguments remaining.
+		// These will be keywords that we didn't recognise.
+		VariableArguments::raise_python_error_if_unused(unused_keyword_args);
+
+
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
 
 		// TODO: Return the read errors to the python caller.
@@ -176,9 +264,13 @@ namespace GPlatesApi
 					reconstructable_file_ptrs,
 					anchor_plate_id,
 					reconstruction_time,
-					true/*export_single_output_file*/,
-					false/*export_per_input_file*/,
-					false/*export_separate_output_directory_per_input_file*/);
+					export_single_output_file,
+					export_per_input_file,
+					export_output_directory_per_input_file,
+					export_wrap_to_dateline);
+
+		// We must return a value (required by 'bp::raw_function') so just return Py_None.
+		return bp::object();
 	}
 
 
@@ -325,7 +417,73 @@ namespace GPlatesApi
 void
 export_reconstruct()
 {
-	bp::def("reconstruct", &GPlatesApi::recontruct);
+	const char *reconstruct_function_name = "reconstruct";
+	bp::def(reconstruct_function_name, bp::raw_function(&GPlatesApi::reconstruct));
+
+	// Seems we cannot set a docstring using non-class bp::def combined with bp::raw_function,
+	// or any case where the second argument of bp::def is a bp::object,
+	// so we set the docstring the old-fashioned way.
+	bp::scope().attr(reconstruct_function_name).attr("__doc__") =
+			"reconstruct(reconstructable_filenames, rotation_filenames, reconstruction_time, "
+			"anchor_plate_id, export_filename, **export_parameters)\n"
+			"  Reconstruct feature collections, loaded from files, to a specific geological time and "
+			"export to file(s).\n"
+			"\n"
+			"  :param reconstructable_filenames: A sequence of names of files containing features "
+			"to reconstruct\n"
+			"  :type reconstructable_filenames: Any sequence of strings such as a ``list`` or a ``tuple``\n"
+			"  :param rotation_filenames: A sequence of names of files containing rotation features\n"
+			"  :type rotation_filenames: Any sequence of strings such as a ``list`` or a ``tuple``\n"
+			"  :param reconstruction_time: the specific geological time to reconstruct to\n"
+			"  :type reconstruction_time: float\n"
+			"  :param anchor_plate_id: the anchored plate id of the :class:`ReconstructionTree` "
+			"used to reconstruct\n"
+			"  :type anchor_plate_id: int\n"
+			"  :param export_filename: the name of the file to export to (see supported formats below)\n"
+			"  :type export_filename: string\n"
+			"  :param export_parameters: variable number of keyword arguments specifying export "
+			"parameters (see table below)\n"
+			"\n"
+			"  The following optional keyword arguments are supported by *export_parameters*:\n"
+			"\n"
+			"  ======================================= ===== ======== ==============\n"
+			"  Name                                    Type  Default  Description\n"
+			"  ======================================= ===== ======== ==============\n"
+			"  export_single_output_file               bool  True     Write all reconstructed "
+			"geometries to a single file\n"
+			"  export_per_input_file                   bool  False    Group reconstructed geometries "
+			"according to the input files their features came from.\n"
+			"  export_output_directory_per_input_file  bool  False    Export each file to a different "
+			"directory based on the file basename of feature collection. Ignored if "
+			"*export_per_input_file* is ``False``.\n"
+			"  export_wrap_to_dateline                 bool  True     Wrap/clip reconstructed "
+			"geometries to the dateline (currently ignored unless exporting to ESRI shapefile format).\n"
+			"  ======================================= ===== ======== ==============\n"
+			"\n"
+			"  Note that if both *export_single_output_file* and *export_per_input_file* are ``True`` "
+			"then both a single output file and multiple per-input files are exported. For ESRI "
+			"shapefiles you can set *export_per_input_file* to ``True`` in order to retain the "
+			"shapefile attributes from the original reconstructable feature collection files - "
+			"this is not possible with *export_single_output_file* because shapefile attributes "
+			"from multiple files are not easily combined into a single shapefile (when the files "
+			"have different attribute field names).\n"
+			"\n"
+			"  The reconstructable and rotation files are read internally using "
+			":class:`FeatureCollectionFileFormatRegistry` - which describes the various supported "
+			"*feature collection* file formats.\n"
+			"\n"
+			"  The following *export* file formats are currently supported by GPlates:\n"
+			"\n"
+			"  =============================== =======================\n"
+			"  Export File Format              Filename Extension     \n"
+			"  =============================== =======================\n"
+			"  ESRI shapefile                  '.shp'                 \n"
+			"  OGR GMT                         '.gmt'                 \n"
+			"  GMT xy                          '.xy'                  \n"
+			"  =============================== =======================\n"
+			"\n"
+			"  Note that the filename extension of *export_filename* determines the export file format.\n";
+
 	bp::def("reverse_reconstruct", &GPlatesApi::reverse_recontruct);
 }
 
