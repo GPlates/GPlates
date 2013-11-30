@@ -204,7 +204,7 @@ namespace GPlatesApi
 		 * Or even just modifying it via python.
 		 *
 		 * NOTE: You will also need to specify the reverse from-python conversion from
-		 * non-const back to const if haven't already.
+		 * non-const back to const if haven't already (eg, using bp::implicitly_convertible).
 		 *
 		 * For more information on boost python to/from conversions, see:
 		 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/

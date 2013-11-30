@@ -66,6 +66,8 @@ set(srcs
     PythonRunner.h
     PythonUtils.cc
     PythonUtils.h
+    PythonVariableFunctionArguments.cc
+    PythonVariableFunctionArguments.h
     PyTopologyTools.cc
     PyUnitVector3D.cc
     PyViewportWindow.cc
