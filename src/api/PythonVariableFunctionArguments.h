@@ -830,7 +830,7 @@ namespace GPlatesApi
 
 			// Throw error if any keyword arguments overlap with explicit positional arguments.
 			Implementation::check_positional_keyword_overlap<
-					Implementation::GetTupleCons<ExplicitArgNamesTupleType>::type>(
+					typename Implementation::GetTupleCons<ExplicitArgNamesTupleType>::type>(
 							keyword_args,
 							explicit_arg_names,
 							num_explicit_positional_args);
@@ -838,9 +838,9 @@ namespace GPlatesApi
 			// Return uses implicit conversion constructor of 'boost::tuple' (from 'boost::tuples::cons').
 			const ExplicitArgsTupleType explicit_args =
 					Implementation::GetExplicitArgsFromPositionalArgs<
-							Implementation::GetTupleCons<ExplicitArgsTupleType>::type,
-							Implementation::GetTupleCons<ExplicitArgNamesTupleType>::type,
-							Implementation::GetTupleCons<DefaultArgsTupleType>::type,
+							typename Implementation::GetTupleCons<ExplicitArgsTupleType>::type,
+							typename Implementation::GetTupleCons<ExplicitArgNamesTupleType>::type,
+							typename Implementation::GetTupleCons<DefaultArgsTupleType>::type,
 							num_explicit_args,
 							min_required_explicit_args>::get(
 									positional_args,
