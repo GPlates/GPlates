@@ -63,7 +63,7 @@ namespace
 
 
 	unsigned int
-	hash(
+	hash_feature_type(
 			const GPlatesModel::FeatureType &feature_type)
 	{
 		// First convert to std::string.
@@ -88,7 +88,7 @@ namespace
 	create_colour(
 			const GPlatesModel::FeatureType &feature_type)
 	{
-		return map_to_colour(hash(feature_type));
+		return map_to_colour(hash_feature_type(feature_type));
 	}
 }
 
