@@ -57,11 +57,12 @@ void export_property_values();
 void export_property_value_visitor();
 void export_qualified_xml_names();
 void export_revisioned_vector();
-void export_reconstruction_tree();
 void export_top_level_property();
 
 // app-logic namespace
 void export_reconstruct();
+void export_reconstruction_tree();
+void export_rotation_model();
 
 // api directory.
 void export_console_reader();
@@ -148,12 +149,13 @@ export_cpp_python_api()
 	export_old_feature_collection();
 	export_property_values();
 	export_property_value_visitor();
-	export_reconstruction_tree();
 	export_revisioned_vector();
 	export_top_level_property();
 
 	// app-logic namespace
 	export_reconstruct();
+	export_reconstruction_tree();
+	export_rotation_model();
 
 	//export_co_registration();
 	export_colour();

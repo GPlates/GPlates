@@ -26,21 +26,15 @@
 #ifndef GPLATES_API_PYRECONSTRUCTIONTREE_H
 #define GPLATES_API_PYRECONSTRUCTIONTREE_H
 
-#include <vector>
 #include <boost/optional.hpp>
 
 #include "app-logic/ReconstructionTree.h"
-#include "app-logic/ReconstructionTreeCreator.h"
-
-#include "global/PreconditionViolationError.h"
-#include "global/python.h"
 
 #include "maths/FiniteRotation.h"
 
-#include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
 
-#include "utils/ReferenceCount.h"
+#include "global/PreconditionViolationError.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -76,76 +70,48 @@ namespace GPlatesApi
 
 
 	/**
-	 * Creates reconstruction trees and provides easy way to query equivalent/relative,
-	 * total/stage rotations.
+	 * Get equivalent total rotation.
+	 *
+	 * This interface is exposed so other API functions can use it in their implementation.
 	 */
-	class RotationModel :
-			public GPlatesUtils::ReferenceCount<RotationModel>
-	{
-	public:
+	boost::optional<GPlatesMaths::FiniteRotation>
+	get_equivalent_total_rotation(
+			const GPlatesAppLogic::ReconstructionTree &reconstruction_tree,
+			GPlatesModel::integer_plate_id_type moving_plate_id);
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<RotationModel> non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const RotationModel> non_null_ptr_to_const_type;
+	/**
+	 * Get relative total rotation.
+	 *
+	 * This interface is exposed so other API functions can use it in their implementation.
+	 */
+	boost::optional<GPlatesMaths::FiniteRotation>
+	get_relative_total_rotation(
+			const GPlatesAppLogic::ReconstructionTree &reconstruction_tree,
+			GPlatesModel::integer_plate_id_type fixed_plate_id,
+			GPlatesModel::integer_plate_id_type moving_plate_id);
 
+	/**
+	 * Get equivalent stage rotation.
+	 *
+	 * This interface is exposed so other API functions can use it in their implementation.
+	 */
+	boost::optional<GPlatesMaths::FiniteRotation>
+	get_equivalent_stage_rotation(
+			const GPlatesAppLogic::ReconstructionTree &from_reconstruction_tree,
+			const GPlatesAppLogic::ReconstructionTree &to_reconstruction_tree,
+			GPlatesModel::integer_plate_id_type plate_id);
 
-		static
-		non_null_ptr_type
-		create_from_feature_collections(
-				boost::python::object feature_collection_seq, // Any python iterable (eg, list, tuple).
-				unsigned int reconstruction_tree_cache_size);
-
-
-		static
-		non_null_ptr_type
-		create_from_files(
-				boost::python::object filename_seq, // Any python iterable (eg, list, tuple).
-				unsigned int reconstruction_tree_cache_size);
-
-
-		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type
-		get_reconstruction_tree(
-				const double &reconstruction_time);
-
-
-		/**
-		 * Handle the four combinations of total/stage and equivalent/relative rotations in one place.
-		 */
-		boost::optional<GPlatesMaths::FiniteRotation>
-		get_rotation(
-				const double &to_time,
-				GPlatesModel::integer_plate_id_type moving_plate_id,
-				const double &from_time,
-				GPlatesModel::integer_plate_id_type fixed_plate_id);
-
-	private:
-
-		// Common create method.
-		static
-		non_null_ptr_type
-		create(
-				const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
-				unsigned int reconstruction_tree_cache_size);
-
-		RotationModel(
-				const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
-				const GPlatesAppLogic::ReconstructionTreeCreator &reconstruction_tree_creator) :
-			d_feature_collections(feature_collections),
-			d_reconstruction_tree_creator(reconstruction_tree_creator)
-		{  }
-
-
-		/**
-		 * Keep the feature collections alive (by using intrusive pointers instead of weak refs)
-		 * since @a ReconstructionTreeCreator only stores weak references.
-		 */
-		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> d_feature_collections;
-
-		/**
-		 * Cached reconstruction tree creator.
-		 */
-		GPlatesAppLogic::ReconstructionTreeCreator d_reconstruction_tree_creator;
-
-	};
+	/**
+	 * Get relative stage rotation.
+	 *
+	 * This interface is exposed so other API functions can use it in their implementation.
+	 */
+	boost::optional<GPlatesMaths::FiniteRotation>
+	get_relative_stage_rotation(
+			const GPlatesAppLogic::ReconstructionTree &from_reconstruction_tree,
+			const GPlatesAppLogic::ReconstructionTree &to_reconstruction_tree,
+			GPlatesModel::integer_plate_id_type fixed_plate_id,
+			GPlatesModel::integer_plate_id_type moving_plate_id);
 }
 
 #endif   // GPLATES_NO_PYTHON

@@ -28,8 +28,6 @@
 
 #include "global/python.h"
 
-#include "global/PreconditionViolationError.h"
-
 
 #if !defined(GPLATES_NO_PYTHON)
 
