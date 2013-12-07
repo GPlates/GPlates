@@ -179,8 +179,8 @@ namespace GPlatesApi
 				// Get the names of all the types in the variant.
 				std::vector<const char *> variant_type_names;
 				GetVariantTypeNames<
-						boost::mpl::begin<variant_types>::type,
-						boost::mpl::end<variant_types>::type>::get(
+						typename boost::mpl::begin<variant_types>::type,
+						typename boost::mpl::end<variant_types>::type>::get(
 								variant_type_names);
 				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 						!variant_type_names.empty(),
@@ -243,8 +243,8 @@ namespace GPlatesApi
 			// Iterate over the types in the variant until we can extract the current sequence
 			// element (python object) into one of the variant's C++ types.
 			return ExtractVariant<
-					boost::mpl::begin<variant_types>::type,
-					boost::mpl::end<variant_types>::type>::get(
+					typename boost::mpl::begin<variant_types>::type,
+					typename boost::mpl::end<variant_types>::type>::get(
 							d_current_element.get());
 		}
 
