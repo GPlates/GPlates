@@ -224,7 +224,7 @@ class RotationModelCase(unittest.TestCase):
     def setUp(self):
         self.rotations = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'rotations.rot'))
-        self.rotation_model = pygplates.RotationModel.create_from_files([ os.path.join(FIXTURES, 'rotations.rot') ])
+        self.rotation_model = pygplates.RotationModel([ os.path.join(FIXTURES, 'rotations.rot') ])
         self.from_time = 20.0
         self.to_time = 10.0
         self.from_reconstruction_tree = pygplates.ReconstructionTree([ self.rotations ], self.from_time)
@@ -233,7 +233,7 @@ class RotationModelCase(unittest.TestCase):
     def test_create(self):
         self.assertRaises(
                 pygplates.OpenFileForReadingError,
-                pygplates.RotationModel.create_from_files,
+                pygplates.RotationModel,
                 [ 'non_existent_file.rot' ])
         # Create using feature collections instead of filenames.
         rotation_model = pygplates.RotationModel([self.rotations])

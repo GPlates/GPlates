@@ -60,15 +60,8 @@ namespace GPlatesApi
 
 		static
 		non_null_ptr_type
-		create_from_feature_collections(
-				boost::python::object feature_collection_seq, // Any python iterable (eg, list, tuple).
-				unsigned int reconstruction_tree_cache_size);
-
-
-		static
-		non_null_ptr_type
-		create_from_files(
-				boost::python::object filename_seq, // Any python iterable (eg, list, tuple).
+		create(
+				boost::python::object rotation_features_seq, // Any python iterable (eg, list, tuple).
 				unsigned int reconstruction_tree_cache_size);
 
 
@@ -88,13 +81,6 @@ namespace GPlatesApi
 				GPlatesModel::integer_plate_id_type fixed_plate_id);
 
 	private:
-
-		// Common create method.
-		static
-		non_null_ptr_type
-		create(
-				const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
-				unsigned int reconstruction_tree_cache_size);
 
 		RotationModel(
 				const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
