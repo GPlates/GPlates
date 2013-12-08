@@ -508,3 +508,50 @@ def get_feature_geometry_properties_by_name(feature, property_name, geometry_on_
                 properties.append((property, geometry_on_sphere))
     
     return properties
+
+
+def get_total_reconstruction_pole(total_reconstruction_sequence_feature):
+    """get_total_reconstruction_pole(total_reconstruction_sequence_feature) -> (int, int, GpmlIrregularSampling) or None
+    Returns the *time-dependent* total reconstruction pole in a *total reconstruction sequence* feature.
+    
+    Features of type *total reconstruction sequence* are usually read from a GPML rotation file or a PLATES4 rotation ('.rot') file.
+    
+    :param total_reconstruction_sequence_feature: the rotation feature with :class:`feature type<FeatureType>` 'gpml:TotalReconstructionSequence'
+    :type total_reconstruction_sequence_feature: :class:`Feature`
+    :rtype: tuple(int, int, :class:`GpmlIrregularSampling`) or None
+    :return: A tuple containing (fixed plate id, moving plate id, time sequence of finite rotations) or None
+    
+    Returns ``None`` if the feature does not contain a 'gpml:fixedReferenceFrame' plate id,
+    a 'gpml:movingReferenceFrame' plate id and a 'gpml:totalReconstructionPole' :class:`GpmlIrregularSampling` with
+    time samples containing :class:`GpmlFiniteRotation` instances.
+    
+    A feature with :class:`feature type<FeatureType>` 'gpml:TotalReconstructionSequence' should have these properties
+    if it conforms to the GPlates Geological Information Model (GPGIM).
+    """
+
+    fixed_plate_id = None
+    moving_plate_id = None
+    total_reconstruction_pole = None
+    
+    fixed_reference_frame_property_name = PropertyName.create_gpml('fixedReferenceFrame')
+    moving_reference_frame_property_name = PropertyName.create_gpml('movingReferenceFrame')
+    total_reconstruction_pole_property_name = PropertyName.create_gpml('totalReconstructionPole')
+    
+    # Find the fixed/moving plate ids and the time sample sequence of total reconstruction poles.
+    for property in total_reconstruction_sequence_feature:
+        try:
+            if property.get_name() == fixed_reference_frame_property_name:
+                fixed_plate_id = property.get_value().get_plate_id()
+            elif property.get_name() == moving_reference_frame_property_name:
+                moving_plate_id = property.get_value().get_plate_id()
+            elif property.get_name() == total_reconstruction_pole_property_name:
+                total_reconstruction_pole = property.get_value()
+        except AttributeError:
+            # The property value type did not match the property name.
+            # This indicates the data does not conform to the GPlates Geological Information Model (GPGIM).
+            return
+
+    if fixed_plate_id is None or moving_plate_id is None or total_reconstruction_pole is None:
+        return
+    
+    return (fixed_plate_id, moving_plate_id, total_reconstruction_pole)

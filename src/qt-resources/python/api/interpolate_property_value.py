@@ -105,33 +105,14 @@ def interpolate_total_reconstruction_sequence(total_reconstruction_sequence_feat
     See :func:`interpolate_total_reconstruction_pole` and :func:`interpolate_finite_rotations` for a similar functions.
     """
 
-    fixed_plate_id = None
-    moving_plate_id = None
-    total_reconstruction_pole = None
-    
-    fixed_reference_frame_property_name = PropertyName.create_gpml('fixedReferenceFrame')
-    moving_reference_frame_property_name = PropertyName.create_gpml('movingReferenceFrame')
-    total_reconstruction_pole_property_name = PropertyName.create_gpml('totalReconstructionPole')
-    
-    # Find the fixed/moving plate ids and the time sample sequence of total reconstruction poles.
-    for property in total_reconstruction_sequence_feature:
-        try:
-            if property.get_name() == fixed_reference_frame_property_name:
-                fixed_plate_id = property.get_value().get_plate_id()
-            elif property.get_name() == moving_reference_frame_property_name:
-                moving_plate_id = property.get_value().get_plate_id()
-            elif property.get_name() == total_reconstruction_pole_property_name:
-                total_reconstruction_pole = property.get_value()
-        except AttributeError:
-            # The property value type did not match the property name.
-            # This indicates the data does not conform to the GPlates Geological Information Model (GPGIM).
-            return
-
-    if fixed_plate_id is None or moving_plate_id is None or total_reconstruction_pole is None:
+    total_reconstruction_pole = get_total_reconstruction_pole(total_reconstruction_sequence_feature)
+    if total_reconstruction_pole is None:
         return
     
+    (fixed_plate_id, moving_plate_id, total_reconstruction_pole_rotation) = total_reconstruction_pole
+    
     # Interpolate the 'GpmlIrregularSampling' of 'GpmlFiniteRotations'.
-    interpolated_rotation = interpolate_total_reconstruction_pole(total_reconstruction_pole, time)
+    interpolated_rotation = interpolate_total_reconstruction_pole(total_reconstruction_pole_rotation, time)
     
     if interpolated_rotation is None:
         return

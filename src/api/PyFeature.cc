@@ -153,7 +153,7 @@ export_feature()
 						(bp::arg("feature_type") = boost::optional<GPlatesModel::FeatureType>(),
 							bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
 							bp::arg("revision_id") = boost::optional<GPlatesModel::RevisionId>())),
-				"__init__([feature_type[, feature_id[, revision_id]]])\n"
+				"__init__([feature_type][, feature_id][, revision_id])\n"
 				"  Create a new feature instance that is (initially) empty (has no properties).\n"
 				"\n"
 				"  :param feature_type: the type of feature\n"

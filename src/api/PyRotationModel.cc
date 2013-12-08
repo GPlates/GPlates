@@ -124,10 +124,11 @@ GPlatesApi::RotationModel::get_reconstruction_tree(
 
 boost::optional<GPlatesMaths::FiniteRotation>
 GPlatesApi::RotationModel::get_rotation(
-		const double &to_time,
 		GPlatesModel::integer_plate_id_type moving_plate_id,
+		const double &to_time,
+		GPlatesModel::integer_plate_id_type fixed_plate_id,
 		const double &from_time,
-		GPlatesModel::integer_plate_id_type fixed_plate_id)
+		bool use_identity_for_missing_plate_ids)
 {
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type to_reconstruction_tree =
 			get_reconstruction_tree(to_time);
@@ -139,14 +140,16 @@ GPlatesApi::RotationModel::get_rotation(
 			// Use the API function in "PyReconstructionTree.h".
 			return GPlatesApi::get_equivalent_total_rotation(
 					*to_reconstruction_tree,
-					moving_plate_id);
+					moving_plate_id,
+					use_identity_for_missing_plate_ids);
 		}
 
 		// Use the API function in "PyReconstructionTree.h".
 		return GPlatesApi::get_relative_total_rotation(
 				*to_reconstruction_tree,
 				fixed_plate_id,
-				moving_plate_id);
+				moving_plate_id,
+				use_identity_for_missing_plate_ids);
 	}
 
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type from_reconstruction_tree =
@@ -158,7 +161,8 @@ GPlatesApi::RotationModel::get_rotation(
 		return GPlatesApi::get_equivalent_stage_rotation(
 				*from_reconstruction_tree,
 				*to_reconstruction_tree,
-				moving_plate_id);
+				moving_plate_id,
+				use_identity_for_missing_plate_ids);
 	}
 
 	// Use the API function in "PyReconstructionTree.h".
@@ -166,7 +170,8 @@ GPlatesApi::RotationModel::get_rotation(
 			*from_reconstruction_tree,
 			*to_reconstruction_tree,
 			fixed_plate_id,
-			moving_plate_id);
+			moving_plate_id,
+			use_identity_for_missing_plate_ids);
 }
 
 
@@ -232,26 +237,29 @@ export_rotation_model()
 				"    rotation_model = pygplates.RotationModel(['rotations.rot', rotation_adjustments])\n")
 		.def("get_rotation",
 				&GPlatesApi::RotationModel::get_rotation,
-				(bp::arg("to_time"),
-					bp::arg("moving_plate_id"),
+				(bp::arg("moving_plate_id"),
+					bp::arg("to_time"),
+					bp::arg("fixed_plate_id") = 0,
 					bp::arg("from_time") = 0,
-					bp::arg("fixed_plate_id") = 0),
-				"get_rotation(to_time, moving_plate_id[, from_time=0[, fixed_plate_id=0]]) -> FiniteRotation or None\n"
+					bp::arg("use_identity_for_missing_plate_ids") = true),
+				"get_rotation(moving_plate_id, to_time[, fixed_plate_id=0][, from_time=0]"
+				"[, use_identity_for_missing_plate_ids=True]) -> FiniteRotation or None\n"
 				"  Return the finite rotation that rotates from the *fixed_plate_id* plate to the *moving_plate_id* "
 				"plate and from the time *from_time* to the time *to_time*.\n"
 				"\n"
-				"  Returns ``None`` if *fixed_plate_id* and *moving_plate_id* do not exist at both "
-				"reconstruction times (do not exist in the reconstruction trees associated with those times).\n"
-				"\n"
-				"  :param to_time: time at which the moving plate is being rotated *to* (in Ma)\n"
-				"  :type to_time: float\n"
 				"  :param moving_plate_id: the plate id of the moving plate\n"
 				"  :type moving_plate_id: int\n"
-				"  :param from_time: time at which the moving plate is being rotated *from* (in Ma)\n"
-				"  :type from_time: float\n"
+				"  :param to_time: time at which the moving plate is being rotated *to* (in Ma)\n"
+				"  :type to_time: float\n"
 				"  :param fixed_plate_id: the plate id of the fixed plate\n"
 				"  :type fixed_plate_id: int\n"
-				"  :rtype: FiniteRotation or None\n"
+				"  :param from_time: time at which the moving plate is being rotated *from* (in Ma)\n"
+				"  :type from_time: float\n"
+				"  :param use_identity_for_missing_plate_ids: whether to use an "
+				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` or return ``None`` "
+				"for missing plate ids (default is to use identity rotation)\n"
+				"  :type use_identity_for_missing_plate_ids: bool\n"
+				"  :rtype: :class:`FiniteRotation`, or None (if *use_identity_for_missing_plate_ids* is ``False``)\n"
 				"\n"
 				"  This method conveniently handles all four combinations of total/stage and "
 				"equivalent/relative rotations (see :class:`ReconstructionTree` for details) normally handled by "
@@ -263,23 +271,23 @@ export_rotation_model()
 				"  This method essentially does the following:\n"
 				"  ::\n"
 				"\n"
-				"    def get_rotation(self, to_time, moving_plate_id[, from_time=0[, fixed_plate_id=0]]):\n"
+				"    def get_rotation(rotation_model, moving_plate_id, to_time, fixed_plate_id=0, from_time=0):\n"
 				"        \n"
 				"        if from_time == 0:\n"
 				"            if fixed_plate_id == 0:\n"
-				"                return self.get_reconstruction_tree(to_time).get_equivalent_total_rotation(moving_plate_id)\n"
+				"                return rotation_model.get_reconstruction_tree(to_time).get_equivalent_total_rotation(moving_plate_id)\n"
 				"            \n"
-				"            return self.get_reconstruction_tree(to_time).get_relative_total_rotation(fixed_plate_id, moving_plate_id)\n"
+				"            return rotation_model.get_reconstruction_tree(to_time).get_relative_total_rotation(fixed_plate_id, moving_plate_id)\n"
 				"        \n"
 				"        if fixed_plate_id == 0:\n"
 				"            return pygplates.get_equivalent_stage_rotation(\n"
-				"                self.get_reconstruction_tree(from_time),\n"
-				"                self.get_reconstruction_tree(to_time),\n"
+				"                rotation_model.get_reconstruction_tree(from_time),\n"
+				"                rotation_model.get_reconstruction_tree(to_time),\n"
 				"                moving_plate_id)\n"
 				"        \n"
 				"        return pygplates.get_relative_stage_rotation(\n"
-				"            self.get_reconstruction_tree(from_time),\n"
-				"            self.get_reconstruction_tree(to_time),\n"
+				"            rotation_model.get_reconstruction_tree(from_time),\n"
+				"            rotation_model.get_reconstruction_tree(to_time),\n"
 				"            fixed_plate_id,\n"
 				"            moving_plate_id)\n")
 		.def("get_reconstruction_tree",

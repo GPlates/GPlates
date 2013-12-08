@@ -75,10 +75,11 @@ namespace GPlatesApi
 		 */
 		boost::optional<GPlatesMaths::FiniteRotation>
 		get_rotation(
-				const double &to_time,
 				GPlatesModel::integer_plate_id_type moving_plate_id,
+				const double &to_time,
+				GPlatesModel::integer_plate_id_type fixed_plate_id,
 				const double &from_time,
-				GPlatesModel::integer_plate_id_type fixed_plate_id);
+				bool use_identity_for_missing_plate_ids);
 
 	private:
 

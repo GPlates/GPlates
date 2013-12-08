@@ -1820,7 +1820,7 @@ export_gpml_time_sample()
 							bp::arg("time"),
 							bp::arg("description") = boost::optional<GPlatesPropertyValues::TextContent>(),
 							bp::arg("is_disabled") = false)),
-				"__init__(property_value, time[, description[, is_disabled=False]])\n"
+				"__init__(property_value, time[, description][, is_disabled=False])\n"
 				"  Create a time sample given a property value and time and optionally a description string "
 				"and disabled flag.\n"
 				"\n"

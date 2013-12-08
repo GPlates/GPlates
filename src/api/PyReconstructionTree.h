@@ -72,15 +72,24 @@ namespace GPlatesApi
 	/**
 	 * Get equivalent total rotation.
 	 *
+	 * If @a use_identity_for_missing_plate_ids is true then returns identity rotation if
+	 * @a moving_plate_id is not found in the reconstruction tree.
+	 * When @a use_identity_for_missing_plate_ids is true then a finite rotation is always returned.
+	 *
 	 * This interface is exposed so other API functions can use it in their implementation.
 	 */
 	boost::optional<GPlatesMaths::FiniteRotation>
 	get_equivalent_total_rotation(
 			const GPlatesAppLogic::ReconstructionTree &reconstruction_tree,
-			GPlatesModel::integer_plate_id_type moving_plate_id);
+			GPlatesModel::integer_plate_id_type moving_plate_id,
+			bool use_identity_for_missing_plate_ids);
 
 	/**
 	 * Get relative total rotation.
+	 *
+	 * If @a use_identity_for_missing_plate_ids is true then uses identity rotation for those plate ids
+	 * not found in the reconstruction tree.
+	 * When @a use_identity_for_missing_plate_ids is true then a finite rotation is always returned.
 	 *
 	 * This interface is exposed so other API functions can use it in their implementation.
 	 */
@@ -88,10 +97,15 @@ namespace GPlatesApi
 	get_relative_total_rotation(
 			const GPlatesAppLogic::ReconstructionTree &reconstruction_tree,
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
-			GPlatesModel::integer_plate_id_type moving_plate_id);
+			GPlatesModel::integer_plate_id_type moving_plate_id,
+			bool use_identity_for_missing_plate_ids);
 
 	/**
 	 * Get equivalent stage rotation.
+	 *
+	 * If @a use_identity_for_missing_plate_ids is true then uses identity rotation for those plate ids
+	 * not found in the reconstruction trees.
+	 * When @a use_identity_for_missing_plate_ids is true then a finite rotation is always returned.
 	 *
 	 * This interface is exposed so other API functions can use it in their implementation.
 	 */
@@ -99,10 +113,15 @@ namespace GPlatesApi
 	get_equivalent_stage_rotation(
 			const GPlatesAppLogic::ReconstructionTree &from_reconstruction_tree,
 			const GPlatesAppLogic::ReconstructionTree &to_reconstruction_tree,
-			GPlatesModel::integer_plate_id_type plate_id);
+			GPlatesModel::integer_plate_id_type plate_id,
+			bool use_identity_for_missing_plate_ids);
 
 	/**
 	 * Get relative stage rotation.
+	 *
+	 * If @a use_identity_for_missing_plate_ids is true then uses identity rotation for those plate ids
+	 * not found in the reconstruction trees.
+	 * When @a use_identity_for_missing_plate_ids is true then a finite rotation is always returned.
 	 *
 	 * This interface is exposed so other API functions can use it in their implementation.
 	 */
@@ -111,7 +130,8 @@ namespace GPlatesApi
 			const GPlatesAppLogic::ReconstructionTree &from_reconstruction_tree,
 			const GPlatesAppLogic::ReconstructionTree &to_reconstruction_tree,
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
-			GPlatesModel::integer_plate_id_type moving_plate_id);
+			GPlatesModel::integer_plate_id_type moving_plate_id,
+			bool use_identity_for_missing_plate_ids);
 }
 
 #endif   // GPLATES_NO_PYTHON

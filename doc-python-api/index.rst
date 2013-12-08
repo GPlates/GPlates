@@ -79,6 +79,7 @@ Contents:
 	pygplates.get_relative_stage_rotation
 	pygplates.get_time_samples_bounding_time
 	pygplates.get_time_window_containing_time
+	pygplates.get_total_reconstruction_pole
 	pygplates.interpolate_finite_rotations
 	pygplates.interpolate_total_reconstruction_pole
 	pygplates.interpolate_total_reconstruction_sequence
