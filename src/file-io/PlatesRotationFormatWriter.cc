@@ -100,15 +100,23 @@ namespace
 				<< data->get_content().toUtf8().data()<< sep.toUtf8().data() <<"\n";
 		}
 
+		/*
+		 * A coordinate in the PLATES4 format is written as decimal number with
+		 * 4 digits precision after the decimal point, and it must take up 9
+		 * characters altogether (i.e. including the decimal point and maybe a sign).
+		 */
+		static const unsigned PLATES_COORDINATE_FIELDWIDTH = 9;
+		static const unsigned PLATES_COORDINATE_PRECISION = 4;
+
 		(*os) << formatted_int_to_string(moving_plate_id, 3, '0')
 			<< " "
 			<< formatted_double_to_string(time, 5, 2, true)
 			<< " "
-			<< formatted_double_to_string(latitude, 6, 2, true)
+			<< formatted_double_to_string(latitude, PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION, true)
 			<< " "
-			<< formatted_double_to_string(longitude, 7, 2, true)
+			<< formatted_double_to_string(longitude, PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION, true)
 			<< " "
-			<< formatted_double_to_string(angle, 7, 2, true)
+			<< formatted_double_to_string(angle, PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION, true)
 			<< "  "
 			<< formatted_int_to_string(fixed_plate_id, 3, '0');
 			if(metadata.empty())	
