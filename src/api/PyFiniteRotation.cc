@@ -33,6 +33,7 @@
 
 #include "maths/FiniteRotation.h"
 #include "maths/GeometryOnSphere.h"
+#include "maths/LatLonPoint.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -115,11 +116,23 @@ namespace GPlatesApi
 				finite_rotation2.unit_quat());
 	}
 
-	// Return the Euler (pole, angle) tuple.
+	// Return the Euler (pole, angle_radians) tuple.
 	bp::tuple
 	finite_rotation_get_euler_pole_and_angle(
-			const GPlatesMaths::FiniteRotation &finite_rotation)
+			const GPlatesMaths::FiniteRotation &finite_rotation,
+			bool use_north_pole_for_identity)
 	{
+		if (use_north_pole_for_identity)
+		{
+			if (GPlatesMaths::represents_identity_rotation(finite_rotation.unit_quat()))
+			{
+				return bp::make_tuple(
+						GPlatesMaths::PointOnSphere::north_pole,
+						GPlatesMaths::real_t(0));
+			}
+		}
+
+		// Throws IndeterminateResultException if represents identity rotation.
 		const GPlatesMaths::UnitQuaternion3D::RotationParams rotation_params =
 				finite_rotation.unit_quat().get_rotation_params(
 						finite_rotation.axis_hint());
@@ -127,6 +140,37 @@ namespace GPlatesApi
 		return bp::make_tuple(
 				GPlatesMaths::PointOnSphere(rotation_params.axis),
 				rotation_params.angle);
+	}
+
+	// Return the Euler (latitude_pole, longitude_pole, angle_degrees) tuple.
+	bp::tuple
+	finite_rotation_get_lat_lon_euler_pole_and_angle_degrees(
+			const GPlatesMaths::FiniteRotation &finite_rotation,
+			bool use_north_pole_for_identity)
+	{
+		if (use_north_pole_for_identity)
+		{
+			if (GPlatesMaths::represents_identity_rotation(finite_rotation.unit_quat()))
+			{
+				return bp::make_tuple(
+						GPlatesMaths::real_t(0),
+						GPlatesMaths::real_t(0),
+						GPlatesMaths::real_t(0));
+			}
+		}
+
+		// Throws IndeterminateResultException if represents identity rotation.
+		const GPlatesMaths::UnitQuaternion3D::RotationParams rotation_params =
+				finite_rotation.unit_quat().get_rotation_params(
+						finite_rotation.axis_hint());
+
+		const GPlatesMaths::LatLonPoint lat_lon_pole =
+				make_lat_lon_point(GPlatesMaths::PointOnSphere(rotation_params.axis));
+
+		return bp::make_tuple(
+				lat_lon_pole.latitude(),
+				lat_lon_pole.longitude(),
+				GPlatesMaths::convert_rad_to_deg(rotation_params.angle));
 	}
 }
 
@@ -377,25 +421,69 @@ export_finite_rotation()
 				"    original_point = finite_rotation.get_inverse() * rotated_point\n")
 		.def("get_euler_pole_and_angle",
 				&GPlatesApi::finite_rotation_get_euler_pole_and_angle,
-				"get_euler_pole_and_angle() -> tuple\n"
+				(bp::arg("use_north_pole_for_identity")=true),
+				"get_euler_pole_and_angle([use_north_pole_for_identity=True]) -> tuple\n"
 				"  Return the (pole, angle) representing finite rotation.\n"
 				"\n"
 				"  *NOTE* the angle is in *radians*.\n"
 				"\n"
+				"  :param use_north_pole_for_identity: whether to return the north pole axis (and zero angle) "
+				"for an :meth:`identity rotation<represents_identity_rotation>` or raise "
+				"IndeterminateResultError (default is to return north pole axis)\n"
+				"  :type use_north_pole_for_identity: bool\n"
 				"  :rtype: tuple (:class:`PointOnSphere`, float)\n"
 				"  :returns: the tuple of (pole, angle)\n"
-				"  :raises: IndeterminateResultError if this finite rotation represents the identity rotation\n"
+				"  :raises: IndeterminateResultError if *use_north_pole_for_identity* is ``False`` "
+				"and this finite rotation represents the identity rotation\n"
 				"\n"
 				"  If :meth:`represents_identity_rotation` returns ``True`` then this method will "
-				"raise *IndeterminateResultError*.\n"
+				"return the north pole axis (and zero angle) if *use_north_pole_for_identity* is ``True``, "
+				"otherwise *IndeterminateResultError* is raised.\n"
 				"\n"
-				"  The function :func:`convert_point_on_sphere_to_lat_lon_point` can be used to "
-				"convert the returned pole to latitude/longitude.\n"
+				"  Alternatively :meth:`get_lat_lon_euler_pole_and_angle_degrees` can be used to "
+				"return the euler pole as latitude/longitude and angle (all in degrees).\n"
 				"\n"
 				"  Note that (pole, angle) and (-pole, -angle) represent equivalent rotations "
 				"(see :func:`represent_equivalent_rotations`) and either could be returned. "
 				"However, if this finite rotation was created with *__init__(pole, angle)* then the "
-				"same pole and angle will be returned here.\n")
+				"same pole and angle will be returned here.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    finite_rotation = pygplates.FiniteRotation(pole, angle)\n"
+				"    pole, angle = finite_rotation.get_euler_pole_and_angle()\n")
+		.def("get_lat_lon_euler_pole_and_angle_degrees",
+				&GPlatesApi::finite_rotation_get_lat_lon_euler_pole_and_angle_degrees,
+				(bp::arg("use_north_pole_for_identity")=true),
+				"get_lat_lon_euler_pole_and_angle_degrees([use_north_pole_for_identity=True]) -> tuple\n"
+				"  Return the this finite rotation as a tuple of pole latitude, pole longitude and "
+				" angle (all in degrees).\n"
+				"\n"
+				"  *NOTE* the angle is in *degrees* (as are the latitude and longitude).\n"
+				"\n"
+				"  :param use_north_pole_for_identity: whether to return the north pole axis (and zero angle) "
+				"for an :meth:`identity rotation<represents_identity_rotation>` or raise "
+				"IndeterminateResultError (default is to return north pole axis)\n"
+				"  :type use_north_pole_for_identity: bool\n"
+				"  :rtype: tuple (float, float, float)\n"
+				"  :returns: the tuple of (pole_latitude, pole_longitude, angle) all in *degrees*\n"
+				"  :raises: IndeterminateResultError if *use_north_pole_for_identity* is ``False`` "
+				"and this finite rotation represents the identity rotation\n"
+				"\n"
+				"  If :meth:`represents_identity_rotation` returns ``True`` then this method will "
+				"return the north pole axis (and zero angle) if *use_north_pole_for_identity* is ``True``, "
+				"otherwise *IndeterminateResultError* is raised.\n"
+				"\n"
+				"  Note that (latitude, longitude, angle) and (-latitude, longitude-360, -angle) "
+				"represent equivalent rotations (see :func:`represent_equivalent_rotations`) and "
+				"either could be returned. However, if this finite rotation was created with "
+				"*__init__(pole, angle)* then the same pole and angle will be returned here.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    finite_rotation = pygplates.FiniteRotation(pole, angle)\n"
+				"    pole_latitude, pole_longitude, angle_degrees = "
+				"finite_rotation.get_lat_lon_euler_pole_and_angle_degrees()\n")
 		// Multiply two finite rotations...
 		.def("__mul__", compose)
 		// Rotations...
@@ -433,8 +521,10 @@ export_finite_rotation()
 			"\n"
 			"  For example, negating both a finite rotation's Euler pole (making it antipodal) and its angle "
 			"will generate the same equivalent rotation (even though the underlying pole/angle will be "
-			"different). They are both the same equivalent rotation because they both rotate a geometry "
-			"to the same final location.\n");
+			"different). Another example is negating a finite rotation's Euler pole (making it antipodal) "
+			"and setting its angle to '2*PI - angle' (making the rotation go the other way around the "
+			"globe). They are all the same equivalent rotation because they all rotate a geometry to "
+			"the same final location.\n");
 
 	// Non-member conversion function...
 	bp::def("compose_finite_rotations",

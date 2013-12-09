@@ -273,9 +273,9 @@ class GetPropertyValueCase(unittest.TestCase):
 class GetTimeSamplesCase(unittest.TestCase):
     def setUp(self):
         self.gpml_irregular_sampling = pygplates.GpmlIrregularSampling([
-                pygplates.GpmlTimeSample(pygplates.XsInteger(0), pygplates.GeoTimeInstant(0), 'sample0', True),
+                pygplates.GpmlTimeSample(pygplates.XsInteger(0), pygplates.GeoTimeInstant(0), 'sample0', False),
                 pygplates.GpmlTimeSample(pygplates.XsInteger(1), pygplates.GeoTimeInstant(1), 'sample1'),
-                pygplates.GpmlTimeSample(pygplates.XsInteger(2), pygplates.GeoTimeInstant(2), 'sample2', True),
+                pygplates.GpmlTimeSample(pygplates.XsInteger(2), pygplates.GeoTimeInstant(2), 'sample2', False),
                 pygplates.GpmlTimeSample(pygplates.XsInteger(3), pygplates.GeoTimeInstant(3), 'sample3')])
 
     def test_enabled(self):

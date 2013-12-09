@@ -84,6 +84,7 @@ Contents:
 	pygplates.interpolate_total_reconstruction_pole
 	pygplates.interpolate_total_reconstruction_sequence
 	pygplates.reconstruct
+	pygplates.represent_equivalent_rotations
 
 .. NOTE: Only document the new API for now, exclude classes/functions not in the new API.
 .. NOTE: Only classes (and their methods) that are documented (that have docstrings) will appear in the generated documentation.
