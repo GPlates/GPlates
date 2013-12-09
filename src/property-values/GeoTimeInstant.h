@@ -48,6 +48,7 @@ namespace GPlatesPropertyValues
 	class GeoTimeInstant :
 			public boost::less_than_comparable<GeoTimeInstant>,
 			public boost::equality_comparable<GeoTimeInstant>,
+			public boost::equivalent<GeoTimeInstant>,
 			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
 			public GPlatesUtils::QtStreamable<GeoTimeInstant>
 	{
@@ -236,6 +237,8 @@ namespace GPlatesPropertyValues
 		/**
 		 * Return true if this instance is temporally-coincident with @a other; false
 		 * otherwise.
+		 *
+		 * This is essentially the same as 'operator==' (provided by Boost).
 		 */
 		bool
 		is_coincident_with(
@@ -243,22 +246,12 @@ namespace GPlatesPropertyValues
 
 
 		/**
-		 * Equality comparison operator.
-		 */
-		bool
-		operator==(
-				const GeoTimeInstant &rhs) const
-		{
-			return is_coincident_with(rhs);
-		}
-
-
-		/**
-		 * Less than comparison operator.
+		 * Less than comparison operator - all other operators supplied by Boost.
 		 *
-		 * NOTE: This is *not* implemented by delegating to @a is_earlier_than_or_coincident_with
-		 * because it is not a strict weak ordering "if x < y then !(y < x)" and so cannot be
-		 * used in std::map for example.
+		 * Note: This is used (by boost::equivalent) to implement the equivalence relation:
+		 *   !(x < y) && !(y < x)
+		 * ...which holds for two values that are within epsilon of each other.
+		 * This is also used, for example, by std::map to find elements (using above equivalence relation).
 		 */
 		bool
 		operator<(

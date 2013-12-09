@@ -152,6 +152,9 @@ GPlatesPropertyValues::GeoTimeInstant::is_coincident_with(
 	// in the "distant past" were, I think that it will be appropriate for the program to treat
 	// the two time-instants in the same way, so we'll call them equal.)  Similarly for two
 	// time-instants which are both in the "distant future".
+	// Note: Comparing two "distant past" time instants (or two "distant future") as equal also
+	// matches up with our current use of boost::equivalent to create "operator==" from
+	// "operator<" and "operator>".
 	//
 	// Note that all geo-times in the distant past and the distant future have their "value"s
 	// initialised to 0.0, so all geo-times in the distant past will compare equal by

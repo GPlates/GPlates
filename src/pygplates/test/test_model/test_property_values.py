@@ -33,39 +33,101 @@ class GeoTimeInstantCase(unittest.TestCase):
         self.assertTrue(self.real_time1.is_real())
 
     def test_comparisons(self):
-        self.assertTrue(self.distant_past < self.distant_future)
-        self.assertTrue(self.distant_past <= self.distant_future)
+        # Note that, unlike comparisons on GeoTimeInstant objects, comparisons on their returned
+        # 'float' times shouldn't really compare with distant-past and distant-future since they
+        # return +Inf and -Inf respectively (from GeoTimeInstant) and the user should not call
+        # 'get_value()' in either case, but we test anyway just to make sure the comparison
+        # holds in case the user actually does do this.
+        
+        self.assertTrue(self.distant_past > self.distant_future)
+        self.assertTrue(self.distant_past.get_value() > self.distant_future)
+        self.assertTrue(self.distant_past > self.distant_future.get_value())
+        self.assertTrue(self.distant_past.get_value() > self.distant_future.get_value())
+        
+        self.assertTrue(self.distant_past >= self.distant_future)
+        self.assertTrue(self.distant_past.get_value() >= self.distant_future)
+        self.assertTrue(self.distant_past >= self.distant_future.get_value())
+        self.assertTrue(self.distant_past.get_value() >= self.distant_future.get_value())
+        
         self.assertTrue(self.distant_past != self.distant_future)
+        self.assertTrue(self.distant_past.get_value() != self.distant_future)
+        self.assertTrue(self.distant_past != self.distant_future.get_value())
+        self.assertTrue(self.distant_past.get_value() != self.distant_future.get_value())
         
-        self.assertTrue(self.distant_future > self.distant_past)
-        self.assertTrue(self.distant_future >= self.distant_past)
+        self.assertTrue(self.distant_future < self.distant_past)
+        self.assertTrue(self.distant_future.get_value() < self.distant_past)
+        self.assertTrue(self.distant_future < self.distant_past.get_value())
+        self.assertTrue(self.distant_future.get_value() < self.distant_past.get_value())
+        
+        self.assertTrue(self.distant_future <= self.distant_past)
+        self.assertTrue(self.distant_future.get_value() <= self.distant_past)
+        self.assertTrue(self.distant_future <= self.distant_past.get_value())
+        self.assertTrue(self.distant_future.get_value() <= self.distant_past.get_value())
+        
         self.assertTrue(self.distant_future != self.distant_past)
+        self.assertTrue(self.distant_future.get_value() != self.distant_past)
+        self.assertTrue(self.distant_future != self.distant_past.get_value())
+        self.assertTrue(self.distant_future.get_value() != self.distant_past.get_value())
         
-        self.assertTrue(self.real_time1 < self.distant_future)
-        self.assertTrue(self.real_time1 <= self.distant_future)
+        self.assertTrue(self.real_time1 > self.distant_future)
+        self.assertTrue(self.real_time1.get_value() > self.distant_future)
+        self.assertTrue(self.real_time1 > self.distant_future.get_value())
+        self.assertTrue(self.real_time1.get_value() > self.distant_future.get_value())
+        
+        self.assertTrue(self.real_time1 >= self.distant_future)
+        self.assertTrue(self.real_time1.get_value() >= self.distant_future)
+        self.assertTrue(self.real_time1 >= self.distant_future.get_value())
+        self.assertTrue(self.real_time1.get_value() >= self.distant_future.get_value())
+
         self.assertTrue(self.real_time1 != self.distant_future)
+        self.assertTrue(self.real_time1.get_value() != self.distant_future)
+        self.assertTrue(self.real_time1 != self.distant_future.get_value())
+        self.assertTrue(self.real_time1.get_value() != self.distant_future.get_value())
         
-        self.assertTrue(self.real_time1 > self.distant_past)
-        self.assertTrue(self.real_time1 >= self.distant_past)
+        self.assertTrue(self.real_time1 < self.distant_past)
+        self.assertTrue(self.real_time1.get_value() < self.distant_past)
+        self.assertTrue(self.real_time1 < self.distant_past.get_value())
+        self.assertTrue(self.real_time1.get_value() < self.distant_past.get_value())
+        
+        self.assertTrue(self.real_time1 <= self.distant_past)
+        self.assertTrue(self.real_time1.get_value() <= self.distant_past)
+        self.assertTrue(self.real_time1 <= self.distant_past.get_value())
+        self.assertTrue(self.real_time1.get_value() <= self.distant_past.get_value())
+        
         self.assertTrue(self.real_time1 != self.distant_past)
+        self.assertTrue(self.real_time1.get_value() != self.distant_past)
+        self.assertTrue(self.real_time1 != self.distant_past.get_value())
+        self.assertTrue(self.real_time1.get_value() != self.distant_past.get_value())
         
-        self.assertTrue(self.real_time1 < self.real_time2)
-        self.assertTrue(self.real_time1 <= self.real_time2)
+        self.assertTrue(self.real_time1 > self.real_time2)
+        self.assertTrue(self.real_time1.get_value() > self.real_time2)
+        self.assertTrue(self.real_time1 > self.real_time2.get_value())
+        self.assertTrue(self.real_time1.get_value() > self.real_time2.get_value())
+        
+        self.assertTrue(self.real_time1 >= self.real_time2)
+        self.assertTrue(self.real_time1.get_value() >= self.real_time2)
+        self.assertTrue(self.real_time1 >= self.real_time2.get_value())
+        self.assertTrue(self.real_time1.get_value() >= self.real_time2.get_value())
+        
         self.assertTrue(self.real_time1 != self.real_time2)
+        self.assertTrue(self.real_time1.get_value() != self.real_time2)
+        self.assertTrue(self.real_time1 != self.real_time2.get_value())
+        self.assertTrue(self.real_time1.get_value() != self.real_time2.get_value())
         
         self.assertTrue(self.real_time1 == self.real_time1)
-        self.assertTrue(self.real_time1 <= self.real_time1)
-        self.assertTrue(self.real_time1 >= self.real_time1)
+        self.assertTrue(self.real_time1.get_value() == self.real_time1)
+        self.assertTrue(self.real_time1 == self.real_time1.get_value())
+        self.assertTrue(self.real_time1.get_value() == self.real_time1.get_value())
         
-        # Note that, unlike the above comparisons on GeoTimeInstant objects, these comparisons are
-        # on floating-point values (hence the reversal of the comparisons). Also we shouldn't really compare
-        # with distant-past and distant-future since they return +Inf and -Inf respectively (and the user
-        # should not call 'get_value()' in either case, but we test anyway just to make sure the comparison
-        # holds in case the user actually does do this.
-        self.assertTrue(self.real_time1.get_value() > self.real_time2.get_value())
-        self.assertTrue(self.real_time1.get_value() > self.distant_future.get_value())
-        self.assertTrue(self.real_time1.get_value() < self.distant_past.get_value())
-        self.assertTrue(self.distant_future.get_value() < self.distant_past.get_value())
+        self.assertTrue(self.real_time1 <= self.real_time1)
+        self.assertTrue(self.real_time1.get_value() <= self.real_time1)
+        self.assertTrue(self.real_time1 <= self.real_time1.get_value())
+        self.assertTrue(self.real_time1.get_value() <= self.real_time1.get_value())
+        
+        self.assertTrue(self.real_time1 >= self.real_time1)
+        self.assertTrue(self.real_time1.get_value() >= self.real_time1)
+        self.assertTrue(self.real_time1 >= self.real_time1.get_value())
+        self.assertTrue(self.real_time1.get_value() >= self.real_time1.get_value())
 
 
 class GmlLineStringCase(unittest.TestCase):
@@ -412,9 +474,9 @@ class GpmlTimeSampleCase(unittest.TestCase):
         self.property_value1 = pygplates.GpmlPlateId(701)
         self.time1 = pygplates.GeoTimeInstant(10)
         self.description1 = 'A plate id time sample'
-        self.is_disabled1 = True
+        self.is_enabled1 = False
         self.gpml_time_sample1 = pygplates.GpmlTimeSample(
-                self.property_value1, self.time1, self.description1, self.is_disabled1)
+                self.property_value1, self.time1, self.description1, self.is_enabled1)
         
         self.property_value2 = pygplates.GpmlPlateId(201)
         self.time2 = pygplates.GeoTimeInstant(20)
@@ -435,15 +497,18 @@ class GpmlTimeSampleCase(unittest.TestCase):
         new_property_value = pygplates.GpmlPlateId(801)
         new_time = pygplates.GeoTimeInstant(30)
         new_description = 'Another plate id time sample'
-        new_is_disabled = False
         self.gpml_time_sample1.set_value(new_property_value)
         self.gpml_time_sample1.set_time(new_time)
         self.gpml_time_sample1.set_description(new_description)
-        self.gpml_time_sample1.set_disabled(new_is_disabled)
+        self.gpml_time_sample1.set_disabled()
         self.assertTrue(self.gpml_time_sample1.get_value() == new_property_value)
         self.assertTrue(self.gpml_time_sample1.get_time() == new_time)
         self.assertTrue(self.gpml_time_sample1.get_description() == new_description)
-        self.assertTrue(self.gpml_time_sample1.is_disabled() == new_is_disabled)
+        self.assertTrue(not self.gpml_time_sample1.is_enabled())
+        self.assertTrue(self.gpml_time_sample1.is_disabled())
+        self.gpml_time_sample1.set_enabled()
+        self.assertTrue(self.gpml_time_sample1.is_enabled())
+        self.assertTrue(not self.gpml_time_sample1.is_disabled())
         
         self.gpml_time_sample1.set_description()
         self.assertTrue(self.gpml_time_sample1.get_description() is None)

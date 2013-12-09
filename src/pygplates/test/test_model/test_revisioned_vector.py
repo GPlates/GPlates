@@ -261,10 +261,9 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         self.gpml_time_sample_list[1].set_time(pygplates.GeoTimeInstant(2.5))
         self.gpml_time_sample_list[3].set_time(pygplates.GeoTimeInstant(1))
         self.assertTrue(len(self.gpml_time_sample_list) == 4)
-        # Sort by time from present day to past times ('reverse=True').
+        # Sort by time.
         # Times of [0, 2.5, 2, 1] -> [0, 1, 2, 2.5]
-        # Note that 2Ma < 1Ma because 2Ma is further in the past (which is why we need to reverse the ordering).
-        self.gpml_time_sample_list.sort(key = lambda x: x.get_time(), reverse=True)
+        self.gpml_time_sample_list.sort(key = lambda x: x.get_time())
         self.assertTrue(len(self.gpml_time_sample_list) == 4)
         self.assertTrue(self.gpml_time_sample_list[0] == self.original_time_samples[0])
         self.assertTrue(self.gpml_time_sample_list[1] == self.original_time_samples[3])

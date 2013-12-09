@@ -12,11 +12,11 @@ def get_enabled_time_samples(gpml_irregular_sampling):
     This function essentially does the following:
     ::
     
-      return filter(lambda ts: not ts.is_disabled(), gpml_irregular_sampling.get_time_samples())
+      return filter(lambda ts: ts.is_enabled(), gpml_irregular_sampling.get_time_samples())
     """
 
     # Filter out the disabled time samples.
-    return filter(lambda ts: not ts.is_disabled(), gpml_irregular_sampling.get_time_samples())
+    return filter(lambda ts: ts.is_enabled(), gpml_irregular_sampling.get_time_samples())
 
 
 def get_time_samples_bounding_time(gpml_irregular_sampling, time, include_disabled_samples=False):
@@ -52,21 +52,18 @@ def get_time_samples_bounding_time(gpml_irregular_sampling, time, include_disabl
     # GpmlIrregularSampling should already be sorted most recent to least recent
     # (ie, backwards in time from present to past times).
     # But create a reversed list if need be.
-    if time_samples[0].get_time() < time_samples[-1].get_time():
+    if time_samples[0].get_time() > time_samples[-1].get_time():
         time_samples = list(reversed(time_samples))
-
-    # Convert 'float' to 'GeoTimeInstant' (for time comparisons).
-    time = GeoTimeInstant(time)
     
     # If the requested time is later than the first (most-recent) time sample then
     # it is outside the time range of the time sample sequence.
-    if time > time_samples[0].get_time():
+    if time < time_samples[0].get_time():
         return
     
     # Find adjacent time samples that span the requested time.
     for i in range(1, len(time_samples)):
         # If the requested time is later than (more recent) or equal to the sample's time.
-        if time >= time_samples[i].get_time():
+        if time <= time_samples[i].get_time():
             # Return times ordered least recent to most recent.
             return (time_samples[i], time_samples[i-1])
 
@@ -84,13 +81,10 @@ def get_time_window_containing_time(gpml_piecewise_aggregation, time):
     Returns ``None`` if *time* is outside the time ranges of all time windows.
     """
     
-    # Convert 'float' to 'GeoTimeInstant' (for time comparisons).
-    time = GeoTimeInstant(time)
-    
     # Find the time window containing the time.
     for window in gpml_piecewise_aggregation.get_time_windows():
         # Time period includes begin time but not end time.
-        if time >= window.get_begin_time() and time <= window.get_end_time():
+        if time <= window.get_begin_time() and time >= window.get_end_time():
             return window
 
 

@@ -30,7 +30,7 @@ def _interpolate_property_value(property_value1, property_value2, time1, time2, 
                     self.time1, self.time2, self.target_time))
         
         def visit_xs_double(self, xs_double1):
-            # Use epsilon comparision of GeoTimeInstant.
+            # Use the epsilon comparison implicitly provided by GeoTimeInstant.
             if GeoTimeInstant(time2) == GeoTimeInstant(time1):
                 return xs_double1
             

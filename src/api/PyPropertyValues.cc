@@ -29,7 +29,9 @@
 
 #include "PythonConverterUtils.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
+#include "global/GPlatesAssert.h"
 
 #include "global/python.h"
 // This is not included by <boost/python.hpp>.
@@ -197,96 +199,171 @@ export_property_value()
 
 namespace GPlatesApi
 {
-	//
-	// To prevent fallback to default scheme of comparing object addresses we raise TypeError
-	// if both objects are not of type 'GeoTimeInstant'.
-	//
-	// This prevents situations like '20 < GeoTimeInstant(10)' comparing false (due to object address
-	// comparison) when it should compare true ('20Ma < 10Ma' because 20Ma is further in past).
-	//
-
-	bool
+	bp::object
 	geo_time_instant_eq(
 			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
 			bp::object other)
 	{
-		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other(other);
-		if (!extract_other.check())
+		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other_geo_time_instant(other);
+		if (extract_other_geo_time_instant.check())
 		{
-			PyErr_SetString(PyExc_TypeError, "Can only '==' compare GeoTimeInstant with another GeoTimeInstant");
-			bp::throw_error_already_set();
+			return bp::object(geo_time_instant == extract_other_geo_time_instant());
 		}
-		return geo_time_instant == extract_other();
+
+		bp::extract<double> extract_other_float(other);
+		if (extract_other_float.check())
+		{
+			return bp::object(geo_time_instant ==
+					// We want to use the epsilon comparison of GeoTimeInstant...
+					GPlatesPropertyValues::GeoTimeInstant(extract_other_float()));
+		}
+
+#if 1
+		// Return NotImplemented so python can continue looking for a match
+		// (eg, in case 'other' is a class that implements relational operators with GeoTimeInstant).
+		return bp::object(bp::handle<>(bp::borrowed(Py_NotImplemented)));
+#else
+		PyErr_SetString(PyExc_TypeError, "Can only '==' compare GeoTimeInstant with another "
+				"GeoTimeInstant or float");
+		bp::throw_error_already_set();
+
+		// Shouldn't get here.
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		// Keep compiler happy.
+		return false;
+#endif
 	}
 
-	bool
+	bp::object
 	geo_time_instant_ne(
 			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
 			bp::object other)
 	{
-		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other(other);
-		if (!extract_other.check())
+		bp::object eq_result = geo_time_instant_eq(geo_time_instant, other);
+		if (eq_result.ptr() == Py_NotImplemented)
 		{
-			PyErr_SetString(PyExc_TypeError, "Can only '!=' compare GeoTimeInstant with another GeoTimeInstant");
-			bp::throw_error_already_set();
+			// Return NotImplemented.
+			return eq_result;
 		}
-		return geo_time_instant != extract_other();
+
+		// Invert the result.
+		return bp::object(!bp::extract<bool>(eq_result));
 	}
 
-	bool
+	bp::object
 	geo_time_instant_lt(
 			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
 			bp::object other)
 	{
-		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other(other);
-		if (!extract_other.check())
+		//
+		// NOTE: We invert the comparison because we want python's GeoTimeInstant to have larger
+		// time values further back in time (which is the opposite of C++'s GeoTimeInstant).
+		// This is to avoid potential confusion with python users if they're unsure whether their
+		// python object is a 'float' or a 'GeoTimeInstant' (due to the dynamic nature of python).
+		//
+
+		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other_geo_time_instant(other);
+		if (extract_other_geo_time_instant.check())
 		{
-			PyErr_SetString(PyExc_TypeError, "Can only '<' compare GeoTimeInstant with another GeoTimeInstant");
-			bp::throw_error_already_set();
+			return bp::object(geo_time_instant > extract_other_geo_time_instant());
 		}
-		return geo_time_instant < extract_other();
+
+		bp::extract<double> extract_other_float(other);
+		if (extract_other_float.check())
+		{
+			return bp::object(geo_time_instant >
+					// We want to use the epsilon comparison of GeoTimeInstant...
+					GPlatesPropertyValues::GeoTimeInstant(extract_other_float()));
+		}
+
+#if 1
+		// Return NotImplemented so python can continue looking for a match
+		// (eg, in case 'other' is a class that implements relational operators with GeoTimeInstant).
+		return bp::object(bp::handle<>(bp::borrowed(Py_NotImplemented)));
+#else
+		PyErr_SetString(PyExc_TypeError, "Can only '<' compare GeoTimeInstant with another "
+				"GeoTimeInstant or float");
+		bp::throw_error_already_set();
+
+		// Shouldn't get here.
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		// Keep compiler happy.
+		return false;
+#endif
 	}
 
-	bool
+	bp::object
 	geo_time_instant_le(
 			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
 			bp::object other)
 	{
-		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other(other);
-		if (!extract_other.check())
+		//
+		// NOTE: We invert the comparison because we want python's GeoTimeInstant to have larger
+		// time values further back in time (which is the opposite of C++'s GeoTimeInstant).
+		// This is to avoid potential confusion with python users if they're unsure whether their
+		// python object is a 'float' or a 'GeoTimeInstant' (due to the dynamic nature of python).
+		//
+
+		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other_geo_time_instant(other);
+		if (extract_other_geo_time_instant.check())
 		{
-			PyErr_SetString(PyExc_TypeError, "Can only '<=' compare GeoTimeInstant with another GeoTimeInstant");
-			bp::throw_error_already_set();
+			return bp::object(geo_time_instant >= extract_other_geo_time_instant());
 		}
-		return geo_time_instant <= extract_other();
+
+		bp::extract<double> extract_other_float(other);
+		if (extract_other_float.check())
+		{
+			return bp::object(geo_time_instant >=
+					// We want to use the epsilon comparison of GeoTimeInstant...
+					GPlatesPropertyValues::GeoTimeInstant(extract_other_float()));
+		}
+
+#if 1
+		// Return NotImplemented so python can continue looking for a match
+		// (eg, in case 'other' is a class that implements relational operators with GeoTimeInstant).
+		return bp::object(bp::handle<>(bp::borrowed(Py_NotImplemented)));
+#else
+		PyErr_SetString(PyExc_TypeError, "Can only '<=' compare GeoTimeInstant with another "
+				"GeoTimeInstant or float");
+		bp::throw_error_already_set();
+
+		// Shouldn't get here.
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		// Keep compiler happy.
+		return false;
+#endif
 	}
 
-	bool
+	bp::object
 	geo_time_instant_gt(
 			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
 			bp::object other)
 	{
-		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other(other);
-		if (!extract_other.check())
+		bp::object le_result = geo_time_instant_le(geo_time_instant, other);
+		if (le_result.ptr() == Py_NotImplemented)
 		{
-			PyErr_SetString(PyExc_TypeError, "Can only '>' compare GeoTimeInstant with another GeoTimeInstant");
-			bp::throw_error_already_set();
+			// Return NotImplemented.
+			return le_result;
 		}
-		return geo_time_instant > extract_other();
+
+		// Invert the result.
+		return bp::object(!bp::extract<bool>(le_result));
 	}
 
-	bool
+	bp::object
 	geo_time_instant_ge(
 			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
 			bp::object other)
 	{
-		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other(other);
-		if (!extract_other.check())
+		bp::object lt_result = geo_time_instant_lt(geo_time_instant, other);
+		if (lt_result.ptr() == Py_NotImplemented)
 		{
-			PyErr_SetString(PyExc_TypeError, "Can only '>=' compare GeoTimeInstant with another GeoTimeInstant");
-			bp::throw_error_already_set();
+			// Return NotImplemented.
+			return lt_result;
 		}
-		return geo_time_instant >= extract_other();
+
+		// Invert the result.
+		return bp::object(!bp::extract<bool>(lt_result));
 	}
 }
 
@@ -309,14 +386,19 @@ export_geo_time_instant()
 			"geological times are represented by how far in the *past* to go back compared to present day.\n"
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported. The comparisons are such that "
-			"times further in the past are *less than* more recent times. Note that this is the opposite "
-			"of comparisons of floating-point values returned by :meth:`get_value`.\n"
+			"times further in the past are *greater than* more recent times. Note that this is the opposite "
+			"how we normally think of time (where future time values are greater than past values). "
+			"Comparisons of *specific* time instants use a numerical tolerance such that they compare "
+			"equal when close enough to each other. Comparisons can also be made between a GeoTimeInstant "
+			"and a ``float``.\n"
 			"::\n"
 			"\n"
 			"  time10Ma = pygplates.GeoTimeInstant(10)\n"
 			"  time20Ma = pygplates.GeoTimeInstant(20)\n"
-			"  assert(time20Ma < time10Ma)\n"
-			"  assert(time20Ma.get_value() > time10Ma.get_value())\n",
+			"  assert(time20Ma > time10Ma)\n"
+			"  assert(time20Ma.get_value() > time10Ma.get_value())\n"
+			"  assert(time20Ma > time10Ma.get_value())\n"
+			"  assert(time20Ma.get_value() > time10Ma)\n",
 			bp::init<double>(
 					(bp::arg("time_value")),
 					"__init__(time_value)\n"
@@ -339,7 +421,7 @@ export_geo_time_instant()
 				"  This is basically creating a time-instant which is infinitely far in the past, "
 				"as if we'd created a GeoTimeInstant with a time-position value of infinity.\n"
 				"\n"
-				"  All distant-past time-instants will compare earlier than all non-distant-past time-instants.\n")
+				"  All distant-past time-instants will compare greater than all non-distant-past time-instants.\n")
 		.staticmethod("create_distant_past")
 		.def("create_distant_future",
 				&GPlatesPropertyValues::GeoTimeInstant::create_distant_future,
@@ -352,7 +434,7 @@ export_geo_time_instant()
 				"  This is basically creating a time-instant which is infinitely far in the future, "
 				"as if we'd created a GeoTimeInstant with a time-position value of minus-infinity.\n"
 				"\n"
-				"  All distant-future time-instants will compare later than all non-distant-future time-instants.\n")
+				"  All distant-future time-instants will compare less than all non-distant-future time-instants.\n")
 		.staticmethod("create_distant_future")
 		.def("get_value",
 				&GPlatesPropertyValues::GeoTimeInstant::value,
@@ -367,16 +449,7 @@ export_geo_time_instant()
 				":meth:`is_distant_future` is ``True`` then *get_value* returns minus-infinity.\n"
 				"\n"
 				"  Note that positive values represent times in the past and negative values represent "
-				"times in the future. So comparing values returned by *get_value* will give opposite "
-				"comparison (``<``, ``>``, etc) results than comparing :class:`GeoTimeInstant` values directly. "
-				"However you should only *compare* :class:`GeoTimeInstant` objects since they handle "
-				"issues related to finite floating-point precision (most notably when comparing for equality).\n"
-				"  ::\n"
-				"\n"
-				"    time10Ma = pygplates.GeoTimeInstant(10)\n"
-				"    time20Ma = pygplates.GeoTimeInstant(20)\n"
-				"    assert(time20Ma < time10Ma)\n"
-				"    assert(time20Ma.get_value() > time10Ma.get_value())\n")
+				"times in the future.\n")
 		.def("is_distant_past",
 				&GPlatesPropertyValues::GeoTimeInstant::is_distant_past,
 				"is_distant_past() -> bool\n"
@@ -1319,8 +1392,8 @@ export_gpml_irregular_sampling()
 				"\n"
 				"    time_samples = irregular_sampling.get_time_samples()\n"
 				"\n"
-				"    # Sort samples by time ('reverse=True' orders backwards in time from present day to past times)\n"
-				"    time_samples.sort(key = lambda x: x.get_time(), reverse = True)\n")
+				"    # Sort samples by time\n"
+				"    time_samples.sort(key = lambda x: x.get_time())\n")
 		.def("get_interpolation_function",
 				get_interpolation_function,
 				"get_interpolation_function() -> GpmlInterpolationFunction\n"
@@ -1645,8 +1718,8 @@ export_gpml_piecewise_aggregation()
 				"\n"
 				"    time_windows = piecewise_aggregation.get_time_windows()\n"
 				"\n"
-				"    # Sort windows by begin time ('reverse=True' orders backwards in time from present day to past times)\n"
-				"    time_windows.sort(key = lambda x: x.get_begin_time(), reverse = True)\n")
+				"    # Sort windows by begin time\n"
+				"    time_windows.sort(key = lambda x: x.get_begin_time())\n")
 	;
 
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
@@ -1719,8 +1792,8 @@ namespace GPlatesApi
 	gpml_time_sample_create(
 			GPlatesModel::PropertyValue::non_null_ptr_type property_value,
 			const GPlatesPropertyValues::GeoTimeInstant &time,
-			boost::optional<GPlatesPropertyValues::TextContent> description = boost::none,
-			bool is_disabled = false)
+			boost::optional<GPlatesPropertyValues::TextContent> description,
+			bool is_enabled)
 	{
 		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_type> description_xs_string;
 		if (description)
@@ -1733,7 +1806,7 @@ namespace GPlatesApi
 				GPlatesModel::ModelUtils::create_gml_time_instant(time),
 				description_xs_string,
 				property_value->get_structural_type(),
-				is_disabled);
+				!is_enabled/*is_disabled*/);
 	}
 
 	// Return base property value to python as its derived property value type.
@@ -1789,6 +1862,21 @@ namespace GPlatesApi
 
 		gpml_time_sample.set_description(xs_string);
 	}
+
+	bool
+	gpml_time_sample_is_enabled(
+			const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
+	{
+		return !gpml_time_sample.is_disabled();
+	}
+
+	void
+	gpml_time_sample_set_enabled(
+			GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample,
+			bool is_enabled)
+	{
+		return gpml_time_sample.set_disabled(!is_enabled);
+	}
 }
 
 void
@@ -1819,8 +1907,8 @@ export_gpml_time_sample()
 						(bp::arg("property_value"),
 							bp::arg("time"),
 							bp::arg("description") = boost::optional<GPlatesPropertyValues::TextContent>(),
-							bp::arg("is_disabled") = false)),
-				"__init__(property_value, time[, description][, is_disabled=False])\n"
+							bp::arg("is_enabled") = true)),
+				"__init__(property_value, time[, description][, is_enabled=True])\n"
 				"  Create a time sample given a property value and time and optionally a description string "
 				"and disabled flag.\n"
 				"\n"
@@ -1830,8 +1918,8 @@ export_gpml_time_sample()
 				"  :type time: :class:`GeoTimeInstant`\n"
 				"  :param description: description of the time sample\n"
 				"  :type description: string or None\n"
-				"  :param is_disabled: whether time sample is disabled or not\n"
-				"  :type is_disabled: bool\n"
+				"  :param is_enabled: whether time sample is enabled\n"
+				"  :type is_enabled: bool\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -1882,6 +1970,23 @@ export_gpml_time_sample()
 				"\n"
 				"  :param description: description of the time sample\n"
 				"  :type description: string or None\n")
+		.def("is_enabled",
+				&GPlatesApi::gpml_time_sample_is_enabled,
+				"is_enabled() -> bool\n"
+				"  Returns whether this time sample is enabled.\n"
+				"\n"
+				"  :rtype: bool\n"
+				"\n"
+				"  For example, only enabled total reconstruction poles (in a GpmlIrregularSampling sequence) "
+				"are considered when interpolating rotations at some arbitrary time.\n")
+		.def("set_enabled",
+				&GPlatesApi::gpml_time_sample_set_enabled,
+				(bp::arg("set_enabled")=true),
+				"set_enabled([is_enabled=True])\n"
+				"  Sets whether this time sample is enabled.\n"
+				"\n"
+				"  :param is_enabled: whether time sample is enabled (defaults to ``True``)\n"
+				"  :type is_enabled: bool\n")
 		.def("is_disabled",
 				&GPlatesPropertyValues::GpmlTimeSample::is_disabled,
 				"is_disabled() -> bool\n"
@@ -1893,11 +1998,11 @@ export_gpml_time_sample()
 				"is ignored when interpolating rotations at some arbitrary time.\n")
 		.def("set_disabled",
 				&GPlatesPropertyValues::GpmlTimeSample::set_disabled,
-				(bp::arg("is_disabled")),
-				"set_disabled(is_disabled)\n"
-				"  Sets whether this time sample is disabled or not.\n"
+				(bp::arg("is_disabled")=true),
+				"set_disabled([is_disabled=True])\n"
+				"  Sets whether this time sample is disabled.\n"
 				"\n"
-				"  :param is_disabled: whether time sample is disabled or not\n"
+				"  :param is_disabled: whether time sample is disabled (defaults to ``True``)\n"
 				"  :type is_disabled: bool\n")
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
