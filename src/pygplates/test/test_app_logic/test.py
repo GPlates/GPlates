@@ -248,17 +248,28 @@ class RotationModelCase(unittest.TestCase):
                 to_reconstruction_tree.get_reconstruction_time() < self.to_time + 1e-6)
     
     def test_get_rotation(self):
-        equivalent_total_rotation = self.rotation_model.get_rotation(802, self.to_time)
+        equivalent_total_rotation = self.rotation_model.get_rotation(self.to_time, 802)
         self.assertTrue(pygplates.represent_equivalent_rotations(
                 equivalent_total_rotation,
                 self.to_reconstruction_tree.get_equivalent_total_rotation(802)))
         
-        relative_total_rotation = self.rotation_model.get_rotation(802, self.to_time, 291)
+        relative_total_rotation = self.rotation_model.get_rotation(self.to_time, 802, fixed_plate_id=291)
+        self.assertTrue(pygplates.represent_equivalent_rotations(
+                relative_total_rotation,
+                self.to_reconstruction_tree.get_relative_total_rotation(291, 802)))
+        # Fixed plate id defaults to anchored plate id.
+        relative_total_rotation = self.rotation_model.get_rotation(self.to_time, 802, anchor_plate_id=291)
+        self.assertTrue(pygplates.represent_equivalent_rotations(
+                relative_total_rotation,
+                self.to_reconstruction_tree.get_relative_total_rotation(291, 802)))
+        # Shouldn't really matter what the anchor plate id is (as long as there's a plate circuit
+        # path from anchor plate to both fixed and moving plates.
+        relative_total_rotation = self.rotation_model.get_rotation(self.to_time, 802, fixed_plate_id=291, anchor_plate_id=802)
         self.assertTrue(pygplates.represent_equivalent_rotations(
                 relative_total_rotation,
                 self.to_reconstruction_tree.get_relative_total_rotation(291, 802)))
         
-        equivalent_stage_rotation = self.rotation_model.get_rotation(802, self.to_time, from_time=self.from_time)
+        equivalent_stage_rotation = self.rotation_model.get_rotation(self.to_time, 802, self.from_time)
         self.assertTrue(pygplates.represent_equivalent_rotations(
                 equivalent_stage_rotation,
                 pygplates.get_equivalent_stage_rotation(
@@ -266,7 +277,16 @@ class RotationModelCase(unittest.TestCase):
                         self.to_reconstruction_tree,
                         802)))
         
-        relative_stage_rotation = self.rotation_model.get_rotation(802, self.to_time, 291, self.from_time)
+        relative_stage_rotation = self.rotation_model.get_rotation(self.to_time, 802, self.from_time, 291)
+        self.assertTrue(pygplates.represent_equivalent_rotations(
+                relative_stage_rotation,
+                pygplates.get_relative_stage_rotation(
+                        self.from_reconstruction_tree,
+                        self.to_reconstruction_tree,
+                        291,
+                        802)))
+        # Fixed plate id defaults to anchored plate id.
+        relative_stage_rotation = self.rotation_model.get_rotation(self.to_time, 802, self.from_time, anchor_plate_id=291)
         self.assertTrue(pygplates.represent_equivalent_rotations(
                 relative_stage_rotation,
                 pygplates.get_relative_stage_rotation(

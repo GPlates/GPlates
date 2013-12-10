@@ -474,7 +474,7 @@ export_finite_rotation()
 				"return the north pole axis (and zero angle) if *use_north_pole_for_identity* is ``True``, "
 				"otherwise *IndeterminateResultError* is raised.\n"
 				"\n"
-				"  Note that (latitude, longitude, angle) and (-latitude, longitude-360, -angle) "
+				"  Note that (latitude, longitude, angle) and (-latitude, longitude-180, -angle) "
 				"represent equivalent rotations (see :func:`represent_equivalent_rotations`) and "
 				"either could be returned. However, if this finite rotation was created with "
 				"*__init__(pole, angle)* then the same pole and angle will be returned here.\n"

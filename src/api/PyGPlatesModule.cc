@@ -40,6 +40,7 @@ void export_strings();
 void export_finite_rotation();
 void export_great_circle_arc();
 void export_geometries_on_sphere();
+void export_integer();
 void export_lat_lon_point();
 void export_real();
 void export_unit_vector_3d();
@@ -133,6 +134,7 @@ export_cpp_python_api()
 	export_finite_rotation();
 	export_great_circle_arc();
 	export_geometries_on_sphere();
+	export_integer();
 	export_lat_lon_point();
 	export_real();
 	export_unit_vector_3d();

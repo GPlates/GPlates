@@ -36,6 +36,7 @@ set(srcs
     PyGPlatesModule.h
     PyGreatCircleArc.cc
     PyIds.cc
+    PyInteger.cc
     PyLatLonPoint.cc
     PyOldFeature.cc
     PyOldFeature.h

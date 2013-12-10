@@ -116,26 +116,28 @@ GPlatesApi::RotationModel::create(
 
 GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type
 GPlatesApi::RotationModel::get_reconstruction_tree(
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		GPlatesModel::integer_plate_id_type anchor_plate_id)
 {
-	return d_reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
+	return d_reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time, anchor_plate_id);
 }
 
 
 boost::optional<GPlatesMaths::FiniteRotation>
 GPlatesApi::RotationModel::get_rotation(
-		GPlatesModel::integer_plate_id_type moving_plate_id,
 		const double &to_time,
-		GPlatesModel::integer_plate_id_type fixed_plate_id,
+		GPlatesModel::integer_plate_id_type moving_plate_id,
 		const double &from_time,
+		boost::optional<GPlatesModel::integer_plate_id_type> fixed_plate_id,
+		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		bool use_identity_for_missing_plate_ids)
 {
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type to_reconstruction_tree =
-			get_reconstruction_tree(to_time);
+			get_reconstruction_tree(to_time, anchor_plate_id);
 
 	if (GPlatesMaths::are_almost_exactly_equal(from_time, 0))
 	{
-		if (fixed_plate_id == 0)
+		if (!fixed_plate_id)
 		{
 			// Use the API function in "PyReconstructionTree.h".
 			return GPlatesApi::get_equivalent_total_rotation(
@@ -147,15 +149,15 @@ GPlatesApi::RotationModel::get_rotation(
 		// Use the API function in "PyReconstructionTree.h".
 		return GPlatesApi::get_relative_total_rotation(
 				*to_reconstruction_tree,
-				fixed_plate_id,
+				fixed_plate_id.get(),
 				moving_plate_id,
 				use_identity_for_missing_plate_ids);
 	}
 
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type from_reconstruction_tree =
-			get_reconstruction_tree(from_time);
+			get_reconstruction_tree(from_time, anchor_plate_id);
 
-	if (fixed_plate_id == 0)
+	if (!fixed_plate_id)
 	{
 		// Use the API function in "PyReconstructionTree.h".
 		return GPlatesApi::get_equivalent_stage_rotation(
@@ -169,7 +171,7 @@ GPlatesApi::RotationModel::get_rotation(
 	return GPlatesApi::get_relative_stage_rotation(
 			*from_reconstruction_tree,
 			*to_reconstruction_tree,
-			fixed_plate_id,
+			fixed_plate_id.get(),
 			moving_plate_id,
 			use_identity_for_missing_plate_ids);
 }
@@ -237,24 +239,28 @@ export_rotation_model()
 				"    rotation_model = pygplates.RotationModel(['rotations.rot', rotation_adjustments])\n")
 		.def("get_rotation",
 				&GPlatesApi::RotationModel::get_rotation,
-				(bp::arg("moving_plate_id"),
-					bp::arg("to_time"),
-					bp::arg("fixed_plate_id") = 0,
+				(bp::arg("to_time"),
+					bp::arg("moving_plate_id"),
 					bp::arg("from_time") = 0,
+					bp::arg("fixed_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
+					bp::arg("anchor_plate_id") = 0,
 					bp::arg("use_identity_for_missing_plate_ids") = true),
-				"get_rotation(moving_plate_id, to_time[, fixed_plate_id=0][, from_time=0]"
+				"get_rotation(to_time, moving_plate_id[, from_time=0][, fixed_plate_id][, anchor_plate_id=0]"
 				"[, use_identity_for_missing_plate_ids=True]) -> FiniteRotation or None\n"
 				"  Return the finite rotation that rotates from the *fixed_plate_id* plate to the *moving_plate_id* "
 				"plate and from the time *from_time* to the time *to_time*.\n"
 				"\n"
-				"  :param moving_plate_id: the plate id of the moving plate\n"
-				"  :type moving_plate_id: int\n"
 				"  :param to_time: time at which the moving plate is being rotated *to* (in Ma)\n"
 				"  :type to_time: float\n"
-				"  :param fixed_plate_id: the plate id of the fixed plate\n"
-				"  :type fixed_plate_id: int\n"
+				"  :param moving_plate_id: the plate id of the moving plate\n"
+				"  :type moving_plate_id: int\n"
 				"  :param from_time: time at which the moving plate is being rotated *from* (in Ma)\n"
 				"  :type from_time: float\n"
+				"  :param fixed_plate_id: the plate id of the fixed plate (defaults to *anchor_plate_id* "
+				"if not specified)\n"
+				"  :type fixed_plate_id: int\n"
+				"  :param anchor_plate_id: the id of the anchored plate\n"
+				"  :type anchor_plate_id: int\n"
 				"  :param use_identity_for_missing_plate_ids: whether to use an "
 				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` or return ``None`` "
 				"for missing plate ids (default is to use identity rotation)\n"
@@ -268,42 +274,65 @@ export_rotation_model()
 				":func:`get_equivalent_stage_rotation` and "
 				":func:`get_relative_stage_rotation`.\n"
 				"\n"
+				"  If *fixed_plate_id* is not specified then it defaults to *anchor_plate_id* (which "
+				"itself defaults to zero). Normally it is sufficient to specify *fixed_plate_id* "
+				"(for a relative rotation) and leave *anchor_plate_id* as its default (zero). "
+				"However if there is no plate circuit path from the default anchor plate (zero) to either "
+				"*moving_plate_id* or *fixed_plate_id*, but there is a path from *fixed_plate_id* to "
+				"*moving_plate_id*, then the correct result will require setting *anchor_plate_id* to "
+				"*fixed_plate_id*. See :class:`ReconstructionTree` for an overview of plate circuit paths.\n"
+				"\n"
+				"  If there is no plate circuit path from *moving_plate_id* (and optionally *fixed_plate_id*) "
+				"to the anchor plate (at times *to_time* and optionally *from_time*) then an "
+				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` is used for that "
+				"plate's rotation if *use_identity_for_missing_plate_ids* is ``True``, "
+				"otherwise this method returns immediately with ``None``. See :class:`ReconstructionTree` "
+				"for details on how a plate id can go missing and how to work around it.\n"
+				"\n"
 				"  This method essentially does the following:\n"
 				"  ::\n"
 				"\n"
-				"    def get_rotation(rotation_model, moving_plate_id, to_time, fixed_plate_id=0, from_time=0):\n"
+				"    def get_rotation(rotation_model, to_time, moving_plate_id, from_time=0, "
+				"fixed_plate_id=None, anchor_plate_id=0):\n"
 				"        \n"
 				"        if from_time == 0:\n"
-				"            if fixed_plate_id == 0:\n"
-				"                return rotation_model.get_reconstruction_tree(to_time).get_equivalent_total_rotation(moving_plate_id)\n"
+				"            if not fixed_plate_id:\n"
+				"                return rotation_model.get_reconstruction_tree(to_time, anchor_plate_id)"
+				".get_equivalent_total_rotation(moving_plate_id)\n"
 				"            \n"
-				"            return rotation_model.get_reconstruction_tree(to_time).get_relative_total_rotation(fixed_plate_id, moving_plate_id)\n"
+				"            return rotation_model.get_reconstruction_tree(to_time, anchor_plate_id)"
+				".get_relative_total_rotation(fixed_plate_id, moving_plate_id)\n"
 				"        \n"
-				"        if fixed_plate_id == 0:\n"
+				"        if not fixed_plate_id:\n"
 				"            return pygplates.get_equivalent_stage_rotation(\n"
-				"                rotation_model.get_reconstruction_tree(from_time),\n"
-				"                rotation_model.get_reconstruction_tree(to_time),\n"
+				"                rotation_model.get_reconstruction_tree(from_time, anchor_plate_id),\n"
+				"                rotation_model.get_reconstruction_tree(to_time, anchor_plate_id),\n"
 				"                moving_plate_id)\n"
 				"        \n"
 				"        return pygplates.get_relative_stage_rotation(\n"
-				"            rotation_model.get_reconstruction_tree(from_time),\n"
-				"            rotation_model.get_reconstruction_tree(to_time),\n"
+				"            rotation_model.get_reconstruction_tree(from_time, anchor_plate_id),\n"
+				"            rotation_model.get_reconstruction_tree(to_time, anchor_plate_id),\n"
 				"            fixed_plate_id,\n"
 				"            moving_plate_id)\n")
 		.def("get_reconstruction_tree",
 				&GPlatesApi::RotationModel::get_reconstruction_tree,
-				(bp::arg("reconstruction_time")),
-				"get_reconstruction_tree(reconstruction_time) -> ReconstructionTree\n"
-				"  Return the reconstruction tree associated with the specified instant of geological time.\n"
+				(bp::arg("reconstruction_time"),
+					bp::arg("anchor_plate_id")=0),
+				"get_reconstruction_tree(reconstruction_time[, anchor_plate_id=0]) -> ReconstructionTree\n"
+				"  Return the reconstruction tree associated with the specified instant of "
+				"geological time and anchored plate id.\n"
 				"\n"
 				"  :param reconstruction_time: time at which to create a reconstruction tree (in Ma)\n"
 				"  :type reconstruction_time: float\n"
+				"  :param anchor_plate_id: the id of the anchored plate that *equivalent* rotations "
+				"are calculated with respect to\n"
+				"  :type anchor_plate_id: int\n"
 				"  :rtype: :class:`ReconstructionTree`\n"
 				"\n"
-				"  If the reconstruction tree for the specified reconstruction time is currently in "
-				"the internal cache then it is returned, otherwise a new reconstruction tree is created "
-				"and stored in the cache (after evicting the reconstruction tree associated with the "
-				"least recently requested reconstruction time if necessary).\n")
+				"  If the reconstruction tree for the specified reconstruction time and anchored plate id "
+				"is currently in the internal cache then it is returned, otherwise a new reconstruction "
+				"tree is created and stored in the cache (after evicting the reconstruction tree "
+				"associated with the least recently requested reconstruction time if necessary).\n")
 	;
 
 	// Enable boost::optional<RotationModel::non_null_ptr_type> to be passed to and from python.

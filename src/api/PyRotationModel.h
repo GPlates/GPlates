@@ -67,18 +67,22 @@ namespace GPlatesApi
 
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type
 		get_reconstruction_tree(
-				const double &reconstruction_time);
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchor_plate_id);
 
 
 		/**
 		 * Handle the four combinations of total/stage and equivalent/relative rotations in one place.
+		 *
+		 * If @a fixed_plate_id is none then it is set to @a anchor_plate_id.
 		 */
 		boost::optional<GPlatesMaths::FiniteRotation>
 		get_rotation(
-				GPlatesModel::integer_plate_id_type moving_plate_id,
 				const double &to_time,
-				GPlatesModel::integer_plate_id_type fixed_plate_id,
+				GPlatesModel::integer_plate_id_type moving_plate_id,
 				const double &from_time,
+				boost::optional<GPlatesModel::integer_plate_id_type> fixed_plate_id,
+				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				bool use_identity_for_missing_plate_ids);
 
 	private:
