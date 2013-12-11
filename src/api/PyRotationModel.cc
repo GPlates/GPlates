@@ -149,8 +149,8 @@ GPlatesApi::RotationModel::get_rotation(
 		// Use the API function in "PyReconstructionTree.h".
 		return GPlatesApi::get_relative_total_rotation(
 				*to_reconstruction_tree,
-				fixed_plate_id.get(),
 				moving_plate_id,
+				fixed_plate_id.get(),
 				use_identity_for_missing_plate_ids);
 	}
 
@@ -171,8 +171,8 @@ GPlatesApi::RotationModel::get_rotation(
 	return GPlatesApi::get_relative_stage_rotation(
 			*from_reconstruction_tree,
 			*to_reconstruction_tree,
-			fixed_plate_id.get(),
 			moving_plate_id,
+			fixed_plate_id.get(),
 			use_identity_for_missing_plate_ids);
 }
 
@@ -301,7 +301,7 @@ export_rotation_model()
 				".get_equivalent_total_rotation(moving_plate_id)\n"
 				"            \n"
 				"            return rotation_model.get_reconstruction_tree(to_time, anchor_plate_id)"
-				".get_relative_total_rotation(fixed_plate_id, moving_plate_id)\n"
+				".get_relative_total_rotation(moving_plate_id, fixed_plate_id)\n"
 				"        \n"
 				"        if not fixed_plate_id:\n"
 				"            return pygplates.get_equivalent_stage_rotation(\n"
@@ -312,8 +312,8 @@ export_rotation_model()
 				"        return pygplates.get_relative_stage_rotation(\n"
 				"            rotation_model.get_reconstruction_tree(from_time, anchor_plate_id),\n"
 				"            rotation_model.get_reconstruction_tree(to_time, anchor_plate_id),\n"
-				"            fixed_plate_id,\n"
-				"            moving_plate_id)\n")
+				"            moving_plate_id,\n"
+				"            fixed_plate_id)\n")
 		.def("get_reconstruction_tree",
 				&GPlatesApi::RotationModel::get_reconstruction_tree,
 				(bp::arg("reconstruction_time"),
@@ -331,8 +331,8 @@ export_rotation_model()
 				"\n"
 				"  If the reconstruction tree for the specified reconstruction time and anchored plate id "
 				"is currently in the internal cache then it is returned, otherwise a new reconstruction "
-				"tree is created and stored in the cache (after evicting the reconstruction tree "
-				"associated with the least recently requested reconstruction time if necessary).\n")
+				"tree is created and stored in the cache (after evicting the reconstruction tree associated "
+				"with the least recently requested reconstruction time and anchored plate id if necessary).\n")
 	;
 
 	// Enable boost::optional<RotationModel::non_null_ptr_type> to be passed to and from python.

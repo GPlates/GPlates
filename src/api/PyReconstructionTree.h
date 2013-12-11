@@ -96,8 +96,8 @@ namespace GPlatesApi
 	boost::optional<GPlatesMaths::FiniteRotation>
 	get_relative_total_rotation(
 			const GPlatesAppLogic::ReconstructionTree &reconstruction_tree,
-			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id,
+			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			bool use_identity_for_missing_plate_ids);
 
 	/**
@@ -129,8 +129,8 @@ namespace GPlatesApi
 	get_relative_stage_rotation(
 			const GPlatesAppLogic::ReconstructionTree &from_reconstruction_tree,
 			const GPlatesAppLogic::ReconstructionTree &to_reconstruction_tree,
-			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id,
+			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			bool use_identity_for_missing_plate_ids);
 }
 

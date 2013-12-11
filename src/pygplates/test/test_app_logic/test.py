@@ -160,16 +160,16 @@ class ReconstructionTreeCase(unittest.TestCase):
                 pygplates.FiniteRotation))
         self.assertTrue(isinstance(
                 # Pick plates that are in different sub-trees.
-                self.reconstruction_tree.get_relative_total_rotation(291, 802),
+                self.reconstruction_tree.get_relative_total_rotation(802, 291),
                 pygplates.FiniteRotation))
         self.assertTrue(pygplates.represent_equivalent_rotations(
                 self.reconstruction_tree.get_equivalent_total_rotation(802),
-                self.reconstruction_tree.get_relative_total_rotation(0, 802)))
+                self.reconstruction_tree.get_relative_total_rotation(802, 0)))
         self.assertTrue(pygplates.represent_equivalent_rotations(
                 self.reconstruction_tree.get_edge(802).get_relative_total_rotation(),
                 self.reconstruction_tree.get_relative_total_rotation(
-                        self.reconstruction_tree.get_edge(802).get_fixed_plate_id(),
-                        802)))
+                        802,
+                        self.reconstruction_tree.get_edge(802).get_fixed_plate_id())))
         # Should return identity rotation.
         self.assertTrue(self.reconstruction_tree.get_equivalent_total_rotation(
                 self.reconstruction_tree.get_anchor_plate_id()).represents_identity_rotation())
@@ -179,7 +179,7 @@ class ReconstructionTreeCase(unittest.TestCase):
         # Should return None for an unknown plate id.
         self.assertFalse(self.reconstruction_tree.get_equivalent_total_rotation(10000, use_identity_for_missing_plate_ids=False))
         # Should return None for an unknown relative plate id.
-        self.assertFalse(self.reconstruction_tree.get_relative_total_rotation(10000, 802, use_identity_for_missing_plate_ids=False))
+        self.assertFalse(self.reconstruction_tree.get_relative_total_rotation(802, 10000, use_identity_for_missing_plate_ids=False))
     
     def test_stage_rotation(self):
         from_reconstruction_tree = pygplates.ReconstructionTree(
@@ -206,7 +206,7 @@ class ReconstructionTreeCase(unittest.TestCase):
                 self.reconstruction_tree,
                 802)
         
-        relative_stage_rotation = pygplates.get_relative_stage_rotation(from_reconstruction_tree, self.reconstruction_tree, 291, 802)
+        relative_stage_rotation = pygplates.get_relative_stage_rotation(from_reconstruction_tree, self.reconstruction_tree, 802, 291)
         self.assertTrue(isinstance(relative_stage_rotation, pygplates.FiniteRotation))
         # Should return identity rotation.
         self.assertTrue(pygplates.get_relative_stage_rotation(
@@ -217,10 +217,10 @@ class ReconstructionTreeCase(unittest.TestCase):
                         .represents_identity_rotation())
         # Should return None for an unknown plate id.
         self.assertFalse(pygplates.get_relative_stage_rotation(
-                from_reconstruction_tree, self.reconstruction_tree, 10000, 802, use_identity_for_missing_plate_ids=False))
+                from_reconstruction_tree, self.reconstruction_tree, 802, 10000, use_identity_for_missing_plate_ids=False))
         # Should return None for an unknown relative plate id.
         self.assertFalse(pygplates.get_relative_stage_rotation(
-                from_reconstruction_tree, self.reconstruction_tree, 291, 10000, use_identity_for_missing_plate_ids=False))
+                from_reconstruction_tree, self.reconstruction_tree, 10000, 291, use_identity_for_missing_plate_ids=False))
 
 
 class RotationModelCase(unittest.TestCase):
@@ -256,18 +256,18 @@ class RotationModelCase(unittest.TestCase):
         relative_total_rotation = self.rotation_model.get_rotation(self.to_time, 802, fixed_plate_id=291)
         self.assertTrue(pygplates.represent_equivalent_rotations(
                 relative_total_rotation,
-                self.to_reconstruction_tree.get_relative_total_rotation(291, 802)))
+                self.to_reconstruction_tree.get_relative_total_rotation(802, 291)))
         # Fixed plate id defaults to anchored plate id.
         relative_total_rotation = self.rotation_model.get_rotation(self.to_time, 802, anchor_plate_id=291)
         self.assertTrue(pygplates.represent_equivalent_rotations(
                 relative_total_rotation,
-                self.to_reconstruction_tree.get_relative_total_rotation(291, 802)))
+                self.to_reconstruction_tree.get_relative_total_rotation(802, 291)))
         # Shouldn't really matter what the anchor plate id is (as long as there's a plate circuit
         # path from anchor plate to both fixed and moving plates.
         relative_total_rotation = self.rotation_model.get_rotation(self.to_time, 802, fixed_plate_id=291, anchor_plate_id=802)
         self.assertTrue(pygplates.represent_equivalent_rotations(
                 relative_total_rotation,
-                self.to_reconstruction_tree.get_relative_total_rotation(291, 802)))
+                self.to_reconstruction_tree.get_relative_total_rotation(802, 291)))
         
         equivalent_stage_rotation = self.rotation_model.get_rotation(self.to_time, 802, self.from_time)
         self.assertTrue(pygplates.represent_equivalent_rotations(
@@ -283,8 +283,8 @@ class RotationModelCase(unittest.TestCase):
                 pygplates.get_relative_stage_rotation(
                         self.from_reconstruction_tree,
                         self.to_reconstruction_tree,
-                        291,
-                        802)))
+                        802,
+                        291)))
         # Fixed plate id defaults to anchored plate id.
         relative_stage_rotation = self.rotation_model.get_rotation(self.to_time, 802, self.from_time, anchor_plate_id=291)
         self.assertTrue(pygplates.represent_equivalent_rotations(
@@ -292,8 +292,8 @@ class RotationModelCase(unittest.TestCase):
                 pygplates.get_relative_stage_rotation(
                         self.from_reconstruction_tree,
                         self.to_reconstruction_tree,
-                        291,
-                        802)))
+                        802,
+                        291)))
 
 
 def suite():

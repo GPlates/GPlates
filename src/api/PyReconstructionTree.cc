@@ -424,8 +424,8 @@ namespace GPlatesApi
 	boost::optional<GPlatesMaths::FiniteRotation>
 	get_relative_total_rotation(
 			const GPlatesAppLogic::ReconstructionTree &reconstruction_tree,
-			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id,
+			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			bool use_identity_for_missing_plate_ids)
 	{
 		boost::optional<GPlatesMaths::FiniteRotation> equivalent_plate_rotation =
@@ -513,8 +513,8 @@ namespace GPlatesApi
 	get_relative_stage_rotation(
 			const GPlatesAppLogic::ReconstructionTree &from_reconstruction_tree,
 			const GPlatesAppLogic::ReconstructionTree &to_reconstruction_tree,
-			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id,
+			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			bool use_identity_for_missing_plate_ids)
 	{
 		boost::optional<GPlatesMaths::FiniteRotation> fixed_plate_from_rotation =
@@ -854,18 +854,18 @@ export_reconstruction_tree()
 				"        # else returns None\n")
 		.def("get_relative_total_rotation",
 				&GPlatesApi::get_relative_total_rotation,
-				(bp::arg("fixed_plate_id"),
-					bp::arg("moving_plate_id"),
+				(bp::arg("moving_plate_id"),
+					bp::arg("fixed_plate_id"),
 					bp::arg("use_identity_for_missing_plate_ids")=true),
-				"get_relative_total_rotation(fixed_plate_id, moving_plate_id"
+				"get_relative_total_rotation(moving_plate_id, fixed_plate_id"
 				"[, use_identity_for_missing_plate_ids=True]) -> FiniteRotation or None\n"
 				"  Return the finite rotation of the *moving_plate_id* plate relative to the "
 				"*fixed_plate_id* plate.\n"
 				"\n"
-				"  :param fixed_plate_id: the plate id of plate that the rotation is relative to\n"
-				"  :type fixed_plate_id: int\n"
 				"  :param moving_plate_id: the plate id of plate to calculate the relative rotation\n"
 				"  :type moving_plate_id: int\n"
+				"  :param fixed_plate_id: the plate id of plate that the rotation is relative to\n"
+				"  :type fixed_plate_id: int\n"
 				"  :param use_identity_for_missing_plate_ids: whether to use an "
 				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` or return ``None`` "
 				"for missing plate ids (default is to use identity rotation)\n"
@@ -890,7 +890,7 @@ export_reconstruction_tree()
 				"  This method essentially does the following:\n"
 				"  ::\n"
 				"\n"
-				"    def get_relative_total_rotation(reconstruction_tree, fixed_plate_id, moving_plate_id):\n"
+				"    def get_relative_total_rotation(reconstruction_tree, moving_plate_id, fixed_plate_id):\n"
 				"        fixed_plate_rotation = reconstruction_tree.get_equivalent_total_rotation(fixed_plate_id)\n"
 				"        moving_plate_rotation = reconstruction_tree.get_equivalent_total_rotation(moving_plate_id)\n"
 				"        if fixed_plate_rotation and moving_plate_rotation:\n"
@@ -1084,11 +1084,11 @@ export_reconstruction_tree()
 			&GPlatesApi::get_relative_stage_rotation,
 			(bp::arg("from_reconstruction_tree"),
 				bp::arg("to_reconstruction_tree"),
-				bp::arg("fixed_plate_id"),
 				bp::arg("moving_plate_id"),
+				bp::arg("fixed_plate_id"),
 				bp::arg("use_identity_for_missing_plate_ids")=true),
 			"get_relative_stage_rotation(from_reconstruction_tree, to_reconstruction_tree, "
-			"fixed_plate_id, moving_plate_id[, use_identity_for_missing_plate_ids]) -> FiniteRotation or None\n"
+			"moving_plate_id, fixed_plate_id[, use_identity_for_missing_plate_ids]) -> FiniteRotation or None\n"
 			"  Return the finite rotation that rotates from the *fixed_plate_id* plate to the *moving_plate_id* "
 			"plate and from the time of *from_reconstruction_tree* to the time of *to_reconstruction_tree*.\n"
 			"\n"
@@ -1096,10 +1096,10 @@ export_reconstruction_tree()
 			"  :type from_reconstruction_tree: :class:`ReconstructionTree`\n"
 			"  :param to_reconstruction_tree: the reconstruction tree created for the *to* time\n"
 			"  :type to_reconstruction_tree: :class:`ReconstructionTree`\n"
-			"  :param fixed_plate_id: the plate id of the fixed plate\n"
-			"  :type fixed_plate_id: int\n"
 			"  :param moving_plate_id: the plate id of the moving plate\n"
 			"  :type moving_plate_id: int\n"
+			"  :param fixed_plate_id: the plate id of the fixed plate\n"
+			"  :type fixed_plate_id: int\n"
 			"  :param use_identity_for_missing_plate_ids: whether to use an "
 			":meth:`identity rotation<FiniteRotation.create_identity_rotation>` or return ``None`` "
 			"for missing plate ids (default is to use identity rotation)\n"
@@ -1119,7 +1119,7 @@ export_reconstruction_tree()
 			"  ::\n"
 			"\n"
 			"    def get_relative_stage_rotation(from_reconstruction_tree, to_reconstruction_tree, "
-			"fixed_plate_id, moving_plate_id):\n"
+			"moving_plate_id, fixed_plate_id):\n"
 			"        fixed_plate_from_rotation = from_reconstruction_tree.get_equivalent_total_rotation(fixed_plate_id)\n"
 			"        fixed_plate_to_rotation = to_reconstruction_tree.get_equivalent_total_rotation(fixed_plate_id)\n"
 			"        moving_plate_from_rotation = from_reconstruction_tree.get_equivalent_total_rotation(moving_plate_id)\n"
