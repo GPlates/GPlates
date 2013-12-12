@@ -62,7 +62,9 @@ namespace GPlatesAppLogic
 			// Default to using surfaces since that's how GPlates started out calculating velocities...
 			d_solve_velocities_method(SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS),
 			d_is_boundary_smoothing_enabled(false),
-			d_boundary_smoothing_angular_half_extent_degrees(1.0)
+			d_boundary_smoothing_angular_half_extent_degrees(1.0),
+			// Default to no smoothing inside deforming regions...
+			d_exclude_deforming_regions_from_smoothing(true)
 		{  }
 
 		SolveVelocitiesMethodType
@@ -116,6 +118,19 @@ namespace GPlatesAppLogic
 			d_boundary_smoothing_angular_half_extent_degrees = boundary_smoothing_angular_half_extent_degrees;
 		}
 
+		bool
+		get_exclude_deforming_regions_from_smoothing() const
+		{
+			return d_exclude_deforming_regions_from_smoothing;
+		}
+
+		void
+		set_exclude_deforming_regions_from_smoothing(
+				bool exclude_deforming_regions_from_smoothing = true)
+		{
+			d_exclude_deforming_regions_from_smoothing = exclude_deforming_regions_from_smoothing;
+		}
+
 
 		//! Equality comparison operator.
 		bool
@@ -124,6 +139,8 @@ namespace GPlatesAppLogic
 		{
 			return d_solve_velocities_method == rhs.d_solve_velocities_method &&
 					d_is_boundary_smoothing_enabled == rhs.d_is_boundary_smoothing_enabled &&
+					d_exclude_deforming_regions_from_smoothing ==
+						rhs.d_exclude_deforming_regions_from_smoothing &&
 					GPlatesMaths::are_almost_exactly_equal(
 							d_boundary_smoothing_angular_half_extent_degrees,
 							rhs.d_boundary_smoothing_angular_half_extent_degrees);
@@ -161,6 +178,15 @@ namespace GPlatesAppLogic
 				return false;
 			}
 
+			if (d_exclude_deforming_regions_from_smoothing < rhs.d_exclude_deforming_regions_from_smoothing)
+			{
+				return true;
+			}
+			if (d_exclude_deforming_regions_from_smoothing > rhs.d_exclude_deforming_regions_from_smoothing)
+			{
+				return false;
+			}
+
 			return false;
 		}
 
@@ -170,6 +196,7 @@ namespace GPlatesAppLogic
 
 		bool d_is_boundary_smoothing_enabled;
 		double d_boundary_smoothing_angular_half_extent_degrees;
+		bool d_exclude_deforming_regions_from_smoothing;
 
 	};
 }

@@ -32,11 +32,16 @@
 
 #include "ModelUtils.h"
 
+#include "FeatureHandleWeakRefBackInserter.h"
 #include "Gpgim.h"
 #include "GpgimProperty.h"
 #include "Model.h"
 
+#include "app-logic/FeatureCollectionFileState.h"
+
 #include "global/LogException.h"
+
+#include "presentation/Application.h"
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
@@ -962,6 +967,40 @@ GPlatesModel::ModelUtils::create_gml_time_sample(
 				gml_description, 
 				StructuralType::create_gpml("FiniteRotation"));
 	}
+}
+
+
+GPlatesModel::FeatureHandle::weak_ref
+GPlatesModel::ModelUtils::find_feature(
+		const GPlatesModel::FeatureId& id)
+{
+	std::vector<GPlatesModel::FeatureHandle::weak_ref> back_ref_targets;
+	id.find_back_ref_targets(
+			GPlatesModel::append_as_weak_refs(back_ref_targets));
+	
+	if (back_ref_targets.size() != 1)
+	{
+		// We didn't get exactly one feature with the feature id so something is
+		// not right (user loaded same file twice or didn't load at all)
+		// so print debug message and return null feature reference.
+		if ( back_ref_targets.empty() )
+		{
+			qWarning() 
+				<< "Missing feature for feature-id = "
+				<< GPlatesUtils::make_qstring_from_icu_string( id.get() );
+		}
+		else
+		{
+			qWarning() 
+				<< "Multiple features for feature-id = "
+				<< GPlatesUtils::make_qstring_from_icu_string( id.get() );
+		}
+
+		// Return null feature reference.
+		return GPlatesModel::FeatureHandle::weak_ref();
+	}
+
+	return back_ref_targets.front();
 }
 
 

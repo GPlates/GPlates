@@ -1312,6 +1312,29 @@ GPlatesModel::Gpgim::read_feature_property_time_dependent_types(
 }
 
 
+boost::optional<GPlatesModel::PropertyName>
+GPlatesModel::Gpgim::read_feature_class_default_geometry_property_name(
+		const XmlElementNode::non_null_ptr_type &feature_class_xml_element,
+		const QString &gpgim_resource_filename)
+{
+	static const XmlAttributeName DEFAULT_GEOMETRY_PROPERTY_NAME_ATTRIBUTE_NAME =
+			XmlAttributeName::create_gpgim("defaultGeometryProperty");
+
+	// Look for the 'gpgim:defaultGeometryProperty' attribute.
+	const XmlElementNode::attribute_const_iterator default_geometry_property_name_attribute_iter =
+			feature_class_xml_element->get_attribute_by_name(DEFAULT_GEOMETRY_PROPERTY_NAME_ATTRIBUTE_NAME);
+	if (default_geometry_property_name_attribute_iter == feature_class_xml_element->attributes_end())
+	{
+		return boost::none;
+	}
+
+	// Convert the attribute value string to a qualified property name.
+	const XmlAttributeValue &attribute_value = default_geometry_property_name_attribute_iter->second;
+	return convert_qstring_to_qualified_xml_name<GPlatesModel::PropertyName>(
+			GPlatesUtils::make_qstring_from_icu_string(attribute_value.get()));
+}
+
+
 void
 GPlatesModel::Gpgim::read_feature_class_xml_elements(
 		feature_class_xml_element_node_map_type &feature_class_xml_element_node_map,
@@ -1436,11 +1459,16 @@ GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type
 GPlatesModel::Gpgim::create_unclassified_feature_class(
 		const QString &gpgim_resource_filename)
 {
+	// Default geometry property name for unclassified feature types.
+	static const GPlatesModel::PropertyName UNCLASSIFIED_GEOMETRY =
+			GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry");
+
 	// Iterate over all GPGIM properties and create a copy of each one that has a multiplicity of '0..*'.
 	// This is a bit risky because it means the unclassified feature class has GPGIM properties
 	// that are not in the global GPGIM property list (as is the case with the other feature types).
 	// But it's a lot better than having special-case code scattered throughout GPlates to handle
 	// 'gpml:UnclassifiedFeature'.
+	boost::optional<GpgimProperty::non_null_ptr_to_const_type> default_gpgim_unclassified_geometry_property;
 	GpgimFeatureClass::gpgim_property_seq_type gpgim_unclassified_feature_properties;
 	BOOST_FOREACH(const property_map_type::value_type &property_map_element, d_property_map)
 	{
@@ -1453,6 +1481,12 @@ GPlatesModel::Gpgim::create_unclassified_feature_class(
 		gpgim_unclassified_feature_property->set_multiplicity(GPlatesModel::GpgimProperty::ZERO_OR_MORE);
 
 		gpgim_unclassified_feature_properties.push_back(gpgim_unclassified_feature_property);
+
+		if (gpgim_unclassified_feature_property->get_property_name() == UNCLASSIFIED_GEOMETRY)
+		{
+			// We found the default geometry property.
+			default_gpgim_unclassified_geometry_property = gpgim_unclassified_feature_property;
+		}
 	}
 
 	// Unclassified feature type.
@@ -1462,12 +1496,16 @@ GPlatesModel::Gpgim::create_unclassified_feature_class(
 			"Unclassified feature containing any number of any GPGIM properties.";
 
 	// Create the unclassified feature class.
+	//
+	// Note that there's no parent/ancestor feature class because we've explicitly added
+	// all the properties (ie, there's no need to inherit any properties).
 	const GpgimFeatureClass::non_null_ptr_type unclassified_feature_class =
 			GpgimFeatureClass::create(
 					UNCLASSIFIED_FEATURE_TYPE,
 					UNCLASSIFIED_FEATURE_DESCRIPTION,
 					gpgim_unclassified_feature_properties.begin(),
-					gpgim_unclassified_feature_properties.end());
+					gpgim_unclassified_feature_properties.end(),
+					default_gpgim_unclassified_geometry_property);
 
 	// Add to our feature class map.
 	d_feature_class_map.insert(
@@ -1574,6 +1612,39 @@ GPlatesModel::Gpgim::create_feature_class(
 			feature_class_xml_element,
 			gpgim_resource_filename);
 
+	// Read the default geometry property name (if there is one) for the feature class.
+	boost::optional<GPlatesModel::PropertyName> default_geometry_property_name =
+			read_feature_class_default_geometry_property_name(
+					feature_class_xml_element,
+					gpgim_resource_filename);
+
+	// Search the feature properties for the default geometry property.
+	boost::optional<GpgimProperty::non_null_ptr_to_const_type> default_geometry_property;
+	if (default_geometry_property_name)
+	{
+		BOOST_FOREACH(
+				const GpgimProperty::non_null_ptr_to_const_type &gpgim_feature_property,
+				gpgim_feature_properties)
+		{
+			if (gpgim_feature_property->get_property_name() == default_geometry_property_name.get())
+			{
+				default_geometry_property = gpgim_feature_property;
+				break;
+			}
+		}
+
+		// Make sure the default geometry property is one of the feature's listed properties.
+		if (!default_geometry_property)
+		{
+			throw GpgimInitialisationException(
+					GPLATES_EXCEPTION_SOURCE,
+					gpgim_resource_filename,
+					feature_class_xml_element->line_number(),
+					QString("failed to find default geometry property '%1' in list of feature properties")
+							.arg(convert_qualified_xml_name_to_qstring(default_geometry_property_name.get())));
+		}
+	}
+
 	// Create the feature class.
 	const GpgimFeatureClass::non_null_ptr_type feature_class =
 			GpgimFeatureClass::create(
@@ -1581,6 +1652,7 @@ GPlatesModel::Gpgim::create_feature_class(
 					feature_description,
 					gpgim_feature_properties.begin(),
 					gpgim_feature_properties.end(),
+					default_geometry_property,
 					parent_feature_class);
 
 	// Add to our feature class map.

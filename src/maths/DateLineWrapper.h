@@ -115,8 +115,11 @@ namespace GPlatesMaths
 		 * hence only one polyline is output to @a output_polylines (it is just the unclipped polyline
 		 * converted to lat/lon coordinates).
 		 *
-		 * NOTE: In some rare cases it's possible for there to be *no* output polylines.
-		 * This can happen if the input polyline lies entirely *on* the dateline.
+		 * NOTE: In some rare cases it's possible that the entire input polyline got swallowed by the dateline.
+		 * This can happen if the original polyline is entirely *on* the dateline which is considered
+		 * to be *outside* the dateline polygon (which covers the entire globe and 'effectively' excludes
+		 * a very thin area of size epsilon around the dateline arc).
+		 * In this situation the input polyline is added to @a output_polylines.
 		 */
 		void
 		wrap_to_dateline(
@@ -138,8 +141,11 @@ namespace GPlatesMaths
 		 * hence only one polygon is output to @a output_polygons (it is just the unclipped polygon
 		 * converted to lat/lon coordinates).
 		 *
-		 * NOTE: In some rare cases it's possible for there to be *no* output polygons.
-		 * This can happen if the input polygon lies entirely *on* the dateline.
+		 * NOTE: In some rare cases it's possible that the entire input polygon got swallowed by the dateline.
+		 * This can happen if the original polygon is entirely *on* the dateline which is considered
+		 * to be *outside* the dateline polygon (which covers the entire globe and 'effectively' excludes
+		 * a very thin area of size epsilon around the dateline arc).
+		 * In this situation the input polygon is added to @a output_polygons.
 		 */
 		void
 		wrap_to_dateline(
@@ -283,13 +289,22 @@ namespace GPlatesMaths
 					// Is this graph used to clip a polygon ?
 					bool is_polygon_graph_);
 
-			//! Traverses geometry vertices (and intersection vertices) in graph and generates polylines.
-			void
+			/**
+			 * Traverses geometry vertices (and intersection vertices) in graph and generates polylines.
+			 *
+			 * Returns false if no output polylines were generated (if input polyline entirely on dateline).
+			 */
+			bool
 			generate_polylines(
 					std::vector<lat_lon_polyline_type> &lat_lon_polylines);
 
-			//! Traverses geometry/dateline vertices (and intersection vertices) in graph and generates polygons.
-			void
+			/**
+			 * Traverses geometry/dateline vertices (and intersection vertices) in graph and generates polygons.
+			 *
+			 * Returns false if no output polygons were generated (if input polygon entirely on dateline *or*
+			 * there were no intersections with the dateline).
+			 */
+			bool
 			generate_polygons(
 					std::vector<lat_lon_polygon_type> &lat_lon_polygons,
 					const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon);
@@ -475,6 +490,18 @@ namespace GPlatesMaths
 		classify_vertex(
 				const UnitVector3D &vertex,
 				IntersectionGraph &graph) const;
+
+		//! Output the un-intersected input polyline.
+		void
+		output_input_polyline(
+				const PolylineOnSphere::non_null_ptr_to_const_type &input_polyline,
+				std::vector<lat_lon_polyline_type> &output_polylines);
+
+		//! Output the un-intersected input polygon.
+		void
+		output_input_polygon(
+				const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon,
+				std::vector<lat_lon_polygon_type> &output_polygons);
 	};
 }
 

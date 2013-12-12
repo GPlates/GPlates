@@ -1,9 +1,9 @@
-/* $Id: ShapefileFormatReconstructedFeatureGeometryExport.cc 8194 2010-04-26 16:24:42Z rwatson $ */
+/* $Id$ */
 
 /**
  * \file Exports flowlines to shapefile format.
- * $Revision: 8194 $
- * $Date: 2010-04-26 18:24:42 +0200 (ma, 26 apr 2010) $
+ * $Revision$
+ * $Date$
  * 
  * Copyright (C) 2010 Geological Survey of Norway
  *

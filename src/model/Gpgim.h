@@ -423,6 +423,11 @@ namespace GPlatesModel
 				const XmlElementNode::non_null_ptr_type &property_xml_element,
 				const QString &gpgim_resource_filename);
 
+		boost::optional<GPlatesModel::PropertyName>
+		read_feature_class_default_geometry_property_name(
+				const XmlElementNode::non_null_ptr_type &feature_class_xml_element,
+				const QString &gpgim_resource_filename);
+
 		/**
 		 * Reads the GPGIM feature class definitions in the GPGIM XML document.
 		 */

@@ -136,10 +136,6 @@ namespace GPlatesDataMining
 		}
 
 
-		std::vector<GPlatesModel::FeatureHandle::weak_ref>
-		get_all_seed_features(
-				GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type);
-
 		/*
 		* Return particular section of configuration file. 
 		*/

@@ -57,6 +57,9 @@ namespace GPlatesQtWidgets
 		 * have one (or more) property(s) of the specified structural type.
 		 *
 		 * If no property type is specified then all feature types are populated.
+		 *
+		 * If the previously selected feature type (if any) is in the new list of feature types
+		 * then the selection is retained.
 		 */
 		void
 		populate(

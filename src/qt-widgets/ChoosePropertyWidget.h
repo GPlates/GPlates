@@ -75,12 +75,6 @@ namespace GPlatesQtWidgets
 				QWidget *parent_ = NULL);
 
 		/**
-		 * Returns the currently selected property name.
-		 */
-		boost::optional<GPlatesModel::PropertyName>
-		get_property_name() const;
-
-		/**
 		 * Causes this widget to show properties appropriate for the specified
 		 * feature type and property type.
 		 *
@@ -93,6 +87,19 @@ namespace GPlatesQtWidgets
 				const GPlatesPropertyValues::StructuralType &target_property_type,
 				const GPlatesModel::FeatureHandle::weak_ref &source_feature_ref =
 						GPlatesModel::FeatureHandle::weak_ref());
+
+		/**
+		 * Returns the currently selected property name.
+		 */
+		boost::optional<GPlatesModel::PropertyName>
+		get_property_name() const;
+
+		/**
+		 * Changes the currently selected property name to @a property_name.
+		 */
+		void
+		set_property_name(
+				const GPlatesModel::PropertyName &property_name);
 
 	Q_SIGNALS:
 

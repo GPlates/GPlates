@@ -93,6 +93,23 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Options to control how velocities are smoothed across plate boundaries.
+		 */
+		class VelocitySmoothingOptions
+		{
+		public:
+			VelocitySmoothingOptions(
+					const double &angular_half_extent_radians_,
+					bool exclude_deforming_regions_) :
+				angular_half_extent_radians(angular_half_extent_radians_),
+				exclude_deforming_regions(exclude_deforming_regions_)
+			{  }
+
+			double angular_half_extent_radians;
+			bool exclude_deforming_regions;
+		};
+
+		/**
 		 * Solves velocities for the specified velocity surfaces:
 		 * - reconstructed static polygons,
 		 * - resolved topological boundaries,
@@ -113,8 +130,9 @@ namespace GPlatesAppLogic
 		 * static polygons and resolved topological plates/networks and the velocities then depend
 		 * on these surfaces.
 		 *
-		 * If @a boundary_smoothing_half_angle_radians is specified it provides the angular
-		 * distance (radians) over which velocities are smoothed across a plate/network boundary.
+		 * If @a velocity_smoothing_options is specified then it provides the angular distance (radians)
+		 * over which velocities are smoothed across a plate/network boundary and whether smoothing
+		 * should occur for points within a deforming region (including network rigid blocks).
 		 * If any points of the reconstructed velocity domain lie within this distance from a
 		 * boundary then their velocity is interpolated between the domain point's calculated velocity
 		 * and the average velocity (at the nearest boundary point) using the distance-to-boundary
@@ -147,7 +165,7 @@ namespace GPlatesAppLogic
 				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
 				const std::vector<resolved_topological_geometry_non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
 				const std::vector<resolved_topological_network_non_null_ptr_type> &velocity_surface_resolved_topological_networks,
-				boost::optional<double> boundary_smoothing_half_angle_radians = boost::none);
+				const boost::optional<VelocitySmoothingOptions> &velocity_smoothing_options = boost::none);
 
 
 		//////////////////////////////

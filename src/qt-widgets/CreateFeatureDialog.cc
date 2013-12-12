@@ -73,6 +73,7 @@
 #include "model/FeatureType.h"
 #include "model/Gpgim.h"
 #include "model/GpgimFeatureClass.h"
+#include "model/GpgimProperty.h"
 #include "model/Model.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
@@ -98,22 +99,54 @@
 namespace
 {
 	bool
-	is_topological_geometry(
+	is_topological_line(
 			const GPlatesModel::PropertyValue &property_value)
 	{
 		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_LINE =
 				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalLine");
+
+		const GPlatesPropertyValues::StructuralType property_type =
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
+
+		return property_type == GPML_TOPOLOGICAL_LINE;
+	}
+
+
+	bool
+	is_topological_polygon(
+			const GPlatesModel::PropertyValue &property_value)
+	{
 		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_POLYGON =
 				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalPolygon");
+
+		const GPlatesPropertyValues::StructuralType property_type =
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
+
+		return property_type == GPML_TOPOLOGICAL_POLYGON;
+	}
+
+
+	bool
+	is_topological_network(
+			const GPlatesModel::PropertyValue &property_value)
+	{
 		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_NETWORK =
 				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalNetwork");
 
 		const GPlatesPropertyValues::StructuralType property_type =
 				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
 
-		return property_type == GPML_TOPOLOGICAL_LINE ||
-			property_type == GPML_TOPOLOGICAL_POLYGON ||
-			property_type == GPML_TOPOLOGICAL_NETWORK;
+		return property_type == GPML_TOPOLOGICAL_NETWORK;
+	}
+
+
+	bool
+	is_topological_geometry(
+			const GPlatesModel::PropertyValue &property_value)
+	{
+		return is_topological_line(property_value) ||
+				is_topological_polygon(property_value) ||
+				is_topological_network(property_value);
 	}
 
 
@@ -197,6 +230,42 @@ namespace
 			return false;
 		}
 	}	
+
+	/**
+	 * Query the GPGIM to determine whether we should present the user
+	 * with a relativePlate property value edit widget.
+	 * This is based on FeatureType.
+	 */
+	bool
+	should_offer_relative_plate_id_prop(
+			const GPlatesQtWidgets::ChooseFeatureTypeWidget *choose_feature_type_widget)
+	{
+		// Get currently selected feature type.
+		boost::optional<GPlatesModel::FeatureType> feature_type =
+				choose_feature_type_widget->get_feature_type();
+		if (!feature_type)
+		{
+			return false;
+		}
+
+		// Exclude unclassified feature type because it supports *all* properties and, since
+		// we don't set the relative plate id widget to null (like conjugate plate id), then
+		// it will add the default relative plate id zero as a property value which we don't want.
+		static const GPlatesModel::FeatureType UNCLASSIFIED_FEATURE_TYPE =
+				GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature");
+		if (feature_type.get() == UNCLASSIFIED_FEATURE_TYPE)
+		{
+			return false;
+		}
+
+		static const GPlatesModel::PropertyName RELATIVE_PLATE_PROPERTY_NAME =
+				GPlatesModel::PropertyName::create_gpml("relativePlate");
+
+		// See if the feature type supports a relative plate id property.
+		return GPlatesModel::Gpgim::instance().get_feature_property(
+				feature_type.get(),
+				RELATIVE_PLATE_PROPERTY_NAME);
+	}
 
 	/**
 	 * Set some default states and/or restrictions on the reconstruction method, depending on the selected feature type.
@@ -322,6 +391,7 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 	d_viewport_window_ptr(&viewport_window_),
 	d_plate_id_widget(new EditPlateIdWidget(this)),
 	d_conjugate_plate_id_widget(new EditPlateIdWidget(this)),
+	d_relative_plate_id_widget(new EditPlateIdWidget(this)),
 	d_time_period_widget(new EditTimePeriodWidget(this)),
 	d_name_widget(new EditStringWidget(this)),
 	d_choose_feature_type_widget(
@@ -475,6 +545,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 	
 	// Reconfigure some accelerator keys that conflict.
 	d_plate_id_widget->label()->setText(tr("Plate &ID:"));
+	d_relative_plate_id_widget->label()->setText(tr("R&elative Plate ID:"));
 	d_conjugate_plate_id_widget->label()->setText(tr("C&onjugate ID:"));
 	// Conjugate Plate IDs are optional.
 	d_conjugate_plate_id_widget->set_null_value_permitted(true);
@@ -513,6 +584,9 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 	plate_id_layout->setMargin(0);
 	plate_id_layout->addWidget(d_plate_id_widget);
 	plate_id_layout->addWidget(d_conjugate_plate_id_widget);
+	plate_id_layout->addWidget(d_relative_plate_id_widget);
+	// Relative plate id widget invisible by default since only used for MotionPath feature type.
+	d_relative_plate_id_widget->setVisible(false);
 
 	//Add right and left plate id widgets
 	//these widgets are invisible by default
@@ -577,10 +651,41 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_list()
 	// If no geometric property type (not selected by user yet) then select all feature types.
 	d_choose_feature_type_widget->populate(geometric_property_type);
 
-	// Default to 'gpml:UnclassifiedFeature' (if it supports the geometric property type).
+	// Note that we don't set the feature type selection.
+	// If the previously selected feature type is in the new list of feature types then
+	// the selection will be retained (ie, we'll remember the last selection).
+}
+
+
+void
+GPlatesQtWidgets::CreateFeatureDialog::select_default_feature_type()
+{
+	// Default feature type 'gpml:UnclassifiedFeature' (if it supports the geometric property type).
 	static const GPlatesModel::FeatureType UNCLASSIFIED_FEATURE_TYPE =
 			GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature");
-	d_choose_feature_type_widget->set_feature_type(UNCLASSIFIED_FEATURE_TYPE);
+	GPlatesModel::FeatureType default_feature_type = UNCLASSIFIED_FEATURE_TYPE;
+
+	// Change the default feature types for topological polygons and networks (requested by Dietmar and Sabin).
+	// It is not needed for topological lines since they were added later when pretty much any
+	// feature type could have topological geometries and hence there was no feature type
+	// designated as a 'topological line'.
+	if (d_geometry_property_value)
+	{
+		if (is_topological_polygon(*d_geometry_property_value.get()))
+		{
+			static const GPlatesModel::FeatureType TOPOLOGICAL_CLOSED_PLATE_BOUNDARY_FEATURE_TYPE =
+					GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary");
+			default_feature_type = TOPOLOGICAL_CLOSED_PLATE_BOUNDARY_FEATURE_TYPE;
+		}
+		else if (is_topological_network(*d_geometry_property_value.get()))
+		{
+			static const GPlatesModel::FeatureType TOPOLOGICAL_NETWORK_FEATURE_TYPE =
+					GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
+			default_feature_type = TOPOLOGICAL_NETWORK_FEATURE_TYPE;
+		}
+	}
+
+	d_choose_feature_type_widget->set_feature_type(default_feature_type);
 }
 
 
@@ -603,6 +708,46 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_geometric_property_list()
 
 	// Populate the listwidget_geometry_destinations based on what is legal right now.
 	d_listwidget_geometry_destinations->populate(feature_type_opt.get(), geometric_property_type);
+
+	//
+	// Set the default geometry property name (if there is one) for the feature type.
+	//
+
+	// Get the GPGIM feature class for the feature type.
+	boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class_opt =
+			GPlatesModel::Gpgim::instance().get_feature_class(feature_type_opt.get());
+	// Our list of features was obtained from the GPGIM so we should be able to find it.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			gpgim_feature_class_opt,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Get the default geometry property for the feature type.
+	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_gpgim_geometry_property =
+			gpgim_feature_class_opt.get()->get_default_geometry_feature_property();
+	if (default_gpgim_geometry_property)
+	{
+		const GPlatesModel::PropertyName &default_geometry_property_name =
+				default_gpgim_geometry_property.get()->get_property_name();
+
+		// Get the list of geometry properties actually populated in the list widget.
+		std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_geometry_properties;
+		ChoosePropertyWidget::get_properties_to_populate(
+				gpgim_geometry_properties,
+				feature_type_opt.get(),
+				geometric_property_type);
+
+		// If the default geometry property name appears in the list then select it.
+		BOOST_FOREACH(
+				const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &gpgim_geometry_property,
+				gpgim_geometry_properties)
+		{
+			if (gpgim_geometry_property->get_property_name() == default_geometry_property_name)
+			{
+				d_listwidget_geometry_destinations->set_property_name(default_geometry_property_name);
+				break;
+			}
+		}
+	}
 }
 
 
@@ -672,6 +817,16 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties()
 					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
 					d_plate_id_widget->create_property_value_from_widget(),
 					feature_type);
+
+			// Add a gpml:relativePlate Property.
+			if (should_offer_relative_plate_id_prop(d_choose_feature_type_widget))
+			{
+				add_common_feature_property_to_list(
+						common_feature_properties,
+						GPlatesModel::PropertyName::create_gpml("relativePlate"),
+						d_relative_plate_id_widget->create_property_value_from_widget(),
+						feature_type);
+			}
 		}
 
 		// Add a gpml:conjugatePlateId Property.
@@ -772,12 +927,16 @@ GPlatesQtWidgets::CreateFeatureDialog::display()
 	//
 	// NOTE: If the dialog was last left on the first page (by the user) then just selecting
 	// the first page will not result in a page change and hence no event.
-	// So we need to explicitly set up the feature type list (normally done in the first page
+	// So we need to explicitly set up the feature type list - normally done in the first page
 	// (the feature type page).
 	set_up_feature_list();
 
 	// Set the stack back to the first page.
 	stack->setCurrentIndex(FEATURE_TYPE_PAGE);
+
+	// Select the default feature type based on the geometry property type.
+	// We only do this once for each time this dialog is invoked.
+	select_default_feature_type();
 
 	// The Feature Collections list needs to be repopulated each time.
 	d_choose_feature_collection_widget->initialise();
@@ -867,6 +1026,10 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 		d_conjugate_plate_id_widget->setVisible(
 			d_recon_method_combobox->currentIndex() == 0 /* plate id */ &&
 				should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget));
+		// Note that we don't set the relative plate id to zero - we remember the last set plate id.
+		d_relative_plate_id_widget->setVisible(
+			d_recon_method_combobox->currentIndex() == 0 /* plate id */ &&
+				should_offer_relative_plate_id_prop(d_choose_feature_type_widget));
 		// Make sure it's unchecked because it's accessed programmatically even when it's not visible.
 		d_create_conjugate_isochron_checkbox->setChecked(false);
 		d_create_conjugate_isochron_checkbox->setVisible(
@@ -1047,6 +1210,7 @@ GPlatesQtWidgets::CreateFeatureDialog::recon_method_changed(int index)
 		case GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION:
 			d_plate_id_widget->setVisible(false);
 			d_conjugate_plate_id_widget->setVisible(false);
+			d_relative_plate_id_widget->setVisible(false);
 			d_right_plate_id->setVisible(true);
 			d_left_plate_id->setVisible(true);
 			d_recon_method = GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION;
@@ -1058,6 +1222,8 @@ GPlatesQtWidgets::CreateFeatureDialog::recon_method_changed(int index)
 			d_plate_id_widget->setVisible(true);
 			d_conjugate_plate_id_widget->setVisible(
 					should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget));
+			d_relative_plate_id_widget->setVisible(
+					should_offer_relative_plate_id_prop(d_choose_feature_type_widget));
 			d_recon_method = GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID;
 			break;
 	}

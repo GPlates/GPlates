@@ -80,7 +80,7 @@ namespace GPlatesFileIO
 		OgrWriter(
 			QString filename,
 			bool multiple_layers,
-			bool wrap_to_dateline = false);
+			bool wrap_to_dateline = true);
 
 		~OgrWriter();
 

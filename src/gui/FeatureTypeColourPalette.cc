@@ -62,8 +62,12 @@ namespace
 	}
 
 
+	/*
+	* The previous name of this function(hash) conflicts 
+	* with a name in boost on mac os 10.7.
+	*/
 	unsigned int
-	hash_feature_type(
+	generate_hash(
 			const GPlatesModel::FeatureType &feature_type)
 	{
 		// First convert to std::string.
@@ -88,7 +92,7 @@ namespace
 	create_colour(
 			const GPlatesModel::FeatureType &feature_type)
 	{
-		return map_to_colour(hash_feature_type(feature_type));
+		return map_to_colour(generate_hash(feature_type));
 	}
 }
 

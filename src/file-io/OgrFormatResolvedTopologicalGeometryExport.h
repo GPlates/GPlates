@@ -68,7 +68,7 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 
 		/**
 		* Exports @a ResolvedTopologicalGeometry objects to OGR format.
@@ -82,7 +82,7 @@ namespace GPlatesFileIO
 				const std::vector<const File::Reference *> &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 
 
 		/**
@@ -97,7 +97,7 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 
 
 		/**
@@ -112,7 +112,7 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 	}
 }
 

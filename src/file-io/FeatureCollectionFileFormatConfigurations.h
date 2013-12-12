@@ -104,7 +104,7 @@ namespace GPlatesFileIO
 			explicit
 			OGRConfiguration(
 					Format file_format,
-					bool wrap_to_dateline = false) :
+					bool wrap_to_dateline = true) :
 				d_wrap_to_dateline(wrap_to_dateline)
 			{  }
 

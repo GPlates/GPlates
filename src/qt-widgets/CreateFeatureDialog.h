@@ -190,6 +190,9 @@ namespace GPlatesQtWidgets
 		set_up_feature_list();
 
 		void
+		select_default_feature_type();
+
+		void
 		set_up_geometric_property_list();
 
 		void
@@ -273,6 +276,11 @@ namespace GPlatesQtWidgets
 		 * The custom edit widget for conjugate plate id. Memory managed by Qt.
 		 */
 		EditPlateIdWidget *d_conjugate_plate_id_widget;
+
+		/**
+		 * The custom edit widget for 'relative plate' id (for MotionPath feature type). Memory managed by Qt.
+		 */
+		EditPlateIdWidget *d_relative_plate_id_widget;
 
 		/**
 		 * The custom edit widget for GmlTimePeriod. Memory managed by Qt.

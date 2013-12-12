@@ -87,6 +87,10 @@ void
 GPlatesQtWidgets::ChooseFeatureTypeWidget::populate(
 		boost::optional<GPlatesPropertyValues::StructuralType> property_type)
 {
+	// Remember the current selection so we can re-select if it exists after re-populating.
+	boost::optional<GPlatesModel::FeatureType> previously_selected_feature_type = get_feature_type();
+	boost::optional<GPlatesModel::FeatureType> selected_feature_type;
+
 	d_selection_widget->clear();
 
 	const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
@@ -108,11 +112,27 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::populate(
 		d_selection_widget->add_item<DefaultConstructibleFeatureType>(
 				convert_qualified_xml_name_to_qstring(feature_type),
 				feature_type);
+
+		// Set the newly selected feature type if it matches previous selection (if there was any) and
+		// the previous selection exists in the new list (ie, if we get here).
+		if (!selected_feature_type &&
+			previously_selected_feature_type &&
+			previously_selected_feature_type.get() == feature_type)
+		{
+			selected_feature_type = previously_selected_feature_type.get();
+		}
 	}
 
 	if (d_selection_widget->get_count())
 	{
-		d_selection_widget->set_current_index(0);
+		if (selected_feature_type)
+		{
+			set_feature_type(selected_feature_type.get());
+		}
+		else
+		{
+			d_selection_widget->set_current_index(0);
+		}
 	}
 }
 

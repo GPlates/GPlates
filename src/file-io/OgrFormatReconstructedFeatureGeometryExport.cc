@@ -1,9 +1,9 @@
-/* $Id: OGRFormatReconstructedFeatureGeometryExport.cc -1   $ */
+/* $Id$ */
 
 /**
  * \file Exports reconstructed feature geometries to a GMT format file.
- * $Revision: -1 $
- * $Date: $
+ * $Revision$
+ * $Date$
  * 
  * Copyright (C) 2009 Geological Survey of Norway
  *

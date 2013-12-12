@@ -40,9 +40,6 @@
 
 namespace
 {
-	typedef boost::optional<GPlatesModel::PropertyName> user_data_type;
-
-
 	bool
 	feature_has_property_name(
 			const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
@@ -67,10 +64,39 @@ namespace
 
 		return false;
 	}
+
+	class DefaultConstructiblePropertyName
+	{
+	public:
+
+		DefaultConstructiblePropertyName()
+		{  }
+
+		DefaultConstructiblePropertyName(
+				const GPlatesModel::PropertyName &property_name) :
+			d_property_name(property_name)
+		{  }
+
+		operator GPlatesModel::PropertyName() const
+		{
+			return *d_property_name;
+		}
+
+		bool
+		operator==(
+				const DefaultConstructiblePropertyName &other)
+		{
+			return d_property_name == other.d_property_name;
+		}
+
+	private:
+
+		boost::optional<GPlatesModel::PropertyName> d_property_name;
+	};
 }
 
 
-Q_DECLARE_METATYPE( user_data_type )
+Q_DECLARE_METATYPE( DefaultConstructiblePropertyName )
 
 
 bool
@@ -131,22 +157,6 @@ GPlatesQtWidgets::ChoosePropertyWidget::ChoosePropertyWidget(
 }
 
 
-boost::optional<GPlatesModel::PropertyName>
-GPlatesQtWidgets::ChoosePropertyWidget::get_property_name() const
-{
-	boost::optional<user_data_type> curr = d_selection_widget->get_data<user_data_type>(
-			d_selection_widget->get_current_index());
-	if (curr)
-	{
-		return *curr;
-	}
-	else
-	{
-		return boost::none;
-	}
-}
-
-
 void
 GPlatesQtWidgets::ChoosePropertyWidget::populate(
 		const GPlatesModel::FeatureType &target_feature_type,
@@ -173,7 +183,7 @@ GPlatesQtWidgets::ChoosePropertyWidget::populate(
 			gpgim_feature_properties)
 	{
 		// Add the current property for display.
-		d_selection_widget->add_item<user_data_type>(
+		d_selection_widget->add_item<DefaultConstructiblePropertyName>(
 				gpgim_feature_property->get_user_friendly_name(),
 				gpgim_feature_property->get_property_name());
 	}
@@ -182,6 +192,24 @@ GPlatesQtWidgets::ChoosePropertyWidget::populate(
 	{
 		d_selection_widget->set_current_index(0);
 	}
+}
+
+
+boost::optional<GPlatesModel::PropertyName>
+GPlatesQtWidgets::ChoosePropertyWidget::get_property_name() const
+{
+	return boost::optional<GPlatesModel::PropertyName>(
+			d_selection_widget->get_data<DefaultConstructiblePropertyName>(
+				d_selection_widget->get_current_index()));
+}
+
+
+void
+GPlatesQtWidgets::ChoosePropertyWidget::set_property_name(
+		const GPlatesModel::PropertyName &property_name)
+{
+	int index = d_selection_widget->find_data<DefaultConstructiblePropertyName>(property_name);
+	d_selection_widget->set_current_index(index);
 }
 
 

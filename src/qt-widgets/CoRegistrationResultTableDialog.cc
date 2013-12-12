@@ -46,6 +46,8 @@
 
 #include "gui/FeatureFocus.h"
 
+#include "model/ModelUtils.h"
+
 #include "opengl/GLContext.h"
 #include "opengl/GLRenderer.h"
 
@@ -197,32 +199,8 @@ GPlatesQtWidgets::CoRegistrationResultTableDialog::update_co_registration_data(
 }
 
 
-// For the nested BOOST_FOREACH below.
-// Also for a problem in the ResultTableModel::data function.
+// For a problem in the ResultTableModel::data function.
 DISABLE_GCC_WARNING("-Wshadow")
-
-
-GPlatesModel::FeatureHandle::weak_ref
-GPlatesQtWidgets::CoRegistrationResultTableDialog::find_feature_by_id(
-		GPlatesAppLogic::FeatureCollectionFileState& state,
-		const QString& id)
-{
-	using namespace GPlatesAppLogic;
-	std::vector<FeatureCollectionFileState::file_reference> files = state.get_loaded_files();
-	BOOST_FOREACH(FeatureCollectionFileState::file_reference& file_ref, files)
-	{
-		GPlatesModel::FeatureCollectionHandle::weak_ref fc = file_ref.get_file().get_feature_collection();
-		BOOST_FOREACH(GPlatesModel::FeatureHandle::non_null_ptr_type feature, *fc)
-		{
-			if(feature->feature_id().get().qstring() == id)
-			{
-				return feature->reference();
-			}
-		}
-	}
-	throw QString("No feature found by this id: %1").arg(id);
-}
-
 
 QVariant
 GPlatesQtWidgets::ResultTableModel::data(
@@ -262,23 +240,20 @@ void
 GPlatesQtWidgets::CoRegistrationResultTableDialog::highlight_seed()
 {
 	QModelIndex idx = table_view->currentIndex();
-	QString id;
-	if(idx.column()==0)
-		id = idx.data().toString();
-	else
-		id = idx.sibling(idx.row(),0).data().toString();
+	QString id = (idx.column()==0) ? idx.data().toString() : 
+		idx.sibling(idx.row(),0).data().toString();
 
-	GPlatesAppLogic::FeatureCollectionFileState& file_state = 
-		d_view_state.get_application_state().get_feature_collection_file_state();
 	try
 	{
-		GPlatesModel::FeatureHandle::weak_ref feature = 
-			find_feature_by_id(file_state,id);
-		d_view_state.get_feature_focus().set_focus(feature);
-	}catch(QString err)
+		d_view_state.get_feature_focus().set_focus(
+					GPlatesModel::ModelUtils::find_feature(id));
+	}
+	//TODO: Create new exception for this.
+	catch(GPlatesGlobal::LogException& ex)
 	{
-		qDebug() << "exception happened!";
-		qDebug() << err;
+		std::ostringstream ostr;
+		ex.write(ostr);
+		qDebug() << ostr.str().c_str();
 	}
 }
 

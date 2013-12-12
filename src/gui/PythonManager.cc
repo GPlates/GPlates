@@ -1,9 +1,9 @@
-/* $Id: ApplicationState.cc 11614 2011-05-20 15:10:51Z jcannon $ */
+/* $Id$ */
 
 /**
  * \file 
- * $Revision: 11614 $
- * $Date: 2011-05-21 01:10:51 +1000 (Sat, 21 May 2011) $
+ * $Revision$
+ * $Date$
  * 
  * Copyright (C) 2009, 2010, 2011 The University of Sydney, Australia
  *
@@ -70,26 +70,27 @@ GPlatesGui::PythonManager::PythonManager() :
 }
 
 void
-GPlatesGui::PythonManager::initialize() 
+GPlatesGui::PythonManager::initialize(
+		char* argv[],
+		GPlatesPresentation::Application *app) 
 {
+	d_application = app;
 	if(d_inited)
 	{
 		qWarning() << "The embedded python interpret has been initialized already.";
 		return;
 	}
 
-	//the python home in gplates preference has priority.
-	set_python_home();
-
 	using namespace boost::python;
-	init_python_interpreter();
+	init_python_interpreter(argv);
 	// Hold references to the main module and its namespace for easy access from
 	// all parts of GPlates.
 	try
 	{
-		GPlatesApi::PythonInterpreterLocker interpreter_locker;
-		d_python_main_thread_runner = new GPlatesApi::PythonRunner(d_python_main_namespace,this);
-		d_python_execution_thread = new GPlatesApi::PythonExecutionThread(d_python_main_namespace, this);
+		using namespace GPlatesApi;
+		PythonInterpreterLocker interpreter_locker;
+		d_python_main_thread_runner = new PythonRunner(d_python_main_namespace,this);
+		d_python_execution_thread = new PythonExecutionThread(d_python_main_namespace, this);
 		d_python_execution_thread->start(QThread::IdlePriority);
 		check_python_capability();
 
@@ -114,19 +115,22 @@ GPlatesGui::PythonManager::check_python_capability()
 			"import sys;" +
 			"import code;"  +
 			"import math;"  +
-			"import platform; " +
-			"import pygplates; " +
-			"print \'python import test passed.\'; " +
-			"math.log(12); " +
-			"print \'python math test passed.\'; " +
-			"sys.version_info; " +
-			"sys.platform; " +
-			"platform.uname(); " +
-			"print \'python system test passed.\'; " +
-			"print \'******End of testing python capability******\'; ";
+			"import platform;" +
+			"import pygplates;" +
+			"print \'python import test passed.\';" +
+			"math.log(12);" +
+			"print \'python math test passed.\';" +
+			"print \'Version: \'; print sys.version_info;" +
+			"sys.platform;" +
+			"platform.uname();" +
+			"print \'Prefix: \' +sys.prefix;" +
+			"print \'Exec Prefix: \'+sys.exec_prefix;" +
+			"print \'python system test passed.\';" +
+			"print \'******End of testing python capability******\';";
 
 	bool result = true;
 	GPlatesApi::PythonInterpreterLocker l;
+
 	result &= (0 == PyRun_SimpleString(test_code.toStdString().c_str()));
 	
 	if(!result)
@@ -134,64 +138,6 @@ GPlatesGui::PythonManager::check_python_capability()
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
 	}
 
-}
-
-
-void
-GPlatesGui::PythonManager::set_python_home()
-{
-	if(validate_python_home())
-	{
-		//Use QDir to determine if python prefix in preference equals the python home we are going to use.
-		//WARNING! LOOK HERE PLS! ***DON'T COMPARE THE TWO QSTRINGS***
-		//because the GPlates' Preference code might add extra "\" on some platforms.
-		//if python prefix equals python home, it means we have tried this python home and it doesn't work. So, skip it.
-		if( QDir(get_python_prefix_from_preferences()) != QDir(d_python_home))
-		{
-			set_python_prefix(d_python_home);
-#ifndef __WINDOWS__
-			QString tmp = QString("PYTHONHOME=") + d_python_home;
-			//qDebug() << "set python home: " << tmp;
-			char* v = tmp.toAscii().data();
-			putenv(v);
-#else
-			_putenv_s("PYTHONHOME", d_python_home.toAscii().data());
-#endif
-			d_clear_python_prefix_flag = false;
-			QProcess::startDetached(QCoreApplication::applicationFilePath(), QStringList());
-			throw GPlatesGlobal::NeedExitException(GPLATES_EXCEPTION_SOURCE);
-		}
-		//std::cout << getenv("PYTHONHOME") << std::endl;
-	}
-
-	return;
-}
-
-void
-GPlatesGui::PythonManager::find_python()
-{
-#ifdef __APPLE__
-	const char* python_home_dirs[] = 
-	{
-		"/opt/local/Library/Frameworks/Python.framework/Versions/",
-		"/System/Library/Frameworks/Python.framework/Versions/",
-		"/Library/Frameworks/Python.framework/Versions/"
-	};
-
-	for(int i=0; i< sizeof(python_home_dirs)/sizeof(char*); i++)
-	{
-		QString h = QString(python_home_dirs[i]) + "/" + d_python_version;
-		if(validate_python_home(h))
-		{
-			d_python_home = h;
-			break;
-		}
-		else
-		{
-			continue;
-		}
-	}
-#endif
 }
 
 
@@ -222,12 +168,12 @@ GPlatesGui::PythonManager::~PythonManager()
 
 void
 GPlatesGui::PythonManager::set_show_init_fail_dlg(
-		bool b) 
+		bool flag) 
 {
-	d_show_python_init_fail_dlg = b;
+	d_show_python_init_fail_dlg = flag;
 	GPlatesAppLogic::UserPreferences(NULL).set_value(
 			"python/show_python_init_fail_dialog",
-			b);
+			flag);
 }
 
 
@@ -259,25 +205,62 @@ GPlatesGui::PythonManager::get_python_prefix_from_preferences()
 
 void
 GPlatesGui::PythonManager::init_python_interpreter(
-		std::string program_name)
+		char* argv[])
 {
 	using namespace boost::python;
-
-	// Initialise the embedded Python interpreter.
+	using namespace GPlatesApi;
+	// Initialize the embedded Python interpreter.
 	char GPLATES_MODULE_NAME[] = "pygplates";
 	if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
 	{
-		qWarning() << GPlatesApi::PythonUtils::get_error_message();
+		qWarning() << PythonUtils::get_error_message();
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
 	}
 
-	const std::size_t MaxProgramNameLen = 256; 
-	char name[MaxProgramNameLen];
-	program_name.copy(name,(program_name.size() < MaxProgramNameLen ? program_name.size() : MaxProgramNameLen));
+	/*
+	Set the Program name properly.
+	The following info is taken from Python manual.
+	This function should be called before Py_Initialize() is called for the first time, 
+	if it is called at all. It tells the interpreter the value of the argv[0] argument to 
+	the main() function of the program. This is used by Py_GetPath() and some other functions 
+	below to find the Python run-time libraries relative to the interpreter executable. 
+	The default value is 'python'. The argument should point to a zero-terminated character 
+	string in static storage whose contents will not change for the duration of the program’s 
+	execution. No code in the Python interpreter will change the contents of this storage.
+	*/
+	Py_SetProgramName(argv[0]);
+	/*
+	Ignore the environment variables. This is necessary because GPlates only works with the *correct* python version, 
+	which is the version that boost python uses. So, the python version has been determined when compiling 
+	GPlates. A copy of the python standard library files have been included in GPlates package. It is always 
+	safer to use the files in the bundle. However, the PYTHONHOME and PYTHONPATH environment variable setting on user's computer
+	could point	to a *wrong* python installation, which could cause GPlates failed to initialize embeded python 
+	interpreter. We force GPlates to use the directory which contains GPlates executable binary as the python home 
+	by setting Py_IgnoreEnvironmentFlag flag. On Mac OS, it is the python framework inside application bundle.
+	*/
 
-	Py_SetProgramName(name);
+	/*
+	* Due to the CRT mismatch, putenv cannot set environment variables without restarting. Use this flag for now.
+	* The CRT mismatch problem maybe need to be addressed in the future, but not now.
+	*/
+	// The GPLATES_IGNORE_PYTHON_ENVIRONMENT is defined in 'ConfigDefault.cmake' and 'src/global/config.h.in'
+	#ifdef GPLATES_IGNORE_PYTHON_ENVIRONMENT
+	Py_IgnoreEnvironmentFlag = 1;
+	#endif
+
+	/* 
+	Info from Python manual.
+	Initialize the Python interpreter. In an application embedding Python, this should be called before 
+	using any other Python/C API functions; with the exception of Py_SetProgramName(), 
+	Py_SetPythonHome(), PyEval_InitThreads(), PyEval_ReleaseLock(), and PyEval_AcquireLock(). 
+	This initializes the table of loaded modules (sys.modules), and creates the fundamental 
+	modules __builtin__, __main__ and sys. It also initializes the module search path (sys.path). 
+	It does not set sys.argv; use PySys_SetArgvEx() for that. This is a no-op when called for a 
+	second time (without calling Py_Finalize() first). There is no return value; it is a fatal error 
+	if the initialization fails.
+	*/
 	Py_Initialize();
-
+		
 	// Initialise Python threading support; this grabs the Global Interpreter Lock
 	// for this thread.
 	PyEval_InitThreads();
@@ -285,7 +268,7 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	// But then we give up the GIL, so that PythonInterpreterLocker may now be used.
 	PyEval_SaveThread();
 
-	GPlatesApi::PythonInterpreterLocker interpreter_locker;
+	PythonInterpreterLocker interpreter_locker;
 
 	// Load the pygplates module.
 	try
@@ -298,7 +281,7 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	catch (const error_already_set &)
 	{
 		std::cerr << "Fatal error while loading pygplates module" << std::endl;
-		qWarning() << GPlatesApi::PythonUtils::get_error_message();
+		qWarning() << PythonUtils::get_error_message();
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
 	}
 
@@ -329,11 +312,16 @@ GPlatesGui::PythonManager::init_python_interpreter(
 
 
 void
-GPlatesGui::PythonManager::recycle_python_object(const boost::python::object& obj)
+GPlatesGui::PythonManager::recycle_python_object(
+		const boost::python::object& obj)
 {
-	//leave these memory here. it doesn't matter.
-	static std::vector<boost::python::object>* python_object_bin = new std::vector<boost::python::object>;
+	//The static vector pointer is initialized only once.
+	//The memory allocated here does not have to be freed. 
+	static std::vector<boost::python::object>* python_object_bin = 
+		new std::vector<boost::python::object>;
 	GPlatesApi::PythonInterpreterLocker lock;
+	//Free the previous python objects in the bin and
+	//put the new object into it.
 	python_object_bin->clear();
 	python_object_bin->push_back(obj);
 }
@@ -343,7 +331,7 @@ QFileInfoList
 GPlatesGui::PythonManager::get_scripts()
 {
 	GPlatesAppLogic::UserPreferences& user_prefs = 
-		GPlatesPresentation::Application::instance().get_application_state().get_user_preferences();
+		d_application->get_application_state().get_user_preferences();
 	QFileInfoList file_list;
 	QStringList filters = (QStringList() << "*.py" << "*.pyc");
 
@@ -454,10 +442,11 @@ GPlatesGui::PythonManager::init_python_console()
 	using namespace GPlatesPresentation;
 	if(!d_python_console_dialog_ptr)
 	{
-		d_python_console_dialog_ptr = new GPlatesQtWidgets::PythonConsoleDialog(
-				Application::instance().get_application_state(),
-				Application::instance().get_view_state(),
-				&Application::instance().get_main_window());
+		d_python_console_dialog_ptr = 
+			new GPlatesQtWidgets::PythonConsoleDialog(
+					d_application->get_application_state(),
+					d_application->get_view_state(),
+					&d_application->get_main_window());
 		d_event_blackout.add_blackout_exemption(d_python_console_dialog_ptr);
 	}
 }

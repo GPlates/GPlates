@@ -57,6 +57,7 @@
 
 #include "model/FeatureHandleWeakRefBackInserter.h"
 #include "model/PropertyName.h"
+#include "model/ModelUtils.h"
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
@@ -930,33 +931,7 @@ GPlatesModel::FeatureHandle::weak_ref
 GPlatesAppLogic::TopologyInternalUtils::resolve_feature_id(
 		const GPlatesModel::FeatureId &feature_id)
 {
-	std::vector<GPlatesModel::FeatureHandle::weak_ref> back_ref_targets;
-	feature_id.find_back_ref_targets(
-			GPlatesModel::append_as_weak_refs(back_ref_targets));
-	
-	if (back_ref_targets.size() != 1)
-	{
-		// We didn't get exactly one feature with the feature id so something is
-		// not right (user loaded same file twice or didn't load at all)
-		// so print debug message and return null feature reference.
-		if ( back_ref_targets.empty() )
-		{
-			qWarning() 
-				<< "Missing feature for feature-id = "
-				<< GPlatesUtils::make_qstring_from_icu_string( feature_id.get() );
-		}
-		else
-		{
-			qWarning() 
-				<< "Multiple features for feature-id = "
-				<< GPlatesUtils::make_qstring_from_icu_string( feature_id.get() );
-		}
-
-		// Return null feature reference.
-		return GPlatesModel::FeatureHandle::weak_ref();
-	}
-
-	return back_ref_targets.front();
+	return GPlatesModel::ModelUtils::find_feature(feature_id);
 }
 
 
