@@ -177,6 +177,8 @@ set(srcs
     ResolvedTriangulationNetwork.cc
     ResolvedTriangulationNetwork.h
     ResolvedTriangulationUtils.h
+    RotationUtils.cc
+    RotationUtils.h
     ScalarField3DLayerProxy.cc
     ScalarField3DLayerProxy.h
     ScalarField3DLayerTask.cc
