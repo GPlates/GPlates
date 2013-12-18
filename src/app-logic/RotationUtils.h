@@ -30,9 +30,13 @@
 
 #include "maths/FiniteRotation.h"
 
+#include "model/types.h"
+
 
 namespace GPlatesAppLogic
 {
+	class ReconstructionTree;
+
 	/**
 	 * Utilities related to rotation calculations.
 	 *
@@ -41,8 +45,36 @@ namespace GPlatesAppLogic
 	namespace RotationUtils
 	{
 		/**
-		 * Returns an adjusted version of @a to_rotation such that the relative rotation
-		 * from @a from_rotation to @a to_rotation takes the short path around the globe
+		 * Returns the half-stage rotation between @a left_plate_id and @a right_plate_id at the
+		 * reconstruction time of the specified reconstruction tree.
+		 *
+		 * NOTE: Since this method does not know when sea-floor spreading begins it assumes that
+		 * the relative rotation between the left and right plates is the identity rotation when
+		 * seafloor spreading is *not* occurring.
+		 */
+		GPlatesMaths::FiniteRotation
+		get_half_stage_rotation(
+				const ReconstructionTree &reconstruction_tree,
+				GPlatesModel::integer_plate_id_type left_plate_id,
+				GPlatesModel::integer_plate_id_type right_plate_id);
+
+
+		/**
+		 * Returns the stage-pole for @a moving_plate_id wrt @a fixed_plate_id, between
+		 * the times represented by @a reconstruction_tree_ptr_1 and 
+		 * @a reconstruction_tree_ptr_2
+		 */
+		GPlatesMaths::FiniteRotation
+        get_stage_pole(
+				const ReconstructionTree &reconstruction_tree_ptr_1, 
+				const ReconstructionTree &reconstruction_tree_ptr_2, 
+				const GPlatesModel::integer_plate_id_type &moving_plate_id, 
+				const GPlatesModel::integer_plate_id_type &fixed_plate_id);	
+
+
+		/**
+		 * Returns an adjusted version of @a final_rotation such that the relative rotation
+		 * from @a initial_rotation to @a final_rotation takes the short path around the globe
 		 * (instead of long path), or returns none if it's already the short path.
 		 *
 		 * Although this adjustment is not necessary for interpolating between adjacent total
@@ -60,13 +92,13 @@ namespace GPlatesAppLogic
 		 * it might actually be the long path. That's where this function comes in handy - it can be
 		 * used to adjust one of the two total poles such that, if a stage pole was calculated, it
 		 * would take the short path.
-		 * This also applies to other types of relative rotations (besides stage poles) such as the
-		 * relative rotation of one plate relative to another.
+		 * This could also apply to other types of relative rotations (besides stage poles) such as
+		 * the relative rotation of one plate relative to any another plate at a fixed time.
 		 */
 		boost::optional<GPlatesMaths::FiniteRotation>
-		take_short_relative_rotation_path(
-				const GPlatesMaths::FiniteRotation &to_rotation,
-				const GPlatesMaths::FiniteRotation &from_rotation);
+		calculate_short_path_final_rotation(
+				const GPlatesMaths::FiniteRotation &final_rotation,
+				const GPlatesMaths::FiniteRotation &initial_rotation);
 	}
 }
 

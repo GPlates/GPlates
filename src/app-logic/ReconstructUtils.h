@@ -41,6 +41,7 @@
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
 #include "ReconstructMethodRegistry.h"
+#include "RotationUtils.h"
 
 #include "maths/FiniteRotation.h"
 #include "maths/GeometryOnSphere.h"
@@ -54,14 +55,13 @@
 
 namespace GPlatesAppLogic
 {
+	/**
+	 * Utilities that reconstruct geometry(s) to palaeo times.
+	 *
+	 * Pure rotation utilities (ie, not dealing with geometries) can go in "RotationUtils.h".
+	 */
 	namespace ReconstructUtils
 	{
-
-        void
-        display_rotation(
-            const GPlatesMaths::FiniteRotation &rotation);
-
-
 		/**
 		 * Returns true if @a feature_ref is a reconstruction feature.
 		 *
@@ -375,33 +375,6 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type right_plate_id,
 				const ReconstructionTree &reconstruction_tree,
 				bool reverse_reconstruct = false);
-
-
-		/**
-		 * Returns the half-stage rotation between @a left_plate_id and @a right_plate_id at the
-		 * reconstruction time of the specified reconstruction tree.
-		 *
-		 * NOTE: Since this method does not know when sea-floor spreading begins it assumes that
-		 * the relative rotation between the left and right plates is the identity rotation when
-		 * seafloor spreading is *not* occurring.
-		 */
-		GPlatesMaths::FiniteRotation
-		get_half_stage_rotation(
-				const ReconstructionTree &reconstruction_tree,
-				GPlatesModel::integer_plate_id_type left_plate_id,
-				GPlatesModel::integer_plate_id_type right_plate_id);
-
-		/**
-		 * Returns the stage-pole for @a moving_plate_id wrt @a fixed_plate_id, between
-		 * the times represented by @a reconstruction_tree_ptr_1 and 
-		 * @a reconstruction_tree_ptr_2
-		 */
-		GPlatesMaths::FiniteRotation
-        get_stage_pole(
-			const ReconstructionTree &reconstruction_tree_ptr_1, 
-			const ReconstructionTree &reconstruction_tree_ptr_2, 
-			const GPlatesModel::integer_plate_id_type &moving_plate_id, 
-			const GPlatesModel::integer_plate_id_type &fixed_plate_id);	
 	}
 
 
@@ -446,7 +419,10 @@ namespace GPlatesAppLogic
 			// Get the composed absolute rotation needed to bring a thing on that plate
 			// in the present day to this time.
 			GPlatesMaths::FiniteRotation rotation =
-				get_half_stage_rotation(reconstruction_tree,left_plate_id,right_plate_id);
+					RotationUtils::get_half_stage_rotation(
+							reconstruction_tree,
+							left_plate_id,
+							right_plate_id);
 
 			// Are we reversing reconstruction back to present day ?
 			if (reverse_reconstruct)

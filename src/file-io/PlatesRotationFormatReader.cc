@@ -422,7 +422,7 @@ namespace
 
 				// Make sure the stage rotation (relative to previous total pole) takes the short path.
 				boost::optional<GPlatesMaths::FiniteRotation> adjusted_curr_finite_rotation =
-						GPlatesAppLogic::RotationUtils::take_short_relative_rotation_path(
+						GPlatesAppLogic::RotationUtils::calculate_short_path_final_rotation(
 								curr_gpml_finite_rotation->finite_rotation(),
 								prev_gpml_finite_rotation->finite_rotation());
 				if (adjusted_curr_finite_rotation)

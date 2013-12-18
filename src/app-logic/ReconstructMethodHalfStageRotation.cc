@@ -32,6 +32,7 @@
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructMethodFiniteRotation.h"
 #include "ReconstructUtils.h"
+#include "RotationUtils.h"
 
 #include "maths/CalculateVelocity.h"
 #include "maths/FiniteRotation.h"
@@ -376,7 +377,7 @@ namespace GPlatesAppLogic
 
 				// Get the half-stage rotation.
 				const GPlatesMaths::FiniteRotation finite_rotation =
-						ReconstructUtils::get_half_stage_rotation(
+						RotationUtils::get_half_stage_rotation(
 								*d_reconstruction_tree,
 								left_plate_id,
 								right_plate_id);
@@ -615,11 +616,11 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature_velocit
 						reconstruction_time + 1);
 
 		// Get the half-stage rotation.
-		const GPlatesMaths::FiniteRotation finite_rotation = ReconstructUtils::get_half_stage_rotation(
+		const GPlatesMaths::FiniteRotation finite_rotation = RotationUtils::get_half_stage_rotation(
 				*reconstruction_tree,
 				left_plate_id,
 				right_plate_id);
-		const GPlatesMaths::FiniteRotation finite_rotation_2 = ReconstructUtils::get_half_stage_rotation(
+		const GPlatesMaths::FiniteRotation finite_rotation_2 = RotationUtils::get_half_stage_rotation(
 				*reconstruction_tree_2,
 				left_plate_id,
 				right_plate_id);

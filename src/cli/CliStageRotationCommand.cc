@@ -37,7 +37,7 @@
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructionTreeCreator.h"
 #include "app-logic/ReconstructParams.h"
-#include "app-logic/ReconstructUtils.h"
+#include "app-logic/RotationUtils.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FileInfo.h"
@@ -248,7 +248,7 @@ GPlatesCli::StageRotationCommand::run(
 
 	// Get the full-stage pole rotation.
 	const GPlatesMaths::FiniteRotation full_stage_rotation =
-			GPlatesAppLogic::ReconstructUtils::get_stage_pole(
+			GPlatesAppLogic::RotationUtils::get_stage_pole(
 					*start_reconstruction_tree,
 					*end_reconstruction_tree,
 					d_moving_plate_id,
@@ -290,7 +290,7 @@ GPlatesCli::StageRotationCommand::run(
 		//
 		// NOTE 1: A rotation must be relative to present day (0Ma) before it can be separated into
 		// a (plate circuit) chain of moving/fixed plate pairs.
-		// See "ReconstructUtils::get_stage_pole()" for more details.
+		// See "RotationUtils::get_stage_pole()" for more details.
 		//
 
 		asymmetric_stage_rotation =
