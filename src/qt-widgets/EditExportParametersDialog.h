@@ -76,6 +76,13 @@ namespace GPlatesQtWidgets
 				GPlatesGui::ExportAnimationType::ExportID export_id,
 				const GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr &export_configuration);
 
+		void
+		set_single_frame(
+				bool is_single_frame)
+		{
+			d_is_single_frame = is_single_frame;
+		}
+
 	private Q_SLOTS:
 
 		void
@@ -90,6 +97,8 @@ namespace GPlatesQtWidgets
 		 * It keeps all the actual export parameters.
 		 */
 		GPlatesGui::ExportAnimationContext::non_null_ptr_type d_export_animation_context_ptr;
+
+		bool d_is_single_frame;
 
 		/**
 		 * Used to set and retrieve the filename template.
