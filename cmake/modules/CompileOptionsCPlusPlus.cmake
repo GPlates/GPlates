@@ -53,6 +53,10 @@ if(MSVC)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
     #set(CMAKE_SHARED_LINKER_FLAGS )
     #set(CMAKE_MODULE_LINKER_FLAGS )
+	
+	# Increase pre-compiled header memory allocation limit to avoid compile error.
+	# Error happens on 12-core Windows 8.1 machine (in Visual Studio 2005).
+   	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zm1000")
 
     # Build configuration-specific flags.
     # The defaults look reasonable...
