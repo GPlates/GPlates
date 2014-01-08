@@ -82,6 +82,8 @@ GLEW
   1. Download and extract glew-1.5.4-win32.zip from: http://glew.sourceforge.net/
   2. Add the \include directory to the CMAKE_INCLUDE_PATH environment variable.
   3. Add the GLEW \Bin directory to the PATH environment variable (see above).
+  4. For the latest releases (eg, version 1.10.0) you will need to copy the 'bin/Release/Win32/' files to 'bin/'
+     and the 'lib/Release/Win32/' files to 'lib/'.
 
 Python
   1. Download, and extract, the latest 2.7 release source code (eg, 'http://www.python.org/download/releases/2.7.5/').
@@ -89,6 +91,10 @@ Python
   3. Build both release and debug configurations (build solution 'F7').
      * Note that not all projects will compile (eg, sqlite and some others) but they are not needed.
   4. Copy the relevant 'pyconfig.h' file (eg, from 'PC' directory) to the 'Include' directory.
+  5. Copy the ".exp", ".lib" and ".pyd" files from the build directory (eg, 'PC/VS8.0') to a new 'libs' directory.
+     * Note that boost expects '.lib' files to be in 'libs/' when boost's bjam builds boost-python.
+  6. Copy 'python.exe', 'python_d.exe', 'pythonw.exe', 'pythonw_d.exe', 'python27.dll' and 'python27_d.dll' to the base python directory.
+  7. Add the base python directory and 'libs/' sub-directory to the PATH environment variable.
 
 Boost
 
@@ -103,14 +109,15 @@ Boost
 	 * Starting a dos command-line window (preferably Visual Studio Command Prompt).
 	 * Running '.\bootstrap vc8' (where vc8 is for Visual Studio 8.0 or 2005).
 	 * Running '.\bjam install --prefix=C:\SDK\boost\boost_1_39' or whichever path you choose to install.
-	   These shared libraries are used by GPlates.
-	 * Running '.\bjam link=shared threading=multi install --prefix=C:\SDK\boost\boost_1_39' which
-	   installs the static library versions (library files with the 'lib' prefix).
+	   Installs the static library versions (library files with the 'lib' prefix).
 	   These static libraries are used by CGAL.
+	 * Running '.\bjam link=shared threading=multi install --prefix=C:\SDK\boost\boost_1_39'.
+	   These shared libraries are used by GPlates.
   2. Add the C:\SDK\boost\boost_1_xx\include\boost_1_xx directory to the CMAKE_INCLUDE_PATH environment
      variable.
   3. Add the C:\SDK\boost\boost_1_xx\lib directory to the CMAKE_LIBRARY_PATH
      environment variable.
+  4. Add C:\SDK\boost\boost_1_xx\lib directory to the PATH environment variable.
   Note that the boost-python (sub)library will link against your python installation
   and, at runtime, will expect a DLL of that python version. For example, if you build boost with python version 2.7
   then, at runtime, the python DLL (version 2.7) should exist in the PATH.
