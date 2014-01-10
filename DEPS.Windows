@@ -91,10 +91,11 @@ Python
   3. Build both release and debug configurations (build solution 'F7').
      * Note that not all projects will compile (eg, sqlite and some others) but they are not needed.
   4. Copy the relevant 'pyconfig.h' file (eg, from 'PC' directory) to the 'Include' directory.
-  5. Copy the ".exp", ".lib" and ".pyd" files from the build directory (eg, 'PC/VS8.0') to a new 'libs' directory.
+  5. Copy the ".exp", ".lib" and ".pyd" files from the build directory (eg, 'PC/VS8.0') to a new 'libs/' directory.
      * Note that boost expects '.lib' files to be in 'libs/' when boost's bjam builds boost-python.
   6. Copy 'python.exe', 'python_d.exe', 'pythonw.exe', 'pythonw_d.exe', 'python27.dll' and 'python27_d.dll' to the base python directory.
-  7. Add the base python directory and 'libs/' sub-directory to the PATH environment variable.
+  7. Add the base python directory and 'libs/' and 'Scripts/' sub-directories to the PATH environment variable.
+  8. Add the 'libs/' directory to the PYTHONPATH environment variable.
 
 Boost
 
