@@ -22,13 +22,19 @@ Installing Sphinx on Windows
 ----------------------------
 
 On Windows, if you have built python from source (maybe it's also the same when python is installed from a (MSI) installer) then there are issues running the 'get-pip.py' script (this was tested using python 2.7.5) so it is probably better to find another way to install PIP.
+
+An interesting link which describes building python for Visual Studio 2010 is https://wiki.python.org/moin/VS2010
+Some of the steps in that link are similar to those described below.
+
 The following issues were encountered running the 'get-pip.py' script (using a python interpreter built from source):
 
- * It requires the 'bzip2' library, and unless this library is installed (next to the source code of python itself) it will fail to compile (the 'bz2' project in the python Visual Studio solution).
+ * It requires the 'bzip2' library, and unless this library is installed (next to the source code of python itself) it will fail to compile (the 'bz2' project in the python Visual Studio solution). Installing next to the source code of python itself enables python to find it automatically.
 
  * It requires the 'openssl' library (which should also be installed next to the source code of python itself) in order to avoid the error 'ImportError: cannot import name HTTPSHandler'.
 
  * You need to install ActivePerl - http://www.activestate.com/activeperl
+
+ * Install (as mentioned in openssl 'INSTALL.W32' text file) NASM (http://nasm.sourceforge.net/) and add it to the PATH environment variable.
 
  * There's a bug in the 'build_ssl.py' script in the python source code (eg, 'PC/VS8.0/build_ssl.py' if you're using Visual Studio 2005). Unfortunately the patch at http://bugs.python.org/issue10752 does not seem to allow the build system to find the Perl executable. So I ended up just hardwiring in the path to my ActivePerl executable with something like the following code in the 'find_working_perl()' function...
     def find_working_perl(perls):
@@ -38,6 +44,11 @@ The following issues were encountered running the 'get-pip.py' script (using a p
         print("Can not find a suitable PERL:")
         print(" Please install ActivePerl and ensure it appears on your path")
         return None
+
+ * Run 'python build_ssl.py Release Win32' from its directory (eg, 'PC/VS8.0/build_ssl.py').
+   If get compile errors (when it compiles C code) then remove the offending ('.obj') files from the makefile in openssl directory ('ms/nt.mak') until it compiles right through.
+
+ * Edit 'pyproject.vsprops' (eg, in 'PC/VS8.0/') and change "opensslDir" value to "$(externalsDir)\openssl-1.0.1e", or whichever openssl version you have.
 
 After these steps, most of the projects in the python source code (in Visual Studio) should compile.
 Some projects don't compile but not all projects are required to compile in order to have a working python installation.
