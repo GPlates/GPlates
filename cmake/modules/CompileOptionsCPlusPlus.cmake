@@ -170,7 +170,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 				#The gcc 4.7 and 4.8.1 report maybe-uninitialized warning when the default boost::optional<> declaration is present.
 				#The boost::optional<> has been used widely throughout gplates. So supress the error for now. 
                 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=maybe-uninitialized")
-            endif (CXX_MINOR_VERSION EQUAL "7")
+            endif ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8"))
 		endif (CXX_MAJOR_VERSION EQUAL "4")
     endif (GPLATES_PUBLIC_RELEASE)
 
