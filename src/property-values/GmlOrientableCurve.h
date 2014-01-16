@@ -258,7 +258,7 @@ namespace GPlatesPropertyValues
 				const GmlOrientableCurve &other) :
 			PropertyValue(other), /* share instance id */
 			d_base_curve(other.d_base_curve),
-			d_xml_attributes(d_xml_attributes)
+			d_xml_attributes(other.d_xml_attributes)
 		{  }
 
 		virtual
