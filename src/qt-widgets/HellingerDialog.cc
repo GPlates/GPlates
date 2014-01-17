@@ -74,6 +74,12 @@ const double ENLARGED_POINT_SIZE = 6;
 // TODO: clear hellinger-related layers when we close the hellinger tool.
 // TODO: save state of expanded/collapsed tree items when closing the dialog, and
 // restore this when opening the tool again.
+// FIXME: when EditPick... Apply clicked, the newly changed pick should retain "edit" focus
+// and the Edit button should be enabled.
+// FIXME: when adding a new pick, sometimes when you click on a position near an existing pick
+// a nearby pick is highlighted. Sort out.
+// TODO: Allow clicking and dragging of newly placed picks.
+// TODO: make results boxes non-editable text boxes, rather then disabled spinboxes as they are now.
 
 
 namespace{
