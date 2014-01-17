@@ -71,6 +71,10 @@ const double ENLARGED_POINT_SIZE = 6;
 // TODO: consider removing the close button and keeping the dialog open as long as the
 // tool is selected.
 // TODO: clean up the system of filenames which are passed to python.
+// TODO: clear hellinger-related layers when we close the hellinger tool.
+// TODO: save state of expanded/collapsed tree items when closing the dialog, and
+// restore this when opening the tool again.
+
 
 namespace{
 
@@ -394,7 +398,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	// d_python_path = "scripts";
 
 	// Temporary path during development
-	//d_python_path = "/home/robin/Desktop/Hellinger/scripts";
+	d_python_path = "/home/robin/Desktop/Hellinger/scripts";
 
 	qDebug() << "python path: " << d_python_path;
 
