@@ -66,20 +66,18 @@ const double DEFAULT_LINE_THICKNESS = 2;
 const double ENLARGED_POINT_SIZE = 6;
 
 // TODO: check tooltips throughout the whole Hellinger workflow.
-// TODO: check button/widget focus throughout Hellinger workflow.
-// TODO: restore picks on canvas when re-opening the dialog
-// TODO: consider removing the close button and keeping the dialog open as long as the
-// tool is selected.
+// TODO: check button/widget focus throughout Hellinger workflow - this seems to be going
+// all over the place at the moment.
 // TODO: clean up the system of filenames which are passed to python.
-// TODO: clear hellinger-related layers when we close the hellinger tool.
 // TODO: save state of expanded/collapsed tree items when closing the dialog, and
 // restore this when opening the tool again.
 // FIXME: when EditPick... Apply clicked, the newly changed pick should retain "edit" focus
 // and the Edit button should be enabled.
 // FIXME: when adding a new pick, sometimes when you click on a position near an existing pick
 // a nearby pick is highlighted. Sort out.
-// TODO: Allow clicking and dragging of newly placed picks.
+// TODO: Allow clicking and dragging of newly placed picks - this has broken recently somehow.
 // TODO: make results boxes non-editable text boxes, rather then disabled spinboxes as they are now.
+// TODO: remove H shortcut
 
 
 namespace{
@@ -1245,6 +1243,7 @@ GPlatesQtWidgets::HellingerDialog::create_feature_collection()
 void
 GPlatesQtWidgets::HellingerDialog::handle_close()
 {
+	qDebug() << "handle_close()";
 	clear_rendered_geometries();
 	activate_layers(false);
 	d_hellinger_edit_point_dialog->close();
@@ -1897,6 +1896,12 @@ GPlatesQtWidgets::HellingerDialog::store_expanded_status()
 		int segment = tree_widget_picks->topLevelItem(i)->text(0).toInt();
 		d_segment_expanded_status.insert(std::make_pair<int,bool>(segment,tree_widget_picks->topLevelItem(i)->isExpanded()));
 	}
+}
+
+void GPlatesQtWidgets::HellingerDialog::close()
+{
+	handle_close();
+	GPlatesDialog::close();
 }
 
 void

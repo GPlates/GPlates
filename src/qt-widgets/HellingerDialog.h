@@ -182,6 +182,9 @@ namespace GPlatesQtWidgets
 		void
 		store_expanded_status();
 
+		void
+		close();
+
 	private:
 
 		void
