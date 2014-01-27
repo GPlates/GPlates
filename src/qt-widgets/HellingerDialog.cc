@@ -74,8 +74,13 @@ const double ENLARGED_POINT_SIZE = 6;
 // FIXME: when adding a new pick, sometimes when you click on a position near an existing pick
 // a nearby pick is highlighted. Sort out.
 // TODO: Allow clicking and dragging of newly placed picks - this has broken recently somehow.
+//  - actually we can probably do without this behaviour; it has no corresponding behvaviour in the
+// digitisation tool.
 // TODO: make results boxes non-editable text boxes, rather then disabled spinboxes as they are now.
 // TODO: remove H shortcut
+// TODO: update status bar messages according to which mode of the tool we are in. For example, when in "new pick" mode
+// we might say something like: "Click to update location of new pick; shift-click on a highlighted geometry to create pick
+// at that geometry". That's very long unfortunately, so I need to find a briefer way to say that.
 
 
 namespace{

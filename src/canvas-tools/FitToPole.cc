@@ -27,6 +27,7 @@
 #include <QObject>
 
 #include "qt-widgets/HellingerDialog.h"
+#include "maths/ProximityHitDetail.h"
 #include "view-operations/RenderedGeometry.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
@@ -123,8 +124,9 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 					proximity_criteria))
 		{
 			// highlight the vertex
+			qDebug() << "Checking for geometry in MWD";
 			GPlatesViewOperations::RenderedGeometryProximityHit hit = sorted_hits.front();
-			GeometryFinder finder;
+			GeometryFinder finder(hit.d_proximity_hit_detail->index());
 			GPlatesViewOperations::RenderedGeometry rg =
 					hit.d_rendered_geom_layer->get_rendered_geometry(
 						hit.d_rendered_geom_index);
@@ -133,7 +135,7 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 					finder.get_geometry();
 			if (pos)
 			{
-				//qDebug() << "Found existing vertex";
+				qDebug() << "MWD: Found existing vertex";
 				d_hellinger_dialog_ptr->set_feature_highlight(**pos);
 			}
 		}
@@ -223,13 +225,13 @@ GPlatesCanvasTools::FitToPole::handle_shift_left_click(
 					GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER,
 					proximity_criteria))
 		{
-			//qDebug() << "Hit a feature geometry";
+			qDebug() << "SLC: Hit a feature geometry";
 			GPlatesViewOperations::RenderedGeometryProximityHit hit = sorted_hits.front();
 
 			// TODO: I think the vertex index is stored in the hit's "ProximityHitDetail"; probably
 			// I want to pass this info to the Finder so that I can extract the correct vertex
 			// geometry.
-			GeometryFinder finder;
+			GeometryFinder finder(hit.d_proximity_hit_detail->index());
 			GPlatesViewOperations::RenderedGeometry rg =
 					hit.d_rendered_geom_layer->get_rendered_geometry(
 						hit.d_rendered_geom_index);
@@ -238,7 +240,7 @@ GPlatesCanvasTools::FitToPole::handle_shift_left_click(
 					finder.get_geometry();
 			if (pos)
 			{
-				//qDebug() << "Found vertex";
+				qDebug() << "SLC: Found vertex";
 				d_hellinger_dialog_ptr->update_edit_layer(**pos);
 			}
 		}

@@ -28,12 +28,17 @@
 
 #include <QObject>
 
+#include "boost/optional.hpp"
+
 #include "CanvasTool.h"
 
+#include "maths/MultiPointOnSphere.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryVisitor.h"
 #include "view-operations/RenderedCrossSymbol.h"
+#include "view-operations/RenderedMultiPointOnSphere.h"
 #include "view-operations/RenderedPointOnSphere.h"
+
 
 
 // TODO: Check if we need any of these "inherited" includes/forward-declarations.
@@ -78,7 +83,9 @@ namespace GPlatesCanvasTools
 		{
 		public:
 
-			GeometryFinder()
+			GeometryFinder(
+					boost::optional<unsigned int> vertex_index):
+				d_vertex_index(vertex_index)
 			{  }
 
 			virtual
@@ -90,6 +97,27 @@ namespace GPlatesCanvasTools
 					rendered_point_on_sphere.get_point_on_sphere().get_non_null_pointer());
 			}
 
+
+			virtual
+			void
+			visit_rendered_multi_point_on_sphere(
+				const GPlatesViewOperations::RenderedMultiPointOnSphere &rendered_multi_point_on_sphere)
+			{
+				qDebug() << "Visiting multipoint";
+				if (d_vertex_index)
+				{
+					if (*d_vertex_index >= rendered_multi_point_on_sphere.get_multi_point_on_sphere()->number_of_points())
+					{
+						return;
+					}
+
+					GPlatesMaths::MultiPointOnSphere::const_iterator
+						it = rendered_multi_point_on_sphere.get_multi_point_on_sphere()->begin();
+					std::advance(it,*d_vertex_index);
+
+					d_geometry.reset(it->get_non_null_pointer());
+				}
+			}
 
 			virtual
 			void
@@ -110,6 +138,8 @@ namespace GPlatesCanvasTools
 
 			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
 				d_geometry;
+
+			boost::optional<unsigned int> d_vertex_index;
 
 		};
 
