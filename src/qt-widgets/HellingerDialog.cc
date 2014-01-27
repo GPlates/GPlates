@@ -5,7 +5,7 @@
  * $Revision: 260 $
  * $Date: 2012-05-30 15:47:23 +0200 (Wed, 30 May 2012) $
  *
- * Copyright (C) 2011, 2012, 2013 Geological Survey of Norway
+ * Copyright (C) 2011, 2012, 2013, 2014 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -69,8 +69,6 @@ const double ENLARGED_POINT_SIZE = 6;
 // TODO: check button/widget focus throughout Hellinger workflow - this seems to be going
 // all over the place at the moment.
 // TODO: clean up the system of filenames which are passed to python.
-// TODO: save state of expanded/collapsed tree items when closing the dialog, and
-// restore this when opening the tool again.
 // FIXME: when EditPick... Apply clicked, the newly changed pick should retain "edit" focus
 // and the Edit button should be enabled.
 // FIXME: when adding a new pick, sometimes when you click on a position near an existing pick
@@ -742,7 +740,9 @@ GPlatesQtWidgets::HellingerDialog::initialise()
 void GPlatesQtWidgets::HellingerDialog::restore()
 {
 	activate_layers();
-	update_from_model();}
+	update_from_model();
+	restore_expanded_status();
+}
 
 void
 GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
@@ -1248,6 +1248,7 @@ GPlatesQtWidgets::HellingerDialog::handle_close()
 	activate_layers(false);
 	d_hellinger_edit_point_dialog->close();
 	d_hellinger_new_point_dialog->close();
+	store_expanded_status();
 }
 
 void
