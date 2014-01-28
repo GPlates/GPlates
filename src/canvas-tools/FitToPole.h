@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$ 
  * 
- * Copyright (C) 2013 Geological Survey of Norway
+ * Copyright (C) 2013, 2014 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -33,11 +33,16 @@
 #include "CanvasTool.h"
 
 #include "maths/MultiPointOnSphere.h"
+
+#include "view-operations/RenderedCircleSymbol.h"
+#include "view-operations/RenderedCrossSymbol.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryVisitor.h"
-#include "view-operations/RenderedCrossSymbol.h"
 #include "view-operations/RenderedMultiPointOnSphere.h"
 #include "view-operations/RenderedPointOnSphere.h"
+#include "view-operations/RenderedSquareSymbol.h"
+#include "view-operations/RenderedStrainMarkerSymbol.h"
+#include "view-operations/RenderedTriangleSymbol.h"
 
 
 
@@ -121,11 +126,37 @@ namespace GPlatesCanvasTools
 
 			virtual
 			void
+			visit_rendered_circle_symbol(const GPlatesViewOperations::RenderedCircleSymbol &rendered_circle_symbol)
+			{
+				d_geometry.reset(
+							rendered_circle_symbol.get_centre().get_non_null_pointer());
+			}
+
+			virtual
+			void
 			visit_rendered_cross_symbol(
 					const GPlatesViewOperations::RenderedCrossSymbol &rendered_cross_symbol)
 			{
 				d_geometry.reset(
 							rendered_cross_symbol.get_centre().get_non_null_pointer());
+			}
+
+			virtual
+			void
+			visit_rendered_square_symbol(
+					const GPlatesViewOperations::RenderedSquareSymbol &rendered_square_symbol)
+			{
+				d_geometry.reset(
+							rendered_square_symbol.get_centre().get_non_null_pointer());
+			}
+
+			virtual
+			void
+			visit_rendered_triangle_symbol(
+					const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol)
+			{
+				d_geometry.reset(
+							rendered_triangle_symbol.get_centre().get_non_null_pointer());
 			}
 
 			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>

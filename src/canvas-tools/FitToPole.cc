@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2013 Geological Survey of Norway
+ * Copyright (C) 2013, 2014 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
