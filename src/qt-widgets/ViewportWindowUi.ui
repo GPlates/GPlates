@@ -1111,14 +1111,6 @@
     <string>&amp;Latitude Longitude...</string>
    </property>
   </action>
-  <action name="action_Open_Hellinger_Fitting_Tool">
-   <property name="text">
-    <string>Open &amp;Hellinger Fitting Tool</string>
-   </property>
-   <property name="shortcut">
-    <string>F10</string>
-   </property>
-  </action>
   <action name="action_About_GPlates_Dataset">
    <property name="icon">
     <iconset resource="../qt-resources/qt_widgets.qrc">

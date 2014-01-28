@@ -65,6 +65,7 @@ const double DEFAULT_POINT_SIZE = 2;
 const double DEFAULT_LINE_THICKNESS = 2;
 const double ENLARGED_POINT_SIZE = 6;
 
+// The following are related to the Hellinger tool in general, and not necessarily to this class.
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger workflow - this seems to be going
 // all over the place at the moment.
@@ -81,6 +82,7 @@ const double ENLARGED_POINT_SIZE = 6;
 // TODO: update status bar messages according to which mode of the tool we are in. For example, when in "new pick" mode
 // we might say something like: "Click to update location of new pick; shift-click on a highlighted geometry to create pick
 // at that geometry". That's very long unfortunately, so I need to find a briefer way to say that.
+// TODO: Find better way of highlighting geometries so that it respects the geometry's original render type (e.g. symbols...)
 
 
 namespace{

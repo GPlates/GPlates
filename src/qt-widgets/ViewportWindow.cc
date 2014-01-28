@@ -758,11 +758,6 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 	QObject::connect(action_Calculate_Reconstruction_Pole, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_calculate_reconstruction_pole_dialog()));
 
-	// TODO: Until the FitToPole canvas tool is hooked up properly, retain this
-	// method of activating the hellinger tool.
-	QObject::connect(action_Open_Hellinger_Fitting_Tool, SIGNAL(triggered()),
-			&dialogs(), SLOT(pop_up_hellinger_dialog()));
-
 	QObject::connect(action_Finite_Rotation_Calculator, SIGNAL(triggered()),
 		&dialogs(), SLOT(pop_up_finite_rotation_calculator_dialog()));
 
