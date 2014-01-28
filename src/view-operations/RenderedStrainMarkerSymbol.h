@@ -32,7 +32,7 @@
 namespace GPlatesViewOperations
 {
 	/**
-	 * Rendered  strain marker geometry. 
+	 * Rendered  strain marker geometry.
 	 */
 	class RenderedStrainMarkerSymbol :
 			public RenderedGeometryImpl
@@ -60,7 +60,7 @@ namespace GPlatesViewOperations
 		virtual
 		void
 		accept_visitor(
-		ConstRenderedGeometryVisitor& visitor)
+				ConstRenderedGeometryVisitor& visitor)
 		{
 			visitor.visit_rendered_strain_marker_symbol(*this);
 		}
@@ -68,9 +68,17 @@ namespace GPlatesViewOperations
 		virtual
 		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
 		test_proximity(
-		const GPlatesMaths::ProximityCriteria &criteria) const
+				const GPlatesMaths::ProximityCriteria &criteria) const
 		{
 			return d_centre.test_proximity(criteria);
+		}
+
+		virtual
+		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+		test_vertex_proximity(
+				const GPlatesMaths::ProximityCriteria &criteria) const
+		{
+			return d_centre.test_vertex_proximity(criteria);
 		}
 
 

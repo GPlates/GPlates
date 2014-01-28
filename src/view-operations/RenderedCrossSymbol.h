@@ -33,78 +33,86 @@
 namespace GPlatesViewOperations
 {
 
-/**
+	/**
  * Rendered  cross geometry. North-south aligned, i.e. one of the lines aligned north-south.
  */
-class RenderedCrossSymbol :
-	public RenderedGeometryImpl
-{
-public:
+	class RenderedCrossSymbol :
+			public RenderedGeometryImpl
+	{
+	public:
 
-    RenderedCrossSymbol(
-	const GPlatesMaths::PointOnSphere &centre,
-	const GPlatesGui::ColourProxy &colour,
-	unsigned int size,
-	float line_width_hint) :
-	d_centre(centre),
-	d_colour(colour),
-	d_size(size),
-	d_line_width_hint(line_width_hint)
+		RenderedCrossSymbol(
+				const GPlatesMaths::PointOnSphere &centre,
+				const GPlatesGui::ColourProxy &colour,
+				unsigned int size,
+				float line_width_hint) :
+			d_centre(centre),
+			d_colour(colour),
+			d_size(size),
+			d_line_width_hint(line_width_hint)
 
-    {  }
-
-
-    virtual
-    void
-    accept_visitor(
-	ConstRenderedGeometryVisitor& visitor)
-    {
-	visitor.visit_rendered_cross_symbol(*this);
-    }
-
-    virtual
-    GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
-    test_proximity(
-	const GPlatesMaths::ProximityCriteria &criteria) const
-    {
-	return d_centre.test_proximity(criteria);
-    }
+		{  }
 
 
-    const GPlatesMaths::PointOnSphere &
-    get_centre() const
-    {
-	return d_centre;
-    }
+		virtual
+		void
+		accept_visitor(
+				ConstRenderedGeometryVisitor& visitor)
+		{
+			visitor.visit_rendered_cross_symbol(*this);
+		}
+
+		virtual
+		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+		test_proximity(
+				const GPlatesMaths::ProximityCriteria &criteria) const
+		{
+			return d_centre.test_proximity(criteria);
+		}
+
+		virtual
+		GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
+		test_vertex_proximity(
+				const GPlatesMaths::ProximityCriteria &criteria) const
+		{
+			return d_centre.test_vertex_proximity(criteria);
+		}
 
 
-    const GPlatesGui::ColourProxy &
-    get_colour() const
-    {
-	return d_colour;
-    }
+		const GPlatesMaths::PointOnSphere &
+		get_centre() const
+		{
+			return d_centre;
+		}
 
-    float
-    get_line_width_hint() const
-    {
-	return d_line_width_hint;
-    }
 
-    unsigned int
-    get_size() const
-    {
-	return d_size;
-    }
+		const GPlatesGui::ColourProxy &
+		get_colour() const
+		{
+			return d_colour;
+		}
 
-private:
+		float
+		get_line_width_hint() const
+		{
+			return d_line_width_hint;
+		}
 
-    GPlatesMaths::PointOnSphere d_centre;
+		unsigned int
+		get_size() const
+		{
+			return d_size;
+		}
 
-    GPlatesGui::ColourProxy d_colour;
-    unsigned int d_size;
-    float d_line_width_hint;
+	private:
 
-};
+		GPlatesMaths::PointOnSphere d_centre;
+
+		GPlatesGui::ColourProxy d_colour;
+		unsigned int d_size;
+		float d_line_width_hint;
+
+	};
 
 }
 

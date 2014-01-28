@@ -121,6 +121,7 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 					sorted_hits,
 					*d_rendered_geom_collection_ptr,
 					GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER,
+//					GPlatesViewOperations::RenderedGeometryCollection::ALL_MAIN_LAYERS,
 					proximity_criteria))
 		{
 			// highlight the vertex
