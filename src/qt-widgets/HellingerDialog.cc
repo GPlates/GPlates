@@ -85,6 +85,7 @@ const double ENLARGED_POINT_SIZE = 6;
 // TODO: Find better way of highlighting geometries so that it respects the geometry's original render type (e.g. symbols...)
 
 
+
 namespace{
 
 	enum PickColumns
@@ -185,6 +186,35 @@ namespace{
 		}
 	}
 
+	boost::optional<unsigned int>
+	selected_segment(
+			const QTreeWidget *tree)
+	{
+
+		if (tree->currentItem())
+		{
+			QString segment_string = tree->currentItem()->text(0);
+			unsigned int segment = segment_string.toInt();
+
+			return boost::optional<unsigned int>(segment);
+		}
+		return boost::none;
+	}
+
+	boost::optional<unsigned int>
+	selected_row(
+			const QTreeWidget *tree)
+	{
+		const QModelIndex index = tree->selectionModel()->currentIndex();
+
+		if (index.isValid())
+		{
+			return boost::optional<unsigned int>(index.row());
+		}
+
+		return boost::none;
+	}
+
 	bool
 	tree_item_is_pick_item(
 			const QTreeWidgetItem *item)
@@ -266,19 +296,6 @@ namespace{
 			bool original_state)
 	{
 		set_text_colour_according_to_enabled_state(item,original_state);
-	}
-
-	boost::optional<int>
-	current_segment_number(
-			QTreeWidget *tree_widget)
-	{
-
-		if (tree_widget->currentItem())
-		{
-			int segment = tree_widget->currentItem()->text(0).toInt();
-			return boost::optional<int>(segment);
-		}
-		return boost::none;
 	}
 
 	/**
@@ -451,14 +468,14 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 		   << QObject::tr("Latitude")
 		   << QObject::tr("Longitude")
 		   << QObject::tr("Uncertainty (km)");
-	tree_widget_picks->setHeaderLabels(labels);
+	tree_widget->setHeaderLabels(labels);
 
 
-	tree_widget_picks->header()->resizeSection(SEGMENT_NUMBER,90);
-	tree_widget_picks->header()->resizeSection(SEGMENT_TYPE,150);
-	tree_widget_picks->header()->resizeSection(LAT,90);
-	tree_widget_picks->header()->resizeSection(LON,90);
-	tree_widget_picks->header()->resizeSection(UNCERTAINTY,90);
+	tree_widget->header()->resizeSection(SEGMENT_NUMBER,90);
+	tree_widget->header()->resizeSection(SEGMENT_TYPE,150);
+	tree_widget->header()->resizeSection(LAT,90);
+	tree_widget->header()->resizeSection(LON,90);
+	tree_widget->header()->resizeSection(UNCERTAINTY,90);
 }
 
 void
@@ -481,7 +498,7 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 
 	clear_selection_layer();
 
-	if (!tree_widget_picks->currentItem())
+	if (!tree_widget->currentItem())
 	{
 		return;
 	}
@@ -497,12 +514,13 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 			d_hellinger_edit_point_dialog->set_active(false);
 		}
 	}
-	else if (tree_item_is_segment_item(tree_widget_picks->currentItem())) // Segment selected
+	boost::optional<unsigned int> selected_segment_number = selected_segment(tree_widget);
+	boost::optional<unsigned int> selected_row_number = selected_row(tree_widget);
+
+	if (tree_item_is_segment_item(tree_widget->currentItem())) // Segment selected
 	{
 		set_buttons_for_segment_selected();
-		QString segment_string = tree_widget_picks->currentItem()->text(0);
-		int segment = segment_string.toInt();
-		d_selected_segment.reset(segment);
+		d_selected_segment.reset(selected_segment_number.get());
 		d_selected_pick.reset();
 
 		if (d_hellinger_edit_point_dialog->isVisible())
@@ -512,6 +530,9 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 	}
 	else // pick selected
 	{
+
+		d_selected_pick.reset(d_hellinger_model->get_pick(selected_segment_number.get(),selected_row_number.get()));
+
 		update_enable_disable_buttons();
 	}
 	update_canvas();
@@ -587,46 +608,45 @@ void GPlatesQtWidgets::HellingerDialog::highlight_selected_segment(
 void
 GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 {
+	boost::optional<unsigned int> segment = selected_segment(tree_widget);
+	boost::optional<unsigned int> row = selected_row(tree_widget);
 
-	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
-	if (!index.isValid())
+	if (!(segment && row))
 	{
 		return;
 	}
-	int segment = tree_widget_picks->currentItem()->text(0).toInt();
-	int row = index.row();
 
-	bool new_enabled_state = !d_hellinger_model->get_pick_state(segment, row);
+	bool new_enabled_state = !d_hellinger_model->get_pick_state(*segment, *row);
 
-	d_hellinger_model->set_pick_state(segment,row,new_enabled_state);
+	d_hellinger_model->set_pick_state(*segment,*row,new_enabled_state);
 
 	set_buttons_for_pick_selected(new_enabled_state);
 
-
-	set_text_colour_according_to_enabled_state(tree_widget_picks->currentItem(),new_enabled_state);
+	set_text_colour_according_to_enabled_state(tree_widget->currentItem(),new_enabled_state);
 }
 
 void
 GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 {
-	d_canvas_operation_type = EDIT_POINT_OPERATION;
+	boost::optional<unsigned int> segment = selected_segment(tree_widget);
+	boost::optional<unsigned int> row = selected_row(tree_widget);
 
-	d_editing_layer_ptr->set_active(true);
-	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
-	if (!index.isValid())
+	if (!(segment && row))
 	{
 		return;
 	}
-	QString segment_string = tree_widget_picks->currentItem()->text(0);
-	int row = index.row();
-	int segment = segment_string.toInt();
+
+	d_canvas_operation_type = EDIT_POINT_OPERATION;
+
+	d_editing_layer_ptr->set_active(true);
 
 	set_buttons_for_child_dialog_open();
-	d_hellinger_edit_point_dialog->update_pick_from_model(segment, row);
+	d_hellinger_edit_point_dialog->update_pick_from_model(*segment, *row);
 	d_hellinger_edit_point_dialog->show();
 	d_hellinger_edit_point_dialog->raise();
 
-	add_pick_geometry_to_layer((d_hellinger_model->get_pick(segment,row)->second),d_editing_layer_ptr,GPlatesGui::Colour::get_yellow());
+	add_pick_geometry_to_layer((d_hellinger_model->get_pick(*segment,*row)->second),
+							   d_editing_layer_ptr,GPlatesGui::Colour::get_yellow());
 }
 
 void
@@ -636,8 +656,7 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 
 	d_editing_layer_ptr->set_active(true);
 
-	QString segment_string = tree_widget_picks->currentItem()->text(SEGMENT_NUMBER);
-	int segment = segment_string.toInt();
+	int segment = selected_segment(tree_widget).get();
 
 	d_hellinger_edit_segment_dialog->initialise_with_segment(
 				d_hellinger_model->get_segment_as_range(segment),segment);
@@ -679,23 +698,23 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_pick()
 	}
 	else
 	{
-		const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
-		if (!index.isValid())
+		boost::optional<unsigned int> segment = selected_segment(tree_widget);
+		boost::optional<unsigned int> row = selected_row(tree_widget);
+
+		if (!(segment && row))
 		{
 			return;
 		}
-		QString segment = tree_widget_picks->currentItem()->text(0);
-		int row = index.row();
-		int segment_int = segment.toInt();
 
-		if (d_selected_pick && *d_selected_pick == d_hellinger_model->get_pick(segment_int,row))
+		if (d_selected_pick && *d_selected_pick == d_hellinger_model->get_pick(*segment,*row))
 		{
 			d_selected_pick.reset();
 		}
 
-		d_hellinger_model->remove_pick(segment_int, row);
+		d_hellinger_model->remove_pick(*segment, *row);
 		update_tree_from_model();
 		update_canvas();
+		update_buttons();
 		restore_expanded_status();
 	}
 }
@@ -719,7 +738,7 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_segment()
 	else
 	{
 		store_expanded_status();
-		QString segment = tree_widget_picks->currentItem()->text(0);
+		QString segment = tree_widget->currentItem()->text(0);
 		unsigned int segment_int = segment.toInt();
 
 		if (d_selected_segment && *d_selected_segment == segment_int)
@@ -780,8 +799,6 @@ GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 	QString type_file = file_name.at(1);
 
 	d_hellinger_model->reset_model();
-
-
 
 	GPlatesFileIO::ReadErrorAccumulation &read_errors = d_read_error_accumulation_dialog.read_errors();
 	GPlatesFileIO::ReadErrorAccumulation::size_type num_initial_errors = read_errors.size();
@@ -913,9 +930,9 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_pick()
 	d_editing_layer_ptr->set_active(true);
 	d_feature_highlight_layer_ptr->set_active(true);
 
-	if (boost::optional<int> segment = current_segment_number(tree_widget_picks))
+	if (boost::optional<unsigned int> segment = selected_segment(tree_widget))
 	{
-		d_hellinger_new_point_dialog->update_segment_number(segment.get());
+		d_hellinger_new_point_dialog->update_segment_number(*segment);
 	}
 
 
@@ -1212,10 +1229,10 @@ GPlatesQtWidgets::HellingerDialog::draw_error_ellipse()
 void
 GPlatesQtWidgets::HellingerDialog::update_tree_from_model()
 {    
-	QObject::disconnect(tree_widget_picks->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
+	QObject::disconnect(tree_widget->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
 					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
 
-	tree_widget_picks->clear();
+	tree_widget->clear();
 
 	d_geometry_to_tree_item_map.clear();
 	hellinger_model_type::const_iterator
@@ -1228,7 +1245,7 @@ GPlatesQtWidgets::HellingerDialog::update_tree_from_model()
 		add_pick_to_tree(
 					iter->first,
 					iter->second,
-					tree_widget_picks,
+					tree_widget,
 					d_geometry_to_tree_item_map,
 					set_as_selected_pick);
 
@@ -1237,7 +1254,7 @@ GPlatesQtWidgets::HellingerDialog::update_tree_from_model()
 	update_canvas();
 	update_buttons();
 
-	QObject::connect(tree_widget_picks->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
+	QObject::connect(tree_widget->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
 					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
 }
 
@@ -1269,6 +1286,7 @@ GPlatesQtWidgets::HellingerDialog::update_canvas()
 	update_selected_geometries();
 
 }
+
 
 void
 GPlatesQtWidgets::HellingerDialog::update_edit_layer(
@@ -1587,7 +1605,7 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 
 bool GPlatesQtWidgets::HellingerDialog::picks_loaded()
 {
-	return (tree_widget_picks->topLevelItemCount() != 0);
+	return (tree_widget->topLevelItemCount() != 0);
 }
 
 void GPlatesQtWidgets::HellingerDialog::set_buttons_for_no_selection()
@@ -1636,23 +1654,23 @@ void GPlatesQtWidgets::HellingerDialog::set_buttons_for_child_dialog_open()
 
 void GPlatesQtWidgets::HellingerDialog::update_enable_disable_buttons()
 {
-	const QModelIndex index = tree_widget_picks->selectionModel()->currentIndex();
-	if (!index.isValid())
+	boost::optional<unsigned int> segment = selected_segment(tree_widget);
+	boost::optional<unsigned int> row = selected_row(tree_widget);
+
+	if (!(segment && row))
 	{
 		return;
 	}
-	QString segment_string = tree_widget_picks->currentItem()->text(0);
-	int row = index.row();
-	int segment = segment_string.toInt();
-	bool state = d_hellinger_model->get_pick_state(segment, row);
+
+	bool state = d_hellinger_model->get_pick_state(*segment, *row);
 
 	set_buttons_for_pick_selected(state);
-	d_selected_pick.reset(d_hellinger_model->get_pick(segment,row));
+	d_selected_pick.reset(d_hellinger_model->get_pick(*segment,*row));
 	d_selected_segment.reset();
 	if (d_hellinger_edit_point_dialog->isVisible())
 	{
 		d_hellinger_edit_point_dialog->set_active(true);
-		d_hellinger_edit_point_dialog->update_pick_from_model(segment,row);
+		d_hellinger_edit_point_dialog->update_pick_from_model(*segment,*row);
 	}
 }
 
@@ -1733,7 +1751,7 @@ GPlatesQtWidgets::HellingerDialog::renumber_segments()
 	store_expanded_status();
 	d_hellinger_model->renumber_segments();
 	renumber_expanded_status_map(d_segment_expanded_status);
-	tree_widget_picks->clear();
+	tree_widget->clear();
 	update_tree_from_model();
 	button_renumber->setEnabled(false);
 	restore_expanded_status();
@@ -1793,9 +1811,9 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(spinbox_result_angle, SIGNAL(valueChanged(double)), this, SLOT(handle_fit_spinboxes_changed()));
 	QObject::connect(spinbox_radius, SIGNAL(valueChanged(double)), this, SLOT(handle_spinbox_radius_changed()));
 	QObject::connect(checkbox_grid_search, SIGNAL(clicked()), this, SLOT(handle_checkbox_grid_search_changed()));
-	QObject::connect(tree_widget_picks,SIGNAL(collapsed(QModelIndex)),this,SLOT(store_expanded_status()));
-	QObject::connect(tree_widget_picks,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
-	QObject::connect(tree_widget_picks->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
+	QObject::connect(tree_widget,SIGNAL(collapsed(QModelIndex)),this,SLOT(store_expanded_status()));
+	QObject::connect(tree_widget,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
+	QObject::connect(tree_widget->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
 					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
 
 	QObject::connect(d_hellinger_thread, SIGNAL(finished()),this, SLOT(handle_thread_finished()));
@@ -1876,14 +1894,14 @@ void GPlatesQtWidgets::HellingerDialog::clear_rendered_geometries()
 void
 GPlatesQtWidgets::HellingerDialog::handle_expand_all()
 {
-	tree_widget_picks->expandAll();
+	tree_widget->expandAll();
 	store_expanded_status();
 }
 
 void
 GPlatesQtWidgets::HellingerDialog::handle_collapse_all()
 {
-	tree_widget_picks->collapseAll();
+	tree_widget->collapseAll();
 	store_expanded_status();
 }
 
@@ -1896,13 +1914,13 @@ GPlatesQtWidgets::HellingerDialog::handle_checkbox_grid_search_changed()
 void
 GPlatesQtWidgets::HellingerDialog::store_expanded_status()
 {
-	int count = tree_widget_picks->topLevelItemCount();
+	int count = tree_widget->topLevelItemCount();
 
 	d_segment_expanded_status.clear();
 	for (int i = 0 ; i < count; ++i)
 	{
-		int segment = tree_widget_picks->topLevelItem(i)->text(0).toInt();
-		d_segment_expanded_status.insert(std::make_pair<int,bool>(segment,tree_widget_picks->topLevelItem(i)->isExpanded()));
+		int segment = tree_widget->topLevelItem(i)->text(0).toInt();
+		d_segment_expanded_status.insert(std::make_pair<int,bool>(segment,tree_widget->topLevelItem(i)->isExpanded()));
 	}
 }
 
@@ -1915,33 +1933,33 @@ void GPlatesQtWidgets::HellingerDialog::close()
 void
 GPlatesQtWidgets::HellingerDialog::restore_expanded_status()
 {
-	int top_level_items = tree_widget_picks->topLevelItemCount();
-	QObject::disconnect(tree_widget_picks,SIGNAL(collapsed(QModelIndex)),this,SLOT(store_expanded_status()));
-	QObject::disconnect(tree_widget_picks,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
+	int top_level_items = tree_widget->topLevelItemCount();
+	QObject::disconnect(tree_widget,SIGNAL(collapsed(QModelIndex)),this,SLOT(store_expanded_status()));
+	QObject::disconnect(tree_widget,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
 	for (int i = 0; i < top_level_items ; ++i)
 	{
-		int segment = tree_widget_picks->topLevelItem(i)->text(0).toInt();
+		int segment = tree_widget->topLevelItem(i)->text(0).toInt();
 		expanded_status_map_type::const_iterator iter = d_segment_expanded_status.find(segment);
 		if (iter != d_segment_expanded_status.end())
 		{
-			tree_widget_picks->topLevelItem(i)->setExpanded(iter->second);
+			tree_widget->topLevelItem(i)->setExpanded(iter->second);
 		}
 
 	}
-	QObject::connect(tree_widget_picks,SIGNAL(collapsed(QModelIndex)),this,SLOT(store_expanded_status()));
-	QObject::connect(tree_widget_picks,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
+	QObject::connect(tree_widget,SIGNAL(collapsed(QModelIndex)),this,SLOT(store_expanded_status()));
+	QObject::connect(tree_widget,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
 }
 
 void GPlatesQtWidgets::HellingerDialog::expand_segment(
 		const unsigned int segment_number)
 {
-	int top_level_items = tree_widget_picks->topLevelItemCount();
+	int top_level_items = tree_widget->topLevelItemCount();
 	for (int i = 0; i < top_level_items ; ++i)
 	{
-		const unsigned int segment = tree_widget_picks->topLevelItem(i)->text(0).toInt();
+		const unsigned int segment = tree_widget->topLevelItem(i)->text(0).toInt();
 
 		if (segment == segment_number){
-			tree_widget_picks->topLevelItem(i)->setExpanded(true);
+			tree_widget->topLevelItem(i)->setExpanded(true);
 			expanded_status_map_type::iterator iter = d_segment_expanded_status.find(segment);
 			if (iter != d_segment_expanded_status.end())
 			{
@@ -2007,7 +2025,7 @@ void GPlatesQtWidgets::HellingerDialog::set_selected_pick(
 	d_selected_segment.reset();
 
 	// This will trigger an update of the canvas.
-	tree_widget_picks->setCurrentItem(d_geometry_to_tree_item_map[index]);
+	tree_widget->setCurrentItem(d_geometry_to_tree_item_map[index]);
 }
 
 void GPlatesQtWidgets::HellingerDialog::set_selected_pick(

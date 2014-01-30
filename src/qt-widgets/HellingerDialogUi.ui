@@ -66,7 +66,7 @@
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="1" column="0" rowspan="2">
-       <widget class="QTreeWidget" name="tree_widget_picks">
+       <widget class="QTreeWidget" name="tree_widget">
         <property name="minimumSize">
          <size>
           <width>500</width>
@@ -1188,7 +1188,7 @@
   <tabstop>button_close</tabstop>
   <tabstop>line_import_file</tabstop>
   <tabstop>button_cancel</tabstop>
-  <tabstop>tree_widget_picks</tabstop>
+  <tabstop>tree_widget</tabstop>
  </tabstops>
  <resources/>
  <connections>

@@ -373,8 +373,6 @@ namespace GPlatesQtWidgets
 		void
 		update_canvas();
 
-
-
 		void
 		update_selected_geometries();
 
