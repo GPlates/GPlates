@@ -171,6 +171,11 @@ namespace GPlatesQtWidgets
 		set_feature_highlight(
 				const GPlatesMaths::PointOnSphere &pos);
 
+		void
+		update_after_new_pick(
+				const hellinger_model_type::const_iterator &it,
+				const int segment_number);
+
 	public Q_SLOTS:
 
 		/**

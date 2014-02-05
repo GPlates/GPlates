@@ -323,7 +323,7 @@ namespace{
 		}
 	}
 
-	void
+	QTreeWidgetItem*
 	add_pick_to_segment(
 			QTreeWidgetItem *parent_item,
 			const int &segment_number,
@@ -331,6 +331,7 @@ namespace{
 			GPlatesQtWidgets::HellingerDialog::geometry_to_tree_item_map_type &geometry_to_tree_item_map,
 			bool set_as_selected)
 	{
+		qDebug() << "Adding pick to segment: set_as_selected: " << set_as_selected;
 		QTreeWidgetItem *item = new QTreeWidgetItem();
 		item->setText(SEGMENT_NUMBER, QString::number(segment_number));
 		item->setText(SEGMENT_TYPE, translate_segment_type(pick.d_segment_type));
@@ -352,6 +353,7 @@ namespace{
 			geometry_to_tree_item_map.push_back(item);
 		}
 		item->setSelected(set_as_selected);
+		return item;
 	}
 
 	void
@@ -376,12 +378,12 @@ namespace{
 		{
 			item = items.at(0);
 		}
-		add_pick_to_segment(item,
+		QTreeWidgetItem *pick_item = add_pick_to_segment(item,
 							segment_number,
 							pick,
 							geometry_to_tree_item_map,
 							set_as_selected_pick);
-
+		tree->setCurrentItem(pick_item);
 	}
 }
 
@@ -496,10 +498,12 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 	// If nothing is selected:
 	//	 disable everything (except the new pick / new segment buttons - which are always enabled anyway)
 
+	qDebug() <<  "seletion changed";
 	clear_selection_layer();
 
 	if (!tree_widget->currentItem())
 	{
+		qDebug() << "no current item; returning";
 		return;
 	}
 
@@ -1284,7 +1288,6 @@ GPlatesQtWidgets::HellingerDialog::update_canvas()
 	draw_error_ellipse();
 	update_hovered_item();
 	update_selected_geometries();
-
 }
 
 
@@ -1337,6 +1340,17 @@ void GPlatesQtWidgets::HellingerDialog::set_feature_highlight(
 				false /* fill polyline */ );
 
 	d_feature_highlight_layer_ptr->add_rendered_geometry(highlight_geometry);
+}
+
+void GPlatesQtWidgets::HellingerDialog::update_after_new_pick(
+		const hellinger_model_type::const_iterator &it,
+		const int segment_number)
+{
+	set_selected_pick(it);
+	update_tree_from_model();
+	restore_expanded_status();
+	expand_segment(segment_number);
+	update_enable_disable_buttons();
 }
 
 void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
@@ -2024,8 +2038,8 @@ void GPlatesQtWidgets::HellingerDialog::set_selected_pick(
 	d_selected_pick.reset(d_geometry_to_model_map[index]);
 	d_selected_segment.reset();
 
-	// This will trigger an update of the canvas.
 	tree_widget->setCurrentItem(d_geometry_to_tree_item_map[index]);
+	d_geometry_to_tree_item_map[index]->setSelected(true);
 }
 
 void GPlatesQtWidgets::HellingerDialog::set_selected_pick(
@@ -2033,6 +2047,7 @@ void GPlatesQtWidgets::HellingerDialog::set_selected_pick(
 {
 	d_selected_pick.reset(it);
 	d_selected_segment.reset();
+
 	update_canvas();
 }
 

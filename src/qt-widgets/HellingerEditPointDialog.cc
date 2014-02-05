@@ -156,11 +156,7 @@ GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 				d_pick,
 				segment_number);
 
-
-	d_hellinger_dialog_ptr->update_tree_from_model();
-	d_hellinger_dialog_ptr->set_selected_pick(it);
-	d_hellinger_dialog_ptr->restore_expanded_status();
-	d_hellinger_dialog_ptr->expand_segment(segment_number);
+	d_hellinger_dialog_ptr->update_after_new_pick(it,segment_number);
 
 	if (!d_create_new_pick)
 	{
