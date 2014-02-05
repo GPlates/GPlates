@@ -941,8 +941,10 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_pick()
 
 
 	set_buttons_for_child_dialog_open();
+	this->setEnabled(false);
 	d_hellinger_new_point_dialog->show();
 	d_hellinger_new_point_dialog->raise();
+	d_hellinger_new_point_dialog->setEnabled(true);
 
 	d_hellinger_new_point_dialog->update_pick_coords(
 				GPlatesMaths::LatLonPoint(0,0));
