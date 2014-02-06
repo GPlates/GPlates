@@ -70,8 +70,6 @@ const double ENLARGED_POINT_SIZE = 6;
 // TODO: check button/widget focus throughout Hellinger workflow - this seems to be going
 // all over the place at the moment.
 // TODO: clean up the system of filenames which are passed to python.
-// FIXME: when EditPick... Apply clicked, the newly changed pick should retain "edit" focus
-// and the Edit button should be enabled.
 // FIXME: when adding a new pick, sometimes when you click on a position near an existing pick
 // a nearby pick is highlighted. Sort out.
 // TODO: Allow clicking and dragging of newly placed picks - this has broken recently somehow.
@@ -383,6 +381,7 @@ namespace{
 							pick,
 							geometry_to_tree_item_map,
 							set_as_selected_pick);
+		Q_UNUSED(pick_item);
 		tree->setCurrentItem(pick_item);
 	}
 }
@@ -549,6 +548,7 @@ void GPlatesQtWidgets::HellingerDialog::handle_cancel()
 
 void GPlatesQtWidgets::HellingerDialog::handle_finished_editing()
 {
+	this->setEnabled(true);
 	d_canvas_operation_type = SELECT_OPERATION;
 	update_buttons();
 	d_editing_layer_ptr->clear_rendered_geometries();
@@ -644,10 +644,11 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_pick()
 
 	d_editing_layer_ptr->set_active(true);
 
-	set_buttons_for_child_dialog_open();
+	this->setEnabled(false);
 	d_hellinger_edit_point_dialog->update_pick_from_model(*segment, *row);
 	d_hellinger_edit_point_dialog->show();
 	d_hellinger_edit_point_dialog->raise();
+	d_hellinger_edit_point_dialog->setEnabled(true);
 
 	add_pick_geometry_to_layer((d_hellinger_model->get_pick(*segment,*row)->second),
 							   d_editing_layer_ptr,GPlatesGui::Colour::get_yellow());
@@ -665,10 +666,10 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 	d_hellinger_edit_segment_dialog->initialise_with_segment(
 				d_hellinger_model->get_segment_as_range(segment),segment);
 
-	set_buttons_for_child_dialog_open();
+	this->setEnabled(false);
 	d_hellinger_edit_segment_dialog->show();
 	d_hellinger_edit_segment_dialog->raise();
-
+	d_hellinger_edit_segment_dialog->setEnabled(true);
 
 
 	add_segment_geometries_to_layer(
@@ -830,7 +831,7 @@ GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 	update_from_model();
 	initialise();
 	handle_expand_all();
-
+	update_canvas();
 }
 
 void
@@ -929,7 +930,6 @@ void
 GPlatesQtWidgets::HellingerDialog::handle_add_new_pick()
 {    
 	d_canvas_operation_type = NEW_POINT_OPERATION;
-	update_buttons();
 
 	d_editing_layer_ptr->set_active(true);
 	d_feature_highlight_layer_ptr->set_active(true);
@@ -939,8 +939,6 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_pick()
 		d_hellinger_new_point_dialog->update_segment_number(*segment);
 	}
 
-
-	set_buttons_for_child_dialog_open();
 	this->setEnabled(false);
 	d_hellinger_new_point_dialog->show();
 	d_hellinger_new_point_dialog->raise();
@@ -954,15 +952,15 @@ void
 GPlatesQtWidgets::HellingerDialog::handle_add_new_segment()
 {
 	d_canvas_operation_type = NEW_SEGMENT_OPERATION;
-	update_buttons();
 
 	// TODO: Here we should activate the relevant layers, once "new segment"
 	// functionality is working on the canvas.
 
-	set_buttons_for_child_dialog_open();
+	this->setEnabled(false);
 	d_hellinger_new_segment_dialog->show();
 	d_hellinger_new_segment_dialog->raise();
 	d_hellinger_new_segment_dialog->initialise();
+	d_hellinger_new_segment_dialog->setEnabled(true);
 }
 
 void
@@ -1257,9 +1255,6 @@ GPlatesQtWidgets::HellingerDialog::update_tree_from_model()
 
 	}
 
-	update_canvas();
-	update_buttons();
-
 	QObject::connect(tree_widget->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
 					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
 }
@@ -1352,7 +1347,7 @@ void GPlatesQtWidgets::HellingerDialog::update_after_new_pick(
 	update_tree_from_model();
 	restore_expanded_status();
 	expand_segment(segment_number);
-	update_enable_disable_buttons();
+	update_buttons();
 }
 
 void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
@@ -1654,18 +1649,6 @@ void GPlatesQtWidgets::HellingerDialog::set_buttons_for_pick_selected(
 	button_remove_point->setEnabled(true);
 	button_remove_segment->setEnabled(false);
 
-}
-
-void GPlatesQtWidgets::HellingerDialog::set_buttons_for_child_dialog_open()
-{
-	button_calculate_fit->setEnabled(false);
-	button_edit_point->setEnabled(false);
-	button_new_pick->setEnabled(false);
-	button_edit_segment->setEnabled(false);
-	button_new_segment->setEnabled(false);
-	button_remove_point->setEnabled(false);
-	button_remove_segment->setEnabled(false);
-	button_clear->setEnabled(false);
 }
 
 void GPlatesQtWidgets::HellingerDialog::update_enable_disable_buttons()

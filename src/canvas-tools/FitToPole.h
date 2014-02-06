@@ -45,7 +45,6 @@
 #include "view-operations/RenderedTriangleSymbol.h"
 
 
-
 // TODO: Check if we need any of these "inherited" includes/forward-declarations.
 namespace GPlatesGui
 {
