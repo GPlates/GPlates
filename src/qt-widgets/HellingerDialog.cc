@@ -321,8 +321,9 @@ namespace{
 		}
 	}
 
-	QTreeWidgetItem*
+	void
 	add_pick_to_segment(
+			QTreeWidget *tree,
 			QTreeWidgetItem *parent_item,
 			const int &segment_number,
 			const GPlatesQtWidgets::HellingerPick &pick,
@@ -351,7 +352,10 @@ namespace{
 			geometry_to_tree_item_map.push_back(item);
 		}
 		item->setSelected(set_as_selected);
-		return item;
+		if (set_as_selected)
+		{
+			tree->setCurrentItem(item);
+		}
 	}
 
 	void
@@ -376,13 +380,13 @@ namespace{
 		{
 			item = items.at(0);
 		}
-		QTreeWidgetItem *pick_item = add_pick_to_segment(item,
+		add_pick_to_segment(tree,
+							item,
 							segment_number,
 							pick,
 							geometry_to_tree_item_map,
 							set_as_selected_pick);
-		Q_UNUSED(pick_item);
-		tree->setCurrentItem(pick_item);
+
 	}
 }
 
