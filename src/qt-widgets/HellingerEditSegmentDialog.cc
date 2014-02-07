@@ -94,7 +94,8 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 	d_hellinger_dialog_ptr(hellinger_dialog),
 	d_hellinger_model_ptr(hellinger_model),
 	d_hellinger_new_segment_warning(0),
-	d_creating_new_segment(create_new_segment)
+	d_creating_new_segment(create_new_segment),
+	d_current_row(0)
 {
 	setupUi(this);
 	QObject::connect(button_add_segment, SIGNAL(clicked()), this, SLOT(handle_add_segment()));
@@ -185,6 +186,18 @@ boost::optional<GPlatesQtWidgets::HellingerPick>
 GPlatesQtWidgets::HellingerEditSegmentDialog::current_pick() const
 {
 	return d_current_pick;
+}
+
+void
+GPlatesQtWidgets::HellingerEditSegmentDialog::update_pick_coords(
+		const GPlatesMaths::LatLonPoint &llp)
+{
+	HellingerPick pick;
+	pick.d_lat = llp.latitude();
+	pick.d_lon = llp.longitude();
+
+	set_row_values(d_current_row,pick);
+
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_selection_changed(

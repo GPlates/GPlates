@@ -1301,13 +1301,17 @@ GPlatesQtWidgets::HellingerDialog::update_edit_layer(
 	// TODO: see if we can use a single instance of HellingerEditPointDialog and
 	// so prevent having to check here (and elsewhere) for the operation type.
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos_);
-	if (is_in_edit_point_state())
+	if (d_canvas_operation_type == EDIT_POINT_OPERATION)
 	{
 		d_hellinger_edit_point_dialog->update_pick_coords(llp);
 	}
-	if (is_in_new_point_state())
+	if (d_canvas_operation_type == NEW_POINT_OPERATION)
 	{
 		d_hellinger_new_point_dialog->update_pick_coords(llp);
+	}
+	if (d_canvas_operation_type == NEW_SEGMENT_OPERATION)
+	{
+		d_hellinger_new_segment_dialog->update_pick_coords(llp);
 	}
 
 }

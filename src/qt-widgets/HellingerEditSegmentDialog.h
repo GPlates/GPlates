@@ -126,6 +126,9 @@ namespace GPlatesQtWidgets
 		boost::optional<GPlatesQtWidgets::HellingerPick>
 		current_pick() const;
 
+		void
+		update_pick_coords(
+				const GPlatesMaths::LatLonPoint &llp);
 
 	Q_SIGNALS:
 
@@ -200,6 +203,8 @@ namespace GPlatesQtWidgets
 		SpinBoxDelegate d_spin_box_delegate;
 
 		boost::optional<HellingerPick> d_current_pick;
+
+		unsigned int d_current_row;
 
 	};
 }
