@@ -957,14 +957,15 @@ GPlatesQtWidgets::HellingerDialog::handle_add_new_segment()
 {
 	d_canvas_operation_type = NEW_SEGMENT_OPERATION;
 
-	// TODO: Here we should activate the relevant layers, once "new segment"
-	// functionality is working on the canvas.
+	d_editing_layer_ptr->set_active(true);
 
 	this->setEnabled(false);
 	d_hellinger_new_segment_dialog->show();
 	d_hellinger_new_segment_dialog->raise();
 	d_hellinger_new_segment_dialog->initialise();
 	d_hellinger_new_segment_dialog->setEnabled(true);
+
+
 }
 
 void
@@ -1353,6 +1354,18 @@ void GPlatesQtWidgets::HellingerDialog::update_after_new_pick(
 	restore_expanded_status();
 	expand_segment(segment_number);
 	update_buttons();
+	update_canvas();
+}
+
+void GPlatesQtWidgets::HellingerDialog::update_after_new_segment(
+		const int segment_number)
+{
+	set_selected_segment(segment_number);
+	update_tree_from_model();
+	restore_expanded_status();
+	expand_segment(segment_number);
+	update_buttons();
+	update_canvas();
 }
 
 void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
@@ -2040,8 +2053,13 @@ void GPlatesQtWidgets::HellingerDialog::set_selected_pick(
 {
 	d_selected_pick.reset(it);
 	d_selected_segment.reset();
+}
 
-	update_canvas();
+void GPlatesQtWidgets::HellingerDialog::set_selected_segment(
+		const unsigned int segment)
+{
+	d_selected_segment.reset(segment);
+	d_selected_pick.reset();
 }
 
 void GPlatesQtWidgets::HellingerDialog::clear_hovered_layer()

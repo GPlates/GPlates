@@ -139,6 +139,10 @@ namespace GPlatesQtWidgets
 				const hellinger_model_type::const_iterator &it);
 
 		void
+		set_selected_segment(
+				const unsigned int segment);
+
+		void
 		clear_hovered_layer();
 
 		void
@@ -174,6 +178,10 @@ namespace GPlatesQtWidgets
 		void
 		update_after_new_pick(
 				const hellinger_model_type::const_iterator &it,
+				const int segment_number);
+
+		void
+		update_after_new_segment(
 				const int segment_number);
 
 	public Q_SLOTS:

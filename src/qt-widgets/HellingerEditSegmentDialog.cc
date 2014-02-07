@@ -494,6 +494,7 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_new_segment()
 		// Everything was cool.
 		add_segment_to_model();
 	}
+	d_hellinger_dialog_ptr->update_after_new_segment(segment_number);
 	close();
 }
 
