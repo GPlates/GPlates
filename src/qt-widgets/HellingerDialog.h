@@ -401,7 +401,7 @@ namespace GPlatesQtWidgets
 				bool state_is_active);
 
 		void
-		update_enable_disable_buttons();
+		update_pick_buttons();
 
 
 		void

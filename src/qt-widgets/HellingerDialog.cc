@@ -540,7 +540,7 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 
 		d_selected_pick.reset(d_hellinger_model->get_pick(selected_segment_number.get(),selected_row_number.get()));
 
-		update_enable_disable_buttons();
+		update_pick_buttons();
 	}
 	update_canvas();
 }
@@ -1129,9 +1129,10 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 	button_calculate_fit->setEnabled(false);
 	button_details->setEnabled(false);
 	button_remove_segment->setEnabled(false);
-	button_remove_point->setEnabled(false);
+	button_remove_pick->setEnabled(false);
 	button_stats->setEnabled(false);
 	button_clear->setEnabled(false);
+	button_edit_pick->setEnabled(false);
 
 	button_new_pick->setEnabled(true);
 	button_new_segment->setEnabled(true);
@@ -1150,7 +1151,7 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 
 	//Update enable/disable depending on state of selected pick, if we have
 	// a selected pick.
-	update_enable_disable_buttons();
+	update_pick_buttons();
 }
 
 void
@@ -1627,9 +1628,9 @@ void GPlatesQtWidgets::HellingerDialog::set_buttons_for_no_selection()
 {
 	button_activate_pick->setEnabled(false);
 	button_deactivate_pick->setEnabled(false);
-	button_edit_point->setEnabled(false);
+	button_edit_pick->setEnabled(false);
 	button_edit_segment->setEnabled(false);
-	button_remove_point->setEnabled(false);
+	button_remove_pick->setEnabled(false);
 	button_remove_segment->setEnabled(false);
 }
 
@@ -1637,9 +1638,9 @@ void GPlatesQtWidgets::HellingerDialog::set_buttons_for_segment_selected()
 {
 	button_activate_pick->setEnabled(false);
 	button_deactivate_pick->setEnabled(false);
-	button_edit_point->setEnabled(false);
+	button_edit_pick->setEnabled(false);
 	button_edit_segment->setEnabled(true);
-	button_remove_point->setEnabled(false);
+	button_remove_pick->setEnabled(false);
 	button_remove_segment->setEnabled(true);
 }
 
@@ -1648,20 +1649,23 @@ void GPlatesQtWidgets::HellingerDialog::set_buttons_for_pick_selected(
 {
 	button_activate_pick->setEnabled(!state_is_active);
 	button_deactivate_pick->setEnabled(state_is_active);
-	button_edit_point->setEnabled(true);
+	button_edit_pick->setEnabled(true);
 	button_edit_segment->setEnabled(false);
-	button_remove_point->setEnabled(true);
+	button_remove_pick->setEnabled(true);
 	button_remove_segment->setEnabled(false);
 
 }
 
-void GPlatesQtWidgets::HellingerDialog::update_enable_disable_buttons()
+void GPlatesQtWidgets::HellingerDialog::update_pick_buttons()
 {
 	boost::optional<unsigned int> segment = selected_segment(tree_widget);
 	boost::optional<unsigned int> row = selected_row(tree_widget);
 
+	button_activate_pick->setEnabled(false);
+	button_deactivate_pick->setEnabled(false);
 	if (!(segment && row))
 	{
+		qDebug() << "update_pick_buttons: no valid segment or row";
 		return;
 	}
 
@@ -1795,8 +1799,8 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(button_export_com_file, SIGNAL(clicked()), this, SLOT(handle_export_com_file()));
 	QObject::connect(button_expand_all, SIGNAL(clicked()), this, SLOT(handle_expand_all()));
 	QObject::connect(button_collapse_all, SIGNAL(clicked()), this, SLOT(handle_collapse_all()));
-	QObject::connect(button_edit_point, SIGNAL(clicked()), this, SLOT(handle_edit_pick()));
-	QObject::connect(button_remove_point, SIGNAL(clicked()), this, SLOT(handle_remove_pick()));
+	QObject::connect(button_edit_pick, SIGNAL(clicked()), this, SLOT(handle_edit_pick()));
+	QObject::connect(button_remove_pick, SIGNAL(clicked()), this, SLOT(handle_remove_pick()));
 	QObject::connect(button_remove_segment, SIGNAL(clicked()), this, SLOT(handle_remove_segment()));
 	QObject::connect(button_new_segment, SIGNAL(clicked()), this, SLOT(handle_add_new_segment()));
 	QObject::connect(button_edit_segment, SIGNAL(clicked()), this, SLOT(handle_edit_segment()));

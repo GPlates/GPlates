@@ -319,7 +319,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="button_remove_point">
+           <widget class="QPushButton" name="button_remove_pick">
             <property name="minimumSize">
              <size>
               <width>0</width>
@@ -335,7 +335,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="button_edit_point">
+           <widget class="QPushButton" name="button_edit_pick">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -1161,8 +1161,8 @@
   <tabstop>button_renumber</tabstop>
   <tabstop>button_clear</tabstop>
   <tabstop>button_new_pick</tabstop>
-  <tabstop>button_remove_point</tabstop>
-  <tabstop>button_edit_point</tabstop>
+  <tabstop>button_remove_pick</tabstop>
+  <tabstop>button_edit_pick</tabstop>
   <tabstop>button_activate_pick</tabstop>
   <tabstop>button_deactivate_pick</tabstop>
   <tabstop>spinbox_lat</tabstop>
