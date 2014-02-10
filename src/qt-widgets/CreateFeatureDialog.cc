@@ -797,7 +797,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties()
 					GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
 					GPlatesPropertyValues::Enumeration::create(
 							GPlatesPropertyValues::EnumerationType::create_gpml("ReconstructionMethodEnumeration"),
-							"HalfStageRotation"),
+							"HalfStageRotationVersion2"),
 					feature_type);
 
 			add_common_feature_property_to_list(
