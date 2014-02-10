@@ -142,6 +142,8 @@ set(srcs
     GuiDebug.cc
     GuiDebug.h
     GuiException.h
+    HellingerCanvasToolWorkflow.cc
+    HellingerCanvasToolWorkflow.h
     HTMLColourNames.cc
     HTMLColourNames.h
     ImportMenu.cc

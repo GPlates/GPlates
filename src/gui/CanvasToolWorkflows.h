@@ -84,6 +84,7 @@ namespace GPlatesGui
 			WORKFLOW_TOPOLOGY,
 			WORKFLOW_POLE_MANIPULATION,
 			WORKFLOW_SMALL_CIRCLE,
+			WORKFLOW_HELLINGER,
 
 			NUM_WORKFLOWS // NOTE: This must be last.
 		};
@@ -108,7 +109,11 @@ namespace GPlatesGui
 			TOOL_INSERT_VERTEX,
 			TOOL_SPLIT_FEATURE,
 			TOOL_MANIPULATE_POLE,
+			// TODO: Rename this to something
+			// more appropriate as we move to a hellinger
+			// workflow with multiple canvas tools.
 			TOOL_FIT_TO_POLE,
+			//TOOL_MANIPULATE_POLE_ESTIMATE,
 			TOOL_BUILD_LINE_TOPOLOGY,
 			TOOL_BUILD_BOUNDARY_TOPOLOGY,
 			TOOL_BUILD_NETWORK_TOPOLOGY,
