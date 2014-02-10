@@ -178,8 +178,8 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::initialise_with_segment(
 void GPlatesQtWidgets::HellingerEditSegmentDialog::initialise()
 {
 	d_table_model->setRowCount(1);
-
 	set_initial_row_values(0);
+	d_original_segment_number.reset(1);
 }
 
 boost::optional<GPlatesQtWidgets::HellingerPick>
@@ -193,6 +193,13 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::update_pick_coords(
 		const GPlatesMaths::LatLonPoint &llp)
 {
 	HellingerPick pick;
+
+	// Some default values while testing.
+	pick.d_is_enabled = true;
+	pick.d_uncertainty = 5.;
+	pick.d_segment_type = GPlatesQtWidgets::MOVING_PICK_TYPE;
+
+
 	pick.d_lat = llp.latitude();
 	pick.d_lon = llp.longitude();
 
@@ -212,13 +219,16 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::fill_widgets()
 {
 	spinbox_segment->setValue(*d_original_segment_number);
 	d_table_model->removeRows(0,d_table_model->rowCount());
-	hellinger_model_type::const_iterator
-			iter = d_original_segment_picks->first,
-			iter_end = d_original_segment_picks->second;
-	for (; iter != iter_end ; ++iter)
+	if (d_original_segment_picks)
 	{
-		d_table_model->insertRow(d_table_model->rowCount());
-		set_row_values(d_table_model->rowCount()-1,iter->second);
+		hellinger_model_type::const_iterator
+				iter = d_original_segment_picks->first,
+				iter_end = d_original_segment_picks->second;
+		for (; iter != iter_end ; ++iter)
+		{
+			d_table_model->insertRow(d_table_model->rowCount());
+			set_row_values(d_table_model->rowCount()-1,iter->second);
+		}
 	}
 }
 
@@ -361,7 +371,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::update_buttons()
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_reset()
 {
-	fill_widgets();
+	initialise();
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_enable()
@@ -535,10 +545,11 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::set_row_values(
 	d_table_model->setData(index,translate_segment_type(pick.d_segment_type));
 
 	index = d_table_model->index(row,COLUMN_LAT);
-	d_table_model->setData(index,pick.d_lat);
+	//QVariant v = QVariant(QString::number(pick.d_lat,'g',6));
+	d_table_model->setData(index,QVariant(QString::number(pick.d_lat,'g',6)));
 
 	index = d_table_model->index(row,COLUMN_LON);
-	d_table_model->setData(index,pick.d_lon);
+	d_table_model->setData(index,QVariant(QString::number(pick.d_lon,'g',6)));
 
 	index = d_table_model->index(row,COLUMN_UNCERTAINTY);
 	d_table_model->setData(index,pick.d_uncertainty);
@@ -575,6 +586,7 @@ GPlatesQtWidgets::SpinBoxDelegate::createEditor(
 	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_LAT:
 	{
 		QDoubleSpinBox *editor = new QDoubleSpinBox(parent_);
+		editor->setDecimals(4);
 		editor->setMinimum(-90.);
 		editor->setMaximum(90.);
 		return editor;
@@ -583,6 +595,7 @@ GPlatesQtWidgets::SpinBoxDelegate::createEditor(
 	case GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_LON:
 	{
 		QDoubleSpinBox *editor = new QDoubleSpinBox(parent_);
+		editor->setDecimals(4);
 		editor->setMinimum(-360.);
 		editor->setMaximum(360.);
 		return editor;
@@ -592,6 +605,7 @@ GPlatesQtWidgets::SpinBoxDelegate::createEditor(
 	default:
 	{
 		QDoubleSpinBox *editor = new QDoubleSpinBox(parent_);
+		editor->setDecimals(4);
 		editor->setMinimum(0.);
 		editor->setMaximum(1000.);
 		return editor;
