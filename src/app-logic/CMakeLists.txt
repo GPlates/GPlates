@@ -151,7 +151,6 @@ set(srcs
     ReconstructMethodRegistry.h
     ReconstructMethodSmallCircle.cc
     ReconstructMethodSmallCircle.h
-    ReconstructMethodType.cc
     ReconstructMethodType.h
     ReconstructMethodVirtualGeomagneticPole.cc
     ReconstructMethodVirtualGeomagneticPole.h

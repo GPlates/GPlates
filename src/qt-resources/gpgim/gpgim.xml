@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GPGIM gpgim:version="1.6.0322" xmlns="http://www.gplates.org/gpgim" xmlns:gpgim="http://www.gplates.org/gpgim" xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance">
+<GPGIM gpgim:version="1.6.0324" xmlns="http://www.gplates.org/gpgim" xmlns:gpgim="http://www.gplates.org/gpgim" xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance">
 	<!--
 		==================================================
 		==================================================
@@ -372,7 +372,11 @@
 			</Content>
 			<Content>
 				<Value>HalfStageRotation</Value>
-				<Description>Reconstruct using a half-stage rotation between a 'gpml:leftPlate' and 'gpml:rightPlate'.</Description>
+				<Description>Reconstruct using a half-stage rotation between a 'gpml:leftPlate' and 'gpml:rightPlate'. Uses only a single half-stage between present day and reconstruction time. See 'HalfStageRotationVersion2' for an improved version.</Description>
+			</Content>
+			<Content>
+				<Value>HalfStageRotationVersion2</Value>
+				<Description>Reconstruct using half-stage rotations between a 'gpml:leftPlate' and 'gpml:rightPlate'. This is a more accurate version that accumulates a half-stage rotation every 10My from present day to reconstruction time.</Description>
 			</Content>
 		</Enumeration>
 		<Enumeration>
@@ -1075,6 +1079,12 @@
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
 		<Property>
+			<Name>gpml:spreadingAsymmetry</Name>
+			<Description>The asymmetry of ridge spreading, in the range [-1,1], where the value 0 represents symmetric (half-stage) rotation.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
 			<Name>gpml:strikeSlip</Name>
 			<Description>The motion along the 'strike', or map-view line of the Fault.</Description>
 			<Type>gpml:StrikeSlipEnumeration</Type>
@@ -1686,6 +1696,7 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TectonicSection</Inherits>
 			<Property>gpml:isActive</Property>
+			<Property>gpml:spreadingAsymmetry</Property>
 			<Comment>The MidOceanRidge class needs to be pretty flexible. In the PLATES methodology, MOR lines are typically used to represent both the 'spreading' and 'transform' sections of the ridge - and so a lot of older data sets will have rigid MidOceanRidges once they are imported. Ideally, they would use an explicit Transform to join up MidOceanRidge and SubductionZone pieces.</Comment>
 			<Comment>The other area that MidOceanRidge needs to encompass is those ridges that have become an "Extinct Ridge" through a process of ridge propagation. This is handled via the .isActive time-dependent property below.</Comment>
 			<Comment>It is possible that later releases of the GPGIM will support a single MidOceanRidge Feature with heterogenous 'segments'.</Comment>
