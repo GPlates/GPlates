@@ -293,7 +293,6 @@ namespace GPlatesAppLogic
 			// which can still give a non-identity rotation if the anchor plate id is non-zero.
 			GPlatesModel::integer_plate_id_type left_plate_id = 0;
 			GPlatesModel::integer_plate_id_type right_plate_id = 0;
-			double spreading_asymmetry = 0.0;
 			if (reconstruction_params.get_left_plate_id())
 			{
 				left_plate_id = reconstruction_params.get_left_plate_id().get();
