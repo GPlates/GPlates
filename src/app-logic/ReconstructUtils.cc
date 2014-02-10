@@ -141,12 +141,18 @@ namespace
 		ReconstructGeometryOnSphereWithHalfStage(
 				const GPlatesModel::integer_plate_id_type left_plate_id,
 				const GPlatesModel::integer_plate_id_type right_plate_id,
-				const GPlatesAppLogic::ReconstructionTree &recon_tree,
+				const double &reconstruction_time,
+				const GPlatesAppLogic::ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &spreading_asymmetry,
+				const double &half_stage_rotation_interval,
 				bool reverse_reconstruct) :
-		d_left_plate_id(left_plate_id),
-		d_right_plate_id(right_plate_id),
-		d_recon_tree(recon_tree),
-		d_reverse_reconstruct(reverse_reconstruct)
+			d_left_plate_id(left_plate_id),
+			d_right_plate_id(right_plate_id),
+			d_reconstruction_time(reconstruction_time),
+			d_recon_tree_creator(reconstruction_tree_creator),
+			d_spreading_asymmetry(spreading_asymmetry),
+			d_half_stage_rotation_interval(half_stage_rotation_interval),
+			d_reverse_reconstruct(reverse_reconstruct)
 		{
 		}
 
@@ -170,7 +176,10 @@ namespace
 							multi_point_on_sphere,
 							d_left_plate_id,
 							d_right_plate_id,
-							d_recon_tree,
+							d_reconstruction_time,
+							d_recon_tree_creator,
+							d_spreading_asymmetry,
+							d_half_stage_rotation_interval,
 							d_reverse_reconstruct).get();
 		}
 
@@ -184,7 +193,10 @@ namespace
 							point_on_sphere,
 							d_left_plate_id,
 							d_right_plate_id,
-							d_recon_tree,
+							d_reconstruction_time,
+							d_recon_tree_creator,
+							d_spreading_asymmetry,
+							d_half_stage_rotation_interval,
 							d_reverse_reconstruct).get();
 		}
 
@@ -198,7 +210,10 @@ namespace
 							polygon_on_sphere,
 							d_left_plate_id,
 							d_right_plate_id,
-							d_recon_tree,
+							d_reconstruction_time,
+							d_recon_tree_creator,
+							d_spreading_asymmetry,
+							d_half_stage_rotation_interval,
 							d_reverse_reconstruct).get();
 		}
 
@@ -212,15 +227,22 @@ namespace
 							polyline_on_sphere,
 							d_left_plate_id,
 							d_right_plate_id,
-							d_recon_tree,
+							d_reconstruction_time,
+							d_recon_tree_creator,
+							d_spreading_asymmetry,
+							d_half_stage_rotation_interval,
 							d_reverse_reconstruct).get();
 		}
 
 	private:
 		const GPlatesModel::integer_plate_id_type d_left_plate_id;
 		const GPlatesModel::integer_plate_id_type d_right_plate_id;
-		const GPlatesAppLogic::ReconstructionTree &d_recon_tree;
+		double d_reconstruction_time;
+		const GPlatesAppLogic::ReconstructionTreeCreator &d_recon_tree_creator;
+		double d_spreading_asymmetry;
+		double d_half_stage_rotation_interval;
 		bool d_reverse_reconstruct;
+
 		GPlatesMaths::GeometryOnSphere::maybe_null_ptr_to_const_type d_reconstructed_geom;
 	};
 }
@@ -582,14 +604,23 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 GPlatesAppLogic::ReconstructUtils::reconstruct_as_half_stage(
-	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-	const GPlatesModel::integer_plate_id_type left_plate_id,
-	const GPlatesModel::integer_plate_id_type right_plate_id,
-	const ReconstructionTree &reconstruction_tree,
-	bool reverse_reconstruct)
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+		const GPlatesModel::integer_plate_id_type left_plate_id,
+		const GPlatesModel::integer_plate_id_type right_plate_id,
+		const double &reconstruction_time,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &spreading_asymmetry,
+		const double &half_stage_rotation_interval,
+		bool reverse_reconstruct)
 {
 	ReconstructGeometryOnSphereWithHalfStage reconstruct_geom_on_sphere(
-		left_plate_id, right_plate_id, reconstruction_tree, reverse_reconstruct);
+		left_plate_id,
+		right_plate_id,
+		reconstruction_time,
+		reconstruction_tree_creator,
+		spreading_asymmetry,
+		half_stage_rotation_interval,
+		reverse_reconstruct);
 
 	return reconstruct_geom_on_sphere.reconstruct(geometry);
 }
