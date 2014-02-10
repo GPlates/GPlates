@@ -26,85 +26,115 @@
 #include "RotationUtils.h"
 
 #include "ReconstructionTree.h"
+#include "ReconstructionTreeCreator.h"
+
+#include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 
 GPlatesMaths::FiniteRotation
 GPlatesAppLogic::RotationUtils::get_half_stage_rotation(
-		const ReconstructionTree &reconstruction_tree,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type left_plate_id,
-		GPlatesModel::integer_plate_id_type right_plate_id)
+		GPlatesModel::integer_plate_id_type right_plate_id,
+		const double &spreading_asymmetry,
+		const double &half_stage_rotation_interval)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			reconstruction_time >=0 && half_stage_rotation_interval > 0,
+			GPLATES_ASSERTION_SOURCE);
+
 	//
 	// Rotation from present day (0Ma) to current reconstruction time 't' of mid-ocean ridge MOR
 	// with left/right plate ids 'L' and 'R':
 	//
 	// R(0->t,A->MOR)
 	// R(0->t,A->L) * R(0->t,L->MOR)
-	// R(0->t,A->L) * Half[R(0->t,L->R)] // Assumes L->R spreading from 0->t1 *and* t1->t2
-	// R(0->t,A->L) * Half[R(0->t,L->A) * R(0->t,A->R)]
-	// R(0->t,A->L) * Half[inverse[R(0->t,A->L)] * R(0->t,A->R)]
 	//
 	// ...where 'A' is the anchor plate id.
+	// R(0->t,L->MOR) is not directly obtainable from a reconstruction tree since there is no
+	// reconstruction plate ID associated with the mid-ocean ridge (which is why we are here).
+	// So we need to approximate it by dividing it into 'N' stages (the more stages the better accuracy).
 	//
+	// R(0->t,L->MOR)
+	// R(t[N-1]->t[N],L->MOR) * R(t[N-2]->t[N-1],L->MOR) * ... * R(t2->t3,L->MOR) * R(t1->t2,L->MOR) * R(0->t1,L->MOR)
+	//
+	// Each stage R(t[i-1]->t[i],L->MOR) can then be calculated as a half-stage rotation of R(t[i-1]->t[i],L->R).
+	//
+	// Note that this assumes ridge spreading occurs from present day all the way to the
+	// reconstruction time which may not be the case.
+	// But it doesn't really matter if there is (non-spreading) motion of the right plate relative to
+	// the left plate *outside* time intervals when ridge spreading is actually occurring because the
+	// position of the mid-ocean ridge will be correct for the reconstruction time at which it was
+	// digitised/created by the user and nearby reconstruction times within the age range of
+	// the mid-ocean ridge (which is where ridge spreading is really happening) will have spreading
+	// calculated relative to that position.
 
 	using namespace GPlatesMaths;
 
-	FiniteRotation left_rotation = reconstruction_tree.get_composed_absolute_rotation(left_plate_id).first;
-	FiniteRotation right_rotation = reconstruction_tree.get_composed_absolute_rotation(right_plate_id).first;
+	// Start with the identity rotation and accumulate half-stage rotations over intervals.
+	FiniteRotation spreading_rotation =
+			FiniteRotation::create(UnitQuaternion3D::create_identity_rotation(), boost::none);
+	double prev_time = 0.0;
+	bool last_iteration = false;
 
-	// NOTE: Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible
-	// that left_q and right_q could be separated by a longer path than are left_q and -right_q
-	// (or -left_q and right_q).
-	// However we do *not* restrict ourselves to the shortest path (like 'FiniteRotation::interpolate()'
-	// does in its SLERP routine). This is because the user (who created the total poles in the
-	// rotation file) may want to take the longest path.
-	//
-	const FiniteRotation left_to_right = compose(get_reverse(left_rotation), right_rotation);
-
-	if (represents_identity_rotation(left_to_right.unit_quat()))
+	// Iterate over the half-stage rotation intervals.
+	do
 	{
-		return left_rotation;
+		double curr_time = prev_time + half_stage_rotation_interval;
+		if (curr_time >= reconstruction_time)
+		{
+			curr_time = reconstruction_time;
+			last_iteration = true;
+		}
+
+		const FiniteRotation left_to_right_stage =
+				get_stage_pole(
+						*reconstruction_tree_creator.get_reconstruction_tree(prev_time),
+						*reconstruction_tree_creator.get_reconstruction_tree(curr_time),
+						right_plate_id,
+						left_plate_id);
+
+		if (!represents_identity_rotation(left_to_right_stage.unit_quat()))
+		{
+			UnitQuaternion3D::RotationParams left_to_right_params =
+					left_to_right_stage.unit_quat().get_rotation_params(boost::none);
+
+			// Convert range [-1,1] to range [0,1].
+			const double asymmetry_angle_factor = 0.5 * (1 + spreading_asymmetry);
+			const real_t asymmetry_angle = asymmetry_angle_factor * left_to_right_params.angle;
+
+			FiniteRotation left_to_right_half_stage = 
+					FiniteRotation::create(
+							UnitQuaternion3D::create_rotation(
+									left_to_right_params.axis, 
+									asymmetry_angle),
+									left_to_right_stage.axis_hint());
+
+			spreading_rotation = compose(left_to_right_half_stage, spreading_rotation);
+		}
+
+		prev_time = curr_time;
 	}
+	while (!last_iteration);
 
-	UnitQuaternion3D::RotationParams left_to_right_params =
-			left_to_right.unit_quat().get_rotation_params(boost::none);
-	const real_t half_angle = 0.5 * left_to_right_params.angle;
+	const FiniteRotation left_rotation = reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)
+			->get_composed_absolute_rotation(left_plate_id).first;
 
-	FiniteRotation half_rotation = 
-			FiniteRotation::create(
-					UnitQuaternion3D::create_rotation(
-							left_to_right_params.axis, 
-							half_angle),
-							left_to_right.axis_hint());
+// 	spreading_rotation = compose(
+// 			spreading_rotation,
+// 			get_reverse(reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)
+// 					->get_composed_absolute_rotation(left_plate_id).first));
+// 
+// 	spreading_rotation = compose(
+// 			spreading_rotation,
+// 			reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)
+// 					->get_composed_absolute_rotation(right_plate_id).first);
 
-	return compose(left_rotation, half_rotation);
-
-	//
-	// NOTE: The above algorithm works only if there is no motion of the right plate relative to
-	// the left plate outside time intervals when ridge spreading is occurring because the algorithm
-	// does not know when spreading is not occurring and just calculates the half-stage rotation
-	// from the current reconstruction time back to present day (0Ma).
-	//
-	// The following example is for a mid-ocean ridge that only spreads between t1->t2:
-	//
-	// This assumes no spreading from 0->t1 and spreading from t1->t2...
-	// R(0->t2,A->MOR)
-	// R(0->t2,A->L) * R(0->t2,L->MOR)
-	// R(0->t2,A->L) * R(t1->t2,L->MOR) * R(0->t1,L->MOR)
-	// R(0->t2,A->L) * Half[R(t1->t2,L->R)] * R(0->t1,L->R) // No L->R spreading from 0->t1
-	//
-	// This (incorrectly) assumes spreading from 0->t2 (ie, both 0->t1 and t1->t2)...
-	// R(0->t2,A->MOR)
-	// R(0->t2,A->L) * R(0->t2,L->MOR)
-	// R(0->t2,A->L) * Half[R(0->t2,L->R)] // Assumes L->R spreading from 0->t1 *and* t1->t2
-	// R(0->t2,A->L) * Half[R(t1->t2,L->R) * R(0->t1,L->R)]
-	//
-	// Both equations above are only equivalent if there is no rotation between L and R from 0->t1.
-	// Which happens if R(0->t1,L->R) is the identity rotation.
-	// Note that the second equation is the one we actually use so it only works if the rotation
-	// file has identity stage rotations between poles (of the MOR moving/fixed plate pair) where
-	// no ridge spreading is occurring (ie, the two poles around an identity stage rotation are equal).
-	//
+	return compose(left_rotation, spreading_rotation);
+// 	inverse[R(0->t1,A->M)] * R(0->t1,A->F)
+// 	inverse[R(0->t1,A->F)] * R(0->t1,A->M) = R(0->t1,F->M)
 }
 
 

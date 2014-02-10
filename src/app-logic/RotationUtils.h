@@ -36,6 +36,7 @@
 namespace GPlatesAppLogic
 {
 	class ReconstructionTree;
+	class ReconstructionTreeCreator;
 
 	/**
 	 * Utilities related to rotation calculations.
@@ -45,18 +46,40 @@ namespace GPlatesAppLogic
 	namespace RotationUtils
 	{
 		/**
+		 * The default time interval for calculating half-stage rotations (see @a get_half_stage_rotation).
+		 *
+		 * If present day to reconstruction time is greater than this interval then it will be
+		 * divided into multiple half-stage intervals of this size.
+		 *
+		 * This is small enough to get good accuracy but not too small that it requires an excessive
+		 * number of reconstruction trees to be calculated (one at end of each time interval).
+		 */
+		const double DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION = 10.0;
+
+
+		/**
 		 * Returns the half-stage rotation between @a left_plate_id and @a right_plate_id at the
 		 * reconstruction time of the specified reconstruction tree.
 		 *
-		 * NOTE: Since this method does not know when sea-floor spreading begins it assumes that
-		 * the relative rotation between the left and right plates is the identity rotation when
-		 * seafloor spreading is *not* occurring.
+		 * @a spreading_asymmetry is in the range [-1,1] where the value 0 represents half-stage
+		 * rotation, the value 1 represents full-stage rotation (right plate) and the value -1
+		 * represents zero stage rotation (left plate).
+		 *
+		 * If present day to reconstruction time is greater than @a half_stage_rotation_interval
+		 * then it will be divided into multiple half-stage intervals of this size (except for
+		 * the last interval that ends at the reconstruction time).
+		 *
+		 * @throws PreconditionViolationError if @a reconstruction_time is negative or
+		 * if @a half_stage_rotation_interval is not greater than zero.
 		 */
 		GPlatesMaths::FiniteRotation
 		get_half_stage_rotation(
-				const ReconstructionTree &reconstruction_tree,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type left_plate_id,
-				GPlatesModel::integer_plate_id_type right_plate_id);
+				GPlatesModel::integer_plate_id_type right_plate_id,
+				const double &spreading_asymmetry = 0.0,
+				const double &half_stage_rotation_interval = DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION);
 
 
 		/**
