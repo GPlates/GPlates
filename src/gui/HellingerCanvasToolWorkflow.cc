@@ -1,11 +1,9 @@
-/* $Id$ */
-
 /**
- * \file 
- * $Revision$
- * $Date$
- * 
- * Copyright (C) 2012 The University of Sydney, Australia
+ * \file
+ * $Revision: 14446 $
+ * $Date: 2013-08-13 14:37:12 +0200 (Tue, 13 Aug 2013) $
+ *
+ * Copyright (C) 2014 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -23,31 +21,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "SmallCircleCanvasToolWorkflow.h"
-
-#include "Dialogs.h"
-
-#include "app-logic/ApplicationState.h"
-
 #include "canvas-tools/CanvasToolAdapterForGlobe.h"
 #include "canvas-tools/CanvasToolAdapterForMap.h"
-#include "canvas-tools/CreateSmallCircle.h"
-#include "canvas-tools/GeometryOperationState.h"
-#include "canvas-tools/MeasureDistance.h"
-
-#include "global/GPlatesAssert.h"
-
+#include "canvas-tools/FitToPole.h"
 #include "presentation/ViewState.h"
-
-#include "qt-widgets/GlobeAndMapWidget.h"
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/MapView.h"
-#include "qt-widgets/ReconstructionViewWidget.h"
-#include "qt-widgets/TaskPanel.h"
 #include "qt-widgets/ViewportWindow.h"
-
 #include "view-operations/RenderedGeometryCollection.h"
 
+#include "Dialogs.h"
+#include "HellingerCanvasToolWorkflow.h"
 
 namespace GPlatesGui
 {
@@ -57,40 +41,34 @@ namespace GPlatesGui
 		 * The main rendered layer used by this canvas tool workflow.
 		 */
 		const GPlatesViewOperations::RenderedGeometryCollection::MainLayerType WORKFLOW_RENDER_LAYER =
-				GPlatesViewOperations::RenderedGeometryCollection::SMALL_CIRCLE_CANVAS_TOOL_WORKFLOW_LAYER;
+				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER;
 	}
 }
 
-GPlatesGui::SmallCircleCanvasToolWorkflow::SmallCircleCanvasToolWorkflow(
+GPlatesGui::HellingerCanvasToolWorkflow::HellingerCanvasToolWorkflow(
 		CanvasToolWorkflows &canvas_tool_workflows,
-		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
-		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
 		const GPlatesCanvasTools::CanvasTool::status_bar_callback_type &status_bar_callback,
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ViewportWindow &viewport_window) :
 	CanvasToolWorkflow(
 			viewport_window.globe_canvas(),
 			viewport_window.map_view(),
-			CanvasToolWorkflows::WORKFLOW_SMALL_CIRCLE,
+			CanvasToolWorkflows::WORKFLOW_HELLINGER,
 			// The tool to start off with...
-			CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE),
+			CanvasToolWorkflows::TOOL_FIT_TO_POLE),
 	d_rendered_geom_collection(view_state.get_rendered_geometry_collection())
 {
 	create_canvas_tools(
 			canvas_tool_workflows,
-			geometry_operation_state,
-			measure_distance_state,
 			status_bar_callback,
 			view_state,
 			viewport_window);
+
 }
 
-
 void
-GPlatesGui::SmallCircleCanvasToolWorkflow::create_canvas_tools(
+GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 		CanvasToolWorkflows &canvas_tool_workflows,
-		GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
-		GPlatesCanvasTools::MeasureDistanceState &measure_distance_state,
 		const GPlatesCanvasTools::CanvasTool::status_bar_callback_type &status_bar_callback,
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ViewportWindow &viewport_window)
@@ -99,30 +77,32 @@ GPlatesGui::SmallCircleCanvasToolWorkflow::create_canvas_tools(
 	// Create small circle canvas tool.
 	//
 
-	GPlatesCanvasTools::CreateSmallCircle::non_null_ptr_type create_small_circle_tool =
-		GPlatesCanvasTools::CreateSmallCircle::create(
+	GPlatesCanvasTools::FitToPole::non_null_ptr_type fit_to_pole_tool =
+		GPlatesCanvasTools::FitToPole::create(
 				status_bar_callback,
 				view_state.get_rendered_geometry_collection(),
 				WORKFLOW_RENDER_LAYER,
-				viewport_window.task_panel_ptr()->small_circle_widget());
+				//Note that this tool uses a stand-alone dialog rather than
+				//a task-panel widget.
+				viewport_window.dialogs().hellinger_dialog());
 	// For the globe view.
-	d_globe_create_small_circle_tool.reset(
+	d_globe_fit_to_pole_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
-					create_small_circle_tool,
+					fit_to_pole_tool,
 					viewport_window.globe_canvas().globe(),
 					viewport_window.globe_canvas()));
 	// For the map view.
-	d_map_create_small_circle_tool.reset(
+	d_map_fit_to_pole_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
-					create_small_circle_tool,
+					fit_to_pole_tool,
 					viewport_window.map_view().map_canvas(),
 					viewport_window.map_view(),
 					view_state.get_map_transform()));
+
 }
 
-
 void
-GPlatesGui::SmallCircleCanvasToolWorkflow::initialise()
+GPlatesGui::HellingerCanvasToolWorkflow::initialise()
 {
 	// Set the initial enable/disable state for our canvas tools.
 	//
@@ -131,34 +111,31 @@ GPlatesGui::SmallCircleCanvasToolWorkflow::initialise()
 	// NOTE: If you are updating the tool in 'update_enable_state()' then you
 	// don't need to enable/disable it here.
 
-	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE, true);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_FIT_TO_POLE, true);
 }
 
-
 void
-GPlatesGui::SmallCircleCanvasToolWorkflow::activate_workflow()
+GPlatesGui::HellingerCanvasToolWorkflow::activate_workflow()
 {
 	// Activate the main rendered layer.
 	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, true/*active*/);
 }
 
-
 void
-GPlatesGui::SmallCircleCanvasToolWorkflow::deactivate_workflow()
+GPlatesGui::HellingerCanvasToolWorkflow::deactivate_workflow()
 {
 	// Deactivate the main rendered layer.
 	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, false/*active*/);
 }
 
-
 boost::optional< std::pair<GPlatesGui::GlobeCanvasTool *, GPlatesGui::MapCanvasTool *> >
-GPlatesGui::SmallCircleCanvasToolWorkflow::get_selected_globe_and_map_canvas_tools(
+GPlatesGui::HellingerCanvasToolWorkflow::get_selected_globe_and_map_canvas_tools(
 			CanvasToolWorkflows::ToolType selected_tool) const
 {
 	switch (selected_tool)
 	{
-	case CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE:
-		return std::make_pair(d_globe_create_small_circle_tool.get(), d_map_create_small_circle_tool.get());
+	case CanvasToolWorkflows::TOOL_FIT_TO_POLE:
+		return std::make_pair(d_globe_fit_to_pole_tool.get(), d_map_fit_to_pole_tool.get());
 
 	default:
 		break;
