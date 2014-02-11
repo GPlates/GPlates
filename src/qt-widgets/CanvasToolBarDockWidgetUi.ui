@@ -884,7 +884,7 @@
    </property>
    <property name="icon">
     <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/crappy-hellinger-icon_35.png</normaloff>:/crappy-hellinger-icon_35.png</iconset>
+     <normaloff>:/focus_feature_35.png</normaloff>:/focus_feature_35.png</iconset>
    </property>
    <property name="text">
     <string>Fit To Pole</string>

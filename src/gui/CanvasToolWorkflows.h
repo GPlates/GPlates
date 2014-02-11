@@ -113,7 +113,7 @@ namespace GPlatesGui
 			// more appropriate as we move to a hellinger
 			// workflow with multiple canvas tools.
 			TOOL_FIT_TO_POLE,
-			//TOOL_MANIPULATE_POLE_ESTIMATE,
+			TOOL_ADJUST_FITTED_POLE_ESTIMATE,
 			TOOL_BUILD_LINE_TOPOLOGY,
 			TOOL_BUILD_BOUNDARY_TOPOLOGY,
 			TOOL_BUILD_NETWORK_TOPOLOGY,
