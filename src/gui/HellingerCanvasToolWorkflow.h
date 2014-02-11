@@ -97,9 +97,9 @@ namespace GPlatesGui
 		boost::scoped_ptr<MapCanvasTool> d_map_click_geometry_tool;
 
 		//! For creating small circles in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_fit_to_pole_tool;
+		boost::scoped_ptr<GlobeCanvasTool> d_globe_select_hellinger_geometries_tool;
 		//! For creating small circles in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_fit_to_pole_tool;
+		boost::scoped_ptr<MapCanvasTool> d_map_select_hellinger_geometries_tool;
 
 
 		void

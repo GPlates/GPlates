@@ -177,7 +177,7 @@ namespace GPlatesCanvasTools
 
 
 		/**
-		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<FitToPole>.
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<AdjustFittedPoleEstimate>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<AdjustFittedPoleEstimate> non_null_ptr_type;
 

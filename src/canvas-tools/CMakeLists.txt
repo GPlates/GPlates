@@ -30,8 +30,6 @@ set(srcs
     DigitiseGeometry.h
     EditTopology.cc
     EditTopology.h
-    FitToPole.cc
-    FitToPole.h
     GeometryOperationState.h
     InsertVertex.cc
     InsertVertex.h
@@ -48,6 +46,8 @@ set(srcs
     PanMap.h
     ReorientGlobe.cc
     ReorientGlobe.h
+    SelectHellingerGeometries.cc
+    SelectHellingerGeometries.h
     SplitFeature.cc
     SplitFeature.h
     ZoomGlobe.cc

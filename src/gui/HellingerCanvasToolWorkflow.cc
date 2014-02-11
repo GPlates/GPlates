@@ -23,7 +23,7 @@
 
 #include "canvas-tools/CanvasToolAdapterForGlobe.h"
 #include "canvas-tools/CanvasToolAdapterForMap.h"
-#include "canvas-tools/FitToPole.h"
+#include "canvas-tools/SelectHellingerGeometries.h"
 #include "presentation/ViewState.h"
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/MapView.h"
@@ -55,7 +55,7 @@ GPlatesGui::HellingerCanvasToolWorkflow::HellingerCanvasToolWorkflow(
 			viewport_window.map_view(),
 			CanvasToolWorkflows::WORKFLOW_HELLINGER,
 			// The tool to start off with...
-			CanvasToolWorkflows::TOOL_FIT_TO_POLE),
+			CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES),
 	d_rendered_geom_collection(view_state.get_rendered_geometry_collection())
 {
 	create_canvas_tools(
@@ -77,8 +77,8 @@ GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 	// Create fit-to-pole canvas tool.
 	//
 
-	GPlatesCanvasTools::FitToPole::non_null_ptr_type fit_to_pole_tool =
-		GPlatesCanvasTools::FitToPole::create(
+	GPlatesCanvasTools::SelectHellingerGeometries::non_null_ptr_type select_hellinger_geometries_tool =
+		GPlatesCanvasTools::SelectHellingerGeometries::create(
 				status_bar_callback,
 				view_state.get_rendered_geometry_collection(),
 				WORKFLOW_RENDER_LAYER,
@@ -86,15 +86,15 @@ GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 				//a task-panel widget.
 				viewport_window.dialogs().hellinger_dialog());
 	// For the globe view.
-	d_globe_fit_to_pole_tool.reset(
+	d_globe_select_hellinger_geometries_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
-					fit_to_pole_tool,
+					select_hellinger_geometries_tool,
 					viewport_window.globe_canvas().globe(),
 					viewport_window.globe_canvas()));
 	// For the map view.
-	d_map_fit_to_pole_tool.reset(
+	d_map_select_hellinger_geometries_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
-					fit_to_pole_tool,
+					select_hellinger_geometries_tool,
 					viewport_window.map_view().map_canvas(),
 					viewport_window.map_view(),
 					view_state.get_map_transform()));
@@ -111,7 +111,7 @@ GPlatesGui::HellingerCanvasToolWorkflow::initialise()
 	// NOTE: If you are updating the tool in 'update_enable_state()' then you
 	// don't need to enable/disable it here.
 
-	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_FIT_TO_POLE, true);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES, true);
 }
 
 void
@@ -134,8 +134,8 @@ GPlatesGui::HellingerCanvasToolWorkflow::get_selected_globe_and_map_canvas_tools
 {
 	switch (selected_tool)
 	{
-	case CanvasToolWorkflows::TOOL_FIT_TO_POLE:
-		return std::make_pair(d_globe_fit_to_pole_tool.get(), d_map_fit_to_pole_tool.get());
+	case CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES:
+		return std::make_pair(d_globe_select_hellinger_geometries_tool.get(), d_map_select_hellinger_geometries_tool.get());
 
 	default:
 		break;

@@ -1350,7 +1350,7 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 		d_task_panel_ptr->choose_modify_pole_tab();
 		break;
 
-	case GPlatesGui::CanvasToolWorkflows::TOOL_FIT_TO_POLE:
+	case GPlatesGui::CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES:
 		// NOTE: We don't currently have any hellinger task panels
 		// (and we may never have any), so we just open the
 		// Hellinger dialog here, unlike most other tools which will

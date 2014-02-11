@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CANVASTOOLS_FITTOPOLE_H
-#define GPLATES_CANVASTOOLS_FITTOPOLE_H
+#ifndef GPLATES_CANVASTOOLS_SELECTHELLINGERGEOMETRIES_H
+#define GPLATES_CANVASTOOLS_SELECTHELLINGERGEOMETRIES_H
 
 #include <QObject>
 
@@ -71,7 +71,7 @@ namespace GPlatesCanvasTools
 	/**
 	 * Canvas tool used for fitting points to a rotation pole.
 	 */
-	class FitToPole :
+	class SelectHellingerGeometries :
 			public QObject,
 			public CanvasTool
 	{
@@ -177,9 +177,9 @@ namespace GPlatesCanvasTools
 
 
 		/**
-		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<FitToPole>.
+		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<SelectHellingerGeometries>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<FitToPole> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<SelectHellingerGeometries> non_null_ptr_type;
 
 		static
 		const non_null_ptr_type
@@ -189,7 +189,7 @@ namespace GPlatesCanvasTools
 				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
 				GPlatesQtWidgets::HellingerDialog &hellinger_dialog)
 		{
-			return new FitToPole(
+			return new SelectHellingerGeometries(
 					status_bar_callback,
 					rendered_geom_collection,
 					main_rendered_layer_type,
@@ -270,7 +270,7 @@ namespace GPlatesCanvasTools
 		void
 		paint();
 
-		FitToPole(
+		SelectHellingerGeometries(
 				const status_bar_callback_type &status_bar_callback,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
@@ -287,4 +287,4 @@ namespace GPlatesCanvasTools
 	};
 }
 
-#endif  // GPLATES_CANVASTOOLS_FITTOPOLE_H
+#endif  // GPLATES_CANVASTOOLS_SELECTHELLINGERGEOMETRIES_H

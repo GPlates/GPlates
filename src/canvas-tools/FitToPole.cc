@@ -32,14 +32,14 @@
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryProximity.h"
-#include "FitToPole.h"
+#include "SelectHellingerGeometries.h"
 
 namespace
 {
 
 }
 
-GPlatesCanvasTools::FitToPole::FitToPole(
+GPlatesCanvasTools::SelectHellingerGeometries::SelectHellingerGeometries(
 		const status_bar_callback_type &status_bar_callback,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
@@ -53,20 +53,20 @@ GPlatesCanvasTools::FitToPole::FitToPole(
 }
 
 void
-GPlatesCanvasTools::FitToPole::handle_activation()
+GPlatesCanvasTools::SelectHellingerGeometries::handle_activation()
 {
 	set_status_bar_message(QT_TR_NOOP("Click to select a pick. Shift+click to edit a pick."));
 }
 
 void
-GPlatesCanvasTools::FitToPole::handle_deactivation()
+GPlatesCanvasTools::SelectHellingerGeometries::handle_deactivation()
 {
 	d_hellinger_dialog_ptr->close();
 }
 
 
 void
-GPlatesCanvasTools::FitToPole::handle_left_click(
+GPlatesCanvasTools::SelectHellingerGeometries::handle_left_click(
 		const GPlatesMaths::PointOnSphere &point_on_sphere,
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
@@ -105,7 +105,7 @@ GPlatesCanvasTools::FitToPole::handle_left_click(
 
 
 void
-GPlatesCanvasTools::FitToPole::handle_move_without_drag(
+GPlatesCanvasTools::SelectHellingerGeometries::handle_move_without_drag(
 		const GPlatesMaths::PointOnSphere &point_on_sphere,
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
@@ -179,7 +179,7 @@ GPlatesCanvasTools::FitToPole::handle_move_without_drag(
 }
 
 void
-GPlatesCanvasTools::FitToPole::handle_shift_left_click(
+GPlatesCanvasTools::SelectHellingerGeometries::handle_shift_left_click(
 		const GPlatesMaths::PointOnSphere &point_on_sphere,
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
@@ -248,7 +248,7 @@ GPlatesCanvasTools::FitToPole::handle_shift_left_click(
 }
 
 void
-GPlatesCanvasTools::FitToPole::handle_left_press(
+GPlatesCanvasTools::SelectHellingerGeometries::handle_left_press(
 		const GPlatesMaths::PointOnSphere &point_on_sphere,
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
@@ -283,7 +283,7 @@ GPlatesCanvasTools::FitToPole::handle_left_press(
 }
 
 void
-GPlatesCanvasTools::FitToPole::handle_shift_left_drag(
+GPlatesCanvasTools::SelectHellingerGeometries::handle_shift_left_drag(
 		const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
 		bool was_on_earth,
 		double initial_proximity_inclusion_threshold,
@@ -296,7 +296,7 @@ GPlatesCanvasTools::FitToPole::handle_shift_left_drag(
 }
 
 void
-GPlatesCanvasTools::FitToPole::handle_left_release_after_drag(
+GPlatesCanvasTools::SelectHellingerGeometries::handle_left_release_after_drag(
 		const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
 		bool was_on_earth,
 		double initial_proximity_inclusion_threshold,
@@ -312,7 +312,7 @@ GPlatesCanvasTools::FitToPole::handle_left_release_after_drag(
 }
 
 void
-GPlatesCanvasTools::FitToPole::handle_left_drag(
+GPlatesCanvasTools::SelectHellingerGeometries::handle_left_drag(
 		const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
 		bool was_on_earth,
 		double initial_proximity_inclusion_threshold,
@@ -328,7 +328,7 @@ GPlatesCanvasTools::FitToPole::handle_left_drag(
 }
 
 void
-GPlatesCanvasTools::FitToPole::paint()
+GPlatesCanvasTools::SelectHellingerGeometries::paint()
 {
 #if 0
 	// Delay any notification of changes to the rendered geometry collection
