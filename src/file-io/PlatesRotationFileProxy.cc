@@ -283,8 +283,10 @@ void
 GPlatesFileIO::RotationFileReader::read_file(
 		File::Reference &file,
 		GPlatesModel::ModelInterface &model,
-		ReadErrorAccumulation &read_errors)
+		ReadErrorAccumulation &read_errors,
+		bool &contains_unsaved_changes)
 {
+	contains_unsaved_changes = false;
 
 	const boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> & cfg = 
 		file.get_file_configuration();

@@ -42,9 +42,12 @@ GPlatesFileIO::ArbitraryXmlReader::read_file(
 		boost::shared_ptr<ArbitraryXmlProfile> profile,
 		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::Gpgim &gpgim,
-		ReadErrorAccumulation &read_errors)
+		ReadErrorAccumulation &read_errors,
+		bool &contains_unsaved_changes)
 {
 	PROFILE_FUNC();
+
+	contains_unsaved_changes = false;
 
 	SetXmlProfileAccess xml_profile_access(&gpgim, &read_errors, this);
 	profile->populate(file_ref);

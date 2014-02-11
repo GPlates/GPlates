@@ -92,7 +92,8 @@ namespace GPlatesFileIO
 				const boost::shared_ptr<const FeatureCollectionFileFormat::OGRConfiguration> &default_file_configuration,
 				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::Gpgim &gpgim,
-				ReadErrorAccumulation &read_errors);
+				ReadErrorAccumulation &read_errors,
+				bool &contains_unsaved_changes);
 
 		static
 		void

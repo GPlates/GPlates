@@ -387,7 +387,8 @@ namespace
 			GPlatesPropertyValues::GpmlTimeSample &time_sample,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &data_source,
 			unsigned line_num,
-			GPlatesFileIO::ReadErrorAccumulation &read_errors)
+			GPlatesFileIO::ReadErrorAccumulation &read_errors,
+			bool &contains_unsaved_changes)
 	{
 		using namespace GPlatesFileIO;
 		using namespace GPlatesModel;
@@ -430,6 +431,9 @@ namespace
 					// Change the current finite rotation for short path.
 					curr_gpml_finite_rotation->set_finite_rotation(adjusted_curr_finite_rotation.get());
 
+					// The loaded finite rotation differs from what was read from the file.
+					contains_unsaved_changes = true;
+
 					// Warn the user that the change was made.
 					boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
 					ReadErrors::Description descr = ReadErrors::PoleTakesLongRotationPathRelativeToPrevPole;
@@ -461,7 +465,8 @@ namespace
 			GPlatesModel::integer_plate_id_type moving_plate_id,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
 			unsigned line_num,
-			GPlatesFileIO::ReadErrorAccumulation &read_errors)
+			GPlatesFileIO::ReadErrorAccumulation &read_errors,
+			bool &contains_unsaved_changes)
 	{
 		using namespace GPlatesFileIO;
 		using namespace GPlatesPropertyValues;
@@ -560,14 +565,14 @@ namespace
 					props_in_current_trs.d_fixed_plate_id == fixed_plate_id &&
 					props_in_current_trs.d_moving_plate_id == moving_plate_id)
 			{
-				add_time_sample(time_samples, time_sample, data_source, line_num, read_errors);
+				add_time_sample(time_samples, time_sample, data_source, line_num, read_errors, contains_unsaved_changes);
 			}
 			else if (moving_plate_id == 999 &&
 					props_in_current_trs.d_fixed_plate_id == fixed_plate_id)
 			{
 				// Let's assume the current pole was intended to be part of the
 				// sequence, but commented-out.
-				add_time_sample(time_samples, time_sample, data_source, line_num, read_errors);
+				add_time_sample(time_samples, time_sample, data_source, line_num, read_errors, contains_unsaved_changes);
 
 				// Don't forget to warn the user that the moving plate ID of the
 				// pole was changed as part of this interpretation.
@@ -645,7 +650,7 @@ namespace
 			{
 				// OK, it's the special case.  Let's assume the current pole was
 				// intended to be part of the sequence, but commented-out.
-				add_time_sample(time_samples, time_sample, data_source, line_num, read_errors);
+				add_time_sample(time_samples, time_sample, data_source, line_num, read_errors, contains_unsaved_changes);
 
 				// Don't forget to warn the user that the moving plate ID of the
 				// pole was changed as part of this interpretation.
@@ -675,7 +680,7 @@ namespace
 			}
 			else
 			{
-				add_time_sample(time_samples, time_sample, data_source, line_num, read_errors);
+				add_time_sample(time_samples, time_sample, data_source, line_num, read_errors, contains_unsaved_changes);
 			}
 		}
 
@@ -699,7 +704,8 @@ namespace
 			GPlatesModel::integer_plate_id_type moving_plate_id,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
 			unsigned line_num,
-			GPlatesFileIO::ReadErrorAccumulation &read_errors)
+			GPlatesFileIO::ReadErrorAccumulation &read_errors,
+			bool &contains_unsaved_changes)
 	{
 		using namespace GPlatesFileIO;
 
@@ -715,7 +721,7 @@ namespace
 
 		append_pole_to_data_set(model, rotations, current_total_recon_seq,
 				props_in_current_trs, time_sample, fixed_plate_id,
-				moving_plate_id, data_source, line_num, read_errors);
+				moving_plate_id, data_source, line_num, read_errors, contains_unsaved_changes);
 	}
 
 
@@ -729,7 +735,8 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
 			GPlatesFileIO::LineReader &line_buffer,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
-			GPlatesFileIO::ReadErrorAccumulation &read_errors)
+			GPlatesFileIO::ReadErrorAccumulation &read_errors,
+			bool &contains_unsaved_changes)
 	{
 		std::string line_of_input;
 
@@ -751,7 +758,7 @@ namespace
 				handle_parsed_pole(model, rotations, current_total_recon_seq,
 						props_in_current_trs, time_sample,
 						fixed_plate_id, moving_plate_id, data_source,
-						line_buffer.line_number(), read_errors);
+						line_buffer.line_number(), read_errors, contains_unsaved_changes);
 			} catch (PoleParsingException &) {
 				// The argument name in the above expression was removed to
 				// prevent "unreferenced local variable" compiler warnings under MSVC
@@ -770,9 +777,12 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 		File::Reference &file,
 		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::Gpgim &gpgim,
-		ReadErrorAccumulation &read_errors)
+		ReadErrorAccumulation &read_errors,
+		bool &contains_unsaved_changes)
 {
 	PROFILE_FUNC();
+
+	contains_unsaved_changes = false;
 
 	const FileInfo &fileinfo = file.get_file_info();
 
@@ -798,7 +808,7 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 
 	try
 	{
-		populate_rotations(model, rotations, line_buffer, data_source, read_errors);
+		populate_rotations(model, rotations, line_buffer, data_source, read_errors, contains_unsaved_changes);
 	} catch (UnexpectedlyNullIrregularSampling &) {
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC
