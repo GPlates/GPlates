@@ -109,9 +109,6 @@ namespace GPlatesGui
 			TOOL_INSERT_VERTEX,
 			TOOL_SPLIT_FEATURE,
 			TOOL_MANIPULATE_POLE,
-			// TODO: Rename this to something
-			// more appropriate as we move to a hellinger
-			// workflow with multiple canvas tools.
 			TOOL_SELECT_HELLINGER_GEOMETRIES,
 			TOOL_ADJUST_FITTED_POLE_ESTIMATE,
 			TOOL_BUILD_LINE_TOPOLOGY,

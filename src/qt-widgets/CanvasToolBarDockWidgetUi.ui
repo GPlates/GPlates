@@ -878,7 +878,7 @@
     <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
-  <action name="action_Fit_To_Pole">
+  <action name="action_Select_Hellinger_Geometries">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -887,10 +887,10 @@
      <normaloff>:/focus_feature_35.png</normaloff>:/focus_feature_35.png</iconset>
    </property>
    <property name="text">
-    <string>Fit To Pole</string>
+    <string>Select Hellinger Geometries</string>
    </property>
    <property name="toolTip">
-    <string>Fit features to a Rotation Pole</string>
+    <string>Select and manipulate hellinger geometries</string>
    </property>
    <property name="shortcut">
     <string>H</string>
