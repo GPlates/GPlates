@@ -1351,9 +1351,10 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 		break;
 
 	case GPlatesGui::CanvasToolWorkflows::TOOL_FIT_TO_POLE:
-		// TODO: In the absence of a task panel, open the
-		// Hellinger directly here.
-		//d_task_panel_ptr->choose_fit_to_pole_tab();
+		// NOTE: We don't currently have any hellinger task panels
+		// (and we may never have any), so we just open the
+		// Hellinger dialog here, unlike most other tools which will
+		// activate their associated task panels.
 		dialogs().pop_up_hellinger_dialog();
 		break;
 

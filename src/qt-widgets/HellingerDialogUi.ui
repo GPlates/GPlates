@@ -766,7 +766,7 @@
           <item>
            <widget class="QDoubleSpinBox" name="spinbox_result_lat">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="minimumSize">
              <size>
@@ -778,10 +778,10 @@
              <number>4</number>
             </property>
             <property name="minimum">
-             <double>-999.000000000000000</double>
+             <double>-90.000000000000000</double>
             </property>
             <property name="maximum">
-             <double>999.990000000000009</double>
+             <double>90.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -802,7 +802,7 @@
           <item>
            <widget class="QDoubleSpinBox" name="spinbox_result_lon">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="minimumSize">
              <size>
@@ -814,10 +814,10 @@
              <number>4</number>
             </property>
             <property name="minimum">
-             <double>-999.000000000000000</double>
+             <double>-360.000000000000000</double>
             </property>
             <property name="maximum">
-             <double>999.990000000000009</double>
+             <double>360.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -838,7 +838,7 @@
           <item>
            <widget class="QDoubleSpinBox" name="spinbox_result_angle">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="minimumSize">
              <size>

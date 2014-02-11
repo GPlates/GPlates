@@ -464,6 +464,15 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	// For eventual insertion of generated pole into the model.
 	groupbox_rotation->hide();
 
+	// Set result boxes to read-only (but enabled). We may want
+	// to allow the user to adjust the pole result later.
+	// Disabling them is another option, but that greys them
+	// out and gives the impression that they don't play a part
+	// in the tool.
+	spinbox_result_lat->setReadOnly(true);
+	spinbox_result_lon->setReadOnly(true);
+	spinbox_result_angle->setReadOnly(true);
+
 	// For eventual interruption of the python thread.
 	button_cancel->hide();
 
@@ -1868,33 +1877,33 @@ void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
 	// Create a rendered layer to draw the picks.
 	d_pick_layer_ptr =
 		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// Create a rendered layer to draw resultant pole and reconstructed picks
 	d_result_layer_ptr =
 		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
 
 
 	// Create a rendered layer to draw selected geometries
 	d_selection_layer_ptr =
 		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// Create a rendered layer to draw highlighted geometries
 	d_hover_layer_ptr =
 		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// Create a rendered layer to draw geometries undergoing editing.
 	d_editing_layer_ptr =
 		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	// Create a rendered layer to highlight feature geometries which can be selected.
 	d_feature_highlight_layer_ptr =
 			d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
-				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
+				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
 }
 
 void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
