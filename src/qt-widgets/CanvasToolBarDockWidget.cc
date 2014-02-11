@@ -154,6 +154,7 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_workflows()
 	set_up_topology_workflow();
 	set_up_pole_manipulation_workflow();
 	set_up_small_circle_workflow();
+	set_up_hellinger_workflow();
 }
 
 
@@ -345,7 +346,25 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_small_circle_workflow()
 	add_tool_action_to_workflow(
 			small_circle_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE,
-			action_Create_Small_Circle);
+				action_Create_Small_Circle);
+}
+
+void GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_hellinger_workflow()
+{
+	//
+	// Set up the 'hellinger' canvas tools workflow.
+	//
+
+	Workflow hellinger_workflow = create_workflow(
+			GPlatesGui::CanvasToolWorkflows::WORKFLOW_HELLINGER,
+			tr("Hellinger"),
+			tab_hellinger,
+			hellinger_toolbar_placeholder);
+
+	add_tool_action_to_workflow(
+			hellinger_workflow,
+			GPlatesGui::CanvasToolWorkflows::TOOL_FIT_TO_POLE,
+				action_Fit_To_Pole);
 }
 
 

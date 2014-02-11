@@ -74,7 +74,7 @@ GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 		GPlatesQtWidgets::ViewportWindow &viewport_window)
 {
 	//
-	// Create small circle canvas tool.
+	// Create fit-to-pole canvas tool.
 	//
 
 	GPlatesCanvasTools::FitToPole::non_null_ptr_type fit_to_pole_tool =
@@ -82,7 +82,7 @@ GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 				status_bar_callback,
 				view_state.get_rendered_geometry_collection(),
 				WORKFLOW_RENDER_LAYER,
-				//Note that this tool uses a stand-alone dialog rather than
+				//NOTE: this tool uses a stand-alone dialog rather than
 				//a task-panel widget.
 				viewport_window.dialogs().hellinger_dialog());
 	// For the globe view.
