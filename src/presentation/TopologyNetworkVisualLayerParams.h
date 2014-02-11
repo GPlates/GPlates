@@ -155,24 +155,30 @@ namespace GPlatesPresentation
 		// set/get data for range1
 		void set_range1_max(double max) { d_range1_max = max; }
 		void set_range1_min(double min) { d_range1_min = min; }
+
 		double get_range1_max() { return d_range1_max; }
 		double get_range1_min() { return d_range1_min; }
 
 		// set/get data for range2
 		void set_range2_max(double max) { d_range2_max = max; }
 		void set_range2_min(double min) { d_range2_min = min; }
+
 		double get_range2_max() { return d_range2_max; }
 		double get_range2_min() { return d_range2_min; }
 
 		// Set Colours 
+		void set_fg_colour(GPlatesGui::Colour c) { d_fg_colour = c; }
 		void set_max_colour(GPlatesGui::Colour c) { d_max_colour = c; }
 		void set_mid_colour(GPlatesGui::Colour c) { d_mid_colour = c; }
 		void set_min_colour(GPlatesGui::Colour c) { d_min_colour = c; }
+		void set_bg_colour(GPlatesGui::Colour c) { d_bg_colour = c; }
 
 		// Get Colours 
+		GPlatesGui::Colour get_fg_colour() 	{ return d_fg_colour; }
 		GPlatesGui::Colour get_max_colour() { return d_max_colour; }
 		GPlatesGui::Colour get_mid_colour() { return d_mid_colour; }
 		GPlatesGui::Colour get_min_colour() { return d_min_colour; }
+		GPlatesGui::Colour get_bg_colour() 	{ return d_bg_colour; }
 
 		// Override of virtual metions in  VisualLayerParams base.
 		virtual
@@ -257,9 +263,11 @@ namespace GPlatesPresentation
 		double d_range1_min;
 		double d_range2_max;
 		double d_range2_min;
+		GPlatesGui::Colour d_fg_colour;
 		GPlatesGui::Colour d_max_colour;
 		GPlatesGui::Colour d_mid_colour;
 		GPlatesGui::Colour d_min_colour;
+		GPlatesGui::Colour d_bg_colour;
 
 		/**
 		 * The current colour palette for this layer

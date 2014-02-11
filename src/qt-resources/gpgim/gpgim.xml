@@ -421,19 +421,19 @@
 		</Enumeration>
 		<Enumeration>
 			<Type>gpml:SubductionPolarityEnumeration</Type>
-			<Description>Indicates the side of the line that the subducting slab is on. The overriding plate will be on the opposite side.
-.subductingSlab is an enumeration: Assuming there is a suitable centerLineOf supplied, and understanding that the order of points in the line matters, we can establish a "left" side and a "right" side to the .centerLineOf. this property indicates which of those "left" and "right" sides the subducting slab is on. The overriding plate will be on the opposite side.</Description>
+			<Description>Indicates which side of the line (when following the vertices in order) that the over-riding plate is on.  The subducting plate will be on the opposite side.
+.subductingSlab is an enumeration: Assuming there is a suitable centerLineOf supplied, and understanding that the order of points in the line matters, we can establish a "left" side and a "right" side to the .centerLineOf. this property indicates which of those "left" and "right" sides the over-riding plate is on. The subducting plate will be on the opposite side.</Description>
 			<Content>
 				<Value>Left</Value>
-				<Description>The subducting slab is on the left of this SubductionZone, according to the directed gml:LineString .centerLineOf.</Description>
+				<Description>The over-riding plate is on the left of this SubductionZone, according to the directed gml:LineString .centerLineOf.</Description>
 			</Content>
 			<Content>
 				<Value>Right</Value>
-				<Description>The subducting slab is on the right of this SubductionZone, according to the directed gml:LineString .centerLineOf.</Description>
+				<Description>The over-riding plate is on the right of this SubductionZone, according to the directed gml:LineString .centerLineOf.</Description>
 			</Content>
 			<Content>
 				<Value>Unknown</Value>
-				<Description>The value of is officially unknown; there is no information about which side of the SubductionZone is which.</Description>
+				<Description>The value of is officially unknown; there is no information about the polarity of the SubductionZone.</Description>
 			</Content>
 		</Enumeration>
 		
@@ -1101,7 +1101,7 @@
 		</Property>
 		<Property>
 			<Name>gpml:subductionPolarity</Name>
-			<Description>Indicates the side of the line that the subducting slab is on.</Description>
+			<Description>Indicates which side of the line (when following the vertices in order) that the over-riding plate is on.</Description>
 			<Type>gpml:SubductionPolarityEnumeration</Type>
 			<Multiplicity>0..1</Multiplicity>
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
@@ -1129,6 +1129,18 @@
 			<Name>gpml:subductionZoneDepth</Name>
 			<Description>Subduction zone depth.</Description>
 			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:subductionZoneSystem</Name>
+			<Description>A unique name for a collection of Subduction Zones forming a continuous system of subduction.</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:subductionZoneSystemOrder</Name>
+			<Description>The order where this subduction zone appears in the system (note: this is zero-based sequence)</Description>
+			<Type>xsi:integer</Type>
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
 		<Property>
@@ -1999,6 +2011,8 @@
 			<Property>gpml:subductionZoneConvergence</Property>
 			<Property>gpml:subductionZoneDeepDip</Property>
 			<Property>gpml:subductionZoneDepth</Property>
+			<Property>gpml:subductionZoneSystem</Property>
+			<Property>gpml:subductionZoneSystemOrder</Property>
 			<Property>gpml:centerLineOf</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
 		</FeatureClass>
@@ -2071,6 +2085,8 @@
 			<Property>gpml:subductionZoneConvergence</Property>
 			<Property>gpml:subductionZoneDeepDip</Property>
 			<Property>gpml:subductionZoneDepth</Property>
+			<Property>gpml:subductionZoneSystem</Property>
+			<Property>gpml:subductionZoneSystemOrder</Property>
 			<Property>gpml:isActive</Property>
 			<Property>gpml:slabEdgeType</Property>
 			<Property>gpml:rheaFault</Property>
