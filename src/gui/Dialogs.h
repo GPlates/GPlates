@@ -289,6 +289,9 @@ namespace GPlatesGui
 		pop_up_hellinger_dialog();
 
 		void
+		pop_up_and_reposition_hellinger_dialog();
+
+		void
 		pop_up_license_dialog();
 
 		void

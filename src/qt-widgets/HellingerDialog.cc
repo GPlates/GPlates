@@ -2020,8 +2020,10 @@ GPlatesQtWidgets::HellingerDialog::store_expanded_status()
 
 void GPlatesQtWidgets::HellingerDialog::close()
 {
+	qDebug() << "HellingerDialog::close()";
 	handle_close();
-	GPlatesDialog::close();
+	//GPlatesDialog::close();
+	GPlatesDialog::hide();
 }
 
 void
