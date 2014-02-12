@@ -90,16 +90,15 @@ namespace GPlatesGui
 		//! For rendering purposes
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
 
-
-		//! For clicking geometries in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_click_geometry_tool;
-		//! For clicking geometries in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_click_geometry_tool;
-
-		//! For creating small circles in the 3D globe view.
+		//! For manipulating hellinger geometries in the 3D globe view.
 		boost::scoped_ptr<GlobeCanvasTool> d_globe_select_hellinger_geometries_tool;
-		//! For creating small circles in the 2D map view.
+		//! For manipulating hellinger geometries in the 2D map view.
 		boost::scoped_ptr<MapCanvasTool> d_map_select_hellinger_geometries_tool;
+
+		//! For adjusting the pole estimate in the 3D globe view.
+		boost::scoped_ptr<GlobeCanvasTool> d_globe_adjust_pole_estimate_tool;
+		//! For adjusting the pole estimate in the 2D map view.
+		boost::scoped_ptr<MapCanvasTool> d_map_adjust_pole_estimate_tool;
 
 
 		void

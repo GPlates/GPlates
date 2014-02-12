@@ -361,6 +361,11 @@ void GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_hellinger_workflow()
 			hellinger_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES,
 				action_Select_Hellinger_Geometries);
+
+	add_tool_action_to_workflow(
+				hellinger_workflow,
+				GPlatesGui::CanvasToolWorkflows::TOOL_ADJUST_FITTED_POLE_ESTIMATE,
+				action_Adjust_Pole_Estimate);
 }
 
 

@@ -21,6 +21,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "canvas-tools/AdjustFittedPoleEstimate.h"
 #include "canvas-tools/CanvasToolAdapterForGlobe.h"
 #include "canvas-tools/CanvasToolAdapterForMap.h"
 #include "canvas-tools/SelectHellingerGeometries.h"
@@ -74,7 +75,7 @@ GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 		GPlatesQtWidgets::ViewportWindow &viewport_window)
 {
 	//
-	// Create fit-to-pole canvas tool.
+	// Create select-hellinger-geometries canvas tool.
 	//
 
 	GPlatesCanvasTools::SelectHellingerGeometries::non_null_ptr_type select_hellinger_geometries_tool =
@@ -99,6 +100,32 @@ GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 					viewport_window.map_view(),
 					view_state.get_map_transform()));
 
+
+	//
+	// Create adjust-pole-estimate canvas tool.
+	//
+	GPlatesCanvasTools::AdjustFittedPoleEstimate::non_null_ptr_type adjust_pole_estimate_tool =
+			GPlatesCanvasTools::AdjustFittedPoleEstimate::create(
+				status_bar_callback,
+				view_state.get_rendered_geometry_collection(),
+				WORKFLOW_RENDER_LAYER,
+				//NOTE: this tool uses a stand-alone dialog rather than
+				//a task-panel widget.
+				viewport_window.dialogs().hellinger_dialog());
+	// For the globe view.
+	d_globe_adjust_pole_estimate_tool.reset(
+				new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
+					adjust_pole_estimate_tool,
+					viewport_window.globe_canvas().globe(),
+					viewport_window.globe_canvas()));
+	// For the map view.
+	d_map_adjust_pole_estimate_tool.reset(
+				new GPlatesCanvasTools::CanvasToolAdapterForMap(
+					adjust_pole_estimate_tool,
+					viewport_window.map_view().map_canvas(),
+					viewport_window.map_view(),
+					view_state.get_map_transform()));
+
 }
 
 void
@@ -112,6 +139,7 @@ GPlatesGui::HellingerCanvasToolWorkflow::initialise()
 	// don't need to enable/disable it here.
 
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES, true);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_ADJUST_FITTED_POLE_ESTIMATE, true);
 }
 
 void
@@ -136,6 +164,8 @@ GPlatesGui::HellingerCanvasToolWorkflow::get_selected_globe_and_map_canvas_tools
 	{
 	case CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES:
 		return std::make_pair(d_globe_select_hellinger_geometries_tool.get(), d_map_select_hellinger_geometries_tool.get());
+	case CanvasToolWorkflows::TOOL_ADJUST_FITTED_POLE_ESTIMATE:
+		return std::make_pair(d_globe_adjust_pole_estimate_tool.get(), d_map_adjust_pole_estimate_tool.get());
 
 	default:
 		break;

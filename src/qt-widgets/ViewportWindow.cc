@@ -1350,14 +1350,6 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 		d_task_panel_ptr->choose_modify_pole_tab();
 		break;
 
-	case GPlatesGui::CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES:
-		// NOTE: We don't currently have any hellinger task panels
-		// (and we may never have any), so we just open the
-		// Hellinger dialog here, unlike most other tools which will
-		// activate their associated task panels.
-		dialogs().pop_up_hellinger_dialog();
-		break;
-
 	case GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY:
 		d_task_panel_ptr->choose_topology_tools_tab();
 		break;
@@ -1376,6 +1368,18 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 
 	case GPlatesGui::CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE:
 		d_task_panel_ptr->choose_small_circle_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES:
+		// NOTE: We don't currently have any hellinger task panels
+		// (and we may never have any), so we just open the
+		// Hellinger dialog here, unlike most other tools which will
+		// activate their associated task panels.
+		dialogs().pop_up_hellinger_dialog();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_ADJUST_FITTED_POLE_ESTIMATE:
+		dialogs().pop_up_hellinger_dialog();
 		break;
 
 	default:

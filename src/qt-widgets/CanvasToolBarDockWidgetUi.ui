@@ -890,13 +890,31 @@
     <string>Select Hellinger Geometries</string>
    </property>
    <property name="toolTip">
-    <string>Select and manipulate hellinger geometries</string>
+    <string>Select and manipulate hellinger geometries H</string>
    </property>
    <property name="shortcut">
     <string>H</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="action_Adjust_Pole_Estimate">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/plate_pole_modification_35.png</normaloff>:/plate_pole_modification_35.png</iconset>
+   </property>
+   <property name="text">
+    <string>Adjust Pole Estimate</string>
+   </property>
+   <property name="toolTip">
+    <string>Adjust Pole Estimate P</string>
+   </property>
+   <property name="shortcut">
+    <string>P</string>
    </property>
   </action>
  </widget>
