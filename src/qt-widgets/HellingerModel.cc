@@ -276,6 +276,20 @@ GPlatesQtWidgets::HellingerModel::add_pick(
 	return d_model.insert(hellinger_model_pair_type(segment_number,pick));
 }
 
+GPlatesMaths::LatLonPoint
+GPlatesQtWidgets::HellingerModel::get_initial_pole_llp()
+{
+	double lat = d_active_com_file_struct.d_lat;
+	double lon = d_active_com_file_struct.d_lon;
+	return GPlatesMaths::LatLonPoint(lat,lon);
+}
+
+double
+GPlatesQtWidgets::HellingerModel::get_initial_pole_angle()
+{
+	return d_active_com_file_struct.d_rho;
+}
+
 void
 GPlatesQtWidgets::HellingerModel::set_fit(const QStringList &fields)
 {	

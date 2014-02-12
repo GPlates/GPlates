@@ -31,7 +31,6 @@
 #include "boost/optional.hpp"
 
 #include "maths/PointOnSphere.h"
-//#include "HellingerDialog.h"
 
 
 namespace GPlatesQtWidgets
@@ -186,6 +185,12 @@ namespace GPlatesQtWidgets
 		hellinger_model_type::const_iterator
 		add_pick(const HellingerPick &pick,
 				 const unsigned int &segment_number);
+
+		GPlatesMaths::LatLonPoint
+		get_initial_pole_llp();
+
+		double
+		get_initial_pole_angle();
 
 		void
 		add_segment(hellinger_segment_type &picks,

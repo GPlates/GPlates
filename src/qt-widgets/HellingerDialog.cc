@@ -57,6 +57,7 @@
 const double SLIDER_MULTIPLIER = -10000.;
 const int DEFAULT_SYMBOL_SIZE = 2;
 const int ENLARGED_SYMBOL_SIZE = 3;
+const int POLE_ESTIMATE_SYMBOL_SIZE = 4;
 const QString TEMP_PICK_FILENAME("temp_pick");
 const QString TEMP_RESULT_FILENAME("temp_pick_temp_result");
 const QString TEMP_PAR_FILENAME("temp_par");
@@ -64,6 +65,7 @@ const QString TEMP_RES_FILENAME("temp_res");
 const double DEFAULT_POINT_SIZE = 2;
 const double DEFAULT_LINE_THICKNESS = 2;
 const double ENLARGED_POINT_SIZE = 6;
+
 
 // The following are related to the Hellinger tool in general, and not necessarily to this class.
 // TODO: check tooltips throughout the whole Hellinger workflow.
@@ -413,6 +415,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_chron_time(0.),
 	d_moving_symbol(GPlatesGui::Symbol::CROSS, DEFAULT_SYMBOL_SIZE, true),
 	d_fixed_symbol(GPlatesGui::Symbol::SQUARE, DEFAULT_SYMBOL_SIZE, false),
+	d_pole_estimate_symbol(GPlatesGui::Symbol::CIRCLE,POLE_ESTIMATE_SYMBOL_SIZE, true),
 	d_thread_type(POLE_THREAD_TYPE),
 	d_hovered_item_original_state(true),
 	d_edit_point_is_enlarged(false),
@@ -1172,7 +1175,7 @@ GPlatesQtWidgets::HellingerDialog::update_from_model()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::draw_pole(
+GPlatesQtWidgets::HellingerDialog::draw_pole_result(
 		const double &lat,
 		const double &lon)
 {
@@ -1206,7 +1209,7 @@ GPlatesQtWidgets::HellingerDialog::update_result()
 		spinbox_result_lat->setValue(data_fit_struct.get().d_lat);
 		spinbox_result_lon->setValue(data_fit_struct.get().d_lon);
 		spinbox_result_angle->setValue(data_fit_struct.get().d_angle);
-		draw_pole(data_fit_struct.get().d_lat, data_fit_struct.get().d_lon);
+		draw_pole_result(data_fit_struct.get().d_lat, data_fit_struct.get().d_lon);
 	}
 
 }
@@ -1295,6 +1298,7 @@ GPlatesQtWidgets::HellingerDialog::update_canvas()
 {
 	clear_rendered_geometries();
 	draw_picks();
+	draw_pole_estimate();
 	update_result();
 	draw_error_ellipse();
 	update_hovered_item();
@@ -1567,6 +1571,29 @@ void GPlatesQtWidgets::HellingerDialog::draw_picks()
 	}
 }
 
+void GPlatesQtWidgets::HellingerDialog::draw_pole_estimate()
+{
+	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
+	d_pole_estimate_layer_ptr->clear_rendered_geometries();
+
+	GPlatesMaths::PointOnSphere pole = GPlatesMaths::make_point_on_sphere(
+				d_hellinger_model->get_initial_pole_llp());
+
+	GPlatesViewOperations::RenderedGeometry pole_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+				pole.get_non_null_pointer(),
+				GPlatesGui::Colour::get_white(),
+				2, /* point thickness */
+				2, /* line thickness */
+				false, /* fill polygon */
+				false, /* fill polyline */
+				GPlatesGui::Colour::get_white(), // dummy colour argument
+				d_pole_estimate_symbol);
+
+	d_pole_estimate_layer_ptr->add_rendered_geometry(pole_geometry);
+
+}
+
 void
 GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 {
@@ -1767,8 +1794,8 @@ void
 GPlatesQtWidgets::HellingerDialog::handle_fit_spinboxes_changed()
 {
 	//TODO: think about if we want this behaviour - i.e. allowing a user to changed
-	// the "fit result" values and the corresponding display. I think I will disable
-	// this for now.
+	// the "fit result" values and the corresponding display. The spinboxes are
+	// read only at the moment.
 
 	GPlatesQtWidgets::HellingerFitStructure fit(spinbox_result_lat->value(),
 											   spinbox_result_lon->value(),

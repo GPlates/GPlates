@@ -244,7 +244,7 @@ namespace GPlatesQtWidgets
 				const int &segment_number);
 
 		void
-		draw_pole(
+		draw_pole_result(
 				const double &lat,
 				const double &lon);
 
@@ -274,6 +274,12 @@ namespace GPlatesQtWidgets
 
 		void
 		draw_picks();
+
+		/**
+		 * @brief draw_estimate - draw the initial estimate of the pole.
+		 */
+		void
+		draw_pole_estimate();
 
 		const GPlatesGui::Colour &get_segment_colour(
 				int num_color);
@@ -463,6 +469,7 @@ namespace GPlatesQtWidgets
 		double d_chron_time;
 		GPlatesGui::Symbol d_moving_symbol;
 		GPlatesGui::Symbol d_fixed_symbol;
+		GPlatesGui::Symbol d_pole_estimate_symbol;
 
 		ThreadType d_thread_type;
 		QString d_python_path;
