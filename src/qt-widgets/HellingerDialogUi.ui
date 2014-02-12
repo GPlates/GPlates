@@ -631,7 +631,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QDoubleSpinBox" name="spinbox_lat">
+           <widget class="QDoubleSpinBox" name="spinbox_lat_estimate">
             <property name="minimumSize">
              <size>
               <width>100</width>
@@ -661,7 +661,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QDoubleSpinBox" name="spinbox_lon">
+           <widget class="QDoubleSpinBox" name="spinbox_lon_estimate">
             <property name="minimumSize">
              <size>
               <width>100</width>
@@ -691,7 +691,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QDoubleSpinBox" name="spinbox_rho">
+           <widget class="QDoubleSpinBox" name="spinbox_rho_estimate">
             <property name="minimumSize">
              <size>
               <width>100</width>
@@ -1165,9 +1165,9 @@
   <tabstop>button_edit_pick</tabstop>
   <tabstop>button_activate_pick</tabstop>
   <tabstop>button_deactivate_pick</tabstop>
-  <tabstop>spinbox_lat</tabstop>
-  <tabstop>spinbox_lon</tabstop>
-  <tabstop>spinbox_rho</tabstop>
+  <tabstop>spinbox_lat_estimate</tabstop>
+  <tabstop>spinbox_lon_estimate</tabstop>
+  <tabstop>spinbox_rho_estimate</tabstop>
   <tabstop>spinbox_radius</tabstop>
   <tabstop>spinbox_sig_level</tabstop>
   <tabstop>checkbox_grid_search</tabstop>

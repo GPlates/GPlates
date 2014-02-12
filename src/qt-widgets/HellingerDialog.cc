@@ -57,7 +57,7 @@
 const double SLIDER_MULTIPLIER = -10000.;
 const int DEFAULT_SYMBOL_SIZE = 2;
 const int ENLARGED_SYMBOL_SIZE = 3;
-const int POLE_ESTIMATE_SYMBOL_SIZE = 4;
+const int POLE_ESTIMATE_SYMBOL_SIZE = 1;
 const QString TEMP_PICK_FILENAME("temp_pick");
 const QString TEMP_RESULT_FILENAME("temp_pick_temp_result");
 const QString TEMP_PAR_FILENAME("temp_par");
@@ -72,8 +72,6 @@ const double ENLARGED_POINT_SIZE = 6;
 // TODO: check button/widget focus throughout Hellinger workflow - this seems to be going
 // all over the place at the moment.
 // TODO: clean up the system of filenames which are passed to python.
-// FIXME: when adding a new pick, sometimes when you click on a position near an existing pick
-// a nearby pick is highlighted. Sort out.
 // TODO: Allow clicking and dragging of newly placed picks - this has broken recently somehow.
 //  - actually we can probably do without this behaviour; it has no corresponding behvaviour in the
 // digitisation tool.
@@ -856,15 +854,21 @@ GPlatesQtWidgets::HellingerDialog::handle_spinbox_radius_changed()
 }
 
 void
+GPlatesQtWidgets::HellingerDialog::handle_estimate_changed()
+{
+
+}
+
+void
 GPlatesQtWidgets::HellingerDialog::update_initial_guess()
 {
 	boost::optional<GPlatesQtWidgets::HellingerComFileStructure> com_file_data = d_hellinger_model->get_com_file();
 
 	if (com_file_data)
 	{
-		spinbox_lat->setValue(com_file_data.get().d_lat);
-		spinbox_lon->setValue(com_file_data.get().d_lon);
-		spinbox_rho->setValue(com_file_data.get().d_rho);
+		spinbox_lat_estimate->setValue(com_file_data.get().d_lat);
+		spinbox_lon_estimate->setValue(com_file_data.get().d_lon);
+		spinbox_rho_estimate->setValue(com_file_data.get().d_rho);
 		spinbox_radius->setValue(com_file_data.get().d_search_radius);
 		checkbox_grid_search->setChecked(com_file_data.get().d_perform_grid_search);
 		spinbox_sig_level->setValue(com_file_data.get().d_significance_level);
@@ -1005,7 +1009,7 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 
 	}
 
-	if (!(spinbox_rho->value() > 0))
+	if (!(spinbox_rho_estimate->value() > 0))
 	{
 		QMessageBox::critical(this,tr("Initial guess values"),
 							  tr("The value of rho in the initial guess is zero. Please enter a non-zero value"),
@@ -1014,9 +1018,9 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 	}
 
 	d_hellinger_model->set_initial_guess(
-				spinbox_lat->value(),
-				spinbox_lon->value(),
-				spinbox_rho->value(),
+				spinbox_lat_estimate->value(),
+				spinbox_lon_estimate->value(),
+				spinbox_rho_estimate->value(),
 				spinbox_radius->value());
 
 	QFile python_code(d_python_file);
@@ -1032,9 +1036,9 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 		// Can we use a bitset or a vector of bools instead of std::vector<int> for example?
 		std::vector<double> input_data;
 		std::vector<int> bool_data;
-		input_data.push_back(spinbox_lat->value());
-		input_data.push_back(spinbox_lon->value());
-		input_data.push_back(spinbox_rho->value());
+		input_data.push_back(spinbox_lat_estimate->value());
+		input_data.push_back(spinbox_lon_estimate->value());
+		input_data.push_back(spinbox_rho_estimate->value());
 		input_data.push_back(spinbox_radius->value());
 		input_data.push_back(spinbox_sig_level->value());
 		int iteration;
@@ -1820,9 +1824,9 @@ void GPlatesQtWidgets::HellingerDialog::update_model_with_com_data()
 {
 	HellingerComFileStructure com_file_struct;
 	com_file_struct.d_pick_file = line_import_file->text();
-	com_file_struct.d_lat = spinbox_lat->value();
-	com_file_struct.d_lon = spinbox_lon->value();
-	com_file_struct.d_rho = spinbox_rho->value();
+	com_file_struct.d_lat = spinbox_lat_estimate->value();
+	com_file_struct.d_lon = spinbox_lon_estimate->value();
+	com_file_struct.d_rho = spinbox_rho_estimate->value();
 	com_file_struct.d_search_radius = spinbox_radius->value();
 	com_file_struct.d_perform_grid_search = checkbox_grid_search->isChecked();
 	com_file_struct.d_significance_level = spinbox_sig_level->value();
@@ -1843,6 +1847,7 @@ void GPlatesQtWidgets::HellingerDialog::update_model_with_com_data()
 
 void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 {
+	// Connections related to the pick tree-widget and associated buttons.
 	QObject::connect(button_calculate_fit, SIGNAL(clicked()),this, SLOT(handle_calculate_fit()));
 	QObject::connect(button_import_file, SIGNAL(clicked()), this, SLOT(import_hellinger_file()));
 	QObject::connect(button_details, SIGNAL(clicked()), this, SLOT(show_stat_details()));
@@ -1861,24 +1866,37 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(button_deactivate_pick, SIGNAL(clicked()), this, SLOT(handle_pick_state_changed()));
 	QObject::connect(button_renumber, SIGNAL(clicked()), this, SLOT(renumber_segments()));
 	QObject::connect(button_close, SIGNAL(rejected()), this, SLOT(handle_close()));
+	QObject::connect(button_clear,SIGNAL(clicked()),this,SLOT(handle_clear()));
+	QObject::connect(tree_widget,SIGNAL(collapsed(QModelIndex)),this,SLOT(store_expanded_status()));
+	QObject::connect(tree_widget,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
+	QObject::connect(tree_widget->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
+					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
 
+	// Connections related to the initial guess and other fit parameters.
+	QObject::connect(spinbox_lat_estimate,SIGNAL(valueChanged(double)),
+					 this, SLOT(handle_estimate_changed()));
+	QObject::connect(spinbox_lon_estimate,SIGNAL(valueChanged(double)),
+					 this, SLOT(handle_estimate_changed()));
+	QObject::connect(spinbox_rho_estimate,SIGNAL(valueChanged(double)),
+					 this, SLOT(handle_estimate_changed()));
+	QObject::connect(spinbox_radius, SIGNAL(valueChanged(double)), this, SLOT(handle_spinbox_radius_changed()));
+	QObject::connect(checkbox_grid_search, SIGNAL(clicked()), this, SLOT(handle_checkbox_grid_search_changed()));
+
+
+	// Connections related to the resultant pole.
 	QObject::connect(spinbox_chron, SIGNAL(valueChanged(double)), this, SLOT(handle_chron_time_changed(double)));
 	QObject::connect(spinbox_recon_time, SIGNAL(valueChanged(double)), this, SLOT(handle_recon_time_spinbox_changed(double)));
 	QObject::connect(slider_recon_time, SIGNAL(valueChanged(int)), this, SLOT(handle_recon_time_slider_changed(int)));
 	QObject::connect(spinbox_result_lat, SIGNAL(valueChanged(double)), this, SLOT(handle_fit_spinboxes_changed()));
 	QObject::connect(spinbox_result_lon, SIGNAL(valueChanged(double)), this, SLOT(handle_fit_spinboxes_changed()));
 	QObject::connect(spinbox_result_angle, SIGNAL(valueChanged(double)), this, SLOT(handle_fit_spinboxes_changed()));
-	QObject::connect(spinbox_radius, SIGNAL(valueChanged(double)), this, SLOT(handle_spinbox_radius_changed()));
-	QObject::connect(checkbox_grid_search, SIGNAL(clicked()), this, SLOT(handle_checkbox_grid_search_changed()));
-	QObject::connect(tree_widget,SIGNAL(collapsed(QModelIndex)),this,SLOT(store_expanded_status()));
-	QObject::connect(tree_widget,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
-	QObject::connect(tree_widget->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
-					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
 
+
+	// Connections related to the python threads.
 	QObject::connect(d_hellinger_thread, SIGNAL(finished()),this, SLOT(handle_thread_finished()));
 	QObject::connect(button_cancel,SIGNAL(clicked()),this,SLOT(handle_cancel()));
-	QObject::connect(button_clear,SIGNAL(clicked()),this,SLOT(handle_clear()));
 
+	// Connections related to child dialogs.
 	QObject::connect(d_hellinger_edit_point_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
 	QObject::connect(d_hellinger_new_point_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
 

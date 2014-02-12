@@ -350,6 +350,9 @@ namespace GPlatesQtWidgets
 		handle_spinbox_radius_changed();
 
 		void
+		handle_estimate_changed();
+
+		void
 		handle_chron_time_changed(
 				const double &time);
 
