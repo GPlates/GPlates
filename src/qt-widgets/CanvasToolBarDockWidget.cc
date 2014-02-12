@@ -323,10 +323,6 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_pole_manipulation_workflow()
 			pole_manipulation_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE,
 			action_Manipulate_Pole);
-	add_tool_action_to_workflow(
-			pole_manipulation_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES,
-			action_Select_Hellinger_Geometries);
 }
 
 

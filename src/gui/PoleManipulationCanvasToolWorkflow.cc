@@ -34,7 +34,6 @@
 #include "canvas-tools/CanvasToolAdapterForGlobe.h"
 #include "canvas-tools/CanvasToolAdapterForMap.h"
 #include "canvas-tools/ClickGeometry.h"
-#include "canvas-tools/SelectHellingerGeometries.h"
 #include "canvas-tools/ManipulatePole.h"
 
 #include "global/GPlatesAssert.h"
@@ -155,31 +154,6 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 					viewport_window.map_view(),
 					view_state.get_map_transform()));
 
-	//
-	// Fit-to-pole canvas tool.
-	//
-
-	GPlatesCanvasTools::SelectHellingerGeometries::non_null_ptr_type select_hellinger_geometries_tool =
-			GPlatesCanvasTools::SelectHellingerGeometries::create(
-					status_bar_callback,
-					view_state.get_rendered_geometry_collection(),
-					WORKFLOW_RENDER_LAYER,
-					//Note that this tool uses a stand-alone dialog rather than
-					//a task-panel widget.
-					viewport_window.dialogs().hellinger_dialog());
-	// For the globe view.
-	d_globe_select_hellinger_geometries_tool.reset(
-			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
-					select_hellinger_geometries_tool,
-					viewport_window.globe_canvas().globe(),
-					viewport_window.globe_canvas()));
-	// For the map view.
-	d_map_select_hellinger_geometries_tool.reset(
-			new GPlatesCanvasTools::CanvasToolAdapterForMap(
-					select_hellinger_geometries_tool,
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
-					view_state.get_map_transform()));
 
 }
 
@@ -194,7 +168,6 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::initialise()
 	// NOTE: If you are updating the tool in 'update_enable_state()' then you
 	// don't need to enable/disable it here.
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_CLICK_GEOMETRY, true);
-	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES, true);
 
 	update_enable_state();
 }
@@ -254,9 +227,6 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::get_selected_globe_and_map_canva
 
 	case CanvasToolWorkflows::TOOL_MANIPULATE_POLE:
 		return std::make_pair(d_globe_manipulate_pole_tool.get(), d_map_manipulate_pole_tool.get());
-
-	case CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES:
-		return std::make_pair(d_globe_select_hellinger_geometries_tool.get(), d_map_select_hellinger_geometries_tool.get());
 
 	default:
 		break;
