@@ -80,7 +80,7 @@ const double ENLARGED_POINT_SIZE = 6;
 // we might say something like: "Click to update location of new pick; shift-click on a highlighted geometry to create pick
 // at that geometry". That's very long unfortunately, so I need to find a briefer way to say that.
 // TODO: Find better way of highlighting geometries so that it respects the geometry's original render type (e.g. symbols...)
-
+// TODO: Farm out rendering functionality  to the canvas tool classes.
 
 
 namespace{
@@ -417,7 +417,9 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_thread_type(POLE_THREAD_TYPE),
 	d_hovered_item_original_state(true),
 	d_edit_point_is_enlarged(false),
-	d_canvas_operation_type(SELECT_OPERATION)
+	d_canvas_operation_type(SELECT_OPERATION),
+	d_current_pole_estimate_llp(GPlatesMaths::LatLonPoint(0,0)),
+	d_current_pole_estimate_angle(0.)
 {
 	setupUi(this);
 
@@ -856,7 +858,17 @@ GPlatesQtWidgets::HellingerDialog::handle_spinbox_radius_changed()
 void
 GPlatesQtWidgets::HellingerDialog::handle_estimate_changed()
 {
+	// The model is updated from the dialog
+	// immediately before performing a fit, so here we
+	// just update the visuals on the canvas.
+	double lat = spinbox_lat_estimate->value();
+	double lon = spinbox_lon_estimate->value();
 
+	d_current_pole_estimate_llp = GPlatesMaths::LatLonPoint(lat,lon);
+	d_current_pole_estimate_angle = spinbox_rho_estimate->value();
+
+	qDebug() << "handle_estimate_changed";
+	draw_pole_estimate();
 }
 
 void
@@ -1581,7 +1593,7 @@ void GPlatesQtWidgets::HellingerDialog::draw_pole_estimate()
 	d_pole_estimate_layer_ptr->clear_rendered_geometries();
 
 	GPlatesMaths::PointOnSphere pole = GPlatesMaths::make_point_on_sphere(
-				d_hellinger_model->get_initial_pole_llp());
+				d_current_pole_estimate_llp);
 
 	GPlatesViewOperations::RenderedGeometry pole_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(

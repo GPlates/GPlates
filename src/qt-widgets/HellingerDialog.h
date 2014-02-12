@@ -492,6 +492,9 @@ namespace GPlatesQtWidgets
 		bool d_edit_point_is_enlarged;
 
 		CanvasOperationType d_canvas_operation_type;
+
+		GPlatesMaths::LatLonPoint d_current_pole_estimate_llp;
+		double d_current_pole_estimate_angle;
 	};
 }
 
