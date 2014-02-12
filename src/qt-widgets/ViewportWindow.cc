@@ -1380,8 +1380,8 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 		break;
 
 	case GPlatesGui::CanvasToolWorkflows::TOOL_ADJUST_FITTED_POLE_ESTIMATE:
-		dialogs().pop_up_and_reposition_hellinger_dialog();
-//		dialogs().pop_up_hellinger_dialog();
+//		dialogs().pop_up_and_reposition_hellinger_dialog();
+		dialogs().pop_up_hellinger_dialog();
 		break;
 
 	default:

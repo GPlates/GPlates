@@ -37,6 +37,8 @@
 
 #include "maths/GeometryType.h"
 
+#include "qt-widgets/HellingerDialog.h"
+
 
 namespace GPlatesQtWidgets
 {
@@ -100,6 +102,7 @@ namespace GPlatesGui
 		//! For adjusting the pole estimate in the 2D map view.
 		boost::scoped_ptr<MapCanvasTool> d_map_adjust_pole_estimate_tool;
 
+		GPlatesQtWidgets::HellingerDialog *d_hellinger_dialog_ptr;
 
 		void
 		create_canvas_tools(

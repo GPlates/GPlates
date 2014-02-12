@@ -61,7 +61,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_activation()
 void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_deactivation()
 {
-	d_hellinger_dialog_ptr->close();
+	//d_hellinger_dialog_ptr->close();
 }
 
 

@@ -57,7 +57,8 @@ GPlatesGui::HellingerCanvasToolWorkflow::HellingerCanvasToolWorkflow(
 			CanvasToolWorkflows::WORKFLOW_HELLINGER,
 			// The tool to start off with...
 			CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES),
-	d_rendered_geom_collection(view_state.get_rendered_geometry_collection())
+	d_rendered_geom_collection(view_state.get_rendered_geometry_collection()),
+	d_hellinger_dialog_ptr(&viewport_window.dialogs().hellinger_dialog())
 {
 	create_canvas_tools(
 			canvas_tool_workflows,
@@ -154,6 +155,7 @@ GPlatesGui::HellingerCanvasToolWorkflow::deactivate_workflow()
 {
 	// Deactivate the main rendered layer.
 	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, false/*active*/);
+	d_hellinger_dialog_ptr->hide();
 }
 
 boost::optional< std::pair<GPlatesGui::GlobeCanvasTool *, GPlatesGui::MapCanvasTool *> >

@@ -61,7 +61,7 @@ GPlatesCanvasTools::SelectHellingerGeometries::handle_activation()
 void
 GPlatesCanvasTools::SelectHellingerGeometries::handle_deactivation()
 {
-	d_hellinger_dialog_ptr->close();
+	//d_hellinger_dialog_ptr->close();
 }
 
 
