@@ -75,7 +75,6 @@ const double ENLARGED_POINT_SIZE = 6;
 // TODO: Allow clicking and dragging of newly placed picks - this has broken recently somehow.
 //  - actually we can probably do without this behaviour; it has no corresponding behvaviour in the
 // digitisation tool.
-// TODO: make results boxes non-editable text boxes, rather then disabled spinboxes as they are now.
 // TODO: remove H shortcut
 // TODO: update status bar messages according to which mode of the tool we are in. For example, when in "new pick" mode
 // we might say something like: "Click to update location of new pick; shift-click on a highlighted geometry to create pick
@@ -1904,6 +1903,11 @@ void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
 	d_feature_highlight_layer_ptr =
 			d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
+
+	// Create a rendered layer to highlight feature geometries which can be selected.
+	d_pole_estimate_layer_ptr =
+			d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
 }
 
 void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
@@ -1912,6 +1916,7 @@ void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
 	d_hover_layer_ptr->set_active(activate);
 	d_result_layer_ptr->set_active(activate);
 	d_selection_layer_ptr->set_active(activate);
+	d_pole_estimate_layer_ptr->set_active(activate);
 }
 
 void GPlatesQtWidgets::HellingerDialog::clear_rendered_geometries()
@@ -1922,6 +1927,7 @@ void GPlatesQtWidgets::HellingerDialog::clear_rendered_geometries()
 	d_result_layer_ptr->clear_rendered_geometries();
 	d_selection_layer_ptr->clear_rendered_geometries();
 	d_editing_layer_ptr->clear_rendered_geometries();
+	d_pole_estimate_layer_ptr->clear_rendered_geometries();
 }
 
 void

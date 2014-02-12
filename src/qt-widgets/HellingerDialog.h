@@ -441,6 +441,9 @@ namespace GPlatesQtWidgets
 		//! For highlighting feature geometries which can be selected
 		child_layer_ptr_type d_feature_highlight_layer_ptr;
 
+		//! For displaying the pole estimate and angle.
+		child_layer_ptr_type d_pole_estimate_layer_ptr;
+
 		ReadErrorAccumulationDialog &d_read_error_accumulation_dialog;
 		HellingerModel *d_hellinger_model;
 		HellingerStatsDialog *d_hellinger_stats_dialog;
