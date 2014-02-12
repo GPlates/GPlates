@@ -1301,8 +1301,6 @@ GPlatesQtWidgets::HellingerDialog::create_feature_collection()
 void
 GPlatesQtWidgets::HellingerDialog::handle_close()
 {
-	qDebug() << "handle_close()";
-	clear_rendered_geometries();
 	activate_layers(false);
 	d_hellinger_edit_point_dialog->close();
 	d_hellinger_new_point_dialog->close();
