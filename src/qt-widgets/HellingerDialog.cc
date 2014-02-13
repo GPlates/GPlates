@@ -1418,6 +1418,12 @@ GPlatesQtWidgets::HellingerDialog::enable_pole_estimate_widgets(
 	spinbox_rho_estimate->setEnabled(enable);
 }
 
+const GPlatesMaths::LatLonPoint &
+GPlatesQtWidgets::HellingerDialog::get_pole_estimate()
+{
+	return d_current_pole_estimate_llp;
+}
+
 void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
 {
 	if (d_selected_pick)

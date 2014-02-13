@@ -185,6 +185,9 @@ namespace GPlatesQtWidgets
 		enable_pole_estimate_widgets(
 				bool enable);
 
+		const GPlatesMaths::LatLonPoint &
+		get_pole_estimate();
+
 	public Q_SLOTS:
 
 		/**

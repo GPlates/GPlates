@@ -274,6 +274,11 @@ namespace GPlatesCanvasTools
 		//! Convenience typedef for GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 		typedef GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type child_layer_ptr_type;
 
+		void
+		update_local_values_from_hellinger_dialog();
+
+		void
+		update_pole_estimate_layer();
 
 		void
 		paint();
@@ -298,6 +303,8 @@ namespace GPlatesCanvasTools
 		// For highlighting whichever geometry (pole, reference-arc,or relative-arc) is
 		// hovered over and hence draggable / adjustable
 		child_layer_ptr_type d_highlight_layer_ptr;
+
+		GPlatesMaths::PointOnSphere d_current_pole;
 
 //		GPlatesMaths::GreatCircleArc d_reference_arc;
 
