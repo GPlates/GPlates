@@ -452,46 +452,10 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_python_file = d_python_path + "py_hellinger.py";
 	d_temporary_path = d_python_path;
 
-	progress_bar->setEnabled(false);
-	progress_bar->setMinimum(0.);
-	progress_bar->setMaximum(1.);
-	progress_bar->setValue(0.);
 
 	update_from_model();
 
-	// As we are moving towards canvas tool behaviour, the dialog will be
-	// closed by switching tool/workflow. Hide the "close" button for now.
-	button_close->hide();
-
-	// For eventual insertion of generated pole into the model.
-	groupbox_rotation->hide();
-
-	// Set result boxes to read-only (but enabled). We may want
-	// to allow the user to adjust the pole result later.
-	// Disabling them is another option, but that greys them
-	// out and gives the impression that they don't play a part
-	// in the tool.
-	spinbox_result_lat->setReadOnly(true);
-	spinbox_result_lon->setReadOnly(true);
-	spinbox_result_angle->setReadOnly(true);
-
-	// For eventual interruption of the python thread.
-	button_cancel->hide();
-
-	QStringList labels;
-	labels << QObject::tr("Segment")
-		   << QObject::tr("Moving(1)/Fixed(2)")
-		   << QObject::tr("Latitude")
-		   << QObject::tr("Longitude")
-		   << QObject::tr("Uncertainty (km)");
-	tree_widget->setHeaderLabels(labels);
-
-
-	tree_widget->header()->resizeSection(SEGMENT_NUMBER,90);
-	tree_widget->header()->resizeSection(SEGMENT_TYPE,150);
-	tree_widget->header()->resizeSection(LAT,90);
-	tree_widget->header()->resizeSection(LON,90);
-	tree_widget->header()->resizeSection(UNCERTAINTY,90);
+	initialise_widgets();
 }
 
 void
@@ -512,7 +476,6 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 	// If nothing is selected:
 	//	 disable everything (except the new pick / new segment buttons - which are always enabled anyway)
 
-	qDebug() <<  "seletion changed";
 	clear_selection_layer();
 
 	if (!tree_widget->currentItem())
@@ -556,12 +519,14 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 	update_canvas();
 }
 
-void GPlatesQtWidgets::HellingerDialog::handle_cancel()
+void
+GPlatesQtWidgets::HellingerDialog::handle_cancel()
 {
 	// TODO: This is where we would (if we can) interrupt the thread running the python code.
 }
 
-void GPlatesQtWidgets::HellingerDialog::handle_finished_editing()
+void
+GPlatesQtWidgets::HellingerDialog::handle_finished_editing()
 {
 	this->setEnabled(true);
 	d_canvas_operation_type = SELECT_OPERATION;
@@ -571,7 +536,8 @@ void GPlatesQtWidgets::HellingerDialog::handle_finished_editing()
 	d_feature_highlight_layer_ptr->set_active(false);
 }
 
-void GPlatesQtWidgets::HellingerDialog::handle_update_point_editing()
+void
+GPlatesQtWidgets::HellingerDialog::handle_update_point_editing()
 {
 	d_editing_layer_ptr->clear_rendered_geometries();
 	if (is_in_edit_point_state())
@@ -592,7 +558,8 @@ void GPlatesQtWidgets::HellingerDialog::handle_update_point_editing()
 	}
 }
 
-void GPlatesQtWidgets::HellingerDialog::handle_update_segment_editing()
+void
+GPlatesQtWidgets::HellingerDialog::handle_update_segment_editing()
 {
 	if (d_hellinger_edit_segment_dialog->current_pick())
 	{
@@ -606,6 +573,54 @@ void GPlatesQtWidgets::HellingerDialog::handle_update_segment_editing()
 }
 
 void
+GPlatesQtWidgets::HellingerDialog::initialise_widgets()
+{
+	progress_bar->setEnabled(false);
+	progress_bar->setMinimum(0.);
+	progress_bar->setMaximum(1.);
+	progress_bar->setValue(0.);
+
+	// As we are moving towards canvas tool behaviour, the dialog will be
+	// closed by switching tool/workflow. Hide the "close" button for now.
+	button_close->hide();
+
+	// For eventual insertion of generated pole into the model.
+	groupbox_rotation->hide();
+
+
+	// Set result boxes to read-only (but enabled). We may want
+	// to allow the user to adjust the pole result later.
+	// Disabling them is another option, but that greys them
+	// out and gives the impression that they don't play a part
+	// in the tool.
+	spinbox_result_lat->setReadOnly(true);
+	spinbox_result_lon->setReadOnly(true);
+	spinbox_result_angle->setReadOnly(true);
+
+	// For eventual interruption of the python thread.
+	button_cancel->hide();
+
+	// Make the pole estimate widgets disabled. They will be enabled when
+	// the AdjustPoleEstimate tool is selected
+	enable_pole_estimate_widgets(false);
+
+	QStringList labels;
+	labels << QObject::tr("Segment")
+		   << QObject::tr("Moving(1)/Fixed(2)")
+		   << QObject::tr("Latitude")
+		   << QObject::tr("Longitude")
+		   << QObject::tr("Uncertainty (km)");
+	tree_widget->setHeaderLabels(labels);
+
+
+	tree_widget->header()->resizeSection(SEGMENT_NUMBER,90);
+	tree_widget->header()->resizeSection(SEGMENT_TYPE,150);
+	tree_widget->header()->resizeSection(LAT,90);
+	tree_widget->header()->resizeSection(LON,90);
+	tree_widget->header()->resizeSection(UNCERTAINTY,90);
+}
+
+void
 GPlatesQtWidgets::HellingerDialog::highlight_selected_pick(
 		const HellingerPick &pick)
 {
@@ -613,7 +628,8 @@ GPlatesQtWidgets::HellingerDialog::highlight_selected_pick(
 	add_pick_geometry_to_layer(pick,d_selection_layer_ptr,colour);
 }
 
-void GPlatesQtWidgets::HellingerDialog::highlight_selected_segment(
+void
+GPlatesQtWidgets::HellingerDialog::highlight_selected_segment(
 		const int &segment_number)
 {
 	hellinger_segment_type segment = d_hellinger_model->get_segment(segment_number);
@@ -778,12 +794,7 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_segment()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::initialise()
-{
-	update_from_model();
-}
-
-void GPlatesQtWidgets::HellingerDialog::restore()
+GPlatesQtWidgets::HellingerDialog::restore()
 {
 	activate_layers();
 	update_from_model();
@@ -840,11 +851,9 @@ GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 	}
 
 	line_import_file->setText(path);
-	clear_rendered_geometries();
 
 	update_buttons();
 	update_from_model();
-	initialise();
 	handle_expand_all();
 	update_canvas();
 }
@@ -1375,7 +1384,8 @@ void GPlatesQtWidgets::HellingerDialog::set_feature_highlight(
 	d_feature_highlight_layer_ptr->add_rendered_geometry(highlight_geometry);
 }
 
-void GPlatesQtWidgets::HellingerDialog::update_after_new_pick(
+void
+GPlatesQtWidgets::HellingerDialog::update_after_new_pick(
 		const hellinger_model_type::const_iterator &it,
 		const int segment_number)
 {
@@ -1387,7 +1397,8 @@ void GPlatesQtWidgets::HellingerDialog::update_after_new_pick(
 	update_canvas();
 }
 
-void GPlatesQtWidgets::HellingerDialog::update_after_new_segment(
+void
+GPlatesQtWidgets::HellingerDialog::update_after_new_segment(
 		const int segment_number)
 {
 	set_selected_segment(segment_number);
@@ -1396,6 +1407,15 @@ void GPlatesQtWidgets::HellingerDialog::update_after_new_segment(
 	expand_segment(segment_number);
 	update_buttons();
 	update_canvas();
+}
+
+void
+GPlatesQtWidgets::HellingerDialog::enable_pole_estimate_widgets(
+		bool enable)
+{
+	spinbox_lat_estimate->setEnabled(enable);
+	spinbox_lon_estimate->setEnabled(enable);
+	spinbox_rho_estimate->setEnabled(enable);
 }
 
 void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
@@ -1959,7 +1979,7 @@ void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
 			d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
 
-	// Create a rendered layer to highlight feature geometries which can be selected.
+	// Create a rendered layer to draw the pole estimate.
 	d_pole_estimate_layer_ptr =
 			d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
@@ -2079,6 +2099,11 @@ GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GP
 GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GPlatesQtWidgets::HellingerDialog::get_feature_highlight_layer()
 {
 	return d_feature_highlight_layer_ptr;
+}
+
+GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GPlatesQtWidgets::HellingerDialog::get_pole_estimate_layer()
+{
+	return d_pole_estimate_layer_ptr;
 }
 
 void GPlatesQtWidgets::HellingerDialog::set_hovered_pick(

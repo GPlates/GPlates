@@ -155,6 +155,9 @@ GPlatesGui::HellingerCanvasToolWorkflow::deactivate_workflow()
 {
 	// Deactivate the main rendered layer.
 	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, false/*active*/);
+
+	// Seeing as we have a dialog, as opposed to a task panel, we want to hide this
+	// when deactivating. Most other workflows won't need to do anything like this.
 	d_hellinger_dialog_ptr->hide();
 }
 

@@ -47,21 +47,22 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::AdjustFittedPoleEstimate(
 	CanvasTool(status_bar_callback),
 	d_rendered_geom_collection_ptr(&rendered_geom_collection),
 	d_hellinger_dialog_ptr(&hellinger_dialog),
-	d_mouse_is_over_editable_pick(false),
-	d_pick_is_being_dragged(false)
+	d_mouse_is_over_pole_estimate(false),
+	d_pole_is_being_dragged(false)
 {
 }
 
 void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_activation()
 {
-	set_status_bar_message(QT_TR_NOOP("Click to select a pick. Shift+click to edit a pick."));
+	set_status_bar_message(QT_TR_NOOP("Click and drag to adjust the pole estimate location."));
+	d_hellinger_dialog_ptr->enable_pole_estimate_widgets(true);
 }
 
 void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_deactivation()
 {
-	//d_hellinger_dialog_ptr->close();
+	d_hellinger_dialog_ptr->enable_pole_estimate_widgets(false);
 }
 
 
@@ -71,35 +72,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_click(
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
 {
-	if (!is_on_earth)
-	{
-		return;
-	}
 
-
-	GPlatesMaths::ProximityCriteria proximity_criteria(
-			point_on_sphere,
-			proximity_inclusion_threshold);
-	std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
-	if (GPlatesViewOperations::test_proximity(
-				sorted_hits,
-				proximity_criteria,
-				*d_hellinger_dialog_ptr->get_pick_layer()))
-	{
-		const unsigned int index = sorted_hits.front().d_rendered_geom_index;
-		d_hellinger_dialog_ptr->set_selected_pick(index);
-	}
-	else
-	{
-		d_hellinger_dialog_ptr->clear_selection_layer();
-	}
-
-	if (d_hellinger_dialog_ptr->is_in_new_point_state())
-	{
-		//Place the new point here.
-		qDebug() << "HLC: updating edit layer";
-		d_hellinger_dialog_ptr->update_edit_layer(point_on_sphere);
-	}
 }
 
 
@@ -115,66 +88,31 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 			proximity_inclusion_threshold);
 	std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
 
-	if (d_hellinger_dialog_ptr->is_in_new_point_state())
-	{
-		if (GPlatesViewOperations::test_vertex_proximity(
-					sorted_hits,
-					*d_rendered_geom_collection_ptr,
-					GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER,
-					proximity_criteria))
-		{
-			// highlight the vertex
-			qDebug() << "Checking for geometry in MWD";
-			GPlatesViewOperations::RenderedGeometryProximityHit hit = sorted_hits.front();
-			GeometryFinder finder(hit.d_proximity_hit_detail->index());
-			GPlatesViewOperations::RenderedGeometry rg =
-					hit.d_rendered_geom_layer->get_rendered_geometry(
-						hit.d_rendered_geom_index);
-			rg.accept_visitor(finder);
-			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> pos =
-					finder.get_geometry();
-			if (pos)
-			{
-				qDebug() << "MWD: Found existing vertex";
-				d_hellinger_dialog_ptr->set_feature_highlight(**pos);
-			}
-		}
-		else
-		{
-			d_hellinger_dialog_ptr->clear_feature_highlight_layer();
-		}
-	}
 
-	// Check editing layer
-	else if (d_hellinger_dialog_ptr->is_in_edit_point_state())
-	{
-		if (GPlatesViewOperations::test_proximity(
-					sorted_hits,
-					proximity_criteria,
-					*d_hellinger_dialog_ptr->get_editing_layer()))
-		{
-			//qDebug() << "moving over editable geom";
-			d_mouse_is_over_editable_pick = true;
-			d_hellinger_dialog_ptr->set_enlarged_edit_geometry();
-		}
-		else
-		{
-			//qDebug() << "not moving over editable geom";
-			d_mouse_is_over_editable_pick = false;
-			d_hellinger_dialog_ptr->set_enlarged_edit_geometry(false);
-		}
-	}
-	else if (GPlatesViewOperations::test_proximity(
+	if (GPlatesViewOperations::test_proximity(
 				sorted_hits,
 				proximity_criteria,
-				*d_hellinger_dialog_ptr->get_pick_layer()))
+				*d_hellinger_dialog_ptr->get_pole_estimate_layer()))
 	{
-		const unsigned int index = sorted_hits.front().d_rendered_geom_index;
-		d_hellinger_dialog_ptr->set_hovered_pick(index);
+		// highlight the vertex
+		qDebug() << "Checking for geometry in MWD";
+		GPlatesViewOperations::RenderedGeometryProximityHit hit = sorted_hits.front();
+		GeometryFinder finder(hit.d_proximity_hit_detail->index());
+		GPlatesViewOperations::RenderedGeometry rg =
+				hit.d_rendered_geom_layer->get_rendered_geometry(
+					hit.d_rendered_geom_index);
+		rg.accept_visitor(finder);
+		boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> pos =
+				finder.get_geometry();
+		if (pos)
+		{
+			qDebug() << "MWD: Found pole estimate";
+
+		}
 	}
 	else
 	{
-		d_hellinger_dialog_ptr->clear_hovered_layer();
+
 	}
 }
 
@@ -254,7 +192,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_press(
 		double proximity_inclusion_threshold)
 {
 
-	if (!d_mouse_is_over_editable_pick)
+	if (!d_mouse_is_over_pole_estimate)
 	{
 		return;
 	}
@@ -273,11 +211,11 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_press(
 					proximity_criteria,
 					*d_hellinger_dialog_ptr->get_editing_layer()))
 		{
-			d_pick_is_being_dragged = true;
+			d_pole_is_being_dragged = true;
 		}
 		else
 		{
-			d_mouse_is_over_editable_pick = false;
+			d_mouse_is_over_pole_estimate = false;
 		}
 	}
 }
@@ -305,7 +243,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_release_after_drag(
 		double current_proximity_inclusion_threshold,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 {
-	d_pick_is_being_dragged = false;
+	d_pole_is_being_dragged = false;
 	d_hellinger_dialog_ptr->set_enlarged_edit_geometry(false);
 	d_hellinger_dialog_ptr->update_edit_layer(current_point_on_sphere);
 
@@ -321,7 +259,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_drag(
 		double current_proximity_inclusion_threshold,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 {
-	if (d_pick_is_being_dragged)
+	if (d_pole_is_being_dragged)
 	{
 		d_hellinger_dialog_ptr->update_edit_layer(current_point_on_sphere);
 	}

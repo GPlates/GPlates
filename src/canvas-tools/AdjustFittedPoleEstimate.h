@@ -32,6 +32,7 @@
 
 #include "CanvasTool.h"
 
+#include "maths/GreatCircleArc.h"
 #include "maths/MultiPointOnSphere.h"
 
 #include "view-operations/RenderedCircleSymbol.h"
@@ -81,6 +82,9 @@ namespace GPlatesCanvasTools
 
 		/**
 		 * Visitor to find a rendered geometry's point-on-sphere, if it has one.
+		 * TODO: this class has been copied from SelectHellingerGeometry tool; it
+		 * is probably required here too, in which case we want to put it somewhere
+		 * else accessible by both tools.
 		 */
 		class GeometryFinder:
 			public GPlatesViewOperations::ConstRenderedGeometryVisitor
@@ -267,6 +271,10 @@ namespace GPlatesCanvasTools
 
 	private:
 
+		//! Convenience typedef for GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+		typedef GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type child_layer_ptr_type;
+
+
 		void
 		paint();
 
@@ -281,9 +289,20 @@ namespace GPlatesCanvasTools
 
 		GPlatesQtWidgets::HellingerDialog *d_hellinger_dialog_ptr;
 
-		bool d_mouse_is_over_editable_pick;
-		bool d_mouse_is_over_selectable_pick;
-		bool d_pick_is_being_dragged;
+		bool d_mouse_is_over_pole_estimate;
+		bool d_pole_is_being_dragged;
+
+		// For drawing the pole, and displaying the angle sector
+		child_layer_ptr_type d_pole_estimate_layer_ptr;
+
+		// For highlighting whichever geometry (pole, reference-arc,or relative-arc) is
+		// hovered over and hence draggable / adjustable
+		child_layer_ptr_type d_highlight_layer_ptr;
+
+//		GPlatesMaths::GreatCircleArc d_reference_arc;
+
+//		GPlatesMaths::GreatCircleArc d_relative_arc;
+
 	};
 }
 

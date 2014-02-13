@@ -1376,11 +1376,9 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 		// Hellinger dialog here, unlike most other tools which will
 		// activate their associated task panels.
 		dialogs().pop_up_and_reposition_hellinger_dialog();
-		//dialogs().pop_up_hellinger_dialog();
 		break;
 
 	case GPlatesGui::CanvasToolWorkflows::TOOL_ADJUST_FITTED_POLE_ESTIMATE:
-//		dialogs().pop_up_and_reposition_hellinger_dialog();
 		dialogs().pop_up_hellinger_dialog();
 		break;
 

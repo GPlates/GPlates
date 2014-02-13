@@ -86,12 +86,6 @@ namespace GPlatesQtWidgets
 				QWidget *parent_ = NULL);
 
 		/**
-		 * Set initial values for dialog.
-		 */
-		void
-		initialise();
-
-		/**
 		 * Set the pick layer active, and draw the model contents on the canvas
 		 */
 		void
@@ -125,6 +119,9 @@ namespace GPlatesQtWidgets
 
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 		get_feature_highlight_layer();
+
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+		get_pole_estimate_layer();
 
 		void
 		set_hovered_pick(
@@ -183,6 +180,10 @@ namespace GPlatesQtWidgets
 		void
 		update_after_new_segment(
 				const int segment_number);
+
+		void
+		enable_pole_estimate_widgets(
+				bool enable);
 
 	public Q_SLOTS:
 
@@ -388,6 +389,12 @@ namespace GPlatesQtWidgets
 
 		//! Convenience typedef for GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 		typedef GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type child_layer_ptr_type;
+
+		/**
+		 * @brief initialise_widgets - set-up initial state of widgets.
+		 */
+		void
+		initialise_widgets();
 
 		/**
 		 * Draw the model contents on the globe/map.
