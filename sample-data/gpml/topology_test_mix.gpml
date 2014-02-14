@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0322" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0324" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
     <gml:featureMember>
         <gpml:SubductionZone>
             <gpml:identity>GPlates-048580e2-b8b5-436a-902a-740674cd1173</gpml:identity>
@@ -80,7 +80,7 @@
                         <gml:OrientableCurve>
                             <gml:baseCurve>
                                 <gml:LineString>
-                                    <gml:posList gml:dimension="2">20 5 20 40 </gml:posList>
+                                    <gml:posList gml:dimension="2">20 5 20 39.999999999999993 </gml:posList>
                                 </gml:LineString>
                             </gml:baseCurve>
                         </gml:OrientableCurve>
@@ -128,7 +128,7 @@
                         <gml:OrientableCurve>
                             <gml:baseCurve>
                                 <gml:LineString>
-                                    <gml:posList gml:dimension="2">29.657199999999996 19.9499 10 20 9.5557099999999995 20 9.2310099999999995 20 8.8010300000000008 20 8.4758300000000002 20 8.0481599999999993 19.999999999999993 7.6240500000000013 19.999999999999993 7.3377600000000003 19.999999999999993 6.9500799999999998 19.999999999999996 6.5914799999999998 20 6.2761199999999997 19.999999999999993 5.6807100000000004 19.999999999999996 5.3339100000000004 20 5 19.999999999999993 4.7049000000000003 20 4.4192600000000004 19.999999999999996 4.0004400000000002 19.999999999999993 3.6276700000000006 20 -0.78478499999999995 19.993099999999998 </gml:posList>
+                                    <gml:posList gml:dimension="2">29.657199999999996 19.9499 10 20 9.5557099999999995 20 9.2310099999999995 20 8.8010300000000008 20 8.4758300000000002 20 8.0481599999999993 19.999999999999989 7.6240500000000013 19.999999999999993 7.3377600000000003 19.999999999999986 6.9500799999999998 19.999999999999996 6.5914799999999998 20 6.2761200000000015 19.999999999999989 5.6807100000000004 19.999999999999996 5.3339100000000021 20 5 19.999999999999986 4.7049000000000003 20 4.4192600000000004 19.999999999999996 4.0004400000000002 19.999999999999986 3.6276700000000006 20 -0.78478499999999995 19.993099999999998 </gml:posList>
                                 </gml:LineString>
                             </gml:baseCurve>
                         </gml:OrientableCurve>
@@ -323,7 +323,7 @@
                         <gml:OrientableCurve>
                             <gml:baseCurve>
                                 <gml:LineString>
-                                    <gml:posList gml:dimension="2">24.605599999999999 4.4019000000000004 24.899100000000001 45.893399999999993 </gml:posList>
+                                    <gml:posList gml:dimension="2">24.605599999999999 4.4019000000000004 24.899100000000008 45.893399999999978 </gml:posList>
                                 </gml:LineString>
                             </gml:baseCurve>
                         </gml:OrientableCurve>
@@ -405,7 +405,7 @@
                         <gml:OrientableCurve>
                             <gml:baseCurve>
                                 <gml:LineString>
-                                    <gml:posList gml:dimension="2">30.315500000000004 32.976700000000001 -3.8679100000000002 32.4268 </gml:posList>
+                                    <gml:posList gml:dimension="2">30.315500000000004 32.976700000000001 -3.8679100000000002 32.426799999999986 </gml:posList>
                                 </gml:LineString>
                             </gml:baseCurve>
                         </gml:OrientableCurve>
@@ -530,7 +530,7 @@
     <gml:featureMember>
         <gpml:TopologicalNetwork>
             <gpml:identity>GPlates-32ad9fb2-878e-4004-961f-2ec7f8e48e2d</gpml:identity>
-            <gpml:revision>GPlates-0f57711c-dd6b-4995-9420-36b7409c7493</gpml:revision>
+            <gpml:revision>GPlates-f1f0527b-6767-42aa-81ca-4921a5a6f2ea</gpml:revision>
             <gml:name>Test Network</gml:name>
             <gml:validTime>
                 <gml:TimePeriod>
@@ -608,17 +608,6 @@
                                     </gpml:section>
                                 </gpml:TopologicalSections>
                             </gpml:boundary>
-                            <gpml:interior>
-                                <gpml:TopologicalNetworkInterior>
-                                    <gpml:sourceGeometry>
-                                        <gpml:PropertyDelegate>
-                                            <gpml:targetFeature>GPlates-299762e5-f870-40a5-9842-532349421e06</gpml:targetFeature>
-                                            <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:centerLineOf</gpml:targetProperty>
-                                            <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
-                                        </gpml:PropertyDelegate>
-                                    </gpml:sourceGeometry>
-                                </gpml:TopologicalNetworkInterior>
-                            </gpml:interior>
                             <gpml:interior>
                                 <gpml:TopologicalNetworkInterior>
                                     <gpml:sourceGeometry>
