@@ -281,6 +281,9 @@ namespace GPlatesCanvasTools
 		update_pole_estimate_layer();
 
 		void
+		update_highlight_layer();
+
+		void
 		paint();
 
 		AdjustFittedPoleEstimate(

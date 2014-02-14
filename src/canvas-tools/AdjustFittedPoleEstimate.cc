@@ -23,9 +23,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iterator>
 #include <QObject>
 
+#include "gui/Colour.h"
+#include "gui/Symbol.h"
 #include "qt-widgets/HellingerDialog.h"
 #include "maths/ProximityHitDetail.h"
 #include "view-operations/RenderedGeometry.h"
@@ -38,6 +39,8 @@ namespace
 {
 
 }
+
+
 
 GPlatesCanvasTools::AdjustFittedPoleEstimate::AdjustFittedPoleEstimate(
 		const status_bar_callback_type &status_bar_callback,
@@ -62,15 +65,22 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::AdjustFittedPoleEstimate(
 void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_activation()
 {
+	qDebug() << "activating AFPE";
+	d_pole_estimate_layer_ptr->set_active(true);
+	d_highlight_layer_ptr->set_active(true);
 	set_status_bar_message(QT_TR_NOOP("Click and drag to adjust the pole estimate location."));
 	d_hellinger_dialog_ptr->enable_pole_estimate_widgets(true);
+	update_local_values_from_hellinger_dialog();
 	update_pole_estimate_layer();
+
 }
 
 void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_deactivation()
 {
 	d_hellinger_dialog_ptr->enable_pole_estimate_widgets(false);
+	d_pole_estimate_layer_ptr->set_active(false);
+	d_highlight_layer_ptr->set_active(false);
 }
 
 
@@ -115,12 +125,12 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 		if (pos)
 		{
 			qDebug() << "MWD: Found pole estimate";
-
+			update_highlight_layer();
 		}
 	}
 	else
 	{
-
+		d_highlight_layer_ptr->clear_rendered_geometries();
 	}
 }
 
@@ -233,17 +243,41 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 {
 	d_pole_estimate_layer_ptr->clear_rendered_geometries();
 
-	GPlatesViewOperations::RenderedGeometry pick_geometry =
+	static const GPlatesGui::Symbol pole_estimate_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CIRCLE, 1, true);
+
+	GPlatesViewOperations::RenderedGeometry pole_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				d_current_pole.get_non_null_pointer(),
 				GPlatesGui::Colour::get_yellow(),
 				2, /* point size */
 				2, /* line thickness */
 				false, /* fill polygon */
-				false /* fill polyline */
-				);
+				false, /* fill polyline */
+				GPlatesGui::Colour::get_white(), /* dummy colour */
+				pole_estimate_symbol);
 
 
-	d_pole_estimate_layer_ptr->add_rendered_geometry(pick_geometry);
+	d_pole_estimate_layer_ptr->add_rendered_geometry(pole_geometry);
+}
+
+void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_highlight_layer()
+{
+	d_highlight_layer_ptr->clear_rendered_geometries();
+
+	static const GPlatesGui::Symbol highlight_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CIRCLE, 2, true);
+
+	GPlatesViewOperations::RenderedGeometry pole_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+				d_current_pole.get_non_null_pointer(),
+				GPlatesGui::Colour::get_yellow(),
+				2, /* point size */
+				2, /* line thickness */
+				false, /* fill polygon */
+				false, /* fill polyline */
+				GPlatesGui::Colour::get_white(), /* dummy colour */
+				highlight_symbol);
+
+
+	d_highlight_layer_ptr->add_rendered_geometry(pole_geometry);
 }
 

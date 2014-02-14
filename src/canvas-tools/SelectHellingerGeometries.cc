@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <iterator>
 #include <QObject>
 
 #include "qt-widgets/HellingerDialog.h"

@@ -329,7 +329,7 @@ namespace{
 			GPlatesQtWidgets::HellingerDialog::geometry_to_tree_item_map_type &geometry_to_tree_item_map,
 			bool set_as_selected)
 	{
-		qDebug() << "Adding pick to segment: set_as_selected: " << set_as_selected;
+		//qDebug() << "Adding pick to segment: set_as_selected: " << set_as_selected;
 		QTreeWidgetItem *item = new QTreeWidgetItem();
 		item->setText(SEGMENT_NUMBER, QString::number(segment_number));
 		item->setText(SEGMENT_TYPE, translate_segment_type(pick.d_segment_type));
