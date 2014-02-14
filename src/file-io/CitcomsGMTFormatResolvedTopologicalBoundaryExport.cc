@@ -300,6 +300,60 @@ namespace GPlatesFileIO
 			}
 
 			/**
+			 * Looks for "gpml:subductionZoneSystem" property in feature 
+			 * otherwise returns false.
+			 */
+			bool
+			get_feature_sz_system(
+					QString &system,
+					const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+			{
+				static const GPlatesModel::PropertyName property_name =
+					GPlatesModel::PropertyName::create_gpml("subductionZoneSystem");
+
+				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> property_value =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+								feature, property_name);
+				if (!property_value)
+				{
+                    system = "Unknown";
+					return false;
+				}
+
+                system = GPlatesUtils::make_qstring_from_icu_string(property_value.get()->get_value().get());
+				return true;
+			}
+
+
+			/**
+			 * Looks for "gpml:subductionZoneSystemOrder" property in feature 
+			 * otherwise returns false.
+			 */
+			bool
+			get_feature_sz_system_order(
+					QString &order,
+					const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+			{
+				static const GPlatesModel::PropertyName property_name =
+					GPlatesModel::PropertyName::create_gpml("subductionZoneSystemOrder");
+
+				boost::optional<GPlatesPropertyValues::XsInteger::non_null_ptr_to_const_type> property_value =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsInteger>(
+								feature, property_name);
+				if (!property_value)
+				{
+                    order = "Unknown";
+					return false;
+				}
+
+				int i = property_value.get()->get_value();
+				QString i_as_str( GPlatesUtils::formatted_int_to_string(i, 2).c_str() );
+				order = i_as_str;
+				return true;
+			}
+
+
+			/**
 			 * Looks for "gpml:rheaFault" property in feature 
 			 * otherwise returns false.
 			 */
@@ -593,6 +647,23 @@ namespace GPlatesFileIO
 					}
 					else { d_header_line.append( unk ); }
 
+					QString system;
+					d_header_line.append( " # subductionZoneSystem: " );
+					if ( get_feature_sz_system(system, feature) )
+					{
+						d_header_line.append( system );
+					}
+					else { d_header_line.append( unk ); }
+
+					QString order;
+					d_header_line.append( " # subductionZoneSystemOrder: " );
+					if ( get_feature_sz_system_order(order, feature) )
+					{
+						d_header_line.append( order );
+					}
+					else { d_header_line.append( unk ); }
+
+
 					QString rhea_fault;
 					d_header_line.append( " # rheaFault: " );
 					if ( get_feature_rhea_fault(rhea_fault, feature) )
@@ -693,6 +764,22 @@ namespace GPlatesFileIO
 					if ( get_feature_sz_depth(depth, feature) )
 					{
 						d_header_line.append( depth );
+					}
+					else { d_header_line.append( unk ); }
+
+					QString system;
+					d_header_line.append( " # subductionZoneSystem: " );
+					if ( get_feature_sz_system(system, feature) )
+					{
+						d_header_line.append( system );
+					}
+					else { d_header_line.append( unk ); }
+
+					QString order;
+					d_header_line.append( " # subductionZoneSystemOrder: " );
+					if ( get_feature_sz_system_order(order, feature) )
+					{
+						d_header_line.append( order );
 					}
 					else { d_header_line.append( unk ); }
 

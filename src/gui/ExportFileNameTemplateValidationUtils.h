@@ -36,12 +36,17 @@ namespace GPlatesGui
 		/**
 		 * Returns true if filename template is a valid filename sequence.
 		 *
+		 * If @a check_filename_variation is true then also checks that there is filename variation
+		 * (varies with reconstruction time).
+		 * This should normally be true except when a exporting for a single time instant.
+		 *
 		 * Internally this validates using the @a ExportTemplateFilename class.
 		 */
 		bool
 		is_valid_template_filename_sequence(
 				const QString &filename_template,
-				QString &filename_template_validation_message);
+				QString &filename_template_validation_message,
+				bool check_filename_variation = true);
 
 
 		/**
@@ -69,11 +74,16 @@ namespace GPlatesGui
 		 * - has no invalid characters, and
 		 * - does *not* contain "%P", and
 		 * - has a valid filename template sequence.
+		 *
+		 * If @a check_filename_variation is true then also checks that there is filename variation
+		 * (varies with reconstruction time).
+		 * This should normally be true except when a exporting for a single time instant.
 		 */
 		bool
 		is_valid_template_filename_sequence_without_percent_P(
 				const QString &filename_template,
-				QString &filename_template_validation_message);
+				QString &filename_template_validation_message,
+				bool check_filename_variation = true);
 
 
 		/**
@@ -83,11 +93,16 @@ namespace GPlatesGui
 		 * - has no invalid characters, and
 		 * - does contain "%P", and
 		 * - has a valid filename template sequence.
+		 *
+		 * If @a check_filename_variation is true then also checks that there is filename variation
+		 * (varies with reconstruction time).
+		 * This should normally be true except when a exporting for a single time instant.
 		 */
 		bool
 		is_valid_template_filename_sequence_with_percent_P(
 				const QString &filename_template,
-				QString &filename_template_validation_message);
+				QString &filename_template_validation_message,
+				bool check_filename_variation = true);
 	}
 }
 

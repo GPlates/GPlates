@@ -206,7 +206,7 @@ namespace
 			bool flip,
 			const QRect &region)
 	{
-		typedef typename RawRasterType::element_type raster_element_type;
+		//typedef typename RawRasterType::element_type raster_element_type;
 
 		// Allocate the buffer to read into.
 		int source_width = band->GetXSize();

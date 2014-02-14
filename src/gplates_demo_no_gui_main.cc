@@ -567,6 +567,7 @@ main(int argc, char *argv[])
 		GPlatesFileIO::FileInfo fileinfo(filename);
 		GPlatesModel::ModelInterface new_model;
 		GPlatesFileIO::ReadErrorAccumulation accum;
+		bool contains_unsaved_changes;
 
 
 		// Create a file with an empty feature collection.
@@ -576,7 +577,8 @@ main(int argc, char *argv[])
 		GPlatesFileIO::GpmlReader::read_file(
 				file->get_reference(),
 				gpml_structural_type_reader,
-				accum);
+				accum,
+				contains_unsaved_changes);
 
 		GPlatesModel::FeatureCollectionHandle::weak_ref features =
 				file->get_reference().get_feature_collection();

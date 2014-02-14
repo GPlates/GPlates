@@ -87,7 +87,8 @@ namespace GPlatesFileIO
 		read_file(
 				File::Reference &file,
 				boost::shared_ptr<ArbitraryXmlProfile> profile,
-				ReadErrorAccumulation &read_errors);
+				ReadErrorAccumulation &read_errors,
+				bool &contains_unsaved_changes);
 
 		void
 		read_xml_data(

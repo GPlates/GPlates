@@ -325,13 +325,19 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collections(
 
 		// Read new features from the file into the feature collection.
 		// Both the filename and target feature collection are in 'file'.
-		d_file_format_registry.read_feature_collection(file->get_reference(), read_errors);
+		bool contains_unsaved_changes;
+		d_file_format_registry.read_feature_collection(file->get_reference(), read_errors, contains_unsaved_changes);
 
-		// Files that have been freshly loaded from disk are by definition, clean.
-		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
-				file->get_reference().get_feature_collection();
-		if (feature_collection_ref.is_valid()) {
-			feature_collection_ref->clear_unsaved_changes();
+		// The file has been freshly loaded from disk.
+		// If no model changes were needed (eg, to make it compatible with GPGIM) then it's clean.
+		if (!contains_unsaved_changes)
+		{
+			GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
+					file->get_reference().get_feature_collection();
+			if (feature_collection_ref.is_valid())
+			{
+				feature_collection_ref->clear_unsaved_changes();
+			}
 		}
 
 		files.push_back(file);
@@ -352,13 +358,19 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collection(
 
 	// Read new features from the file into the feature collection.
 	// Both the filename and target feature collection are in 'file_ref'.
-	d_file_format_registry.read_feature_collection(file_ref, read_errors);
+	bool contains_unsaved_changes;
+	d_file_format_registry.read_feature_collection(file_ref, read_errors, contains_unsaved_changes);
 
-	// Files that have been freshly loaded from disk are by definition, clean.
-	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
-			file_ref.get_feature_collection();
-	if (feature_collection_ref.is_valid()) {
-		feature_collection_ref->clear_unsaved_changes();
+	// The file has been freshly loaded from disk.
+	// If no model changes were needed (eg, to make it compatible with GPGIM) then it's clean.
+	if (!contains_unsaved_changes)
+	{
+		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
+				file_ref.get_feature_collection();
+		if (feature_collection_ref.is_valid())
+		{
+			feature_collection_ref->clear_unsaved_changes();
+		}
 	}
 
 	emit_handle_read_errors_signal(read_errors);

@@ -212,7 +212,8 @@ namespace GPlatesFileIO
 			shapefile_read_feature_collection(
 					File::Reference &file_ref,
 					const Registry &file_format_registry,
-					ReadErrorAccumulation &read_errors)
+					ReadErrorAccumulation &read_errors,
+					bool &contains_unsaved_changes)
 			{
 				// Get the current default OGR configuration in case file does not have one.
 				boost::optional<FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type>
@@ -224,7 +225,7 @@ namespace GPlatesFileIO
 						ogr_file_configuration,
 						GPLATES_ASSERTION_SOURCE);
 
-				OgrReader::read_file(file_ref, ogr_file_configuration.get(), read_errors);
+				OgrReader::read_file(file_ref, ogr_file_configuration.get(), read_errors, contains_unsaved_changes);
 			}
 
 
@@ -232,10 +233,11 @@ namespace GPlatesFileIO
 			gplates_rotation_read_feature_collection(
 					File::Reference &file_ref,
 					const Registry &file_format_registry,
-					ReadErrorAccumulation &read_errors)
+					ReadErrorAccumulation &read_errors,
+					bool &contains_unsaved_changes)
 			{
 				file_ref.set_file_info(file_ref.get_file_info(), file_format_registry.get_default_configuration(GPLATES_ROTATION));
-				RotationFileReader::read_file(file_ref, read_errors);
+				RotationFileReader::read_file(file_ref, read_errors, contains_unsaved_changes);
 			}
 
 
@@ -245,12 +247,14 @@ namespace GPlatesFileIO
 			void
 			gsml_read_feature_collection(
 					File::Reference &file_ref,
-					ReadErrorAccumulation &read_errors)
+					ReadErrorAccumulation &read_errors,
+					bool &contains_unsaved_changes)
 			{
 				ArbitraryXmlReader::instance()->read_file(
 						file_ref,
 						boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()),
-						read_errors);
+						read_errors,
+						contains_unsaved_changes);
 			}
 
 
@@ -533,7 +537,8 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_feature_classification
 void
 GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
 		File::Reference &file_ref,
-		ReadErrorAccumulation &read_errors) const
+		ReadErrorAccumulation &read_errors,
+		boost::optional<bool &> contains_unsaved_changes_opt) const
 {
 	const boost::optional<Format> file_format = get_file_format(file_ref.get_file_info().get_qfileinfo());
 	if (!file_format)
@@ -560,7 +565,14 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::read_feature_collection(
 
 	try
 	{
-		read_feature_collection_function(file_ref, read_errors);
+ 		bool contains_unsaved_changes = false;
+		read_feature_collection_function(file_ref, read_errors, contains_unsaved_changes);
+
+		// Return unsaved changes state to caller if requested.
+		if (contains_unsaved_changes_opt)
+		{
+			contains_unsaved_changes_opt.get() = contains_unsaved_changes;
+		}
 	}
 	catch (ErrorOpeningFileForReadingException &e)
 	{
@@ -691,7 +703,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			&is_gpml_format_file,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&GpmlReader::read_file,
-							_1, gpml_property_structural_type_reader, _2, false)),
+							_1, gpml_property_structural_type_reader, _2, _3, false)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_gpml_feature_collection_writer, _1)),
 			// No configuration options yet for this file format...
@@ -710,7 +722,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			&is_gpmlz_format_file,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&GpmlReader::read_file,
-							_1, gpml_property_structural_type_reader, _2, true)),
+							_1, gpml_property_structural_type_reader, _2, _3, true)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_gpmlz_feature_collection_writer, _1)),
 			// No configuration options yet for this file format...
@@ -728,7 +740,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			plate4_line_classification,
 			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
-					boost::bind(&PlatesLineFormatReader::read_file, _1, _2)),
+					boost::bind(&PlatesLineFormatReader::read_file, _1, _2, _3)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_plates_line_feature_collection_writer, _1)),
 			// No configuration options yet for this file format...
@@ -745,7 +757,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&gplates_rotation_read_feature_collection,
-							_1, boost::cref(*this), _2)),
+							_1, boost::cref(*this), _2, _3)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_grot_feature_collection_writer, _1)), //TODO: the writer
 			grot_default_configuration);
@@ -759,7 +771,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			plate4_rotation_classification,
 			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
-					boost::bind(&PlatesRotationFormatReader::read_file, _1, _2)),
+					boost::bind(&PlatesRotationFormatReader::read_file, _1, _2, _3)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_plates_rotation_feature_collection_writer, _1)),
 			// No configuration options yet for this file format...
@@ -778,7 +790,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&shapefile_read_feature_collection,
-							_1, boost::cref(*this), _2)),
+							_1, boost::cref(*this), _2, _3)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_feature_collection_writer,
 							_1, boost::cref(*this), SHAPEFILE)),
@@ -797,7 +809,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
 					boost::bind(&shapefile_read_feature_collection,
-							_1, boost::cref(*this), _2)),
+							_1, boost::cref(*this), _2, _3)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_feature_collection_writer,
 							_1, boost::cref(*this), OGRGMT)),
@@ -829,7 +841,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			gmap_classification,
 			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
-					boost::bind(&GmapReader::read_file, _1, _2)),
+					boost::bind(&GmapReader::read_file, _1, _2, _3)),
 			// Writing not currently supported...
 			boost::none,
 			// No configuration options yet for this file format...
@@ -844,7 +856,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 			gsml_classification,
 			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
-					boost::bind(&gsml_read_feature_collection, _1, _2)),
+					boost::bind(&gsml_read_feature_collection, _1, _2, _3)),
 			// Writing not currently supported...
 			boost::none,
 			// No configuration options yet for this file format...

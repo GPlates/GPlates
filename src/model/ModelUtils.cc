@@ -25,6 +25,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/static_assert.hpp>
@@ -267,7 +268,7 @@ GPlatesModel::ModelUtils::get_property_value(
 std::vector<GPlatesModel::FeatureHandle::iterator>
 GPlatesModel::ModelUtils::get_top_level_properties(
 		const PropertyName& name,
-		GPlatesModel::FeatureHandle::weak_ref feature)
+		FeatureHandle::weak_ref feature)
 {
 	std::vector<FeatureHandle::iterator> ret;
 	if(feature.is_valid())
@@ -347,7 +348,7 @@ GPlatesModel::ModelUtils::add_property(
 		feature_type = feature->feature_type();
 	}
 
-	boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> top_level_property =
+	boost::optional<TopLevelProperty::non_null_ptr_type> top_level_property =
 			create_top_level_property(
 					property_name,
 					property_value,
@@ -372,7 +373,7 @@ GPlatesModel::ModelUtils::add_property(
 		const PropertyValue::non_null_ptr_type &property_value,
 		TopLevelPropertyError::Type *error_code)
 {
-	boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> top_level_property =
+	boost::optional<TopLevelProperty::non_null_ptr_type> top_level_property =
 			create_top_level_property(
 					gpgim_property,
 					property_value,
@@ -395,6 +396,7 @@ GPlatesModel::ModelUtils::rename_feature_properties(
 		const PropertyName &old_property_name,
 		const PropertyName &new_property_name,
 		bool check_new_property_name_allowed_for_feature_type,
+		boost::optional< std::vector<FeatureHandle::iterator> &> renamed_feature_properties,
 		TopLevelPropertyError::Type *error_code)
 {
 	boost::optional<FeatureType> feature_type;
@@ -415,12 +417,14 @@ GPlatesModel::ModelUtils::rename_feature_properties(
 		return false;
 	}
 
-	std::vector<TopLevelProperty::non_null_ptr_type> renamed_top_level_properties;
+	typedef std::pair<FeatureHandle::iterator/*old*/, TopLevelProperty::non_null_ptr_type/*new*/>
+			renamed_property_type;
+	std::vector<renamed_property_type> renamed_top_level_properties;
 
-	// Iterate over the feature properties and created a renamed property for each matching property name.
+	// Iterate over the feature properties and create a renamed property for each matching property name.
 	FeatureHandle::iterator properties_iter = feature.begin();
 	FeatureHandle::iterator properties_end = feature.end();
-	while (properties_iter != properties_end)
+	for ( ; properties_iter != properties_end; ++properties_iter)
 	{
 		if ((*properties_iter)->get_property_name() == old_property_name)
 		{
@@ -444,26 +448,28 @@ GPlatesModel::ModelUtils::rename_feature_properties(
 			}
 
 			// Add it to the list of renamed top-level properties.
-			renamed_top_level_properties.push_back(renamed_top_level_property.get());
-
-			// Increment iterator before removing property.
-			const FeatureHandle::iterator remove_properties_iter = properties_iter;
-			++properties_iter;
-
-			// Remove the current property - we'll add the renamed version after the iteration loop.
-			feature.remove(remove_properties_iter);
-			continue;
+			renamed_top_level_properties.push_back(
+					renamed_property_type(properties_iter, renamed_top_level_property.get()));
 		}
-
-		 ++properties_iter;
 	}
 
-	// Add the renamed properties to the feature.
+	// Add the renamed properties to the feature (and remove the old properties).
 	BOOST_FOREACH(
-			const TopLevelProperty::non_null_ptr_type &renamed_top_level_property,
+			const renamed_property_type &renamed_top_level_property,
 			renamed_top_level_properties)
 	{
-		feature.add(renamed_top_level_property);
+		// Remove old property.
+		feature.remove(renamed_top_level_property.first);
+
+		// Add renamed property.
+		const FeatureHandle::iterator renamed_feature_property =
+				feature.add(renamed_top_level_property.second);
+
+		// Notify caller of renamed properties if requested.
+		if (renamed_feature_properties)
+		{
+			renamed_feature_properties->push_back(renamed_feature_property);
+		}
 	}
 
 	return true;
@@ -892,7 +898,7 @@ GPlatesModel::ModelUtils::create_total_recon_seq(
 
 GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
 GPlatesModel::ModelUtils::get_mprs_attributes(
-		GPlatesModel::FeatureHandle::const_weak_ref f)
+		FeatureHandle::const_weak_ref f)
 {
 
 	static const  PropertyName mprs_attrs = PropertyName::create_gpml(QString("mprsAttributes"));
@@ -929,7 +935,7 @@ GPlatesModel::ModelUtils::get_mprs_attributes(
 
 GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 GPlatesModel::ModelUtils::create_gml_time_sample(
-		const GPlatesModel::ModelUtils::TotalReconstructionPole &trp,
+		const TotalReconstructionPole &trp,
 		bool is_grot)
 {
 	using namespace GPlatesModel;
@@ -972,11 +978,10 @@ GPlatesModel::ModelUtils::create_gml_time_sample(
 
 GPlatesModel::FeatureHandle::weak_ref
 GPlatesModel::ModelUtils::find_feature(
-		const GPlatesModel::FeatureId& id)
+		const FeatureId &id)
 {
-	std::vector<GPlatesModel::FeatureHandle::weak_ref> back_ref_targets;
-	id.find_back_ref_targets(
-			GPlatesModel::append_as_weak_refs(back_ref_targets));
+	std::vector<FeatureHandle::weak_ref> back_ref_targets;
+	id.find_back_ref_targets(append_as_weak_refs(back_ref_targets));
 	
 	if (back_ref_targets.size() != 1)
 	{
@@ -997,7 +1002,7 @@ GPlatesModel::ModelUtils::find_feature(
 		}
 
 		// Return null feature reference.
-		return GPlatesModel::FeatureHandle::weak_ref();
+		return FeatureHandle::weak_ref();
 	}
 
 	return back_ref_targets.front();

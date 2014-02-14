@@ -84,7 +84,8 @@ namespace GPlatesFileIO
 		read_file(
 				GPlatesFileIO::File::Reference &file_ref,
 				const boost::shared_ptr<const FeatureCollectionFileFormat::OGRConfiguration> &default_file_configuration,
-				ReadErrorAccumulation &read_errors);
+				ReadErrorAccumulation &read_errors,
+				bool &contains_unsaved_changes);
 
 		static
 		void

@@ -2109,9 +2109,12 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 void
 GPlatesFileIO::PlatesLineFormatReader::read_file(
 		File::Reference &file,
-		ReadErrorAccumulation &read_errors)
+		ReadErrorAccumulation &read_errors,
+		bool &contains_unsaved_changes)
 {
 	PROFILE_FUNC();
+
+	contains_unsaved_changes = false;
 
 	const FileInfo &fileinfo = file.get_file_info();
 

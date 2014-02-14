@@ -210,6 +210,134 @@ GPlatesGui::DefaultRasterColourPalette::get_upper_bound() const
 
 
 //
+// Deformation palette
+//
+GPlatesGui::DeformationColourPalette::DeformationColourPalette(
+		double range1_max,
+		double range1_min,
+		double range2_max,
+		double range2_min,
+		GPlatesGui::Colour fg_c,
+		GPlatesGui::Colour max_c,
+		GPlatesGui::Colour mid_c,
+		GPlatesGui::Colour min_c,
+		GPlatesGui::Colour bg_c) :
+	d_inner_palette(
+			RegularCptColourPalette::create()),
+	d_range1_max(range1_max),
+	d_range1_min(range1_min),
+	d_range2_max(range2_max),
+	d_range2_min(range2_min),
+	d_fg_colour(fg_c),
+	d_max_colour(max_c),
+	d_mid_colour(mid_c),
+	d_min_colour(min_c),
+	d_bg_colour(bg_c)
+{
+	// Note Add the lowest values first, that is, from Range2:
+
+	// Background colour, for values before min value.
+	d_inner_palette->set_background_colour(d_bg_colour);
+
+    // NOTE: 
+	// the 'inversion' in the slices below is on purpose 
+	// so that the most intese colours are the smallest values
+
+	// Add the slice from range2_min to range2_max
+	ColourSlice colour_slice_range2(
+			d_range2_min,
+			d_mid_colour,
+			d_range2_max,
+			d_min_colour);
+	d_inner_palette->add_entry(colour_slice_range2);
+
+	// Add the middle to the spectrum
+	ColourSlice colour_slice_mid(
+			d_range2_max,
+			d_mid_colour,
+			d_range1_min,
+			d_mid_colour);
+	d_inner_palette->add_entry(colour_slice_mid);
+
+	// Add the slice from range1_min to range1_max
+	ColourSlice colour_slice_range1(
+			d_range1_min,
+			d_max_colour,
+			d_range1_max,
+			d_mid_colour);
+	d_inner_palette->add_entry(colour_slice_range1);
+
+	// Foreground colour, for values after max value.
+	d_inner_palette->set_foreground_colour(d_fg_colour);
+
+	// Set nan colour
+	d_inner_palette->set_nan_colour( Colour(0.5, 0.5, 0.5) );
+}
+
+GPlatesGui::DeformationColourPalette::non_null_ptr_type
+GPlatesGui::DeformationColourPalette::create()
+{
+	return new DeformationColourPalette(
+		1.0,
+		0.0,
+		0.0,
+		-1.0,
+		GPlatesGui::Colour(1, 1, 1), /* white - fg */
+		GPlatesGui::Colour(1, 0, 0), /* red - high */
+		GPlatesGui::Colour(1, 1, 1), /* white - middle */
+		GPlatesGui::Colour(0, 0, 1), /* blue - low */
+		GPlatesGui::Colour(1, 1, 1)  /* white - bg */
+	);
+}
+
+
+GPlatesGui::DeformationColourPalette::non_null_ptr_type
+GPlatesGui::DeformationColourPalette::create(
+		double range_1max,
+		double range_1min,
+		double range_2max,
+		double range_2min,
+		GPlatesGui::Colour fg_c,
+		GPlatesGui::Colour max_c,
+		GPlatesGui::Colour mid_c,
+		GPlatesGui::Colour min_c,
+		GPlatesGui::Colour bg_c)
+{
+	return new DeformationColourPalette(
+		range_1max, 
+		range_1min, 
+		range_2max, 
+		range_2min, 
+		fg_c,
+		max_c, 
+		mid_c, 
+		min_c,
+		bg_c);
+}
+
+
+boost::optional<GPlatesGui::Colour>
+GPlatesGui::DeformationColourPalette::get_colour(
+		double value) const
+{
+	return d_inner_palette->get_colour(value);
+}
+
+
+double
+GPlatesGui::DeformationColourPalette::get_lower_bound() const
+{
+	return d_range2_min;
+}
+
+
+double
+GPlatesGui::DeformationColourPalette::get_upper_bound() const
+{
+	return d_range1_max;
+}
+
+//
 // User controled palette
 //
 GPlatesGui::UserColourPalette::UserColourPalette(

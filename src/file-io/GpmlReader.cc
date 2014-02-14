@@ -378,9 +378,12 @@ GPlatesFileIO::GpmlReader::read_file(
 		File::Reference &file,
 		const GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type &property_structural_type_reader,
 		ReadErrorAccumulation &read_errors,
+		bool &contains_unsaved_changes,
 		bool use_gzip)
 {
 	PROFILE_FUNC();
+
+	contains_unsaved_changes = false;
 
 	const FileInfo &fileinfo = file.get_file_info();
 
@@ -421,7 +424,7 @@ GPlatesFileIO::GpmlReader::read_file(
 
 	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection = file.get_feature_collection();
 
-	GpmlReaderUtils::ReaderParams params(reader, source, read_errors);
+	GpmlReaderUtils::ReaderParams params(reader, source, read_errors, contains_unsaved_changes);
 	boost::shared_ptr<GPlatesModel::XmlElementNode::AliasToNamespaceMap> alias_map(
 			new GPlatesModel::XmlElementNode::AliasToNamespaceMap);
 

@@ -393,12 +393,22 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::RenamePropertyFeatureReaderImpl::read_fea
 
 	// Rename all properties matching our property name.
 	GPlatesModel::ModelUtils::TopLevelPropertyError::Type error_code;
-	if (!GPlatesModel::ModelUtils::rename_feature_properties(
+	std::vector<GPlatesModel::FeatureHandle::iterator> renamed_feature_properties;
+	if (GPlatesModel::ModelUtils::rename_feature_properties(
 			*feature,
 			d_from_property_name,
 			d_to_property_name,
 			true/*check_new_property_name_allowed_for_feature_type*/,
+			renamed_feature_properties,
 			&error_code))
+	{
+		// If any properties were renamed then the file we read from will not contain those changes.
+		if (!renamed_feature_properties.empty())
+		{
+			reader_params.contains_unsaved_changes = true;
+		}
+	}
+	else
 	{
 		append_reader_errors(error_code, feature_xml_element, reader_params);
 	}
@@ -429,8 +439,14 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::ChangeFeatureTypeFeatureReaderImpl::read_
 					unprocessed_feature_property_xml_nodes,
 					reader_params);
 
-	// Change the feature type.
-	feature->set_feature_type(d_new_feature_type);
+	if (feature->feature_type() != d_new_feature_type)
+	{
+		// Change the feature type.
+		feature->set_feature_type(d_new_feature_type);
+
+		// The file we read from still contains old feature type.
+		reader_params.contains_unsaved_changes = true;
+	}
 
 	return feature;
 }
@@ -718,12 +734,17 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 	//
 
 	GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
-	if (!GPlatesModel::ModelUtils::add_property(
+	if (GPlatesModel::ModelUtils::add_property(
 		feature->reference(),
 		d_network_property_name,
 		network_property_value,
 		true/*check_property_name_allowed_for_feature_type*/,
 		&add_property_error_code))
+	{
+		// The file we read from does not contain the newly added network property.
+		reader_params.contains_unsaved_changes = true;
+	}
+	else
 	{
 		append_reader_errors(add_property_error_code, feature_xml_element, reader_params);
 	}

@@ -152,7 +152,6 @@ set(srcs
     ReconstructMethodRegistry.h
     ReconstructMethodSmallCircle.cc
     ReconstructMethodSmallCircle.h
-    ReconstructMethodType.cc
     ReconstructMethodType.h
     ReconstructMethodVirtualGeomagneticPole.cc
     ReconstructMethodVirtualGeomagneticPole.h
@@ -178,6 +177,8 @@ set(srcs
     ResolvedTriangulationNetwork.cc
     ResolvedTriangulationNetwork.h
     ResolvedTriangulationUtils.h
+    RotationUtils.cc
+    RotationUtils.h
     ScalarField3DLayerProxy.cc
     ScalarField3DLayerProxy.h
     ScalarField3DLayerTask.cc

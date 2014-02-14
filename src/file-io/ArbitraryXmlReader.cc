@@ -40,9 +40,12 @@ void
 GPlatesFileIO::ArbitraryXmlReader::read_file(
 		File::Reference &file_ref,
 		boost::shared_ptr<ArbitraryXmlProfile> profile,
-		ReadErrorAccumulation &read_errors)
+		ReadErrorAccumulation &read_errors,
+		bool &contains_unsaved_changes)
 {
 	PROFILE_FUNC();
+
+	contains_unsaved_changes = false;
 
 	SetXmlProfileAccess xml_profile_access(&read_errors, this);
 	profile->populate(file_ref);

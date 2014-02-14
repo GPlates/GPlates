@@ -53,6 +53,10 @@ if(MSVC)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
     #set(CMAKE_SHARED_LINKER_FLAGS )
     #set(CMAKE_MODULE_LINKER_FLAGS )
+	
+	# Increase pre-compiled header memory allocation limit to avoid compile error.
+	# Error happens on 12-core Windows 8.1 machine (in Visual Studio 2005).
+   	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zm1000")
 
     # Build configuration-specific flags.
     # The defaults look reasonable...
@@ -140,7 +144,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
             -Woverloaded-virtual -Wno-long-long -Wold-style-cast)
  	
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem /usr/include/qt4")
-   endif(APPLE)
+    endif(APPLE)
     # Convert the semi-colon separated list 'warnings_flags_list' to the string 'warnings_flags' 
     # (otherwise semi-colons will appear on the compiler command-line).
     foreach(warning ${warnings_flags_list})
@@ -162,9 +166,11 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 			if (CXX_MINOR_VERSION STRLESS "4")
 				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-uninitialized")
 			endif (CXX_MINOR_VERSION STRLESS "4")
-			if (CXX_MINOR_VERSION EQUAL "7")#Due to G++4.7 bug, not treat maybe-uninitialized warning as error.
-                                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=maybe-uninitialized")
-                        endif (CXX_MINOR_VERSION EQUAL "7")
+			if ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8"))
+				#The gcc 4.7 and 4.8.1 report maybe-uninitialized warning when the default boost::optional<> declaration is present.
+				#The boost::optional<> has been used widely throughout gplates. So supress the error for now. 
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
+            endif ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8"))
 		endif (CXX_MAJOR_VERSION EQUAL "4")
     endif (GPLATES_PUBLIC_RELEASE)
 

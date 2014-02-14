@@ -50,7 +50,8 @@ namespace GPlatesFileIO
 		void
 		read_file(
 				File::Reference &file,
-				ReadErrorAccumulation &read_errors);
+				ReadErrorAccumulation &read_errors,
+				bool &contains_unsaved_changes);
 	};
 	
 }

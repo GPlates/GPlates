@@ -31,9 +31,9 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/Reconstruction.h"
-#include "app-logic/ReconstructUtils.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructionTreeCreator.h"
+#include "app-logic/RotationUtils.h"
 
 #include "maths/FiniteRotation.h"
 #include "maths/LatLonPoint.h"
@@ -169,7 +169,7 @@ GPlatesQtWidgets::CreateSmallCircleDialog::handle_calculate()
 
 	// Get stage pole
 	GPlatesMaths::FiniteRotation stage_pole =
-		GPlatesAppLogic::ReconstructUtils::get_stage_pole(
+		GPlatesAppLogic::RotationUtils::get_stage_pole(
 			*tree_1,
 			*tree_2,				
 			p_moving,

@@ -41,22 +41,23 @@ namespace
 bool
 GPlatesGui::ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence(
 		const QString &filename_template,
-		QString &filename_template_validation_message)
+		QString &filename_template_validation_message,
+		bool check_filename_variation)
 {
 	try
 	{
-		GPlatesFileIO::ExportTemplateFilename::validate_filename_template(filename_template);
+		GPlatesFileIO::ExportTemplateFilename::validate_filename_template(
+				filename_template,
+				check_filename_variation);
 	}
-	catch (
-			GPlatesFileIO::ExportTemplateFilename::UnrecognisedFormatString &exc)
+	catch (GPlatesFileIO::ExportTemplateFilename::UnrecognisedFormatString &exc)
 	{
 		std::ostringstream os;
 		exc.write(os);
 		filename_template_validation_message = os.str().c_str();
 		return false;
 	}
-	catch (	
-			GPlatesFileIO::ExportTemplateFilename::NoFilenameVariation &exc)
+	catch (GPlatesFileIO::ExportTemplateFilename::NoFilenameVariation &exc)
 	{
 		std::ostringstream os;
 		exc.write(os);
@@ -121,7 +122,8 @@ GPlatesGui::ExportFileNameTemplateValidationUtils::does_template_filename_have_p
 bool
 GPlatesGui::ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P(
 		const QString &filename_template,
-		QString &filename_template_validation_message)
+		QString &filename_template_validation_message,
+		bool check_filename_variation)
 {
 	if (does_template_filename_have_invalid_characters(
 			filename_template, filename_template_validation_message))
@@ -136,14 +138,17 @@ GPlatesGui::ExportFileNameTemplateValidationUtils::is_valid_template_filename_se
 	}
 
 	return is_valid_template_filename_sequence(
-			filename_template, filename_template_validation_message);
+			filename_template,
+			filename_template_validation_message,
+			check_filename_variation);
 }
 
 
 bool
 GPlatesGui::ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P(
 		const QString &filename_template,
-		QString &filename_template_validation_message)
+		QString &filename_template_validation_message,
+		bool check_filename_variation)
 {
 	if (does_template_filename_have_invalid_characters(
 			filename_template, filename_template_validation_message))
@@ -158,5 +163,7 @@ GPlatesGui::ExportFileNameTemplateValidationUtils::is_valid_template_filename_se
 	}
 
 	return is_valid_template_filename_sequence(
-			filename_template, filename_template_validation_message);
+			filename_template,
+			filename_template_validation_message,
+			check_filename_variation);
 }

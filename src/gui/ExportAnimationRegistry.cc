@@ -337,7 +337,8 @@ bool
 GPlatesGui::ExportAnimationRegistry::validate_filename_template(
 		ExportAnimationType::ExportID export_id,
 		const QString &filename_template,
-		QString &filename_template_validation_message) const
+		QString &filename_template_validation_message,
+		bool check_filename_variation) const
 {
 	exporter_info_map_type::const_iterator iter = d_exporter_info_map.find(export_id);
 	if (iter == d_exporter_info_map.end())
@@ -349,7 +350,8 @@ GPlatesGui::ExportAnimationRegistry::validate_filename_template(
 
 	return exporter_info.validate_filename_template_function(
 			filename_template,
-			filename_template_validation_message);
+			filename_template_validation_message,
+			check_filename_variation);
 }
 
 

@@ -66,7 +66,7 @@ GPlatesAppLogic::ResolvedTriangulation::Delaunay_3::gradient_3(
 	//delaunay_map_point_to_value_3_type function_values;
 	//delaunay_map_point_to_vector_3_type function_gradients;
 
-	typedef CGAL::Voronoi_intersection_2_traits_3<delaunay_kernel_3_type> Traits;
+	//typedef CGAL::Voronoi_intersection_2_traits_3<delaunay_kernel_3_type> Traits;
 
 #if 0
  	CGAL::sibson_gradient_fitting(

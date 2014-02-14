@@ -81,12 +81,26 @@ namespace GPlatesFileIO
 		/**
 		 * Construct a FileInfo for the given @a file_name.
 		 * The @a file_name does not have to exist.
+		 *
+		 * Note that we disable caching inside QFileInfo (even though it can affect performance).
+		 * This is done because it's possible that the cached state (inside QFileInfo) might not
+		 * reflect the actual state. One option we could have taken would be to refresh (see
+		 * QFileInfo::refresh()) the file information every time we make a change to the file.
+		 * However this becomes quite troublesome to do throughout GPlates (and the copying of
+		 * FileInfo objects makes it even harder). So the option we've taken is to disable caching.
+		 * An example where caching can be problematic is creating a file that didn't exist when
+		 * a FileInfo was constructed. If the FileInfo is asked if the file exists it will correctly
+		 * report that it doesn't (and cache the result, if caching enabled). If the file (on disc)
+		 * is subsequently created then the original FileInfo (if caching enabled) would incorrectly
+		 * report the file as non-existent (because it looks up its cache rather than querying the OS).
 		 */
 		explicit
 		FileInfo(
-				const QString &file_name):
+				const QString &file_name) :
 			d_file_info(file_name)
-		{  }
+		{
+			d_file_info.setCaching(false);
+		}
 
 
 		/**
