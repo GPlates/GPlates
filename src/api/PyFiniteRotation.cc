@@ -522,7 +522,7 @@ export_finite_rotation()
 			"  For example, negating both a finite rotation's Euler pole (making it antipodal) and its angle "
 			"will generate the same equivalent rotation (even though the underlying pole/angle will be "
 			"different). Another example is negating a finite rotation's Euler pole (making it antipodal) "
-			"and setting its angle to '2*PI - angle' (making the rotation go the other way around the "
+			"and setting its angle to '360 - angle' degrees (making the rotation go the other way around the "
 			"globe). They are all the same equivalent rotation because they all rotate a geometry to "
 			"the same final location.\n");
 

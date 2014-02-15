@@ -71,7 +71,6 @@ set(srcs
     PythonUtils.h
     PythonVariableFunctionArguments.cc
     PythonVariableFunctionArguments.h
-    PythonVariantInputIterator.h
     PyTopologyTools.cc
     PyUnitVector3D.cc
     PyViewportWindow.cc

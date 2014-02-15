@@ -37,10 +37,12 @@
 #include "PyFeatureCollectionFileFormatRegistry.h"
 #include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"
-#include "PythonVariantInputIterator.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
+// This is not included by <boost/python.hpp>.
+// Also we must include this after <boost/python.hpp> which means after "global/python.h".
+#include <boost/python/stl_iterator.hpp>
 
 #include "maths/MathsUtils.h"
 
@@ -53,6 +55,18 @@
 namespace bp = boost::python;
 
 
+namespace GPlatesApi
+{
+	namespace
+	{
+		// A rotation feature collection or a rotation filename.
+		typedef boost::variant<
+				GPlatesModel::FeatureCollectionHandle::non_null_ptr_type,
+				QString> rotation_features_type;
+	}
+}
+
+
 GPlatesApi::RotationModel::non_null_ptr_type
 GPlatesApi::RotationModel::create(
 		bp::object rotation_features_seq, // Any python iterable (eg, list, tuple).
@@ -61,13 +75,8 @@ GPlatesApi::RotationModel::create(
 	// We'll only create a file registry if we come across a filename in the sequence.
 	boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Registry> file_registry;
 
-	// Each element in the sequence can be a feature collection or a filename.
-	typedef boost::variant<
-			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type,
-			QString> rotation_features_type;
-
 	// Begin/end iterators over the python rotations iterable.
-	VariantInputIterator<rotation_features_type>
+	bp::stl_input_iterator<rotation_features_type>
 			rotation_features_seq_iter(rotation_features_seq),
 			rotation_features_seq_end;
 
@@ -217,8 +226,8 @@ export_rotation_model()
 				"  Create from a sequence of rotation feature collections or rotation filenames, and "
 				"an optional reconstruction tree cache size.\n"
 				"\n"
-				"  :param rotation_features: A sequence of :class:`FeatureCollection` instances or "
-				"filename strings\n"
+				"  :param rotation_features: A sequence of rotation :class:`FeatureCollection` "
+				"instances or filename strings\n"
 				"  :type rotation_features: Any sequence such as a ``list`` or a ``tuple``\n"
 				"  :param reconstruction_tree_cache_size: number of reconstruction trees to cache internally\n"
 				"  :type reconstruction_tree_cache_size: int\n"
@@ -345,6 +354,10 @@ export_rotation_model()
 	boost::python::implicitly_convertible<
 			boost::optional<GPlatesApi::RotationModel::non_null_ptr_type>,
 			boost::optional<GPlatesApi::RotationModel::non_null_ptr_to_const_type> >();
+
+	// Enable the rotation features boost::variant to be initialised from python.
+	// This is used in RotationModel::create().
+	GPlatesApi::PythonConverterUtils::register_variant_conversion<GPlatesApi::rotation_features_type>();
 }
 
 #endif // GPLATES_NO_PYTHON

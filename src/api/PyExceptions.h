@@ -43,11 +43,22 @@ namespace GPlatesApi
 	// The names of the associated C++ exceptions match the python exception name.
 	// For example, in python "AssertionFailureError" and in C++ "AssertionFailureException".
 	//
-	// These exceptions are not normally needed because the associated C++ exceptions are
-	// automatically converted to these python exceptions (by registering exception handlers
-	// with boost-python). They are only needed if some C++ code calls python *and* wants to
-	// catch/handle the python exception (which could have originated in C++ code called by python).
-	// In this case class PythonExceptionHandler below can be used to query the python exception.
+	// These exceptions are not normally needed for pygplates API functions (C++) because the
+	// associated C++ exceptions are automatically converted to these python exceptions (below)
+	// by registering exception handlers with boost-python - see "export_exceptions()" - and these
+	// are handled for us by boost-python (in 'def' binding statements, etc). In other words the
+	// C++ exception gets converted to its python equivalent before the pygplates API function returns
+	// back to its python calling function. The python calling function is then responsible for
+	// dealing with the exception (or ignoring it as mentioned in the example below).
+	// However these python exceptions can be needed by C++ code that is not called by python.
+	// For example, in the GPlates desktop (which has an embedded python interpreter) there could be
+	// some C++ code that delegates to a python function. That python function could then, in turn,
+	// call the pygplates API (C++) which could throw a C++ exception. That C++ exception gets
+	// converted to a python exception (by our boost-python registered exception handlers) and,
+	// let's say, the python code does not catch it. So it propagates back to the original C++ code
+	// (that has no python caller). If this C++ code does not catch it then GPlates will catch the
+	// exception in its default handler and shutdown.
+	// In this case class PythonExceptionHandler below can be used to handle the python exception.
 	//
 	// NOTE: These are Py_None if the 'pygplates' module has not yet been initialised.
 	//

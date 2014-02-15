@@ -173,8 +173,9 @@ namespace GPlatesApi
 		 * extraction fails, mentioning the argument name and the C++ object type in the error message.
 		 *
 		 * NOTE: Unlike boost::python::extract this method does *not* mention the python type
-		 * in the error message. So this method is mainly useful when using the unused keyword
-		 * arguments returned by @a get_explicit_args.
+		 * in the error message. However, unlike boost::python::extract, this method does mention
+		 * the argument name and so is mainly useful when using the unused keyword arguments
+		 * returned by @a get_explicit_args.
 		 */
 		template <typename ArgumentType>
 		ArgumentType
@@ -188,8 +189,9 @@ namespace GPlatesApi
 		 * name @a argument_name (if found), otherwise none.
 		 *
 		 * NOTE: Unlike boost::python::extract this method does *not* mention the python type
-		 * in the error message. So this method is mainly useful when using the unused keyword
-		 * arguments returned by @a get_explicit_args.
+		 * in the error message. However, unlike boost::python::extract, this method does mention
+		 * the argument name and so is mainly useful when using the unused keyword arguments
+		 * returned by @a get_explicit_args.
 		 */
 		template <typename ArgumentType>
 		boost::optional<ArgumentType>
