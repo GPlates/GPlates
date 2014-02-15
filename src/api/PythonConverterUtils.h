@@ -26,13 +26,24 @@
 #ifndef GPLATES_API_PYTHONCONVERTERUTILS_H
 #define GPLATES_API_PYTHONCONVERTERUTILS_H
 
+#include <boost/mpl/begin_end.hpp>
 #include <boost/mpl/bool.hpp>
+#include <boost/mpl/deref.hpp>
+#include <boost/mpl/next.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/type_traits/add_const.hpp>
 #include <boost/type_traits/is_convertible.hpp>
 #include <boost/type_traits/is_same.hpp>
+#include <boost/variant.hpp>
+#include <iterator>
+#include <sstream>
+#include <string>
+#include <typeinfo>
+#include <vector>
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 #include "global/python.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -70,6 +81,50 @@ namespace GPlatesApi
 		boost::python::object/*derived geometry-on-sphere non_null_ptr_to_const_type*/
 		get_geometry_on_sphere_as_derived_type(
 				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere);
+
+
+		/**
+		 * Enables boost::optional<T> to be passed to and from python.
+		 *
+		 * A python object that is None will become boost::none and vice versa.
+		 *
+		 * To register the to/from converters, for boost::optional<T>, simply call:
+		 *
+		 *   register_optional_conversion<T>();
+		 *
+		 * ...in the module initialisation code for the desired type 'T'.
+		 *
+		 * For more information on boost python to/from conversions, see:
+		 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
+		 *   http://stackoverflow.com/questions/6274822/boost-python-no-to-python-converter-found-for-stdstring
+		 *   http://mail.python.org/pipermail/cplusplus-sig/2007-May/012003.html
+		 */
+		template <typename T>
+		void
+		register_optional_conversion();
+
+
+		/**
+		 * Enables boost::variant<T1,T2,...> to be passed to and from python.
+		 *
+		 * Note: The python object wraps the element (T1 or T2 or ...) contained in the variant
+		 * and not the variant type itself. This enables a python object wrapping a C++ type T
+		 * to be converted to a boost::variant containing T as one of its types (and vice versa).
+		 *
+		 * To register the to/from converters, for boost::variant<...>, simply call:
+		 *
+		 *   register_variant_conversion< boost::variant<...> >();
+		 *
+		 * ...in the module initialisation code for the desired variant type 'boost::variant<...>'.
+		 *
+		 * For more information on boost python to/from conversions, see:
+		 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
+		 *   http://stackoverflow.com/questions/6274822/boost-python-no-to-python-converter-found-for-stdstring
+		 *   http://mail.python.org/pipermail/cplusplus-sig/2007-May/012003.html
+		 */
+		template <typename VariantType>
+		void
+		register_variant_conversion();
 
 
 		/**
@@ -141,27 +196,6 @@ namespace GPlatesApi
 
 
 		/**
-		 * Enables boost::optional<T> to be passed to and from python.
-		 *
-		 * A python object that is None will become boost::none and vice versa.
-		 *
-		 * To register the to/from converters, for boost::optional<T>, simply call:
-		 *
-		 *   register_optional_conversion<T>();
-		 *
-		 * ...in the module initialisation code for the desired type 'T'.
-		 *
-		 * For more information on boost python to/from conversions, see:
-		 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
-		 *   http://stackoverflow.com/questions/6274822/boost-python-no-to-python-converter-found-for-stdstring
-		 *   http://mail.python.org/pipermail/cplusplus-sig/2007-May/012003.html
-		 */
-		template <typename T>
-		void
-		register_optional_conversion();
-
-
-		/**
 		 * Enables boost::optional<SourceType> to be passed to and from python.
 		 *
 		 * Also enables a python-wrapped boost::optional<SourceType::non_null_ptr_type> to be used when a
@@ -223,6 +257,363 @@ namespace GPlatesApi
 {
 	namespace PythonConverterUtils
 	{
+		namespace Implementation
+		{
+			template <typename T>
+			struct python_optional :
+					private boost::noncopyable
+			{
+				struct Conversion
+				{
+					static
+					PyObject *
+					convert(
+							const boost::optional<T> &value)
+					{
+						namespace bp = boost::python;
+
+						return bp::incref((value ? bp::object(value.get()) : bp::object()).ptr());
+					}
+				};
+
+				static
+				void *
+				convertible(
+						PyObject *obj)
+				{
+					namespace bp = boost::python;
+
+					if (obj == Py_None ||
+						bp::extract<T>(obj).check())
+					{
+						return obj;
+					}
+
+					return NULL;
+				}
+
+				static
+				void
+				construct(
+						PyObject *obj,
+						boost::python::converter::rvalue_from_python_stage1_data *data)
+				{
+					namespace bp = boost::python;
+
+					void *const storage = reinterpret_cast<
+							bp::converter::rvalue_from_python_storage<boost::optional<T> > *>(
+									data)->storage.bytes;
+
+					if (obj == Py_None)
+					{
+						new (storage) boost::optional<T>();
+					}
+					else
+					{
+						new (storage) boost::optional<T>(bp::extract<T>(obj)());
+					}
+
+					data->convertible = storage;
+				}
+			};
+		}
+
+
+		template <typename T>
+		void
+		register_optional_conversion()
+		{
+			namespace bp = boost::python;
+
+			if (!bp::extract<boost::optional<T> >(bp::object()).check())
+			{
+				// To python conversion.
+				bp::to_python_converter<
+						boost::optional<T>,
+						typename Implementation::python_optional<T>::Conversion>();
+
+				// From python conversion.
+				bp::converter::registry::push_back(
+						&Implementation::python_optional<T>::convertible,
+						&Implementation::python_optional<T>::construct,
+						bp::type_id<boost::optional<T> >());
+			}
+		}
+
+
+		namespace Implementation
+		{
+			template <typename VariantType>
+			class python_variant :
+					private boost::noncopyable
+			{
+			public:
+
+				struct Conversion
+				{
+					static
+					PyObject *
+					convert(
+							const VariantType &value)
+					{
+						namespace bp = boost::python;
+
+						return bp::incref(boost::apply_visitor(ToPythonVisitor(), value).ptr());
+					}
+				};
+
+				static
+				void *
+				convertible(
+						PyObject *obj)
+				{
+					if (CheckExtractVariant<
+							typename boost::mpl::begin<variant_types>::type,
+							typename boost::mpl::end<variant_types>::type>::get(obj))
+					{
+						return obj;
+					}
+
+					return NULL;
+				}
+
+				static
+				void
+				construct(
+						PyObject *obj,
+						boost::python::converter::rvalue_from_python_stage1_data *data)
+				{
+					namespace bp = boost::python;
+
+					void *const storage = reinterpret_cast<
+							bp::converter::rvalue_from_python_storage<variant_type> *>(
+									data)->storage.bytes;
+
+					// Iterate over the types in the variant until we can extract the python object into
+					// one of the variant's C++ types.
+					new (storage) variant_type(
+							ExtractVariant<
+									typename boost::mpl::begin<variant_types>::type,
+									typename boost::mpl::end<variant_types>::type>::get(obj));
+
+					data->convertible = storage;
+				}
+
+			private:
+
+				//! The boost::variant type.
+				typedef VariantType variant_type;
+
+				//! The MPL sequence of types in the variant.
+				typedef typename variant_type::types variant_types;
+
+
+				/**
+				 * Converts a visited variant value to a boost::python::object.
+				 */
+				class ToPythonVisitor :
+						public boost::static_visitor<boost::python::object>
+				{
+				public:
+
+					template <typename T>
+					boost::python::object
+					operator()(
+							const T &value) const
+					{
+						return boost::python::object(value);
+					}
+				};
+
+
+				/**
+				 * Returns the names of the types in the variant.
+				 */
+				template <typename VariantCurrentIterType, typename VariantEndIterType>
+				struct GetVariantTypeNames;
+
+				// Terminates visitation of variant types.
+				template <typename VariantEndIterType>
+				struct GetVariantTypeNames<VariantEndIterType, VariantEndIterType>
+				{
+					static
+					void
+					get(
+							std::vector<const char *> &variant_type_names)
+					{  }
+				};
+
+				// Primary template - defined after partial specialisation since latter is used by primate template.
+				template <typename VariantCurrentIterType, typename VariantEndIterType>
+				struct GetVariantTypeNames
+				{
+					static
+					void
+					get(
+							std::vector<const char *> &variant_type_names)
+					{
+						// The current type being visited in the variant.
+						typedef typename boost::mpl::deref<VariantCurrentIterType>::type variant_current_type;
+
+						variant_type_names.push_back(typeid(variant_current_type).name());
+
+						// Visit the next type in the variant.
+						return GetVariantTypeNames<
+								typename boost::mpl::next<VariantCurrentIterType>::type,
+								VariantEndIterType>::get(variant_type_names);
+					}
+				};
+
+
+				/**
+				 * Checks if the currently visited type in the variant can be extracted (from boost).
+				 *
+				 * If successful then returns, otherwise proceeds to the next type in the variant.
+				 */
+				template <typename VariantCurrentIterType, typename VariantEndIterType>
+				struct CheckExtractVariant;
+
+				// Terminates visitation of variant types.
+				template <typename VariantEndIterType>
+				struct CheckExtractVariant<VariantEndIterType, VariantEndIterType>
+				{
+					static
+					bool
+					get(
+							PyObject *)
+					{
+						// If we get here then we couldn't extract any variant type.
+						return false;
+					}
+				};
+
+				// Primary template - defined after partial specialisation since latter is used by primate template.
+				template <typename VariantCurrentIterType, typename VariantEndIterType>
+				struct CheckExtractVariant
+				{
+					static
+					bool
+					get(
+							PyObject *python_object)
+					{
+						// The current type being visited in the variant.
+						typedef typename boost::mpl::deref<VariantCurrentIterType>::type variant_current_type;
+
+						// Check if the current type in the variant can be extracted.
+						boost::python::extract<variant_current_type> extract_object(python_object);
+						if (extract_object.check())
+						{
+							return true;
+						}
+
+						// Check to see if the next type in the variant can be extracted.
+						return CheckExtractVariant<
+								typename boost::mpl::next<VariantCurrentIterType>::type,
+								VariantEndIterType>::get(python_object);
+					}
+				};
+
+
+				/**
+				 * Attempts to extract (from boost) the currently visited type in the variant.
+				 *
+				 * If successful then returns, otherwise proceeds to the next type in the variant.
+				 */
+				template <typename VariantCurrentIterType, typename VariantEndIterType>
+				struct ExtractVariant;
+
+				// Terminates visitation of variant types.
+				template <typename VariantEndIterType>
+				struct ExtractVariant<VariantEndIterType, VariantEndIterType>
+				{
+					static
+					variant_type
+					get(
+							PyObject *)
+					{
+						//
+						// If we get here then we couldn't extract any variant type, so raise a python error.
+						//
+						// NOTE: We really shouldn't be able to get here since the from-python
+						// converter will first check if the conversion is possible before attempting
+						// the conversion.
+
+						// Get the names of all the types in the variant.
+						std::vector<const char *> variant_type_names;
+						GetVariantTypeNames<
+								typename boost::mpl::begin<variant_types>::type,
+								typename boost::mpl::end<variant_types>::type>::get(
+										variant_type_names);
+						GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+								!variant_type_names.empty(),
+								GPLATES_ASSERTION_SOURCE);
+
+						std::ostringstream oss;
+						oss << "Unable to convert sequence element to one of the following C++ types: ";
+						for (unsigned int n = 0; n < variant_type_names.size() - 1; ++n)
+						{
+							oss << "'" << variant_type_names[n] << "', ";
+						}
+						oss << "'" << variant_type_names.back() << "'";
+
+						PyErr_SetString(PyExc_TypeError, oss.str().c_str());
+						boost::python::throw_error_already_set();
+
+						// Shouldn't be able to get here.
+						// This is to keep compiler happy since we're not returning a variant object
+						// because it might not be default-constructible (if first element type isn't).
+						throw GPlatesGlobal::AssertionFailureException(GPLATES_ASSERTION_SOURCE);
+					}
+				};
+
+				// Primary template - defined after partial specialisation since latter is used by primate template.
+				template <typename VariantCurrentIterType, typename VariantEndIterType>
+				struct ExtractVariant
+				{
+					static
+					variant_type
+					get(
+							PyObject *python_object)
+					{
+						// The current type being visited in the variant.
+						typedef typename boost::mpl::deref<VariantCurrentIterType>::type variant_current_type;
+
+						// Attempt to extract the current type in the variant.
+						boost::python::extract<variant_current_type> extract_object(python_object);
+						if (extract_object.check())
+						{
+							return variant_type(extract_object());
+						}
+
+						// Try to extract the next type in the variant.
+						return ExtractVariant<
+								typename boost::mpl::next<VariantCurrentIterType>::type,
+								VariantEndIterType>::get(python_object);
+					}
+				};
+			};
+		}
+
+
+		template <typename VariantType>
+		void
+		register_variant_conversion()
+		{
+			namespace bp = boost::python;
+
+			// To python conversion.
+			bp::to_python_converter<
+					VariantType,
+					typename Implementation::python_variant<VariantType>::Conversion>();
+
+			// From python conversion.
+			bp::converter::registry::push_back(
+					&Implementation::python_variant<VariantType>::convertible,
+					&Implementation::python_variant<VariantType>::construct,
+					bp::type_id<VariantType>());
+		}
+
+
 		template <class SourceType, class TargetType>
 		void
 		implicitly_convertible_non_null_intrusive_ptr(
@@ -329,90 +720,6 @@ namespace GPlatesApi
 							boost::optional<GPlatesUtils::non_null_intrusive_ptr<source_type> >,
 							boost::optional<GPlatesUtils::non_null_intrusive_ptr<const_source_type> > >();
 				}
-			}
-		}
-
-
-		namespace Implementation
-		{
-			template <typename T>
-			struct python_optional :
-					private boost::noncopyable
-			{
-				struct Conversion
-				{
-					static
-					PyObject *
-					convert(
-							const boost::optional<T> &value)
-					{
-						namespace bp = boost::python;
-
-						return bp::incref((value ? bp::object(value.get()) : bp::object()).ptr());
-					}
-				};
-
-				static
-				void *
-				convertible(
-						PyObject *obj)
-				{
-					namespace bp = boost::python;
-
-					if (obj == Py_None ||
-						bp::extract<T>(obj).check())
-					{
-						return obj;
-					}
-
-					return NULL;
-				}
-
-				static
-				void
-				construct(
-						PyObject *obj,
-						boost::python::converter::rvalue_from_python_stage1_data *data)
-				{
-					namespace bp = boost::python;
-
-					void *const storage = reinterpret_cast<
-							bp::converter::rvalue_from_python_storage<boost::optional<T> > *>(
-									data)->storage.bytes;
-
-					if (obj == Py_None)
-					{
-						new (storage) boost::optional<T>();
-					}
-					else
-					{
-						new (storage) boost::optional<T>(bp::extract<T>(obj)());
-					}
-
-					data->convertible = storage;
-				}
-			};
-		}
-
-
-		template <typename T>
-		void
-		register_optional_conversion()
-		{
-			namespace bp = boost::python;
-
-			if (!bp::extract<boost::optional<T> >(bp::object()).check())
-			{
-				// To python conversion.
-				bp::to_python_converter<
-						boost::optional<T>,
-						typename Implementation::python_optional<T>::Conversion>();
-
-				// From python conversion.
-				bp::converter::registry::push_back(
-						&Implementation::python_optional<T>::convertible,
-						&Implementation::python_optional<T>::construct,
-						bp::type_id<boost::optional<T> >());
 			}
 		}
 
