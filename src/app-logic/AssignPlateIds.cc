@@ -76,7 +76,6 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 					10/*max_num_reconstruction_trees_in_cache*/);
 
 	ReconstructMethodRegistry reconstruct_method_registry;
-	register_default_reconstruct_method_types(reconstruct_method_registry);
 
 	// Contains the reconstructed static polygons used for cookie-cutting.
 	// Can also contain the topological section geometries referenced by topologies.

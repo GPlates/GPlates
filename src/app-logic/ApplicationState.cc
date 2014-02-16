@@ -101,9 +101,6 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_suppress_auto_layer_creation(false),
 	d_callback_feature_store(d_model->root())
 {
-	// Register default reconstruct method types with the reconstruct method registry.
-	register_default_reconstruct_method_types(*d_reconstruct_method_registry);
-
 	// Register default layer task types with the layer task registry.
 	register_default_layer_task_types(*d_layer_task_registry, *this);
 

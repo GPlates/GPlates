@@ -31,11 +31,16 @@
 
 #include <vector>
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
+#include <boost/variant.hpp>
 #include <QString>
 
+#include "PyRotationModel.h"
+#include "PythonConverterUtils.h"
 #include "PythonUtils.h"
 #include "PythonVariableFunctionArguments.h"
 
+#include "app-logic/ReconstructMethodRegistry.h"
 #include "app-logic/ReconstructUtils.h"
 
 #include "feature-visitors/GeometrySetter.h"
@@ -64,6 +69,116 @@ namespace GPlatesApi
 {
 	namespace
 	{
+		/**
+		 * The reconstruct features are either a feature collection or a filename.
+		 *
+		 * For backwards compatibility (since the 'reconstruct()' has been around for so long)
+		 * we also allow the possibility of a list of filenames. However this is not documented
+		 * in the API documentation to discourage users from using it that way.
+		 */
+		typedef boost::variant<
+				QString,
+				GPlatesModel::FeatureCollectionHandle::non_null_ptr_type,
+				bp::list> reconstructable_features_type;
+
+		// The rotation features are either a RotationModel or a list of feature collections / filenames.
+		typedef boost::variant<bp::object/*sequence*/, RotationModel::non_null_ptr_type> rotation_features_type;
+
+
+		/**
+		 * Extracts, or creates, a RotationModel from a python function argument.
+		 */
+		RotationModel::non_null_ptr_type
+		get_rotation_model(
+				const rotation_features_type &rotation_features)
+		{
+			// It's either a filename or a feature collection.
+			if (const RotationModel::non_null_ptr_type *rotation_model =
+				boost::get<RotationModel::non_null_ptr_type>(&rotation_features))
+			{
+				return *rotation_model;
+			}
+
+			return RotationModel::create(
+					boost::get<bp::object>(rotation_features),
+					// Use a reasonable size in case reconstructing features that require more than
+					// one reconstruction tree/time such as mid-ocean ridges (multiple half-stages)...
+					32/*reconstruction_tree_cache_size*/);
+		}
+
+
+		/**
+		 * Returns python function argument as either a reconstructable feature collection, filename
+		 * or (for undocumented backwards compatibility) a list of filenames.
+		 */
+		void
+		get_reconstructable_features_collection(
+				const reconstructable_features_type &reconstructable_features,
+				std::vector<GPlatesFileIO::File::non_null_ptr_type> &reconstruct_files,
+				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors)
+		{
+			// If it's a feature collection...
+			if (const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type *reconstruct_feature_collection =
+				boost::get<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(&reconstructable_features))
+			{
+				// Create a file with an empty filename - since we don't know if feature collection
+				// came from a file or not.
+				GPlatesFileIO::File::non_null_ptr_type file =
+						GPlatesFileIO::File::create_file(
+								GPlatesFileIO::FileInfo(),
+								*reconstruct_feature_collection);
+
+				reconstruct_files.push_back(file);
+				reconstructable_features_collection.push_back(file->get_reference().get_feature_collection());
+			}
+			// If it's a filename...
+			else if (const QString *reconstruct_filename = boost::get<QString>(&reconstructable_features))
+			{
+				GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
+
+				// Create a file with an empty feature collection.
+				GPlatesFileIO::File::non_null_ptr_type file =
+						GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(*reconstruct_filename));
+
+				// Read new features from the file into the feature collection.
+				file_registry.read_feature_collection(file->get_reference(), read_errors);
+
+				reconstruct_files.push_back(file);
+				reconstructable_features_collection.push_back(file->get_reference().get_feature_collection());
+			}
+			else
+			{
+				//
+				// Undocumented, backwards compatible support for a list of filenames.
+				//
+
+				bp::list filenames = boost::get<bp::list>(reconstructable_features);
+
+				GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
+
+				// Read the feature collections from the files.
+				// Begin/end iterators over the python filenames iterable.
+				bp::stl_input_iterator<QString> filenames_iter(filenames);
+				bp::stl_input_iterator<QString> filenames_end;
+				for ( ; filenames_iter != filenames_end; ++filenames_iter)
+				{
+					const QString filename = *filenames_iter;
+
+					// Create a file with an empty feature collection.
+					GPlatesFileIO::File::non_null_ptr_type file =
+							GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(filename));
+
+					// Read new features from the file into the feature collection.
+					file_registry.read_feature_collection(file->get_reference(), read_errors);
+
+					reconstruct_files.push_back(file);
+					reconstructable_features_collection.push_back(file->get_reference().get_feature_collection());
+				}
+			}
+		}
+
+
 		GPlatesFileIO::ReconstructedFeatureGeometryExport::Format
 		get_format(
 				QString file_name)
@@ -87,6 +202,7 @@ namespace GPlatesApi
 
 			return GPlatesFileIO::ReconstructedFeatureGeometryExport::UNKNOWN;
 		}
+
 
 		void
 		read_feature_collection_files(
@@ -138,59 +254,42 @@ namespace GPlatesApi
 		// These are our variable number of export parameters.
 		VariableArguments::keyword_arguments_type unused_keyword_args;
 
-		bp::object reconstruct_filenames;
-		bp::object rotation_filenames;
+		reconstructable_features_type reconstructable_features;
+		rotation_features_type rotation_features;
+		QString export_file_name;
 		double reconstruction_time;
 		GPlatesModel::integer_plate_id_type anchor_plate_id;
-		QString export_file_name;
-
-		// Define the number of explicit arguments and their types.
-		typedef boost::tuple<
-				bp::object,
-				bp::object,
-				double,
-				GPlatesModel::integer_plate_id_type,
-				QString
-		> function_explicit_args_type;
 
 		boost::tie(
-				reconstruct_filenames,
-				rotation_filenames,
+				reconstructable_features,
+				rotation_features,
+				export_file_name,
 				reconstruction_time,
-				anchor_plate_id,
-				export_file_name) =
-						VariableArguments::get_explicit_args<function_explicit_args_type>(
+				anchor_plate_id) =
+						VariableArguments::get_explicit_args<
+								// Define the number of explicit arguments and their types...
+								boost::tuple<
+										reconstructable_features_type,
+										rotation_features_type,
+										QString,
+										double,
+										GPlatesModel::integer_plate_id_type> >(
 								positional_args,
 								keyword_args,
 								boost::make_tuple(
-										"reconstruct_filenames",
-										"rotation_filenames",
+										"reconstructable_features",
+										"rotation_features",
+										"reconstructed_feature_geometries",
 										"reconstruction_time",
-										"anchor_plate_id",
-										"export_file_name"),
+										"anchor_plate_id"),
 								boost::tuples::make_tuple(),
 								boost::none/*unused_positional_args*/,
 								unused_keyword_args);
 
 		//
-		// Get the optional non-explicit export parameters from the variable argument list.
+		// Get the optional non-explicit output parameters from the variable argument list.
 		//
 
-		bool export_single_output_file =
-				VariableArguments::extract_and_remove_or_default<bool>(
-						unused_keyword_args,
-						"export_single_output_file",
-						true);
-		bool export_per_input_file =
-				VariableArguments::extract_and_remove_or_default<bool>(
-						unused_keyword_args,
-						"export_per_input_file",
-						false);
-		bool export_output_directory_per_input_file =
-				VariableArguments::extract_and_remove_or_default<bool>(
-						unused_keyword_args,
-						"export_output_directory_per_input_file",
-						false);
 		bool export_wrap_to_dateline =
 				VariableArguments::extract_and_remove_or_default<bool>(
 						unused_keyword_args,
@@ -201,39 +300,40 @@ namespace GPlatesApi
 		// These will be keywords that we didn't recognise.
 		VariableArguments::raise_python_error_if_unused(unused_keyword_args);
 
-
-		GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
-
 		// TODO: Return the read errors to the python caller.
 		GPlatesFileIO::ReadErrorAccumulation read_errors;
 
-		// Read the feature collections from the reconstruct files.
+		// Get the reconstructable feature collection(s).
+		//
+		// The 'File's keep the feature collections alive (since 'reconstructable_features_collection'
+		// contains only weak references).
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstruct_files;
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstruct_feature_collection_refs;
-		read_feature_collection_files(
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstructable_features_collection;
+		get_reconstructable_features_collection(
+				reconstructable_features,
 				reconstruct_files,
-				reconstruct_feature_collection_refs,
-				reconstruct_filenames,
-				file_registry,
+				reconstructable_features_collection,
 				read_errors);
 
-		// Read the feature collections from the rotation files.
-		std::vector<GPlatesFileIO::File::non_null_ptr_type> rotation_files;
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> rotation_feature_collection_refs;
-		read_feature_collection_files(
-				rotation_files,
-				rotation_feature_collection_refs,
-				rotation_filenames,
-				file_registry,
-				read_errors);
+		// Extract, or create, the rotation model.
+		const RotationModel::non_null_ptr_type rotation_model = get_rotation_model(rotation_features);
 
+		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
+		// This ensures 'ReconstructUtils::reconstruct()' will reconstruct using the correct anchor plate.
+		GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
+				GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
+						rotation_model->get_reconstruction_tree_creator(),
+						anchor_plate_id);
+
+		// Reconstruct.
 		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> rfgs;
+		GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
 		GPlatesAppLogic::ReconstructUtils::reconstruct(
 				rfgs,
 				reconstruction_time,
-				anchor_plate_id,
-				reconstruct_feature_collection_refs,
-				rotation_feature_collection_refs);
+				reconstruct_method_registry,
+				reconstructable_features_collection,
+				reconstruction_tree_creator);
 
 		// Converts to raw pointers.
 		std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfgs_p;
@@ -253,7 +353,7 @@ namespace GPlatesApi
 		{
 			reconstructable_file_ptrs.push_back(&(*file_iter)->get_reference());
 		}
-		
+
 		GPlatesFileIO::ReconstructedFeatureGeometryExport::Format format = get_format(export_file_name);
 
 		// Export the reconstructed feature geometries.
@@ -264,9 +364,9 @@ namespace GPlatesApi
 					reconstructable_file_ptrs,
 					anchor_plate_id,
 					reconstruction_time,
-					export_single_output_file,
-					export_per_input_file,
-					export_output_directory_per_input_file,
+					true/*export_single_output_file*/,
+					false/*export_per_input_file*/,
+					false/*export_output_directory_per_input_file*/,
 					export_wrap_to_dateline);
 
 		// We must return a value (required by 'bp::raw_function') so just return Py_None.
@@ -324,7 +424,6 @@ namespace GPlatesApi
 				read_errors);
 
 		GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
-		register_default_reconstruct_method_types(reconstruct_method_registry);
 
 		const GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 				GPlatesAppLogic::create_cached_reconstruction_tree_creator(
@@ -424,56 +523,39 @@ export_reconstruct()
 	// or any case where the second argument of bp::def is a bp::object,
 	// so we set the docstring the old-fashioned way.
 	bp::scope().attr(reconstruct_function_name).attr("__doc__") =
-			"reconstruct(reconstructable_filenames, rotation_filenames, reconstruction_time, "
-			"anchor_plate_id, export_filename, **export_parameters)\n"
-			"  Reconstruct feature collections, loaded from files, to a specific geological time and "
-			"export to file(s).\n"
+			"reconstruct(reconstructable_features, rotation_features, reconstructed_feature_geometries, "
+			"reconstruction_time, [anchor_plate_id=0], \\*\\*output_parameters)\n"
+			"  Reconstruct geological features to a specific geological time.\n"
 			"\n"
-			"  :param reconstructable_filenames: A sequence of names of files containing features "
-			"to reconstruct\n"
-			"  :type reconstructable_filenames: Any sequence of strings such as a ``list`` or a ``tuple``\n"
-			"  :param rotation_filenames: A sequence of names of files containing rotation features\n"
-			"  :type rotation_filenames: Any sequence of strings such as a ``list`` or a ``tuple``\n"
+			"  :param reconstructable_features: The geological feature collection, or filename string "
+			"containing a feature collection, to reconstruct\n"
+			"  :type reconstructable_features: A :class:`FeatureCollection` or a string\n"
+			"  :param rotation_features: A rotation model or a sequence of rotation feature collections "
+			"and/or rotation filenames\n"
+			"  :type rotation_features: A :class:`RotationModel` or a sequence containing "
+			":class:`FeatureCollection` instances and/or strings\n"
+			"  :param reconstructed_feature_geometries: the name of the file to export to (see supported formats below)\n"
+			"  :type reconstructed_feature_geometries: string\n"
 			"  :param reconstruction_time: the specific geological time to reconstruct to\n"
 			"  :type reconstruction_time: float\n"
 			"  :param anchor_plate_id: the anchored plate id of the :class:`ReconstructionTree` "
 			"used to reconstruct\n"
 			"  :type anchor_plate_id: int\n"
-			"  :param export_filename: the name of the file to export to (see supported formats below)\n"
-			"  :type export_filename: string\n"
-			"  :param export_parameters: variable number of keyword arguments specifying export "
+			"  :param output_parameters: variable number of keyword arguments specifying output "
 			"parameters (see table below)\n"
-			"  :raises: OpenFileForReadingError if any input file is not readable\n"
+			"  :raises: OpenFileForReadingError if any input file is not readable (when filenames specified)\n"
 			"  :raises: FileFormatNotSupportedError if any input file format (identified by the "
-			"reconstructable and rotation filename extensions) does not support reading\n"
+			"reconstructable and rotation filename extensions) does not support reading "
+			"(when filenames specified)\n"
 			"\n"
-			"  The following optional keyword arguments are supported by *export_parameters*:\n"
+			"  The following optional keyword arguments are supported by *output_parameters*:\n"
 			"\n"
 			"  ======================================= ===== ======== ==============\n"
 			"  Name                                    Type  Default  Description\n"
 			"  ======================================= ===== ======== ==============\n"
-			"  export_single_output_file               bool  True     Write all reconstructed "
-			"geometries to a single file\n"
-			"  export_per_input_file                   bool  False    Group reconstructed geometries "
-			"according to the input files their features came from.\n"
-			"  export_output_directory_per_input_file  bool  False    Export each file to a different "
-			"directory based on the file basename of feature collection. Ignored if "
-			"*export_per_input_file* is ``False``.\n"
 			"  export_wrap_to_dateline                 bool  True     Wrap/clip reconstructed "
 			"geometries to the dateline (currently ignored unless exporting to ESRI shapefile format).\n"
 			"  ======================================= ===== ======== ==============\n"
-			"\n"
-			"  Note that if both *export_single_output_file* and *export_per_input_file* are ``True`` "
-			"then both a single output file and multiple per-input files are exported. For ESRI "
-			"shapefiles you can set *export_per_input_file* to ``True`` in order to retain the "
-			"shapefile attributes from the original reconstructable feature collection files - "
-			"this is not possible with *export_single_output_file* because shapefile attributes "
-			"from multiple files are not easily combined into a single shapefile (when the files "
-			"have different attribute field names).\n"
-			"\n"
-			"  The reconstructable and rotation files are read internally using "
-			":class:`FeatureCollectionFileFormatRegistry` - which describes the various supported "
-			"*feature collection* file formats.\n"
 			"\n"
 			"  The following *export* file formats are currently supported by GPlates:\n"
 			"\n"
@@ -485,9 +567,22 @@ export_reconstruct()
 			"  GMT xy                          '.xy'                  \n"
 			"  =============================== =======================\n"
 			"\n"
-			"  Note that the filename extension of *export_filename* determines the export file format.\n";
+			"  Note that the filename extension of *reconstructed_feature_geometries* determines "
+			"the export file format.\n"
+			"\n"
+			"  Note that *rotation_features* can be either a :class:`RotationModel` or a "
+			"sequence (eg, ``list`` or ``tuple``) containing :class:`FeatureCollection` instances "
+			"or filenames (or a mixture of both). In the latter case a temporary :class:`RotationModel` is "
+			"created internally (and hence is less efficient if this function is called multiple times).\n"
+			"\n"
+			"  If any filenames are specified then :class:`FeatureCollectionFileFormatRegistry` is "
+			"used internally to read feature collections from those files.\n";
 
 	bp::def("reverse_reconstruct", &GPlatesApi::reverse_recontruct);
+
+	// Enable the rotation features boost::variant to be initialised from python.
+	// This is used in 'reconstruct()'.
+	GPlatesApi::PythonConverterUtils::register_variant_conversion<GPlatesApi::rotation_features_type>();
 }
 
 #endif

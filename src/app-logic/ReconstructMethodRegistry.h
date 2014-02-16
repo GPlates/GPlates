@@ -76,6 +76,25 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Constructor.
+		 *
+		 * If @a register_default_reconstruct_method_types_ is true then the default reconstruct
+		 * method types are registered.
+		 */
+		explicit
+		ReconstructMethodRegistry(
+				bool register_default_reconstruct_method_types_ = true);
+
+
+		/**
+		 * Registers information about the default reconstruct method types.
+		 *
+		 * Note that this was called by the constructor if it's @a register_default_reconstruct_method_types_ was true.
+		 */
+		void
+		register_default_reconstruct_method_types();
+
+		/**
 		 * Registers information about the given @a reconstruct_method_type.
 		 */
 		void
@@ -225,13 +244,6 @@ namespace GPlatesAppLogic
 		 */
 		reconstruct_method_info_map_type d_reconstruct_method_info_map;
 	};
-
-	/**
-	 * Registers information about the default reconstruct method types with the given @a registry.
-	 */
-	void
-	register_default_reconstruct_method_types(
-			ReconstructMethodRegistry &registry);
 }
 
 #endif // GPLATES_APP_LOGIC_RECONSTRUCTMETHODREGISTRY_H

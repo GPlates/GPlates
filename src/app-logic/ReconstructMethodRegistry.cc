@@ -39,6 +39,17 @@
 #include "global/PreconditionViolationError.h"
 
 
+
+GPlatesAppLogic::ReconstructMethodRegistry::ReconstructMethodRegistry(
+		bool register_default_reconstruct_method_types_)
+{
+	if (register_default_reconstruct_method_types_)
+	{
+		register_default_reconstruct_method_types();
+	}
+}
+
+
 void
 GPlatesAppLogic::ReconstructMethodRegistry::register_reconstruct_method(
 		ReconstructMethod::Type reconstruct_method_type,
@@ -260,8 +271,7 @@ GPlatesAppLogic::ReconstructMethodRegistry::create_reconstruct_method(
 
 
 void
-GPlatesAppLogic::register_default_reconstruct_method_types(
-		ReconstructMethodRegistry &registry)
+GPlatesAppLogic::ReconstructMethodRegistry::register_default_reconstruct_method_types()
 {
 	//
 	// NOTE: The order of registration does *not* matter.
@@ -272,7 +282,7 @@ GPlatesAppLogic::register_default_reconstruct_method_types(
 	//
 	// Reconstruct by plate ID.
 	//
-	registry.register_reconstruct_method(
+	register_reconstruct_method(
 			ReconstructMethod::BY_PLATE_ID,
 			&ReconstructMethodByPlateId::can_reconstruct_feature,
 			&ReconstructMethodByPlateId::create);
@@ -280,7 +290,7 @@ GPlatesAppLogic::register_default_reconstruct_method_types(
 	//
 	// Reconstruct using half-stage rotation.
 	//
-	registry.register_reconstruct_method(
+	register_reconstruct_method(
 			ReconstructMethod::HALF_STAGE_ROTATION,
 			&ReconstructMethodHalfStageRotation::can_reconstruct_feature,
 			&ReconstructMethodHalfStageRotation::create);
@@ -288,7 +298,7 @@ GPlatesAppLogic::register_default_reconstruct_method_types(
 	//
 	// Reconstruct Virtual Geomagnetic Poles.
 	//
-	registry.register_reconstruct_method(
+	register_reconstruct_method(
 			ReconstructMethod::VIRTUAL_GEOMAGNETIC_POLE,
 			&ReconstructMethodVirtualGeomagneticPole::can_reconstruct_feature,
 			&ReconstructMethodVirtualGeomagneticPole::create);
@@ -296,7 +306,7 @@ GPlatesAppLogic::register_default_reconstruct_method_types(
 	//
 	// Reconstruct flowlines.
 	//
-	registry.register_reconstruct_method(
+	register_reconstruct_method(
 			ReconstructMethod::FLOWLINE,
 			&ReconstructMethodFlowline::can_reconstruct_feature,
 			&ReconstructMethodFlowline::create);
@@ -304,7 +314,7 @@ GPlatesAppLogic::register_default_reconstruct_method_types(
 	//
 	// Reconstruct motion paths.
 	//
-	registry.register_reconstruct_method(
+	register_reconstruct_method(
 			ReconstructMethod::MOTION_PATH,
 			&ReconstructMethodMotionPath::can_reconstruct_feature,
 			&ReconstructMethodMotionPath::create);
@@ -312,7 +322,7 @@ GPlatesAppLogic::register_default_reconstruct_method_types(
 	//
 	// Reconstruct small circles.
 	//
-	registry.register_reconstruct_method(
+	register_reconstruct_method(
 			ReconstructMethod::SMALL_CIRCLE,
 			&ReconstructMethodSmallCircle::can_reconstruct_feature,
 			&ReconstructMethodSmallCircle::create);

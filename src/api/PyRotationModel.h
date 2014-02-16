@@ -85,6 +85,18 @@ namespace GPlatesApi
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				bool use_identity_for_missing_plate_ids);
 
+
+		/**
+		 * Returns reconstruction tree creator.
+		 *
+		 * NOTE: Not accessible from python - only used in C++ when RotationModel passed from python.
+		 */
+		GPlatesAppLogic::ReconstructionTreeCreator
+		get_reconstruction_tree_creator() const
+		{
+			return d_reconstruction_tree_creator;
+		}
+
 	private:
 
 		RotationModel(

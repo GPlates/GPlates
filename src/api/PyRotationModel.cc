@@ -221,13 +221,13 @@ export_rotation_model()
 						&GPlatesApi::RotationModel::create,
 						bp::default_call_policies(),
 						(bp::arg("rotation_features"),
-							bp::arg("reconstruction_tree_cache_size") = 1)),
-				"__init__(rotation_features[, reconstruction_tree_cache_size=1])\n"
+							bp::arg("reconstruction_tree_cache_size") = 32)),
+				"__init__(rotation_features[, reconstruction_tree_cache_size=32])\n"
 				"  Create from a sequence of rotation feature collections or rotation filenames, and "
 				"an optional reconstruction tree cache size.\n"
 				"\n"
 				"  :param rotation_features: A sequence of rotation :class:`FeatureCollection` "
-				"instances or filename strings\n"
+				"instances and/or filename strings\n"
 				"  :type rotation_features: Any sequence such as a ``list`` or a ``tuple``\n"
 				"  :param reconstruction_tree_cache_size: number of reconstruction trees to cache internally\n"
 				"  :type reconstruction_tree_cache_size: int\n"

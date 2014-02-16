@@ -492,7 +492,6 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 		unsigned int reconstruction_tree_cache_size)
 {
 	ReconstructMethodRegistry reconstruct_method_registry;
-	register_default_reconstruct_method_types(reconstruct_method_registry);
 
 	ReconstructionTreeCreator reconstruction_tree_creator =
 			create_cached_reconstruction_tree_creator(
@@ -557,7 +556,6 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 					reconstruction_tree_cache_size);
 
 	ReconstructMethodRegistry reconstruct_method_registry;
-	register_default_reconstruct_method_types(reconstruct_method_registry);
 
 	return reconstruct_geometry(
 			geometry,

@@ -131,7 +131,6 @@ GPlatesUnitTest::CoregTest::test(double time)
 
 #else
 	ReconstructMethodRegistry reconstruct_method_registry;
-	register_default_reconstruct_method_types(reconstruct_method_registry);
 
 	ReconstructionTreeCreator reconstruction_tree_creator =
 			create_cached_reconstruction_tree_creator(
