@@ -111,6 +111,12 @@ namespace GPlatesApi
 		 * and not the variant type itself. This enables a python object wrapping a C++ type T
 		 * to be converted to a boost::variant containing T as one of its types (and vice versa).
 		 *
+		 * NOTE: When converting *from* python, the search order is T1, T2, etc. The first match
+		 * (that can be converted from python to the C++ element type T) is used to initialise
+		 * the C++ variant object. So if one of the element types is boost::python::object then
+		 * it should be specified last in the variant declaration because it will always match and
+		 * hence any elements after it will always be ignored.
+		 *
 		 * To register the to/from converters, for boost::variant<...>, simply call:
 		 *
 		 *   register_variant_conversion< boost::variant<...> >();
@@ -325,6 +331,7 @@ namespace GPlatesApi
 		{
 			namespace bp = boost::python;
 
+			// Avoid registering same boost optional type multiple times.
 			if (!bp::extract<boost::optional<T> >(bp::object()).check())
 			{
 				// To python conversion.
@@ -601,16 +608,35 @@ namespace GPlatesApi
 		{
 			namespace bp = boost::python;
 
-			// To python conversion.
-			bp::to_python_converter<
-					VariantType,
-					typename Implementation::python_variant<VariantType>::Conversion>();
+			const bp::type_info variant_type_info = bp::type_id<VariantType>();
 
-			// From python conversion.
-			bp::converter::registry::push_back(
-					&Implementation::python_variant<VariantType>::convertible,
-					&Implementation::python_variant<VariantType>::construct,
-					bp::type_id<VariantType>());
+			// Only register if we haven't already registered a to-python converter for the same variant type.
+			//
+			// See http://stackoverflow.com/questions/9888289/checking-whether-a-converter-has-already-been-registered
+			// and http://stackoverflow.com/questions/16892966/boost-python-avoid-registering-inner-class-twice-but-still-expose-in-python
+			//
+			// ...for how to check for multiple registrations.
+			// We check to-python because there can only be one registration per type unlike
+			// from-python which can have any number.
+			//
+			// This check essentially prevents unnecessary slowdowns during from-python conversions
+			// due to multiple registrations for the same variant type that do the same conversion check.
+			const bp::converter::registration* registration =
+					bp::converter::registry::query(variant_type_info);
+			if (registration == NULL ||
+				registration->m_to_python == NULL)
+			{
+				// To python conversion.
+				bp::to_python_converter<
+						VariantType,
+						typename Implementation::python_variant<VariantType>::Conversion>();
+
+				// From python conversion.
+				bp::converter::registry::push_back(
+						&Implementation::python_variant<VariantType>::convertible,
+						&Implementation::python_variant<VariantType>::construct,
+						variant_type_info);
+			}
 		}
 
 
