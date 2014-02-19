@@ -62,11 +62,11 @@ class InterpolateTotalReconstructionSequenceTest(unittest.TestCase):
 class ReconstructTest(unittest.TestCase):
     def test_reconstruct(self):
         pygplates.reconstruct(
-            [os.path.join(FIXTURES, 'volcanoes.gpml')],
-            [os.path.join(FIXTURES, 'rotations.rot')],
+            os.path.join(FIXTURES, 'volcanoes.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            'test.xy',
             10,
-            0,
-            'test.xy')
+            0)
 
 class ReconstructionTreeCase(unittest.TestCase):
     def setUp(self):
