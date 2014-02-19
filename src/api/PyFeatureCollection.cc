@@ -30,8 +30,10 @@
 
 #include "PyFeatureCollection.h"
 
-#include "PyFeatureCollectionFileFormatRegistry.h"
 #include "PythonConverterUtils.h"
+
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
+#include "file-io/ReadErrorAccumulation.h"
 
 #include "global/python.h"
 // This is not included by <boost/python.hpp>.
@@ -271,22 +273,30 @@ GPlatesApi::FeatureCollectionFunctionArgument::FeatureCollectionFunctionArgument
 }
 
 
-GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
+GPlatesFileIO::File::non_null_ptr_type
 GPlatesApi::FeatureCollectionFunctionArgument::initialise_feature_collection(
 		const function_argument_type &function_argument)
 {
 	if (const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type *feature_collection =
 		boost::get<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(&function_argument))
 	{
-		return *feature_collection;
+		// Create a file with an empty filename - since we don't know if feature collection
+		// came from a file or not.
+		return GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(), *feature_collection);
 	}
 
 	const QString filename = boost::get<QString>(function_argument);
 
-	GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
+	// Create a file with an empty feature collection.
+	GPlatesFileIO::File::non_null_ptr_type file =
+			GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(filename));
 
-	// Use the API function in "PyFeatureCollectionFileFormatRegistry.h" to read the file.
-	return GPlatesApi::read_feature_collection(file_registry, filename);
+	// Read new features from the file into the feature collection.
+	GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
+	GPlatesFileIO::ReadErrorAccumulation read_errors;
+	file_registry.read_feature_collection(file->get_reference(), read_errors);
+
+	return file;
 }
 
 
@@ -300,6 +310,15 @@ GPlatesApi::FeatureCollectionFunctionArgument::to_python() const
 
 GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 GPlatesApi::FeatureCollectionFunctionArgument::get_feature_collection() const
+{
+	// Extract the feature collection contained within the file.
+	return GPlatesUtils::get_non_null_pointer(
+			d_feature_collection->get_reference().get_feature_collection().handle_ptr());
+}
+
+
+GPlatesFileIO::File::non_null_ptr_type
+GPlatesApi::FeatureCollectionFunctionArgument::get_file() const
 {
 	return d_feature_collection;
 }
@@ -370,32 +389,25 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::FeatureCollectionSequence
 
 
 GPlatesApi::FeatureCollectionSequenceFunctionArgument::FeatureCollectionSequenceFunctionArgument(
-		const std::vector<FeatureCollectionFunctionArgument> &feature_collection_function_arguments)
+		const std::vector<FeatureCollectionFunctionArgument> &feature_collections) :
+	d_feature_collections(feature_collections)
 {
-	BOOST_FOREACH(
-			const FeatureCollectionFunctionArgument &feature_collection_function_argument,
-			feature_collection_function_arguments)
-	{
-		d_feature_collections.push_back(feature_collection_function_argument.get_feature_collection());
-	}
 }
 
 
 void
 GPlatesApi::FeatureCollectionSequenceFunctionArgument::initialise_feature_collections(
-		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
+		std::vector<FeatureCollectionFunctionArgument> &feature_collections,
 		const function_argument_type &function_argument)
 {
 	if (const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type *feature_collection =
 		boost::get<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(&function_argument))
 	{
-		feature_collections.push_back(*feature_collection);
+		feature_collections.push_back(FeatureCollectionFunctionArgument(*feature_collection));
 	}
 	else if (const QString *filename = boost::get<QString>(&function_argument))
 	{
-		// Use convenience class to read the feature collection from the file.
-		FeatureCollectionFunctionArgument feature_collection(*filename);
-		feature_collections.push_back(feature_collection.get_feature_collection());
+		feature_collections.push_back(FeatureCollectionFunctionArgument(*filename));
 	}
 	else
 	{
@@ -411,7 +423,7 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::initialise_feature_collec
 		for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
 		{
 			const FeatureCollectionFunctionArgument feature_collection = *feature_collections_iter;
-			feature_collections.push_back(feature_collection.get_feature_collection());
+			feature_collections.push_back(feature_collection);
 		}
 	}
 }
@@ -420,17 +432,11 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::initialise_feature_collec
 bp::object
 GPlatesApi::FeatureCollectionSequenceFunctionArgument::to_python() const
 {
-	// Get the feature collections.
-	std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collections;
-	get_feature_collections(feature_collections);
-
 	// Add feature collections to a python list.
 	bp::list python_feature_collections;
-	BOOST_FOREACH(
-			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
-			feature_collections)
+	BOOST_FOREACH(const FeatureCollectionFunctionArgument &feature_collection, d_feature_collections)
 	{
-		python_feature_collections.append(feature_collection);
+		python_feature_collections.append(feature_collection.get_feature_collection());
 	}
 
 	return python_feature_collections;
@@ -441,10 +447,21 @@ void
 GPlatesApi::FeatureCollectionSequenceFunctionArgument::get_feature_collections(
 		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections) const
 {
-	feature_collections.insert(
-			feature_collections.end(),
-			d_feature_collections.begin(),
-			d_feature_collections.end());
+	BOOST_FOREACH(const FeatureCollectionFunctionArgument &feature_collection, d_feature_collections)
+	{
+		feature_collections.push_back(feature_collection.get_feature_collection());
+	}
+}
+
+
+void
+GPlatesApi::FeatureCollectionSequenceFunctionArgument::get_files(
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files) const
+{
+	BOOST_FOREACH(const FeatureCollectionFunctionArgument &feature_collection, d_feature_collections)
+	{
+		feature_collection_files.push_back(feature_collection.get_file());
+	}
 }
 
 

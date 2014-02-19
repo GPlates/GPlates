@@ -110,7 +110,7 @@ export_feature_collection_file_format_registry()
 					"PLATES4 line                    '.dat' or '.pla'        Yes            Yes\n"
 					"PLATES4 rotation                '.rot'                  Yes            Yes\n"
 					"GPlates rotation                '.grot'                 Yes            Yes\n"
-					"ESRI shapefile                  '.shp'                  Yes            Yes\n"
+					"ESRI Shapefile                  '.shp'                  Yes            Yes\n"
 					"OGR GMT                         '.gmt'                  Yes            Yes\n"
 					"GMT xy                          '.xy'                   No             Yes\n"
 					"GMAP Virtual Geomagnetic Poles  '.vgp'                  Yes            No\n"

@@ -33,9 +33,9 @@
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
-#include <boost/variant.hpp>
 #include <QString>
 
+#include "PyFeatureCollection.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
 #include "PythonUtils.h"
@@ -70,123 +70,6 @@ namespace GPlatesApi
 {
 	namespace
 	{
-		/**
-		 * The reconstruct features are either a feature collection or a filename or a sequence
-		 * of feature collections and/or filenames.
-		 */
-		typedef boost::variant<
-				// NOTE: Put filename before feature collection in search order since feature collection can
-				// implicitly convert from filename but we want to record the filename if there is one...
-				QString,
-				GPlatesModel::FeatureCollectionHandle::non_null_ptr_type,
-				// Must go last since bp::object is a catch-all...
-				bp::object/*sequence*/> reconstructable_features_type;
-
-		// Each sequence element is either a feature collection or a filename.
-		typedef boost::variant<
-				// NOTE: Put filename before feature collection in search order since feature collection can
-				// implicitly convert from filename but we want to record the filename if there is one...
-				QString,
-				GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>
-						reconstructable_feature_collection_type;
-
-
-		/**
-		 * Wraps a file (with no filename) around a feature collection.
-		 */
-		GPlatesFileIO::File::non_null_ptr_type
-		get_reconstructable_feature_collection(
-				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type &feature_collection)
-		{
-			// Create a file with an empty filename - since we don't know if feature collection
-			// came from a file or not.
-			GPlatesFileIO::File::non_null_ptr_type file =
-					GPlatesFileIO::File::create_file(
-							GPlatesFileIO::FileInfo(),
-							feature_collection);
-
-			return file;
-		}
-
-		/**
-		 * Loads a feature collection from a filename and returns it as a file.
-		 */
-		GPlatesFileIO::File::non_null_ptr_type
-		get_reconstructable_feature_collection(
-				const QString &filename,
-				GPlatesFileIO::ReadErrorAccumulation &read_errors)
-		{
-			// Create a file with an empty feature collection.
-			GPlatesFileIO::File::non_null_ptr_type file =
-					GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(filename));
-
-			// Read new features from the file into the feature collection.
-			GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
-			file_registry.read_feature_collection(file->get_reference(), read_errors);
-
-			return file;
-		}
-
-
-		/**
-		 * Converts python function argument as either a reconstructable feature collection, a filename
-		 * or a sequence of feature collections and/or filenames.
-		 */
-		void
-		get_reconstructable_feature_collections(
-				const reconstructable_features_type &reconstructable_features,
-				std::vector<GPlatesFileIO::File::non_null_ptr_type> &reconstruct_files,
-				GPlatesFileIO::ReadErrorAccumulation &read_errors)
-		{
-			// If it's a feature collection...
-			if (const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type *feature_collection =
-				boost::get<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(&reconstructable_features))
-			{
-				reconstruct_files.push_back(
-						get_reconstructable_feature_collection(*feature_collection));
-			}
-			// If it's a filename...
-			else if (const QString *filename = boost::get<QString>(&reconstructable_features))
-			{
-				reconstruct_files.push_back(
-						get_reconstructable_feature_collection(*filename, read_errors));
-			}
-			else
-			{
-				//
-				// A sequence of feature collections and/or filenames.
-				//
-
-				const bp::object sequence = boost::get<bp::object>(reconstructable_features);
-
-				bp::stl_input_iterator<reconstructable_feature_collection_type> reconstructable_feature_collections_iter(sequence);
-				bp::stl_input_iterator<reconstructable_feature_collection_type> reconstructable_feature_collections_end;
-				for ( ;
-					reconstructable_feature_collections_iter != reconstructable_feature_collections_end;
-					++reconstructable_feature_collections_iter)
-				{
-					const reconstructable_feature_collection_type reconstructable_feature_collection =
-							*reconstructable_feature_collections_iter;
-
-					if (const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type *feature_collection =
-						boost::get<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(&reconstructable_feature_collection))
-					{
-						reconstruct_files.push_back(
-								get_reconstructable_feature_collection(*feature_collection));
-					}
-					// If it's a filename...
-					else
-					{
-						const QString filename = boost::get<QString>(reconstructable_feature_collection);
-
-						reconstruct_files.push_back(
-								get_reconstructable_feature_collection(filename, read_errors));
-					}
-				}
-			}
-		}
-
-
 		GPlatesFileIO::ReconstructedFeatureGeometryExport::Format
 		get_format(
 				QString file_name)
@@ -264,12 +147,8 @@ namespace GPlatesApi
 		VariableArguments::keyword_arguments_type unused_keyword_args;
 
 		// Define the number of explicit function arguments and their types...
-		//
-		// NOTE: We can't use FeatureCollectionSequenceFunctionArgument for the reconstructable features
-		// because we need the files the feature collections came from (if any) and not just
-		// the feature collections themselves.
 		typedef boost::tuple<
-				reconstructable_features_type,
+				FeatureCollectionSequenceFunctionArgument,
 				RotationModelFunctionArgument,
 				QString,
 				double,
@@ -289,7 +168,7 @@ namespace GPlatesApi
 						boost::none/*unused_positional_args*/,
 						unused_keyword_args);
 
-		const reconstructable_features_type reconstructable_features = boost::get<0>(reconstruct_args);
+		const FeatureCollectionSequenceFunctionArgument reconstructable_features = boost::get<0>(reconstruct_args);
 		const RotationModelFunctionArgument rotation_model = boost::get<1>(reconstruct_args);
 		const QString export_file_name = boost::get<2>(reconstruct_args);
 		const double reconstruction_time = boost::get<3>(reconstruct_args);
@@ -309,23 +188,16 @@ namespace GPlatesApi
 		// These will be keywords that we didn't recognise.
 		VariableArguments::raise_python_error_if_unused(unused_keyword_args);
 
-		// TODO: Return the read errors to the python caller.
-		GPlatesFileIO::ReadErrorAccumulation read_errors;
+		// The sequence of reconstructable feature collections.
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstructable_files;
+		reconstructable_features.get_files(reconstructable_files);
 
-		// Get the reconstructable feature collection(s).
-		//
-		// The 'File's keep the feature collections alive (since 'reconstructable_features_collection'
-		// contains only weak references).
-		std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstruct_files;
-		get_reconstructable_feature_collections(
-				reconstructable_features,
-				reconstruct_files,
-				read_errors);
-		// Extract feature collection weak refs from the files.
+		// Extract reconstructable feature collection weak refs from their files.
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstructable_feature_collections;
-		BOOST_FOREACH(GPlatesFileIO::File::non_null_ptr_type reconstruct_file, reconstruct_files)
+		BOOST_FOREACH(GPlatesFileIO::File::non_null_ptr_type reconstruct_file, reconstructable_files)
 		{
-			reconstructable_feature_collections.push_back(reconstruct_file->get_reference().get_feature_collection());
+			reconstructable_feature_collections.push_back(
+					reconstruct_file->get_reference().get_feature_collection());
 		}
 
 		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
@@ -357,11 +229,9 @@ namespace GPlatesApi
 
 		// Get the sequence of reconstructable files as File pointers.
 		std::vector<const GPlatesFileIO::File::Reference *> reconstructable_file_ptrs;
-		std::vector<GPlatesFileIO::File::non_null_ptr_type>::const_iterator file_iter = reconstruct_files.begin();
-		std::vector<GPlatesFileIO::File::non_null_ptr_type>::const_iterator file_end = reconstruct_files.end();
-		for ( ; file_iter != file_end; ++file_iter)
+		BOOST_FOREACH(GPlatesFileIO::File::non_null_ptr_type reconstructable_file, reconstructable_files)
 		{
-			reconstructable_file_ptrs.push_back(&(*file_iter)->get_reference());
+			reconstructable_file_ptrs.push_back(&reconstructable_file->get_reference());
 		}
 
 		GPlatesFileIO::ReconstructedFeatureGeometryExport::Format format = get_format(export_file_name);
@@ -564,7 +434,7 @@ export_reconstruct()
 			"  Name                                    Type  Default  Description\n"
 			"  ======================================= ===== ======== ==============\n"
 			"  export_wrap_to_dateline                 bool  True     Wrap/clip reconstructed "
-			"geometries to the dateline (currently ignored unless exporting to ESRI shapefile format).\n"
+			"geometries to the dateline (currently ignored unless exporting to ESRI Shapefile format).\n"
 			"  ======================================= ===== ======== ==============\n"
 			"\n"
 			"  The following *export* file formats are currently supported by GPlates:\n"
@@ -572,13 +442,20 @@ export_reconstruct()
 			"  =============================== =======================\n"
 			"  Export File Format              Filename Extension     \n"
 			"  =============================== =======================\n"
-			"  ESRI shapefile                  '.shp'                 \n"
+			"  ESRI Shapefile                  '.shp'                 \n"
 			"  OGR GMT                         '.gmt'                 \n"
 			"  GMT xy                          '.xy'                  \n"
 			"  =============================== =======================\n"
 			"\n"
 			"  Note that the filename extension of *reconstructed_feature_geometries* determines "
 			"the export file format.\n"
+			"\n"
+			"  Note that if the export format is ESRI Shapefile then the shapefile attributes from "
+			"*reconstructable_features* will only be retained in the exported shapefile if there "
+			"is a single reconstructable feature collection (where *reconstructable_features* is a "
+			"single feature collection or file, or sequence containing a single feature collection "
+			"or file). This is because shapefile attributes from multiple input feature collections are "
+			"not easily combined into a single output shapefile (due to different attribute field names).\n"
 			"\n"
 			"  Note that *reconstructable_features* can be a :class:`FeatureCollection` or a "
 			"filename or a sequence (eg, ``list`` or ``tuple``) containing :class:`FeatureCollection` "
@@ -595,11 +472,6 @@ export_reconstruct()
 			"used internally to read feature collections from those files.\n";
 
 	bp::def("reverse_reconstruct", &GPlatesApi::reverse_recontruct);
-
-	// Enable the reconstructable features boost::variant to be initialised from python.
-	// This is used in 'reconstruct()'.
-	GPlatesApi::PythonConverterUtils::register_variant_conversion<GPlatesApi::reconstructable_features_type>();
-	GPlatesApi::PythonConverterUtils::register_variant_conversion<GPlatesApi::reconstructable_feature_collection_type>();
 }
 
 #endif

@@ -31,6 +31,8 @@
 #include <boost/variant.hpp>
 #include <QString>
 
+#include "file-io/File.h"
+
 #include "global/python.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -92,15 +94,23 @@ namespace GPlatesApi
 		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 		get_feature_collection() const;
 
+		/**
+		 * Return the function argument as a file object.
+		 *
+		 * If feature collection did not come from a file then it will have an empty filename.
+		 */
+		GPlatesFileIO::File::non_null_ptr_type
+		get_file() const;
+
 	private:
 
 		static
-		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
+		GPlatesFileIO::File::non_null_ptr_type
 		initialise_feature_collection(
 				const function_argument_type &function_argument);
 
 
-		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type d_feature_collection;
+		GPlatesFileIO::File::non_null_ptr_type d_feature_collection;
 	};
 
 
@@ -165,16 +175,25 @@ namespace GPlatesApi
 		get_feature_collections(
 				std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections) const;
 
+		/**
+		 * Return the function argument as a sequence of file object appended to @a feature_collection_files.
+		 *
+		 * Any feature collections that did not come from files will have empty filenames.
+		 */
+		void
+		get_files(
+				std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files) const;
+
 	private:
 
 		static
 		void
 		initialise_feature_collections(
-				std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
+				std::vector<FeatureCollectionFunctionArgument> &feature_collections,
 				const function_argument_type &function_argument);
 
 
-		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> d_feature_collections;
+		std::vector<FeatureCollectionFunctionArgument> d_feature_collections;
 	};
 }
 

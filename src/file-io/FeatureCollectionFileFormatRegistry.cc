@@ -784,7 +784,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::register_default_file_form
 	Configuration::shared_ptr_to_const_type shapefile_default_configuration(new OGRConfiguration(SHAPEFILE));
 	register_file_format(
 			SHAPEFILE,
-			"ESRI shapefile",
+			"ESRI Shapefile",
 			std::vector<QString>(1, FILE_FORMAT_EXT_SHAPEFILE),
 			shapefile_classification,
 			&file_name_ends_with,

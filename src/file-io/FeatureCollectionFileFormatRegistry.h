@@ -120,7 +120,7 @@ namespace GPlatesFileIO
 			/**
 			 * Stores information about the given @a file_format.
 			 *
-			 * @param short_description a very short description of the file format (eg, "ESRI shapefile").
+			 * @param short_description a very short description of the file format (eg, "ESRI Shapefile").
 			 * @param filename_extensions the filename extensions of the file format.
 			 *        Note that there must be at least one extension and the first one is the primary one.
 			 * @param is_file_format_function used to recognise a file format.
@@ -161,7 +161,7 @@ namespace GPlatesFileIO
 			 * Returns a short description of the specified @a file_format.
 			 *
 			 * The description is short enough to be used in file dialogs.
-			 * For example, "ESRI shapefile".
+			 * For example, "ESRI Shapefile".
 			 *
 			 * @throws FileFormatNotSupportedException if file format is not registered.
 			 */
