@@ -382,7 +382,7 @@ export_finite_rotation()
 		.def("create_identity_rotation",
 				&GPlatesApi::finite_rotation_create_identity_rotation,
 				"create_identity_rotation() -> FiniteRotation\n"
-				"  Creates a finite rotation that does not rotate (it maps a vector to itself).\n"
+				"  Creates a finite rotation that does not rotate (it maps a vector onto the same vector).\n"
 				"\n"
 				"  :rtype: :class:`FiniteRotation`\n"
 				"\n"
@@ -404,7 +404,7 @@ export_finite_rotation()
 				&GPlatesApi::finite_rotation_represents_identity_rotation,
 				"represents_identity_rotation() -> bool\n"
 				"  Return whether this finite rotation represents an identity rotation (a rotation "
-				"which maps a vector to itself).\n"
+				"which maps a vector onto the same vector).\n"
 				"\n"
 				"  :rtype: bool\n")
 		.def("get_inverse",

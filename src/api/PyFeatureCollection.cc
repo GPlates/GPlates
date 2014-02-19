@@ -25,7 +25,9 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+#include <QString>
 
+#include "PyFeatureCollectionFileFormatRegistry.h"
 #include "PythonConverterUtils.h"
 
 #include "global/python.h"
@@ -75,6 +77,62 @@ namespace GPlatesApi
 		// Raise the 'ValueError' python exception if the feature was not found.
 		PyErr_SetString(PyExc_ValueError, "Feature instance not found");
 		bp::throw_error_already_set();
+	}
+
+
+	/**
+	 * From-python converter from a string filename to a FeatureCollection.
+	 */
+	struct python_FeatureCollection :
+			private boost::noncopyable
+	{
+		static
+		void *
+		convertible(
+				PyObject *obj)
+		{
+			namespace bp = boost::python;
+
+			// If it's a string then it can be used as a filename to read a feature collection.
+			return bp::extract<QString>(obj).check() ? obj : NULL;
+		}
+
+		static
+		void
+		construct(
+				PyObject *obj,
+				boost::python::converter::rvalue_from_python_stage1_data *data)
+		{
+			namespace bp = boost::python;
+
+			void *const storage = reinterpret_cast<
+					bp::converter::rvalue_from_python_storage<
+							GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> *>(
+									data)->storage.bytes;
+
+			const QString filename = bp::extract<QString>(obj);
+			GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
+
+			// Use the API function in "PyFeatureCollectionFileFormatRegistry.h" to read the file.
+			new (storage) GPlatesModel::FeatureCollectionHandle::non_null_ptr_type(
+					GPlatesApi::read_feature_collection(file_registry, filename));
+
+			data->convertible = storage;
+		}
+	};
+
+
+	/**
+	 * Registers from-python converter from a string filename to a FeatureCollection.
+	 */
+	void
+	register_feature_collection_from_python_conversion()
+	{
+		// From python conversion.
+		bp::converter::registry::push_back(
+				&python_FeatureCollection::convertible,
+				&python_FeatureCollection::construct,
+				bp::type_id<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>());
 	}
 }
 
@@ -162,6 +220,9 @@ export_feature_collection()
 	boost::python::implicitly_convertible<
 			boost::optional<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>,
 			boost::optional<GPlatesModel::FeatureCollectionHandle::non_null_ptr_to_const_type> >();
+
+	// A string can be converted to a feature collection by using it as a feature collection filename.
+	GPlatesApi::register_feature_collection_from_python_conversion();
 }
 
 #endif // GPLATES_NO_PYTHON
