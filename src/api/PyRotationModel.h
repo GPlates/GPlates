@@ -28,6 +28,9 @@
 
 #include <vector>
 #include <boost/optional.hpp>
+#include <boost/variant.hpp>
+
+#include "PyFeatureCollection.h"
 
 #include "app-logic/ReconstructionTreeCreator.h"
 
@@ -62,27 +65,13 @@ namespace GPlatesApi
 
 
 		/**
-		 * Returns true if @a rotation_features is of the necessary type to pass into @a create:
-		 * (1) a feature collection (assumed to be rotation features),
-		 * (2) a string (assumed to be a rotation filename),
-		 * (3) a sequence (eg, list or tuple) of feature collections and/or strings.
-		 *
-		 * ...for (3) the sequence can contain a mixture of feature collections and filename strings.
-		 */
-		static
-		bool
-		is_valid_rotation_feature_input_type(
-				boost::python::object rotation_features);
-
-
-		/**
-		 * Create a rotation model from rotations features that will cache reconstruction trees
+		 * Create a rotation model (from rotations features) that will cache reconstruction trees
 		 * up to a cache size of @a reconstruction_tree_cache_size.
 		 *
-		 * @a rotation_features must satisfy @a is_valid_rotation_feature_input_type.
+		 * @a rotation_features must satisfy FeatureCollectionSequenceFunctionArgument::is_convertible().
 		 *
 		 * Alternatively you can just use boost::python::extract<RotationModel::non_null_ptr_type>()
-		 * on any python object satisfying the @a is_valid_rotation_feature_input_type.
+		 * on any python object satisfying FeatureCollectionSequenceFunctionArgument::is_convertible().
 		 */
 		static
 		non_null_ptr_type
@@ -90,6 +79,17 @@ namespace GPlatesApi
 				boost::python::object rotation_features,
 				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE);
 
+
+		/**
+		 * Create a rotation model (from a sequence of rotation feature collections) that will cache
+		 * reconstruction trees up to a cache size of @a reconstruction_tree_cache_size.
+		 */
+		static
+		non_null_ptr_type
+		create(
+				const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &rotation_features,
+				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE);
+	
 
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type
 		get_reconstruction_tree(
@@ -144,6 +144,70 @@ namespace GPlatesApi
 		 */
 		GPlatesAppLogic::ReconstructionTreeCreator d_reconstruction_tree_creator;
 
+	};
+
+
+	/**
+	 * A convenience class for receiving a rotation model function argument as either:
+	 *  (1) a rotation model, or
+	 *  (2) a @a FeatureCollectionSequenceFunctionArgument.
+	 *
+	 * To get an instance of @a RotationModelFunctionArgument you can either:
+	 *  (1) specify RotationModelFunctionArgument directly as a function argument type
+	 *      (in the C++ function being wrapped), or
+	 *  (2) use boost::python::extract<RotationModelFunctionArgument>().
+	 */
+	class RotationModelFunctionArgument
+	{
+	public:
+
+		/**
+		 * Types of function argument.
+		 */
+		typedef boost::variant<
+				RotationModel::non_null_ptr_type,
+				FeatureCollectionSequenceFunctionArgument> function_argument_type;
+
+
+		/**
+		 * Returns true if @a python_function_argument is convertible to an instance of this class.
+		 */
+		static
+		bool
+		is_convertible(
+				boost::python::object python_function_argument);
+
+
+		explicit
+		RotationModelFunctionArgument(
+				boost::python::object python_function_argument);
+
+
+		explicit
+		RotationModelFunctionArgument(
+				const function_argument_type &function_argument);
+
+		/**
+		 * Returns function argument as a rotation model (for passing to python).
+		 */
+		boost::python::object
+		to_python() const;
+
+		/**
+		 * Return the function argument as a rotation model.
+		 */
+		RotationModel::non_null_ptr_type
+		get_rotation_model() const;
+
+	private:
+
+		static
+		RotationModel::non_null_ptr_type
+		initialise_rotation_model(
+				const function_argument_type &function_argument);
+
+
+		RotationModel::non_null_ptr_type d_rotation_model;
 	};
 }
 

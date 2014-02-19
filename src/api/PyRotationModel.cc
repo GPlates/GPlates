@@ -61,23 +61,25 @@ namespace GPlatesApi
 	namespace
 	{
 		/**
-		 * A rotation feature collection or a sequence of them.
+		 * Python converter from a rotation model or a sequence of feature collections to a
+		 * @a RotationModelFunctionArgument (and vice versa).
 		 */
-		typedef boost::variant<
-				GPlatesModel::FeatureCollectionHandle::non_null_ptr_type,
-				// Must go last since bp::object is a catch-all...
-				bp::object/*sequence*/> rotation_features_type;
-
-
-		/**
-		 * From-python converter for RotationModel.
-		 *
-		 * See 'RotationModel::is_valid_rotation_feature_input_type()' for what types
-		 * this converts from.
-		 */
-		struct python_RotationModel :
+		struct python_RotationModelFunctionArgument :
 				private boost::noncopyable
 		{
+			struct Conversion
+			{
+				static
+				PyObject *
+				convert(
+						const RotationModelFunctionArgument &function_arg)
+				{
+					namespace bp = boost::python;
+
+					return bp::incref(function_arg.to_python().ptr());
+				}
+			};
+
 			static
 			void *
 			convertible(
@@ -85,7 +87,7 @@ namespace GPlatesApi
 			{
 				namespace bp = boost::python;
 
-				if (RotationModel::is_valid_rotation_feature_input_type(
+				if (RotationModelFunctionArgument::is_convertible(
 					bp::object(bp::handle<>(bp::borrowed(obj)))))
 				{
 					return obj;
@@ -103,12 +105,12 @@ namespace GPlatesApi
 				namespace bp = boost::python;
 
 				void *const storage = reinterpret_cast<
-						bp::converter::rvalue_from_python_storage<RotationModel::non_null_ptr_type> *>(
-								data)->storage.bytes;
+						bp::converter::rvalue_from_python_storage<
+								RotationModelFunctionArgument> *>(
+										data)->storage.bytes;
 
-				new (storage) RotationModel::non_null_ptr_type(
-						RotationModel::create(
-								bp::object(bp::handle<>(bp::borrowed(obj)))));
+				new (storage) RotationModelFunctionArgument(
+						bp::object(bp::handle<>(bp::borrowed(obj))));
 
 				data->convertible = storage;
 			}
@@ -116,64 +118,27 @@ namespace GPlatesApi
 
 
 		/**
-		 * Registers from-python converter for RotationModel.
-		 *
-		 * See 'RotationModel::is_valid_rotation_feature_input_type()' for what types
-		 * this converts from.
+		 * Registers converter from a rotation model or a sequence of feature collections to a @a RotationModelFunctionArgument.
 		 */
 		void
-		register_rotation_model_from_python_conversion()
+		register_rotation_model_function_argument_conversion()
 		{
+			// Register function argument types variant.
+			PythonConverterUtils::register_variant_conversion<
+					RotationModelFunctionArgument::function_argument_type>();
+
+			// To python conversion.
+			bp::to_python_converter<
+					RotationModelFunctionArgument,
+					typename python_RotationModelFunctionArgument::Conversion>();
+
 			// From python conversion.
 			bp::converter::registry::push_back(
-					&python_RotationModel::convertible,
-					&python_RotationModel::construct,
-					bp::type_id<RotationModel::non_null_ptr_type>());
+					&python_RotationModelFunctionArgument::convertible,
+					&python_RotationModelFunctionArgument::construct,
+					bp::type_id<RotationModelFunctionArgument>());
 		}
 	}
-}
-
-
-bool
-GPlatesApi::RotationModel::is_valid_rotation_feature_input_type(
-		bp::object rotation_features_python_object)
-{
-	// If we fail to extract or iterate over the supported types then catch exception and return false.
-	try
-	{
-		// The rotation features must be a feature collection or a sequence of them.
-		// Feature collections includes filenames since a filename is implicitly convertible to a
-		// feature collection.
-		const rotation_features_type rotation_features =
-				bp::extract<rotation_features_type>(rotation_features_python_object)();
-
-		// If it's a boost::python::object then we're expecting it to be a sequence of feature collections
-		// which requires further checking.
-		if (boost::get<bp::object>(&rotation_features))
-		{
-			// Begin/end iterators over the python rotations iterable.
-			bp::stl_input_iterator<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>
-					rotation_features_seq_iter(boost::get<bp::object>(rotation_features)),
-					rotation_features_seq_end;
-
-			for ( ; rotation_features_seq_iter != rotation_features_seq_end; ++rotation_features_seq_iter)
-			{
-				// Make sure element can be extracted as a feature collection by dereferencing it.
-				// Note that the python wrapping code for FeatureCollectionHandle also adds a
-				// from-python conversion from a string filename to a feature collection - so we
-				// don't have to test that here.
-				*rotation_features_seq_iter;
-			}
-		}
-
-		return true;
-	}
-	catch (const bp::error_already_set &)
-	{
-		PyErr_Clear();
-	}
-
-	return false;
 }
 
 
@@ -182,33 +147,24 @@ GPlatesApi::RotationModel::create(
 		bp::object rotation_features_python_object,
 		unsigned int reconstruction_tree_cache_size)
 {
+	// Use convenience class 'FeatureCollectionSequenceFunctionArgument' to extract the
+	// rotation features allowing a variety of ways for the user to specify the features.
+	const FeatureCollectionSequenceFunctionArgument feature_collections_function_argument =
+			bp::extract<FeatureCollectionSequenceFunctionArgument>(rotation_features_python_object);
+
 	// Copy feature collections into a vector.
 	std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collections;
+	feature_collections_function_argument.get_feature_collections(feature_collections);
 
-	// Extract rotation features as a feature collection or a sequence of them.
-	const rotation_features_type rotation_features =
-			bp::extract<rotation_features_type>(rotation_features_python_object)();
-	if (const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type *feature_collection =
-		boost::get<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(&rotation_features))
-	{
-		feature_collections.push_back(*feature_collection);
-	}
-	else // a sequence of feature collections (and/or filenames by implicit conversion)...
-	{
-		// Begin/end iterators over the python rotations iterable.
-		bp::stl_input_iterator<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>
-				rotation_features_seq_iter(boost::get<bp::object>(rotation_features)),
-				rotation_features_seq_end;
+	return create(feature_collections, reconstruction_tree_cache_size);
+}
 
-		for ( ; rotation_features_seq_iter != rotation_features_seq_end; ++rotation_features_seq_iter)
-		{
-			const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
-					*rotation_features_seq_iter;
 
-			feature_collections.push_back(feature_collection);
-		}
-	}
-
+GPlatesApi::RotationModel::non_null_ptr_type
+GPlatesApi::RotationModel::create(
+		const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
+		unsigned int reconstruction_tree_cache_size)
+{
 	// Convert the feature collections to weak refs (for ReconstructionTreeCreator).
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
 	BOOST_FOREACH(
@@ -292,9 +248,78 @@ GPlatesApi::RotationModel::get_rotation(
 }
 
 
+bool
+GPlatesApi::RotationModelFunctionArgument::is_convertible(
+		bp::object python_function_argument)
+{
+	// It needs to be either a rotation model or a sequence of feature collections.
+	//
+	// Note: We avoid actually extracting the feature collections since we don't want to read
+	// them from files (ie, we only want to check the argument type).
+	return bp::extract<RotationModel::non_null_ptr_type>(python_function_argument).check() ||
+		bp::extract<FeatureCollectionSequenceFunctionArgument>(python_function_argument).check();
+}
+
+
+GPlatesApi::RotationModelFunctionArgument::RotationModelFunctionArgument(
+		bp::object python_function_argument) :
+	d_rotation_model(initialise_rotation_model(bp::extract<function_argument_type>(python_function_argument)))
+{
+}
+
+
+GPlatesApi::RotationModelFunctionArgument::RotationModelFunctionArgument(
+		const function_argument_type &function_argument) :
+	d_rotation_model(initialise_rotation_model(function_argument))
+{
+}
+
+
+GPlatesApi::RotationModel::non_null_ptr_type
+GPlatesApi::RotationModelFunctionArgument::initialise_rotation_model(
+		const function_argument_type &function_argument)
+{
+	if (const RotationModel::non_null_ptr_type *rotation_model =
+		boost::get<RotationModel::non_null_ptr_type>(&function_argument))
+	{
+		return *rotation_model;
+	}
+
+	const FeatureCollectionSequenceFunctionArgument feature_collections_function_argument =
+			boost::get<FeatureCollectionSequenceFunctionArgument>(function_argument);
+
+	// Copy feature collections into a vector.
+	std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collections;
+	feature_collections_function_argument.get_feature_collections(feature_collections);
+
+	return RotationModel::create(feature_collections);
+}
+
+
+bp::object
+GPlatesApi::RotationModelFunctionArgument::to_python() const
+{
+	// Wrap rotation model in a python object.
+	return bp::object(get_rotation_model());
+}
+
+
+GPlatesApi::RotationModel::non_null_ptr_type
+GPlatesApi::RotationModelFunctionArgument::get_rotation_model() const
+{
+	return d_rotation_model;
+}
+
+
 void
 export_rotation_model()
 {
+	// Select the desired overload...
+	GPlatesApi::RotationModel::non_null_ptr_type (*rotation_model_create)(
+			boost::python::object,
+			unsigned int) =
+					&GPlatesApi::RotationModel::create;
+
 	std::stringstream rotation_model_constructor_docstring_stream;
 	rotation_model_constructor_docstring_stream <<
 			"__init__(rotation_features[, reconstruction_tree_cache_size="
@@ -355,7 +380,7 @@ export_rotation_model()
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::RotationModel::create,
+						rotation_model_create,
 						bp::default_call_policies(),
 						(bp::arg("rotation_features"),
 							bp::arg("reconstruction_tree_cache_size") =
@@ -470,13 +495,8 @@ export_rotation_model()
 			boost::optional<GPlatesApi::RotationModel::non_null_ptr_type>,
 			boost::optional<GPlatesApi::RotationModel::non_null_ptr_to_const_type> >();
 
-	// Enable the rotation features boost::variant to be initialised from python.
-	// This is used in RotationModel::create().
-	GPlatesApi::PythonConverterUtils::register_variant_conversion<GPlatesApi::rotation_features_type>();
-
-	// All python types defined by 'RotationModel::is_valid_rotation_feature_input_type()' to be
-	// converted to 'RotationModel'.
-	GPlatesApi::register_rotation_model_from_python_conversion();
+	// Register converter from a rotation model or a sequence of feature collections to a @a RotationModelFunctionArgument.
+	GPlatesApi::register_rotation_model_function_argument_conversion();
 }
 
 #endif // GPLATES_NO_PYTHON

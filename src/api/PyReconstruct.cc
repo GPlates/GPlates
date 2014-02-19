@@ -264,9 +264,13 @@ namespace GPlatesApi
 		VariableArguments::keyword_arguments_type unused_keyword_args;
 
 		// Define the number of explicit function arguments and their types...
+		//
+		// NOTE: We can't use FeatureCollectionSequenceFunctionArgument for the reconstructable features
+		// because we need the files the feature collections came from (if any) and not just
+		// the feature collections themselves.
 		typedef boost::tuple<
 				reconstructable_features_type,
-				RotationModel::non_null_ptr_type,
+				RotationModelFunctionArgument,
 				QString,
 				double,
 				GPlatesModel::integer_plate_id_type> reconstruct_args_type;
@@ -286,7 +290,7 @@ namespace GPlatesApi
 						unused_keyword_args);
 
 		const reconstructable_features_type reconstructable_features = boost::get<0>(reconstruct_args);
-		const RotationModel::non_null_ptr_type rotation_model = boost::get<1>(reconstruct_args);
+		const RotationModelFunctionArgument rotation_model = boost::get<1>(reconstruct_args);
 		const QString export_file_name = boost::get<2>(reconstruct_args);
 		const double reconstruction_time = boost::get<3>(reconstruct_args);
 		const GPlatesModel::integer_plate_id_type anchor_plate_id = boost::get<4>(reconstruct_args);
@@ -328,7 +332,7 @@ namespace GPlatesApi
 		// This ensures 'ReconstructUtils::reconstruct()' will reconstruct using the correct anchor plate.
 		GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 				GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
-						rotation_model->get_reconstruction_tree_creator(),
+						rotation_model.get_rotation_model()->get_reconstruction_tree_creator(),
 						anchor_plate_id);
 
 		// Reconstruct.
