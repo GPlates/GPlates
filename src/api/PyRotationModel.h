@@ -58,11 +58,37 @@ namespace GPlatesApi
 		typedef GPlatesUtils::non_null_intrusive_ptr<const RotationModel> non_null_ptr_to_const_type;
 
 
+		static const unsigned int DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE = 32;
+
+
+		/**
+		 * Returns true if @a rotation_features is of the necessary type to pass into @a create:
+		 * (1) a feature collection (assumed to be rotation features),
+		 * (2) a string (assumed to be a rotation filename),
+		 * (3) a sequence (eg, list or tuple) of feature collections and/or strings.
+		 *
+		 * ...for (3) the sequence can contain a mixture of feature collections and filename strings.
+		 */
+		static
+		bool
+		is_valid_rotation_feature_input_type(
+				boost::python::object rotation_features);
+
+
+		/**
+		 * Create a rotation model from rotations features that will cache reconstruction trees
+		 * up to a cache size of @a reconstruction_tree_cache_size.
+		 *
+		 * @a rotation_features must satisfy @a is_valid_rotation_feature_input_type.
+		 *
+		 * Alternatively you can just use boost::python::extract<RotationModel::non_null_ptr_type>()
+		 * on any python object satisfying the @a is_valid_rotation_feature_input_type.
+		 */
 		static
 		non_null_ptr_type
 		create(
-				boost::python::object rotation_features_seq, // Any python iterable (eg, list, tuple).
-				unsigned int reconstruction_tree_cache_size);
+				boost::python::object rotation_features,
+				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE);
 
 
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type

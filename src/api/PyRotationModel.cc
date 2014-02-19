@@ -25,8 +25,10 @@
 
 #include <cstddef>
 #include <iterator>
+#include <sstream>
 #include <vector>
 #include <boost/cast.hpp>
+#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
@@ -34,7 +36,6 @@
 
 #include "PyRotationModel.h"
 
-#include "PyFeatureCollectionFileFormatRegistry.h"
 #include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"
 
@@ -59,57 +60,162 @@ namespace GPlatesApi
 {
 	namespace
 	{
-		// A rotation feature collection or a rotation filename.
+		/**
+		 * A rotation feature collection or a sequence of them.
+		 */
 		typedef boost::variant<
 				GPlatesModel::FeatureCollectionHandle::non_null_ptr_type,
-				QString> rotation_features_type;
+				// Must go last since bp::object is a catch-all...
+				bp::object/*sequence*/> rotation_features_type;
+
+
+		/**
+		 * From-python converter for RotationModel.
+		 *
+		 * See 'RotationModel::is_valid_rotation_feature_input_type()' for what types
+		 * this converts from.
+		 */
+		struct python_RotationModel :
+				private boost::noncopyable
+		{
+			static
+			void *
+			convertible(
+					PyObject *obj)
+			{
+				namespace bp = boost::python;
+
+				if (RotationModel::is_valid_rotation_feature_input_type(
+					bp::object(bp::handle<>(bp::borrowed(obj)))))
+				{
+					return obj;
+				}
+
+				return NULL;
+			}
+
+			static
+			void
+			construct(
+					PyObject *obj,
+					boost::python::converter::rvalue_from_python_stage1_data *data)
+			{
+				namespace bp = boost::python;
+
+				void *const storage = reinterpret_cast<
+						bp::converter::rvalue_from_python_storage<RotationModel::non_null_ptr_type> *>(
+								data)->storage.bytes;
+
+				new (storage) RotationModel::non_null_ptr_type(
+						RotationModel::create(
+								bp::object(bp::handle<>(bp::borrowed(obj)))));
+
+				data->convertible = storage;
+			}
+		};
+
+
+		/**
+		 * Registers from-python converter for RotationModel.
+		 *
+		 * See 'RotationModel::is_valid_rotation_feature_input_type()' for what types
+		 * this converts from.
+		 */
+		void
+		register_rotation_model_from_python_conversion()
+		{
+			// From python conversion.
+			bp::converter::registry::push_back(
+					&python_RotationModel::convertible,
+					&python_RotationModel::construct,
+					bp::type_id<RotationModel::non_null_ptr_type>());
+		}
 	}
+}
+
+
+bool
+GPlatesApi::RotationModel::is_valid_rotation_feature_input_type(
+		bp::object rotation_features_python_object)
+{
+	// If we fail to extract or iterate over the supported types then catch exception and return false.
+	try
+	{
+		// The rotation features must be a feature collection or a sequence of them.
+		// Feature collections includes filenames since a filename is implicitly convertible to a
+		// feature collection.
+		const rotation_features_type rotation_features =
+				bp::extract<rotation_features_type>(rotation_features_python_object)();
+
+		// If it's a boost::python::object then we're expecting it to be a sequence of feature collections
+		// which requires further checking.
+		if (boost::get<bp::object>(&rotation_features))
+		{
+			// Begin/end iterators over the python rotations iterable.
+			bp::stl_input_iterator<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>
+					rotation_features_seq_iter(boost::get<bp::object>(rotation_features)),
+					rotation_features_seq_end;
+
+			for ( ; rotation_features_seq_iter != rotation_features_seq_end; ++rotation_features_seq_iter)
+			{
+				// Make sure element can be extracted as a feature collection by dereferencing it.
+				// Note that the python wrapping code for FeatureCollectionHandle also adds a
+				// from-python conversion from a string filename to a feature collection - so we
+				// don't have to test that here.
+				*rotation_features_seq_iter;
+			}
+		}
+
+		return true;
+	}
+	catch (const bp::error_already_set &)
+	{
+		PyErr_Clear();
+	}
+
+	return false;
 }
 
 
 GPlatesApi::RotationModel::non_null_ptr_type
 GPlatesApi::RotationModel::create(
-		bp::object rotation_features_seq, // Any python iterable (eg, list, tuple).
+		bp::object rotation_features_python_object,
 		unsigned int reconstruction_tree_cache_size)
 {
-	// We'll only create a file registry if we come across a filename in the sequence.
-	boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::Registry> file_registry;
-
-	// Begin/end iterators over the python rotations iterable.
-	bp::stl_input_iterator<rotation_features_type>
-			rotation_features_seq_iter(rotation_features_seq),
-			rotation_features_seq_end;
-
 	// Copy feature collections into a vector.
 	std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collections;
+
+	// Extract rotation features as a feature collection or a sequence of them.
+	const rotation_features_type rotation_features =
+			bp::extract<rotation_features_type>(rotation_features_python_object)();
+	if (const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type *feature_collection =
+		boost::get<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(&rotation_features))
+	{
+		feature_collections.push_back(*feature_collection);
+	}
+	else // a sequence of feature collections (and/or filenames by implicit conversion)...
+	{
+		// Begin/end iterators over the python rotations iterable.
+		bp::stl_input_iterator<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>
+				rotation_features_seq_iter(boost::get<bp::object>(rotation_features)),
+				rotation_features_seq_end;
+
+		for ( ; rotation_features_seq_iter != rotation_features_seq_end; ++rotation_features_seq_iter)
+		{
+			const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
+					*rotation_features_seq_iter;
+
+			feature_collections.push_back(feature_collection);
+		}
+	}
+
 	// Convert the feature collections to weak refs (for ReconstructionTreeCreator).
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
-	for ( ; rotation_features_seq_iter != rotation_features_seq_end; ++rotation_features_seq_iter)
+	BOOST_FOREACH(
+			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
+			feature_collections)
 	{
-		const rotation_features_type rotation_features = *rotation_features_seq_iter;
-
-		boost::optional<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collection;
-
-		// It's either a filename or a feature collection.
-		if (const QString *filename = boost::get<QString>(&rotation_features))
-		{
-			// Create a file registry if we haven't already.
-			if (!file_registry)
-			{
-				file_registry = boost::in_place(true/*register_default_file_formats_*/);
-			}
-
-			// Use the API function in "PyFeatureCollectionFileFormatRegistry.h" to read the file.
-			feature_collection = GPlatesApi::read_feature_collection(file_registry.get(), *filename);
-		}
-		else
-		{
-			feature_collection =
-				boost::get<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(rotation_features);
-		}
-
-		feature_collections.push_back(feature_collection.get());
-		feature_collection_refs.push_back(feature_collection.get()->reference());
+		feature_collection_refs.push_back(feature_collection->reference());
 	}
 
 	// Create a cached reconstruction tree creator.
@@ -189,6 +295,37 @@ GPlatesApi::RotationModel::get_rotation(
 void
 export_rotation_model()
 {
+	std::stringstream rotation_model_constructor_docstring_stream;
+	rotation_model_constructor_docstring_stream <<
+			"__init__(rotation_features[, reconstruction_tree_cache_size="
+			<< GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE
+			<< "])\n"
+			"  Create from rotation feature collection(s) and/or rotation filename(s), and "
+			"an optional reconstruction tree cache size.\n"
+			"\n"
+			"  :param rotation_features: A rotation feature collection or a rotation  filename "
+			"or a sequence of rotation feature collections and/or rotation filenames\n"
+			"  :type rotation_features: :class:`FeatureCollection` or string or sequence of "
+			":class:`FeatureCollection` and/or strings\n"
+			"  :param reconstruction_tree_cache_size: number of reconstruction trees to cache internally\n"
+			"  :type reconstruction_tree_cache_size: int\n"
+			"  :raises: OpenFileForReadingError if any file is not readable (when filenames specified)\n"
+			"  :raises: FileFormatNotSupportedError if any file format (identified by the filename "
+			"extensions) does not support reading (when filenames specified)\n"
+			"\n"
+			"  Note that *rotation_features* can be a rotation :class:`FeatureCollection` or a "
+			"rotation filename or a sequence (eg, ``list`` or ``tuple``) containing rotation "
+			":class:`FeatureCollection` instances or filenames (or a mixture of both).\n"
+			"\n"
+			"  If any rotation filenames are specified then this method uses "
+			":class:`FeatureCollectionFileFormatRegistry` internally to read the rotation files.\n"
+			"\n"
+			"  ::\n"
+			"\n"
+			"    rotation_adjustments = pygplates.FeatureCollection()\n"
+			"    ...\n"
+			"    rotation_model = pygplates.RotationModel(['rotations.rot', rotation_adjustments])\n";
+
 	//
 	// RotationModel - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -212,7 +349,7 @@ export_rotation_model()
 					"reconstruction trees associated with different reconstruction times to be re-used "
 					"instead of re-creating them, provided they have not been evicted from the cache. "
 					"This benefit also applies when querying rotations with :meth:`get_rotation` since "
-					"it, in turn, requests reconstruction trees. The default cache size is one.\n",
+					"it, in turn, requests reconstruction trees.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -221,31 +358,9 @@ export_rotation_model()
 						&GPlatesApi::RotationModel::create,
 						bp::default_call_policies(),
 						(bp::arg("rotation_features"),
-							bp::arg("reconstruction_tree_cache_size") = 32)),
-				"__init__(rotation_features[, reconstruction_tree_cache_size=32])\n"
-				"  Create from a sequence of rotation feature collections or rotation filenames, and "
-				"an optional reconstruction tree cache size.\n"
-				"\n"
-				"  :param rotation_features: A sequence of rotation :class:`FeatureCollection` "
-				"instances and/or filename strings\n"
-				"  :type rotation_features: Any sequence such as a ``list`` or a ``tuple``\n"
-				"  :param reconstruction_tree_cache_size: number of reconstruction trees to cache internally\n"
-				"  :type reconstruction_tree_cache_size: int\n"
-				"  :raises: OpenFileForReadingError if any file is not readable (when filenames specified)\n"
-				"  :raises: FileFormatNotSupportedError if any file format (identified by the filename "
-				"extensions) does not support reading (when filenames specified)\n"
-				"\n"
-				"  Note that *rotation_features* is a sequence (eg, ``list`` or ``tuple``) than can "
-				"contain :class:`FeatureCollection` instances or filenames, or a mixture of both.\n"
-				"\n"
-				"  If any rotation filenames are specified then this method uses "
-				":class:`FeatureCollectionFileFormatRegistry` internally to read the rotation files.\n"
-				"\n"
-				"  ::\n"
-				"\n"
-				"    rotation_adjustments = pygplates.FeatureCollection()\n"
-				"    ...\n"
-				"    rotation_model = pygplates.RotationModel(['rotations.rot', rotation_adjustments])\n")
+							bp::arg("reconstruction_tree_cache_size") =
+								GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE)),
+				rotation_model_constructor_docstring_stream.str().c_str())
 		.def("get_rotation",
 				&GPlatesApi::RotationModel::get_rotation,
 				(bp::arg("to_time"),
@@ -358,6 +473,10 @@ export_rotation_model()
 	// Enable the rotation features boost::variant to be initialised from python.
 	// This is used in RotationModel::create().
 	GPlatesApi::PythonConverterUtils::register_variant_conversion<GPlatesApi::rotation_features_type>();
+
+	// All python types defined by 'RotationModel::is_valid_rotation_feature_input_type()' to be
+	// converted to 'RotationModel'.
+	GPlatesApi::register_rotation_model_from_python_conversion();
 }
 
 #endif // GPLATES_NO_PYTHON
