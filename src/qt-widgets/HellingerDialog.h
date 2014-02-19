@@ -188,6 +188,10 @@ namespace GPlatesQtWidgets
 		const GPlatesMaths::LatLonPoint &
 		get_pole_estimate();
 
+		void
+		update_pole_estimate_spinboxes_and_layer(
+				const GPlatesMaths::PointOnSphere &point, double rho);
+
 	public Q_SLOTS:
 
 		/**
@@ -201,6 +205,14 @@ namespace GPlatesQtWidgets
 
 		void
 		close();
+
+	Q_SIGNALS:
+
+		void
+		estimate_changed(
+				double,
+				double,
+				double);
 
 	private:
 
@@ -261,7 +273,9 @@ namespace GPlatesQtWidgets
 		draw_error_ellipse();
 
 		void
-		update_initial_guess();
+		update_pole_estimate_from_model();
+
+
 
 		/**
 		 * Import the currently loaded hellinger pick data into the

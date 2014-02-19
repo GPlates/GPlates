@@ -51,7 +51,8 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::AdjustFittedPoleEstimate(
 	d_rendered_geom_collection_ptr(&rendered_geom_collection),
 	d_hellinger_dialog_ptr(&hellinger_dialog),
 	d_mouse_is_over_pole_estimate(false),
-	d_pole_is_being_dragged(false)
+	d_pole_is_being_dragged(false),
+	d_current_angle(0.)
 {
 	d_pole_estimate_layer_ptr =
 		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
@@ -60,6 +61,11 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::AdjustFittedPoleEstimate(
 	d_highlight_layer_ptr =
 			d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
+
+	QObject::connect(d_hellinger_dialog_ptr,
+					 SIGNAL(estimate_changed(double,double,double)),
+					 this,
+					 SLOT(handle_estimate_changed(double,double,double)));
 }
 
 void
@@ -79,6 +85,8 @@ void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_deactivation()
 {
 	d_hellinger_dialog_ptr->enable_pole_estimate_widgets(false);
+	qDebug() << GPlatesMaths::make_lat_lon_point(d_current_pole).latitude();
+	d_hellinger_dialog_ptr->update_pole_estimate_spinboxes_and_layer(d_current_pole, d_current_angle);
 	d_pole_estimate_layer_ptr->set_active(false);
 	d_highlight_layer_ptr->set_active(false);
 }
@@ -125,12 +133,14 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 		if (pos)
 		{
 			qDebug() << "MWD: Found pole estimate";
-			update_highlight_layer();
+			update_highlight_layer(point_on_sphere);
+			d_mouse_is_over_pole_estimate = true;
 		}
 	}
 	else
 	{
 		d_highlight_layer_ptr->clear_rendered_geometries();
+		d_mouse_is_over_pole_estimate = false;
 	}
 }
 
@@ -160,21 +170,19 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_press(
 			proximity_inclusion_threshold);
 	std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
 
-	// Check editing layer first
-	if (d_hellinger_dialog_ptr->get_editing_layer()->is_active())
+
+	if (GPlatesViewOperations::test_proximity(
+				sorted_hits,
+				proximity_criteria,
+				*d_highlight_layer_ptr))
 	{
-		if (GPlatesViewOperations::test_proximity(
-					sorted_hits,
-					proximity_criteria,
-					*d_hellinger_dialog_ptr->get_editing_layer()))
-		{
-			d_pole_is_being_dragged = true;
-		}
-		else
-		{
-			d_mouse_is_over_pole_estimate = false;
-		}
+		d_pole_is_being_dragged = true;
 	}
+	else
+	{
+		d_mouse_is_over_pole_estimate = false;
+	}
+
 }
 
 void
@@ -188,6 +196,16 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_shift_left_drag(
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 {
 
+}
+
+void
+GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_estimate_changed(
+		double lat,
+		double lon,
+		double rho)
+{
+	d_current_pole = GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(lat,lon));
+	update_pole_estimate_layer();
 }
 
 
@@ -218,7 +236,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_drag(
 {
 	if (d_pole_is_being_dragged)
 	{
-
+		update_highlight_layer(current_point_on_sphere);
 	}
 }
 
@@ -260,7 +278,8 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 	d_pole_estimate_layer_ptr->add_rendered_geometry(pole_geometry);
 }
 
-void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_highlight_layer()
+void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_highlight_layer(
+		const GPlatesMaths::PointOnSphere &current_pos)
 {
 	d_highlight_layer_ptr->clear_rendered_geometries();
 
@@ -268,7 +287,7 @@ void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_highlight_layer()
 
 	GPlatesViewOperations::RenderedGeometry pole_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				d_current_pole.get_non_null_pointer(),
+				current_pos.get_non_null_pointer(),
 				GPlatesGui::Colour::get_yellow(),
 				2, /* point size */
 				2, /* line thickness */

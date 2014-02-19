@@ -797,8 +797,8 @@ void
 GPlatesQtWidgets::HellingerDialog::restore()
 {
 	activate_layers();
-	update_from_model();
 	restore_expanded_status();
+	draw_pole_estimate();
 }
 
 void
@@ -867,26 +867,22 @@ GPlatesQtWidgets::HellingerDialog::handle_spinbox_radius_changed()
 void
 GPlatesQtWidgets::HellingerDialog::handle_estimate_changed()
 {
-	// The model is updated from the dialog
-	// immediately before performing a fit, so here we
-	// just update the visuals on the canvas.
-	double lat = spinbox_lat_estimate->value();
-	double lon = spinbox_lon_estimate->value();
 
-	d_current_pole_estimate_llp = GPlatesMaths::LatLonPoint(lat,lon);
-	d_current_pole_estimate_angle = spinbox_rho_estimate->value();
+	Q_EMIT estimate_changed(
+				spinbox_lat_estimate->value(),
+				spinbox_lon_estimate->value(),
+				spinbox_rho_estimate->value());
 
-	qDebug() << "handle_estimate_changed";
-	draw_pole_estimate();
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::update_initial_guess()
+GPlatesQtWidgets::HellingerDialog::update_pole_estimate_from_model()
 {
 	boost::optional<GPlatesQtWidgets::HellingerComFileStructure> com_file_data = d_hellinger_model->get_com_file();
 
 	if (com_file_data)
 	{
+		qDebug() << "com file exisits";
 		spinbox_lat_estimate->setValue(com_file_data.get().d_lat);
 		spinbox_lon_estimate->setValue(com_file_data.get().d_lon);
 		spinbox_rho_estimate->setValue(com_file_data.get().d_rho);
@@ -900,8 +896,29 @@ GPlatesQtWidgets::HellingerDialog::update_initial_guess()
 		d_filename_dat = com_file_data.get().d_data_filename;
 		d_filename_up = com_file_data.get().d_up_filename;
 		d_filename_down = com_file_data.get().d_down_filename;
+
+		d_current_pole_estimate_llp = GPlatesMaths::LatLonPoint(com_file_data->d_lat,
+																com_file_data->d_lon);
 	}
 
+}
+
+void GPlatesQtWidgets::HellingerDialog::update_pole_estimate_spinboxes_and_layer(
+		const GPlatesMaths::PointOnSphere &point,
+		double rho)
+{
+	qDebug() << "upodating spinboxes";
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
+	qDebug() << "lat: " << llp.latitude();
+	spinbox_lat_estimate->setValue(llp.latitude());
+	spinbox_lon_estimate->setValue(llp.longitude());
+
+	d_current_pole_estimate_llp = llp;
+
+	//d_current_rho_estimate = rho;
+	//spinbox_rho_estimate->setValue(rho);
+
+	draw_pole_estimate();
 }
 
 void
@@ -1194,9 +1211,10 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 void
 GPlatesQtWidgets::HellingerDialog::update_from_model()
 {
+	qDebug() << "update from model";
 	d_pick_layer_ptr->set_active(true);
 	update_tree_from_model();
-	update_initial_guess();
+	update_pole_estimate_from_model();
 }
 
 void
@@ -1613,6 +1631,7 @@ void GPlatesQtWidgets::HellingerDialog::draw_picks()
 
 void GPlatesQtWidgets::HellingerDialog::draw_pole_estimate()
 {
+	qDebug() << "draw_pole_estimate";
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 	d_pole_estimate_layer_ptr->clear_rendered_geometries();
 

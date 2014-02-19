@@ -269,8 +269,21 @@ namespace GPlatesCanvasTools
 				double current_proximity_inclusion_threshold,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport);
 
-	private:
 
+
+
+
+
+	private Q_SLOTS:
+
+		void
+		handle_estimate_changed(
+				double lat,
+				double lon,
+				double rho);
+
+
+	private:
 		//! Convenience typedef for GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 		typedef GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type child_layer_ptr_type;
 
@@ -281,7 +294,8 @@ namespace GPlatesCanvasTools
 		update_pole_estimate_layer();
 
 		void
-		update_highlight_layer();
+		update_highlight_layer(
+				const GPlatesMaths::PointOnSphere &current_pos);
 
 		void
 		paint();
@@ -308,6 +322,8 @@ namespace GPlatesCanvasTools
 		child_layer_ptr_type d_highlight_layer_ptr;
 
 		GPlatesMaths::PointOnSphere d_current_pole;
+
+		double d_current_angle;
 
 //		GPlatesMaths::GreatCircleArc d_reference_arc;
 

@@ -41,6 +41,7 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 	QFile file(filename);
 	QTextStream out(&file);
 
+
 	// TODO: Refactor this. Probably cleaner to grab the raw data from the model and convert to string as we go.
 	if (file.open(QIODevice::WriteOnly))
 	{
@@ -61,13 +62,10 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 					}
 					if (load_data.at(a+1).toInt() == GPlatesQtWidgets::MOVING_PICK_TYPE)
 					{
-
 						pick_state = QString("%1").arg(GPlatesQtWidgets::DISABLED_MOVING_PICK_TYPE);
-
 					}
 					else if (load_data.at(a+1).toInt() == GPlatesQtWidgets::FIXED_PICK_TYPE)
 					{
-
 						pick_state = QString("%1").arg(GPlatesQtWidgets::DISABLED_FIXED_PICK_TYPE);
 					}
 				}
@@ -79,8 +77,8 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 				{
 					out << pick_state<<" "<<load_data.at(a)<<" "<<load_data.at(a+2)
 						<<" "<<load_data.at(a+3)<<" "<<load_data.at(a+4)<<"\n";
-//					qDebug() << pick_state<<" "<<load_data.at(a)<<" "<<load_data.at(a+2)
-//							 <<" "<<load_data.at(a+3)<<" "<<load_data.at(a+4)<<"\n";
+					//					qDebug() << pick_state<<" "<<load_data.at(a)<<" "<<load_data.at(a+2)
+					//							 <<" "<<load_data.at(a+3)<<" "<<load_data.at(a+4)<<"\n";
 				}
 				a=a+6;
 			}
