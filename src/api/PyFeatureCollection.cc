@@ -23,14 +23,20 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <QString>
+
+#include "PyFeatureCollection.h"
 
 #include "PyFeatureCollectionFileFormatRegistry.h"
 #include "PythonConverterUtils.h"
 
 #include "global/python.h"
+// This is not included by <boost/python.hpp>.
+// Also we must include this after <boost/python.hpp> which means after "global/python.h".
+#include <boost/python/stl_iterator.hpp>
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureCollectionHandle.h"
@@ -81,11 +87,25 @@ namespace GPlatesApi
 
 
 	/**
-	 * From-python converter from a string filename to a FeatureCollection.
+	 * Python converter from a feature collection or a string filename to a
+	 * @a FeatureCollectionFunctionArgument (and vice versa).
 	 */
-	struct python_FeatureCollection :
+	struct python_FeatureCollectionFunctionArgument :
 			private boost::noncopyable
 	{
+		struct Conversion
+		{
+			static
+			PyObject *
+			convert(
+					const FeatureCollectionFunctionArgument &function_arg)
+			{
+				namespace bp = boost::python;
+
+				return bp::incref(function_arg.to_python().ptr());
+			}
+		};
+
 		static
 		void *
 		convertible(
@@ -93,8 +113,13 @@ namespace GPlatesApi
 		{
 			namespace bp = boost::python;
 
-			// If it's a string then it can be used as a filename to read a feature collection.
-			return bp::extract<QString>(obj).check() ? obj : NULL;
+			if (FeatureCollectionFunctionArgument::is_convertible(
+				bp::object(bp::handle<>(bp::borrowed(obj)))))
+			{
+				return obj;
+			}
+
+			return NULL;
 		}
 
 		static
@@ -107,15 +132,11 @@ namespace GPlatesApi
 
 			void *const storage = reinterpret_cast<
 					bp::converter::rvalue_from_python_storage<
-							GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> *>(
+							FeatureCollectionFunctionArgument> *>(
 									data)->storage.bytes;
 
-			const QString filename = bp::extract<QString>(obj);
-			GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
-
-			// Use the API function in "PyFeatureCollectionFileFormatRegistry.h" to read the file.
-			new (storage) GPlatesModel::FeatureCollectionHandle::non_null_ptr_type(
-					GPlatesApi::read_feature_collection(file_registry, filename));
+			new (storage) FeatureCollectionFunctionArgument(
+					bp::object(bp::handle<>(bp::borrowed(obj))));
 
 			data->convertible = storage;
 		}
@@ -123,17 +144,307 @@ namespace GPlatesApi
 
 
 	/**
-	 * Registers from-python converter from a string filename to a FeatureCollection.
+	 * Registers converter from a feature collection or a string filename to a @a FeatureCollectionFunctionArgument.
 	 */
 	void
-	register_feature_collection_from_python_conversion()
+	register_feature_collection_function_argument_conversion()
 	{
+		// Register function argument types variant.
+		PythonConverterUtils::register_variant_conversion<
+				FeatureCollectionFunctionArgument::function_argument_type>();
+
+		// To python conversion.
+		bp::to_python_converter<
+				FeatureCollectionFunctionArgument,
+				typename python_FeatureCollectionFunctionArgument::Conversion>();
+
 		// From python conversion.
 		bp::converter::registry::push_back(
-				&python_FeatureCollection::convertible,
-				&python_FeatureCollection::construct,
-				bp::type_id<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>());
+				&python_FeatureCollectionFunctionArgument::convertible,
+				&python_FeatureCollectionFunctionArgument::construct,
+				bp::type_id<FeatureCollectionFunctionArgument>());
 	}
+
+
+	/**
+	 * Python converter from a feature collection or a string filename or a sequence of feature
+	 * collections and/or string filenames to a @a FeatureCollectionSequenceFunctionArgument (and vice versa).
+	 */
+	struct python_FeatureCollectionSequenceFunctionArgument :
+			private boost::noncopyable
+	{
+		struct Conversion
+		{
+			static
+			PyObject *
+			convert(
+					const FeatureCollectionSequenceFunctionArgument &function_arg)
+			{
+				namespace bp = boost::python;
+
+				return bp::incref(function_arg.to_python().ptr());
+			}
+		};
+
+		static
+		void *
+		convertible(
+				PyObject *obj)
+		{
+			namespace bp = boost::python;
+
+			if (FeatureCollectionSequenceFunctionArgument::is_convertible(
+				bp::object(bp::handle<>(bp::borrowed(obj)))))
+			{
+				return obj;
+			}
+
+			return NULL;
+		}
+
+		static
+		void
+		construct(
+				PyObject *obj,
+				boost::python::converter::rvalue_from_python_stage1_data *data)
+		{
+			namespace bp = boost::python;
+
+			void *const storage = reinterpret_cast<
+					bp::converter::rvalue_from_python_storage<
+							FeatureCollectionSequenceFunctionArgument> *>(
+									data)->storage.bytes;
+
+			new (storage) FeatureCollectionSequenceFunctionArgument(
+					bp::object(bp::handle<>(bp::borrowed(obj))));
+
+			data->convertible = storage;
+		}
+	};
+
+
+	/**
+	 * Registers converter from a feature collection or a string filename to a @a FeatureCollectionSequenceFunctionArgument.
+	 */
+	void
+	register_feature_collection_sequence_function_argument_conversion()
+	{
+		// Register function argument types variant.
+		PythonConverterUtils::register_variant_conversion<
+				FeatureCollectionSequenceFunctionArgument::function_argument_type>();
+
+		// To python conversion.
+		bp::to_python_converter<
+				FeatureCollectionSequenceFunctionArgument,
+				typename python_FeatureCollectionSequenceFunctionArgument::Conversion>();
+
+		// From python conversion.
+		bp::converter::registry::push_back(
+				&python_FeatureCollectionSequenceFunctionArgument::convertible,
+				&python_FeatureCollectionSequenceFunctionArgument::construct,
+				bp::type_id<FeatureCollectionSequenceFunctionArgument>());
+	}
+}
+
+
+bool
+GPlatesApi::FeatureCollectionFunctionArgument::is_convertible(
+		bp::object python_function_argument)
+{
+	return bp::extract<function_argument_type>(python_function_argument).check();
+}
+
+
+GPlatesApi::FeatureCollectionFunctionArgument::FeatureCollectionFunctionArgument(
+		bp::object python_function_argument) :
+	d_feature_collection(
+			initialise_feature_collection(
+					bp::extract<function_argument_type>(python_function_argument)))
+{
+}
+
+
+GPlatesApi::FeatureCollectionFunctionArgument::FeatureCollectionFunctionArgument(
+		const function_argument_type &function_argument) :
+	d_feature_collection(initialise_feature_collection(function_argument))
+{
+}
+
+
+GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
+GPlatesApi::FeatureCollectionFunctionArgument::initialise_feature_collection(
+		const function_argument_type &function_argument)
+{
+	if (const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type *feature_collection =
+		boost::get<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(&function_argument))
+	{
+		return *feature_collection;
+	}
+
+	const QString filename = boost::get<QString>(function_argument);
+
+	GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
+
+	// Use the API function in "PyFeatureCollectionFileFormatRegistry.h" to read the file.
+	return GPlatesApi::read_feature_collection(file_registry, filename);
+}
+
+
+bp::object
+GPlatesApi::FeatureCollectionFunctionArgument::to_python() const
+{
+	// Wrap feature collection in a python object.
+	return bp::object(get_feature_collection());
+}
+
+
+GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
+GPlatesApi::FeatureCollectionFunctionArgument::get_feature_collection() const
+{
+	return d_feature_collection;
+}
+
+
+bool
+GPlatesApi::FeatureCollectionSequenceFunctionArgument::is_convertible(
+		bp::object python_function_argument)
+{
+	// If we fail to extract or iterate over the supported types then catch exception and return NULL.
+	try
+	{
+		const function_argument_type function_argument =
+				bp::extract<function_argument_type>(python_function_argument)();
+
+		// If it's a boost::python::object then we're expecting it to be a sequence of
+		// FeatureCollectionFunctionArgument's which requires further checking.
+		if (boost::get<bp::object>(&function_argument))
+		{
+			bp::object sequence = boost::get<bp::object>(function_argument);
+
+			// Iterate over the sequence.
+			//
+			// NOTE: We avoid iterating using 'bp::stl_input_iterator<FeatureCollectionFunctionArgument>'
+			// because we want to avoid actually reading a feature collection from a file.
+			// We're just checking if there's a feature collection or a string here.
+			bp::object iter = sequence.attr("__iter__")();
+			while (bp::handle<> item = bp::handle<>(bp::allow_null(PyIter_Next(iter.ptr()))))
+			{
+				if (!bp::extract<FeatureCollectionFunctionArgument>(bp::object(item)).check())
+				{
+					return false;
+				}
+			}
+
+			if (PyErr_Occurred())
+			{
+				PyErr_Clear();
+				return false;
+			}
+		}
+
+		return true;
+	}
+	catch (const bp::error_already_set &)
+	{
+		PyErr_Clear();
+	}
+
+	return false;
+}
+
+
+GPlatesApi::FeatureCollectionSequenceFunctionArgument::FeatureCollectionSequenceFunctionArgument(
+		bp::object python_function_argument)
+{
+	initialise_feature_collections(
+			d_feature_collections,
+			bp::extract<function_argument_type>(python_function_argument));
+}
+
+
+GPlatesApi::FeatureCollectionSequenceFunctionArgument::FeatureCollectionSequenceFunctionArgument(
+		const function_argument_type &function_argument)
+{
+	initialise_feature_collections(d_feature_collections, function_argument);
+}
+
+
+GPlatesApi::FeatureCollectionSequenceFunctionArgument::FeatureCollectionSequenceFunctionArgument(
+		const std::vector<FeatureCollectionFunctionArgument> &feature_collection_function_arguments)
+{
+	BOOST_FOREACH(
+			const FeatureCollectionFunctionArgument &feature_collection_function_argument,
+			feature_collection_function_arguments)
+	{
+		d_feature_collections.push_back(feature_collection_function_argument.get_feature_collection());
+	}
+}
+
+
+void
+GPlatesApi::FeatureCollectionSequenceFunctionArgument::initialise_feature_collections(
+		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
+		const function_argument_type &function_argument)
+{
+	if (const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type *feature_collection =
+		boost::get<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(&function_argument))
+	{
+		feature_collections.push_back(*feature_collection);
+	}
+	else if (const QString *filename = boost::get<QString>(&function_argument))
+	{
+		// Use convenience class to read the feature collection from the file.
+		FeatureCollectionFunctionArgument feature_collection(*filename);
+		feature_collections.push_back(feature_collection.get_feature_collection());
+	}
+	else
+	{
+		//
+		// A sequence of feature collections and/or filenames.
+		//
+
+		const bp::object sequence = boost::get<bp::object>(function_argument);
+
+		// Use convenience class 'FeatureCollectionFunctionArgument' to access the feature collections.
+		bp::stl_input_iterator<FeatureCollectionFunctionArgument> feature_collections_iter(sequence);
+		bp::stl_input_iterator<FeatureCollectionFunctionArgument> feature_collections_end;
+		for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
+		{
+			const FeatureCollectionFunctionArgument feature_collection = *feature_collections_iter;
+			feature_collections.push_back(feature_collection.get_feature_collection());
+		}
+	}
+}
+
+
+bp::object
+GPlatesApi::FeatureCollectionSequenceFunctionArgument::to_python() const
+{
+	// Get the feature collections.
+	std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collections;
+	get_feature_collections(feature_collections);
+
+	// Add feature collections to a python list.
+	bp::list python_feature_collections;
+	BOOST_FOREACH(
+			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
+			feature_collections)
+	{
+		python_feature_collections.append(feature_collection);
+	}
+
+	return python_feature_collections;
+}
+
+
+void
+GPlatesApi::FeatureCollectionSequenceFunctionArgument::get_feature_collections(
+		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections) const
+{
+	feature_collections.insert(
+			feature_collections.end(),
+			d_feature_collections.begin(),
+			d_feature_collections.end());
 }
 
 
@@ -141,7 +452,7 @@ void
 export_feature_collection()
 {
 	// Select the desired overload...
-	const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type (*create)() =
+	const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type (*feature_collection_create)() =
 					&GPlatesModel::FeatureCollectionHandle::create;
 
 	//
@@ -175,7 +486,7 @@ export_feature_collection()
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
 		.def("__init__",
-				bp::make_constructor(create),
+				bp::make_constructor(feature_collection_create),
 				"__init__()\n"
 				"  Create a new feature collection instance that is (initially) empty (has no features).\n"
 				"  ::\n"
@@ -221,8 +532,11 @@ export_feature_collection()
 			boost::optional<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>,
 			boost::optional<GPlatesModel::FeatureCollectionHandle::non_null_ptr_to_const_type> >();
 
-	// A string can be converted to a feature collection by using it as a feature collection filename.
-	GPlatesApi::register_feature_collection_from_python_conversion();
+	// Register converter from a feature collection or a string filename to a @a FeatureCollectionFunctionArgument.
+	GPlatesApi::register_feature_collection_function_argument_conversion();
+
+	// Register converter from a feature collection or a string filename to a @a FeatureCollectionSequenceFunctionArgument.
+	GPlatesApi::register_feature_collection_sequence_function_argument_conversion();
 }
 
 #endif // GPLATES_NO_PYTHON
