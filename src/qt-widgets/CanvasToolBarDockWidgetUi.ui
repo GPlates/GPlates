@@ -57,7 +57,7 @@
        <enum>QTabWidget::West</enum>
       </property>
       <property name="currentIndex">
-       <number>5</number>
+       <number>6</number>
       </property>
       <property name="iconSize">
        <size>
@@ -376,6 +376,9 @@
        </property>
        <attribute name="title">
         <string/>
+       </attribute>
+       <attribute name="toolTip">
+        <string>Hellinger 7</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_8">
         <property name="spacing">
@@ -890,10 +893,10 @@
     <string>Select Hellinger Geometries</string>
    </property>
    <property name="toolTip">
-    <string>Select and manipulate hellinger geometries H</string>
+    <string>Select Hellinger Geometries Q</string>
    </property>
    <property name="shortcut">
-    <string>H</string>
+    <string>Q</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
@@ -911,10 +914,10 @@
     <string>Adjust Pole Estimate</string>
    </property>
    <property name="toolTip">
-    <string>Adjust Pole Estimate P</string>
+    <string>Adjust Pole Estimate R</string>
    </property>
    <property name="shortcut">
-    <string>P</string>
+    <string>R</string>
    </property>
   </action>
  </widget>
