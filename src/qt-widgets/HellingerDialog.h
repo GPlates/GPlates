@@ -210,6 +210,12 @@ namespace GPlatesQtWidgets
 		void
 		close();
 
+		/**
+		 * @brief hide - override the QDialog method so that we can hide child dialogs too.
+		 */
+		void
+		hide();
+
 	Q_SIGNALS:
 
 		void
@@ -303,9 +309,8 @@ namespace GPlatesQtWidgets
 		void
 		draw_pole_estimate();
 
-		const GPlatesGui::Colour &get_segment_colour(
-				int num_color);
-
+		void
+		hide_child_dialogs();
 
 
 	private Q_SLOTS:

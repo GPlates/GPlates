@@ -148,6 +148,10 @@ GPlatesGui::HellingerCanvasToolWorkflow::activate_workflow()
 {
 	// Activate the main rendered layer.
 	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, true/*active*/);
+
+	// The dialog may have been left disabled (e.g. if one of the child dialogs were open
+	// when the HellingerDialog was last closed); so enable it.
+	d_hellinger_dialog_ptr->setEnabled(true);
 }
 
 void

@@ -387,6 +387,39 @@ namespace{
 							set_as_selected_pick);
 
 	}
+
+	const GPlatesGui::Colour &
+	get_segment_colour(
+			int num_colour)
+	{
+		num_colour = num_colour%7;
+		switch (num_colour)
+		{
+		case 0:
+			return GPlatesGui::Colour::get_green();
+			break;
+		case 1:
+			return GPlatesGui::Colour::get_blue();
+			break;
+		case 2:
+			return GPlatesGui::Colour::get_maroon();
+			break;
+		case 3:
+			return GPlatesGui::Colour::get_purple();
+			break;
+		case 4:
+			return GPlatesGui::Colour::get_fuchsia();
+			break;
+		case 5:
+			return GPlatesGui::Colour::get_olive();
+			break;
+		case 6:
+			return GPlatesGui::Colour::get_navy();
+			break;
+		default:
+			return GPlatesGui::Colour::get_navy();
+		}
+	}
 }
 
 GPlatesQtWidgets::HellingerDialog::HellingerDialog(
@@ -1464,39 +1497,6 @@ void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()
 }
 
 
-const GPlatesGui::Colour &
-GPlatesQtWidgets::HellingerDialog::get_segment_colour(
-		int num_colour)
-{
-	num_colour = num_colour%7;
-	switch (num_colour)
-	{
-	case 0:
-		return GPlatesGui::Colour::get_green();
-		break;
-	case 1:
-		return GPlatesGui::Colour::get_blue();
-		break;
-	case 2:
-		return GPlatesGui::Colour::get_maroon();
-		break;
-	case 3:
-		return GPlatesGui::Colour::get_purple();
-		break;
-	case 4:
-		return GPlatesGui::Colour::get_fuchsia();
-		break;
-	case 5:
-		return GPlatesGui::Colour::get_olive();
-		break;
-	case 6:
-		return GPlatesGui::Colour::get_navy();
-		break;
-	default:
-		return GPlatesGui::Colour::get_navy();
-	}
-}
-
 void GPlatesQtWidgets::HellingerDialog::handle_clear()
 {
 	QMessageBox message_box;
@@ -1660,6 +1660,18 @@ void GPlatesQtWidgets::HellingerDialog::draw_pole_estimate()
 
 	d_pole_estimate_layer_ptr->add_rendered_geometry(pole_geometry);
 
+}
+
+void GPlatesQtWidgets::HellingerDialog::hide_child_dialogs()
+{
+	if (d_hellinger_stats_dialog)
+	{
+		d_hellinger_stats_dialog->hide();
+	}
+	d_hellinger_edit_point_dialog->hide();
+	d_hellinger_new_point_dialog->hide();
+	d_hellinger_edit_segment_dialog->hide();
+	d_hellinger_new_segment_dialog->hide();
 }
 
 void
@@ -2077,6 +2089,12 @@ void GPlatesQtWidgets::HellingerDialog::close()
 	qDebug() << "HellingerDialog::close()";
 	handle_close();
 	//GPlatesDialog::close();
+	GPlatesDialog::hide();
+}
+
+void GPlatesQtWidgets::HellingerDialog::hide()
+{
+	hide_child_dialogs();
 	GPlatesDialog::hide();
 }
 
