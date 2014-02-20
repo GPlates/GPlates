@@ -192,6 +192,10 @@ namespace GPlatesQtWidgets
 		update_pole_estimate_spinboxes_and_layer(
 				const GPlatesMaths::PointOnSphere &point, double rho);
 
+		void
+		update_pole_estimate_spinboxes(
+				const GPlatesMaths::PointOnSphere &point, double rho);
+
 	public Q_SLOTS:
 
 		/**

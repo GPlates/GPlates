@@ -35,11 +35,6 @@
 #include "view-operations/RenderedGeometryProximity.h"
 #include "AdjustFittedPoleEstimate.h"
 
-namespace
-{
-
-}
-
 
 
 GPlatesCanvasTools::AdjustFittedPoleEstimate::AdjustFittedPoleEstimate(
@@ -93,17 +88,6 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_deactivation()
 
 
 void
-GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_click(
-		const GPlatesMaths::PointOnSphere &point_on_sphere,
-		bool is_on_earth,
-		double proximity_inclusion_threshold)
-{
-
-}
-
-
-
-void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 		const GPlatesMaths::PointOnSphere &point_on_sphere,
 		bool is_on_earth,
@@ -118,7 +102,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 	if (GPlatesViewOperations::test_proximity(
 				sorted_hits,
 				proximity_criteria,
-				*d_hellinger_dialog_ptr->get_pole_estimate_layer()))
+				*d_pole_estimate_layer_ptr))
 	{
 		// highlight the vertex
 		qDebug() << "Checking for geometry in MWD";
@@ -144,13 +128,6 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 	}
 }
 
-void
-GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_shift_left_click(
-		const GPlatesMaths::PointOnSphere &point_on_sphere,
-		bool is_on_earth,
-		double proximity_inclusion_threshold)
-{
-}
 
 void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_press(
@@ -177,6 +154,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_press(
 				*d_highlight_layer_ptr))
 	{
 		d_pole_is_being_dragged = true;
+		d_pole_estimate_layer_ptr->set_active(false);
 	}
 	else
 	{
@@ -185,18 +163,6 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_press(
 
 }
 
-void
-GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_shift_left_drag(
-		const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
-		bool was_on_earth,
-		double initial_proximity_inclusion_threshold,
-		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
-		bool is_on_earth,
-		double current_proximity_inclusion_threshold,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
-{
-
-}
 
 void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_estimate_changed(
@@ -221,7 +187,8 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_release_after_drag(
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 {
 	d_pole_is_being_dragged = false;
-
+	d_pole_estimate_layer_ptr->set_active(true);
+	update_pole_estimate_layer();
 }
 
 void
@@ -237,6 +204,8 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_drag(
 	if (d_pole_is_being_dragged)
 	{
 		update_highlight_layer(current_point_on_sphere);
+		d_current_pole = current_point_on_sphere;
+		d_hellinger_dialog_ptr->update_pole_estimate_spinboxes(current_point_on_sphere,d_current_angle);
 	}
 }
 
