@@ -403,6 +403,9 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 	d_gpgim_version_warning_dialog_ptr(
 			new GPlatesQtWidgets::GpgimVersionWarningDialog(
 					app_state_.get_gpgim(),
+					// We no longer show the dialog when *loading* files since it's too annoying.
+					// It's still shown when *saving* files though...
+					false/*show_dialog_on_loading_files*/,
 					&viewport_window()))
 {
 	setObjectName("FileIOFeedback");
