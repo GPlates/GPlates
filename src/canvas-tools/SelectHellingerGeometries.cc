@@ -70,6 +70,13 @@ GPlatesCanvasTools::SelectHellingerGeometries::handle_left_click(
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
 {
+
+	if (d_hellinger_dialog_ptr->is_in_edit_segment_state() ||
+			d_hellinger_dialog_ptr->is_in_new_segment_state())
+	{
+		return;
+	}
+
 	if (!is_on_earth)
 	{
 		return;
@@ -109,6 +116,12 @@ GPlatesCanvasTools::SelectHellingerGeometries::handle_move_without_drag(
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
 {
+	if (d_hellinger_dialog_ptr->is_in_edit_segment_state() ||
+			d_hellinger_dialog_ptr->is_in_new_segment_state())
+	{
+		return;
+	}
+
 	GPlatesMaths::ProximityCriteria proximity_criteria(
 			point_on_sphere,
 			proximity_inclusion_threshold);
@@ -183,6 +196,13 @@ GPlatesCanvasTools::SelectHellingerGeometries::handle_shift_left_click(
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
 {
+
+	if (d_hellinger_dialog_ptr->is_in_edit_segment_state() ||
+			d_hellinger_dialog_ptr->is_in_new_segment_state())
+	{
+		return;
+	}
+
 	if (!is_on_earth)
 	{
 		return;
@@ -252,6 +272,11 @@ GPlatesCanvasTools::SelectHellingerGeometries::handle_left_press(
 		bool is_on_earth,
 		double proximity_inclusion_threshold)
 {
+	if (d_hellinger_dialog_ptr->is_in_edit_segment_state() ||
+			d_hellinger_dialog_ptr->is_in_new_segment_state())
+	{
+		return;
+	}
 
 	if (!d_mouse_is_over_editable_pick)
 	{

@@ -1417,17 +1417,6 @@ void GPlatesQtWidgets::HellingerDialog::set_enlarged_edit_geometry(bool enlarged
 	handle_update_point_editing();
 }
 
-bool GPlatesQtWidgets::HellingerDialog::is_in_edit_point_state()
-{
-	return ((d_canvas_operation_type == EDIT_POINT_OPERATION) ||
-			(d_canvas_operation_type == EDIT_SEGMENT_OPERATION));
-}
-
-bool GPlatesQtWidgets::HellingerDialog::is_in_new_point_state()
-{
-	return ((d_canvas_operation_type == NEW_POINT_OPERATION) ||
-			(d_canvas_operation_type == NEW_SEGMENT_OPERATION));
-}
 
 void GPlatesQtWidgets::HellingerDialog::set_feature_highlight(
 		const GPlatesMaths::PointOnSphere &point)

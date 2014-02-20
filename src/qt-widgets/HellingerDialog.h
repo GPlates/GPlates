@@ -163,10 +163,28 @@ namespace GPlatesQtWidgets
 				bool enlarged = true);
 
 		bool
-		is_in_edit_point_state();
+		is_in_edit_point_state()
+		{
+			return (d_canvas_operation_type == EDIT_POINT_OPERATION);
+		}
 
 		bool
-		is_in_new_point_state();
+		is_in_new_point_state()
+		{
+			return (d_canvas_operation_type == NEW_POINT_OPERATION);
+		}
+
+		bool
+		is_in_edit_segment_state()
+		{
+			return (d_canvas_operation_type == EDIT_SEGMENT_OPERATION);
+		}
+
+		bool
+		is_in_new_segment_state()
+		{
+			return (d_canvas_operation_type == NEW_SEGMENT_OPERATION);
+		}
 
 		void
 		set_feature_highlight(
