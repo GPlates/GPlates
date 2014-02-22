@@ -70,6 +70,88 @@ namespace GPlatesApi
 {
 	namespace
 	{
+		/**
+		 * Retrieve the function arguments from the python 'reconstruct()' function.
+		 */
+		void
+		get_reconstruct_args(
+				bp::tuple positional_args,
+				bp::dict keyword_args,
+				std::vector<GPlatesFileIO::File::non_null_ptr_type> &reconstructable_files,
+				boost::optional<RotationModel::non_null_ptr_type> &rotation_model,
+				QString &export_file_name,
+				double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type &anchor_plate_id,
+				bool &export_wrap_to_dateline)
+		{
+			// The non-explicit function arguments.
+			// These are our variable number of export parameters.
+			VariableArguments::keyword_arguments_type unused_keyword_args;
+
+			// Define the explicit function argument types...
+			typedef boost::tuple<
+					FeatureCollectionSequenceFunctionArgument,
+					RotationModelFunctionArgument,
+					QString,
+					double,
+					GPlatesModel::integer_plate_id_type>
+							reconstruct_args_type;
+
+			const boost::tuple<const char *, const char *, const char *, const char *, const char *>
+					explicit_arg_names(
+							"reconstructable_features",
+							"rotation_model",
+							"reconstructed_feature_geometries",
+							"reconstruction_time",
+							"anchor_plate_id");
+
+			// Define the default function argument...
+			typedef boost::tuple<> default_args_type;
+			default_args_type defaults_args;
+
+			if (!VariableArguments::check_explicit_args<reconstruct_args_type>(
+				positional_args,
+				keyword_args,
+				explicit_arg_names,
+				defaults_args,
+				boost::none/*unused_positional_args*/,
+				unused_keyword_args))
+			{
+				PyErr_SetString(PyExc_TypeError, "None of the function overloads matched the function arguments");
+				bp::throw_error_already_set();
+			}
+
+			const reconstruct_args_type reconstruct_args =
+					VariableArguments::get_explicit_args<reconstruct_args_type>(
+							positional_args,
+							keyword_args,
+							explicit_arg_names,
+							defaults_args,
+							boost::none/*unused_positional_args*/,
+							unused_keyword_args);
+
+			boost::get<0>(reconstruct_args).get_files(reconstructable_files);
+			rotation_model = boost::get<1>(reconstruct_args).get_rotation_model();
+			export_file_name = boost::get<2>(reconstruct_args);
+			reconstruction_time = boost::get<3>(reconstruct_args);
+			anchor_plate_id = boost::get<4>(reconstruct_args);
+
+			//
+			// Get the optional non-explicit output parameters from the variable argument list.
+			//
+
+			export_wrap_to_dateline =
+					VariableArguments::extract_and_remove_or_default<bool>(
+							unused_keyword_args,
+							"export_wrap_to_dateline",
+							true);
+
+			// Raise a python error if there are any unused keyword arguments remaining.
+			// These will be keywords that we didn't recognise.
+			VariableArguments::raise_python_error_if_unused(unused_keyword_args);
+		}
+
+
 		GPlatesFileIO::ReconstructedFeatureGeometryExport::Format
 		get_format(
 				QString file_name)
@@ -142,55 +224,22 @@ namespace GPlatesApi
 		// Get the explicit function arguments from the variable argument list.
 		//
 
-		// The non-explicit function arguments.
-		// These are our variable number of export parameters.
-		VariableArguments::keyword_arguments_type unused_keyword_args;
-
-		// Define the number of explicit function arguments and their types...
-		typedef boost::tuple<
-				FeatureCollectionSequenceFunctionArgument,
-				RotationModelFunctionArgument,
-				QString,
-				double,
-				GPlatesModel::integer_plate_id_type> reconstruct_args_type;
-
-		const reconstruct_args_type reconstruct_args =
-				VariableArguments::get_explicit_args<reconstruct_args_type>(
-						positional_args,
-						keyword_args,
-						boost::make_tuple(
-								"reconstructable_features",
-								"rotation_model",
-								"reconstructed_feature_geometries",
-								"reconstruction_time",
-								"anchor_plate_id"),
-						boost::tuples::make_tuple(),
-						boost::none/*unused_positional_args*/,
-						unused_keyword_args);
-
-		const FeatureCollectionSequenceFunctionArgument reconstructable_features = boost::get<0>(reconstruct_args);
-		const RotationModelFunctionArgument rotation_model = boost::get<1>(reconstruct_args);
-		const QString export_file_name = boost::get<2>(reconstruct_args);
-		const double reconstruction_time = boost::get<3>(reconstruct_args);
-		const GPlatesModel::integer_plate_id_type anchor_plate_id = boost::get<4>(reconstruct_args);
-
-		//
-		// Get the optional non-explicit output parameters from the variable argument list.
-		//
-
-		bool export_wrap_to_dateline =
-				VariableArguments::extract_and_remove_or_default<bool>(
-						unused_keyword_args,
-						"export_wrap_to_dateline",
-						true);
-
-		// Raise a python error if there are any unused keyword arguments remaining.
-		// These will be keywords that we didn't recognise.
-		VariableArguments::raise_python_error_if_unused(unused_keyword_args);
-
-		// The sequence of reconstructable feature collections.
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstructable_files;
-		reconstructable_features.get_files(reconstructable_files);
+		boost::optional<RotationModel::non_null_ptr_type> rotation_model;
+		QString export_file_name;
+		double reconstruction_time;
+		GPlatesModel::integer_plate_id_type anchor_plate_id;
+		bool export_wrap_to_dateline;
+
+		get_reconstruct_args(
+				positional_args,
+				keyword_args,
+				reconstructable_files,
+				rotation_model,
+				export_file_name,
+				reconstruction_time,
+				anchor_plate_id,
+				export_wrap_to_dateline);
 
 		// Extract reconstructable feature collection weak refs from their files.
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstructable_feature_collections;
@@ -204,7 +253,7 @@ namespace GPlatesApi
 		// This ensures 'ReconstructUtils::reconstruct()' will reconstruct using the correct anchor plate.
 		GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 				GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
-						rotation_model.get_rotation_model()->get_reconstruction_tree_creator(),
+						rotation_model.get()->get_reconstruction_tree_creator(),
 						anchor_plate_id);
 
 		// Reconstruct.
@@ -244,9 +293,11 @@ namespace GPlatesApi
 					reconstructable_file_ptrs,
 					anchor_plate_id,
 					reconstruction_time,
+					// If exporting to Shapefile and there's only *one* input reconstructable file then
+					// shapefile attributes in input reconstructable file will get copied to output...
 					true/*export_single_output_file*/,
-					false/*export_per_input_file*/,
-					false/*export_output_directory_per_input_file*/,
+					false/*export_per_input_file*/, // We only generate a single output file.
+					false/*export_output_directory_per_input_file*/, // We only generate a single output file.
 					export_wrap_to_dateline);
 
 		// We must return a value (required by 'bp::raw_function') so just return Py_None.

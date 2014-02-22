@@ -331,34 +331,35 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::is_convertible(
 	// If we fail to extract or iterate over the supported types then catch exception and return NULL.
 	try
 	{
-		const function_argument_type function_argument =
-				bp::extract<function_argument_type>(python_function_argument)();
-
-		// If it's a boost::python::object then we're expecting it to be a sequence of
-		// FeatureCollectionFunctionArgument's which requires further checking.
-		if (boost::get<bp::object>(&function_argument))
+		if (bp::extract<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(python_function_argument).check() ||
+			bp::extract<QString>(python_function_argument).check())
 		{
-			bp::object sequence = boost::get<bp::object>(function_argument);
+			return true;
+		}
 
-			// Iterate over the sequence.
-			//
-			// NOTE: We avoid iterating using 'bp::stl_input_iterator<FeatureCollectionFunctionArgument>'
-			// because we want to avoid actually reading a feature collection from a file.
-			// We're just checking if there's a feature collection or a string here.
-			bp::object iter = sequence.attr("__iter__")();
-			while (bp::handle<> item = bp::handle<>(bp::allow_null(PyIter_Next(iter.ptr()))))
-			{
-				if (!bp::extract<FeatureCollectionFunctionArgument>(bp::object(item)).check())
-				{
-					return false;
-				}
-			}
+		// Else it's a boost::python::object so we're expecting it to be a sequence of
+		// FeatureCollectionFunctionArgument's which requires further checking.
 
-			if (PyErr_Occurred())
+		const bp::object sequence = python_function_argument;
+
+		// Iterate over the sequence.
+		//
+		// NOTE: We avoid iterating using 'bp::stl_input_iterator<FeatureCollectionFunctionArgument>'
+		// because we want to avoid actually reading a feature collection from a file.
+		// We're just checking if there's a feature collection or a string here.
+		bp::object iter = sequence.attr("__iter__")();
+		while (bp::handle<> item = bp::handle<>(bp::allow_null(PyIter_Next(iter.ptr()))))
+		{
+			if (!bp::extract<FeatureCollectionFunctionArgument>(bp::object(item)).check())
 			{
-				PyErr_Clear();
 				return false;
 			}
+		}
+
+		if (PyErr_Occurred())
+		{
+			PyErr_Clear();
+			return false;
 		}
 
 		return true;
@@ -422,8 +423,7 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::initialise_feature_collec
 		bp::stl_input_iterator<FeatureCollectionFunctionArgument> feature_collections_end;
 		for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
 		{
-			const FeatureCollectionFunctionArgument feature_collection = *feature_collections_iter;
-			feature_collections.push_back(feature_collection);
+			feature_collections.push_back(*feature_collections_iter);
 		}
 	}
 }
