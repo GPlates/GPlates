@@ -32,6 +32,9 @@
 #include <typeinfo>
 #include <vector>
 #include <boost/call_traits.hpp>
+#include <boost/mpl/placeholders.hpp>
+#include <boost/mpl/range_c.hpp>
+#include <boost/mpl/reverse_fold.hpp>
 #include <boost/optional.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -169,6 +172,31 @@ namespace GPlatesApi
 
 
 		/**
+		 * Checks if a similar call to @a get_explicit_args will succeed as far as having the correct
+		 * explicit argument types and names to match the actual arguments.
+		 *
+		 * See @a get_explicit_args for more details.
+		 *
+		 * It is only necessary to check before calling @a get_explicit_args if you are overloading
+		 * the function in question (ie, more than one set of function argument types).
+		 * In this case @a check_explicit_args is used to find the correct overload matching the actual
+		 * given function arguments, after which @a get_explicit_args can be called to extract them.
+		 *
+		 * Note that as part of checking for a particular function overload you may also need to
+		 * process any unused positional and keyword arguments returned by this function.
+		 */
+		template <class ExplicitArgsTupleType, class ExplicitArgNamesTupleType, class DefaultArgsTupleType>
+		bool
+		check_explicit_args(
+				boost::python::tuple positional_args,
+				boost::python::dict keyword_args,
+				const ExplicitArgNamesTupleType &explicit_arg_names,
+				const DefaultArgsTupleType &default_args,
+				boost::optional<positional_arguments_type &> unused_positional_args,
+				boost::optional<keyword_arguments_type &> unused_keyword_args);
+
+
+		/**
 		 * A convenience wrapper around boost::python::extract that raises a 'TypeError', if
 		 * extraction fails, mentioning the argument name and the C++ object type in the error message.
 		 *
@@ -269,6 +297,27 @@ namespace GPlatesApi
 {
 	namespace VariableArguments
 	{
+		namespace Implementation
+		{
+			template <typename ArgumentType>
+			void
+			check_extract(
+					const boost::python::extract<ArgumentType> &extract_arg,
+					const std::string &argument_name)
+			{
+				if (!extract_arg.check())
+				{
+					std::ostringstream oss;
+					oss << "Unable to convert function argument '" << argument_name
+						<< "' to C++ type '" << typeid(ArgumentType).name() << "'";
+
+					PyErr_SetString(PyExc_TypeError, oss.str().c_str());
+					boost::python::throw_error_already_set();
+				}
+			}
+		}
+
+
 		template <typename ArgumentType>
 		ArgumentType
 		extract(
@@ -277,15 +326,9 @@ namespace GPlatesApi
 		{
 			// Note that 'ArgumentType' could be a reference.
 			boost::python::extract<ArgumentType> extract_arg(python_argument);
-			if (!extract_arg.check())
-			{
-				std::ostringstream oss;
-				oss << "Unable to convert function argument '" << argument_name
-					<< "' to C++ type '" << typeid(ArgumentType).name() << "'";
 
-				PyErr_SetString(PyExc_TypeError, oss.str().c_str());
-				boost::python::throw_error_already_set();
-			}
+			// Throw python error if check for extraction fails.
+			Implementation::check_extract(extract_arg, argument_name);
 
 			return extract_arg();
 		}
@@ -364,27 +407,31 @@ namespace GPlatesApi
 
 		namespace Implementation
 		{
-			// Get explicit arguments from the keywords arguments.
+			// Get, or check, explicit arguments from the keywords arguments.
 			//
 			// Need a class template instead of function template since the latter cannot be
 			// partially specialised.
 			//
 			// Primary template declaration.
 			template <
+					class GetOrCheckExtractionType,
+					class ResultArgsConsType,
 					class ExplicitArgsConsType,
 					class ExplicitArgNamesConsType,
 					class DefaultArgsConsType,
 					int num_explicit_args_remaining,
 					int num_required_explicit_args_remaining>
-			struct GetExplicitArgsFromKeywordArgs;
+			struct GetOrCheckExplicitArgsFromKeywordArgs;
 
 
 			// Finished processing all *required* and *optional* explicit arguments from
 			// keyword arguments - so we're done.
 			//
-			// This is a full specialisation.
-			template <>
-			struct GetExplicitArgsFromKeywordArgs<
+			// This is a partial specialisation, which is why we had to use a class instead of a function.
+			template <class GetOrCheckExtractionType, class ResultArgsConsType>
+			struct GetOrCheckExplicitArgsFromKeywordArgs<
+					GetOrCheckExtractionType,
+					ResultArgsConsType,
 					boost::tuples::null_type,
 					boost::tuples::null_type,
 					boost::tuples::null_type,
@@ -408,11 +455,15 @@ namespace GPlatesApi
 			//
 			// This is a partial specialisation, which is why we had to use a class instead of a function.
 			template <
+					class GetOrCheckExtractionType,
+					class ResultArgsConsType,
 					class ExplicitArgsConsType,
 					class ExplicitArgNamesConsType,
 					class DefaultArgsConsType,
 					int num_explicit_args_remaining>
-			struct GetExplicitArgsFromKeywordArgs<
+			struct GetOrCheckExplicitArgsFromKeywordArgs<
+					GetOrCheckExtractionType,
+					ResultArgsConsType,
 					ExplicitArgsConsType,
 					ExplicitArgNamesConsType,
 					DefaultArgsConsType,
@@ -420,7 +471,7 @@ namespace GPlatesApi
 					0/*num_required_explicit_args_remaining*/>
 			{
 				static
-				ExplicitArgsConsType
+				ResultArgsConsType
 				get(
 						keyword_arguments_type &unused_keyword_args,
 						const ExplicitArgNamesConsType &explicit_arg_names,
@@ -435,13 +486,16 @@ namespace GPlatesApi
 					keyword_arguments_type::iterator explicit_arg_iter = unused_keyword_args.find(explicit_arg_name);
 
 					typedef typename ExplicitArgsConsType::head_type explicit_arg_type;
+					typedef typename ResultArgsConsType::head_type result_arg_type;
 
 					// Note that 'explicit_arg_type' could be a reference if client specified it as such
 					// in the original boost::tuple (because they wanted reference to C++ object
 					// wrapped inside python object instead of a copy).
-					explicit_arg_type arg = (explicit_arg_iter != unused_keyword_args.end())
-							// Extract from unused keyword arguments...
-							? extract<explicit_arg_type>(explicit_arg_iter->second, explicit_arg_name)
+					result_arg_type arg = (explicit_arg_iter != unused_keyword_args.end())
+							// Check, or extract from, unused keyword arguments...
+							? GetOrCheckExtractionType::template extract<explicit_arg_type>(
+									explicit_arg_iter->second,
+									explicit_arg_name)
 							// Use default value (since not found in unused keyword arguments)...
 							: default_args.get_head();
 
@@ -455,9 +509,11 @@ namespace GPlatesApi
 						unused_keyword_args.erase(explicit_arg_iter);
 					}
 
-					return ExplicitArgsConsType(
+					return ResultArgsConsType(
 							arg,
-							GetExplicitArgsFromKeywordArgs<
+							GetOrCheckExplicitArgsFromKeywordArgs<
+									GetOrCheckExtractionType,
+									typename ResultArgsConsType::tail_type,
 									typename ExplicitArgsConsType::tail_type,
 									typename ExplicitArgNamesConsType::tail_type,
 									typename DefaultArgsConsType::tail_type,
@@ -472,15 +528,17 @@ namespace GPlatesApi
 
 			// Primary template definition.
 			template <
+					class GetOrCheckExtractionType,
+					class ResultArgsConsType,
 					class ExplicitArgsConsType,
 					class ExplicitArgNamesConsType,
 					class DefaultArgsConsType,
 					int num_explicit_args_remaining,
 					int num_required_explicit_args_remaining>
-			struct GetExplicitArgsFromKeywordArgs
+			struct GetOrCheckExplicitArgsFromKeywordArgs
 			{
 				static
-				ExplicitArgsConsType
+				ResultArgsConsType
 				get(
 						keyword_arguments_type &unused_keyword_args,
 						const ExplicitArgNamesConsType &explicit_arg_names,
@@ -507,19 +565,24 @@ namespace GPlatesApi
 					}
 
 					typedef typename ExplicitArgsConsType::head_type explicit_arg_type;
+					typedef typename ResultArgsConsType::head_type result_arg_type;
 
 					// Note that 'explicit_arg_type' could be a reference if client specified it as such
 					// in the original boost::tuple (because they wanted reference to C++ object
 					// wrapped inside python object instead of a copy).
-					explicit_arg_type arg =
-							extract<explicit_arg_type>(explicit_arg_iter->second, explicit_arg_name);
+					result_arg_type arg =
+							GetOrCheckExtractionType::template extract<explicit_arg_type>(
+									explicit_arg_iter->second,
+									explicit_arg_name);
 
 					// Remove from the map of unused keywords arguments.
 					unused_keyword_args.erase(explicit_arg_iter);
 
-					return ExplicitArgsConsType(
+					return ResultArgsConsType(
 							arg,
-							GetExplicitArgsFromKeywordArgs<
+							GetOrCheckExplicitArgsFromKeywordArgs<
+									GetOrCheckExtractionType,
+									typename ResultArgsConsType::tail_type,
 									typename ExplicitArgsConsType::tail_type,
 									typename ExplicitArgNamesConsType::tail_type,
 									DefaultArgsConsType, // Use full tuple since haven't started using default args
@@ -539,6 +602,8 @@ namespace GPlatesApi
 			//
 			// Primary template declaration.
 			template <
+					class GetOrCheckExtractionType,
+					class ResultArgsConsType,
 					class ExplicitArgsConsType,
 					class ExplicitArgNamesConsType,
 					class DefaultArgsConsType,
@@ -550,9 +615,11 @@ namespace GPlatesApi
 			// Finished processing all *required* and *optional* explicit arguments from
 			// positional arguments - so we're done.
 			//
-			// This is a full specialisation.
-			template <>
+			// This is a partial specialisation, which is why we had to use a class instead of a function.
+			template <class GetOrCheckExtractionType, class ResultArgsConsType>
 			struct GetExplicitArgsFromPositionalArgs<
+					GetOrCheckExtractionType,
+					ResultArgsConsType,
 					boost::tuples::null_type,
 					boost::tuples::null_type,
 					boost::tuples::null_type,
@@ -578,11 +645,15 @@ namespace GPlatesApi
 			//
 			// This is a partial specialisation, which is why we had to use a class instead of a function.
 			template <
+					class GetOrCheckExtractionType,
+					class ResultArgsConsType,
 					class ExplicitArgsConsType,
 					class ExplicitArgNamesConsType,
 					class DefaultArgsConsType,
 					int num_explicit_args_remaining>
 			struct GetExplicitArgsFromPositionalArgs<
+					GetOrCheckExtractionType,
+					ResultArgsConsType,
 					ExplicitArgsConsType,
 					ExplicitArgNamesConsType,
 					DefaultArgsConsType,
@@ -590,7 +661,7 @@ namespace GPlatesApi
 					0/*num_required_explicit_args_remaining*/>
 			{
 				static
-				ExplicitArgsConsType
+				ResultArgsConsType
 				get(
 						const positional_arguments_type &positional_args,
 						keyword_arguments_type &unused_keyword_args,
@@ -613,7 +684,9 @@ namespace GPlatesApi
 					// arguments will get used for them or they'll assume their default values.
 					if (positional_arg_index == positional_args.size())
 					{
-						return GetExplicitArgsFromKeywordArgs<
+						return GetOrCheckExplicitArgsFromKeywordArgs<
+								GetOrCheckExtractionType,
+								ResultArgsConsType,
 								ExplicitArgsConsType,
 								ExplicitArgNamesConsType,
 								DefaultArgsConsType,
@@ -629,18 +702,21 @@ namespace GPlatesApi
 					const std::string explicit_arg_name(explicit_arg_names.get_head());
 
 					typedef typename ExplicitArgsConsType::head_type explicit_arg_type;
+					typedef typename ResultArgsConsType::head_type result_arg_type;
 
 					// Note that 'explicit_arg_type' could be a reference if client specified it as such
 					// in the original boost::tuple (because they wanted reference to C++ object
 					// wrapped inside python object instead of a copy).
-					explicit_arg_type arg =
-							extract<explicit_arg_type>(
+					result_arg_type arg =
+							GetOrCheckExtractionType::template extract<explicit_arg_type>(
 									positional_args[positional_arg_index],
 									explicit_arg_name);
 
-					return ExplicitArgsConsType(
+					return ResultArgsConsType(
 							arg,
 							GetExplicitArgsFromPositionalArgs<
+									GetOrCheckExtractionType,
+									typename ResultArgsConsType::tail_type,
 									typename ExplicitArgsConsType::tail_type,
 									typename ExplicitArgNamesConsType::tail_type,
 									typename DefaultArgsConsType::tail_type, // We ignored current default value
@@ -657,6 +733,8 @@ namespace GPlatesApi
 
 			// Primary template definition.
 			template <
+					class GetOrCheckExtractionType,
+					class ResultArgsConsType,
 					class ExplicitArgsConsType,
 					class ExplicitArgNamesConsType,
 					class DefaultArgsConsType,
@@ -665,7 +743,7 @@ namespace GPlatesApi
 			struct GetExplicitArgsFromPositionalArgs
 			{
 				static
-				ExplicitArgsConsType
+				ResultArgsConsType
 				get(
 						const positional_arguments_type &positional_args,
 						keyword_arguments_type &unused_keyword_args,
@@ -683,7 +761,9 @@ namespace GPlatesApi
 					// hoping the keyword arguments will satisfy them.
 					if (positional_arg_index == positional_args.size())
 					{
-						return GetExplicitArgsFromKeywordArgs<
+						return GetOrCheckExplicitArgsFromKeywordArgs<
+								GetOrCheckExtractionType,
+								ResultArgsConsType,
 								ExplicitArgsConsType,
 								ExplicitArgNamesConsType,
 								DefaultArgsConsType,
@@ -699,18 +779,21 @@ namespace GPlatesApi
 					const std::string explicit_arg_name(explicit_arg_names.get_head());
 
 					typedef typename ExplicitArgsConsType::head_type explicit_arg_type;
+					typedef typename ResultArgsConsType::head_type result_arg_type;
 
 					// Note that 'explicit_arg_type' could be a reference if client specified it as such
 					// in the original boost::tuple (because they wanted reference to C++ object
 					// wrapped inside python object instead of a copy).
-					explicit_arg_type arg =
-							extract<explicit_arg_type>(
+					result_arg_type arg =
+							GetOrCheckExtractionType::template extract<explicit_arg_type>(
 									positional_args[positional_arg_index],
 									explicit_arg_name);
 
 					return ExplicitArgsConsType(
 							arg,
 							GetExplicitArgsFromPositionalArgs<
+									GetOrCheckExtractionType,
+									typename ResultArgsConsType::tail_type,
 									typename ExplicitArgsConsType::tail_type,
 									typename ExplicitArgNamesConsType::tail_type,
 									DefaultArgsConsType, // Use full tuple since haven't started using default args
@@ -788,6 +871,151 @@ namespace GPlatesApi
 			{
 				typedef boost::tuples::null_type type;
 			};
+
+
+			template <
+					class GetOrCheckExtractionType,
+					class ResultArgsConsType,
+					class ExplicitArgsConsType,
+					class ExplicitArgNamesConsType,
+					class DefaultArgsConsType>
+			ResultArgsConsType
+			get_or_check_explicit_args(
+					boost::python::tuple positional_args_tuple,
+					boost::python::dict keyword_args_dict,
+					const ExplicitArgNamesConsType &explicit_arg_names,
+					const DefaultArgsConsType &default_args,
+					boost::optional<positional_arguments_type &> unused_positional_args,
+					boost::optional<keyword_arguments_type &> unused_keyword_args)
+			{
+				const unsigned int num_explicit_args = boost::tuples::length<ExplicitArgsConsType>::value;
+				const unsigned int num_explicit_arg_names = boost::tuples::length<ExplicitArgNamesConsType>::value;
+				const unsigned int num_default_args = boost::tuples::length<DefaultArgsConsType>::value;
+
+				// Number of explicit arguments must match number of associated argument names.
+				BOOST_STATIC_ASSERT(num_explicit_args == num_explicit_arg_names);
+				// Number of explicit arguments must match the number of result arguments.
+				// Note that for 'get' these are the same tuple types but for 'check' they are not -
+				// this is just so both can reuse the same code.
+				BOOST_STATIC_ASSERT(num_explicit_args == boost::tuples::length<ResultArgsConsType>::value);
+
+				// There must not be more default arguments than explicit arguments.
+				BOOST_STATIC_ASSERT(num_explicit_args >= num_default_args);
+
+				const unsigned int min_required_explicit_args = num_explicit_args - num_default_args;
+
+				// Copy positional and keywords args from python tuple and dict into a vector and map.
+				// Copy keyword args from python dict into the unused keywords args map.
+				// If we use any keyword args for any explicit args then we'll remove them as we go.
+				positional_arguments_type positional_args;
+				keyword_arguments_type keyword_args;
+				get_positional_and_keywords_args(
+						positional_args,
+						keyword_args,
+						positional_args_tuple,
+						keyword_args_dict);
+
+				// The number of positional arguments that will be used to satisfy explicit arguments.
+				const unsigned int num_explicit_positional_args =
+						(positional_args.size() > num_explicit_args)
+						? num_explicit_args
+						: positional_args.size();
+
+				// Throw error if any keyword arguments overlap with explicit positional arguments.
+				Implementation::check_positional_keyword_overlap<ExplicitArgNamesConsType>(
+						keyword_args,
+						explicit_arg_names,
+						num_explicit_positional_args);
+
+				const ResultArgsConsType explicit_args =
+						Implementation::GetExplicitArgsFromPositionalArgs<
+								GetOrCheckExtractionType,
+								ResultArgsConsType,
+								ExplicitArgsConsType,
+								ExplicitArgNamesConsType,
+								DefaultArgsConsType,
+								num_explicit_args,
+								min_required_explicit_args>::get(
+										positional_args,
+										keyword_args,
+										explicit_arg_names,
+										default_args,
+										0); // start at positional index zero
+
+				// If unused positional arguments are not allowed then raise an error if any were unused.
+				if (!unused_positional_args)
+				{
+					// Note that we did *not* clear the used positional arguments as we processed them.
+					raise_python_error_if_unused(positional_args, num_explicit_args);
+				}
+
+				// If unused keywords arguments are not allowed then raise an error if any were unused.
+				if (!unused_keyword_args)
+				{
+					// Note that we *did* clear the used keyword arguments as we processed them.
+					raise_python_error_if_unused(keyword_args);
+				}
+
+				if (unused_positional_args)
+				{
+					// We didn't clear the used positional arguments as we processed them.
+					// So skip over the used positional arguments.
+					unused_positional_args->assign(
+							positional_args.begin() + num_explicit_positional_args,
+							positional_args.end());
+				}
+
+				if (unused_keyword_args)
+				{
+					// Only the unused keywords remain.
+					unused_keyword_args->swap(keyword_args);
+				}
+
+				return explicit_args;
+			}
+
+
+			/**
+			 * Wrapper class for a template function to extract a specific type from a python object.
+			 */
+			struct Extract
+			{
+				template <typename ArgumentType>
+				static
+				ArgumentType
+				extract(
+						boost::python::object python_argument,
+						const std::string &argument_name)
+				{
+					return GPlatesApi::VariableArguments::extract<ArgumentType>(python_argument, argument_name);
+				}
+			};
+
+
+			/**
+			 * Wrapper class for a template function to check if can extract a specific type from a python object.
+			 */
+			struct CheckExtract
+			{
+				template <typename ArgumentType>
+				static
+				bool
+				extract(
+						boost::python::object python_argument,
+						const std::string &argument_name)
+				{
+					// Note that 'ArgumentType' could be a reference.
+					boost::python::extract<ArgumentType> extract_arg(python_argument);
+
+					// Throw python error if check for extraction fails.
+					// But we never attempt to do an actual extraction - we're only checking it's possible.
+					Implementation::check_extract(extract_arg, argument_name);
+
+					// Dummy value - not used by caller - only done this way so that check and extract
+					// can reuse same code 'get_or_check_explicit_args()'.
+					return true;
+				}
+			};
 		}
 
 
@@ -801,86 +1029,76 @@ namespace GPlatesApi
 				boost::optional<positional_arguments_type &> unused_positional_args,
 				boost::optional<keyword_arguments_type &> unused_keyword_args)
 		{
-			const unsigned int num_explicit_args = boost::tuples::length<ExplicitArgsTupleType>::value;
-			const unsigned int num_explicit_arg_names = boost::tuples::length<ExplicitArgNamesTupleType>::value;
-			const unsigned int num_default_args = boost::tuples::length<DefaultArgsTupleType>::value;
-
-			// Number of explicit arguments must match number of associated argument names.
-			BOOST_STATIC_ASSERT(num_explicit_args == num_explicit_arg_names);
-
-			// There must not be more default arguments than explicit arguments.
-			BOOST_STATIC_ASSERT(num_explicit_args >= num_default_args);
-
-			const unsigned int min_required_explicit_args = num_explicit_args - num_default_args;
-
-			// Copy positional and keywords args from python tuple and dict into a vector and map.
-			// Copy keyword args from python dict into the unused keywords args map.
-			// If we use any keyword args for any explicit args then we'll remove them as we go.
-			positional_arguments_type positional_args;
-			keyword_arguments_type keyword_args;
-			get_positional_and_keywords_args(
-					positional_args,
-					keyword_args,
-					positional_args_tuple,
-					keyword_args_dict);
-
-			// The number of positional arguments that will be used to satisfy explicit arguments.
-			const unsigned int num_explicit_positional_args =
-					(positional_args.size() > num_explicit_args)
-					? num_explicit_args
-					: positional_args.size();
-
-			// Throw error if any keyword arguments overlap with explicit positional arguments.
-			Implementation::check_positional_keyword_overlap<
-					typename Implementation::GetTupleCons<ExplicitArgNamesTupleType>::type>(
-							keyword_args,
-							explicit_arg_names,
-							num_explicit_positional_args);
-
+			// The explicit args tuple and the result args tuple are the same.
 			// Return uses implicit conversion constructor of 'boost::tuple' (from 'boost::tuples::cons').
-			const ExplicitArgsTupleType explicit_args =
-					Implementation::GetExplicitArgsFromPositionalArgs<
+			return Implementation::get_or_check_explicit_args<
+						Implementation::Extract, // We're actually extracting, not just checking for extraction.
+						typename Implementation::GetTupleCons<ExplicitArgsTupleType>::type,
+						typename Implementation::GetTupleCons<ExplicitArgsTupleType>::type,
+						typename Implementation::GetTupleCons<ExplicitArgNamesTupleType>::type,
+						typename Implementation::GetTupleCons<DefaultArgsTupleType>::type>(
+					positional_args_tuple,
+					keyword_args_dict,
+					explicit_arg_names,
+					default_args,
+					unused_positional_args,
+					unused_keyword_args);
+		}
+
+
+		template <class ExplicitArgsTupleType, class ExplicitArgNamesTupleType, class DefaultArgsTupleType>
+		bool
+		check_explicit_args(
+				boost::python::tuple positional_args_tuple,
+				boost::python::dict keyword_args_dict,
+				const ExplicitArgNamesTupleType &explicit_arg_names,
+				const DefaultArgsTupleType &default_args,
+				boost::optional<positional_arguments_type &> unused_positional_args,
+				boost::optional<keyword_arguments_type &> unused_keyword_args)
+		{
+			// The explicit args tuple and the result args tuple differ.
+			// The result is just a dummy tuple that we're not interested in - it's purely
+			// so we can reuse 'Implementation::get_or_check_explicit_args()' for both
+			// extracting and checking the explicit arguments.
+			//
+			// We make the result a tuple of 'bool's of the same size as the explicit args tuple.
+			// We can do this using some template metaprogramming on boost::tuples::cons...
+			typedef typename boost::mpl::reverse_fold<
+					// Just need any type sequence of the same length as explicit args tuple...
+					boost::mpl::range_c<int, 0, boost::tuples::length<ExplicitArgsTupleType>::value>,
+					// The tail end of the tuple...
+					boost::tuples::null_type,
+					// Build the tuple on the way out of the recursion from tail to head...
+					boost::tuples::cons<bool, boost::mpl::_1> >::type
+							result_args_cons_type;
+
+			// If the check fails then a python exception will get thrown.
+			try
+			{
+				Implementation::get_or_check_explicit_args<
+							Implementation::CheckExtract, // We're only checking for extraction, not extracting.
+							result_args_cons_type,
 							typename Implementation::GetTupleCons<ExplicitArgsTupleType>::type,
 							typename Implementation::GetTupleCons<ExplicitArgNamesTupleType>::type,
-							typename Implementation::GetTupleCons<DefaultArgsTupleType>::type,
-							num_explicit_args,
-							min_required_explicit_args>::get(
-									positional_args,
-									keyword_args,
-									explicit_arg_names,
-									default_args,
-									0); // start at positional index zero
+							result_args_cons_type/*DefaultArgsConsType*/>(
+						positional_args_tuple,
+						keyword_args_dict,
+						explicit_arg_names,
+						// The default args are also not used during checking but we need to create
+						// a tuple matching the return result in order to reuse
+						// 'Implementation::get_or_check_explicit_args()'...
+						result_args_cons_type()/*default_args*/,
+						unused_positional_args,
+						unused_keyword_args);
 
-			// If unused positional arguments are not allowed then raise an error if any were unused.
-			if (!unused_positional_args)
+				return true;
+			}
+			catch (const bp::error_already_set &)
 			{
-				// Note that we did *not* clear the used positional arguments as we processed them.
-				raise_python_error_if_unused(positional_args, num_explicit_args);
+				PyErr_Clear();
 			}
 
-			// If unused keywords arguments are not allowed then raise an error if any were unused.
-			if (!unused_keyword_args)
-			{
-				// Note that we *did* clear the used keyword arguments as we processed them.
-				raise_python_error_if_unused(keyword_args);
-			}
-
-			if (unused_positional_args)
-			{
-				// We didn't clear the used positional arguments as we processed them.
-				// So skip over the used positional arguments.
-				unused_positional_args->assign(
-						positional_args.begin() + num_explicit_positional_args,
-						positional_args.end());
-			}
-
-			if (unused_keyword_args)
-			{
-				// Only the unused keywords remain.
-				unused_keyword_args->swap(keyword_args);
-			}
-
-			return explicit_args;
+			return false;
 		}
 	}
 }
