@@ -888,6 +888,7 @@ namespace GPlatesApi
 					boost::optional<positional_arguments_type &> unused_positional_args,
 					boost::optional<keyword_arguments_type &> unused_keyword_args)
 			{
+				const unsigned int num_result_args = boost::tuples::length<ResultArgsConsType>::value;
 				const unsigned int num_explicit_args = boost::tuples::length<ExplicitArgsConsType>::value;
 				const unsigned int num_explicit_arg_names = boost::tuples::length<ExplicitArgNamesConsType>::value;
 				const unsigned int num_default_args = boost::tuples::length<DefaultArgsConsType>::value;
@@ -897,7 +898,7 @@ namespace GPlatesApi
 				// Number of explicit arguments must match the number of result arguments.
 				// Note that for 'get' these are the same tuple types but for 'check' they are not -
 				// this is just so both can reuse the same code.
-				BOOST_STATIC_ASSERT(num_explicit_args == boost::tuples::length<ResultArgsConsType>::value);
+				BOOST_STATIC_ASSERT(num_explicit_args == num_result_args);
 
 				// There must not be more default arguments than explicit arguments.
 				BOOST_STATIC_ASSERT(num_explicit_args >= num_default_args);
@@ -1093,7 +1094,7 @@ namespace GPlatesApi
 
 				return true;
 			}
-			catch (const bp::error_already_set &)
+			catch (const boost::python::error_already_set &)
 			{
 				PyErr_Clear();
 			}
