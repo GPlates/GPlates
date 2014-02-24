@@ -396,139 +396,97 @@ namespace GPlatesApi
 
 
 	/**
-	 * Loads reconstructable features from files @a python_reconstructable_filenames and assumes
-	 * each feature geometry is *not* present day geometry but instead is the reconstructed geometry
-	 * for the specified reconstruction_time @a reconstruction_time.
+	 * Loads a reconstructable feature collection (optionally from a file) @a reconstructable_features
+	 * and assumes each feature geometry is *not* present day geometry but instead is the
+	 * reconstructed geometry for the specified reconstruction time @a reconstruction_time.
 	 *
 	 * The reconstructed geometries of each reconstructable feature are reverse reconstructed to
-	 * present day, stored back in the features and saved to files (one output file per input
-	 * reconstructable file) with...
-	 *    <python_output_file_basename_suffix> + '.' + <python_output_file_format>
-	 * ...appended to each corresponding input reconstructable file basename.
+	 * present day, stored back in the same features (and saved back out to the same file if the
+	 * features were initially read from a file).
 	 *
 	 * @a reconstruction_time is the reconstruction_time representing the reconstructed geometries in each feature.
-	 * @a python_reconstruction_filenames contains the reconstruction/rotation features used to
+	 * @a rotation_model contains the rotation model (or reconstruction/rotation features) used to
 	 * perform the reverse reconstruction.
 	 */
 	void
 	reverse_recontruct(
-			bp::object reconstruct_filenames,
-			bp::object rotation_filenames,
+			FeatureCollectionFunctionArgument reconstructable_features,
+			RotationModelFunctionArgument rotation_model,
 			const double &reconstruction_time,
-			GPlatesModel::integer_plate_id_type anchor_plate_id,
-			QString output_file_basename_suffix,
-			QString output_file_format)
+			GPlatesModel::integer_plate_id_type anchor_plate_id)
 	{
-		GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
-
-		// TODO: Return the read errors to the python caller.
-		GPlatesFileIO::ReadErrorAccumulation read_errors;
-
-		// Read the feature collections from the reconstruct files.
-		std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstruct_files;
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstruct_feature_collection_refs;
-		read_feature_collection_files(
-				reconstruct_files,
-				reconstruct_feature_collection_refs,
-				reconstruct_filenames,
-				file_registry,
-				read_errors);
-
-		// Read the feature collections from the rotation files.
-		std::vector<GPlatesFileIO::File::non_null_ptr_type> rotation_files;
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> rotation_feature_collection_refs;
-		read_feature_collection_files(
-				rotation_files,
-				rotation_feature_collection_refs,
-				rotation_filenames,
-				file_registry,
-				read_errors);
-
-		GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
-
-		const GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
-				GPlatesAppLogic::create_cached_reconstruction_tree_creator(
-						rotation_feature_collection_refs,
-						anchor_plate_id/*default_anchor_plate_id*/);
+		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
+		// This ensures we will reverse reconstruct using the correct anchor plate.
+		GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
+				GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
+						rotation_model.get_rotation_model()->get_reconstruction_tree_creator(),
+						anchor_plate_id);
 
 		// Create the context in which to reconstruct.
 		const GPlatesAppLogic::ReconstructMethodInterface::Context reconstruct_method_context(
 				GPlatesAppLogic::ReconstructParams(),
 				reconstruction_tree_creator);
 
-		// Iterate over the reconstruct files.
-		bp::stl_input_iterator<QString> reconstruct_filenames_iter(reconstruct_filenames);
-		bp::stl_input_iterator<QString> reconstruct_filenames_end;
-		for (unsigned int reconstruct_file_index = 0;
-			reconstruct_filenames_iter != reconstruct_filenames_end;
-			++reconstruct_filenames_iter, ++reconstruct_file_index)
+		GPlatesFileIO::File::non_null_ptr_type reconstructable_file = reconstructable_features.get_file();
+
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &reconstructable_feature_collection =
+				reconstructable_file->get_reference().get_feature_collection();
+
+		GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
+
+		// Iterate over the features in the reconstructable feature collection.
+		GPlatesModel::FeatureCollectionHandle::iterator reconstructable_features_iter =
+				reconstructable_feature_collection->begin();
+		GPlatesModel::FeatureCollectionHandle::iterator reconstructable_features_end =
+				reconstructable_feature_collection->end();
+		for ( ; reconstructable_features_iter != reconstructable_features_end; ++reconstructable_features_iter)
 		{
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &reconstruct_feature_collection =
-					reconstruct_feature_collection_refs[reconstruct_file_index];
+			const GPlatesModel::FeatureHandle::weak_ref reconstructable_feature =
+					(*reconstructable_features_iter)->reference();
 
-			// Iterate over the features in the current feature collection.
-			GPlatesModel::FeatureCollectionHandle::iterator reconstruct_features_iter =
-					reconstruct_feature_collection->begin();
-			GPlatesModel::FeatureCollectionHandle::iterator reconstruct_features_end =
-					reconstruct_feature_collection->end();
-			for ( ; reconstruct_features_iter != reconstruct_features_end; ++reconstruct_features_iter)
+			// Find out how to reconstruct each geometry in a feature based on the feature's other properties.
+			// Get the reconstruct method so we can reverse reconstruct the geometry.
+			GPlatesAppLogic::ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
+					reconstruct_method_registry.create_reconstruct_method_or_default(
+							reconstructable_feature,
+							reconstruct_method_context);
+
+			// Get the (reconstructed - not present day) geometries for the current feature.
+			//
+			// NOTE: We are actually going to treat these geometries *not* as present day
+			// but as geometries at time 'reconstruction_time' - we're going to reverse reconstruct to get
+			// the present day geometries.
+			// Note: There should be one geometry for each geometry property that can be reconstructed.
+			std::vector<GPlatesAppLogic::ReconstructMethodInterface::Geometry> feature_reconstructed_geometries;
+			reconstruct_method->get_present_day_feature_geometries(feature_reconstructed_geometries);
+
+			// Iterate over the reconstructed geometries for the current feature.
+			BOOST_FOREACH(
+					const GPlatesAppLogic::ReconstructMethodInterface::Geometry &feature_reconstructed_geometry,
+					feature_reconstructed_geometries)
 			{
-				const GPlatesModel::FeatureHandle::weak_ref reconstruct_feature_ref =
-						(*reconstruct_features_iter)->reference();
+				// Reverse reconstruct the current feature geometry from time 'reconstruction_time' to present day.
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
+						reconstruct_method->reconstruct_geometry(
+								feature_reconstructed_geometry.geometry,
+								reconstruct_method_context,
+								// The reconstruction_time of the reconstructed feature geometry...
+								reconstruction_time/*reconstruction_time*/,
+								true/*reverse_reconstruct*/);
 
-				// Find out how to reconstruct each geometry in a feature based on the feature's other properties.
-				// Get the reconstruct method so we can reverse reconstruct the geometry.
-				GPlatesAppLogic::ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
-						reconstruct_method_registry.create_reconstruct_method_or_default(
-								reconstruct_feature_ref,
-								reconstruct_method_context);
-
-				// Get the (reconstructed - not present day) geometries for the current feature.
-				//
-				// NOTE: We are actually going to treat these geometries *not* as present day
-				// but as geometries at time 'reconstruction_time' - we're going to reverse reconstruct to get
-				// the present day geometries.
-				// Note: There should be one geometry for each geometry property that can be reconstructed.
-				std::vector<GPlatesAppLogic::ReconstructMethodInterface::Geometry> feature_reconstructed_geometries;
-				reconstruct_method->get_present_day_feature_geometries(feature_reconstructed_geometries);
-
-				// Iterate over the reconstructed geometries for the current feature.
-				BOOST_FOREACH(
-						const GPlatesAppLogic::ReconstructMethodInterface::Geometry &feature_reconstructed_geometry,
-						feature_reconstructed_geometries)
-				{
-					// Reverse reconstruct the current feature geometry from time 'reconstruction_time' to present day.
-					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
-							reconstruct_method->reconstruct_geometry(
-									feature_reconstructed_geometry.geometry,
-									reconstruct_method_context,
-									// The reconstruction_time of the reconstructed feature geometry...
-									reconstruction_time/*reconstruction_time*/,
-									true/*reverse_reconstruct*/);
-
-					// Set the reverse reconstructed (present day) geometry back onto the feature's geometry property.
-					GPlatesModel::TopLevelProperty::non_null_ptr_type geom_top_level_prop_clone = 
-							(*feature_reconstructed_geometry.property_iterator)->clone();
-					GPlatesFeatureVisitors::GeometrySetter(present_day_geometry).set_geometry(
-							geom_top_level_prop_clone.get());
-					*feature_reconstructed_geometry.property_iterator = geom_top_level_prop_clone;
-				}
+				// Set the reverse reconstructed (present day) geometry back onto the feature's geometry property.
+				GPlatesFeatureVisitors::GeometrySetter(present_day_geometry).set_geometry(
+						(*feature_reconstructed_geometry.property_iterator).get());
 			}
+		}
 
-			const QString reconstruct_input_filename = *reconstruct_filenames_iter;
-			const QString reconstruct_input_file_basename =
-					reconstruct_input_filename.left(reconstruct_input_filename.lastIndexOf('.'));
-			const QString reconstruct_output_filename =
-					reconstruct_input_file_basename + output_file_basename_suffix + '.' + output_file_format;
-
-			// Create an output file to write back out the current modified feature collection.
-			GPlatesFileIO::File::Reference::non_null_ptr_type output_file_ref =
-					GPlatesFileIO::File::create_file_reference(
-							GPlatesFileIO::FileInfo(reconstruct_output_filename),
-							reconstruct_feature_collection);
-
-			// Save the modified feature collection to file.
-			file_registry.write_feature_collection(*output_file_ref);
+		// If the feature collection came from a file (as opposed to being passed in directly as a
+		// feature collection) then write the current modified feature collection back out to the
+		// same file it came from.
+		if (reconstructable_file->get_reference().get_file_info().get_qfileinfo().exists())
+		{
+			GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
+			file_registry.write_feature_collection(reconstructable_file->get_reference());
 		}
 	}
 }

@@ -78,6 +78,23 @@ class ReconstructTest(unittest.TestCase):
             0,
             'test.xy')
 
+    def test_reverse_reconstruct(self):
+        # Test modifying the feature collection file.
+        pygplates.reverse_reconstruct(
+            os.path.join(FIXTURES, 'volcanoes.gpml'),
+            [os.path.join(FIXTURES, 'rotations.rot')],
+            10,
+            0)
+        
+        # Test modifying the feature collection only (not the file it was read from).
+        reconstructable_feature_collection = pygplates.FeatureCollectionFileFormatRegistry().read(
+                os.path.join(FIXTURES, 'volcanoes.gpml'))
+        pygplates.reverse_reconstruct(
+            reconstructable_feature_collection,
+            [os.path.join(FIXTURES, 'rotations.rot')],
+            10,
+            0)
+        
 class ReconstructionTreeCase(unittest.TestCase):
     def setUp(self):
         self.rotations = pygplates.FeatureCollectionFileFormatRegistry().read(
