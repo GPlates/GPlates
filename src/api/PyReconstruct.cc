@@ -55,7 +55,6 @@
 // This is not included by <boost/python.hpp>.
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
 #include <boost/python/raw_function.hpp>
-#include <boost/python/stl_iterator.hpp>
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
@@ -265,35 +264,6 @@ namespace GPlatesApi
 
 			return GPlatesFileIO::ReconstructedFeatureGeometryExport::UNKNOWN;
 		}
-
-
-		void
-		read_feature_collection_files(
-				std::vector<GPlatesFileIO::File::non_null_ptr_type> &files,
-				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collection_refs,
-				bp::object filenames,
-				const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_registry,
-				GPlatesFileIO::ReadErrorAccumulation &read_errors)
-		{
-			// Read the feature collections from the files.
-			// Begin/end iterators over the python filenames iterable.
-			bp::stl_input_iterator<QString> filenames_iter(filenames);
-			bp::stl_input_iterator<QString> filenames_end;
-			for ( ; filenames_iter != filenames_end; ++filenames_iter)
-			{
-				const QString filename = *filenames_iter;
-
-				// Create a file with an empty feature collection.
-				GPlatesFileIO::File::non_null_ptr_type file =
-						GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(filename));
-
-				// Read new features from the file into the feature collection.
-				file_registry.read_feature_collection(file->get_reference(), read_errors);
-
-				files.push_back(file);
-				feature_collection_refs.push_back(file->get_reference().get_feature_collection());
-			}
-		}
 	}
 
 
@@ -409,7 +379,7 @@ namespace GPlatesApi
 	 * perform the reverse reconstruction.
 	 */
 	void
-	reverse_recontruct(
+	reverse_reconstruct(
 			FeatureCollectionFunctionArgument reconstructable_features,
 			RotationModelFunctionArgument rotation_model,
 			const double &reconstruction_time,
@@ -523,7 +493,7 @@ export_reconstruct()
 			"  :param output_parameters: variable number of keyword arguments specifying output "
 			"parameters (see table below)\n"
 			"  :raises: OpenFileForReadingError if any input file is not readable (when filenames specified)\n"
-			"  :raises: FileFormatNotSupportedError if any input file format (identified by the "
+			"  :raises: FileFormatNotSupportedError if any input file format (identified by any "
 			"reconstructable and rotation filename extensions) does not support reading "
 			"(when filenames specified)\n"
 			"\n"
@@ -570,7 +540,51 @@ export_reconstruct()
 			"  If any filenames are specified then :class:`FeatureCollectionFileFormatRegistry` is "
 			"used internally to read feature collections from those files.\n";
 
-	bp::def("reverse_reconstruct", &GPlatesApi::reverse_recontruct);
+	bp::def("reverse_reconstruct",
+			&GPlatesApi::reverse_reconstruct,
+			(bp::arg("reconstructable_features"),
+				bp::arg("rotation_model"),
+				bp::arg("reconstruction_time"),
+				bp::arg("anchor_plate_id")=0),
+			"reverse_reconstruct(reconstructable_features, rotation_model, reconstruction_time, [anchor_plate_id=0])\n"
+			"  Reverse reconstruct geological features from a specific geological time.\n"
+			"\n"
+			"  :param reconstructable_features: A reconstructable feature collection or a filename "
+			"(used as input and output)\n"
+			"  :type reconstructable_features: :class:`FeatureCollection` or string\n"
+			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
+			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
+			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
+			"or sequence of :class:`FeatureCollection` instances and/or strings\n"
+			"  :param reconstruction_time: the specific geological time to reverse reconstruct from\n"
+			"  :type reconstruction_time: float\n"
+			"  :param anchor_plate_id: the anchored plate id used during reverse reconstruction\n"
+			"  :type anchor_plate_id: int\n"
+			"  :raises: OpenFileForReadingError if any input file is not readable (when filenames specified)\n"
+			"  :raises: FileFormatNotSupportedError if any input file format (identified by any "
+			"reconstructable and rotation filename extensions) does not support reading "
+			"(when filenames specified)\n"
+			"\n"
+			"  The effect of this function is to replace the present day geometries in each feature with "
+			"reverse reconstructed versions of those geometries. This assumes that the original geometries, "
+			"stored in *reconstructable_features*, are not in fact present day geometries (as they "
+			"normally should be) but instead the already-reconstructed geometries corresponding to "
+			"geological time *reconstruction_time*. This function reverses that reconstruction process "
+			"to ensure present day geometries are stored in the features.\n"
+			"\n"
+			"  Note that *reconstructable_features* can be a :class:`FeatureCollection` or a "
+			"filename. If loaded from a file then the modified feature collection (containing reverse "
+			"reconstructed geometries) is written back out to the same file.\n"
+			"\n"
+			"  Note that *rotation_model* can be either a :class:`RotationModel` or a "
+			"rotation :class:`FeatureCollection` or a rotation filename or a sequence "
+			"(eg, ``list`` or ``tuple``) containing rotation :class:`FeatureCollection` instances "
+			"or filenames (or a mixture of both). When a :class:`RotationModel` is not specified "
+			"then a temporary one is created internally (and hence is less efficient if this "
+			"function is called multiple times with the same rotation data).\n"
+			"\n"
+			"  If any filenames are specified then :class:`FeatureCollectionFileFormatRegistry` is "
+			"used internally to read feature collections from those files.\n");
 }
 
 #endif

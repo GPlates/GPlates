@@ -84,6 +84,7 @@ Contents:
 	pygplates.interpolate_total_reconstruction_pole
 	pygplates.interpolate_total_reconstruction_sequence
 	pygplates.reconstruct
+	pygplates.reverse_reconstruct
 	pygplates.represent_equivalent_rotations
 
 .. NOTE: Only document the new API for now, exclude classes/functions not in the new API.
@@ -96,7 +97,7 @@ Contents:
 ..       then they don't get documented by Sphinx. In other words only the '__init__' special members with docstrings will show up.
 .. automodule:: pygplates
 	:members:
-	:exclude-members: Colour, OldFeature, OldFeatureCollection, Palette, PaletteKey, reverse_reconstruct
+	:exclude-members: Colour, OldFeature, OldFeatureCollection, Palette, PaletteKey
 	:show-inheritance:
 	:special-members:
 

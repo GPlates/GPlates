@@ -83,8 +83,7 @@ class ReconstructTest(unittest.TestCase):
         pygplates.reverse_reconstruct(
             os.path.join(FIXTURES, 'volcanoes.gpml'),
             [os.path.join(FIXTURES, 'rotations.rot')],
-            10,
-            0)
+            10)
         
         # Test modifying the feature collection only (not the file it was read from).
         reconstructable_feature_collection = pygplates.FeatureCollectionFileFormatRegistry().read(
