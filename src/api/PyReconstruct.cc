@@ -71,6 +71,87 @@ namespace GPlatesApi
 	namespace
 	{
 		/**
+		 * Retrieve the function arguments from the *deprecated* python 'reconstruct()' function.
+		 *
+		 * This version of the 'reconstruct()' function is not documented. However we still
+		 * support it since it was one of the few python API functions that's been around since
+		 * the dawn of time and is currently used in some web applications.
+		 *
+		 * Returns true if this version of the 'reconstruct()' function was detected via the
+		 * specified positional and keyword arguments.
+		 */
+		bool
+		get_deprecated_reconstruct_args(
+				bp::tuple positional_args,
+				bp::dict keyword_args,
+				std::vector<GPlatesFileIO::File::non_null_ptr_type> &reconstructable_files,
+				boost::optional<RotationModel::non_null_ptr_type> &rotation_model,
+				QString &export_file_name,
+				double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type &anchor_plate_id,
+				bool &export_wrap_to_dateline)
+		{
+			// Define the explicit function argument types...
+			//
+			// We're actually more generous than the original (deprecated) function since the original
+			// only allowed a python 'list' of filenames (for reconstructable and rotation features).
+			typedef boost::tuple<
+					FeatureCollectionSequenceFunctionArgument,
+					RotationModelFunctionArgument,
+					double,
+					GPlatesModel::integer_plate_id_type,
+					QString>
+							reconstruct_args_type;
+
+			// Define the explicit function argument names...
+			const boost::tuple<const char *, const char *, const char *, const char *, const char *>
+					explicit_arg_names(
+							"recon_files",
+							"rot_files",
+							"time",
+							"anchor_plate_id",
+							"export_file_name");
+
+			// Define the default function arguments...
+			typedef boost::tuple<> default_args_type;
+			default_args_type defaults_args;
+
+			// If this deprecated version of 'reconstruct()' does not match the actual function
+			// arguments then return false.
+			if (!VariableArguments::check_explicit_args<reconstruct_args_type>(
+				positional_args,
+				keyword_args,
+				explicit_arg_names,
+				defaults_args,
+				boost::none/*unused_positional_args*/,
+				boost::none/*unused_keyword_args*/))
+			{
+				return false;
+			}
+
+			const reconstruct_args_type reconstruct_args =
+					VariableArguments::get_explicit_args<reconstruct_args_type>(
+							positional_args,
+							keyword_args,
+							explicit_arg_names,
+							defaults_args,
+							boost::none/*unused_positional_args*/,
+							boost::none/*unused_keyword_args*/);
+
+			boost::get<0>(reconstruct_args).get_files(reconstructable_files);
+			rotation_model = boost::get<1>(reconstruct_args).get_rotation_model();
+			reconstruction_time = boost::get<2>(reconstruct_args);
+			anchor_plate_id = boost::get<3>(reconstruct_args);
+			export_file_name = boost::get<4>(reconstruct_args);
+
+			// Parameters not available in deprecated function - so set to default values...
+			export_wrap_to_dateline = true;
+
+			return true;
+		}
+
+
+		/**
 		 * Retrieve the function arguments from the python 'reconstruct()' function.
 		 */
 		void
@@ -84,6 +165,26 @@ namespace GPlatesApi
 				GPlatesModel::integer_plate_id_type &anchor_plate_id,
 				bool &export_wrap_to_dateline)
 		{
+			// First attempt to get arguments from deprecated version of 'reconstruct()'.
+			if (get_deprecated_reconstruct_args(
+					positional_args,
+					keyword_args,
+					reconstructable_files,
+					rotation_model,
+					export_file_name,
+					reconstruction_time,
+					anchor_plate_id,
+					export_wrap_to_dateline))
+			{
+				// Successfully obtained arguments from deprecated version of 'reconstruct()'.
+				return;
+			}
+
+			//
+			// Now get arguments from official version of 'reconstruct().
+			// If this fails then a python exception will be generated.
+			//
+
 			// The non-explicit function arguments.
 			// These are our variable number of export parameters.
 			VariableArguments::keyword_arguments_type unused_keyword_args;
@@ -97,6 +198,7 @@ namespace GPlatesApi
 					GPlatesModel::integer_plate_id_type>
 							reconstruct_args_type;
 
+			// Define the explicit function argument names...
 			const boost::tuple<const char *, const char *, const char *, const char *, const char *>
 					explicit_arg_names(
 							"reconstructable_features",
@@ -105,21 +207,9 @@ namespace GPlatesApi
 							"reconstruction_time",
 							"anchor_plate_id");
 
-			// Define the default function argument...
-			typedef boost::tuple<> default_args_type;
-			default_args_type defaults_args;
-
-			if (!VariableArguments::check_explicit_args<reconstruct_args_type>(
-				positional_args,
-				keyword_args,
-				explicit_arg_names,
-				defaults_args,
-				boost::none/*unused_positional_args*/,
-				unused_keyword_args))
-			{
-				PyErr_SetString(PyExc_TypeError, "None of the function overloads matched the function arguments");
-				bp::throw_error_already_set();
-			}
+			// Define the default function arguments...
+			typedef boost::tuple<GPlatesModel::integer_plate_id_type> default_args_type;
+			default_args_type defaults_args(0/*anchor_plate_id*/);
 
 			const reconstruct_args_type reconstruct_args =
 					VariableArguments::get_explicit_args<reconstruct_args_type>(

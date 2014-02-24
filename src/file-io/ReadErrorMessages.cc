@@ -635,7 +635,7 @@ namespace
 }
 
 
-const QString &
+QString
 GPlatesFileIO::ReadErrorMessages::get_short_description_as_string(
 		GPlatesFileIO::ReadErrors::Description code)
 {
@@ -651,7 +651,7 @@ GPlatesFileIO::ReadErrorMessages::get_short_description_as_string(
 }
 
 
-const QString &
+QString
 GPlatesFileIO::ReadErrorMessages::get_full_description_as_string(
 		GPlatesFileIO::ReadErrors::Description code)
 {
@@ -667,7 +667,7 @@ GPlatesFileIO::ReadErrorMessages::get_full_description_as_string(
 }
 
 
-const QString &
+QString
 GPlatesFileIO::ReadErrorMessages::get_result_as_string(
 		GPlatesFileIO::ReadErrors::Result code)
 {

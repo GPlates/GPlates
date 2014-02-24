@@ -65,8 +65,18 @@ class ReconstructTest(unittest.TestCase):
             os.path.join(FIXTURES, 'volcanoes.gpml'),
             os.path.join(FIXTURES, 'rotations.rot'),
             'test.xy',
+            10)
+        
+    def test_deprecated_reconstruct(self):
+        # We continue to support the deprecated version of 'reconstruct()' since
+        # it was one of the few python API functions that's been around since
+        # the dawn of time and is currently used in some web applications.
+        pygplates.reconstruct(
+            [os.path.join(FIXTURES, 'volcanoes.gpml')],
+            [os.path.join(FIXTURES, 'rotations.rot')],
             10,
-            0)
+            0,
+            'test.xy')
 
 class ReconstructionTreeCase(unittest.TestCase):
     def setUp(self):

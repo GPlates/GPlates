@@ -789,7 +789,7 @@ namespace GPlatesApi
 									positional_args[positional_arg_index],
 									explicit_arg_name);
 
-					return ExplicitArgsConsType(
+					return ResultArgsConsType(
 							arg,
 							GetExplicitArgsFromPositionalArgs<
 									GetOrCheckExtractionType,
@@ -988,7 +988,14 @@ namespace GPlatesApi
 						boost::python::object python_argument,
 						const std::string &argument_name)
 				{
-					return GPlatesApi::VariableArguments::extract<ArgumentType>(python_argument, argument_name);
+					// Note that 'ArgumentType' could be a reference.
+					boost::python::extract<ArgumentType> extract_arg(python_argument);
+
+					// Throw our own python error if check for extraction fails.
+					Implementation::check_extract(extract_arg, argument_name);
+
+					// Extract the argument.
+					return extract_arg();
 				}
 			};
 
