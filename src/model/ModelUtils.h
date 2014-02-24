@@ -27,9 +27,11 @@
 #define GPLATES_MODEL_MODELUTILS_H
 
 #include <boost/optional.hpp>
+#include <vector>
 
 #include "FeatureCollectionHandle.h"
 #include "FeatureHandle.h"
+#include "FeatureId.h"
 #include "FeatureType.h"
 #include "ModelInterface.h"
 #include "PropertyName.h"
@@ -114,7 +116,7 @@ namespace GPlatesModel
 
 		GPlatesPropertyValues::GpmlTimeSample
 		create_gml_time_sample(
-				const GPlatesModel::ModelUtils::TotalReconstructionPole &trp,
+				const ModelUtils::TotalReconstructionPole &trp,
 				bool is_grot = false);
 		//
 		// Time-dependent property value wrapper functions.
@@ -244,7 +246,7 @@ namespace GPlatesModel
 		 *
 		 * NOTE: Currently the only type of top-level property is inline so this should not fail.
 		 */
-		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type>
+		boost::optional<PropertyValue::non_null_ptr_to_const_type>
 		get_property_value(
 				const TopLevelProperty &top_level_property,
 				TopLevelPropertyError::Type *error_code = NULL);
@@ -255,7 +257,7 @@ namespace GPlatesModel
 		std::vector<FeatureHandle::iterator>
 		get_top_level_property_ref(
 				const PropertyName& name,
-				GPlatesModel::FeatureHandle::weak_ref feature);
+				FeatureHandle::weak_ref feature);
 
 
 		/**
@@ -376,6 +378,8 @@ namespace GPlatesModel
 		 * name is also checked to see if it's valid for the specified feature's type.
 		 * This ensures a stricter level of conformance to the GPGIM.
 		 *
+		 * If @a renamed_feature_properties is specified then any renamed properties are returned in it.
+		 *
 		 * Returns false if any error is encountered in which case *none* of the properties are renamed.
 		 * The error can optionally be returned via @a error_code.
 		 */
@@ -386,6 +390,7 @@ namespace GPlatesModel
 				const PropertyName &new_property_name,
 				const Gpgim &gpgim,
 				bool check_new_property_name_allowed_for_feature_type = true,
+				boost::optional< std::vector<FeatureHandle::iterator> &> renamed_feature_properties = boost::none,
 				TopLevelPropertyError::Type *error_code = NULL);
 
 
@@ -413,6 +418,24 @@ namespace GPlatesModel
 				const TopLevelProperty &top_level_property,
 				const GpgimProperty &new_gpgim_property,
 				TopLevelPropertyError::Type *error_code = NULL);
+		
+		/*
+		* Find the FeatureHandle weak ref given the feature id as FeatureId.
+		*/
+		FeatureHandle::weak_ref
+		find_feature(
+				const FeatureId &id);
+
+		/*
+		* Find the FeatureHandle weak ref given the feature id as QString.
+		*/
+		inline
+		FeatureHandle::weak_ref
+		find_feature(
+				const QString &id)
+		{
+			return find_feature(FeatureId(GPlatesUtils::UnicodeString(id)));
+		}
 	}
 }
 

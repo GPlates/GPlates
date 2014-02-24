@@ -403,6 +403,9 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 	d_gpgim_version_warning_dialog_ptr(
 			new GPlatesQtWidgets::GpgimVersionWarningDialog(
 					app_state_.get_gpgim(),
+					// We no longer show the dialog when *loading* files since it's too annoying.
+					// It's still shown when *saving* files though...
+					false/*show_dialog_on_loading_files*/,
 					&viewport_window()))
 {
 	setObjectName("FileIOFeedback");
@@ -717,7 +720,22 @@ bool
 GPlatesGui::FileIOFeedback::save_file(
 		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
 {
-	return save_file(file.get_file());
+	bool ok = save_file(file.get_file());
+	if (!ok)
+	{
+		return false;
+	}
+
+	// Let FeatureCollectionFileState and all its listeners (like ManageFeatureCollectionsDialog)
+	// know that the file has been written to since it's possible that the file did not exist
+	// before now and hence "New Feature Collection" will get displayed even though the file now
+	// exists and has a proper filename.
+	//
+	// Setting the file info will cause the filenames (ManageFeatureCollectionsDialog) to get re-populated.
+	// TODO: Find a better way to do this.
+	file.set_file_info(file.get_file().get_file_info());
+
+	return true;
 }
 
 

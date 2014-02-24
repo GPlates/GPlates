@@ -31,7 +31,7 @@
 #include "GeometryUtils.h"
 #include "FlowlineGeometryPopulator.h"
 #include "FlowlineUtils.h"
-#include "ReconstructUtils.h"
+#include "RotationUtils.h"
 
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
@@ -198,20 +198,16 @@ GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_feature_velocities(
 	get_present_day_feature_geometries(present_day_geometries);
 	BOOST_FOREACH(const Geometry &present_day_geometry, present_day_geometries)
 	{
-		const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-				context.reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
-		const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_2 =
-				context.reconstruction_tree_creator.get_reconstruction_tree(
-						// FIXME:  Should this '1' should be user controllable? ...
-						reconstruction_time + 1);
-
 		// Get the half-stage rotation.
-		const GPlatesMaths::FiniteRotation finite_rotation = ReconstructUtils::get_half_stage_rotation(
-				*reconstruction_tree,
+		const GPlatesMaths::FiniteRotation finite_rotation = RotationUtils::get_half_stage_rotation(
+				context.reconstruction_tree_creator,
+				reconstruction_time,
 				left_plate_id,
 				right_plate_id);
-		const GPlatesMaths::FiniteRotation finite_rotation_2 = ReconstructUtils::get_half_stage_rotation(
-				*reconstruction_tree_2,
+		const GPlatesMaths::FiniteRotation finite_rotation_2 = RotationUtils::get_half_stage_rotation(
+				context.reconstruction_tree_creator,
+				// FIXME:  Should this '1' should be user controllable? ...
+				reconstruction_time + 1,
 				left_plate_id,
 				right_plate_id);
 
@@ -233,7 +229,7 @@ GPlatesAppLogic::ReconstructMethodFlowline::reconstruct_feature_velocities(
 		// lookup the plate ID or other feature property(s) depending on the colour scheme).
 		const ReconstructedFeatureGeometry::non_null_ptr_type plate_id_rfg =
 				ReconstructedFeatureGeometry::create(
-						reconstruction_tree,
+						context.reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time),
 						context.reconstruction_tree_creator,
 						*get_feature_ref(),
 						present_day_geometry.property_iterator,

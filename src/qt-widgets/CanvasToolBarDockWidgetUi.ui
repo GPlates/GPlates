@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>70</width>
+    <width>87</width>
     <height>507</height>
    </rect>
   </property>
@@ -66,6 +66,10 @@
        </size>
       </property>
       <widget class="QWidget" name="tab_view">
+       <attribute name="icon">
+        <iconset resource="../qt-resources/qt_widgets.qrc">
+         <normaloff>:/drag_globe_35.png</normaloff>:/drag_globe_35.png</iconset>
+       </attribute>
        <attribute name="title">
         <string/>
        </attribute>
@@ -113,6 +117,10 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <attribute name="icon">
+        <iconset resource="../qt-resources/qt_widgets.qrc">
+         <normaloff>:/focus_feature_35.png</normaloff>:/focus_feature_35.png</iconset>
+       </attribute>
        <attribute name="title">
         <string/>
        </attribute>
@@ -170,6 +178,10 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <attribute name="icon">
+        <iconset resource="../qt-resources/qt_widgets.qrc">
+         <normaloff>:/digitise_polyline_35.png</normaloff>:/digitise_polyline_35.png</iconset>
+       </attribute>
        <attribute name="title">
         <string/>
        </attribute>
@@ -218,6 +230,10 @@
        </layout>
       </widget>
       <widget class="QWidget" name="tab_topology">
+       <attribute name="icon">
+        <iconset resource="../qt-resources/qt_widgets.qrc">
+         <normaloff>:/topology_build_boundary_35.png</normaloff>:/topology_build_boundary_35.png</iconset>
+       </attribute>
        <attribute name="title">
         <string/>
        </attribute>
@@ -266,6 +282,10 @@
        </layout>
       </widget>
       <widget class="QWidget" name="tab_pole_manipulation">
+       <attribute name="icon">
+        <iconset resource="../qt-resources/qt_widgets.qrc">
+         <normaloff>:/plate_pole_modification_35.png</normaloff>:/plate_pole_modification_35.png</iconset>
+       </attribute>
        <attribute name="title">
         <string/>
        </attribute>
@@ -320,6 +340,10 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <attribute name="icon">
+        <iconset resource="../qt-resources/qt_widgets.qrc">
+         <normaloff>:/small_circle_35.png</normaloff>:/small_circle_35.png</iconset>
+       </attribute>
        <attribute name="title">
         <string/>
        </attribute>

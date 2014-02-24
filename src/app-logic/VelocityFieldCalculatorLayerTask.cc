@@ -39,8 +39,7 @@ const QString GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VELOCITY_SURFAC
 
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VelocityFieldCalculatorLayerTask() :
 	d_velocity_field_calculator_layer_proxy(
-			VelocityFieldCalculatorLayerProxy::create(
-					d_layer_task_params.get_solve_velocities_method()))
+			VelocityFieldCalculatorLayerProxy::create())
 {
 }
 
@@ -243,12 +242,12 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::update(
 			reconstruction->get_reconstruction_time());
 
 	// If the layer task params have been modified then update our velocity layer proxy.
-	if (d_layer_task_params.d_set_solve_velocities_method_called)
+	if (d_layer_task_params.d_set_velocity_params_called)
 	{
-		d_layer_task_params.d_set_solve_velocities_method_called = false;
+		d_velocity_field_calculator_layer_proxy->set_current_velocity_params(
+				d_layer_task_params.d_velocity_params);
 
-		d_velocity_field_calculator_layer_proxy->set_solve_velocities_method(
-				d_layer_task_params.get_solve_velocities_method());
+		d_layer_task_params.d_set_velocity_params_called = false;
 	}
 }
 
@@ -261,26 +260,24 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_layer_proxy()
 
 
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::Params() :
-	// Default to using surfaces since that's how GPlates started out calculating velocities...
-	d_solve_velocities_method(SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS),
-	d_set_solve_velocities_method_called(false)
+	d_set_velocity_params_called(false)
 {
 }
 
 
-GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType
-GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::get_solve_velocities_method() const
+const GPlatesAppLogic::VelocityParams &
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::get_velocity_params() const
 {
-	return d_solve_velocities_method;
+	return d_velocity_params;
 }
 
 
 void
-GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::set_solve_velocities_method(
-		SolveVelocitiesMethodType solve_velocities_method)
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::set_velocity_params(
+		const VelocityParams &velocity_params)
 {
-	d_solve_velocities_method = solve_velocities_method;
+	d_velocity_params = velocity_params;
 
-	d_set_solve_velocities_method_called = true;
+	d_set_velocity_params_called = true;
 	emit_modified();
 }

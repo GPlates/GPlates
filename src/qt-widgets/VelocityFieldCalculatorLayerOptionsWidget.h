@@ -97,6 +97,16 @@ namespace GPlatesQtWidgets
 		handle_arrowhead_scale_value_changed(
 				double arrowhead_scale_log10);
 
+		void
+		handle_velocity_smoothing_check_box_changed();
+
+		void
+		handle_velocity_smoothing_distance_spinbox_changed(
+				double value);
+
+		void
+		handle_exclude_smoothing_in_deforming_regions_check_box_changed();
+
 	private:
 
 		VelocityFieldCalculatorLayerOptionsWidget(
@@ -117,6 +127,7 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::InformationDialog *d_help_solve_velocities_method_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_arrow_spacing_dialog;
 		GPlatesQtWidgets::InformationDialog *d_help_arrow_scale_dialog;
+		GPlatesQtWidgets::InformationDialog *d_help_velocity_smoothing_dialog;
 	};
 }
 

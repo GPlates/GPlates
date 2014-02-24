@@ -2232,29 +2232,42 @@ GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 			return false;
 		}
 
-		stencil_render_buffer = get_context().get_shared_state()->acquire_render_buffer_object(
+		// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
+		// And both must be enabled for the frame buffer completeness check to succeed.
+		const GLRenderBufferObject::shared_ptr_type depth_stencil_render_buffer =
+				get_context().get_shared_state()->acquire_render_buffer_object(
 					*this,
-					GL_DEPTH_STENCIL_EXT,
+					GL_DEPTH24_STENCIL8_EXT,
 					texture_level_width,
 					texture_level_height);
-
-		// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
-		if (render_texture_target.depth_buffer)
-		{
-			depth_render_buffer = stencil_render_buffer;
-		}
+		stencil_render_buffer = depth_stencil_render_buffer;
+		depth_render_buffer = depth_stencil_render_buffer;
 	}
 	else if (render_texture_target.depth_buffer)
 	{
-		depth_render_buffer = get_context().get_shared_state()->acquire_render_buffer_object(
-					*this,
-					// To improve render buffer re-use we use packed depth/stencil (if supported)
-					// even if only depth is requested...
-					get_capabilities().framebuffer.gl_EXT_packed_depth_stencil
-							? GL_DEPTH_STENCIL_EXT
-							: GL_DEPTH_COMPONENT,
-					texture_level_width,
-					texture_level_height);
+		// To improve render buffer re-use we use packed depth/stencil (if supported)
+		// though only depth was requested...
+		if (get_capabilities().framebuffer.gl_EXT_packed_depth_stencil)
+		{
+			// With GL_EXT_packed_depth_stencil both depth and stencil share the same render buffer.
+			// And both must be enabled for the frame buffer completeness check to succeed.
+			const GLRenderBufferObject::shared_ptr_type depth_stencil_render_buffer =
+					get_context().get_shared_state()->acquire_render_buffer_object(
+							*this,
+							GL_DEPTH24_STENCIL8_EXT,
+							texture_level_width,
+							texture_level_height);
+			stencil_render_buffer = depth_stencil_render_buffer;
+			depth_render_buffer = depth_stencil_render_buffer;
+		}
+		else
+		{
+			depth_render_buffer = get_context().get_shared_state()->acquire_render_buffer_object(
+						*this,
+						GL_DEPTH_COMPONENT,
+						texture_level_width,
+						texture_level_height);
+		}
 	}
 
 	// Classify our frame buffer object according to texture (mipmap level) format/dimensions, etc.

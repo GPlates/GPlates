@@ -33,6 +33,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/VelocityFieldCalculatorLayerTask.h"
+#include "app-logic/VelocityParams.h"
 
 #include "global/GPlatesAssert.h"
 
@@ -87,6 +88,30 @@ namespace
 			"<p>The scaling of arrows on the screen is <i>independent</i> of the zoom level. "
 			"That is, the size of the arrows on the screen remains constant across the zoom levels.</p>"
 			"</body></html>\n");
+
+	const QString HELP_VELOCITY_SMOOTHING_DIALOG_TITLE = QObject::tr("Plate boundary velocity smoothing");
+	const QString HELP_VELOCITY_SMOOTHING_DIALOG_TEXT = QObject::tr(
+			"<html><body>\n"
+			"<p>If enabled, specifies the angular distance (degrees) over which velocities are smoothed "
+			"across a plate/network boundary.</p>"
+			"<p>Any domain points that lie within this distance from a boundary will have their velocity "
+			"smoothed across this region to minimize velocity discontinuities across a plate boundary.</p>"
+			"</body></html>\n");
+}
+
+
+GPlatesQtWidgets::LayerOptionsWidget *
+GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::create(
+		GPlatesAppLogic::ApplicationState &application_state,
+		GPlatesPresentation::ViewState &view_state,
+		ViewportWindow *viewport_window,
+		QWidget *parent_)
+{
+	return new VelocityFieldCalculatorLayerOptionsWidget(
+			application_state,
+			view_state,
+			viewport_window,
+			parent_);
 }
 
 
@@ -113,6 +138,11 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalcul
 			new InformationDialog(
 					HELP_ARROW_SCALE_DIALOG_TEXT,
 					HELP_ARROW_SCALE_DIALOG_TITLE,
+					viewport_window)),
+	d_help_velocity_smoothing_dialog(
+			new InformationDialog(
+					HELP_VELOCITY_SMOOTHING_DIALOG_TEXT,
+					HELP_VELOCITY_SMOOTHING_DIALOG_TITLE,
 					viewport_window))
 {
 	setupUi(this);
@@ -124,6 +154,10 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalcul
 	arrow_body_scale_spinbox->setCursor(QCursor(Qt::ArrowCursor));
 	arrowhead_scale_spinbox->setCursor(QCursor(Qt::ArrowCursor));
 	push_button_help_arrow_scale->setCursor(QCursor(Qt::ArrowCursor));
+	velocity_smoothing_check_box->setCursor(QCursor(Qt::ArrowCursor));
+	velocity_smoothing_distance_spinbox->setCursor(QCursor(Qt::ArrowCursor));
+	exclude_smoothing_in_deforming_regions_check_box->setCursor(QCursor(Qt::ArrowCursor));
+	push_button_help_velocity_smoothing->setCursor(QCursor(Qt::ArrowCursor));
 
 	QObject::connect(
 			solve_velocities_method_combobox, SIGNAL(activated(int)),
@@ -140,6 +174,15 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalcul
 	QObject::connect(
 			arrowhead_scale_spinbox, SIGNAL(valueChanged(double)),
 			this, SLOT(handle_arrowhead_scale_value_changed(double)));
+	QObject::connect(
+			velocity_smoothing_check_box, SIGNAL(stateChanged(int)),
+			this, SLOT(handle_velocity_smoothing_check_box_changed()));
+	QObject::connect(
+			velocity_smoothing_distance_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(handle_velocity_smoothing_distance_spinbox_changed(double)));
+	QObject::connect(
+			exclude_smoothing_in_deforming_regions_check_box, SIGNAL(stateChanged(int)),
+			this, SLOT(handle_exclude_smoothing_in_deforming_regions_check_box_changed()));
 
 	// Connect the help dialogs.
 	QObject::connect(
@@ -151,21 +194,9 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::VelocityFieldCalcul
 	QObject::connect(
 			push_button_help_arrow_scale, SIGNAL(clicked()),
 			d_help_arrow_scale_dialog, SLOT(show()));
-}
-
-
-GPlatesQtWidgets::LayerOptionsWidget *
-GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::create(
-		GPlatesAppLogic::ApplicationState &application_state,
-		GPlatesPresentation::ViewState &view_state,
-		ViewportWindow *viewport_window,
-		QWidget *parent_)
-{
-	return new VelocityFieldCalculatorLayerOptionsWidget(
-			application_state,
-			view_state,
-			viewport_window,
-			parent_);
+	QObject::connect(
+			push_button_help_velocity_smoothing, SIGNAL(clicked()),
+			d_help_velocity_smoothing_dialog, SLOT(show()));
 }
 
 
@@ -184,24 +215,26 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::set_data(
 					&layer.get_layer_task_params());
 		if (layer_task_params)
 		{
-			typedef GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params layer_task_params_type;
 			// Update this source code if more 'solve velocities' enumeration values have been added (or removed).
-			BOOST_STATIC_ASSERT(layer_task_params_type::NUM_SOLVE_VELOCITY_METHODS == 2);
+			BOOST_STATIC_ASSERT(GPlatesAppLogic::VelocityParams::NUM_SOLVE_VELOCITY_METHODS == 2);
+
+			const GPlatesAppLogic::VelocityParams &velocity_params =
+					layer_task_params->get_velocity_params();
 
 			// Populate the 'solve velocities' combobox.
 			solve_velocities_method_combobox->clear();
-			for (int i = 0; i < layer_task_params_type::NUM_SOLVE_VELOCITY_METHODS; ++i)
+			for (int i = 0; i < GPlatesAppLogic::VelocityParams::NUM_SOLVE_VELOCITY_METHODS; ++i)
 			{
-				const layer_task_params_type::SolveVelocitiesMethodType solve_velocities_method =
-						static_cast<layer_task_params_type::SolveVelocitiesMethodType>(i);
+				const GPlatesAppLogic::VelocityParams::SolveVelocitiesMethodType solve_velocities_method =
+						static_cast<GPlatesAppLogic::VelocityParams::SolveVelocitiesMethodType>(i);
 
 				// "Calculate velocities "....
 				switch (solve_velocities_method)
 				{
-				case layer_task_params_type::SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS:
+				case GPlatesAppLogic::VelocityParams::SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS:
 					solve_velocities_method_combobox->addItem("of surfaces");
 					break;
-				case layer_task_params_type::SOLVE_VELOCITIES_OF_DOMAIN_POINTS:
+				case GPlatesAppLogic::VelocityParams::SOLVE_VELOCITIES_OF_DOMAIN_POINTS:
 					solve_velocities_method_combobox->addItem("of domain points");
 					break;
 				default:
@@ -210,7 +243,41 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::set_data(
 				}
 			}
 
-			solve_velocities_method_combobox->setCurrentIndex(layer_task_params->get_solve_velocities_method());
+			solve_velocities_method_combobox->setCurrentIndex(velocity_params.get_solve_velocities_method());
+
+			QObject::disconnect(
+					velocity_smoothing_check_box, SIGNAL(stateChanged(int)),
+					this, SLOT(handle_velocity_smoothing_check_box_changed()));
+			velocity_smoothing_check_box->setChecked(velocity_params.get_is_boundary_smoothing_enabled());
+			QObject::connect(
+					velocity_smoothing_check_box, SIGNAL(stateChanged(int)),
+					this, SLOT(handle_velocity_smoothing_check_box_changed()));
+
+			QObject::disconnect(
+					velocity_smoothing_distance_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_velocity_smoothing_distance_spinbox_changed(double)));
+			velocity_smoothing_distance_spinbox->setValue(
+					velocity_params.get_boundary_smoothing_angular_half_extent_degrees());
+			QObject::connect(
+					velocity_smoothing_distance_spinbox, SIGNAL(valueChanged(double)),
+					this, SLOT(handle_velocity_smoothing_distance_spinbox_changed(double)));
+
+			QObject::disconnect(
+					exclude_smoothing_in_deforming_regions_check_box, SIGNAL(stateChanged(int)),
+					this, SLOT(handle_exclude_smoothing_in_deforming_regions_check_box_changed()));
+			exclude_smoothing_in_deforming_regions_check_box->setChecked(
+					velocity_params.get_exclude_deforming_regions_from_smoothing());
+			QObject::connect(
+					exclude_smoothing_in_deforming_regions_check_box, SIGNAL(stateChanged(int)),
+					this, SLOT(handle_exclude_smoothing_in_deforming_regions_check_box_changed()));
+
+			// Only enable velocity smoothing controls if velocity smoothing is enabled.
+			velocity_smoothing_controls->setEnabled(velocity_params.get_is_boundary_smoothing_enabled());
+
+			// Only show velocity smoothing options if solve-velocities-of-surfaces is selected.
+			velocity_smoothing_widget->setVisible(
+					velocity_params.get_solve_velocities_method() ==
+						GPlatesAppLogic::VelocityParams::SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS);
 		}
 
 		GPlatesPresentation::VelocityFieldCalculatorVisualLayerParams *visual_layer_params =
@@ -267,27 +334,34 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_solve_veloci
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
 	{
-		// Set the band name in the app-logic layer params.
 		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
 		GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *layer_task_params =
 			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *>(
 					&layer.get_layer_task_params());
 		if (layer_task_params)
 		{
-			if (index < 0 || index >= GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::NUM_SOLVE_VELOCITY_METHODS)
+			if (index < 0 || index >= GPlatesAppLogic::VelocityParams::NUM_SOLVE_VELOCITY_METHODS)
 			{
 				return;
 			}
 
 			// If the combobox choice has not changed then return early.
-			if (index == layer_task_params->get_solve_velocities_method())
+			if (index == layer_task_params->get_velocity_params().get_solve_velocities_method())
 			{
 				return;
 			}
 
-			layer_task_params->set_solve_velocities_method(
-					static_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::SolveVelocitiesMethodType>(
-							index));
+			GPlatesAppLogic::VelocityParams velocity_params = layer_task_params->get_velocity_params();
+
+			velocity_params.set_solve_velocities_method(
+					static_cast<GPlatesAppLogic::VelocityParams::SolveVelocitiesMethodType>(index));
+
+			layer_task_params->set_velocity_params(velocity_params);
+
+			// Only show velocity smoothing options if solve-velocities-of-surfaces is selected.
+			velocity_smoothing_widget->setVisible(
+					velocity_params.get_solve_velocities_method() ==
+						GPlatesAppLogic::VelocityParams::SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS);
 		}
 	}
 }
@@ -354,6 +428,78 @@ GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_arrowhead_sc
 			const float arrowhead_scale = static_cast<float>(std::pow(10.0, arrowhead_scale_log10));
 
 			params->set_arrowhead_scale(arrowhead_scale);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_velocity_smoothing_check_box_changed()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *>(
+					&layer.get_layer_task_params());
+		if (layer_task_params)
+		{
+			GPlatesAppLogic::VelocityParams velocity_params = layer_task_params->get_velocity_params();
+
+			velocity_params.set_is_boundary_smoothing_enabled(
+					velocity_smoothing_check_box->isChecked());
+
+			layer_task_params->set_velocity_params(velocity_params);
+
+			// Only enable velocity smoothing controls if velocity smoothing is enabled.
+			velocity_smoothing_controls->setEnabled(velocity_params.get_is_boundary_smoothing_enabled());
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_velocity_smoothing_distance_spinbox_changed(
+		double value)
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *>(
+					&layer.get_layer_task_params());
+		if (layer_task_params)
+		{
+			GPlatesAppLogic::VelocityParams velocity_params = layer_task_params->get_velocity_params();
+
+			velocity_params.set_boundary_smoothing_angular_half_extent_degrees(value);
+
+			layer_task_params->set_velocity_params(velocity_params);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::handle_exclude_smoothing_in_deforming_regions_check_box_changed()
+{
+	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
+			d_current_visual_layer.lock())
+	{
+		GPlatesAppLogic::Layer layer = locked_visual_layer->get_reconstruct_graph_layer();
+		GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *layer_task_params =
+			dynamic_cast<GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params *>(
+					&layer.get_layer_task_params());
+		if (layer_task_params)
+		{
+			GPlatesAppLogic::VelocityParams velocity_params = layer_task_params->get_velocity_params();
+
+			velocity_params.set_exclude_deforming_regions_from_smoothing(
+					exclude_smoothing_in_deforming_regions_check_box->isChecked());
+
+			layer_task_params->set_velocity_params(velocity_params);
 		}
 	}
 }

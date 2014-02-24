@@ -82,7 +82,7 @@ namespace GPlatesGui
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
 					bool export_topological_lines_ = true,
 					bool export_topological_polygons_ = true,
-					bool wrap_to_dateline_ = false) :
+					bool wrap_to_dateline_ = true) :
 				ConfigurationBase(filename_template_),
 				file_format(file_format_),
 				file_options(file_options_),

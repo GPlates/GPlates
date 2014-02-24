@@ -36,10 +36,12 @@
 #include <boost/shared_ptr.hpp>
 
 #include "AppLogicFwd.h"
+#include "ReconstructContext.h"
 #include "ReconstructParams.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
 #include "ReconstructMethodRegistry.h"
+#include "RotationUtils.h"
 
 #include "maths/FiniteRotation.h"
 #include "maths/GeometryOnSphere.h"
@@ -53,14 +55,13 @@
 
 namespace GPlatesAppLogic
 {
+	/**
+	 * Utilities that reconstruct geometry(s) to palaeo times.
+	 *
+	 * Pure rotation utilities (ie, not dealing with geometries) can go in "RotationUtils.h".
+	 */
 	namespace ReconstructUtils
 	{
-
-        void
-        display_rotation(
-            const GPlatesMaths::FiniteRotation &rotation);
-
-
 		/**
 		 * Returns true if @a feature_ref is a reconstruction feature.
 		 *
@@ -163,7 +164,32 @@ namespace GPlatesAppLogic
 		reconstruct(
 				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
 				const double &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchor_plate_id,
+				const ReconstructMethodRegistry &reconstruct_method_registry,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const ReconstructParams &reconstruct_params = ReconstructParams());
+
+		/**
+		 * Same as @a reconstruct overload for @a ReconstructedFeatureGeometry except generates
+		 * ReconstructContext::Reconstruction instances instead.
+		 */
+		ReconstructHandle::type
+		reconstruct(
+				std::vector<ReconstructContext::Reconstruction> &reconstructions,
+				const double &reconstruction_time,
+				const ReconstructMethodRegistry &reconstruct_method_registry,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const ReconstructParams &reconstruct_params = ReconstructParams());
+
+		/**
+		 * Same as @a reconstruct overload for @a ReconstructedFeatureGeometry except generates
+		 * ReconstructContext::ReconstructedFeature instances instead.
+		 */
+		ReconstructHandle::type
+		reconstruct(
+				std::vector<ReconstructContext::ReconstructedFeature> &reconstructed_features,
+				const double &reconstruction_time,
 				const ReconstructMethodRegistry &reconstruct_method_registry,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
@@ -187,6 +213,36 @@ namespace GPlatesAppLogic
 		ReconstructHandle::type
 		reconstruct(
 				std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchor_plate_id,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection =
+						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(),
+				const ReconstructParams &reconstruct_params = ReconstructParams(),
+				unsigned int reconstruction_tree_cache_size = 1);
+
+		/**
+		 * Same as @a reconstruct overload for @a ReconstructedFeatureGeometry except generates
+		 * ReconstructContext::Reconstruction instances instead.
+		 */
+		ReconstructHandle::type
+		reconstruct(
+				std::vector<ReconstructContext::Reconstruction> &reconstructions,
+				const double &reconstruction_time,
+				GPlatesModel::integer_plate_id_type anchor_plate_id,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection =
+						std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>(),
+				const ReconstructParams &reconstruct_params = ReconstructParams(),
+				unsigned int reconstruction_tree_cache_size = 1);
+
+		/**
+		 * Same as @a reconstruct overload for @a ReconstructedFeatureGeometry except generates
+		 * ReconstructContext::ReconstructedFeature instances instead.
+		 */
+		ReconstructHandle::type
+		reconstruct(
+				std::vector<ReconstructContext::ReconstructedFeature> &reconstructed_features,
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
@@ -292,6 +348,14 @@ namespace GPlatesAppLogic
 		 * that rotates from present day to the reconstruction time for which
 		 * @a reconstruction_tree was generated, using the half-stage rotation 
 		 * reconstruction method.
+		 *
+		 * @a spreading_asymmetry is in the range [-1,1] where the value 0 represents half-stage
+		 * rotation, the value 1 represents full-stage rotation (right plate) and the value -1
+		 * represents zero stage rotation (left plate).
+		 *
+		 * If present day to reconstruction time is greater than @a half_stage_rotation_interval
+		 * then it will be divided into multiple half-stage intervals of this size (except for
+		 * the last interval that ends at the reconstruction time).
 		 * 
 		 * If @a reverse_reconstruct is true then @a geometry is assumed to be
 		 * at a non-present-day reconstruction time (the time at which
@@ -303,7 +367,10 @@ namespace GPlatesAppLogic
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 				const GPlatesModel::integer_plate_id_type left_plate_id,
 				const GPlatesModel::integer_plate_id_type right_plate_id,
-				const ReconstructionTree &reconstruction_tree,
+				const double &reconstruction_time,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &spreading_asymmetry = 0.0,
+				const double &half_stage_rotation_interval = RotationUtils::DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION,
 				bool reverse_reconstruct = false);
 
 		/**
@@ -317,35 +384,11 @@ namespace GPlatesAppLogic
 				const GeometryType &geometry,
 				GPlatesModel::integer_plate_id_type left_plate_id,
 				GPlatesModel::integer_plate_id_type right_plate_id,
-				const ReconstructionTree &reconstruction_tree,
+				const double &reconstruction_time,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &spreading_asymmetry = 0.0,
+				const double &half_stage_rotation_interval = RotationUtils::DEFAULT_TIME_INTERVAL_HALF_STAGE_ROTATION,
 				bool reverse_reconstruct = false);
-
-
-		/**
-		 * Returns the half-stage rotation between @a left_plate_id and @a right_plate_id at the
-		 * reconstruction time of the specified reconstruction tree.
-		 *
-		 * NOTE: Since this method does not know when sea-floor spreading begins it assumes that
-		 * the relative rotation between the left and right plates is the identity rotation when
-		 * seafloor spreading is *not* occurring.
-		 */
-		GPlatesMaths::FiniteRotation
-		get_half_stage_rotation(
-				const ReconstructionTree &reconstruction_tree,
-				GPlatesModel::integer_plate_id_type left_plate_id,
-				GPlatesModel::integer_plate_id_type right_plate_id);
-
-		/**
-		 * Returns the stage-pole for @a moving_plate_id wrt @a fixed_plate_id, between
-		 * the times represented by @a reconstruction_tree_ptr_1 and 
-		 * @a reconstruction_tree_ptr_2
-		 */
-		GPlatesMaths::FiniteRotation
-        get_stage_pole(
-			const ReconstructionTree &reconstruction_tree_ptr_1, 
-			const ReconstructionTree &reconstruction_tree_ptr_2, 
-			const GPlatesModel::integer_plate_id_type &moving_plate_id, 
-			const GPlatesModel::integer_plate_id_type &fixed_plate_id);	
 	}
 
 
@@ -381,16 +424,25 @@ namespace GPlatesAppLogic
 		template <class GeometryType>
 		GeometryType
 		reconstruct_as_half_stage(
-			const GeometryType &geometry,
-			GPlatesModel::integer_plate_id_type left_plate_id,
-			GPlatesModel::integer_plate_id_type right_plate_id,
-			const ReconstructionTree &reconstruction_tree,
-			bool reverse_reconstruct)
+				const GeometryType &geometry,
+				GPlatesModel::integer_plate_id_type left_plate_id,
+				GPlatesModel::integer_plate_id_type right_plate_id,
+				const double &reconstruction_time,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &spreading_asymmetry,
+				const double &half_stage_rotation_interval,
+				bool reverse_reconstruct)
 		{
 			// Get the composed absolute rotation needed to bring a thing on that plate
 			// in the present day to this time.
 			GPlatesMaths::FiniteRotation rotation =
-				get_half_stage_rotation(reconstruction_tree,left_plate_id,right_plate_id);
+					RotationUtils::get_half_stage_rotation(
+							reconstruction_tree_creator,
+							reconstruction_time,
+							left_plate_id,
+							right_plate_id,
+							spreading_asymmetry,
+							half_stage_rotation_interval);
 
 			// Are we reversing reconstruction back to present day ?
 			if (reverse_reconstruct)

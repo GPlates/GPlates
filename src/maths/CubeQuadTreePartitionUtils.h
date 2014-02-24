@@ -380,7 +380,7 @@ namespace GPlatesMaths
 					typename CubeQuadTreePartition<SrcElementType>::const_node_reference_type src_node,
 					const MirrorNodeElementFunctionType &mirror_node_element_function)
 			{
-				typedef CubeQuadTreePartition<DstElementType> dst_spatial_partition_type;
+				//typedef CubeQuadTreePartition<DstElementType> dst_spatial_partition_type;
 				typedef CubeQuadTreePartition<SrcElementType> src_spatial_partition_type;
 				typedef typename CubeQuadTreePartition<DstElementType>::node_reference_type dst_node_reference_type;
 				typedef typename CubeQuadTreePartition<SrcElementType>::const_node_reference_type src_node_reference_type;

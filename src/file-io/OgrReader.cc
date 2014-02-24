@@ -1,11 +1,11 @@
-/* $Id: OgrReader.cc 13710 2012-12-14 14:16:34Z rwatson $ */
+/* $Id$ */
 
 /**
  * \file 
  * File specific comments.
  *
  * Most recent change:
- *   $Date: 2012-12-14 15:16:34 +0100 (Fri, 14 Dec 2012) $
+ *   $Date$
  * 
  * Copyright (C) 2007, 2008, 2009 Geological Survey of Norway (under the name "ShapefileReader.h")
  * Copyright (C) 2010 The University of Sydney, Australia (under the name "ShapefileReader.h")
@@ -100,10 +100,10 @@ namespace
 #endif
 
 	/**
-	 * @brief recon_method_is_valid returns true if @a recon_method is either "HalfStageRotation"
-	 * or "ByPlateID".
+	 * @brief recon_method_is_valid returns true if @a recon_method is "ByPlateID",
+	 * "HalfStageRotation" or "HalfStageRotationVersion2".
 	 *
-	 * Note that currently (May 2013) only HalfStageRotation gets exported by any part of GPlates. ByPlateID
+	 * Note that currently (Feb 2014) only HalfStageRotationVersion2 gets exported by any part of GPlates. ByPlateID
 	 * is considered as the default and is not explicitly exported in any of GPlates' export functionality, and
 	 * features will not normally contain a gpml:reconstructionMethod property. In this case shapefile export
 	 * will write an empty string as the reconstructionMethod. As this returns false from this function,
@@ -114,8 +114,9 @@ namespace
 	recon_method_is_valid(
 			const QString &recon_method)
 	{
-		if ((recon_method == "HalfStageRotation") ||
-				(recon_method == "ByPlateID"))
+		if (recon_method == "ByPlateID" ||
+			recon_method == "HalfStageRotation" ||
+			recon_method == "HalfStageRotationVersion2")
 		{
 			return true;
 		}
@@ -1458,9 +1459,12 @@ GPlatesFileIO::OgrReader::read_file(
 		const FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_file_configuration,
 		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::Gpgim &gpgim,
-		ReadErrorAccumulation &read_errors)
+		ReadErrorAccumulation &read_errors,
+		bool &contains_unsaved_changes)
 {
 	PROFILE_FUNC();
+
+	contains_unsaved_changes = false;
 
 	const FileInfo &fileinfo = file_ref.get_file_info();
 

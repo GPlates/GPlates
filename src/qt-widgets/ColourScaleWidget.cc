@@ -350,6 +350,14 @@ namespace
 
 			virtual
 			void
+			visit_deformation_colour_palette(
+					GPlatesGui::DeformationColourPalette &colour_palette)
+			{
+				do_visit(colour_palette);
+			}
+
+			virtual
+			void
 			visit_default_scalar_field_scalar_colour_palette(
 					GPlatesGui::DefaultScalarFieldScalarColourPalette &colour_palette)
 			{

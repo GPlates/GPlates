@@ -33,12 +33,18 @@
 #include <string>
 #include <QFile>
 
-#include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "PlatesRotationFormatReader.h"
 #include "PlatesRotationFileProxy.h"
 #include "LineReader.h"
+
+#include "app-logic/RotationUtils.h"
+
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 
 #include "maths/MathsUtils.h"
 
@@ -368,6 +374,82 @@ namespace
 	}
 
 
+	/**
+	 * Add a time sample to an irregular sequence.
+	 *
+	 * Also adjusts the pole, if necessary, so that the stage rotation relative to previous pole
+	 * takes the short way around the globe (instead of long way).
+	 * Also emits a read error (warning) if an adjustment was made.
+	 */
+	void
+	add_time_sample(
+			std::vector<GPlatesPropertyValues::GpmlTimeSample> &time_samples,
+			GPlatesPropertyValues::GpmlTimeSample &time_sample,
+			const boost::shared_ptr<GPlatesFileIO::DataSource> &data_source,
+			unsigned line_num,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors,
+			bool &contains_unsaved_changes)
+	{
+		using namespace GPlatesFileIO;
+		using namespace GPlatesModel;
+		using namespace GPlatesPropertyValues;
+
+		//
+		// Adjust the time sample's total pole, if necessary, so that the stage rotation from the
+		// previous pole takes the short rotation path instead of the long path.
+		//
+		// Both poles must be enabled before this adjustment is attempted.
+		//
+		if (!time_sample.is_disabled())
+		{
+			// Search backwards for most recently added time sample (that's enabled).
+			for (unsigned int n = 0; n < time_samples.size(); ++n)
+			{
+				const GpmlTimeSample &prev_enabled_time_sample = time_samples[time_samples.size() - n - 1];
+				if (prev_enabled_time_sample.is_disabled())
+				{
+					continue;
+				}
+
+				const GpmlFiniteRotation *prev_gpml_finite_rotation =
+						dynamic_cast<const GpmlFiniteRotation *>(
+								prev_enabled_time_sample.value().get());
+				GpmlFiniteRotation *curr_gpml_finite_rotation =
+						dynamic_cast<GpmlFiniteRotation *>(
+								time_sample.value().get());
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						prev_gpml_finite_rotation && curr_gpml_finite_rotation,
+						GPLATES_ASSERTION_SOURCE);
+
+				// Make sure the stage rotation (relative to previous total pole) takes the short path.
+				boost::optional<GPlatesMaths::FiniteRotation> adjusted_curr_finite_rotation =
+						GPlatesAppLogic::RotationUtils::calculate_short_path_final_rotation(
+								curr_gpml_finite_rotation->finite_rotation(),
+								prev_gpml_finite_rotation->finite_rotation());
+				if (adjusted_curr_finite_rotation)
+				{
+					// Change the current finite rotation for short path.
+					curr_gpml_finite_rotation->set_finite_rotation(adjusted_curr_finite_rotation.get());
+
+					// The loaded finite rotation differs from what was read from the file.
+					contains_unsaved_changes = true;
+
+					// Warn the user that the change was made.
+					boost::shared_ptr<LocationInDataSource> location(new LineNumber(line_num));
+					ReadErrors::Description descr = ReadErrors::PoleTakesLongRotationPathRelativeToPrevPole;
+					ReadErrors::Result res = ReadErrors::PoleAdjustedToShortRotationPathRelativeToPrevPole;
+					ReadErrorOccurrence read_error(data_source, location, descr, res);
+					read_errors.d_warnings.push_back(read_error);
+				}
+
+				break;
+			}
+		}
+
+		time_samples.push_back(time_sample);
+	}
+
+
 	// FIXME:  Give this a better name (and do the exception properly).
 	struct UnexpectedlyNullIrregularSampling {  };
 
@@ -378,12 +460,13 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
 			GPlatesModel::FeatureHandle::weak_ref &current_total_recon_seq,
 			TotalReconSeqProperties &props_in_current_trs,
-			const GPlatesPropertyValues::GpmlTimeSample &time_sample,
+			GPlatesPropertyValues::GpmlTimeSample &time_sample,
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
 			unsigned line_num,
-			GPlatesFileIO::ReadErrorAccumulation &read_errors)
+			GPlatesFileIO::ReadErrorAccumulation &read_errors,
+			bool &contains_unsaved_changes)
 	{
 		using namespace GPlatesFileIO;
 		using namespace GPlatesPropertyValues;
@@ -422,7 +505,8 @@ namespace
 		// pole is set to be commented-out, and a warning is logged to inform the user that
 		// this interpretation was made.
 
-		if ( ! current_total_recon_seq.is_valid()) {
+		if ( ! current_total_recon_seq.is_valid())
+		{
 
 			// There are not yet any total reconstruction sequences in the feature
 			// collection, which means that we need to create the first one.
@@ -446,7 +530,8 @@ namespace
 		// sampling in the current TRS.
 
 		// FIXME:  Refactor the next if-statement out into a different function.
-		if (props_in_current_trs.d_irregular_sampling.get() == NULL) {
+		if (props_in_current_trs.d_irregular_sampling.get() == NULL)
+		{
 			// There's a problem here:  The pointer is NULL (which means that we don't
 			// have a pointer to an irregular sampling) but the pointer should be NULL
 			// if and only if 'current_total_recon_seq' is invalid for dereferencing.
@@ -455,15 +540,16 @@ namespace
 			// been some sort of internal error.
 			throw UnexpectedlyNullIrregularSampling();
 		}
-		GpmlIrregularSampling &gpml_irregular_sampling =
-				*props_in_current_trs.d_irregular_sampling;
-		// FIXME:  Since GpmlIrregularSampling should always contain at least one
-		// TimeSample, should we replace the std::vector (which is used to contain the
-		// GpmlTimeSample instances inside GpmlIrregularSampling) with some sort of wrapper
-		// container which can never be empty?
-		GpmlTimeSample &prev_time_sample = gpml_irregular_sampling.time_samples().back();
 
-		if (gml_time_instants_are_approx_equal(time_sample.valid_time(), prev_time_sample.valid_time())) {
+		// The current time samples.
+		std::vector<GpmlTimeSample> &time_samples =
+				props_in_current_trs.d_irregular_sampling->time_samples();
+
+		// The previous time sample (disabled or enabled).
+		const GpmlTimeSample prev_time_sample = time_samples.back();
+
+		if (gml_time_instants_are_approx_equal(time_sample.valid_time(), prev_time_sample.valid_time()))
+		{
 			// We'll assume it's the start of a new sequence.  Since we're cautious
 			// programmers, let's just double-check whether the plate IDs are the same.
 
@@ -477,13 +563,16 @@ namespace
 			// FIXME:  Re-read that first sentence.  What does it mean?
 			if (prev_time_sample.is_disabled() &&
 					props_in_current_trs.d_fixed_plate_id == fixed_plate_id &&
-					props_in_current_trs.d_moving_plate_id == moving_plate_id) {
-				gpml_irregular_sampling.time_samples().push_back(time_sample);
-			} else if (moving_plate_id == 999 &&
-					props_in_current_trs.d_fixed_plate_id == fixed_plate_id) {
+					props_in_current_trs.d_moving_plate_id == moving_plate_id)
+			{
+				add_time_sample(time_samples, time_sample, data_source, line_num, read_errors, contains_unsaved_changes);
+			}
+			else if (moving_plate_id == 999 &&
+					props_in_current_trs.d_fixed_plate_id == fixed_plate_id)
+			{
 				// Let's assume the current pole was intended to be part of the
 				// sequence, but commented-out.
-				gpml_irregular_sampling.time_samples().push_back(time_sample);
+				add_time_sample(time_samples, time_sample, data_source, line_num, read_errors, contains_unsaved_changes);
 
 				// Don't forget to warn the user that the moving plate ID of the
 				// pole was changed as part of this interpretation.
@@ -493,9 +582,12 @@ namespace
 				ReadErrors::Result res = ReadErrors::MovingPlateIdChangedToMatchEarlierSequence;
 				ReadErrorOccurrence read_error(data_source, location, descr, res);
 				read_errors.d_warnings.push_back(read_error);
-			} else {
+			}
+			else
+			{
 				if (props_in_current_trs.d_fixed_plate_id == fixed_plate_id &&
-						props_in_current_trs.d_moving_plate_id == moving_plate_id) {
+						props_in_current_trs.d_moving_plate_id == moving_plate_id)
+				{
 
 					// The plate IDs of the current pole are the same as the
 					// corresponding plate IDs of the previous pole.  We'll
@@ -505,7 +597,8 @@ namespace
 					// EXCEPT that there's no point warning the user if both
 					// the fixed and moving plate IDs are 999, since the lines
 					// are just comments.
-					if ( ! (moving_plate_id == 999 && fixed_plate_id == 999)) {
+					if ( ! (moving_plate_id == 999 && fixed_plate_id == 999))
+					{
 						warn_user_about_new_overlapping_sequence(
 								time_sample, prev_time_sample,
 								data_source, line_num, read_errors);
@@ -515,14 +608,17 @@ namespace
 						props_in_current_trs, time_sample, fixed_plate_id,
 						moving_plate_id);
 			}
-		} else if (time_sample.valid_time()->time_position().value() <
-				prev_time_sample.valid_time()->time_position().value()) {
+		}
+		else if (time_sample.valid_time()->time_position().value() <
+				prev_time_sample.valid_time()->time_position().value())
+		{
 			// We'll assume it's the start of a new sequence.  Since we're cautious
 			// programmers, let's just double-check whether the plate IDs are the same.
 
 			// Ignore commented-out poles.
 			if (props_in_current_trs.d_moving_plate_id == moving_plate_id &&
-					moving_plate_id != 999) {
+					moving_plate_id != 999)
+			{
 				// The moving plate ID of the current pole is the same as the
 				// moving plate ID of the previous pole.  We'll warn the user that
 				// a new sequence has been begun, which overlaps with the previous
@@ -530,7 +626,8 @@ namespace
 				//
 				// EXCEPT that there's no point warning the user if both the fixed
 				// and moving plate IDs are 999, since the lines are just comments.
-				if ( ! (moving_plate_id == 999 && fixed_plate_id == 999)) {
+				if ( ! (moving_plate_id == 999 && fixed_plate_id == 999))
+				{
 					warn_user_about_new_overlapping_sequence(time_sample,
 							prev_time_sample, data_source, line_num,
 							read_errors);
@@ -539,7 +636,9 @@ namespace
 			create_total_recon_seq(model, rotations, current_total_recon_seq,
 					props_in_current_trs, time_sample, fixed_plate_id,
 					moving_plate_id);
-		} else {
+		}
+		else
+		{
 			// The geo-time of the current pole is greater-than the geo-time of the
 			// previous pole.  Let's compare the plate IDs of the current pole with the
 			// plate IDs of the previous pole.
@@ -547,10 +646,11 @@ namespace
 			// First, let's check for the special case when the moving plate ID == 999
 			// and the fixed plate ID is the same as the previous fixed plate ID.
 			if (moving_plate_id == 999 &&
-					props_in_current_trs.d_fixed_plate_id == fixed_plate_id) {
+					props_in_current_trs.d_fixed_plate_id == fixed_plate_id)
+			{
 				// OK, it's the special case.  Let's assume the current pole was
 				// intended to be part of the sequence, but commented-out.
-				gpml_irregular_sampling.time_samples().push_back(time_sample);
+				add_time_sample(time_samples, time_sample, data_source, line_num, read_errors, contains_unsaved_changes);
 
 				// Don't forget to warn the user that the moving plate ID of the
 				// pole was changed as part of this interpretation.
@@ -570,14 +670,17 @@ namespace
 			// OK, now to handle the regular cases -- comparing the plate IDs to
 			// determine whether the pole should be part of the sequence or not.
 			if (props_in_current_trs.d_fixed_plate_id != fixed_plate_id ||
-					props_in_current_trs.d_moving_plate_id != moving_plate_id) {
+					props_in_current_trs.d_moving_plate_id != moving_plate_id)
+			{
 				// The sequence has a different fixed ref frame or moving ref frame
 				// to those of the pole, so we need to commence a *new* sequence.
 				create_total_recon_seq(model, rotations, current_total_recon_seq,
 						props_in_current_trs, time_sample, fixed_plate_id,
 						moving_plate_id);
-			} else {
-				gpml_irregular_sampling.time_samples().push_back(time_sample);
+			}
+			else
+			{
+				add_time_sample(time_samples, time_sample, data_source, line_num, read_errors, contains_unsaved_changes);
 			}
 		}
 
@@ -596,12 +699,13 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
 			GPlatesModel::FeatureHandle::weak_ref &current_total_recon_seq,
 			TotalReconSeqProperties &props_in_current_trs,
-			const GPlatesPropertyValues::GpmlTimeSample &time_sample,
+			GPlatesPropertyValues::GpmlTimeSample &time_sample,
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
 			unsigned line_num,
-			GPlatesFileIO::ReadErrorAccumulation &read_errors)
+			GPlatesFileIO::ReadErrorAccumulation &read_errors,
+			bool &contains_unsaved_changes)
 	{
 		using namespace GPlatesFileIO;
 
@@ -617,7 +721,7 @@ namespace
 
 		append_pole_to_data_set(model, rotations, current_total_recon_seq,
 				props_in_current_trs, time_sample, fixed_plate_id,
-				moving_plate_id, data_source, line_num, read_errors);
+				moving_plate_id, data_source, line_num, read_errors, contains_unsaved_changes);
 	}
 
 
@@ -631,7 +735,8 @@ namespace
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
 			GPlatesFileIO::LineReader &line_buffer,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
-			GPlatesFileIO::ReadErrorAccumulation &read_errors)
+			GPlatesFileIO::ReadErrorAccumulation &read_errors,
+			bool &contains_unsaved_changes)
 	{
 		std::string line_of_input;
 
@@ -653,7 +758,7 @@ namespace
 				handle_parsed_pole(model, rotations, current_total_recon_seq,
 						props_in_current_trs, time_sample,
 						fixed_plate_id, moving_plate_id, data_source,
-						line_buffer.line_number(), read_errors);
+						line_buffer.line_number(), read_errors, contains_unsaved_changes);
 			} catch (PoleParsingException &) {
 				// The argument name in the above expression was removed to
 				// prevent "unreferenced local variable" compiler warnings under MSVC
@@ -672,9 +777,12 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 		File::Reference &file,
 		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::Gpgim &gpgim,
-		ReadErrorAccumulation &read_errors)
+		ReadErrorAccumulation &read_errors,
+		bool &contains_unsaved_changes)
 {
 	PROFILE_FUNC();
+
+	contains_unsaved_changes = false;
 
 	const FileInfo &fileinfo = file.get_file_info();
 
@@ -700,7 +808,7 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 
 	try
 	{
-		populate_rotations(model, rotations, line_buffer, data_source, read_errors);
+		populate_rotations(model, rotations, line_buffer, data_source, read_errors, contains_unsaved_changes);
 	} catch (UnexpectedlyNullIrregularSampling &) {
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC

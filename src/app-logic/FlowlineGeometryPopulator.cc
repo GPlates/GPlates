@@ -36,7 +36,7 @@
 #include "ReconstructedFlowline.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionTree.h"
-#include "ReconstructUtils.h"
+#include "RotationUtils.h"
 
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
@@ -189,7 +189,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 
 			// The stage pole for the right plate w.r.t. the left plate
 			GPlatesMaths::FiniteRotation stage_pole_left =
-				GPlatesAppLogic::ReconstructUtils::get_stage_pole(
+				GPlatesAppLogic::RotationUtils::get_stage_pole(
 				*tree_at_prev_time_ptr,
 				*tree_at_time_t_ptr,
 				*d_flowline_property_finder.get_right_plate(),
@@ -197,7 +197,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 
 
 			GPlatesMaths::FiniteRotation stage_pole_right =
-				GPlatesAppLogic::ReconstructUtils::get_stage_pole(
+				GPlatesAppLogic::RotationUtils::get_stage_pole(
 				*tree_at_prev_time_ptr,
 				*tree_at_time_t_ptr,
 				*d_flowline_property_finder.get_left_plate(),

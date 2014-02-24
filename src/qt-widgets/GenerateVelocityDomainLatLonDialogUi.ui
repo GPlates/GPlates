@@ -37,7 +37,7 @@
           <item>
            <widget class="QLabel" name="lattitude_grid_intervals_label">
             <property name="text">
-             <string>Number of grid intervals along latitude (meridian lines):</string>
+             <string>Number of latitudinal grid intervals (along meridians):</string>
             </property>
             <property name="buddy">
              <cstring>lattitude_grid_intervals_spinbox</cstring>

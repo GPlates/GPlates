@@ -337,7 +337,8 @@ bool
 GPlatesGui::ExportAnimationRegistry::validate_filename_template(
 		ExportAnimationType::ExportID export_id,
 		const QString &filename_template,
-		QString &filename_template_validation_message) const
+		QString &filename_template_validation_message,
+		bool check_filename_variation) const
 {
 	exporter_info_map_type::const_iterator iter = d_exporter_info_map.find(export_id);
 	if (iter == d_exporter_info_map.end())
@@ -349,7 +350,8 @@ GPlatesGui::ExportAnimationRegistry::validate_filename_template(
 
 	return exporter_info.validate_filename_template_function(
 			filename_template,
-			filename_template_validation_message);
+			filename_template_validation_message,
+			check_filename_variation);
 }
 
 
@@ -364,7 +366,7 @@ GPlatesGui::register_default_export_animation_types(
 	const ExportOptionsUtils::ExportFileOptions default_reconstructed_geometry_file_export_options(
 			/*export_to_a_single_file_*/true,
 			/*export_to_multiple_files_*/true);
-	const bool default_reconstructed_geometry_wrap_to_dateline = false;
+	const bool default_reconstructed_geometry_wrap_to_dateline = true;
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
@@ -457,6 +459,12 @@ GPlatesGui::register_default_export_animation_types(
 	// Export velocities
 	//
 
+	// Default velocity smoothing options for all velocity exports.
+	const ExportOptionsUtils::ExportVelocitySmoothingOptions default_velocity_smoothing_export_options(
+			/*is_boundary_smoothing_enabled_*/false,
+			/*boundary_smoothing_angular_half_extent_degrees_*/1.0,
+			/*exclude_deforming_regions_*/true);
+
 	// By default only export to multiple files (one output file per input file).
 	const ExportOptionsUtils::ExportFileOptions default_velocity_file_export_options(
 			/*export_to_a_single_file_*/false,
@@ -469,6 +477,7 @@ GPlatesGui::register_default_export_animation_types(
 			ExportVelocityAnimationStrategy::const_configuration_ptr(
 					new ExportVelocityAnimationStrategy::GpmlConfiguration(
 							add_export_filename_extension("velocity_%0.2fMa", ExportAnimationType::GPML),
+							default_velocity_smoothing_export_options,
 							default_velocity_file_export_options)),
 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
 			boost::bind(
@@ -488,6 +497,7 @@ GPlatesGui::register_default_export_animation_types(
 			ExportVelocityAnimationStrategy::const_configuration_ptr(
 					new ExportVelocityAnimationStrategy::GMTConfiguration(
 							add_export_filename_extension("velocity_%0.2fMa", ExportAnimationType::GMT),
+							default_velocity_smoothing_export_options,
 							default_velocity_file_export_options,
 							GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D,
 							1.0/*velocity_scale*/,
@@ -525,6 +535,7 @@ GPlatesGui::register_default_export_animation_types(
 							// An example Terra filename is "gpt.0025.100" which must have
 							// 3 digits for the reconstruction time (which must be an integer)...
 							add_export_filename_extension("gpt.%P.%03d", ExportAnimationType::TERRA_TEXT),
+							default_velocity_smoothing_export_options,
 							default_terra_grid_filename_template)),
 			&create_animation_strategy<ExportVelocityAnimationStrategy>,
 			boost::bind(
@@ -552,6 +563,7 @@ GPlatesGui::register_default_export_animation_types(
 							// An example Terra filename is "bvel25.9" where 25 is the reconstruction
 							// time (which must be an integer) and 9 is the cap number...
 							add_export_filename_extension("bvel%d.%P", ExportAnimationType::CITCOMS_GLOBAL),
+							default_velocity_smoothing_export_options,
 							default_citcoms_grid_filename_template,
 							true/*include_gmt_export*/,
 							1.0/*gmt_velocity_scale*/,
@@ -576,7 +588,7 @@ GPlatesGui::register_default_export_animation_types(
 			/*export_to_multiple_files_*/true);
 	const bool default_resolved_topology_export_lines = true;
 	const bool default_resolved_topology_export_polygons = true;
-	const bool default_resolved_topology_wrap_to_dateline = false;
+	const bool default_resolved_topology_wrap_to_dateline = true;
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
@@ -652,7 +664,7 @@ GPlatesGui::register_default_export_animation_types(
 	// Set defaults 
 	const GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::OutputOptions
 			default_citcoms_resolved_topology_export_options(
-					/*wrap_geometries_to_the_dateline*/false,
+					/*wrap_geometries_to_the_dateline*/true,
 
 					/*export_individual_plate_polygon_files*/false,
 					/*export_all_plate_polygons_to_a_single_file*/true,
@@ -1227,7 +1239,7 @@ GPlatesGui::register_default_export_animation_types(
 	const ExportOptionsUtils::ExportFileOptions default_flowline_file_export_options(
 			/*export_to_a_single_file_*/false,
 			/*export_to_multiple_files_*/true);
-	const bool default_flowline_wrap_to_dateline = false;
+	const bool default_flowline_wrap_to_dateline = true;
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(
@@ -1299,7 +1311,7 @@ GPlatesGui::register_default_export_animation_types(
 	const ExportOptionsUtils::ExportFileOptions default_motion_path_file_export_options(
 			/*export_to_a_single_file_*/false,
 			/*export_to_multiple_files_*/true);
-	const bool default_motion_path_wrap_to_dateline = false;
+	const bool default_motion_path_wrap_to_dateline = true;
 
 	registry.register_exporter(
 			ExportAnimationType::get_export_id(

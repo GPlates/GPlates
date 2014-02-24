@@ -139,6 +139,21 @@ namespace GPlatesGui
 
 			virtual
 			void
+			visit_deformation_colour_palette(
+					const DeformationColourPalette &colour_palette)
+			{
+				generate_remapped_colour_palette(
+						colour_palette.get_background_colour(),
+						colour_palette.get_foreground_colour(),
+						colour_palette.get_nan_colour(),
+						get_double_value(colour_palette.get_lower_bound()),
+						get_double_value(colour_palette.get_upper_bound()),
+						colour_palette.get_colour_slices());
+			}
+
+
+			virtual
+			void
 			visit_default_scalar_field_scalar_colour_palette(
 					const DefaultScalarFieldScalarColourPalette &colour_palette)
 			{

@@ -100,7 +100,7 @@ namespace GPlatesFileIO
 			explicit
 			OGRConfiguration(
 					Format file_format,
-					bool wrap_to_dateline = false,
+					bool wrap_to_dateline = true,
 					const model_to_attribute_map_type model_to_shapefile_map = model_to_attribute_map_type()) :
 				d_wrap_to_dateline(wrap_to_dateline),
 				d_model_to_attribute_map(model_to_shapefile_map)

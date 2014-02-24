@@ -889,7 +889,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	GPlatesViewOperations::RenderedGeometry rendered_geom =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrowed_polyline(
 			rmp->motion_path_points(),
-			d_colour ? d_colour.get() : GPlatesGui::ColourProxy(rmp));
+			get_colour(rmp, d_colour, d_style_adapter));
 
 	GPlatesViewOperations::RenderedGeometry rendered_geometry = 
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_reconstruction_geometry(

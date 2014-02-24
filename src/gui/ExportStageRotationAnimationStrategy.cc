@@ -32,7 +32,7 @@
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/ReconstructionTreeCreator.h"
 #include "app-logic/ReconstructionTreeEdge.h"
-#include "app-logic/ReconstructUtils.h"
+#include "app-logic/RotationUtils.h"
 
 #include "global/GPlatesAssert.h"
 
@@ -252,7 +252,7 @@ GPlatesGui::ExportStageRotationAnimationStrategy::get_relative_stage_rotation(
 {
 	// This rotation represents a rotation from t2 (the older time) to t1 (closer to present day).
 	// The rotation is from the fixed plate to the moving plate.
-	return GPlatesAppLogic::ReconstructUtils::get_stage_pole(
+	return GPlatesAppLogic::RotationUtils::get_stage_pole(
 			tree2,
 			tree1,
 			moving_plate_id,

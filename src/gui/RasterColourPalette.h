@@ -280,6 +280,129 @@ namespace GPlatesGui
 		static const int NUM_STD_DEV_AWAY_FROM_MEAN = 2;
 	};
 
+
+	/**
+	 * A colour palette for use with deformation networks 
+	 */
+	class DeformationColourPalette :
+			public ColourPalette<double>
+	{
+	public:
+
+		typedef GPlatesUtils::non_null_intrusive_ptr<DeformationColourPalette> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const DeformationColourPalette> non_null_ptr_to_const_type;
+
+		/**
+		 * Constructs a DeformationColourPalette, given the max and the
+		 * standard deviation of the values in the raster.
+		 */
+		static
+		non_null_ptr_type
+		create();
+
+		static
+		non_null_ptr_type
+		create(
+				double range1_max,
+				double range1_min,
+				double range2_max,
+				double range2_min,
+				GPlatesGui::Colour fg_colour,
+				GPlatesGui::Colour max_colour,
+				GPlatesGui::Colour mid_colour,
+				GPlatesGui::Colour min_colour,
+				GPlatesGui::Colour bg_colour);
+
+		virtual
+		boost::optional<Colour>
+		get_colour(
+				double value) const;
+
+		virtual
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &visitor) const
+		{
+			visitor.visit_deformation_colour_palette(*this);
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &visitor)
+		{
+			visitor.visit_deformation_colour_palette(*this);
+		}
+
+		double
+		get_max() const
+		{
+			return d_range1_max;
+		}
+
+		double
+		get_min() const
+		{
+			return d_range2_min;
+		}
+
+		double
+		get_lower_bound() const;
+
+		double
+		get_upper_bound() const;
+
+		const std::vector<ColourSlice> &
+		get_colour_slices() const
+		{
+			return d_inner_palette->get_entries();
+		}
+
+		boost::optional<Colour>
+		get_background_colour() const
+		{
+			return d_inner_palette->get_background_colour();
+		}
+
+		boost::optional<Colour>
+		get_foreground_colour() const
+		{
+			return d_inner_palette->get_foreground_colour();
+		}
+
+		boost::optional<Colour>
+		get_nan_colour() const
+		{
+			return d_inner_palette->get_nan_colour();
+		}
+
+	private:
+
+		DeformationColourPalette(
+				double range1_max,
+				double range1_min,
+				double range2_max,
+				double range2_min,
+				GPlatesGui::Colour fg_colour,
+				GPlatesGui::Colour max_colour,
+				GPlatesGui::Colour mid_colour,
+				GPlatesGui::Colour min_colour,
+				GPlatesGui::Colour bg_colour);
+
+		RegularCptColourPalette::non_null_ptr_type d_inner_palette;
+
+		double d_range1_max;
+		double d_range1_min;
+		double d_range2_max;
+		double d_range2_min;
+		GPlatesGui::Colour d_fg_colour;
+		GPlatesGui::Colour d_max_colour;
+		GPlatesGui::Colour d_mid_colour;
+		GPlatesGui::Colour d_min_colour;
+		GPlatesGui::Colour d_bg_colour;
+	};
+
+
 	/**
 	 * The default colour palette used to colour non-RGBA rasters upon file loading.
 	 * The colour palette covers a range of values up to two standard deviations

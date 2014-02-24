@@ -36,6 +36,7 @@
 namespace GPlatesQtWidgets
 {
 	class ExportFileOptionsWidget;
+	class ExportVelocitySmoothingOptionsWidget;
 
 	/**
 	 * General (non-CitcomS-specific) resolved topology export options.
@@ -131,6 +132,7 @@ namespace GPlatesQtWidgets
 
 		GPlatesGui::ExportVelocityAnimationStrategy::configuration_ptr d_export_configuration;
 
+		ExportVelocitySmoothingOptionsWidget *d_export_velocity_smoothing_options_widget;
 		ExportFileOptionsWidget *d_export_file_options_widget;
 	};
 }

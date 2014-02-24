@@ -1574,25 +1574,32 @@ GPlatesFileIO::GpmlOutputVisitor::write_gpml_time_sample(
 		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) 
 {
 	d_output.writeStartGpmlElement("TimeSample");
-		d_output.writeStartGpmlElement("value");
-			gpml_time_sample.value()->accept_visitor(*this);
-		d_output.writeEndElement();
+	d_output.writeStartGpmlElement("value");
+	gpml_time_sample.value()->accept_visitor(*this);
+	d_output.writeEndElement();
 
-		d_output.writeStartGpmlElement("validTime");
-			gpml_time_sample.valid_time()->accept_visitor(*this);
-		d_output.writeEndElement();
+	d_output.writeStartGpmlElement("validTime");
+	gpml_time_sample.valid_time()->accept_visitor(*this);
+	d_output.writeEndElement();
 
-		// The description is optional.
-		if (gpml_time_sample.description() != NULL) 
-		{
-			d_output.writeStartGmlElement("description");
-				gpml_time_sample.description()->accept_visitor(*this);
-			d_output.writeEndElement();
-		}
-
-		d_output.writeStartGpmlElement("valueType");
-			writeTemplateTypeParameterType(d_output, gpml_time_sample.value_type());
+	// The description is optional.
+	if (gpml_time_sample.description() != NULL) 
+	{
+		d_output.writeStartGmlElement("description");
+		gpml_time_sample.description()->accept_visitor(*this);
 		d_output.writeEndElement();
+	}
+
+	if(gpml_time_sample.is_disabled())
+	{
+		d_output.writeStartGpmlElement("isDisabled");
+		d_output.writeBoolean(true);
+		d_output.writeEndElement();
+	}
+
+	d_output.writeStartGpmlElement("valueType");
+	writeTemplateTypeParameterType(d_output, gpml_time_sample.value_type());
+	d_output.writeEndElement();
 
 	d_output.writeEndElement();  // </gpml:TimeSample>
 }

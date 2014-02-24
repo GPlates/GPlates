@@ -233,6 +233,8 @@ set(srcs
     ExportVelocityOptionsWidget.cc
     ExportVelocityOptionsWidget.h
     ExportVelocityOptionsWidgetUi.ui
+    ExportVelocitySmoothingOptionsWidget.h
+    ExportVelocitySmoothingOptionsWidgetUi.ui
     FeaturePropertiesDialog.cc
     FeaturePropertiesDialog.h
     FeaturePropertiesDialogUi.ui

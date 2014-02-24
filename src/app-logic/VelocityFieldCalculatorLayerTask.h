@@ -34,6 +34,7 @@
 #include "AppLogicFwd.h"
 #include "LayerTask.h"
 #include "LayerTaskParams.h"
+#include "VelocityParams.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -57,42 +58,37 @@ namespace GPlatesAppLogic
 		{
 		public:
 
-			//! How to calculate velocities.
-			enum SolveVelocitiesMethodType
-			{
-				// Intersects reconstructed domain geometry with polygon/network surface and
-				// calculates velocity of latter at the position of the former.
-				SOLVE_VELOCITIES_OF_SURFACES_AT_DOMAIN_POINTS,
+			/**
+			 * Returns the 'const' velocity parameters.
+			 */
+			const VelocityParams &
+			get_velocity_params() const;
 
-				// Calculates velocity of reconstructed domain geometry itself.
-				SOLVE_VELOCITIES_OF_DOMAIN_POINTS,
-
-				NUM_SOLVE_VELOCITY_METHODS    // This must be last.
-			};
-
-			//! Gets the velocity calculation method.
-			SolveVelocitiesMethodType
-			get_solve_velocities_method() const;
-
-			//! Sets the velocity calculation method.
+			/**
+			 * Sets the velocity parameters.
+			 *
+			 * NOTE: This will flush any cached velocity multi-point vector fields in this layer.
+			 */
 			void
-			set_solve_velocities_method(
-					SolveVelocitiesMethodType solve_velocities_method);
+			set_velocity_params(
+					const VelocityParams &velocity_params);
 
 		private:
 
-			SolveVelocitiesMethodType d_solve_velocities_method;
+			VelocityParams d_velocity_params;
 
 			/**
-			 * Is true if @a set_solve_velocities_method has been called - VelocityFieldCalculatorLayerTask will reset this explicitly.
+			 * Is true if @a set_velocity_params has been called.
 			 *
 			 * Used to let VelocityFieldCalculatorLayerTask know that an external client has modified this state.
+			 *
+			 * VelocityFieldCalculatorLayerTask will reset this explicitly.
 			 */
-			bool d_set_solve_velocities_method_called;
+			bool d_set_velocity_params_called;
 
 			Params();
 
-			// Make friend so can access constructor and @a d_set_solve_velocities_method_called.
+			// Make friend so can access constructor and @a d_set_velocity_params_called.
 			friend class VelocityFieldCalculatorLayerTask;
 		};
 

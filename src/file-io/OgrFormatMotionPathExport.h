@@ -1,9 +1,9 @@
-/* $Id: ShapefileFormatReconstructedFeatureGeometryExport.h 6843 2009-10-15 14:54:14Z rwatson $ */
+/* $Id$ */
 
 /**
  * \file Exports motion_paths to shapefile format.
- * $Revision: 6843 $
- * $Date: 2009-10-15 16:54:14 +0200 (to, 15 okt 2009) $
+ * $Revision$
+ * $Date$
  * 
  * Copyright (C) 2010 Geological Survey of Norway
  *
@@ -65,7 +65,7 @@ namespace GPlatesFileIO
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool should_export_referenced_files = true,
-				bool wrap_to_dateline = false);
+				bool wrap_to_dateline = true);
 
 
 	}

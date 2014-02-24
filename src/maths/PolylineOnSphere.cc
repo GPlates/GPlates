@@ -190,7 +190,7 @@ GPlatesMaths::PolylineOnSphere::accept_visitor(
 }
 
 
-bool
+boost::optional<GPlatesMaths::PointOnSphere>
 GPlatesMaths::PolylineOnSphere::is_close_to(
 		const PointOnSphere &test_point,
 		const real_t &closeness_inclusion_threshold,
@@ -225,33 +225,42 @@ GPlatesMaths::PolylineOnSphere::is_close_to(
 	}
 
 	real_t &closest_closeness_so_far = closeness;  // A descriptive alias.
-	bool have_already_found_a_close_gca = false;
+	boost::optional<PointOnSphere> closest_point;
 
 	const_iterator iter = begin(), the_end = end();
-	for ( ; iter != the_end; ++iter) {
+	for ( ; iter != the_end; ++iter)
+	{
 		const GreatCircleArc &the_gca = *iter;
 
-		// Don't bother initialising this.
+		// No need to initialise this - to -1 (ie, min-dot-product).
 		real_t gca_closeness;
 
-		if (the_gca.is_close_to(test_point,
-				closeness_inclusion_threshold,
-				latitude_exclusion_threshold, gca_closeness))
+		boost::optional<PointOnSphere> gca_closest_point =
+				the_gca.is_close_to(
+						test_point,
+						closeness_inclusion_threshold,
+						latitude_exclusion_threshold,
+						gca_closeness);
+		if (gca_closest_point)
 		{
-			if (have_already_found_a_close_gca) {
-				if (gca_closeness.is_precisely_greater_than(
-							closest_closeness_so_far.dval()))
+			if (closest_point)
+			{
+				if (gca_closeness.is_precisely_greater_than(closest_closeness_so_far.dval()))
 				{
 					closest_closeness_so_far = gca_closeness;
+					closest_point = gca_closest_point.get();
 				}
 				// else, do nothing.
-			} else {
+			}
+			else
+			{
 				closest_closeness_so_far = gca_closeness;
-				have_already_found_a_close_gca = true;
+				closest_point = gca_closest_point.get();
 			}
 		}
 	}
-	return have_already_found_a_close_gca;
+
+	return closest_point;
 }
 
 

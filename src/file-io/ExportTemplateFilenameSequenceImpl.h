@@ -61,12 +61,15 @@ namespace GPlatesFileIO
 		 * Tests for validity of parameters in the filename template.
 		 *
 		 * @throws UnrecognisedFormatString if no format recognised at a '%' char.
-		 * @throws NoFilenameVariation if no formats have filename variation (vary with reconstruction time).
+		 *
+		 * If @a check_filename_variation is true then also checks that there is filename variation
+		 * (varies with reconstruction time).
 		 */
 		static
 		void
 		validate_filename_template(
-				const QString &filename_template);
+				const QString &filename_template,
+				bool check_filename_variation);
 
 
 		/**
@@ -126,12 +129,15 @@ namespace GPlatesFileIO
 			 * Tests for validity of parameters in the filename template.
 			 *
 			 * @throws UnrecognisedFormatString if no format recognised at a '%' char.
-			 * @throws NoFilenameVariation if no formats have filename variation (vary with reconstruction time).
+			 *
+			 * If @a check_filename_variation is true and if no formats have filename variation
+			 * (vary with reconstruction time) then throws NoFilenameVariation.
 			 */
 			static
 			void
 			validate_filename_template(
-					const QString &filename_template);
+					const QString &filename_template,
+					bool check_filename_variation);
 
 
 			/**

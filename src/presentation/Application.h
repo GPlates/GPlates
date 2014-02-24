@@ -30,6 +30,7 @@
 
 #include "app-logic/ApplicationState.h"
 
+#include "gui/CommandServer.h"
 #include "gui/ExternalSyncController.h"
 
 #include "presentation/ViewState.h"
@@ -145,7 +146,7 @@ namespace GPlatesPresentation
 		GPlatesAppLogic::ApplicationState d_application_state;
 		GPlatesPresentation::ViewState d_view_state;
 		GPlatesQtWidgets::ViewportWindow d_main_window;
-		boost::shared_ptr<GPlatesGui::CommandServer> d_cmd_server;
+		GPlatesGui::CommandServer d_cmd_server;
 
 		/**
 		 * Controller for external communication.

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GPGIM gpgim:version="1.6.0322" xmlns="http://www.gplates.org/gpgim" xmlns:gpgim="http://www.gplates.org/gpgim" xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance">
+<GPGIM gpgim:version="1.6.0324" xmlns="http://www.gplates.org/gpgim" xmlns:gpgim="http://www.gplates.org/gpgim" xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance">
 	<!--
 		==================================================
 		==================================================
@@ -152,8 +152,11 @@
 			* FeatureClassList contains a list of all feature classes defined by the GPGIM.
 			* FeatureClassList can only contain FeatureClass elements.
 			
-			FeatureClass[0..*]:
+			FeatureClass[0..*](attribute 'gpgim:defaultGeometryProperty'):
 				* Each FeatureClass defines a feature type in the GPlates Geological Information Model (GPGIM).
+				* This XML element can also have a 'gpgim:defaultGeometryProperty' XML attribute that defines the default geometry property.
+				* The 'gpgim:defaultGeometryProperty' attribute is optional and overrides attribute in inherited classes (if defined).
+				* The 'gpgim:defaultGeometryProperty' (if specified) must match one of the properties listed in the feature class.
 				
 				Name[1]:
 					* The name of the feature class.
@@ -369,7 +372,11 @@
 			</Content>
 			<Content>
 				<Value>HalfStageRotation</Value>
-				<Description>Reconstruct using a half-stage rotation between a 'gpml:leftPlate' and 'gpml:rightPlate'.</Description>
+				<Description>Reconstruct using a half-stage rotation between a 'gpml:leftPlate' and 'gpml:rightPlate'. Uses only a single half-stage between present day and reconstruction time. See 'HalfStageRotationVersion2' for an improved version.</Description>
+			</Content>
+			<Content>
+				<Value>HalfStageRotationVersion2</Value>
+				<Description>Reconstruct using half-stage rotations between a 'gpml:leftPlate' and 'gpml:rightPlate'. This is a more accurate version that accumulates a half-stage rotation every 10My from present day to reconstruction time.</Description>
 			</Content>
 		</Enumeration>
 		<Enumeration>
@@ -414,19 +421,19 @@
 		</Enumeration>
 		<Enumeration>
 			<Type>gpml:SubductionPolarityEnumeration</Type>
-			<Description>Indicates the side of the line that the subducting slab is on. The overriding plate will be on the opposite side.
-.subductingSlab is an enumeration: Assuming there is a suitable centerLineOf supplied, and understanding that the order of points in the line matters, we can establish a "left" side and a "right" side to the .centerLineOf. this property indicates which of those "left" and "right" sides the subducting slab is on. The overriding plate will be on the opposite side.</Description>
+			<Description>Indicates which side of the line (when following the vertices in order) that the over-riding plate is on.  The subducting plate will be on the opposite side.
+.subductingSlab is an enumeration: Assuming there is a suitable centerLineOf supplied, and understanding that the order of points in the line matters, we can establish a "left" side and a "right" side to the .centerLineOf. this property indicates which of those "left" and "right" sides the over-riding plate is on. The subducting plate will be on the opposite side.</Description>
 			<Content>
 				<Value>Left</Value>
-				<Description>The subducting slab is on the left of this SubductionZone, according to the directed gml:LineString .centerLineOf.</Description>
+				<Description>The over-riding plate is on the left of this SubductionZone, according to the directed gml:LineString .centerLineOf.</Description>
 			</Content>
 			<Content>
 				<Value>Right</Value>
-				<Description>The subducting slab is on the right of this SubductionZone, according to the directed gml:LineString .centerLineOf.</Description>
+				<Description>The over-riding plate is on the right of this SubductionZone, according to the directed gml:LineString .centerLineOf.</Description>
 			</Content>
 			<Content>
 				<Value>Unknown</Value>
-				<Description>The value of is officially unknown; there is no information about which side of the SubductionZone is which.</Description>
+				<Description>The value of is officially unknown; there is no information about the polarity of the SubductionZone.</Description>
 			</Content>
 		</Enumeration>
 		
@@ -996,7 +1003,7 @@
 			<Name>gpml:relativePlate</Name>
 			<Description>The plate that something is relative to.</Description>
 			<Type>gpml:plateId</Type>
-			<Multiplicity>0..1</Multiplicity>
+			<Multiplicity>1</Multiplicity>
 			<Comment>This is currently used in MotionPath features as the plate that the motion is relative to.</Comment>
 		</Property>
 		<Property>
@@ -1072,6 +1079,12 @@
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
 		<Property>
+			<Name>gpml:spreadingAsymmetry</Name>
+			<Description>The asymmetry of ridge spreading, in the range [-1,1], where the value 0 represents symmetric (half-stage) rotation.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
 			<Name>gpml:strikeSlip</Name>
 			<Description>The motion along the 'strike', or map-view line of the Fault.</Description>
 			<Type>gpml:StrikeSlipEnumeration</Type>
@@ -1088,7 +1101,7 @@
 		</Property>
 		<Property>
 			<Name>gpml:subductionPolarity</Name>
-			<Description>Indicates the side of the line that the subducting slab is on.</Description>
+			<Description>Indicates which side of the line (when following the vertices in order) that the over-riding plate is on.</Description>
 			<Type>gpml:SubductionPolarityEnumeration</Type>
 			<Multiplicity>0..1</Multiplicity>
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
@@ -1116,6 +1129,18 @@
 			<Name>gpml:subductionZoneDepth</Name>
 			<Description>Subduction zone depth.</Description>
 			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:subductionZoneSystem</Name>
+			<Description>A unique name for a collection of Subduction Zones forming a continuous system of subduction.</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:subductionZoneSystemOrder</Name>
+			<Description>The order where this subduction zone appears in the system (note: this is zero-based sequence)</Description>
+			<Type>xsi:integer</Type>
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
 		<Property>
@@ -1251,7 +1276,7 @@
 			<Property>gpml:subcategory</Property>
 			<Property>gpml:shapefileAttributes</Property>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<Name>gpml:AbstractField</Name>
 			<Description>Abstract superclass for various field data, including stand-alone Contours and outlines.</Description>
 			<ClassType>abstract</ClassType>
@@ -1270,7 +1295,7 @@
 			<Property>gpml:rightUnit</Property>
 			<Comment>An AbstractGeologicalContact is simply the surface along which two different rock types are juxtaposed.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:centerLineOf">
 			<Name>gpml:AbstractGeologicalPlane</Name>
 			<Description>Abstract base for all Geological Surface Planes, including Surfaces such as Bedding Surfaces, Cleavage, intangible planes such as Fold Plane, as well as Contacts and Faults.</Description>
 			<ClassType>abstract</ClassType>
@@ -1296,7 +1321,7 @@
 			<Inherits>gpml:ReconstructableFeature</Inherits>
 			<Comment>In contrast to TangibleFeature, this deals with geometry that has been arbitrarily created, or possibly derived from a TangibleFeature. For example, InferredPaleoBoundary is a plate boundary that is assumed to have existed, even though it has long since been subducted under the surface. OldPlatesGridMark is a sequence of lines defined in PLATES data files for annotation.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:unclassifiedGeometry">
 			<Name>gpml:AseismicRidge</Name>
 			<Description>Miscellaneous inactive ridge feature.</Description>
 			<ClassType>concrete</ClassType>
@@ -1309,7 +1334,7 @@
 			<Comment>As far as the GPGIM is concerned, this might make AseismicRidge into an abstract parent of some sort- however, that would imply that all features inheriting from AseismicRidge would be inactive, throughout their entire lifespan. This is unacceptable, especially considering planned improvements to MidOceanRidge to allow for partial segments of a MOR to become inactive, and also considering that a HotSpot's trail is formed of Volcanoes as well as Seamounts that may be active for some time and later become inactive.</Comment>
 			<Comment>However, there still exist some situations where the term "AseismicRidge" may be the only term applicable, where a ridge is not known to be any other specific type of ridge. AseismicRidge exists in the GPGIM for this purpose.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<Name>gpml:BasicRockUnit</Name>
 			<Description>Basic definition of a geological rock unit.</Description>
 			<ClassType>concrete</ClassType>
@@ -1323,7 +1348,7 @@
 			<Comment>gml:name and gml:description can be used for this specific rock unit.</Comment>
 			<Comment>gpml:subcategory can be used to specify which general categories this BasicRockUnit belongs to, for example, a "Basalt" BasicRockUnit, or "Ophiolite" can be used to define an ophiolite belt, and so on.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<Name>gpml:Basin</Name>
 			<Description>Regional scale depression of erosional or structural origin.</Description>
 			<ClassType>concrete</ClassType>
@@ -1341,7 +1366,7 @@
 			<Comment>Usually measured in m (depth).</Comment>
 			<Comment>Currently, this feature provides for contour and outline data. This feature is intended to support gridded data in a future release.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:boundary">
 			<Name>gpml:ClosedContinentalBoundary</Name>
 			<Description>Rigid closed polygon continental crust boundary that can be reconstructed to any time.</Description>
 			<ClassType>concrete</ClassType>
@@ -1351,7 +1376,7 @@
 			<Property>gpml:boundary</Property>
 			<Comment>Similar (but not identical) to ClosedPlateBoundary, but for crust type differences (oceanic-continental). It can be rotated via the usual reconstruction mechanisms, and the geometry of this boundary is represented in present-day-coordinates.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:boundary">
 			<Name>gpml:ClosedPlateBoundary</Name>
 			<Description>Rigid closed polygon plate boundary that can be reconstructed to any time.</Description>
 			<ClassType>concrete</ClassType>
@@ -1360,7 +1385,7 @@
 			<Comment>A simple geometric view of a PlateSlab's closed boundary, possibly derived from a TopologicalClosedPlateBoundary. It is reconstructable, and so the polygon is encoded using present-day coordinates. This type of plate boundary might be most useful as a "Grid Mask" for gridded data relating to the plate.</Comment>
 			<Comment>Some standard properties are very useful for a ClosedPlateBoundary. The .reconstructionPlateId property inherited from ReconstructableFeature will allow us to associate one (or more, potentially) gpml:plateId s with the plate boundary, gml:name can be used to name the plate, and validTime indicates the lifetime of this plate polygon.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:centerLineOf">
 			<Name>gpml:Coastline</Name>
 			<Description>Present day coastline.</Description>
 			<ClassType>concrete</ClassType>
@@ -1369,7 +1394,7 @@
 			<Property>gpml:unclassifiedGeometry</Property>
 			<Comment>Present day coastline, but can still be reconstructed with the rest of them as a visual aid.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<Name>gpml:ContinentalFragment</Name>
 			<Description>A fragment of continental crust that has become detached.</Description>
 			<ClassType>concrete</ClassType>
@@ -1384,7 +1409,7 @@
 			<Inherits>gpml:TectonicSection</Inherits>
 			<Comment>Functionally, this behaves similarly to MidOceanRidge, but a ContinentalRift is defined for continental crust only.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<Name>gpml:Craton</Name>
 			<Description>Large portion of a continental plate that has been relatively undisturbed since the Precambrian era and includes both shield and platform layers.</Description>
 			<ClassType>concrete</ClassType>
@@ -1400,7 +1425,7 @@
 			<Inherits>gpml:AbstractField</Inherits>
 			<Comment>Currently, this feature provides for contour and outline data. This feature is intended to support gridded data in a future release.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
 			<!--
 				FIXME: Do we need this feature type ?
 				Perhaps instead we should use arbitrary (point-geometry) feature types to build deforming topologies.
@@ -1421,7 +1446,7 @@
 			<Comment>Currently, this feature provides for contour and outline data. This feature is intended to support gridded data in a future release.</Comment>
 			<Comment>Seismic Tomography (MantleDensity) is used as a source of data to create DynamicTopography.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<Name>gpml:ExtendedContinentalCrust</Name>
 			<Description>Continental crust which has been pulled apart.</Description>
 			<ClassType>concrete</ClassType>
@@ -1446,7 +1471,7 @@
 			<Comment>Suggested subcategories are (1) "Thrust" : A Thrust fault is a term often given to a special case of reverse or compression fault where the hanging wall has thrusted completely over the foot wall. Additional information about e.g. Folding (which might warrant additional subcategories), or perhaps describing specific patterns of the Thrust e.g. "Snake Head", make this an ideal candidate for the .subcategory property, (2) "Detachment" : Often used to describe massive movements of rock created from e.g. detachment of rock from a subducting plate which has moved onto the overriding plate.</Comment>
 			<Comment>Here's what Dictionary of Earth Sciences p201 has to say: Approximately plane surface of fracture in a rock body, caused by brittle failure, and along which observable relative displacement has occurred between adjacent blocks. Most faults may be broadly classified according to the direction of slip of adjacent blocks into dip-slip, strike-slip, and oblique-slip varieties. The term 'dip-slip fault' comprises both normal and reverse slip faults, and the special cases of low-angle lag and thrust faults. Strike-slip faults {wrench, transform, transcurrent} result from horizontal displacement {dextral or sinistral movements} and on a regional scale may involve transpression and transtension.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:seedPoints">
 			<Name>gpml:Flowline</Name>
 			<Description>Tracks plate motion away from spreading ridges over time using half-stage rotations.</Description>
 			<ClassType>concrete</ClassType>
@@ -1508,7 +1533,7 @@
 			<Comment>gpml:FractureZone has an advantage over the old PLATES format; all gpml:ReconstructableFeatures have an optional property called .truncatedSection, which allows for one or more FractureZone pieces to be semantically linked.</Comment>
 			<Comment>Interestingly, a FractureZone's geometry is a SmallCircleArc, roughly indicating the rotation pole when the Transform that created it was active.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
 			<Name>gpml:FractureZoneIdentification</Name>
 			<Description>Pick to identify fracture zone.</Description>
 			<ClassType>concrete</ClassType>
@@ -1522,7 +1547,7 @@
 			<Comment>As a FractureZoneIdentification can be picked from a wide variety of sources, it is recommended to use the standard gpml:subcategory property if you want to indicate where this pick comes from.</Comment>
 			<Comment>Suggested subcategories are: (1) "Bathymetry" : chosen based on a Bathymetry grid, (2) "Topography" : chosen based on a Topography grid, (3) "Gravity" : chosen based on a Gravity grid, (4) "Magnetic" : chosen based on a Magnetic grid.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:centerLineOf">
 			<Name>gpml:GeologicalLineation</Name>
 			<Description>Undefined linear region.</Description>
 			<ClassType>concrete</ClassType>
@@ -1562,7 +1587,7 @@
 			<Comment>Heat flow is typically measured by placing devices on the ocean floor to measure temperature. For example, heat will emanate from a MidOceanRidge.</Comment>
 			<Comment>Currently, this feature provides for contour and outline data. This feature is intended to support gridded data in a future release.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
 			<Name>gpml:HotSpot</Name>
 			<Description>Location in the mantle linked with high igneous activity.</Description>
 			<ClassType>concrete</ClassType>
@@ -1574,7 +1599,7 @@
 			<Comment>In the Rotation hierachy, these features will depend on a Hotspot AbsoluteReferenceFrame.</Comment>
 			<Comment>HotSpots are a little unique as they don't move with the plates, but under them (if they move at all).</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:unclassifiedGeometry">
 			<Name>gpml:HotSpotTrail</Name>
 			<Description>Used to track the paleo-movement of HotSpots.</Description>
 			<ClassType>concrete</ClassType>
@@ -1586,7 +1611,7 @@
 			<Comment>HotSpotTrails are used to track the paleo-movement of HotSpots. They are gpml:Features in their own right, because for the case of a HotSpot with multiple HotSpotTrail s (one disjoint trail), they can be rotated independently of each other.</Comment>
 			<Comment>Being reconstructable and also describing an inferred sequence of paleo-positions looks like it will get confusing. But presumably, geoscientists are OK with that.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:centerLineOf">
 			<Name>gpml:InferredPaleoBoundary</Name>
 			<Description>Part of a plate boundary defined by hand for real-world geology that no longer exists.</Description>
 			<ClassType>concrete</ClassType>
@@ -1596,7 +1621,7 @@
 			<Property>gpml:unclassifiedGeometry</Property>
 			<Comment>For example, the InferredPaleoBoundary between India and Asia that has since been subducted under the Himalaya.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<Name>gpml:IslandArc</Name>
 			<Description>Type of volcanic arc formed by plate tectonics as an oceanic plate subducts under another and produces magma which rises to form the arc.</Description>
 			<ClassType>concrete</ClassType>
@@ -1605,7 +1630,7 @@
 			<Property>gpml:outlineOf</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:centerLineOf">
 			<Name>gpml:Isochron</Name>
 			<Description>Simple line defining points of equal age for oceanic crust.</Description>
 			<ClassType>concrete</ClassType>
@@ -1618,7 +1643,7 @@
 			<Comment>For the GPGIM1.5, we just want a simple, rigid Isochron replacement for the PLATES model. It includes Paleo-Ridge and Paleo-Transform sections.</Comment>
 			<Comment>A common property associated with an Isochron is its "age". It defines the point in time that this Isochron is believed to originate at, in Ma. However, we already have a .validTime property inherited from TimeVariantFeature, so to work out the 'age' of the Isochron, one can look at .validTime(a TimePeriod).begin(a TimeInstant).</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<Name>gpml:LargeIgneousProvince</Name>
 			<Description>An extensive region of basalts resulting from flood basalt volcanism.</Description>
 			<ClassType>concrete</ClassType>
@@ -1626,7 +1651,7 @@
 			<Property>gpml:outlineOf</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
 			<Name>gpml:MagneticAnomalyIdentification</Name>
 			<Description>Magnetic 'pick' to identify age of oceanic crust based on magnetostratigraphic time-scale.</Description>
 			<ClassType>concrete</ClassType>
@@ -1643,7 +1668,7 @@
 			<Comment>The first letter indicates Cenozoic or Mesozoic era, followed by a number indicating the chron's position in the sequence. However, the early measurements of isochrons were not very high resolution, and many smaller polarity reversals were missed, only to be discovered later as techniques improved. Rather than renumbering everything as new isochrons were discovered, letters from a-z were added after the number, so M14a refers to the first sub-chron located inside the 14th major chron, and if a polarity reversal were located inside that, it would be named M14aa, and so on.</Comment>
 			<Comment>This would result in names such as C34ado0.5, which translates to a Cenozoic isochron, major region 34, sub region a, sub region d, and in the case of this pick the measurement was taken half-way between the "old" and "young" edges.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:centerLineOf">
 			<Name>gpml:MagneticAnomalyShipTrack</Name>
 			<Description>Ship Track data for Magnetic 'pick's.</Description>
 			<ClassType>concrete</ClassType>
@@ -1670,7 +1695,7 @@
 			<Comment>Currently, this feature provides for contour and outline data. This feature is intended to support gridded data in a future release.</Comment>
 			<Comment>MantleDensity data can be applied to the creation of DynamicTopography grids.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:meshPoints">
 			<Name>gpml:MeshNode</Name>
 			<Description>Global positions to calculate plate velocities at.</Description>
 			<ClassType>concrete</ClassType>
@@ -1683,11 +1708,12 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TectonicSection</Inherits>
 			<Property>gpml:isActive</Property>
+			<Property>gpml:spreadingAsymmetry</Property>
 			<Comment>The MidOceanRidge class needs to be pretty flexible. In the PLATES methodology, MOR lines are typically used to represent both the 'spreading' and 'transform' sections of the ridge - and so a lot of older data sets will have rigid MidOceanRidges once they are imported. Ideally, they would use an explicit Transform to join up MidOceanRidge and SubductionZone pieces.</Comment>
 			<Comment>The other area that MidOceanRidge needs to encompass is those ridges that have become an "Extinct Ridge" through a process of ridge propagation. This is handled via the .isActive time-dependent property below.</Comment>
 			<Comment>It is possible that later releases of the GPGIM will support a single MidOceanRidge Feature with heterogenous 'segments'.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:seedPoints">
 			<Name>gpml:MotionPath</Name>
 			<Description>Tracks absolute plate motion over time.</Description>
 			<ClassType>concrete</ClassType>
@@ -1697,7 +1723,7 @@
 			<Property>gpml:reconstructionMethod</Property>
 			<Property>gpml:relativePlate</Property>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
 			<!-- FIXME: This should represent a geological feature type, not a sample from a specific database. -->
 			<Name>gpml:NavdatSample</Name>
 			<Description>Abstract base class representing a sample from the North American Volcanic and Intrusive Rock Database (NAVDAT).</Description>
@@ -1746,7 +1772,7 @@
 			<Comment>While oceanic age is most frequently represented with grids, it is still useful to pick out contours of specific ages.</Comment>
 			<Comment>Currently, this feature provides for contour and outline data. This feature is intended to support gridded data in a future release.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:centerLineOf">
 			<Name>gpml:OldPlatesGridMark</Name>
 			<Description>Backwards-compatibility with PLATES "GR" code.</Description>
 			<ClassType>concrete</ClassType>
@@ -1754,7 +1780,7 @@
 			<Property>gpml:centerLineOf</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<Name>gpml:Ophiolite</Name>
 			<Description>Uplifted oceanic crust attached to edges of continental plates.</Description>
 			<ClassType>concrete</ClassType>
@@ -1791,7 +1817,7 @@
 			<Property>gpml:outlineOf</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<!-- A political boundary in a geological information model ? -->
 			<Name>gpml:PoliticalBoundary</Name>
 			<!-- Come up with a better description or remove/rename this feature type. -->
@@ -1802,7 +1828,7 @@
 			<Property>gpml:outlineOf</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
 			<!-- FIXME: This should really be part of the 'gpml:TopologicalNetwork' property type (not a feature type). -->
 			<Name>gpml:PolygonCentroidPoint</Name>
 			<Description>The centroid of a polygon used when meshing a deforming region that contains non-deforming interior blocks.</Description>
@@ -1812,7 +1838,7 @@
 			<Property>gpml:multiPosition</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:centerLineOf">
 			<Name>gpml:PseudoFault</Name>
 			<Description>Fault-like contact caused by ridge propagation.</Description>
 			<ClassType>concrete</ClassType>
@@ -1953,7 +1979,7 @@
 			<Inherits>gpml:AbstractFeature</Inherits>
 			<Property>gpml:file</Property>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
 			<Name>gpml:Seamount</Name>
 			<Description>Igneous cone-shaped mountain that is below sea level.</Description>
 			<ClassType>concrete</ClassType>
@@ -1972,7 +1998,7 @@
 			<Comment>Currently, this feature provides for contour and outline data. This feature is intended to support gridded data in a future release.</Comment>
 			<Comment>For example, http://www.usawaterquality.org/conferences/2005/Posters/Negrini.pdf</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:centerLineOf">
 			<Name>gpml:SlabEdge</Name>
 			<Description>A slab edge.</Description>
 			<ClassType>concrete</ClassType>
@@ -1985,10 +2011,12 @@
 			<Property>gpml:subductionZoneConvergence</Property>
 			<Property>gpml:subductionZoneDeepDip</Property>
 			<Property>gpml:subductionZoneDepth</Property>
+			<Property>gpml:subductionZoneSystem</Property>
+			<Property>gpml:subductionZoneSystemOrder</Property>
 			<Property>gpml:centerLineOf</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:centre">
 			<!--
 				Some things to consider regarding small-circles-as-features:
 			
@@ -2028,7 +2056,7 @@
 			<Inherits>gpml:AbstractField</Inherits>
 			<Comment>Currently, this feature provides for contour and outline data. This feature is intended to support gridded data in a future release.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
 			<Name>gpml:StrainMarker</Name>
 			<Description>Location on the surface to show stain data computed from interpolation via a Topologicl Network feature.</Description>
 			<ClassType>concrete</ClassType>
@@ -2057,13 +2085,15 @@
 			<Property>gpml:subductionZoneConvergence</Property>
 			<Property>gpml:subductionZoneDeepDip</Property>
 			<Property>gpml:subductionZoneDepth</Property>
+			<Property>gpml:subductionZoneSystem</Property>
+			<Property>gpml:subductionZoneSystemOrder</Property>
 			<Property>gpml:isActive</Property>
 			<Property>gpml:slabEdgeType</Property>
 			<Property>gpml:rheaFault</Property>
 			<Comment>The standard model of a subduction zone is a linear tectonic region which consumes plate material on one side, while being largely 'attached' to a plate on the other side. Similarly to MidOceanRidge, the leftPlate and rightPlate properties are often set to advise approximately which plate is being consumed. The SubductionZone is always 'attached' to the overriding plate, as far as the gpml:plateIds are concerned.</Comment>
 			<Comment>Not necessarily a 'Zone', could be a linelike feature or have an additional polygon geometry. The gml property .centerLineOf is used to indicate where the subducting plate meets the overriding plate.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:centerLineOf">
 			<Name>gpml:Suture</Name>
 			<Description>Large scale structural feature associated with continental collision, separating crust that once belonged to two different plates.</Description>
 			<ClassType>concrete</ClassType>
@@ -2078,7 +2108,7 @@
 			<ClassType>abstract</ClassType>
 			<Inherits>gpml:ReconstructableFeature</Inherits>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:centerLineOf">
 			<Name>gpml:TectonicSection</Name>
 			<Description>Superclass to group ridgelike and related tectonic features together.</Description>
 			<ClassType>concrete</ClassType>
@@ -2119,7 +2149,7 @@
 			<Comment>Usually measured in m (height).</Comment>
 			<Comment>Currently, this feature provides for contour and outline data. This feature is intended to support gridded data in a future release.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:boundary">
 			<Name>gpml:TopologicalClosedPlateBoundary</Name>
 			<Description>A plate boundary formed by rubber-banding vertex lists, which are obtained by intersecting the geometry of other features.</Description>
 			<ClassType>concrete</ClassType>
@@ -2149,7 +2179,7 @@
 			<Comment>In comparison with ReconstructableFeature and InstantaneousFeature: (1) does not have geometry of its own, (2) should be able to exist for more than an instant, so it is not really an "instantaneous" feature.</Comment>
 			<Comment>JB: A topological plate boundary doesn't need any of the reconstruction timeline stuff, since the whole key to its existence is that it borrows its geometry from other features, which will be reconstructable, and thus will have their own reconstruction timelines.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:network">
 			<Name>gpml:TopologicalNetwork</Name>
 			<Description>A triangulated region inside a topological boundary, comprising internal constraint geometries and excluding interior polygons, used to calculate velocities in deforming regions.</Description>
 			<ClassType>concrete</ClassType>
@@ -2191,7 +2221,7 @@
 			<Comment>Used to link MidOceanRidge s and SubductionZone s together to form a closed plate boundary.</Comment>
 			<Comment>This may not see as much use as MidOceanRidge; the current methodology employed in PLATES data files typically ignores Transforms altogether, and uses 'MOR' lines for both the spreading ridge and the transform 'kink's. In addition, the parts of simple PLATES-style Isochron lines that are perpendicular to the ridge can also be considered 'transforms' or 'fracture zones', because they indicate the paleo-offset between two ridge sections.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<Name>gpml:TransitionalCrust</Name>
 			<Description>Undefined region between continental crust and oceanic crust.</Description>
 			<ClassType>concrete</ClassType>
@@ -2216,7 +2246,7 @@
 			<Inherits>gpml:AbstractGeologicalContact</Inherits>
 			<Comment>Unlike Unconformity and Fault, which deal with fine-grained map views, UnknownContact is for regional scale map views which don't necessarily correspond to physical Faults and Unconformities. It can be used where the reason for the contact is unknown or not specified.</Comment>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:polePosition">
 			<Name>gpml:VirtualGeomagneticPole</Name>
 			<Description>Magnetic pole location consistent with the observed direction of remanence at a particular location.</Description>
 			<ClassType>concrete</ClassType>
@@ -2232,7 +2262,7 @@
 			<Property>gpml:averageAge</Property>
 			<Property>gpml:locationNames</Property>
 		</FeatureClass>
-		<FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
 			<Name>gpml:Volcano</Name>
 			<Description>An opening in the crust, which allows magma to escape from below.</Description>
 			<ClassType>concrete</ClassType>
