@@ -130,7 +130,7 @@ namespace GPlatesApi
 			// To python conversion.
 			bp::to_python_converter<
 					RotationModelFunctionArgument,
-					typename python_RotationModelFunctionArgument::Conversion>();
+					python_RotationModelFunctionArgument::Conversion>();
 
 			// From python conversion.
 			bp::converter::registry::push_back(
@@ -140,6 +140,9 @@ namespace GPlatesApi
 		}
 	}
 }
+
+
+const unsigned int GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE = 32;
 
 
 GPlatesApi::RotationModel::non_null_ptr_type

@@ -158,7 +158,7 @@ namespace GPlatesApi
 		// To python conversion.
 		bp::to_python_converter<
 				FeatureCollectionFunctionArgument,
-				typename python_FeatureCollectionFunctionArgument::Conversion>();
+				python_FeatureCollectionFunctionArgument::Conversion>();
 
 		// From python conversion.
 		bp::converter::registry::push_back(
@@ -238,7 +238,7 @@ namespace GPlatesApi
 		// To python conversion.
 		bp::to_python_converter<
 				FeatureCollectionSequenceFunctionArgument,
-				typename python_FeatureCollectionSequenceFunctionArgument::Conversion>();
+				python_FeatureCollectionSequenceFunctionArgument::Conversion>();
 
 		// From python conversion.
 		bp::converter::registry::push_back(

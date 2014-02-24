@@ -61,7 +61,7 @@ namespace GPlatesApi
 		typedef GPlatesUtils::non_null_intrusive_ptr<const RotationModel> non_null_ptr_to_const_type;
 
 
-		static const unsigned int DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE = 32;
+		static const unsigned int DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE;
 
 
 		/**
