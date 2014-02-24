@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>87</width>
+    <width>90</width>
     <height>507</height>
    </rect>
   </property>
@@ -398,6 +398,10 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <attribute name="icon">
+        <iconset resource="../qt-resources/qt_widgets.qrc">
+         <normaloff>:/crappy-hellinger-icon_35.png</normaloff>:/crappy-hellinger-icon_35.png</iconset>
+       </attribute>
        <attribute name="title">
         <string/>
        </attribute>
