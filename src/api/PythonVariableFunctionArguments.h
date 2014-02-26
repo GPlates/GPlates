@@ -347,7 +347,9 @@ namespace GPlatesApi
 				return boost::none;
 			}
 
-			return extract<ArgumentType>(keywords_args_iter->second, argument_name);
+			return GPlatesApi::VariableArguments::extract<ArgumentType>(
+					keywords_args_iter->second,
+					argument_name);
 		}
 
 
@@ -365,7 +367,9 @@ namespace GPlatesApi
 				return default_argument;
 			}
 
-			return extract<ArgumentType>(keywords_args_iter->second, argument_name);
+			return GPlatesApi::VariableArguments::extract<ArgumentType>(
+					keywords_args_iter->second,
+					argument_name);
 		}
 
 
@@ -383,7 +387,9 @@ namespace GPlatesApi
 
 			keyword_args.erase(keywords_args_iter);
 
-			return extract<ArgumentType>(keywords_args_iter->second, argument_name);
+			return GPlatesApi::VariableArguments::extract<ArgumentType>(
+					keywords_args_iter->second,
+					argument_name);
 		}
 
 		template <typename ArgumentType>
@@ -401,7 +407,9 @@ namespace GPlatesApi
 
 			keyword_args.erase(keywords_args_iter);
 
-			return extract<ArgumentType>(keywords_args_iter->second, argument_name);
+			return GPlatesApi::VariableArguments::extract<ArgumentType>(
+					keywords_args_iter->second,
+					argument_name);
 		}
 
 
