@@ -22,12 +22,14 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#include <vector>
 
 #include <QObject>
 
 #include "gui/Colour.h"
 #include "gui/Symbol.h"
 #include "qt-widgets/HellingerDialog.h"
+#include "maths/GreatCircleArc.h"
 #include "maths/ProximityHitDetail.h"
 #include "view-operations/RenderedGeometry.h"
 #include "view-operations/RenderedGeometryFactory.h"
@@ -47,7 +49,8 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::AdjustFittedPoleEstimate(
 	d_hellinger_dialog_ptr(&hellinger_dialog),
 	d_mouse_is_over_pole_estimate(false),
 	d_pole_is_being_dragged(false),
-	d_current_angle(0.)
+	d_current_angle(0.),
+	d_has_been_activated(false)
 {
 	d_pole_estimate_layer_ptr =
 		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
@@ -66,21 +69,22 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::AdjustFittedPoleEstimate(
 void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_activation()
 {
-	qDebug() << "activating AFPE";
 	d_pole_estimate_layer_ptr->set_active(true);
 	d_highlight_layer_ptr->set_active(true);
+
 	set_status_bar_message(QT_TR_NOOP("Click and drag to adjust the pole estimate location."));
 	d_hellinger_dialog_ptr->enable_pole_estimate_widgets(true);
+
 	update_local_values_from_hellinger_dialog();
 	update_pole_estimate_layer();
 
+	d_has_been_activated = true;
 }
 
 void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_deactivation()
 {
 	d_hellinger_dialog_ptr->enable_pole_estimate_widgets(false);
-	qDebug() << GPlatesMaths::make_lat_lon_point(d_current_pole).latitude();
 	d_hellinger_dialog_ptr->update_pole_estimate_spinboxes_and_layer(d_current_pole, d_current_angle);
 	d_pole_estimate_layer_ptr->set_active(false);
 	d_highlight_layer_ptr->set_active(false);
@@ -98,6 +102,9 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 			proximity_inclusion_threshold);
 	std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
 
+	d_mouse_is_over_pole_estimate = false;
+	d_mouse_is_over_reference_arc = false;
+	d_mouse_is_over_relative_arc = false;
 
 	if (GPlatesViewOperations::test_proximity(
 				sorted_hits,
@@ -112,19 +119,33 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 				hit.d_rendered_geom_layer->get_rendered_geometry(
 					hit.d_rendered_geom_index);
 		rg.accept_visitor(finder);
-		boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> pos =
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geom =
 				finder.get_geometry();
-		if (pos)
+		if (geom)
 		{
-			qDebug() << "MWD: Found pole estimate";
-			update_highlight_layer(point_on_sphere);
+			// We have moved the mouse over one of the 3 geometries in the pole_estimate_layer.
+			unsigned int index = hit.d_rendered_geom_index;
+			qDebug() << "Geom index: " << index;
+
+			switch(index){
+			case POLE_GEOMETRY_INDEX:
+				d_mouse_is_over_pole_estimate = true;
+				break;
+			case REFERENCE_ARC_GEOMETRY_INDEX:
+				d_mouse_is_over_reference_arc = true;
+				break;
+			case RELATIVE_ARC_GEOMETRY_INDEX:
+				d_mouse_is_over_relative_arc = true;
+				break;
+			}
+
+			update_pole_estimate_highlight(*geom);
 			d_mouse_is_over_pole_estimate = true;
 		}
 	}
 	else
 	{
 		d_highlight_layer_ptr->clear_rendered_geometries();
-		d_mouse_is_over_pole_estimate = false;
 	}
 }
 
@@ -203,7 +224,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_drag(
 {
 	if (d_pole_is_being_dragged)
 	{
-		update_highlight_layer(current_point_on_sphere);
+		update_pole_estimate_highlight(current_point_on_sphere);
 		d_current_pole = current_point_on_sphere;
 		d_hellinger_dialog_ptr->update_pole_estimate_spinboxes(current_point_on_sphere,d_current_angle);
 	}
@@ -223,6 +244,11 @@ void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::update_local_values_from_hellinger_dialog()
 {
 	d_current_pole = GPlatesMaths::make_point_on_sphere(d_hellinger_dialog_ptr->get_pole_estimate());
+
+	if (!d_has_been_activated)
+	{
+		d_end_point_of_reference_arc = GPlatesMaths::PointOnSphere(GPlatesMaths::generate_perpendicular(d_current_pole.position_vector()));
+	}
 }
 
 void
@@ -245,10 +271,23 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 
 
 	d_pole_estimate_layer_ptr->add_rendered_geometry(pole_geometry);
+
+	GPlatesMaths::GreatCircleArc gca = GPlatesMaths::GreatCircleArc::create(d_current_pole,d_end_point_of_reference_arc);
+	std::vector<GPlatesMaths::PointOnSphere> points;
+	GPlatesMaths::tessellate(points,gca,GPlatesMaths::PI/1800.);
+
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
+			GPlatesMaths::PolylineOnSphere::create_on_heap(points);
+
+	GPlatesViewOperations::RenderedGeometry gca_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+				polyline);
+
+	d_pole_estimate_layer_ptr->add_rendered_geometry(gca_geometry);
 }
 
-void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_highlight_layer(
-		const GPlatesMaths::PointOnSphere &current_pos)
+void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_highlight(
+		const GPlatesMaths::PointOnSphere &geom)
 {
 	d_highlight_layer_ptr->clear_rendered_geometries();
 
@@ -256,7 +295,29 @@ void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_highlight_layer(
 
 	GPlatesViewOperations::RenderedGeometry pole_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				current_pos.get_non_null_pointer(),
+				geom.get_non_null_pointer(),
+				GPlatesGui::Colour::get_yellow(),
+				2, /* point size */
+				2, /* line thickness */
+				false, /* fill polygon */
+				false, /* fill polyline */
+				GPlatesGui::Colour::get_white(), /* dummy colour */
+				highlight_symbol);
+
+
+	d_highlight_layer_ptr->add_rendered_geometry(pole_geometry);
+}
+
+void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_highlight(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geom)
+{
+	d_highlight_layer_ptr->clear_rendered_geometries();
+
+	static const GPlatesGui::Symbol highlight_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CIRCLE, 2, true);
+
+	GPlatesViewOperations::RenderedGeometry pole_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+				geom,
 				GPlatesGui::Colour::get_yellow(),
 				2, /* point size */
 				2, /* line thickness */

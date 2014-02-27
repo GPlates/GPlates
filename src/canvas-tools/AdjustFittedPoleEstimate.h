@@ -32,6 +32,7 @@
 
 #include "CanvasTool.h"
 
+#include "maths/GeometryOnSphere.h"
 #include "maths/GreatCircleArc.h"
 #include "maths/MultiPointOnSphere.h"
 
@@ -41,6 +42,7 @@
 #include "view-operations/RenderedGeometryVisitor.h"
 #include "view-operations/RenderedMultiPointOnSphere.h"
 #include "view-operations/RenderedPointOnSphere.h"
+#include "view-operations/RenderedPolylineOnSphere.h"
 #include "view-operations/RenderedSquareSymbol.h"
 #include "view-operations/RenderedStrainMarkerSymbol.h"
 #include "view-operations/RenderedTriangleSymbol.h"
@@ -81,7 +83,7 @@ namespace GPlatesCanvasTools
 	public:
 
 		/**
-		 * Visitor to find a rendered geometry's point-on-sphere, if it has one.
+		 * Visitor to find a rendered geometry's underlying geometry-on-sphere, if it has one.
 		 * TODO: this class has been copied from SelectHellingerGeometry tool; it
 		 * is probably required here too, in which case we want to put it somewhere
 		 * else accessible by both tools.
@@ -162,7 +164,16 @@ namespace GPlatesCanvasTools
 							rendered_triangle_symbol.get_centre().get_non_null_pointer());
 			}
 
-			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
+			virtual
+			void
+			visit_rendered_polyline_on_sphere(
+					const GPlatesViewOperations::RenderedPolylineOnSphere &rendered_polyline)
+			{
+				d_geometry.reset(
+							rendered_polyline.get_polyline_on_sphere());
+			}
+
+			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 			get_geometry()
 			{
 				return d_geometry;
@@ -170,7 +181,7 @@ namespace GPlatesCanvasTools
 
 		private:
 
-			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
+			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 				d_geometry;
 
 			boost::optional<unsigned int> d_vertex_index;
@@ -260,6 +271,14 @@ namespace GPlatesCanvasTools
 		//! Convenience typedef for GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 		typedef GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type child_layer_ptr_type;
 
+		// This enum is used in keeping track of which geometry in the pole_estimate_layer we're hovered over.
+		enum GeometryTypeIndex
+		{
+			POLE_GEOMETRY_INDEX,
+			REFERENCE_ARC_GEOMETRY_INDEX,
+			RELATIVE_ARC_GEOMETRY_INDEX
+		};
+
 		void
 		update_local_values_from_hellinger_dialog();
 
@@ -267,8 +286,12 @@ namespace GPlatesCanvasTools
 		update_pole_estimate_layer();
 
 		void
-		update_highlight_layer(
+		update_pole_estimate_highlight(
 				const GPlatesMaths::PointOnSphere &current_pos);
+
+		void
+		update_pole_estimate_highlight(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geom);
 
 		void
 		paint();
@@ -286,21 +309,25 @@ namespace GPlatesCanvasTools
 
 		bool d_mouse_is_over_pole_estimate;
 		bool d_pole_is_being_dragged;
+		bool d_mouse_is_over_reference_arc;
+		bool d_reference_arc_is_being_draggged;
+		bool d_mouse_is_over_relative_arc;
+		bool d_relative_arc_is_being_dragged;
 
-		// For drawing the pole, and displaying the angle sector
+		// For drawing the pole
 		child_layer_ptr_type d_pole_estimate_layer_ptr;
 
 		// For highlighting whichever geometry (pole, reference-arc,or relative-arc) is
-		// hovered over and hence draggable / adjustable
+		// hovered over and hence draggable / adjustable.
 		child_layer_ptr_type d_highlight_layer_ptr;
 
 		GPlatesMaths::PointOnSphere d_current_pole;
 
 		double d_current_angle;
 
-//		GPlatesMaths::GreatCircleArc d_reference_arc;
+		GPlatesMaths::PointOnSphere d_end_point_of_reference_arc;
 
-//		GPlatesMaths::GreatCircleArc d_relative_arc;
+		bool d_has_been_activated;
 
 	};
 }
