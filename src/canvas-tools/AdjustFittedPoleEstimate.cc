@@ -125,7 +125,6 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 		{
 			// We have moved the mouse over one of the 3 geometries in the pole_estimate_layer.
 			unsigned int index = hit.d_rendered_geom_index;
-			qDebug() << "Geom index: " << index;
 
 			switch(index){
 			case POLE_GEOMETRY_INDEX:
@@ -140,7 +139,6 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 			}
 
 			update_pole_estimate_highlight(*geom);
-			d_mouse_is_over_pole_estimate = true;
 		}
 	}
 	else
@@ -157,7 +155,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_press(
 		double proximity_inclusion_threshold)
 {
 
-	if (!d_mouse_is_over_pole_estimate)
+	if (!mouse_is_over_a_highlight_geometry())
 	{
 		return;
 	}
@@ -174,12 +172,11 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_press(
 				proximity_criteria,
 				*d_highlight_layer_ptr))
 	{
-		d_pole_is_being_dragged = true;
+
+		d_pole_is_being_dragged = d_mouse_is_over_pole_estimate;
+		d_reference_arc_is_being_draggged = d_mouse_is_over_reference_arc;
+		d_relative_arc_is_being_dragged = d_mouse_is_over_relative_arc;
 		d_pole_estimate_layer_ptr->set_active(false);
-	}
-	else
-	{
-		d_mouse_is_over_pole_estimate = false;
 	}
 
 }
@@ -208,7 +205,11 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_release_after_drag(
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
 {
 	d_pole_is_being_dragged = false;
+	d_reference_arc_is_being_draggged = false;
+	d_relative_arc_is_being_dragged = false;
+
 	d_pole_estimate_layer_ptr->set_active(true);
+
 	update_pole_estimate_layer();
 }
 
@@ -228,6 +229,10 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_drag(
 		d_current_pole = current_point_on_sphere;
 		d_hellinger_dialog_ptr->update_pole_estimate_spinboxes(current_point_on_sphere,d_current_angle);
 	}
+	else if (d_relative_arc_is_being_dragged)
+	{
+		update_reference_arc_highlight(current_point_on_sphere);
+	}
 }
 
 void
@@ -238,6 +243,12 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::paint()
 	// until end of current scope block
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 #endif
+}
+
+bool
+GPlatesCanvasTools::AdjustFittedPoleEstimate::mouse_is_over_a_highlight_geometry()
+{
+	return (d_mouse_is_over_pole_estimate || d_mouse_is_over_reference_arc || d_mouse_is_over_relative_arc);
 }
 
 void
@@ -281,12 +292,14 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 
 	GPlatesViewOperations::RenderedGeometry gca_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				polyline);
+				polyline,
+				GPlatesGui::Colour::get_yellow());
 
 	d_pole_estimate_layer_ptr->add_rendered_geometry(gca_geometry);
 }
 
-void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_highlight(
+void
+GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_highlight(
 		const GPlatesMaths::PointOnSphere &geom)
 {
 	d_highlight_layer_ptr->clear_rendered_geometries();
@@ -308,7 +321,8 @@ void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_highligh
 	d_highlight_layer_ptr->add_rendered_geometry(pole_geometry);
 }
 
-void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_highlight(
+void
+GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_highlight(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geom)
 {
 	d_highlight_layer_ptr->clear_rendered_geometries();
@@ -328,5 +342,20 @@ void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_highligh
 
 
 	d_highlight_layer_ptr->add_rendered_geometry(pole_geometry);
+}
+
+void
+GPlatesCanvasTools::AdjustFittedPoleEstimate::update_reference_arc_highlight(
+		const GPlatesMaths::PointOnSphere &current_pos)
+{
+
+
+}
+
+void
+GPlatesCanvasTools::AdjustFittedPoleEstimate::update_relative_arc_highlight(
+		const GPlatesMaths::PointOnSphere &current_pos)
+{
+
 }
 

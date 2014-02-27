@@ -294,7 +294,22 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geom);
 
 		void
+		update_highlight_geometry(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geom);
+
+		void
+		update_reference_arc_highlight(
+				const GPlatesMaths::PointOnSphere &current_pos);
+
+		void
+		update_relative_arc_highlight(
+				const GPlatesMaths::PointOnSphere &current_pos);
+
+		void
 		paint();
+
+		bool
+		mouse_is_over_a_highlight_geometry();
 
 		AdjustFittedPoleEstimate(
 				const status_bar_callback_type &status_bar_callback,
