@@ -932,6 +932,7 @@ GPlatesQtWidgets::HellingerDialog::update_pole_estimate_from_model()
 
 		d_current_pole_estimate_llp = GPlatesMaths::LatLonPoint(com_file_data->d_lat,
 																com_file_data->d_lon);
+		d_current_pole_estimate_angle = com_file_data->d_rho;
 	}
 
 }
@@ -1468,9 +1469,14 @@ GPlatesQtWidgets::HellingerDialog::enable_pole_estimate_widgets(
 }
 
 const GPlatesMaths::LatLonPoint &
-GPlatesQtWidgets::HellingerDialog::get_pole_estimate()
+GPlatesQtWidgets::HellingerDialog::get_pole_estimate_lat_lon()
 {
 	return d_current_pole_estimate_llp;
+}
+
+const double &GPlatesQtWidgets::HellingerDialog::get_pole_estimate_angle()
+{
+	return d_current_pole_estimate_angle;
 }
 
 void GPlatesQtWidgets::HellingerDialog::update_selected_geometries()

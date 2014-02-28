@@ -273,11 +273,16 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::mouse_is_over_a_highlight_geometry
 void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::update_local_values_from_hellinger_dialog()
 {
-	d_current_pole = GPlatesMaths::make_point_on_sphere(d_hellinger_dialog_ptr->get_pole_estimate());
+	d_current_pole = GPlatesMaths::make_point_on_sphere(d_hellinger_dialog_ptr->get_pole_estimate_lat_lon());
+	d_current_angle = d_hellinger_dialog_ptr->get_pole_estimate_angle();
+	qDebug() << "angle: " << d_current_angle;
 
 	if (!d_has_been_activated)
 	{
 		d_end_point_of_reference_arc = GPlatesMaths::PointOnSphere(GPlatesMaths::generate_perpendicular(d_current_pole.position_vector()));
+
+		GPlatesMaths::Rotation rotation = GPlatesMaths::Rotation::create(d_current_pole.position_vector(),d_current_angle*GPlatesMaths::PI/180.);
+		d_end_point_of_relative_arc = rotation*d_end_point_of_reference_arc;
 	}
 }
 
@@ -320,11 +325,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 
 	d_pole_estimate_layer_ptr->add_rendered_geometry(pole_geometry);
 
-
-
-//	d_pole_estimate_layer_ptr->add_rendered_geometry(gca_geometry);
-
-	GPlatesViewOperations::RenderedGeometry end_point_geometry =
+	GPlatesViewOperations::RenderedGeometry reference_end_point_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				d_end_point_of_reference_arc.get_non_null_pointer(),
 				GPlatesGui::Colour::get_yellow(),
@@ -336,7 +337,23 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 				end_point_symbol);
 
 
-	d_pole_estimate_layer_ptr->add_rendered_geometry(end_point_geometry);
+	d_pole_estimate_layer_ptr->add_rendered_geometry(reference_end_point_geometry);
+
+	GPlatesViewOperations::RenderedGeometry relative_end_point_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+				d_end_point_of_relative_arc.get_non_null_pointer(),
+				GPlatesGui::Colour::get_yellow(),
+				10, /* point size */
+				2, /* line thickness */
+				false, /* fill polygon */
+				false, /* fill polyline */
+				GPlatesGui::Colour::get_white(),/* dummy colour */
+				end_point_symbol);
+
+
+	d_pole_estimate_layer_ptr->add_rendered_geometry(relative_end_point_geometry);
+
+
 
 	GPlatesMaths::GreatCircleArc gca = GPlatesMaths::GreatCircleArc::create(d_current_pole,d_end_point_of_reference_arc);
 	std::vector<GPlatesMaths::PointOnSphere> points;
@@ -347,6 +364,15 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 
 	GPlatesViewOperations::RenderedGeometry gca_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+				polyline,
+				GPlatesGui::Colour::get_yellow());
+
+	d_pole_estimate_layer_ptr->add_rendered_geometry(gca_geometry);
+
+	gca = GPlatesMaths::GreatCircleArc::create(d_current_pole,d_end_point_of_relative_arc);
+	GPlatesMaths::tessellate(points,gca,GPlatesMaths::PI/1800.);
+	polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(points);
+	gca_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				polyline,
 				GPlatesGui::Colour::get_yellow());
 

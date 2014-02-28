@@ -130,7 +130,12 @@ namespace GPlatesQtWidgets
 			d_data_filename(file_dat),
 			d_up_filename(file_up),
 			d_down_filename(file_down){};
-		HellingerComFileStructure(){};
+		HellingerComFileStructure():
+			d_pick_file(QString()),
+			d_lat(0.),
+			d_lon(0.),
+			d_rho(5.)
+			{};
 		QString d_pick_file;
 		double d_lat;	// initial estimate
 		double d_lon; // initial estimate

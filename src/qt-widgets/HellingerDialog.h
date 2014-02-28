@@ -204,7 +204,10 @@ namespace GPlatesQtWidgets
 				bool enable);
 
 		const GPlatesMaths::LatLonPoint &
-		get_pole_estimate();
+		get_pole_estimate_lat_lon();
+
+		const double &
+		get_pole_estimate_angle();
 
 		void
 		update_pole_estimate_spinboxes_and_layer(

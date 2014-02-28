@@ -338,10 +338,10 @@ namespace GPlatesCanvasTools
 		child_layer_ptr_type d_highlight_layer_ptr;
 
 		GPlatesMaths::PointOnSphere d_current_pole;
-
 		double d_current_angle;
 
 		GPlatesMaths::PointOnSphere d_end_point_of_reference_arc;
+		GPlatesMaths::PointOnSphere d_end_point_of_relative_arc;
 
 		bool d_has_been_activated;
 
