@@ -55,6 +55,8 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::AdjustFittedPoleEstimate(
 	d_reference_arc_end_point_is_being_dragged(false),
 	d_mouse_is_over_relative_arc(false),
 	d_relative_arc_is_being_dragged(false),
+	d_mouse_is_over_relative_arc_end_point(false),
+	d_relative_arc_end_point_is_being_dragged(false),
 	d_current_angle(0.),
 	d_has_been_activated(false)
 {
@@ -112,6 +114,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 	d_mouse_is_over_reference_arc = false;
 	d_mouse_is_over_relative_arc = false;
 	d_mouse_is_over_reference_arc_end_point = false;
+	d_mouse_is_over_relative_arc_end_point = false;
 
 	if (GPlatesViewOperations::test_proximity(
 				sorted_hits,
@@ -135,13 +138,17 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 			qDebug() << "found geom with index " << index;
 			switch(index){
 			case POLE_GEOMETRY_INDEX:
-				qDebug() << "Over pole";
 				d_mouse_is_over_pole_estimate = true;
 				update_pole_estimate_highlight(point_on_sphere.get_non_null_pointer());
 				break;
 			case REFERENCE_ARC_ENDPOINT_GEOMETRY_INDEX:
 				qDebug() << "Over reference end point";
 				d_mouse_is_over_reference_arc_end_point = true;
+				update_arc_and_end_point_highlight(point_on_sphere.get_non_null_pointer());
+				break;
+			case RELATIVE_ARC_ENDPOINT_GEOMETRY_INDEX:
+				qDebug() << "Over relative end point";
+				d_mouse_is_over_relative_arc_end_point = true;
 				update_arc_and_end_point_highlight(point_on_sphere.get_non_null_pointer());
 				break;
 			case REFERENCE_ARC_GEOMETRY_INDEX:
@@ -188,6 +195,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_press(
 		d_reference_arc_is_being_draggged = d_mouse_is_over_reference_arc;
 		d_relative_arc_is_being_dragged = d_mouse_is_over_relative_arc;
 		d_reference_arc_end_point_is_being_dragged = d_mouse_is_over_reference_arc_end_point;
+		d_relative_arc_end_point_is_being_dragged = d_mouse_is_over_relative_arc_end_point;
 		d_pole_estimate_layer_ptr->set_active(false);
 	}
 
@@ -218,9 +226,10 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_release_after_drag(
 {
 	d_pole_is_being_dragged = false;
 	d_reference_arc_end_point_is_being_dragged = false;
+	d_relative_arc_end_point_is_being_dragged = false;
 	d_relative_arc_is_being_dragged = false;
 	d_reference_arc_is_being_draggged = false;
-	d_relative_arc_is_being_dragged = false;
+
 
 	d_pole_estimate_layer_ptr->set_active(true);
 	d_highlight_layer_ptr->clear_rendered_geometries();
@@ -246,7 +255,14 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_drag(
 	}
 	else if (d_reference_arc_end_point_is_being_dragged)
 	{
+		qDebug() << "Reference arc being dragged";
 		d_end_point_of_reference_arc = current_point_on_sphere;
+		update_arc_and_end_point_highlight(current_point_on_sphere.get_non_null_pointer());
+	}
+	else if (d_relative_arc_end_point_is_being_dragged)
+	{
+		qDebug() << "Relative arc being dragged";
+		d_end_point_of_relative_arc = current_point_on_sphere;
 		update_arc_and_end_point_highlight(current_point_on_sphere.get_non_null_pointer());
 	}
 }
@@ -267,7 +283,8 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::mouse_is_over_a_highlight_geometry
 	return (d_mouse_is_over_pole_estimate ||
 			d_mouse_is_over_reference_arc ||
 			d_mouse_is_over_relative_arc  ||
-			d_mouse_is_over_reference_arc_end_point);
+			d_mouse_is_over_reference_arc_end_point ||
+			d_mouse_is_over_relative_arc_end_point);
 }
 
 void

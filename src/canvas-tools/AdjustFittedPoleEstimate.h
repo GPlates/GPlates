@@ -287,17 +287,9 @@ namespace GPlatesCanvasTools
 		void
 		update_pole_estimate_layer();
 
-//		void
-//		update_pole_estimate_highlight(
-//				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geom);
-
 		void
 		update_pole_estimate_highlight(
 				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point);
-
-//		void
-//		update_arc_and_end_point_highlight(
-//				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geom);
 
 		void
 		update_arc_and_end_point_highlight(
@@ -329,6 +321,8 @@ namespace GPlatesCanvasTools
 		bool d_reference_arc_end_point_is_being_dragged;
 		bool d_mouse_is_over_relative_arc;
 		bool d_relative_arc_is_being_dragged;
+		bool d_mouse_is_over_relative_arc_end_point;
+		bool d_relative_arc_end_point_is_being_dragged;
 
 		// For drawing the pole
 		child_layer_ptr_type d_pole_estimate_layer_ptr;
