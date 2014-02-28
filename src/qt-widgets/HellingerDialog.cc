@@ -962,6 +962,7 @@ GPlatesQtWidgets::HellingerDialog::update_pole_estimate_spinboxes(
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 	spinbox_lat_estimate->setValue(llp.latitude());
 	spinbox_lon_estimate->setValue(llp.longitude());
+	spinbox_rho_estimate->setValue(rho);
 }
 
 void

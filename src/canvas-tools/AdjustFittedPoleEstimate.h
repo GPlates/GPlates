@@ -295,6 +295,9 @@ namespace GPlatesCanvasTools
 		update_arc_and_end_point_highlight(
 				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point);
 
+		void
+		update_angle();
+
 
 		void
 		paint();

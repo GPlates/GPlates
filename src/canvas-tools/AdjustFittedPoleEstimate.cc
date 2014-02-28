@@ -31,6 +31,7 @@
 #include "qt-widgets/HellingerDialog.h"
 #include "maths/GreatCircleArc.h"
 #include "maths/ProximityHitDetail.h"
+#include "maths/SphericalArea.h" // for angle calculation
 #include "view-operations/RenderedGeometry.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
@@ -255,15 +256,15 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_drag(
 	}
 	else if (d_reference_arc_end_point_is_being_dragged)
 	{
-		qDebug() << "Reference arc being dragged";
 		d_end_point_of_reference_arc = current_point_on_sphere;
 		update_arc_and_end_point_highlight(current_point_on_sphere.get_non_null_pointer());
+		update_angle();
 	}
 	else if (d_relative_arc_end_point_is_being_dragged)
 	{
-		qDebug() << "Relative arc being dragged";
 		d_end_point_of_relative_arc = current_point_on_sphere;
 		update_arc_and_end_point_highlight(current_point_on_sphere.get_non_null_pointer());
+		update_angle();
 	}
 }
 
@@ -459,6 +460,18 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_arc_and_end_point_highlight
 
 	d_highlight_layer_ptr->add_rendered_geometry(gca_geometry);
 
+}
+
+void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_angle()
+{
+	GPlatesMaths::GreatCircleArc gca_1 = GPlatesMaths::GreatCircleArc::create(d_end_point_of_reference_arc,d_current_pole);
+	GPlatesMaths::GreatCircleArc gca_2 = GPlatesMaths::GreatCircleArc::create(d_current_pole,d_end_point_of_relative_arc);
+
+	d_current_angle = GPlatesMaths::convert_rad_to_deg(GPlatesMaths::calculate_angle_between_adjacent_non_zero_length_arcs(gca_1,gca_2));
+
+	d_current_angle = (d_current_angle > 180.) ? (360.-d_current_angle) : d_current_angle;
+	d_hellinger_dialog_ptr->update_pole_estimate_spinboxes(d_current_pole,d_current_angle);
+	qDebug() << "Angle: " << d_current_angle;
 }
 
 
