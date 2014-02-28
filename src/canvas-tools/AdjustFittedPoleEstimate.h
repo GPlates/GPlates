@@ -275,6 +275,8 @@ namespace GPlatesCanvasTools
 		enum GeometryTypeIndex
 		{
 			POLE_GEOMETRY_INDEX,
+			REFERENCE_ARC_ENDPOINT_GEOMETRY_INDEX,
+			RELATIVE_ARC_ENDPOINT_GEOMETRY_INDEX,
 			REFERENCE_ARC_GEOMETRY_INDEX,
 			RELATIVE_ARC_GEOMETRY_INDEX
 		};
@@ -285,25 +287,22 @@ namespace GPlatesCanvasTools
 		void
 		update_pole_estimate_layer();
 
-		void
-		update_pole_estimate_highlight(
-				const GPlatesMaths::PointOnSphere &current_pos);
+//		void
+//		update_pole_estimate_highlight(
+//				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geom);
 
 		void
 		update_pole_estimate_highlight(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geom);
+				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point);
+
+//		void
+//		update_arc_and_end_point_highlight(
+//				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geom);
 
 		void
-		update_highlight_geometry(
-				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geom);
+		update_arc_and_end_point_highlight(
+				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point);
 
-		void
-		update_reference_arc_highlight(
-				const GPlatesMaths::PointOnSphere &current_pos);
-
-		void
-		update_relative_arc_highlight(
-				const GPlatesMaths::PointOnSphere &current_pos);
 
 		void
 		paint();
@@ -326,6 +325,8 @@ namespace GPlatesCanvasTools
 		bool d_pole_is_being_dragged;
 		bool d_mouse_is_over_reference_arc;
 		bool d_reference_arc_is_being_draggged;
+		bool d_mouse_is_over_reference_arc_end_point;
+		bool d_reference_arc_end_point_is_being_dragged;
 		bool d_mouse_is_over_relative_arc;
 		bool d_relative_arc_is_being_dragged;
 
