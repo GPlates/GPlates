@@ -31,14 +31,45 @@
 #include "qt-widgets/HellingerDialog.h"
 #include "maths/GreatCircleArc.h"
 #include "maths/ProximityHitDetail.h"
-#include "maths/SphericalArea.h" // for angle calculation
 #include "view-operations/RenderedGeometry.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryProximity.h"
 #include "AdjustFittedPoleEstimate.h"
 
+namespace
+{
+	/**
+	 * @brief generate_new_relative_end_point
+	 * @param pole - the rotation pole
+	 * @param reference_end_point - the point at the end of the arc which represents a baseline from which angles are measured
+	 * @param relative_end_point - the point at the end of the arc which lies at angle @param angle from the baseline arc
+	 * @param angle - the rotation angle in degrees
+	 *
+	 * The value of @param relative_end_point is changed in this function.
+	 */
+	void
+	generate_new_relative_end_point(
+			const GPlatesMaths::PointOnSphere &pole,
+			const GPlatesMaths::PointOnSphere &reference_end_point,
+			GPlatesMaths::PointOnSphere &relative_end_point,
+			const double &angle)
+	{
+		using namespace GPlatesMaths;
 
+
+		// Project the relative_end_point onto the reference gca.
+		GreatCircleArc gca = GreatCircleArc::create(pole,reference_end_point);
+		UnitVector3D axis = gca.rotation_axis();
+		double arc_angle = std::acos(dot(pole.position_vector(),relative_end_point.position_vector()).dval());
+
+		Rotation r1 =  Rotation::create(axis,arc_angle);
+		PointOnSphere projected_relative_end_point = r1*pole;
+
+		Rotation r2 = GPlatesMaths::Rotation::create(pole.position_vector(),convert_deg_to_rad(angle));
+		relative_end_point = r2*projected_relative_end_point;
+	}
+}
 
 GPlatesCanvasTools::AdjustFittedPoleEstimate::AdjustFittedPoleEstimate(
 		const status_bar_callback_type &status_bar_callback,
@@ -210,6 +241,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_estimate_changed(
 		double rho)
 {
 	d_current_pole = GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(lat,lon));
+	generate_new_relative_end_point(d_current_pole,d_end_point_of_reference_arc,d_end_point_of_relative_arc,rho);
 	update_pole_estimate_layer();
 }
 
