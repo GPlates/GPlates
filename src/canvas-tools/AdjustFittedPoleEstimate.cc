@@ -30,15 +30,45 @@
 #include "gui/Symbol.h"
 #include "qt-widgets/HellingerDialog.h"
 #include "maths/GreatCircleArc.h"
-#include "maths/ProximityHitDetail.h"
 #include "view-operations/RenderedGeometry.h"
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryProximity.h"
 #include "AdjustFittedPoleEstimate.h"
 
+const GPlatesGui::Colour VERTEX_COLOUR = GPlatesGui::Colour::get_blue();
+const GPlatesGui::Colour ARC_COLOUR = GPlatesGui::Colour::get_blue();
+const GPlatesGui::Colour VERTEX_HIGHLIGHT_COLOUR = GPlatesGui::Colour::get_yellow();
+
 namespace
 {
+	/**
+	 * Compare based on hit index.
+	 */
+	bool
+	proximity_hit_index_compare(
+			const GPlatesViewOperations::RenderedGeometryProximityHit &lhs,
+			const GPlatesViewOperations::RenderedGeometryProximityHit &rhs)
+	{
+		return lhs.d_rendered_geom_index <
+			rhs.d_rendered_geom_index;
+	}
+
+	/**
+	 * Sorts proximity hits by index.
+	 */
+	void
+	sort_proximity_by_index(
+			GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type &sorted_proximity_seq)
+	{
+			// Sort results based on proximity closeness.
+			std::sort(
+					sorted_proximity_seq.begin(),
+					sorted_proximity_seq.end(),
+					proximity_hit_index_compare);
+	}
+
+
 	/**
 	 * @brief generate_new_relative_end_point
 	 * @param pole - the rotation pole
@@ -153,7 +183,10 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 				proximity_criteria,
 				*d_pole_estimate_layer_ptr))
 	{
-		// highlight the vertex
+		// The hits are sorted by closeness, but here I want to sort by index to be sure I get
+		// one of the vertices, which are rendered before the arcs, and so have lower geometry index.
+		sort_proximity_by_index(sorted_hits);
+
 		GPlatesViewOperations::RenderedGeometryProximityHit hit = sorted_hits.front();
 		GeometryFinder finder(hit.d_proximity_hit_detail->index());
 		GPlatesViewOperations::RenderedGeometry rg =
@@ -228,7 +261,6 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_press(
 		d_relative_arc_is_being_dragged = d_mouse_is_over_relative_arc;
 		d_reference_arc_end_point_is_being_dragged = d_mouse_is_over_reference_arc_end_point;
 		d_relative_arc_end_point_is_being_dragged = d_mouse_is_over_relative_arc_end_point;
-		d_pole_estimate_layer_ptr->set_active(false);
 	}
 
 }
@@ -282,8 +314,8 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_drag(
 {
 	if (d_pole_is_being_dragged)
 	{
-		update_pole_estimate_highlight(current_point_on_sphere.get_non_null_pointer());
 		d_current_pole = current_point_on_sphere;
+		update_pole_estimate_highlight(current_point_on_sphere.get_non_null_pointer());
 		update_angle();
 		d_hellinger_dialog_ptr->update_pole_estimate_spinboxes(current_point_on_sphere,d_current_angle);
 	}
@@ -367,7 +399,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 	GPlatesViewOperations::RenderedGeometry pole_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				d_current_pole.get_non_null_pointer(),
-				GPlatesGui::Colour::get_yellow(),
+				VERTEX_COLOUR,
 				2, /* point size */
 				2, /* line thickness */
 				false, /* fill polygon */
@@ -381,7 +413,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 	GPlatesViewOperations::RenderedGeometry reference_end_point_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				d_end_point_of_reference_arc.get_non_null_pointer(),
-				GPlatesGui::Colour::get_yellow(),
+				VERTEX_COLOUR,
 				10, /* point size */
 				2, /* line thickness */
 				false, /* fill polygon */
@@ -395,7 +427,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 	GPlatesViewOperations::RenderedGeometry relative_end_point_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				d_end_point_of_relative_arc.get_non_null_pointer(),
-				GPlatesGui::Colour::get_yellow(),
+				VERTEX_COLOUR,
 				10, /* point size */
 				2, /* line thickness */
 				false, /* fill polygon */
@@ -418,7 +450,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 	GPlatesViewOperations::RenderedGeometry gca_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				polyline,
-				GPlatesGui::Colour::get_yellow());
+				ARC_COLOUR);
 
 	d_pole_estimate_layer_ptr->add_rendered_geometry(gca_geometry);
 
@@ -427,7 +459,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 	polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(points);
 	gca_geometry = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				polyline,
-				GPlatesGui::Colour::get_yellow());
+				ARC_COLOUR);
 
 	d_pole_estimate_layer_ptr->add_rendered_geometry(gca_geometry);
 }
@@ -444,7 +476,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_highlight(
 	GPlatesViewOperations::RenderedGeometry pole_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 				point,
-				GPlatesGui::Colour::get_yellow(),
+				VERTEX_HIGHLIGHT_COLOUR,
 				2, /* point size */
 				2, /* line thickness */
 				false, /* fill polygon */
@@ -504,7 +536,7 @@ void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_angle()
 
 	d_current_angle = GPlatesMaths::convert_rad_to_deg(GPlatesMaths::calculate_angle_between_adjacent_non_zero_length_arcs(gca_1,gca_2));
 
-	d_current_angle = (d_current_angle > 180.) ? (360.-d_current_angle) : d_current_angle;
+	d_current_angle = (d_current_angle > 180.) ? (d_current_angle - 360.) : d_current_angle;
 	qDebug() << "Angle: " << d_current_angle;
 }
 
