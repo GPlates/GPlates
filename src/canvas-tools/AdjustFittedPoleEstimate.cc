@@ -273,7 +273,9 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_estimate_changed(
 		double rho)
 {
 	d_current_pole = GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(lat,lon));
-	generate_new_relative_end_point(d_current_pole,d_end_point_of_reference_arc,d_end_point_of_relative_arc,rho);
+	//TODO: the following function should only apply when we change the angle in the dialog, but
+	// not the lat-lon. I think we just need to split up the signal handlers.
+//	generate_new_relative_end_point(d_current_pole,d_end_point_of_reference_arc,d_end_point_of_relative_arc,rho);
 	update_pole_estimate_layer();
 }
 
