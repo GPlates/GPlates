@@ -959,10 +959,27 @@ GPlatesQtWidgets::HellingerDialog::update_pole_estimate_spinboxes(
 		const GPlatesMaths::PointOnSphere &point,
 		double rho)
 {
+	QObject::disconnect(spinbox_lat_estimate,SIGNAL(valueChanged(double)),
+					 this, SLOT(handle_estimate_changed()));
+	QObject::disconnect(spinbox_lon_estimate,SIGNAL(valueChanged(double)),
+					 this, SLOT(handle_estimate_changed()));
+	QObject::disconnect(spinbox_rho_estimate,SIGNAL(valueChanged(double)),
+					 this, SLOT(handle_estimate_changed()));
+
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 	spinbox_lat_estimate->setValue(llp.latitude());
 	spinbox_lon_estimate->setValue(llp.longitude());
+
+	rho = (rho < 0.) ? -rho : rho;
+
 	spinbox_rho_estimate->setValue(rho);
+
+	QObject::connect(spinbox_lat_estimate,SIGNAL(valueChanged(double)),
+					 this, SLOT(handle_estimate_changed()));
+	QObject::connect(spinbox_lon_estimate,SIGNAL(valueChanged(double)),
+					 this, SLOT(handle_estimate_changed()));
+	QObject::connect(spinbox_rho_estimate,SIGNAL(valueChanged(double)),
+					 this, SLOT(handle_estimate_changed()));
 }
 
 void
