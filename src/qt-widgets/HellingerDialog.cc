@@ -489,6 +489,8 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	update_from_model();
 
 	initialise_widgets();
+
+	set_up_test_chron_map();
 }
 
 void
@@ -1861,6 +1863,26 @@ GPlatesQtWidgets::HellingerDialog::update_hovered_item(
 		set_hovered_item(*d_hovered_item);
 		d_hovered_item_original_state = current_state;
 	}
+}
+
+void
+GPlatesQtWidgets::HellingerDialog::set_up_test_chron_map()
+{
+	// A few hard-coded chrons and time-intervals for testing.
+	// (The values are "real" and are taken from Gee and Kent 2007 :
+	// http://academiccommons.columbia.edu/catalog/ac:144328
+	// in case anyone's curious).
+
+	GPlatesAppLogic::ApplicationState::chron_to_time_interval_map_type &map =
+			d_view_state.get_application_state().get_chron_to_time_interval_map();
+
+	map.insert(std::make_pair(QString("C1n"),std::make_pair(0.,0.78)));
+	map.insert(std::make_pair(QString("C1r.1n"),std::make_pair(0.99,1.07)));
+	map.insert(std::make_pair(QString("C1r.2r-1n"),std::make_pair(1.201,1.211)));
+	map.insert(std::make_pair(QString("C2n"),std::make_pair(1.770,1.950)));
+	map.insert(std::make_pair(QString("C2r.1n"),std::make_pair(2.140,2.150)));
+
+
 }
 
 void

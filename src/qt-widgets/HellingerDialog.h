@@ -494,6 +494,9 @@ namespace GPlatesQtWidgets
 				boost::optional<QTreeWidgetItem*> item = boost::none,
 				bool current_state = true);
 
+		void
+		set_up_test_chron_map();
+
 
 		GPlatesPresentation::ViewState &d_view_state;
 
