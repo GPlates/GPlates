@@ -566,6 +566,19 @@ namespace
 		}
 
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		get_geometry_from_property(
+				const GPlatesModel::TopLevelProperty::non_null_ptr_type &property,
+				const double &reconstruction_time)
+		{
+			d_reconstruction_time = GPlatesPropertyValues::GeoTimeInstant(reconstruction_time);
+			d_geometry = boost::none;
+
+			property->accept_visitor(*this);
+
+			return d_geometry;
+		}
+
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 		get_geometry_from_property_value(
 				const GPlatesModel::PropertyValue &property_value,
 				const double &reconstruction_time)
@@ -864,6 +877,16 @@ GPlatesAppLogic::GeometryUtils::convert_geometry_to_polygon(
 boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 GPlatesAppLogic::GeometryUtils::get_geometry_from_property(
 		const GPlatesModel::FeatureHandle::iterator &property,
+		const double &reconstruction_time)
+{
+	GetGeometryFromPropertyVisitor visitor;
+	return visitor.get_geometry_from_property(property, reconstruction_time);
+}
+
+
+boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+GPlatesAppLogic::GeometryUtils::get_geometry_from_property(
+		const GPlatesModel::TopLevelProperty::non_null_ptr_type &property,
 		const double &reconstruction_time)
 {
 	GetGeometryFromPropertyVisitor visitor;

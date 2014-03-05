@@ -67,6 +67,26 @@ class ReconstructTest(unittest.TestCase):
             'test.xy',
             10)
         
+        reconstructed_feature_geometries = []
+        pygplates.reconstruct(
+            [os.path.join(FIXTURES, 'volcanoes.gpml')],
+            os.path.join(FIXTURES, 'rotations.rot'),
+            reconstructed_feature_geometries,
+            0)
+        self.assertEqual(len(reconstructed_feature_geometries), 4)
+        rfg1 = reconstructed_feature_geometries[0]
+        self.assertTrue(rfg1.get_feature())
+        self.assertTrue(rfg1.get_property())
+        
+        reconstructed_feature_geometries = []
+        pygplates.reconstruct(
+            [os.path.join(FIXTURES, 'volcanoes.gpml')],
+            [os.path.join(FIXTURES, 'rotations.rot')],
+            reconstructed_feature_geometries,
+            15)
+        # One volcano does not exist at 15Ma.
+        self.assertEqual(len(reconstructed_feature_geometries), 3)
+        
     def test_deprecated_reconstruct(self):
         # We continue to support the deprecated version of 'reconstruct()' since
         # it was one of the few python API functions that's been around since

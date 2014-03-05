@@ -82,7 +82,7 @@ export_geometry_on_sphere()
 	 *   'PythonConverterUtils::get_geometry_on_sphere_as_derived_type()'
 	 * which returns a 'non_null_ptr_type' to the *derived* geometry type.
 	 * UPDATE: Actually boost-python will convert a 'GeometryOnSphere::non_null_ptr_to_const_type' to a reference
-	 * to a derived geometry type (eg, 'GeometryOnSphere::non_null_ptr_to_const_type' -> 'PointOnSphere &')
+	 * to a derived geometry type (eg, 'GeometryOnSphere::non_null_ptr_to_const_type' -> 'const PointOnSphere &')
 	 * but it can't convert to a 'non_null_ptr_to_const_type' of derived geometry type
 	 * (eg, 'GeometryOnSphere::non_null_ptr_to_const_type' -> 'PointOnSphere::non_null_ptr_to_const_type') so
 	 * 'PythonConverterUtils::get_geometry_on_sphere_as_derived_type()' is still needed for that.
