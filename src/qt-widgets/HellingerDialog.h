@@ -217,6 +217,14 @@ namespace GPlatesQtWidgets
 		update_pole_estimate_spinboxes(
 				const GPlatesMaths::PointOnSphere &point, double rho);
 
+		void
+		update_pole_estimate_angle_spinbox(
+				double &angle);
+
+		void
+		update_pole_estimate_lat_lon_spinboxes(
+				const GPlatesMaths::PointOnSphere &point);
+
 	public Q_SLOTS:
 
 		/**
@@ -240,9 +248,12 @@ namespace GPlatesQtWidgets
 	Q_SIGNALS:
 
 		void
-		estimate_changed(
+		pole_estimate_lat_lon_changed(
 				double,
-				double,
+				double);
+
+		void
+		pole_estimate_angle_changed(
 				double);
 
 	private:
@@ -398,7 +409,10 @@ namespace GPlatesQtWidgets
 		handle_spinbox_radius_changed();
 
 		void
-		handle_estimate_changed();
+		handle_pole_estimate_lat_lon_changed();
+
+		void
+		handle_pole_estimate_angle_changed();
 
 		void
 		handle_chron_time_changed(

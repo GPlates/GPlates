@@ -898,14 +898,19 @@ GPlatesQtWidgets::HellingerDialog::handle_spinbox_radius_changed()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::handle_estimate_changed()
+GPlatesQtWidgets::HellingerDialog::handle_pole_estimate_lat_lon_changed()
 {
 
-	Q_EMIT estimate_changed(
+	Q_EMIT pole_estimate_lat_lon_changed(
 				spinbox_lat_estimate->value(),
-				spinbox_lon_estimate->value(),
-				spinbox_rho_estimate->value());
+				spinbox_lon_estimate->value());
 
+}
+
+void GPlatesQtWidgets::HellingerDialog::handle_pole_estimate_angle_changed()
+{
+	Q_EMIT pole_estimate_angle_changed(
+				spinbox_rho_estimate->value());
 }
 
 void
@@ -959,27 +964,41 @@ GPlatesQtWidgets::HellingerDialog::update_pole_estimate_spinboxes(
 		const GPlatesMaths::PointOnSphere &point,
 		double rho)
 {
-	QObject::disconnect(spinbox_lat_estimate,SIGNAL(valueChanged(double)),
-					 this, SLOT(handle_estimate_changed()));
-	QObject::disconnect(spinbox_lon_estimate,SIGNAL(valueChanged(double)),
-					 this, SLOT(handle_estimate_changed()));
+	update_pole_estimate_lat_lon_spinboxes(point);
+	update_pole_estimate_angle_spinbox(rho);
+}
+
+void
+GPlatesQtWidgets::HellingerDialog::update_pole_estimate_angle_spinbox(
+		double &rho)
+{
 	QObject::disconnect(spinbox_rho_estimate,SIGNAL(valueChanged(double)),
-					 this, SLOT(handle_estimate_changed()));
+					 this, SLOT(handle_pole_estimate_angle_changed()));
+
+	rho = (rho < 0.) ? -rho : rho;
+	spinbox_rho_estimate->setValue(rho);
+
+	QObject::connect(spinbox_rho_estimate,SIGNAL(valueChanged(double)),
+					 this, SLOT(handle_pole_estimate_angle_changed()));
+}
+
+void
+GPlatesQtWidgets::HellingerDialog::update_pole_estimate_lat_lon_spinboxes(
+		const GPlatesMaths::PointOnSphere &point)
+{
+	QObject::disconnect(spinbox_lat_estimate,SIGNAL(valueChanged(double)),
+					 this, SLOT(handle_pole_estimate_lat_lon_changed()));
+	QObject::disconnect(spinbox_lon_estimate,SIGNAL(valueChanged(double)),
+					 this, SLOT(handle_pole_estimate_lat_lon_changed()));
 
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(point);
 	spinbox_lat_estimate->setValue(llp.latitude());
 	spinbox_lon_estimate->setValue(llp.longitude());
 
-	rho = (rho < 0.) ? -rho : rho;
-
-	spinbox_rho_estimate->setValue(rho);
-
 	QObject::connect(spinbox_lat_estimate,SIGNAL(valueChanged(double)),
-					 this, SLOT(handle_estimate_changed()));
+					 this, SLOT(handle_pole_estimate_lat_lon_changed()));
 	QObject::connect(spinbox_lon_estimate,SIGNAL(valueChanged(double)),
-					 this, SLOT(handle_estimate_changed()));
-	QObject::connect(spinbox_rho_estimate,SIGNAL(valueChanged(double)),
-					 this, SLOT(handle_estimate_changed()));
+					 this, SLOT(handle_pole_estimate_lat_lon_changed()));
 }
 
 void
@@ -1963,11 +1982,11 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 
 	// Connections related to the initial guess and other fit parameters.
 	QObject::connect(spinbox_lat_estimate,SIGNAL(valueChanged(double)),
-					 this, SLOT(handle_estimate_changed()));
+					 this, SLOT(handle_pole_estimate_lat_lon_changed()));
 	QObject::connect(spinbox_lon_estimate,SIGNAL(valueChanged(double)),
-					 this, SLOT(handle_estimate_changed()));
+					 this, SLOT(handle_pole_estimate_lat_lon_changed()));
 	QObject::connect(spinbox_rho_estimate,SIGNAL(valueChanged(double)),
-					 this, SLOT(handle_estimate_changed()));
+					 this, SLOT(handle_pole_estimate_angle_changed()));
 	QObject::connect(spinbox_radius, SIGNAL(valueChanged(double)), this, SLOT(handle_spinbox_radius_changed()));
 	QObject::connect(checkbox_grid_search, SIGNAL(clicked()), this, SLOT(handle_checkbox_grid_search_changed()));
 

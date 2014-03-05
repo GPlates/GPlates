@@ -131,9 +131,14 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::AdjustFittedPoleEstimate(
 				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	QObject::connect(d_hellinger_dialog_ptr,
-					 SIGNAL(estimate_changed(double,double,double)),
+					 SIGNAL(pole_estimate_lat_lon_changed(double,double)),
 					 this,
-					 SLOT(handle_estimate_changed(double,double,double)));
+					 SLOT(handle_pole_estimate_lat_lon_changed(double,double)));
+
+	QObject::connect(d_hellinger_dialog_ptr,
+					 SIGNAL(pole_estimate_angle_changed(double)),
+					 this,
+					 SLOT(handle_pole_estimate_angle_changed(double)));
 }
 
 void
@@ -267,15 +272,22 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_press(
 
 
 void
-GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_estimate_changed(
+GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_pole_estimate_lat_lon_changed(
 		double lat,
-		double lon,
-		double rho)
+		double lon)
 {
 	d_current_pole = GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(lat,lon));
-	//TODO: the following function should only apply when we change the angle in the dialog, but
-	// not the lat-lon. I think we just need to split up the signal handlers.
-//	generate_new_relative_end_point(d_current_pole,d_end_point_of_reference_arc,d_end_point_of_relative_arc,rho);
+	update_angle();
+	update_pole_estimate_layer();
+	d_hellinger_dialog_ptr->update_pole_estimate_spinboxes(d_current_pole,d_current_angle);
+}
+
+void
+GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_pole_estimate_angle_changed(
+		double angle)
+{
+	generate_new_relative_end_point(d_current_pole,d_end_point_of_reference_arc,d_end_point_of_relative_arc,angle);
+
 	update_pole_estimate_layer();
 }
 

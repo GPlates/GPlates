@@ -261,10 +261,13 @@ namespace GPlatesCanvasTools
 	private Q_SLOTS:
 
 		void
-		handle_estimate_changed(
+		handle_pole_estimate_lat_lon_changed(
 				double lat,
-				double lon,
-				double rho);
+				double lon);
+
+		void
+		handle_pole_estimate_angle_changed(
+				double angle);
 
 
 	private:
