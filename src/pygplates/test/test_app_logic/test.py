@@ -74,9 +74,12 @@ class ReconstructTest(unittest.TestCase):
             reconstructed_feature_geometries,
             0)
         self.assertEqual(len(reconstructed_feature_geometries), 4)
+        # Test queries on ReconstructedFeatureGeometry.
         rfg1 = reconstructed_feature_geometries[0]
         self.assertTrue(rfg1.get_feature())
         self.assertTrue(rfg1.get_property())
+        self.assertTrue(pygplates.get_geometry_from_property_value(rfg1.get_property().get_value(), pygplates.PointOnSphere))
+        self.assertTrue(isinstance(rfg1.get_reconstructed_geometry(), pygplates.PointOnSphere))
         
         reconstructed_feature_geometries = []
         pygplates.reconstruct(
