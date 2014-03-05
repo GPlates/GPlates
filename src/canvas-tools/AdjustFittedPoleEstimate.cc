@@ -210,19 +210,16 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 
 			// We have moved the mouse over one of the 5 geometries in the pole_estimate_layer.
 			unsigned int index = hit.d_rendered_geom_index;
-			qDebug() << "found geom with index " << index;
 			switch(index){
 			case POLE_GEOMETRY_INDEX:
 				d_mouse_is_over_pole_estimate = true;
 				update_pole_estimate_and_arc_highlight(point_on_sphere.get_non_null_pointer());
 				break;
 			case REFERENCE_ARC_ENDPOINT_GEOMETRY_INDEX:
-				qDebug() << "Over reference end point";
 				d_mouse_is_over_reference_arc_end_point = true;
 				update_arc_and_end_point_highlight(point_on_sphere.get_non_null_pointer());
 				break;
 			case RELATIVE_ARC_ENDPOINT_GEOMETRY_INDEX:
-				qDebug() << "Over relative end point";
 				d_mouse_is_over_relative_arc_end_point = true;
 				update_arc_and_end_point_highlight(point_on_sphere.get_non_null_pointer());
 				break;
@@ -377,14 +374,17 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_local_values_from_hellinger
 {
 	d_current_pole = GPlatesMaths::make_point_on_sphere(d_hellinger_dialog_ptr->get_pole_estimate_lat_lon());
 	d_current_angle = d_hellinger_dialog_ptr->get_pole_estimate_angle();
-	qDebug() << "angle: " << d_current_angle;
 
 	if (!d_has_been_activated)
 	{
-		d_end_point_of_reference_arc = GPlatesMaths::PointOnSphere(GPlatesMaths::generate_perpendicular(d_current_pole.position_vector()));
+		// Set an (arbitrary) initial direction for the reference arc relative to the pole, with arc-angle 45 degrees.
+		GPlatesMaths::UnitVector3D perpendicular = GPlatesMaths::generate_perpendicular(d_current_pole.position_vector());
+		GPlatesMaths::Rotation rotation_1 = GPlatesMaths::Rotation::create(perpendicular,GPlatesMaths::convert_deg_to_rad(45.));
+		d_end_point_of_reference_arc = rotation_1*d_current_pole;
 
-		GPlatesMaths::Rotation rotation = GPlatesMaths::Rotation::create(d_current_pole.position_vector(),d_current_angle*GPlatesMaths::PI/180.);
-		d_end_point_of_relative_arc = rotation*d_end_point_of_reference_arc;
+
+		GPlatesMaths::Rotation rotation_2 = GPlatesMaths::Rotation::create(d_current_pole.position_vector(),GPlatesMaths::convert_deg_to_rad(d_current_angle));
+		d_end_point_of_relative_arc = rotation_2*d_end_point_of_reference_arc;
 	}
 }
 
@@ -599,7 +599,6 @@ void GPlatesCanvasTools::AdjustFittedPoleEstimate::update_angle()
 	d_current_angle = GPlatesMaths::convert_rad_to_deg(GPlatesMaths::calculate_angle_between_adjacent_non_zero_length_arcs(gca_1,gca_2));
 
 	d_current_angle = (d_current_angle > 180.) ? (d_current_angle - 360.) : d_current_angle;
-	qDebug() << "Angle: " << d_current_angle;
 }
 
 

@@ -39,8 +39,6 @@
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/Layer.h"
 
-#include "gui/Symbol.h"
-
 #include "view-operations/RenderedGeometryCollection.h"
 
 
