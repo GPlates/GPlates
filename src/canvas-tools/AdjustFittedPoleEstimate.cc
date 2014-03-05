@@ -39,8 +39,11 @@
 const GPlatesGui::Colour VERTEX_COLOUR = GPlatesGui::Colour::get_blue();
 const GPlatesGui::Colour ARC_COLOUR = GPlatesGui::Colour::get_blue();
 const GPlatesGui::Colour VERTEX_HIGHLIGHT_COLOUR = GPlatesGui::Colour::get_yellow();
+const GPlatesGui::Symbol POLE_SYMBOL = GPlatesGui::Symbol(GPlatesGui::Symbol::CIRCLE,1,true);
+const GPlatesGui::Symbol END_POINT_SYMBOL = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, 2, true);
 const GPlatesGui::Symbol POLE_HIGHLIGHT_SYMBOL = GPlatesGui::Symbol(GPlatesGui::Symbol::CIRCLE, 2, true);
 const GPlatesGui::Symbol END_POINT_HIGHLIGHT_SYMBOL = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, 3, true);
+
 
 namespace
 {
@@ -406,9 +409,6 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 
 	d_pole_estimate_layer_ptr->clear_rendered_geometries();
 
-	static const GPlatesGui::Symbol pole_estimate_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CIRCLE, 1, true);
-	static const GPlatesGui::Symbol end_point_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, 2, true);
-
 
 	GPlatesViewOperations::RenderedGeometry pole_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
@@ -419,7 +419,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 				false, /* fill polygon */
 				false, /* fill polyline */
 				GPlatesGui::Colour::get_white(), /* dummy colour */
-				pole_estimate_symbol);
+				POLE_SYMBOL);
 
 
 	d_pole_estimate_layer_ptr->add_rendered_geometry(pole_geometry);
@@ -433,7 +433,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 				false, /* fill polygon */
 				false, /* fill polyline */
 				GPlatesGui::Colour::get_white(),/* dummy colour */
-				end_point_symbol);
+				END_POINT_SYMBOL);
 
 
 	d_pole_estimate_layer_ptr->add_rendered_geometry(reference_end_point_geometry);
@@ -447,7 +447,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 				false, /* fill polygon */
 				false, /* fill polyline */
 				GPlatesGui::Colour::get_white(),/* dummy colour */
-				end_point_symbol);
+				END_POINT_SYMBOL);
 
 
 	d_pole_estimate_layer_ptr->add_rendered_geometry(relative_end_point_geometry);
