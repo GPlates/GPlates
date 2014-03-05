@@ -305,6 +305,19 @@ namespace GPlatesQtWidgets
         QStringList
 		get_data_as_string() const;
 
+		QString
+		get_chron_string() const
+		{
+			return d_chron_string;
+		}
+
+		void
+		set_chron_string(
+				const QString &chron_string)
+		{
+			d_chron_string = chron_string;
+		}
+
 		hellinger_model_type::const_iterator begin() const;
 
 		hellinger_model_type::const_iterator end() const;
@@ -356,6 +369,7 @@ namespace GPlatesQtWidgets
 		boost::optional<HellingerFitStructure> d_last_result;
 		hellinger_model_type d_model;
 		std::vector<GPlatesMaths::LatLonPoint> d_error_ellipse_points;
+		QString d_chron_string;
 
 		// TODO: check if this path is required.
 		// Required until we have shifted file-io to the reader class.

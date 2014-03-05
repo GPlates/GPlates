@@ -36,51 +36,36 @@ namespace GPlatesQtWidgets
 namespace GPlatesFileIO
 {
 
-class HellingerReader
-{
-public:
-    HellingerReader();
-#if 0
-    /**
-     * Provide a static read_file method for conformance with other file-io methods. Unsure
-     * if we will need to instantiate a class here.
-     *
-     * All picks contained in the same pick file will share the same moving/fixed plate ids, and same
-     * chron time.
-     */
-    static
-    void
-    read_pick_file(
-            File::Reference &file,
-            GPlatesModel::ModelInterface &model,
-            ReadErrorAccumulation &read_errors,
-            const GPlatesModel::integer_plate_id_type &moving_plate_id,
-            const GPlatesModel::integer_plate_id_type &fixed_plate_id,
-            const double &chron_time);
-#endif
 
+	/**
+	 * @brief The HellingerReader class
+	 */
+	class HellingerReader
+	{
+	public:
+		HellingerReader();
 
-	static
-	void
-	read_pick_file(
-			const QString &filename,
-			GPlatesQtWidgets::HellingerModel &hellinger_model,
-			ReadErrorAccumulation &read_errors);
+		static
+		void
+		read_pick_file(
+				const QString &filename,
+				GPlatesQtWidgets::HellingerModel &hellinger_model,
+				ReadErrorAccumulation &read_errors);
 
-    static
-    void
-    read_com_file(
-            const QString &filename,
-            GPlatesQtWidgets::HellingerModel& hellinger_model,
-            ReadErrorAccumulation &read_errors);
+		static
+		void
+		read_com_file(
+				const QString &filename,
+				GPlatesQtWidgets::HellingerModel& hellinger_model,
+				ReadErrorAccumulation &read_errors);
 
-
-	static
-	void
-	read_error_ellipse(
-			const QString &filename,
-			GPlatesQtWidgets::HellingerModel& hellinger_model);
-};
+		// TODO: Implement. Reading the error ellipse is done by the HellingerModel class.
+		static
+		void
+		read_error_ellipse(
+				const QString &filename,
+				GPlatesQtWidgets::HellingerModel& hellinger_model);
+	};
 
 }
 #endif // GPLATES_FILEIO_PICKFILEREADER_H

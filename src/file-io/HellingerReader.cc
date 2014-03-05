@@ -322,6 +322,40 @@ namespace
 
             }
 
+			/**
+			 * @brief parse_filename_for_chron_string
+			 * @param filename
+			 * @return  the string lying between the last dash ("-") or last underscore ("_")  (whichever lies closest to the end)
+			 * and the last full stop (".") .
+			 */
+			QString
+			parse_filename_for_chron_string(
+					QString filepath)
+			{
+				QFileInfo file_info(filepath);
+
+				// completeBaseName gives us the filename upto the last "." and without the path.
+				QString base_name = file_info.completeBaseName();
+
+				qDebug() << "base_name: " << base_name;
+
+				int dash_index = base_name.lastIndexOf("-");
+				int underscore_index = base_name.lastIndexOf("_");
+
+				qDebug() << "indices: " << dash_index << ", " << underscore_index;
+
+				if ((dash_index == -1) && (underscore_index == -1))
+				{
+					return QString();
+				}
+
+				int index = qMax(dash_index,underscore_index);
+				int l = base_name.length();
+
+				qDebug() << "Chron string: " << base_name.right(l-index-1);
+				return base_name.right(l-index-1);
+			}
+
 
 }
 
@@ -428,6 +462,10 @@ GPlatesFileIO::HellingerReader::read_com_file(
 	QString pick_file = file_info.absolutePath() + QDir::separator() + hellinger_model.get_hellinger_com_file_struct().d_pick_file;
 
 	read_pick_file(pick_file,hellinger_model,read_errors);
+
+	QString chron_string = parse_filename_for_chron_string(filename);
+
+	hellinger_model.set_chron_string(chron_string);
 
 }
 

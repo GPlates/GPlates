@@ -111,6 +111,60 @@ namespace{
 		NUM_STATES
 	};
 
+	/**
+	 * @brief set_chron_time
+	 * @param chron_time - if we find a matching chron string in the @param map, then @param chron_time is changed on return
+	 * @param chron_string - QString of form <chron>.<y|o>
+	 * where <y|o> can be "y" or "o", indicating which of the
+	 * younger or older ends of the time interval is to be used.
+	 *
+	 * @param map - a map of <QString chron> to <double younger_time,double older_time>
+	 */
+	void
+	set_chron_time(
+			double &chron_time,
+			const QString &chron_string,
+			const GPlatesAppLogic::ApplicationState::chron_to_time_interval_map_type &map)
+	{
+		// Extract the "y" (younger) or "o" (older) field from the chron_string, if it exists.
+		int i = chron_string.lastIndexOf(".");
+		qDebug() << "index of last dot: " << i;
+		QString younger_or_older_string = chron_string.right(chron_string.length() - i - 1);
+
+		// Everything to the left of the last "." we will take as the base_chron_string,
+		// which we'll use as a key in the chron-to-time-interval-map.
+		QString base_chron_string = chron_string.left(i);
+		qDebug() << "base: " << base_chron_string;
+		qDebug() << "end: " << younger_or_older_string;
+
+		static const QString younger_string = QString("y");
+		static const QString older_string = QString("n");
+
+		// We have to use the younger or older ends of the time interval.If we
+		// don't find any sensible indication of this in the chron_string, we'll
+		// choose (arbitrarily) the younger, so we'll make this the default behaviour.
+		bool use_younger_end = true;
+
+		if (younger_or_older_string == older_string)
+		{
+			use_younger_end = false;
+		}
+
+		GPlatesAppLogic::ApplicationState::chron_to_time_interval_map_type::const_iterator iter
+				= map.find(base_chron_string);
+
+		if (iter != map.end())
+		{
+			if (use_younger_end)
+			{
+				chron_time = iter->second.first;
+			}
+			else
+			{
+				chron_time = iter->second.second;
+			}
+		}
+	}
 
 	bool
 	edit_operation_active(const GPlatesQtWidgets::CanvasOperationType &type)
@@ -862,7 +916,7 @@ GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 	QFile file(path);
 	QFileInfo file_info(file.fileName());
 	QStringList file_name = file_info.fileName().split(".", QString::SkipEmptyParts);
-	QString type_file = file_name.at(1);
+	QString type_file = file_name.last();
 
 	d_hellinger_model->reset_model();
 
@@ -886,6 +940,12 @@ GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 	}
 
 	line_import_file->setText(path);
+
+	set_chron_time(
+				d_chron_time,
+				d_hellinger_model->get_chron_string(),
+				d_view_state.get_application_state().get_chron_to_time_interval_map());
+	spinbox_chron->setValue(d_chron_time);
 
 	update_buttons();
 	update_from_model();
