@@ -62,6 +62,7 @@ void export_top_level_property();
 
 // app-logic namespace
 void export_reconstruct();
+void export_reconstruction_geometries();
 void export_reconstruction_tree();
 void export_rotation_model();
 
@@ -156,6 +157,7 @@ export_cpp_python_api()
 
 	// app-logic namespace
 	export_reconstruct();
+	export_reconstruction_geometries();
 	export_reconstruction_tree();
 	export_rotation_model();
 

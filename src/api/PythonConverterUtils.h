@@ -620,7 +620,8 @@ namespace GPlatesApi
 			// from-python which can have any number.
 			//
 			// This check essentially prevents unnecessary slowdowns during from-python conversions
-			// due to multiple registrations for the same variant type that do the same conversion check.
+			// due to multiple registrations for the same variant type that will end up doing the
+			// exact same conversion check at runtime when boost-python searches its registry list.
 			const bp::converter::registration* registration =
 					bp::converter::registry::query(variant_type_info);
 			if (registration == NULL ||

@@ -50,6 +50,7 @@ set(srcs
     PyQualifiedXmlNames.cc
     PyReal.cc
     PyReconstruct.cc
+    PyReconstructionGeometries.cc
     PyReconstructionTree.cc
     PyReconstructionTree.h
     PyRevisionedVector.cc
