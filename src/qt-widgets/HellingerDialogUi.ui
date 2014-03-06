@@ -120,7 +120,7 @@
         <item>
          <widget class="QLabel" name="label_10">
           <property name="text">
-           <string>Pick file:</string>
+           <string>Pick/com file:</string>
           </property>
          </widget>
         </item>
@@ -879,7 +879,7 @@
          </spacer>
         </item>
         <item>
-         <widget class="QPushButton" name="button_details">
+         <widget class="QPushButton" name="button_show_details">
           <property name="minimumSize">
            <size>
             <width>108</width>
@@ -1180,7 +1180,7 @@
   <tabstop>spinbox_result_lat</tabstop>
   <tabstop>spinbox_result_lon</tabstop>
   <tabstop>spinbox_result_angle</tabstop>
-  <tabstop>button_details</tabstop>
+  <tabstop>button_show_details</tabstop>
   <tabstop>spinbox_chron</tabstop>
   <tabstop>slider_recon_time</tabstop>
   <tabstop>spinbox_recon_time</tabstop>

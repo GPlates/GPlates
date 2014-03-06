@@ -1115,11 +1115,11 @@ GPlatesQtWidgets::HellingerDialog::handle_export_com_file()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::show_stat_details()
+GPlatesQtWidgets::HellingerDialog::handle_show_details()
 {
 	if (!d_hellinger_stats_dialog)
 	{
-		d_hellinger_stats_dialog = new GPlatesQtWidgets::HellingerStatsDialog(d_python_path,this);
+		d_hellinger_stats_dialog = new GPlatesQtWidgets::HellingerStatsDialog(d_python_path,TEMP_PAR_FILENAME,this);
 	}
 	d_hellinger_stats_dialog->update();
 	d_hellinger_stats_dialog->show();
@@ -1304,14 +1304,14 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 			data_file.close();
 			update_result();
 			button_stats->setEnabled(true);
-			button_details->setEnabled(true);
+			button_show_details->setEnabled(true);
 		}
 	}
 	else if(d_thread_type == STATS_THREAD_TYPE)
 	{
 		d_hellinger_model->read_error_ellipse_points();
 		draw_error_ellipse();
-		button_details->setEnabled(true);
+		button_show_details->setEnabled(true);
 	}
 }
 
@@ -1323,7 +1323,7 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 	button_export_pick_file->setEnabled(false);
 	button_export_com_file->setEnabled(false);
 	button_calculate_fit->setEnabled(false);
-	button_details->setEnabled(false);
+	button_show_details->setEnabled(false);
 	button_remove_segment->setEnabled(false);
 	button_remove_pick->setEnabled(false);
 	button_stats->setEnabled(false);
@@ -2040,7 +2040,7 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	// Connections related to the pick tree-widget and associated buttons.
 	QObject::connect(button_calculate_fit, SIGNAL(clicked()),this, SLOT(handle_calculate_fit()));
 	QObject::connect(button_import_file, SIGNAL(clicked()), this, SLOT(import_hellinger_file()));
-	QObject::connect(button_details, SIGNAL(clicked()), this, SLOT(show_stat_details()));
+	QObject::connect(button_show_details, SIGNAL(clicked()), this, SLOT(handle_show_details()));
 	QObject::connect(button_new_pick, SIGNAL(clicked()), this, SLOT(handle_add_new_pick()));
 	QObject::connect(button_export_pick_file, SIGNAL(clicked()), this, SLOT(handle_export_pick_file()));
 	QObject::connect(button_export_com_file, SIGNAL(clicked()), this, SLOT(handle_export_com_file()));

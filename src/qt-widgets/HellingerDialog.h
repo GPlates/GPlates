@@ -360,7 +360,7 @@ namespace GPlatesQtWidgets
 		import_hellinger_file();
 
 		void
-		show_stat_details();
+		handle_show_details();
 
 
 		void

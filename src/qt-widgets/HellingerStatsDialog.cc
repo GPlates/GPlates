@@ -32,9 +32,11 @@
 
 GPlatesQtWidgets::HellingerStatsDialog::HellingerStatsDialog(
 		const QString &python_path,
+		const QString &parameter_file_name,
 		QWidget *parent_):
         QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-		d_python_path(python_path)
+		d_python_path(python_path),
+		d_parameter_file_name(parameter_file_name)
 {
 	setupUi(this);
 	QObject::connect(button_export, SIGNAL(clicked()), this, SLOT(handle_export()));
@@ -44,7 +46,7 @@ void
 GPlatesQtWidgets::HellingerStatsDialog::update()
 {
     textEdit->clear();
-	QString filepath = d_python_path + QDir::separator() + "temp_file_par";
+	QString filepath = d_python_path + QDir::separator() + d_parameter_file_name;
     QFile dataFile(filepath);
 
     QString line;
@@ -69,7 +71,7 @@ GPlatesQtWidgets::HellingerStatsDialog::handle_export()
                                                      tr("Text Files (*.txt);"));
     QString path = file_name;
     QFile file_out(path);
-	QString filepath = d_python_path + QDir::separator() + "temp_file_par";
+	QString filepath = d_python_path + QDir::separator() + d_parameter_file_name;
 	QFile dataFile(filepath);
     QString line;
     if (dataFile.open(QFile::ReadOnly))
