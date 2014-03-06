@@ -2,7 +2,7 @@ import sys
 import optparse
 from math import *
 from optparse import OptionParser
-#sys.path.append("./scripts/")
+sys.path.append("./scripts/")
 from math_hellinger import *
 from numpy import *
 VERSION = "2011/09/15"
@@ -544,9 +544,9 @@ def cont(in_file, alat, along, rho, radius, sig_level, iteration, grid_search, k
     guess = [alat, along, rho]
     startHellinger = Hellinger(in_file, guess, radius, sig_level, iteration, grid_search, kappa_quest,output_graphics, path, file_dat, file_up, file_do)
     
-    qhati_file = path + "temp_file_qhati"
-    qhat_file = path + "temp_file_qhat"
-    rmin_file = path + "temp_file_rmin"
+    qhati_file = path + "temp_pick_qhati"
+    qhat_file = path + "temp_pick_qhat"
+    rmin_file = path + "temp_pick_rmin"
 
     qhati_f = open(qhati_file, "r")
     qhat_f = open(qhat_file, "r")
