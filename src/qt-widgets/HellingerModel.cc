@@ -380,6 +380,7 @@ GPlatesQtWidgets::HellingerModel::read_error_ellipse_points()
     {
 		qDebug() << "Ellipse point file opened.";
         QTextStream in(&data_file);
+		in.readLine();
         while (!in.atEnd())
         {
             QString line = in.readLine();

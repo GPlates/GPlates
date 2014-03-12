@@ -1412,6 +1412,7 @@ GPlatesQtWidgets::HellingerDialog::draw_error_ellipse()
 			GPlatesMaths::LatLonPoint llp = *iter;
 			double lat = llp.latitude();
 			double lon = llp.longitude();
+			qDebug() << "Drawing error ellipse with point: " << lat << ", " << lon;
 			GPlatesGui::Symbol results_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, DEFAULT_SYMBOL_SIZE, true);
 			GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
 						GPlatesMaths::LatLonPoint(lat,lon));
