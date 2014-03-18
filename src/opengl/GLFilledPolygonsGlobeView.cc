@@ -679,7 +679,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
 
 		const bool lighting_enabled = d_light &&
 				d_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
-						GPlatesGui::SceneLightingParameters::LIGHTING_FILLED_POLYGON);
+						GPlatesGui::SceneLightingParameters::LIGHTING_FILLED_GEOMETRY_ON_SPHERE);
 
 		// Determine which shader program to use.
 		if (clip_to_tile_frustum)

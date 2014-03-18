@@ -297,6 +297,9 @@ set(srcs
     LeaveFullScreenButtonUi.ui
     LicenseDialog.cc
     LicenseDialog.h
+    LightingWidget.cc
+    LightingWidget.h
+    LightingWidgetUi.ui
     LinkWidget.cc
     LinkWidget.h
     LogDialog.cc
@@ -326,6 +329,9 @@ set(srcs
     ModifyReconstructionPoleWidget.cc
     ModifyReconstructionPoleWidget.h
     ModifyReconstructionPoleWidgetUi.ui
+    MovePoleWidget.cc
+    MovePoleWidget.h
+    MovePoleWidgetUi.ui
     NoActiveEditWidgetException.h
     OpenDirectoryDialog.cc
     OpenDirectoryDialog.h

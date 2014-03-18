@@ -35,7 +35,11 @@
 
 #include "maths/types.h"
 #include "maths/MathsUtils.h"
+#include "maths/Rotation.h"
 #include "maths/UnitVector3D.h"
+
+#include "opengl/GLMatrix.h"
+
 
 namespace GPlatesGui
 {
@@ -52,8 +56,9 @@ namespace GPlatesGui
 		 */
 		enum LightingPrimitiveType
 		{
-			LIGHTING_POINT_POLYLINE_POLYGON,
-			LIGHTING_FILLED_POLYGON,
+			LIGHTING_GEOMETRY_ON_SPHERE,
+			LIGHTING_FILLED_GEOMETRY_ON_SPHERE,
+			LIGHTING_DIRECTION_ARROW,
 			LIGHTING_RASTER,
 			LIGHTING_SCALAR_FIELD,
 
@@ -67,21 +72,9 @@ namespace GPlatesGui
 		 *
 		 * The initial light direction in the 2D map views is perpendicular to the map plane
 		 * which is towards the viewer and hence along the z-axis.
-		 *
-		 * Default to 40% ambient (non-lit) and 60% diffuse lighting since
-		 * it gives good visual contrast/results for the user to start off with.
+		 * NOTE: Currently the light direction in 2D map views remains constant.
 		 */
-		SceneLightingParameters() :
-			d_light_direction_attached_to_view_frame(true),
-			d_ambient_light_contribution(0.4),
-			d_globe_view_light_direction(1, 0, 0),
-			d_map_view_light_direction(0, 0, 1)
-		{
-			// Disable all lighting (except scalar fields) for now by default - until the lighting
-			// canvas tool is in place - since it will have controls to individually enable/disable
-			// lighting for vector geometries, filled geometries, rasters, scalar fields, etc...
-			d_lighting_primitives_enable_state.set(LIGHTING_SCALAR_FIELD);
-		}
+		SceneLightingParameters();
 
 		//! Enables (or disables) scene lighting for the specified lighting primitive.
 		void
@@ -117,13 +110,7 @@ namespace GPlatesGui
 		//! Sets the ambient light contribution - must be in the range [0,1].
 		void
 		set_ambient_light_contribution(
-				const double &ambient_light_contribution)
-		{
-			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					ambient_light_contribution >= 0 && ambient_light_contribution <= 1.0,
-					GPLATES_ASSERTION_SOURCE);
-			d_ambient_light_contribution = ambient_light_contribution;
-		}
+				const double &ambient_light_contribution);
 
 		//! Sets the globe view light direction.
 		void
@@ -178,15 +165,7 @@ namespace GPlatesGui
 		//! Equality comparison operator.
 		bool
 		operator==(
-				const SceneLightingParameters &rhs) const
-		{
-			return
-				d_lighting_primitives_enable_state == rhs.d_lighting_primitives_enable_state &&
-				d_light_direction_attached_to_view_frame == rhs.d_light_direction_attached_to_view_frame &&
-				GPlatesMaths::are_almost_exactly_equal(d_ambient_light_contribution, rhs.d_ambient_light_contribution) &&
-				d_globe_view_light_direction == rhs.d_globe_view_light_direction &&
-				d_map_view_light_direction == rhs.d_map_view_light_direction;
-		}
+				const SceneLightingParameters &rhs) const;
 
 	private:
 
@@ -215,6 +194,44 @@ namespace GPlatesGui
 		 */
 		GPlatesMaths::UnitVector3D d_map_view_light_direction;
 	};
+
+
+	/**
+	 * Convenience function to reverse rotate the light direction (in view-space) back to world-space.
+	 */
+	GPlatesMaths::UnitVector3D
+	transform_globe_view_space_light_direction_to_world_space(
+			const GPlatesMaths::UnitVector3D &view_space_light_direction,
+			const GPlatesMaths::Rotation &view_space_transform);
+
+	/**
+	 * Convenience function to reverse rotate the light direction (in view-space) back to world-space.
+	 *
+	 * NOTE: The 4x4 view space transform is assumed to contain only a 3x3 rotation matrix.
+	 */
+	GPlatesMaths::UnitVector3D
+	transform_globe_view_space_light_direction_to_world_space(
+			const GPlatesMaths::UnitVector3D &view_space_light_direction,
+			const GPlatesOpenGL::GLMatrix &view_space_transform);
+
+
+	/**
+	 * Convenience function to rotate the light direction (in world-space) to view-space.
+	 */
+	GPlatesMaths::UnitVector3D
+	transform_globe_world_space_light_direction_to_view_space(
+			const GPlatesMaths::UnitVector3D &world_space_light_direction,
+			const GPlatesMaths::Rotation &view_space_transform);
+
+	/**
+	 * Convenience function to rotate the light direction (in world-space) to view-space.
+	 *
+	 * NOTE: The 4x4 view space transform is assumed to contain only a 3x3 rotation matrix.
+	 */
+	GPlatesMaths::UnitVector3D
+	transform_globe_world_space_light_direction_to_view_space(
+			const GPlatesMaths::UnitVector3D &world_space_light_direction,
+			const GPlatesOpenGL::GLMatrix &view_space_transform);
 }
 
 #endif // GPLATES_GUI_SCENELIGHTINGPARAMETERS_H

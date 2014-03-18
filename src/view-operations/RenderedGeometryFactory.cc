@@ -28,24 +28,25 @@
 
 #include "RenderedGeometryFactory.h"
 #include "RenderedArrowedPolyline.h"
+#include "RenderedCircleSymbol.h"
 #include "RenderedColouredEdgeSurfaceMesh.h"
 #include "RenderedColouredTriangleSurfaceMesh.h"
 #include "RenderedCrossSymbol.h"
-#include "RenderedDirectionArrow.h"
 #include "RenderedEllipse.h"
 #include "RenderedMultiPointOnSphere.h"
 #include "RenderedPointOnSphere.h"
 #include "RenderedPolygonOnSphere.h"
 #include "RenderedPolylineOnSphere.h"
+#include "RenderedRadialArrow.h"
+#include "RenderedReconstructionGeometry.h"
 #include "RenderedResolvedRaster.h"
 #include "RenderedResolvedScalarField3D.h"
-#include "RenderedReconstructionGeometry.h"
 #include "RenderedSmallCircle.h"
 #include "RenderedSmallCircleArc.h"
 #include "RenderedSquareSymbol.h"
 #include "RenderedStrainMarkerSymbol.h"
-#include "RenderedCircleSymbol.h"
 #include "RenderedString.h"
+#include "RenderedTangentialArrow.h"
 #include "RenderedTriangleSymbol.h"
 #include "gui/Symbol.h"
 #include "maths/ConstGeometryOnSphereVisitor.h"
@@ -351,13 +352,14 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_scalar_
 
 
 GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
 		const GPlatesMaths::PointOnSphere &start,
 		const GPlatesMaths::Vector3D &arrow_direction,
 		const float ratio_unit_vector_direction_to_globe_radius,
 		const GPlatesGui::ColourProxy &colour,
 		const float ratio_arrowhead_size_to_globe_radius,
-		const float arrowline_width_hint)
+		const float globe_view_ratio_arrowline_width_to_arrowhead_size,
+		const float map_view_arrowline_width_hint)
 {
 	const GPlatesMaths::Vector3D scaled_direction =
 			ratio_unit_vector_direction_to_globe_radius * arrow_direction;
@@ -365,15 +367,42 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
 	// The arrowhead size should scale with length of arrow only up to a certain
 	// length otherwise long arrows will have arrowheads that are too big.
 	// When arrow length reaches a limit make the arrowhead projected size remain constant.
-	const float MIN_RATIO_ARROWHEAD_TO_ARROWLINE = 0.5f;
+	const float MAX_RATIO_ARROWHEAD_TO_ARROWLINE_LENGTH = 0.5f;
 
-	RenderedGeometry::impl_ptr_type rendered_geom_impl(new RenderedDirectionArrow(
-			start,
-			scaled_direction,
-			ratio_arrowhead_size_to_globe_radius,
-			MIN_RATIO_ARROWHEAD_TO_ARROWLINE,
-			colour,
-			arrowline_width_hint));
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(
+			new RenderedTangentialArrow(
+					start,
+					scaled_direction,
+					ratio_arrowhead_size_to_globe_radius,
+					MAX_RATIO_ARROWHEAD_TO_ARROWLINE_LENGTH,
+					colour,
+					globe_view_ratio_arrowline_width_to_arrowhead_size,
+					map_view_arrowline_width_hint));
+
+	return RenderedGeometry(rendered_geom_impl);
+}
+
+GPlatesViewOperations::RenderedGeometry
+GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
+		const GPlatesMaths::PointOnSphere &position,
+		float arrow_projected_length,
+		float arrowhead_projected_size,
+		float ratio_arrowline_width_to_arrowhead_size,
+		const GPlatesGui::ColourProxy &arrow_colour,
+		RenderedRadialArrow::SymbolType symbol_type,
+		float symbol_size,
+		const GPlatesGui::ColourProxy &symbol_colour)
+{
+	RenderedGeometry::impl_ptr_type rendered_geom_impl(
+			new RenderedRadialArrow(
+					position,
+					arrow_projected_length,
+					arrowhead_projected_size,
+					ratio_arrowline_width_to_arrowhead_size * arrowhead_projected_size,
+					arrow_colour,
+					symbol_type,
+					symbol_size,
+					symbol_colour));
 
 	return RenderedGeometry(rendered_geom_impl);
 }

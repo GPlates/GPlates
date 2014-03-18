@@ -30,9 +30,6 @@
 // (due to earlier hardware lack of support) so we need to emulate bilinear filtering in the fragment shader.
 //
 
-// Temporarily remove directional lighting for normal maps until GPlates 1.4 (when introduce light canvas tool)...
-#define TEMPORARY_HACK_NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
-
 uniform sampler2D source_texture_sampler;
 uniform sampler2D clip_texture_sampler;
 varying vec4 source_raster_texture_coordinate;
@@ -41,7 +38,9 @@ varying vec4 clip_texture_coordinate;
 #ifdef USING_AGE_GRID
 	uniform sampler2D age_grid_texture_sampler;
 	uniform vec4 age_grid_texture_dimensions;
-	uniform float reconstruction_time;
+	#ifdef GENERATE_AGE_MASK
+		uniform float reconstruction_time;
+	#endif
 	varying vec4 age_grid_texture_coordinate;
 #endif
 
@@ -62,12 +61,14 @@ varying vec4 clip_texture_coordinate;
             varying vec4 normal_map_texture_coordinate;
             #ifdef MAP_VIEW
                 uniform vec4 plate_rotation_quaternion;
-				#ifndef TEMPORARY_HACK_NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
+				#ifndef NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
 					uniform samplerCube light_direction_cube_texture_sampler;
 				#endif
             #else
                 varying vec3 model_space_light_direction;
-                uniform vec3 world_space_light_direction;
+				#ifndef NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
+					uniform vec3 world_space_light_direction;
+				#endif
             #endif
         #else // globe view with no normal map...
             uniform vec3 world_space_light_direction;
@@ -186,7 +187,7 @@ void main (void)
             // Need to convert the x/y/z components from unsigned to signed ([0,1] -> [-1,1]).
             model_space_normal = 2 * model_space_normal - 1;
             #ifdef MAP_VIEW
-				#ifdef TEMPORARY_HACK_NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
+				#ifdef NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
 					vec3 world_space_light_direction = world_space_sphere_normal;
 				#else
 					// Get the world-space light direction from the light direction cube texture.
@@ -208,12 +209,8 @@ void main (void)
         #else // globe view with no normal map...
             // Do the lambert dot product in world-space.
             vec3 normal = world_space_sphere_normal;
-			#ifdef TEMPORARY_HACK_NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
-				vec3 light_direction = world_space_sphere_normal;
-			#else
-				// The light direction is already in world-space.
-				vec3 light_direction = world_space_light_direction;
-			#endif
+			// The light direction is already in world-space.
+			vec3 light_direction = world_space_light_direction;
         #endif
 
         // Apply the Lambert diffuse lighting to the tile colour.
@@ -229,7 +226,7 @@ void main (void)
             // NOTE: The normal and light direction are not normalized since accuracy is less important here.
             // NOTE: Using float instead of integer parameters to 'clamp' otherwise driver compiler
             // crashes on some systems complaining cannot find (integer overload of) function in 'stdlib'.
-			#ifndef TEMPORARY_HACK_NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
+			#ifndef NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
 				lambert *= clamp(8 * dot(world_space_sphere_normal, world_space_light_direction), 0.0, 1.0);
 			#endif
         #endif

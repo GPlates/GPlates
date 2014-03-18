@@ -375,7 +375,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			// This means it was inside the network but outside any interior rigid blocks on the network.
 			// The arrow should be rendered black.
 			const GPlatesViewOperations::RenderedGeometry rendered_arrow =
-					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
 							point,
 							velocity.d_vector,
 							d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
@@ -405,7 +405,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 						plate_id_recon_geom.get();
 
 				const GPlatesViewOperations::RenderedGeometry rendered_arrow =
-						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
+						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
 								point,
 								velocity.d_vector,
 								d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
@@ -416,7 +416,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 				render(rendered_arrow);
 			} else {
 				const GPlatesViewOperations::RenderedGeometry rendered_arrow =
-						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
+						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
 								point,
 								velocity.d_vector,
 								d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
@@ -1366,7 +1366,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 
 		// Create a RenderedGeometry using the velocity vector.
 		const GPlatesViewOperations::RenderedGeometry rendered_vector =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_direction_arrow(
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
 				point,
 				velocity_vector,
 				d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,

@@ -24,35 +24,47 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_VIEWOPERATIONS_RENDEREDDIRECTIONARROW_H
-#define GPLATES_VIEWOPERATIONS_RENDEREDDIRECTIONARROW_H
+#ifndef GPLATES_VIEWOPERATIONS_RENDEREDTANGENTIALARROW_H
+#define GPLATES_VIEWOPERATIONS_RENDEREDTANGENTIALARROW_H
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
+
 #include "maths/PointOnSphere.h"
 #include "maths/Vector3D.h"
+
 #include "gui/ColourProxy.h"
 
 
 namespace GPlatesViewOperations
 {
-	class RenderedDirectionArrow :
-		public RenderedGeometryImpl
+	/**
+	 * An arrow that is tangential to the globe's surface.
+	 */
+	class RenderedTangentialArrow :
+			public RenderedGeometryImpl
 	{
 	public:
-		RenderedDirectionArrow(
+		/**
+		 * Note that even though the arrow direction is not constrained to be tangential to the
+		 * globe's surface (because it can be an arbitrary vector), in the 2D map views only the
+		 * tangential component is rendered.
+		 */
+		RenderedTangentialArrow(
 				const GPlatesMaths::PointOnSphere &start,
 				const GPlatesMaths::Vector3D &arrow_direction,
 				float arrowhead_projected_size,
-				float min_ratio_arrowhead_to_arrowline,
+				float max_ratio_arrowhead_to_arrowline_length,
 				const GPlatesGui::ColourProxy &colour,
-				float arrowline_width_hint) :
+				float globe_view_ratio_arrowline_width_to_arrowhead_size,
+				float map_view_arrowline_width_hint) :
 			d_start_position(start),
 			d_arrow_direction(arrow_direction),
 			d_arrowhead_projected_size(arrowhead_projected_size),
-			d_min_ratio_arrowhead_to_arrowline(min_ratio_arrowhead_to_arrowline),
+			d_max_ratio_arrowhead_to_arrowline_length(max_ratio_arrowhead_to_arrowline_length),
 			d_colour(colour),
-			d_arrowline_width_hint(arrowline_width_hint)
+			d_globe_view_ratio_arrowline_width_to_arrowhead_size(globe_view_ratio_arrowline_width_to_arrowhead_size),
+			d_map_view_arrowline_width_hint(map_view_arrowline_width_hint)
 		{  }
 
 
@@ -61,7 +73,7 @@ namespace GPlatesViewOperations
 		accept_visitor(
 				ConstRenderedGeometryVisitor& visitor)
 		{
-			visitor.visit_rendered_direction_arrow(*this);
+			visitor.visit_rendered_tangential_arrow(*this);
 		}
 
 
@@ -88,6 +100,11 @@ namespace GPlatesViewOperations
 		}
 
 
+		/**
+		 * Note that even though the arrow direction is not constrained to be tangential to the
+		 * globe's surface (because it can be an arbitrary vector), in the 2D map views only the
+		 * tangential component is rendered.
+		 */
 		const GPlatesMaths::Vector3D &
 		get_arrow_direction() const
 		{
@@ -100,7 +117,7 @@ namespace GPlatesViewOperations
 		 * viewport window.
 		 * The arrowhead size should appear to be a constant size when
 		 * projected onto the viewport window regardless of the current zoom
-		 * (except for small arrows - see @a get_min_ratio_arrowhead_to_arrowline).
+		 * (except for small arrows - see @a get_max_ratio_arrowhead_to_arrowline_length).
 		 * The returned size is a proportion of the globe radius when the globe
 		 * is fully zoomed out.
 		 * For example, if @a get_arrowhead_projected_size returns 0.1 then the
@@ -116,19 +133,19 @@ namespace GPlatesViewOperations
 
 
 		/**
-		 * Returns the minimum ratio of arrowhead size to arrowline length.
+		 * Returns the maximum ratio of arrowhead size to arrowline length.
 		 * Normally the arrowhead size should appear to be a constant size when
 		 * projected onto the viewport window regardless of the current zoom.
 		 * However for small arrowline lengths the size of the arrowhead should
 		 * scale linearly with the arrowline length so that the arrowhead
 		 * disappears as the arrowline disappears.
 		 * The ratio at which this change in scaling should occur is determined
-		 * by the miniumum ratio returned by this method.
+		 * by the maxiumum ratio returned by this method.
 		 */
 		float
-		get_min_ratio_arrowhead_to_arrowline() const
+		get_max_ratio_arrowhead_to_arrowline_length() const
 		{
-			return d_min_ratio_arrowhead_to_arrowline;
+			return d_max_ratio_arrowhead_to_arrowline_length;
 		}
 
 
@@ -139,10 +156,25 @@ namespace GPlatesViewOperations
 		}
 
 
+		/**
+		 * The ratio of arrow line width to arrow head size.
+		 *
+		 * This is only used for the 3D globe view where arrow body is rendered as a 3D cylinder
+		 * instead of an anti-aliased line primitive (as is done in the 2D map views).
+		 */
 		float
-		get_arrowline_width_hint() const
+		get_globe_view_ratio_arrowline_width_to_arrowhead_size() const
 		{
-			return d_arrowline_width_hint;
+			return d_globe_view_ratio_arrowline_width_to_arrowhead_size;
+		}
+
+		/**
+		 * The 2D map views render arrow body as an anti-aliased line primitive.
+		 */
+		float
+		get_map_view_arrowline_width_hint() const
+		{
+			return d_map_view_arrowline_width_hint;
 		}
 
 
@@ -150,10 +182,11 @@ namespace GPlatesViewOperations
 		const GPlatesMaths::PointOnSphere d_start_position;
 		const GPlatesMaths::Vector3D d_arrow_direction;
 		const float d_arrowhead_projected_size;
-		const float d_min_ratio_arrowhead_to_arrowline;
+		const float d_max_ratio_arrowhead_to_arrowline_length;
 		const GPlatesGui::ColourProxy d_colour;
-		const float d_arrowline_width_hint;
+		const float d_globe_view_ratio_arrowline_width_to_arrowhead_size;
+		const float d_map_view_arrowline_width_hint;
 	};
 }
 
-#endif // GPLATES_VIEWOPERATIONS_RENDEREDDIRECTIONARROW_H
+#endif // GPLATES_VIEWOPERATIONS_RENDEREDTANGENTIALARROW_H

@@ -135,9 +135,10 @@ lambert_diffuse_lighting(
 		vec3 light_direction,
 		vec3 normal)
 {
-	// The light direction typically needs to be normalised because it's interpolated between vertices.
+	// The light direction typically needs to be normalised because it's interpolated between vertices
+	// (if using tangent-space lighting).
 	// The surface normal might also need to be normalised because it's either interpolated between
-	// vertices (no normal map) or bilinearly interpolated texture lookup (with normal map).
+	// vertices (no normal map) or bilinearly interpolated during texture (normal map) lookup.
 	// We can save one expensive 'normalize' by rearranging...
 	// Lambert = dot(normalize(N),normalize(L))
 	//		 = dot(N/|N|,L/|L|) 

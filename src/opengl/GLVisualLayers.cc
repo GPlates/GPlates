@@ -1131,12 +1131,23 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_s
 		return boost::none;
 	}
 
-	// If we don't have reconstructed polygon meshes or an age grid or a normal map then a regular
-	// GLMultiResolutionRaster should be used instead (it's faster and uses less memory).
+	// If:
+	//  (1) we don't have reconstructed polygon meshes, and
+	//  (2) we don't have an age grid, and
+	//  (3) we don't have a normal map, and
+	//  (4) surface lighting of rasters (with or without normal maps) is not enabled
+	// ...then a regular "unreconstructed" raster should be used instead (it's faster and uses less memory).
 	// Note that we don't require reconstructed polygon meshes to continue past this point.
+	// Also note that in (4) we delegate all lighting tasks to "reconstructed" raster even if we're
+	// not reconstructing a raster - this makes the implementation much simpler since we don't have
+	// to worry about issues related to incorrectly applying lighting twice to reconstructed rasters
+	// (both at the unreconstructed stage and reconstructed stage) - and besides, we're already
+	// delegating all "normal map" lighting to "reconstructed" raster anyway.
 	if (!d_reconstructed_polygon_meshes_layer_usage &&
 		!d_age_grid_layer_usage &&
-		!d_normal_map_layer_usage)
+		!d_normal_map_layer_usage &&
+		!(d_light && d_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
+				GPlatesGui::SceneLightingParameters::LIGHTING_RASTER)))
 	{
 		return boost::none;
 	}

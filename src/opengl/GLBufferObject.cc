@@ -476,7 +476,7 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_stream(
 			// Notify clients that a buffer allocation has occurred.
 			// We haven't really allocated a new buffer, like 'gl_buffer_data()', but we tell
 			// clients we have in case some hardware needs to rebind the buffer objects.
-			// This might be required for ATI hardware which seems to require a rebing when
+			// This might be required for ATI hardware which seems to require a rebinding when
 			// 'gl_buffer_data()' is called (nVidia doesn't seem to require it).
 			allocated_buffer();
 		}

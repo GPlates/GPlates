@@ -58,9 +58,10 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	class ViewportWindow;
-	class ApplyReconstructionPoleAdjustmentDialog;
 	class AdjustmentApplicator;
+	class ApplyReconstructionPoleAdjustmentDialog;
+	class MovePoleWidget;
+	class ViewportWindow;
 	
 
 	class ModifyReconstructionPoleWidget :
@@ -78,6 +79,7 @@ namespace GPlatesQtWidgets
 				reconstructed_feature_geometry_collection_type;
 
 		ModifyReconstructionPoleWidget(
+				MovePoleWidget &move_pole_widget,
 				GPlatesPresentation::ViewState &view_state,
 				ViewportWindow &viewport_window,
 				QAction *clear_action,
@@ -132,10 +134,6 @@ namespace GPlatesQtWidgets
 
 		void
 		reset_adjustment();
-
-		void
-		change_constrain_latitude_checkbox_state(
-			int new_checkbox_state);
 				
 		void
 		change_highlight_children_checkbox_state(
@@ -180,6 +178,12 @@ namespace GPlatesQtWidgets
 		draw_dragged_geometries();
 
 		/**
+		 * Draw the adjustment pole location (from Move Pole canvas tool) if enabled.
+		 */
+		void
+		draw_adjustment_pole();
+
+		/**
 		 * Update the "Adjustment" fields in the TaskPanel pane.
 		 */
 		void
@@ -209,8 +213,14 @@ namespace GPlatesQtWidgets
 		clear_and_reset_after_reconstruction();
 
 	private:
+
 		//! Manages reconstructions.
 		GPlatesAppLogic::ApplicationState *d_application_state_ptr;
+
+		/**
+		 * Used to get the adjustment pole location.
+		 */
+		MovePoleWidget &d_move_pole_widget;
 
 		/**
 		 * Used to draw rendered geometries.
@@ -230,6 +240,12 @@ namespace GPlatesQtWidgets
 			d_dragged_geom_layer_ptr;
 
 		/**
+		 * Rendered geometry layer to render the optional adjustment pole location.
+		 */
+		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+			d_adjustment_pole_layer_ptr;
+
+		/**
 		 * The dialog presented to the user, to enable him to complete the modification of
 		 * reconstruction poles.
 		 *
@@ -241,11 +257,6 @@ namespace GPlatesQtWidgets
 		ApplyReconstructionPoleAdjustmentDialog *d_dialog_ptr;
 
 		boost::scoped_ptr<AdjustmentApplicator> d_applicator_ptr;
-
-		/**
-		 * Whether or not the latitude of the dragging motion should be constrained.
-		 */
-		bool d_should_constrain_latitude;
 		
 		/**
 		 * Whether or not the children of the selected plate id should be displayed during a drag                                                                     

@@ -31,6 +31,7 @@
 #include "ActionButtonBox.h"
 #include "ApplyReconstructionPoleAdjustmentDialog.h"
 #include "ModifyReconstructionPoleWidget.h"
+#include "MovePoleWidget.h"
 #include "QtWidgetUtils.h"
 #include "ViewportWindow.h"
 
@@ -55,132 +56,79 @@
 #include "view-operations/RenderedGeometryParameters.h"
 
 
-GPlatesQtWidgets::ModifyReconstructionPoleWidget::ModifyReconstructionPoleWidget(
-		GPlatesPresentation::ViewState &view_state,
-		ViewportWindow &viewport_window,
-		QAction *clear_action,
-		QWidget *parent_):
-	TaskPanelWidget(parent_),
-	d_application_state_ptr(&view_state.get_application_state()),
-	d_rendered_geom_collection(&view_state.get_rendered_geometry_collection()),
-	d_dialog_ptr(new ApplyReconstructionPoleAdjustmentDialog(&viewport_window)),
-	d_applicator_ptr(new AdjustmentApplicator(view_state, *d_dialog_ptr)),
-	d_should_constrain_latitude(false),
-	d_should_display_children(false),
-	d_is_active(false),
-	d_view_state_ptr(&view_state)
-{
-	setupUi(this);
-
-	// Set up the action button box showing the reset button.
-	ActionButtonBox *action_button_box = new ActionButtonBox(1, 16, this);
-	action_button_box->add_action(clear_action);
-#ifndef Q_WS_MAC
-	action_button_box->setFixedHeight(button_apply->sizeHint().height());
-#endif
-	QtWidgetUtils::add_widget_to_placeholder(
-			action_button_box,
-			action_button_box_placeholder_widget);
-
-	make_signal_slot_connections(view_state);
-
-	create_child_rendered_layers();
-
-	// Disable the task panel widget.
-	// It will get enabled when the Manipulate Pole canvas tool is activated.
-	// This prevents the user from interacting with the task panel widget if the
-	// canvas tool happens to be disabled at startup.
-	setEnabled(false);
-}
-
-
-GPlatesQtWidgets::ModifyReconstructionPoleWidget::~ModifyReconstructionPoleWidget()
-{
-}
-
-
-void
-GPlatesQtWidgets::ModifyReconstructionPoleWidget::activate()
-{
-	// Enable the task panel widget.
-	setEnabled(true);
-
-	d_is_active = true;
-
-	// Activate both rendered layers.
-	d_initial_geom_layer_ptr->set_active();
-	d_dragged_geom_layer_ptr->set_active();
-
-	set_focus(d_view_state_ptr->get_feature_focus());
-	draw_initial_geometries_at_activation();
-}
-
-
-void
-GPlatesQtWidgets::ModifyReconstructionPoleWidget::deactivate()
-{
-	// Disable the task panel widget.
-	setEnabled(false);
-
-	d_is_active = false;
-
-	// Deactivate both rendered layers.
-	d_initial_geom_layer_ptr->set_active(false);
-	d_dragged_geom_layer_ptr->set_active(false);
-}
-
-
-void
-GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries_at_activation()
-{
-	d_reconstructed_feature_geometries.clear();
-	populate_initial_geometries();
-	draw_dragged_geometries();
-}
-
-
 namespace
 {
 	/**
-	 * Return the closest point on the equator to @a p.
+	 * Return the closest point on the horizon to @a oriented_point_within_horizon.
 	 *
-	 * This result point will be at the same longitude as @a p.
-	 *
-	 * If @p is at the North Pole or South Pole, there is no unique "closest" point to @a p on
-	 * the equator, so boost::none will be returned.
+	 * If @a oriented_point_within_horizon is either coincident with the centre of the
+	 * viewport, or (somehow) antipodal to the centre of the viewport, boost::none will be
+	 * returned.
 	 */
 	const boost::optional<GPlatesMaths::PointOnSphere>
-	get_closest_point_on_equator(
-			const GPlatesMaths::PointOnSphere &p)
+	get_closest_point_on_horizon(
+			const GPlatesMaths::PointOnSphere &oriented_point_within_horizon,
+			const GPlatesMaths::PointOnSphere &oriented_center_of_viewport)
 	{
 		using namespace GPlatesMaths;
 
-		if (abs(p.position_vector().z()) >= 1.0) {
-			// The point is on the North Pole or South Pole.  Hence, there is no unique
+		if (collinear(oriented_point_within_horizon.position_vector(),
+				oriented_center_of_viewport.position_vector()))
+		{
+			// The point (which is meant to be) within the horizon is either coincident
+			// with the centre of the viewport, or (somehow) antipodal to the centre of
+			// the viewport (which should not be possible, but right now, we don't care
+			// about the story, we just care about the maths).
+			//
+			// Hence, it's not mathematically possible to calculate a closest point on
+			// the horizon.
+			return boost::none;
+		}
+		Vector3D cross_result =
+				cross(oriented_point_within_horizon.position_vector(),
+						oriented_center_of_viewport.position_vector());
+		// Since the two unit-vectors are non-collinear, we can assume the cross-product is
+		// a non-zero vector.
+		UnitVector3D normal_to_plane = cross_result.get_normalisation();
+
+		Vector3D point_on_horizon =
+				cross(oriented_center_of_viewport.position_vector(), normal_to_plane);
+		// Since both the center-of-viewport and normal-to-plane are unit-vectors, and they
+		// are (by definition) perpendicular, we will assume the result is of unit length.
+		return PointOnSphere(point_on_horizon.get_normalisation());
+	}
+
+
+	/**
+	 * Return the closest point on the equator (of pole @a pole) to @a point.
+	 *
+	 * The equator is the great circle with rotation axis @a pole.
+	 *
+	 * If @point is at @a pole or its antipodal, there is no unique "closest" point to @a point on
+	 * the equator, so boost::none will be returned.
+	 */
+	const boost::optional<GPlatesMaths::PointOnSphere>
+	get_closest_point_on_equator_of_pole(
+			const GPlatesMaths::PointOnSphere &point,
+			const GPlatesMaths::PointOnSphere &pole)
+	{
+		using namespace GPlatesMaths;
+
+		Vector3D cross_point_and_pole = cross(point.position_vector(), pole.position_vector());
+		if (cross_point_and_pole.magSqrd() == 0)
+		{
+			// The point is at 'pole' or its antipodal.  Hence, there is no unique
 			// "closest" point on the equator.
 			return boost::none;
 		}
-		// Else, the point is _not_ on the North Pole or South Pole, meaning there *is* a
+		// Else, the point is _not_ at 'pole' or its antipodal, meaning there *is* a
 		// unique "closest" point on the equator.  Hence, we can proceed.
 
-		// Since the point is on neither the North Pole nor South Pole, it lies on a
-		// well-defined small-circle of latitude (ie, a small-circle of latitude with a
-		// non-zero radius).
-		//
-		// Equivalently, since the point is on neither the North Pole nor South Pole, the
-		// z-coord of the unit-vector must lie in the range [-1, 1].  Hence, at least one
-		// of the x- and y-coords must be non-zero, which means that the following radius
-		// result will be greater than zero.
-		const double &x = p.position_vector().x().dval();
-		const double &y = p.position_vector().y().dval();
-		double radius_of_small_circle = std::sqrt(x*x + y*y);
-
-		// Since the radius is greater than zero, the following fraction is well-defined.
-		double one_on_radius = 1.0 / radius_of_small_circle;
-
-		return PointOnSphere(UnitVector3D(one_on_radius * x, one_on_radius * y, 0.0));
+		// Move the point to the great circle 'equator'.
+		return PointOnSphere(UnitVector3D(cross(
+				pole.position_vector(),
+				cross_point_and_pole.get_normalisation())));
 	}
-	
 
 	void
 	add_child_edges_to_collection(
@@ -248,184 +196,8 @@ namespace
 		{
 			qDebug() << *it;
 		}
-	}	
-}
-
-
-void
-GPlatesQtWidgets::ModifyReconstructionPoleWidget::start_new_drag(
-		const GPlatesMaths::PointOnSphere &current_oriented_position)
-{
-	if ( ! d_accum_orientation) {
-		d_accum_orientation.reset(new GPlatesGui::SimpleGlobeOrientation());
-	}
-	if (d_should_constrain_latitude) {
-		d_drag_start = get_closest_point_on_equator(current_oriented_position);
-		if (d_drag_start) {
-			d_accum_orientation->set_new_handle_at_pos(*d_drag_start);
-		}
-		// Else, the drag-start was at the North Pole or South Pole, so there was no unique
-		// "closest" point to the equator; don't try to do anything until the drag leaves
-		// the poles.
-	} else {
-		d_accum_orientation->set_new_handle_at_pos(current_oriented_position);
-	}
-}
-
-
-namespace
-{
-	/**
-	 * Return the closest point on the horizon to @a oriented_point_within_horizon.
-	 *
-	 * If @a oriented_point_within_horizon is either coincident with the centre of the
-	 * viewport, or (somehow) antipodal to the centre of the viewport, boost::none will be
-	 * returned.
-	 */
-	const boost::optional<GPlatesMaths::PointOnSphere>
-	get_closest_point_on_horizon(
-			const GPlatesMaths::PointOnSphere &oriented_point_within_horizon,
-			const GPlatesMaths::PointOnSphere &oriented_center_of_viewport)
-	{
-		using namespace GPlatesMaths;
-
-		if (collinear(oriented_point_within_horizon.position_vector(),
-					oriented_center_of_viewport.position_vector())) {
-			// The point (which is meant to be) within the horizon is either coincident
-			// with the centre of the viewport, or (somehow) antipodal to the centre of
-			// the viewport (which should not be possible, but right now, we don't care
-			// about the story, we just care about the maths).
-			//
-			// Hence, it's not mathematically possible to calculate a closest point on
-			// the horizon.
-			return boost::none;
-		}
-		Vector3D cross_result =
-				cross(oriented_point_within_horizon.position_vector(),
-						oriented_center_of_viewport.position_vector());
-		// Since the two unit-vectors are non-collinear, we can assume the cross-product is
-		// a non-zero vector.
-		UnitVector3D normal_to_plane = cross_result.get_normalisation();
-
-		Vector3D point_on_horizon =
-				cross(oriented_center_of_viewport.position_vector(), normal_to_plane);
-		// Since both the center-of-viewport and normal-to-plane are unit-vectors, and they
-		// are (by definition) perpendicular, we will assume the result is of unit length.
-		return PointOnSphere(point_on_horizon.get_normalisation());
-	}
-}
-
-
-void
-GPlatesQtWidgets::ModifyReconstructionPoleWidget::start_new_rotation_drag(
-		const GPlatesMaths::PointOnSphere &current_oriented_position,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
-{
-	if (d_should_constrain_latitude) {
-		// Rotation-dragging of the plate is disabled when the "Constrain Latitude"
-		// checkbox is checked:  When you're constraining the latitude, you're also
-		// implicitly constraining the plate orientation, since you want the VGP pole
-		// position to remain in its current position.
-		//
-		// Hence, nothing to do in this function.
-		return;
 	}
 
-	boost::optional<GPlatesMaths::PointOnSphere> point_on_horizon =
-			get_closest_point_on_horizon(current_oriented_position, oriented_centre_of_viewport);
-	if ( ! point_on_horizon) {
-		// The mouse position could not be converted to a point on the horizon.  Presumably
-		// the it was at the centre of the viewport.  Hence, nothing to be done.
-		return;
-	}
-	if ( ! d_accum_orientation) {
-		d_accum_orientation.reset(new GPlatesGui::SimpleGlobeOrientation());
-	}
-	d_accum_orientation->set_new_handle_at_pos(*point_on_horizon);
-}
-
-
-void
-GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_drag_position(
-		const GPlatesMaths::PointOnSphere &current_oriented_position)
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_accum_orientation != NULL,
-			GPLATES_ASSERTION_SOURCE);
-
-	if (d_should_constrain_latitude) {
-		if ( ! d_drag_start) {
-			// We haven't set the drag start yet.  The mouse pointer must have been at
-			// either the North Pole or South Pole.  The first thing we should try to
-			// do is start the drag now.
-			d_drag_start = get_closest_point_on_equator(current_oriented_position);
-			if (d_drag_start) {
-				d_accum_orientation->set_new_handle_at_pos(*d_drag_start);
-			}
-			// Else, the drag-start was at the North Pole or South Pole, so there was
-			// no unique "closest" point to the equator; don't try to do anything until
-			// the drag leaves the poles.
-		} else {
-			boost::optional<GPlatesMaths::PointOnSphere> drag_update =
-					get_closest_point_on_equator(current_oriented_position);
-			if (drag_update) {
-				d_accum_orientation->move_handle_to_pos(*drag_update);
-			}
-			// Else, the drag-update was at the North Pole or South Pole, so there was
-			// no unique "closest" point to the equator; don't try to do anything until
-			// the drag leaves the poles.
-		}
-	} else {
-		d_accum_orientation->move_handle_to_pos(current_oriented_position);
-	}
-
-	draw_dragged_geometries();
-	update_adjustment_fields();
-}
-
-
-void
-GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_rotation_drag_position(
-		const GPlatesMaths::PointOnSphere &current_oriented_position,
-		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
-{
-	if (d_should_constrain_latitude) {
-		// Rotation-dragging of the plate is disabled when the "Constrain Latitude"
-		// checkbox is checked:  When you're constraining the latitude, you're also
-		// implicitly constraining the plate orientation, since you want the VGP pole
-		// position to remain in its current position.
-		//
-		// Hence, nothing to do in this function.
-		return;
-	}
-
-	if ( ! d_accum_orientation) {
-		// We must be in the middle of a non-drag.  Perhaps the user tried to drag at the
-		// centre of the viewport, for instance.
-		return;
-	}
-
-	boost::optional<GPlatesMaths::PointOnSphere> point_on_horizon =
-			get_closest_point_on_horizon(current_oriented_position, oriented_centre_of_viewport);
-	if ( ! point_on_horizon) {
-		// The mouse position could not be converted to a point on the horizon.  Presumably
-		// the it was at the centre of the viewport.  Hence, nothing to be done.
-		return;
-	}
-	d_accum_orientation->move_handle_to_pos(*point_on_horizon);
-
-	draw_dragged_geometries();
-	update_adjustment_fields();
-}
-
-
-void
-GPlatesQtWidgets::ModifyReconstructionPoleWidget::end_drag()
-{  }
-
-
-namespace
-{
 	void
 	examine_trs(
 			std::vector<GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::PoleSequenceInfo> &
@@ -444,7 +216,8 @@ namespace
 		// A valid TRS should have a fixed reference frame and a moving reference frame. 
 		// Let's verify that this is a valid TRS.
 		if ( ! (trs_plate_id_finder.fixed_ref_frame_plate_id() &&
-				trs_plate_id_finder.moving_ref_frame_plate_id())) {
+				trs_plate_id_finder.moving_ref_frame_plate_id()))
+		{
 			// This feature was missing one (or both) of the plate IDs which a TRS is
 			// supposed to have.  Skip this feature.
 			return;
@@ -452,7 +225,8 @@ namespace
 		// Else, we know it found both of the required plate IDs.
 
 		if (*trs_plate_id_finder.fixed_ref_frame_plate_id() ==
-				*trs_plate_id_finder.moving_ref_frame_plate_id()) {
+				*trs_plate_id_finder.moving_ref_frame_plate_id())
+		{
 			// The fixed ref-frame plate ID equals the moving ref-frame plate ID? 
 			// Something strange is going on here.  Skip this feature.
 			return;
@@ -461,10 +235,12 @@ namespace
 		// Dietmar has said that he doesn't want the table to include pole sequences for
 		// which the plate ID of interest is the fixed ref-frame.  (2008-09-18)
 #if 0
-		if (*trs_plate_id_finder.fixed_ref_frame_plate_id() == plate_id_of_interest) {
+		if (*trs_plate_id_finder.fixed_ref_frame_plate_id() == plate_id_of_interest)
+		{
 			trs_time_period_finder.reset();
 			trs_time_period_finder.visit_feature(current_feature);
-			if ( ! (trs_time_period_finder.begin_time() && trs_time_period_finder.end_time())) {
+			if ( ! (trs_time_period_finder.begin_time() && trs_time_period_finder.end_time()))
+			{
 				// No time samples were found.  Skip this feature.
 				return;
 			}
@@ -473,7 +249,8 @@ namespace
 			// reconstruction time.
 			GPlatesPropertyValues::GeoTimeInstant current_time(reconstruction_time);
 			if (trs_time_period_finder.begin_time()->is_strictly_later_than(current_time) ||
-					trs_time_period_finder.end_time()->is_strictly_earlier_than(current_time)) {
+					trs_time_period_finder.end_time()->is_strictly_earlier_than(current_time))
+			{
 				return;
 			}
 
@@ -487,10 +264,12 @@ namespace
 							true));
 		}
 #endif
-		if (*trs_plate_id_finder.moving_ref_frame_plate_id() == plate_id_of_interest) {
+		if (*trs_plate_id_finder.moving_ref_frame_plate_id() == plate_id_of_interest)
+		{
 			trs_time_period_finder.reset();
 			trs_time_period_finder.visit_feature(current_feature);
-			if ( ! (trs_time_period_finder.begin_time() && trs_time_period_finder.end_time())) {
+			if ( ! (trs_time_period_finder.begin_time() && trs_time_period_finder.end_time()))
+			{
 				// No time samples were found.  Skip this feature.
 				return;
 			}
@@ -499,7 +278,8 @@ namespace
 			// reconstruction time.
 			GPlatesPropertyValues::GeoTimeInstant current_time(reconstruction_time);
 			if (trs_time_period_finder.begin_time()->is_strictly_later_than(current_time) ||
-					trs_time_period_finder.end_time()->is_strictly_earlier_than(current_time)) {
+					trs_time_period_finder.end_time()->is_strictly_earlier_than(current_time))
+			{
 				return;
 			}
 
@@ -537,9 +317,11 @@ namespace
 				reconstruction_tree.get_reconstruction_features().begin();
 		std::vector<FeatureCollectionHandle::weak_ref>::const_iterator collections_end =
 				reconstruction_tree.get_reconstruction_features().end();
-		for ( ; collections_iter != collections_end; ++collections_iter) {
+		for ( ; collections_iter != collections_end; ++collections_iter)
+		{
 			const FeatureCollectionHandle::weak_ref &current_collection = *collections_iter;
-			if ( ! current_collection.is_valid()) {
+			if ( ! current_collection.is_valid())
+			{
 				// FIXME:  Should we do anything about this? Or is this acceptable?
 				// (If the collection is not valid, then presumably it has been
 				// unloaded.  In which case, why hasn't the reconstruction been
@@ -549,7 +331,8 @@ namespace
 
 			FeatureCollectionHandle::iterator features_iter = current_collection->begin();
 			FeatureCollectionHandle::iterator features_end = current_collection->end();
-			for ( ; features_iter != features_end; ++features_iter) {
+			for ( ; features_iter != features_end; ++features_iter)
+			{
 				examine_trs(sequence_choices, trs_plate_id_finder,
 						trs_time_period_finder, plate_id_of_interest,
 						reconstruction_tree.get_reconstruction_time(), features_iter);
@@ -559,16 +342,256 @@ namespace
 }
 
 
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::ModifyReconstructionPoleWidget(
+		MovePoleWidget &move_pole_widget,
+		GPlatesPresentation::ViewState &view_state,
+		ViewportWindow &viewport_window,
+		QAction *clear_action,
+		QWidget *parent_):
+	TaskPanelWidget(parent_),
+	d_application_state_ptr(&view_state.get_application_state()),
+	d_move_pole_widget(move_pole_widget),
+	d_rendered_geom_collection(&view_state.get_rendered_geometry_collection()),
+	d_dialog_ptr(new ApplyReconstructionPoleAdjustmentDialog(&viewport_window)),
+	d_applicator_ptr(new AdjustmentApplicator(view_state, *d_dialog_ptr)),
+	d_should_display_children(false),
+	d_is_active(false),
+	d_view_state_ptr(&view_state)
+{
+	setupUi(this);
+
+	// Set up the action button box showing the reset button.
+	ActionButtonBox *action_button_box = new ActionButtonBox(1, 16, this);
+	action_button_box->add_action(clear_action);
+#ifndef Q_WS_MAC
+	action_button_box->setFixedHeight(button_apply->sizeHint().height());
+#endif
+	QtWidgetUtils::add_widget_to_placeholder(
+			action_button_box,
+			action_button_box_placeholder_widget);
+
+	make_signal_slot_connections(view_state);
+
+	create_child_rendered_layers();
+
+	// Disable the task panel widget.
+	// It will get enabled when the Manipulate Pole canvas tool is activated.
+	// This prevents the user from interacting with the task panel widget if the
+	// canvas tool happens to be disabled at startup.
+	setEnabled(false);
+}
+
+
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::~ModifyReconstructionPoleWidget()
+{
+}
+
+
+void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::activate()
+{
+	// Enable the task panel widget.
+	setEnabled(true);
+
+	d_is_active = true;
+
+	// Activate rendered layers.
+	d_initial_geom_layer_ptr->set_active();
+	d_dragged_geom_layer_ptr->set_active();
+	d_adjustment_pole_layer_ptr->set_active();
+
+	set_focus(d_view_state_ptr->get_feature_focus());
+	draw_initial_geometries_at_activation();
+	draw_adjustment_pole();
+}
+
+
+void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::deactivate()
+{
+	// Disable the task panel widget.
+	setEnabled(false);
+
+	d_is_active = false;
+
+	// Deactivate rendered layers.
+	d_initial_geom_layer_ptr->set_active(false);
+	d_dragged_geom_layer_ptr->set_active(false);
+	d_adjustment_pole_layer_ptr->set_active(false);
+}
+
+
+void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries_at_activation()
+{
+	d_reconstructed_feature_geometries.clear();
+	populate_initial_geometries();
+	draw_dragged_geometries();
+}
+
+
+void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::start_new_drag(
+		const GPlatesMaths::PointOnSphere &current_oriented_position)
+{
+	if ( ! d_accum_orientation)
+	{
+		d_accum_orientation.reset(new GPlatesGui::SimpleGlobeOrientation());
+	}
+
+	if (d_move_pole_widget.get_pole())
+	{
+		d_drag_start = get_closest_point_on_equator_of_pole(
+				current_oriented_position,
+				d_move_pole_widget.get_pole().get());
+		if (d_drag_start)
+		{
+			d_accum_orientation->set_new_handle_at_pos(d_drag_start.get());
+		}
+		// Else, the drag-start was at the adjustment pole location (or its antipodal), so there was no
+		// unique "closest" point to the equator; don't try to do anything until the drag leaves the poles.
+	}
+	else
+	{
+		d_accum_orientation->set_new_handle_at_pos(current_oriented_position);
+	}
+}
+
+
+void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::start_new_rotation_drag(
+		const GPlatesMaths::PointOnSphere &current_oriented_position,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+{
+	if (d_move_pole_widget.get_pole())
+	{
+		// Rotation-dragging of the plate is disabled because there is a specific adjustment pole
+		// location which constrains the motion.
+		//
+		// Hence, nothing to do in this function.
+		return;
+	}
+
+	boost::optional<GPlatesMaths::PointOnSphere> point_on_horizon =
+			get_closest_point_on_horizon(current_oriented_position, oriented_centre_of_viewport);
+	if ( ! point_on_horizon)
+	{
+		// The mouse position could not be converted to a point on the horizon.  Presumably
+		// the it was at the centre of the viewport.  Hence, nothing to be done.
+		return;
+	}
+	if ( ! d_accum_orientation)
+	{
+		d_accum_orientation.reset(new GPlatesGui::SimpleGlobeOrientation());
+	}
+	d_accum_orientation->set_new_handle_at_pos(*point_on_horizon);
+}
+
+
+void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_drag_position(
+		const GPlatesMaths::PointOnSphere &current_oriented_position)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_accum_orientation != NULL,
+			GPLATES_ASSERTION_SOURCE);
+
+	if (d_move_pole_widget.get_pole())
+	{
+		if ( ! d_drag_start)
+		{
+			// We haven't set the drag start yet.  The mouse pointer must have been at either the
+			// adjustment pole location (or its antipodal). The first thing we should try to do is
+			// start the drag now.
+			d_drag_start = get_closest_point_on_equator_of_pole(
+					current_oriented_position,
+					d_move_pole_widget.get_pole().get());
+			if (d_drag_start)
+			{
+				d_accum_orientation->set_new_handle_at_pos(*d_drag_start);
+			}
+			// Else, the drag-start was at the adjustment pole location (or its antipodal), so there
+			// was no unique "closest" point to the equator; don't try to do anything until the drag
+			// leaves the poles.
+		}
+		else
+		{
+			boost::optional<GPlatesMaths::PointOnSphere> drag_update =
+					get_closest_point_on_equator_of_pole(
+							current_oriented_position,
+							d_move_pole_widget.get_pole().get());
+			if (drag_update)
+			{
+				d_accum_orientation->move_handle_to_pos(*drag_update);
+			}
+			// Else, the drag-update was at the adjustment pole location (or its antipodal), so
+			// there was no unique "closest" point to the equator; don't try to do anything until
+			// the drag leaves the poles.
+		}
+	}
+	else
+	{
+		d_accum_orientation->move_handle_to_pos(current_oriented_position);
+	}
+
+	draw_dragged_geometries();
+	update_adjustment_fields();
+}
+
+
+void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_rotation_drag_position(
+		const GPlatesMaths::PointOnSphere &current_oriented_position,
+		const GPlatesMaths::PointOnSphere &oriented_centre_of_viewport)
+{
+	if (d_move_pole_widget.get_pole())
+	{
+		// Rotation-dragging of the plate is disabled because there is a specific adjustment pole
+		// location which constrains the motion.
+		//
+		// Hence, nothing to do in this function.
+		return;
+	}
+
+	if ( ! d_accum_orientation)
+	{
+		// We must be in the middle of a non-drag.  Perhaps the user tried to drag at the
+		// centre of the viewport, for instance.
+		return;
+	}
+
+	boost::optional<GPlatesMaths::PointOnSphere> point_on_horizon =
+			get_closest_point_on_horizon(current_oriented_position, oriented_centre_of_viewport);
+	if ( ! point_on_horizon)
+	{
+		// The mouse position could not be converted to a point on the horizon.  Presumably
+		// the it was at the centre of the viewport.  Hence, nothing to be done.
+		return;
+	}
+	d_accum_orientation->move_handle_to_pos(*point_on_horizon);
+
+	draw_dragged_geometries();
+	update_adjustment_fields();
+}
+
+
+void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::end_drag()
+{  }
+
+
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::apply()
 {
-	if ( ! d_accum_orientation) {
+	if ( ! d_accum_orientation)
+	{
 		// The user must have released the mouse button after a non-drag.  Perhaps the user
 		// tried to drag at the centre of the viewport, for instance.
 		return;
 	}
 
-	if ( ! d_plate_id || ! d_reconstruction_tree) {
+	if ( ! d_plate_id || ! d_reconstruction_tree)
+	{
 		// Presumably the feature did not contain a reconstruction plate ID.
 		// What do we do here?  Do we give it one, or do nothing?
 		// For now, let's just do nothing.
@@ -621,28 +644,16 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::reset_adjustment()
 	spinbox_adjustment_angle->setValue(0.0);
 }
 
-
-void
-GPlatesQtWidgets::ModifyReconstructionPoleWidget::change_constrain_latitude_checkbox_state(
-		int new_checkbox_state)
-{
-	if (new_checkbox_state == Qt::Unchecked) {
-		d_should_constrain_latitude = false;
-	}
-	else if (new_checkbox_state == Qt::Checked) {
-		d_should_constrain_latitude = true;
-	}
-	// Ignore any other values of 'new_checkbox_state'.
-}
-
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::change_highlight_children_checkbox_state(
 	int new_checkbox_state)
 {
-	if (new_checkbox_state == Qt::Unchecked) {
+	if (new_checkbox_state == Qt::Unchecked)
+	{
 		d_should_display_children = false;
 	}
-	else if (new_checkbox_state == Qt::Checked) {
+	else if (new_checkbox_state == Qt::Checked)
+	{
 		d_should_display_children = true;
 	}
 
@@ -718,7 +729,8 @@ void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::handle_reconstruction()
 {
 	set_focus(d_view_state_ptr->get_feature_focus());
-	if (d_is_active) {
+	if (d_is_active)
+	{
 		draw_initial_geometries();
 		draw_dragged_geometries();
 	}
@@ -730,7 +742,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 {
 	// If there's no plate ID of the currently-focused RFG, then there can be no other RFGs
 	// with the same plate ID.
-	if ( ! d_plate_id || ! d_reconstruction_tree) {
+	if ( ! d_plate_id || ! d_reconstruction_tree)
+	{
 		return;
 	}
 	
@@ -804,7 +817,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 		}
 	}
 
-	if (d_reconstructed_feature_geometries.empty()) {
+	if (d_reconstructed_feature_geometries.empty())
+	{
 		// That's pretty strange.  We expected at least one geometry here, or else, what's
 		// the user dragging?
 		qWarning() << "No initial geometries found ModifyReconstructionPoleWidget::populate_initial_geometries!";
@@ -883,7 +897,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 
 	// Be careful that the boost::optional is not boost::none.
-	if ( ! d_accum_orientation) {
+	if ( ! d_accum_orientation)
+	{
 		draw_initial_geometries();
 		return;
 	}
@@ -926,9 +941,35 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 
 
 void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_adjustment_pole()
+{
+	// Clear current pole rendered geometry first.
+	d_adjustment_pole_layer_ptr->clear_rendered_geometries();
+
+	// We should only be rendering the pole if it's currently enabled.
+	if (d_move_pole_widget.get_pole())
+	{
+		// Render the pole as a very non-intrusive semi-transparent arrow with cross symbol.
+		const GPlatesViewOperations::RenderedGeometry adjustment_pole_arrow_rendered_geom =
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
+						d_move_pole_widget.get_pole().get(),
+						0.3f/*arrow_projected_length*/,
+						0.12f/*arrowhead_projected_size*/,
+						0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
+						GPlatesGui::Colour(1, 1, 1, 0.5f)/*arrow_colour*/,
+						GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
+						10.0f/*symbol_size*/,
+						GPlatesGui::Colour::get_white()/*symbol_colour*/);
+		d_adjustment_pole_layer_ptr->add_rendered_geometry(adjustment_pole_arrow_rendered_geom);
+	}
+}
+
+
+void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_adjustment_fields()
 {
-	if ( ! d_accum_orientation) {
+	if ( ! d_accum_orientation)
+	{
 		// No idea why the boost::optional is boost::none here, but let's not crash!
 		// FIXME:  Complain about this.
 		return;
@@ -993,10 +1034,6 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::make_signal_slot_connections(
 			SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
 			this,
 			SLOT(handle_reconstruction()));
-
-	// Respond to changes in the "Constrain Latitude" checkbox.
-	QObject::connect(checkbox_constrain_latitude, SIGNAL(stateChanged(int)),
-			this, SLOT(change_constrain_latitude_checkbox_state(int)));
 			
 	// Respond to changes in the "Highlight children" checkbox.
 	QObject::connect(checkbox_highlight_children, SIGNAL(stateChanged(int)),
@@ -1026,7 +1063,12 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::create_child_rendered_layers()
 		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
 
-	// In both cases above we store the returned object as a data member and it
+	// Create a rendered layer to draw the optional adjustment pole location.
+	d_adjustment_pole_layer_ptr =
+		d_rendered_geom_collection->create_child_rendered_layer_and_transfer_ownership(
+				GPlatesViewOperations::RenderedGeometryCollection::POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER);
+
+	// In the cases above we store the returned object as a data member and it
 	// automatically destroys the created layer for us when 'this' object is destroyed.
 }
 

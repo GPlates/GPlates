@@ -33,6 +33,8 @@
 
 #include "canvas-tools/CanvasToolAdapterForGlobe.h"
 #include "canvas-tools/CanvasToolAdapterForMap.h"
+#include "canvas-tools/ChangeLightDirectionGlobe.h"
+#include "canvas-tools/ChangeLightDirectionMap.h"
 #include "canvas-tools/PanMap.h"
 #include "canvas-tools/ReorientGlobe.h"
 #include "canvas-tools/ZoomGlobe.h"
@@ -50,6 +52,19 @@
 #include "qt-widgets/ViewportWindow.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
+
+
+namespace GPlatesGui
+{
+	namespace
+	{
+		/**
+		 * The main rendered layer used by this canvas tool workflow.
+		 */
+		const GPlatesViewOperations::RenderedGeometryCollection::MainLayerType WORKFLOW_RENDER_LAYER =
+				GPlatesViewOperations::RenderedGeometryCollection::VIEW_CANVAS_TOOL_WORKFLOW_LAYER;
+	}
+}
 
 
 GPlatesGui::ViewCanvasToolWorkflow::ViewCanvasToolWorkflow(
@@ -117,6 +132,26 @@ GPlatesGui::ViewCanvasToolWorkflow::create_canvas_tools(
 					viewport_window,
 					view_state.get_map_transform(),
 					view_state.get_viewport_zoom()));
+
+	//
+	// Change lighting canvas tool.
+	//
+
+	d_globe_change_lighting_tool.reset(
+			new GPlatesCanvasTools::ChangeLightDirectionGlobe(
+					viewport_window.globe_canvas().globe(),
+					viewport_window.globe_canvas(),
+					view_state.get_rendered_geometry_collection(),
+					WORKFLOW_RENDER_LAYER,
+					viewport_window,
+					view_state));
+	d_map_change_lighting_tool.reset(
+			new GPlatesCanvasTools::ChangeLightDirectionMap(
+					viewport_window.map_view().map_canvas(),
+					viewport_window.map_view(),
+					view_state.get_rendered_geometry_collection(),
+					viewport_window,
+					view_state.get_map_transform()));
 }
 
 
@@ -132,6 +167,7 @@ GPlatesGui::ViewCanvasToolWorkflow::initialise()
 
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_DRAG_GLOBE, true);
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_ZOOM_GLOBE, true);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_CHANGE_LIGHTING, true);
 
 	update_enable_state();
 }
@@ -140,12 +176,16 @@ GPlatesGui::ViewCanvasToolWorkflow::initialise()
 void
 GPlatesGui::ViewCanvasToolWorkflow::activate_workflow()
 {
+	// Activate the main rendered layer.
+	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, true/*active*/);
 }
 
 
 void
 GPlatesGui::ViewCanvasToolWorkflow::deactivate_workflow()
 {
+	// Deactivate the main rendered layer.
+	d_rendered_geom_collection.set_main_layer_active(WORKFLOW_RENDER_LAYER, false/*active*/);
 }
 
 
@@ -166,6 +206,9 @@ GPlatesGui::ViewCanvasToolWorkflow::get_selected_globe_and_map_canvas_tools(
 
 	case CanvasToolWorkflows::TOOL_ZOOM_GLOBE:
 		return std::make_pair(d_globe_zoom_globe_tool.get(), d_map_zoom_globe_tool.get());
+
+	case CanvasToolWorkflows::TOOL_CHANGE_LIGHTING:
+		return std::make_pair(d_globe_change_lighting_tool.get(), d_map_change_lighting_tool.get());
 
 	default:
 		break;

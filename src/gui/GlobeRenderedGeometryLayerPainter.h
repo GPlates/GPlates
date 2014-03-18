@@ -193,8 +193,13 @@ namespace GPlatesGui
 
 		virtual
 		void
-		visit_rendered_direction_arrow(
-				const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow);
+		visit_rendered_radial_arrow(
+				const GPlatesViewOperations::RenderedRadialArrow &rendered_radial_arrow);
+
+		virtual
+		void
+		visit_rendered_tangential_arrow(
+				const GPlatesViewOperations::RenderedTangentialArrow &rendered_tangential_arrow);
 				
 		virtual
 		void
@@ -231,17 +236,18 @@ namespace GPlatesGui
 		//! Typedef for a vertex element (index).
 		typedef LayerPainter::vertex_element_type vertex_element_type;
 
-		//! Typedef for a coloured vertex.
-		typedef LayerPainter::coloured_vertex_type coloured_vertex_type;
-
-		//! Typedef for a sequence of coloured vertices.
-		typedef LayerPainter::coloured_vertex_seq_type coloured_vertex_seq_type;
-
 		//! Typedef for a sequence of vertex elements.
 		typedef LayerPainter::vertex_element_seq_type vertex_element_seq_type;
 
-		//! Typedef for a primitives stream containing coloured vertices.
+		// Typedefs related to LayerPainter::coloured_vertex_type.
+		typedef LayerPainter::coloured_vertex_type coloured_vertex_type;
+		typedef LayerPainter::coloured_vertex_seq_type coloured_vertex_seq_type;
 		typedef LayerPainter::stream_primitives_type stream_primitives_type;
+
+		// Typedefs related to LayerPainter::AxiallySymmetricMeshVertex.
+		typedef LayerPainter::AxiallySymmetricMeshVertex axially_symmetric_mesh_vertex_type;
+		typedef LayerPainter::axially_symmetric_mesh_vertex_seq_type axially_symmetric_mesh_vertex_seq_type;
+		typedef LayerPainter::axially_symmetric_mesh_stream_primitives_type axially_symmetric_mesh_stream_primitives_type;
 
 
 		//! Typedef for a rendered geometries spatial partition.
@@ -425,13 +431,42 @@ namespace GPlatesGui
 				stream_primitives_type &lines_stream);
 
 		/**
-		 * Paints a cone (for arrow head).
+		 * Paints an arrow (straight line, not curved over globe) as a 3D arrow.
 		 */
 		void
-		paint_cone(
+		paint_arrow(
+				const GPlatesMaths::Vector3D &start,
+				const GPlatesMaths::Vector3D &end,
+				const GPlatesMaths::UnitVector3D &arrowline_unit_vector,
+				const GPlatesMaths::real_t &arrowline_width,
+				const GPlatesMaths::real_t &arrowhead_size,
+				rgba8_t rgba8_color,
+				axially_symmetric_mesh_stream_primitives_type &triangles_stream);
+
+		/**
+		 * Paints a 3D cone for an arrow head.
+		 */
+		void
+		paint_arrow_head_3D(
 				const GPlatesMaths::Vector3D &apex,
-				const GPlatesMaths::UnitVector3D &cone_axis_unit_vector,
+				const GPlatesMaths::UnitVector3D &cone_x_axis,
+				const GPlatesMaths::UnitVector3D &cone_y_axis,
+				const GPlatesMaths::UnitVector3D &cone_z_axis,
 				const GPlatesMaths::real_t &cone_axis_mag,
+				rgba8_t rgba8_color,
+				axially_symmetric_mesh_stream_primitives_type &triangles_stream);
+
+		/**
+		 * Paints a flat triangle tangential to the globe for an arrow head.
+		 *
+		 * A triangle is actually 3D but it appears 2D in that it pretty much stays on the
+		 * 2D (spherical) surface of the globe.
+		 */
+		void
+		paint_arrow_head_2D(
+				const GPlatesMaths::UnitVector3D &apex,
+				const GPlatesMaths::UnitVector3D &direction,
+				const GPlatesMaths::real_t &size,
 				rgba8_t rgba8_color,
 				stream_primitives_type &triangles_stream);
 	};

@@ -26,6 +26,7 @@
 
 #include "MapCanvasTool.h"
 
+#include "MapProjection.h"
 #include "MapTransform.h"
 
 #include "maths/Real.h"
@@ -81,6 +82,25 @@ GPlatesGui::MapCanvasTool::handle_ctrl_left_drag(
 		const QPointF &translation)
 {
 	map_transform().translate(-translation.x(), -translation.y());
+}
+
+
+boost::optional<GPlatesMaths::PointOnSphere>
+GPlatesGui::MapCanvasTool::qpointf_to_point_on_sphere(
+		const QPointF &point,
+		const GPlatesGui::MapProjection &projection)
+{
+	double x = point.x();
+	double y = point.y();
+
+	boost::optional<GPlatesMaths::LatLonPoint> llp =
+			projection.inverse_transform(x, y);
+	if (!llp)
+	{
+		return boost::none;
+	}
+
+	return GPlatesMaths::make_point_on_sphere(llp.get());
 }
 
 
