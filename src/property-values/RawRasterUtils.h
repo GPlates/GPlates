@@ -645,17 +645,6 @@ namespace GPlatesPropertyValues
 
 
 		/**
-		 * Writes @a raster out to @a filename.
-		 *
-		 * Returns whether the write was successful.
-		 */
-		bool
-		write_rgba8_raster(
-				const Rgba8RawRaster::non_null_ptr_type &raster,
-				const QString &filename);
-
-
-		/**
 		 * Returns true if @a raster has any pixels with an alpha value of 255.
 		 */
 		bool

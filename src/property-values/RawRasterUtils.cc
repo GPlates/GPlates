@@ -25,13 +25,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "global/CompilerWarnings.h"
-
-PUSH_MSVC_WARNINGS
-DISABLE_MSVC_WARNING( 4251 )
-#include <Magick++.h>
-POP_MSVC_WARNINGS
-
 #include "RawRasterUtils.h"
 
 #include "global/GPlatesAssert.h"
@@ -403,30 +396,6 @@ GPlatesPropertyValues::RawRasterUtils::apply_coverage_raster(
 
 		++source_data;
 		++coverage_data;
-	}
-}
-
-
-bool
-GPlatesPropertyValues::RawRasterUtils::write_rgba8_raster(
-		const Rgba8RawRaster::non_null_ptr_type &raster,
-		const QString &filename)
-{
-	try
-	{
-		Magick::Image image(raster->width(), raster->height(), "RGBA", Magick::CharPixel, raster->data());
-		image.write(filename.toStdString());
-		return true;
-	}
-	catch (std::exception &exc)
-	{
-		qWarning() << "GPlatesPropertyValues::RawRasterUtils::write_rgba8_raster: " << exc.what();
-		return false;
-	}
-	catch (...)
-	{
-		qWarning() << "GPlatesPropertyValues::RawRasterUtils::write_rgba8_raster: unknown error";
-		return false;
 	}
 }
 
