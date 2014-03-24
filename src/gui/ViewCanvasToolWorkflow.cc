@@ -167,7 +167,9 @@ GPlatesGui::ViewCanvasToolWorkflow::initialise()
 
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_DRAG_GLOBE, true);
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_ZOOM_GLOBE, true);
+#if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_CHANGE_LIGHTING, true);
+#endif
 
 	update_enable_state();
 }
@@ -207,8 +209,10 @@ GPlatesGui::ViewCanvasToolWorkflow::get_selected_globe_and_map_canvas_tools(
 	case CanvasToolWorkflows::TOOL_ZOOM_GLOBE:
 		return std::make_pair(d_globe_zoom_globe_tool.get(), d_map_zoom_globe_tool.get());
 
+#if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
 	case CanvasToolWorkflows::TOOL_CHANGE_LIGHTING:
 		return std::make_pair(d_globe_change_lighting_tool.get(), d_map_change_lighting_tool.get());
+#endif
 
 	default:
 		break;
