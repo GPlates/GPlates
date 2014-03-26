@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2009 Geological Survey of Norway
+ * Copyright (C) 2009, 2014 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -77,113 +77,6 @@ namespace
 	}
 
 
-	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type
-	create_kvd_from_feature(
-		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-		const referenced_files_collection_type &referenced_files,
-		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time	)
-	{
-
-		// FIXME: Consider exporting fields from the original feature's kvd too. This could get
-		// complicated if features came from shapefiles with different attribute fields. 
-		// For now, I'm just adding plateID, anchor plate, time, and referenced files to the kvd. 
-	
-		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
-			GPlatesPropertyValues::GpmlKeyValueDictionary::create();
-
-		static const GPlatesModel::PropertyName plate_id_property_name =
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-
-		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
-
-		// If we found a plate id, add it. 
-		if (GPlatesFeatureVisitors::get_property_value(feature,plate_id_property_name,recon_plate_id))
-		{
-			// Shapefile attribute field names are limited to 10 characters in length 
-			// and should not contain spaces.
-			GPlatesPropertyValues::XsString::non_null_ptr_type key = 
-				GPlatesPropertyValues::XsString::create("PLATE_ID");
-			GPlatesPropertyValues::XsInteger::non_null_ptr_type plateid_value = 
-				GPlatesPropertyValues::XsInteger::create(recon_plate_id->value());	
-
-			GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-				key,
-				plateid_value,
-				GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-			dictionary->elements().push_back(element);
-		}
-
-		// Anchor plate.
-
-		// (Shapefile attribute fields are limited to 10 characters in length)
-		GPlatesPropertyValues::XsString::non_null_ptr_type key = 
-			GPlatesPropertyValues::XsString::create("ANCHOR");
-		GPlatesPropertyValues::XsInteger::non_null_ptr_type anchor_value = 
-			GPlatesPropertyValues::XsInteger::create(reconstruction_anchor_plate_id);	
-
-		GPlatesPropertyValues::GpmlKeyValueDictionaryElement anchor_element(
-			key,
-			anchor_value,
-			GPlatesPropertyValues::StructuralType::create_xsi("integer"));
-		dictionary->elements().push_back(anchor_element);	
-
-		// Reconstruction time.
-		key = GPlatesPropertyValues::XsString::create("TIME");
-		GPlatesPropertyValues::XsDouble::non_null_ptr_type time_value = 
-			GPlatesPropertyValues::XsDouble::create(reconstruction_time);	
-
-		GPlatesPropertyValues::GpmlKeyValueDictionaryElement time_element(
-			key,
-			time_value,
-			GPlatesPropertyValues::StructuralType::create_xsi("double"));
-		dictionary->elements().push_back(time_element);	
-
-		// Referenced files.
-		// As this info is output on a geometry by geometry basis (there's no place in a shapefile 
-		// for global attributes...) I could give each geometry its correct file, rather 
-		// then write out the whole list. For now I'm going to write out the
-		// whole list, so at least we're consistent with the GMT export. 
-
-		// Attribute field names will have the form "FILE1", "FILE2" etc...
-		QString file_string("FILE");
-
-		int file_count = 1;
-		referenced_files_collection_type::const_iterator file_iter;
-		for (file_iter = referenced_files.begin();
-			file_iter != referenced_files.end();
-			++file_iter, ++file_count)
-		{
-			const GPlatesFileIO::File::Reference *file = *file_iter;
-
-			QString count_string = QString("%1").arg(file_count);
-			QString field_name = file_string + count_string;
-
-			// Some files might not actually exist yet if the user created a new
-			// feature collection internally and hasn't saved it to file yet.
-			if (!GPlatesFileIO::file_exists(file->get_file_info()))
-			{
-				continue;
-			}
-
-			QString filename = file->get_file_info().get_display_name(false/*use_absolute_path_name*/);
-
-			key = GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(field_name));
-			GPlatesPropertyValues::XsString::non_null_ptr_type file_value = 
-				GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(filename));
-
-			GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
-				key,
-				file_value,
-				GPlatesPropertyValues::StructuralType::create_xsi("string"));
-			dictionary->elements().push_back(element);	
-		}
-
-
-		return dictionary;
-
-	}
-
 	void
 	add_feature_fields_to_kvd(
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type &output_kvd,
@@ -209,6 +102,7 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 		const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
+		const referenced_files_collection_type &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool wrap_to_dateline)
@@ -289,20 +183,13 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries(
 										reconstruction_anchor_plate_id,
 										reconstruction_time);
 
-		OgrUtils::add_referenced_files_to_kvd(kvd_for_export,referenced_files);
+		OgrUtils::add_filename_sequence_to_kvd(QString("FILE"),referenced_files,kvd_for_export);
+		OgrUtils::add_filename_sequence_to_kvd(QString("RECONFILE"),active_reconstruction_files,kvd_for_export);
 
 		OgrUtils::add_standard_properties_to_kvd(
 					feature_ref,kvd_for_export);
 
 
-
-#if 0		
-		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type kvd =
-			create_kvd_from_feature(feature_ref,
-									referenced_files,
-									reconstruction_anchor_plate_id,
-									reconstruction_time);
-#endif
 		// Iterate through the reconstructed geometries of the current feature and write to output.
 		// Note that this will export each geometry as a separate entry in the shapefile, even if they
 		// come from the same feature. 
@@ -325,6 +212,7 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 		const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
+		const referenced_files_collection_type &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool wrap_to_dateline)
@@ -407,7 +295,8 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 												   reconstruction_anchor_plate_id,
 												   reconstruction_time);
 
-		OgrUtils::add_referenced_files_to_kvd(kvd_for_export,referenced_files);
+		OgrUtils::add_filename_sequence_to_kvd(QString("FILE"),referenced_files,kvd_for_export);
+		OgrUtils::add_filename_sequence_to_kvd(QString("RECONFILE"),active_reconstruction_files,kvd_for_export);
 
 		GPlatesFeatureVisitors::KeyValueDictionaryFinder kvd_finder;
 		kvd_finder.visit_feature(feature_ref);
@@ -435,14 +324,6 @@ GPlatesFileIO::OgrFormatReconstructedFeatureGeometryExport::export_geometries_pe
 		}
 
 
-
-#if 0		
-		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type kvd =
-			create_kvd_from_feature(feature_ref,
-									referenced_files,
-									reconstruction_anchor_plate_id,
-									reconstruction_time);
-#endif
 		// Iterate through the reconstructed geometries of the current feature and write to output.
 		// Note that this will export each geometry as a separate entry in the shapefile, even if they
 		// come from the same feature. 

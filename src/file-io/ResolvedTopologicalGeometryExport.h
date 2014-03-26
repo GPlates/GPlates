@@ -100,6 +100,7 @@ namespace GPlatesFileIO
 				Format export_format,
 				const std::vector<const GPlatesAppLogic::ResolvedTopologicalGeometry *> &resolved_topological_geom_seq,
 				const std::vector<const File::Reference *> &active_files,
+				const std::vector<const File::Reference *> &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool export_single_output_file,
