@@ -69,6 +69,7 @@ namespace GPlatesFileIO
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time);
 					break;
@@ -137,6 +138,7 @@ namespace GPlatesFileIO
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time);
 					break;

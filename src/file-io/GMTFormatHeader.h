@@ -31,6 +31,7 @@
 #include <QTextStream>
 
 #include "PlatesLineFormatHeaderVisitor.h"
+#include "ReconstructionGeometryExportImpl.h"
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
@@ -67,6 +68,13 @@
 
 namespace GPlatesFileIO
 {
+
+	/**
+	 * Typedef for a sequence of referenced files.
+	 */
+	typedef ReconstructionGeometryExportImpl::referenced_files_collection_type
+			referenced_files_collection_type;
+
 	/**
 	 * Interface for formatting of a GMT feature header.
 	 */
@@ -86,6 +94,35 @@ namespace GPlatesFileIO
 		get_feature_header_lines(
 				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 				std::vector<QString>& header_lines) = 0;
+
+		static
+		void
+		add_filenames_to_header(
+				std::vector<QString>& header,
+				const referenced_files_collection_type &file_references)
+		{
+
+			QStringList filenames;
+			referenced_files_collection_type::const_iterator file_iter;
+			for (file_iter = file_references.begin();
+				 file_iter != file_references.end();
+				 ++file_iter)
+			{
+				const File::Reference *file = *file_iter;
+
+				// Some files might not actually exist yet if the user created a new
+				// feature collection internally and hasn't saved it to file yet.
+				if (!GPlatesFileIO::file_exists(file->get_file_info()))
+				{
+					continue;
+				}
+
+				filenames << file->get_file_info().get_display_name(false/*use_absolute_path_name*/);
+			}
+
+			header.push_back(filenames.join(" "));
+		}
+
 	};
 
 
