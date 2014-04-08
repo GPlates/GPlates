@@ -83,6 +83,8 @@ set(srcs
     ExportFileNameTemplateValidationUtils.h
     ExportFlowlineAnimationStrategy.cc
     ExportFlowlineAnimationStrategy.h
+    ExportImageAnimationStrategy.cc
+    ExportImageAnimationStrategy.h
     ExportMotionPathAnimationStrategy.cc
     ExportMotionPathAnimationStrategy.h
     ExportOptionsUtils.h

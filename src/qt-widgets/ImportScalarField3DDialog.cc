@@ -35,9 +35,9 @@
 
 #include "ImportScalarField3DDialog.h"
 
-#include "GeoreferencingPage.h"
+#include "ScalarField3DGeoreferencingPage.h"
 #include "GlobeAndMapWidget.h"
-#include "RasterFeatureCollectionPage.h"
+#include "ScalarField3DFeatureCollectionPage.h"
 #include "ReconstructionViewWidget.h"
 #include "ScalarField3DDepthLayersPage.h"
 #include "ViewportWindow.h"
@@ -196,6 +196,9 @@ GPlatesQtWidgets::ImportScalarField3DDialog::ImportScalarField3DDialog(
 			view_state),
 	d_georeferencing(
 			GPlatesPropertyValues::Georeferencing::create()),
+	// TODO: Initialise coordinate transformation from first depth layer raster in sequence...
+	d_coordinate_transformation(
+			GPlatesPropertyValues::CoordinateTransformation::create()),
 	d_save_after_finish(true),
 	d_depth_layers_page_id(addPage(
 				new ScalarField3DDepthLayersPage(
@@ -205,13 +208,14 @@ GPlatesQtWidgets::ImportScalarField3DDialog::ImportScalarField3DDialog(
 					d_depth_layers_sequence,
 					this))),
 	d_georeferencing_page_id(addPage(
-				new GeoreferencingPage(
+				new ScalarField3DGeoreferencingPage(
 					d_georeferencing,
 					d_raster_width,
 					d_raster_height,
+					d_depth_layers_sequence,
 					this))),
 	d_scalar_field_feature_collection_page_id(addPage(
-				new RasterFeatureCollectionPage(
+				new ScalarField3DFeatureCollectionPage(
 					d_save_after_finish,
 					this)))
 {
@@ -401,6 +405,7 @@ GPlatesQtWidgets::ImportScalarField3DDialog::generate_scalar_field(
 					*renderer,
 					gpsf_file_path,
 					d_georeferencing,
+					d_coordinate_transformation,
 					// All depth layers have been verified to have the same width and height...
 					d_raster_width,
 					d_raster_height,

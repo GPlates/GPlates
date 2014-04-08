@@ -51,6 +51,7 @@
 #include "maths/PointOnSphere.h"
 #include "maths/Vector3D.h"
 
+#include "property-values/CoordinateTransformation.h"
 #include "property-values/Georeferencing.h"
 
 #include "utils/ObjectCache.h"
@@ -202,6 +203,10 @@ namespace GPlatesOpenGL
 		/**
 		 * Creates a @a GLMultiResolutionRaster object.
 		 *
+		 * @a georeferencing locates the raster pixels/lines in the raster's spatial reference system.
+		 * @a coordinate_transformation transforms georeferenced raster coordinates to the standard
+		 * geographic coordinate system WGS84 (this transforms from the raster's possibly
+		 * *projection* spatial reference).
 		 * @a raster_source is the source of raster data.
 		 *
 		 * Default fixed-point texture filtering mode for the internal textures rendered during
@@ -231,6 +236,7 @@ namespace GPlatesOpenGL
 		create(
 				GLRenderer &renderer,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
+				const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
 				const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
 				FixedPointTextureFilterType fixed_point_texture_filter = DEFAULT_FIXED_POINT_TEXTURE_FILTER,
 				CacheTileTexturesType cache_tile_textures = DEFAULT_CACHE_TILE_TEXTURES,
@@ -885,9 +891,15 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Georeferencing information to position the raster onto the globe.
+		 * Georeferencing information to position the raster pixels/lines in the raster's spatial reference system.
 		 */
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type d_georeferencing;
+
+		/**
+		 * Transforms georeferenced raster coordinates to the standard geographic coordinate system WGS84
+		 * (this transforms from the raster's possibly *projection* spatial reference).
+		 */
+		GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type d_coordinate_transformation;
 
 		/**
 		 * The source of multi-resolution raster data.
@@ -915,6 +927,9 @@ namespace GPlatesOpenGL
 		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
 		 */
 		unsigned int d_tile_texel_dimension;
+
+		//! 1.0 / 'd_tile_texel_dimension'.
+		float d_inverse_tile_texel_dimension;
 
 		/**
 		 * The (fractional) number of texels between two adjacent vertices along a horizontal or
@@ -1025,6 +1040,7 @@ namespace GPlatesOpenGL
 		GLMultiResolutionRaster(
 				GLRenderer &renderer,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
+				const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
 				const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
 				FixedPointTextureFilterType fixed_point_texture_filter,
 				CacheTileTexturesType cache_tile_textures,

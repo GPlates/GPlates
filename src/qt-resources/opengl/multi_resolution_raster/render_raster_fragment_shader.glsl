@@ -33,11 +33,17 @@
  */
 uniform sampler2D raster_texture_sampler;
 
+#ifdef SOURCE_RASTER_IS_FLOATING_POINT
+	uniform vec4 source_texture_dimensions;
+#endif
+
 void main (void)
 {
 #ifdef SOURCE_RASTER_IS_FLOATING_POINT
-	// Just return the source raster.
-	gl_FragColor = texture2D(raster_texture_sampler, gl_TexCoord[0].st);
+	// Bilinearly filter the tile texture (data/coverage is in red/green channel).
+	// The texture access in 'bilinearly_interpolate' starts a new indirection phase.
+	gl_FragColor = bilinearly_interpolate_data_coverge_RG(
+		 raster_texture_sampler, gl_TexCoord[0].st, source_texture_dimensions);
 #endif
 
 #ifdef SURFACE_NORMALS

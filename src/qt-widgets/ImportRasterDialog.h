@@ -165,6 +165,31 @@ namespace GPlatesQtWidgets
 
 	private:
 
+		/**
+		 * Wizard page ids.
+		 */
+		enum PageId
+		{
+			TIME_DEPENDENT_RASTER_PAGE_ID,
+			RASTER_BAND_PAGE_ID,
+			GEOREFERENCING_PAGE_ID,
+			RASTER_FEATURE_COLLECTION_PAGE_ID
+		};
+
+
+		/**
+		 * Override the next page id so we can skip georeferencing page if raster has inbuilt georeferencing.
+		 */
+		virtual
+		int
+		nextId() const;
+
+		/**
+		 * Returns (first) raster's inbuilt georeferencing (if any).
+		 */
+		boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
+		get_raster_georeferencing() const;
+
 		void
 		set_number_of_bands(
 				unsigned int number_of_bands);
@@ -199,11 +224,6 @@ namespace GPlatesQtWidgets
 		std::vector<QString> d_band_names;
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_type d_georeferencing;
 		bool d_save_after_finish;
-
-		int d_time_dependent_raster_page_id;
-		int d_raster_band_page_id;
-		int d_georeferencing_page_id;
-		int d_raster_feature_collection_page_id;
 	};
 }
 

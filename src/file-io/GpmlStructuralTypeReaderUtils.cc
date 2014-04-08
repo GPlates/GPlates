@@ -170,6 +170,69 @@ namespace
 
 		boost::optional<GPlatesPropertyValues::GmlFile::value_component_type> d_result;
 	};
+
+
+	/**
+	 * Common code used by 'create_point_on_sphere()', 'create_lon_lat_point_on_sphere' and
+	 * 'create_point_2d'.
+	 */
+	template <class PointType>
+	std::pair<PointType, GPlatesPropertyValues::GmlPoint::GmlProperty>
+	create_point(
+			const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+			PointType (*create_pos_fn)(
+					const GPlatesModel::XmlElementNode::non_null_ptr_type &,
+					const GPlatesModel::GpgimVersion &,
+					GPlatesFileIO::ReadErrorAccumulation &),
+			PointType (*create_coordinates_fn)(
+					const GPlatesModel::XmlElementNode::non_null_ptr_type &,
+					const GPlatesModel::GpgimVersion &,
+					GPlatesFileIO::ReadErrorAccumulation &),
+			const GPlatesModel::GpgimVersion &gpml_version,
+			GPlatesFileIO::ReadErrorAccumulation &read_errors)
+	{
+		static const GPlatesModel::XmlElementName
+			STRUCTURAL_TYPE = GPlatesModel::XmlElementName::create_gml("Point"),
+			POS = GPlatesModel::XmlElementName::create_gml("pos"),
+			COORDINATES = GPlatesModel::XmlElementName::create_gml("coordinates");
+
+		GPlatesModel::XmlElementNode::non_null_ptr_type elem =
+				GPlatesFileIO::GpmlStructuralTypeReaderUtils::get_structural_type_element(
+						parent,
+						STRUCTURAL_TYPE);
+
+		// FIXME: We need to give the srsName et al. attributes from the pos 
+		// (or the gml:FeatureCollection tag?) to the GmlPoint or GmlMultiPoint.
+		boost::optional<PointType> point_as_pos =
+				GPlatesFileIO::GpmlStructuralTypeReaderUtils::find_and_create_optional(
+						elem, create_pos_fn, POS, gpml_version, read_errors);
+		boost::optional<PointType> point_as_coordinates =
+				GPlatesFileIO::GpmlStructuralTypeReaderUtils::find_and_create_optional(
+						elem, create_coordinates_fn, COORDINATES, gpml_version, read_errors);
+
+		// The gml:Point needs one of gml:pos and gml:coordinates, but not both.
+		if (point_as_pos && point_as_coordinates)
+		{
+			throw GPlatesFileIO::GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+					elem, GPlatesFileIO::ReadErrors::DuplicateProperty,
+					EXCEPTION_SOURCE);
+		}
+		if (!point_as_pos && !point_as_coordinates)
+		{
+			throw GPlatesFileIO::GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+					elem, GPlatesFileIO::ReadErrors::NecessaryPropertyNotFound,
+					EXCEPTION_SOURCE);
+		}
+
+		if (point_as_pos)
+		{
+			return std::make_pair(*point_as_pos, GPlatesPropertyValues::GmlPoint::POS);
+		}
+		else
+		{
+			return std::make_pair(*point_as_coordinates, GPlatesPropertyValues::GmlPoint::COORDINATES);
+		}
+	}
 }
 
 
@@ -1086,57 +1149,31 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_pos(
 		const GPlatesModel::GpgimVersion &gpml_version,
 		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
-	QString str = create_nonempty_string(elem, gpml_version, read_errors);
+	const std::pair<double, double> lon_lat_pos =
+			create_lon_lat_pos(elem, gpml_version, read_errors);
 
-	// XXX: Currently assuming srsDimension is 2!!
-
-	QTextStream is(&str, QIODevice::ReadOnly);
-
-	double lat = 0.0;
-	double lon = 0.0;
-
-	// FIXME: What should I do if one (or both) of these are screwed?
-	// NOTE: We are assuming GPML is using (lat,lon) ordering.
-	// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
-	is >> lat;
-	// FIXME: Check is.status() here!
-	is >> lon;
-
-	if ( ! (GPlatesMaths::LatLonPoint::is_valid_latitude(lat) &&
-			GPlatesMaths::LatLonPoint::is_valid_longitude(lon))) {
-		// Bad coordinates.
-		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
-				elem, GPlatesFileIO::ReadErrors::InvalidLatLonPoint,
-				EXCEPTION_SOURCE);
-	}
-	return GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(lat, lon));
+	return GPlatesMaths::make_point_on_sphere(
+			GPlatesMaths::LatLonPoint(
+					lon_lat_pos.second/*lat*/,
+					lon_lat_pos.first/*lon*/));
 }
 
 
-// Similar to create_pos but returns it as (lon, lat) pair.
-// This is to ensure that the longitude doesn't get wiped when reading in a
-// point physically at the north pole.
 std::pair<double, double>
 GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_lon_lat_pos(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 		const GPlatesModel::GpgimVersion &gpml_version,
 		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
-	QString str = create_nonempty_string(elem, gpml_version, read_errors);
-
-	// XXX: Currently assuming srsDimension is 2!!
-
-	QTextStream is(&str, QIODevice::ReadOnly);
-
-	double lat = 0.0;
-	double lon = 0.0;
+	const std::pair<double, double> pos_2d =
+			create_pos_2d(elem, gpml_version, read_errors);
 
 	// FIXME: What should I do if one (or both) of these are screwed?
 	// NOTE: We are assuming GPML is using (lat,lon) ordering.
 	// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
-	is >> lat;
+	const double lat = pos_2d.first;
 	// FIXME: Check is.status() here!
-	is >> lon;
+	const double lon = pos_2d.second;
 
 	if ( ! (GPlatesMaths::LatLonPoint::is_valid_latitude(lat) &&
 			GPlatesMaths::LatLonPoint::is_valid_longitude(lon))) {
@@ -1149,8 +1186,8 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_lon_lat_pos(
 }
 
 
-GPlatesMaths::PointOnSphere
-GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_coordinates(
+std::pair<double, double>
+GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_pos_2d(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 		const GPlatesModel::GpgimVersion &gpml_version,
 		GPlatesFileIO::ReadErrorAccumulation &read_errors)
@@ -1159,31 +1196,31 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_coordinates(
 
 	// XXX: Currently assuming srsDimension is 2!!
 
-	QStringList tokens = str.split(",");
+	QTextStream is(&str, QIODevice::ReadOnly);
 
-	if (tokens.count() == 2)
-	{
-		try
-		{
-			GPlatesUtils::Parse<double> parse;
-			double lat = parse(tokens.at(0));
-			double lon = parse(tokens.at(1));
+	double x = 0.0;
+	double y = 0.0;
 
-			if (GPlatesMaths::LatLonPoint::is_valid_latitude(lat) &&
-					GPlatesMaths::LatLonPoint::is_valid_longitude(lon))
-			{
-				return GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(lat, lon));
-			}
-		}
-		catch (...)
-		{
-			// Do nothing, fall through.
-		}
-	}
+	is >> x;
+	is >> y;
 
-	throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
-			elem, GPlatesFileIO::ReadErrors::InvalidLatLonPoint,
-			EXCEPTION_SOURCE);
+	return std::make_pair(x, y);
+}
+
+
+GPlatesMaths::PointOnSphere
+GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_coordinates(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		const GPlatesModel::GpgimVersion &gpml_version,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
+{
+	const std::pair<double, double> lon_lat_coordinates =
+			create_lon_lat_coordinates(elem, gpml_version, read_errors);
+
+	return GPlatesMaths::make_point_on_sphere(
+			GPlatesMaths::LatLonPoint(
+					lon_lat_coordinates.second/*lat*/,
+					lon_lat_coordinates.first/*lon*/));
 }
 
 
@@ -1193,25 +1230,49 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_lon_lat_coordinates(
 		const GPlatesModel::GpgimVersion &gpml_version,
 		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
+	const std::pair<double, double> coordinates_2d =
+			create_coordinates_2d(elem, gpml_version, read_errors);
+
+	// FIXME: What should I do if one (or both) of these are screwed?
+	// NOTE: We are assuming GPML is using (lat,lon) ordering.
+	// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
+	const double lat = coordinates_2d.first;
+	// FIXME: Check is.status() here!
+	const double lon = coordinates_2d.second;
+
+	if ( ! (GPlatesMaths::LatLonPoint::is_valid_latitude(lat) &&
+			GPlatesMaths::LatLonPoint::is_valid_longitude(lon))) {
+		// Bad coordinates.
+		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+				elem, GPlatesFileIO::ReadErrors::InvalidLatLonPoint,
+				EXCEPTION_SOURCE);
+	}
+	return std::make_pair(lon, lat);
+}
+
+
+std::pair<double, double>
+GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_coordinates_2d(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		const GPlatesModel::GpgimVersion &gpml_version,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
+{
 	QString str = create_nonempty_string(elem, gpml_version, read_errors);
 
 	// XXX: Currently assuming srsDimension is 2!!
 
 	QStringList tokens = str.split(",");
 
+	double x = 0.0;
+	double y = 0.0;
+
 	if (tokens.count() == 2)
 	{
 		try
 		{
 			GPlatesUtils::Parse<double> parse;
-			double lat = parse(tokens.at(0));
-			double lon = parse(tokens.at(1));
-
-			if (GPlatesMaths::LatLonPoint::is_valid_latitude(lat) &&
-					GPlatesMaths::LatLonPoint::is_valid_longitude(lon))
-			{
-				return std::make_pair(lon, lat);
-			}
+			x = parse(tokens.at(0));
+			y = parse(tokens.at(1));
 		}
 		catch (...)
 		{
@@ -1219,9 +1280,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_lon_lat_coordinates(
 		}
 	}
 
-	throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
-			elem, GPlatesFileIO::ReadErrors::InvalidLatLonPoint,
-			EXCEPTION_SOURCE);
+	return std::make_pair(x, y);
 }
 
 
@@ -1432,43 +1491,12 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_point_on_sphere(
 		const GPlatesModel::GpgimVersion &gpml_version,
 		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
-	static const GPlatesModel::XmlElementName
-		STRUCTURAL_TYPE = GPlatesModel::XmlElementName::create_gml("Point"),
-		POS = GPlatesModel::XmlElementName::create_gml("pos"),
-		COORDINATES = GPlatesModel::XmlElementName::create_gml("coordinates");
-
-	GPlatesModel::XmlElementNode::non_null_ptr_type
-		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
-
-	// FIXME: We need to give the srsName et al. attributes from the pos 
-	// (or the gml:FeatureCollection tag?) to the GmlPoint or GmlMultiPoint.
-	boost::optional<GPlatesMaths::PointOnSphere> point_as_pos =
-		find_and_create_optional(elem, &create_pos, POS, gpml_version, read_errors);
-	boost::optional<GPlatesMaths::PointOnSphere> point_as_coordinates =
-		find_and_create_optional(elem, &create_coordinates, COORDINATES, gpml_version, read_errors);
-
-	// The gml:Point needs one of gml:pos and gml:coordinates, but not both.
-	if (point_as_pos && point_as_coordinates)
-	{
-		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
-				elem, GPlatesFileIO::ReadErrors::DuplicateProperty,
-				EXCEPTION_SOURCE);
-	}
-	if (!point_as_pos && !point_as_coordinates)
-	{
-		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
-				elem, GPlatesFileIO::ReadErrors::NecessaryPropertyNotFound,
-				EXCEPTION_SOURCE);
-	}
-
-	if (point_as_pos)
-	{
-		return std::make_pair(*point_as_pos, GPlatesPropertyValues::GmlPoint::POS);
-	}
-	else
-	{
-		return std::make_pair(*point_as_coordinates, GPlatesPropertyValues::GmlPoint::COORDINATES);
-	}
+	return create_point(
+			parent,
+			&create_pos,
+			&create_coordinates,
+			gpml_version,
+			read_errors);
 }
 
 
@@ -1478,43 +1506,27 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_lon_lat_point_on_sphere(
 		const GPlatesModel::GpgimVersion &gpml_version,
 		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
-	static const GPlatesModel::XmlElementName
-		STRUCTURAL_TYPE = GPlatesModel::XmlElementName::create_gml("Point"),
-		POS = GPlatesModel::XmlElementName::create_gml("pos"),
-		COORDINATES = GPlatesModel::XmlElementName::create_gml("coordinates");
+	return create_point(
+			parent,
+			&create_lon_lat_pos,
+			&create_lon_lat_coordinates,
+			gpml_version,
+			read_errors);
+}
 
-	GPlatesModel::XmlElementNode::non_null_ptr_type
-		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
-	// FIXME: We need to give the srsName et al. attributes from the pos 
-	// (or the gml:FeatureCollection tag?) to the GmlPoint or GmlMultiPoint.
-	boost::optional<std::pair<double, double> > point_as_pos =
-		find_and_create_optional(elem, &create_lon_lat_pos, POS, gpml_version, read_errors);
-	boost::optional<std::pair<double, double> > point_as_coordinates =
-		find_and_create_optional(elem, &create_lon_lat_coordinates, COORDINATES, gpml_version, read_errors);
-
-	// The gml:Point needs one of gml:pos and gml:coordinates, but not both.
-	if (point_as_pos && point_as_coordinates)
-	{
-		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
-				elem, GPlatesFileIO::ReadErrors::DuplicateProperty,
-				EXCEPTION_SOURCE);
-	}
-	if (!point_as_pos && !point_as_coordinates)
-	{
-		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
-				elem, GPlatesFileIO::ReadErrors::NecessaryPropertyNotFound,
-				EXCEPTION_SOURCE);
-	}
-
-	if (point_as_pos)
-	{
-		return std::make_pair(*point_as_pos, GPlatesPropertyValues::GmlPoint::POS);
-	}
-	else
-	{
-		return std::make_pair(*point_as_coordinates, GPlatesPropertyValues::GmlPoint::COORDINATES);
-	}
+std::pair<std::pair<double, double>, GPlatesPropertyValues::GmlPoint::GmlProperty>
+GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_point_2d(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		const GPlatesModel::GpgimVersion &gpml_version,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
+{
+	return create_point(
+			parent,
+			&create_pos_2d,
+			&create_coordinates_2d,
+			gpml_version,
+			read_errors);
 }
 
 

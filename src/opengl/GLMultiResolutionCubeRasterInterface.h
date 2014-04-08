@@ -30,6 +30,7 @@
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <opengl/OpenGL.h>
 
 #include "GLMatrix.h"
 #include "GLTexture.h"
@@ -166,6 +167,16 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Gets the transform that is applied to raster/geometries when rendering into the cube map.
+		 *
+		 * The initial (default) transform is the identity transform.
+		 */
+		virtual
+		const GLMatrix &
+		get_world_transform() const = 0;
+
+
+		/**
 		 * Sets the transform to apply to raster/geometries when rendering into the cube map.
 		 *
 		 * This also invalidates all cached tile textures (if any) such that they will get regenerated
@@ -221,6 +232,17 @@ namespace GPlatesOpenGL
 		virtual
 		std::size_t
 		get_tile_texel_dimension() const = 0;
+
+
+		/**
+		 * Returns the texture internal format that can be used if rendering to a texture as
+		 * opposed to the main framebuffer.
+		 *
+		 * This is the internal format of the texture returned by @a get_tile_texture.
+		 */
+		virtual
+		GLint
+		get_tile_texture_internal_format() const = 0;
 	};
 }
 

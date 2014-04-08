@@ -85,6 +85,13 @@ GPlatesPropertyValues::GmlFile::proxied_raw_rasters() const
 }
 
 
+boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+GPlatesPropertyValues::GmlFile::get_spatial_reference_system() const
+{
+	return d_proxied_raster_cache->get_spatial_reference_system();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::GmlFile::print_to(
 		std::ostream &os) const

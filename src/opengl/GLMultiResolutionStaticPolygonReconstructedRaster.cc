@@ -473,7 +473,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_level_of_d
 	//
 	//    t = t0 * 2 ^ (-depth)
 	//
-	// ...where 't0' is the texel size of the *highest* resolution level-of-detail and
+	// ...where 't0' is the texel size of the *lowest* resolution level-of-detail and
 	// 't' is the projected size of a pixel of the viewport.
 	//
 

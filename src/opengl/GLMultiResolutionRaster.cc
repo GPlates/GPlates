@@ -204,6 +204,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type
 GPlatesOpenGL::GLMultiResolutionRaster::create(
 		GLRenderer &renderer,
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
+		const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
 		const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
 		FixedPointTextureFilterType fixed_point_texture_filter,
 		CacheTileTexturesType cache_tile_textures,
@@ -213,6 +214,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create(
 			new GLMultiResolutionRaster(
 					renderer,
 					georeferencing,
+					coordinate_transformation,
 					raster_source,
 					fixed_point_texture_filter,
 					cache_tile_textures,
@@ -223,11 +225,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::create(
 GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 		GLRenderer &renderer,
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
+		const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
 		const GLMultiResolutionRasterSource::non_null_ptr_type &raster_source,
 		FixedPointTextureFilterType fixed_point_texture_filter,
 		CacheTileTexturesType cache_tile_textures,
 		RasterScanlineOrderType raster_scanline_order) :
 	d_georeferencing(georeferencing),
+	d_coordinate_transformation(coordinate_transformation),
 	d_raster_source(raster_source),
 	// The raster dimensions (the highest resolution level-of-detail).
 	d_raster_width(raster_source->get_raster_width()),
@@ -235,6 +239,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	d_raster_scanline_order(raster_scanline_order),
 	d_fixed_point_texture_filter(fixed_point_texture_filter),
 	d_tile_texel_dimension(raster_source->get_tile_texel_dimension()),
+	d_inverse_tile_texel_dimension(1.0f / raster_source->get_tile_texel_dimension()),
 	d_num_texels_per_vertex(/*default*/MAX_NUM_TEXELS_PER_VERTEX << 16), // ...a 16:16 fixed-point type.
 	// The parentheses around min are to prevent the windows min macros
 	// from stuffing numeric_limits' min.
@@ -684,7 +689,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 
 	const GLint internal_format = d_raster_source->get_target_texture_internal_format();
 
-#if 0
 	// If the auto-generate mipmaps OpenGL extension is supported then have mipmaps generated
 	// automatically for us and specify a mipmap minification filter,
 	// otherwise don't use mipmaps (and instead specify a non-mipmap minification filter).
@@ -702,6 +706,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// we have our own mipmapped raster tiles via proxied rasters. Also we turn on anisotropic
 	// filtering which will reduce any aliasing near the horizon of the globe.
 	// Turning off auto-mipmap-generation will also give us a small speed boost.
+#if 0
 	if (capabilities.texture.gl_SGIS_generate_mipmap)
 	{
 		// Mipmaps will be generated automatically when the level 0 image is modified.
@@ -1452,6 +1457,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 		// Configure shader for floating-point rasters.
 		fragment_shader_source.add_code_segment("#define SOURCE_RASTER_IS_FLOATING_POINT\n");
 
+		// Then add the GLSL function to bilinearly interpolate.
+		fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+
 		// Finally add the GLSL 'main()' function.
 		fragment_shader_source.add_code_segment_from_file(RENDER_RASTER_FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
@@ -1466,6 +1474,15 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_shader_program_if_necessary(
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				d_render_raster_program_object,
 				GPLATES_ASSERTION_SOURCE);
+
+		// We need to setup for bilinear filtering of floating-point texture in the fragment shader.
+		// Set the source tile texture dimensions (and inverse dimensions).
+		// This uniform is constant (only needs to be reloaded if shader program is re-linked).
+		d_render_raster_program_object.get()->gl_uniform4f(
+				renderer,
+				"source_texture_dimensions",
+				d_tile_texel_dimension, d_tile_texel_dimension,
+				d_inverse_tile_texel_dimension, d_inverse_tile_texel_dimension);
 	}
 	else
 	{
@@ -2327,8 +2344,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::convert_pixel_coord_to_geographic_coord(
 	const GPlatesPropertyValues::Georeferencing::parameters_type &georef =
 			d_georeferencing->parameters();
 
-	// Use the georeferencing information to convert
-	// from pixel coordinates to geographic coordinates.
+	// Use the georeferencing information to convert from pixel/line coordinates to georeference
+	// coordinates in the raster's spatial reference system.
 	double x_geo =
 			x_pixel_coord * georef.x_component_of_pixel_width +
 			y_pixel_coord * georef.x_component_of_pixel_height +
@@ -2338,18 +2355,16 @@ GPlatesOpenGL::GLMultiResolutionRaster::convert_pixel_coord_to_geographic_coord(
 			y_pixel_coord * georef.y_component_of_pixel_height +
 			georef.top_left_y_coordinate;
 
-	// TODO: This is where the inverse map projection will go when we add
-	// the map projection to the georeferencing information.
-	// It will transform from map coordinates (x_geo, y_geo) to (longitude, latitude).
-	// Right now we assume no map projection in which case (x_geo, y_geo)
-	// are already in (longitude, latitude).
+	// Transform georeferenced raster coordinates to the standard geographic coordinate system WGS84
+	// (this transforms from the raster's possibly *projection* spatial reference).
+	d_coordinate_transformation->transform_in_place(&x_geo, &y_geo);
 
-	// Sometimes due to numerical precision the latitude is slightly less then -90 degrees
-	// or slightly greater than 90 degrees.
-	// If it's only slightly outside the valid range then we'll be lenient and correct it.
-	// Otherwise we'll do nothing and let GPlatesMaths::LatLonPoint throw an exception.
-	// UPDATE: Actually we'll hard clamp it - there's no guarantee that the georeferencing
-	// is correct in which case the raster will just be displayed incorrectly.
+	// Some rasters have a geographic coordinate latitude extent of, for example, [-90.05, 90.05]
+	// (for a raster of height 1801) such that the pixel centre of the first and last rows are at the
+	// same position (-90 or 90 degrees). However we are rendering in cartesian (x,y,z) space and not
+	// lat/lon space so we need to clamp latitudes to the poles. This introduces a slight error in
+	// positioning (georeferencing) of raster data but only for raster pixels between the pole and
+	// the nearest vertex in the raster mesh.
 	if (y_geo < -90)
 	{
 		y_geo = -90;
@@ -2358,13 +2373,27 @@ GPlatesOpenGL::GLMultiResolutionRaster::convert_pixel_coord_to_geographic_coord(
 	{
 		y_geo = 90;
 	}
+
+	// Wrap longitude into the range [-360,360] if necessary since otherwise LatLonPoint will thrown an exception.
+	// Some rasters have a georeference longitude extent of, for example, [-0.05, 360.05] (for a
+	// raster of width 3601) such that the pixel centre of the first and last column are at the same
+	// position (0, or 360, degrees) in order to avoid a seam.
+	// So we shouldn't clamp those values (we wraparound instead).
 	if (x_geo < -360)
 	{
-		x_geo = -360;
+		do 
+		{
+			x_geo += 360;
+		}
+		while (x_geo < -360);
 	}
 	else if (x_geo > 360)
 	{
-		x_geo = 360;
+		do 
+		{
+			x_geo -= 360;
+		}
+		while (x_geo > 360);
 	}
 
 	// Finally convert from (longitude, latitude) to cartesian (x,y,z).

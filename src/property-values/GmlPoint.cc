@@ -29,62 +29,73 @@
 
 #include "GmlPoint.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "maths/MathsUtils.h"
-#include "maths/PointOnSphere.h"
 
 
-const GPlatesPropertyValues::GmlPoint::non_null_ptr_type
-GPlatesPropertyValues::GmlPoint::create(
-		const std::pair<double, double> &gml_pos,
-		GmlProperty gml_property_)
+const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+GPlatesPropertyValues::GmlPoint::point() const
 {
-	using namespace ::GPlatesMaths;
+	if (!d_point_on_sphere)
+	{
+		// At least one type of point must always exist.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_point_2d,
+				GPLATES_ASSERTION_SOURCE);
 
-	const double &lon = gml_pos.first;
-	const double &lat = gml_pos.second;
+		// Note that the 2D point stores as (lat, lon) which is the order stored in GPML file.
+		// This will throw if the lat/lon is outside valid range.
+		const GPlatesMaths::LatLonPoint lat_lon_point(d_point_2d->first/*lat*/, d_point_2d->second/*lon*/);
 
-	// FIXME:  Check the validity of the lat/lon coords using functions in LatLonPoint.
-	LatLonPoint llp(lat, lon);
-	PointOnSphere p = make_point_on_sphere(llp);
+		d_point_on_sphere = GPlatesMaths::make_point_on_sphere(lat_lon_point).clone_as_point();
+	}
 
-	non_null_ptr_type point_ptr(
-			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()), gml_property_));
-	point_ptr->d_original_longitude = lon;
-
-	return point_ptr;
-}
-
-
-const GPlatesPropertyValues::GmlPoint::non_null_ptr_type
-GPlatesPropertyValues::GmlPoint::create(
-		const GPlatesMaths::PointOnSphere &p,
-		GmlProperty gml_property_)
-{
-	using namespace ::GPlatesMaths;
-
-	GmlPoint::non_null_ptr_type point_ptr(
-			new GmlPoint(PointOnSphere::create_on_heap(p.position_vector()), gml_property_));
-	return point_ptr;
+	return d_point_on_sphere.get();
 }
 
 
 GPlatesMaths::LatLonPoint
 GPlatesPropertyValues::GmlPoint::point_in_lat_lon() const
 {
-	// First convert it to lat-lon directly.
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*d_point);
+	const std::pair<double, double> &pos_2d = point_2d();
 
-	// Fix up the lon if the lat is near 90 or -90.
-	if (d_original_longitude)
+	// Note that the 2D point stores as (lat, lon) which is the order stored in GPML file.
+	// This will throw if the lat/lon is outside valid range.
+	return GPlatesMaths::LatLonPoint(pos_2d.first/*lat*/, pos_2d.second/*lon*/);
+}
+
+
+const std::pair<double, double> &
+GPlatesPropertyValues::GmlPoint::point_2d() const
+{
+	if (!d_point_2d)
 	{
-		if (GPlatesMaths::are_almost_exactly_equal(llp.latitude(), 90.0) ||
-				GPlatesMaths::are_almost_exactly_equal(llp.latitude(), -90.0))
-		{
-			llp = GPlatesMaths::LatLonPoint(llp.latitude(), *d_original_longitude);
-		}
+		// At least one type of point must always exist.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_point_on_sphere,
+				GPLATES_ASSERTION_SOURCE);
+
+		const GPlatesMaths::LatLonPoint lat_lon_point = make_lat_lon_point(*d_point_on_sphere.get());
+
+		// Note that the 2D point stores as (lat, lon) which is the order stored in GPML file.
+		d_point_2d = std::make_pair(lat_lon_point.latitude(), lat_lon_point.longitude());
 	}
 
-	return llp;
+	return d_point_2d.get();
+}
+
+
+void
+GPlatesPropertyValues::GmlPoint::set_point(
+		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &p)
+{
+	d_point_on_sphere = p;
+
+	d_point_2d = boost::none;
+
+	update_instance_id();
 }
 
 
@@ -92,6 +103,6 @@ std::ostream &
 GPlatesPropertyValues::GmlPoint::print_to(
 		std::ostream &os) const
 {
-	return os << *d_point;
+	return os << *point();
 }
 

@@ -313,7 +313,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::does_raster_layer_cont
 	{
 		// If the raster band contains numerical data (ie, it's not colour data) then we can
 		// use it for co-registration.
-		if (raster_layer_proxy.get()->does_raster_contain_numerical_data(raster_band_name->value()))
+		if (raster_layer_proxy.get()->does_raster_band_contain_numerical_data(raster_band_name->value()))
 		{
 			return true;
 		}
@@ -646,7 +646,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::populate_raster_coregi
 	{
 		// If the raster band does not contain numerical data (ie, it's colour data) then we don't
 		// use it for co-registration.
-		if (!raster_layer_proxy.get()->does_raster_contain_numerical_data(raster_band_name->value()))
+		if (!raster_layer_proxy.get()->does_raster_band_contain_numerical_data(raster_band_name->value()))
 		{
 			continue;
 		}

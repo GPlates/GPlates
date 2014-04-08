@@ -25,6 +25,7 @@
 
 #include <limits>
 #include <vector>
+#include <boost/optional.hpp>
 #include <boost/static_assert.hpp>
 
 #include "GLMultiResolutionMapCubeMesh.h"
@@ -32,6 +33,8 @@
 #include "GLIntersectPrimitives.h"
 #include "GLRenderer.h"
 #include "GLUtils.h"
+
+#include "maths/CubeCoordinateFrame.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -186,14 +189,14 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_mesh(
 	// NOTE: Not that any of this would make much difference on todays graphics cards so really
 	// the fact that it's easier to program (with quad tree traversal) is probably the main gain.
 	//
-	// The extra '12' below accounts for the fact that the cube faces containing the north or
-	// south pole will need four extra triangles to map the four quadrants correctly to the pole singularity.
-	// Even without the extra '12' it's an overestimation but it's fine since we're just *reserving* memory as
+	// The extra '8' below accounts for the fact that the cube faces containing the north and south poles
+	// will need four extra triangles each to map the four quadrants correctly to the pole singularity.
+	// Even without the extra '8' it's an overestimation but it's fine since we're just *reserving* memory as
 	// a speed optimisation (to avoid std::vector reallocations) and we free the std::vector soon enough.
 	const unsigned int num_mesh_vertices_to_reserve =
-			12 + 4 * NUM_MESH_VERTICES_PER_CUBE_FACE_SIDE * NUM_MESH_VERTICES_PER_CUBE_FACE_SIDE;
+			8 + 4 * NUM_MESH_VERTICES_PER_CUBE_FACE_SIDE * NUM_MESH_VERTICES_PER_CUBE_FACE_SIDE;
 	const unsigned int num_mesh_indices_to_reserve =
-			12 + 6/*two triangles*/ * NUM_MESH_VERTICES_PER_CUBE_FACE_SIDE * NUM_MESH_VERTICES_PER_CUBE_FACE_SIDE;
+			8 * 3 + 6/*two triangles*/ * NUM_MESH_VERTICES_PER_CUBE_FACE_SIDE * NUM_MESH_VERTICES_PER_CUBE_FACE_SIDE;
 	// If we're using 'GLushort' vertex indices which are 16-bit - make sure we don't overflow them.
 	// 16-bit indices are faster than 32-bit for graphics cards (but again probably not much gain).
 	// The odd combination is to avoid overflow compile error if sizeof(vertex_element_type) happens to be 4.
@@ -251,7 +254,8 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_mesh(
 							cube_face_quadrant_mesh_vertices,
 							quadrant_x_offset,
 							quadrant_y_offset,
-							quadrant_node_location);
+							quadrant_node_location,
+							map_cube_mesh_generator);
 		}
 	}
 
@@ -309,7 +313,8 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_quad_tree_mesh(
 		const std::vector<GLMapCubeMeshGenerator::Point> &cube_face_quadrant_mesh_vertices,
 		const unsigned int cube_face_quadrant_x_offset,
 		const unsigned int cube_face_quadrant_y_offset,
-		const GPlatesMaths::CubeQuadTreeLocation &quad_tree_node_location)
+		const GPlatesMaths::CubeQuadTreeLocation &quad_tree_node_location,
+		const GLMapCubeMeshGenerator &map_cube_mesh_generator)
 {
 	const unsigned int base_vertex_index = mesh_vertices.size();
 	const unsigned int base_vertex_element_index = mesh_indices.size();
@@ -330,7 +335,8 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_quad_tree_mesh(
 				cube_face_quadrant_mesh_vertices,
 				cube_face_quadrant_x_offset,
 				cube_face_quadrant_y_offset,
-				quad_tree_node_location);
+				quad_tree_node_location,
+				map_cube_mesh_generator);
 	}
 	else
 	{
@@ -356,7 +362,8 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_quad_tree_mesh(
 								cube_face_quadrant_mesh_vertices,
 								cube_face_quadrant_x_offset,
 								cube_face_quadrant_y_offset,
-								child_quad_tree_node_location);
+								child_quad_tree_node_location,
+								map_cube_mesh_generator);
 			}
 		}
 	}
@@ -370,7 +377,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_quad_tree_mesh(
 		parent_max_quad_size_in_map_projection = max_quad_size_in_map_projection;
 	}
 
-	GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face =
+	const GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face =
 			quad_tree_node_location.get_node_location()->cube_face;
 
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -429,7 +436,8 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_quad_tree_mesh_ver
 		const std::vector<GLMapCubeMeshGenerator::Point> &cube_face_quadrant_mesh_vertices,
 		const unsigned int cube_face_quadrant_x_offset,
 		const unsigned int cube_face_quadrant_y_offset,
-		const GPlatesMaths::CubeQuadTreeLocation &quad_tree_node_location)
+		const GPlatesMaths::CubeQuadTreeLocation &quad_tree_node_location,
+		const GLMapCubeMeshGenerator &map_cube_mesh_generator)
 {
 	const unsigned int base_vertex_index = mesh_vertices.size();
 
@@ -605,6 +613,151 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_quad_tree_mesh_ver
 				mesh_indices.push_back(base_vertex_index + y * num_vertices_per_node_side + x + 1);
 				mesh_indices.push_back(base_vertex_index + (y + 1) * num_vertices_per_node_side + x + 1);
 				mesh_indices.push_back(base_vertex_index + (y + 1) * num_vertices_per_node_side + x);
+			}
+		}
+	}
+
+	//
+	// If the cube face contains the north or south pole then we need to add four extra triangles
+	// each to map the four quadrants correctly to the pole singularity.
+	//
+	// The following shows the four missing triangles near the north pole.
+	// There are also four at the south pole (but inverted).
+	//
+	//-180 -90  0  90  180
+	//   ---------------
+	//   \  |  / \  |  /
+	//    \ | /   \ | /
+	//     \|/     \|/
+	//
+	// The extra pole vertices we create below are at longitudes -90 and 90 (and latitude 90 and -90).
+	// The others we have already generated above.
+	//
+	// This section is particularly tricky to visualise due to the fact that we have to determine
+	// which of the four possible orientations of the cube face *local* coordinate frame x and y axes
+	// (about their local z-axis) is the actual orientation (see CubeCoordinateFrame) and then we have
+	// to work out how that relates to the *global* coordinate frame (ie, relative to poles/dateline).
+	//
+
+	const GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face =
+			quad_tree_node_location.get_node_location()->cube_face;
+
+	const bool north_pole_is_in_cube_face = (cube_face == GPlatesMaths::CubeCoordinateFrame::POSITIVE_Z);
+	const bool south_pole_is_in_cube_face = (cube_face == GPlatesMaths::CubeCoordinateFrame::NEGATIVE_Z);
+
+	if (north_pole_is_in_cube_face ||
+		south_pole_is_in_cube_face)
+	{
+		// See if any of the corner points of the current node are at the south/north pole.
+		// This also help determine which quadrant the node is in.
+		boost::optional< std::pair<bool/*x-axis*/, bool/*y-axis*/> > quadrant_relative_to_x_and_y_axes;
+		if (node_x_offset == CUBE_FACE_QUADRANT_DIMENSION)
+		{
+			if (node_y_offset == CUBE_FACE_QUADRANT_DIMENSION)
+			{
+				quadrant_relative_to_x_and_y_axes = std::make_pair(true, true);
+			}
+			else if (node_y_offset + node_dimension == CUBE_FACE_QUADRANT_DIMENSION)
+			{
+				quadrant_relative_to_x_and_y_axes = std::make_pair(true, false);
+			}
+		}
+		else if (node_x_offset + node_dimension == CUBE_FACE_QUADRANT_DIMENSION)
+		{
+			if (node_y_offset == CUBE_FACE_QUADRANT_DIMENSION)
+			{
+				quadrant_relative_to_x_and_y_axes = std::make_pair(false, true);
+			}
+			else if (node_y_offset + node_dimension == CUBE_FACE_QUADRANT_DIMENSION)
+			{
+				quadrant_relative_to_x_and_y_axes = std::make_pair(false, false);
+			}
+		}
+
+		// If current node's corner touches pole...
+		if (quadrant_relative_to_x_and_y_axes)
+		{
+			const bool quadrant_is_in_positive_x_axis = quadrant_relative_to_x_and_y_axes->first;
+			const bool quadrant_is_in_positive_y_axis = quadrant_relative_to_x_and_y_axes->second;
+
+			// The cube corner that this node's quadrant is touching.
+			const GPlatesMaths::Vector3D &corner_adjacent_to_quadrant =
+					GPlatesMaths::CubeCoordinateFrame::get_cube_corner(
+							GPlatesMaths::CubeCoordinateFrame::get_cube_corner_index(
+									cube_face,
+									quadrant_is_in_positive_x_axis,
+									quadrant_is_in_positive_y_axis));
+
+			// Is true if the quadrant is in the half-space of the globe with longitude range [0,180].
+			// The other half space has longitude range [-180,0].
+			const bool quadrant_is_in_upper_longitude_range =
+					dot(corner_adjacent_to_quadrant, GPlatesMaths::UnitVector3D::yBasis()).dval() > 0;
+
+			const double new_pole_longitude = quadrant_is_in_upper_longitude_range ? 90 : -90;
+			const GLMapCubeMeshGenerator::Point new_pole_point =
+					map_cube_mesh_generator.create_pole_mesh_vertex(
+							new_pole_longitude,
+							north_pole_is_in_cube_face);
+
+			// The new pole vertex index is the vertex about to be added.
+			// We don't need 'base_vertex_index' for this.
+			const unsigned int new_pole_vertex_index = mesh_vertices.size();
+			// Add the new pole vertex.
+			mesh_vertices.push_back(
+					GLTexture3DVertex(
+							new_pole_point.point_2D.x/*x*/,
+							new_pole_point.point_2D.y/*y*/,
+							0/*z*/,
+							new_pole_point.point_3D.x().dval()/*s*/,
+							new_pole_point.point_3D.y().dval()/*t*/,
+							new_pole_point.point_3D.z().dval()/*r*/));
+
+			// Expand the bounding box bounds to include the new pole map-projected position.
+			node_bounding_box.add(new_pole_point.point_2D);
+
+			// Index to the existing pole (at longitude -180, 0 or 180) already added to the
+			// mesh vertices for the current node.
+			//
+			// Find which of the four corner points of the node is at the pole.
+			const unsigned int current_pole_vertex_index = base_vertex_index +
+					(quadrant_is_in_positive_x_axis ? 0 : node_dimension) +
+					(quadrant_is_in_positive_y_axis ? 0 : node_dimension) * num_vertices_per_node_side;
+
+			// Index to the point adjacent to the existing pole having the same longitude.
+			// Note that the cube face local z-axis always points towards centre of cube
+			// which makes it a bit easier to determine whether to index along the local
+			// x-axis or local y-axis (of the cube face) since the local coordinate frame
+			// is always right-handed.
+			const GPlatesMaths::UnitVector3D &cube_face_x_axis =
+					GPlatesMaths::CubeCoordinateFrame::get_cube_face_coordinate_frame_axis(
+							cube_face,
+							GPlatesMaths::CubeCoordinateFrame::X_AXIS);
+			// If the cube face local x-axis is aligned with the global y-axis then the adjacent
+			// point (to the pole) with same longitude (which is along the global y-axis) is
+			// also aligned with the local x-axis.
+			const bool is_local_x_axis_aligned_with_global_y_axis = abs(
+						dot(cube_face_x_axis, GPlatesMaths::UnitVector3D::yBasis())
+					) > 0.5;
+			const unsigned int adjacent_point_vertex_index = is_local_x_axis_aligned_with_global_y_axis
+					// Next point along (positive or negative) x direction from pole point...
+					? current_pole_vertex_index + (quadrant_is_in_positive_x_axis ? 1 : -1)
+					// Next point along (positive or negative) y direction...
+					: current_pole_vertex_index +
+							(quadrant_is_in_positive_y_axis ? 1 : -1) * num_vertices_per_node_side;
+
+			// Add the missing triangle at the pole.
+
+			mesh_indices.push_back(current_pole_vertex_index);
+			// Try to keep the triangle's vertex orientation the same as the other triangles.
+			if (is_local_x_axis_aligned_with_global_y_axis)
+			{
+				mesh_indices.push_back(new_pole_vertex_index);
+				mesh_indices.push_back(adjacent_point_vertex_index);
+			}
+			else
+			{
+				mesh_indices.push_back(adjacent_point_vertex_index);
+				mesh_indices.push_back(new_pole_vertex_index);
 			}
 		}
 	}

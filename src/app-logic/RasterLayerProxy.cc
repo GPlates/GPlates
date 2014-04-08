@@ -32,7 +32,11 @@
 #include "ExtractRasterFeatureProperties.h"
 #include "ReconstructUtils.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "property-values/RawRasterUtils.h"
+
 
 const boost::optional<GPlatesPropertyValues::RawRaster::non_null_ptr_type> &
 GPlatesAppLogic::RasterLayerProxy::get_proxied_raster(
@@ -112,7 +116,7 @@ GPlatesAppLogic::RasterLayerProxy::get_resolved_raster(
 
 
 bool
-GPlatesAppLogic::RasterLayerProxy::does_raster_contain_numerical_data(
+GPlatesAppLogic::RasterLayerProxy::does_raster_band_contain_numerical_data(
 		const GPlatesPropertyValues::TextContent &raster_band_name)
 {
 	// Get the proxied raster for present day and the specified band name.
@@ -234,6 +238,7 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 				GPlatesOpenGL::GLMultiResolutionRaster::create(
 						renderer,
 						d_current_georeferencing.get(),
+						d_current_coordinate_transformation,
 						d_cached_multi_resolution_data_raster.cached_data_raster_source.get(),
 						GPlatesOpenGL::GLMultiResolutionRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER,
 						GPlatesOpenGL::GLMultiResolutionRaster::CACHE_TILE_TEXTURES_ENTIRE_LEVEL_OF_DETAIL_PYRAMID);
@@ -332,16 +337,17 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 		GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type cube_raster =
 				GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
 						renderer,
-						d_cached_multi_resolution_data_raster.cached_data_raster.get(),
-						GPlatesOpenGL::GLMultiResolutionCubeRaster::DEFAULT_TILE_TEXEL_DIMENSION,
-						true/*adapt_tile_dimension_to_source_resolution*/,
-						GPlatesOpenGL::GLMultiResolutionCubeRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER);
+						d_cached_multi_resolution_data_raster.cached_data_raster.get());
 
 		d_cached_multi_resolution_data_raster.cached_data_cube_raster = cube_raster;
 	}
 
 	if (!d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster)
 	{
+		// NOTE: We also invalidate the *reconstructed* multi-resolution cube raster since it must link
+		// to the multi-resolution *reconstructed* raster and hence must also be rebuilt.
+		d_cached_multi_resolution_data_raster.cached_data_reconstructed_cube_raster = boost::none;
+
 		//qDebug() << "RasterLayerProxy: Rebuilding GLMultiResolutionStaticPolygonReconstructedRaster "
 		//	<< (d_cached_multi_resolution_data_raster.cached_age_grid_mask_cube_raster ? "with" : "without")
 		//	<< " an age grid.";
@@ -372,6 +378,68 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 	// Return the *reconstructed* raster.
 	return GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type(
 		d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster.get());
+}
+
+
+boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type>
+GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_cube_raster(
+		GPlatesOpenGL::GLRenderer &renderer,
+		const double &reconstruction_time,
+		const GPlatesPropertyValues::TextContent &raster_band_name)
+{
+	// Get the *unreconstructed* or *reconstructed* input into the cube raster.
+	boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type> data_raster =
+			get_multi_resolution_data_raster(renderer, reconstruction_time, raster_band_name);
+	if (!data_raster)
+	{
+		return boost::none;
+	}
+
+	// See if it's a reconstructed raster or not.
+	if (d_cached_multi_resolution_data_raster.cached_data_raster &&
+		d_cached_multi_resolution_data_raster.cached_data_raster.get() == data_raster.get())
+	{
+		// It's an *unreconstructed* raster.
+
+		// Rebuild the multi-resolution cube raster if necessary.
+		if (!d_cached_multi_resolution_data_raster.cached_data_cube_raster)
+		{
+			// NOTE: We also invalidate the multi-resolution *reconstructed* raster since it must link
+			// to the multi-resolution cube raster and hence must also be rebuilt.
+			d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster = boost::none;
+
+			// Create the multi-resolution cube raster.
+			GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type cube_raster =
+					GPlatesOpenGL::GLMultiResolutionCubeRaster::create(
+							renderer,
+							d_cached_multi_resolution_data_raster.cached_data_raster.get());
+
+			d_cached_multi_resolution_data_raster.cached_data_cube_raster = cube_raster;
+		}
+
+		return GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type(
+				d_cached_multi_resolution_data_raster.cached_data_cube_raster.get());
+	}
+
+	// It's a *reconstructed* raster.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster &&
+				d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster.get() == data_raster.get(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Rebuild the multi-resolution *reconstructed* cube raster if necessary.
+	if (!d_cached_multi_resolution_data_raster.cached_data_reconstructed_cube_raster)
+	{
+		GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::non_null_ptr_type cube_reconstructed_raster =
+				GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create(
+						renderer,
+						d_cached_multi_resolution_data_raster.cached_data_reconstructed_raster.get());
+
+		d_cached_multi_resolution_data_raster.cached_data_reconstructed_cube_raster = cube_reconstructed_raster;
+	}
+
+	return GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type(
+			d_cached_multi_resolution_data_raster.cached_data_reconstructed_cube_raster.get());
 }
 
 
@@ -479,6 +547,7 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_age_grid_mask(
 				GPlatesOpenGL::GLMultiResolutionRaster::create(
 						renderer,
 						d_current_georeferencing.get(),
+						d_current_coordinate_transformation,
 						d_cached_multi_resolution_age_grid_raster.cached_age_grid_mask_source.get(),
 						// Avoids blending seams due to anisotropic filtering which gives age grid
 						// coverage alpha values that are not either 0.0 or 1.0...
@@ -675,6 +744,30 @@ GPlatesAppLogic::RasterLayerProxy::set_raster_params(
 	d_current_raster_band_name = raster_params.get_band_name();
 	d_current_raster_band_names = raster_params.get_band_names();
 	d_current_georeferencing = raster_params.get_georeferencing();
+	d_current_spatial_reference_system = raster_params.get_spatial_reference_system();
+
+	// Update the coordinate transformation if the raster has a spatial reference system,
+	// otherwise revert to identity transformation.
+	if (d_current_spatial_reference_system)
+	{
+		boost::optional<GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_type>
+				coordinate_transformation = GPlatesPropertyValues::CoordinateTransformation::create(
+						d_current_spatial_reference_system.get());
+		if (coordinate_transformation)
+		{
+			d_current_coordinate_transformation = coordinate_transformation.get();
+		}
+		else
+		{
+			// Identity transformation.
+			d_current_coordinate_transformation = GPlatesPropertyValues::CoordinateTransformation::create();
+		}
+	}
+	else
+	{
+		// Identity transformation.
+		d_current_coordinate_transformation = GPlatesPropertyValues::CoordinateTransformation::create();
+	}
 }
 
 

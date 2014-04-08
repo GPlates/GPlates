@@ -714,6 +714,7 @@ GPlatesOpenGL::GLVisualLayers::RasterLayerUsage::get_multi_resolution_raster(
 				GLMultiResolutionRaster::create(
 						renderer,
 						d_raster_layer_proxy->get_georeferencing().get(),
+						d_raster_layer_proxy->get_coordinate_transformation(),
 						d_visual_raster_source.get(),
 						GLMultiResolutionRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER,
 						// Use non-default here - our source GLVisualRasterSource has caching that
@@ -776,10 +777,7 @@ GPlatesOpenGL::GLVisualLayers::CubeRasterLayerUsage::get_multi_resolution_cube_r
 		d_multi_resolution_cube_raster =
 				GLMultiResolutionCubeRaster::create(
 						renderer,
-						d_multi_resolution_raster.get(),
-						GLMultiResolutionCubeRaster::DEFAULT_TILE_TEXEL_DIMENSION,
-						true/*adapt_tile_dimension_to_source_resolution*/,
-						GLMultiResolutionCubeRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER);
+						d_multi_resolution_raster.get());
 	}
 
 	return d_multi_resolution_cube_raster;
@@ -963,6 +961,7 @@ GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage::NormalRaster::get_normal_map
 				GLMultiResolutionRaster::create(
 						renderer,
 						d_raster_layer_proxy->get_georeferencing().get(),
+						d_raster_layer_proxy->get_coordinate_transformation(),
 						d_normal_map_raster_source.get());
 
 		d_multi_resolution_raster = multi_resolution_raster;
@@ -1382,11 +1381,16 @@ GPlatesOpenGL::GLVisualLayers::MapRasterLayerUsage::get_multi_resolution_raster_
 	{
 		if (!d_multi_resolution_raster_map_view)
 		{
+			// NOTE: We create our own cube reconstructed raster because the world transform gets
+			// set on it according to the central meridian of the map projection.
+			// This means the input cube raster will get re-oriented and hence can no longer
+			// be shared with the globe (non-map) view where the central meridian is always zero.
+			// Actually, in this, case it wouldn't affect the globe view anyway since it doesn't
+			// make use (or need) a cube reconstructed raster.
 			GLMultiResolutionCubeRasterInterface::non_null_ptr_type multi_resolution_cube_reconstructed_raster =
 					GLMultiResolutionCubeReconstructedRaster::create(
 							renderer,
-							d_reconstructed_raster.get(),
-							GLMultiResolutionCubeReconstructedRaster::get_default_tile_texel_dimension(renderer));
+							d_reconstructed_raster.get());
 
 			//qDebug() << "Rebuilding GLMultiResolutionRasterMapView for reconstructed raster.";
 
@@ -1419,13 +1423,14 @@ GPlatesOpenGL::GLVisualLayers::MapRasterLayerUsage::get_multi_resolution_raster_
 	{
 		if (!d_multi_resolution_raster_map_view)
 		{
+			// NOTE: We create our own cube raster because the world transform gets set on it
+			// according to the central meridian of the map projection.
+			// This means the input cube raster will get re-oriented and hence can no longer
+			// be shared with the globe (non-map) view where the central meridian is always zero.
 			GLMultiResolutionCubeRasterInterface::non_null_ptr_type multi_resolution_cube_raster =
 					GLMultiResolutionCubeRaster::create(
 							renderer,
-							d_raster.get(),
-							GLMultiResolutionCubeRaster::DEFAULT_TILE_TEXEL_DIMENSION,
-							true/*adapt_tile_dimension_to_source_resolution*/,
-							GLMultiResolutionCubeRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER);
+							d_raster.get());
 
 			//qDebug() << "Rebuilding GLMultiResolutionRasterMapView for raster.";
 

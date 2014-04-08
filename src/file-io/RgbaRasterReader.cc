@@ -139,6 +139,20 @@ GPlatesFileIO::RgbaRasterReader::can_read()
 }
 
 
+boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
+GPlatesFileIO::RgbaRasterReader::get_georeferencing()
+{
+	return boost::none;
+}
+
+
+boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+GPlatesFileIO::RgbaRasterReader::get_spatial_reference_system()
+{
+	return boost::none;
+}
+
+
 unsigned int
 GPlatesFileIO::RgbaRasterReader::get_number_of_bands(
 		ReadErrorAccumulation *read_errors)

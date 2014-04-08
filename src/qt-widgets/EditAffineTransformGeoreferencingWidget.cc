@@ -168,6 +168,8 @@ GPlatesQtWidgets::EditAffineTransformGeoreferencingWidget::update_extents_if_nec
 				new_extents,
 				d_raster_width,
 				d_raster_height);
+
+		Q_EMIT georeferencing_changed();
 	}
 }
 

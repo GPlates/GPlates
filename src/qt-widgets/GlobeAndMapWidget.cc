@@ -405,6 +405,18 @@ GPlatesQtWidgets::GlobeAndMapWidget::get_active_gl_context()
 }
 
 
+GPlatesOpenGL::GLVisualLayers::non_null_ptr_type
+GPlatesQtWidgets::GlobeAndMapWidget::get_active_gl_visual_layers()
+{
+	if (d_active_view_ptr == d_globe_canvas_ptr.get())
+	{
+		return d_globe_canvas_ptr->get_gl_visual_layers();
+	}
+
+	return d_map_view_ptr->get_gl_visual_layers();
+}
+
+
 void
 GPlatesQtWidgets::GlobeAndMapWidget::update_canvas()
 {

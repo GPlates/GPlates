@@ -243,6 +243,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::create(
 		GLRenderer &renderer,
 		const QString &scalar_field_filename,
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
+		const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
 		unsigned int depth_layer_width,
 		unsigned int depth_layer_height,
 		const depth_layer_seq_type &depth_layers,
@@ -257,6 +258,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::create(
 					renderer,
 					scalar_field_filename,
 					georeferencing,
+					coordinate_transformation,
 					depth_layer_width,
 					depth_layer_height,
 					depth_layers,
@@ -268,12 +270,14 @@ GPlatesOpenGL::GLScalarField3DGenerator::GLScalarField3DGenerator(
 		GLRenderer &renderer,
 		const QString &scalar_field_filename,
 		const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
+		const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
 		unsigned int depth_layer_width,
 		unsigned int depth_layer_height,
 		const depth_layer_seq_type &depth_layers,
 		GPlatesFileIO::ReadErrorAccumulation *read_errors) :
 	d_scalar_field_filename(scalar_field_filename),
 	d_georeferencing(georeferencing),
+	d_coordinate_transformation(coordinate_transformation),
 	d_depth_layers(depth_layers),
 	d_cube_face_dimension(0)
 {
@@ -905,6 +909,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::initialise_multi_resolution_raster(
 			GLMultiResolutionRaster::create(
 					renderer,
 					d_georeferencing,
+					d_coordinate_transformation,
 					d_depth_layers_source.get(),
 					GLMultiResolutionRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER,
 					// No need to cache tiles...

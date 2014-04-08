@@ -39,6 +39,7 @@
 #include "file-io/ReadErrors.h"
 #include "file-io/ScalarField3DFileFormat.h"
 
+#include "property-values/CoordinateTransformation.h"
 #include "property-values/Georeferencing.h"
 
 #include "utils/ReferenceCount.h"
@@ -113,6 +114,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const QString &scalar_field_filename,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
+				const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
 				unsigned int depth_layer_width,
 				unsigned int depth_layer_height,
 				const depth_layer_seq_type &depth_layers,
@@ -133,6 +135,7 @@ namespace GPlatesOpenGL
 
 		QString d_scalar_field_filename;
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type d_georeferencing;
+		GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type d_coordinate_transformation;
 		depth_layer_seq_type d_depth_layers;
 
 		boost::optional<GLScalarFieldDepthLayersSource::non_null_ptr_type> d_depth_layers_source;
@@ -145,6 +148,7 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const QString &scalar_field_filename,
 				const GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type &georeferencing,
+				const GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type &coordinate_transformation,
 				unsigned int depth_layer_width,
 				unsigned int depth_layer_height,
 				const depth_layer_seq_type &depth_layers,

@@ -244,6 +244,15 @@ namespace GPlatesQtWidgets
 			return d_gl_context;
 		}
 
+		/**
+		 * Returns the OpenGL layers used to filled polygons, render rasters and scalar fields.
+		 */
+		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type
+		get_gl_visual_layers()
+		{
+			return d_gl_visual_layers;
+		}
+
 		int
 		width() const;
 

@@ -68,6 +68,14 @@ namespace GPlatesFileIO
 		can_read();
 
 		virtual
+		boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
+		get_georeferencing();
+
+		virtual
+		boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+		get_spatial_reference_system();
+
+		virtual
 		unsigned int
 		get_number_of_bands(
 				ReadErrorAccumulation *read_errors);
