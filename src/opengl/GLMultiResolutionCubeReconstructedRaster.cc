@@ -352,10 +352,12 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_child_node(
 	// NOTE: After a while (with the user panning and zooming) we could end up with a lot
 	// of nodes (because, unlike most situations, here there's no limit to how deep into the tree
 	// the client can go - well, the limit would be how much viewport zoom is allowed in the GUI).
+	// Note that we still recycle the tile textures though.
 	//
 	// TODO: We may want to periodically release nodes but that'll be hard because will first have
 	// to determine which nodes are least-recently-used and also take into account that removing
 	// an internal quad tree node will also remove its descendant nodes which may not be ready to go.
+	// Probably not worth it though - memory usage is probably high enough to worry about.
 	if (cube_child_node == NULL)
 	{
 		// The view transform for the current cube face.

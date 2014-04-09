@@ -155,6 +155,7 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 				this)),
 	d_move_pole_widget_ptr(
 			new MovePoleWidget(
+				view_state,
 				this)),
 	d_modify_reconstruction_pole_widget_ptr(
 			new ModifyReconstructionPoleWidget(

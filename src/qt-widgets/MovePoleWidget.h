@@ -32,8 +32,19 @@
 #include "MovePoleWidgetUi.h"
 #include "TaskPanelWidget.h"
 
+#include "maths/FiniteRotation.h"
 #include "maths/PointOnSphere.h"
 
+
+namespace GPlatesGui
+{
+	class FeatureFocus;
+}
+
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
 
 namespace GPlatesQtWidgets
 {
@@ -47,6 +58,7 @@ namespace GPlatesQtWidgets
 
 		explicit
 		MovePoleWidget(
+				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
 
 		~MovePoleWidget();
@@ -93,6 +105,10 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
+		set_focus(
+				GPlatesGui::FeatureFocus &feature_focus);
+
+		void
 		react_enable_pole_check_box_changed();
 
 		void
@@ -104,13 +120,22 @@ namespace GPlatesQtWidgets
 		void
 		react_north_pole_pushbutton_clicked();
 
+		void
+		react_stage_pole_pushbutton_clicked();
+
 	private:
+
+		GPlatesGui::FeatureFocus &d_feature_focus;
 
 		boost::optional<GPlatesMaths::PointOnSphere> d_pole;
 
 
 		void
-		make_signal_slot_connections();
+		make_signal_slot_connections(
+				GPlatesPresentation::ViewState &view_state);
+
+		boost::optional<GPlatesMaths::FiniteRotation>
+		get_stage_pole();
 	};
 }
 

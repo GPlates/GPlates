@@ -352,8 +352,7 @@ GPlatesAppLogic::RasterLayerProxy::get_multi_resolution_data_raster(
 		//	<< (d_cached_multi_resolution_data_raster.cached_age_grid_mask_cube_raster ? "with" : "without")
 		//	<< " an age grid.";
 
-		// This handles both with and without an age grid mask raster depending on whether
-		// the age grid raster is boost::none or not.
+		// This handles age-grid masking both with and without reconstructing the raster (with polygons).
 		GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type reconstructed_raster =
 				d_cached_multi_resolution_data_raster.cached_reconstructed_polygon_meshes
 				? GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::create(
