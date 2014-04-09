@@ -26,13 +26,15 @@
 #ifndef GPLATES_QT_WIDGETS_MOVEPOLEWIDGET_H
 #define GPLATES_QT_WIDGETS_MOVEPOLEWIDGET_H
 
+#include <utility>
 #include <boost/optional.hpp>
 #include <QWidget>
 
 #include "MovePoleWidgetUi.h"
 #include "TaskPanelWidget.h"
 
-#include "maths/FiniteRotation.h"
+#include "app-logic/ReconstructedFeatureGeometry.h"
+
 #include "maths/PointOnSphere.h"
 
 
@@ -105,8 +107,10 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
-		set_focus(
-				GPlatesGui::FeatureFocus &feature_focus);
+		set_focus();
+
+		void
+		handle_reconstruction();
 
 		void
 		react_enable_pole_check_box_changed();
@@ -123,6 +127,9 @@ namespace GPlatesQtWidgets
 		void
 		react_stage_pole_pushbutton_clicked();
 
+		void
+		react_keep_stage_pole_constrained_checkbox_changed();
+
 	private:
 
 		GPlatesGui::FeatureFocus &d_feature_focus;
@@ -134,8 +141,21 @@ namespace GPlatesQtWidgets
 		make_signal_slot_connections(
 				GPlatesPresentation::ViewState &view_state);
 
-		boost::optional<GPlatesMaths::FiniteRotation>
-		get_stage_pole();
+		void
+		update_stage_pole_moving_fixed_plate_ids();
+
+		boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
+		get_focused_feature_geometry() const;
+
+		boost::optional<
+				std::pair<
+						GPlatesModel::integer_plate_id_type/*moving*/,
+						GPlatesModel::integer_plate_id_type/*fixed*/> >
+		get_stage_pole_plate_pair(
+				const GPlatesAppLogic::ReconstructedFeatureGeometry &rfg) const;
+
+		boost::optional<GPlatesMaths::PointOnSphere>
+		get_stage_pole_location() const;
 	};
 }
 
