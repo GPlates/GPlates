@@ -204,8 +204,8 @@ GPlatesQtWidgets::TaskPanel::TaskPanel(
 	set_up_feature_tab(view_state);
 	set_up_digitisation_tab();
 	set_up_modify_geometry_tab();
-	set_up_modify_pole_tab();
 	set_up_move_pole_tab();
+	set_up_modify_pole_tab();
 	set_up_topology_tools_tab();
 	set_up_measure_distance_tab();
 	set_up_small_circle_tab();
