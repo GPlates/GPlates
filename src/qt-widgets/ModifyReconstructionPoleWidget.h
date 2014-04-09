@@ -212,6 +212,12 @@ namespace GPlatesQtWidgets
 		void
 		clear_and_reset_after_reconstruction();
 
+		/**
+		 * Re-draw the adjustment pole when it changes location.
+		 */
+		void
+		react_adjustment_pole_changed();
+
 	private:
 
 		//! Manages reconstructions.

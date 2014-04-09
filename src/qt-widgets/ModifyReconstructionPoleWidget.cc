@@ -966,6 +966,16 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_adjustment_pole()
 
 
 void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::react_adjustment_pole_changed()
+{
+	if (d_is_active)
+	{
+		draw_adjustment_pole();
+	}
+}
+
+
+void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_adjustment_fields()
 {
 	if ( ! d_accum_orientation)
@@ -1038,6 +1048,11 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::make_signal_slot_connections(
 	// Respond to changes in the "Highlight children" checkbox.
 	QObject::connect(checkbox_highlight_children, SIGNAL(stateChanged(int)),
 			this, SLOT(change_highlight_children_checkbox_state(int)));			
+
+	// Listen for pole changes due to the Move Pole widget (since we draw the pole location).
+	QObject::connect(
+			&d_move_pole_widget, SIGNAL(pole_changed(boost::optional<GPlatesMaths::PointOnSphere>)),
+			this, SLOT(react_adjustment_pole_changed()));
 }
 
 

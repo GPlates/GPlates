@@ -39,6 +39,7 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "gui/FeatureFocus.h"
 
@@ -63,9 +64,12 @@ GPlatesQtWidgets::MovePoleWidget::MovePoleWidget(
 
 	enable_pole_checkbox->setChecked(d_pole);
 	pole_widget->setEnabled(d_pole);
-	// We can only get a stage pole if a feature is focused.
+
+	// Enable stage pole button only if 'keep constrained' not checked and if a feature is focused.
+	keep_stage_pole_constrained_checkbox->setChecked(false);
 	constrain_to_stage_pole_pushbutton->setEnabled(
-			bool(d_feature_focus.associated_reconstruction_geometry()));
+			!keep_stage_pole_constrained_checkbox->isChecked() &&
+			d_feature_focus.associated_reconstruction_geometry());
 
 	if (d_pole)
 	{
@@ -92,53 +96,23 @@ GPlatesQtWidgets::MovePoleWidget::~MovePoleWidget()
 }
 
 
+bool
+GPlatesQtWidgets::MovePoleWidget::can_change_pole() const
+{
+	// Cannot change pole if constrained to always follow stage pole location.
+	return !keep_stage_pole_constrained_checkbox->isChecked();
+}
+
+
 void
 GPlatesQtWidgets::MovePoleWidget::set_pole(
 		boost::optional<GPlatesMaths::PointOnSphere> pole)
 {
-	// Return early if no state change.
-	if (pole == d_pole)
-	{
-		return;
-	}
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			can_change_pole(),
+			GPLATES_ASSERTION_SOURCE);
 
-	d_pole = pole;
-
-	// Disconnect enable pole checkbox and lat/lon spinbox slots.
-	// We only want to emit 'pole_changed' signal once.
-	QObject::disconnect(
-			enable_pole_checkbox, SIGNAL(stateChanged(int)),
-			this, SLOT(react_enable_pole_check_box_changed()));
-	QObject::disconnect(
-			latitude_spinbox, SIGNAL(valueChanged(double)),
-			this, SLOT(react_latitude_spinbox_changed()));
-	QObject::disconnect(
-			longitude_spinbox, SIGNAL(valueChanged(double)),
-			this, SLOT(react_longitude_spinbox_changed()));
-
-	// Enable or disable pole.
-	enable_pole_checkbox->setChecked(d_pole);
-
-	if (d_pole)
-	{
-		const GPlatesMaths::LatLonPoint lat_lon_pole = GPlatesMaths::make_lat_lon_point(d_pole.get());
-
-		latitude_spinbox->setValue(lat_lon_pole.latitude());
-		longitude_spinbox->setValue(lat_lon_pole.longitude());
-	}
-
-	// Reconnect enable pole checkbox and lat/lon spinbox slots.
-	QObject::connect(
-			enable_pole_checkbox, SIGNAL(stateChanged(int)),
-			this, SLOT(react_enable_pole_check_box_changed()));
-	QObject::connect(
-			latitude_spinbox, SIGNAL(valueChanged(double)),
-			this, SLOT(react_latitude_spinbox_changed()));
-	QObject::connect(
-			longitude_spinbox, SIGNAL(valueChanged(double)),
-			this, SLOT(react_longitude_spinbox_changed()));
-
-	Q_EMIT pole_changed(d_pole);
+	set_pole_internal(pole);
 }
 
 
@@ -161,11 +135,18 @@ GPlatesQtWidgets::MovePoleWidget::deactivate()
 void
 GPlatesQtWidgets::MovePoleWidget::set_focus()
 {
-	// We can only get a stage pole if a feature is focused.
+	// Enable stage pole button only if 'keep constrained' not checked and if a feature is focused.
 	constrain_to_stage_pole_pushbutton->setEnabled(
-			bool(d_feature_focus.associated_reconstruction_geometry()));
+			!keep_stage_pole_constrained_checkbox->isChecked() &&
+			d_feature_focus.associated_reconstruction_geometry());
 
 	update_stage_pole_moving_fixed_plate_ids();
+
+	// Update the pole location according to the current stage pole of the focused feature (if focused).
+	if (keep_stage_pole_constrained_checkbox->isChecked())
+	{
+		set_stage_pole_location();
+	}
 }
 
 
@@ -173,6 +154,12 @@ void
 GPlatesQtWidgets::MovePoleWidget::handle_reconstruction()
 {
 	update_stage_pole_moving_fixed_plate_ids();
+
+	// Update the pole location according to the current stage pole of the focused feature (if focused).
+	if (keep_stage_pole_constrained_checkbox->isChecked())
+	{
+		set_stage_pole_location();
+	}
 }
 
 
@@ -267,35 +254,32 @@ GPlatesQtWidgets::MovePoleWidget::react_north_pole_pushbutton_clicked()
 		return;
 	}
 
-	set_pole(GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(90, 0)));
+	set_pole_internal(GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(90, 0)));
 }
 
 
 void
 GPlatesQtWidgets::MovePoleWidget::react_stage_pole_pushbutton_clicked()
 {
-	// Get stage pole axis.
-	boost::optional<GPlatesMaths::PointOnSphere> stage_pole_location = get_stage_pole_location();
-
-	// Use north pole if no stage pole or represents identity rotation.
-	// This is a visual indicator to the user that the stage pole is not available.
-	if (!stage_pole_location)
-	{
-		stage_pole_location = GPlatesMaths::PointOnSphere(GPlatesMaths::UnitVector3D::zBasis());
-	}
-
-	const GPlatesMaths::LatLonPoint stage_pole_axis_lat_lon =
-			GPlatesMaths::make_lat_lon_point(stage_pole_location.get());
-
-	set_pole(stage_pole_location);
+	set_stage_pole_location();
 }
-
-
 
 
 void
 GPlatesQtWidgets::MovePoleWidget::react_keep_stage_pole_constrained_checkbox_changed()
 {
+	// Enable stage pole button only if 'keep constrained' not checked and if a feature is focused.
+	constrain_to_stage_pole_pushbutton->setEnabled(
+			!keep_stage_pole_constrained_checkbox->isChecked() &&
+			d_feature_focus.associated_reconstruction_geometry());
+
+	// Disable other ways of changing the pole is we are constraining the pole to follow stage pole.
+	pole_location_groupbox->setEnabled(
+			!keep_stage_pole_constrained_checkbox->isChecked());
+	vgp_constraints_groupbox->setEnabled(
+			!keep_stage_pole_constrained_checkbox->isChecked());
+
+	set_stage_pole_location();
 }
 
 
@@ -429,52 +413,26 @@ GPlatesQtWidgets::MovePoleWidget::get_stage_pole_plate_pair(
 boost::optional<GPlatesMaths::PointOnSphere>
 GPlatesQtWidgets::MovePoleWidget::get_stage_pole_location() const
 {
-	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_geometry =
-			d_feature_focus.associated_reconstruction_geometry();
-	if (!focused_geometry)
-	{
-		return boost::none;
-	}
-
-	// Like ModifyReconstructionPoleWidget we're only interested in ReconstructedFeatureGeometry's.
-	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
-			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ReconstructedFeatureGeometry>(focused_geometry);
+	boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
+			rfg = get_focused_feature_geometry();
 	if (!rfg)
 	{
 		return boost::none;
 	}
 
-	boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id =
-			rfg.get()->reconstruction_plate_id();
-	if (!reconstruction_plate_id)
+	boost::optional<
+			std::pair<
+					GPlatesModel::integer_plate_id_type/*moving*/,
+					GPlatesModel::integer_plate_id_type/*fixed*/> >
+							moving_fixed_plate_ids = get_stage_pole_plate_pair(*rfg.get());
+	if (!moving_fixed_plate_ids)
 	{
 		return boost::none;
 	}
 
-	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
-			rfg.get()->get_reconstruction_tree();
-
-	GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_const_range_type edges =
-			reconstruction_tree->find_edges_whose_moving_plate_id_match(
-					reconstruction_plate_id.get());
-
-	if (edges.first == edges.second)
-	{
-		// We haven't found any edges - might not have a rotation file loaded.
-		return boost::none;
-	}
-
-	// We shouldn't have more than one edge - even in a cross-over situation, one
-	// of the edges will already have been selected for use in the tree	
-	if (std::distance(edges.first, edges.second) > 1)
-	{
-		qDebug() << "More than one edge found for reconstruction plate id " << reconstruction_plate_id.get();
-		return boost::none;
-	}
-
-	GPlatesAppLogic::ReconstructionTree::edge_ref_type edge = edges.first->second;
-
+	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_1 =
+			rfg.get()->get_reconstruction_tree_creator().get_reconstruction_tree(
+					rfg.get()->get_reconstruction_time());
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_2 =
 			rfg.get()->get_reconstruction_tree_creator().get_reconstruction_tree(
 					rfg.get()->get_reconstruction_time() + 1);
@@ -482,10 +440,10 @@ GPlatesQtWidgets::MovePoleWidget::get_stage_pole_location() const
 	// Get stage pole.
 	const GPlatesMaths::FiniteRotation stage_pole =
 			GPlatesAppLogic::RotationUtils::get_stage_pole(
-					*reconstruction_tree,
+					*reconstruction_tree_1,
 					*reconstruction_tree_2,
-					edge->moving_plate(),
-					edge->fixed_plate());
+					moving_fixed_plate_ids->first/*moving_plate*/,
+					moving_fixed_plate_ids->second/*fixed_plate*/);
 
 	// Get stage pole axis.
 	if (GPlatesMaths::represents_identity_rotation(stage_pole.unit_quat()))
@@ -495,4 +453,71 @@ GPlatesQtWidgets::MovePoleWidget::get_stage_pole_location() const
 
 	// Return the stage pole axis.
 	return GPlatesMaths::PointOnSphere(stage_pole.unit_quat().get_rotation_params(boost::none).axis);
+}
+
+
+void
+GPlatesQtWidgets::MovePoleWidget::set_stage_pole_location()
+{
+	// Get stage pole axis.
+	boost::optional<GPlatesMaths::PointOnSphere> stage_pole_location = get_stage_pole_location();
+
+	// Use north pole if no stage pole or represents identity rotation.
+	// This is a visual indicator to the user that the stage pole is not available.
+	if (!stage_pole_location)
+	{
+		stage_pole_location = GPlatesMaths::PointOnSphere(GPlatesMaths::UnitVector3D::zBasis());
+	}
+
+	set_pole_internal(stage_pole_location);
+}
+
+
+void
+GPlatesQtWidgets::MovePoleWidget::set_pole_internal(
+		boost::optional<GPlatesMaths::PointOnSphere> pole)
+{
+	// Return early if no state change.
+	if (pole == d_pole)
+	{
+		return;
+	}
+
+	d_pole = pole;
+
+	// Disconnect enable pole checkbox and lat/lon spinbox slots.
+	// We only want to emit 'pole_changed' signal once.
+	QObject::disconnect(
+			enable_pole_checkbox, SIGNAL(stateChanged(int)),
+			this, SLOT(react_enable_pole_check_box_changed()));
+	QObject::disconnect(
+			latitude_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(react_latitude_spinbox_changed()));
+	QObject::disconnect(
+			longitude_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(react_longitude_spinbox_changed()));
+
+	// Enable or disable pole.
+	enable_pole_checkbox->setChecked(d_pole);
+
+	if (d_pole)
+	{
+		const GPlatesMaths::LatLonPoint lat_lon_pole = GPlatesMaths::make_lat_lon_point(d_pole.get());
+
+		latitude_spinbox->setValue(lat_lon_pole.latitude());
+		longitude_spinbox->setValue(lat_lon_pole.longitude());
+	}
+
+	// Reconnect enable pole checkbox and lat/lon spinbox slots.
+	QObject::connect(
+			enable_pole_checkbox, SIGNAL(stateChanged(int)),
+			this, SLOT(react_enable_pole_check_box_changed()));
+	QObject::connect(
+			latitude_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(react_latitude_spinbox_changed()));
+	QObject::connect(
+			longitude_spinbox, SIGNAL(valueChanged(double)),
+			this, SLOT(react_longitude_spinbox_changed()));
+
+	Q_EMIT pole_changed(d_pole);
 }

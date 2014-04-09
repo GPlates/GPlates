@@ -151,35 +151,53 @@ GPlatesViewOperations::MovePoleOperation::mouse_move_on_map(
 }
 
 
-void
+bool
 GPlatesViewOperations::MovePoleOperation::start_drag_on_globe(
 		const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 		const double &closeness_inclusion_threshold)
 {
-	if (test_proximity_to_pole_on_globe(
+	if (!d_move_pole_widget.can_change_pole())
+	{
+		return false;
+	}
+
+	if (!test_proximity_to_pole_on_globe(
 		oriented_initial_pos_on_globe,
 		// Increase closeness inclusion so easier to select arrow instead of point...
 		adjust_closeness_inclusion_threshold(closeness_inclusion_threshold)))
 	{
-		d_is_dragging_pole = true;
-
-		render_pole(true/*highlight*/);
+		return false;
 	}
+
+	d_is_dragging_pole = true;
+
+	render_pole(true/*highlight*/);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesViewOperations::MovePoleOperation::start_drag_on_map(
 		const QPointF &initial_point_on_scene,
 		const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
 		const GPlatesGui::MapProjection &map_projection)
 {
-	if (test_proximity_to_pole_on_map(initial_point_on_scene, initial_point_on_sphere, map_projection))
+	if (!d_move_pole_widget.can_change_pole())
 	{
-		d_is_dragging_pole = true;
-
-		render_pole(true/*highlight*/);
+		return false;
 	}
+
+	if (!test_proximity_to_pole_on_map(initial_point_on_scene, initial_point_on_sphere, map_projection))
+	{
+		return false;
+	}
+
+	d_is_dragging_pole = true;
+
+	render_pole(true/*highlight*/);
+
+	return true;
 }
 
 

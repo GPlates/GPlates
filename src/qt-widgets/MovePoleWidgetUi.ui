@@ -132,7 +132,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QGroupBox" name="move_pole_to_groupbox">
+       <widget class="QGroupBox" name="vgp_constraints_groupbox">
         <property name="title">
          <string>VGP Constraints</string>
         </property>

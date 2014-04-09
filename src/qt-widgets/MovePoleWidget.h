@@ -80,7 +80,18 @@ namespace GPlatesQtWidgets
 		}
 
 		/**
+		 * Returns true if the pole can currently be changed with @a set_pole.
+		 *
+		 * A reason it might not be changeable is if the pole location is constrained
+		 * to always follow the stage of the focused feature.
+		 */
+		bool
+		can_change_pole() const;
+
+		/**
 		 * Sets pole (also enables/disables pole).
+		 *
+		 * @throws PreconditionViolationError if @a can_change_pole returns false.
 		 */
 		void
 		set_pole(
@@ -156,6 +167,13 @@ namespace GPlatesQtWidgets
 
 		boost::optional<GPlatesMaths::PointOnSphere>
 		get_stage_pole_location() const;
+
+		void
+		set_stage_pole_location();
+
+		void
+		set_pole_internal(
+				boost::optional<GPlatesMaths::PointOnSphere> pole);
 	};
 }
 

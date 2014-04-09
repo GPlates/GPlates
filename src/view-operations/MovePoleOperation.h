@@ -111,14 +111,24 @@ namespace GPlatesViewOperations
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				const GPlatesGui::MapProjection &map_projection);
 
-		//! User has just clicked and dragged on the globe.
-		void
+		/**
+		 * User has just clicked and dragged on the globe.
+		 *
+		 * Returns false if mouse cursor is not near pole, or if cannot change pole location
+		 * (eg, because pole location constrained to focused feature stage pole location).
+		 */
+		bool
 		start_drag_on_globe(
 				const GPlatesMaths::PointOnSphere &oriented_initial_pos_on_globe,
 				const double &closeness_inclusion_threshold);
 
-		//! User has just clicked and dragged on the map.
-		void
+		/**
+		 * User has just clicked and dragged on the map.
+		 *
+		 * Returns false if mouse cursor is not near pole, or if cannot change pole location
+		 * (eg, because pole location constrained to focused feature stage pole location).
+		 */
+		bool
 		start_drag_on_map(
 				const QPointF &initial_point_on_scene,
 				const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
