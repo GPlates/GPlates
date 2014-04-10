@@ -397,10 +397,10 @@ GPlatesQtWidgets::MovePoleWidget::get_stage_pole_plate_pair(
 	}
 
 	// We shouldn't have more than one edge - even in a cross-over situation, one
-	// of the edges will already have been selected for use in the tree	
+	// of the edges will already have been selected for use in the tree.
 	if (std::distance(edges.first, edges.second) > 1)
 	{
-		qDebug() << "More than one edge found for reconstruction plate id " << reconstruction_plate_id.get();
+		//qDebug() << "More than one edge found for reconstruction plate id " << reconstruction_plate_id.get();
 		return boost::none;
 	}
 
@@ -430,29 +430,52 @@ GPlatesQtWidgets::MovePoleWidget::get_stage_pole_location() const
 		return boost::none;
 	}
 
-	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_1 =
+	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			rfg.get()->get_reconstruction_tree_creator().get_reconstruction_tree(
 					rfg.get()->get_reconstruction_time());
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree_2 =
 			rfg.get()->get_reconstruction_tree_creator().get_reconstruction_tree(
 					rfg.get()->get_reconstruction_time() + 1);
 
+	const GPlatesModel::integer_plate_id_type moving_plate_id = moving_fixed_plate_ids->first;
+	const GPlatesModel::integer_plate_id_type fixed_plate_id = moving_fixed_plate_ids->second;
+
 	// Get stage pole.
 	const GPlatesMaths::FiniteRotation stage_pole =
 			GPlatesAppLogic::RotationUtils::get_stage_pole(
-					*reconstruction_tree_1,
+					*reconstruction_tree,
 					*reconstruction_tree_2,
-					moving_fixed_plate_ids->first/*moving_plate*/,
-					moving_fixed_plate_ids->second/*fixed_plate*/);
+					moving_plate_id,
+					fixed_plate_id);
 
 	// Get stage pole axis.
+	// We want to indicate an identity stage rotation (with none) so caller can indicate this to the user.
 	if (GPlatesMaths::represents_identity_rotation(stage_pole.unit_quat()))
 	{
 		return boost::none;
 	}
 
-	// Return the stage pole axis.
-	return GPlatesMaths::PointOnSphere(stage_pole.unit_quat().get_rotation_params(boost::none).axis);
+	const GPlatesMaths::UnitVector3D stage_pole_axis =
+			stage_pole.unit_quat().get_rotation_params(boost::none).axis;
+
+	//
+	// The rotation adjustment calculation is:
+	//
+	// R(0->t,A->M)' = Adj * R(0->t,A->M)
+	//
+	// ...where t is reconstruction time, A is anchor plate and F and M are fixed and moving plates.
+	// R' is after adjustment and R is prior to adjustment.
+	//
+	// So we need to rotate the stage pole axis into the frame of reference that the adjustment
+	// is made within - this is "R(0->t,A->M)" which is just the total rotation of moving plate
+	// relative to anchor plate.
+	//
+
+	const GPlatesMaths::FiniteRotation moving_plate_rotation =
+		reconstruction_tree->get_composed_absolute_rotation(moving_plate_id).first;
+
+	// Return the stage pole axis rotated into the moving plate frame.
+	return GPlatesMaths::PointOnSphere(moving_plate_rotation * stage_pole_axis);
 }
 
 
