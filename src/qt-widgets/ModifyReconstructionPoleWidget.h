@@ -35,9 +35,13 @@
 #include "TaskPanelWidget.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
+
 #include "gui/SimpleGlobeOrientation.h"
+
 #include "maths/PointOnSphere.h"
+
 #include "model/FeatureHandle.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
 
 
@@ -153,6 +157,12 @@ namespace GPlatesQtWidgets
 		deactivate();
 
 	protected:
+
+		/**
+		 * Returns focused feature RFG (if there is one).
+		 */
+		boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
+		get_focused_feature_geometry() const;
 
 		/**
 		 * Find the geometries whose RFG has a plate ID which is equal to the plate ID of

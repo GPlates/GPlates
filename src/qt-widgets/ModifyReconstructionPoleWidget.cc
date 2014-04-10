@@ -424,8 +424,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::deactivate()
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries_at_activation()
 {
-	d_reconstructed_feature_geometries.clear();
-	populate_initial_geometries();
+	draw_initial_geometries();
 	draw_dragged_geometries();
 }
 
@@ -658,7 +657,6 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::change_highlight_children_chec
 	}
 
 	// Ignore any other values of 'new_checkbox_state'.
-	d_reconstructed_feature_geometries.clear();
 	draw_initial_geometries();
 	draw_dragged_geometries();
 }
@@ -667,28 +665,16 @@ void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 		GPlatesGui::FeatureFocus &feature_focus)
 {
-	const GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_geometry =
-			feature_focus.associated_reconstruction_geometry();
+	boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
+			rfg = get_focused_feature_geometry();
 
-	// We're only interested in ReconstructedFeatureGeometry's (resolved topologies are excluded
-	// since they, in turn, reference reconstructed static geometries).
-	// NOTE: ReconstructedVirtualGeomagneticPole's will also be included since they derive
-	// from ReconstructedFeatureGeometry.
-	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg;
-	if (focused_geometry)
-	{
-		rfg = GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-				const GPlatesAppLogic::ReconstructedFeatureGeometry>(focused_geometry);
-	}
-
-	// Do the following if no RG or if RG is not RFG.
+	// Do the following if no focused RFG.
 	if (!rfg)
 	{
 		// Clear the plate ID and the plate ID field.
 		d_reconstruction_tree = boost::none;
 		d_plate_id = boost::none;
 		reset_adjustment();
-		d_reconstructed_feature_geometries.clear();
 		field_moving_plate->clear();
 		// This is to clear the rendered geometries if the feature geometry
 		// disappears when this tool is still active (eg, when a
@@ -703,7 +689,6 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 	if (d_plate_id != rfg.get()->reconstruction_plate_id())
 	{
 		reset_adjustment();
-		d_reconstructed_feature_geometries.clear();
 		d_plate_id = rfg.get()->reconstruction_plate_id();
 		if (d_plate_id)
 		{
@@ -722,14 +707,10 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::set_focus(
 		// Since the plate id has changed the initial geometries will also have changed.
 		draw_initial_geometries();
 	}
-}
-
-
-void
-GPlatesQtWidgets::ModifyReconstructionPoleWidget::handle_reconstruction()
-{
-	set_focus(d_view_state_ptr->get_feature_focus());
-	if (d_is_active)
+	// Else if this tool is active then re-populate our RFGs according to the new focused RFG
+	// (note that the focused RFG can change with reconstruction time for the same focused feature).
+	// See 'handle_reconstruction()' for why this is done here instead of in 'handle_reconstruction()'.
+	else if (d_is_active)
 	{
 		draw_initial_geometries();
 		draw_dragged_geometries();
@@ -738,15 +719,69 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::handle_reconstruction()
 
 
 void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::handle_reconstruction()
+{
+	// NOTE: We no longer do anything here because the order in which Qt slots are called
+	// causes a problem - specifically here we rely on the focused RFG getting updated
+	// (for the new reconstruction time) in order to re-populate our geometries but that update
+	// doesn't happen until after this slot is called.
+	// However when the focused RFG changes (associated with same focused feature), due to the
+	// new reconstruction time, then our 'set_focus()' slot is called and that happens after the
+	// focused RFG has been updated. So we moved our code into 'set_focus()'.
+}
+
+
+boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::get_focused_feature_geometry() const
+{
+	GPlatesAppLogic::ReconstructionGeometry::maybe_null_ptr_to_const_type focused_geometry =
+			d_view_state_ptr->get_feature_focus().associated_reconstruction_geometry();
+	if (!focused_geometry)
+	{
+		return boost::none;
+	}
+
+	// We're only interested in ReconstructedFeatureGeometry's.
+	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+					const GPlatesAppLogic::ReconstructedFeatureGeometry>(focused_geometry);
+	if (!rfg)
+	{
+		return boost::none;
+	}
+
+	return GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type(rfg.get());
+}
+
+
+void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 {
+	// First clear the RFGs before we do anything else (even before we return early).
+	d_reconstructed_feature_geometries.clear();
+
 	// If there's no plate ID of the currently-focused RFG, then there can be no other RFGs
 	// with the same plate ID.
 	if ( ! d_plate_id || ! d_reconstruction_tree)
 	{
 		return;
 	}
-	
+
+	// Get the focused geometry's reconstruct context/handle.
+	// If there is none then we return early since we won't be able to find/populate any matching RFGs.
+	boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
+			focused_rfg = get_focused_feature_geometry();
+	if (!focused_rfg)
+	{
+		return;
+	}
+	boost::optional<GPlatesAppLogic::ReconstructHandle::type> focused_reconstruct_handle =
+			focused_rfg.get()->get_reconstruct_handle();
+	if (!focused_reconstruct_handle)
+	{
+		return;
+	}
+
 	std::vector<GPlatesModel::integer_plate_id_type> plate_id_collection;
 	plate_id_collection.push_back(*d_plate_id);
 
@@ -762,7 +797,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 
 	//
 	// Iterate over all the reconstruction geometries that were reconstructed using the same
-	// reconstruction tree as the focused feature geometry.
+	// reconstruction context/handle as the focused feature geometry.
 	//
 
 	// Get the layer outputs.
@@ -797,7 +832,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 
 				// Make sure the current RFG was created from the same reconstruction tree as
 				// the focused geometry.
-				if (rfg->get_reconstruction_tree() != *d_reconstruction_tree)
+				if (rfg->get_reconstruct_handle() != focused_reconstruct_handle)
 				{
 					continue;
 				}
@@ -823,15 +858,12 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 		// the user dragging?
 		qWarning() << "No initial geometries found ModifyReconstructionPoleWidget::populate_initial_geometries!";
 	}
-	
 }
 
 
 void
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 {
-	
-	d_reconstructed_feature_geometries.clear();
 	populate_initial_geometries();
 
 	// Delay any notification of changes to the rendered geometry collection
@@ -896,15 +928,14 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 	// But since these guards can be nested it's probably a good idea to have it here too.
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 
+	// Clear all dragged geometry RenderedGeometry's before adding new ones.
+	d_dragged_geom_layer_ptr->clear_rendered_geometries();
+
 	// Be careful that the boost::optional is not boost::none.
 	if ( ! d_accum_orientation)
 	{
-		draw_initial_geometries();
 		return;
 	}
-
-	// Clear all dragged geometry RenderedGeometry's before adding new ones.
-	d_dragged_geom_layer_ptr->clear_rendered_geometries();
 
 	const GPlatesGui::Colour &silver_colour = GPlatesGui::Colour::get_silver();
 

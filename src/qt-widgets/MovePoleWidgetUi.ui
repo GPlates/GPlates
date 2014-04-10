@@ -303,7 +303,7 @@
          <item>
           <widget class="QLabel" name="keep_stage_pole_constrained_label">
            <property name="text">
-            <string>Keep updated and constrained over time:</string>
+            <string>Keep stage pole updated and constrained over time:</string>
            </property>
            <property name="wordWrap">
             <bool>true</bool>
