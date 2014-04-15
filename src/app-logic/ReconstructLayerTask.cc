@@ -32,6 +32,8 @@
 #include "ReconstructUtils.h"
 #include "TopologyNetworkResolverLayerProxy.h"
 
+#include "utils/ComponentManager.h"
+
 
 const QString GPlatesAppLogic::ReconstructLayerTask::RECONSTRUCTABLE_FEATURES_CHANNEL_NAME =
 		"Reconstructable features";
@@ -79,18 +81,22 @@ GPlatesAppLogic::ReconstructLayerTask::get_input_channel_types() const
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL));
 
 
-	// Channel definition for the surfaces on which to calculate interpolated rotations:
-	// - resolved topological networks.
-	std::vector<LayerTaskType::Type> deformation_surfaces_input_channel_types;
-	deformation_surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
+	// For the GPlates 1.4 *public* release we are disabling deformation unless a command-line switch is activated.
+	if (GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::deformation()))
+	{
+		// Channel definition for the surfaces on which to calculate interpolated rotations:
+		// - resolved topological networks.
+		std::vector<LayerTaskType::Type> deformation_surfaces_input_channel_types;
+		deformation_surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
 #if 0// NOTE: not sure we will need this one:
-	deformation_surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
+		deformation_surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
 #endif
-	input_channel_types.push_back(
-		LayerInputChannelType(
-				DEFORMATION_SURFACES_CHANNEL_NAME,
-				LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
-				deformation_surfaces_input_channel_types));
+		input_channel_types.push_back(
+			LayerInputChannelType(
+					DEFORMATION_SURFACES_CHANNEL_NAME,
+					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
+					deformation_surfaces_input_channel_types));
+	}
 
 	return input_channel_types;
 }
