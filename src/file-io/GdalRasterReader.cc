@@ -213,6 +213,11 @@ namespace GPlatesFileIO
 			GPlatesGui::rgba8_t &no_data_value)
 	{
 		// Colour rasters do not have a no-data value.
+		//
+		// But we'll initialise a value since caller will not be able to easily determine the
+		// template parameter type and initialise a dummy value themselves.
+		no_data_value = GPlatesGui::rgba8_t(0, 0, 0, 0);
+
 		return false;
 	}
 
