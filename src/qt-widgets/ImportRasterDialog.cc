@@ -223,8 +223,15 @@ GPlatesQtWidgets::ImportRasterDialog::ImportRasterDialog(
 
 	// Note: I would've preferred to use resize() instead, but at least on
 	// Windows Vista with Qt 4.4, the dialog doesn't respect the call to resize().
+	//
+	// UPDATE: Using setMinimumSize causes Windows 8.1 to not display the next/cancel buttons
+	// unless user explicitly resizes dialog (the exact same build on Windows 7 is fine though).
 	QSize desired_size(724, 600);
+#if 1
+	resize(desired_size);
+#else
 	setMinimumSize(desired_size);
+#endif
 }
 
 

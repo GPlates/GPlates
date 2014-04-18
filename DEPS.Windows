@@ -122,6 +122,9 @@ Boost
   Note that the boost-python (sub)library will link against your python installation
   and, at runtime, will expect a DLL of that python version. For example, if you build boost with python version 2.7
   then, at runtime, the python DLL (version 2.7) should exist in the PATH.
+  To get boost to find python at compile time you might also need to add something like...
+     using python : 2.7 : C:\\SDK\\python\\Python-2.7.6 : C:\\SDK\\python\\Python-2.7.6\\Include : C:\\SDK\\python\\Python-2.7.6\\libs ;
+  ...to "C:\SDK\boost\boost_1_39\tools\build\v2\user-config.jam" for example.
   Note if you are using python 2.6.3 or above then you need a boost version greater than 1.40 otherwise you'll get the following
   exception during GPlates startup 'AttributeError: 'Boost.Python.StaticProperty' object attribute '__doc__' is read-only'
   - see https://bugs.launchpad.net/ubuntu/+source/boost1.38/+bug/457688
@@ -203,6 +206,7 @@ CGAL
            above because you will likely run into permissions issues later.
      * Tick 'CGAL_DIR' environment variable - note: this is necessary for GPlates to be able to find CGAL.
   2. Prepare CGAL for building by running 'cmake-gui.exe' (this requires CMAKE to have already been installed):
+     * NOTE: Make sure you run 'cmake-gui.exe' as administrator (right-click and select 'Run as administrator').
      * Specify the CGAL installation location as the source and build directories.
      * Click the 'Configure' button.
          * If an error dialog pops up and there's red text that complains it cannot find the boost library
