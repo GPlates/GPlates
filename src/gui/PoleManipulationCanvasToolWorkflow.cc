@@ -35,6 +35,8 @@
 #include "canvas-tools/CanvasToolAdapterForMap.h"
 #include "canvas-tools/ClickGeometry.h"
 #include "canvas-tools/ManipulatePole.h"
+#include "canvas-tools/MovePoleGlobe.h"
+#include "canvas-tools/MovePoleMap.h"
 
 #include "global/GPlatesAssert.h"
 
@@ -49,6 +51,7 @@
 #include "qt-widgets/TaskPanel.h"
 #include "qt-widgets/ViewportWindow.h"
 
+#include "view-operations/MovePoleOperation.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
 
@@ -153,6 +156,33 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 					viewport_window.map_view().map_canvas(),
 					viewport_window.map_view(),
 					view_state.get_map_transform()));
+
+	//
+	// Move pole canvas tool.
+	//
+
+	const GPlatesViewOperations::MovePoleOperation::non_null_ptr_type move_pole_operation =
+			GPlatesViewOperations::MovePoleOperation::create(
+					view_state.get_viewport_zoom(),
+					view_state.get_rendered_geometry_collection(),
+					WORKFLOW_RENDER_LAYER,
+					viewport_window.task_panel_ptr()->move_pole_widget());
+
+	// For the globe view.
+	d_globe_move_pole_tool.reset(
+			new GPlatesCanvasTools::MovePoleGlobe(
+					move_pole_operation,
+					viewport_window.globe_canvas().globe(),
+					viewport_window.globe_canvas(),
+					viewport_window));
+	// For the map view.
+	d_map_move_pole_tool.reset(
+			new GPlatesCanvasTools::MovePoleMap(
+					move_pole_operation,
+					viewport_window.map_view().map_canvas(),
+					viewport_window.map_view(),
+					viewport_window,
+					view_state));
 }
 
 
@@ -226,6 +256,9 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::get_selected_globe_and_map_canva
 	case CanvasToolWorkflows::TOOL_MANIPULATE_POLE:
 		return std::make_pair(d_globe_manipulate_pole_tool.get(), d_map_manipulate_pole_tool.get());
 
+	case CanvasToolWorkflows::TOOL_MOVE_POLE:
+		return std::make_pair(d_globe_move_pole_tool.get(), d_map_move_pole_tool.get());
+
 	default:
 		break;
 	}
@@ -270,4 +303,5 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::update_manipulate_pole_tool()
 	}
 
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MANIPULATE_POLE, enable_manipulate_pole_tool);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MOVE_POLE, true);
 }

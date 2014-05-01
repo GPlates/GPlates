@@ -110,12 +110,6 @@ namespace GPlatesGui
 		initialiseGL(
 				GPlatesOpenGL::GLRenderer &renderer);
 
-		SimpleGlobeOrientation &
-		orientation() const
-		{
-			return *d_globe_orientation_ptr;
-		}
-
 		void
 		set_new_handle_pos(
 				const GPlatesMaths::PointOnSphere &pos);
@@ -133,6 +127,18 @@ namespace GPlatesGui
 		const GPlatesMaths::PointOnSphere
 		orient(
 				const GPlatesMaths::PointOnSphere &pos) const;
+
+		const SimpleGlobeOrientation &
+		orientation() const
+		{
+			return *d_globe_orientation_ptr;
+		}
+
+		SimpleGlobeOrientation &
+		orientation()
+		{
+			return *d_globe_orientation_ptr;
+		}
 
 		/**
 		 * Paint the globe and all the visible features and rasters on it.

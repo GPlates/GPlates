@@ -851,8 +851,16 @@ GPlatesQtWidgets::TimeDependentRasterPage::deduce_time(
 
 	try
 	{
+		// If ends with 'Ma' then remove it.
+		// This is common with exported filenames.
+		QString last_token = tokens.last();
+		if (last_token.endsWith("Ma"))
+		{
+			last_token = last_token.left(last_token.size() - 2);
+		}
+
 		GPlatesUtils::Parse<double> parse;
-		double value = parse(tokens.last());
+		double value = parse(last_token);
 
 		// Round to DECIMAL_PLACES.
 		value = round_to_dp(value);

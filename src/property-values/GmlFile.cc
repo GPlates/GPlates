@@ -254,6 +254,22 @@ GPlatesPropertyValues::GmlFile::get_proxied_raw_rasters() const
 }
 
 
+boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+GPlatesPropertyValues::GmlFile::get_spatial_reference_system() const
+{
+	const Revision &revision = get_current_revision<Revision>();
+
+	if (!revision.proxied_raster_cache)
+	{
+		// We can't actually report the read errors to the user.
+		GPlatesFileIO::ReadErrorAccumulation read_errors;
+		revision.update_proxied_raster_cache(&read_errors);
+	}
+
+	return revision.proxied_raster_cache.get()->get_spatial_reference_system();
+}
+
+
 std::ostream &
 GPlatesPropertyValues::GmlFile::print_to(
 		std::ostream &os) const

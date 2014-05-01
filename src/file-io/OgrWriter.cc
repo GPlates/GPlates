@@ -90,26 +90,6 @@ namespace{
 	}
 
 
-
-	QVariant
-	get_qvariant_from_element(
-		const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
-	{
-		GPlatesFeatureVisitors::ToQvariantConverter converter;
-
-		element.value()->accept_visitor(converter);
-
-		if (converter.found_values_begin() != converter.found_values_end())
-		{
-			return *converter.found_values_begin();
-		}
-		else
-		{
-			return QVariant();
-		}
-	}
-
-
 	OGRFieldType
 	get_ogr_field_type_from_qvariant(
 		QVariant &variant)
@@ -163,7 +143,7 @@ namespace{
 
 				QString key_string = GPlatesUtils::make_qstring_from_icu_string(iter->get()->key()->get_value().get());
 
-				QVariant value_variant = get_qvariant_from_element(*iter->get());
+				QVariant value_variant = GPlatesFileIO::OgrUtils::get_qvariant_from_kvd_element(*iter->get());
 				QString type_string = GPlatesFileIO::OgrUtils::get_type_qstring_from_qvariant(value_variant);
 
 				//qDebug() << "Field name: " << key_string << ", type: " << type_string;
@@ -223,7 +203,7 @@ namespace{
 				}
 
 				// FIXME: do I really need to put this in variant form first?
-				QVariant value_variant = get_qvariant_from_element(*iter->get());
+				QVariant value_variant = GPlatesFileIO::OgrUtils::get_qvariant_from_kvd_element(*iter->get());
 
 				OGRFieldType layer_type = ogr_layer->GetLayerDefn()->GetFieldDefn(count)->GetType();	
 				OGRFieldType model_type  = get_ogr_field_type_from_qvariant(value_variant);

@@ -30,36 +30,8 @@
 #include "gui/MapProjection.h"
 #include "gui/MapTransform.h"
 
-#include "maths/PointOnSphere.h"
-
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/MapView.h"
-
-
-namespace
-{
-	/**
-	 * Converts a QPointF to a PointOnSphere
-	 */
-	boost::optional<GPlatesMaths::PointOnSphere>
-	qpointf_to_point_on_sphere(const QPointF &point, const GPlatesGui::MapProjection &projection)
-	{
-		double x = point.x();
-		double y = point.y();
-
-		boost::optional<GPlatesMaths::LatLonPoint> llp =
-			projection.inverse_transform(x, y);
-		if (llp)
-		{
-			GPlatesMaths::PointOnSphere pos = GPlatesMaths::make_point_on_sphere(*llp);
-			return boost::optional<GPlatesMaths::PointOnSphere>(pos);
-		}
-		else
-		{
-			return boost::none;
-		}
-	}
-}
 
 
 GPlatesCanvasTools::CanvasToolAdapterForMap::CanvasToolAdapterForMap(
@@ -88,7 +60,10 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_activation()
 void
 GPlatesCanvasTools::CanvasToolAdapterForMap::handle_deactivation()
 {
-	d_canvas_tool_ptr->handle_deactivation();
+	if (map_view().isVisible()) // Avoid deactivating twice (in globe and map adaptor)
+	{
+		d_canvas_tool_ptr->handle_deactivation();
+	}
 }
 
 

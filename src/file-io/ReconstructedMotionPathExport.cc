@@ -59,6 +59,7 @@ namespace GPlatesFileIO
 					Format export_format,
 					const feature_geometry_group_seq_type &grouped_recon_geoms_seq,
 					const std::vector<const File::Reference *> &referenced_files,
+					const std::vector<const File::Reference *> &active_reconstruction_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
 					bool wrap_to_dateline)
@@ -70,6 +71,7 @@ namespace GPlatesFileIO
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time);
 					break;
@@ -79,6 +81,7 @@ namespace GPlatesFileIO
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						wrap_to_dateline);		
@@ -89,6 +92,7 @@ namespace GPlatesFileIO
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time);		
 					break;
@@ -106,6 +110,7 @@ namespace GPlatesFileIO
 					Format export_format,
 					const feature_geometry_group_seq_type &grouped_recon_geoms_seq,
 					const std::vector<const File::Reference *> &referenced_files,
+					const std::vector<const File::Reference *> &active_reconstruction_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
 					bool wrap_to_dateline)
@@ -117,6 +122,7 @@ namespace GPlatesFileIO
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
 						wrap_to_dateline);
@@ -126,6 +132,7 @@ namespace GPlatesFileIO
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time);
 					break;
@@ -134,6 +141,7 @@ namespace GPlatesFileIO
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time);
 					break;
@@ -188,6 +196,7 @@ GPlatesFileIO::ReconstructedMotionPathExport::export_reconstructed_motion_paths(
 		Format export_format,
 		const std::vector<const GPlatesAppLogic::ReconstructedMotionPath *> &reconstructed_motion_path_seq,
 		const std::vector<const File::Reference *> &active_files,
+		const std::vector<const File::Reference *> &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool export_single_output_file,
@@ -215,6 +224,7 @@ GPlatesFileIO::ReconstructedMotionPathExport::export_reconstructed_motion_paths(
 				export_format,
 				grouped_recon_geom_seq,
 				referenced_files,
+				active_reconstruction_files,
 				reconstruction_anchor_plate_id,
 				reconstruction_time,
 				wrap_to_dateline);
@@ -247,6 +257,7 @@ GPlatesFileIO::ReconstructedMotionPathExport::export_reconstructed_motion_paths(
 					export_format,
 					grouped_features_iter->feature_geometry_groups,
 					referenced_files,
+					active_reconstruction_files,
 					reconstruction_anchor_plate_id,
 					reconstruction_time,
 					wrap_to_dateline);

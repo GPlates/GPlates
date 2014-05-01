@@ -243,6 +243,13 @@ GPlatesAppLogic::ExtractRasterFeatureProperties::get_georeferencing() const
 }
 
 
+const boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> &
+GPlatesAppLogic::ExtractRasterFeatureProperties::get_spatial_reference_system() const
+{
+	return d_spatial_reference_system;
+}
+
+
 const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
 GPlatesAppLogic::ExtractRasterFeatureProperties::get_proxied_rasters() const
 {
@@ -262,6 +269,7 @@ GPlatesAppLogic::ExtractRasterFeatureProperties::initialise_pre_feature_properti
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	d_georeferencing = boost::none;
+	d_spatial_reference_system = boost::none;
 	d_proxied_rasters = boost::none;
 	d_raster_band_names = boost::none;
 
@@ -337,6 +345,10 @@ GPlatesAppLogic::ExtractRasterFeatureProperties::visit_gml_file(
 		if (propname && *propname == RANGE_SET)
 		{
 			d_proxied_rasters = gml_file.get_proxied_raw_rasters();
+
+			// Temporary code until the raster's spatial reference system is stored as a property value.
+			// In the meantime we will extract it directly from the raster.
+			d_spatial_reference_system = gml_file.get_spatial_reference_system();
 		}
 	}
 }

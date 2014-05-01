@@ -98,6 +98,9 @@ namespace GPlatesGui
 		{
 			TOOL_DRAG_GLOBE,
 			TOOL_ZOOM_GLOBE,
+#if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
+			TOOL_CHANGE_LIGHTING,
+#endif
 			TOOL_MEASURE_DISTANCE,
 			TOOL_CLICK_GEOMETRY,
 			TOOL_DIGITISE_NEW_POLYLINE,
@@ -108,6 +111,7 @@ namespace GPlatesGui
 			TOOL_INSERT_VERTEX,
 			TOOL_SPLIT_FEATURE,
 			TOOL_MANIPULATE_POLE,
+			TOOL_MOVE_POLE,
 			TOOL_BUILD_LINE_TOPOLOGY,
 			TOOL_BUILD_BOUNDARY_TOPOLOGY,
 			TOOL_BUILD_NETWORK_TOPOLOGY,

@@ -47,6 +47,7 @@ namespace ShapefileAttributes {
 		RECONSTRUCTION_METHOD,
 		LEFT_PLATE,
 		RIGHT_PLATE,
+		SPREADING_ASYMMETRY,
 		
 		NUM_PROPERTIES
 	};
@@ -62,7 +63,8 @@ namespace ShapefileAttributes {
 		"ConjugatePlateId",
 		"ReconstructionMethod",
 		"LeftPlate",
-		"RightPlate"
+		"RightPlate",
+		"SpreadingAsymmetry"
 	};
 	
 	static const QString default_attribute_field_names[] = {
@@ -76,7 +78,8 @@ namespace ShapefileAttributes {
 		"PLATEID2",
 		"RECON_METH",
 		"L_PLATE",
-		"R_PLATE"
+		"R_PLATE",
+		"SPREAD_ASY"
 
 	};
 

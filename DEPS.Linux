@@ -162,6 +162,17 @@ the latest bugfix release of Qt 4.4.
 Qt 4.4 or newer is provided out of the box on Ubuntu 8.10 and newer, and it is
 not necessary to enable the 'backports' repository on those systems.
 
+A note about GDAL
+
+If you decide to compile GDAL from source then ensure that GDAL links *statically*
+to PROJ4 if the PROJ4 library is in a non-standard location. This ensures GPlates
+does not generate a dynamic library loading error (for PROJ4) when a raster with an
+inbuilt spatial reference system (eg, a projection) is loaded.
+You'll also need to ensure that the NetCDF library is installed and that GDAL is
+configured to use it - this is necessary for GPlates to be able to load gridded rasters.
+Here are the relevant options for the GDAL 'configure' script:
+   configure --with-netcdf=/path/to/netcdf --with-static-proj4=/path/to/proj4
+
 Fedora 13 packages
 
 The following packages are not installed by default and may need to be

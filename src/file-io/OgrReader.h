@@ -1,15 +1,15 @@
 /* $Id$ */
 
 /**
- * \file 
+ * \file
  * File specific comments.
  *
  * Most recent change:
  *   $Date$
- * 
+ *
  * Copyright (C) 2007, 2008, 2009 Geological Survey of Norway (under the name "ShapefileReader.h")
  * Copyright (C) 2010 The University of Sydney, Australia (under the name "ShapefileReader.h")
- * Copyright (C) 2012 Geological Survey of Norway
+ * Copyright (C) 2012, 2014 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -53,6 +53,8 @@
 #include "ReadErrorAccumulation.h"
 
 #include "model/FeatureCollectionHandle.h"
+#include "model/GpgimProperty.h"
+#include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
 
 
@@ -63,7 +65,7 @@ namespace GPlatesFileIO
 		class OGRConfiguration;
 	}
 
-	const double SHAPE_NO_DATA = -1e38; 
+	const double SHAPE_NO_DATA = -1e38;
 
 	class OgrReader
 	{
@@ -90,7 +92,7 @@ namespace GPlatesFileIO
 		static
 		void
 		set_property_mapper(
-			boost::shared_ptr< PropertyMapper > property_mapper);
+				boost::shared_ptr< PropertyMapper > property_mapper);
 
 		/**
 		 * Reads only the field names from the file @a file_ref.
@@ -113,9 +115,9 @@ namespace GPlatesFileIO
 		static
 		void
 		remap_shapefile_attributes(
-			GPlatesFileIO::File::Reference &file,
-			GPlatesModel::ModelInterface &model,
-			ReadErrorAccumulation &read_errors);
+				GPlatesFileIO::File::Reference &file,
+				GPlatesModel::ModelInterface &model,
+				ReadErrorAccumulation &read_errors);
 
 	private:
 
@@ -123,12 +125,12 @@ namespace GPlatesFileIO
 
 		~OgrReader();
 
-// Make copy constructor private
+		// Make copy constructor private
 		OgrReader(
-			const OgrReader &other);
+				const OgrReader &other);
 
 
-// Make assignment private
+		// Make assignment private
 		OgrReader &
 		operator=(
 				const OgrReader &other);
@@ -145,19 +147,31 @@ namespace GPlatesFileIO
 		check_file_format(
 				ReadErrorAccumulation &read_errors);
 
-		bool 
+		bool
 		open_file(
 				const QString &filename);
 
-		void 
+		void
 		get_field_names(
-			ReadErrorAccumulation &read_errors);
+				ReadErrorAccumulation &read_errors);
 
-		void 
+		void
 		get_attributes();
 
 		void
+		handle_geometry(
+				const GPlatesModel::FeatureType &feature_type,
+				const OGRwkbGeometryType &type,
+				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+				ReadErrorAccumulation &read_errors,
+				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
+				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);
+
+		void
 		handle_point(
+				const GPlatesModel::FeatureType &feature_type,
+				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -165,6 +179,8 @@ namespace GPlatesFileIO
 
 		void
 		handle_multi_point(
+				const GPlatesModel::FeatureType &feature_type,
+				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -173,6 +189,8 @@ namespace GPlatesFileIO
 
 		void
 		handle_linestring(
+				const GPlatesModel::FeatureType &feature_type,
+				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -180,6 +198,8 @@ namespace GPlatesFileIO
 
 		void
 		handle_multi_linestring(
+				const GPlatesModel::FeatureType &feature_type,
+				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -187,6 +207,8 @@ namespace GPlatesFileIO
 
 		void
 		handle_polygon(
+				const GPlatesModel::FeatureType &feature_type,
+				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -194,6 +216,8 @@ namespace GPlatesFileIO
 
 		void
 		handle_multi_polygon(
+				const GPlatesModel::FeatureType &feature_type,
+				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -207,58 +231,61 @@ namespace GPlatesFileIO
 
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_polygon_feature_from_list(
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-			std::list<GPlatesMaths::PointOnSphere> &list);
+				const GPlatesModel::FeatureType &feature_type,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+				const std::list<GPlatesMaths::PointOnSphere> &list,
+				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property);
 
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_line_feature_from_list(
+				const GPlatesModel::FeatureType &feature_type,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-				std::list<GPlatesMaths::PointOnSphere> &list);
-
-		const GPlatesModel::FeatureHandle::weak_ref
-		create_point_feature_from_pair(
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-			std::pair<double,double> &pair);
+				const std::list<GPlatesMaths::PointOnSphere> &list,
+				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property);
 
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_point_feature_from_point_on_sphere(
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-			GPlatesMaths::PointOnSphere &point);
+				const GPlatesModel::FeatureType &feature_type,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+				const GPlatesMaths::PointOnSphere &point,
+				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property);
 
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_multi_point_feature_from_list(
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-			std::list<GPlatesMaths::PointOnSphere> &list);
+				const GPlatesModel::FeatureType &feature_type,
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+				const std::list<GPlatesMaths::PointOnSphere> &list,
+				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property);
 
 		void
 		add_attributes_to_feature(
-			const GPlatesModel::FeatureHandle::weak_ref &,
-			GPlatesFileIO::ReadErrorAccumulation &read_errors,
-			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
-			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);
+				const GPlatesModel::FeatureHandle::weak_ref &,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors,
+				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
+				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);
 
-		bool 
+		bool
 		is_valid_shape_data(
-			double lat,
-			double lon,
-			ReadErrorAccumulation &read_errors,
-			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
-			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location
-			);
+				double lat,
+				double lon,
+				ReadErrorAccumulation &read_errors,
+				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
+				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location
+				);
 
 		void
 		display_feature_counts();
 
-		OGRwkbGeometryType 
+		OGRwkbGeometryType
 		get_OGR_type();
 
 		void
 		add_ring_to_points_list(
-			OGRLinearRing *ring,
-			std::list<GPlatesMaths::PointOnSphere> &list,
-			ReadErrorAccumulation &read_errors,
-			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
-			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);
+				OGRLinearRing *ring,
+				std::list<GPlatesMaths::PointOnSphere> &list,
+				ReadErrorAccumulation &read_errors,
+				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
+				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);
 
 
 		QString d_filename;
@@ -276,21 +303,16 @@ namespace GPlatesFileIO
 		/// The type of the current geometry (e.g. LineString, Polygon, MultiPolygon...)
 		OGRwkbGeometryType d_type;
 
-		/// The shapefile attribute field names. 
+		/// The shapefile attribute field names.
 		QStringList d_field_names;
 
 		/// The shapefile attributes for the current geometry.
 		std::vector<QVariant> d_attributes;
 
 		/// Map for associating a model property with a shapefile attribute.
-//		std::map<int, int> d_model_to_attribute_map;
 		QMap<QString,QString> d_model_to_attribute_map;
 
-#if 0
-		/// The feature type and the geometry type
-		std::pair<QString,QString> d_feature_creation_pair;
-#endif
-		QString d_feature_type;
+		QString d_feature_type_string;
 		
 		boost::optional<GPlatesUtils::UnicodeString> d_feature_id;
 

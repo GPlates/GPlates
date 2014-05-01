@@ -40,6 +40,7 @@
 #include "property-values/RasterStatistics.h"
 #include "property-values/RawRaster.h"
 #include "property-values/RawRasterUtils.h"
+#include "property-values/SpatialReferenceSystem.h"
 #include "property-values/XsString.h"
 
 
@@ -82,6 +83,16 @@ namespace GPlatesAppLogic
 
 		const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
 		get_georeferencing() const;
+
+
+		/**
+		 * FIXME: Currently this is extracted from the (possibly time-dependent) raster at the
+		 * reconstruction time passed into constructor.
+		 * Later, when the spatial reference system is stored in a property value, this will not
+		 * potentially vary with the reconstruction time.
+		 */
+		const boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> &
+		get_spatial_reference_system() const;
 
 
 		const boost::optional<std::vector<GPlatesPropertyValues::RawRaster::non_null_ptr_type> > &
@@ -137,6 +148,13 @@ namespace GPlatesAppLogic
 		 * The georeferencing for the raster - currently treated as a constant value over time.
 		 */
 		boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> d_georeferencing;
+
+		/**
+		 * The raster's spatial reference system.
+		 *
+		 * Currently treated as a constant value over time.
+		 */
+		boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> d_spatial_reference_system;
 
 		/**
 		 * The proxied rasters of the first GmlFile encountered.

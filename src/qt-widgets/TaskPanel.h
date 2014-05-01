@@ -66,9 +66,11 @@ namespace GPlatesQtWidgets
 {
 	class DigitisationWidget;
 	class FeatureSummaryWidget;
+	class LightingWidget;
 	class MeasureDistanceWidget;
 	class ModifyGeometryWidget;
 	class ModifyReconstructionPoleWidget;
+	class MovePoleWidget;
 	class SmallCircleWidget;
 	class SnapNearbyVerticesWidget;
 	class TopologyToolsWidget;
@@ -96,10 +98,12 @@ namespace GPlatesQtWidgets
 			CURRENT_FEATURE,
 			DIGITISATION,
 			MODIFY_GEOMETRY,
+			MOVE_POLE,
 			MODIFY_POLE,
 			TOPOLOGY_TOOLS,
 			MEASURE_DISTANCE,
 			SMALL_CIRCLE,
+			LIGHTING,
 
 			NUM_PAGES // Must be the last entry.
 		};
@@ -168,6 +172,17 @@ namespace GPlatesQtWidgets
 		}
 
 		/**
+		 * Accessor for the Move Pole Widget of the Move Pole Tab.
+		 *
+		 * This lets the move pole canvas tool interact with the MovePoleWidget.
+		 */
+		MovePoleWidget &
+		move_pole_widget() const
+		{
+			return *d_move_pole_widget_ptr;
+		}
+
+		/**
 		 * Accessor for the TopologyToolsWidget 
 		 *
 		 * This lets the topology canvas tools interact with the widget in the task panel
@@ -197,6 +212,17 @@ namespace GPlatesQtWidgets
 		small_circle_widget() const
 		{
 			return *d_small_circle_widget_ptr;
+		}
+		
+		/**
+		 * Access for the LightingWidget
+		 *
+		 * This lets the Lighting canvas tool interact with the LightingWidget.
+		 */
+		LightingWidget &
+		lighting_widget() const
+		{
+			return *d_lighting_widget_ptr;
 		}
 
 		/**
@@ -247,6 +273,9 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_modify_pole_tab();
+
+		void
+		choose_move_pole_tab();
 		
 		void
 		choose_topology_tools_tab();
@@ -256,6 +285,9 @@ namespace GPlatesQtWidgets
 
 		void
 		choose_small_circle_tab();
+
+		void
+		choose_lighting_tab();
 
 	private Q_SLOTS:
 
@@ -311,6 +343,15 @@ namespace GPlatesQtWidgets
 		void
 		set_up_modify_pole_tab();
 
+
+		/**
+		 * Sets up the "Move Pole" tab in the Extr3me Task Panel.
+		 * This adds the special MovePoleWidget.
+		 */
+		void
+		set_up_move_pole_tab();
+
+
 		/**
 		 * Sets up the "Topology Tools" tab in the Extra Creamy Task Panel.
 		 * This adds the special TopologyToolsWidget.
@@ -330,6 +371,13 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		set_up_small_circle_tab();
+
+		/**
+		 * Sets up the "Lighting" tab in the Task Panel.
+		 * This adds the LightingWidget.
+		 */
+		void
+		set_up_lighting_tab();
 
 		/**
 		 * Configure the 'modify geometry' tab enable snapping to nearby vertices.
@@ -402,6 +450,12 @@ namespace GPlatesQtWidgets
 				ModifyGeometryWidget *d_modify_geometry_widget_ptr;
 
 				/**
+				 * Widget responsible for the controls in the Move Pole Tab.
+				 * Memory managed by Qt.
+				 */
+				MovePoleWidget *d_move_pole_widget_ptr;
+
+				/**
 				 * Widget responsible for the controls in the Modify Pole Tab.
 				 * Memory managed by Qt.
 				 */
@@ -420,9 +474,16 @@ namespace GPlatesQtWidgets
 				MeasureDistanceWidget *d_measure_distance_widget_ptr;
 
 				/**
-				 * Widget responsible for the Small Circle tab.                                                                    
+				 * Widget responsible for the Small Circle tab.
+				 * Memory managed by Qt.
 				 */
 				SmallCircleWidget *d_small_circle_widget_ptr;
+
+				/**
+				 * Widget responsible for the Lighting tab.
+				 * Memory managed by Qt.
+				 */
+				LightingWidget *d_lighting_widget_ptr;
 			};
 		};
 

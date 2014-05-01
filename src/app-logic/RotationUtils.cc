@@ -122,19 +122,7 @@ GPlatesAppLogic::RotationUtils::get_half_stage_rotation(
 	const FiniteRotation left_rotation = reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)
 			->get_composed_absolute_rotation(left_plate_id).first;
 
-// 	spreading_rotation = compose(
-// 			spreading_rotation,
-// 			get_reverse(reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)
-// 					->get_composed_absolute_rotation(left_plate_id).first));
-// 
-// 	spreading_rotation = compose(
-// 			spreading_rotation,
-// 			reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)
-// 					->get_composed_absolute_rotation(right_plate_id).first);
-
 	return compose(left_rotation, spreading_rotation);
-// 	inverse[R(0->t1,A->M)] * R(0->t1,A->F)
-// 	inverse[R(0->t1,A->F)] * R(0->t1,A->M) = R(0->t1,F->M)
 }
 
 

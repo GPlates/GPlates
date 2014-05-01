@@ -97,6 +97,45 @@ bilinearly_interpolate(
 	return mix(mix(tex11, tex21, interp.x), mix(tex12, tex22, interp.x), interp.y);
 }
 
+/*
+ * Bilinearly interpolate a data raster where the data is in the red channel and
+ * the coverage is in the green channel.
+ *
+ * This function weights the bilinear filter according to the coverage texels.
+ *
+ * This RG format is used for floating-point rasters in GPlates.
+ */
+vec4
+bilinearly_interpolate_data_coverge_RG(
+		sampler2D tex_sampler,
+		vec2 tex_coords,
+		vec4 tex_dimensions)
+{
+	// The 2x2 texture sample to interpolate.
+	vec4 tex11;
+	vec4 tex21;
+	vec4 tex12;
+	vec4 tex22;
+
+	// The bilinear interpolation coefficients.
+	vec2 interp;
+
+	// Call the other overload of 'bilinearly_interpolate()'.
+	bilinearly_interpolate(
+		tex_sampler, tex_coords, tex_dimensions, tex11, tex21, tex12, tex22, interp);
+	
+	// Multiple the data (in red channel) by coverage (in green channel) for each sample.
+	tex11.r *= tex11.g;
+	tex21.r *= tex21.g;
+	tex12.r *= tex12.g;
+	tex22.r *= tex22.g;
+
+	// Bilinearly interpolate the four texels.
+	vec4 result = mix(mix(tex11, tex21, interp.x), mix(tex12, tex22, interp.x), interp.y);
+	
+	return vec4(result.r / result.g, result.gba);
+}
+
 
 /*
  * Shader source code to rotate an (x,y,z) vector by a quaternion.
@@ -135,9 +174,10 @@ lambert_diffuse_lighting(
 		vec3 light_direction,
 		vec3 normal)
 {
-	// The light direction typically needs to be normalised because it's interpolated between vertices.
+	// The light direction typically needs to be normalised because it's interpolated between vertices
+	// (if using tangent-space lighting).
 	// The surface normal might also need to be normalised because it's either interpolated between
-	// vertices (no normal map) or bilinearly interpolated texture lookup (with normal map).
+	// vertices (no normal map) or bilinearly interpolated during texture (normal map) lookup.
 	// We can save one expensive 'normalize' by rearranging...
 	// Lambert = dot(normalize(N),normalize(L))
 	//		 = dot(N/|N|,L/|L|) 

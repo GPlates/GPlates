@@ -29,11 +29,14 @@
 
 
 GPlatesQtWidgets::GpgimVersionWarningDialog::GpgimVersionWarningDialog(
+		bool show_dialog_on_loading_files,
 		QWidget *parent_) :
 	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
 {
 	setupUi(this);
 	set_action_requested(LOAD_FILES, QStringList(), QStringList());
+
+	do_not_show_dialog_on_loading_check_box->setChecked(!show_dialog_on_loading_files);
 }
 
 

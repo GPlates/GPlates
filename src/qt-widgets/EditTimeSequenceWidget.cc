@@ -31,6 +31,7 @@
 #include <QHeaderView>
 #include <QLocale>
 #include <QMessageBox>
+#include <QPainter>
 #include <QString>
 #include <QTableWidgetItem>
 
@@ -48,7 +49,11 @@
 #include "property-values/XsDouble.h"
 #include "property-values/XsString.h"
 
+//TODO: check control flow so that sorting/removing-duplicates isn't happening multiple times.
+//TODO: (not in this source file but...) The tab order during flowline feature creation is poor; it jumps
+// from leftplateID to geometry type....these widgets are spread over several container widgets though.
 
+const bool DEMAND_ZERO_TIME_VALUE_IN_TABLE = true;
 
 namespace
 {
@@ -56,7 +61,23 @@ namespace
 	{
 		COLUMN_TIME, COLUMN_ACTION
 	};
-	
+
+	bool
+	row_contains_zero(int row, QTableWidget *table)
+	{
+		bool ok;
+		double value = table->item(row,COLUMN_TIME)->data(Qt::DisplayRole).toDouble(&ok);
+
+		if (!ok)
+		{
+			return false;
+		}
+		if (qFuzzyCompare(value+1,1.))
+		{
+			return true;
+		}
+		return false;
+	}
 	
 	/**
 	 * Fetches the appropriate action widget given a row number.
@@ -79,25 +100,7 @@ namespace
 		return action_widget;
 	}
 	
-	
-	/**
-	 * Uses rowCount() and setRowCount() to ensure the table has at least
-	 * @a rows rows available. If the table has more rows currently allocated,
-	 * this function does not shrink the table.
-	 *
-	 * The number of rows in the table after the operation is returned.
-	 */
-	int
-	ensure_table_size(
-			QTableWidget &table,
-			int rows)
-	{
-		if (table.rowCount() < rows) {
-			table.setRowCount(rows);
-		}
-		return table.rowCount();
-	}
-	
+		
 	/**
 	 * Allocates QTableWidgetItems and populates a QTableWidget from a
 	 * time.
@@ -119,7 +122,7 @@ namespace
 		}
 
 		QString time_as_string = locale.toString(time);
-		
+
 		if (!(table.findItems(time_as_string,Qt::MatchExactly)).isEmpty())
 		{
 			return false;
@@ -198,16 +201,11 @@ namespace
 	boost::optional<double>
 	get_valid_time(
 		QTableWidget &table_widget,
-		int row,
-		int column)
+		int row)
 	{
-		if (column != COLUMN_TIME)
-		{
-			return boost::none;
-		}
-		
 
-		QTableWidgetItem* item = table_widget.item(row,column);
+
+		QTableWidgetItem* item = table_widget.item(row,COLUMN_TIME);
 
 		if (item == NULL)
 		{
@@ -237,18 +235,6 @@ namespace
 			time = 0;
 			item->setData(0,time);
 		}
-		
-		QList<QTableWidgetItem*> matching_list = table_widget.findItems(item->text(),Qt::MatchExactly);
-		// We've just added the item to the table; it should be the only instance of an
-		// item with that value in the table, so the size of the list returned from "findItems"
-		// should be 1.
-		if (matching_list.size() != 1)
-		{
-		// We have this value in the cell already. Remove the current (just edited) cell, and
-		// switch focus to the one that already contains that value.
-			table_widget.setCurrentCell(matching_list.first()->row(),COLUMN_ACTION);
-			table_widget.removeRow(row);
-		}
 
 		return time;
 
@@ -259,7 +245,12 @@ namespace
 		int row,
 		QTableWidget *table_widget)
 	{
-		table_widget->removeRow(row);
+		if (DEMAND_ZERO_TIME_VALUE_IN_TABLE && !row_contains_zero(row,table_widget))
+		{
+			table_widget->removeCellWidget(row,COLUMN_TIME);
+			table_widget->removeCellWidget(row,COLUMN_ACTION);
+			table_widget->removeRow(row);
+		}
 	}
 
 	/**
@@ -287,11 +278,37 @@ namespace
 
 			for (int i = 0 ; i < number_of_rows_to_remove ; ++i)
 			{
-				remove_row(row_to_remove,table_widget);
+				qDebug() << "removing: " << i << " of " << number_of_rows_to_remove;
+				if (DEMAND_ZERO_TIME_VALUE_IN_TABLE && !row_contains_zero(row_to_remove,table_widget))
+				{
+					remove_row(row_to_remove,table_widget);
+				}
 			}
 		}
 	}
-	
+
+	void
+	sort_and_remove_duplicates_from_table(
+			QTableWidget *table)
+	{
+		table->sortItems(COLUMN_TIME,Qt::AscendingOrder);
+
+		if (table->rowCount() == 0)
+		{
+			return;
+		}
+
+		QString previous_time_as_string = table->item(0,COLUMN_TIME)->text();
+		for (int count = 1; count < table->rowCount() ; ++count)
+		{
+			QString current_time_as_string = table->item(count,COLUMN_TIME)->text();
+			if (current_time_as_string == previous_time_as_string)
+			{
+				remove_row(count,table);
+			}
+			previous_time_as_string = current_time_as_string;
+		}
+	}
 }
 
 
@@ -301,7 +318,8 @@ GPlatesQtWidgets::EditTimeSequenceWidget::EditTimeSequenceWidget(
 	AbstractEditWidget(parent_),
 	EditTableWidget(),
         d_current_reconstruction_time(
-                app_state_.get_current_reconstruction_time())
+				app_state_.get_current_reconstruction_time()),
+		d_spin_box_delegate(new EditTimeSequenceSpinBoxDelegate(this))
 {
     setupUi(this);
     // Set column widths and resizabilty.
@@ -313,8 +331,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::EditTimeSequenceWidget(
     // Set up a minimum row height as well, for the action widgets' sake.
     table_times->verticalHeader()->setDefaultSectionSize(dummy.height());
 
-    //button_remove->setVisible(false);
-
     // Clear spinboxes and things.
     reset_widget_to_default_values();
 
@@ -323,6 +339,8 @@ GPlatesQtWidgets::EditTimeSequenceWidget::EditTimeSequenceWidget(
 
     setFocusProxy(table_times);
 
+	table_times->setItemDelegateForColumn(COLUMN_TIME,d_spin_box_delegate);
+	table_times->setSelectionMode(QAbstractItemView::ContiguousSelection);
 }
 
 
@@ -335,10 +353,15 @@ GPlatesQtWidgets::EditTimeSequenceWidget::reset_widget_to_default_values()
     table_times->clearContents();
     table_times->setRowCount(0);
 
+	if (DEMAND_ZERO_TIME_VALUE_IN_TABLE)
+	{
+		insert_single(0.);
+	}
+
     // Reset widgets.
     spinbox_time->setValue(0.0);
     spinbox_from_time->setValue(100.0);
-    spinbox_to_time->setValue(0.0);
+	spinbox_to_time->setValue(0.0);
     spinbox_step_time->setValue(10.0);
 
     set_clean();
@@ -348,6 +371,8 @@ GPlatesQtWidgets::EditTimeSequenceWidget::reset_widget_to_default_values()
 GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesQtWidgets::EditTimeSequenceWidget::create_property_value_from_widget() const
 {
+	sort_and_remove_duplicates_from_table(table_times);
+
 	std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> time_periods;
 
 	static const GPlatesPropertyValues::StructuralType gml_time_period_type =
@@ -359,7 +384,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::create_property_value_from_widget() co
 
 	for (count = 0; count < table_times->rowCount(); ++count)
 	{			   
-		end_time = get_valid_time(*table_times,count,COLUMN_TIME);		
+		end_time = get_valid_time(*table_times,count);
 		if (end_time)
 		{			 
 			break;
@@ -368,7 +393,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::create_property_value_from_widget() co
 	++count;
 	for (int i = count; i < table_times->rowCount(); ++i)
 	{
-		begin_time = get_valid_time(*table_times,i,COLUMN_TIME);
+		begin_time = get_valid_time(*table_times,i);
 		if (begin_time)
 		{
 			GPlatesPropertyValues::GeoTimeInstant end_geo_instant(*end_time);
@@ -413,12 +438,12 @@ GPlatesQtWidgets::EditTimeSequenceWidget::create_property_value_from_widget() co
 bool
 GPlatesQtWidgets::EditTimeSequenceWidget::update_property_value_from_widget()
 {
-
 	// Remember that the property value pointer may be NULL!
 
 	if (d_array_ptr.get() != NULL) {
 		if (is_dirty()) {
-			update_times();
+			sort_and_remove_duplicates_from_table(table_times);
+			update_time_array_from_widget();
 			set_clean();
 			return true;
 		} else {
@@ -429,7 +454,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_property_value_from_widget()
 	}
 	
 }
-
 
 void
 GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
@@ -507,7 +531,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_widget_from_time_period_array(
 
 
 void
-GPlatesQtWidgets::EditTimeSequenceWidget::update_times()
+GPlatesQtWidgets::EditTimeSequenceWidget::update_time_array_from_widget()
 {
 	std::vector<GPlatesPropertyValues::GpmlArray::Member> time_periods;
 
@@ -520,15 +544,16 @@ GPlatesQtWidgets::EditTimeSequenceWidget::update_times()
 
 	for (count = 0; count < table_times->rowCount(); ++count)
 	{			   
-		end_time = get_valid_time(*table_times,count,COLUMN_TIME);		
+		end_time = get_valid_time(*table_times,count);
 		if (end_time)
 		{			 
 			break;
 		}
-	}		
+	}
+	++count;
 	for (int i = count; i < table_times->rowCount(); ++i)
 	{
-		begin_time = get_valid_time(*table_times,i,COLUMN_TIME);
+		begin_time = get_valid_time(*table_times,i);
 		if (begin_time)
 		{
 			GPlatesPropertyValues::GeoTimeInstant end_geo_instant(*end_time);
@@ -588,27 +613,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_delete_row(
 		delete_time_from_table(row);
 	}
 	update_buttons();
-}
-
-
-void
-GPlatesQtWidgets::EditTimeSequenceWidget::handle_cell_changed(
-		int row,
-		int column)
-{
-	if (get_valid_time(*table_times,row,column))
-	{
-		sort_and_commit();
-	}
-	update_buttons();
-}
-
-void
-GPlatesQtWidgets::EditTimeSequenceWidget::handle_cell_activated(
-		int row, 
-		int column)
-{
-
 }
 
 
@@ -687,10 +691,15 @@ GPlatesQtWidgets::EditTimeSequenceWidget::delete_time_from_table(
 		int row)
 {
 
+	if (DEMAND_ZERO_TIME_VALUE_IN_TABLE && row_contains_zero(row,table_times))
+	{
+		return;
+	}
 	// Before we delete the row, delete the action widget. removeRow() messes with the previous/current
 	// row indices, and then calls handle_current_cell_changed, which cannot delete the old action widget, 
 	// the upshot being that we end up with a surplus action widget which we can't get rid of. 
 	table_times->removeCellWidget(row,COLUMN_ACTION);
+	table_times->removeCellWidget(row,COLUMN_TIME);
 	// Delete the given row.
 	table_times->removeRow(row);
 
@@ -711,7 +720,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::delete_time_from_table(
 void
 GPlatesQtWidgets::EditTimeSequenceWidget::sort_and_commit()
 {
-	table_times->sortItems(COLUMN_TIME);
+	sort_and_remove_duplicates_from_table(table_times);
 	set_dirty();
 	Q_EMIT commit_me();
 }
@@ -751,12 +760,25 @@ GPlatesQtWidgets::EditTimeSequenceWidget::insert_multiple()
 		return;
 	}
 	
-	for (double time = youngest_time ; time <= oldest_time ; time += step)
+	double time; // declare here as we use it later outside the loop to check the last time.
+	for (time = youngest_time ; time <= oldest_time ; time += step)
 	{
 		insert_single(time);
 	}
 
+	// We may have hopped over the oldest time. Add it here.
+	if (time > oldest_time)
+	{
+		insert_single(oldest_time);
+	}
 
+
+}
+
+void
+GPlatesQtWidgets::EditTimeSequenceWidget::handle_spinbox_editing_finished()
+{
+	sort_and_commit();
 }
 
 void
@@ -778,6 +800,11 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_remove_all()
 
 	table_times->clearContents();
 	table_times->setRowCount(0);
+
+	if (DEMAND_ZERO_TIME_VALUE_IN_TABLE)
+	{
+		insert_single(0);
+	}
 	update_buttons();
 	sort_and_commit();
 }
@@ -819,15 +846,6 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_use_main_to()
 void
 GPlatesQtWidgets::EditTimeSequenceWidget::setup_connections()
 {
-
-        // See comments in EditGeometryWidget about issues with this signal.
-        QObject::connect(table_times, SIGNAL(cellActivated(int, int)),
-                        this, SLOT(handle_cell_changed(int, int)));
-
-		// See comments in EditGeometryWidget about issues with this signal.
-		QObject::connect(table_times, SIGNAL(cellClicked(int, int)),
-			this, SLOT(handle_cell_clicked(int, int)));
-
         // Signals for managing data entry focus for the "Insert single time" widgets.
         QObject::connect(button_insert_single, SIGNAL(clicked()),
                         this, SLOT(handle_insert_single()));
@@ -861,14 +879,9 @@ GPlatesQtWidgets::EditTimeSequenceWidget::setup_connections()
                          this,
                          SLOT(handle_use_main_to()));
 
-}
+		QObject::connect(d_spin_box_delegate,SIGNAL(editing_finished()),
+						 this,SLOT(handle_spinbox_editing_finished()));
 
-void
-GPlatesQtWidgets::EditTimeSequenceWidget::handle_cell_clicked(
-    int row, int column)
-{
-    //table_times->setCurrentCell(row,column);
-    update_buttons();
 }
 
 void
@@ -876,3 +889,70 @@ GPlatesQtWidgets::EditTimeSequenceWidget::handle_single_time_entered()
 {
     handle_insert_single();
 }
+
+
+GPlatesQtWidgets::EditTimeSequenceSpinBoxDelegate::EditTimeSequenceSpinBoxDelegate(QObject *parent_):
+	QItemDelegate(parent_)
+{
+
+}
+
+QWidget*
+GPlatesQtWidgets::EditTimeSequenceSpinBoxDelegate::createEditor(
+		QWidget *parent_,
+		const QStyleOptionViewItem &/* option */,
+		const QModelIndex &index) const
+{
+	QDoubleSpinBox *editor = new QDoubleSpinBox(parent_);
+	editor->setDecimals(4);
+	editor->setMinimum(0.);
+	editor->setMaximum(1000.);
+	return editor;
+}
+
+void
+GPlatesQtWidgets::EditTimeSequenceSpinBoxDelegate::setEditorData(
+		QWidget *editor,
+		const QModelIndex &index) const
+{
+	double value = index.model()->data(index, Qt::EditRole).toInt();
+	QDoubleSpinBox *spinbox = static_cast<QDoubleSpinBox*>(editor);
+	spinbox->setValue(value);
+}
+
+void
+GPlatesQtWidgets::EditTimeSequenceSpinBoxDelegate::setModelData(
+		QWidget *editor,
+		QAbstractItemModel *model,
+		const QModelIndex &index) const
+{
+	QDoubleSpinBox *spinbox = static_cast<QDoubleSpinBox*>(editor);
+
+	QVariant value = spinbox->value();
+	model->setData(index,value,Qt::EditRole);
+
+	// If we use the closeEditor(QWidget*) signal, for some reason the double contained in the
+	// spinbox has been mangled to an integer when we examine the spinbox value again in the
+	// slot, and this integer is added to the table. I don't know why this is, but if we emit
+	// our own signal here, it appears to prevent this double-to-integer behaviour....
+	Q_EMIT editing_finished();
+}
+
+void
+GPlatesQtWidgets::EditTimeSequenceSpinBoxDelegate::updateEditorGeometry(
+		QWidget *editor,
+		const QStyleOptionViewItem &option,
+		const QModelIndex &/* index */) const
+{
+	editor->setGeometry(option.rect);
+}
+
+void
+GPlatesQtWidgets::EditTimeSequenceSpinBoxDelegate::paint(
+		QPainter *painter,
+		const QStyleOptionViewItem &option,
+		const QModelIndex &index) const
+{
+	painter->drawText(option.rect, Qt::AlignCenter,index.data().toString());
+}
+

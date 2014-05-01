@@ -364,6 +364,8 @@ namespace GPlatesApi
 						format,
 						rfgs_p,
 						reconstructable_file_ptrs,
+						// TODO: Add reconstruction files when available...
+						std::vector<const GPlatesFileIO::File::Reference *>() /*reconstruction_file_ptrs*/,
 						anchor_plate_id,
 						reconstruction_time,
 						// If exporting to Shapefile and there's only *one* input reconstructable file then

@@ -389,24 +389,11 @@ GPlatesOpenGL::GLLight::update_globe_view(
 
 	if (d_scene_lighting_params.is_light_direction_attached_to_view_frame())
 	{
-		// The light direction is in view-space.
-		const GPlatesMaths::UnitVector3D &view_space_light_direction =
-				d_scene_lighting_params.get_globe_view_light_direction();
-		const double light_x = view_space_light_direction.x().dval();
-		const double light_y = view_space_light_direction.y().dval();
-		const double light_z = view_space_light_direction.z().dval();
-
-		// Need to reverse rotate back to world-space.
-		// We'll assume the view orientation matrix stores only a 3x3 rotation.
-		// In which case the inverse matrix is the transpose.
-		const GLMatrix &view = d_view_orientation;
-
-		// Multiply the view-space light direction by the transpose of the 3x3 view orientation.
-		d_globe_view_light_direction = GPlatesMaths::Vector3D(
-				view.get_element(0,0) * light_x + view.get_element(1,0) * light_y + view.get_element(2,0) * light_z,
-				view.get_element(0,1) * light_x + view.get_element(1,1) * light_y + view.get_element(2,1) * light_z,
-				view.get_element(0,2) * light_x + view.get_element(1,2) * light_y + view.get_element(2,2) * light_z)
-						.get_normalisation();
+		// Reverse rotate light direction from view-space back to world-space.
+		d_globe_view_light_direction =
+				GPlatesGui::transform_globe_view_space_light_direction_to_world_space(
+						d_scene_lighting_params.get_globe_view_light_direction(),
+						d_view_orientation);
 	}
 	else // light direction is attached to world-space...
 	{

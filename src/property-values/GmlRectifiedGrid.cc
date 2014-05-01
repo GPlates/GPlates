@@ -78,9 +78,11 @@ GPlatesPropertyValues::GmlRectifiedGrid::create(
 
 	// The origin is the top-left corner in the georeferencing.
 	Georeferencing::parameters_type params = georeferencing->parameters();
-	GmlPoint::non_null_ptr_type origin_ = GmlPoint::create(
-			/* this version of create takes (lon, lat) */
-			std::make_pair(params.top_left_x_coordinate, params.top_left_y_coordinate));
+	GmlPoint::non_null_ptr_type origin_ = GmlPoint::create_from_pos_2d(
+			// This version of create takes (lat, lon) but doesn't check for valid lat/lon ranges
+			// in case georeferenced coordinates are not in a lat/lon coordinate system.
+			// For example they could be in a *projection* coordinate system...
+			std::make_pair(params.top_left_y_coordinate/*lat*/, params.top_left_x_coordinate/*lon*/));
 
 	// The x-axis (longitude) offset vector.
 	offset_vector_type longitude_offset_vector;
@@ -202,13 +204,16 @@ GPlatesPropertyValues::GmlRectifiedGrid::convert_to_georeferencing() const
 	const offset_vector_type &longitude_offset_vector = revision.offset_vectors[0];
 	const offset_vector_type &latitude_offset_vector = revision.offset_vectors[1];
 
-	GPlatesMaths::LatLonPoint llp = revision.origin.get_revisionable()->point_in_lat_lon();
+	// NOTE: We don't call 'GmlPoint::get_point_in_lat_lon()' because that checks the lat/lon are in
+	// valid ranges and our georeferenced origin might be in a *projection* coordinate system
+	// (ie, not a lat/lon coordinate system) and hence could easily be outside the valid lat/lon range.
+	const std::pair<double, double> &origin_2d = revision.origin.get_revisionable()->get_point_2d();
 
 	Georeferencing::parameters_type params = {{{
-		llp.longitude(),
+		origin_2d.second/*longitude*/,
 		longitude_offset_vector[0],
 		latitude_offset_vector[0],
-		llp.latitude(),
+		origin_2d.first/*latitude*/,
 		longitude_offset_vector[1],
 		latitude_offset_vector[1]
 	}}};

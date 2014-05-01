@@ -445,7 +445,7 @@
           </sizepolicy>
          </property>
          <property name="suffix">
-          <string>°</string>
+          <string/>
          </property>
          <property name="decimals">
           <number>4</number>
@@ -467,7 +467,7 @@
           </sizepolicy>
          </property>
          <property name="suffix">
-          <string>°</string>
+          <string/>
          </property>
          <property name="decimals">
           <number>4</number>
@@ -489,7 +489,7 @@
           </sizepolicy>
          </property>
          <property name="suffix">
-          <string>°</string>
+          <string/>
          </property>
          <property name="decimals">
           <number>4</number>
@@ -511,7 +511,7 @@
           </sizepolicy>
          </property>
          <property name="suffix">
-          <string>°</string>
+          <string/>
          </property>
          <property name="decimals">
           <number>4</number>
@@ -533,7 +533,7 @@
           </sizepolicy>
          </property>
          <property name="suffix">
-          <string>°</string>
+          <string/>
          </property>
          <property name="decimals">
           <number>4</number>
@@ -555,7 +555,7 @@
           </sizepolicy>
          </property>
          <property name="suffix">
-          <string>°</string>
+          <string/>
          </property>
          <property name="decimals">
           <number>4</number>

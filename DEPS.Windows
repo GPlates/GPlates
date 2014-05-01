@@ -77,7 +77,7 @@ Qt
       * Executable files: \bin
   6. Add the Qt \bin and \qmake directories to the PATH environment variable
      (see above).
-	 
+     
 GLEW
   1. Download and extract glew-1.5.4-win32.zip from: http://glew.sourceforge.net/
   2. Add the \include directory to the CMAKE_INCLUDE_PATH environment variable.
@@ -101,19 +101,19 @@ Boost
 
   1. Download and extract the source code for boost 1.39 or higher from http://www.boost.org/users/download/
      NOTE: You can no longer get pre-compiled binaries from http://www.boostpro.com/download
-	 * Under 'Select Default Variants' select your compiler (eg, 'Visual C++ 8.0'),
-	   and select all 'Variants'.
+     * Under 'Select Default Variants' select your compiler (eg, 'Visual C++ 8.0'),
+       and select all 'Variants'.
      * In addition to the default packages, also install "Program Options",
-	    "Test (unit test framework)" and "Thread".
+        "Test (unit test framework)" and "Thread".
   2. Follow the instructions in the Getting Started guide at http://www.boost.org/doc/libs/1_53_0/more/getting_started/windows.html
      Essentially (for Visual Studio 2005) this involves:
-	 * Starting a dos command-line window (preferably Visual Studio Command Prompt).
-	 * Running '.\bootstrap vc8' (where vc8 is for Visual Studio 8.0 or 2005).
-	 * Running '.\bjam install --prefix=C:\SDK\boost\boost_1_39' or whichever path you choose to install.
-	   Installs the static library versions (library files with the 'lib' prefix).
-	   These static libraries are used by CGAL.
-	 * Running '.\bjam link=shared threading=multi install --prefix=C:\SDK\boost\boost_1_39'.
-	   These shared libraries are used by GPlates.
+     * Starting a dos command-line window (preferably Visual Studio Command Prompt).
+     * Running '.\bootstrap vc8' (where vc8 is for Visual Studio 8.0 or 2005).
+     * Running '.\bjam install --prefix=C:\SDK\boost\boost_1_39' or whichever path you choose to install.
+       Installs the static library versions (library files with the 'lib' prefix).
+       These static libraries are used by CGAL.
+     * Running '.\bjam link=shared threading=multi install --prefix=C:\SDK\boost\boost_1_39'.
+       These shared libraries are used by GPlates.
   2. Add the C:\SDK\boost\boost_1_xx\include\boost_1_xx directory to the CMAKE_INCLUDE_PATH environment
      variable.
   3. Add the C:\SDK\boost\boost_1_xx\lib directory to the CMAKE_LIBRARY_PATH
@@ -122,6 +122,9 @@ Boost
   Note that the boost-python (sub)library will link against your python installation
   and, at runtime, will expect a DLL of that python version. For example, if you build boost with python version 2.7
   then, at runtime, the python DLL (version 2.7) should exist in the PATH.
+  To get boost to find python at compile time you might also need to add something like...
+     using python : 2.7 : C:\\SDK\\python\\Python-2.7.6 : C:\\SDK\\python\\Python-2.7.6\\Include : C:\\SDK\\python\\Python-2.7.6\\libs ;
+  ...to "C:\SDK\boost\boost_1_39\tools\build\v2\user-config.jam" for example.
   Note if you are using python 2.6.3 or above then you need a boost version greater than 1.40 otherwise you'll get the following
   exception during GPlates startup 'AttributeError: 'Boost.Python.StaticProperty' object attribute '__doc__' is read-only'
   - see https://bugs.launchpad.net/ubuntu/+source/boost1.38/+bug/457688
@@ -139,6 +142,7 @@ Proj4
      o You can install it to the same location where you extracted the source code (eg, "INSTDIR=C:\SDK\proj\proj-4.7.0").
   3. Add the 'include' directory to CMAKE_INCLUDE_PATH environment variable (eg, "C:\SDK\proj\proj-4.7.0\include").
   4. Add the 'lib' directory to the CMAKE_LIBRARY_PATH environment variable (eg, "C:\SDK\proj\proj-4.7.0\lib").
+  5. Add the 'bin' directory to the PATH environment variable so the PROJ DLL can be found at run-time (eg, "C:\SDK\proj\proj-4.7.0\bin").
 
 NetCDF
 
@@ -149,8 +153,8 @@ NetCDF
        o So download the associated source code from "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/".
        o For example, "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/netcdf-4.1.1-win32-src.zip".
     3. Copy the "netcdf.h" from step 2 into the extracted location from step 1 (eg, "C:\SDK\netcdf\netcdf-4.1.1").
-	   o There appears to be two different "netcdf.h" files (in the 'libsrc/' and 'libsrc4/' subdirectories).
-	   o If this is the case then copy the "netcdf.h" from the 'libsrc4' subdirectory.
+       o There appears to be two different "netcdf.h" files (in the 'libsrc/' and 'libsrc4/' subdirectories).
+       o If this is the case then copy the "netcdf.h" from the 'libsrc4' subdirectory.
     4. Also add this location to the PATH environment variable (so the NetCDF DLL can be found at run-time).
        o Eg, Add "C:\SDK\netcdf\netcdf-4.1.1" to the PATH environment variable.
     5. This library will get compiled into GDAL (see GDAL below).
@@ -166,43 +170,59 @@ GDAL
          NETCDF_SETTING=yes
          NETCDF_LIB=C:\SDK\netcdf\netcdf-4.1.1\netcdf.lib
          NETCDF_INC_DIR=C:\SDK\netcdf\netcdf-4.1.1
-	4. Uncomment "#WIN64=YES" in "nmake.opt" for 64-bit build.
-    5. Generate a new Visual Studio solution file,
+    4. Edit the "nmake.opt" file under the section labelled "# Uncomment the following lines to link PROJ.4 library statically.",
+       o Uncomment the following three lines and specify the location of the PROJ4 library (see PROJ4 above).
+       o For example, after editing, you might have something like:
+         PROJ_FLAGS = -DPROJ_STATIC
+         PROJ_INCLUDE = -Ic:\SDK\proj\proj-4.7.0\include
+         PROJ_LIBRARY = c:\SDK\proj\proj-4.7.0\lib\proj.lib
+       o This helps to avoid a dynamic library loading error (for PROJ4) if the PROJ4 DLL is not in the PATH when
+         a raster with an inbuilt spatial reference system (eg, a projection) is loaded into GPlates.
+       o Also note that 'proj.lib' (static lib) should be specified and not 'proj_i.lib' (DLL interface lib).
+    5. Uncomment "#WIN64=YES" in "nmake.opt" for 64-bit build.
+    6. Generate a new Visual Studio solution file,
        o Run "makegdal_gen.bat 8.00 > makegdal80.vcproj" if you are using Visual Studio 2005.
        o Run "makegdal_gen.bat 9.00 > makegdal90.vcproj" if you are using Visual Studio 2008.
-    6. Use Visual Studio to build GDAL.
+    7. Use Visual Studio to build GDAL.
        o For example, by opening the 'makegdal80.vcproj' project file with Visual Studio 2005.
        o Selecting 'Release' as the build type.
-    7. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-1.9.0").
-    8. Also add the root path of GDAL to the PATH environment variable (so the GDAL DLL can be found at run-time).
+	   o NOTE: It seems that selecting 'Debug' as the build type does not generate a debug build.
+	     Instead you'll need to build via the command-line (see below) using the 'DEBUG=1' option.
+	8. Alternatively, instead of building with a solution file, you can bring up a Visual Studio command prompt and type:
+	     nmake /f makefile.vc MSVC_VER=1500
+	   o If 'MSVC_VER' is not specified it appears (in "nmake.opt") to default to 1500 (Visual Studio 2008).
+	   o If you want a debug build then add 'DEBUG=1'.
+    9. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-1.9.0").
+    10. Also add the root path of GDAL to the PATH environment variable (so the GDAL DLL can be found at run-time).
   
 CGAL
 
   1. Get and install the CGAL 3.8 source code from http://www.cgal.org/:
      * Download and run 'CGAL-3.8-Setup.exe'.
-	 * Under 'Select Default Variants' leave everything unticked (except for 'Platforms').
-	 * Under 'Choose Components' untick everything ('Main CGAL' cannot be unticked).
-	 * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-3.8'.
-	     * In particular, do not install under Program Files on Windows Vista and
-	       above because you will likely run into permissions issues later.
-	 * Tick 'CGAL_DIR' environment variable - note: this is necessary for GPlates to be able to find CGAL.
+     * Under 'Select Default Variants' leave everything unticked (except for 'Platforms').
+     * Under 'Choose Components' untick everything ('Main CGAL' cannot be unticked).
+     * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-3.8'.
+         * In particular, do not install under Program Files on Windows Vista and
+           above because you will likely run into permissions issues later.
+     * Tick 'CGAL_DIR' environment variable - note: this is necessary for GPlates to be able to find CGAL.
   2. Prepare CGAL for building by running 'cmake-gui.exe' (this requires CMAKE to have already been installed):
+     * NOTE: Make sure you run 'cmake-gui.exe' as administrator (right-click and select 'Run as administrator').
      * Specify the CGAL installation location as the source and build directories.
      * Click the 'Configure' button.
-	     * If an error dialog pops up and there's red text that complains it cannot find the boost library
-		   boost_thread then (if it's not a path issue) it could be that you don't have the 'static' library
-		   versions of the boost libraries (the ones with the 'lib' prefix in the library filenames).
-	 * Untick all 'WITH_*' options.
-	 * Change 'CMAKE_INSTALL_PREFIX' to the installation location (eg, 'C:/SDK/cgal/CGAL-3.8').
-	 * Click the 'Configure' button again.
-	 * Click the 'Generate' button.
-	 * If this is successful then a Visual Studio solution file 'CGAL.sln'.
+         * If an error dialog pops up and there's red text that complains it cannot find the boost library
+           boost_thread then (if it's not a path issue) it could be that you don't have the 'static' library
+           versions of the boost libraries (the ones with the 'lib' prefix in the library filenames).
+     * Untick all 'WITH_*' options.
+     * Change 'CMAKE_INSTALL_PREFIX' to the installation location (eg, 'C:/SDK/cgal/CGAL-3.8').
+     * Click the 'Configure' button again.
+     * Click the 'Generate' button.
+     * If this is successful then a Visual Studio solution file 'CGAL.sln'.
   3. Build CGAL:
      * Open the generated Visual Studio solution file 'CGAL.sln'.
-	 * Select the 'Release' build type.
-	 * (GPlates developers will also want to build 'Debug', etc so that similar builds in
-	   GPlates can find the CGAL library of the correct build type).
-	 * Build the 'INSTALL' project.
+     * Select the 'Release' build type.
+     * (GPlates developers will also want to build 'Debug', etc so that similar builds in
+       GPlates can find the CGAL library of the correct build type).
+     * Build the 'INSTALL' project.
   When GPlates is built it should find CGAL via the "CGAL_DIR" environment variable.
   Note: If you are compiling CGAL 3.7 or above using Visual Studio 2005 then you'll need to modify
   a few CGAL headers to get it to compile (because VS2005 no longer supported) - see the last post at

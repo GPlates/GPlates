@@ -31,6 +31,7 @@
 #include "FileInfo.h"
 #include "OgrFormatFlowlineExport.h"
 #include "OgrGeometryExporter.h"
+#include "OgrUtils.h"
 
 #include "app-logic/FlowlineUtils.h"
 #include "app-logic/ReconstructedFlowline.h"
@@ -107,6 +108,7 @@ namespace
 	create_kvd_from_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,		
 		const referenced_files_collection_type &referenced_files,	
+		const referenced_files_collection_type &reconstruction_files,
 		const double &reconstruction_time,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &seed_point,
@@ -118,7 +120,7 @@ namespace
 		finder.visit_feature(feature_ref);
 
 
-		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type> elements;
+		GpmlKeyValueDictionary::non_null_ptr_type dictionary = GpmlKeyValueDictionary::create();
 
 		// (Shapefile attribute fields are limited to 10 characters in length).
 
@@ -132,7 +134,7 @@ namespace
 						key,
 						name_value,
 						StructuralType::create_xsi("string"));
-		elements.push_back(name_element);	
+		dictionary->elements().push_back(name_element);	
 
 		// Seed points.
 		key = XsString::create("SEED");
@@ -145,7 +147,7 @@ namespace
 						key,
 						flowline_seeds_value,
 						StructuralType::create_xsi("string"));
-		elements.push_back(flowline_seeds_element);
+		dictionary->elements().push_back(flowline_seeds_element);
 
 		// Anchor plate.
 		key = XsString::create("ANCHOR");
@@ -157,7 +159,7 @@ namespace
 						key,
 						anchor_value,
 						StructuralType::create_xsi("integer"));
-		elements.push_back(anchor_element);	
+		dictionary->elements().push_back(anchor_element);	
 
 		// Reconstruction time.
 		key = XsString::create("TIME");
@@ -169,53 +171,22 @@ namespace
 						key,
 						time_value,
 						StructuralType::create_xsi("double"));
-		elements.push_back(time_element);	
+		dictionary->elements().push_back(time_element);	
 
 		if (should_add_referenced_files)
 		{
-			// Referenced file(s).
-			// As this info is output on a geometry by geometry basis (there's no place in a shapefile 
-			// for global attributes...) I could give each geometry its correct file, rather 
-			// then write out the whole list. For now at least I'll just export the entire list for
-			// each geometry. 
+			GPlatesFileIO::OgrUtils::add_filename_sequence_to_kvd(
+						QString("FILE"),
+						referenced_files,
+						dictionary);
 
-			// Attribute field names will have the form "FILE1", "FILE2" etc...
-			QString file_string("FILE");
-
-			int file_count = 1;
-			GPlatesFileIO::OgrFormatFlowlineExport::referenced_files_collection_type::const_iterator file_iter;
-			for (file_iter = referenced_files.begin();
-				file_iter != referenced_files.end();
-				++file_iter, ++file_count)
-			{
-				const GPlatesFileIO::File::Reference *file = *file_iter;
-
-				QString count_string = QString("%1").arg(file_count);
-				QString field_name = file_string + count_string;
-
-				// Some files might not actually exist yet if the user created a new
-				// feature collection internally and hasn't saved it to file yet.
-				if (!GPlatesFileIO::file_exists(file->get_file_info()))
-				{
-					continue;
-				}
-
-				QString filename = file->get_file_info().get_display_name(false/*use_absolute_path_name*/);
-
-				key = XsString::create(GPlatesUtils::make_icu_string_from_qstring(field_name));
-				XsString::non_null_ptr_type file_value = 
-					XsString::create(GPlatesUtils::make_icu_string_from_qstring(filename));
-
-				GpmlKeyValueDictionaryElement::non_null_ptr_type element =
-						GpmlKeyValueDictionaryElement::create(
-								key,
-								file_value,
-								StructuralType::create_xsi("string"));
-				elements.push_back(element);	
-			}
+			GPlatesFileIO::OgrUtils::add_filename_sequence_to_kvd(
+						QString("RECONFILE"),
+						reconstruction_files,
+						dictionary);
 		}
 
-		return GpmlKeyValueDictionary::create(elements);
+		return dictionary;
 
 	}
 }
@@ -226,6 +197,7 @@ GPlatesFileIO::OgrFormatFlowlineExport::export_flowlines(
 		const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
+		const referenced_files_collection_type &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool should_export_referenced_files)
@@ -263,8 +235,9 @@ GPlatesFileIO::OgrFormatFlowlineExport::export_flowlines(
 				= create_kvd_from_feature(
 					feature_ref,
 					referenced_files,
-					reconstruction_anchor_plate_id,
+					active_reconstruction_files,
 					reconstruction_time,
+					reconstruction_anchor_plate_id,
 					rf->seed_point(),
 					should_export_referenced_files);
 

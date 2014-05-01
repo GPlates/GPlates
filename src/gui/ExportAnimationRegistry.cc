@@ -23,16 +23,20 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <utility>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QString>
 
 #include "ExportAnimationRegistry.h"
 
+#include "ExportAnimationType.h"
 #include "ExportCitcomsResolvedTopologyAnimationStrategy.h"
 #include "ExportCoRegistrationAnimationStrategy.h"
 #include "ExportFileNameTemplateValidationUtils.h"
 #include "ExportFlowlineAnimationStrategy.h"
+#include "ExportImageAnimationStrategy.h"
 #include "ExportMotionPathAnimationStrategy.h"
 #include "ExportRasterAnimationStrategy.h"
 #include "ExportReconstructedGeometryAnimationStrategy.h"
@@ -43,12 +47,14 @@
 #include "ExportVelocityAnimationStrategy.h"
 
 #include "file-io/MultiPointVectorFieldExport.h"
+#include "file-io/RasterWriter.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
 #include "qt-widgets/ExportCitcomsResolvedTopologyOptionsWidget.h"
 #include "qt-widgets/ExportFlowlineOptionsWidget.h"
+#include "qt-widgets/ExportImageOptionsWidget.h"
 #include "qt-widgets/ExportMotionPathOptionsWidget.h"
 #include "qt-widgets/ExportRasterOptionsWidget.h"
 #include "qt-widgets/ExportReconstructedGeometryOptionsWidget.h"
@@ -1063,172 +1069,201 @@ GPlatesGui::register_default_export_animation_types(
 			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
 	//
-	// Export rasters
+	// Export images (screenshots of viewport)
 	//
 
 	// By default output image the same size as main viewport window (and don't constrain aspect ratio).
 	const ExportOptionsUtils::ExportImageResolutionOptions default_raster_image_resolution_export_options(
 			false/*constrain_aspect_ratio*/);
 
-	registry.register_exporter(
-			ExportAnimationType::get_export_id(
-					ExportAnimationType::RASTER,
-					ExportAnimationType::BMP),
-			ExportRasterAnimationStrategy::const_configuration_ptr(
-					new ExportRasterAnimationStrategy::Configuration(
-							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::BMP),
-							ExportRasterAnimationStrategy::Configuration::BMP,
-							default_raster_image_resolution_export_options)),
-			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			boost::bind(
-					// 'static_cast' is because some compilers have trouble determining
-					// which overload of 'create_export_options_widget()' to use...
-					static_cast<create_export_options_widget_function_pointer_type>(
-							&create_export_options_widget<
-									GPlatesQtWidgets::ExportRasterOptionsWidget,
-									ExportRasterAnimationStrategy>),
-					_1, _2, _3),
-			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+	// A list of image formats to register.
+	typedef std::pair<ExportAnimationType::Format, ExportImageAnimationStrategy::Configuration::ImageType>
+			image_format_type;
+	const image_format_type image_formats[] =
+	{
+		std::make_pair(ExportAnimationType::BMP, ExportImageAnimationStrategy::Configuration::BMP),
+		std::make_pair(ExportAnimationType::JPG, ExportImageAnimationStrategy::Configuration::JPG),
+		std::make_pair(ExportAnimationType::JPEG, ExportImageAnimationStrategy::Configuration::JPEG),
+		std::make_pair(ExportAnimationType::PNG, ExportImageAnimationStrategy::Configuration::PNG),
+		std::make_pair(ExportAnimationType::PPM, ExportImageAnimationStrategy::Configuration::PPM),
+		std::make_pair(ExportAnimationType::TIFF, ExportImageAnimationStrategy::Configuration::TIFF),
+		std::make_pair(ExportAnimationType::XBM, ExportImageAnimationStrategy::Configuration::XBM),
+		std::make_pair(ExportAnimationType::XPM, ExportImageAnimationStrategy::Configuration::XPM)
+	};
 
-	registry.register_exporter(
-			ExportAnimationType::get_export_id(
-					ExportAnimationType::RASTER,
-					ExportAnimationType::JPG),
-			ExportRasterAnimationStrategy::const_configuration_ptr(
-					new ExportRasterAnimationStrategy::Configuration(
-							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::JPG),
-							ExportRasterAnimationStrategy::Configuration::JPG,
-							default_raster_image_resolution_export_options)),
-			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			boost::bind(
-					// 'static_cast' is because some compilers have trouble determining
-					// which overload of 'create_export_options_widget()' to use...
-					static_cast<create_export_options_widget_function_pointer_type>(
-							&create_export_options_widget<
-									GPlatesQtWidgets::ExportRasterOptionsWidget,
-									ExportRasterAnimationStrategy>),
-					_1, _2, _3),
-			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+	// Iterate over the numerical raster formats.
+	BOOST_FOREACH(const image_format_type &image_format, image_formats)
+	{
+		const ExportAnimationType::Format format = image_format.first;
+		const ExportImageAnimationStrategy::Configuration::ImageType image_type = image_format.second;
 
-	registry.register_exporter(
-			ExportAnimationType::get_export_id(
-					ExportAnimationType::RASTER,
-					ExportAnimationType::JPEG),
-			ExportRasterAnimationStrategy::const_configuration_ptr(
-					new ExportRasterAnimationStrategy::Configuration(
-							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::JPEG),
-							ExportRasterAnimationStrategy::Configuration::JPEG,
-							default_raster_image_resolution_export_options)),
-			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			boost::bind(
-					// 'static_cast' is because some compilers have trouble determining
-					// which overload of 'create_export_options_widget()' to use...
-					static_cast<create_export_options_widget_function_pointer_type>(
-							&create_export_options_widget<
-									GPlatesQtWidgets::ExportRasterOptionsWidget,
-									ExportRasterAnimationStrategy>),
-					_1, _2, _3),
-			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+		registry.register_exporter(
+				ExportAnimationType::get_export_id(
+						ExportAnimationType::IMAGE,
+						format),
+				ExportImageAnimationStrategy::const_configuration_ptr(
+						new ExportImageAnimationStrategy::Configuration(
+								add_export_filename_extension("image_%0.2fMa", format),
+								image_type,
+								default_raster_image_resolution_export_options)),
+				&create_animation_strategy<ExportImageAnimationStrategy>,
+				boost::bind(
+						// 'static_cast' is because some compilers have trouble determining
+						// which overload of 'create_export_options_widget()' to use...
+						static_cast<create_export_options_widget_function_pointer_type>(
+								&create_export_options_widget<
+										GPlatesQtWidgets::ExportImageOptionsWidget,
+										ExportImageAnimationStrategy>),
+						_1, _2, _3),
+				&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+	}
 
-	registry.register_exporter(
-			ExportAnimationType::get_export_id(
-					ExportAnimationType::RASTER,
-					ExportAnimationType::PNG),
-			ExportRasterAnimationStrategy::const_configuration_ptr(
-					new ExportRasterAnimationStrategy::Configuration(
-							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::PNG),
-							ExportRasterAnimationStrategy::Configuration::PNG,
-							default_raster_image_resolution_export_options)),
-			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			boost::bind(
-					// 'static_cast' is because some compilers have trouble determining
-					// which overload of 'create_export_options_widget()' to use...
-					static_cast<create_export_options_widget_function_pointer_type>(
-							&create_export_options_widget<
-									GPlatesQtWidgets::ExportRasterOptionsWidget,
-									ExportRasterAnimationStrategy>),
-					_1, _2, _3),
-			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+	//
+	// Export colour rasters
+	//
 
-	registry.register_exporter(
-			ExportAnimationType::get_export_id(
-					ExportAnimationType::RASTER,
-					ExportAnimationType::PPM),
-			ExportRasterAnimationStrategy::const_configuration_ptr(
-					new ExportRasterAnimationStrategy::Configuration(
-							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::PPM),
-							ExportRasterAnimationStrategy::Configuration::PPM,
-							default_raster_image_resolution_export_options)),
-			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			boost::bind(
-					// 'static_cast' is because some compilers have trouble determining
-					// which overload of 'create_export_options_widget()' to use...
-					static_cast<create_export_options_widget_function_pointer_type>(
-							&create_export_options_widget<
-									GPlatesQtWidgets::ExportRasterOptionsWidget,
-									ExportRasterAnimationStrategy>),
-					_1, _2, _3),
-			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+	// Default raster resolution (degrees) - corresponds to a 6 minute global grid.
+	const double default_raster_resolution_in_degrees = 0.1;
+	// Default raster lat/lon extents cover entire globe.
+	const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type default_raster_lat_lon_extents =
+	{{{
+		90/*top*/,
+		-90/*bottom*/,
+		-180/*left*/,
+		180/*right*/
+	}}};
 
-	registry.register_exporter(
-			ExportAnimationType::get_export_id(
-					ExportAnimationType::RASTER,
-					ExportAnimationType::TIFF),
-			ExportRasterAnimationStrategy::const_configuration_ptr(
-					new ExportRasterAnimationStrategy::Configuration(
-							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::TIFF),
-							ExportRasterAnimationStrategy::Configuration::TIFF,
-							default_raster_image_resolution_export_options)),
-			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			boost::bind(
-					// 'static_cast' is because some compilers have trouble determining
-					// which overload of 'create_export_options_widget()' to use...
-					static_cast<create_export_options_widget_function_pointer_type>(
-							&create_export_options_widget<
-									GPlatesQtWidgets::ExportRasterOptionsWidget,
-									ExportRasterAnimationStrategy>),
-					_1, _2, _3),
-			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
 
-	registry.register_exporter(
-			ExportAnimationType::get_export_id(
-					ExportAnimationType::RASTER,
-					ExportAnimationType::XBM),
-			ExportRasterAnimationStrategy::const_configuration_ptr(
-					new ExportRasterAnimationStrategy::Configuration(
-							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::XBM),
-							ExportRasterAnimationStrategy::Configuration::XBM,
-							default_raster_image_resolution_export_options)),
-			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			boost::bind(
-					// 'static_cast' is because some compilers have trouble determining
-					// which overload of 'create_export_options_widget()' to use...
-					static_cast<create_export_options_widget_function_pointer_type>(
-							&create_export_options_widget<
-									GPlatesQtWidgets::ExportRasterOptionsWidget,
-									ExportRasterAnimationStrategy>),
-					_1, _2, _3),
-			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+	// Determine which colour raster formats are supported.
+	const GPlatesFileIO::RasterWriter::supported_formats_type colour_raster_supported_formats =
+			GPlatesFileIO::RasterWriter::get_supported_formats();
 
-	registry.register_exporter(
-			ExportAnimationType::get_export_id(
-					ExportAnimationType::RASTER,
-					ExportAnimationType::XPM),
-			ExportRasterAnimationStrategy::const_configuration_ptr(
-					new ExportRasterAnimationStrategy::Configuration(
-							add_export_filename_extension("raster_%0.2fMa", ExportAnimationType::XPM),
-							ExportRasterAnimationStrategy::Configuration::XPM,
-							default_raster_image_resolution_export_options)),
-			&create_animation_strategy<ExportRasterAnimationStrategy>,
-			boost::bind(
-					// 'static_cast' is because some compilers have trouble determining
-					// which overload of 'create_export_options_widget()' to use...
-					static_cast<create_export_options_widget_function_pointer_type>(
-							&create_export_options_widget<
-									GPlatesQtWidgets::ExportRasterOptionsWidget,
-									ExportRasterAnimationStrategy>),
-					_1, _2, _3),
-			&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_without_percent_P);
+	// A list of colour raster formats we will try to register.
+	// This includes colour-only formats and numerical formats that also support colour (such as GeoTIFF).
+	const ExportAnimationType::Format colour_raster_formats[] =
+	{
+		ExportAnimationType::NETCDF,
+		ExportAnimationType::GMT_NETCDF,
+		ExportAnimationType::GEOTIFF,
+		ExportAnimationType::ERDAS_IMAGINE,
+		ExportAnimationType::ERMAPPER,
+		ExportAnimationType::BMP,
+		ExportAnimationType::JPG,
+		ExportAnimationType::JPEG,
+		ExportAnimationType::PNG,
+		ExportAnimationType::PPM,
+#if 0 // Already taken care of by GEOTIFF (which has same filename extension and supports georeferencing)...
+		ExportAnimationType::TIFF,
+#endif
+		ExportAnimationType::XBM,
+		ExportAnimationType::XPM
+	};
+
+	// Iterate over the colour raster formats.
+	BOOST_FOREACH(const ExportAnimationType::Format format, colour_raster_formats)
+	{
+		// Do not register current colour raster format if it is not supported.
+		const QString &filename_ext = ExportAnimationType::get_export_format_filename_extension(format);
+		GPlatesFileIO::RasterWriter::supported_formats_type::const_iterator supported_formats_iter =
+				colour_raster_supported_formats.find(filename_ext);
+		if (supported_formats_iter == colour_raster_supported_formats.end())
+		{
+			continue;
+		}
+
+		// Make sure the format supports writing 'RGBA' rasters.
+		// Well some, like jpeg, support RGB (without alpha) but we include it anyway.
+		// All our (possibly reconstructed) colour rasters are in RGBA format (numerical rasters
+		// are converted to colour using a palette).
+		const GPlatesFileIO::RasterWriter::FormatInfo &format_info = supported_formats_iter->second;
+		if (std::find(format_info.band_types.begin(), format_info.band_types.end(),
+			GPlatesPropertyValues::RasterType::RGBA8) == format_info.band_types.end())
+		{
+			continue;
+		}
+
+		registry.register_exporter(
+				ExportAnimationType::get_export_id(
+						ExportAnimationType::COLOUR_RASTER,
+						format),
+				ExportRasterAnimationStrategy::const_configuration_ptr(
+						new ExportRasterAnimationStrategy::Configuration(
+								add_export_filename_extension("raster_%P_%0.2fMa", format),
+								ExportRasterAnimationStrategy::Configuration::COLOUR,
+								default_raster_resolution_in_degrees,
+								default_raster_lat_lon_extents)),
+				&create_animation_strategy<ExportRasterAnimationStrategy>,
+				boost::bind(
+						// 'static_cast' is because some compilers have trouble determining
+						// which overload of 'create_export_options_widget()' to use...
+						static_cast<create_export_options_widget_function_pointer_type>(
+								&create_export_options_widget<
+										GPlatesQtWidgets::ExportRasterOptionsWidget,
+										ExportRasterAnimationStrategy>),
+						_1, _2, _3),
+				&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
+	}
+
+	//
+	// Export numerical rasters
+	//
+
+	// Determine which numerical raster formats are supported.
+	const GPlatesFileIO::RasterWriter::supported_formats_type numerical_raster_supported_formats =
+			GPlatesFileIO::RasterWriter::get_supported_formats();
+
+	// A list of numerical raster formats we will try to register.
+	const ExportAnimationType::Format numerical_raster_formats[] =
+	{
+		ExportAnimationType::NETCDF,
+		ExportAnimationType::GMT_NETCDF,
+		ExportAnimationType::GEOTIFF,
+		ExportAnimationType::ERDAS_IMAGINE,
+		ExportAnimationType::ERMAPPER
+	};
+
+	// Iterate over the numerical raster formats.
+	BOOST_FOREACH(const ExportAnimationType::Format format, numerical_raster_formats)
+	{
+		// Do not register current numerical raster format if it is not supported.
+		const QString &filename_ext = ExportAnimationType::get_export_format_filename_extension(format);
+		GPlatesFileIO::RasterWriter::supported_formats_type::const_iterator supported_formats_iter =
+				numerical_raster_supported_formats.find(filename_ext);
+		if (supported_formats_iter == numerical_raster_supported_formats.end())
+		{
+			continue;
+		}
+
+		// Make sure the format supports writing 'float' rasters.
+		// All our (possibly reconstructed) numerical rasters are in float format (even if loaded from integers).
+		const GPlatesFileIO::RasterWriter::FormatInfo &format_info = supported_formats_iter->second;
+		if (std::find(format_info.band_types.begin(), format_info.band_types.end(),
+			GPlatesPropertyValues::RasterType::FLOAT) == format_info.band_types.end())
+		{
+			continue;
+		}
+
+		registry.register_exporter(
+				ExportAnimationType::get_export_id(
+						ExportAnimationType::NUMERICAL_RASTER,
+						format),
+				ExportRasterAnimationStrategy::const_configuration_ptr(
+						new ExportRasterAnimationStrategy::Configuration(
+								add_export_filename_extension("raster_data_%P_%0.2fMa", format),
+								ExportRasterAnimationStrategy::Configuration::NUMERICAL,
+								default_raster_resolution_in_degrees,
+								default_raster_lat_lon_extents)),
+				&create_animation_strategy<ExportRasterAnimationStrategy>,
+				boost::bind(
+						// 'static_cast' is because some compilers have trouble determining
+						// which overload of 'create_export_options_widget()' to use...
+						static_cast<create_export_options_widget_function_pointer_type>(
+								&create_export_options_widget<
+										GPlatesQtWidgets::ExportRasterOptionsWidget,
+										ExportRasterAnimationStrategy>),
+						_1, _2, _3),
+				&ExportFileNameTemplateValidationUtils::is_valid_template_filename_sequence_with_percent_P);
+	}
 
 	//
 	// Export flowlines

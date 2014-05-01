@@ -19,6 +19,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <sstream>
 #include <string>
 #include <QDebug>
@@ -41,6 +42,7 @@
 #include "gui/FileIOFeedback.h"
 
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/MultiPointOnSphere.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -60,20 +62,29 @@
 namespace
 {
 	const std::string NUM_LATITUDE_GRID_INTERVALS_PLACE_HOLDER = "%n";
+	const std::string NUM_LONGITUDE_GRID_INTERVALS_PLACE_HOLDER = "%m";
 
 	const char *HELP_DIALOG_TITLE_CONFIGURATION = QT_TR_NOOP("Configuration parameters");
 
 	const char *HELP_DIALOG_TEXT_CONFIGURATION = QT_TR_NOOP(
 			"<html><body>"
 			"<p/>"
+			"<p>The latitudinal and longitudinal extents can be used to limit the generated node points "
+			"to a specific geographic region (the default is global).</p>"
+			"<p>The <i>'Place node points at centre of latitude/longitude cells'</i> check box determines "
+			"whether generated nodes (points) are placed at the centres of latitude/longitude cells "
+			"or at cell corners.</p>"
 			"<p>The <i>'number of latitudinal grid intervals'</i> parameter specifies the number of "
-			"intervals in the latitude direction (along meridians). The number of latitudinal grid nodes "
-			"(points) will be the number of grid intervals plus one. "
-			"The top and bottom points will lie on the north and south poles. "
-			"Note that the density of grid nodes is much higher near the poles than at the equator.</p>"
-			"<p>The latitude and longitude grid <i>spacings</i> are the same, resulting in roughly "
-			"twice the number of nodes along longitudes - it is actually '2 * (NUM_LATITUDE_NODES - 1)' "
-			"to avoid duplicating nodes when wrapping from longitude 360 degrees to 0 degrees.</p>"
+			"intervals in the latitude direction (along meridians). A similar parameter specifies "
+			"longitudinal intervals. The number of latitudinal grid nodes (points) will be the number "
+			"of latitudinal grid intervals when the nodes are at the centres of the latitude/longitude "
+			"cells (and plus one when nodes are at cell corners). The <i>'number of longitudinal grid "
+			"grid intervals'</i> has the same relation to the number of longitudinal grid nodes (points) "
+			"as the latitude case above, except in the case where the longitude interval is the full "
+			"360 degrees in which case the end line of nodes is not generated to avoid duplicating nodes "
+			"with the start line.</p>"
+			"<p>Note that the density of grid nodes on the globe is much higher near the poles than "
+			"at the equator due to sampling in latitude/longitude space.</p>"
 			"</body></html>");
 
 	const char *HELP_DIALOG_TITLE_OUTPUT = QT_TR_NOOP("Setting output directory and file name");
@@ -82,8 +93,9 @@ namespace
 			"<html><body>"
 			"<p/>"
 			"<p>A single generated GPML file of the specified filename will be saved to the specifed output directory.</p>"
-			"<p>You can <i>optionally</i> use the template parameter '%n' in the file name and it will be "
-			"replaced by the <i>'number of grid intervals along latitude'</i> parameter.</p>"
+			"<p>You can <i>optionally</i> use the template parameters '%n' and '%m' in the file name and "
+			"they will be replaced by the <i>'number of latitudinal grid intervals'</i> and "
+			"<i>'number of longitudinal grid intervals'</i> parameters.</p>"
 			"</body></html>\n");
 
 
@@ -119,8 +131,14 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::GenerateVelocityDomainLatL
 			Qt::WindowSystemMenuHint |
 			Qt::MSWindowsFixedSizeDialogHint),
 	d_main_window(main_window_),
-	d_num_latitude_grid_intervals(6),
-	d_file_name_template("lat_lon_velocity_domain_%n"),
+	d_num_latitude_grid_intervals(9),
+	d_num_longitude_grid_intervals(18),
+	d_extents_top(90),
+	d_extents_bottom(-90),
+	d_extents_left(-180),
+	d_extents_right(180),
+	d_cell_centred_nodes(false),
+	d_file_name_template("lat_lon_velocity_domain_%n_%m"),
 	d_help_dialog_configuration(
 			new InformationDialog(
 					tr(HELP_DIALOG_TEXT_CONFIGURATION), 
@@ -139,10 +157,43 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::GenerateVelocityDomainLatL
 	setupUi(this);
 
 	QObject::connect(
+			top_extents_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(react_top_extents_spin_box_value_changed(double)));
+	QObject::connect(
+			bottom_extents_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(react_bottom_extents_spin_box_value_changed(double)));
+	QObject::connect(
+			left_extents_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(react_left_extents_spin_box_value_changed(double)));
+	QObject::connect(
+			right_extents_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(react_right_extents_spin_box_value_changed(double)));
+	QObject::connect(
+			use_global_extents_button,
+			SIGNAL(clicked()),
+			this,
+			SLOT(handle_use_global_extents_button_clicked()));
+	QObject::connect(
 			lattitude_grid_intervals_spinbox,
 			SIGNAL(valueChanged(int)), 
 			this,
 			SLOT(handle_num_latitude_grid_intervals_value_changed(int)));
+	QObject::connect(
+			longitude_grid_intervals_spinbox,
+			SIGNAL(valueChanged(int)), 
+			this,
+			SLOT(handle_num_longitude_grid_intervals_value_changed(int)));
+	QObject::connect(
+			cell_centred_checkbox, SIGNAL(stateChanged(int)),
+			this, SLOT(react_cell_centred_check_box_changed()));
 
 	QObject::connect(
 			button_path,
@@ -188,11 +239,90 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::GenerateVelocityDomainLatL
 	// Initialise the GUI from the initial parameter values.
 	//
 
+	// Set the min/max longitude values.
+	left_extents_spinbox->setMinimum(d_extents_right - 360);
+	left_extents_spinbox->setMaximum(d_extents_right + 360);
+	right_extents_spinbox->setMinimum(d_extents_left - 360);
+	left_extents_spinbox->setMaximum(d_extents_left + 360);
+
+	top_extents_spinbox->setValue(d_extents_top);
+	bottom_extents_spinbox->setValue(d_extents_bottom);
+	left_extents_spinbox->setValue(d_extents_left);
+	right_extents_spinbox->setValue(d_extents_right);
+
 	lattitude_grid_intervals_spinbox->setValue(d_num_latitude_grid_intervals);
-	
+	longitude_grid_intervals_spinbox->setValue(d_num_longitude_grid_intervals);
+
+	cell_centred_checkbox->setChecked(d_cell_centred_nodes);
+
 	lineEdit_path->setText(QDir::toNativeSeparators(QDir::currentPath()));
 
 	lineEdit_file_name_template->setText(d_file_name_template.c_str());
+}
+
+
+void
+GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::react_top_extents_spin_box_value_changed(
+		double value)
+{
+	d_extents_top = value;
+}
+
+
+void
+GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::react_bottom_extents_spin_box_value_changed(
+		double value)
+{
+	d_extents_bottom = value;
+}
+
+
+void
+GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::react_left_extents_spin_box_value_changed(
+		double value)
+{
+	d_extents_left = value;
+
+	// Make sure longitude extent cannot exceed 360 degrees (either direction).
+	right_extents_spinbox->setMinimum(d_extents_left - 360);
+	right_extents_spinbox->setMaximum(d_extents_left + 360);
+
+	// Update the number of nodes.
+	display_num_nodes();
+}
+
+
+void
+GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::react_right_extents_spin_box_value_changed(
+		double value)
+{
+	d_extents_right = value;
+
+	// Make sure longitude extent cannot exceed 360 degrees (either direction).
+	left_extents_spinbox->setMinimum(d_extents_right - 360);
+	left_extents_spinbox->setMaximum(d_extents_right + 360);
+
+	// Update the number of nodes.
+	display_num_nodes();
+}
+
+
+void
+GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::handle_use_global_extents_button_clicked()
+{
+	const double left = -180;
+	const double right = 180;
+
+	// Reset the min/max longitude values.
+	left_extents_spinbox->setMinimum(right - 360);
+	left_extents_spinbox->setMaximum(right + 360);
+	right_extents_spinbox->setMinimum(left - 360);
+	left_extents_spinbox->setMaximum(left + 360);
+
+	top_extents_spinbox->setValue(90);
+	bottom_extents_spinbox->setValue(-90);
+	left_extents_spinbox->setValue(left);
+	right_extents_spinbox->setValue(right);
 }
 
 
@@ -203,14 +333,60 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::handle_num_latitude_grid_i
 	d_num_latitude_grid_intervals = num_latitude_grid_intervals;
 
 	// Update the number of nodes.
-	set_num_nodes();
+	display_num_nodes();
 }
 
 
 void
-GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::set_num_nodes()
+GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::handle_num_longitude_grid_intervals_value_changed(
+		int num_longitude_grid_intervals)
 {
-	const int num_nodes = (d_num_latitude_grid_intervals + 1) * (2 * d_num_latitude_grid_intervals);
+	d_num_longitude_grid_intervals = num_longitude_grid_intervals;
+
+	// Update the number of nodes.
+	display_num_nodes();
+}
+
+
+void
+GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::react_cell_centred_check_box_changed()
+{
+	d_cell_centred_nodes = cell_centred_checkbox->isChecked();
+
+	// Update the number of nodes.
+	display_num_nodes();
+}
+
+
+unsigned int
+GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::get_num_latitude_nodes() const
+{
+	return d_cell_centred_nodes
+			? d_num_latitude_grid_intervals
+			: d_num_latitude_grid_intervals + 1;
+}
+
+
+unsigned int
+GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::get_num_longitude_nodes() const
+{
+	if (d_cell_centred_nodes)
+	{
+		return d_num_longitude_grid_intervals;
+	}
+
+	// If the longitude extent is 360 degrees then there's one less node due to wraparound.
+	// Note that the longitude extents are already constrained to the range [-360, 360].
+	return GPlatesMaths::are_almost_exactly_equal(std::fabs(d_extents_right - d_extents_left), 360)
+			? d_num_longitude_grid_intervals
+			: d_num_longitude_grid_intervals + 1;
+}
+
+
+void
+GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::display_num_nodes()
+{
+	const int num_nodes = get_num_latitude_nodes() * get_num_longitude_nodes();
 
 	num_nodes_line_edit->setText(QString("%1").arg(num_nodes));
 }
@@ -331,17 +507,26 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::generate_lat_lon_domain()
 {
 	std::vector<GPlatesMaths::PointOnSphere> points;
 
-	const double grid_spacing = GPlatesMaths::PI / d_num_latitude_grid_intervals;
+	const double grid_latitude_length = d_extents_bottom - d_extents_top;
+	const double grid_latitude_spacing = grid_latitude_length / d_num_latitude_grid_intervals;
+	const double grid_latitude_top = d_extents_top +
+			(d_cell_centred_nodes ? 0.5 * grid_latitude_spacing : 0);
+	const unsigned int num_latitude_grid_nodes = get_num_latitude_nodes();
 
-	// Generate grid starting at north pole, ending at south pole and incrementing points along
-	// lines of constant latitude (parallels).
-	for (unsigned int j = 0; j <= d_num_latitude_grid_intervals; ++j)
+	const double grid_longitude_length = d_extents_right - d_extents_left;
+	const double grid_longitude_spacing = grid_longitude_length / d_num_longitude_grid_intervals;
+	const double grid_longitude_left = d_extents_left +
+			(d_cell_centred_nodes ? 0.5 * grid_longitude_spacing : 0);
+	const unsigned int num_longitude_grid_nodes = get_num_longitude_nodes();
+
+	// Generate a grid within the lat/lon extents.
+	for (unsigned int j = 0; j < num_latitude_grid_nodes; ++j)
 	{
-		const double latitude = GPlatesMaths::convert_rad_to_deg(GPlatesMaths::HALF_PI - j * grid_spacing);
+		const double latitude = grid_latitude_top + j * grid_latitude_spacing;
 
-		for (unsigned int i = 0; i < 2 * d_num_latitude_grid_intervals; ++i)
+		for (unsigned int i = 0; i < num_longitude_grid_nodes; ++i)
 		{
-			const double longitude = GPlatesMaths::convert_rad_to_deg(i * grid_spacing);
+			const double longitude = grid_longitude_left + i * grid_longitude_spacing;
 
 			points.push_back(
 					GPlatesMaths::make_point_on_sphere(
@@ -403,11 +588,14 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::save_velocity_domain_file(
 	// Get the integer parameters in string form.
 	std::stringstream num_latitude_grid_intervals_stream;
 	num_latitude_grid_intervals_stream << d_num_latitude_grid_intervals;
+	std::stringstream num_longitude_grid_intervals_stream;
+	num_longitude_grid_intervals_stream << d_num_longitude_grid_intervals;
 
 	// Generate the filename from the template by replacing the place holders (if any) with parameter values.
 	std::string file_name = d_file_name_template;	
 	file_name.append(".gpml");
 	replace_place_holder(file_name, NUM_LATITUDE_GRID_INTERVALS_PLACE_HOLDER, num_latitude_grid_intervals_stream.str());
+	replace_place_holder(file_name, NUM_LONGITUDE_GRID_INTERVALS_PLACE_HOLDER, num_longitude_grid_intervals_stream.str());
 	file_name = d_path.toStdString() + file_name;
 
 	// Make a new FileInfo object for saving to a new file.

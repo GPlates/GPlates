@@ -30,6 +30,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
+#include "app-logic/Layer.h"
 
 #include "gui/ExportAnimationContext.h"
 #include "gui/AnimationController.h"
@@ -57,6 +58,39 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::ExportReconstructedGeo
 	BOOST_FOREACH(GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref, loaded_files)
 	{
 		d_loaded_files.push_back(&file_ref.get_file());
+	}
+
+	const GPlatesAppLogic::ReconstructGraph &reconstruct_graph =
+			d_export_animation_context_ptr->view_state().get_application_state().get_reconstruct_graph();
+
+	// Check all the active reconstruction layers, and get their input files.
+	GPlatesAppLogic::ReconstructGraph::const_iterator it = reconstruct_graph.begin(),
+													end = reconstruct_graph.end();
+	for (; it != end ; ++it)
+	{
+		if ((it->get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCTION) && it->is_active())
+		{
+
+			// The 'reconstruct geometries' layer has input feature collections on its main input channel.
+			const QString main_input_channel = it->get_main_input_feature_collection_channel();
+			const std::vector<GPlatesAppLogic::Layer::InputConnection> main_inputs =
+					it->get_channel_inputs(main_input_channel);
+
+			// Loop over all input connections to get the files (feature collections) for the current target layer.
+			BOOST_FOREACH(const GPlatesAppLogic::Layer::InputConnection& main_input_connection, main_inputs)
+			{
+				boost::optional<GPlatesAppLogic::Layer::InputFile> input_file =
+						main_input_connection.get_input_file();
+				// If it's not a file (ie, it's a layer) then continue to the next file.
+				if(!input_file)
+				{
+					continue;
+				}
+				d_loaded_reconstruction_files.push_back(&(input_file->get_file().get_file()));
+			}
+
+
+		}
 	}
 }
 
@@ -91,6 +125,7 @@ GPlatesGui::ExportReconstructedGeometryAnimationStrategy::do_export_iteration(
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection(),
 			d_export_animation_context_ptr->view_state().get_application_state().get_feature_collection_file_format_registry(),
 			d_loaded_files,
+			d_loaded_reconstruction_files,
 			d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),
 			d_export_animation_context_ptr->view_time(),
 			d_configuration->file_options.export_to_a_single_file,

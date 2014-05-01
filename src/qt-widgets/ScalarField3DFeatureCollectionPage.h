@@ -23,45 +23,43 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_GEOREFERENCINGPAGE_H
-#define GPLATES_QTWIDGETS_GEOREFERENCINGPAGE_H
+#ifndef GPLATES_QTWIDGETS_SCALARFIELD3DFEATURECOLLECTIONPAGE_H
+#define GPLATES_QTWIDGETS_SCALARFIELD3DFEATURECOLLECTIONPAGE_H
 
-#include "GeoreferencingPageUi.h"
+#include <QWizardPage>
 
-#include "property-values/Georeferencing.h"
+#include "ScalarField3DFeatureCollectionPageUi.h"
 
 
 namespace GPlatesQtWidgets
 {
-	// Forward declaration.
-	class EditAffineTransformGeoreferencingWidget;
-
-	class GeoreferencingPage: 
+	class ScalarField3DFeatureCollectionPage: 
 			public QWizardPage,
-			protected Ui_GeoreferencingPage
+			protected Ui_ScalarField3DFeatureCollectionPage
 	{
+		Q_OBJECT
+		
 	public:
 
 		explicit
-		GeoreferencingPage(
-				GPlatesPropertyValues::Georeferencing::non_null_ptr_type &georeferencing,
-				unsigned int &raster_width,
-				unsigned int &raster_height,
+		ScalarField3DFeatureCollectionPage(
+				bool &save_after_finish,
 				QWidget *parent_ = NULL);
 
 		virtual
+		bool
+		isComplete() const;
+
+	private Q_SLOTS:
+
 		void
-		initializePage();
+		handle_save_checkbox_state_changed(
+				int state);
 
 	private:
 
-		GPlatesPropertyValues::Georeferencing::non_null_ptr_type &d_georeferencing;
-		EditAffineTransformGeoreferencingWidget *d_georeferencing_widget;
-		unsigned int &d_raster_width;
-		unsigned int &d_raster_height;
-		unsigned int d_last_seen_raster_width;
-		unsigned int d_last_seen_raster_height;
+		bool &d_save_after_finish;
 	};
 }
 
-#endif  // GPLATES_QTWIDGETS_GEOREFERENCINGPAGE_H
+#endif  // GPLATES_QTWIDGETS_SCALARFIELD3DFEATURECOLLECTIONPAGE_H

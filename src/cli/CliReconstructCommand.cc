@@ -257,6 +257,15 @@ GPlatesCli::ReconstructCommand::run(
 		reconstructable_file_ptrs.push_back(file_iter->get());
 	}
 
+	// Get the sequence of reconstruction files as File pointers.
+	std::vector<const GPlatesFileIO::File::Reference *> reconstruction_file_ptrs;
+	file_iter = reconstruction_files.begin();
+	file_end = reconstruction_files.end();
+	for ( ; file_iter != file_end; ++file_iter)
+	{
+		reconstruction_file_ptrs.push_back(file_iter->get());
+	}
+
 	// Export filename.
 	const GPlatesFileIO::FileInfo export_filename =
 			file_io.get_save_file_info(
@@ -271,6 +280,7 @@ GPlatesCli::ReconstructCommand::run(
 						file_io.get_file_format_registry()),
 				reconstruct_feature_geom_seq,
 				reconstructable_file_ptrs,
+				reconstruction_file_ptrs,
 				d_anchor_plate_id,
 				d_recon_time,
 				d_export_single_output_file/*export_single_output_file*/,

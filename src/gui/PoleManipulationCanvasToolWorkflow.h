@@ -120,6 +120,11 @@ namespace GPlatesGui
 		//! For manipulating poles in the 2D map view.
 		boost::scoped_ptr<MapCanvasTool> d_map_manipulate_pole_tool;
 
+		//! For moving poles in the 3D globe view.
+		boost::scoped_ptr<GlobeCanvasTool> d_globe_move_pole_tool;
+		//! For moving poles in the 2D map view.
+		boost::scoped_ptr<MapCanvasTool> d_map_move_pole_tool;
+
 
 		void
 		create_canvas_tools(

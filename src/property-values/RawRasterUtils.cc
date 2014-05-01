@@ -353,15 +353,7 @@ GPlatesPropertyValues::RawRasterUtils::does_raster_contain_numerical_data(
 {
 	const RasterType::Type raster_type = get_raster_type(raster);
 
-	return
-		raster_type == GPlatesPropertyValues::RasterType::FLOAT ||
-		raster_type == GPlatesPropertyValues::RasterType::DOUBLE ||
-		raster_type == GPlatesPropertyValues::RasterType::INT8 ||
-		raster_type == GPlatesPropertyValues::RasterType::UINT8 ||
-		raster_type == GPlatesPropertyValues::RasterType::INT16 ||
-		raster_type == GPlatesPropertyValues::RasterType::UINT16 ||
-		raster_type == GPlatesPropertyValues::RasterType::INT32 ||
-		raster_type == GPlatesPropertyValues::RasterType::UINT32;
+	return RasterType::is_integer(raster_type) || RasterType::is_floating_point(raster_type);
 }
 
 

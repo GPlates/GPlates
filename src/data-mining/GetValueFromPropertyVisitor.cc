@@ -138,7 +138,7 @@ GPlatesDataMining::GetValueFromPropertyVisitor::visit_gml_point(
 			gml_point_type &gml_point)
 {
 	std::stringstream ss;
-	ss << gml_point.point_in_lat_lon();
+	ss << gml_point.get_point_in_lat_lon();
 	d_data.push_back(QString(ss.str().c_str()));
 }
 

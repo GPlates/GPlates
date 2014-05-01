@@ -11,6 +11,8 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    CoordinateTransformation.cc
+    CoordinateTransformation.h
     Enumeration.cc
     Enumeration.h
     EnumerationContent.h
@@ -118,6 +120,8 @@ set(srcs
     RawRaster.h
     RawRasterUtils.cc
     RawRasterUtils.h
+    SpatialReferenceSystem.cc
+    SpatialReferenceSystem.h
     StructuralType.h
     TextContent.h
     UninterpretedPropertyValue.cc

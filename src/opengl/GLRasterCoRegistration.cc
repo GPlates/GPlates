@@ -180,7 +180,7 @@ GPlatesOpenGL::GLRasterCoRegistration::GLRasterCoRegistration(
 
 	// A pixel buffer object for debugging render targets.
 #if defined(DEBUG_RASTER_COREGISTRATION_RENDER_TARGET)
-	GLBuffer::shared_ptr_type debug_pixel_buffer = GLBuffer::create(renderer);
+	GLBuffer::shared_ptr_type debug_pixel_buffer = GLBuffer::create(renderer, GLBuffer::BUFFER_TYPE_PIXEL);
 	debug_pixel_buffer->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_PIXEL_PACK_BUFFER,

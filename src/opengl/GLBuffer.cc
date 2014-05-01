@@ -23,12 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <exception>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
  * Must be included before the OpenGL headers (which also means before Qt headers).
  * For this reason it's best to try and include it in ".cc" files only.
  */
 #include <GL/glew.h>
+#include <QDebug>
 
 #include "GLBuffer.h"
 
@@ -121,8 +123,14 @@ GPlatesOpenGL::GLBuffer::MapBufferScope::~MapBufferScope()
 		{
 			gl_unmap_buffer();
 		}
+		catch (std::exception &exc)
+		{
+			qWarning() << "GLBuffer: exception thrown during map buffer scope: " << exc.what();
+		}
 		catch (...)
-		{  }
+		{
+			qWarning() << "GLBuffer: exception thrown during map buffer scope: Unknown error";
+		}
 	}
 }
 

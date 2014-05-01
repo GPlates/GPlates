@@ -117,7 +117,7 @@ namespace GPlatesApi
 	/**
 	 * A convenience class for receiving one or more feature collections from a function argument as either:
 	 *  (1) a feature collection, or
-	 *  (2) a filename (read into a feature collection),
+	 *  (2) a filename (read into a feature collection), or
 	 *  (3) a sequence of feature collections and/or filenames.
 	 *
 	 * To get an instance of @a FeatureCollectionSequenceFunctionArgument you can either:

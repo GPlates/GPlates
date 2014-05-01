@@ -38,6 +38,7 @@
 
 #include "model/PropertyValue.h"
 
+#include "property-values/CoordinateTransformation.h"
 #include "property-values/Georeferencing.h"
 
 
@@ -213,6 +214,7 @@ namespace GPlatesQtWidgets
 		unsigned int d_raster_height;
 		ScalarField3DDepthLayersSequence d_depth_layers_sequence;
 		GPlatesPropertyValues::Georeferencing::non_null_ptr_type d_georeferencing;
+		GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type d_coordinate_transformation;
 		bool d_save_after_finish;
 
 		int d_depth_layers_page_id;

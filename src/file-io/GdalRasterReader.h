@@ -32,6 +32,7 @@
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/variant.hpp>
 #include <QString>
 #include <QtGlobal>
 
@@ -39,6 +40,8 @@
 #include "RasterBandReaderHandle.h"
 #include "RasterReader.h"
 #include "SourceRasterFileCacheFormatReader.h"
+
+#include "gui/Colour.h"
 
 
 namespace GPlatesFileIO
@@ -61,6 +64,14 @@ namespace GPlatesFileIO
 		virtual
 		bool
 		can_read();
+
+		virtual
+		boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
+		get_georeferencing();
+
+		virtual
+		boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+		get_spatial_reference_system();
 
 		virtual
 		unsigned int
@@ -93,10 +104,49 @@ namespace GPlatesFileIO
 
 	private:
 
-		GDALRasterBand *
-		get_raster_band(
-				unsigned int band_number,
-				ReadErrorAccumulation *read_errors);
+		/**
+		 * Raster band information.
+		 *
+		 * Colour raster bands (an R band, G band and B band) are merged into a single RGBA pseudo-raster-band.
+		 * So the mapping to GDALDataset bands is not necessarily one-to-one to the GDAL bands.
+		 */
+		struct RasterBand
+		{
+			//! If this band comes from R,G,B (and optionally A) colour GDAL bands.
+			struct GDALRgbaBands
+			{
+				GDALRasterBand *red_band;
+				GDALRasterBand *green_band;
+				GDALRasterBand *blue_band;
+				boost::optional<GDALRasterBand *> alpha_band;
+			};
+
+			//! This band is either a single GDAL band or RGB[A] GDAL bands.
+			typedef boost::variant<
+					GDALRasterBand *,
+					GDALRgbaBands> gdal_raster_band_type;
+
+
+			explicit
+			RasterBand(
+					GPlatesPropertyValues::RasterType::Type raster_type_,
+					const gdal_raster_band_type &gdal_raster_band_) :
+				raster_type(raster_type_),
+				gdal_raster_band(gdal_raster_band_)
+			{  }
+
+			GPlatesPropertyValues::RasterType::Type raster_type;
+			gdal_raster_band_type gdal_raster_band;
+			//! Source raster file cache reader.
+			boost::shared_ptr<SourceRasterFileCacheFormatReader> file_cache_format_reader;
+		};
+
+
+		bool
+		initialise_source_raster_dimensions();
+
+		boost::optional<RasterBand::GDALRgbaBands>
+		is_colour_raster();
 
 		void
 		report_recoverable_error(
@@ -108,6 +158,13 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation *read_errors,
 				ReadErrors::Description description);
 
+		template<class RawRasterType>
+		GPlatesPropertyValues::RawRaster::non_null_ptr_type
+		create_proxied_raw_raster(
+				const RasterBand &raster_band,
+				const GPlatesFileIO::RasterBandReaderHandle &raster_band_reader_handle,
+				ReadErrorAccumulation *read_errors);
+
 		/**
 		 * Creates a reader for the cached source raster.
 		 *
@@ -115,12 +172,13 @@ namespace GPlatesFileIO
 		 */
 		boost::shared_ptr<GPlatesFileIO::SourceRasterFileCacheFormatReader>
 		create_source_raster_file_cache_format_reader(
+				RasterBand &raster_band,
 				unsigned int band_number,
 				ReadErrorAccumulation *read_errors);
 
 		boost::shared_ptr<SourceRasterFileCacheFormatReader>
 		create_source_raster_file_cache_format_reader(
-				unsigned int band_number,
+				RasterBand &raster_band,
 				const QString &cache_filename,
 				ReadErrorAccumulation *read_errors);
 
@@ -129,24 +187,84 @@ namespace GPlatesFileIO
 		 */
 		bool
 		create_source_raster_file_cache(
+				RasterBand &raster_band,
 				unsigned int band_number,
 				ReadErrorAccumulation *read_errors);
 
 		template <class RawRasterType>
 		void
 		write_source_raster_file_cache(
-				unsigned int band_number,
+				RasterBand &raster_band,
 				const QString &cache_filename,
 				ReadErrorAccumulation *read_errors);
 
 		template <class RawRasterType>
 		void
 		write_source_raster_file_cache_image_data(
-				unsigned int band_number,
+				RasterBand &raster_band,
 				QFile &cache_file,
 				QDataStream &out,
 				RasterFileCacheFormat::BlockInfos &block_infos,
 				ReadErrorAccumulation *read_errors,
+				double &raster_min,
+				double &raster_max,
+				double &raster_sum,
+				double &raster_sum_squares,
+				qint64 &num_valid_raster_samples);
+
+		/**
+		 * Returns the no-data value of the specified raster band.
+		 *
+		 * Returns false if raster band does not have a no-data value (this includes colour rasters).
+		 */
+		template <typename RasterElementType>
+		bool
+		get_no_data_value(
+				const RasterBand &raster_band,
+				RasterElementType &no_data_value);
+
+		template <class RawRasterType>
+		void
+		add_no_data_value(
+				RawRasterType &raster,
+				const RasterBand &raster_band);
+
+		template <class RawRasterType>
+		boost::optional<GPlatesPropertyValues::RasterStatistics>
+		get_statistics(
+				RawRasterType &raster,
+				const RasterBand &raster_band,
+				ReadErrorAccumulation *read_errors);
+
+		template <class RawRasterType>
+		void
+		add_statistics(
+				RawRasterType &raster,
+				const RasterBand &raster_band,
+				ReadErrorAccumulation *read_errors);
+
+		template<typename RasterElementType>
+		void
+		add_data(
+				RasterElementType *result_buf,
+				const RasterBand &raster_band,
+				bool flip,
+				unsigned int region_x_offset,
+				unsigned int region_y_offset,
+				unsigned int region_width,
+				unsigned int region_height);
+
+		template<class RawRasterType>
+		boost::optional<typename RawRasterType::non_null_ptr_type>
+		read_data(
+				const RasterBand &raster_band,
+				bool flip,
+				const QRect &region);
+
+		template <class RawRasterType>
+		void
+		update_statistics(
+				RawRasterType &source_region_data,
 				double &raster_min,
 				double &raster_max,
 				double &raster_sum,
@@ -161,7 +279,7 @@ namespace GPlatesFileIO
 		template <class RawRasterType>
 		void
 		hilbert_curve_traversal(
-				unsigned int band_number,
+				RasterBand &raster_band,
 				unsigned int depth,
 				unsigned int read_source_raster_depth,
 				unsigned int write_source_raster_depth,
@@ -232,11 +350,67 @@ namespace GPlatesFileIO
 		unsigned int d_source_width;
 		unsigned int d_source_height;
 
+		std::vector<RasterBand> d_raster_bands;
+
 		/**
 		 * A source raster file cache reader for each raster band.
 		 */
 		std::vector<boost::shared_ptr<SourceRasterFileCacheFormatReader> > d_raster_band_file_cache_format_readers;
 	};
+
+
+	// Template specialisations are in .cc file.
+	template <>
+	bool
+	GDALRasterReader::get_no_data_value<GPlatesGui::rgba8_t>(
+			const GDALRasterReader::RasterBand &raster_band,
+			GPlatesGui::rgba8_t &no_data_value);
+
+	// Template specialisations are in .cc file.
+	template <>
+	boost::optional<GPlatesPropertyValues::RasterStatistics>
+	GDALRasterReader::get_statistics<GPlatesPropertyValues::Rgba8RawRaster>(
+			GPlatesPropertyValues::Rgba8RawRaster &raster,
+			const GDALRasterReader::RasterBand &raster_band,
+			ReadErrorAccumulation *read_errors);
+	template <>
+	boost::optional<GPlatesPropertyValues::RasterStatistics>
+	GDALRasterReader::get_statistics<GPlatesPropertyValues::ProxiedRgba8RawRaster>(
+			GPlatesPropertyValues::ProxiedRgba8RawRaster &raster,
+			const GDALRasterReader::RasterBand &raster_band,
+			ReadErrorAccumulation *read_errors);
+
+	// Template specialisations are in .cc file.
+	template <>
+	void
+	GDALRasterReader::add_data<GPlatesGui::rgba8_t>(
+			GPlatesGui::rgba8_t *result_buf,
+			const GDALRasterReader::RasterBand &raster_band,
+			bool flip,
+			unsigned int region_x_offset,
+			unsigned int region_y_offset,
+			unsigned int region_width,
+			unsigned int region_height);
+
+	// Template specialisations are in .cc file.
+	template <>
+	void
+	GDALRasterReader::update_statistics<GPlatesPropertyValues::Rgba8RawRaster>(
+			GPlatesPropertyValues::Rgba8RawRaster &source_region_data,
+			double &raster_min,
+			double &raster_max,
+			double &raster_sum,
+			double &raster_sum_squares,
+			qint64 &num_valid_raster_samples);
+	template <>
+	void
+	GDALRasterReader::update_statistics<GPlatesPropertyValues::ProxiedRgba8RawRaster>(
+			GPlatesPropertyValues::ProxiedRgba8RawRaster &source_region_data,
+			double &raster_min,
+			double &raster_max,
+			double &raster_sum,
+			double &raster_sum_squares,
+			qint64 &num_valid_raster_samples);
 }
 
 #endif  // GPLATES_FILEIO_GDALRASTERREADER_H

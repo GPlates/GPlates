@@ -714,6 +714,7 @@ GPlatesOpenGL::GLVisualLayers::RasterLayerUsage::get_multi_resolution_raster(
 				GLMultiResolutionRaster::create(
 						renderer,
 						d_raster_layer_proxy->get_georeferencing().get(),
+						d_raster_layer_proxy->get_coordinate_transformation(),
 						d_visual_raster_source.get(),
 						GLMultiResolutionRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER,
 						// Use non-default here - our source GLVisualRasterSource has caching that
@@ -776,10 +777,7 @@ GPlatesOpenGL::GLVisualLayers::CubeRasterLayerUsage::get_multi_resolution_cube_r
 		d_multi_resolution_cube_raster =
 				GLMultiResolutionCubeRaster::create(
 						renderer,
-						d_multi_resolution_raster.get(),
-						GLMultiResolutionCubeRaster::DEFAULT_TILE_TEXEL_DIMENSION,
-						true/*adapt_tile_dimension_to_source_resolution*/,
-						GLMultiResolutionCubeRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER);
+						d_multi_resolution_raster.get());
 	}
 
 	return d_multi_resolution_cube_raster;
@@ -963,6 +961,7 @@ GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage::NormalRaster::get_normal_map
 				GLMultiResolutionRaster::create(
 						renderer,
 						d_raster_layer_proxy->get_georeferencing().get(),
+						d_raster_layer_proxy->get_coordinate_transformation(),
 						d_normal_map_raster_source.get());
 
 		d_multi_resolution_raster = multi_resolution_raster;
@@ -1131,12 +1130,23 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_s
 		return boost::none;
 	}
 
-	// If we don't have reconstructed polygon meshes or an age grid or a normal map then a regular
-	// GLMultiResolutionRaster should be used instead (it's faster and uses less memory).
+	// If:
+	//  (1) we don't have reconstructed polygon meshes, and
+	//  (2) we don't have an age grid, and
+	//  (3) we don't have a normal map, and
+	//  (4) surface lighting of rasters (with or without normal maps) is not enabled
+	// ...then a regular "unreconstructed" raster should be used instead (it's faster and uses less memory).
 	// Note that we don't require reconstructed polygon meshes to continue past this point.
+	// Also note that in (4) we delegate all lighting tasks to "reconstructed" raster even if we're
+	// not reconstructing a raster - this makes the implementation much simpler since we don't have
+	// to worry about issues related to incorrectly applying lighting twice to reconstructed rasters
+	// (both at the unreconstructed stage and reconstructed stage) - and besides, we're already
+	// delegating all "normal map" lighting to "reconstructed" raster anyway.
 	if (!d_reconstructed_polygon_meshes_layer_usage &&
 		!d_age_grid_layer_usage &&
-		!d_normal_map_layer_usage)
+		!d_normal_map_layer_usage &&
+		!(d_light && d_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
+				GPlatesGui::SceneLightingParameters::LIGHTING_RASTER)))
 	{
 		return boost::none;
 	}
@@ -1371,11 +1381,16 @@ GPlatesOpenGL::GLVisualLayers::MapRasterLayerUsage::get_multi_resolution_raster_
 	{
 		if (!d_multi_resolution_raster_map_view)
 		{
+			// NOTE: We create our own cube reconstructed raster because the world transform gets
+			// set on it according to the central meridian of the map projection.
+			// This means the input cube raster will get re-oriented and hence can no longer
+			// be shared with the globe (non-map) view where the central meridian is always zero.
+			// Actually, in this, case it wouldn't affect the globe view anyway since it doesn't
+			// make use (or need) a cube reconstructed raster.
 			GLMultiResolutionCubeRasterInterface::non_null_ptr_type multi_resolution_cube_reconstructed_raster =
 					GLMultiResolutionCubeReconstructedRaster::create(
 							renderer,
-							d_reconstructed_raster.get(),
-							GLMultiResolutionCubeReconstructedRaster::get_default_tile_texel_dimension(renderer));
+							d_reconstructed_raster.get());
 
 			//qDebug() << "Rebuilding GLMultiResolutionRasterMapView for reconstructed raster.";
 
@@ -1408,13 +1423,14 @@ GPlatesOpenGL::GLVisualLayers::MapRasterLayerUsage::get_multi_resolution_raster_
 	{
 		if (!d_multi_resolution_raster_map_view)
 		{
+			// NOTE: We create our own cube raster because the world transform gets set on it
+			// according to the central meridian of the map projection.
+			// This means the input cube raster will get re-oriented and hence can no longer
+			// be shared with the globe (non-map) view where the central meridian is always zero.
 			GLMultiResolutionCubeRasterInterface::non_null_ptr_type multi_resolution_cube_raster =
 					GLMultiResolutionCubeRaster::create(
 							renderer,
-							d_raster.get(),
-							GLMultiResolutionCubeRaster::DEFAULT_TILE_TEXEL_DIMENSION,
-							true/*adapt_tile_dimension_to_source_resolution*/,
-							GLMultiResolutionCubeRaster::DEFAULT_FIXED_POINT_TEXTURE_FILTER);
+							d_raster.get());
 
 			//qDebug() << "Rebuilding GLMultiResolutionRasterMapView for raster.";
 

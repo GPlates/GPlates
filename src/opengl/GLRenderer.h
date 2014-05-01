@@ -1770,6 +1770,9 @@ namespace GPlatesOpenGL
 				GLRendererImpl::RenderTextureTarget &render_texture_target);
 
 		void
+		begin_render_internal();
+
+		void
 		begin_render_target_block_internal(
 				bool reset_to_default_state,
 				const boost::optional<GLRendererImpl::RenderTextureTarget> &render_texture_target = boost::none);

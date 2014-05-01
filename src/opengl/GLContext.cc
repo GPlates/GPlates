@@ -219,7 +219,7 @@ GPlatesOpenGL::GLContext::disable_opengl_extensions()
 	//
 	// For testing different code paths.
 	//
-	//__GLEW_ARB_vertex_buffer_object = 0;
+	//__GLEW_ARB_vertex_buffer_object = 0; __GLEW_ARB_pixel_buffer_object = 0;
 	//__GLEW_ARB_pixel_buffer_object = 0;
 	//__GLEW_EXT_framebuffer_object = 0;
 	//__GLEW_EXT_packed_depth_stencil = 0;

@@ -1309,6 +1309,12 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 		// We don't pick a tab - the previous tab from another canvas tool workflow will remain.
 		break;
 
+#if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
+	case GPlatesGui::CanvasToolWorkflows::TOOL_CHANGE_LIGHTING:
+		d_task_panel_ptr->choose_lighting_tab();
+		break;
+#endif
+
 	case GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY:
 		d_task_panel_ptr->choose_feature_tab();
 		break;
@@ -1347,6 +1353,10 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 
 	case GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE:
 		d_task_panel_ptr->choose_modify_pole_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_MOVE_POLE:
+		d_task_panel_ptr->choose_move_pole_tab();
 		break;
 
 	case GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY:

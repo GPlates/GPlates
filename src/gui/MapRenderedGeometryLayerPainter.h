@@ -125,8 +125,13 @@ namespace GPlatesGui
 
 		virtual
 		void
-		visit_rendered_direction_arrow(
-				const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow);
+		visit_rendered_radial_arrow(
+				const GPlatesViewOperations::RenderedRadialArrow &rendered_radial_arrow);
+
+		virtual
+		void
+		visit_rendered_tangential_arrow(
+				const GPlatesViewOperations::RenderedTangentialArrow &rendered_tangential_arrow);
 
 		virtual
 		void

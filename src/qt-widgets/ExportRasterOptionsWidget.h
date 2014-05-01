@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2013 The University of Sydney, Australia
+ * Copyright (C) 2014 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -26,10 +26,9 @@
 #ifndef GPLATES_QT_WIDGETS_EXPORTRASTEROPTIONSWIDGET_H
 #define GPLATES_QT_WIDGETS_EXPORTRASTEROPTIONSWIDGET_H
 
-#include <QObject>
+#include "ExportRasterOptionsWidgetUi.h"
 
 #include "ExportOptionsWidget.h"
-#include "ExportImageResolutionOptionsWidget.h"
 
 #include "gui/ExportRasterAnimationStrategy.h"
 
@@ -37,15 +36,15 @@
 namespace GPlatesQtWidgets
 {
 	/**
-	 * ExportRasterOptionsWidget is used to show export options for exporting screen shots of the globe/map view.
+	 * Raster (colour or numerical) export options.
 	 */
 	class ExportRasterOptionsWidget :
-			public ExportOptionsWidget
+			public ExportOptionsWidget,
+			protected Ui_ExportRasterOptionsWidget
 	{
 		Q_OBJECT
 
 	public:
-
 		/**
 		 * Creates a @a ExportRasterOptionsWidget containing default export options.
 		 */
@@ -54,32 +53,61 @@ namespace GPlatesQtWidgets
 		create(
 				QWidget *parent,
 				GPlatesGui::ExportAnimationContext &export_animation_context,
-				const GPlatesGui::ExportRasterAnimationStrategy::const_configuration_ptr &export_configuration)
+				const GPlatesGui::ExportRasterAnimationStrategy::const_configuration_ptr &
+						export_configuration)
 		{
-			return new ExportRasterOptionsWidget(parent, export_animation_context, export_configuration);
+			return new ExportRasterOptionsWidget(parent, export_configuration);
 		}
 
 
 		/**
-		 * Collects the options specified by the user and returns them as an
-		 * export animation strategy configuration.
+		 * Collects the options specified by the user and
+		 * returns them as an export animation strategy configuration.
 		 */
 		virtual
 		GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr
 		create_export_animation_strategy_configuration(
 				const QString &filename_template);
 
+	private Q_SLOTS:
+
+		void
+		react_resolution_spin_box_value_changed(
+				double value);
+
+		void
+		react_top_extents_spin_box_value_changed(
+				double value);
+		void
+		react_bottom_extents_spin_box_value_changed(
+				double value);
+		void
+		react_left_extents_spin_box_value_changed(
+				double value);
+		void
+		react_right_extents_spin_box_value_changed(
+				double value);
+
+		void
+		handle_use_global_extents_button_clicked();
+
 	private:
-
-		ExportImageResolutionOptionsWidget *d_export_image_resolution_options_widget;
-		GPlatesGui::ExportRasterAnimationStrategy::Configuration d_export_configuration;
-
 
 		explicit
 		ExportRasterOptionsWidget(
 				QWidget *parent_,
-				GPlatesGui::ExportAnimationContext &export_animation_context,
-				const GPlatesGui::ExportRasterAnimationStrategy::const_configuration_ptr &export_configuration);
+				const GPlatesGui::ExportRasterAnimationStrategy::const_configuration_ptr &
+						export_configuration);
+
+
+		void
+		make_signal_slot_connections();
+
+		void
+		update_raster_dimensions();
+
+
+		GPlatesGui::ExportRasterAnimationStrategy::Configuration d_export_configuration;
 
 	};
 }

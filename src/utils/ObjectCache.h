@@ -303,7 +303,7 @@ namespace GPlatesUtils
 					// reference to the cached object is 'cached_object', otherwise we
 					// wouldn't be here.
 
-					// Since the the object is being returned to the cache we should call the
+					// Since the object is being returned to the cache we should call the
 					// client callback function if they provided one.
 					if (d_return_object_to_cache_function)
 					{

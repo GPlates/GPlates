@@ -98,7 +98,7 @@ namespace GPlatesOpenGL
 		unsigned int
 		get_cube_face_quadrant_dimension_in_vertex_samples() const
 		{
-			return (d_cube_mesh_generator.get_cube_face_dimension_in_vertex_spacing() >> 1) + 1;
+			return get_cube_face_quadrant_dimension_in_vertex_spacing() + 1;
 		}
 
 
@@ -135,6 +135,18 @@ namespace GPlatesOpenGL
 				GPlatesMaths::CubeCoordinateFrame::CubeFaceType cube_face,
 				unsigned int quadrant_x_offset,
 				unsigned int quadrant_y_offset) const;
+
+
+		/**
+		 * Create a map-projected mesh vertex at the north or south pole with the specified longitude.
+		 *
+		 * Note: The longitude is relative to the map projection's central meridian
+		 * (ie, zero longitude means the central meridian).
+		 */
+		Point
+		create_pole_mesh_vertex(
+				const double &pole_longitude,
+				bool north_pole) const;
 
 	private:
 		/**

@@ -57,6 +57,18 @@ namespace GPlatesGui
 		 */
 		const QString RENDER_POINT_LINE_POLYGON_LIGHTING_FRAGMENT_SHADER =
 				":/opengl/layer_painter/render_point_line_polygon_lighting_fragment_shader.glsl";
+
+		/**
+		 * Vertex shader source code for lighting axially symmetric meshes.
+		 */
+		const QString RENDER_AXIALLY_SYMMETRIC_MESH_LIGHTING_VERTEX_SHADER =
+				":/opengl/layer_painter/render_axially_symmetric_mesh_lighting_vertex_shader.glsl";
+
+		/**
+		 * Fragment shader source code for lighting axially symmetric meshes.
+		 */
+		const QString RENDER_AXIALLY_SYMMETRIC_MESH_LIGHTING_FRAGMENT_SHADER =
+				":/opengl/layer_painter/render_axially_symmetric_mesh_lighting_fragment_shader.glsl";
 	}
 }
 
@@ -75,7 +87,7 @@ GPlatesGui::LayerPainter::initialise(
 		GPlatesOpenGL::GLRenderer &renderer)
 {
 	//
-	// Create the vertex buffers and array.
+	// Create the vertex buffers.
 	//
 
 	// These are only created *once* and re-used across paint calls.
@@ -86,6 +98,10 @@ GPlatesGui::LayerPainter::initialise(
 	d_vertex_buffer = GPlatesOpenGL::GLVertexBuffer::create(
 			renderer,
 			GPlatesOpenGL::GLBuffer::create(renderer, GPlatesOpenGL::GLBuffer::BUFFER_TYPE_VERTEX));
+
+	//
+	// Create and initialise the vertex array containing vertices of type 'coloured_vertex_type'.
+	//
 
 	d_vertex_array = GPlatesOpenGL::GLVertexArray::create(renderer);
 
@@ -147,6 +163,227 @@ GPlatesGui::LayerPainter::initialise(
 					renderer,
 					map_view_vertex_shader_source,
 					map_view_fragment_shader_source);
+
+	//
+	// Create and initialise the vertex arrays containing vertices of type 'AxiallySymmetricMeshVertex'.
+	//
+
+	d_unlit_axially_symmetric_mesh_vertex_array = GPlatesOpenGL::GLVertexArray::create(renderer);
+	d_lit_axially_symmetric_mesh_vertex_array = GPlatesOpenGL::GLVertexArray::create(renderer);
+
+	// Attach vertex element buffer to the axially symmetric vertex arrays.
+	d_unlit_axially_symmetric_mesh_vertex_array->set_vertex_element_buffer(renderer, d_vertex_element_buffer);
+	d_lit_axially_symmetric_mesh_vertex_array->set_vertex_element_buffer(renderer, d_vertex_element_buffer);
+
+	//
+	// Attach vertex buffer to the unlit axially symmetric vertex array.
+	//
+	// Unlike the lit version of the vertex array this binds non-generic vertex attributes and hence
+	// can be used with fixed-function pipeline (or a shader that uses non-generic vertex attributes).
+	//
+
+	d_unlit_axially_symmetric_mesh_vertex_array->set_enable_client_state(renderer, GL_VERTEX_ARRAY, true/*enable*/);
+	d_unlit_axially_symmetric_mesh_vertex_array->set_vertex_pointer(
+			renderer,
+			d_vertex_buffer,
+			3,
+			GL_FLOAT,
+			sizeof(AxiallySymmetricMeshVertex),
+			0);
+
+	d_unlit_axially_symmetric_mesh_vertex_array->set_enable_client_state(renderer, GL_COLOR_ARRAY, true/*enable*/);
+	d_unlit_axially_symmetric_mesh_vertex_array->set_color_pointer(
+			renderer,
+			d_vertex_buffer,
+			4,
+			GL_UNSIGNED_BYTE,
+			sizeof(AxiallySymmetricMeshVertex),
+			3 * sizeof(GLfloat));
+
+	// ...note that we ignore the remaining vertex attributes (which are lighting specific).
+
+	//
+	// Create shader program for lighting axially symmetric meshes.
+	//
+
+	const char *axially_symmetric_mesh_lighting_shader_defines = "";
+
+	GPlatesOpenGL::GLShaderSource axially_symmetric_mesh_lighting_vertex_shader_source;
+	axially_symmetric_mesh_lighting_vertex_shader_source.add_code_segment(
+			axially_symmetric_mesh_lighting_shader_defines);
+	axially_symmetric_mesh_lighting_vertex_shader_source.add_code_segment_from_file(
+			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	axially_symmetric_mesh_lighting_vertex_shader_source.add_code_segment_from_file(
+			RENDER_AXIALLY_SYMMETRIC_MESH_LIGHTING_VERTEX_SHADER);
+
+	GPlatesOpenGL::GLShaderSource axially_symmetric_mesh_lighting_fragment_shader_source;
+	axially_symmetric_mesh_lighting_fragment_shader_source.add_code_segment(
+			axially_symmetric_mesh_lighting_shader_defines);
+	axially_symmetric_mesh_lighting_fragment_shader_source.add_code_segment_from_file(
+			GPlatesOpenGL::GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+	axially_symmetric_mesh_lighting_fragment_shader_source.add_code_segment_from_file(
+			RENDER_AXIALLY_SYMMETRIC_MESH_LIGHTING_FRAGMENT_SHADER);
+
+	d_render_axially_symmetric_mesh_lighting_program_object =
+			GPlatesOpenGL::GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
+					renderer,
+					axially_symmetric_mesh_lighting_vertex_shader_source,
+					axially_symmetric_mesh_lighting_fragment_shader_source);
+
+	//
+	// Attach vertex buffer to the lit axially symmetric vertex array.
+	// And bind *generic* vertex attributes to lit axially symmetric shader program.
+	//
+
+	// If shader program was unsuccessfully compiled/linked then the lit axially symmetric vertex array
+	// will never get used anyway - so doesn't matter if not attached to vertex buffer.
+	if (d_render_axially_symmetric_mesh_lighting_program_object)
+	{
+		//
+		// The following reflects the structure of 'struct AxiallySymmetricMeshVertex'.
+		// It tells OpenGL how the elements of the vertex are packed together in the vertex and
+		// which parts of the vertex bind to the named attributes in the shader program.
+		//
+
+		// sizeof() only works on data members if you have an object instantiated...
+		AxiallySymmetricMeshVertex vertex_for_sizeof;
+		// Avoid unused variable warning on some compilers not recognising sizeof() as usage.
+		static_cast<void>(vertex_for_sizeof.world_space_position);
+		// Offset of attribute data from start of a vertex.
+		GLint offset = 0;
+
+		GLuint attribute_index = 0;
+
+		// The "world_space_position" attribute data...
+		d_render_axially_symmetric_mesh_lighting_program_object.get()->gl_bind_attrib_location(
+				"world_space_position_attribute", attribute_index);
+		d_lit_axially_symmetric_mesh_vertex_array->set_enable_vertex_attrib_array(
+				renderer, attribute_index, true/*enable*/);
+		d_lit_axially_symmetric_mesh_vertex_array->set_vertex_attrib_pointer(
+				renderer,
+				d_vertex_buffer,
+				attribute_index,
+				sizeof(vertex_for_sizeof.world_space_position) / sizeof(vertex_for_sizeof.world_space_position[0]),
+				GL_FLOAT,
+				GL_FALSE/*normalized*/,
+				sizeof(AxiallySymmetricMeshVertex),
+				offset);
+
+		++attribute_index;
+		offset += sizeof(vertex_for_sizeof.world_space_position);
+
+		// The "colour" attribute data...
+		d_render_axially_symmetric_mesh_lighting_program_object.get()->gl_bind_attrib_location(
+				"colour_attribute", attribute_index);
+		d_lit_axially_symmetric_mesh_vertex_array->set_enable_vertex_attrib_array(
+				renderer, attribute_index, true/*enable*/);
+		d_lit_axially_symmetric_mesh_vertex_array->set_vertex_attrib_pointer(
+				renderer,
+				d_vertex_buffer,
+				attribute_index,
+				4,
+				GL_UNSIGNED_BYTE,
+				GL_TRUE/*normalized*/,
+				sizeof(AxiallySymmetricMeshVertex),
+				offset);
+
+		++attribute_index;
+		offset += sizeof(vertex_for_sizeof.colour);
+
+		// The "world_space_x_axis" attribute data...
+		d_render_axially_symmetric_mesh_lighting_program_object.get()->gl_bind_attrib_location(
+				"world_space_x_axis_attribute", attribute_index);
+		d_lit_axially_symmetric_mesh_vertex_array->set_enable_vertex_attrib_array(
+				renderer, attribute_index, true/*enable*/);
+		d_lit_axially_symmetric_mesh_vertex_array->set_vertex_attrib_pointer(
+				renderer,
+				d_vertex_buffer,
+				attribute_index,
+				sizeof(vertex_for_sizeof.world_space_x_axis) / sizeof(vertex_for_sizeof.world_space_x_axis[0]),
+				GL_FLOAT,
+				GL_FALSE/*normalized*/,
+				sizeof(AxiallySymmetricMeshVertex),
+				offset);
+
+		++attribute_index;
+		offset += sizeof(vertex_for_sizeof.world_space_x_axis);
+
+		// The "world_space_y_axis" attribute data...
+		d_render_axially_symmetric_mesh_lighting_program_object.get()->gl_bind_attrib_location(
+				"world_space_y_axis_attribute", attribute_index);
+		d_lit_axially_symmetric_mesh_vertex_array->set_enable_vertex_attrib_array(
+				renderer, attribute_index, true/*enable*/);
+		d_lit_axially_symmetric_mesh_vertex_array->set_vertex_attrib_pointer(
+				renderer,
+				d_vertex_buffer,
+				attribute_index,
+				sizeof(vertex_for_sizeof.world_space_y_axis) / sizeof(vertex_for_sizeof.world_space_y_axis[0]),
+				GL_FLOAT,
+				GL_FALSE/*normalized*/,
+				sizeof(AxiallySymmetricMeshVertex),
+				offset);
+
+		++attribute_index;
+		offset += sizeof(vertex_for_sizeof.world_space_y_axis);
+
+		// The "world_space_x_axis" attribute data...
+		d_render_axially_symmetric_mesh_lighting_program_object.get()->gl_bind_attrib_location(
+				"world_space_z_axis_attribute", attribute_index);
+		d_lit_axially_symmetric_mesh_vertex_array->set_enable_vertex_attrib_array(
+				renderer, attribute_index, true/*enable*/);
+		d_lit_axially_symmetric_mesh_vertex_array->set_vertex_attrib_pointer(
+				renderer,
+				d_vertex_buffer,
+				attribute_index,
+				sizeof(vertex_for_sizeof.world_space_z_axis) / sizeof(vertex_for_sizeof.world_space_z_axis[0]),
+				GL_FLOAT,
+				GL_FALSE/*normalized*/,
+				sizeof(AxiallySymmetricMeshVertex),
+				offset);
+
+		++attribute_index;
+		offset += sizeof(vertex_for_sizeof.world_space_z_axis);
+
+		// The "model_space_radial_position" attribute data...
+		d_render_axially_symmetric_mesh_lighting_program_object.get()->gl_bind_attrib_location(
+				"model_space_radial_position_attribute", attribute_index);
+		d_lit_axially_symmetric_mesh_vertex_array->set_enable_vertex_attrib_array(
+				renderer, attribute_index, true/*enable*/);
+		d_lit_axially_symmetric_mesh_vertex_array->set_vertex_attrib_pointer(
+				renderer,
+				d_vertex_buffer,
+				attribute_index,
+				sizeof(vertex_for_sizeof.model_space_radial_position) / sizeof(vertex_for_sizeof.model_space_radial_position[0]),
+				GL_FLOAT,
+				GL_FALSE/*normalized*/,
+				sizeof(AxiallySymmetricMeshVertex),
+				offset);
+
+		++attribute_index;
+		offset += sizeof(vertex_for_sizeof.model_space_radial_position);
+
+		// The "radial_and_axial_normal_weights" attribute data...
+		d_render_axially_symmetric_mesh_lighting_program_object.get()->gl_bind_attrib_location(
+				"radial_and_axial_normal_weights_attribute", attribute_index);
+		d_lit_axially_symmetric_mesh_vertex_array->set_enable_vertex_attrib_array(
+				renderer, attribute_index, true/*enable*/);
+		d_lit_axially_symmetric_mesh_vertex_array->set_vertex_attrib_pointer(
+				renderer,
+				d_vertex_buffer,
+				attribute_index,
+				sizeof(vertex_for_sizeof.radial_and_axial_normal_weights) / sizeof(vertex_for_sizeof.radial_and_axial_normal_weights[0]),
+				GL_FLOAT,
+				GL_FALSE/*normalized*/,
+				sizeof(AxiallySymmetricMeshVertex),
+				offset);
+
+		// Now that we've changed the attribute bindings in the program object we need to
+		// re-link it in order for them to take effect.
+		bool link_status = d_render_axially_symmetric_mesh_lighting_program_object.get()->gl_link_program(renderer);
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				link_status,
+				GPLATES_ASSERTION_SOURCE);
+	}
 }
 
 
@@ -156,7 +393,8 @@ GPlatesGui::LayerPainter::begin_painting(
 {
 	// The vertex buffers should have already been initialised in 'initialise()'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_vertex_element_buffer && d_vertex_buffer && d_vertex_array,
+			d_vertex_element_buffer && d_vertex_buffer && d_vertex_array &&
+				d_unlit_axially_symmetric_mesh_vertex_array && d_lit_axially_symmetric_mesh_vertex_array,
 			GPLATES_ASSERTION_SOURCE);
 
 	d_renderer = renderer;
@@ -296,25 +534,33 @@ GPlatesGui::LayerPainter::end_painting(
 
 	// Even though these primitives are opaque they are still rendered with polygon anti-aliasing
 	// which relies on alpha-blending (so we don't disable it here).
+	// UPDATE: We no longer enable polygon anti-aliasing because it generates transparent edges
+	// between adjacent triangles in a mesh.
 	opaque_drawables_on_the_sphere.end_painting(
 			renderer,
 			*d_vertex_element_buffer->get_buffer(),
 			*d_vertex_buffer->get_buffer(),
 			*d_vertex_array,
+			*d_unlit_axially_symmetric_mesh_vertex_array,
+			*d_lit_axially_symmetric_mesh_vertex_array,
 			*d_gl_visual_layers,
 			d_map_projection,
 			d_render_point_line_polygon_lighting_in_globe_view_program_object,
-			d_render_point_line_polygon_lighting_in_map_view_program_object);
+			d_render_point_line_polygon_lighting_in_map_view_program_object,
+			d_render_axially_symmetric_mesh_lighting_program_object);
 
 	translucent_drawables_on_the_sphere.end_painting(
 			renderer,
 			*d_vertex_element_buffer->get_buffer(),
 			*d_vertex_buffer->get_buffer(),
 			*d_vertex_array,
+			*d_unlit_axially_symmetric_mesh_vertex_array,
+			*d_lit_axially_symmetric_mesh_vertex_array,
 			*d_gl_visual_layers,
 			d_map_projection,
 			d_render_point_line_polygon_lighting_in_globe_view_program_object,
-			d_render_point_line_polygon_lighting_in_map_view_program_object);
+			d_render_point_line_polygon_lighting_in_map_view_program_object,
+			d_render_axially_symmetric_mesh_lighting_program_object);
 
 
 	// We rendered off-the-sphere drawables after on-the-sphere drawables because, for the 2D map views,
@@ -336,7 +582,8 @@ GPlatesGui::LayerPainter::end_painting(
 		}
 
 		// As mentioned above these off-sphere primitives should not be rendered with any anti-aliasing
-		// (including polygon anti-aliasing - which we no longer use due to artifacts at triangle edges).
+		// (including polygon anti-aliasing - which we no longer use because it generates transparent
+		// edges between adjacent triangles in a mesh).
 		renderer.gl_enable(GL_POINT_SMOOTH, false);
 		renderer.gl_enable(GL_LINE_SMOOTH, false);
 
@@ -345,10 +592,13 @@ GPlatesGui::LayerPainter::end_painting(
 				*d_vertex_element_buffer->get_buffer(),
 				*d_vertex_buffer->get_buffer(),
 				*d_vertex_array,
+				*d_unlit_axially_symmetric_mesh_vertex_array,
+				*d_lit_axially_symmetric_mesh_vertex_array,
 				*d_gl_visual_layers,
 				d_map_projection,
 				d_render_point_line_polygon_lighting_in_globe_view_program_object,
-				d_render_point_line_polygon_lighting_in_map_view_program_object);
+				d_render_point_line_polygon_lighting_in_map_view_program_object,
+				d_render_axially_symmetric_mesh_lighting_program_object);
 	}
 
 	// Render any 2D text last (text specified at 2D viewport positions).
@@ -658,6 +908,7 @@ void
 GPlatesGui::LayerPainter::PointLinePolygonDrawables::begin_painting()
 {
 	d_triangle_drawables.begin_painting();
+	d_axially_symmetric_mesh_triangle_drawables.begin_painting();
 
 	// There are multiple point and line categories depending on point sizes and line widths so
 	// we only begin painting on those when we encounter a new point size or line width.
@@ -670,12 +921,16 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 		GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
 		GPlatesOpenGL::GLBuffer &vertex_buffer_data,
 		GPlatesOpenGL::GLVertexArray &vertex_array,
+		GPlatesOpenGL::GLVertexArray &unlit_axially_symmetric_mesh_vertex_array,
+		GPlatesOpenGL::GLVertexArray &lit_axially_symmetric_mesh_vertex_array,
 		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
 		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
 				render_point_line_polygon_lighting_in_globe_view_program_object,
 		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
-				render_point_line_polygon_lighting_in_map_view_program_object)
+				render_point_line_polygon_lighting_in_map_view_program_object,
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+				render_axially_symmetric_mesh_lighting_program_object)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
@@ -685,7 +940,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 	paint_filled_polygons(renderer, gl_visual_layers, map_projection);
 
 	//
-	// Set up for rendering points, lines and polygons.
+	// Set up for regular rendering of points, lines and polygons.
 	//
 
 	// All painting below uses the one vertex array so we only need to bind it once (here).
@@ -693,63 +948,19 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 	vertex_array.gl_bind(renderer);
 
 	//
-	// Apply lighting if it's enabled and the runtime system supports it.
+	// Apply lighting if it's enabled and the runtime system supports it, otherwise defaults
+	// to the fixed-function pipeline.
 	//
-
-	// If we are not rendering to the framebuffer then we need to use OpenGL feedback in order to
-	// render to the QPainter's paint device. Currently we're using base OpenGL feedback which only
-	// works with the fixed-function pipeline - so we turn off shaders.
-	// TODO: Implement OpenGL 2/3 feedback extensions to enable feedback from vertex shaders.
-	if (renderer.rendering_to_context_framebuffer())
-	{
-		// Get the OpenGL light if the runtime system supports it.
-		boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> gl_light =
-				gl_visual_layers.get_light(renderer);
-
-		// Use shader program (if supported) if lighting is enabled, otherwise the fixed-function pipeline (default).
-		// The shader program enables lighting of the point/polyline/polygon geometries.
-		if (gl_light &&
-			gl_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
-					GPlatesGui::SceneLightingParameters::LIGHTING_POINT_POLYLINE_POLYGON))
-		{
-			if (map_projection)
-			{
-				if (render_point_line_polygon_lighting_in_map_view_program_object)
-				{
-					// Bind the shader program.
-					renderer.gl_bind_program_object(render_point_line_polygon_lighting_in_map_view_program_object.get());
-
-					// Set the (ambient+diffuse) lighting.
-					// For the 2D map views this is constant across the map since the surface normal is
-					// constant (it's a flat surface unlike the globe).
-					render_point_line_polygon_lighting_in_map_view_program_object.get()->gl_uniform1f(
-							renderer,
-							"ambient_and_diffuse_lighting",
-							gl_light.get()->get_map_view_constant_lighting(renderer));
-				}
-			}
-			else // globe view ...
-			{
-				if (render_point_line_polygon_lighting_in_globe_view_program_object)
-				{
-					// Bind the shader program.
-					renderer.gl_bind_program_object(render_point_line_polygon_lighting_in_globe_view_program_object.get());
-
-					// Set the world-space light direction.
-					render_point_line_polygon_lighting_in_globe_view_program_object.get()->gl_uniform3f(
-							renderer,
-							"world_space_light_direction",
-							gl_light.get()->get_globe_view_light_direction(renderer));
-
-					// Set the light ambient contribution.
-					render_point_line_polygon_lighting_in_globe_view_program_object.get()->gl_uniform1f(
-							renderer,
-							"light_ambient_contribution",
-							gl_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
-				}
-			}
-		}
-	}
+	// This lighting simply uses the normal to the globe as the surface normal.
+	// In other words it doesn't consider any surface variations that are present in arbitrary
+	// triangular meshes for instance.
+	//
+	set_generic_point_line_polygon_lighting_state(
+			renderer,
+			gl_visual_layers,
+			map_projection,
+			render_point_line_polygon_lighting_in_globe_view_program_object,
+			render_point_line_polygon_lighting_in_map_view_program_object);
 
 	//
 	// Paint the point, line and polygon drawables with the appropriate state
@@ -784,7 +995,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 	BOOST_FOREACH(line_width_to_drawables_map_type::value_type &line_width_entry, d_line_drawables_map)
 	{
 		const float line_width = line_width_entry.first.dval();
-		Drawables &lines_drawable = line_width_entry.second;
+		Drawables<coloured_vertex_type> &lines_drawable = line_width_entry.second;
 
 		// Set the line width for the current group of lines.
 		renderer.gl_line_width(line_width);
@@ -808,7 +1019,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 	BOOST_FOREACH(point_size_to_drawables_map_type::value_type &point_size_entry, d_point_drawables_map)
 	{
 		const float point_size = point_size_entry.first.dval();
-		Drawables &points_drawable = point_size_entry.second;
+		Drawables<coloured_vertex_type> &points_drawable = point_size_entry.second;
 
 		// Set the point size for the current group of points.
 		renderer.gl_point_size(point_size);
@@ -823,6 +1034,62 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 
 	// Clear the points drawables because the next render may have a different collection of point sizes.
 	d_point_drawables_map.clear();
+
+	//
+	// Render axially symmetric primitives (if any).
+	//
+
+	// Since this uses a separate vertex array and separate shader program than regular rendering
+	// we only bind them if there are primitives to render (and it's quite likely there aren't any).
+	if (d_axially_symmetric_mesh_triangle_drawables.has_primitives())
+	{
+		// Make sure we leave the OpenGL state the way it was.
+		GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_axially_symmetric_state(renderer);
+
+		// Apply axially symmetric lighting if it's enabled and the runtime system supports it,
+		// otherwise defaults to the existing state (which is either the generic lighting set above
+		// or the fixed-function pipeline - both of which support non-generic vertex attribute data).
+		const bool lighting_axially_symmetric_meshes =
+				set_axially_symmetric_mesh_lighting_state(
+						renderer,
+						gl_visual_layers,
+						render_axially_symmetric_mesh_lighting_program_object);
+
+		GPlatesOpenGL::GLVertexArray &axially_symmetric_mesh_vertex_array =
+				lighting_axially_symmetric_meshes
+						// Generic vertex attribute data...
+						? lit_axially_symmetric_mesh_vertex_array
+						// Non-generic vertex attribute data...
+						: unlit_axially_symmetric_mesh_vertex_array;
+
+		axially_symmetric_mesh_vertex_array.gl_bind(renderer);
+
+		// Cull back faces since the lighting is not two-sided - the lighting is one-sided and
+		// only meant for the front face. If the mesh is closed then this isn't necessary unless
+		// the mesh is semi-transparent.
+		// We use the currently set state of 'gl_cull_face()' and 'gl_front_face()', or the default
+		// (cull back faces and front faces are CCW-oriented) if caller has not specified.
+		renderer.gl_enable(GL_CULL_FACE);
+
+		d_axially_symmetric_mesh_triangle_drawables.end_painting(
+				renderer,
+				vertex_element_buffer_data,
+				vertex_buffer_data,
+				axially_symmetric_mesh_vertex_array,
+				GL_TRIANGLES);
+	}
+	else
+	{
+		// We have to match calls to 'begin_painting()' with calls to 'end_painting()' even if
+		// there's no primitives to render.
+		d_axially_symmetric_mesh_triangle_drawables.end_painting(
+				renderer,
+				vertex_element_buffer_data,
+				vertex_buffer_data,
+				// Any vertex array will do - it won't get used since there's no primitives to render...
+				unlit_axially_symmetric_mesh_vertex_array,
+				GL_TRIANGLES);
+	}
 }
 
 
@@ -834,12 +1101,12 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::get_points_stream(
 	point_size_to_drawables_map_type::iterator stream_iter = d_point_drawables_map.find(point_size);
 	if (stream_iter != d_point_drawables_map.end())
 	{
-		Drawables &drawable = stream_iter->second;
+		Drawables<coloured_vertex_type> &drawable = stream_iter->second;
 		return drawable.get_stream();
 	}
 
 	// A drawable does not yet exist for 'point_size' so create a new one.
-	Drawables &drawable = d_point_drawables_map[point_size];
+	Drawables<coloured_vertex_type> &drawable = d_point_drawables_map[point_size];
 
 	// Start a new stream on the drawable.
 	drawable.begin_painting();
@@ -856,12 +1123,12 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::get_lines_stream(
 	line_width_to_drawables_map_type::iterator stream_iter = d_line_drawables_map.find(line_width);
 	if (stream_iter != d_line_drawables_map.end())
 	{
-		Drawables &drawable = stream_iter->second;
+		Drawables<coloured_vertex_type> &drawable = stream_iter->second;
 		return drawable.get_stream();
 	}
 
 	// A drawable does not yet exist for 'line_width' so create a new one.
-	Drawables &drawable = d_line_drawables_map[line_width];
+	Drawables<coloured_vertex_type> &drawable = d_line_drawables_map[line_width];
 
 	// Start a new stream on the drawable.
 	drawable.begin_painting();
@@ -874,6 +1141,13 @@ GPlatesGui::LayerPainter::stream_primitives_type &
 GPlatesGui::LayerPainter::PointLinePolygonDrawables::get_triangles_stream()
 {
 	return d_triangle_drawables.get_stream();
+}
+
+
+GPlatesGui::LayerPainter::axially_symmetric_mesh_stream_primitives_type &
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::get_axially_symmetric_mesh_triangles_stream()
+{
+	return d_axially_symmetric_mesh_triangle_drawables.get_stream();
 }
 
 
@@ -967,8 +1241,137 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
 }
 
 
+bool
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_generic_point_line_polygon_lighting_state(
+		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
+		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+				render_point_line_polygon_lighting_in_globe_view_program_object,
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+				render_point_line_polygon_lighting_in_map_view_program_object)
+{
+	// If we are not rendering to the framebuffer then we need to use OpenGL feedback in order to
+	// render to the QPainter's paint device. Currently we're using base OpenGL feedback which only
+	// works with the fixed-function pipeline - so we don't turn on shaders.
+	// TODO: Implement OpenGL 2/3 feedback extensions to enable feedback from vertex shaders.
+	if (!renderer.rendering_to_context_framebuffer())
+	{
+		return false;
+	}
+
+	// Get the OpenGL light if the runtime system supports it.
+	boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> gl_light = gl_visual_layers.get_light(renderer);
+
+	// Use shader program (if supported) if lighting is enabled.
+	// The shader program enables lighting of the point/polyline/polygon geometries.
+	if (!gl_light ||
+		!gl_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
+				GPlatesGui::SceneLightingParameters::LIGHTING_GEOMETRY_ON_SPHERE))
+	{
+		return false;
+	}
+
+	if (map_projection)
+	{
+		if (!render_point_line_polygon_lighting_in_map_view_program_object)
+		{
+			return false;
+		}
+
+		// Bind the shader program.
+		renderer.gl_bind_program_object(render_point_line_polygon_lighting_in_map_view_program_object.get());
+
+		// Set the (ambient+diffuse) lighting.
+		// For the 2D map views this is constant across the map since the surface normal is
+		// constant (it's a flat surface unlike the globe).
+		render_point_line_polygon_lighting_in_map_view_program_object.get()->gl_uniform1f(
+				renderer,
+				"ambient_and_diffuse_lighting",
+				gl_light.get()->get_map_view_constant_lighting(renderer));
+	}
+	else // globe view ...
+	{
+		if (!render_point_line_polygon_lighting_in_globe_view_program_object)
+		{
+			return false;
+		}
+
+		// Bind the shader program.
+		renderer.gl_bind_program_object(render_point_line_polygon_lighting_in_globe_view_program_object.get());
+
+		// Set the world-space light direction.
+		render_point_line_polygon_lighting_in_globe_view_program_object.get()->gl_uniform3f(
+				renderer,
+				"world_space_light_direction",
+				gl_light.get()->get_globe_view_light_direction(renderer));
+
+		// Set the light ambient contribution.
+		render_point_line_polygon_lighting_in_globe_view_program_object.get()->gl_uniform1f(
+				renderer,
+				"light_ambient_contribution",
+				gl_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
+	}
+
+	return true;
+}
+
+
+bool
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_axially_symmetric_mesh_lighting_state(
+		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+				render_axially_symmetric_mesh_lighting_program_object)
+{
+	// If we are not rendering to the framebuffer then we need to use OpenGL feedback in order to
+	// render to the QPainter's paint device. Currently we're using base OpenGL feedback which only
+	// works with the fixed-function pipeline - so we don't turn on shaders.
+	// TODO: Implement OpenGL 2/3 feedback extensions to enable feedback from vertex shaders.
+	if (!renderer.rendering_to_context_framebuffer())
+	{
+		return false;
+	}
+
+	// Get the OpenGL light if the runtime system supports it.
+	boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> gl_light = gl_visual_layers.get_light(renderer);
+
+	// Use shader program (if supported) if lighting is enabled, otherwise the fixed-function pipeline (default).
+	// The shader program enables lighting of the point/polyline/polygon geometries.
+	if (!gl_light ||
+		!gl_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
+				GPlatesGui::SceneLightingParameters::LIGHTING_DIRECTION_ARROW))
+	{
+		return false;
+	}
+
+	if (!render_axially_symmetric_mesh_lighting_program_object)
+	{
+		return false;
+	}
+
+	// Bind the shader program.
+	renderer.gl_bind_program_object(render_axially_symmetric_mesh_lighting_program_object.get());
+
+	// Set the world-space light direction.
+	render_axially_symmetric_mesh_lighting_program_object.get()->gl_uniform3f(
+			renderer,
+			"world_space_light_direction",
+			gl_light.get()->get_globe_view_light_direction(renderer));
+
+	// Set the light ambient contribution.
+	render_axially_symmetric_mesh_lighting_program_object.get()->gl_uniform1f(
+			renderer,
+			"light_ambient_contribution",
+			gl_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
+
+	return true;
+}
+
+
+template <class VertexType>
 void
-GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::begin_painting()
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables<VertexType>::begin_painting()
 {
 	// Create the stream.
 	d_stream.reset(new Stream());
@@ -980,8 +1383,9 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::begin_painting()
 }
 
 
+template <class VertexType>
 void
-GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::end_painting(
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables<VertexType>::end_painting(
 		GPlatesOpenGL::GLRenderer &renderer,
 		GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
 		GPlatesOpenGL::GLBuffer &vertex_buffer_data,
@@ -997,7 +1401,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::end_painting(
 	d_stream->stream_target.stop_streaming();
 
 	// If there are primitives to draw...
-	if (!d_vertex_elements.empty())
+	if (has_primitives())
 	{
 		// Either render directly to the framebuffer, or use OpenGL feedback to render to the
 		// QPainter's paint device.
@@ -1020,8 +1424,35 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::end_painting(
 }
 
 
+template <class VertexType>
+GPlatesOpenGL::GLDynamicStreamPrimitives<VertexType, GPlatesGui::LayerPainter::vertex_element_type> &
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables<VertexType>::get_stream()
+{
+	// The stream should have already been created in 'begin_painting()'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_stream,
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_stream->stream_primitives;
+}
+
+
+template <class VertexType>
+bool
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables<VertexType>::has_primitives() const
+{
+	// The stream should have already been created in 'begin_painting()'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_stream,
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_stream->stream_target.get_num_streamed_vertex_elements() > 0;
+}
+
+
+template <class VertexType>
 void
-GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::draw_primitives(
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables<VertexType>::draw_primitives(
 		GPlatesOpenGL::GLRenderer &renderer,
 		GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
 		GPlatesOpenGL::GLBuffer &vertex_buffer_data,
@@ -1055,8 +1486,9 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::draw_primitives(
 }
 
 
+template <class VertexType>
 void
-GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::draw_feedback_primitives_to_qpainter(
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables<VertexType>::draw_feedback_primitives_to_qpainter(
 		GPlatesOpenGL::GLRenderer &renderer,
 		GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
 		GPlatesOpenGL::GLBuffer &vertex_buffer_data,
@@ -1096,4 +1528,41 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables::draw_feedback_pr
 			max_num_triangles);
 
 	draw_primitives(renderer, vertex_element_buffer_data, vertex_buffer_data, vertex_array, mode);
+}
+
+
+GPlatesGui::LayerPainter::AxiallySymmetricMeshVertex::AxiallySymmetricMeshVertex(
+		const GPlatesMaths::Vector3D &world_space_position_,
+		GPlatesGui::rgba8_t colour_,
+		const GPlatesMaths::UnitVector3D &world_space_x_axis_,
+		const GPlatesMaths::UnitVector3D &world_space_y_axis_,
+		const GPlatesMaths::UnitVector3D &world_space_z_axis_,
+		GLfloat model_space_x_position_,
+		GLfloat model_space_y_position_,
+		GLfloat radial_normal_weight_,
+		GLfloat axial_normal_weight_)
+{
+	world_space_position[0] = world_space_position_.x().dval();
+	world_space_position[1] = world_space_position_.y().dval();
+	world_space_position[2] = world_space_position_.z().dval();
+
+	colour = colour_;
+
+	world_space_x_axis[0] = world_space_x_axis_.x().dval();
+	world_space_x_axis[1] = world_space_x_axis_.y().dval();
+	world_space_x_axis[2] = world_space_x_axis_.z().dval();
+
+	world_space_y_axis[0] = world_space_y_axis_.x().dval();
+	world_space_y_axis[1] = world_space_y_axis_.y().dval();
+	world_space_y_axis[2] = world_space_y_axis_.z().dval();
+
+	world_space_z_axis[0] = world_space_z_axis_.x().dval();
+	world_space_z_axis[1] = world_space_z_axis_.y().dval();
+	world_space_z_axis[2] = world_space_z_axis_.z().dval();
+
+	model_space_radial_position[0] = model_space_x_position_;
+	model_space_radial_position[1] = model_space_y_position_;
+
+	radial_and_axial_normal_weights[0] = radial_normal_weight_;
+	radial_and_axial_normal_weights[1] = axial_normal_weight_;
 }

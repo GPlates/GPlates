@@ -49,6 +49,7 @@
 #include "GLRenderer.h"
 #include "GLShaderProgramUtils.h"
 #include "GLShaderSource.h"
+#include "GLTexture.h"
 #include "GLTextureUtils.h"
 #include "GLViewport.h"
 
@@ -191,6 +192,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::GLMultiResolutionRasterMapView(
 	d_multi_resolution_cube_raster(multi_resolution_cube_raster),
 	d_multi_resolution_map_cube_mesh(multi_resolution_map_cube_mesh),
 	d_tile_texel_dimension(multi_resolution_cube_raster->get_tile_texel_dimension()),
+	d_inverse_tile_texel_dimension(1.0f / multi_resolution_cube_raster->get_tile_texel_dimension()),
 	d_map_projection_central_meridian_longitude(0)
 {
 	create_shader_programs(renderer);
@@ -208,11 +210,8 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
 	// First see if the map projection central meridian has changed.
-	// If so then we need to invalidate the source raster cube map cache because it is aligned with
-	// the central meridian and must be regenerated.
 	//
-	// NOTE: If the projection *type* changes then we don't need to invalidate - the raster cube map
-	// can still be applied as is.
+	// NOTE: If the projection *type* changes then we don't need to change our world transform.
 	const double updated_map_projection_central_meridian_longitude =
 			d_multi_resolution_map_cube_mesh->get_current_map_projection_settings().get_central_llp().longitude();
 	if (!GPlatesMaths::are_almost_exactly_equal(
@@ -232,8 +231,16 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 								// The negative sign rotates *to* longitude zero...
 								-d_map_projection_central_meridian_longitude));
 
+		d_world_transform = GLMatrix(world_transform.quat());
+	}
+
+	// If our world transform differs from the cube raster's then set it.
+	// This can happen if some other client changes the cube raster's world transform or
+	// if we have a new map projection central meridian (which changes our world transform).
+	if (d_world_transform != d_multi_resolution_cube_raster->get_world_transform())
+	{
 		// Note that this invalidates all cached textures so we only want to call it if the transform changed.
-		d_multi_resolution_cube_raster->set_world_transform(GLMatrix(world_transform.quat()));
+		d_multi_resolution_cube_raster->set_world_transform(d_world_transform);
 	}
 
 	// Determine the size of a viewport pixel in map projection coordinates.
@@ -711,27 +718,92 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::create_shader_programs(
 	// The clipping is only needed for high zoom levels so for reasonable zoom levels the fixed-function
 	// pipeline (available on all hardware) should render fine.
 
+	const bool is_floating_point_source_raster =
+			GLTexture::is_format_floating_point(d_multi_resolution_cube_raster->get_tile_texture_internal_format());
+
+	//
 	// A version without clipping.
+	//
+
+	GLShaderSource render_tile_to_scene_without_clipping_fragment_shader_source;
+
+	// Add the '#define's first.
+	if (is_floating_point_source_raster)
+	{
+		// Configure shader for floating-point rasters.
+		render_tile_to_scene_without_clipping_fragment_shader_source.add_code_segment(
+				"#define SOURCE_RASTER_IS_FLOATING_POINT\n");
+	}
+
+	// Then add the GLSL function to bilinearly interpolate.
+	render_tile_to_scene_without_clipping_fragment_shader_source.add_code_segment_from_file(
+			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+
+	// Then add the GLSL 'main()' function.
+	render_tile_to_scene_without_clipping_fragment_shader_source.add_code_segment_from_file(
+			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+
 	d_render_tile_to_scene_program_object =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					GLShaderSource::create_shader_source_from_file(
 							RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME),
-					GLShaderSource::create_shader_source_from_file(
-							RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME));
+					render_tile_to_scene_without_clipping_fragment_shader_source);
 
+	if (d_render_tile_to_scene_program_object &&
+		is_floating_point_source_raster)
+	{
+		// We need to setup for bilinear filtering of floating-point texture in the fragment shader.
+		// Set the source tile texture dimensions (and inverse dimensions).
+		// This uniform is constant (only needs to be reloaded if shader program is re-linked).
+		d_render_tile_to_scene_program_object.get()->gl_uniform4f(
+				renderer,
+				"source_texture_dimensions",
+				d_tile_texel_dimension, d_tile_texel_dimension,
+				d_inverse_tile_texel_dimension, d_inverse_tile_texel_dimension);
+	}
+
+	//
 	// A version with clipping.
-	GLShaderSource render_tile_to_scene_with_clipping_shader_source;
-	// Add the '#define' first.
-	render_tile_to_scene_with_clipping_shader_source.add_code_segment("#define ENABLE_CLIPPING\n");
+	//
+
+	GLShaderSource render_tile_to_scene_with_clipping_fragment_shader_source;
+
+	// Add the '#define's first.
+	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment("#define ENABLE_CLIPPING\n");
+	if (is_floating_point_source_raster)
+	{
+		// Configure shader for floating-point rasters.
+		render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment(
+				"#define SOURCE_RASTER_IS_FLOATING_POINT\n");
+	}
+
+	// Then add the GLSL function to bilinearly interpolate.
+	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment_from_file(
+			GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+
 	// Then add the GLSL 'main()' function.
-	render_tile_to_scene_with_clipping_shader_source.add_code_segment_from_file(
+	render_tile_to_scene_with_clipping_fragment_shader_source.add_code_segment_from_file(
 			RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+
 	// Create the program object.
 	d_render_tile_to_scene_with_clipping_program_object =
 			GLShaderProgramUtils::compile_and_link_vertex_fragment_program(
 					renderer,
 					GLShaderSource::create_shader_source_from_file(
 							RENDER_TILE_TO_SCENE_VERTEX_SHADER_SOURCE_FILE_NAME),
-					render_tile_to_scene_with_clipping_shader_source);
+					render_tile_to_scene_with_clipping_fragment_shader_source);
+
+	if (d_render_tile_to_scene_with_clipping_program_object &&
+		is_floating_point_source_raster)
+	{
+		// We need to setup for bilinear filtering of floating-point texture in the fragment shader.
+		// Set the source tile texture dimensions (and inverse dimensions).
+		// This uniform is constant (only needs to be reloaded if shader program is re-linked).
+		d_render_tile_to_scene_with_clipping_program_object.get()->gl_uniform4f(
+				renderer,
+				"source_texture_dimensions",
+				d_tile_texel_dimension, d_tile_texel_dimension,
+				d_inverse_tile_texel_dimension, d_inverse_tile_texel_dimension);
+	}
 }

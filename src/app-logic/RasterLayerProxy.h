@@ -43,14 +43,18 @@
 #include "opengl/GLDataRasterSource.h"
 #include "opengl/GLMultiResolutionCubeMesh.h"
 #include "opengl/GLMultiResolutionCubeRaster.h"
+#include "opengl/GLMultiResolutionCubeRasterInterface.h"
+#include "opengl/GLMultiResolutionCubeReconstructedRaster.h"
 #include "opengl/GLMultiResolutionRaster.h"
 #include "opengl/GLMultiResolutionRasterInterface.h"
 #include "opengl/GLMultiResolutionStaticPolygonReconstructedRaster.h"
 #include "opengl/GLReconstructedStaticPolygonMeshes.h"
 
+#include "property-values/CoordinateTransformation.h"
 #include "property-values/Georeferencing.h"
 #include "property-values/GpmlRasterBandNames.h"
 #include "property-values/RawRaster.h"
+#include "property-values/SpatialReferenceSystem.h"
 #include "property-values/TextContent.h"
 
 #include "utils/SubjectObserverToken.h"
@@ -89,12 +93,37 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the georeferencing of the raster feature.
+		 * Returns the georeferencing of the raster feature (if any).
 		 */
 		const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
 		get_georeferencing() const
 		{
 			return d_current_georeferencing;
+		}
+
+
+		/**
+		 * Returns the raster's spatial reference system (if any).
+		 */
+		boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+		get_spatial_reference_system() const
+		{
+			return d_current_spatial_reference_system;
+		}
+
+
+		/**
+		 * Returns the transform from the raster's spatial reference to the standard WGS84.
+		 *
+		 * The georeference coordinates undergo a coordinate system transformation from the raster's
+		 * (possibly projected) geographic coordinate system to lat/lon coordinates in the standard
+		 * WGS84 datum (which GPlates currently considers to be a perfectly spherical globe, ie,
+		 * anything in WGS84 is not converted to spherical coordinates).
+		 */
+		GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type
+		get_coordinate_transformation() const
+		{
+			return d_current_coordinate_transformation;
 		}
 
 
@@ -207,7 +236,7 @@ namespace GPlatesAppLogic
 		 * for the same raster band name.
 		 */
 		bool
-		does_raster_contain_numerical_data(
+		does_raster_band_contain_numerical_data(
 				const GPlatesPropertyValues::TextContent &raster_band_name);
 
 
@@ -220,7 +249,7 @@ namespace GPlatesAppLogic
 		 * read back to the CPU or both - the raster co-registration client actually does both.
 		 *
 		 * NOTE: Returns boost::none if the raster does not contain *numerical* data (see
-		 * @a does_raster_contain_numerical_data). Also returns boost::none for various errors
+		 * @a does_raster_band_contain_numerical_data). Also returns boost::none for various errors
 		 * such as lack of OpenGL floating-point texture support on the runtime system.
 		 * Raster *visualisation* is currently handled by @a get_resolved_raster in conjunction
 		 * with "GLVisualLayers::render_raster()" - ie, handled at the visualisation tier
@@ -273,6 +302,65 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
 		get_multi_resolution_data_raster(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const double &reconstruction_time,
+				const GPlatesPropertyValues::TextContent &raster_band_name);
+
+
+		/**
+		 * This is the same as @a get_multi_resolution_data_raster but returns a *cube* version of the raster.
+		 *
+		 * As with @a get_multi_resolution_data_raster this returns either a reconstructed or
+		 * unreconstructed raster depending on the layer setup.
+		 *
+		 * This method is useful for @a GLMultiResolutionRasterMapView when it renders a reconstructed
+		 * or unreconstructed raster (eg, during numerical raster export).
+		 *
+		 * NOTE: Since it is possible to set the world transform directly on a cube raster it is not
+		 * guaranteed that the identity world transform is set of the returned cube raster (this will
+		 * be the case if another caller has changed it and the cube raster is still cached internally).
+		 * For this reason it's probably better to instead use @a get_multi_resolution_data_raster
+		 * and create our own cube raster to wrap it with.
+		 *
+		 * See @a get_multi_resolution_data_raster for more details.
+		 */
+		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type>
+		get_multi_resolution_data_cube_raster(
+				GPlatesOpenGL::GLRenderer &renderer)
+		{
+			return get_multi_resolution_data_cube_raster(renderer, d_current_reconstruction_time, d_current_raster_band_name);
+		}
+
+		/**
+		 * Returns the possibly reconstructed (multi-resolution) *data* cube raster, for the current
+		 * reconstruction time and specified raster band name.
+		 */
+		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type>
+		get_multi_resolution_data_cube_raster(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const GPlatesPropertyValues::TextContent &raster_band_name)
+		{
+			return get_multi_resolution_data_cube_raster(renderer, d_current_reconstruction_time, raster_band_name);
+		}
+
+		/**
+		 * Returns the possibly reconstructed (multi-resolution) *data* cube raster, current raster
+		 * band name at the specified time.
+		 */
+		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type>
+		get_multi_resolution_data_cube_raster(
+				GPlatesOpenGL::GLRenderer &renderer,
+				const double &reconstruction_time)
+		{
+			return get_multi_resolution_data_cube_raster(renderer, reconstruction_time, d_current_raster_band_name);
+		}
+
+		/**
+		 * Returns the possibly reconstructed (multi-resolution) *data* cube raster, for the specified
+		 * time and specified raster band name.
+		 */
+		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type>
+		get_multi_resolution_data_cube_raster(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &reconstruction_time,
 				const GPlatesPropertyValues::TextContent &raster_band_name);
@@ -565,6 +653,12 @@ namespace GPlatesAppLogic
 			 */
 			boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
 					cached_data_reconstructed_raster;
+
+			/**
+			 * Cached OpenGL (reconstructed) multi-resolution cube *data* raster (for the currently cached proxied raster).
+			 */
+			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::non_null_ptr_type>
+					cached_data_reconstructed_cube_raster;
 		};
 
 
@@ -658,6 +752,12 @@ namespace GPlatesAppLogic
 		//! The georeferencing of the raster.
 		boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> d_current_georeferencing;
 
+		//! The raster's spatial reference system (if any).
+		boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> d_current_spatial_reference_system;
+
+		//! The coordinate transformation from raster to WGS84.
+		GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type d_current_coordinate_transformation;
+
 		/**
 		 * The current reconstruction time as set by the layer system.
 		 */
@@ -690,6 +790,9 @@ namespace GPlatesAppLogic
 
 		RasterLayerProxy() :
 			d_current_raster_band_name(GPlatesUtils::UnicodeString()),
+			d_current_coordinate_transformation(
+					// Default to identity transformation...
+					GPlatesPropertyValues::CoordinateTransformation::create()),
 			d_current_reconstruction_time(0)
 		{  }
 

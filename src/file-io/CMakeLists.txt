@@ -60,6 +60,8 @@ set(srcs
     Gdal.h
     GdalRasterReader.cc
     GdalRasterReader.h
+    GdalRasterWriter.cc
+    GdalRasterWriter.h
     GdalUtils.cc
     GdalUtils.h
     GeometryExporter.h
@@ -174,6 +176,8 @@ set(srcs
     RasterFileCacheFormatReader.h
     RasterReader.cc
     RasterReader.h
+    RasterWriter.cc
+    RasterWriter.h
     ReadErrorAccumulation.h
     ReadErrorMessages.cc
     ReadErrorMessages.h
@@ -194,6 +198,8 @@ set(srcs
     ResolvedTopologicalGeometryExport.h
     RgbaRasterReader.cc
     RgbaRasterReader.h
+    RgbaRasterWriter.cc
+    RgbaRasterWriter.h
     RotationAttributesRegistry.cc
     RotationAttributesRegistry.h
     ScalarField3DFileFormat.cc

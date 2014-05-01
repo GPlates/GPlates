@@ -165,6 +165,7 @@ namespace GPlatesOpenGL
 		 * NOTE: If @a light is specified but lighting is not supported on the run-time system
 		 * (eg, due to exceeding shader instructions limit) then the raster will not be rendered
 		 * with surface lighting.
+		 * Whether lighting is used also depends on the state of SceneLightingParameters.
 		 */
 		static
 		non_null_ptr_type
@@ -450,6 +451,47 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * A GLProgramObject and the uniform variables it uses.
+		 */
+		struct ProgramObject
+		{
+			//! Which uniform variables are used by a shader program.
+			struct Uniforms
+			{
+				Uniforms();
+
+				bool uses_source_raster_texture_transform;
+				bool uses_source_texture_sampler;
+				bool uses_source_texture_dimensions;
+				bool uses_clip_texture_transform;
+				bool uses_clip_texture_sampler;
+				bool uses_age_grid_texture_transform;
+				bool uses_age_grid_texture_sampler;
+				bool uses_age_grid_texture_dimensions;
+				bool uses_normal_map_texture_transform;
+				bool uses_normal_map_texture_sampler;
+				bool uses_reconstruction_time;
+				bool uses_plate_rotation_quaternion;
+				bool uses_world_space_light_direction;
+				bool uses_light_direction_cube_texture_sampler;
+				bool uses_ambient_and_diffuse_lighting;
+				bool uses_light_ambient_contribution;
+			};
+
+
+			ProgramObject(
+					const GLProgramObject::shared_ptr_type &shader_program_object_,
+					const Uniforms &uniforms_) :
+				shader_program_object(shader_program_object_),
+				uniforms(uniforms_)
+			{  }
+
+			GLProgramObject::shared_ptr_type shader_program_object;
+			Uniforms uniforms;
+		};
+
+
+		/**
 		 * Used to cache information, specific to a quad tree node, *during* traversal of the source raster.
 		 *
 		 * The cube quad tree containing these nodes is destroyed at the end of each render.
@@ -463,7 +505,7 @@ namespace GPlatesOpenGL
 				explicit
 				TileDrawState(
 						const GLCompiledDrawState::non_null_ptr_to_const_type &compiled_draw_state_,
-						boost::optional<GLProgramObject::shared_ptr_type> program_object_ = boost::none) :
+						boost::optional<ProgramObject> program_object_ = boost::none) :
 					compiled_draw_state(compiled_draw_state_),
 					program_object(program_object_)
 				{  }
@@ -472,7 +514,7 @@ namespace GPlatesOpenGL
 				GLCompiledDrawState::non_null_ptr_to_const_type compiled_draw_state;
 
 				// Optional program object if not using the fixed-function pipeline.
-				boost::optional<GLProgramObject::shared_ptr_type> program_object;
+				boost::optional<ProgramObject> program_object;
 
 				// Optional uniform variables in program object.
 				// These cannot be stored in a 'GLCompiledDrawState'.
@@ -720,24 +762,22 @@ namespace GPlatesOpenGL
 		//
 
 		//! Render a floating-point source raster.
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_floating_point_program_object;
+		boost::optional<ProgramObject> d_render_floating_point_program_object;
 
 		//! Render a floating-point source raster using an age grid with active polygons.
-		boost::optional<GLProgramObject::shared_ptr_type>
+		boost::optional<ProgramObject>
 				d_render_floating_point_with_age_grid_with_active_polygons_program_object;
 		//! Render a floating-point source raster using an age grid with inactive polygons.
-		boost::optional<GLProgramObject::shared_ptr_type>
+		boost::optional<ProgramObject>
 				d_render_floating_point_with_age_grid_with_inactive_polygons_program_object;
 
 		//! Render a fixed-point source raster.
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_fixed_point_program_object;
+		boost::optional<ProgramObject> d_render_fixed_point_program_object;
 
 		//! Render a fixed-point source raster using an age grid with active polygons.
-		boost::optional<GLProgramObject::shared_ptr_type>
-				d_render_fixed_point_with_age_grid_with_active_polygons_program_object;
+		boost::optional<ProgramObject> d_render_fixed_point_with_age_grid_with_active_polygons_program_object;
 		//! Render a fixed-point source raster using an age grid with inactive polygons.
-		boost::optional<GLProgramObject::shared_ptr_type>
-				d_render_fixed_point_with_age_grid_with_inactive_polygons_program_object;
+		boost::optional<ProgramObject> d_render_fixed_point_with_age_grid_with_inactive_polygons_program_object;
 
 		//
 		// The following shader program variables are arrays of size two since the surface lighting
@@ -745,24 +785,28 @@ namespace GPlatesOpenGL
 		//
 
 		//! Render a fixed-point source raster using an age grid with active polygons with surface lighting.
-		boost::optional<GLProgramObject::shared_ptr_type>
-				d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program_object[2];
+		boost::optional<ProgramObject> d_render_fixed_point_with_age_grid_with_active_polygons_with_surface_lighting_program_object[2];
 		//! Render a fixed-point source raster using an age grid with inactive polygons with surface lighting.
-		boost::optional<GLProgramObject::shared_ptr_type>
-				d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program_object[2];
+		boost::optional<ProgramObject> d_render_fixed_point_with_age_grid_with_inactive_polygons_with_surface_lighting_program_object[2];
 
 		//! Render a fixed-point source raster with surface lighting.
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_fixed_point_with_surface_lighting_program_object[2];
+		boost::optional<ProgramObject> d_render_fixed_point_with_surface_lighting_program_object[2];
 
-		//! Render a fixed-point source raster with surface lighting with a normal map.
-		boost::optional<GLProgramObject::shared_ptr_type> d_render_fixed_point_with_normal_map_program_object[2];
+		//! Render a fixed-point source raster with with a normal map.
+		boost::optional<ProgramObject> d_render_fixed_point_with_normal_map_program_object[2];
 
-		//! Render a fixed-point source raster using an age grid with active polygons with surface lighting with a normal map.
-		boost::optional<GLProgramObject::shared_ptr_type>
-				d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program_object[2];
-		//! Render a fixed-point source raster using an age grid with inactive polygons with surface lighting with a normal map.
-		boost::optional<GLProgramObject::shared_ptr_type>
-				d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program_object[2];
+		//! Render a fixed-point source raster with a normal map with surface lighting.
+		boost::optional<ProgramObject> d_render_fixed_point_with_normal_map_with_surface_lighting_program_object[2];
+
+		//! Render a fixed-point source raster using an age grid with active polygons with a normal map with surface lighting.
+		boost::optional<ProgramObject> d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_program_object[2];
+		//! Render a fixed-point source raster using an age grid with inactive polygons with a normal map.
+		boost::optional<ProgramObject> d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_program_object[2];
+
+		//! Render a fixed-point source raster using an age grid with active polygons with a normal map with surface lighting.
+		boost::optional<ProgramObject> d_render_fixed_point_with_age_grid_with_active_polygons_with_normal_map_with_surface_lighting_program_object[2];
+		//! Render a fixed-point source raster using an age grid with inactive polygons with a normal map with surface lighting.
+		boost::optional<ProgramObject> d_render_fixed_point_with_age_grid_with_inactive_polygons_with_normal_map_with_surface_lighting_program_object[2];
 
 
 		/**
@@ -895,7 +939,7 @@ namespace GPlatesOpenGL
 				const boost::optional<age_grid_mask_quad_tree_node_type> &age_grid_mask_quad_tree_node,
 				const boost::optional<age_grid_mask_quad_tree_node_type> &normal_map_quad_tree_node);
 
-		boost::optional<GLProgramObject::shared_ptr_type>
+		boost::optional<ProgramObject>
 		get_shader_program_for_tile(
 				bool source_raster_is_floating_point,
 				bool using_age_grid_tile,
@@ -905,7 +949,7 @@ namespace GPlatesOpenGL
 		RenderQuadTreeNode::TileDrawState
 		create_scene_tile_draw_state(
 				GLRenderer &renderer,
-				boost::optional<GLProgramObject::shared_ptr_type> render_tile_to_scene_program_object,
+				boost::optional<ProgramObject> render_tile_to_scene_program_object,
 				const GLTexture::shared_ptr_to_const_type &source_raster_tile_texture,
 				const GLUtils::QuadTreeUVTransform &source_raster_uv_transform,
 				boost::optional<GLTexture::shared_ptr_to_const_type> age_grid_tile_texture,
@@ -947,10 +991,17 @@ namespace GPlatesOpenGL
 		create_shader_programs(
 				GLRenderer &renderer);
 
-		boost::optional<GLProgramObject::shared_ptr_type>
+		boost::optional<ProgramObject>
 		create_shader_program(
 				GLRenderer &renderer,
-				const char *vertex_and_fragment_shader_defines = "");
+				bool define_source_raster_is_floating_point,
+				bool define_using_age_grid,
+				bool define_generate_age_mask,
+				bool define_active_polygons,
+				bool define_surface_lighting,
+				bool define_using_normal_map,
+				bool define_no_directional_light_for_normal_maps,
+				bool define_map_view);
 	};
 }
 

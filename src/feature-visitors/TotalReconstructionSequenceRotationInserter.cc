@@ -153,7 +153,6 @@ void
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_finite_rotation(
 		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 {
-    qDebug() << "Visiting finite rotation";
 	if (d_is_expecting_a_finite_rotation) {
 		// The visitor was expecting a FiniteRotation, which means the structure of the
 		// Total Reconstruction Sequence is (more or less) correct.
