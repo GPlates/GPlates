@@ -155,25 +155,29 @@ GPlatesApi::RotationModel::create(
 	const FeatureCollectionSequenceFunctionArgument feature_collections_function_argument =
 			bp::extract<FeatureCollectionSequenceFunctionArgument>(rotation_features_python_object);
 
-	// Copy feature collections into a vector.
-	std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collections;
-	feature_collections_function_argument.get_feature_collections(feature_collections);
+	// Copy feature collection files into a vector.
+	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
+	feature_collections_function_argument.get_files(feature_collection_files);
 
-	return create(feature_collections, reconstruction_tree_cache_size);
+	return create(feature_collection_files, reconstruction_tree_cache_size);
 }
 
 
 GPlatesApi::RotationModel::non_null_ptr_type
 GPlatesApi::RotationModel::create(
-		const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
+		const std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
 		unsigned int reconstruction_tree_cache_size)
 {
-	// Convert the feature collections to weak refs (for ReconstructionTreeCreator).
+	// Convert the feature collections (in the files) to weak refs (for ReconstructionTreeCreator).
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
 	BOOST_FOREACH(
-			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
-			feature_collections)
+			GPlatesFileIO::File::non_null_ptr_type feature_collection_file,
+			feature_collection_files)
 	{
+		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
+				GPlatesUtils::get_non_null_pointer(
+						feature_collection_file->get_reference().get_feature_collection().handle_ptr());
+
 		feature_collection_refs.push_back(feature_collection->reference());
 	}
 
@@ -184,7 +188,30 @@ GPlatesApi::RotationModel::create(
 					0/*default_anchor_plate_id*/,
 					reconstruction_tree_cache_size);
 
-	return non_null_ptr_type(new RotationModel(feature_collections, reconstruction_tree_creator));
+	return non_null_ptr_type(new RotationModel(feature_collection_files, reconstruction_tree_creator));
+}
+
+
+GPlatesApi::RotationModel::non_null_ptr_type
+GPlatesApi::RotationModel::create(
+		const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
+		unsigned int reconstruction_tree_cache_size)
+{
+	// Create feature collection files with empty filenames.
+	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
+	BOOST_FOREACH(
+			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
+			feature_collections)
+	{
+		// Create a file with an empty filename - since we don't know if feature collection
+		// came from a file or not.
+		GPlatesFileIO::File::non_null_ptr_type feature_collection_file =
+				GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(), feature_collection);
+
+		feature_collection_files.push_back(feature_collection_file);
+	}
+
+	return create(feature_collection_files, reconstruction_tree_cache_size);
 }
 
 
@@ -251,6 +278,32 @@ GPlatesApi::RotationModel::get_rotation(
 }
 
 
+void
+GPlatesApi::RotationModel::get_feature_collections(
+		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections) const
+{
+	BOOST_FOREACH(GPlatesFileIO::File::non_null_ptr_type feature_collection_file, d_feature_collection_files)
+	{
+		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
+				GPlatesUtils::get_non_null_pointer(
+						feature_collection_file->get_reference().get_feature_collection().handle_ptr());
+
+		feature_collections.push_back(feature_collection);
+	}
+}
+
+
+void
+GPlatesApi::RotationModel::get_files(
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files) const
+{
+	feature_collection_files.insert(
+			feature_collection_files.end(),
+			d_feature_collection_files.begin(),
+			d_feature_collection_files.end());
+}
+
+
 bool
 GPlatesApi::RotationModelFunctionArgument::is_convertible(
 		bp::object python_function_argument)
@@ -292,10 +345,10 @@ GPlatesApi::RotationModelFunctionArgument::initialise_rotation_model(
 			boost::get<FeatureCollectionSequenceFunctionArgument>(function_argument);
 
 	// Copy feature collections into a vector.
-	std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collections;
-	feature_collections_function_argument.get_feature_collections(feature_collections);
+	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
+	feature_collections_function_argument.get_files(feature_collection_files);
 
-	return RotationModel::create(feature_collections);
+	return RotationModel::create(feature_collection_files);
 }
 
 

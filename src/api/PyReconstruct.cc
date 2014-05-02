@@ -356,6 +356,15 @@ namespace GPlatesApi
 				reconstructable_file_ptrs.push_back(&reconstructable_file->get_reference());
 			}
 
+			// Get the sequence of reconstruction files (if any) from the rotation model.
+			std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstruction_files;
+			rotation_model.get()->get_files(reconstruction_files);
+			std::vector<const GPlatesFileIO::File::Reference *> reconstruction_file_ptrs;
+			BOOST_FOREACH(GPlatesFileIO::File::non_null_ptr_type reconstruction_file, reconstruction_files)
+			{
+				reconstruction_file_ptrs.push_back(&reconstruction_file->get_reference());
+			}
+
 			GPlatesFileIO::ReconstructedFeatureGeometryExport::Format format = get_format(*export_file_name);
 
 			// Export the reconstructed feature geometries.
@@ -364,8 +373,7 @@ namespace GPlatesApi
 						format,
 						rfgs_p,
 						reconstructable_file_ptrs,
-						// TODO: Add reconstruction files when available...
-						std::vector<const GPlatesFileIO::File::Reference *>() /*reconstruction_file_ptrs*/,
+						reconstruction_file_ptrs,
 						anchor_plate_id,
 						reconstruction_time,
 						// If exporting to Shapefile and there's only *one* input reconstructable file then

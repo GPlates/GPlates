@@ -34,6 +34,8 @@
 
 #include "app-logic/ReconstructionTreeCreator.h"
 
+#include "file-io/File.h"
+
 #include "global/python.h"
 
 #include "maths/FiniteRotation.h"
@@ -81,6 +83,17 @@ namespace GPlatesApi
 
 
 		/**
+		 * Create a rotation model (from a sequence of rotation feature collection files) that will cache
+		 * reconstruction trees up to a cache size of @a reconstruction_tree_cache_size.
+		 */
+		static
+		non_null_ptr_type
+		create(
+				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &rotation_features,
+				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE);
+
+
+		/**
 		 * Create a rotation model (from a sequence of rotation feature collections) that will cache
 		 * reconstruction trees up to a cache size of @a reconstruction_tree_cache_size.
 		 */
@@ -123,12 +136,30 @@ namespace GPlatesApi
 			return d_reconstruction_tree_creator;
 		}
 
+
+		/**
+		 * Return the feature collections used to create this rotation model.
+		 */
+		void
+		get_feature_collections(
+				std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections) const;
+
+
+		/**
+		 * Return the feature collection files used to create this rotation model.
+		 *
+		 * NOTE: Any feature collections that did not come from files will have empty filenames.
+		 */
+		void
+		get_files(
+				std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files) const;
+
 	private:
 
 		RotationModel(
-				const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
+				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
 				const GPlatesAppLogic::ReconstructionTreeCreator &reconstruction_tree_creator) :
-			d_feature_collections(feature_collections),
+			d_feature_collection_files(feature_collection_files),
 			d_reconstruction_tree_creator(reconstruction_tree_creator)
 		{  }
 
@@ -136,8 +167,11 @@ namespace GPlatesApi
 		/**
 		 * Keep the feature collections alive (by using intrusive pointers instead of weak refs)
 		 * since @a ReconstructionTreeCreator only stores weak references.
+		 *
+		 * We now also keep track of the files the feature collections came from.
+		 * If any feature collection did not come from a file then it will have an empty filename.
 		 */
-		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> d_feature_collections;
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_feature_collection_files;
 
 		/**
 		 * Cached reconstruction tree creator.
