@@ -863,23 +863,6 @@ GPlatesOpenGL::GLContext::NonSharedState::check_framebuffer_object_completeness(
 	{
 		const bool framebuffer_status = frame_buffer_object->gl_check_frame_buffer_status(renderer);
 
-		if (!framebuffer_status)
-		{
-			// This only emits one warning (per classification) since the result is cached.
-			qWarning() << "Texture internal format '"
-				<< frame_buffer_object_classification.get_texture_internal_format()
-				<< "' failed frame buffer object completeness check.";
-
-			// Also emit a warning if the texture is floating-point.
-			// This is because the caller might fall back to using the main framebuffer as a
-			// render target, but the main framebuffer is fixed-point (not floating-point).
-			if (GLTexture::is_format_floating_point(frame_buffer_object_classification.get_texture_internal_format()))
-			{
-				qWarning() << "...incorrect results likely if floating-point render-texture "
-					"is emulated with (fixed-point) main framebuffer.";
-			}
-		}
-
 		d_frame_buffer_state_to_status_map[frame_buffer_object_classification.get_tuple()] = framebuffer_status;
 
 		return framebuffer_status;

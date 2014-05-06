@@ -269,6 +269,13 @@ namespace GPlatesOpenGL
 		boost::optional<GLProgramObject::shared_ptr_type> d_render_map_view_light_direction_program_object;
 
 
+		static
+		void
+		create_map_view_light_direction_cube_texture(
+				GLRenderer &renderer,
+				const GLTexture::shared_ptr_type &map_view_light_direction_cube_texture);
+
+
 		GLLight(
 				GLRenderer &renderer,
 				const GPlatesGui::SceneLightingParameters &scene_lighting_params,
@@ -277,10 +284,6 @@ namespace GPlatesOpenGL
 
 		void
 		create_shader_programs(
-				GLRenderer &renderer);
-
-		void
-		create_map_view_light_direction_cube_texture(
 				GLRenderer &renderer);
 
 		void
