@@ -25,6 +25,7 @@
 
 #include <cmath>
 #include <limits>
+#include <set>
 #include <boost/scoped_array.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
@@ -169,9 +170,11 @@ namespace GPlatesOpenGL
 			// Classify our frame buffer object according to texture format/dimensions.
 			GLFrameBufferObject::Classification framebuffer_object_classification;
 			framebuffer_object_classification.set_dimensions(
+					renderer,
 					texture->get_width().get(),
 					texture->get_height().get());
-			framebuffer_object_classification.set_texture_internal_format(
+			framebuffer_object_classification.set_attached_texture_array_layer(
+					renderer,
 					texture->get_internal_format().get());
 
 			// Acquire and bind a frame buffer object.
@@ -1139,9 +1142,11 @@ GPlatesOpenGL::GLScalarField3D::render_surface_fill_mask(
 	// Classify our frame buffer object according to texture format/dimensions.
 	GLFrameBufferObject::Classification framebuffer_object_classification;
 	framebuffer_object_classification.set_dimensions(
+			renderer,
 			surface_fill_mask_texture->get_width().get(),
 			surface_fill_mask_texture->get_height().get());
-	framebuffer_object_classification.set_texture_internal_format(
+	framebuffer_object_classification.set_attached_texture_array(
+			renderer,
 			surface_fill_mask_texture->get_internal_format().get());
 
 	// Acquire and bind a frame buffer object.
@@ -1158,6 +1163,31 @@ GPlatesOpenGL::GLScalarField3D::render_surface_fill_mask(
 			surface_fill_mask_texture,
 			0, // level - note that this is mipmap level and not the layer number
 			GL_COLOR_ATTACHMENT0_EXT);
+
+	// Check for framebuffer completeness (after attaching to texture array).
+	// It seems some hardware fails even though we checked OpenGL capabilities in 'is_supported()'
+	// such as 'gl_EXT_geometry_shader4' and we are using nice power-of-two texture dimensions, etc.
+	// Note that the expensive completeness check is cached so it shouldn't slow us down.
+	if (!renderer.get_context().get_non_shared_state()->check_framebuffer_object_completeness(
+			renderer,
+			framebuffer_object,
+			framebuffer_object_classification))
+	{
+		// Only output warning once for each framebuffer object classification.
+		static std::set<GLFrameBufferObject::Classification::tuple_type> warning_map;
+		if (warning_map.find(framebuffer_object_classification.get_tuple()) == warning_map.end())
+		{
+			qWarning() << "Scalar field surface polygons mask failed framebuffer completeness check.";
+
+			// Flag warning has been output.
+			warning_map.insert(framebuffer_object_classification.get_tuple());
+		}
+
+		// Detach from the framebuffer object before it gets returned to the framebuffer object cache.
+		framebuffer_object->gl_detach_all(renderer);
+
+		return false;
+	}
 
 	// Clear all layers of texture array.
 	renderer.gl_clear_color(); // Clear colour to all zeros.
