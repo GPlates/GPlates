@@ -63,6 +63,7 @@ namespace GPlatesViewOperations
 {
 	class GeometryBuilder;
 	class RenderedGeometryCollection;
+	class RenderedGeometryParameters;
 }
 
 namespace GPlatesGui
@@ -133,6 +134,9 @@ namespace GPlatesGui
 
 		//! For rendering purposes
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
+
+		//! Parameters for rendering geometries in canvas tools.
+		const GPlatesViewOperations::RenderedGeometryParameters &d_rendered_geometry_parameters;
 
 		const GPlatesGui::symbol_map_type &d_symbol_map;
 

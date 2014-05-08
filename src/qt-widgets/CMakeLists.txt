@@ -72,6 +72,9 @@ set(srcs
     ColouringDialogUi.ui
     ColourScaleWidget.cc
     ColourScaleWidget.h
+    ConfigureCanvasToolGeometryRenderParametersDialog.cc
+    ConfigureCanvasToolGeometryRenderParametersDialog.h
+    ConfigureCanvasToolGeometryRenderParametersDialogUi.ui
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui

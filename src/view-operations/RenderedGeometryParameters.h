@@ -27,10 +27,117 @@
 #ifndef GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYPARAMETERS_H
 #define GPLATES_VIEWOPERATIONS_RENDEREDGEOMETRYPARAMETERS_H
 
-#include "gui/Colour.h"
+#include <QObject>
 
 #include "RenderedGeometryFactory.h"
 
+#include "gui/Colour.h"
+
+#include "maths/MathsUtils.h"
+
+
+namespace GPlatesViewOperations
+{
+	/**
+	 * Parameters that specify how to draw geometry in the various canvas tools, and also some aspects
+	 * (not covered by symboling/colouring/etc) of drawing the main reconstruction rendered layer.
+	 */
+	class RenderedGeometryParameters :
+			public QObject
+	{
+		Q_OBJECT
+
+	public:
+
+		//! Constructor sets the default parameter values.
+		RenderedGeometryParameters() :
+			d_reconstruction_layer_point_size_hint(4.0f),
+			d_reconstruction_layer_line_width_hint(1.5f),
+			d_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius(0.05f),
+			d_reconstruction_layer_ratio_arrowhead_size_to_globe_radius(
+					RenderedGeometryFactory::DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS)
+		{  }
+
+		//! Point size for reconstruction layer.
+		float
+		get_reconstruction_layer_point_size_hint() const
+		{
+			return d_reconstruction_layer_point_size_hint;
+		}
+
+		void
+		set_reconstruction_layer_point_size_hint(
+				float reconstruction_layer_point_size_hint)
+		{
+			d_reconstruction_layer_point_size_hint = reconstruction_layer_point_size_hint;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! Line width for reconstruction layer.
+		float
+		get_reconstruction_layer_line_width_hint() const
+		{
+			return d_reconstruction_layer_line_width_hint;
+		}
+
+		void
+		set_reconstruction_layer_line_width_hint(
+				float reconstruction_layer_line_width_hint)
+		{
+			d_reconstruction_layer_line_width_hint = reconstruction_layer_line_width_hint;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! Scaling for arrow bodies in reconstruction layer.
+		float
+		get_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius() const
+		{
+			return d_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius;
+		}
+
+		void
+		set_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius(
+				float reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius)
+		{
+			d_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius =
+					reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		//! Scaling for arrowheads in reconstruction layer.
+		float
+		get_reconstruction_layer_ratio_arrowhead_size_to_globe_radius() const
+		{
+			return d_reconstruction_layer_ratio_arrowhead_size_to_globe_radius;
+		}
+
+		void
+		set_reconstruction_layer_ratio_arrowhead_size_to_globe_radius(
+				float reconstruction_layer_ratio_arrowhead_size_to_globe_radius)
+		{
+			d_reconstruction_layer_ratio_arrowhead_size_to_globe_radius =
+					reconstruction_layer_ratio_arrowhead_size_to_globe_radius;
+			Q_EMIT parameters_changed(*this);
+		}
+	
+	Q_SIGNALS:
+
+		void
+		parameters_changed(
+				GPlatesViewOperations::RenderedGeometryParameters &);
+
+	private:
+
+		float d_reconstruction_layer_point_size_hint;
+		float d_reconstruction_layer_line_width_hint;
+		float d_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius;
+		float d_reconstruction_layer_ratio_arrowhead_size_to_globe_radius;
+
+	};
+}
 
 namespace GPlatesViewOperations
 {
@@ -48,19 +155,6 @@ namespace GPlatesViewOperations
 		 * Default line width hint used by most (or all) layers.
 		 */
 		const float DEFAULT_LINE_WIDTH_HINT = 1.5f;
-
-		//! Point size for reconstruction layer.
-		const float RECONSTRUCTION_POINT_SIZE_HINT = DEFAULT_POINT_SIZE_HINT;
-
-		//! Line width for reconstruction layer.
-		const float RECONSTRUCTION_LINE_WIDTH_HINT = 1.5f;
-
-		//! Default scaling for arrow bodies.
-		const float RECONSTRUCTION_RATIO_ARROW_UNIT_VECTOR_DIRECTION_TO_GLOBE_RADIUS = 0.05f;
-
-		//! Default scaling for arrowheads.
-		const float RECONSTRUCTION_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS =
-				RenderedGeometryFactory::DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS;
 
 		//! Point size for reconstruction layer.
 		const float DIGITISATION_POINT_SIZE_HINT = DEFAULT_POINT_SIZE_HINT;

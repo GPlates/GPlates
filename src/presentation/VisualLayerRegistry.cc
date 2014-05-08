@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QPixmap>
 
@@ -519,7 +520,9 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				VELOCITY_FIELD_CALCULATOR),
 			&GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::create,
-			&VelocityFieldCalculatorVisualLayerParams::create,
+			boost::bind(
+					&VelocityFieldCalculatorVisualLayerParams::create,
+					_1, boost::cref(view_state.get_rendered_geometry_parameters())),
 			true);
 
 	using namespace  GPlatesUtils;

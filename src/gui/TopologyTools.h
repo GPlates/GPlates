@@ -79,8 +79,13 @@ namespace GPlatesPresentation
 namespace GPlatesQtWidgets
 {
 	class CreateFeatureDialog;
-	class ViewportWindow;
 	class TopologyToolsWidget;
+	class ViewportWindow;
+}
+
+namespace GPlatesViewOperations
+{
+	class RenderedGeometryParameters;
 }
 
 namespace GPlatesGui
@@ -402,6 +407,9 @@ namespace GPlatesGui
 		 * Used to draw rendered geometries.
 		 */
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geom_collection;
+
+		//! Parameters for rendering geometries in canvas tool.
+		const GPlatesViewOperations::RenderedGeometryParameters &d_rendered_geometry_parameters;
 
 		/**
 		 * Rendered geometry layers to draw into 

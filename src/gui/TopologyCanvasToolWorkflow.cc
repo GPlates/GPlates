@@ -94,6 +94,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::TopologyCanvasToolWorkflow(
 	d_canvas_tool_workflows(canvas_tool_workflows),
 	d_feature_focus(view_state.get_feature_focus()),
 	d_rendered_geom_collection(view_state.get_rendered_geometry_collection()),
+	d_rendered_geometry_parameters(view_state.get_rendered_geometry_parameters()),
 	d_symbol_map(view_state.get_feature_type_symbol_map())
 {
 	create_canvas_tools(
@@ -372,6 +373,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::draw_feature_focus(
 			feature_focus,
 			*d_rendered_geom_collection.get_main_rendered_layer(WORKFLOW_RENDER_LAYER),
 			d_rendered_geom_collection,
+			d_rendered_geometry_parameters,
 			d_symbol_map);
 }
 

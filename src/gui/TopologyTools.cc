@@ -227,6 +227,7 @@ GPlatesGui::TopologyTools::TopologyTools(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ViewportWindow &viewport_window):
 	d_rendered_geom_collection(&view_state.get_rendered_geometry_collection()),
+	d_rendered_geometry_parameters(view_state.get_rendered_geometry_parameters()),
 	d_feature_focus_ptr(&view_state.get_feature_focus()),
 	d_application_state_ptr(&view_state.get_application_state()),
 	d_viewport_window_ptr(&viewport_window),
@@ -1867,7 +1868,8 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 
 	// FIXME: Probably should use the same styling params used to draw
 	// the original geometries rather than use some of the defaults.
-	GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams render_style_params;
+	GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams render_style_params(
+			d_rendered_geometry_parameters);
 	render_style_params.reconstruction_line_width_hint =
 			GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT;
 	render_style_params.reconstruction_point_size_hint =

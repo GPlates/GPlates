@@ -196,13 +196,10 @@ namespace
 
 
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
-		float reconstruction_line_width_hint_,
-		float reconstruction_point_size_hint_,
+		const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters_,
 		bool fill_polygons_,
 		bool fill_polylines_,
 		float ratio_zoom_dependent_bin_dimension_to_globe_radius_,
-		float ratio_arrow_unit_vector_direction_to_globe_radius_,
-		float ratio_arrowhead_size_to_globe_radius_,
 		bool show_deformed_feature_geometries_,
 		bool show_strain_accumulation_,
 		double strain_accumulation_scale_,
@@ -212,13 +209,15 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 		bool show_topological_network_total_triangulation_,
 		bool show_topological_network_segment_velocity_,
 		int topological_network_color_index_) :
-	reconstruction_line_width_hint(reconstruction_line_width_hint_),
-	reconstruction_point_size_hint(reconstruction_point_size_hint_),
+	reconstruction_line_width_hint(rendered_geometry_parameters_.get_reconstruction_layer_line_width_hint()),
+	reconstruction_point_size_hint(rendered_geometry_parameters_.get_reconstruction_layer_point_size_hint()),
 	fill_polygons(fill_polygons_),
 	fill_polylines(fill_polylines_),
 	ratio_zoom_dependent_bin_dimension_to_globe_radius(ratio_zoom_dependent_bin_dimension_to_globe_radius_),
-	ratio_arrow_unit_vector_direction_to_globe_radius(ratio_arrow_unit_vector_direction_to_globe_radius_),
-	ratio_arrowhead_size_to_globe_radius(ratio_arrowhead_size_to_globe_radius_),
+	ratio_arrow_unit_vector_direction_to_globe_radius(
+			rendered_geometry_parameters_.get_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius()),
+	ratio_arrowhead_size_to_globe_radius(
+			rendered_geometry_parameters_.get_reconstruction_layer_ratio_arrowhead_size_to_globe_radius()),
 	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
 	fill_modulate_colour(1, 1, 1, 1),
 	normal_map_height_field_scale_factor(1),

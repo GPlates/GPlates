@@ -91,8 +91,8 @@ namespace GPlatesViewOperations
 {
 	class FocusedFeatureGeometryManipulator;
 	class GeometryBuilder;
-	class ReconstructView;
 	class RenderedGeometryCollection;
+	class RenderedGeometryParameters;
 }
 
 namespace GPlatesPresentation
@@ -206,20 +206,24 @@ namespace GPlatesPresentation
 		get_colour_scheme_delegator();
 
 
+		GPlatesGui::RenderSettings &
+		get_render_settings();
+
+
+		GPlatesViewOperations::RenderedGeometryParameters &
+		get_rendered_geometry_parameters();
+
+
+		GPlatesGui::SceneLightingParameters &
+		get_scene_lighting_parameters();
+
+
 		VisualLayers &
 		get_visual_layers();
 
 
 		VisualLayerRegistry &
 		get_visual_layer_registry();
-
-
-		GPlatesGui::RenderSettings &
-		get_render_settings();
-
-
-		GPlatesGui::SceneLightingParameters &
-		get_scene_lighting_parameters();
 
 
 		GPlatesGui::MapTransform &
@@ -384,6 +388,19 @@ namespace GPlatesPresentation
 		 */
 		GPlatesGui::symbol_map_type d_feature_type_symbol_map;
 
+		//! What geometry types get rendered and what don't.
+		boost::scoped_ptr<GPlatesGui::RenderSettings> d_render_settings;
+
+		/**
+		 * Render parameters (point/line sizes, colours, etc) of geometries (mostly in canvas tools).
+		 *
+		 * NOTE: This needs to be declared before 'd_visual_layers'.
+		 */
+		boost::scoped_ptr<GPlatesViewOperations::RenderedGeometryParameters> d_rendered_geometry_parameters;
+
+		//! Parameters used when lighting the scene during OpenGL rendering.
+		boost::scoped_ptr<GPlatesGui::SceneLightingParameters> d_scene_lighting_parameters;
+
 		/**
 		 * Manages the various layers (usually corresponding to each loaded feature collection)
 		 * whose output results are drawn into child layers of the RECONSTRUCTION main
@@ -395,12 +412,6 @@ namespace GPlatesPresentation
 		 * Stores information about the available visual layer types.
 		 */
 		boost::scoped_ptr<VisualLayerRegistry> d_visual_layer_registry;
-
-		//! What gets rendered and what doesn't
-		boost::scoped_ptr<GPlatesGui::RenderSettings> d_render_settings;
-
-		//! Parameters used when lighting the scene during OpenGL rendering.
-		boost::scoped_ptr<GPlatesGui::SceneLightingParameters> d_scene_lighting_parameters;
 
 		//! Sends signals to transform maps
 		boost::scoped_ptr<GPlatesGui::MapTransform> d_map_transform;
