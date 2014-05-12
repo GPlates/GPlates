@@ -147,6 +147,22 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns true if surface polygons masking of 3D scalar fields is supported on the runtime system.
+		 *
+		 * This determines whether @a SurfaceFillMask can be passed into @a render_iso_surface and
+		 * @a render_cross-sections.
+		 *
+		 * Some runtime graphics hardware supports the necessary features for this but then fails
+		 * a framebuffer completeness test. So this test is here to detect that case so that the
+		 * client can, for example, disable this in the user interface or popup a warning message.
+		 */
+		static
+		bool
+		supports_surface_fill_mask(
+				GLRenderer &renderer);
+
+
+		/**
 		 * Creates a @a GLScalarField3D object.
 		 *
 		 * @a scalar_field_filename is the cube map file containing the source of scalar field data.
@@ -878,6 +894,13 @@ namespace GPlatesOpenGL
 		boost::optional<GLProgramObject::shared_ptr_type> d_render_depth_range_inner_sphere_program_object;
 
 
+		static
+		GLTexture::shared_ptr_to_const_type
+		acquire_surface_fill_mask_texture(
+				GLRenderer &renderer,
+				unsigned int surface_fill_mask_resolution);
+
+
 		//! Constructor.
 		GLScalarField3D(
 				GLRenderer &renderer,
@@ -939,10 +962,6 @@ namespace GPlatesOpenGL
 
 		void
 		create_colour_palette_texture(
-				GLRenderer &renderer);
-
-		GLTexture::shared_ptr_to_const_type
-		acquire_surface_fill_mask_texture(
 				GLRenderer &renderer);
 
 		void

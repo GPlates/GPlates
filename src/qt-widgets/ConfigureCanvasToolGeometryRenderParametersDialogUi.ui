@@ -112,7 +112,7 @@
         <item>
          <widget class="QLabel" name="reconstruction_layer_warning_label">
           <property name="text">
-           <string>These options will be removed in a future GPlates version.</string>
+           <string>These will be moved to symbology in a future version...</string>
           </property>
          </widget>
         </item>
@@ -134,6 +134,13 @@
      </property>
     </spacer>
    </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Close</set>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <tabstops>
@@ -143,5 +150,38 @@
  <resources>
   <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
- <connections/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>ConfigureCanvasToolGeometryRenderParametersDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>185</x>
+     <y>187</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>185</x>
+     <y>103</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>ConfigureCanvasToolGeometryRenderParametersDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>185</x>
+     <y>187</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>185</x>
+     <y>103</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
