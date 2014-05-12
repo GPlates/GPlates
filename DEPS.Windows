@@ -96,6 +96,9 @@ Python
   6. Copy 'python.exe', 'python_d.exe', 'pythonw.exe', 'pythonw_d.exe', 'python27.dll' and 'python27_d.dll' to the base python directory.
   7. Add the base python directory and 'libs/' and 'Scripts/' sub-directories to the PATH environment variable.
   8. Add the 'libs/' directory to the PYTHONPATH environment variable.
+  9. Add the 'Include/' directory to the CMAKE_INCLUDE_PATH environment variable.
+  10. Add the 'libs/' directory to the CMAKE_LIBRARY_PATH environment variable.
+      * CMAKE_INCLUDE_PATH and CMAKE_LIBRARY_PATH prevent GPlates finding a different python installation such as inside ArcGIS.
 
 Boost
 
