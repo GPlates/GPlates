@@ -99,9 +99,9 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 	GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams render_style_params(
 			rendered_geometry_parameters);
 	render_style_params.reconstruction_line_width_hint =
-			GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT;
+			rendered_geometry_parameters.get_choose_feature_tool_line_width_hint();
 	render_style_params.reconstruction_point_size_hint =
-			GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT;
+			rendered_geometry_parameters.get_choose_feature_tool_point_size_hint();;
 
 	// Iterate over the reconstruction geometries of the focused features.
 	BOOST_FOREACH(
@@ -112,8 +112,8 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 		// user clicked on) then highlight it in a different colour.
 		const GPlatesGui::Colour &highlight_colour =
 				(reconstruction_geometry == focused_geometry.get())
-				? rendered_geometry_parameters.get_reconstruction_layer_clicked_geometry_of_focused_feature_colour()
-				: rendered_geometry_parameters.get_reconstruction_layer_non_clicked_geometry_of_focused_feature_colour();
+				? rendered_geometry_parameters.get_choose_feature_tool_clicked_geometry_of_focused_feature_colour()
+				: rendered_geometry_parameters.get_choose_feature_tool_non_clicked_geometry_of_focused_feature_colour();
 
 		// This creates the RenderedGeometry's using the highlight colour.
 		GPlatesPresentation::ReconstructionGeometryRenderer highlighted_geometry_renderer(

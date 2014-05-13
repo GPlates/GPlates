@@ -326,6 +326,13 @@ GPlatesGui::TopologyTools::activate(
 		this,
 		SLOT(handle_reconstruction()));
 
+	// Re-draw when the render geometry parameters change.
+	QObject::connect(
+			&d_rendered_geometry_parameters,
+			SIGNAL(parameters_changed(GPlatesViewOperations::RenderedGeometryParameters &)),
+			this,
+			SLOT(draw_all_layers()));
+
 	// Set the pointer to the Topology Tools Widget 
 	d_topology_tools_widget_ptr = 
 		&( d_viewport_window_ptr->task_panel_ptr()->topology_tools_widget() );
@@ -393,6 +400,13 @@ GPlatesGui::TopologyTools::deactivate()
 		SIGNAL(reconstructed(GPlatesAppLogic::ApplicationState &)),
 		this,
 		SLOT(handle_reconstruction()));
+
+	// Disconnect from render geometry parameter changes.
+	QObject::disconnect(
+			&d_rendered_geometry_parameters,
+			SIGNAL(parameters_changed(GPlatesViewOperations::RenderedGeometryParameters &)),
+			this,
+			SLOT(draw_all_layers()));
 
 	// Reset internal state - the very last thing we should do.
 	d_is_active = false;
@@ -1699,6 +1713,11 @@ GPlatesGui::TopologyTools::draw_all_layers()
 	// the boundary subsegment anymore (reduces visual clutter).
 	draw_click_points();
 #endif
+
+	// Draw focused geometry.
+	draw_focused_geometry(
+			can_insert_focused_feature_into_topology() ||
+			can_remove_focused_feature_from_topology());
 }
 
 
@@ -1741,9 +1760,11 @@ GPlatesGui::TopologyTools::draw_boundary_geometry()
 	if (!d_boundary_geometry_opt_ptr) { return; }
 
 	// Render the active topology section sequence in contrast to the topology verts (and network) 
-	GPlatesGui::Colour colour = GPlatesGui::Colour(0.05f, 0.05f, 0.05f, 1.0f); // dark grey
-	float point_size_hint = GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT;
-    float line_width_hint = GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT;
+	GPlatesGui::Colour colour = d_rendered_geometry_parameters.get_topology_tool_topological_sections_colour();
+	float point_size_hint =
+			d_rendered_geometry_parameters.get_topology_tool_topological_sections_point_size_hint();
+    float line_width_hint =
+			d_rendered_geometry_parameters.get_topology_tool_topological_sections_line_width_hint();
 
 	// check if boundary is the active sequnce
 	if ( d_topology_tools_widget_ptr->get_sections_combobox_index() != 0 ) // 0 = boundary list
@@ -1774,9 +1795,11 @@ GPlatesGui::TopologyTools::draw_interior_geometry()
 	if ( d_interior_geometry_opt_ptrs.empty() ) { return; }
 
 	// Render the active topology section sequence in contrast to topology verts 
-	GPlatesGui::Colour colour = GPlatesGui::Colour(0.05f, 0.05f, 0.05f, 1.0f); // dark grey
-	float point_size_hint = GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT;
-    float line_width_hint = GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT;
+	GPlatesGui::Colour colour = d_rendered_geometry_parameters.get_topology_tool_topological_sections_colour();
+	float point_size_hint =
+			d_rendered_geometry_parameters.get_topology_tool_topological_sections_point_size_hint();
+    float line_width_hint =
+			d_rendered_geometry_parameters.get_topology_tool_topological_sections_line_width_hint();
 
 	// check if interior is the active sequence
 	if ( d_topology_tools_widget_ptr->get_sections_combobox_index() != 1 ) // 1 = interior list
@@ -1864,21 +1887,19 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 		return;
 	}
 
-	const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_white();
-
 	// FIXME: Probably should use the same styling params used to draw
 	// the original geometries rather than use some of the defaults.
 	GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams render_style_params(
 			d_rendered_geometry_parameters);
 	render_style_params.reconstruction_line_width_hint =
-			GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_LINE_WIDTH_HINT;
+			d_rendered_geometry_parameters.get_topology_tool_focused_geometry_line_width_hint();
 	render_style_params.reconstruction_point_size_hint =
-			GPlatesViewOperations::RenderedLayerParameters::GEOMETRY_FOCUS_POINT_SIZE_HINT;
+			d_rendered_geometry_parameters.get_topology_tool_focused_geometry_point_size_hint();
 
 	// This creates the RenderedGeometry's from the ReconstructionGeometry's.
 	GPlatesPresentation::ReconstructionGeometryRenderer reconstruction_geometry_renderer(
 			render_style_params,
-			colour,
+			d_rendered_geometry_parameters.get_topology_tool_focused_geometry_colour(),
 			boost::none,
 			boost::none);
 
@@ -1898,18 +1919,12 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 				GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
 						*focused_geometry.get());
 
-	// draw the focused end_points
-	draw_focused_geometry_end_points(
-			focus_feature_end_points.first,
-			focus_feature_end_points.second);
-}
+	//
+	// Draw the focused end_points.
+	//
 
-
-void
-GPlatesGui::TopologyTools::draw_focused_geometry_end_points(
-		const GPlatesMaths::PointOnSphere &start_point,
-		const GPlatesMaths::PointOnSphere &end_point)
-{
+	const GPlatesMaths::PointOnSphere &focus_feature_start_point = focus_feature_end_points.first;
+	const GPlatesMaths::PointOnSphere &focus_feature_end_point = focus_feature_end_points.second;
 	const GPlatesGui::Colour &colour = GPlatesGui::Colour::get_white();
 
 	//
@@ -1921,7 +1936,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry_end_points(
 	// Create rendered geometry.
 	const GPlatesViewOperations::RenderedGeometry start_point_rendered_geometry =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
-			start_point,
+			focus_feature_start_point,
 			colour,
 			GPlatesViewOperations::GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
 
@@ -1931,7 +1946,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry_end_points(
 	// Create rendered geometry.
 	const GPlatesViewOperations::RenderedGeometry end_point_rendered_geometry =
 		GPlatesViewOperations::RenderedGeometryFactory::create_rendered_point_on_sphere(
-			end_point,
+			focus_feature_end_point,
 			colour,
 			GPlatesViewOperations::GeometryOperationParameters::LARGE_POINT_SIZE_HINT);
 

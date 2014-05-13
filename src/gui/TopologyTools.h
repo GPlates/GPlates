@@ -202,6 +202,9 @@ namespace GPlatesGui
 		display_feature_focus_modified(
 			GPlatesGui::FeatureFocus &feature_focus);
 
+		void
+		draw_all_layers();
+
 
 		/**
 		 * The slot that gets called when the user clicks "Add".
@@ -771,9 +774,6 @@ namespace GPlatesGui
 		void
 		draw_all_layers_clear();
 
-		void
-		draw_all_layers();
-
 		void 
 		draw_topology_geometry();
 
@@ -799,11 +799,6 @@ namespace GPlatesGui
 
 		void 
 		draw_focused_geometry( bool draw);
-
-		void 
-		draw_focused_geometry_end_points(
-				const GPlatesMaths::PointOnSphere &start_point,
-				const GPlatesMaths::PointOnSphere &end_point);
 
 	};
 }

@@ -61,7 +61,34 @@ namespace GPlatesQtWidgets
 		react_focused_feature_clicked_geometry_colour_changed();
 
 		void
-		react_focused_feature_non_clicked_geometry_colour_changed();
+		react_focused_feature_point_size_hint_spinbox_value_changed(
+				double value);
+
+		void
+		react_focused_feature_line_width_hint_spinbox_value_changed(
+				double value);
+
+		void
+		react_topology_focus_colour_changed();
+
+		void
+		react_topology_focus_point_size_hint_spinbox_value_changed(
+				double value);
+
+		void
+		react_topology_focus_line_width_hint_spinbox_value_changed(
+				double value);
+
+		void
+		react_topology_sections_colour_changed();
+
+		void
+		react_topology_sections_point_size_hint_spinbox_value_changed(
+				double value);
+
+		void
+		react_topology_sections_line_width_hint_spinbox_value_changed(
+				double value);
 
 		void
 		react_reconstruction_layer_point_size_hint_spinbox_value_changed(
@@ -76,7 +103,8 @@ namespace GPlatesQtWidgets
 		GPlatesViewOperations::RenderedGeometryParameters &d_rendered_geometry_parameters;
 
 		ChooseColourButton *d_focused_feature_clicked_geometry_colour_button;
-		ChooseColourButton *d_focused_feature_non_clicked_geometry_colour_button;
+		ChooseColourButton *d_topology_focus_colour_button;
+		ChooseColourButton *d_topology_sections_colour_button;
 	};
 }
 

@@ -37,29 +37,46 @@ GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::ConfigureCa
 	GPlatesDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
 	d_rendered_geometry_parameters(rendered_geometry_parameters),
 	d_focused_feature_clicked_geometry_colour_button(new ChooseColourButton(this)),
-	d_focused_feature_non_clicked_geometry_colour_button(new ChooseColourButton(this))
+	d_topology_focus_colour_button(new ChooseColourButton(this)),
+	d_topology_sections_colour_button(new ChooseColourButton(this))
 {
 	setupUi(this);
-
-	topology_tools_groupbox->hide();
 
 	QtWidgetUtils::add_widget_to_placeholder(
 			d_focused_feature_clicked_geometry_colour_button,
 			focused_feature_clicked_geometry_colour_button_placeholder_widget);
 	focused_feature_clicked_geometry_colour_label->setBuddy(d_focused_feature_clicked_geometry_colour_button);
 	d_focused_feature_clicked_geometry_colour_button->set_colour(
-			rendered_geometry_parameters.get_reconstruction_layer_clicked_geometry_of_focused_feature_colour());
+			rendered_geometry_parameters.get_choose_feature_tool_clicked_geometry_of_focused_feature_colour());
+
+	focused_feature_point_size_hint_spinbox->setValue(
+			d_rendered_geometry_parameters.get_choose_feature_tool_point_size_hint());
+	focused_feature_line_width_hint_spinbox->setValue(
+			d_rendered_geometry_parameters.get_choose_feature_tool_line_width_hint());
 
 	QtWidgetUtils::add_widget_to_placeholder(
-			d_focused_feature_non_clicked_geometry_colour_button,
-			focused_feature_non_clicked_geometry_colour_button_placeholder_widget);
-	focused_feature_non_clicked_geometry_colour_label->setBuddy(d_focused_feature_non_clicked_geometry_colour_button);
-	d_focused_feature_non_clicked_geometry_colour_button->set_colour(
-			rendered_geometry_parameters.get_reconstruction_layer_non_clicked_geometry_of_focused_feature_colour());
-	// It's probably a bit too difficult for the user to understand what this is so we'll just hide it
-	// - most features only have a single geometry property so this doesn't apply in most situations.
-	focused_feature_non_clicked_geometry_colour_label->hide();
-	focused_feature_non_clicked_geometry_colour_widget->hide();
+			d_topology_focus_colour_button,
+			topology_focus_colour_button_placeholder_widget);
+	topology_focus_colour_label->setBuddy(d_topology_focus_colour_button);
+	d_topology_focus_colour_button->set_colour(
+			rendered_geometry_parameters.get_topology_tool_focused_geometry_colour());
+
+	topology_focus_point_size_hint_spinbox->setValue(
+			d_rendered_geometry_parameters.get_topology_tool_focused_geometry_point_size_hint());
+	topology_focus_line_width_hint_spinbox->setValue(
+			d_rendered_geometry_parameters.get_topology_tool_focused_geometry_line_width_hint());
+
+	QtWidgetUtils::add_widget_to_placeholder(
+			d_topology_sections_colour_button,
+			topology_sections_colour_button_placeholder_widget);
+	topology_sections_colour_label->setBuddy(d_topology_sections_colour_button);
+	d_topology_sections_colour_button->set_colour(
+			rendered_geometry_parameters.get_topology_tool_topological_sections_colour());
+
+	topology_sections_point_size_hint_spinbox->setValue(
+			d_rendered_geometry_parameters.get_topology_tool_topological_sections_point_size_hint());
+	topology_sections_line_width_hint_spinbox->setValue(
+			d_rendered_geometry_parameters.get_topology_tool_topological_sections_line_width_hint());
 
 	reconstruction_layer_point_size_hint_spinbox->setValue(
 			d_rendered_geometry_parameters.get_reconstruction_layer_point_size_hint());
@@ -72,10 +89,47 @@ GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::ConfigureCa
 			this,
 			SLOT(react_focused_feature_clicked_geometry_colour_changed()));
 	QObject::connect(
-			d_focused_feature_non_clicked_geometry_colour_button,
+			focused_feature_point_size_hint_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(react_focused_feature_point_size_hint_spinbox_value_changed(double)));
+	QObject::connect(
+			focused_feature_line_width_hint_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(react_focused_feature_line_width_hint_spinbox_value_changed(double)));
+
+	QObject::connect(
+			d_topology_focus_colour_button,
 			SIGNAL(colour_changed(GPlatesQtWidgets::ChooseColourButton &)),
 			this,
-			SLOT(react_focused_feature_non_clicked_geometry_colour_changed()));
+			SLOT(react_topology_focus_colour_changed()));
+	QObject::connect(
+			topology_focus_point_size_hint_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(react_topology_focus_point_size_hint_spinbox_value_changed(double)));
+	QObject::connect(
+			topology_focus_line_width_hint_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(react_topology_focus_line_width_hint_spinbox_value_changed(double)));
+	QObject::connect(
+			d_topology_sections_colour_button,
+			SIGNAL(colour_changed(GPlatesQtWidgets::ChooseColourButton &)),
+			this,
+			SLOT(react_topology_sections_colour_changed()));
+	QObject::connect(
+			topology_sections_point_size_hint_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(react_topology_sections_point_size_hint_spinbox_value_changed(double)));
+	QObject::connect(
+			topology_sections_line_width_hint_spinbox,
+			SIGNAL(valueChanged(double)),
+			this,
+			SLOT(react_topology_sections_line_width_hint_spinbox_value_changed(double)));
+
 	QObject::connect(
 			reconstruction_layer_point_size_hint_spinbox,
 			SIGNAL(valueChanged(double)),
@@ -94,16 +148,72 @@ GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::ConfigureCa
 void
 GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::react_focused_feature_clicked_geometry_colour_changed()
 {
-	d_rendered_geometry_parameters.set_reconstruction_layer_clicked_geometry_of_focused_feature_colour(
+	d_rendered_geometry_parameters.set_choose_feature_toolr_clicked_geometry_of_focused_feature_colour(
 			d_focused_feature_clicked_geometry_colour_button->get_colour());
 }
 
 
 void
-GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::react_focused_feature_non_clicked_geometry_colour_changed()
+GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::react_focused_feature_point_size_hint_spinbox_value_changed(
+		double value)
 {
-	d_rendered_geometry_parameters.set_reconstruction_layer_non_clicked_geometry_of_focused_feature_colour(
-			d_focused_feature_non_clicked_geometry_colour_button->get_colour());
+	d_rendered_geometry_parameters.set_choose_feature_tool_point_size_hint(value);
+}
+
+
+void
+GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::react_focused_feature_line_width_hint_spinbox_value_changed(
+		double value)
+{
+	d_rendered_geometry_parameters.set_choose_feature_tool_line_width_hint(value);
+}
+
+
+void
+GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::react_topology_focus_colour_changed()
+{
+	d_rendered_geometry_parameters.set_topology_tool_focused_geometry_colour(
+			d_topology_focus_colour_button->get_colour());
+}
+
+
+void
+GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::react_topology_focus_point_size_hint_spinbox_value_changed(
+		double value)
+{
+	d_rendered_geometry_parameters.set_topology_tool_focused_geometry_point_size_hint(value);
+}
+
+
+void
+GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::react_topology_focus_line_width_hint_spinbox_value_changed(
+		double value)
+{
+	d_rendered_geometry_parameters.set_topology_tool_focused_geometry_line_width_hint(value);
+}
+
+
+void
+GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::react_topology_sections_colour_changed()
+{
+	d_rendered_geometry_parameters.set_topology_tool_topological_sections_colour(
+			d_topology_sections_colour_button->get_colour());
+}
+
+
+void
+GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::react_topology_sections_point_size_hint_spinbox_value_changed(
+		double value)
+{
+	d_rendered_geometry_parameters.set_topology_tool_topological_sections_point_size_hint(value);
+}
+
+
+void
+GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::react_topology_sections_line_width_hint_spinbox_value_changed(
+		double value)
+{
+	d_rendered_geometry_parameters.set_topology_tool_topological_sections_line_width_hint(value);
 }
 
 
