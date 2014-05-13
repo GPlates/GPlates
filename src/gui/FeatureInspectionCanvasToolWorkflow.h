@@ -112,8 +112,7 @@ namespace GPlatesGui
 	private Q_SLOTS:
 
 		void
-		draw_feature_focus(
-				GPlatesGui::FeatureFocus &feature_focus);
+		draw_feature_focus();
 
 		void
 		update_enable_state();

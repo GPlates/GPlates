@@ -127,7 +127,8 @@ namespace GPlatesPresentation
 				GPlatesAppLogic::LayerTaskParams &layer_task_params,
 				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters) :
 			VisualLayerParams(layer_task_params),
-			d_arrow_spacing(GPlatesViewOperations::RenderedLayerParameters::VELOCITY_ARROW_SPACING),
+			d_arrow_spacing(rendered_geometry_parameters
+					.get_reconstruction_layer_arrow_spacing()),
 			d_arrow_body_scale(rendered_geometry_parameters
 					.get_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius()),
 			d_arrowhead_scale(rendered_geometry_parameters

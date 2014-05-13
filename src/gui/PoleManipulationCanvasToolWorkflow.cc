@@ -53,6 +53,7 @@
 
 #include "view-operations/MovePoleOperation.h"
 #include "view-operations/RenderedGeometryCollection.h"
+#include "view-operations/RenderedGeometryParameters.h"
 
 
 namespace GPlatesGui
@@ -213,15 +214,22 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::activate_workflow()
 			&d_feature_focus,
 			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+			SLOT(draw_feature_focus()));
 	QObject::connect(
 			&d_feature_focus,
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+			SLOT(draw_feature_focus()));
+
+	// Re-draw the focused feature when the render geometry parameters change.
+	QObject::connect(
+			&d_rendered_geometry_parameters,
+			SIGNAL(parameters_changed(GPlatesViewOperations::RenderedGeometryParameters &)),
+			this,
+			SLOT(draw_feature_focus()));
 
 	// Draw the focused feature (or draw nothing) in case the focused feature changed while we were inactive.
-	draw_feature_focus(d_feature_focus);
+	draw_feature_focus();
 }
 
 
@@ -236,12 +244,17 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::deactivate_workflow()
 			&d_feature_focus,
 			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+			SLOT(draw_feature_focus()));
 	QObject::disconnect(
 			&d_feature_focus,
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+			SLOT(draw_feature_focus()));
+	QObject::disconnect(
+			&d_rendered_geometry_parameters,
+			SIGNAL(parameters_changed(GPlatesViewOperations::RenderedGeometryParameters &)),
+			this,
+			SLOT(draw_feature_focus()));
 }
 
 
@@ -269,11 +282,10 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::get_selected_globe_and_map_canva
 
 
 void
-GPlatesGui::PoleManipulationCanvasToolWorkflow::draw_feature_focus(
-		GPlatesGui::FeatureFocus &feature_focus)
+GPlatesGui::PoleManipulationCanvasToolWorkflow::draw_feature_focus()
 {
 	GeometryFocusHighlight::draw_focused_geometry(
-			feature_focus,
+			d_feature_focus,
 			*d_rendered_geom_collection.get_main_rendered_layer(WORKFLOW_RENDER_LAYER),
 			d_rendered_geom_collection,
 			d_rendered_geometry_parameters,

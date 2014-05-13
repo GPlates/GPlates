@@ -52,6 +52,7 @@
 #include "qt-widgets/ViewportWindow.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
+#include "view-operations/RenderedGeometryParameters.h"
 
 
 namespace GPlatesGui
@@ -295,15 +296,22 @@ GPlatesGui::TopologyCanvasToolWorkflow::activate_workflow()
 			&d_feature_focus,
 			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+			SLOT(draw_feature_focus()));
 	QObject::connect(
 			&d_feature_focus,
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+			SLOT(draw_feature_focus()));
+
+	// Re-draw the focused feature when the render geometry parameters change.
+	QObject::connect(
+			&d_rendered_geometry_parameters,
+			SIGNAL(parameters_changed(GPlatesViewOperations::RenderedGeometryParameters &)),
+			this,
+			SLOT(draw_feature_focus()));
 
 	// Draw the focused feature (or draw nothing) in case the focused feature changed while we were inactive.
-	draw_feature_focus(d_feature_focus);
+	draw_feature_focus();
 }
 
 
@@ -318,12 +326,17 @@ GPlatesGui::TopologyCanvasToolWorkflow::deactivate_workflow()
 			&d_feature_focus,
 			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+			SLOT(draw_feature_focus()));
 	QObject::disconnect(
 			&d_feature_focus,
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+			SLOT(draw_feature_focus()));
+	QObject::disconnect(
+			&d_rendered_geometry_parameters,
+			SIGNAL(parameters_changed(GPlatesViewOperations::RenderedGeometryParameters &)),
+			this,
+			SLOT(draw_feature_focus()));
 }
 
 
@@ -366,11 +379,10 @@ GPlatesGui::TopologyCanvasToolWorkflow::handle_canvas_tool_activated(
 
 
 void
-GPlatesGui::TopologyCanvasToolWorkflow::draw_feature_focus(
-		GPlatesGui::FeatureFocus &feature_focus)
+GPlatesGui::TopologyCanvasToolWorkflow::draw_feature_focus()
 {
 	GeometryFocusHighlight::draw_focused_geometry(
-			feature_focus,
+			d_feature_focus,
 			*d_rendered_geom_collection.get_main_rendered_layer(WORKFLOW_RENDER_LAYER),
 			d_rendered_geom_collection,
 			d_rendered_geometry_parameters,

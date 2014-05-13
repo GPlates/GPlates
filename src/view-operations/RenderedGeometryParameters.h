@@ -51,12 +51,59 @@ namespace GPlatesViewOperations
 
 		//! Constructor sets the default parameter values.
 		RenderedGeometryParameters() :
+			d_reconstruction_layer_clicked_geometry_of_focused_feature_colour(GPlatesGui::Colour::get_white()),
+			d_reconstruction_layer_non_clicked_geometry_of_focused_feature_colour(GPlatesGui::Colour::get_grey()),
 			d_reconstruction_layer_point_size_hint(4.0f),
 			d_reconstruction_layer_line_width_hint(1.5f),
 			d_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius(0.05f),
 			d_reconstruction_layer_ratio_arrowhead_size_to_globe_radius(
-					RenderedGeometryFactory::DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS)
+					RenderedGeometryFactory::DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS),
+			d_reconstruction_layer_arrow_spacing(0.175f)
 		{  }
+
+
+		/**
+		 * Colour to use for rendering the actual focus geometry clicked by user.
+		 *
+		 * Since there can be multiple geometry properties associated with a single feature
+		 * only one of them (the clicked geometry) gets rendered in this colour.
+		 */
+		const GPlatesGui::Colour &
+		get_reconstruction_layer_clicked_geometry_of_focused_feature_colour() const
+		{
+			return d_reconstruction_layer_clicked_geometry_of_focused_feature_colour;
+		}
+
+		void
+		set_reconstruction_layer_clicked_geometry_of_focused_feature_colour(
+				const GPlatesGui::Colour &colour)
+		{
+			d_reconstruction_layer_clicked_geometry_of_focused_feature_colour = colour;
+			Q_EMIT parameters_changed(*this);
+		}
+
+
+		/**
+		 * Colour to use for rendering the geometries of focused feature that the user did not click on.
+		 *
+		 * When the user clicks on a geometry it focuses the feature that the geometry
+		 * belongs to. If there are other geometries associated with that feature then
+		 * they will get rendered in this colour.
+		 */
+		const GPlatesGui::Colour &
+		get_reconstruction_layer_non_clicked_geometry_of_focused_feature_colour() const
+		{
+			return d_reconstruction_layer_non_clicked_geometry_of_focused_feature_colour;
+		}
+
+		void
+		set_reconstruction_layer_non_clicked_geometry_of_focused_feature_colour(
+				const GPlatesGui::Colour &colour)
+		{
+			d_reconstruction_layer_non_clicked_geometry_of_focused_feature_colour = colour;
+			Q_EMIT parameters_changed(*this);
+		}
+
 
 		//! Point size for reconstruction layer.
 		float
@@ -122,6 +169,22 @@ namespace GPlatesViewOperations
 					reconstruction_layer_ratio_arrowhead_size_to_globe_radius;
 			Q_EMIT parameters_changed(*this);
 		}
+
+
+		//! The screen-space spacing of rendered arrows in reconstruction layer.
+		float
+		get_reconstruction_layer_arrow_spacing() const
+		{
+			return d_reconstruction_layer_arrow_spacing;
+		}
+
+		void
+		set_reconstruction_layer_arrow_spacing(
+				float reconstruction_layer_arrow_spacing)
+		{
+			d_reconstruction_layer_arrow_spacing = reconstruction_layer_arrow_spacing;
+			Q_EMIT parameters_changed(*this);
+		}
 	
 	Q_SIGNALS:
 
@@ -131,10 +194,13 @@ namespace GPlatesViewOperations
 
 	private:
 
+		GPlatesGui::Colour d_reconstruction_layer_clicked_geometry_of_focused_feature_colour;
+		GPlatesGui::Colour d_reconstruction_layer_non_clicked_geometry_of_focused_feature_colour;
 		float d_reconstruction_layer_point_size_hint;
 		float d_reconstruction_layer_line_width_hint;
 		float d_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius;
 		float d_reconstruction_layer_ratio_arrowhead_size_to_globe_radius;
+		float d_reconstruction_layer_arrow_spacing;
 
 	};
 }
@@ -176,37 +242,6 @@ namespace GPlatesViewOperations
 
 		//! Line width for reconstruction layer.
 		const float TOPOLOGY_TOOL_LINE_WIDTH_HINT = 4.0f;
-
-		//! Default arrow spacing velocity layer.
-		const float VELOCITY_ARROW_SPACING = 0.175f;
-	}
-
-	/**
-	 * Parameters that specify how geometry operations should draw geometry.
-	 */
-	namespace FocusedFeatureParameters
-	{
-		/////////////
-		// Colours //
-		/////////////
-
-		/**
-		 * Colour to use for rendering the actual focus geometry clicked by user.
-		 * Since there can be multiple geometry properties associated with a single feature
-		 * only one of them (the clicked geometry) gets rendered in this colour.
-		 */
-		const GPlatesGui::Colour CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR =
-				GPlatesGui::Colour::get_white();
-
-		/**
-		 * Colour to use for rendering the geometries of focused feature that the user
-		 * did not click on.
-		 * When the user clicks on a geometry it focuses the feature that the geometry
-		 * belongs to. If there are other geometries associated with that feature then
-		 * they will get rendered in this colour.
-		 */
-		const GPlatesGui::Colour NON_CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR =
-				GPlatesGui::Colour::get_grey();
 	}
 
 	/**

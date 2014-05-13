@@ -58,6 +58,12 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
+		react_focused_feature_clicked_geometry_colour_changed();
+
+		void
+		react_focused_feature_non_clicked_geometry_colour_changed();
+
+		void
 		react_reconstruction_layer_point_size_hint_spinbox_value_changed(
 				double value);
 
@@ -69,7 +75,8 @@ namespace GPlatesQtWidgets
 
 		GPlatesViewOperations::RenderedGeometryParameters &d_rendered_geometry_parameters;
 
-		ChooseColourButton *d_colour_button;
+		ChooseColourButton *d_focused_feature_clicked_geometry_colour_button;
+		ChooseColourButton *d_focused_feature_non_clicked_geometry_colour_button;
 	};
 }
 

@@ -112,8 +112,8 @@ GPlatesGui::GeometryFocusHighlight::draw_focused_geometry(
 		// user clicked on) then highlight it in a different colour.
 		const GPlatesGui::Colour &highlight_colour =
 				(reconstruction_geometry == focused_geometry.get())
-				? GPlatesViewOperations::FocusedFeatureParameters::CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR
-				: GPlatesViewOperations::FocusedFeatureParameters::NON_CLICKED_GEOMETRY_OF_FOCUSED_FEATURE_COLOUR;
+				? rendered_geometry_parameters.get_reconstruction_layer_clicked_geometry_of_focused_feature_colour()
+				: rendered_geometry_parameters.get_reconstruction_layer_non_clicked_geometry_of_focused_feature_colour();
 
 		// This creates the RenderedGeometry's using the highlight colour.
 		GPlatesPresentation::ReconstructionGeometryRenderer highlighted_geometry_renderer(
