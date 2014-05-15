@@ -74,7 +74,7 @@ namespace GPlatesPropertyValues
 			 */
 			CoordinateList(
 					GmlDataBlockCoordinateList::non_null_ptr_type coordinate_list) :
-				d_coordinate_list(d_coordinate_list)
+				d_coordinate_list(coordinate_list)
 			{  }
 
 			/**
