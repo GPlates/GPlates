@@ -665,7 +665,7 @@ GPlatesModel::ModelUtils::add_remove_or_convert_time_dependent_wrapper(
 		if (time_dependent_flags.test(GpgimProperty::CONSTANT_VALUE) ||
 			!time_dependent_flags.any())
 		{
-			const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
+			const RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow> &time_windows =
 					gpml_piecewise_aggregation->time_windows();
 
 			// If the there's a single time window that covers all time and it's a constant-value...

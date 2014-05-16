@@ -117,12 +117,10 @@ export_top_level_property()
 				"  Returns the name of the property.\n"
 				"\n"
 				"  :rtype: :class:`PropertyName`\n")
-		.def("get_value",
-				&GPlatesApi::top_level_property_get_property_value,
-				"get_value() -> PropertyValue\n"
-				"  Returns the value of the property.\n"
-				"\n"
-				"  :rtype: :class:`PropertyValue`\n")
+		// This is a private method (has leading '_'), and we don't provide a docstring.
+		// This method is accessed by pure python API code.
+		.def("_get_value",
+				&GPlatesApi::top_level_property_get_property_value)
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))

@@ -260,7 +260,7 @@ namespace GPlatesModel
 				TopLevelPropertyError::Type *error_code = NULL);
 
 		//! Non-const overload.
-		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+		boost::optional<PropertyValue::non_null_ptr_type>
 		get_property_value(
 				TopLevelProperty &top_level_property,
 				TopLevelPropertyError::Type *error_code = NULL);

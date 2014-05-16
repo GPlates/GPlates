@@ -153,7 +153,9 @@ export_property_value()
 					"* :class:`GpmlConstantValue`\n"
 					"* :class:`GpmlIrregularSampling`\n"
 					"* :class:`GpmlPiecewiseAggregation`\n"
-					"\n",
+					"\n"
+					"You can use :meth:`get_value` to extract a value at a specific time "
+					"from a time-dependent wrapper.\n",
 					bp::no_init)
 		.def("clone",
 				&GPlatesApi::property_value_clone,
@@ -1068,12 +1070,10 @@ export_gpml_constant_value()
 					"  ::\n"
 					"\n"
 					"    constant_property_value = pygplates.GpmlConstantValue(property_value)\n")
-		.def("get_value",
-				&GPlatesApi::gpml_constant_value_get_value,
-				"get_value() -> PropertyValue\n"
-				"  Returns the property value contained in this constant value wrapper.\n"
-				"\n"
-				"  :rtype: :class:`PropertyValue`\n")
+		// This is a private method (has leading '_'), and we don't provide a docstring...
+		// This method is accessed by pure python API code.
+		.def("_get_value",
+				&GPlatesApi::gpml_constant_value_get_value)
 		.def("set_value",
 				&GPlatesPropertyValues::GpmlConstantValue::set_value,
 				(bp::arg("property_value")),
@@ -2123,7 +2123,7 @@ export_gpml_time_window()
 				"    time_window = pygplates.GpmlTimeWindow(property_value, begin_time, end_time)\n"
 				"\n"
 				"  Note that *begin_time* must be further in the past than the *end_time* "
-				"``begin_time < end_time``.\n")
+				"``begin_time > end_time``.\n")
 		.def("get_value",
 				&GPlatesApi::gpml_time_window_get_value,
 				"get_value() -> PropertyValue\n"

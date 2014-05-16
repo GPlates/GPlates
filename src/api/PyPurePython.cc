@@ -105,6 +105,11 @@ export_pure_python_api()
 	// does not need to prefix 'pygplates.' if it calls the GPlates python API.
 	//
 
+	export_pure_python_code(":/python/api/GpmlConstantValue.py");
+	export_pure_python_code(":/python/api/GpmlIrregularSampling.py");
+	export_pure_python_code(":/python/api/GpmlPiecewiseAggregation.py");
+	export_pure_python_code(":/python/api/Property.py");
+	export_pure_python_code(":/python/api/PropertyValue.py");
 	export_pure_python_code(":/python/api/get_property_value.py");
 	export_pure_python_code(":/python/api/interpolate_property_value.py");
 }

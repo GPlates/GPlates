@@ -253,12 +253,8 @@ BOOST_PYTHON_MODULE(pygplates)
 
 	// Export any *pure* python code that contributes to the python API.
 	//
-	// We've already exported all the C++ python bindings - although I don't think the order
-	// matters (pure python code can contain functions/classes that call the C++-bound API before
-	// it has been bound - the order only matters when the pure python code is actually used).
-	// But we'll define it after the C++ bindings in case there's any set up code within the pure
-	// python code (ie, code other than simply defining functions and classes) that calls the
-	// C++ python bindings (which there shouldn't be - should just be function/class definitions).
+	// We've already exported all the C++ python bindings - this is important because the pure python
+	// code injects methods into the python classes already defined by the C++ python bindings.
 	export_pure_python_api();
 }
 

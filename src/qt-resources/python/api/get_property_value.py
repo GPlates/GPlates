@@ -88,142 +88,6 @@ def get_time_window_containing_time(gpml_piecewise_aggregation, time):
             return window
 
 
-def get_property_value(property_value, time=0):
-    """get_property_value(property_value[, time=0]) -> PropertyValue or None
-    Extracts the value of *property_value* at the reconstruction *time*.
-    
-    :param property_value: the possibly time-dependent property value to extract the value from
-    :type property_value: :class:`PropertyValue`
-    :param time: the time to extract value
-    :type time: float
-    :rtype: :class:`PropertyValue` or None
-    
-    If *property_value* is a time-dependent property such (as :class:`GpmlIrregularSampling` or
-    :class:`GpmlPiecewiseAggregation`) then the nested property value is extracted at the
-    reconstruction *time* and returned. Otherwise *property_value* is simply returned as is
-    (since it's not a time-dependent property value).
-
-    Returns ``None`` if *property_value* is a time-dependent property such (as :class:`GpmlIrregularSampling` or
-    :class:`GpmlPiecewiseAggregation`) and *time* is outside its time range (of time samples or time windows).
-    
-    Note that if *property_value* is a :class:`GpmlIrregularSampling` instance then the extracted property value is
-    interpolated (at reconstruction *time*) if property value can be interpolated (currently only
-    :class:`GpmlFiniteRotation` and :class:`XsDouble`), otherwise ``None`` is returned.
-    
-    The following example demonstrates extracting the finite rotation of a
-    :class:`total reconstruction pole<GpmlIrregularSampling>` at time 20Ma:
-    ::
-    
-      gpml_finite_rotation_20Ma = pygplates.get_property_value(total_reconstruction_pole, 20)
-      if gpml_finite_rotation_20Ma:
-        print 'Interpolated finite rotation at 20Ma: %s' % gpml_finite_rotation_20Ma.get_finite_rotation()
-    """
-    
-    # If a constant-value wrapper then recurse to extract contained property value.
-    # Also note that it could be another time-dependent sequence (not that it should happen).
-    if isinstance(property_value, GpmlConstantValue):
-        return get_property_value(property_value.get_value(), time)
-    
-    elif isinstance(property_value, GpmlPiecewiseAggregation):
-        time_window = get_time_window_containing_time(property_value, time)
-        if time_window:
-            # Recurse to extract contained property value.
-            # Also note that it could be another time-dependent sequence.
-            return get_property_value(time_window.get_value(), time)
-    
-    elif isinstance(property_value, GpmlIrregularSampling):
-        # Get the time samples bounding the time (and filter out the disabled time samples).
-        adjacent_time_samples = get_time_samples_bounding_time(property_value, time)
-        if adjacent_time_samples:
-            begin_time_sample, end_time_sample = adjacent_time_samples
-            # Use private module function defined in another module code section (file).
-            return _interpolate_property_value(
-                    begin_time_sample.get_value(),
-                    end_time_sample.get_value(),
-                    begin_time_sample.get_time().get_value(),
-                    end_time_sample.get_time().get_value(),
-                    time)
-    
-    else:
-        # Property value is not time-dependent so just return it as is.
-        return property_value
-
-
-def get_property_value_by_type(property_value, property_value_type, time=0):
-    """get_property_value_by_type(property_value, property_value_type[, time=0]) -> PropertyValue or None
-    Extracts the value of *property_value* at the reconstruction *time* if its type matches *property_value_type*.
-    
-    :param property_value: the possibly time-dependent property value to extract the value from
-    :type property_value: :class:`PropertyValue`
-    :param property_value_type: the property value *type* to extract
-    :type property_value_type: a class inheriting :class:`PropertyValue`
-    :param time: the time to extract value
-    :type time: float
-    :rtype: :class:`PropertyValue` or None
-    
-    If *property_value* is a time-dependent property such (as :class:`GpmlIrregularSampling` or
-    :class:`GpmlPiecewiseAggregation`) then the nested property value is extracted at the
-    reconstruction *time* and returned if its type matches *property_value_type* (otherwise ``None`` is returned).
-    If *property_value* is *not* a time-dependent property then it is simply returned as is
-    if its type matches *property_value_type* (otherwise ``None`` is returned).
-    
-    Note that *property_value_type* can also be :class:`GpmlConstantValue`, :class:`GpmlIrregularSampling` or
-    :class:`GpmlPiecewiseAggregation` in which case *property_value* is simply returned as is (without extracting the
-    nested property value) provided it matches *property_value_type*.
-    
-    For example:
-    ::
-    
-        plate_id_property_value = pygplates.get_property_value_by_type(property_value, pygplates.GpmlPlateId)
-        if plate_id_property_value:
-            print 'Property value has the plate id: %d' % plate_id_property_value.get_plate_id()
-    
-    ...although the usual approach is perhaps preferable if you're *expecting* a certain property value type...
-    ::
-    
-        try:
-            print 'Property value has the plate id: %d' % property_value.get_plate_id()
-        except AttributeError:
-            # Was not expecting this...
-            ...
-    """
-    
-    # If either:
-    # (1) 'property_value_type' is not a time-dependent type, or
-    # (2) caller has requested an actual time-dependent wrapper (eg, 'GpmlIrregularSampling')
-    #     rather than contained property value type (eg, 'GpmlFiniteRotation').
-    # ...then just return the property value as is (if its type matches).
-    if isinstance(property_value, property_value_type):
-        return property_value
-    
-    # If a constant-value wrapper then recurse to extract contained property value (if correct type).
-    # Also note that it could be another time-dependent sequence (not that it should happen).
-    elif isinstance(property_value, GpmlConstantValue):
-        return get_property_value_by_type(property_value.get_value(), property_value_type, time)
-    
-    elif isinstance(property_value, GpmlPiecewiseAggregation):
-        time_window = get_time_window_containing_time(property_value, time)
-        if time_window:
-            # Recurse to extract contained property value (if correct type).
-            # Also note that it could be another time-dependent sequence so we can't test the property value type here.
-            return get_property_value_by_type(time_window.get_value(), property_value_type, time)
-    
-    elif isinstance(property_value, GpmlIrregularSampling):
-        # Get the time samples bounding the time (and filter out the disabled time samples).
-        adjacent_time_samples = get_time_samples_bounding_time(property_value, time)
-        if adjacent_time_samples:
-            begin_time_sample, end_time_sample = adjacent_time_samples
-            # Optimisation to avoid interpolation if wrong property value 'type'.
-            if isinstance(begin_time_sample.get_value(), property_value_type):
-                # Use private module function defined in another module code section (file).
-                return _interpolate_property_value(
-                        begin_time_sample.get_value(),
-                        end_time_sample.get_value(),
-                        begin_time_sample.get_time().get_value(),
-                        end_time_sample.get_time().get_value(),
-                        time)
-
-
 def get_geometry_from_property_value(property_value, geometry_on_sphere_type=GeometryOnSphere):
     """get_geometry_from_property_value(property_value[, geometry_on_sphere_type=GeometryOnSphere]) -> GeometryOnSphere or None
     Extracts the :class:`geometry<GeometryOnSphere>` from *property_value* if it contains a geometry of type *geometry_on_sphere_type*.
@@ -319,7 +183,7 @@ def get_feature_properties_by_name(feature, property_name, time=0):
     :rtype: list of tuples of (:class:`Property`, :class:`PropertyValue`)
     :return: the list of matching properties and their extracted property value at *time*
     
-    This function uses :func:`get_property_value` to extract property values at *time*.
+    This function uses :meth:`Property.get_value` to extract property values at *time*.
     
     This function essentially does the following:
     ::
@@ -328,7 +192,7 @@ def get_feature_properties_by_name(feature, property_name, time=0):
             properties = []
             for property in feature:
                 if property.get_name() == property_name:
-                    property_value = pygplates.get_property_value(property.get_value(), time)
+                    property_value = property.get_value(time)
                     if property_value:
                         properties.append((property, property_value))
             return properties
@@ -338,7 +202,7 @@ def get_feature_properties_by_name(feature, property_name, time=0):
     
     for property in feature:
         if property.get_name() == property_name:
-            property_value = get_property_value(property.get_value(), time)
+            property_value = property.get_value(time)
             if property_value:
                 properties.append((property, property_value))
     
@@ -359,7 +223,7 @@ def get_feature_properties_by_value_type(feature, property_value_type, time=0):
     :rtype: list of tuples of (:class:`Property`, :class:`PropertyValue`)
     :return: the list of matching properties and their extracted property value at *time*
     
-    This function uses :func:`get_property_value_by_type` to match the property value types and
+    This function uses :meth:`Property.get_value` to match the property value types and
     extract property values at *time*.
     
     This function essentially does the following:
@@ -368,7 +232,7 @@ def get_feature_properties_by_value_type(feature, property_value_type, time=0):
         get_feature_properties_by_value_type(feature, property_value_type, time=0):
             properties = []
             for property in feature:
-                property_value = pygplates.get_property_value_by_type(property.get_value(), property_value_type, time)
+                property_value = property.get_value(time, property_value_type)
                 if property_value:
                     properties.append((property, property_value))
             return properties
@@ -377,7 +241,7 @@ def get_feature_properties_by_value_type(feature, property_value_type, time=0):
     properties = []
     
     for property in feature:
-        property_value = get_property_value_by_type(property.get_value(), property_value_type, time)
+        property_value = property.get_value(time, property_value_type)
         if property_value:
             properties.append((property, property_value))
     
@@ -401,7 +265,7 @@ def get_feature_properties_by_name_and_value_type(feature, property_name, proper
     :rtype: list of tuples of (:class:`Property`, :class:`PropertyValue`)
     :return: the list of matching properties and their extracted property value at *time*
     
-    This function uses :func:`get_property_value_by_type` to match the property value types and
+    This function uses :meth:`Property.get_value` to match the property value types and
     extract property values at *time*.
     
     This function essentially does the following:
@@ -411,7 +275,7 @@ def get_feature_properties_by_name_and_value_type(feature, property_name, proper
             properties = []
             for property in feature:
                 if property.get_name() == property_name:
-                    property_value = pygplates.get_property_value_by_type(property.get_value(), property_value_type, time)
+                    property_value = property.get_value(time, property_value_type)
                     if property_value:
                         properties.append((property, property_value))
             return properties
@@ -421,7 +285,7 @@ def get_feature_properties_by_name_and_value_type(feature, property_name, proper
     
     for property in feature:
         if property.get_name() == property_name:
-            property_value = get_property_value_by_type(property.get_value(), property_value_type, time)
+            property_value = property.get_value(time, property_value_type)
             if property_value:
                 properties.append((property, property_value))
     
@@ -539,7 +403,7 @@ def get_total_reconstruction_pole(total_reconstruction_sequence_feature):
             elif property.get_name() == moving_reference_frame_property_name:
                 moving_plate_id = property.get_value().get_plate_id()
             elif property.get_name() == total_reconstruction_pole_property_name:
-                total_reconstruction_pole = property.get_value()
+                total_reconstruction_pole = property.get_time_dependent_container(GpmlIrregularSampling)
         except AttributeError:
             # The property value type did not match the property name.
             # This indicates the data does not conform to the GPlates Geological Information Model (GPGIM).

@@ -180,7 +180,7 @@ namespace GPlatesModel
 		 * feature class (since a descendent/derived class will likely contain a geometry property).
 		 *
 		 * If both an ancestor feature class (or multiple ancestor classes) and this feature class
-		 * provide a defautl GPGIM property then this feature class overrides the ancestors.
+		 * provide a default GPGIM property then this feature class overrides the ancestors.
 		 * Note that typically this won't happen if the GPGIM is designed/edited properly.
 		 */
 		boost::optional<GpgimProperty::non_null_ptr_to_const_type>
