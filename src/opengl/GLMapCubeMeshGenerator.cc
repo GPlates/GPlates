@@ -165,7 +165,7 @@ GPlatesOpenGL::GLMapCubeMeshGenerator::create_pole_mesh_vertex(
 	Point2D map_point =
 	{
 		pole_longitude + central_meridian_longitude,
-		(north_pole ? 90 : -90)
+		double(north_pole ? 90 : -90)
 	};
 
 	// Map project the point.
