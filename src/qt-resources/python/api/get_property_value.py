@@ -209,89 +209,6 @@ def get_feature_properties_by_name(feature, property_name, time=0):
     return properties
 
 
-def get_feature_properties_by_value_type(feature, property_value_type, time=0):
-    """get_feature_properties_by_value_type(feature, property_value_type[, time=0]) -> list
-    Return the :class:`properties<Property>` of *feature* with property values matching the
-    type *property_value_type*, and also return the property values extracted at the reconstruction *time*.
-    
-    :param feature: the feature to query the properties of
-    :type feature: :class:`Feature`
-    :param property_value_type: the property value *type* to extract
-    :type property_value_type: a class inheriting :class:`PropertyValue`
-    :param time: the time to extract the property value
-    :type time: float
-    :rtype: list of tuples of (:class:`Property`, :class:`PropertyValue`)
-    :return: the list of matching properties and their extracted property value at *time*
-    
-    This function uses :meth:`Property.get_value` to match the property value types and
-    extract property values at *time*.
-    
-    This function essentially does the following:
-    ::
-    
-        get_feature_properties_by_value_type(feature, property_value_type, time=0):
-            properties = []
-            for property in feature:
-                property_value = property.get_value(time, property_value_type)
-                if property_value:
-                    properties.append((property, property_value))
-            return properties
-    """
-    
-    properties = []
-    
-    for property in feature:
-        property_value = property.get_value(time, property_value_type)
-        if property_value:
-            properties.append((property, property_value))
-    
-    return properties
-
-
-def get_feature_properties_by_name_and_value_type(feature, property_name, property_value_type, time=0):
-    """get_feature_properties_by_name_and_value_type(feature, property_name, property_value_type[, time=0]) -> list
-    Return the :class:`properties<Property>` of *feature* with property name *property_name* and with
-    property values matching the type *property_value_type*, and also return the property values
-    extracted at the reconstruction *time*.
-    
-    :param feature: the feature to query the properties of
-    :type feature: :class:`Feature`
-    :param property_name: the property name to match
-    :type property_name: :class:`PropertyName`
-    :param property_value_type: the property value *type* to extract
-    :type property_value_type: a class inheriting :class:`PropertyValue`
-    :param time: the time to extract the property value
-    :type time: float
-    :rtype: list of tuples of (:class:`Property`, :class:`PropertyValue`)
-    :return: the list of matching properties and their extracted property value at *time*
-    
-    This function uses :meth:`Property.get_value` to match the property value types and
-    extract property values at *time*.
-    
-    This function essentially does the following:
-    ::
-    
-        get_feature_properties_by_name_and_value_type(feature, property_name, property_value_type, time=0):
-            properties = []
-            for property in feature:
-                if property.get_name() == property_name:
-                    property_value = property.get_value(time, property_value_type)
-                    if property_value:
-                        properties.append((property, property_value))
-            return properties
-    """
-    
-    properties = []
-    
-    for property in feature:
-        if property.get_name() == property_name:
-            property_value = property.get_value(time, property_value_type)
-            if property_value:
-                properties.append((property, property_value))
-    
-    return properties
-
-
 def get_feature_geometry_properties(feature, geometry_on_sphere_type=GeometryOnSphere):
     """get_feature_geometry_properties(feature[, geometry_on_sphere_type=GeometryOnSphere]) -> list
     Return the geometry :class:`properties<Property>` of *feature* with geometry types matching
@@ -321,9 +238,11 @@ def get_feature_geometry_properties(feature, geometry_on_sphere_type=GeometryOnS
     properties = []
     
     for property in feature:
-        geometry_on_sphere = get_geometry_from_property_value(property.get_value(), geometry_on_sphere_type)
-        if geometry_on_sphere:
-            properties.append((property, geometry_on_sphere))
+        property_value = property.get_value()
+        if property_value:
+            geometry_on_sphere = get_geometry_from_property_value(property_value, geometry_on_sphere_type)
+            if geometry_on_sphere:
+                properties.append((property, geometry_on_sphere))
     
     return properties
 
@@ -361,9 +280,11 @@ def get_feature_geometry_properties_by_name(feature, property_name, geometry_on_
     
     for property in feature:
         if property.get_name() == property_name:
-            geometry_on_sphere = get_geometry_from_property_value(property.get_value(), geometry_on_sphere_type)
-            if geometry_on_sphere:
-                properties.append((property, geometry_on_sphere))
+            property_value = property.get_value()
+            if property_value:
+                geometry_on_sphere = get_geometry_from_property_value(property_value, geometry_on_sphere_type)
+                if geometry_on_sphere:
+                    properties.append((property, geometry_on_sphere))
     
     return properties
 

@@ -81,66 +81,6 @@ class GetFeaturePropertiesCase(unittest.TestCase):
             # No property name existing in feature.
         self.assertFalse(pygplates.get_feature_properties_by_name(self.feature, pygplates.PropertyName.create_gpml('not_exists')))
 
-    def test_get_by_value_type(self):
-        properties = pygplates.get_feature_properties_by_value_type(self.feature, pygplates.XsInteger)
-        self.assertTrue(len(properties) == 1)
-        self.assertTrue(properties[0][1].get_integer() == 300)
-        properties = pygplates.get_feature_properties_by_value_type(self.feature, pygplates.GpmlPlateId)
-        self.assertTrue(len(properties) == 3)
-        for property in properties:
-            self.assertTrue(property[1].get_plate_id() in (1,2,3))
-        properties = pygplates.get_feature_properties_by_value_type(self.feature, pygplates.GpmlPlateId, 5)
-        self.assertTrue(len(properties) == 4)
-        for property in properties:
-            self.assertTrue(property[1].get_plate_id() in (1,2,3,100))
-        properties = pygplates.get_feature_properties_by_value_type(self.feature, pygplates.GpmlPlateId, 15)
-        self.assertTrue(len(properties) == 4)
-        for property in properties:
-            self.assertTrue(property[1].get_plate_id() in (1,2,3,101))
-        properties = pygplates.get_feature_properties_by_value_type(self.feature, pygplates.GpmlPiecewiseAggregation)
-        self.assertTrue(len(properties) == 1)
-        self.assertTrue(properties[0][1] == self.property5.get_value())
-        # No property value type existing in feature.
-        self.assertFalse(pygplates.get_feature_properties_by_value_type(self.feature, pygplates.XsDouble))
-    
-    def test_get_by_name_and_value_type(self):
-        properties = pygplates.get_feature_properties_by_name_and_value_type(
-                self.feature, pygplates.PropertyName.create_gpml('test_integer'), pygplates.XsInteger)
-        self.assertTrue(len(properties) == 1)
-        self.assertTrue(properties[0][1].get_integer() == 300)
-        properties = pygplates.get_feature_properties_by_name_and_value_type(
-                self.feature, pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.GpmlPlateId)
-        self.assertTrue(len(properties) == 2)
-        self.assertTrue(properties[0][1].get_plate_id() in (1,3))
-        self.assertTrue(properties[1][1].get_plate_id() in (1,3))
-        properties = pygplates.get_feature_properties_by_name_and_value_type(
-                self.feature, pygplates.PropertyName.create_gpml('conjugatePlateId'), pygplates.GpmlPlateId)
-        self.assertTrue(len(properties) == 1)
-        self.assertTrue(properties[0][1].get_plate_id() == 2)
-        properties = pygplates.get_feature_properties_by_name_and_value_type(
-                self.feature, pygplates.PropertyName.create_gpml('plateId'), pygplates.GpmlPlateId)
-        self.assertFalse(properties)
-        properties = pygplates.get_feature_properties_by_name_and_value_type(
-                self.feature, pygplates.PropertyName.create_gpml('plateId'), pygplates.GpmlPlateId, 5)
-        self.assertTrue(len(properties) == 1)
-        self.assertTrue(properties[0][1].get_plate_id() == 100)
-        properties = pygplates.get_feature_properties_by_name_and_value_type(
-                self.feature, pygplates.PropertyName.create_gpml('plateId'), pygplates.GpmlPlateId, 15)
-        self.assertTrue(len(properties) == 1)
-        self.assertTrue(properties[0][1].get_plate_id() == 101)
-        properties = pygplates.get_feature_properties_by_name_and_value_type(
-                self.feature, pygplates.PropertyName.create_gpml('plateId'), pygplates.GpmlPiecewiseAggregation)
-        self.assertTrue(len(properties) == 1)
-        self.assertTrue(properties[0][1] == self.property5.get_value())
-        # Property name exists, but wrong property value type.
-        self.assertFalse(pygplates.get_feature_properties_by_name_and_value_type(
-                self.feature, pygplates.PropertyName.create_gpml('test_integer'), pygplates.XsDouble))
-        self.assertFalse(pygplates.get_feature_properties_by_name_and_value_type(
-                self.feature, pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.GpmlPiecewiseAggregation))
-        # Property value type exists, but no matching property name.
-        self.assertFalse(pygplates.get_feature_properties_by_name_and_value_type(
-                self.feature, pygplates.PropertyName.create_gpml('test_integer2'), pygplates.XsInteger))
-
 
 class GetGeometryFromPropertyValueCase(unittest.TestCase):
     def setUp(self):
@@ -236,36 +176,6 @@ class GetPropertyValueCase(unittest.TestCase):
         self.assertTrue(self.gpml_piecewise_aggregation.get_value(1.5) == self.gpml_plate_id2)
         # Outside time range.
         self.assertFalse(self.gpml_irregular_sampling.get_value(20))
-
-    def test_get_by_type(self):
-        interpolated_gpml_finite_rotation = self.gpml_irregular_sampling.get_value(
-                5, pygplates.GpmlFiniteRotation)
-        interpolated_pole, interpolated_angle = interpolated_gpml_finite_rotation.get_finite_rotation().get_euler_pole_and_angle()
-        self.assertTrue(abs(interpolated_angle) > 0.322 and abs(interpolated_angle) < 0.323)
-        # XsDouble can be interpolated.
-        interpolated_double = self.gpml_irregular_sampling2.get_value(7, pygplates.XsDouble)
-        self.assertTrue(interpolated_double)
-        self.assertTrue(abs(interpolated_double.get_double() - 140) < 1e-10)
-        self.assertTrue(self.gpml_plate_id1.get_value(property_value_type=pygplates.GpmlPlateId) == self.gpml_plate_id1)
-        self.assertTrue(self.gpml_constant_value.get_value(property_value_type=pygplates.GpmlPlateId) == self.gpml_plate_id1)
-        # Cannot request type that's a time-dependent wrapper type.
-        self.assertFalse(self.gpml_constant_value.get_value(property_value_type=pygplates.GpmlConstantValue))
-        self.assertTrue(self.gpml_piecewise_aggregation.get_value(property_value_type=pygplates.GpmlPlateId))
-        self.assertTrue(self.gpml_piecewise_aggregation.get_value(1.5, pygplates.GpmlPlateId) == self.gpml_plate_id2)
-        self.assertTrue(self.gpml_piecewise_aggregation.get_value(0.5, pygplates.GpmlPlateId) == self.gpml_plate_id1)
-        # Cannot request type that's a time-dependent wrapper type.
-        self.assertFalse(self.gpml_piecewise_aggregation.get_value(property_value_type=pygplates.GpmlPiecewiseAggregation))
-        # Time makes no difference in this case.
-        self.assertFalse(self.gpml_piecewise_aggregation.get_value(0.5, pygplates.GpmlPiecewiseAggregation))
-        # Should fail to extract incorrectly specified nested type.
-        self.assertFalse(self.gpml_irregular_sampling.get_value(property_value_type=pygplates.GpmlPlateId))
-        self.assertFalse(self.gpml_irregular_sampling2.get_value(property_value_type=pygplates.XsInteger))
-        self.assertFalse(self.gpml_plate_id1.get_value(property_value_type=pygplates.GpmlConstantValue))
-        self.assertFalse(self.gpml_plate_id1.get_value(property_value_type=pygplates.XsInteger))
-        self.assertFalse(self.gpml_constant_value.get_value(property_value_type=pygplates.XsInteger))
-        self.assertFalse(self.gpml_piecewise_aggregation.get_value(property_value_type=pygplates.GpmlConstantValue))
-        self.assertFalse(self.gpml_piecewise_aggregation.get_value(property_value_type=pygplates.GpmlIrregularSampling))
-        self.assertFalse(self.gpml_piecewise_aggregation.get_value(property_value_type=pygplates.XsInteger))
 
 
 class GetTimeSamplesCase(unittest.TestCase):

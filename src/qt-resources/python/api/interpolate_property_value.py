@@ -1,47 +1,50 @@
+# Private helper class (has '_' prefix) for interpolation.
+class _InterpolateVisitor(PropertyValueVisitor):
+    def __init__(self, property_value1, property_value2, time1, time2, target_time):
+        super(_InterpolateVisitor, self).__init__()
+        self.property_value1 = property_value1
+        self.property_value2 = property_value2
+        self.time1 = time1
+        self.time2 = time2
+        self.target_time = target_time
+        self.interpolated_property_value = None
+    
+    def interpolate(self):
+        self.interpolated_property_value = None
+        # Visit the first property value.
+        self.property_value1.accept_visitor(self)
+        return self.interpolated_property_value
+    
+    # Currently on GpmlFiniteRotation and XsDouble can be interpolated...
+    
+    def visit_gpml_finite_rotation(self, gpml_finite_rotation1):
+        # No need to test 'time1==time2' since 'interpolate_finite_rotations()' does that for us.
+        
+        # Second property value should also be the same type.
+        self.interpolated_property_value = GpmlFiniteRotation(
+            interpolate_finite_rotations(
+                gpml_finite_rotation1.get_finite_rotation(), self.property_value2.get_finite_rotation(),
+                self.time1, self.time2, self.target_time))
+    
+    def visit_xs_double(self, xs_double1):
+        # Use the epsilon comparison implicitly provided by GeoTimeInstant.
+        if GeoTimeInstant(self.time2) == GeoTimeInstant(self.time1):
+            return xs_double1
+        
+        interpolation = (self.target_time - self.time1) / (self.time2 - self.time1)
+        
+        # Second property value should also be the same type.
+        self.interpolated_property_value = XsDouble(
+            (1 - interpolation) * xs_double1.get_double() +
+                interpolation * self.property_value2.get_double())
+
+
 # This function is private in this 'pygplates' module (function name prefixed with a single underscore).
 # It's used by other sections of the 'pygplates' module, but not meant for public use.
 # It's only in this code section because it does interpolation.
 def _interpolate_property_value(property_value1, property_value2, time1, time2, target_time):
-    class InterpolateVisitor(PropertyValueVisitor):
-        def __init__(self, property_value1, property_value2, time1, time2, target_time):
-            super(InterpolateVisitor, self).__init__()
-            self.property_value1 = property_value1
-            self.property_value2 = property_value2
-            self.time1 = time1
-            self.time2 = time2
-            self.target_time = target_time
-            self.interpolated_property_value = None
-        
-        def interpolate(self):
-            self.interpolated_property_value = None
-            # Visit the first property value.
-            self.property_value1.accept_visitor(self)
-            return self.interpolated_property_value
-        
-        # Currently on GpmlFiniteRotation and XsDouble can be interpolated...
-        
-        def visit_gpml_finite_rotation(self, gpml_finite_rotation1):
-            # No need to test 'time1==time2' since 'interpolate_finite_rotations()' does that for us.
-            
-            # Second property value should also be the same type.
-            self.interpolated_property_value = GpmlFiniteRotation(
-                interpolate_finite_rotations(
-                    gpml_finite_rotation1.get_finite_rotation(), self.property_value2.get_finite_rotation(),
-                    self.time1, self.time2, self.target_time))
-        
-        def visit_xs_double(self, xs_double1):
-            # Use the epsilon comparison implicitly provided by GeoTimeInstant.
-            if GeoTimeInstant(time2) == GeoTimeInstant(time1):
-                return xs_double1
-            
-            interpolation = (self.target_time - self.time1) / (self.time2 - self.time1)
-            
-            # Second property value should also be the same type.
-            self.interpolated_property_value = XsDouble(
-                (1 - interpolation) * xs_double1.get_double() +
-                    interpolation * self.property_value2.get_double())
     
-    visitor = InterpolateVisitor(property_value1, property_value2, time1, time2, target_time)
+    visitor = _InterpolateVisitor(property_value1, property_value2, time1, time2, target_time)
     return visitor.interpolate()
 
 
@@ -76,8 +79,8 @@ def interpolate_total_reconstruction_pole(total_reconstruction_pole, time):
     return interpolate_finite_rotations(
             begin_time_sample.get_value().get_finite_rotation(),
             end_time_sample.get_value().get_finite_rotation(),
-            begin_time_sample.get_time().get_value(),
-            end_time_sample.get_time().get_value(),
+            begin_time_sample.get_time(),
+            end_time_sample.get_time(),
             time)
 
 

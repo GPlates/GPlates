@@ -1,11 +1,9 @@
-def get_value(property, time=0, property_value_type=None):
-    """get_value([time=0[, property_value_type=None]]) -> PropertyValue or None
+def get_value(property, time=0):
+    """get_value([time=0]) -> PropertyValue or None
     Extracts the value, of our possibly time-dependent property, at the reconstruction *time*.
     
     :param time: the time to extract value (defaults to present day)
     :type time: float
-    :param property_value_type: the property value *type* to match, if specified (defaults to ``None``)
-    :type property_value_type: a class inheriting :class:`PropertyValue`
     :rtype: :class:`PropertyValue` or None
     
     If this property has a time-dependent property value (:class:`GpmlConstantValue`,
@@ -13,12 +11,6 @@ def get_value(property, time=0, property_value_type=None):
     value is extracted at the reconstruction *time* and returned. Otherwise our property value
     instance is simply returned as is (since it's not a time-dependent property value).
     See :meth:`PropertyValue.get_value` for more details.
-    
-    Returns ``None`` if *property_value_type* is specified but does not match the type of the
-    extracted property value.
-    
-    Returns ``None`` if *property_value_type* is one of the time-dependent types
-    (:class:`GpmlConstantValue`, :class:`GpmlIrregularSampling` or :class:`GpmlPiecewiseAggregation`).
     
     Note that this method never returns a time-dependent property value (:class:`GpmlConstantValue`,
     :class:`GpmlIrregularSampling` or :class:`GpmlPiecewiseAggregation`).
@@ -29,7 +21,7 @@ def get_value(property, time=0, property_value_type=None):
     property_value = property._get_value();
     
     # Look up the value at the specified time.
-    return property_value.get_value(time, property_value_type)
+    return property_value.get_value(time)
 
 # Add the module function as a class method.
 Property.get_value = get_value
