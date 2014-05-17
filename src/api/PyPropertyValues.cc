@@ -199,296 +199,6 @@ export_property_value()
 // NOTE: Please keep the property values alphabetically ordered.
 //////////////////////////////////////////////////////////////////////////
 
-namespace GPlatesApi
-{
-	bp::object
-	geo_time_instant_eq(
-			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
-			bp::object other)
-	{
-		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other_geo_time_instant(other);
-		if (extract_other_geo_time_instant.check())
-		{
-			return bp::object(geo_time_instant == extract_other_geo_time_instant());
-		}
-
-		bp::extract<double> extract_other_float(other);
-		if (extract_other_float.check())
-		{
-			return bp::object(geo_time_instant ==
-					// We want to use the epsilon comparison of GeoTimeInstant...
-					GPlatesPropertyValues::GeoTimeInstant(extract_other_float()));
-		}
-
-#if 1
-		// Return NotImplemented so python can continue looking for a match
-		// (eg, in case 'other' is a class that implements relational operators with GeoTimeInstant).
-		return bp::object(bp::handle<>(bp::borrowed(Py_NotImplemented)));
-#else
-		PyErr_SetString(PyExc_TypeError, "Can only '==' compare GeoTimeInstant with another "
-				"GeoTimeInstant or float");
-		bp::throw_error_already_set();
-
-		// Shouldn't get here.
-		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-		// Keep compiler happy.
-		return false;
-#endif
-	}
-
-	bp::object
-	geo_time_instant_ne(
-			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
-			bp::object other)
-	{
-		bp::object eq_result = geo_time_instant_eq(geo_time_instant, other);
-		if (eq_result.ptr() == Py_NotImplemented)
-		{
-			// Return NotImplemented.
-			return eq_result;
-		}
-
-		// Invert the result.
-		return bp::object(!bp::extract<bool>(eq_result));
-	}
-
-	bp::object
-	geo_time_instant_lt(
-			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
-			bp::object other)
-	{
-		//
-		// NOTE: We invert the comparison because we want python's GeoTimeInstant to have larger
-		// time values further back in time (which is the opposite of C++'s GeoTimeInstant).
-		// This is to avoid potential confusion with python users if they're unsure whether their
-		// python object is a 'float' or a 'GeoTimeInstant' (due to the dynamic nature of python).
-		//
-
-		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other_geo_time_instant(other);
-		if (extract_other_geo_time_instant.check())
-		{
-			return bp::object(geo_time_instant > extract_other_geo_time_instant());
-		}
-
-		bp::extract<double> extract_other_float(other);
-		if (extract_other_float.check())
-		{
-			return bp::object(geo_time_instant >
-					// We want to use the epsilon comparison of GeoTimeInstant...
-					GPlatesPropertyValues::GeoTimeInstant(extract_other_float()));
-		}
-
-#if 1
-		// Return NotImplemented so python can continue looking for a match
-		// (eg, in case 'other' is a class that implements relational operators with GeoTimeInstant).
-		return bp::object(bp::handle<>(bp::borrowed(Py_NotImplemented)));
-#else
-		PyErr_SetString(PyExc_TypeError, "Can only '<' compare GeoTimeInstant with another "
-				"GeoTimeInstant or float");
-		bp::throw_error_already_set();
-
-		// Shouldn't get here.
-		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-		// Keep compiler happy.
-		return false;
-#endif
-	}
-
-	bp::object
-	geo_time_instant_le(
-			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
-			bp::object other)
-	{
-		//
-		// NOTE: We invert the comparison because we want python's GeoTimeInstant to have larger
-		// time values further back in time (which is the opposite of C++'s GeoTimeInstant).
-		// This is to avoid potential confusion with python users if they're unsure whether their
-		// python object is a 'float' or a 'GeoTimeInstant' (due to the dynamic nature of python).
-		//
-
-		bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_other_geo_time_instant(other);
-		if (extract_other_geo_time_instant.check())
-		{
-			return bp::object(geo_time_instant >= extract_other_geo_time_instant());
-		}
-
-		bp::extract<double> extract_other_float(other);
-		if (extract_other_float.check())
-		{
-			return bp::object(geo_time_instant >=
-					// We want to use the epsilon comparison of GeoTimeInstant...
-					GPlatesPropertyValues::GeoTimeInstant(extract_other_float()));
-		}
-
-#if 1
-		// Return NotImplemented so python can continue looking for a match
-		// (eg, in case 'other' is a class that implements relational operators with GeoTimeInstant).
-		return bp::object(bp::handle<>(bp::borrowed(Py_NotImplemented)));
-#else
-		PyErr_SetString(PyExc_TypeError, "Can only '<=' compare GeoTimeInstant with another "
-				"GeoTimeInstant or float");
-		bp::throw_error_already_set();
-
-		// Shouldn't get here.
-		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-		// Keep compiler happy.
-		return false;
-#endif
-	}
-
-	bp::object
-	geo_time_instant_gt(
-			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
-			bp::object other)
-	{
-		bp::object le_result = geo_time_instant_le(geo_time_instant, other);
-		if (le_result.ptr() == Py_NotImplemented)
-		{
-			// Return NotImplemented.
-			return le_result;
-		}
-
-		// Invert the result.
-		return bp::object(!bp::extract<bool>(le_result));
-	}
-
-	bp::object
-	geo_time_instant_ge(
-			const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant,
-			bp::object other)
-	{
-		bp::object lt_result = geo_time_instant_lt(geo_time_instant, other);
-		if (lt_result.ptr() == Py_NotImplemented)
-		{
-			// Return NotImplemented.
-			return lt_result;
-		}
-
-		// Invert the result.
-		return bp::object(!bp::extract<bool>(lt_result));
-	}
-}
-
-void
-export_geo_time_instant()
-{
-	//
-	// GeoTimeInstant - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
-	//
-	bp::class_<GPlatesPropertyValues::GeoTimeInstant>(
-			"GeoTimeInstant",
-			"Represents an instant in geological time. This class is able to represent:\n"
-			"\n"
-			"* time-instants with a *specific* time-position relative to the present-day\n"
-			"* time-instants in the *distant past*\n"
-			"* time-instants in the *distant future*\n"
-			"\n"
-			"Note that *positive* values represent times in the *past* and *negative* values represent "
-			"times in the *future*. This can be confusing at first, but the reason for this is "
-			"geological times are represented by how far in the *past* to go back compared to present day.\n"
-			"\n"
-			"All comparison operators (==, !=, <, <=, >, >=) are supported. The comparisons are such that "
-			"times further in the past are *greater than* more recent times. Note that this is the opposite "
-			"how we normally think of time (where future time values are greater than past values). "
-			"Comparisons of *specific* time instants use a numerical tolerance such that they compare "
-			"equal when close enough to each other. Comparisons can also be made between a GeoTimeInstant "
-			"and a ``float``.\n"
-			"::\n"
-			"\n"
-			"  time10Ma = pygplates.GeoTimeInstant(10)\n"
-			"  time20Ma = pygplates.GeoTimeInstant(20)\n"
-			"  assert(time20Ma > time10Ma)\n"
-			"  assert(time20Ma.get_value() > time10Ma.get_value())\n"
-			"  assert(time20Ma > time10Ma.get_value())\n"
-			"  assert(time20Ma.get_value() > time10Ma)\n",
-			bp::init<double>(
-					(bp::arg("time_value")),
-					"__init__(time_value)\n"
-					"  Create a GeoTimeInstant instance from *time_value*.\n"
-					"\n"
-					"  :param time_value: the time position - positive values represent times in the *past*\n"
-					"  :type time_value: float\n"
-					"\n"
-					"  ::\n"
-					"\n"
-					"    time_instant = pygplates.GeoTimeInstant(time_value)\n"))
-		.def("create_distant_past",
-				&GPlatesPropertyValues::GeoTimeInstant::create_distant_past,
-				"create_distant_past() -> GeoTimeInstant\n"
-				"  Create a GeoTimeInstant instance for the distant past.\n"
-				"  ::\n"
-				"\n"
-				"    distant_past = pygplates.GeoTimeInstant.create_distant_past()\n"
-				"\n"
-				"  This is basically creating a time-instant which is infinitely far in the past, "
-				"as if we'd created a GeoTimeInstant with a time-position value of infinity.\n"
-				"\n"
-				"  All distant-past time-instants will compare greater than all non-distant-past time-instants.\n")
-		.staticmethod("create_distant_past")
-		.def("create_distant_future",
-				&GPlatesPropertyValues::GeoTimeInstant::create_distant_future,
-				"create_distant_future() -> GeoTimeInstant\n"
-				"  Create a GeoTimeInstant instance for the distant future.\n"
-				"  ::\n"
-				"\n"
-				"    distant_past = pygplates.GeoTimeInstant.create_distant_past()\n"
-				"\n"
-				"  This is basically creating a time-instant which is infinitely far in the future, "
-				"as if we'd created a GeoTimeInstant with a time-position value of minus-infinity.\n"
-				"\n"
-				"  All distant-future time-instants will compare less than all non-distant-future time-instants.\n")
-		.staticmethod("create_distant_future")
-		.def("get_value",
-				&GPlatesPropertyValues::GeoTimeInstant::value,
-				"get_value() -> float\n"
-				"  Access the floating-point representation of the time-position of this instance. "
-				"Units are in Ma (millions of year ago).\n"
-				"\n"
-				"  :rtype: float\n"
-				"\n"
-				"  **NOTE** that this value may not be meaningful if :meth:`is_real` returns ``False``. "
-				"Currently, if :meth:`is_distant_past` is ``True`` then *get_value* returns infinity and if "
-				":meth:`is_distant_future` is ``True`` then *get_value* returns minus-infinity.\n"
-				"\n"
-				"  Note that positive values represent times in the past and negative values represent "
-				"times in the future.\n")
-		.def("is_distant_past",
-				&GPlatesPropertyValues::GeoTimeInstant::is_distant_past,
-				"is_distant_past() -> bool\n"
-				"  Returns ``True`` if this instance is a time-instant in the distant past.\n"
-				"\n"
-				"  :rtype: bool\n")
-		.def("is_distant_future",
-				&GPlatesPropertyValues::GeoTimeInstant::is_distant_future,
-				"is_distant_future() -> bool\n"
-				"  Returns ``True`` if this instance is a time-instant in the distant future.\n"
-				"\n"
-				"  :rtype: bool\n")
-		.def("is_real",
-				&GPlatesPropertyValues::GeoTimeInstant::is_real,
-				"is_real() -> bool\n"
-				"  Returns ``True`` if this instance is a time-instant whose time-position may be "
-				"expressed as a *real* floating-point number.\n"
-				"\n"
-				"  :rtype: bool\n"
-				"\n"
-				"  If :meth:`is_real` is ``True`` then both :meth:`is_distant_past` and "
-				":meth:`is_distant_future` will be ``False``.\n")
-		// Generate '__str__' from 'operator<<'...
-		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
-		.def(bp::self_ns::str(bp::self))
-		.def("__eq__", &GPlatesApi::geo_time_instant_eq)
-		.def("__ne__", &GPlatesApi::geo_time_instant_ne)
-		.def("__lt__", &GPlatesApi::geo_time_instant_lt)
-		.def("__le__", &GPlatesApi::geo_time_instant_le)
-		.def("__gt__", &GPlatesApi::geo_time_instant_gt)
-		.def("__ge__", &GPlatesApi::geo_time_instant_ge)
-	;
-
-	// Enable boost::optional<GeoTimeInstant> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::GeoTimeInstant>();
-}
-
 
 void
 export_gml_line_string()
@@ -840,18 +550,34 @@ export_gml_time_instant()
 				"  Create a property value representing a specific time instant.\n"
 				"\n"
 				"  :param time_position: the time position\n"
-				"  :type time_position: :class:`GeoTimeInstant`\n"
+				"  :type time_position: float or :class:`GeoTimeInstant`\n"
 				"\n"
 				"  ::\n"
 				"\n"
-				"    time_instant = pygplates.GmlTimeInstant(time_position)\n")
+				"    begin_time_instant = pygplates.GmlTimeInstant(pygplates.GeoTimeInstant.create_distant_past())\n"
+				"    end_time_instant = pygplates.GmlTimeInstant(0)\n")
 		.def("get_time",
 				&GPlatesPropertyValues::GmlTimeInstant::get_time_position,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_time() -> GeoTimeInstant\n"
+				"get_time() -> float\n"
 				"  Returns the time position of this property value.\n"
 				"\n"
-				"  :rtype: :class:`GeoTimeInstant`\n")
+				"  :rtype: float\n"
+				"\n"
+				"  You can use :class:`GeoTimeInstant` with the returned ``float`` to "
+				"check for *distant past* or *distant future* for example:\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    float_time = time_instant.get_time()\n"
+				"    print 'Time instant is distant past: %s' % pygplates.GeoTimeInstant(float_time).is_distant_past()\n"
+				"\n"
+				"  ...or just test directly using ``float`` comparisons...\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    float_time = time_instant.get_time()\n"
+				"    print 'Time instant is distant past: %s' % (float_time == float('inf'))\n")
 		.def("set_time",
 				&GPlatesPropertyValues::GmlTimeInstant::set_time_position,
 				(bp::arg("time_position")),
@@ -859,7 +585,7 @@ export_gml_time_instant()
 				"  Sets the time position of this property value.\n"
 				"\n"
 				"  :param time_position: the time position\n"
-				"  :type time_position: :class:`GeoTimeInstant`\n")
+				"  :type time_position: float or :class:`GeoTimeInstant`\n")
 	;
 
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
@@ -940,20 +666,24 @@ export_gml_time_period()
 				"  Create a property value representing a specific time period.\n"
 				"\n"
 				"  :param begin_time_position: the begin time position (time of appearance)\n"
-				"  :type begin_time_position: :class:`GeoTimeInstant`\n"
+				"  :type begin_time_position: float or :class:`GeoTimeInstant`\n"
 				"  :param end_time_position: the end time position (time of disappearance)\n"
-				"  :type end_time_position: :class:`GeoTimeInstant`\n"
+				"  :type end_time_position: float or :class:`GeoTimeInstant`\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n"
 				"\n"
 				"  ::\n"
 				"\n"
-				"    time_period = pygplates.GmlTimePeriod(begin_time_position, end_time_position)\n")
+				"    time_period = pygplates.GmlTimePeriod(pygplates.GeoTimeInstant.create_distant_past(), 0)\n")
 		.def("get_begin_time",
 				&GPlatesApi::gml_time_period_get_begin_time,
-				"get_begin_time() -> GeoTimeInstant\n"
+				"get_begin_time() -> float\n"
 				"  Returns the begin time position (time of appearance) of this property value.\n"
 				"\n"
-				"  :rtype: :class:`GeoTimeInstant`\n")
+				"  :rtype: float\n"
+				"\n"
+				"  You can use :class:`GeoTimeInstant` with the returned ``float`` to check for "
+				"*distant past* or *distant future* for example. "
+				"See :meth:`GmlTimeInstant.get_time` for more details.\n")
 		.def("set_begin_time",
 				&GPlatesApi::gml_time_period_set_begin_time,
 				(bp::arg("time_position")),
@@ -961,14 +691,18 @@ export_gml_time_period()
 				"  Sets the begin time position (time of appearance) of this property value.\n"
 				"\n"
 				"  :param time_position: the begin time position (time of appearance)\n"
-				"  :type time_position: :class:`GeoTimeInstant`\n"
+				"  :type time_position: float or :class:`GeoTimeInstant`\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 		.def("get_end_time",
 				&GPlatesApi::gml_time_period_get_end_time,
-				"get_end_time() -> GeoTimeInstant\n"
+				"get_end_time() -> float\n"
 				"  Returns the end time position (time of disappearance) of this property value.\n"
 				"\n"
-				"  :rtype: :class:`GeoTimeInstant`\n")
+				"  :rtype: float\n"
+				"\n"
+				"  You can use :class:`GeoTimeInstant` with the returned ``float`` to check for "
+				"*distant past* or *distant future* for example. "
+				"See :meth:`GmlTimeInstant.get_time` for more details.\n")
 		.def("set_end_time",
 				&GPlatesApi::gml_time_period_set_end_time,
 				(bp::arg("time_position")),
@@ -976,7 +710,7 @@ export_gml_time_period()
 				"  Sets the end time position (time of disappearance) of this property value.\n"
 				"\n"
 				"  :param time_position: the end time position (time of disappearance)\n"
-				"  :type time_position: :class:`GeoTimeInstant`\n"
+				"  :type time_position: float or :class:`GeoTimeInstant`\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 	;
 
@@ -1915,7 +1649,7 @@ export_gpml_time_sample()
 				"  :param property_value: arbitrary property value\n"
 				"  :type property_value: :class:`PropertyValue`\n"
 				"  :param time: the time position associated with the property value\n"
-				"  :type time: :class:`GeoTimeInstant`\n"
+				"  :type time: float or :class:`GeoTimeInstant`\n"
 				"  :param description: description of the time sample\n"
 				"  :type description: string or None\n"
 				"  :param is_enabled: whether time sample is enabled\n"
@@ -1944,10 +1678,14 @@ export_gpml_time_sample()
 				"using its property value methods.\n")
 		.def("get_time",
 				&GPlatesApi::gpml_time_sample_get_time,
-				"get_time() -> GeoTimeInstant\n"
+				"get_time() -> float\n"
 				"  Returns the time position of this time sample.\n"
 				"\n"
-				"  :rtype: :class:`GeoTimeInstant`\n")
+				"  :rtype: float\n"
+				"\n"
+				"  You can use :class:`GeoTimeInstant` with the returned ``float`` to check for "
+				"*distant past* or *distant future* for example. "
+				"See :meth:`GmlTimeInstant.get_time` for more details.\n")
 		.def("set_time",
 				&GPlatesApi::gpml_time_sample_set_time,
 				(bp::arg("time")),
@@ -1955,7 +1693,7 @@ export_gpml_time_sample()
 				"  Sets the time position associated with this time sample.\n"
 				"\n"
 				"  :param time: the time position associated with the property value\n"
-				"  :type time: :class:`GeoTimeInstant`\n")
+				"  :type time: float or :class:`GeoTimeInstant`\n")
 		.def("get_description",
 				&GPlatesApi::gpml_time_sample_get_description,
 				"get_description() -> string or None\n"
@@ -2113,9 +1851,9 @@ export_gpml_time_window()
 				"  :param property_value: arbitrary property value\n"
 				"  :type property_value: :class:`PropertyValue`\n"
 				"  :param begin_time: the begin time of the time window\n"
-				"  :type begin_time: :class:`GeoTimeInstant`\n"
+				"  :type begin_time: float or :class:`GeoTimeInstant`\n"
 				"  :param end_time: the end time of the time window\n"
-				"  :type end_time: :class:`GeoTimeInstant`\n"
+				"  :type end_time: float or :class:`GeoTimeInstant`\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n"
 				"\n"
 				"  ::\n"
@@ -2144,10 +1882,14 @@ export_gpml_time_window()
 				"using its property value methods.\n")
 		.def("get_begin_time",
 				&GPlatesApi::gpml_time_window_get_begin_time,
-				"get_begin_time() -> GeoTimeInstant\n"
+				"get_begin_time() -> float\n"
 				"  Returns the begin time of this time window.\n"
 				"\n"
-				"  :rtype: :class:`GeoTimeInstant`\n")
+				"  :rtype: float\n"
+				"\n"
+				"  You can use :class:`GeoTimeInstant` with the returned ``float`` to check for "
+				"*distant past* or *distant future* for example. "
+				"See :meth:`GmlTimeInstant.get_time` for more details.\n")
 		.def("set_begin_time",
 				&GPlatesApi::gpml_time_window_set_begin_time,
 				(bp::arg("time")),
@@ -2155,14 +1897,18 @@ export_gpml_time_window()
 				"  Sets the begin time of this time window.\n"
 				"\n"
 				"  :param time: the begin time of this time window\n"
-				"  :type time: :class:`GeoTimeInstant`\n"
+				"  :type time: float or :class:`GeoTimeInstant`\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 		.def("get_end_time",
 				&GPlatesApi::gpml_time_window_get_end_time,
-				"get_end_time() -> GeoTimeInstant\n"
+				"get_end_time() -> float\n"
 				"  Returns the end time of this time window.\n"
 				"\n"
-				"  :rtype: :class:`GeoTimeInstant`\n")
+				"  :rtype: float\n"
+				"\n"
+				"  You can use :class:`GeoTimeInstant` with the returned ``float`` to check for "
+				"*distant past* or *distant future* for example. "
+				"See :meth:`GmlTimeInstant.get_time` for more details.\n")
 		.def("set_end_time",
 				&GPlatesApi::gpml_time_window_set_end_time,
 				(bp::arg("time")),
@@ -2170,7 +1916,7 @@ export_gpml_time_window()
 				"  Sets the end time of this time window.\n"
 				"\n"
 				"  :param time: the end time of this time window\n"
-				"  :type time: :class:`GeoTimeInstant`\n"
+				"  :type time: float or :class:`GeoTimeInstant`\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
@@ -2425,8 +2171,6 @@ export_property_values()
 	// NOTE: Please keep the property values alphabetically ordered.
 	//       Unless there are inheritance dependencies.
 	//////////////////////////////////////////////////////////////////////////
-
-	export_geo_time_instant();
 
 	export_gml_line_string();
 	export_gml_multi_point();

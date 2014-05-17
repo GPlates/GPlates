@@ -21,11 +21,13 @@ class GeoTimeInstantCase(unittest.TestCase):
         self.assertTrue(self.distant_past.is_distant_past())
         self.assertFalse(self.distant_past.is_distant_future())
         self.assertFalse(self.distant_past.is_real())
+        self.assertTrue(pygplates.GeoTimeInstant(float('inf')).is_distant_past())
 
     def test_distant_future(self):
         self.assertTrue(self.distant_future.is_distant_future())
         self.assertFalse(self.distant_future.is_distant_past())
         self.assertFalse(self.distant_past.is_real())
+        self.assertTrue(pygplates.GeoTimeInstant(float('-inf')).is_distant_future())
 
     def test_real_time(self):
         self.assertFalse(self.real_time1.is_distant_past())
@@ -33,12 +35,6 @@ class GeoTimeInstantCase(unittest.TestCase):
         self.assertTrue(self.real_time1.is_real())
 
     def test_comparisons(self):
-        # Note that, unlike comparisons on GeoTimeInstant objects, comparisons on their returned
-        # 'float' times shouldn't really compare with distant-past and distant-future since they
-        # return +Inf and -Inf respectively (from GeoTimeInstant) and the user should not call
-        # 'get_value()' in either case, but we test anyway just to make sure the comparison
-        # holds in case the user actually does do this.
-        
         self.assertTrue(self.distant_past > self.distant_future)
         self.assertTrue(self.distant_past.get_value() > self.distant_future)
         self.assertTrue(self.distant_past > self.distant_future.get_value())
@@ -227,26 +223,28 @@ class GmlPolygonCase(unittest.TestCase):
 class GmlTimeInstantCase(unittest.TestCase):
     def setUp(self):
         self.geo_time_instant = pygplates.GeoTimeInstant(10)
-        self.gml_time_instant = pygplates.GmlTimeInstant(self.geo_time_instant)
+        self.gml_time_instant1 = pygplates.GmlTimeInstant(self.geo_time_instant)
+        self.gml_time_instant2 = pygplates.GmlTimeInstant(self.geo_time_instant.get_value())
 
     def test_get(self):
-        self.assertTrue(self.gml_time_instant.get_time() == self.geo_time_instant)
+        self.assertTrue(self.gml_time_instant1.get_time() == self.geo_time_instant)
+        self.assertTrue(self.gml_time_instant2.get_time() == self.geo_time_instant)
 
     def test_set(self):
         new_geo_time_instant = pygplates.GeoTimeInstant(20)
-        self.gml_time_instant.set_time(new_geo_time_instant)
-        self.assertTrue(self.gml_time_instant.get_time() == new_geo_time_instant)
+        self.gml_time_instant1.set_time(new_geo_time_instant)
+        self.assertTrue(self.gml_time_instant1.get_time() == new_geo_time_instant)
 
 
 class GmlTimePeriodCase(unittest.TestCase):
     def setUp(self):
-        self.begin_geo_time_instant = pygplates.GeoTimeInstant(20)
+        self.begin_time_position = 20
         self.end_geo_time_instant = pygplates.GeoTimeInstant.create_distant_future()
         self.gml_time_period = pygplates.GmlTimePeriod(
-                self.begin_geo_time_instant, self.end_geo_time_instant)
+                self.begin_time_position, self.end_geo_time_instant)
 
     def test_get(self):
-        self.assertTrue(self.gml_time_period.get_begin_time() == self.begin_geo_time_instant)
+        self.assertTrue(self.gml_time_period.get_begin_time() == self.begin_time_position)
         self.assertTrue(self.gml_time_period.get_end_time() == self.end_geo_time_instant)
 
     def test_set(self):
@@ -337,9 +335,7 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
     def setUp(self):
         self.original_time_samples = []
         for i in range(0,4):
-            ts = pygplates.GpmlTimeSample(
-                pygplates.XsInteger(i),
-                pygplates.GeoTimeInstant(i))
+            ts = pygplates.GpmlTimeSample(pygplates.XsInteger(i), i)
             self.original_time_samples.append(ts)
         
         self.gpml_irregular_sampling = pygplates.GpmlIrregularSampling(
@@ -437,7 +433,7 @@ class GpmlPiecewiseAggregationCase(unittest.TestCase):
             tw = pygplates.GpmlTimeWindow(
                 pygplates.XsInteger(i),
                 pygplates.GeoTimeInstant(i+1), # begin time - earlier
-                pygplates.GeoTimeInstant(i))   # end time - later
+                i)   # end time - later
             self.original_time_windows.append(tw)
         
         self.gpml_piecewise_aggregation = pygplates.GpmlPiecewiseAggregation(self.original_time_windows)
@@ -479,7 +475,7 @@ class GpmlTimeSampleCase(unittest.TestCase):
                 self.property_value1, self.time1, self.description1, self.is_enabled1)
         
         self.property_value2 = pygplates.GpmlPlateId(201)
-        self.time2 = pygplates.GeoTimeInstant(20)
+        self.time2 = 20
         self.gpml_time_sample2 = pygplates.GpmlTimeSample(self.property_value2, self.time2)
 
     def test_get(self):
@@ -536,7 +532,7 @@ class GpmlTimeWindowCase(unittest.TestCase):
     def setUp(self):
         self.property_value = pygplates.GpmlPlateId(701)
         self.begin_time = pygplates.GeoTimeInstant(20)
-        self.end_time = pygplates.GeoTimeInstant(10)
+        self.end_time = 10
         self.gpml_time_window = pygplates.GpmlTimeWindow(
                 self.property_value, self.begin_time, self.end_time)
 

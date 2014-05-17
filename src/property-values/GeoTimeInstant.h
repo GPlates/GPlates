@@ -141,10 +141,13 @@ namespace GPlatesPropertyValues
 		 *
 		 * Note that positive values represent times in the past; negative values represent
 		 * times in the future.
+		 *
+		 * Note that the specified value should not be positive or negative infinity
+		 * (use @a create_distant_past and @a create_distant_future instead).
 		 */
 		explicit
 		GeoTimeInstant(
-				const double &value_):
+				const double &value_) :
 			d_type(TimePositionTypes::Real),
 			d_value(value_)
 		{  }
@@ -155,7 +158,8 @@ namespace GPlatesPropertyValues
 		 * Note that positive values represent times in the past; negative values represent
 		 * times in the future.
 		 *
-		 * Note that this value may not be meaningful if @a is_real returns false.
+		 * If @a is_real is false then the value returned is positive infinity if
+		 * @a is_distant_past is true or negative infinity if @a is_distant_future is true.
 		 */
 		double
 		value() const;

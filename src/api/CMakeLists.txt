@@ -33,6 +33,7 @@ set(srcs
     PyFeatureCollectionFileFormatRegistry.h
     PyFiniteRotation.cc
     PyGeometriesOnSphere.cc
+    PyGeoTimeInstant.cc
     PyGPlatesModule.cc
     PyGPlatesModule.h
     PyGreatCircleArc.cc

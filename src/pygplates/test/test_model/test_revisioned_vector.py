@@ -19,9 +19,7 @@ class GpmlTimeSampleListCase(unittest.TestCase):
     def setUp(self):
         self.original_time_samples = []
         for i in range(0,4):
-            ts = pygplates.GpmlTimeSample(
-                pygplates.XsInteger(i),
-                pygplates.GeoTimeInstant(i))
+            ts = pygplates.GpmlTimeSample(pygplates.XsInteger(i), i)
             self.original_time_samples.append(ts)
             
         # Store the actual GpmlTimeSampleList (ie, RevisionedVector) for use by the test cases.
@@ -43,23 +41,15 @@ class GpmlTimeSampleListCase(unittest.TestCase):
             self.assertTrue(time_samples[i] == self.original_time_samples[i])
 
     def test_set_item(self):
-        ts = pygplates.GpmlTimeSample(
-                pygplates.XsInteger(100),
-                pygplates.GeoTimeInstant(100))
+        ts = pygplates.GpmlTimeSample(pygplates.XsInteger(100), 100)
         self.gpml_time_sample_list[2] = ts
         self.assertTrue(len(self.gpml_time_sample_list) == 4)
         self.assertTrue(self.gpml_time_sample_list[2] == ts)
 
     def test_set_slice(self):
-        ts1 = pygplates.GpmlTimeSample(
-                pygplates.XsInteger(100),
-                pygplates.GeoTimeInstant(100))
-        ts2 = pygplates.GpmlTimeSample(
-                pygplates.XsInteger(200),
-                pygplates.GeoTimeInstant(200))
-        ts3 = pygplates.GpmlTimeSample(
-                pygplates.XsInteger(300),
-                pygplates.GeoTimeInstant(300))
+        ts1 = pygplates.GpmlTimeSample(pygplates.XsInteger(100), 100)
+        ts2 = pygplates.GpmlTimeSample(pygplates.XsInteger(200), 200)
+        ts3 = pygplates.GpmlTimeSample(pygplates.XsInteger(300), 300)
         self.gpml_time_sample_list[1:3] = [ts1, ts2, ts3]
         # The length should increase by one.
         self.assertTrue(len(self.gpml_time_sample_list) == 5)
@@ -70,15 +60,9 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         self.assertTrue(self.gpml_time_sample_list[4] == self.original_time_samples[3])
 
     def test_set_extended_slice(self):
-        ts1 = pygplates.GpmlTimeSample(
-                pygplates.XsInteger(100),
-                pygplates.GeoTimeInstant(100))
-        ts2 = pygplates.GpmlTimeSample(
-                pygplates.XsInteger(200),
-                pygplates.GeoTimeInstant(200))
-        ts3 = pygplates.GpmlTimeSample(
-                pygplates.XsInteger(300),
-                pygplates.GeoTimeInstant(300))
+        ts1 = pygplates.GpmlTimeSample(pygplates.XsInteger(100), 100)
+        ts2 = pygplates.GpmlTimeSample(pygplates.XsInteger(200), 200)
+        ts3 = pygplates.GpmlTimeSample(pygplates.XsInteger(300), 300)
         self.gpml_time_sample_list[1::2] = [ts1, ts2]
         self.assertTrue(len(self.gpml_time_sample_list) == 4)
         self.assertTrue(self.gpml_time_sample_list[0] == self.original_time_samples[0])
@@ -129,9 +113,7 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         for i in range(0, len(self.original_time_samples)):
             self.assertTrue(self.original_time_samples[i] in self.gpml_time_sample_list)
         
-        ts = pygplates.GpmlTimeSample(
-            pygplates.XsInteger(100),
-            pygplates.GeoTimeInstant(100))
+        ts = pygplates.GpmlTimeSample(pygplates.XsInteger(100), 100)
         self.assertFalse(ts in self.gpml_time_sample_list)
 
     def test_iadd1(self):
@@ -258,8 +240,8 @@ class GpmlTimeSampleListCase(unittest.TestCase):
     def test_sort(self):
         # Change the time of one element so the sequence is no longer ordered by time.
         # Times of [0, 1, 2, 3] -> [0, 2.5, 2, 1]
-        self.gpml_time_sample_list[1].set_time(pygplates.GeoTimeInstant(2.5))
-        self.gpml_time_sample_list[3].set_time(pygplates.GeoTimeInstant(1))
+        self.gpml_time_sample_list[1].set_time(2.5)
+        self.gpml_time_sample_list[3].set_time(1)
         self.assertTrue(len(self.gpml_time_sample_list) == 4)
         # Sort by time.
         # Times of [0, 2.5, 2, 1] -> [0, 1, 2, 2.5]
