@@ -47,8 +47,12 @@ namespace GPlatesApi
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
 	feature_handle_create(
 			boost::optional<GPlatesModel::FeatureType> feature_type = boost::none,
-			boost::optional<GPlatesModel::FeatureId> feature_id = boost::none,
-			boost::optional<GPlatesModel::RevisionId> revision_id = boost::none)
+			boost::optional<GPlatesModel::FeatureId> feature_id = boost::none
+	// Not including RevisionId yet since it is not really needed in the python API user (we can add it later though)...
+#if 0
+			, boost::optional<GPlatesModel::RevisionId> revision_id = boost::none
+#endif
+			)
 	{
 		// Default to unclassified feature - since that supports any combination of properties.
 		if (!feature_type)
@@ -62,13 +66,21 @@ namespace GPlatesApi
 			feature_id = GPlatesModel::FeatureId();
 		}
 
+	// Not including RevisionId yet since it is not really needed in the python API user (we can add it later though)...
+#if 0
 		// Create a unique revision id if none specified.
 		if (!revision_id)
 		{
 			revision_id = GPlatesModel::RevisionId();
 		}
+#endif
 
-		return GPlatesModel::FeatureHandle::create(feature_type.get(), feature_id.get(), revision_id.get());
+		return GPlatesModel::FeatureHandle::create(feature_type.get(), feature_id.get()
+	// Not including RevisionId yet since it is not really needed in the python API user (we can add it later though)...
+#if 0
+				, revision_id.get()
+#endif
+				);
 	}
 
 	void
@@ -124,10 +136,13 @@ export_feature()
 					"concept of interest. It consists of a collection of properties, a feature type "
 					"and a feature id.\n"
 					"\n"
+	// Not including RevisionId yet since it is not really needed in the python API user (we can add it later though)...
+#if 0
 					"Since a feature contains revisioned content it also has a :class:`revision id<RevisionId>`. "
 					"Each time a property of a feature is modified, a new revision id is generated for the feature. "
 					"The concept of revisioning comes into play with model undo/redo and can generally be ignored.\n"
 					"\n"
+#endif
 					"The following operations for accessing the properties are supported:\n"
 					"\n"
 					"=========================== ==========================================================\n"
@@ -151,17 +166,29 @@ export_feature()
 						&GPlatesApi::feature_handle_create,
 						bp::default_call_policies(),
 						(bp::arg("feature_type") = boost::optional<GPlatesModel::FeatureType>(),
-							bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
-							bp::arg("revision_id") = boost::optional<GPlatesModel::RevisionId>())),
-				"__init__([feature_type][, feature_id][, revision_id])\n"
+							bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>()
+	// Not including RevisionId yet since it is not really needed in the python API user (we can add it later though)...
+#if 0
+							, bp::arg("revision_id") = boost::optional<GPlatesModel::RevisionId>()
+#endif
+						)),
+				"__init__([feature_type][, feature_id]"
+	// Not including RevisionId yet since it is not really needed in the python API user (we can add it later though)...
+#if 0
+				"[, revision_id]"
+#endif
+				")\n"
 				"  Create a new feature instance that is (initially) empty (has no properties).\n"
 				"\n"
 				"  :param feature_type: the type of feature\n"
 				"  :type feature_type: :class:`FeatureType`\n"
 				"  :param feature_id: the feature identifier\n"
 				"  :type feature_id: :class:`FeatureId`\n"
+	// Not including RevisionId yet since it is not really needed in the python API user (we can add it later though)...
+#if 0
 				"  :param revision_id: the current revision identifier\n"
 				"  :type revision_id: :class:`RevisionId`\n"
+#endif
 				"\n"
 				"  *feature_type* defaults to *gpml:UnclassifiedFeature* if not specified. "
 				"There are no restrictions on the types and number of properties that can be added "
@@ -169,15 +196,18 @@ export_feature()
 				"are restricted according to the GPlates Geological Information Model (GPGIM) "
 				"(see http://www.gplates.org/gpml.html). The restriction is only apparent "
 				"when the features are *read* from a GPML format file (there are no restrictions "
-				"when the features are *written* to a GPML format file). *TODO: Support GPGIM validation*.\n"
+				"when the features are *written* to a GPML format file).\n"
 				"\n"
 				"  If *feature_id* is not specified then a unique feature identifier is created. In most cases "
 				"a specific *feature_id* should not be specified because it avoids the possibility of "
 				"accidentally having two feature instances with the same identifier which can cause "
 				"problems with *topological* geometries.\n"
+	// Not including RevisionId yet since it is not really needed in the python API user (we can add it later though)...
+#if 0
 				"\n"
 				"  If *revision_id* is not specified then a unique revision identifier is created. "
 				"In most cases a specific *revision_id* does not need to be specified.\n"
+#endif
 				"  ::\n"
 				"\n"
 				"    unclassified_feature = pygplates.Feature()\n"
@@ -235,6 +265,8 @@ export_feature()
 				"  Returns the feature identifier.\n"
 				"\n"
 				"  :rtype: :class:`FeatureId`\n")
+	// Not including RevisionId yet since it is not really needed in the python API user (we can add it later though)...
+#if 0
 		.def("get_revision_id",
 				&GPlatesModel::FeatureHandle::revision_id,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -245,6 +277,7 @@ export_feature()
 				"\n"
 				"  The revision identifier changes each time "
 				"the feature instance is modified (such as adding, removing or modifying a property).\n")
+#endif
 	;
 
 	// Enable boost::optional<FeatureHandle::non_null_ptr_type> to be passed to and from python.

@@ -60,7 +60,6 @@ Contents:
 	pygplates.ReconstructionTreeBuilder
 	pygplates.ReconstructionTreeEdge
 	pygplates.RotationModel
-	pygplates.RevisionId
 	pygplates.XsBoolean
 	pygplates.XsDouble
 	pygplates.XsInteger

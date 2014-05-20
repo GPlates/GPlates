@@ -38,10 +38,11 @@ class FeatureCase(unittest.TestCase):
         self.assertTrue(isinstance(feature_type, pygplates.FeatureType))
         self.assertEquals(feature_type, pygplates.FeatureType.create_gpml('Volcano'))
 
-    def test_revision_id(self):
-        revision_id = self.feature.get_revision_id()
-        self.assertTrue(isinstance(revision_id, pygplates.RevisionId))
-        self.assertEquals('GPlates-d172eaab-931f-484e-a8b6-0605e2dacd18', revision_id.get_string())
+# Not including RevisionId yet since it is not really needed in the python API user (we can add it later though)...
+#    def test_revision_id(self):
+#        revision_id = self.feature.get_revision_id()
+#        self.assertTrue(isinstance(revision_id, pygplates.RevisionId))
+#        self.assertEquals('GPlates-d172eaab-931f-484e-a8b6-0605e2dacd18', revision_id.get_string())
 
     def test_is_iterable(self):
         """
