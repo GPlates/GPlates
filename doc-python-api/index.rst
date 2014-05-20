@@ -73,12 +73,9 @@ Contents:
 	pygplates.get_feature_geometry_properties
 	pygplates.get_feature_geometry_properties_by_name
 	pygplates.get_feature_properties_by_name
-	pygplates.get_enabled_time_samples
 	pygplates.get_equivalent_stage_rotation
 	pygplates.get_geometry_from_property_value
 	pygplates.get_relative_stage_rotation
-	pygplates.get_time_samples_bounding_time
-	pygplates.get_time_window_containing_time
 	pygplates.get_total_reconstruction_pole
 	pygplates.interpolate_finite_rotations
 	pygplates.interpolate_total_reconstruction_pole
