@@ -272,6 +272,11 @@ export_point_on_sphere()
 				"  Returns the *z* coordinate.\n"
 				"\n"
 				"  :rtype: float\n")
+		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
+		// This is because the default '__hash__'is based on 'id()' which is not compatible and
+		// would cause errors when used as key in a dictionary.
+		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 		// Generate '__str__' from 'operator<<'...
@@ -495,6 +500,11 @@ export_multi_point_on_sphere()
 		.def("__len__", &GPlatesMaths::MultiPointOnSphere::number_of_points)
 		.def("__contains__", &GPlatesApi::multi_point_on_sphere_contains_point)
 		.def("__getitem__", &GPlatesApi::multi_point_on_sphere_get_item)
+		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
+		// This is because the default '__hash__'is based on 'id()' which is not compatible and
+		// would cause errors when used as key in a dictionary.
+		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;
@@ -1015,6 +1025,11 @@ export_polyline_on_sphere()
 				"  The centroid is calculated as a weighted average of the mid-points of the "
 				":class:`great circle arcs<GreatCircleArc>` of this polyline with weighting "
 				"proportional to the individual arc lengths.\n")
+		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
+		// This is because the default '__hash__'is based on 'id()' which is not compatible and
+		// would cause errors when used as key in a dictionary.
+		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;
@@ -1340,6 +1355,11 @@ export_polygon_on_sphere()
 				"For example, the *interior* centroid of a bottom-heavy, pear-shaped polygon will be "
 				"closer to the bottom of the polygon. This centroid is not exactly at the centre-of-mass, "
 				"but it will be a lot closer to the real centre-of-mass than :meth:`get_boundary_centroid`.\n")
+		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
+		// This is because the default '__hash__'is based on 'id()' which is not compatible and
+		// would cause errors when used as key in a dictionary.
+		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;

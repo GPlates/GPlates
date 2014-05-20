@@ -80,6 +80,11 @@ export_feature_id()
 				"  Returns the feature identifier as a string.\n"
 				"\n"
 				"  :rtype: string\n")
+		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
+		// This is because the default '__hash__'is based on 'id()' which is not compatible and
+		// would cause errors when used as key in a dictionary.
+		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 		// For '__str__' return the string form...
@@ -105,6 +110,8 @@ namespace GPlatesApi
 void
 export_revision_id()
 {
+	// Not including RevisionId yet since it is not really needed in the python API user (we can add it later though)...
+#if 0
 	//
 	// RevisionId - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -131,6 +138,11 @@ export_revision_id()
 				"  Returns the revision identifier as a string.\n"
 				"\n"
 				"  :rtype: string\n")
+		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
+		// This is because the default '__hash__'is based on 'id()' which is not compatible and
+		// would cause errors when used as key in a dictionary.
+		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 		// For '__str__' return the string form...
@@ -141,6 +153,7 @@ export_revision_id()
 
 	// Enable boost::optional<RevisionId> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesModel::RevisionId>();
+#endif
 }
 
 void

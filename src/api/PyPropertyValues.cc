@@ -179,6 +179,11 @@ export_property_value()
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
+		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
+		// This is because the default '__hash__'is based on 'id()' which is not compatible and
+		// would cause errors when used as key in a dictionary.
+		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;
@@ -1089,10 +1094,14 @@ namespace GPlatesApi
 void
 export_gpml_irregular_sampling()
 {
+	// Not including interpolation function since it is not really used (yet) in GPlates and hence
+	// is just extra baggage for the python API user (we can add it later though)...
+#if 0
 	// Use the 'non-const' overload...
 	const boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>
 			(GPlatesPropertyValues::GpmlIrregularSampling::*get_interpolation_function)() =
 					&GPlatesPropertyValues::GpmlIrregularSampling::interpolation_function;
+#endif
 
 	//
 	// GpmlIrregularSampling - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
@@ -1392,6 +1401,11 @@ export_gpml_key_value_dictionary_element()
 				"  This essentially replaces the previous property value. "
 				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
 				"using its property value methods.\n")
+		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
+		// This is because the default '__hash__'is based on 'id()' which is not compatible and
+		// would cause errors when used as key in a dictionary.
+		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;
@@ -1785,6 +1799,11 @@ export_gpml_time_sample()
 				"\n"
 				"  :param is_disabled: whether time sample is disabled (defaults to ``True``)\n"
 				"  :type is_disabled: bool\n")
+		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
+		// This is because the default '__hash__'is based on 'id()' which is not compatible and
+		// would cause errors when used as key in a dictionary.
+		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;
@@ -1961,6 +1980,11 @@ export_gpml_time_window()
 				"  :param time: the end time of this time window\n"
 				"  :type time: float or :class:`GeoTimeInstant`\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
+		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
+		// This is because the default '__hash__'is based on 'id()' which is not compatible and
+		// would cause errors when used as key in a dictionary.
+		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;

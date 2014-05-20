@@ -121,6 +121,11 @@ export_qualified_xml_name(
 				"get_name() -> string\n"
 				"  Returns the unqualified name. For example, the fully qualified name minus the "
 				"'gpml:' prefix (if created with 'create_gpml()').\n")
+		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
+		// This is because the default '__hash__'is based on 'id()' which is not compatible and
+		// would cause errors when used as key in a dictionary.
+		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 		.def(bp::self < bp::self)

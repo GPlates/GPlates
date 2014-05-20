@@ -95,6 +95,11 @@ export_unit_vector_3d()
 				"  Returns the *z* coordinate.\n"
 				"\n"
 				"  :rtype: float\n")
+		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
+		// This is because the default '__hash__'is based on 'id()' which is not compatible and
+		// would cause errors when used as key in a dictionary.
+		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 		// Generate '__str__' from 'operator<<'...
