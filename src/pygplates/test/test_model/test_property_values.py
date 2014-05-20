@@ -320,11 +320,13 @@ class GpmlFiniteRotationCase(unittest.TestCase):
                 self.gpml_finite_rotation.get_finite_rotation(), new_finite_rotation))
 
 
-class GpmlFiniteRotationSlerpCase(unittest.TestCase):
-    def test_create(self):
-        gpml_finite_rotation_slerp = pygplates.GpmlFiniteRotationSlerp()
-        self.assertTrue(isinstance(gpml_finite_rotation_slerp, pygplates.GpmlFiniteRotationSlerp))
-        self.assertTrue(isinstance(gpml_finite_rotation_slerp, pygplates.GpmlInterpolationFunction))
+# Not including interpolation function since it is not really used (yet) in GPlates and hence
+# is just extra baggage for the python API user (we can add it later though)...
+#class GpmlFiniteRotationSlerpCase(unittest.TestCase):
+#    def test_create(self):
+#        gpml_finite_rotation_slerp = pygplates.GpmlFiniteRotationSlerp()
+#        self.assertTrue(isinstance(gpml_finite_rotation_slerp, pygplates.GpmlFiniteRotationSlerp))
+#        self.assertTrue(isinstance(gpml_finite_rotation_slerp, pygplates.GpmlInterpolationFunction))
 
 
 class GpmlIrregularSamplingCase(unittest.TestCase):
@@ -339,11 +341,17 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
             self.original_time_samples.append(ts)
         
         self.gpml_irregular_sampling = pygplates.GpmlIrregularSampling(
-                self.original_time_samples,
-                pygplates.GpmlFiniteRotationSlerp())
+                self.original_time_samples
+                # Not including interpolation function since it is not really used (yet) in GPlates and hence
+                # is just extra baggage for the python API user (we can add it later though)...
+                #, pygplates.GpmlFiniteRotationSlerp()
+                )
 
     def test_get(self):
-        self.assertTrue(isinstance(self.gpml_irregular_sampling.get_interpolation_function(), pygplates.GpmlInterpolationFunction))
+        # Not including interpolation function since it is not really used (yet) in GPlates and hence
+        # is just extra baggage for the python API user (we can add it later though)...
+        #self.assertTrue(isinstance(self.gpml_irregular_sampling.get_interpolation_function(), pygplates.GpmlInterpolationFunction))
+        
         self.assertTrue(list(self.gpml_irregular_sampling.get_time_samples()) == self.original_time_samples)
 
     def test_set(self):
@@ -352,11 +360,13 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
         gpml_time_sample_list[:] = reversed_time_samples
         self.assertTrue(list(self.gpml_irregular_sampling.get_time_samples()) == reversed_time_samples)
         
-        self.gpml_irregular_sampling.set_interpolation_function()
-        self.assertTrue(self.gpml_irregular_sampling.get_interpolation_function() is None)
-        interpolation_func = pygplates.GpmlFiniteRotationSlerp()
-        self.gpml_irregular_sampling.set_interpolation_function(interpolation_func)
-        self.assertTrue(self.gpml_irregular_sampling.get_interpolation_function() == interpolation_func)
+        # Not including interpolation function since it is not really used (yet) in GPlates and hence
+        # is just extra baggage for the python API user (we can add it later though)...
+        #self.gpml_irregular_sampling.set_interpolation_function()
+        #self.assertTrue(self.gpml_irregular_sampling.get_interpolation_function() is None)
+        #interpolation_func = pygplates.GpmlFiniteRotationSlerp()
+        #self.gpml_irregular_sampling.set_interpolation_function(interpolation_func)
+        #self.assertTrue(self.gpml_irregular_sampling.get_interpolation_function() == interpolation_func)
         
         # Need at least one time sample to create a GpmlIrregularSampling.
         self.assertRaises(RuntimeError, pygplates.GpmlIrregularSampling, [])
@@ -641,7 +651,10 @@ def suite():
             GmlTimePeriodCase,
             GpmlConstantValueCase,
             GpmlFiniteRotationCase,
-            GpmlFiniteRotationSlerpCase,
+            # Not including interpolation function since it is not really used (yet) in GPlates and hence
+            # is just extra baggage for the python API user (we can add it later though)...
+            #GpmlFiniteRotationSlerpCase,
+            
             GpmlIrregularSamplingCase,
             GpmlKeyValueDictionaryCase,
             GpmlKeyValueDictionaryElementCase,

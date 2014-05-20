@@ -917,6 +917,9 @@ namespace GPlatesApi
 void
 export_gpml_finite_rotation_slerp()
 {
+	// Not including GpmlFiniteRotationSlerp since it is not really used (yet) in GPlates and hence
+	// is just extra baggage for the python API user (we can add it later though)...
+#if 0
 	//
 	// GpmlFiniteRotationSlerp - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -949,6 +952,7 @@ export_gpml_finite_rotation_slerp()
 	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			GPlatesPropertyValues::GpmlFiniteRotationSlerp,
 			GPlatesPropertyValues::GpmlInterpolationFunction>();
+#endif
 }
 
 
@@ -991,6 +995,9 @@ export_gpml_hot_spot_trail_mark()
 void
 export_gpml_interpolation_function()
 {
+	// Not including GpmlInterpolationFunction since it is not really used (yet) in GPlates and hence
+	// is just extra baggage for the python API user (we can add it later though)...
+#if 0
 	/*
 	 * GpmlInterpolationFunction - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	 *
@@ -1022,6 +1029,7 @@ export_gpml_interpolation_function()
 	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			GPlatesPropertyValues::GpmlInterpolationFunction,
 			GPlatesModel::PropertyValue>();
+#endif
 }
 
 
@@ -1029,9 +1037,14 @@ namespace GPlatesApi
 {
 	const GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
 	gpml_irregular_sampling_create(
-			bp::object time_samples, // Any python sequence (eg, list, tuple).
-			boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>
-					interpolation_function = boost::none)
+			bp::object time_samples // Any python sequence (eg, list, tuple).
+			// Not including interpolation function since it is not really used (yet) in GPlates and hence
+			// is just extra baggage for the python API user (we can add it later though)...
+#if 0
+			, boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>
+					interpolation_function = boost::none
+#endif
+			)
 	{
 		// Begin/end iterators over the python time samples sequence.
 		bp::stl_input_iterator<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>
@@ -1055,7 +1068,13 @@ namespace GPlatesApi
 
 		return GPlatesPropertyValues::GpmlIrregularSampling::create(
 				time_samples_vector,
+				// Not including interpolation function since it is not really used (yet) in GPlates and hence
+				// is just extra baggage for the python API user (we can add it later though)...
+#if 0
 				interpolation_function,
+#else
+				boost::none,
+#endif
 				time_samples_vector[0]->get_value_type());
 	}
 
@@ -1095,17 +1114,37 @@ export_gpml_irregular_sampling()
 				bp::make_constructor(
 						&GPlatesApi::gpml_irregular_sampling_create,
 						bp::default_call_policies(),
-						(bp::arg("time_samples"),
-							bp::arg("interpolation_function") =
-								boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>())),
-				"__init__(time_samples[, interpolation_function])\n"
-				"  Create an irregularly sampled time-dependent property from a sequence of time samples. "
-				"Optionally provide an interpolation function.\n"
+						(bp::arg("time_samples")
+				// Not including interpolation function since it is not really used (yet) in GPlates and hence
+				// is just extra baggage for the python API user (we can add it later though)...
+#if 0
+							, bp::arg("interpolation_function") =
+								boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>()
+#endif
+							)),
+				"__init__(time_samples"
+				// Not including interpolation function since it is not really used (yet) in GPlates and hence
+				// is just extra baggage for the python API user (we can add it later though)...
+#if 0
+				"[, interpolation_function]"
+#endif
+				")\n"
+				"  Create an irregularly sampled time-dependent property from a sequence of time samples."
+				// Not including interpolation function since it is not really used (yet) in GPlates and hence
+				// is just extra baggage for the python API user (we can add it later though)...
+#if 0
+				" Optionally provide an interpolation function."
+#endif
+				"\n"
 				"\n"
 				"  :param time_samples: A sequence of :class:`GpmlTimeSample` elements.\n"
 				"  :type time_samples: Any sequence such as a ``list`` or a ``tuple``\n"
+				// Not including interpolation function since it is not really used (yet) in GPlates and hence
+				// is just extra baggage for the python API user (we can add it later though)...
+#if 0
 				"  :param interpolation_function: identifies function used to interpolate\n"
 				"  :type interpolation_function: an instance derived from :class:`GpmlInterpolationFunction`\n"
+#endif
 				"  :raises: RuntimeError if time sample sequence is empty\n"
 				"\n"
 				"  **NOTE** that the sequence of time samples must **not** be empty (for technical implementation reasons), "
@@ -1128,6 +1167,9 @@ export_gpml_irregular_sampling()
 				"\n"
 				"    # Sort samples by time\n"
 				"    time_samples.sort(key = lambda x: x.get_time())\n")
+		// Not including interpolation function since it is not really used (yet) in GPlates and hence
+		// is just extra baggage for the python API user (we can add it later though)...
+#if 0
 		.def("get_interpolation_function",
 				get_interpolation_function,
 				"get_interpolation_function() -> GpmlInterpolationFunction\n"
@@ -1144,6 +1186,7 @@ export_gpml_irregular_sampling()
 				"\n"
 				"  :param interpolation_function: the function used to interpolate between time samples\n"
 				"  :type interpolation_function: an instance derived from :class:`GpmlInterpolationFunction`, or None\n")
+#endif
 	;
 
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.

@@ -33,8 +33,11 @@ Contents:
 	pygplates.GmlTimePeriod
 	pygplates.GpmlConstantValue
 	pygplates.GpmlFiniteRotation
-	pygplates.GpmlFiniteRotationSlerp
-	pygplates.GpmlInterpolationFunction
+	# Not including interpolation function since it is not really used (yet) in GPlates and hence
+	# is just extra baggage for the python API user (we can add it later though)...
+	#pygplates.GpmlFiniteRotationSlerp
+	#pygplates.GpmlInterpolationFunction
+
 	pygplates.GpmlIrregularSampling
 	pygplates.GpmlKeyValueDictionary
 	pygplates.GpmlKeyValueDictionaryElement
