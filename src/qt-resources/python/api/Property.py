@@ -29,39 +29,27 @@ Property.get_value = get_value
 del get_value
 
 
-def get_time_dependent_container(property, time_dependent_property_value_type):
-    """get_time_dependent_container(time_dependent_property_value_type) -> PropertyValue or None
+def get_time_dependent_container(property):
+    """get_time_dependent_container() -> PropertyValue or None
     Returns the time-dependent property value container.
     
-    :param time_dependent_property_value_type: the time-dependent property value container *type* to match
-    :type time_dependent_property_value_type: :class:`GpmlConstantValue`, :class:`GpmlIrregularSampling` or :class:`GpmlPiecewiseAggregation`
     :rtype: :class:`PropertyValue` or None
+    
+    Returns a time-dependent property value (:class:`GpmlConstantValue`, :class:`GpmlIrregularSampling` or
+    :class:`GpmlPiecewiseAggregation`), or ``None`` if the property value is not actually time-dependent.
+    Alternatively you can use :meth:`get_value` for extracting a contained property value at a reconstruction time.
     
     This method is useful if you want to access the time-dependent property value container directly.
     An example is inspecting or modifying the time samples in a :class:`GpmlIrregularSampling`.
     Otherwise :meth:`get_value` is generally more useful since it extracts a value from the container.
-    
-    Note that this method always returns a time-dependent property value (:class:`GpmlConstantValue`,
-    :class:`GpmlIrregularSampling` or :class:`GpmlPiecewiseAggregation`), or ``None`` if the property
-    value is not actually time-dependent. Alternatively you can use :meth:`get_value` for
-    extracting a contained property value at a reconstruction time.
-    
-    Returns ``None`` if *time_dependent_property_value_type* does not match the type of the property value.
-    
-    Returns ``None`` if *time_dependent_property_value_type* is not one of the time-dependent types
-    (:class:`GpmlConstantValue`, :class:`GpmlIrregularSampling` or :class:`GpmlPiecewiseAggregation`).
     """
     
     # Get the property value using a private method.
     property_value = property._get_value();
     
-    # Return the property value if it matches the requested property value type (which must
-    # also be one of the time-dependent types).
-    if isinstance(property_value, time_dependent_property_value_type):
-        if (isinstance(property_value, GpmlConstantValue) or
-            isinstance(property_value, GpmlIrregularSampling) or
-            isinstance(property_value, GpmlPiecewiseAggregation)):
-            return property_value
+    # Return the property value if it is one of the time-dependent types.
+    if isinstance(property_value, (GpmlConstantValue, GpmlIrregularSampling, GpmlPiecewiseAggregation)):
+        return property_value
 
 
 # Add the module function as a class method.

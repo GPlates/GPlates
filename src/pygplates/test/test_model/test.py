@@ -211,6 +211,34 @@ class GeoTimeInstantCase(unittest.TestCase):
         self.assertTrue(instant.is_distant_past())
 
 
+class PropertyCase(unittest.TestCase):
+    def setUp(self):
+        self.property1 = pygplates.Property(
+                pygplates.PropertyName.create_gpml('reconstructionPlateId'),
+                pygplates.GpmlPlateId(1))
+        self.property2 = pygplates.Property(
+                pygplates.PropertyName.create_gpml('test_integer'),
+                pygplates.XsInteger(300))
+        self.property3 =  pygplates.Property(
+                pygplates.PropertyName.create_gpml('plateId'),
+                pygplates.GpmlPiecewiseAggregation([pygplates.GpmlTimeWindow(pygplates.GpmlPlateId(100), 10, 0)]))
+        self.property4=  pygplates.Property(
+                pygplates.PropertyName.create_gpml('double'),
+                pygplates.GpmlIrregularSampling([
+                        pygplates.GpmlTimeSample(pygplates.XsDouble(100), 0),
+                        pygplates.GpmlTimeSample(pygplates.XsDouble(200), 10)]))
+        self.property5 =  pygplates.Property(
+                pygplates.PropertyName.create_gpml('plateId'),
+                pygplates.GpmlConstantValue(pygplates.GpmlPlateId(300)))
+    
+    def test_get_time_dependent_container(self):
+        self.assertFalse(self.property1.get_time_dependent_container())
+        self.assertFalse(self.property2.get_time_dependent_container())
+        self.assertTrue(isinstance(self.property3.get_time_dependent_container(), pygplates.GpmlPiecewiseAggregation))
+        self.assertTrue(isinstance(self.property4.get_time_dependent_container(), pygplates.GpmlIrregularSampling))
+        self.assertTrue(isinstance(self.property5.get_time_dependent_container(), pygplates.GpmlConstantValue))
+
+
 class PropertyNameCase(unittest.TestCase):
 
     def setUp(self):
@@ -271,6 +299,7 @@ def suite():
             FeatureCollectionCase,
             FeatureCollectionFileFormatRegistryCase,
             GeoTimeInstantCase,
+            PropertyCase,
             PropertyNameCase,
             PropertyValueCase
         ]

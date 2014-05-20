@@ -324,7 +324,7 @@ def get_total_reconstruction_pole(total_reconstruction_sequence_feature):
             elif property.get_name() == moving_reference_frame_property_name:
                 moving_plate_id = property.get_value().get_plate_id()
             elif property.get_name() == total_reconstruction_pole_property_name:
-                total_reconstruction_pole = property.get_time_dependent_container(GpmlIrregularSampling)
+                total_reconstruction_pole = property.get_time_dependent_container()
         except AttributeError:
             # The property value type did not match the property name.
             # This indicates the data does not conform to the GPlates Geological Information Model (GPGIM).
