@@ -28,6 +28,7 @@
 
 #include "PyExceptions.h"
 
+#include "PyInterpolationException.h"
 #include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"
 
@@ -194,21 +195,22 @@ namespace GPlatesApi
 	// GPlates C++ exceptions translated to python errors.
 	//
 
-	bp::object GPlatesError;
 	bp::object AssertionFailureError;
+	bp::object DifferentAnchoredPlatesInReconstructionTreesError;
 	bp::object FileFormatNotSupportedError;
+	bp::object GmlTimePeriodBeginTimeLaterThanEndTimeError;
+	bp::object GPlatesError;
+	bp::object IndeterminateArcRotationAxisError;
+	bp::object IndeterminateResultError;
+	bp::object InsufficientPointsForMultiPointConstructionError;
+	bp::object InterpolationError;
+	bp::object InvalidLatLonError;
+	bp::object InvalidPointsForPolygonConstructionError;
+	bp::object InvalidPointsForPolylineConstructionError;
+	bp::object MathematicalError;
 	bp::object OpenFileForReadingError;
 	bp::object OpenFileForWritingError;
 	bp::object PreconditionViolationError;
-	bp::object GmlTimePeriodBeginTimeLaterThanEndTimeError;
-	bp::object DifferentAnchoredPlatesInReconstructionTreesError;
-	bp::object IndeterminateArcRotationAxisError;
-	bp::object InsufficientPointsForMultiPointConstructionError;
-	bp::object InvalidPointsForPolygonConstructionError;
-	bp::object InvalidPointsForPolylineConstructionError;
-	bp::object InvalidLatLonError;
-	bp::object MathematicalError;
-	bp::object IndeterminateResultError;
 	bp::object ViolatedUnitVectorInvariantError;
 }
 
@@ -272,6 +274,10 @@ export_exceptions()
 	GPlatesApi::InsufficientPointsForMultiPointConstructionError =
 			export_exception<GPlatesMaths::InsufficientPointsForMultiPointConstructionError>(
 					"InsufficientPointsForMultiPointConstructionError",
+					GPlatesApi::PreconditionViolationError);
+	GPlatesApi::InterpolationError =
+			export_exception<InterpolationException>(
+					"InterpolationError",
 					GPlatesApi::PreconditionViolationError);
 	GPlatesApi::InvalidPointsForPolygonConstructionError =
 			export_exception<GPlatesMaths::InvalidPointsForPolygonConstructionError>(

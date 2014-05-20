@@ -168,12 +168,12 @@ class GetPropertyValueCase(unittest.TestCase):
         interpolated_pole, interpolated_angle = interpolated_gpml_finite_rotation.get_finite_rotation().get_euler_pole_and_angle()
         self.assertTrue(abs(interpolated_angle) > 0.322 and abs(interpolated_angle) < 0.323)
         # XsDouble can be interpolated.
-        interpolated_double = self.gpml_irregular_sampling2.get_value(7)
+        interpolated_double = self.gpml_irregular_sampling2.get_value(pygplates.GeoTimeInstant(7))
         self.assertTrue(interpolated_double)
         self.assertTrue(abs(interpolated_double.get_double() - 140) < 1e-10)
         self.assertTrue(self.gpml_plate_id1.get_value() == self.gpml_plate_id1)
         self.assertTrue(self.gpml_constant_value.get_value() == self.gpml_plate_id1)
-        self.assertTrue(self.gpml_piecewise_aggregation.get_value(1.5) == self.gpml_plate_id2)
+        self.assertTrue(self.gpml_piecewise_aggregation.get_value(pygplates.GeoTimeInstant(1.5)) == self.gpml_plate_id2)
         # Outside time range.
         self.assertFalse(self.gpml_irregular_sampling.get_value(20))
 
@@ -183,46 +183,51 @@ class GetTimeSamplesCase(unittest.TestCase):
         self.gpml_irregular_sampling = pygplates.GpmlIrregularSampling([
                 pygplates.GpmlTimeSample(pygplates.XsInteger(0), pygplates.GeoTimeInstant(0), 'sample0', False),
                 pygplates.GpmlTimeSample(pygplates.XsInteger(1), pygplates.GeoTimeInstant(1), 'sample1'),
-                pygplates.GpmlTimeSample(pygplates.XsInteger(2), pygplates.GeoTimeInstant(2), 'sample2', False),
-                pygplates.GpmlTimeSample(pygplates.XsInteger(3), pygplates.GeoTimeInstant(3), 'sample3')])
+                pygplates.GpmlTimeSample(pygplates.XsInteger(2), 2, 'sample2', False),
+                pygplates.GpmlTimeSample(pygplates.XsInteger(3), 3, 'sample3')])
 
     def test_enabled(self):
-        enabled_samples = pygplates.get_enabled_time_samples(self.gpml_irregular_sampling)
+        enabled_samples = self.gpml_irregular_sampling.get_enabled_time_samples()
         self.assertTrue(len(enabled_samples) == 2)
         self.assertTrue(enabled_samples[0].get_value().get_integer() == 1)
         self.assertTrue(enabled_samples[1].get_value().get_integer() == 3)
 
     def test_bounding(self):
-        bounding_enabled_samples = pygplates.get_time_samples_bounding_time(self.gpml_irregular_sampling, 1.5)
+        bounding_enabled_samples = self.gpml_irregular_sampling.get_time_samples_bounding_time(pygplates.GeoTimeInstant(1.5))
         self.assertTrue(bounding_enabled_samples)
         first_bounding_enabled_sample, second_bounding_enabled_sample = bounding_enabled_samples
         self.assertTrue(first_bounding_enabled_sample.get_value().get_integer() == 3)
         self.assertTrue(second_bounding_enabled_sample.get_value().get_integer() == 1)
         # Time is outside time samples range.
-        self.assertFalse(pygplates.get_time_samples_bounding_time(self.gpml_irregular_sampling, 0.5))
+        self.assertFalse(self.gpml_irregular_sampling.get_time_samples_bounding_time(0.5))
         
-        bounding_all_samples = pygplates.get_time_samples_bounding_time(self.gpml_irregular_sampling, 1.5, True)
+        bounding_all_samples = self.gpml_irregular_sampling.get_time_samples_bounding_time(1.5, True)
         self.assertTrue(bounding_all_samples)
         first_bounding_sample, second_bounding_sample = bounding_all_samples
         self.assertTrue(first_bounding_sample.get_value().get_integer() == 2)
         self.assertTrue(second_bounding_sample.get_value().get_integer() == 1)
         # Time is now inside time samples range.
-        self.assertTrue(pygplates.get_time_samples_bounding_time(self.gpml_irregular_sampling, 0.5, True))
+        self.assertTrue(self.gpml_irregular_sampling.get_time_samples_bounding_time(0.5, True))
         # Time is outside time samples range.
-        self.assertFalse(pygplates.get_time_samples_bounding_time(self.gpml_irregular_sampling, 3.5, True))
+        self.assertFalse(self.gpml_irregular_sampling.get_time_samples_bounding_time(3.5, True))
 
 
 class GetTimeWindowsCase(unittest.TestCase):
     def setUp(self):
         self.gpml_piecewise_aggregation = pygplates.GpmlPiecewiseAggregation([
                 pygplates.GpmlTimeWindow(pygplates.XsInteger(0), pygplates.GeoTimeInstant(1), pygplates.GeoTimeInstant(0)),
-                pygplates.GpmlTimeWindow(pygplates.XsInteger(1), pygplates.GeoTimeInstant(2), pygplates.GeoTimeInstant(1)),
-                pygplates.GpmlTimeWindow(pygplates.XsInteger(2), pygplates.GeoTimeInstant(3), pygplates.GeoTimeInstant(2))])
+                pygplates.GpmlTimeWindow(pygplates.XsInteger(1), pygplates.GeoTimeInstant(2), 1),
+                pygplates.GpmlTimeWindow(pygplates.XsInteger(2), 3, pygplates.GeoTimeInstant(2)),
+                pygplates.GpmlTimeWindow(pygplates.XsInteger(3), 4, 3)])
 
     def test_get(self):
-        time_window = pygplates.get_time_window_containing_time(self.gpml_piecewise_aggregation, 1.5)
+        time_window = self.gpml_piecewise_aggregation.get_time_window_containing_time(1.5)
         self.assertTrue(time_window)
         self.assertTrue(time_window.get_value().get_integer() == 1)
+        # Should be able to specify time using 'GeoTimeInstant' also.
+        time_window = self.gpml_piecewise_aggregation.get_time_window_containing_time(pygplates.GeoTimeInstant(2.5))
+        self.assertTrue(time_window)
+        self.assertTrue(time_window.get_value().get_integer() == 2)
 
 
 def suite():

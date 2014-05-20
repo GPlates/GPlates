@@ -3,7 +3,7 @@ def get_value(property_value, time=0):
     Extracts the value, of this possibly time-dependent property value, at the reconstruction *time*.
     
     :param time: the time to extract value (defaults to present day)
-    :type time: float
+    :type time: float or :class:`GeoTimeInstant`
     :rtype: :class:`PropertyValue` or None
     
     If this property value is a time-dependent property (:class:`GpmlConstantValue`,

@@ -39,6 +39,7 @@ set(srcs
     PyGreatCircleArc.cc
     PyIds.cc
     PyInteger.cc
+    PyInterpolationException.h
     PyLatLonPoint.cc
     PyOldFeature.cc
     PyOldFeature.h

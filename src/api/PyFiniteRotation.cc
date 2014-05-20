@@ -27,6 +27,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "PyInterpolationException.h"
 #include "PythonConverterUtils.h"
 
 #include "global/python.h"
@@ -40,6 +41,8 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/UnitQuaternion3D.h"
 #include "maths/UnitVector3D.h"
+
+#include "property-values/GeoTimeInstant.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -71,10 +74,18 @@ namespace GPlatesApi
 	finite_rotation_interpolate(
 			const GPlatesMaths::FiniteRotation &finite_rotation1,
 			const GPlatesMaths::FiniteRotation &finite_rotation2,
-			const GPlatesMaths::Real &time1,
-			const GPlatesMaths::Real &time2,
-			const GPlatesMaths::Real &target_time)
+			// NOTE: Using the 'GPlatesPropertyValues::GeoTimeInstant' enables conversions
+			// both from python 'float' and python 'GeoTimeInstant' (see PyGeoTimeInstant.cc)...
+			const GPlatesPropertyValues::GeoTimeInstant &time1,
+			const GPlatesPropertyValues::GeoTimeInstant &time2,
+			const GPlatesPropertyValues::GeoTimeInstant &target_time)
 	{
+		// We can't interpolate if any time is distant past/future.
+		GPlatesGlobal::Assert<InterpolationException>(
+				time1.is_real() && time2.is_real() && target_time.is_real(),
+				GPLATES_ASSERTION_SOURCE,
+				"Interpolation time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+
 		// We can't interpolate if both times are equal.
 		if (time1 == time2)
 		{
@@ -94,8 +105,8 @@ namespace GPlatesApi
 
 		return GPlatesMaths::interpolate(
 				finite_rotation1, finite_rotation2,
-				time1, time2,
-				target_time,
+				time1.value(), time2.value(),
+				target_time.value(),
 				axis_hint);
 	}
 
@@ -559,11 +570,11 @@ export_finite_rotation()
 			"  :param finite_rotation2: the right-hand-side finite rotation\n"
 			"  :type finite_rotation2: :class:`FiniteRotation`\n"
 			"  :param time1: the time associated with the left-hand-side finite rotation\n"
-			"  :type time1: float\n"
+			"  :type time1: float or :class:`GeoTimeInstant`\n"
 			"  :param time2: the time associated with the right-hand-side finite rotation\n"
-			"  :type time2: float\n"
+			"  :type time2: float or :class:`GeoTimeInstant`\n"
 			"  :param target_time: the time associated with the result of the interpolation\n"
-			"  :type target_time: float\n"
+			"  :type target_time: float or :class:`GeoTimeInstant`\n"
 			"  :rtype: :class:`FiniteRotation`\n"
 			"\n"
 			"  The finite rotations *finite_rotation1* and *finite_rotation2* are associated with "

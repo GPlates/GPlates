@@ -4,10 +4,15 @@ class _InterpolateVisitor(PropertyValueVisitor):
         super(_InterpolateVisitor, self).__init__()
         self.property_value1 = property_value1
         self.property_value2 = property_value2
-        self.time1 = time1
-        self.time2 = time2
-        self.target_time = target_time
+        # Make sure time values are 'GeoTimeInstant' and not 'float'...
+        self.time1 = GeoTimeInstant(time1)
+        self.time2 = GeoTimeInstant(time2)
+        self.target_time = GeoTimeInstant(target_time)
         self.interpolated_property_value = None
+        # Times must not be distant past/future (since then cannot interpolate).
+        if not self.time1.is_real() or not self.time2.is_real() or not self.target_time.is_real():
+            raise InterpolationError(
+                "Interpolation time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).")
     
     def interpolate(self):
         self.interpolated_property_value = None
@@ -28,10 +33,11 @@ class _InterpolateVisitor(PropertyValueVisitor):
     
     def visit_xs_double(self, xs_double1):
         # Use the epsilon comparison implicitly provided by GeoTimeInstant.
-        if GeoTimeInstant(self.time2) == GeoTimeInstant(self.time1):
+        if self.time2 == self.time1:
             return xs_double1
         
-        interpolation = (self.target_time - self.time1) / (self.time2 - self.time1)
+        interpolation = (self.target_time.get_value() - self.time1.get_value()) / (
+                self.time2.get_value() - self.time1.get_value())
         
         # Second property value should also be the same type.
         self.interpolated_property_value = XsDouble(
@@ -55,7 +61,7 @@ def interpolate_total_reconstruction_pole(total_reconstruction_pole, time):
     :param total_reconstruction_pole: the *total reconstruction pole* time-dependent property value
     :type total_reconstruction_pole: :class:`GpmlIrregularSampling`
     :param time: the time at which to interpolate
-    :type time: float
+    :type time: float or :class:`GeoTimeInstant`
     :rtype: :class:`FiniteRotation` or None
     :return: the interpolated rotation or None
     
@@ -66,7 +72,7 @@ def interpolate_total_reconstruction_pole(total_reconstruction_pole, time):
     """
     
     # Get the time samples bounding the time (and filter out the disabled time samples).
-    adjacent_time_samples = get_time_samples_bounding_time(total_reconstruction_pole, time)
+    adjacent_time_samples = total_reconstruction_pole.get_time_samples_bounding_time(time)
     
     # Return early if all time samples are disabled or time is outside time samples range.
     if not adjacent_time_samples:
@@ -93,7 +99,7 @@ def interpolate_total_reconstruction_sequence(total_reconstruction_sequence_feat
     :param total_reconstruction_sequence_feature: the rotation feature with :class:`feature type<FeatureType>` 'gpml:TotalReconstructionSequence'
     :type total_reconstruction_sequence_feature: :class:`Feature`
     :param time: the time at which to interpolate
-    :type time: float
+    :type time: float or :class:`GeoTimeInstant`
     :rtype: tuple(int, int, :class:`FiniteRotation`) or None
     :return: A tuple containing (fixed plate id, moving plate id, interpolated rotation) or None
     

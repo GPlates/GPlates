@@ -154,13 +154,21 @@ namespace GPlatesApi
 
 	boost::shared_ptr<GeoTimeInstant>
 	geo_time_instant_create(
-			const double &time_value)
+			// NOTE: Using the 'GPlatesPropertyValues' version of GeoTimeInstant enables conversions
+			// both from python 'float' and python 'GeoTimeInstant' such as...
+			//
+			// >>> x = pygplates.GeoTimeInstant(10)
+			// >>> y = pygplates.GeoTimeInstant(20)
+			// >>> def is_equal(i,j): return pygplates.GeoTimeInstant(i) == pygplates.GeoTimeInstant(j)
+			// >>> print is_equal(x,y)
+			// >>> print is_equal(10,y)
+			// >>> print is_equal(10,20)
+			//
+			// ...where function 'is_equal()' can accept either 'float' or 'GeoTimeInstant' but
+			// always does an epison equality test (ie, uses GeoTimeInstant equality).
+			const GPlatesPropertyValues::GeoTimeInstant &time_value)
 	{
-		return boost::shared_ptr<GeoTimeInstant>(
-				new GeoTimeInstant(
-						// Handle conversion from +/- infinity in a python 'float' to
-						// distant-past and distant future...
-						convert_float_to_geo_time_instant(time_value)));
+		return boost::shared_ptr<GeoTimeInstant>(new GeoTimeInstant(time_value));
 	}
 
 	bp::object
@@ -549,7 +557,10 @@ export_geo_time_instant()
 					"  assert(time20Ma.get_value() > 10)\n"
 					"  assert(time20Ma.get_value() > time10Ma.get_value())\n"
 					"  assert(time20Ma > time10Ma.get_value())\n"
-					"  assert(time20Ma.get_value() > time10Ma)\n",
+					"  assert(time20Ma.get_value() > time10Ma)\n"
+					"  assert(time20Ma < pygplates.GeoTimeInstant.create_distant_past())\n"
+					"  assert(time20Ma.get_value() < pygplates.GeoTimeInstant.create_distant_past())\n"
+					"  assert(20 < pygplates.GeoTimeInstant.create_distant_past())\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -562,7 +573,7 @@ export_geo_time_instant()
 				"  Create a GeoTimeInstant instance from *time_value*.\n"
 				"\n"
 				"  :param time_value: the time position - positive values represent times in the *past*\n"
-				"  :type time_value: float\n"
+				"  :type time_value: float or :class:`GeoTimeInstant`\n"
 				"\n"
 				"  Note that if *time_value* is +infinity then :meth:`is_distant_past` will subsequently return true. "
 				"And if *time_value* is -infinity then :meth:`is_distant_future` will subsequently return true.\n"

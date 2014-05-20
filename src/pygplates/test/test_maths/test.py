@@ -105,8 +105,21 @@ class FiniteRotationCase(unittest.TestCase):
         finite_rotation2 = pygplates.FiniteRotation(pygplates.PointOnSphere(0, 1, 0), 0.25 * math.pi)
         interpolated_rotation = pygplates.interpolate_finite_rotations(
                 self.finite_rotation, finite_rotation2,
-                10, 20, 15)
+                10, pygplates.GeoTimeInstant(20), 15)
         self.assertTrue(isinstance(interpolated_rotation, pygplates.FiniteRotation))
+        # Cannot use distant past/future for any of the time values.
+        self.assertRaises(pygplates.InterpolationError,
+                pygplates.interpolate_finite_rotations,
+                self.finite_rotation, finite_rotation2,
+                pygplates.GeoTimeInstant.create_distant_past(), 20, 15)
+        self.assertRaises(pygplates.InterpolationError,
+                pygplates.interpolate_finite_rotations,
+                self.finite_rotation, finite_rotation2,
+                10, pygplates.GeoTimeInstant.create_distant_future(), 15)
+        self.assertRaises(pygplates.InterpolationError,
+                pygplates.interpolate_finite_rotations,
+                self.finite_rotation, finite_rotation2,
+                10, 20, pygplates.GeoTimeInstant.create_distant_past())
 
 
 class GreatCircleArcCase(unittest.TestCase):

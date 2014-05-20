@@ -63,21 +63,22 @@ namespace GPlatesApi
 	// NOTE: These are Py_None if the 'pygplates' module has not yet been initialised.
 	//
 
-	extern boost::python::object GPlatesError;
 	extern boost::python::object AssertionFailureError;
+	extern boost::python::object DifferentAnchoredPlatesInReconstructionTreesError;
 	extern boost::python::object FileFormatNotSupportedError;
+	extern boost::python::object GmlTimePeriodBeginTimeLaterThanEndTimeError;
+	extern boost::python::object GPlatesError;
+	extern boost::python::object IndeterminateArcRotationAxisError;
+	extern boost::python::object IndeterminateResultError;
+	extern boost::python::object InsufficientPointsForMultiPointConstructionError;
+	extern boost::python::object InterpolationError;
+	extern boost::python::object InvalidLatLonError;
+	extern boost::python::object InvalidPointsForPolygonConstructionError;
+	extern boost::python::object InvalidPointsForPolylineConstructionError;
+	extern boost::python::object MathematicalError;
 	extern boost::python::object OpenFileForReadingError;
 	extern boost::python::object OpenFileForWritingError;
 	extern boost::python::object PreconditionViolationError;
-	extern boost::python::object GmlTimePeriodBeginTimeLaterThanEndTimeError;
-	extern boost::python::object DifferentAnchoredPlatesInReconstructionTreesError;
-	extern boost::python::object IndeterminateArcRotationAxisError;
-	extern boost::python::object InsufficientPointsForMultiPointConstructionError;
-	extern boost::python::object InvalidPointsForPolygonConstructionError;
-	extern boost::python::object InvalidPointsForPolylineConstructionError;
-	extern boost::python::object InvalidLatLonError;
-	extern boost::python::object MathematicalError;
-	extern boost::python::object IndeterminateResultError;
 	extern boost::python::object ViolatedUnitVectorInvariantError;
 
 

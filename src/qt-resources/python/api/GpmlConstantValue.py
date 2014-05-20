@@ -3,7 +3,7 @@ def get_value(gpml_constant_value, time=0):
     Extracts the constant value contained within.
     
     :param time: the time to extract value (defaults to present day)
-    :type time: float
+    :type time: float or :class:`GeoTimeInstant`
     :rtype: :class:`PropertyValue` or None
     
     Since the contained property value is constant, the *time* parameter is ignored.
