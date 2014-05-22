@@ -54,7 +54,7 @@ export_lat_lon_point()
 					"\n"
 					"* :func:`convert_point_on_sphere_to_lat_lon_point` - "
 					"convert *from* a :class:`PointOnSphere` *to* a :class:`LatLonPoint`.\n"
-					"* :func:`convert_point_on_sphere_to_lat_lon_point` - "
+					"* :func:`convert_lat_lon_point_to_point_on_sphere` - "
 					"convert *from* a :class:`LatLonPoint` *to* a :class:`PointOnSphere`.\n",
 					bp::init<double,double>(
 							(bp::arg("latitude"), bp::arg("longitude")),

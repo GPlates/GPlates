@@ -32,6 +32,11 @@ class PointOnSphereCase(unittest.TestCase):
         self.assertEquals(point2.get_position_vector(), self.unit_vector_3d)
         # A non-unit length vector raises error.
         self.assertRaises(pygplates.ViolatedUnitVectorInvariantError, pygplates.PointOnSphere, 1, 1, 1)
+    
+    def test_get_points(self):
+        point = pygplates.PointOnSphere(1, 0, 0)
+        points = point.get_points()
+        self.assertTrue(len(points) == 1 and point == points[0])
 
 
 class MultiPointOnSphereCase(unittest.TestCase):
@@ -49,6 +54,10 @@ class MultiPointOnSphereCase(unittest.TestCase):
                 pygplates.InsufficientPointsForMultiPointConstructionError,
                 pygplates.MultiPointOnSphere,
                 [])
+    
+    def test_get_points(self):
+        point_sequence = self.multi_point.get_points()
+        self.assertEquals(self.multi_point, pygplates.MultiPointOnSphere(point_sequence))
     
     def test_compare(self):
         self.assertEquals(self.multi_point, pygplates.MultiPointOnSphere(self.points))
@@ -104,6 +113,10 @@ class PolylineOnSphereCase(unittest.TestCase):
                 pygplates.InvalidPointsForPolylineConstructionError,
                 pygplates.PolylineOnSphere,
                 [pygplates.PointOnSphere(1, 0, 0)])
+    
+    def test_get_points(self):
+        point_sequence = self.polyline.get_points()
+        self.assertEquals(self.polyline, pygplates.PolylineOnSphere(point_sequence))
 
     def test_compare(self):
         self.assertEquals(self.polyline, pygplates.PolylineOnSphere(self.points))
@@ -201,6 +214,10 @@ class PolygonOnSphereCase(unittest.TestCase):
                 pygplates.InvalidPointsForPolygonConstructionError,
                 pygplates.PolygonOnSphere,
                 [pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(0, 1, 0)])
+    
+    def test_get_points(self):
+        point_sequence = self.polygon.get_points()
+        self.assertEquals(self.polygon, pygplates.PolygonOnSphere(point_sequence))
 
     def test_compare(self):
         self.assertEquals(self.polygon, pygplates.PolygonOnSphere(self.points))
