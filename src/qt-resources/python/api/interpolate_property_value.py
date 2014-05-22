@@ -64,6 +64,8 @@ def interpolate_total_reconstruction_pole(total_reconstruction_pole, time):
     :type time: float or :class:`GeoTimeInstant`
     :rtype: :class:`FiniteRotation` or None
     :return: the interpolated rotation or None
+    :raises: InterpolationError if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
+    :meth:`distant future<GeoTimeInstant.is_distant_future>`
     
     Returns ``None`` if *time* is not spanned by any time samples in the *total reconstruction pole*, or
     if all time samples are disabled.
@@ -102,6 +104,8 @@ def interpolate_total_reconstruction_sequence(total_reconstruction_sequence_feat
     :type time: float or :class:`GeoTimeInstant`
     :rtype: tuple(int, int, :class:`FiniteRotation`) or None
     :return: A tuple containing (fixed plate id, moving plate id, interpolated rotation) or None
+    :raises: InterpolationError if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
+    :meth:`distant future<GeoTimeInstant.is_distant_future>`
     
     Returns ``None`` if the feature does not contain a 'gpml:fixedReferenceFrame' plate id,
     a 'gpml:movingReferenceFrame' plate id and a 'gpml:totalReconstructionPole' :class:`GpmlIrregularSampling` with

@@ -89,8 +89,8 @@ namespace GPlatesApi
 
 
 	/**
-	 * Python converter from a feature collection or a string filename to a
-	 * @a FeatureCollectionFunctionArgument (and vice versa).
+	 * A from-python converter from a feature collection or a string filename to a
+	 * @a FeatureCollectionFunctionArgument and to-python converter back to feature collection.
 	 */
 	struct python_FeatureCollectionFunctionArgument :
 			private boost::noncopyable
@@ -169,8 +169,9 @@ namespace GPlatesApi
 
 
 	/**
-	 * Python converter from a feature collection or a string filename or a sequence of feature
-	 * collections and/or string filenames to a @a FeatureCollectionSequenceFunctionArgument (and vice versa).
+	 * A from-python converter from a feature collection or a string filename or a sequence of feature
+	 * collections and/or string filenames to a @a FeatureCollectionSequenceFunctionArgument, and
+	 * a to-python converter back to a list of feature collections.
 	 */
 	struct python_FeatureCollectionSequenceFunctionArgument :
 			private boost::noncopyable

@@ -61,8 +61,8 @@ namespace GPlatesApi
 	namespace
 	{
 		/**
-		 * Python converter from a rotation model or a sequence of feature collections to a
-		 * @a RotationModelFunctionArgument (and vice versa).
+		 * A from-python converter from a rotation model or a sequence of feature collections to a
+		 * @a RotationModelFunctionArgument, and a to-python convert back to a rotation model.
 		 */
 		struct python_RotationModelFunctionArgument :
 				private boost::noncopyable

@@ -62,12 +62,14 @@ namespace GPlatesApi
 						GPlatesMaths::FiniteRotation::create(pole, angle)));
 	}
 
-	GPlatesMaths::FiniteRotation
+	boost::shared_ptr<GPlatesMaths::FiniteRotation>
 	finite_rotation_create_identity_rotation()
 	{
-		return GPlatesMaths::FiniteRotation::create(
-				GPlatesMaths::UnitQuaternion3D::create_identity_rotation(),
-				boost::none);
+		return boost::shared_ptr<GPlatesMaths::FiniteRotation>(
+				new GPlatesMaths::FiniteRotation(
+						GPlatesMaths::FiniteRotation::create(
+								GPlatesMaths::UnitQuaternion3D::create_identity_rotation(),
+								boost::none)));
 	}
 
 	GPlatesMaths::FiniteRotation
@@ -382,14 +384,27 @@ export_finite_rotation()
 						(bp::arg("pole"), bp::arg("angle"))),
 				"__init__(pole, angle)\n"
 				"  Create a finite rotation from an Euler pole and a rotation angle (in *radians*).\n"
-				"  ::\n"
-				"\n"
-				"    finite_rotation = pygplates.FiniteRotation(pole, angle)\n"
 				"\n"
 				"  :param pole: the Euler pole.\n"
 				"  :type pole: :class:`PointOnSphere`\n"
 				"  :param angle: the rotation angle (in *radians*).\n"
-				"  :type angle: float\n")
+				"  :type angle: float\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    finite_rotation = pygplates.FiniteRotation(pole, angle)\n")
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::finite_rotation_create_identity_rotation,
+						bp::default_call_policies()),
+				"__init__()\n"
+				"  Creates a finite rotation that does not rotate (it maps a vector onto the same vector).\n"
+				"\n"
+				"  Equivalent to :meth:`create_identity_rotation`.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    identity_finite_rotation = pygplates.FiniteRotation()\n")
 		.def("create_identity_rotation",
 				&GPlatesApi::finite_rotation_create_identity_rotation,
 				"create_identity_rotation() -> FiniteRotation\n"
@@ -436,7 +451,7 @@ export_finite_rotation()
 				"get_euler_pole_and_angle([use_north_pole_for_identity=True]) -> tuple\n"
 				"  Return the (pole, angle) representing finite rotation.\n"
 				"\n"
-				"  *NOTE* the angle is in *radians*.\n"
+				"  *NOTE:* the angle is in *radians*.\n"
 				"\n"
 				"  :param use_north_pole_for_identity: whether to return the north pole axis (and zero angle) "
 				"for an :meth:`identity rotation<represents_identity_rotation>` or raise "
@@ -467,10 +482,10 @@ export_finite_rotation()
 				&GPlatesApi::finite_rotation_get_lat_lon_euler_pole_and_angle_degrees,
 				(bp::arg("use_north_pole_for_identity")=true),
 				"get_lat_lon_euler_pole_and_angle_degrees([use_north_pole_for_identity=True]) -> tuple\n"
-				"  Return the this finite rotation as a tuple of pole latitude, pole longitude and "
+				"  Return the finite rotation as a tuple of pole latitude, pole longitude and "
 				" angle (all in degrees).\n"
 				"\n"
-				"  *NOTE* the angle is in *degrees* (as are the latitude and longitude).\n"
+				"  *NOTE:* the angle is in *degrees* (as are the latitude and longitude).\n"
 				"\n"
 				"  :param use_north_pole_for_identity: whether to return the north pole axis (and zero angle) "
 				"for an :meth:`identity rotation<represents_identity_rotation>` or raise "
@@ -581,6 +596,10 @@ export_finite_rotation()
 			"  :param target_time: the time associated with the result of the interpolation\n"
 			"  :type target_time: float or :class:`GeoTimeInstant`\n"
 			"  :rtype: :class:`FiniteRotation`\n"
+			"  :raises: InterpolationError if any time value is "
+			":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+			":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+			"\n"
 			"\n"
 			"  The finite rotations *finite_rotation1* and *finite_rotation2* are associated with "
 			"times *time1* and *time2*, respectively. The result of the interpolation is associated "

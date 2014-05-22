@@ -253,8 +253,8 @@ export_reconstructed_feature_geometry()
 				"\n"
 				"  :rtype: :class:`Property`\n"
 				"\n"
-				"  See :func:`get_geometry_from_property_value` for extracting the present day "
-				"geometry from the returned property.\n")
+				"  This is the :class:`Property` that the :meth:`present day geometry<get_present_day_geometry>` "
+				"and the :meth:`reconstructed geometry<get_reconstructed_geometry>` are obtained from.\n")
 		.def("get_reconstructed_geometry",
 				&GPlatesApi::ReconstructedFeatureGeometryWrapper::get_reconstructed_geometry,
 				"get_reconstructed_geometry() -> GeometryOnSphere\n"
