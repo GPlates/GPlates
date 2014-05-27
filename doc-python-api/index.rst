@@ -67,8 +67,6 @@ Contents:
 	pygplates.UnitVector3D
 	
 	pygplates.compose_finite_rotations
-	pygplates.convert_lat_lon_point_to_point_on_sphere
-	pygplates.convert_point_on_sphere_to_lat_lon_point
 	pygplates.get_feature_geometry_properties
 	pygplates.get_feature_geometry_properties_by_name
 	pygplates.get_feature_properties_by_name

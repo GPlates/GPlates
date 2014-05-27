@@ -32,7 +32,9 @@
 
 #include "PythonConverterUtils.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
+#include "global/GPlatesAssert.h"
 #include "global/python.h"
 // This is not included by <boost/python.hpp>.
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
@@ -40,6 +42,7 @@
 #include <boost/python/stl_iterator.hpp>
 
 #include "maths/GeometryOnSphere.h"
+#include "maths/LatLonPoint.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -125,10 +128,167 @@ export_geometry_on_sphere()
 
 namespace GPlatesApi
 {
+	/**
+	 * Enables LatLonPoint to be passed from python (to a PointOnSphere).
+	 *
+	 * For more information on boost python to/from conversions, see:
+	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
+	 */
+	struct python_PointOnSphereFromLatLonPoint :
+			private boost::noncopyable
+	{
+		explicit
+		python_PointOnSphereFromLatLonPoint()
+		{
+			namespace bp = boost::python;
+
+			// From python conversion.
+			bp::converter::registry::push_back(
+					&convertible,
+					&construct,
+					bp::type_id<GPlatesMaths::PointOnSphere>());
+		}
+
+		static
+		void *
+		convertible(
+				PyObject *obj)
+		{
+			namespace bp = boost::python;
+
+			// PointOnSphere is created from a LatLonPoint.
+			return bp::extract<GPlatesMaths::LatLonPoint>(obj).check() ? obj : NULL;
+		}
+
+		static
+		void
+		construct(
+				PyObject *obj,
+				boost::python::converter::rvalue_from_python_stage1_data *data)
+		{
+			namespace bp = boost::python;
+
+			void *const storage = reinterpret_cast<
+					bp::converter::rvalue_from_python_storage<GPlatesMaths::PointOnSphere> *>(
+							data)->storage.bytes;
+
+			new (storage) GPlatesMaths::PointOnSphere(
+					make_point_on_sphere(bp::extract<GPlatesMaths::LatLonPoint>(obj)));
+
+			data->convertible = storage;
+		}
+	};
+
+
+	/**
+	 * Enables a sequence, such as tuple or list, of (x,y,z) or (latitude,longitude)to be passed
+	 * from python (to a PointOnSphere).
+	 *
+	 * For more information on boost python to/from conversions, see:
+	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
+	 */
+	struct python_PointOnSphereFromXYZOrLatLonSequence :
+			private boost::noncopyable
+	{
+		explicit
+		python_PointOnSphereFromXYZOrLatLonSequence()
+		{
+			namespace bp = boost::python;
+
+			// From python conversion.
+			bp::converter::registry::push_back(
+					&convertible,
+					&construct,
+					bp::type_id<GPlatesMaths::PointOnSphere>());
+		}
+
+		static
+		void *
+		convertible(
+				PyObject *obj)
+		{
+			namespace bp = boost::python;
+
+			bp::object py_obj = bp::object(bp::handle<>(bp::borrowed(obj)));
+
+			// If the check fails then we'll catch a python exception and return NULL.
+			try
+			{
+				// A sequence containing floats.
+				bp::stl_input_iterator<double>
+						float_seq_begin(py_obj),
+						float_seq_end;
+
+				// Copy into a vector.
+				std::vector<double> float_vector;
+				std::copy(float_seq_begin, float_seq_end, std::back_inserter(float_vector));
+				if (float_vector.size() != 2 && // (lat,lon)
+					float_vector.size() != 3)   // (x,y,z)
+				{
+					return NULL;
+				}
+			}
+			catch (const boost::python::error_already_set &)
+			{
+				PyErr_Clear();
+				return NULL;
+			}
+
+			return obj;
+		}
+
+		static
+		void
+		construct(
+				PyObject *obj,
+				boost::python::converter::rvalue_from_python_stage1_data *data)
+		{
+			namespace bp = boost::python;
+
+			bp::object py_obj = bp::object(bp::handle<>(bp::borrowed(obj)));
+
+			// A sequence containing floats.
+			bp::stl_input_iterator<double>
+					float_seq_begin(py_obj),
+					float_seq_end;
+
+			// Copy into a vector.
+			std::vector<double> float_vector;
+			std::copy(float_seq_begin, float_seq_end, std::back_inserter(float_vector));
+
+			void *const storage = reinterpret_cast<
+					bp::converter::rvalue_from_python_storage<GPlatesMaths::PointOnSphere> *>(
+							data)->storage.bytes;
+
+			if (float_vector.size() == 2)
+			{
+				// (lat,lon) sequence.
+				new (storage) GPlatesMaths::PointOnSphere(
+						make_point_on_sphere(
+								GPlatesMaths::LatLonPoint(float_vector[0], float_vector[1])));
+			}
+			else
+			{
+				// Note that 'convertible' has checked for the correct size of the vector (size either 2 or 3).
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						float_vector.size() == 3,
+						GPLATES_ASSERTION_SOURCE);
+
+				// (x,y,z) sequence.
+				new (storage) GPlatesMaths::PointOnSphere(
+						GPlatesMaths::UnitVector3D(float_vector[0], float_vector[1], float_vector[2]));
+			}
+
+			data->convertible = storage;
+		}
+	};
+
+
 	// Convenience constructor to create from (x,y,z) without having to first create a UnitVector3D.
 	//
 	// We can't use bp::make_constructor with a function that returns a non-pointer, so instead we
 	// return 'non_null_intrusive_ptr'.
+	//
 	// With boost 1.42 we get the following compile error...
 	//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
 	// ...if we return 'GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type' and rely on
@@ -145,6 +305,34 @@ namespace GPlatesApi
 	{
 		return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(
 				new GPlatesMaths::PointOnSphere(GPlatesMaths::UnitVector3D(x, y, z)));
+	}
+
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
+	point_on_sphere_create(
+			bp::object point_object)
+	{
+		// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+		// sequence(x,y,z) so they will also get matched by this...
+		bp::extract<GPlatesMaths::PointOnSphere> extract_point_on_sphere(point_object);
+		if (extract_point_on_sphere.check())
+		{
+			return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(
+					new GPlatesMaths::PointOnSphere(extract_point_on_sphere()));
+		}
+
+		bp::extract<GPlatesMaths::UnitVector3D> extract_unit_vector_3d(point_object);
+		if (extract_unit_vector_3d.check())
+		{
+			return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(
+					new GPlatesMaths::PointOnSphere(extract_unit_vector_3d()));
+		}
+
+		PyErr_SetString(PyExc_TypeError, "Expected PointOnSphere or UnitVector3D or LatLonPoint or "
+				"(latitude,longitude) sequence or (x,y,z) sequence");
+		bp::throw_error_already_set();
+
+		// Shouldn't be able to get here.
+		return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(NULL);
 	}
 
 	GPlatesMaths::Real
@@ -166,6 +354,24 @@ namespace GPlatesApi
 			const GPlatesMaths::PointOnSphere &point_on_sphere)
 	{
 		return point_on_sphere.position_vector().z();
+	}
+
+	bp::tuple
+	point_on_sphere_to_xyz(
+			const GPlatesMaths::PointOnSphere &point_on_sphere)
+	{
+		const GPlatesMaths::UnitVector3D &position_vector = point_on_sphere.position_vector();
+
+		return bp::make_tuple(position_vector.x(), position_vector.y(), position_vector.z());
+	}
+
+	bp::tuple
+	point_on_sphere_to_lat_lon(
+			const GPlatesMaths::PointOnSphere &point_on_sphere)
+	{
+		const GPlatesMaths::LatLonPoint lat_lon_point = make_lat_lon_point(point_on_sphere);
+
+		return bp::make_tuple(lat_lon_point.latitude(), lat_lon_point.longitude());
 	}
 }
 
@@ -198,13 +404,6 @@ export_point_on_sphere()
 					"PointOnSphere",
 					"Represents a point on the surface of the unit length sphere in 3D cartesian coordinates.\n"
 					"\n"
-					"The following functions convert between :class:`LatLonPoint` and :class:`PointOnSphere`:\n"
-					"\n"
-					"* :func:`convert_point_on_sphere_to_lat_lon_point` - "
-					"convert *from* a :class:`PointOnSphere`: *to* a :class:`LatLonPoint`.\n"
-					"* :func:`convert_point_on_sphere_to_lat_lon_point` - "
-					"convert *from* a :class:`LatLonPoint`: *to* a :class:`PointOnSphere`.\n"
-					"\n"
 					"Points are equality (``==``, ``!=``) comparable where two points are considered "
 					"equal if their coordinates match within a *very* small numerical epsilon that accounts "
 					"for the limits of floating-point precision. Note that usually two points will only compare "
@@ -214,17 +413,9 @@ export_point_on_sphere()
 					"\n"
 					"Note that since a *PointOnSphere* is immutable it contains no operations or "
 					"methods that modify its state.\n",
-					bp::init<GPlatesMaths::UnitVector3D>(
-							(bp::arg("unit_vector")),
-							"__init__(unit_vector)\n"
-							"  Create a *PointOnSphere* instance from a 3D unit vector.\n"
-							"\n"
-							"  :param unit_vector: the 3D unit vector\n"
-							"  :type unit_vector: :class:`UnitVector3D`\n"
-							"\n"
-							"  ::\n"
-							"\n"
-							"    point = pygplates.PointOnSphere(unit_vector)\n"))
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
 						&GPlatesApi::point_on_sphere_create_xyz,
@@ -247,6 +438,32 @@ export_point_on_sphere()
 				"  ::\n"
 				"\n"
 				"    point = pygplates.PointOnSphere(x, y, z)\n")
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::point_on_sphere_create,
+						bp::default_call_policies(),
+						(bp::arg("point"))),
+				"__init__(point)\n"
+				"  Create a *PointOnSphere* instance from a (x,y,z) or (latitude,longitude) point.\n"
+				"\n"
+				"  :param point: (x,y,z) or (latitude,longitude) point\n"
+				"  :type point: :class:`PointOnSphere` or :class:`UnitVector3D` or :class:`LatLonPoint` or "
+				"(latitude,longitude) sequence or (x,y,z) sequence\n"
+				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
+				"  :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude\n"
+				"\n"
+				"  The following example shows a few different ways to use this method:\n"
+				"  ::\n"
+				"\n"
+				"    point = pygplates.PointOnSphere(pygplates.UnitVector3D(x,y,z))\n"
+				"    point = pygplates.PointOnSphere(pygplates.PointOnSphere(x,y,z))\n"
+				"    point = pygplates.PointOnSphere((x,y,z))\n"
+				"    point = pygplates.PointOnSphere([x,y,z])\n"
+				"    point = pygplates.PointOnSphere(numpy.array([x,y,z]))\n"
+				"    point = pygplates.PointOnSphere(pygplates.LatLonPoint(latitude,longitude))\n"
+				"    point = pygplates.PointOnSphere((latitude,longitude))\n"
+				"    point = pygplates.PointOnSphere([latitude,longitude])\n"
+				"    point = pygplates.PointOnSphere(numpy.array([latitude,longitude]))\n")
 		.def("get_position_vector",
 				&GPlatesMaths::PointOnSphere::position_vector,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -272,6 +489,34 @@ export_point_on_sphere()
 				"  Returns the *z* coordinate.\n"
 				"\n"
 				"  :rtype: float\n")
+		.def("to_xyz",
+				&GPlatesApi::point_on_sphere_to_xyz,
+				"to_xyz() -> x, y, z\n"
+				"  Returns the cartesian coordinates as the tuple (x,y,z).\n"
+				"\n"
+				"  :rtype: the tuple (float,float,float)\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    x, y, z = point.to_xyz()\n")
+		.def("to_lat_lon_point",
+				&GPlatesMaths::make_lat_lon_point,
+				"to_lat_lon_point() -> LatLonPoint\n"
+				"  Returns the (latitude,longitude) equivalent of this :class:`PointOnSphere`.\n"
+				"\n"
+				"  :rtype: :class:`LatLonPoint`\n")
+		.def("to_lat_lon",
+				&GPlatesApi::point_on_sphere_to_lat_lon,
+				"to_lat_lon() -> latitude, longitude\n"
+				"  Returns the tuple (latitude,longitude) in degrees.\n"
+				"\n"
+				"  :rtype: the tuple (float, float)\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    latitude, longitude = point.to_lat_lon()\n"
+				"\n"
+				"  This is similar to :meth:`LatLonPoint.to_lat_lon`.\n")
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
 		// This is because the default '__hash__'is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.
@@ -302,6 +547,12 @@ export_point_on_sphere()
 	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			const GPlatesMaths::PointOnSphere,
 			const GPlatesMaths::GeometryOnSphere>();
+
+	// Registers the from-python converter from GPlatesMaths::LatLonPoint.
+	GPlatesApi::python_PointOnSphereFromLatLonPoint();
+
+	// Registers the from-python converter from a (x,y,z) or (lat,lon) sequence.
+	GPlatesApi::python_PointOnSphereFromXYZOrLatLonSequence();
 }
 
 

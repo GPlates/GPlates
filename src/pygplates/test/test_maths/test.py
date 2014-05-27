@@ -6,6 +6,12 @@ import math
 import os
 import unittest
 import pygplates
+# Test using numpy if it's available...
+try:
+    import numpy
+    imported_numpy = True
+except ImportError:
+    imported_numpy = False
 
 import test_geometries_on_sphere
 
@@ -18,6 +24,36 @@ class FiniteRotationCase(unittest.TestCase):
         self.pole = pygplates.PointOnSphere(0, 0, 1)
         self.angle = 0.5 * math.pi
         self.finite_rotation = pygplates.FiniteRotation(self.pole, self.angle)
+    
+    def test_construct(self):
+        # Can construct from PointOnSphere pole.
+        finite_rotation = pygplates.FiniteRotation(self.pole, self.angle)
+        self.assertTrue(isinstance(finite_rotation, pygplates.FiniteRotation))
+        # Can construct from (x,y,z) tuple pole.
+        xyz_tuple = self.pole.to_xyz()
+        finite_rotation = pygplates.FiniteRotation(xyz_tuple, self.angle)
+        self.assertTrue(isinstance(finite_rotation, pygplates.FiniteRotation))
+        # Can construct from (x,y,z) list pole.
+        finite_rotation = pygplates.FiniteRotation(list(xyz_tuple), self.angle)
+        self.assertTrue(isinstance(finite_rotation, pygplates.FiniteRotation))
+        # Can construct from (x,y,z) numpy array pole.
+        if imported_numpy:
+            finite_rotation = pygplates.FiniteRotation(numpy.array(xyz_tuple), self.angle)
+            self.assertTrue(isinstance(finite_rotation, pygplates.FiniteRotation))
+        # Can construct from LatLonPoint pole.
+        finite_rotation = pygplates.FiniteRotation(self.pole.to_lat_lon_point(), self.angle)
+        self.assertTrue(isinstance(finite_rotation, pygplates.FiniteRotation))
+        # Can construct from (lat,lon) tuple pole.
+        lat_lon_tuple = self.pole.to_lat_lon()
+        finite_rotation = pygplates.FiniteRotation(lat_lon_tuple, self.angle)
+        self.assertTrue(isinstance(finite_rotation, pygplates.FiniteRotation))
+        # Can construct from (lat,lon) list pole.
+        finite_rotation = pygplates.FiniteRotation(list(lat_lon_tuple), self.angle)
+        self.assertTrue(isinstance(finite_rotation, pygplates.FiniteRotation))
+        # Can construct from (lat,lon) numpy array pole.
+        if imported_numpy:
+            finite_rotation = pygplates.FiniteRotation(numpy.array(lat_lon_tuple), self.angle)
+            self.assertTrue(isinstance(finite_rotation, pygplates.FiniteRotation))
     
     # Attempt to rotate each supported geometry type - an error will be raised if not supported...
     
@@ -179,6 +215,25 @@ class LatLonPointCase(unittest.TestCase):
         self.assertTrue(isinstance(point_on_sphere, pygplates.PointOnSphere))
         lat_lon_point = pygplates.convert_point_on_sphere_to_lat_lon_point(pygplates.PointOnSphere(1, 0, 0))
         self.assertTrue(isinstance(lat_lon_point, pygplates.LatLonPoint))
+    
+    def test_to_lat_lon(self):
+        lat_lon_point = pygplates.LatLonPoint(0, 90)
+        self.assertAlmostEqual(lat_lon_point.get_latitude(), 0)
+        self.assertAlmostEqual(lat_lon_point.get_longitude(), 90)
+        lat, lon = lat_lon_point.to_lat_lon()
+        self.assertAlmostEqual(lat, 0)
+        self.assertAlmostEqual(lon, 90)
+    
+    def test_to_xyz(self):
+        lat_lon_point = pygplates.LatLonPoint(0, 90)
+        point = lat_lon_point.to_point_on_sphere()
+        self.assertAlmostEqual(point.get_x(), 0)
+        self.assertAlmostEqual(point.get_y(), 1)
+        self.assertAlmostEqual(point.get_z(), 0)
+        x, y, z = lat_lon_point.to_xyz()
+        self.assertAlmostEqual(x, 0)
+        self.assertAlmostEqual(y, 1)
+        self.assertAlmostEqual(z, 0)
 
 def suite():
     suite = unittest.TestSuite()

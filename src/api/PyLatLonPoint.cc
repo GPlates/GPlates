@@ -39,23 +39,35 @@
 namespace bp = boost::python;
 
 
+namespace GPlatesApi
+{
+	bp::tuple
+	lat_lon_point_to_xyz(
+			const GPlatesMaths::LatLonPoint &lat_lon_point)
+	{
+		const GPlatesMaths::UnitVector3D position_vector =
+				make_point_on_sphere(lat_lon_point).position_vector();
+
+		return bp::make_tuple(position_vector.x(), position_vector.y(), position_vector.z());
+	}
+
+	bp::tuple
+	lat_lon_point_to_lat_lon(
+			const GPlatesMaths::LatLonPoint &lat_lon_point)
+	{
+		return bp::make_tuple(lat_lon_point.latitude(), lat_lon_point.longitude());
+	}
+}
+
 void
 export_lat_lon_point()
 {
 	//
 	// LatLonPoint - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
-	bp::class_<
-			GPlatesMaths::LatLonPoint>(
+	bp::class_<GPlatesMaths::LatLonPoint>(
 					"LatLonPoint",
-					"Represents a point in 2D geographic coordinates (latitude and longitude).\n"
-					"\n"
-					"The following functions convert between :class:`LatLonPoint` and :class:`PointOnSphere`:\n"
-					"\n"
-					"* :func:`convert_point_on_sphere_to_lat_lon_point` - "
-					"convert *from* a :class:`PointOnSphere` *to* a :class:`LatLonPoint`.\n"
-					"* :func:`convert_lat_lon_point_to_point_on_sphere` - "
-					"convert *from* a :class:`LatLonPoint` *to* a :class:`PointOnSphere`.\n",
+					"Represents a point in 2D geographic coordinates (latitude and longitude).\n",
 					bp::init<double,double>(
 							(bp::arg("latitude"), bp::arg("longitude")),
 							"__init__(latitude, longitude)\n"
@@ -118,6 +130,34 @@ export_lat_lon_point()
 				"  Returns the longitude (in degrees).\n"
 				"\n"
 				"  :rtype: float\n")
+		.def("to_point_on_sphere",
+				&GPlatesMaths::make_point_on_sphere,
+				"to_point_on_sphere() -> PointOnSphere\n"
+				"  Returns the cartesian coordinates as a :class:`PointOnSphere`.\n"
+				"\n"
+				"  :rtype: :class:`PointOnSphere`\n")
+		.def("to_xyz",
+				&GPlatesApi::lat_lon_point_to_xyz,
+				"to_xyz() -> x, y, z\n"
+				"  Returns the cartesian coordinates as the tuple (x,y,z).\n"
+				"\n"
+				"  :rtype: the tuple (float,float,float)\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    x, y, z = lat_lon_point.to_xyz()\n"
+				"\n"
+				"  This is similar to :meth:`PointOnSphere.to_xyz`.\n")
+		.def("to_lat_lon",
+				&GPlatesApi::lat_lon_point_to_lat_lon,
+				"to_lat_lon() -> latitude, longitude\n"
+				"  Returns the tuple (latitude,longitude) in degrees.\n"
+				"\n"
+				"  :rtype: the tuple (float,float)\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    latitude, longitude = lat_lon_point.to_lat_lon()\n")
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
@@ -126,26 +166,42 @@ export_lat_lon_point()
 	// Non-member conversion function...
 	bp::def("convert_lat_lon_point_to_point_on_sphere",
 			&GPlatesMaths::make_point_on_sphere,
-			(bp::arg("lat_lon_point")),
+			(bp::arg("lat_lon_point"))
+			// We'll keep this function (for those still using it) but we won't document it so that
+			// it doesn't show up in the API documentation.
+			// There are better ways to convert between LatLonPoint and PointOnSphere such as
+			// 'LatLonPoint.to_point_on_sphere()' and 'PointOnSphere.to_lat_lon_point()'...
+#if 0
+			,
 			"convert_lat_lon_point_to_point_on_sphere(lat_lon_point) -> PointOnSphere\n"
 			"  Converts a 2D latitude/longitude point to a 3D cartesian point.\n"
 			"\n"
 			"  :param lat_lon_point: the 2D latitude/longitude point\n"
 			"  :type lat_lon_point: :class:`LatLonPoint`\n"
 			"  :rtype: :class:`PointOnSphere`\n"
-			"\n");
+			"\n"
+#endif
+			);
 
 	// Non-member conversion function...
 	bp::def("convert_point_on_sphere_to_lat_lon_point",
 			&GPlatesMaths::make_lat_lon_point,
-			(bp::arg("point")),
+			(bp::arg("point"))
+			// We'll keep this function (for those still using it) but we won't document it so that
+			// it doesn't show up in the API documentation.
+			// There are better ways to convert between LatLonPoint and PointOnSphere such as
+			// 'LatLonPoint.to_point_on_sphere()' and 'PointOnSphere.to_lat_lon_point()'...
+#if 0
+			,
 			"convert_point_on_sphere_to_lat_lon_point(point) -> LatLonPoint\n"
 			"  Converts a 3D cartesian point to a 2D latitude/longitude point.\n"
 			"\n"
 			"  :param point: the 3D cartesian point\n"
 			"  :type point: :class:`PointOnSphere`\n"
 			"  :rtype: :class:`LatLonPoint`\n"
-			"\n");
+			"\n"
+#endif
+			);
 
 	// Enable boost::optional<LatLonPoint> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::LatLonPoint>();

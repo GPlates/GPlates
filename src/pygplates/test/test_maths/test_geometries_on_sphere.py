@@ -6,6 +6,12 @@ import math
 import os
 import unittest
 import pygplates
+# Test using numpy if it's available...
+try:
+    import numpy
+    imported_numpy = True
+except ImportError:
+    imported_numpy = False
 
 # Fixture path
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
@@ -33,10 +39,60 @@ class PointOnSphereCase(unittest.TestCase):
         # A non-unit length vector raises error.
         self.assertRaises(pygplates.ViolatedUnitVectorInvariantError, pygplates.PointOnSphere, 1, 1, 1)
     
+    def test_convert(self):
+        point_on_sphere = pygplates.PointOnSphere(self.unit_vector_3d)
+        # Can construct from PointOnSphere.
+        point_on_sphere = pygplates.PointOnSphere(point_on_sphere)
+        self.assertTrue(isinstance(point_on_sphere, pygplates.PointOnSphere))
+        # Can construct from (x,y,z) tuple.
+        xyz_tuple = point_on_sphere.to_xyz()
+        point_on_sphere = pygplates.PointOnSphere(xyz_tuple)
+        self.assertTrue(isinstance(point_on_sphere, pygplates.PointOnSphere))
+        # Can construct from (x,y,z) list.
+        point_on_sphere = pygplates.PointOnSphere(list(xyz_tuple))
+        self.assertTrue(isinstance(point_on_sphere, pygplates.PointOnSphere))
+        # Can construct from (x,y,z) numpy array.
+        if imported_numpy:
+            point_on_sphere = pygplates.PointOnSphere(numpy.array(xyz_tuple))
+            self.assertTrue(isinstance(point_on_sphere, pygplates.PointOnSphere))
+        # Can construct from LatLonPoint.
+        point_on_sphere = pygplates.PointOnSphere(point_on_sphere.to_lat_lon_point())
+        self.assertTrue(isinstance(point_on_sphere, pygplates.PointOnSphere))
+        # Can construct from (lat,lon) tuple.
+        lat_lon_tuple = point_on_sphere.to_lat_lon()
+        point_on_sphere = pygplates.PointOnSphere(lat_lon_tuple)
+        self.assertTrue(isinstance(point_on_sphere, pygplates.PointOnSphere))
+        # Can construct from (lat,lon) list.
+        point_on_sphere = pygplates.PointOnSphere(list(lat_lon_tuple))
+        self.assertTrue(isinstance(point_on_sphere, pygplates.PointOnSphere))
+        # Can construct from (lat,lon) numpy array.
+        if imported_numpy:
+            point_on_sphere = pygplates.PointOnSphere(numpy.array(lat_lon_tuple))
+            self.assertTrue(isinstance(point_on_sphere, pygplates.PointOnSphere))
+    
     def test_get_points(self):
         point = pygplates.PointOnSphere(1, 0, 0)
         points = point.get_points()
         self.assertTrue(len(points) == 1 and point == points[0])
+    
+    def test_to_lat_lon(self):
+        point = pygplates.PointOnSphere(0, 1, 0)
+        lat, lon = point.to_lat_lon()
+        self.assertAlmostEqual(lat, 0)
+        self.assertAlmostEqual(lon, 90)
+        lat_lon_point = point.to_lat_lon_point()
+        self.assertAlmostEqual(lat_lon_point.get_latitude(), 0)
+        self.assertAlmostEqual(lat_lon_point.get_longitude(), 90)
+    
+    def test_to_xyz(self):
+        point = pygplates.PointOnSphere(0, 1, 0)
+        self.assertAlmostEqual(point.get_x(), 0)
+        self.assertAlmostEqual(point.get_y(), 1)
+        self.assertAlmostEqual(point.get_z(), 0)
+        x, y, z = point.to_xyz()
+        self.assertAlmostEqual(x, 0)
+        self.assertAlmostEqual(y, 1)
+        self.assertAlmostEqual(z, 0)
 
 
 class MultiPointOnSphereCase(unittest.TestCase):

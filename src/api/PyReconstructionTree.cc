@@ -961,7 +961,7 @@ export_reconstruction_tree()
 				"                angle = 0\n"
 				"            else:\n"
 				"                pole, angle = relative_rotation.get_euler_pole_and_angle()\n"
-				"                lat_lon_pole = pygplates.convert_point_on_sphere_to_lat_lon_point(pole)\n"
+				"                lat_lon_pole = pole.to_lat_lon_point(pole)\n"
 				"            file.write('%f %f %f %f %f\\n' % (\n"
 				"                edge.get_moving_plate_id(),\n"
 				"                lat_lon_pole.get_latitude(),\n"
