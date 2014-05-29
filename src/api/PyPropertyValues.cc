@@ -362,7 +362,7 @@ export_gml_orientable_curve()
 						&GPlatesApi::gml_orientable_curve_create,
 						bp::default_call_policies(),
 						(bp::arg("gml_line_string")/*, bp::arg(reverse_orientation)=false)*/)),
-				//"__init__(gml_line_string[, reverse_orientation=False])\n"
+				//"__init__(gml_line_string, [reverse_orientation=False])\n"
 				"__init__(gml_line_string)\n"
 				"  Create an orientable polyline property value that wraps a polyline geometry and "
 				"gives it an orientation - **NOTE** currently the orientation is always *positive* "
@@ -795,7 +795,7 @@ export_gpml_constant_value()
 						bp::default_call_policies(),
 						(bp::arg("property_value"),
 							bp::arg("description") = boost::optional<GPlatesUtils::UnicodeString>())),
-					"__init__(property_value[, description])\n"
+					"__init__(property_value, [description])\n"
 					"  Wrap a property value in a time-dependent wrapper that identifies the "
 					"property value as constant for all time.\n"
 					"\n"
@@ -1135,7 +1135,7 @@ export_gpml_irregular_sampling()
 				// Not including interpolation function since it is not really used (yet) in GPlates and hence
 				// is just extra baggage for the python API user (we can add it later though)...
 #if 0
-				"[, interpolation_function]"
+				", [interpolation_function]"
 #endif
 				")\n"
 				"  Create an irregularly sampled time-dependent property from a sequence of time samples."
@@ -1699,7 +1699,7 @@ export_gpml_time_sample()
 							bp::arg("time"),
 							bp::arg("description") = boost::optional<GPlatesPropertyValues::TextContent>(),
 							bp::arg("is_enabled") = true)),
-				"__init__(property_value, time[, description][, is_enabled=True])\n"
+				"__init__(property_value, time, [description], [is_enabled=True])\n"
 				"  Create a time sample given a property value and time and optionally a description string "
 				"and disabled flag.\n"
 				"\n"

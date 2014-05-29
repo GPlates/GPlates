@@ -235,6 +235,9 @@ BOOST_PYTHON_MODULE(pygplates)
 			"\n"
 			"    import pygplates\n";
 
+	// Set the array type (and module) to numpy array (so we can use bp::numeric::array in C++ code).
+	bp::numeric::array::set_module_and_type("numpy", "ndarray");
+
 	// Export the part of the python API that consists of C++ python bindinds (ie, not pure python).
 	export_cpp_python_api();
 

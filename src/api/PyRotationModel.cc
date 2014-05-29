@@ -378,7 +378,7 @@ export_rotation_model()
 
 	std::stringstream rotation_model_constructor_docstring_stream;
 	rotation_model_constructor_docstring_stream <<
-			"__init__(rotation_features[, reconstruction_tree_cache_size="
+			"__init__(rotation_features, [reconstruction_tree_cache_size="
 			<< GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE
 			<< "])\n"
 			"  Create from rotation feature collection(s) and/or rotation filename(s), and "
@@ -450,8 +450,8 @@ export_rotation_model()
 					bp::arg("fixed_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
 					bp::arg("anchor_plate_id") = 0,
 					bp::arg("use_identity_for_missing_plate_ids") = true),
-				"get_rotation(to_time, moving_plate_id[, from_time=0][, fixed_plate_id][, anchor_plate_id=0]"
-				"[, use_identity_for_missing_plate_ids=True]) -> FiniteRotation or None\n"
+				"get_rotation(to_time, moving_plate_id, [from_time=0], [fixed_plate_id], [anchor_plate_id=0]"
+				", [use_identity_for_missing_plate_ids=True]) -> FiniteRotation or None\n"
 				"  Return the finite rotation that rotates from the *fixed_plate_id* plate to the *moving_plate_id* "
 				"plate and from the time *from_time* to the time *to_time*.\n"
 				"\n"
@@ -523,7 +523,7 @@ export_rotation_model()
 				&GPlatesApi::RotationModel::get_reconstruction_tree,
 				(bp::arg("reconstruction_time"),
 					bp::arg("anchor_plate_id")=0),
-				"get_reconstruction_tree(reconstruction_time[, anchor_plate_id=0]) -> ReconstructionTree\n"
+				"get_reconstruction_tree(reconstruction_time, [anchor_plate_id=0]) -> ReconstructionTree\n"
 				"  Return the reconstruction tree associated with the specified instant of "
 				"geological time and anchored plate id.\n"
 				"\n"

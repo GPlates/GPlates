@@ -172,10 +172,10 @@ export_feature()
 							, bp::arg("revision_id") = boost::optional<GPlatesModel::RevisionId>()
 #endif
 						)),
-				"__init__([feature_type][, feature_id]"
+				"__init__([feature_type], [feature_id]"
 	// Not including RevisionId yet since it is not really needed in the python API user (we can add it later though)...
 #if 0
-				"[, revision_id]"
+				", [revision_id]"
 #endif
 				")\n"
 				"  Create a new feature instance that is (initially) empty (has no properties).\n"

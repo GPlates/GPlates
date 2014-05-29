@@ -110,6 +110,35 @@ class MultiPointOnSphereCase(unittest.TestCase):
                 pygplates.InsufficientPointsForMultiPointConstructionError,
                 pygplates.MultiPointOnSphere,
                 [])
+        lat_lon_tuple_list = [point.to_lat_lon() for point in self.points]
+        multi_point = pygplates.MultiPointOnSphere(lat_lon_tuple_list)
+        self.assertTrue(isinstance(multi_point, pygplates.MultiPointOnSphere))
+        xyz_list_list = [list(point.to_xyz()) for point in self.points]
+        multi_point = pygplates.MultiPointOnSphere(xyz_list_list)
+        self.assertTrue(isinstance(multi_point, pygplates.MultiPointOnSphere))
+    
+    def test_convert(self):
+        # Convert to (lat,lon) tuple list and back.
+        lat_lon_list = self.multi_point.to_lat_lon_list()
+        self.assertEquals(len(lat_lon_list), len(self.multi_point))
+        multi_point = pygplates.MultiPointOnSphere(lat_lon_list)
+        self.assertTrue(isinstance(multi_point, pygplates.MultiPointOnSphere))
+        # Convert to (x,y,z) tuple list and back.
+        xyz_list = self.multi_point.to_xyz_list()
+        self.assertEquals(len(xyz_list), len(self.multi_point))
+        multi_point = pygplates.MultiPointOnSphere(xyz_list)
+        self.assertTrue(isinstance(multi_point, pygplates.MultiPointOnSphere))
+        if imported_numpy:
+            # Convert to (lat,lon) numpy array and back.
+            lat_lon_array = self.multi_point.to_lat_lon_array()
+            self.assertEquals(len(list(lat_lon_array)), len(self.multi_point))
+            multi_point = pygplates.MultiPointOnSphere(lat_lon_array)
+            self.assertTrue(isinstance(multi_point, pygplates.MultiPointOnSphere))
+            # Convert to (x,y,z) numpy array and back.
+            xyz_array = self.multi_point.to_xyz_array()
+            self.assertEquals(len(list(xyz_array)), len(self.multi_point))
+            multi_point = pygplates.MultiPointOnSphere(xyz_array)
+            self.assertTrue(isinstance(multi_point, pygplates.MultiPointOnSphere))
     
     def test_get_points(self):
         point_sequence = self.multi_point.get_points()
@@ -169,6 +198,12 @@ class PolylineOnSphereCase(unittest.TestCase):
                 pygplates.InvalidPointsForPolylineConstructionError,
                 pygplates.PolylineOnSphere,
                 [pygplates.PointOnSphere(1, 0, 0)])
+        lat_lon_tuple_list = [point.to_lat_lon() for point in self.points]
+        polyline = pygplates.PolylineOnSphere(lat_lon_tuple_list)
+        self.assertTrue(isinstance(polyline, pygplates.PolylineOnSphere))
+        xyz_list_list = [list(point.to_xyz()) for point in self.points]
+        polyline = pygplates.PolylineOnSphere(xyz_list_list)
+        self.assertTrue(isinstance(polyline, pygplates.PolylineOnSphere))
     
     def test_get_points(self):
         point_sequence = self.polyline.get_points()
@@ -270,6 +305,12 @@ class PolygonOnSphereCase(unittest.TestCase):
                 pygplates.InvalidPointsForPolygonConstructionError,
                 pygplates.PolygonOnSphere,
                 [pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(0, 1, 0)])
+        lat_lon_tuple_list = [point.to_lat_lon() for point in self.points]
+        polygon = pygplates.PolygonOnSphere(lat_lon_tuple_list)
+        self.assertTrue(isinstance(polygon, pygplates.PolygonOnSphere))
+        xyz_list_list = [list(point.to_xyz()) for point in self.points]
+        polygon = pygplates.PolygonOnSphere(xyz_list_list)
+        self.assertTrue(isinstance(polygon, pygplates.PolygonOnSphere))
     
     def test_get_points(self):
         point_sequence = self.polygon.get_points()

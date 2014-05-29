@@ -770,7 +770,7 @@ export_reconstruction_tree()
 						(bp::arg("feature_collections"),
 							bp::arg("reconstruction_time"),
 							bp::arg("anchor_plate_id") = 0)),
-				"__init__(feature_collections, reconstruction_time[, anchor_plate_id=0])\n"
+				"__init__(feature_collections, reconstruction_time, [anchor_plate_id=0])\n"
 				"  Create a plate-reconstruction hierarchy at the specified reconstruction time "
 				"with *equivalent* rotations relative to the specified anchored plate.\n"
 				"\n"
@@ -818,7 +818,7 @@ export_reconstruction_tree()
 				&GPlatesApi::get_equivalent_total_rotation,
 				(bp::arg("plate_id"),
 					bp::arg("use_identity_for_missing_plate_ids")=true),
-				"get_equivalent_total_rotation(plate_id[, bool use_identity_for_missing_plate_ids=True]) "
+				"get_equivalent_total_rotation(plate_id, [bool use_identity_for_missing_plate_ids=True]) "
 				"-> FiniteRotation or None\n"
 				"  Return the *equivalent* finite rotation of the *plate_id* plate relative to the "
 				"*anchored* plate.\n"
@@ -858,7 +858,7 @@ export_reconstruction_tree()
 					bp::arg("fixed_plate_id"),
 					bp::arg("use_identity_for_missing_plate_ids")=true),
 				"get_relative_total_rotation(moving_plate_id, fixed_plate_id"
-				"[, use_identity_for_missing_plate_ids=True]) -> FiniteRotation or None\n"
+				", [use_identity_for_missing_plate_ids=True]) -> FiniteRotation or None\n"
 				"  Return the finite rotation of the *moving_plate_id* plate relative to the "
 				"*fixed_plate_id* plate.\n"
 				"\n"
@@ -1015,7 +1015,7 @@ export_reconstruction_tree()
 				bp::arg("plate_id"),
 				bp::arg("use_identity_for_missing_plate_ids")=true),
 			"get_equivalent_stage_rotation(from_reconstruction_tree, to_reconstruction_tree, plate_id"
-			"[, use_identity_for_missing_plate_ids=True]) -> FiniteRotation or None\n"
+			", [use_identity_for_missing_plate_ids=True]) -> FiniteRotation or None\n"
 			"  Return the finite rotation that rotates from the *anchored* plate to plate *plate_id* "
 			"and from the time of *from_reconstruction_tree* to the time of *to_reconstruction_tree*.\n"
 			"\n"
@@ -1088,7 +1088,7 @@ export_reconstruction_tree()
 				bp::arg("fixed_plate_id"),
 				bp::arg("use_identity_for_missing_plate_ids")=true),
 			"get_relative_stage_rotation(from_reconstruction_tree, to_reconstruction_tree, "
-			"moving_plate_id, fixed_plate_id[, use_identity_for_missing_plate_ids]) -> FiniteRotation or None\n"
+			"moving_plate_id, fixed_plate_id, [use_identity_for_missing_plate_ids]) -> FiniteRotation or None\n"
 			"  Return the finite rotation that rotates from the *fixed_plate_id* plate to the *moving_plate_id* "
 			"plate and from the time of *from_reconstruction_tree* to the time of *to_reconstruction_tree*.\n"
 			"\n"

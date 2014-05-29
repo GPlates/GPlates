@@ -57,11 +57,11 @@ namespace GPlatesApi
 			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
 			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
 			const GPlatesMaths::PointOnSphere &pole,
-			const GPlatesMaths::Real &angle)
+			const GPlatesMaths::Real &angle_radians)
 	{
 		return boost::shared_ptr<GPlatesMaths::FiniteRotation>(
 				new GPlatesMaths::FiniteRotation(
-						GPlatesMaths::FiniteRotation::create(pole, angle)));
+						GPlatesMaths::FiniteRotation::create(pole, angle_radians)));
 	}
 
 	boost::shared_ptr<GPlatesMaths::FiniteRotation>
@@ -383,29 +383,29 @@ export_finite_rotation()
 				bp::make_constructor(
 						&GPlatesApi::finite_rotation_create,
 						bp::default_call_policies(),
-						(bp::arg("pole"), bp::arg("angle"))),
-				"__init__(pole, angle)\n"
+						(bp::arg("pole"), bp::arg("angle_radians"))),
+				"__init__(pole, angle_radians)\n"
 				"  Create a finite rotation from an Euler pole and a rotation angle (in *radians*).\n"
 				"\n"
 				"  :param pole: the Euler pole.\n"
-				"  :type pole: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude) "
-				"sequence or (x,y,z) sequence\n"
-				"  :param angle: the rotation angle (in *radians*).\n"
-				"  :type angle: float\n"
+				"  :type pole: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude)"
+				", in degrees, or (x,y,z)\n"
+				"  :param angle_radians: the rotation angle (in *radians*).\n"
+				"  :type angle_radians: float\n"
 				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
 				"  :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude\n"
 				"\n"
 				"  The following example shows a few different ways to use this method:\n"
 				"  ::\n"
 				"\n"
-				"    finite_rotation = pygplates.FiniteRotation(pygplates.PointOnSphere(x,y,z), angle)\n"
-				"    finite_rotation = pygplates.FiniteRotation((x,y,z), angle)\n"
-				"    finite_rotation = pygplates.FiniteRotation([x,y,z], angle)\n"
-				"    finite_rotation = pygplates.FiniteRotation(numpy.array([x,y,z]), angle)\n"
-				"    finite_rotation = pygplates.FiniteRotation(pygplates.LatLonPoint(latitude,longitude), angle)\n"
-				"    finite_rotation = pygplates.FiniteRotation((latitude,longitude), angle)\n"
-				"    finite_rotation = pygplates.FiniteRotation([latitude,longitude], angle)\n"
-				"    finite_rotation = pygplates.FiniteRotation(numpy.array([latitude,longitude]), angle)\n")
+				"    finite_rotation = pygplates.FiniteRotation(pygplates.PointOnSphere(x,y,z), angle_radians)\n"
+				"    finite_rotation = pygplates.FiniteRotation((x,y,z), math.radians(angle_degrees))\n"
+				"    finite_rotation = pygplates.FiniteRotation([x,y,z], angle_radians)\n"
+				"    finite_rotation = pygplates.FiniteRotation(numpy.array([x,y,z]), angle_radians)\n"
+				"    finite_rotation = pygplates.FiniteRotation(pygplates.LatLonPoint(latitude,longitude), angle_radians)\n"
+				"    finite_rotation = pygplates.FiniteRotation((latitude,longitude), angle_radians)\n"
+				"    finite_rotation = pygplates.FiniteRotation([latitude,longitude], math.radians(angle_degrees))\n"
+				"    finite_rotation = pygplates.FiniteRotation(numpy.array([latitude,longitude]), angle_radians)\n")
 		.def("__init__",
 				bp::make_constructor(
 						&GPlatesApi::finite_rotation_create_identity_rotation,
@@ -461,17 +461,17 @@ export_finite_rotation()
 		.def("get_euler_pole_and_angle",
 				&GPlatesApi::finite_rotation_get_euler_pole_and_angle,
 				(bp::arg("use_north_pole_for_identity")=true),
-				"get_euler_pole_and_angle([use_north_pole_for_identity=True]) -> pole, angle\n"
+				"get_euler_pole_and_angle([use_north_pole_for_identity=True]) -> pole, angle_radians\n"
 				"  Return the (pole, angle) representing finite rotation.\n"
 				"\n"
-				"  *NOTE:* the angle is in *radians*.\n"
+				"  *NOTE:* the returned angle is in *radians*.\n"
 				"\n"
 				"  :param use_north_pole_for_identity: whether to return the north pole axis (and zero angle) "
 				"for an :meth:`identity rotation<represents_identity_rotation>` or raise "
 				"IndeterminateResultError (default is to return north pole axis)\n"
 				"  :type use_north_pole_for_identity: bool\n"
 				"  :rtype: tuple (:class:`PointOnSphere`, float)\n"
-				"  :returns: the tuple of (pole, angle)\n"
+				"  :returns: the tuple of (pole, angle_radians)\n"
 				"  :raises: IndeterminateResultError if *use_north_pole_for_identity* is ``False`` "
 				"and this finite rotation represents the identity rotation\n"
 				"\n"
@@ -489,24 +489,24 @@ export_finite_rotation()
 				"\n"
 				"  ::\n"
 				"\n"
-				"    finite_rotation = pygplates.FiniteRotation(pole, angle)\n"
-				"    pole, angle = finite_rotation.get_euler_pole_and_angle()\n")
+				"    finite_rotation = pygplates.FiniteRotation(pole, angle_radians)\n"
+				"    pole, angle_radians = finite_rotation.get_euler_pole_and_angle()\n")
 		.def("get_lat_lon_euler_pole_and_angle_degrees",
 				&GPlatesApi::finite_rotation_get_lat_lon_euler_pole_and_angle_degrees,
 				(bp::arg("use_north_pole_for_identity")=true),
 				"get_lat_lon_euler_pole_and_angle_degrees([use_north_pole_for_identity=True]) -> "
-				"pole_latitude, pole_longitude, angle\n"
+				"pole_latitude, pole_longitude, angle_degrees\n"
 				"  Return the finite rotation as a tuple of pole latitude, pole longitude and "
 				" angle (all in degrees).\n"
 				"\n"
-				"  *NOTE:* the angle is in *degrees* (as are the latitude and longitude).\n"
+				"  *NOTE:* the returned angle is in *degrees* (as are the latitude and longitude).\n"
 				"\n"
 				"  :param use_north_pole_for_identity: whether to return the north pole axis (and zero angle) "
 				"for an :meth:`identity rotation<represents_identity_rotation>` or raise "
 				"IndeterminateResultError (default is to return north pole axis)\n"
 				"  :type use_north_pole_for_identity: bool\n"
 				"  :rtype: tuple (float, float, float)\n"
-				"  :returns: the tuple of (pole_latitude, pole_longitude, angle) all in *degrees*\n"
+				"  :returns: the tuple of (pole_latitude, pole_longitude, angle_degrees) all in *degrees*\n"
 				"  :raises: IndeterminateResultError if *use_north_pole_for_identity* is ``False`` "
 				"and this finite rotation represents the identity rotation\n"
 				"\n"
@@ -521,7 +521,7 @@ export_finite_rotation()
 				"\n"
 				"  ::\n"
 				"\n"
-				"    finite_rotation = pygplates.FiniteRotation(pole, angle)\n"
+				"    finite_rotation = pygplates.FiniteRotation(pole, angle_radians)\n"
 				"    pole_latitude, pole_longitude, angle_degrees = "
 				"finite_rotation.get_lat_lon_euler_pole_and_angle_degrees()\n")
 		// Multiply two finite rotations...
