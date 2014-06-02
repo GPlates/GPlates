@@ -13,33 +13,29 @@ FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 class GetFeaturePropertiesCase(unittest.TestCase):
     def setUp(self):
         self.feature = pygplates.Feature()
-        self.property1 = pygplates.Property(
+        self.feature.add_property(
                 pygplates.PropertyName.create_gpml('reconstructionPlateId'),
                 pygplates.GpmlPlateId(1))
-        self.feature.add(self.property1)
-        self.property2 = pygplates.Property(
+        self.feature.add_property(
                 pygplates.PropertyName.create_gpml('conjugatePlateId'),
                 pygplates.GpmlPlateId(2))
-        self.feature.add(self.property2)
-        self.property3 = pygplates.Property(
+        self.feature.add_property(
                 pygplates.PropertyName.create_gpml('reconstructionPlateId'),
                 pygplates.GpmlPlateId(3))
-        self.feature.add(self.property3)
-        self.property4 = pygplates.Property(
-                pygplates.PropertyName.create_gpml('test_integer'),
+        self.feature.add_property(
+                pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'),
                 pygplates.XsInteger(300))
-        self.feature.add(self.property4)
         # A time-dependent property excluding time 0Ma.
-        self.property5 =  pygplates.Property(
+        self.feature.add_property(
                 pygplates.PropertyName.create_gpml('plateId'),
                 pygplates.GpmlPiecewiseAggregation([
                     pygplates.GpmlTimeWindow(pygplates.GpmlPlateId(100), pygplates.GeoTimeInstant(10), pygplates.GeoTimeInstant(5)),
-                    pygplates.GpmlTimeWindow(pygplates.GpmlPlateId(101), pygplates.GeoTimeInstant(20), pygplates.GeoTimeInstant(10))]))
-        self.feature.add(self.property5)
-        self.property6 = pygplates.Property(
+                    pygplates.GpmlTimeWindow(pygplates.GpmlPlateId(101), pygplates.GeoTimeInstant(20), pygplates.GeoTimeInstant(10))]),
+                # 'gpml:plateId' is not a (GPGIM) recognised property name...
+                pygplates.VerifyInformationModel.no)
+        self.feature.add_property(
                 pygplates.PropertyName.create_gpml('position'),
                 pygplates.GpmlConstantValue(pygplates.GmlPoint(pygplates.PointOnSphere(0,1,0))))
-        self.feature.add(self.property6)
     
     def test_get_geometry(self):
         geometry_properties = pygplates.get_feature_geometry_properties(self.feature, pygplates.PointOnSphere)
@@ -55,7 +51,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
     
     def test_get_by_name(self):
         properties = pygplates.get_feature_properties_by_name(
-                self.feature, pygplates.PropertyName.create_gpml('test_integer'))
+                self.feature, pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'))
         self.assertTrue(len(properties) == 1)
         self.assertTrue(properties[0][1].get_integer() == 300)
         properties = pygplates.get_feature_properties_by_name(

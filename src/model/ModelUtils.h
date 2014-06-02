@@ -313,7 +313,7 @@ namespace GPlatesModel
 
 		/**
 		 * Creates a TopLevelPropertyInline from the specified property value and
-		 * adds it into the specified feature.
+		 * adds it into the specified feature (and returns iterator to property).
 		 *
 		 * The property value is also converted, if necessary, to have the correct time-dependent
 		 * wrapper (or none) as dictated by the GPGIM for the specified property name
@@ -323,11 +323,11 @@ namespace GPlatesModel
 		 * checked to see if it's valid for the specified feature's type (and only added if it is).
 		 * This ensures a stricter level of conformance to the GPGIM.
 		 *
-		 * Returns false if any error is encountered (such as an unrecognised property name or inability
+		 * Returns none if any error is encountered (such as an unrecognised property name or inability
 		 * to convert time-dependent wrapper) in which case the property value is not added to the feature.
 		 * The error code can optionally be returned via @a error_code.
 		 */
-		bool
+		boost::optional<FeatureHandle::iterator>
 		add_property(
 				const FeatureHandle::weak_ref &feature,
 				const PropertyName& property_name,
@@ -343,7 +343,7 @@ namespace GPlatesModel
 		 * Note that the caller is responsible for ensuring that the specified GPGIM property
 		 * is allowed for the feature's type (according to the GPGIM).
 		 */
-		bool
+		boost::optional<FeatureHandle::iterator>
 		add_property(
 				const FeatureHandle::weak_ref &feature,
 				const GpgimProperty &gpgim_property,

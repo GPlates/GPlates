@@ -28,6 +28,7 @@
 
 #include "PyExceptions.h"
 
+#include "PyInformationModel.h"
 #include "PyInterpolationException.h"
 #include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"
@@ -202,6 +203,7 @@ namespace GPlatesApi
 	bp::object GPlatesError;
 	bp::object IndeterminateArcRotationAxisError;
 	bp::object IndeterminateResultError;
+	bp::object InformationModelError;
 	bp::object InsufficientPointsForMultiPointConstructionError;
 	bp::object InterpolationError;
 	bp::object InvalidLatLonError;
@@ -270,6 +272,10 @@ export_exceptions()
 	GPlatesApi::IndeterminateArcRotationAxisError =
 			export_exception<GPlatesMaths::IndeterminateArcRotationAxisException>(
 					"IndeterminateArcRotationAxisError",
+					GPlatesApi::PreconditionViolationError);
+	GPlatesApi::InformationModelError =
+			export_exception<GPlatesApi::InformationModelException>(
+					"InformationModelError",
 					GPlatesApi::PreconditionViolationError);
 	GPlatesApi::InsufficientPointsForMultiPointConstructionError =
 			export_exception<GPlatesMaths::InsufficientPointsForMultiPointConstructionError>(

@@ -38,6 +38,8 @@ set(srcs
     PyGPlatesModule.h
     PyGreatCircleArc.cc
     PyIds.cc
+    PyInformationModel.cc
+    PyInformationModel.h
     PyInteger.cc
     PyInterpolationException.h
     PyLatLonPoint.cc

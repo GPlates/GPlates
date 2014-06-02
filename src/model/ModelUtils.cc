@@ -334,7 +334,7 @@ GPlatesModel::ModelUtils::create_top_level_property(
 }
 
 
-bool
+boost::optional<GPlatesModel::FeatureHandle::iterator>
 GPlatesModel::ModelUtils::add_property(
 		const FeatureHandle::weak_ref &feature,
 		const PropertyName& property_name,
@@ -360,13 +360,11 @@ GPlatesModel::ModelUtils::add_property(
 	}
 
 	// Add the converted property value to the feature.
-	feature->add(top_level_property.get());
-
-	return true;
+	return feature->add(top_level_property.get());
 }
 
 
-bool
+boost::optional<GPlatesModel::FeatureHandle::iterator>
 GPlatesModel::ModelUtils::add_property(
 		const FeatureHandle::weak_ref &feature,
 		const GpgimProperty &gpgim_property,
@@ -384,9 +382,7 @@ GPlatesModel::ModelUtils::add_property(
 	}
 
 	// Add the converted property value to the feature.
-	feature->add(top_level_property.get());
-
-	return true;
+	return feature->add(top_level_property.get());
 }
 
 

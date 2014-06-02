@@ -53,6 +53,7 @@ void export_feature();
 void export_feature_collection();
 void export_geo_time_instant();
 void export_ids();
+void export_information_model();
 void export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
 void export_old_feature_collection();
 void export_property_values();
@@ -146,6 +147,7 @@ export_cpp_python_api()
 
 	// model namespace
 	export_ids(); // Must be called before 'export_feature()'.
+	export_information_model();
 	export_qualified_xml_names(); // Must be called before 'export_feature()'.
 	export_feature();
 	export_feature_collection();
