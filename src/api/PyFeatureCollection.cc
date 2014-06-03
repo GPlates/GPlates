@@ -23,6 +23,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <iterator>
+#include <vector>
 #include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
@@ -51,23 +54,131 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
+	feature_collection_handle_create(
+			bp::object features_object)
+	{
+		// Create empty feature collection.
+		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection_handle =
+				GPlatesModel::FeatureCollectionHandle::create();
+
+		// Add any specified features (if 'features_object' is not Py_None).
+		if (features_object != bp::object())
+		{
+			// Begin/end iterators over the python feature sequence.
+			bp::stl_input_iterator<GPlatesModel::FeatureHandle::non_null_ptr_type>
+					features_iter(features_object),
+					features_end;
+
+			// Add the features to the collection.
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				feature_collection_handle->add(*features_iter);
+			}
+		}
+
+		return feature_collection_handle;
+	}
+
 	void
 	feature_collection_handle_add(
 			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection_handle,
-			GPlatesModel::FeatureHandle::non_null_ptr_type feature)
+			bp::object features_object)
 	{
-		// Ignore the returned iterator.
-		feature_collection_handle->add(feature);
+		// See if a single feature.
+		bp::extract<GPlatesModel::FeatureHandle::non_null_ptr_type> extract_feature(features_object);
+		if (extract_feature.check())
+		{
+			GPlatesModel::FeatureHandle::non_null_ptr_type feature = extract_feature();
+			feature_collection_handle->add(feature);
+
+			return;
+		}
+
+		// Try a sequence of features next.
+		try
+		{
+			// Begin/end iterators over the python feature sequence.
+			bp::stl_input_iterator<GPlatesModel::FeatureHandle::non_null_ptr_type>
+					features_iter(features_object),
+					features_end;
+
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				feature_collection_handle->add(*features_iter);
+			}
+
+			return;
+		}
+		catch (const boost::python::error_already_set &)
+		{
+			PyErr_Clear();
+		}
+
+		PyErr_SetString(PyExc_TypeError, "Expected Feature or sequence of Feature's");
+		bp::throw_error_already_set();
 	}
 
 	void
 	feature_collection_handle_remove(
 			GPlatesModel::FeatureCollectionHandle &feature_collection_handle,
-			GPlatesModel::FeatureHandle::non_null_ptr_type feature)
+			bp::object features_object)
 	{
-		// Search for the feature.
-		// Note: This searches for the same feature *instance* - it does not compare values of
-		// two different feature instances.
+		// See if a single feature.
+		bp::extract<GPlatesModel::FeatureHandle::non_null_ptr_type> extract_feature(features_object);
+		if (extract_feature.check())
+		{
+			GPlatesModel::FeatureHandle::non_null_ptr_type feature = extract_feature();
+
+			// Search for the feature.
+			// Note: This searches for the same feature *instance* - it does not compare values of
+			// two different feature instances.
+			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
+			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
+
+				// Compare pointers not pointed-to-objects.
+				if (feature == collection_feature)
+				{
+					feature_collection_handle.remove(features_iter);
+					return;
+				}
+			}
+
+			// Raise the 'ValueError' python exception if the feature was not found.
+			PyErr_SetString(PyExc_ValueError, "Feature instance not found");
+			bp::throw_error_already_set();
+		}
+
+		// Try a sequence of features next.
+		typedef std::vector<GPlatesModel::FeatureHandle::non_null_ptr_type> features_seq_type;
+		features_seq_type features_seq;
+		try
+		{
+			// Begin/end iterators over the python feature sequence.
+			bp::stl_input_iterator<GPlatesModel::FeatureHandle::non_null_ptr_type>
+					features_begin(features_object),
+					features_end;
+
+			// Copy into the vector.
+			std::copy(features_begin, features_end, std::back_inserter(features_seq));
+
+			// Remove duplicate feature pointers.
+			features_seq.erase(
+					std::unique(features_seq.begin(), features_seq.end()),
+					features_seq.end());
+		}
+		catch (const boost::python::error_already_set &)
+		{
+			PyErr_Clear();
+
+			PyErr_SetString(PyExc_TypeError, "Expected Feature or sequence of Feature's");
+			bp::throw_error_already_set();
+		}
+
+		// Search for the features.
 		GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
 		GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
 		for ( ; features_iter != features_end; ++features_iter)
@@ -75,16 +186,24 @@ namespace GPlatesApi
 			GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
 
 			// Compare pointers not pointed-to-objects.
-			if (feature == collection_feature)
+			features_seq_type::iterator features_seq_iter =
+					std::find(features_seq.begin(), features_seq.end(), collection_feature);
+			if (features_seq_iter != features_seq.end())
 			{
+				// Remove the feature from the collection.
+				// Note that removing a feature does not prevent us from incrementing to the next feature.
 				feature_collection_handle.remove(features_iter);
-				return;
+				// Record that we have removed this feature.
+				features_seq.erase(features_seq_iter);
 			}
 		}
 
-		// Raise the 'ValueError' python exception if the feature was not found.
-		PyErr_SetString(PyExc_ValueError, "Feature instance not found");
-		bp::throw_error_already_set();
+		// Raise the 'ValueError' python exception if not all features were found.
+		if (!features_seq.empty())
+		{
+			PyErr_SetString(PyExc_ValueError, "Not all feature instances were found");
+			bp::throw_error_already_set();
+		}
 	}
 
 
@@ -469,10 +588,6 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::get_files(
 void
 export_feature_collection()
 {
-	// Select the desired overload...
-	const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type (*feature_collection_create)() =
-					&GPlatesModel::FeatureCollectionHandle::create;
-
 	//
 	// FeatureCollection - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -504,39 +619,60 @@ export_feature_collection()
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
 		.def("__init__",
-				bp::make_constructor(feature_collection_create),
-				"__init__()\n"
-				"  Create a new feature collection instance that is (initially) empty (has no features).\n"
+				bp::make_constructor(
+						GPlatesApi::feature_collection_handle_create,
+						bp::default_call_policies(),
+						(bp::arg("features") = bp::object()/*Py_None*/)),
+				"__init__([features])\n"
+				"  Create a new feature collection instance.\n"
+				"\n"
+				"  :param features: an optional sequence of features to add\n"
+				"  :type features: a sequence (eg, ``list`` or ``tuple``) of :class:`Feature`\n"
+				"\n"
 				"  ::\n"
 				"\n"
-				"    feature_collection = pygplates.FeatureCollection()\n")
+				"    feature_collection = pygplates.FeatureCollection()\n"
+				"    feature_collection.add(feature1)\n"
+				"    feature_collection.add(feature2)\n"
+				"    # ...or...\n"
+				"    feature_collection = pygplates.FeatureCollection([feature1, feature2])\n")
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureCollectionHandle>())
 		.def("__len__", &GPlatesModel::FeatureCollectionHandle::size)
 		.def("add",
 				&GPlatesApi::feature_collection_handle_add,
-				(bp::arg("feature")),
-				"add(feature)\n"
-				"  Adds a feature to this collection.\n"
+				(bp::arg("features")),
+				"add(features)\n"
+				"  Adds one or more features to this collection.\n"
 				"\n"
-				"  :param feature: the feature\n"
-				"  :type feature: :class:`Feature`\n"
+				"  :param features: one or more features to add\n"
+				"  :type features: :class:`Feature` or sequence (eg, ``list`` or ``tuple``) of :class:`Feature`\n"
 				"\n"
 				"  A feature collection is an *unordered* collection of features "
-				"so there is no concept of where a feature is inserted in the sequence of features.\n")
+				"so there is no concept of where a feature is inserted in the sequence of features.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    feature_collection.add(feature)\n"
+				"    feature_collection.add([feature1, feature2])\n")
 		.def("remove",
 				&GPlatesApi::feature_collection_handle_remove,
-				(bp::arg("feature")),
-				"remove(feature)\n"
-				"  Removes *feature* from this collection.\n"
+				(bp::arg("features")),
+				"remove(features)\n"
+				"  Removes one or more features from this collection.\n"
 				"\n"
-				"  :param feature: a feature instance that currently exists inside this collection\n"
-				"  :type feature: :class:`Feature`\n"
+				"  :param features: one or more feature instances that currently exist inside this collection\n"
+				"  :type features: :class:`Feature` or sequence (eg, ``list`` or ``tuple``) of :class:`Feature`\n"
+				"  :raises: ValueError if any specified feature is not currently in this collection\n"
 				"\n"
-				"  Raises the ``ValueError`` exception if *feature* is not "
-				"currently a feature in this collection. Note that the same feature *instance* must "
-				"have previously been added. In other words, *remove* does not compare the value of "
-				"*feature* with the values of the features of this collection - it actually looks for "
-				"the same feature *instance*.\n")
+				"  Raises the ``ValueError`` exception if if any specified feature is not "
+				"currently in this collection. Note that the same feature *instance* must "
+				"have previously been added. In other words, *remove* does not compare the values of "
+				"the features of this collection - it actually looks for the same feature *instance*.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    feature_collection.remove(feature)\n"
+				"    feature_collection.remove([feature1, feature2])\n")
 	;
 
 	// Enable boost::optional<FeatureCollectionHandle::non_null_ptr_type> to be passed to and from python.

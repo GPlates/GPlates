@@ -82,14 +82,27 @@ class FeatureCase(unittest.TestCase):
                 missing_name_property = property
                 break
         self.assertFalse(missing_name_property)
+        # Should now raise ValueError.
+        self.assertRaises(ValueError, self.feature.remove, name_property)
+        
+        property_to_remove1 = self.feature.add(
+                pygplates.PropertyName.create_gml('name'),
+                pygplates.XsString("Name1"))
+        property_to_remove2 = self.feature.add(
+                pygplates.PropertyName.create_gml('name'),
+                pygplates.XsString("Name2"))
+        self.assertTrue(len(self.feature) == self.property_count + 1)
+        # Remove a sequence of properties (and testing that specifying duplicates is allowed).
+        self.feature.remove([property_to_remove1, property_to_remove2, property_to_remove2])
+        self.assertTrue(len(self.feature) == self.property_count - 1)
     
-    def test_remove_property(self):
-        self.feature.add_property(
+    def test_remove_properties_by_name(self):
+        self.feature.add(
                 pygplates.PropertyName.create_gml('name'),
                 pygplates.XsString("property's name"))
         self.assertTrue(len(self.feature) == self.property_count + 1)
         # Should remove newly added and previously added 'name' properties.
-        self.feature.remove_property(pygplates.PropertyName.create_gml('name'))
+        self.feature.remove(pygplates.PropertyName.create_gml('name'))
         self.assertTrue(len(self.feature) == self.property_count - 1)
         # Should not be able to find either now.
         missing_name_property = None
@@ -98,9 +111,15 @@ class FeatureCase(unittest.TestCase):
                 missing_name_property = property
                 break
         self.assertFalse(missing_name_property)
+        
+        # Remove multiple property names.
+        self.feature.remove([
+                pygplates.PropertyName.create_gml('validTime'),
+                pygplates.PropertyName.create_gpml('reconstructionPlateId')])
+        self.assertTrue(len(self.feature) == self.property_count - 3)
     
-    def test_add_property(self):
-        integer_property = self.feature.add_property(
+    def test_add(self):
+        integer_property = self.feature.add(
                 pygplates.PropertyName.create_gpml('integer'),
                 pygplates.XsInteger(100),
                 # 'gpml:integer' is not a (GPGIM) recognised property name...
@@ -113,9 +132,21 @@ class FeatureCase(unittest.TestCase):
                 break
         self.assertTrue(found_integer_property)
         # Since 'gpml:integer' is not a (GPGIM) recognised property name it should raise an error by default.
-        self.assertRaises(pygplates.InformationModelError, self.feature.add_property,
+        self.assertRaises(pygplates.InformationModelError, self.feature.add,
                 pygplates.PropertyName.create_gpml('integer'),
                 pygplates.XsInteger(100))
+        
+        # Since 'gpml:integer1', etc, is not a (GPGIM) recognised property name it should raise an error by default.
+        self.assertRaises(pygplates.InformationModelError, self.feature.add,
+                [(pygplates.PropertyName.create_gpml('integer1'), pygplates.XsInteger(101)),
+                (pygplates.PropertyName.create_gpml('integer2'), pygplates.XsInteger(102))])
+        # Add as a list of property name/value pairs.
+        properties_added = self.feature.add([
+                (pygplates.PropertyName.create_gpml('integer1'), pygplates.XsInteger(101)),
+                (pygplates.PropertyName.create_gpml('integer2'), pygplates.XsInteger(102))],
+                # 'gpml:integer' is not a (GPGIM) recognised property name...
+                pygplates.VerifyInformationModel.no)
+        self.assertTrue(len(self.feature) == self.property_count + 3 and len(properties_added) == 2)
 
 
 class FeatureCollectionCase(unittest.TestCase):
@@ -125,6 +156,14 @@ class FeatureCollectionCase(unittest.TestCase):
         # The volcanoes file contains 4 volcanoes
         self.feature_count = 4
         self.feature_collection = pygplates.FeatureCollectionFileFormatRegistry().read(self.volcanoes_filename)
+
+    def test_construct(self):
+        # Create new empty feature collection.
+        new_feature_collection = pygplates.FeatureCollection()
+        self.assertEquals(len(new_feature_collection), 0)
+        # Create new feature collection from existing features.
+        new_feature_collection = pygplates.FeatureCollection([feature for feature in self.feature_collection])
+        self.assertEquals(len(new_feature_collection), len(self.feature_collection))
 
     def test_len(self):
         self.assertEquals(len(self.feature_collection), self.feature_count)
@@ -160,11 +199,20 @@ class FeatureCollectionCase(unittest.TestCase):
                 missing_feature = feature
                 break
         self.assertFalse(missing_feature)
+        # Should now raise ValueError.
+        self.assertRaises(ValueError, self.feature_collection.remove, feature_to_remove)
+        
+        # Add and remove again as a list.
+        self.feature_collection.add(feature_to_remove)
+        self.assertTrue(len(self.feature_collection) == self.feature_count)
+        # Duplicates list entries will be removed.
+        self.feature_collection.remove([feature_to_remove, feature_to_remove])
+        self.assertTrue(len(self.feature_collection) == self.feature_count - 1)
     
     def test_add(self):
         # Create a feature with a new unique feature ID.
         feature_with_integer_property = pygplates.Feature()
-        feature_with_integer_property.add_property(
+        feature_with_integer_property.add(
                 pygplates.PropertyName.create_gpml('integer'),
                 pygplates.XsInteger(100),
                 # 'gpml:integer' is not a (GPGIM) recognised property name...
@@ -181,6 +229,12 @@ class FeatureCollectionCase(unittest.TestCase):
         # Added feature should have one property.
         self.assertTrue(len(found_feature_with_integer_property) == 1)
         self.assertTrue(iter(found_feature_with_integer_property).next().get_value().get_integer() == 100)
+        
+        # Remove and add again as a list.
+        self.feature_collection.remove(feature_with_integer_property)
+        self.assertTrue(len(self.feature_collection) == self.feature_count)
+        self.feature_collection.add([feature_with_integer_property])
+        self.assertTrue(len(self.feature_collection) == self.feature_count + 1)
 
 
 class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):

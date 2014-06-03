@@ -13,27 +13,27 @@ FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 class GetFeaturePropertiesCase(unittest.TestCase):
     def setUp(self):
         self.feature = pygplates.Feature()
-        self.feature.add_property(
+        self.feature.add(
                 pygplates.PropertyName.create_gpml('reconstructionPlateId'),
                 pygplates.GpmlPlateId(1))
-        self.feature.add_property(
+        self.feature.add(
                 pygplates.PropertyName.create_gpml('conjugatePlateId'),
                 pygplates.GpmlPlateId(2))
-        self.feature.add_property(
+        self.feature.add(
                 pygplates.PropertyName.create_gpml('reconstructionPlateId'),
                 pygplates.GpmlPlateId(3))
-        self.feature.add_property(
+        self.feature.add(
                 pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'),
                 pygplates.XsInteger(300))
         # A time-dependent property excluding time 0Ma.
-        self.feature.add_property(
+        self.feature.add(
                 pygplates.PropertyName.create_gpml('plateId'),
                 pygplates.GpmlPiecewiseAggregation([
                     pygplates.GpmlTimeWindow(pygplates.GpmlPlateId(100), pygplates.GeoTimeInstant(10), pygplates.GeoTimeInstant(5)),
                     pygplates.GpmlTimeWindow(pygplates.GpmlPlateId(101), pygplates.GeoTimeInstant(20), pygplates.GeoTimeInstant(10))]),
                 # 'gpml:plateId' is not a (GPGIM) recognised property name...
                 pygplates.VerifyInformationModel.no)
-        self.feature.add_property(
+        self.feature.add(
                 pygplates.PropertyName.create_gpml('position'),
                 pygplates.GpmlConstantValue(pygplates.GmlPoint(pygplates.PointOnSphere(0,1,0))))
     

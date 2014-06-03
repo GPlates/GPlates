@@ -137,7 +137,7 @@ export_property_value()
 					"* :class:`GmlTimePeriod`\n"
 					"* :class:`GpmlConstantValue`\n"
 					"* :class:`GpmlFiniteRotation`\n"
-					"* :class:`GpmlFiniteRotationSlerp`\n"
+					//"* :class:`GpmlFiniteRotationSlerp`\n"
 					//"* :class:`GpmlHotSpotTrailMark`\n"
 					"* :class:`GpmlIrregularSampling`\n"
 					"* :class:`GpmlKeyValueDictionary`\n"
