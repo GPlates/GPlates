@@ -79,46 +79,6 @@ def get_geometry_from_property_value(property_value, geometry_on_sphere_type=Geo
     return visitor.geometry_on_sphere
 
 
-def get_feature_properties_by_name(feature, property_name, time=0):
-    """get_feature_properties_by_name(feature, property_name[, time=0]) -> list
-    Return the :class:`properties<Property>` of *feature* with property name *property_name*
-    and also return the property values extracted at the reconstruction *time*.
-    
-    :param feature: the feature to query the properties of
-    :type feature: :class:`Feature`
-    :param property_name: the property name to match
-    :type property_name: :class:`PropertyName`
-    :param time: the time to extract the property value
-    :type time: float or :class:`GeoTimeInstant`
-    :rtype: list of tuples of (:class:`Property`, :class:`PropertyValue`)
-    :return: the list of matching properties and their extracted property value at *time*
-    
-    This function uses :meth:`Property.get_value` to extract property values at *time*.
-    
-    This function essentially does the following:
-    ::
-    
-        get_feature_properties_by_name(feature, property_name, time=0):
-            properties = []
-            for property in feature:
-                if property.get_name() == property_name:
-                    property_value = property.get_value(time)
-                    if property_value:
-                        properties.append((property, property_value))
-            return properties
-    """
-    
-    properties = []
-    
-    for property in feature:
-        if property.get_name() == property_name:
-            property_value = property.get_value(time)
-            if property_value:
-                properties.append((property, property_value))
-    
-    return properties
-
-
 def get_feature_geometry_properties(feature, geometry_on_sphere_type=GeometryOnSphere):
     """get_feature_geometry_properties(feature[, geometry_on_sphere_type=GeometryOnSphere]) -> list
     Return the geometry :class:`properties<Property>` of *feature* with geometry types matching

@@ -50,32 +50,48 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 self.feature, pygplates.PropertyName.create_gpml('position2'), pygplates.PointOnSphere))
     
     def test_get_by_name(self):
-        properties = pygplates.get_feature_properties_by_name(
-                self.feature, pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'))
+        properties = self.feature.get(
+                pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'),
+                pygplates.PropertyQuery.all)
         self.assertTrue(len(properties) == 1)
-        self.assertTrue(properties[0][1].get_integer() == 300)
-        properties = pygplates.get_feature_properties_by_name(
-                self.feature, pygplates.PropertyName.create_gpml('reconstructionPlateId'))
+        self.assertTrue(properties[0].get_value().get_integer() == 300)
+        property_values = self.feature.get_value(
+                pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'),
+                property_query=pygplates.PropertyQuery.all)
+        self.assertTrue(len(property_values) == 1)
+        self.assertTrue(property_values[0].get_integer() == 300)
+        self.assertTrue(
+                self.feature.get_value(pygplates.PropertyName.create_gpml('subductionZoneSystemOrder')).get_integer() == 300)
+        properties = self.feature.get_value(
+                pygplates.PropertyName.create_gpml('reconstructionPlateId'),
+                property_query=pygplates.PropertyQuery.all)
         self.assertTrue(len(properties) == 2)
-        self.assertTrue(properties[0][1].get_plate_id() in (1,3))
-        self.assertTrue(properties[1][1].get_plate_id() in (1,3))
-        properties = pygplates.get_feature_properties_by_name(
-                self.feature, pygplates.PropertyName.create_gpml('conjugatePlateId'))
+        self.assertTrue(properties[0].get_plate_id() in (1,3))
+        self.assertTrue(properties[1].get_plate_id() in (1,3))
+        property = self.feature.get_value(
+                pygplates.PropertyName.create_gpml('reconstructionPlateId'),
+                property_query=pygplates.PropertyQuery.first)
+        self.assertTrue(property.get_plate_id() == 1)
+        properties = self.feature.get(
+                pygplates.PropertyName.create_gpml('conjugatePlateId'),
+                property_query=pygplates.PropertyQuery.all)
         self.assertTrue(len(properties) == 1)
-        self.assertTrue(properties[0][1].get_plate_id() == 2)
-        properties = pygplates.get_feature_properties_by_name(
-                self.feature, pygplates.PropertyName.create_gpml('plateId'))
-        self.assertFalse(properties)
-        properties = pygplates.get_feature_properties_by_name(
-                self.feature, pygplates.PropertyName.create_gpml('plateId'), 5)
-        self.assertTrue(len(properties) == 1)
-        self.assertTrue(properties[0][1].get_plate_id() == 100)
-        properties = pygplates.get_feature_properties_by_name(
-                self.feature, pygplates.PropertyName.create_gpml('plateId'), 15)
-        self.assertTrue(len(properties) == 1)
-        self.assertTrue(properties[0][1].get_plate_id() == 101)
-            # No property name existing in feature.
-        self.assertFalse(pygplates.get_feature_properties_by_name(self.feature, pygplates.PropertyName.create_gpml('not_exists')))
+        self.assertTrue(properties[0].get_value().get_plate_id() == 2)
+        property = self.feature.get(pygplates.PropertyName.create_gpml('plateId'))
+        self.assertTrue(property)
+        property_value = self.feature.get_value(pygplates.PropertyName.create_gpml('plateId'))
+        self.assertFalse(property_value)
+        property_value = self.feature.get_value(pygplates.PropertyName.create_gpml('plateId'), 5)
+        self.assertTrue(property_value)
+        self.assertTrue(property_value.get_plate_id() == 100)
+        self.assertTrue(property.get_value(5).get_plate_id() == 100)
+        property_value = self.feature.get_value(pygplates.PropertyName.create_gpml('plateId'), 15)
+        self.assertTrue(property_value)
+        self.assertTrue(property_value.get_plate_id() == 101)
+        # No property name existing in feature.
+        self.assertFalse(self.feature.get(pygplates.PropertyName.create_gpml('not_exists')))
+        self.assertFalse(self.feature.get(pygplates.PropertyName.create_gpml('not_exists'), pygplates.PropertyQuery.all))
+        self.assertFalse(self.feature.get_value(pygplates.PropertyName.create_gpml('not_exists')))
 
 
 class GetGeometryFromPropertyValueCase(unittest.TestCase):

@@ -146,12 +146,12 @@ export_cpp_python_api()
 	export_feature_collection_file_format_registry();
 
 	// model namespace
+	export_geo_time_instant(); // Must be called before 'export_feature()'.
 	export_ids(); // Must be called before 'export_feature()'.
-	export_information_model();
+	export_information_model(); // Must be called before 'export_feature()'.
 	export_qualified_xml_names(); // Must be called before 'export_feature()'.
 	export_feature();
 	export_feature_collection();
-	export_geo_time_instant();
 	export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
 	export_old_feature_collection();
 	export_property_values();

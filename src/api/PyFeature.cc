@@ -33,6 +33,7 @@
 #include "PyInformationModel.h"
 #include "PythonConverterUtils.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
 // This is not included by <boost/python.hpp>.
@@ -47,6 +48,8 @@
 #include "model/RevisionId.h"
 #include "model/TopLevelProperty.h"
 
+#include "property-values/GeoTimeInstant.h"
+
 
 #if !defined(GPLATES_NO_PYTHON)
 
@@ -55,6 +58,20 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+	/**
+	 * Enumeration to determine how properties are returned.
+	 */
+	namespace PropertyQuery
+	{
+		enum Value
+		{
+			EXACTLY_ONE, // Returns a single element only if there's one match to the query.
+			FIRST,       // Returns the first element that matches the query.
+			ALL          // Returns all elements that matches the query.
+		};
+	};
+
+
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
 	feature_handle_create(
 			boost::optional<GPlatesModel::FeatureType> feature_type,
@@ -336,12 +353,141 @@ namespace GPlatesApi
 			bp::throw_error_already_set();
 		}
 	}
+
+	bp::object
+	feature_handle_get_property(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			PropertyQuery::Value property_query)
+	{
+		if (property_query == PropertyQuery::EXACTLY_ONE)
+		{
+			boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> property;
+
+			// Search for the property name.
+			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
+			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
+			for ( ; properties_iter != properties_end; ++properties_iter)
+			{
+				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+				if (property_name == feature_property->get_property_name())
+				{
+					if (property)
+					{
+						// Found two properties with same name but client expecting only one.
+						return bp::object()/*Py_None*/;
+					}
+
+					property = feature_property;
+				}
+			}
+
+			// Return exactly one found property (if found).
+			if (property)
+			{
+				return bp::object(property.get());
+			}
+		}
+		else if (property_query == PropertyQuery::FIRST)
+		{
+			// Search for the property name.
+			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
+			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
+			for ( ; properties_iter != properties_end; ++properties_iter)
+			{
+				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+				if (property_name == feature_property->get_property_name())
+				{
+					// Return first found.
+					return bp::object(feature_property);
+				}
+			}
+		}
+		else
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					property_query == PropertyQuery::ALL,
+					GPLATES_ASSERTION_SOURCE);
+
+			bp::list properties;
+
+			// Search for the property name.
+			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
+			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
+			for ( ; properties_iter != properties_end; ++properties_iter)
+			{
+				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+				if (property_name == feature_property->get_property_name())
+				{
+					properties.append(feature_property);
+				}
+			}
+
+			// Returned list could be empty if no properties matched.
+			return properties;
+		}
+
+		return bp::object()/*Py_None*/;
+	}
+
+	bp::object
+	feature_handle_get_property_value(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			const GPlatesPropertyValues::GeoTimeInstant &time,
+			PropertyQuery::Value property_query)
+	{
+		bp::object properties_object =
+				feature_handle_get_property(feature_handle, property_name, property_query);
+		if (properties_object == bp::object()/*Py_None*/)
+		{
+			return bp::object()/*Py_None*/;
+		}
+
+		if (property_query == PropertyQuery::ALL)
+		{
+			// We're expecting a list for 'PropertyQuery::ALL'.
+			bp::list property_values;
+
+			const unsigned int num_properties = bp::len(properties_object);
+			for (unsigned int n = 0; n < num_properties; ++n)
+			{
+				// Call python since Property.get_value is implemented in python code...
+				bp::object property_value = properties_object[n].attr("get_value")(time);
+				// Only append to list of property values if not Py_None;
+				if (property_value != bp::object())
+				{
+					property_values.append(property_value);
+				}
+			}
+
+			// Returned list could be empty if no properties matched, or 'time' outside
+			// range of time-dependent properties.
+			return property_values;
+		}
+		else
+		{
+			// Call python since Property.get_value is implemented in python code...
+			bp::object property_value = properties_object.attr("get_value")(time);
+			// This could be Py_None...
+			return property_value;
+		}
+	}
 }
 
 
 void
 export_feature()
 {
+	// An enumeration nested within 'pygplates (ie, current) module.
+	bp::enum_<GPlatesApi::PropertyQuery::Value>("PropertyQuery")
+			.value("exactly_one", GPlatesApi::PropertyQuery::EXACTLY_ONE)
+			.value("first", GPlatesApi::PropertyQuery::FIRST)
+			.value("all", GPlatesApi::PropertyQuery::ALL);
+
 	//
 	// Feature - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -494,7 +640,7 @@ export_feature()
 				"be removed. Any specified :class:`PropertyName` that does not exist in this feature is ignored. "
 				"However if any specified :class:`Property` is not currently a property in this feature "
 				"then the ``ValueError`` exception is raised - note that the same property *instance* must "
-				"have previously been added (in other words the property values are not compared - "
+				"have previously been added (in other words the property *values* are not compared - "
 				"it actually looks for the same property *instance*).\n"
 				"\n"
 				"  ::\n"
@@ -503,6 +649,85 @@ export_feature()
 				"    feature.remove([property_name1, property_name2])\n"
 				"    feature.remove(property)\n"
 				"    feature.remove([property1, property2])\n")
+		.def("get",
+				&GPlatesApi::feature_handle_get_property,
+				(bp::arg("property_name"),
+						bp::arg("property_query") = GPlatesApi::PropertyQuery::EXACTLY_ONE),
+				"get(property_name, [property_query=PropertyQuery.exactly_one]) "
+				"-> Property or list or None\n"
+				"  Returns the one or more properties named *property_name* from this feature.\n"
+				"\n"
+				"  :param property_name: the name of the property (or properties) to get\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param property_query: whether to return exactly one property, the first property or "
+				"all matching properties\n"
+				"  :type property_query: *PropertyQuery.exactly_one*, *PropertyQuery.first* or *PropertyQuery.all*\n"
+				"  :rtype: :class:`Property`, or ``list`` of :class:`Property`, or None\n"
+				"\n"
+				"  The following table maps *property_query* values to return values:\n"
+				"\n"
+				"  ======================================= ==============\n"
+				"  PropertyQuery Value                     Description\n"
+				"  ======================================= ==============\n"
+				"  exactly_one                             Returns a :class:`Property` only if "
+				"*property_name* matches exactly one property, otherwise ``None`` is returned.\n"
+				"  first                                   Returns the first :class:`Property` named "
+				"*property_name* - however note that a feature is an *unordered* collection of "
+				"properties. If no properties match then ``None`` is returned.\n"
+				"  all                                     Returns a ``list`` of :class:`properties<Property>` "
+				"named *property_name*. If no properties match then the returned list will be empty.\n"
+				"  ======================================= ==============\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    exactly_one_property = feature.get(property_name)\n"
+				"    first_property = feature.get(property_name, PropertyQuery.first)\n"
+				"    all_properties = feature.get(property_name, PropertyQuery.all)\n")
+		.def("get_value",
+				&GPlatesApi::feature_handle_get_property_value,
+				(bp::arg("property_name"),
+						bp::arg("time") = GPlatesPropertyValues::GeoTimeInstant(0),
+						bp::arg("property_query") = GPlatesApi::PropertyQuery::EXACTLY_ONE),
+				"get_value(property_name, [time=0], [property_query=PropertyQuery.exactly_one]) "
+				"-> PropertyValue or list or None\n"
+				"  Returns the one or more values of properties named *property_name* from this feature.\n"
+				"\n"
+				"  :param property_name: the name of the property (or properties) to get\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param time: the time to extract value (defaults to present day)\n"
+				"  :type time: float or :class:`GeoTimeInstant`\n"
+				"  :param property_query: whether to return exactly one property, the first property or "
+				"all matching properties\n"
+				"  :type property_query: *PropertyQuery.exactly_one*, *PropertyQuery.first* or *PropertyQuery.all*\n"
+				"  :rtype: :class:`PropertyValue`, or ``list`` of :class:`PropertyValue`, or None\n"
+				"\n"
+				"  This method is essentially the same as :meth:`get` except it also calls "
+				":meth:`Property.get_value` on each property.\n"
+				"\n"
+				"  The following table maps *property_query* values to return values:\n"
+				"\n"
+				"  ======================================= ==============\n"
+				"  PropertyQuery Value                     Description\n"
+				"  ======================================= ==============\n"
+				"  exactly_one                             Returns a :class:`value<PropertyValue>` only if "
+				"*property_name* matches exactly one property, otherwise ``None`` is returned. "
+				"Note that ``None`` can still be returned, even if exactly one property matches, "
+				"due to :meth:`Property.get_value` returning ``None``.\n"
+				"  first                                   Returns the :class:`value<PropertyValue>` "
+				"of the first property named *property_name* - however note that a feature "
+				"is an *unordered* collection of properties. If no properties match then ``None`` is returned. "
+				"Note that ``None`` can still be returned for the first matching property due to "
+				":meth:`Property.get_value` returning ``None``.\n"
+				"  all                                     Returns a ``list`` of :class:`values<PropertyValue>` "
+				"of properties named *property_name*. If no properties match then the returned list will be empty. "
+				"Any matching properties where :meth:`Property.get_value` returns ``None`` will not be added to the list.\n"
+				"  ======================================= ==============\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    exactly_one_property_value = feature.get_value(property_name)\n"
+				"    first_property_value = feature.get_value(property_name, property_query=PropertyQuery.first)\n"
+				"    all_property_values = feature.get_value(property_name, property_query=PropertyQuery.all)\n")
 		.def("get_feature_type",
 				&GPlatesModel::FeatureHandle::feature_type,
 				bp::return_value_policy<bp::copy_const_reference>(),
