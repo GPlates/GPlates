@@ -61,7 +61,7 @@ namespace GPlatesApi
 	/**
 	 * Enumeration to determine how properties are returned.
 	 */
-	namespace PropertyQuery
+	namespace PropertyReturn
 	{
 		enum Value
 		{
@@ -357,10 +357,18 @@ namespace GPlatesApi
 	bp::object
 	feature_handle_get_property(
 			GPlatesModel::FeatureHandle &feature_handle,
-			const GPlatesModel::PropertyName &property_name,
-			PropertyQuery::Value property_query)
+			bp::object property_query_object,
+			PropertyReturn::Value property_return)
 	{
-		if (property_query == PropertyQuery::EXACTLY_ONE)
+		// See if property query is a property name.
+		boost::optional<GPlatesModel::PropertyName> property_name;
+		bp::extract<GPlatesModel::PropertyName> extract_property_name(property_query_object);
+		if (extract_property_name.check())
+		{
+			property_name = extract_property_name();
+		}
+
+		if (property_return == PropertyReturn::EXACTLY_ONE)
 		{
 			boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> property;
 
@@ -371,7 +379,13 @@ namespace GPlatesApi
 			{
 				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
 
-				if (property_name == feature_property->get_property_name())
+				// See if current property matches the query.
+				const bool property_query_result = property_name
+					? (property_name.get() == feature_property->get_property_name())
+					// Property query is a callable predicate...
+					: bp::extract<bool>(property_query_object(feature_property));
+
+				if (property_query_result)
 				{
 					if (property)
 					{
@@ -389,7 +403,7 @@ namespace GPlatesApi
 				return bp::object(property.get());
 			}
 		}
-		else if (property_query == PropertyQuery::FIRST)
+		else if (property_return == PropertyReturn::FIRST)
 		{
 			// Search for the property name.
 			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
@@ -398,7 +412,13 @@ namespace GPlatesApi
 			{
 				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
 
-				if (property_name == feature_property->get_property_name())
+				// See if current property matches the query.
+				const bool property_query_result = property_name
+					? (property_name.get() == feature_property->get_property_name())
+					// Property query is a callable predicate...
+					: bp::extract<bool>(property_query_object(feature_property));
+
+				if (property_query_result)
 				{
 					// Return first found.
 					return bp::object(feature_property);
@@ -408,7 +428,7 @@ namespace GPlatesApi
 		else
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					property_query == PropertyQuery::ALL,
+					property_return == PropertyReturn::ALL,
 					GPLATES_ASSERTION_SOURCE);
 
 			bp::list properties;
@@ -420,7 +440,13 @@ namespace GPlatesApi
 			{
 				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
 
-				if (property_name == feature_property->get_property_name())
+				// See if current property matches the query.
+				const bool property_query_result = property_name
+					? (property_name.get() == feature_property->get_property_name())
+					// Property query is a callable predicate...
+					: bp::extract<bool>(property_query_object(feature_property));
+
+				if (property_query_result)
 				{
 					properties.append(feature_property);
 				}
@@ -436,20 +462,20 @@ namespace GPlatesApi
 	bp::object
 	feature_handle_get_property_value(
 			GPlatesModel::FeatureHandle &feature_handle,
-			const GPlatesModel::PropertyName &property_name,
+			bp::object property_query_object,
 			const GPlatesPropertyValues::GeoTimeInstant &time,
-			PropertyQuery::Value property_query)
+			PropertyReturn::Value property_return)
 	{
 		bp::object properties_object =
-				feature_handle_get_property(feature_handle, property_name, property_query);
+				feature_handle_get_property(feature_handle, property_query_object, property_return);
 		if (properties_object == bp::object()/*Py_None*/)
 		{
 			return bp::object()/*Py_None*/;
 		}
 
-		if (property_query == PropertyQuery::ALL)
+		if (property_return == PropertyReturn::ALL)
 		{
-			// We're expecting a list for 'PropertyQuery::ALL'.
+			// We're expecting a list for 'PropertyReturn::ALL'.
 			bp::list property_values;
 
 			const unsigned int num_properties = bp::len(properties_object);
@@ -483,10 +509,10 @@ void
 export_feature()
 {
 	// An enumeration nested within 'pygplates (ie, current) module.
-	bp::enum_<GPlatesApi::PropertyQuery::Value>("PropertyQuery")
-			.value("exactly_one", GPlatesApi::PropertyQuery::EXACTLY_ONE)
-			.value("first", GPlatesApi::PropertyQuery::FIRST)
-			.value("all", GPlatesApi::PropertyQuery::ALL);
+	bp::enum_<GPlatesApi::PropertyReturn::Value>("PropertyReturn")
+			.value("exactly_one", GPlatesApi::PropertyReturn::EXACTLY_ONE)
+			.value("first", GPlatesApi::PropertyReturn::FIRST)
+			.value("all", GPlatesApi::PropertyReturn::ALL);
 
 	//
 	// Feature - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
@@ -651,83 +677,101 @@ export_feature()
 				"    feature.remove([property1, property2])\n")
 		.def("get",
 				&GPlatesApi::feature_handle_get_property,
-				(bp::arg("property_name"),
-						bp::arg("property_query") = GPlatesApi::PropertyQuery::EXACTLY_ONE),
-				"get(property_name, [property_query=PropertyQuery.exactly_one]) "
+				(bp::arg("property_query"),
+						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE),
+				"get(property_query, [property_return=PropertyReturn.exactly_one]) "
 				"-> Property or list or None\n"
-				"  Returns the one or more properties named *property_name* from this feature.\n"
+				"  Returns the one or more properties matching a property name or predicate.\n"
 				"\n"
-				"  :param property_name: the name of the property (or properties) to get\n"
-				"  :type property_name: :class:`PropertyName`\n"
-				"  :param property_query: whether to return exactly one property, the first property or "
+				"  :param property_query: the property name (or predicate function) of the property (or properties) to get\n"
+				"  :type property_query: :class:`PropertyName`, or callable accepting single :class:`Property` argument\n"
+				"  :param property_return: whether to return exactly one property, the first property or "
 				"all matching properties\n"
-				"  :type property_query: *PropertyQuery.exactly_one*, *PropertyQuery.first* or *PropertyQuery.all*\n"
+				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
 				"  :rtype: :class:`Property`, or ``list`` of :class:`Property`, or None\n"
 				"\n"
-				"  The following table maps *property_query* values to return values:\n"
+				"  The following table maps *property_return* values to return values:\n"
 				"\n"
 				"  ======================================= ==============\n"
-				"  PropertyQuery Value                     Description\n"
+				"  PropertyReturn Value                     Description\n"
 				"  ======================================= ==============\n"
 				"  exactly_one                             Returns a :class:`Property` only if "
-				"*property_name* matches exactly one property, otherwise ``None`` is returned.\n"
-				"  first                                   Returns the first :class:`Property` named "
-				"*property_name* - however note that a feature is an *unordered* collection of "
+				"*property_query* matches exactly one property, otherwise ``None`` is returned.\n"
+				"  first                                   Returns the first :class:`Property` that matches "
+				"*property_query* - however note that a feature is an *unordered* collection of "
 				"properties. If no properties match then ``None`` is returned.\n"
 				"  all                                     Returns a ``list`` of :class:`properties<Property>` "
-				"named *property_name*. If no properties match then the returned list will be empty.\n"
+				"matching *property_query*. If no properties match then the returned list will be empty.\n"
 				"  ======================================= ==============\n"
 				"\n"
 				"  ::\n"
 				"\n"
+				"    property_name = pygplates.PropertyName.create_gml('validTime')\n"
 				"    exactly_one_property = feature.get(property_name)\n"
-				"    first_property = feature.get(property_name, PropertyQuery.first)\n"
-				"    all_properties = feature.get(property_name, PropertyQuery.all)\n")
+				"    first_property = feature.get(property_name, PropertyReturn.first)\n"
+				"    all_properties = feature.get(property_name, PropertyReturn.all)\n"
+				"    \n"
+				"    # A predicate function that returns true if property is 'gpml:reconstructionPlateId' "
+				"with value less than 700.\n"
+				"    def recon_plate_id_less_700(property):\n"
+				"      if property.get_name() == pygplates.PropertyName.create_gpml('reconstructionPlateId'):\n"
+				"         return property.get_value().get_plate_id() < 700\n"
+				"    \n"
+				"    recon_plate_id_less_700_property = feature.get(recon_plate_id_less_700)\n"
+				"    assert(recon_plate_id_less_700_property.get_value().get_plate_id() < 700)\n")
 		.def("get_value",
 				&GPlatesApi::feature_handle_get_property_value,
-				(bp::arg("property_name"),
+				(bp::arg("property_query"),
 						bp::arg("time") = GPlatesPropertyValues::GeoTimeInstant(0),
-						bp::arg("property_query") = GPlatesApi::PropertyQuery::EXACTLY_ONE),
-				"get_value(property_name, [time=0], [property_query=PropertyQuery.exactly_one]) "
+						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE),
+				"get_value(property_query, [time=0], [property_return=PropertyReturn.exactly_one]) "
 				"-> PropertyValue or list or None\n"
-				"  Returns the one or more values of properties named *property_name* from this feature.\n"
+				"  Returns the one or more values of properties matching a property name or predicate.\n"
 				"\n"
-				"  :param property_name: the name of the property (or properties) to get\n"
-				"  :type property_name: :class:`PropertyName`\n"
+				"  :param property_query: the property name (or predicate function) of the property (or properties) to get\n"
+				"  :type property_query: :class:`PropertyName`, or callable accepting single :class:`Property` argument\n"
 				"  :param time: the time to extract value (defaults to present day)\n"
 				"  :type time: float or :class:`GeoTimeInstant`\n"
-				"  :param property_query: whether to return exactly one property, the first property or "
+				"  :param property_return: whether to return exactly one property, the first property or "
 				"all matching properties\n"
-				"  :type property_query: *PropertyQuery.exactly_one*, *PropertyQuery.first* or *PropertyQuery.all*\n"
+				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
 				"  :rtype: :class:`PropertyValue`, or ``list`` of :class:`PropertyValue`, or None\n"
 				"\n"
 				"  This method is essentially the same as :meth:`get` except it also calls "
 				":meth:`Property.get_value` on each property.\n"
 				"\n"
-				"  The following table maps *property_query* values to return values:\n"
+				"  The following table maps *property_return* values to return values:\n"
 				"\n"
 				"  ======================================= ==============\n"
-				"  PropertyQuery Value                     Description\n"
+				"  PropertyReturn Value                     Description\n"
 				"  ======================================= ==============\n"
 				"  exactly_one                             Returns a :class:`value<PropertyValue>` only if "
-				"*property_name* matches exactly one property, otherwise ``None`` is returned. "
+				"*property_query* matches exactly one property, otherwise ``None`` is returned. "
 				"Note that ``None`` can still be returned, even if exactly one property matches, "
 				"due to :meth:`Property.get_value` returning ``None``.\n"
 				"  first                                   Returns the :class:`value<PropertyValue>` "
-				"of the first property named *property_name* - however note that a feature "
+				"of the first property matching *property_query* - however note that a feature "
 				"is an *unordered* collection of properties. If no properties match then ``None`` is returned. "
 				"Note that ``None`` can still be returned for the first matching property due to "
 				":meth:`Property.get_value` returning ``None``.\n"
 				"  all                                     Returns a ``list`` of :class:`values<PropertyValue>` "
-				"of properties named *property_name*. If no properties match then the returned list will be empty. "
+				"of properties matching *property_query*. If no properties match then the returned list will be empty. "
 				"Any matching properties where :meth:`Property.get_value` returns ``None`` will not be added to the list.\n"
 				"  ======================================= ==============\n"
 				"\n"
 				"  ::\n"
 				"\n"
+				"    property_name = pygplates.PropertyName.create_gml('validTime')\n"
 				"    exactly_one_property_value = feature.get_value(property_name)\n"
-				"    first_property_value = feature.get_value(property_name, property_query=PropertyQuery.first)\n"
-				"    all_property_values = feature.get_value(property_name, property_query=PropertyQuery.all)\n")
+				"    first_property_value = feature.get_value(property_name, property_return=PropertyReturn.first)\n"
+				"    all_property_values = feature.get_value(property_name, property_return=PropertyReturn.all)\n"
+				"    \n"
+				"    # Using a predicate function that returns true if property is 'gpml:reconstructionPlateId' "
+				"with value less than 700.\n"
+				"    recon_plate_id_less_700_property_value = feature.get_value(\n"
+				"        lambda property: property.get_name() == pygplates.PropertyName.create_gpml('reconstructionPlateId') and\n"
+				"                         property.get_value().get_plate_id() < 700)\n"
+				"    assert(recon_plate_id_less_700_property_value.get_plate_id() < 700)\n")
 		.def("get_feature_type",
 				&GPlatesModel::FeatureHandle::feature_type,
 				bp::return_value_policy<bp::copy_const_reference>(),
