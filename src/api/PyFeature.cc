@@ -318,19 +318,19 @@ namespace GPlatesApi
 			const bp::object property_query = *property_queries_iter;
 
 			// See if a property name.
-			bp::extract<GPlatesModel::PropertyName> extract_property_name(property_query);
-			if (extract_property_name.check())
+			bp::extract<GPlatesModel::PropertyName> extract_property_name_element(property_query);
+			if (extract_property_name_element.check())
 			{
-				const GPlatesModel::PropertyName property_name = extract_property_name();
+				const GPlatesModel::PropertyName property_name = extract_property_name_element();
 				property_names_seq.push_back(property_name);
 				continue;
 			}
 
 			// See if a property.
-			bp::extract<GPlatesModel::TopLevelProperty::non_null_ptr_type> extract_property(property_query);
-			if (extract_property.check())
+			bp::extract<GPlatesModel::TopLevelProperty::non_null_ptr_type> extract_property_element(property_query);
+			if (extract_property_element.check())
 			{
-				GPlatesModel::TopLevelProperty::non_null_ptr_type property = extract_property();
+				GPlatesModel::TopLevelProperty::non_null_ptr_type property = extract_property_element();
 				properties_seq.push_back(property);
 				continue;
 			}

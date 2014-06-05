@@ -13,10 +13,10 @@ import unittest
 # TODO: Get CMake to specify these paths using its 'configure_file' command.
 
 # Path used for linux/MacOS CMake builds that are 'in-place' (same source and build directories)...
-PYGPLATES_PATH = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'bin')
+#PYGPLATES_PATH = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'bin')
 
 # An example path used for linux/MacOS CMake builds where the source and builds directories differ...
-#PYGPLATES_PATH = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'python-api-2013-jul-25-build', 'bin')
+PYGPLATES_PATH = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'python-api-2013-jul-25-build', 'bin')
 
 # An example path used for Windows CMake builds...
 #PYGPLATES_PATH = "C:\\Users\\John\\Development\\Usyd\\gplates\\svn\\build\\python-api-2013-jul-25\\bin\\profilegplates"
