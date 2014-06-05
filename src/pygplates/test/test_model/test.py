@@ -118,6 +118,28 @@ class FeatureCase(unittest.TestCase):
                 pygplates.PropertyName.create_gpml('reconstructionPlateId')])
         self.assertTrue(len(self.feature) == self.property_count - 3)
     
+    def test_remove_properties_by_predicate(self):
+        self.feature.add(
+                pygplates.PropertyName.create_gml('name'),
+                pygplates.XsString("property's name"))
+        self.assertTrue(len(self.feature) == self.property_count + 1)
+        # Should remove newly added and previously added 'name' properties.
+        self.feature.remove(lambda property: property.get_name() == pygplates.PropertyName.create_gml('name'))
+        self.assertTrue(len(self.feature) == self.property_count - 1)
+        # Should not be able to find either now.
+        missing_name_property = None
+        for property in self.feature:
+            if property.get_name() == pygplates.PropertyName.create_gml('name'):
+                missing_name_property = property
+                break
+        self.assertFalse(missing_name_property)
+        
+        # Remove using multiple property queries.
+        self.feature.remove([
+                lambda property: property.get_name() == pygplates.PropertyName.create_gml('validTime'),
+                pygplates.PropertyName.create_gpml('reconstructionPlateId')])
+        self.assertTrue(len(self.feature) == self.property_count - 3)
+    
     def test_add(self):
         integer_property = self.feature.add(
                 pygplates.PropertyName.create_gpml('integer'),

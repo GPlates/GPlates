@@ -13,6 +13,7 @@ Contents:
 
 .. NOTE: We need to manually list any classes/functions that we want an autosummary for.
 .. autosummary::
+	:nosignatures:
 
 	pygplates
 	pygplates.EnumerationType

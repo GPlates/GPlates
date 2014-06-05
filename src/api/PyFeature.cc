@@ -202,10 +202,10 @@ namespace GPlatesApi
 	void
 	feature_handle_remove(
 			GPlatesModel::FeatureHandle &feature_handle,
-			bp::object properties_object)
+			bp::object property_query_object)
 	{
 		// See if a single property name.
-		bp::extract<GPlatesModel::PropertyName> extract_property_name(properties_object);
+		bp::extract<GPlatesModel::PropertyName> extract_property_name(property_query_object);
 		if (extract_property_name.check())
 		{
 			const GPlatesModel::PropertyName property_name = extract_property_name();
@@ -228,7 +228,7 @@ namespace GPlatesApi
 		}
 
 		// See if a single property.
-		bp::extract<GPlatesModel::TopLevelProperty::non_null_ptr_type> extract_property(properties_object);
+		bp::extract<GPlatesModel::TopLevelProperty::non_null_ptr_type> extract_property(property_query_object);
 		if (extract_property.check())
 		{
 			GPlatesModel::TopLevelProperty::non_null_ptr_type property = extract_property();
@@ -255,24 +255,148 @@ namespace GPlatesApi
 			bp::throw_error_already_set();
 		}
 
-		// Try a sequence of property names next.
-		typedef std::vector<GPlatesModel::PropertyName> property_names_seq_type;
-		property_names_seq_type property_names_seq;
+		// See if a single predicate callable.
+		if (PyObject_HasAttrString(property_query_object.ptr(), "__call__"))
+		{
+			// Search for the property using a predicate callable.
+			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
+			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
+			for ( ; properties_iter != properties_end; ++properties_iter)
+			{
+				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+				// See if current property matches the query.
+				// Property query is a callable predicate...
+				if (bp::extract<bool>(property_query_object(feature_property)))
+				{
+					// Note that removing a property does not prevent us from incrementing to the next property.
+					feature_handle.remove(properties_iter);
+				}
+			}
+
+			return;
+		}
+
+		const char *type_error_string = "Expected PropertyName, or predicate, or Property, "
+				"or a sequence of any combination of them";
+
+		// Try an iterable sequence next.
+		typedef std::vector<bp::object> property_queries_seq_type;
+		property_queries_seq_type property_queries_seq;
 		try
 		{
-			// Begin/end iterators over the python property names sequence.
-			bp::stl_input_iterator<GPlatesModel::PropertyName>
-					property_names_begin(properties_object),
-					property_names_end;
+			// Begin/end iterators over the python property queries sequence.
+			bp::stl_input_iterator<bp::object>
+					property_queries_begin(property_query_object),
+					property_queries_end;
 
 			// Copy into the vector.
-			std::copy(property_names_begin, property_names_end, std::back_inserter(property_names_seq));
+			std::copy(property_queries_begin, property_queries_end, std::back_inserter(property_queries_seq));
+		}
+		catch (const boost::python::error_already_set &)
+		{
+			PyErr_Clear();
 
-			// Remove duplicates.
-			property_names_seq.erase(
-					std::unique(property_names_seq.begin(), property_names_seq.end()),
-					property_names_seq.end());
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
 
+		typedef std::vector<GPlatesModel::PropertyName> property_names_seq_type;
+		property_names_seq_type property_names_seq;
+
+		typedef std::vector<GPlatesModel::TopLevelProperty::non_null_ptr_type> properties_seq_type;
+		properties_seq_type properties_seq;
+
+		typedef std::vector<bp::object> predicates_seq_type;
+		predicates_seq_type predicates_seq;
+
+		// Extract the different property query types into their own arrays.
+		property_queries_seq_type::const_iterator property_queries_iter = property_queries_seq.begin();
+		property_queries_seq_type::const_iterator property_queries_end = property_queries_seq.end();
+		for ( ; property_queries_iter != property_queries_end; ++property_queries_iter)
+		{
+			const bp::object property_query = *property_queries_iter;
+
+			// See if a property name.
+			bp::extract<GPlatesModel::PropertyName> extract_property_name(property_query);
+			if (extract_property_name.check())
+			{
+				const GPlatesModel::PropertyName property_name = extract_property_name();
+				property_names_seq.push_back(property_name);
+				continue;
+			}
+
+			// See if a property.
+			bp::extract<GPlatesModel::TopLevelProperty::non_null_ptr_type> extract_property(property_query);
+			if (extract_property.check())
+			{
+				GPlatesModel::TopLevelProperty::non_null_ptr_type property = extract_property();
+				properties_seq.push_back(property);
+				continue;
+			}
+
+			// See if a predicate callable.
+			if (PyObject_HasAttrString(property_query.ptr(), "__call__"))
+			{
+				predicates_seq.push_back(property_query);
+				continue;
+			}
+
+			// Unexpected property query type so raise an error.
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
+
+		//
+		// Process properties first to avoid unnecessarily throwing ValueError exception.
+		//
+
+		// Remove duplicate property pointers.
+		properties_seq.erase(
+				std::unique(properties_seq.begin(), properties_seq.end()),
+				properties_seq.end());
+
+		if (!properties_seq.empty())
+		{
+			// Search for the properties.
+			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
+			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
+			for ( ; properties_iter != properties_end; ++properties_iter)
+			{
+				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+				// Compare pointers not pointed-to-objects.
+				properties_seq_type::iterator properties_seq_iter =
+						std::find(properties_seq.begin(), properties_seq.end(), feature_property);
+				if (properties_seq_iter != properties_seq.end())
+				{
+					// Remove the property from the feature.
+					// Note that removing a property does not prevent us from incrementing to the next property.
+					feature_handle.remove(properties_iter);
+					// Record that we have removed this property.
+					properties_seq.erase(properties_seq_iter);
+				}
+			}
+
+			// Raise the 'ValueError' python exception if not all properties were found.
+			if (!properties_seq.empty())
+			{
+				PyErr_SetString(PyExc_ValueError, "Not all property instances were found");
+				bp::throw_error_already_set();
+			}
+		}
+
+		//
+		// Process property names next.
+		//
+
+		// Remove duplicate property names.
+		property_names_seq.erase(
+				std::unique(property_names_seq.begin(), property_names_seq.end()),
+				property_names_seq.end());
+
+		if (!property_names_seq.empty())
+		{
 			// Search for the property names.
 			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
 			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
@@ -291,66 +415,38 @@ namespace GPlatesApi
 					feature_handle.remove(properties_iter);
 				}
 			}
-
-			return;
-		}
-		catch (const boost::python::error_already_set &)
-		{
-			PyErr_Clear();
 		}
 
-		// Try a sequence of properties next.
-		typedef std::vector<GPlatesModel::TopLevelProperty::non_null_ptr_type> properties_seq_type;
-		properties_seq_type properties_seq;
-		try
+		//
+		// Process predicate callables next.
+		//
+
+		if (!predicates_seq.empty())
 		{
-			// Begin/end iterators over the python properties sequence.
-			bp::stl_input_iterator<GPlatesModel::TopLevelProperty::non_null_ptr_type>
-					properties_begin(properties_object),
-					properties_end;
-
-			// Copy into the vector.
-			std::copy(properties_begin, properties_end, std::back_inserter(properties_seq));
-
-			// Remove duplicate property pointers.
-			properties_seq.erase(
-					std::unique(properties_seq.begin(), properties_seq.end()),
-					properties_seq.end());
-		}
-		catch (const boost::python::error_already_set &)
-		{
-			PyErr_Clear();
-
-			PyErr_SetString(PyExc_TypeError,
-					"Expected PropertyName or Property or sequence of PropertyName's or sequence of Property's");
-			bp::throw_error_already_set();
-		}
-
-		// Search for the properties.
-		GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
-		GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
-		for ( ; properties_iter != properties_end; ++properties_iter)
-		{
-			GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
-
-			// Compare pointers not pointed-to-objects.
-			properties_seq_type::iterator properties_seq_iter =
-					std::find(properties_seq.begin(), properties_seq.end(), feature_property);
-			if (properties_seq_iter != properties_seq.end())
+			// Search for matching predicate callables.
+			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
+			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
+			for ( ; properties_iter != properties_end; ++properties_iter)
 			{
-				// Remove the property from the feature.
-				// Note that removing a property does not prevent us from incrementing to the next property.
-				feature_handle.remove(properties_iter);
-				// Record that we have removed this property.
-				properties_seq.erase(properties_seq_iter);
-			}
-		}
+				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
 
-		// Raise the 'ValueError' python exception if not all properties were found.
-		if (!properties_seq.empty())
-		{
-			PyErr_SetString(PyExc_ValueError, "Not all property instances were found");
-			bp::throw_error_already_set();
+				// Test each predicate callable.
+				predicates_seq_type::const_iterator predicates_seq_iter = predicates_seq.begin();
+				predicates_seq_type::const_iterator predicates_seq_end = predicates_seq.end();
+				for ( ; predicates_seq_iter != predicates_seq_end; ++predicates_seq_iter)
+				{
+					bp::object predicate = *predicates_seq_iter;
+
+					// See if current property matches the query.
+					// Property query is a callable predicate...
+					if (bp::extract<bool>(predicate(feature_property)))
+					{
+						// Note that removing a property does not prevent us from incrementing to the next property.
+						feature_handle.remove(properties_iter);
+						break;
+					}
+				}
+			}
 		}
 	}
 
@@ -653,42 +749,70 @@ export_feature()
 				"recognised by the GPlates Geological Information Model (GPGIM).\n")
 		.def("remove",
 				&GPlatesApi::feature_handle_remove,
-				(bp::arg("properties")),
-				"remove(properties)\n"
+				(bp::arg("property_query")),
+				"remove(property_query)\n"
 				"  Removes one or more properties from this feature.\n"
 				"\n"
-				"  :param properties: one or more property names or property instances\n"
-				"  :type properties: :class:`PropertyName` or :class:`Property` or a sequence "
-				"(eg, ``list`` or ``tuple``) of :class:`PropertyName` or a sequence of :class:`Property`\n"
+				"  :param property_query: one or more property names, predicate functions or property instances "
+				"that determine which properties to remove\n"
+				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument), "
+				"or :class:`Property`, or a sequence (eg, ``list`` or ``tuple``) of any combination of them\n"
 				"  :raises: ValueError if any specified :class:`Property` is not currently a property in this feature\n"
 				"\n"
-				"  All feature properties matching each :class:`PropertyName` (if any specified) will "
-				"be removed. Any specified :class:`PropertyName` that does not exist in this feature is ignored. "
-				"However if any specified :class:`Property` is not currently a property in this feature "
-				"then the ``ValueError`` exception is raised - note that the same property *instance* must "
+				"  All feature properties matching any :class:`PropertyName`, or predicate callable, (if any specified) will "
+				"be removed. Any specified :class:`PropertyName`, or predicate callable, that does not match a property "
+				"in this feature is ignored. However if any specified :class:`Property` is not currently a property "
+				"in this feature then the ``ValueError`` exception is raised - note that the same property *instance* must "
 				"have previously been added (in other words the property *values* are not compared - "
 				"it actually looks for the same property *instance*).\n"
 				"\n"
 				"  ::\n"
 				"\n"
-				"    feature.remove(property_name)\n"
-				"    feature.remove([property_name1, property_name2])\n"
-				"    feature.remove(property)\n"
-				"    feature.remove([property1, property2])\n")
+				"    feature.remove(pygplates.PropertyName.create_gpml('leftPlate'))\n"
+				"    feature.remove([\n"
+				"        pygplates.PropertyName.create_gpml('leftPlate'),\n"
+				"        pygplates.PropertyName.create_gpml('rightPlate')])\n"
+				"    \n"
+				"    for property in feature:\n"
+				"        if predicate(property):\n"
+				"            feature.remove(property)\n"
+				"    feature.remove([property for property in feature if predicate(property)])\n"
+				"    feature.remove(predicate)\n"
+				"    \n"
+				"    # Mix different query types.\n"
+				"    # Remove a specific 'property' instance and any 'gpml:leftPlate' properties...\n"
+				"    feature.remove([property, pygplates.PropertyName.create_gpml('leftPlate')])\n"
+				"    \n"
+				"    # Remove 'gpml:leftPlate' properties with plate IDs less than 700...\n"
+				"    feature.remove(\n"
+				"        lambda property: property.get_name() == pygplates.PropertyName.create_gpml('leftPlate') and\n"
+				"                         property.get_value().get_plate_id() < 700)\n"
+				"    \n"
+				"    # Remove 'gpml:leftPlate' and 'gpml:rightPlate' properties...\n"
+				"    feature.remove([\n"
+				"        lambda property: property.get_name() == pygplates.PropertyName.create_gpml('leftPlate'),\n"
+				"        pygplates.PropertyName.create_gpml('rightPlate')])\n"
+				"    feature.remove(\n"
+				"        lambda property: property.get_name() == pygplates.PropertyName.create_gpml('leftPlate') or\n"
+				"                         property.get_name() == pygplates.PropertyName.create_gpml('rightPlate'))\n")
 		.def("get",
 				&GPlatesApi::feature_handle_get_property,
 				(bp::arg("property_query"),
 						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE),
 				"get(property_query, [property_return=PropertyReturn.exactly_one]) "
 				"-> Property or list or None\n"
-				"  Returns the one or more properties matching a property name or predicate.\n"
+				"  Returns one or more properties matching a property name or predicate.\n"
 				"\n"
-				"  :param property_query: the property name (or predicate function) of the property (or properties) to get\n"
-				"  :type property_query: :class:`PropertyName`, or callable accepting single :class:`Property` argument\n"
+				"  :param property_query: the property name (or predicate function) that matches the property "
+				"(or properties) to get\n"
+				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
 				"  :param property_return: whether to return exactly one property, the first property or "
 				"all matching properties\n"
 				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
 				"  :rtype: :class:`Property`, or ``list`` of :class:`Property`, or None\n"
+				"\n"
+				"  This method is similar to :meth:`get_value` except it returns properties instead "
+				"of property *values*.\n"
 				"\n"
 				"  The following table maps *property_return* values to return values:\n"
 				"\n"
@@ -714,8 +838,8 @@ export_feature()
 				"    # A predicate function that returns true if property is 'gpml:reconstructionPlateId' "
 				"with value less than 700.\n"
 				"    def recon_plate_id_less_700(property):\n"
-				"      if property.get_name() == pygplates.PropertyName.create_gpml('reconstructionPlateId'):\n"
-				"         return property.get_value().get_plate_id() < 700\n"
+				"      return property.get_name() == pygplates.PropertyName.create_gpml('reconstructionPlateId') and \\\n"
+				"             property.get_value().get_plate_id() < 700\n"
 				"    \n"
 				"    recon_plate_id_less_700_property = feature.get(recon_plate_id_less_700)\n"
 				"    assert(recon_plate_id_less_700_property.get_value().get_plate_id() < 700)\n")
@@ -726,10 +850,11 @@ export_feature()
 						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE),
 				"get_value(property_query, [time=0], [property_return=PropertyReturn.exactly_one]) "
 				"-> PropertyValue or list or None\n"
-				"  Returns the one or more values of properties matching a property name or predicate.\n"
+				"  Returns one or more values of properties matching a property name or predicate.\n"
 				"\n"
-				"  :param property_query: the property name (or predicate function) of the property (or properties) to get\n"
-				"  :type property_query: :class:`PropertyName`, or callable accepting single :class:`Property` argument\n"
+				"  :param property_query: the property name (or predicate function) that matches the property "
+				"(or properties) to get\n"
+				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
 				"  :param time: the time to extract value (defaults to present day)\n"
 				"  :type time: float or :class:`GeoTimeInstant`\n"
 				"  :param property_return: whether to return exactly one property, the first property or "
