@@ -377,6 +377,9 @@ namespace GPlatesModel
 		/**
 		 * This function is similar to @a add_property except it first removes any existing
 		 * properties named @a property_name.
+		 *
+		 * Note that there is no need to check property multiplicity since we're setting only
+		 * one property (which is always supported).
 		 */
 		boost::optional<FeatureHandle::iterator>
 		set_property(
@@ -384,6 +387,56 @@ namespace GPlatesModel
 				const PropertyName& property_name,
 				const PropertyValue::non_null_ptr_type &property_value,
 				bool check_property_name_allowed_for_feature_type = true,
+				TopLevelPropertyError::Type *error_code = NULL);
+
+
+		/**
+		 * An overload of @a set_property for when the GPGIM property has already been
+		 * determined by the caller (from the property name).
+		 *
+		 * Note that the caller is responsible for ensuring that the specified GPGIM property
+		 * is allowed for the feature's type (according to the GPGIM).
+		 */
+		boost::optional<FeatureHandle::iterator>
+		set_property(
+				const FeatureHandle::weak_ref &feature,
+				const GpgimProperty &gpgim_property,
+				const PropertyValue::non_null_ptr_type &property_value,
+				TopLevelPropertyError::Type *error_code = NULL);
+
+
+		/**
+		 * This function is similar to @a set_property except it sets multiple properties with the same name.
+		 *
+		 * The property values to be set are passed in @a property_values and
+		 * the properties set in the feature are returned in @a feature_properties.
+		 *
+		 * Returns false if there is an error setting any property.
+		 */
+		bool
+		set_properties(
+				std::vector<FeatureHandle::iterator> &feature_properties,
+				const FeatureHandle::weak_ref &feature,
+				const PropertyName& property_name,
+				const std::vector<PropertyValue::non_null_ptr_type> &property_values,
+				bool check_property_name_allowed_for_feature_type = true,
+				bool check_property_multiplicity = true,
+				TopLevelPropertyError::Type *error_code = NULL);
+
+
+		/**
+		 * An overload of @a set_properties for when the GPGIM property has already been
+		 * determined by the caller (from the property name).
+		 *
+		 * Note that the caller is responsible for ensuring that the specified GPGIM property
+		 * is allowed for the feature's type (according to the GPGIM).
+		 */
+		bool
+		set_properties(
+				std::vector<FeatureHandle::iterator> &feature_properties,
+				const FeatureHandle::weak_ref &feature,
+				const GpgimProperty &gpgim_property,
+				const std::vector<PropertyValue::non_null_ptr_type> &property_values,
 				bool check_property_multiplicity = true,
 				TopLevelPropertyError::Type *error_code = NULL);
 

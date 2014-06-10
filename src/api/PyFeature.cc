@@ -175,7 +175,7 @@ namespace GPlatesApi
 		{
 			bp::list properties;
 
-			// Just create a top-level properties without checking information model.
+			// Just create top-level properties without checking information model.
 			property_value_seq_type::const_iterator property_values_iter = property_values.begin();
 			property_value_seq_type::const_iterator property_values_end = property_values.end();
 			for ( ; property_values_iter != property_values_end; ++property_values_iter)
@@ -592,27 +592,53 @@ namespace GPlatesApi
 				GPlatesModel::TopLevelProperty::non_null_ptr_type property =
 						GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
 
-				GPlatesModel::FeatureHandle::iterator property_iter = feature_handle.add(property);
+				// Search for an existing property with the same name.
+				GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
+				GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
+				for ( ; properties_iter != properties_end; ++properties_iter)
+				{
+					GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+					if (property_name == feature_property->get_property_name())
+					{
+						// Change the property.
+						feature_handle.set(properties_iter, property);
+
+						// Remove any remaining properties with same name.
+						for (++properties_iter ; properties_iter != properties_end; ++properties_iter)
+						{
+							if (property_name == (*properties_iter)->get_property_name())
+							{
+								feature_handle.remove(properties_iter);
+							}
+						}
+
+						// Return the property.
+						return bp::object(property);
+					}
+				}
+
+				// Existing property with same name not found so just add property.
+				GPlatesModel::FeatureHandle::iterator feature_property_iter = feature_handle.add(property);
 
 				// Return the newly added property.
-				return bp::object(*property_iter);
+				return bp::object(*feature_property_iter);
 			}
 
 			// Only add property if valid property name for the feature's type.
-			GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
+			GPlatesModel::ModelUtils::TopLevelPropertyError::Type set_property_error_code;
 			boost::optional<GPlatesModel::FeatureHandle::iterator> feature_property_iter =
 					GPlatesModel::ModelUtils::set_property(
 							feature_handle.reference(),
 							property_name,
 							property_value,
 							true/*check_property_name_allowed_for_feature_type*/,
-							true/*check_property_multiplicity*/,
-							&add_property_error_code);
+							&set_property_error_code);
 			if (!feature_property_iter)
 			{
 				throw InformationModelException(
 						GPLATES_EXCEPTION_SOURCE,
-						QString(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)));
+						QString(GPlatesModel::ModelUtils::get_error_message(set_property_error_code)));
 			}
 
 			// Return the newly added property.
@@ -630,7 +656,7 @@ namespace GPlatesApi
 					property_value_seq_begin(property_value_object),
 					property_value_seq_end;
 
-			// Copy into a vector.
+			// Copy into a sequence.
 			std::copy(property_value_seq_begin, property_value_seq_end, std::back_inserter(property_values));
 		}
 		catch (const boost::python::error_already_set &)
@@ -645,13 +671,50 @@ namespace GPlatesApi
 		{
 			bp::list properties;
 
-			// Just create a top-level properties without checking information model.
-			property_value_seq_type::const_iterator property_values_iter = property_values.begin();
-			property_value_seq_type::const_iterator property_values_end = property_values.end();
-			for ( ; property_values_iter != property_values_end; ++property_values_iter)
-			{
-				GPlatesModel::PropertyValue::non_null_ptr_type property_value = *property_values_iter;
+			property_value_seq_type::const_iterator property_value_seq_iter = property_values.begin();
+			property_value_seq_type::const_iterator property_value_seq_end = property_values.end();
 
+			// Search for an existing property with the same name.
+			// We will override existing properties with new property values where possible.
+			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
+			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
+			for ( ; properties_iter != properties_end; ++properties_iter)
+			{
+				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+				if (property_name == feature_property->get_property_name())
+				{
+					// If we have a property value to set...
+					if (property_value_seq_iter != property_value_seq_end)
+					{
+						// Get the next property value to set.
+						GPlatesModel::PropertyValue::non_null_ptr_type property_value = *property_value_seq_iter;
+						++property_value_seq_iter;
+
+						// Just create a top-level property without checking information model.
+						GPlatesModel::TopLevelProperty::non_null_ptr_type property =
+								GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
+
+						// Change the property.
+						feature_handle.set(properties_iter, property);
+
+						properties.append(property);
+					}
+					else
+					{
+						// Remove remaining properties with same name.
+						feature_handle.remove(properties_iter);
+					}
+				}
+			}
+
+			// If there are any remaining properties then just add them.
+			for ( ; property_value_seq_iter != property_value_seq_end; ++property_value_seq_iter)
+			{
+				// Get the next property value to set.
+				GPlatesModel::PropertyValue::non_null_ptr_type property_value = *property_value_seq_iter;
+
+				// Just create a top-level property without checking information model.
 				GPlatesModel::TopLevelProperty::non_null_ptr_type property =
 						GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
 
@@ -664,32 +727,30 @@ namespace GPlatesApi
 			return properties;
 		}
 
+		// Only add properties if valid property name for the feature's type.
+		GPlatesModel::ModelUtils::TopLevelPropertyError::Type set_property_error_code;
+		std::vector<GPlatesModel::FeatureHandle::iterator> feature_properties;
+		if (!GPlatesModel::ModelUtils::set_properties(
+				feature_properties,
+				feature_handle.reference(),
+				property_name,
+				std::vector<GPlatesModel::PropertyValue::non_null_ptr_type>(
+						property_values.begin(),
+						property_values.end()),
+				true/*check_property_name_allowed_for_feature_type*/,
+				true/*check_property_multiplicity*/,
+				&set_property_error_code))
+		{
+			throw InformationModelException(
+					GPLATES_EXCEPTION_SOURCE,
+					QString(GPlatesModel::ModelUtils::get_error_message(set_property_error_code)));
+		}
+
 		bp::list properties;
 
-		property_value_seq_type::const_iterator property_values_iter = property_values.begin();
-		property_value_seq_type::const_iterator property_values_end = property_values.end();
-		for ( ; property_values_iter != property_values_end; ++property_values_iter)
+		BOOST_FOREACH(GPlatesModel::FeatureHandle::iterator feature_property_iter, feature_properties)
 		{
-			GPlatesModel::PropertyValue::non_null_ptr_type property_value = *property_values_iter;
-
-			// Only add property if valid property name for the feature's type.
-			GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
-			boost::optional<GPlatesModel::FeatureHandle::iterator> feature_property_iter =
-					GPlatesModel::ModelUtils::set_property(
-							feature_handle.reference(),
-							property_name,
-							property_value,
-							true/*check_property_name_allowed_for_feature_type*/,
-							true/*check_property_multiplicity*/,
-							&add_property_error_code);
-			if (!feature_property_iter)
-			{
-				throw InformationModelException(
-						GPLATES_EXCEPTION_SOURCE,
-						QString(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)));
-			}
-
-			properties.append(*feature_property_iter.get());
+			properties.append(*feature_property_iter);
 		}
 
 		// Return the property list.

@@ -128,6 +128,43 @@ namespace
 	}
 
 
+	/**
+	 * Ensure that if a property, described by @a gpgim_property, is added to @a feature then it
+	 * will not exceed the number of properties allowed per feature for that property description.
+	 */
+	bool
+	check_property_multiplicity_supports_add_to_feature(
+			const GPlatesModel::FeatureHandle::weak_ref &feature,
+			const GPlatesModel::GpgimProperty &gpgim_property,
+			GPlatesModel::ModelUtils::TopLevelPropertyError::Type *error_code)
+	{
+		// If we're restricted to at most one property then check that we don't already have one.
+		if (gpgim_property.get_multiplicity() == GPlatesModel::GpgimProperty::ZERO_OR_ONE ||
+			gpgim_property.get_multiplicity() == GPlatesModel::GpgimProperty::ONE)
+		{
+			// Search for an existing property with the same name.
+			GPlatesModel::FeatureHandle::iterator properties_iter = feature->begin();
+			GPlatesModel::FeatureHandle::iterator properties_end = feature->end();
+			for ( ; properties_iter != properties_end; ++properties_iter)
+			{
+				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+				if (gpgim_property.get_property_name() == feature_property->get_property_name())
+				{
+					if (error_code)
+					{
+						*error_code = GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_NAME_CAN_OCCUR_AT_MOST_ONCE_IN_A_FEATURE;
+					}
+
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+
 	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
 	add_remove_or_convert_time_dependent_wrapper(
 			const GPlatesModel::PropertyValue::non_null_ptr_type &property_value,
@@ -380,27 +417,9 @@ GPlatesModel::ModelUtils::add_property(
 {
 	if (check_property_multiplicity)
 	{
-		// If we're restricted to at most one property then check that we don't already have one.
-		if (gpgim_property.get_multiplicity() == GpgimProperty::ZERO_OR_ONE ||
-			gpgim_property.get_multiplicity() == GpgimProperty::ONE)
+		if (!check_property_multiplicity_supports_add_to_feature(feature, gpgim_property, error_code))
 		{
-			// Search for an existing property with the same name.
-			FeatureHandle::iterator properties_iter = feature->begin();
-			FeatureHandle::iterator properties_end = feature->end();
-			for ( ; properties_iter != properties_end; ++properties_iter)
-			{
-				TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
-
-				if (gpgim_property.get_property_name() == feature_property->get_property_name())
-				{
-					if (error_code)
-					{
-						*error_code = TopLevelPropertyError::PROPERTY_NAME_CAN_OCCUR_AT_MOST_ONCE_IN_A_FEATURE;
-					}
-
-					return boost::none;
-				}
-			}
+			return boost::none;
 		}
 	}
 
@@ -425,10 +444,219 @@ GPlatesModel::ModelUtils::set_property(
 		const PropertyName& property_name,
 		const PropertyValue::non_null_ptr_type &property_value,
 		bool check_property_name_allowed_for_feature_type,
+		TopLevelPropertyError::Type *error_code)
+{
+	boost::optional<FeatureType> feature_type;
+	if (check_property_name_allowed_for_feature_type)
+	{
+		feature_type = feature->feature_type();
+	}
+
+	// Get the GPGIM property using the property name (and optionally the feature type).
+	// Using the feature type results in stricter conformance to the GPGIM.
+	boost::optional<GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
+			get_gpgim_property(
+					property_name,
+					feature_type,
+					error_code);
+	if (!gpgim_property)
+	{
+		return boost::none;
+	}
+
+	return set_property(
+			feature,
+			*gpgim_property.get(),
+			property_value,
+			error_code);
+}
+
+
+boost::optional<GPlatesModel::FeatureHandle::iterator>
+GPlatesModel::ModelUtils::set_property(
+		const FeatureHandle::weak_ref &feature,
+		const GpgimProperty &gpgim_property,
+		const PropertyValue::non_null_ptr_type &property_value,
+		TopLevelPropertyError::Type *error_code)
+{
+	boost::optional<TopLevelProperty::non_null_ptr_type> top_level_property =
+			create_top_level_property(
+					gpgim_property,
+					property_value,
+					error_code);
+	if (!top_level_property)
+	{
+		return boost::none;
+	}
+
+	// Search for an existing property with the same name.
+	FeatureHandle::iterator properties_iter = feature->begin();
+	FeatureHandle::iterator properties_end = feature->end();
+	for ( ; properties_iter != properties_end; ++properties_iter)
+	{
+		TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+		if (gpgim_property.get_property_name() == feature_property->get_property_name())
+		{
+			// Change the property.
+			FeatureHandle::iterator feature_property_iter = properties_iter;
+			feature->set(feature_property_iter, top_level_property.get());
+
+			// Remove any remaining properties with same name.
+			for (++properties_iter ; properties_iter != properties_end; ++properties_iter)
+			{
+				if (gpgim_property.get_property_name() == (*properties_iter)->get_property_name())
+				{
+					feature->remove(properties_iter);
+				}
+			}
+
+			// Return the property iterator.
+			return feature_property_iter;
+		}
+	}
+
+	// Existing property with same name not found so just add property.
+	FeatureHandle::iterator feature_property_iter = feature->add(top_level_property.get());
+
+	// Return the property iterator.
+	return feature_property_iter;
+}
+
+
+bool
+GPlatesModel::ModelUtils::set_properties(
+		std::vector<FeatureHandle::iterator> &feature_properties,
+		const FeatureHandle::weak_ref &feature,
+		const PropertyName& property_name,
+		const std::vector<PropertyValue::non_null_ptr_type> &property_values,
+		bool check_property_name_allowed_for_feature_type,
 		bool check_property_multiplicity,
 		TopLevelPropertyError::Type *error_code)
 {
-	return boost::none;
+	boost::optional<FeatureType> feature_type;
+	if (check_property_name_allowed_for_feature_type)
+	{
+		feature_type = feature->feature_type();
+	}
+
+	// Get the GPGIM property using the property name (and optionally the feature type).
+	// Using the feature type results in stricter conformance to the GPGIM.
+	boost::optional<GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
+			get_gpgim_property(
+					property_name,
+					feature_type,
+					error_code);
+	if (!gpgim_property)
+	{
+		return false;
+	}
+
+	return set_properties(
+			feature_properties,
+			feature,
+			*gpgim_property.get(),
+			property_values,
+			check_property_multiplicity,
+			error_code);
+}
+
+
+bool
+GPlatesModel::ModelUtils::set_properties(
+		std::vector<FeatureHandle::iterator> &feature_properties,
+		const FeatureHandle::weak_ref &feature,
+		const GpgimProperty &gpgim_property,
+		const std::vector<PropertyValue::non_null_ptr_type> &property_values,
+		bool check_property_multiplicity,
+		TopLevelPropertyError::Type *error_code)
+{
+	if (check_property_multiplicity)
+	{
+		// If we're setting more than one property value then make sure we can.
+		if (property_values.size() > 1)
+		{
+			if (gpgim_property.get_multiplicity() == GpgimProperty::ZERO_OR_ONE ||
+				gpgim_property.get_multiplicity() == GpgimProperty::ONE)
+			{
+				if (error_code)
+				{
+					*error_code = TopLevelPropertyError::PROPERTY_NAME_CAN_OCCUR_AT_MOST_ONCE_IN_A_FEATURE;
+				}
+
+				return false;
+			}
+		}
+	}
+
+	typedef std::vector<PropertyValue::non_null_ptr_type> property_value_seq_type;
+	property_value_seq_type::const_iterator property_value_seq_iter = property_values.begin();
+	property_value_seq_type::const_iterator property_value_seq_end = property_values.end();
+
+	// Search for an existing property with the same name.
+	// We will override existing properties with new property values where possible.
+	FeatureHandle::iterator properties_iter = feature->begin();
+	FeatureHandle::iterator properties_end = feature->end();
+	for ( ; properties_iter != properties_end; ++properties_iter)
+	{
+		TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+		if (gpgim_property.get_property_name() == feature_property->get_property_name())
+		{
+			// If we have a property value to set...
+			if (property_value_seq_iter != property_value_seq_end)
+			{
+				// Get the next property value to set.
+				PropertyValue::non_null_ptr_type property_value = *property_value_seq_iter;
+				++property_value_seq_iter;
+
+				// Create a top-level property.
+				boost::optional<TopLevelProperty::non_null_ptr_type> top_level_property =
+						create_top_level_property(
+								gpgim_property,
+								property_value,
+								error_code);
+				if (!top_level_property)
+				{
+					return false;
+				}
+
+				// Change the property.
+				feature->set(properties_iter, top_level_property.get());
+
+				feature_properties.push_back(properties_iter);
+			}
+			else
+			{
+				// Remove remaining properties with same name.
+				feature->remove(properties_iter);
+			}
+		}
+	}
+
+	// If there are any remaining properties then just add them.
+	for ( ; property_value_seq_iter != property_value_seq_end; ++property_value_seq_iter)
+	{
+		// Get the next property value to set.
+		PropertyValue::non_null_ptr_type property_value = *property_value_seq_iter;
+
+		// Create a top-level property.
+		boost::optional<TopLevelProperty::non_null_ptr_type> top_level_property =
+				create_top_level_property(
+						gpgim_property,
+						property_value,
+						error_code);
+		if (!top_level_property)
+		{
+			return false;
+		}
+
+		FeatureHandle::iterator feature_property_iter = feature->add(top_level_property.get());
+
+		feature_properties.push_back(feature_property_iter);
+	}
+
+	return true;
 }
 
 

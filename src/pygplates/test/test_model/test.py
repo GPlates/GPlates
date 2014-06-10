@@ -63,6 +63,10 @@ class FeatureCase(unittest.TestCase):
                 str(counter) + " properties")
     
     def test_add(self):
+        # Should not be able to add a second 'gpml:reconstructionPlateId'.
+        self.assertRaises(pygplates.InformationModelError, self.feature.add,
+                pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.GpmlPlateId(101))
+        
         integer_property = self.feature.add(
                 pygplates.PropertyName.create_gpml('integer'),
                 pygplates.XsInteger(100),
@@ -185,6 +189,88 @@ class FeatureCase(unittest.TestCase):
                 pygplates.PropertyName.create_gpml('reconstructionPlateId')])
         self.assertTrue(len(self.feature) == self.property_count - 3)
 
+    def test_set(self):
+        # Should not be able to set two 'gpml:reconstructionPlateId' properties.
+        self.assertRaises(pygplates.InformationModelError, self.feature.set,
+                pygplates.PropertyName.create_gpml('reconstructionPlateId'),
+                [pygplates.GpmlPlateId(101), pygplates.GpmlPlateId(102)])
+        
+        self.feature.set(pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.GpmlPlateId(10001))
+        self.assertTrue(self.feature.get_reconstruction_plate_id() == 10001)
+        # Number of properties should remain unchanged since just changing a property.
+        self.assertTrue(len(self.feature) == self.property_count)
+        
+        integer_property = self.feature.set(
+                pygplates.PropertyName.create_gpml('integer'),
+                pygplates.XsInteger(100),
+                # 'gpml:integer' is not a (GPGIM) recognised property name...
+                pygplates.VerifyInformationModel.no)
+        self.assertTrue(len(self.feature) == self.property_count + 1)
+        self.assertTrue(self.feature.get_value(pygplates.PropertyName.create_gpml('integer')).get_integer() == 100)
+        # Since 'gpml:integer' is not a (GPGIM) recognised property name it should raise an error by default.
+        self.assertRaises(pygplates.InformationModelError, self.feature.set,
+                pygplates.PropertyName.create_gpml('integer'),
+                pygplates.XsInteger(101))
+        
+        # Since 'gpml:integer', etc, is not a (GPGIM) recognised property name it should raise an error by default.
+        self.assertRaises(pygplates.InformationModelError, self.feature.set,
+                pygplates.PropertyName.create_gpml('integer'),
+                pygplates.XsInteger(102))
+        self.assertTrue(len(self.feature) == self.property_count + 1)
+        self.assertTrue(self.feature.get_value(pygplates.PropertyName.create_gpml('integer')).get_integer() == 100)
+        integer_property = self.feature.set(
+                pygplates.PropertyName.create_gpml('integer'),
+                pygplates.XsInteger(102),
+                # 'gpml:integer' is not a (GPGIM) recognised property name...
+                pygplates.VerifyInformationModel.no)
+        self.assertTrue(len(self.feature) == self.property_count + 1)
+        self.assertTrue(self.feature.get_value(pygplates.PropertyName.create_gpml('integer')).get_integer() == 102)
+        # Set as a property name and list of property values.
+        properties_set = self.feature.set(
+                pygplates.PropertyName.create_gpml('integer'),
+                [pygplates.XsInteger(103), pygplates.XsInteger(104)],
+                # 'gpml:integer' is not a (GPGIM) recognised property name...
+                pygplates.VerifyInformationModel.no)
+        self.assertTrue(len(self.feature) == self.property_count + 2 and len(properties_set) == 2)
+        # Value 100 should have been removed by latest 'set()'.
+        self.assertTrue(pygplates.XsInteger(100) not in
+                self.feature.get_value(pygplates.PropertyName.create_gpml('integer'), property_return=pygplates.PropertyReturn.all))
+        self.assertTrue(pygplates.XsInteger(103) in
+                self.feature.get_value(pygplates.PropertyName.create_gpml('integer'), property_return=pygplates.PropertyReturn.all))
+        self.assertTrue(pygplates.XsInteger(104) in
+                self.feature.get_value(pygplates.PropertyName.create_gpml('integer'), property_return=pygplates.PropertyReturn.all))
+        # Value 100 should have been removed by latest 'set()'.
+        self.assertTrue(100 not in [property.get_value().get_integer() for property in properties_set])
+        self.assertTrue(103 in [property.get_value().get_integer() for property in properties_set])
+        self.assertTrue(104 in [property.get_value().get_integer() for property in properties_set])
+        integer_properties = self.feature.set(
+                pygplates.PropertyName.create_gpml('integer'),
+                [pygplates.XsInteger(105)],
+                # 'gpml:integer' is not a (GPGIM) recognised property name...
+                pygplates.VerifyInformationModel.no)
+        self.assertTrue(len(self.feature) == self.property_count + 1)
+        self.assertTrue(len(integer_properties) == 1)
+        self.assertTrue(integer_properties[0].get_value().get_integer() == 105)
+        self.assertTrue(self.feature.get_value(pygplates.PropertyName.create_gpml('integer')).get_integer() == 105)
+        
+        # Can add more than one conjugate plate ID (according to the GPGIM).
+        new_feature = pygplates.Feature(pygplates.FeatureType.create_gpml('Isochron'))
+        conjugate_plate_ids = new_feature.set(pygplates.PropertyName.create_gpml('conjugatePlateId'), (pygplates.GpmlPlateId(10002), pygplates.GpmlPlateId(10003)))
+        self.assertTrue(len(conjugate_plate_ids) == 2)
+        conjugate_plate_ids = new_feature.get_conjugate_plate_id([], pygplates.PropertyReturn.all)
+        self.assertTrue(len(conjugate_plate_ids) == 2)
+        self.assertTrue(len(new_feature) == 2)
+        self.assertTrue(10002 in conjugate_plate_ids)
+        self.assertTrue(10003 in conjugate_plate_ids)
+        conjugate_plate_ids = new_feature.set(pygplates.PropertyName.create_gpml('conjugatePlateId'), (pygplates.GpmlPlateId(10004), ))
+        self.assertTrue(len(new_feature) == 1)
+        self.assertTrue(len(conjugate_plate_ids) == 1)
+        self.assertTrue(new_feature.get_conjugate_plate_id() == 10004)
+        conjugate_plate_id = new_feature.set(pygplates.PropertyName.create_gpml('conjugatePlateId'), pygplates.GpmlPlateId(10005))
+        self.assertTrue(conjugate_plate_id.get_value().get_plate_id() == 10005)
+        self.assertTrue(len(new_feature) == 1)
+        self.assertTrue(new_feature.get_conjugate_plate_id() == 10005)
+    
 
 class FeatureCollectionCase(unittest.TestCase):
 
