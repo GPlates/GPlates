@@ -16,7 +16,7 @@ def get_description(feature, default=''):
     :param default: the default description (defaults to an empty string)
     :type default: string or None
     :returns: the description (if exactly one 'gml:description' property found), otherwise *default* is returned
-    :rtype: string or *default*
+    :rtype: string, or type(*default*)
     
     This is a convenience method that wraps :meth:`get_value` for the common property 'gml:description'.
     
@@ -50,13 +50,15 @@ Feature.get_description = get_description
 del get_description
 
 
-def get_name(feature, property_return=PropertyReturn.exactly_one):
-    """get_name([property_return=PropertyReturn.exactly_one]) -> str or list
+def get_name(feature, default='', property_return=PropertyReturn.exactly_one):
+    """get_name([default=''], [property_return=PropertyReturn.exactly_one]) -> str or list
     Return the name (or names) of this feature.
     
+    :param default: the default name (defaults to an empty string)
+    :type default: string or list or None
     :param property_return: whether to return exactly one name, the first name or all names
     :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*
-    :rtype: string, or list of strings
+    :rtype: string, or list of strings, or type(*default*)
     
     This is a convenience method that wraps :meth:`get_value` for the common property 'gml:name'.
     
@@ -68,19 +70,26 @@ def get_name(feature, property_return=PropertyReturn.exactly_one):
     PropertyReturn Value                     Description
     ======================================= ==============
     exactly_one                             Returns the name ``str`` if exactly one 'gml:name' property is found, \
-    otherwise an empty ``str`` is returned.
+    otherwise *default* is returned.
     first                                   Returns the name ``str`` of the first 'gml:name' property - \
-    however note that a feature is an *unordered* collection of properties. Returns an empty ``str`` \
+    however note that a feature is an *unordered* collection of properties. Returns *default* \
     if there are no 'gml:name' properties.
     all                                     Returns a ``list`` of names (``str``) of 'gml:name' properties. \
-    Returns an empty ``list`` if there are no 'gml:name' properties. Any 'gml:name' property with an empty name string \
-    will *not* be added to the list.
+    Returns *default* if there are no 'gml:name' properties. Note that any 'gml:name' property with an \
+    empty name string *will* be added to the list.
     ======================================= ==============
     
     Return the name of this feature as a string (defaults to an empty string if not exactly one found):
     ::
     
       name = feature.get_name()
+    
+    Test that there is exactly one 'gml:name' property:
+    ::
+    
+      name = feature.get_name(None)
+      if name:
+        ...
     
     Test that there is exactly one 'gml:name' property and that it is not the empty string:
     ::
@@ -92,13 +101,20 @@ def get_name(feature, property_return=PropertyReturn.exactly_one):
     Return the list of names of this feature as strings (defaults to an empty list if no names are found):
     ::
     
-      names = feature.get_name(PropertyReturn.all)
+      names = feature.get_name([], PropertyReturn.all)
+    
+    Test if there are any 'gml:name' properties:
+    ::
+    
+      names = feature.get_names(None, PropertyReturn.all)
+      if names:
+        ...
     
     Test if there are any 'gml:name' properties with a non-empty string:
     ::
     
-      names = feature.get_names(PropertyReturn.all)
-      if names:
+      names = feature.get_names(None, PropertyReturn.all)
+      if names and any(names):
         ...
     """
     
@@ -107,8 +123,7 @@ def get_name(feature, property_return=PropertyReturn.exactly_one):
         try:
             if property_return == PropertyReturn.all:
                 # 'gml_name' is a list of property values.
-                # Only add non-empty strings.
-                return [name.get_string() for name in gml_name if name.get_string()]
+                return [name.get_string() for name in gml_name]
             else:
                 # 'gml_name' is a single property value.
                 return gml_name.get_string()
@@ -118,10 +133,7 @@ def get_name(feature, property_return=PropertyReturn.exactly_one):
             pass
     
     # Return default.
-    if property_return == PropertyReturn.all:
-        return []
-    else:
-        return ''
+    return default
 
 # Add the module function as a class method.
 Feature.get_name = get_name
@@ -136,7 +148,7 @@ def get_valid_time(feature, default=(float('inf'), float('-inf'))):
     :param default: the default time range (defaults to all time)
     :type default: tuple (float,float) or None
     :returns: begin and end times (if exactly one 'gml:validTime' property found), otherwise *default* is returned
-    :rtype: tuple (float,float) or *default*
+    :rtype: tuple (float,float), or type(*default*)
     
     This is a convenience method that wraps :meth:`get_value` for the common property 'gml:validTime'.
     
@@ -177,7 +189,7 @@ def get_left_plate(feature, default=0):
     :param default: the default left plate id (defaults zero)
     :type default: int or None
     :returns: the left plate id (if exactly one 'gpml:leftPlate' property found), otherwise *default* is returned
-    :rtype: int or *default*
+    :rtype: int, or type(*default*)
     
     This is a convenience method that wraps :meth:`get_value` for the common property 'gpml:leftPlate'.
     
@@ -218,7 +230,7 @@ def get_right_plate(feature, default=0):
     :param default: the default right plate id (defaults zero)
     :type default: int or None
     :returns: the right plate id (if exactly one 'gpml:rightPlate' property found), otherwise *default* is returned
-    :rtype: int or *default*
+    :rtype: int, or type(*default*)
     
     This is a convenience method that wraps :meth:`get_value` for the common property 'gpml:rightPlate'.
     
@@ -259,7 +271,7 @@ def get_reconstruction_plate_id(feature, default=0):
     :param default: the default reconstruction plate id (defaults zero)
     :type default: int or None
     :returns: the reconstruction plate id (if exactly one 'gpml:reconstructionPlateId' property found), otherwise *default* is returned
-    :rtype: int or *default*
+    :rtype: int, or type(*default*)
     
     This is a convenience method that wraps :meth:`get_value` for the common property 'gpml:reconstructionPlateId'.
     
@@ -293,13 +305,15 @@ Feature.get_reconstruction_plate_id = get_reconstruction_plate_id
 del get_reconstruction_plate_id
 
 
-def get_conjugate_plate_id(feature, property_return=PropertyReturn.exactly_one):
-    """get_conjugate_plate_id([property_return=PropertyReturn.exactly_one]) -> int or list
+def get_conjugate_plate_id(feature, default=0, property_return=PropertyReturn.exactly_one):
+    """get_conjugate_plate_id([default=0], [property_return=PropertyReturn.exactly_one]) -> int or list
     Return the conjugate plate ID (or IDs) of this feature.
     
+    :param default: the default plate ID (defaults to zero)
+    :type default: int or list or None
     :param property_return: whether to return exactly one ID, the first ID or all IDs
     :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*
-    :rtype: int, or list of ints
+    :rtype: int, or list of ints, or type(*default*)
     
     This is a convenience method that wraps :meth:`get_value` for the common property 'gpml:conjugatePlateId'.
     
@@ -311,19 +325,26 @@ def get_conjugate_plate_id(feature, property_return=PropertyReturn.exactly_one):
     PropertyReturn Value                     Description
     ======================================= ==============
     exactly_one                             Returns the integer plate ID if exactly one 'gpml:conjugatePlateId' property is found, \
-    otherwise zero is returned.
+    otherwise *default* is returned.
     first                                   Returns the integer plate ID of the first 'gpml:conjugatePlateId' property - \
-    however note that a feature is an *unordered* collection of properties. Returns zero \
+    however note that a feature is an *unordered* collection of properties. Returns *default* \
     if there are no 'gpml:conjugatePlateId' properties.
     all                                     Returns a ``list`` of integer plate IDs of 'gpml:conjugatePlateId' properties. \
-    Returns an empty ``list`` if there are no 'gpml:conjugatePlateId' properties. Any 'gpml:conjugatePlateId' property with \
-    a zero plate ID will *not* be added to the list.
+    Returns *default* if there are no 'gpml:conjugatePlateId' properties. Note that any 'gpml:conjugatePlateId' property with \
+    a zero plate ID *will* be added to the list.
     ======================================= ==============
     
     Return the conjugate plate ID of this feature as an integer (defaults to zero if not exactly one found):
     ::
     
       conjugate_plate_id = feature.get_conjugate_plate_id()
+    
+    Test that there is exactly one 'gpml:conjugatePlateId' property:
+    ::
+    
+      conjugate_plate_id = feature.get_conjugate_plate_id(None)
+      if conjugate_plate_id:
+        ...
     
     Test that there is exactly one 'gpml:conjugatePlateId' property and that it is not zero:
     ::
@@ -335,13 +356,20 @@ def get_conjugate_plate_id(feature, property_return=PropertyReturn.exactly_one):
     Return the list of conjugate plate IDs of this feature as integers (defaults to an empty list if no conjugate plate IDs are found):
     ::
     
-      conjugate_plate_ids = feature.get_conjugate_plate_id(PropertyReturn.all)
+      conjugate_plate_ids = feature.get_conjugate_plate_id([], PropertyReturn.all)
     
-    Test if there are any 'gpml:conjugatePlateId' properties with non-zero plate IDs:
+    Test if there are any 'gpml:conjugatePlateId' properties:
     ::
     
-      conjugate_plate_ids = feature.get_conjugate_plate_id(PropertyReturn.all)
+      conjugate_plate_ids = feature.get_conjugate_plate_id(None, PropertyReturn.all)
       if conjugate_plate_ids:
+        ...
+    
+    Test if there are any 'gpml:conjugatePlateId' properties with a non-zero plate ID:
+    ::
+    
+      conjugate_plate_ids = feature.get_conjugate_plate_id(None, PropertyReturn.all)
+      if conjugate_plate_ids and any(conjugate_plate_ids):
         ...
     """
     
@@ -350,8 +378,7 @@ def get_conjugate_plate_id(feature, property_return=PropertyReturn.exactly_one):
         try:
             if property_return == PropertyReturn.all:
                 # 'gml_conjugate_plate_id' is a list of property values.
-                # Only add non-zero plate IDs.
-                return [id.get_plate_id() for id in gml_conjugate_plate_id if id.get_plate_id()]
+                return [id.get_plate_id() for id in gml_conjugate_plate_id]
             else:
                 # 'gml_conjugate_plate_id' is a single property value.
                 return gml_conjugate_plate_id.get_plate_id()
@@ -361,10 +388,7 @@ def get_conjugate_plate_id(feature, property_return=PropertyReturn.exactly_one):
             pass
     
     # Return default.
-    if property_return == PropertyReturn.all:
-        return []
-    else:
-        return 0
+    return default
 
 # Add the module function as a class method.
 Feature.get_conjugate_plate_id = get_conjugate_plate_id
