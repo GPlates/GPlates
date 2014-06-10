@@ -33,6 +33,7 @@
 #include "FeatureHandle.h"
 #include "FeatureId.h"
 #include "FeatureType.h"
+#include "GpgimProperty.h"
 #include "ModelInterface.h"
 #include "PropertyName.h"
 #include "PropertyValue.h"
@@ -57,8 +58,6 @@
 
 namespace GPlatesModel
 {
-	class GpgimProperty;
-
 	namespace ModelUtils
 	{
 
@@ -119,6 +118,8 @@ namespace GPlatesModel
 		create_gml_time_sample(
 				const ModelUtils::TotalReconstructionPole &trp,
 				bool is_grot = false);
+
+
 		//
 		// Time-dependent property value wrapper functions.
 		//
@@ -273,6 +274,21 @@ namespace GPlatesModel
 		get_top_level_properties(
 				const PropertyName& name,
 				FeatureHandle::weak_ref feature);
+
+
+		/**
+		 * Get the GPGIM property using the property name (and optionally the feature type).
+		 *
+		 * If the feature type is specified then the property name must supported by the feature type
+		 * (according to the GPGIM) otherwise boost::none is returned.
+		 * If the feature type is *not* specified then the property name only needs to be recognised
+		 * as a known property by the GPGIM otherwise boost::none is returned.
+		 */
+		boost::optional<GpgimProperty::non_null_ptr_to_const_type>
+		get_gpgim_property(
+				const PropertyName& property_name,
+				boost::optional<FeatureType> feature_type = boost::none,
+				TopLevelPropertyError::Type *error_code = NULL);
 
 
 		/**

@@ -62,6 +62,51 @@ class FeatureCase(unittest.TestCase):
                 "Expected " + str(self.property_count) + " properties, actual " + 
                 str(counter) + " properties")
     
+    def test_add(self):
+        integer_property = self.feature.add(
+                pygplates.PropertyName.create_gpml('integer'),
+                pygplates.XsInteger(100),
+                # 'gpml:integer' is not a (GPGIM) recognised property name...
+                pygplates.VerifyInformationModel.no)
+        self.assertTrue(len(self.feature) == self.property_count + 1)
+        found_integer_property = None
+        for property in self.feature:
+            if property == integer_property:
+                found_integer_property = property
+                break
+        self.assertTrue(found_integer_property)
+        # Since 'gpml:integer' is not a (GPGIM) recognised property name it should raise an error by default.
+        self.assertRaises(pygplates.InformationModelError, self.feature.add,
+                pygplates.PropertyName.create_gpml('integer'),
+                pygplates.XsInteger(100))
+        
+        # Since 'gpml:integer1', etc, is not a (GPGIM) recognised property name it should raise an error by default.
+        self.assertRaises(pygplates.InformationModelError, self.feature.add,
+                [(pygplates.PropertyName.create_gpml('integer1'), pygplates.XsInteger(101)),
+                (pygplates.PropertyName.create_gpml('integer2'), pygplates.XsInteger(102))])
+        # Add as a list of property name/value pairs.
+        properties_added = self.feature.add([
+                (pygplates.PropertyName.create_gpml('integer1'), pygplates.XsInteger(101)),
+                (pygplates.PropertyName.create_gpml('integer2'), pygplates.XsInteger(102))],
+                # 'gpml:integer' is not a (GPGIM) recognised property name...
+                pygplates.VerifyInformationModel.no)
+        self.assertTrue(len(self.feature) == self.property_count + 3 and len(properties_added) == 2)
+        # Add as a property name and list of property values.
+        properties_added = self.feature.add(
+                pygplates.PropertyName.create_gpml('integer'),
+                [pygplates.XsInteger(103), pygplates.XsInteger(104)],
+                # 'gpml:integer' is not a (GPGIM) recognised property name...
+                pygplates.VerifyInformationModel.no)
+        self.assertTrue(len(self.feature) == self.property_count + 5 and len(properties_added) == 2)
+        # Add as a list of property name/values pairs.
+        properties_added = self.feature.add([
+                (pygplates.PropertyName.create_gpml('integer3'), [pygplates.XsInteger(105), pygplates.XsInteger(106)]),
+                [pygplates.PropertyName.create_gpml('integer4'), (pygplates.XsInteger(107),)],
+                (pygplates.PropertyName.create_gpml('integer4'), pygplates.XsInteger(108))],
+                # 'gpml:integer' is not a (GPGIM) recognised property name...
+                pygplates.VerifyInformationModel.no)
+        self.assertTrue(len(self.feature) == self.property_count + 9 and len(properties_added) == 4)
+    
     def test_remove(self):
         # Find the 'gml:name' property.
         name_property = None
@@ -139,36 +184,6 @@ class FeatureCase(unittest.TestCase):
                 lambda property: property.get_name() == pygplates.PropertyName.create_gml('validTime'),
                 pygplates.PropertyName.create_gpml('reconstructionPlateId')])
         self.assertTrue(len(self.feature) == self.property_count - 3)
-    
-    def test_add(self):
-        integer_property = self.feature.add(
-                pygplates.PropertyName.create_gpml('integer'),
-                pygplates.XsInteger(100),
-                # 'gpml:integer' is not a (GPGIM) recognised property name...
-                pygplates.VerifyInformationModel.no)
-        self.assertTrue(len(self.feature) == self.property_count + 1)
-        found_integer_property = None
-        for property in self.feature:
-            if property == integer_property:
-                found_integer_property = property
-                break
-        self.assertTrue(found_integer_property)
-        # Since 'gpml:integer' is not a (GPGIM) recognised property name it should raise an error by default.
-        self.assertRaises(pygplates.InformationModelError, self.feature.add,
-                pygplates.PropertyName.create_gpml('integer'),
-                pygplates.XsInteger(100))
-        
-        # Since 'gpml:integer1', etc, is not a (GPGIM) recognised property name it should raise an error by default.
-        self.assertRaises(pygplates.InformationModelError, self.feature.add,
-                [(pygplates.PropertyName.create_gpml('integer1'), pygplates.XsInteger(101)),
-                (pygplates.PropertyName.create_gpml('integer2'), pygplates.XsInteger(102))])
-        # Add as a list of property name/value pairs.
-        properties_added = self.feature.add([
-                (pygplates.PropertyName.create_gpml('integer1'), pygplates.XsInteger(101)),
-                (pygplates.PropertyName.create_gpml('integer2'), pygplates.XsInteger(102))],
-                # 'gpml:integer' is not a (GPGIM) recognised property name...
-                pygplates.VerifyInformationModel.no)
-        self.assertTrue(len(self.feature) == self.property_count + 3 and len(properties_added) == 2)
 
 
 class FeatureCollectionCase(unittest.TestCase):

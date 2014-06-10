@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <iterator>
 #include <vector>
+#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <QString>
@@ -101,40 +102,141 @@ namespace GPlatesApi
 		return GPlatesModel::FeatureHandle::create(feature_type.get(), feature_id.get());
 	}
 
-	GPlatesModel::TopLevelProperty::non_null_ptr_type
+	bp::object
+	feature_handle_add_property_internal(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			bp::object property_value_object,
+			VerifyInformationModel::Value verify_information_model,
+			const char *type_error_string)
+	{
+		// 'property_value_object' is either a property value or a sequence of property values.
+		bp::extract<GPlatesModel::PropertyValue::non_null_ptr_type> extract_property_value(property_value_object);
+		if (extract_property_value.check())
+		{
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value = extract_property_value();
+
+			if (verify_information_model == VerifyInformationModel::NO)
+			{
+				// Just create a top-level property without checking information model.
+				GPlatesModel::TopLevelProperty::non_null_ptr_type property =
+						GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
+
+				GPlatesModel::FeatureHandle::iterator property_iter = feature_handle.add(property);
+
+				// Return the newly added property.
+				return bp::object(*property_iter);
+			}
+
+			// Only add property if valid property name for the feature's type.
+			GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
+			boost::optional<GPlatesModel::FeatureHandle::iterator> feature_property_iter =
+					GPlatesModel::ModelUtils::add_property(
+							feature_handle.reference(),
+							property_name,
+							property_value,
+							true/*check_property_name_allowed_for_feature_type*/,
+							&add_property_error_code);
+			if (!feature_property_iter)
+			{
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)));
+			}
+
+			// Return the newly added property.
+			return bp::object(*feature_property_iter.get());
+		}
+		// ...else a sequence of property values.
+
+		// Attempt to extract a sequence of property values.
+		typedef std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> property_value_seq_type;
+		property_value_seq_type property_values;
+		try
+		{
+			// A sequence containing property values.
+			bp::stl_input_iterator<GPlatesModel::PropertyValue::non_null_ptr_type>
+					property_value_seq_begin(property_value_object),
+					property_value_seq_end;
+
+			// Copy into a vector.
+			std::copy(property_value_seq_begin, property_value_seq_end, std::back_inserter(property_values));
+		}
+		catch (const boost::python::error_already_set &)
+		{
+			PyErr_Clear();
+
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
+
+		if (verify_information_model == VerifyInformationModel::NO)
+		{
+			bp::list properties;
+
+			// Just create a top-level properties without checking information model.
+			property_value_seq_type::const_iterator property_values_iter = property_values.begin();
+			property_value_seq_type::const_iterator property_values_end = property_values.end();
+			for ( ; property_values_iter != property_values_end; ++property_values_iter)
+			{
+				GPlatesModel::PropertyValue::non_null_ptr_type property_value = *property_values_iter;
+
+				GPlatesModel::TopLevelProperty::non_null_ptr_type property =
+						GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
+
+				GPlatesModel::FeatureHandle::iterator feature_property_iter = feature_handle.add(property);
+
+				properties.append(*feature_property_iter);
+			}
+
+			// Return the property list.
+			return properties;
+		}
+
+		bp::list properties;
+
+		property_value_seq_type::const_iterator property_values_iter = property_values.begin();
+		property_value_seq_type::const_iterator property_values_end = property_values.end();
+		for ( ; property_values_iter != property_values_end; ++property_values_iter)
+		{
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value = *property_values_iter;
+
+			// Only add property if valid property name for the feature's type.
+			GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
+			boost::optional<GPlatesModel::FeatureHandle::iterator> feature_property_iter =
+					GPlatesModel::ModelUtils::add_property(
+							feature_handle.reference(),
+							property_name,
+							property_value,
+							true/*check_property_name_allowed_for_feature_type*/,
+							&add_property_error_code);
+			if (!feature_property_iter)
+			{
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)));
+			}
+
+			properties.append(*feature_property_iter.get());
+		}
+
+		// Return the property list.
+		return properties;
+	}
+
+	bp::object
 	feature_handle_add_property(
 			GPlatesModel::FeatureHandle &feature_handle,
 			const GPlatesModel::PropertyName &property_name,
-			GPlatesModel::PropertyValue::non_null_ptr_type property_value,
+			bp::object property_value_object,
 			VerifyInformationModel::Value verify_information_model)
 	{
-		if (verify_information_model == VerifyInformationModel::NO)
-		{
-			// Just create a top-level property without checking information model.
-			GPlatesModel::TopLevelProperty::non_null_ptr_type property =
-					GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
-			// Return the newly added property.
-			return *feature_handle.add(property);
-		}
-
-		// Only add property if valid property name for the feature's type.
-		GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
-		boost::optional<GPlatesModel::FeatureHandle::iterator> feature_property_iter =
-				GPlatesModel::ModelUtils::add_property(
-						feature_handle.reference(),
-						property_name,
-						property_value,
-						true/*check_property_name_allowed_for_feature_type*/,
-						&add_property_error_code);
-		if (!feature_property_iter)
-		{
-			throw InformationModelException(
-					GPLATES_EXCEPTION_SOURCE,
-					QString(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)));
-		}
-
-		// Return the newly added property.
-		return *feature_property_iter.get();
+		return feature_handle_add_property_internal(
+				feature_handle,
+				property_name,
+				property_value_object,
+				verify_information_model,
+				"Expected a PropertyName and PropertyValue, or PropertyName and sequence of PropertyValue");
 	}
 
 	bp::list
@@ -145,18 +247,21 @@ namespace GPlatesApi
 	{
 		bp::list properties;
 
+		const char *type_error_string = "Expected a sequence of (PropertyName, PropertyValue(s))";
+
 		// Begin/end iterators over the python property name/value pair sequence.
 		bp::stl_input_iterator<bp::object>
 				properties_iter(properties_object),
 				properties_end;
 
+		// Retrieve the (PropertyName, PropertyValue) pairs.
 		for ( ; properties_iter != properties_end; ++properties_iter)
 		{
 			std::vector<bp::object> name_value_vector;
 			// Attempt to extract the property name and value.
 			try
 			{
-				// A two-element sequence containing property name and property value.
+				// A two-element sequence containing property name and property value(s).
 				bp::stl_input_iterator<bp::object>
 						name_value_seq_begin(*properties_iter),
 						name_value_seq_end;
@@ -168,32 +273,45 @@ namespace GPlatesApi
 			{
 				PyErr_Clear();
 
-				PyErr_SetString(PyExc_TypeError, "Expected a sequence of (PropertyName, PropertyValue)");
+				PyErr_SetString(PyExc_TypeError, type_error_string);
 				bp::throw_error_already_set();
 			}
 
-			if (name_value_vector.size() != 2)   // (PropertyName, PropertyValue)
+			if (name_value_vector.size() != 2)   // (PropertyName, PropertyValue(s))
 			{
-				PyErr_SetString(PyExc_TypeError, "Expected a sequence of (PropertyName, PropertyValue)");
+				PyErr_SetString(PyExc_TypeError, type_error_string);
 				bp::throw_error_already_set();
 			}
+			const bp::object property_name_object = name_value_vector[0];
+			const bp::object property_value_object = name_value_vector[1];
 
-			bp::extract<GPlatesModel::PropertyName> extract_property_name(name_value_vector[0]);
-			bp::extract<GPlatesModel::PropertyValue::non_null_ptr_type> extract_property_value(name_value_vector[1]);
-			if (!extract_property_name.check() ||
-				!extract_property_value.check())
+			// Make sure we can extract PropertyName.
+			// The PropertyValue(s) is handled by 'feature_handle_add_property()'.
+			bp::extract<GPlatesModel::PropertyName> extract_property_name(property_name_object);
+			if (!extract_property_name.check())
 			{
-				PyErr_SetString(PyExc_TypeError, "Expected a sequence of (PropertyName, PropertyValue)");
+				PyErr_SetString(PyExc_TypeError, type_error_string);
 				bp::throw_error_already_set();
 			}
 
-			GPlatesModel::TopLevelProperty::non_null_ptr_type property =
-					feature_handle_add_property(
+			bp::object property =
+					feature_handle_add_property_internal(
 							feature_handle,
 							extract_property_name(),
-							extract_property_value(),
-							verify_information_model);
-			properties.append(property);
+							property_value_object,
+							verify_information_model,
+							type_error_string);
+
+			// It could be a list of properties if we passed in a sequence of property values.
+			bp::extract<bp::list> extract_property_list(property);
+			if (extract_property_list.check())
+			{
+				properties.extend(extract_property_list());
+			}
+			else
+			{
+				properties.append(property);
+			}
 		}
 
 		return properties;
@@ -697,22 +815,26 @@ export_feature()
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"add(property_name, property_value, [verify_information_model=VerifyInformationModel.yes]) "
 				"-> Property\n"
-				"  Adds a property to this feature.\n"
+				"  Adds a property (or properties) to this feature.\n"
 				"\n"
-				"  :param property_name: the name of the property\n"
+				"  :param property_name: the name of the property (or properties) to add\n"
 				"  :type property_name: :class:`PropertyName`\n"
-				"  :param property_value: the value of the property\n"
-				"  :type property_value: :class:`PropertyValue`\n"
+				"  :param property_value: the value (or values) of the property (or properties) to add\n"
+				"  :type property_value: :class:`PropertyValue`, or sequence (eg, ``list`` or ``tuple``) "
+				"of :class:`PropertyValue`\n"
 				"  :param verify_information_model: whether to check the information model before adding (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
-				"  :returns: the property added to the feature\n"
-				"  :rtype: :class:`Property`\n"
+				"  :returns: the property (or properties) added to the feature\n"
+				"  :rtype: :class:`Property`, or list of :class:`Property` depending on whether *property_value* "
+				"is a :class:`PropertyValue` or sequence of :class:`PropertyValue`\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *property_name* is not a recognised property name or is not supported by the feature type\n"
 				"\n"
 				"  ::\n"
 				"\n"
 				"    property_added = feature.add(property_name, property_value)\n"
+				"    properties_added = feature.add(property_name, [property_value1, property_value2])\n"
+				"    assert(len(properties_added) == 2)\n"
 				"\n"
 				"  A feature is an *unordered* collection of properties so there is no concept of "
 				"where a property is inserted in the sequence of properties.\n"
@@ -729,7 +851,8 @@ export_feature()
 				"  Adds properties to this feature.\n"
 				"\n"
 				"  :param properties: the property name/value pairs to add\n"
-				"  :type properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, :class:`PropertyValue`)\n"
+				"  :type properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
+				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
 				"  :param verify_information_model: whether to check the information model before adding (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
 				"  :returns: the list of properties added to the feature\n"
@@ -739,7 +862,17 @@ export_feature()
 				"\n"
 				"  ::\n"
 				"\n"
-				"    properties_added = feature.add([(property_name1, property_value1), (property_name2, property_value2)])\n"
+				"    properties_added = feature.add([\n"
+				"        (property_name1, property_value1),\n"
+				"        (property_name2, property_value2)])\n"
+				"    assert(len(properties_added) == 2)\n"
+				"    \n"
+				"    properties_added = feature.add([\n"
+				"        (property_name3, (property_value3a, property_value3b)),\n"
+				"        (property_name4, [property_value4a, property_value4b])\n"
+				"        (property_name5, property_value5)\n"
+				"        ])\n"
+				"    assert(len(properties_added) == 5)\n"
 				"\n"
 				"  A feature is an *unordered* collection of properties so there is no concept of where "
 				"a property is inserted in the sequence of properties.\n"

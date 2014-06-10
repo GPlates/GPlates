@@ -35,7 +35,6 @@
 
 #include "FeatureHandleWeakRefBackInserter.h"
 #include "Gpgim.h"
-#include "GpgimProperty.h"
 #include "Model.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
@@ -165,47 +164,47 @@ namespace
 
 		return boost::none;
 	}
+}
 
 
-	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type>
-	get_gpgim_property(
-			boost::optional<GPlatesModel::FeatureType> feature_type,
-			const GPlatesModel::PropertyName& property_name,
-			GPlatesModel::ModelUtils::TopLevelPropertyError::Type *error_code)
+boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type>
+GPlatesModel::ModelUtils::get_gpgim_property(
+		const GPlatesModel::PropertyName& property_name,
+		boost::optional<GPlatesModel::FeatureType> feature_type,
+		GPlatesModel::ModelUtils::TopLevelPropertyError::Type *error_code)
+{
+	const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
+
+	// Get the GPGIM property using the property name (and optionally the feature type).
+	// Using the feature type results in stricter conformance to the GPGIM.
+	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
+			feature_type
+			? gpgim.get_feature_property(feature_type.get(), property_name)
+			: gpgim.get_property(property_name);
+	if (gpgim_property)
 	{
-		const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
-
-		// Get the GPGIM property using the property name (and optionally the feature type).
-		// Using the feature type results in stricter conformance to the GPGIM.
-		boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
-				feature_type
-				? gpgim.get_feature_property(feature_type.get(), property_name)
-				: gpgim.get_property(property_name);
-		if (gpgim_property)
-		{
-			return gpgim_property.get();
-		}
-
-		if (error_code)
-		{
-			if (feature_type)
-			{
-				// If we checked against the feature type then the failure could just be that
-				// the property name wasn't a name recognised for *any* feature type - we give
-				// preference to that error message (if that's the case here).
-				*error_code = gpgim.get_property(property_name)
-						? GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_NAME_NOT_RECOGNISED
-						// Property name was recognised, but not supported by the feature type...
-						: GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_NAME_NOT_SUPPORTED_BY_FEATURE_TYPE;
-			}
-			else
-			{
-				*error_code = GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_NAME_NOT_RECOGNISED;
-			}
-		}
-
-		return boost::none;
+		return gpgim_property.get();
 	}
+
+	if (error_code)
+	{
+		if (feature_type)
+		{
+			// If we checked against the feature type then the failure could just be that
+			// the property name wasn't a name recognised for *any* feature type - we give
+			// preference to that error message (if that's the case here).
+			*error_code = gpgim.get_property(property_name)
+					? GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_NAME_NOT_RECOGNISED
+					// Property name was recognised, but not supported by the feature type...
+					: GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_NAME_NOT_SUPPORTED_BY_FEATURE_TYPE;
+		}
+		else
+		{
+			*error_code = GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_NAME_NOT_RECOGNISED;
+		}
+	}
+
+	return boost::none;
 }
 
 
@@ -297,8 +296,8 @@ GPlatesModel::ModelUtils::create_top_level_property(
 	// Using the feature type results in stricter conformance to the GPGIM.
 	boost::optional<GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
 			get_gpgim_property(
-					feature_type,
 					property_name,
+					feature_type,
 					error_code);
 	if (!gpgim_property)
 	{
@@ -405,8 +404,8 @@ GPlatesModel::ModelUtils::rename_feature_properties(
 	// Using the feature type results in stricter conformance to the GPGIM.
 	boost::optional<GpgimProperty::non_null_ptr_to_const_type> new_gpgim_property =
 			get_gpgim_property(
-					feature_type,
 					new_property_name,
+					feature_type,
 					error_code);
 	if (!new_gpgim_property)
 	{
