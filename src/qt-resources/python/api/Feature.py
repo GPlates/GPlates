@@ -3,10 +3,10 @@
 _gml_description_property_name = PropertyName.create_gml('description')
 _gml_name_property_name = PropertyName.create_gml('name')
 _gml_valid_time_property_name = PropertyName.create_gml('validTime')
-_gpml_left_plate = PropertyName.create_gpml('leftPlate')
-_gpml_right_plate = PropertyName.create_gpml('rightPlate')
-_gpml_reconstruction_plate_id = PropertyName.create_gpml('reconstructionPlateId')
-_gpml_conjugate_plate_id = PropertyName.create_gpml('conjugatePlateId')
+_gpml_left_plate_property_name = PropertyName.create_gpml('leftPlate')
+_gpml_right_plate_property_name = PropertyName.create_gpml('rightPlate')
+_gpml_reconstruction_plate_id_property_name = PropertyName.create_gpml('reconstructionPlateId')
+_gpml_conjugate_plate_id_property_name = PropertyName.create_gpml('conjugatePlateId')
 
 
 def get_description(feature, default=''):
@@ -20,7 +20,7 @@ def get_description(feature, default=''):
     
     This is a convenience method that wraps :meth:`get_value` for the common property 'gml:description'.
     
-    Return the description of this feature as a string (defaults to an empty string if not exactly one found):
+    Return the description as a string (defaults to an empty string if not exactly one found):
     ::
     
       description = feature.get_description()
@@ -48,6 +48,31 @@ def get_description(feature, default=''):
 Feature.get_description = get_description
 # Delete the module reference to the function - we only keep the class method.
 del get_description
+
+
+def set_description(feature, description):
+    """set_description(description) -> Property
+    Sets the description of this feature.
+    
+    :param description: the description
+    :type description: string
+    :returns: the property containing the description
+    :rtype: :class:`Property`
+    
+    This is a convenience method that wraps :meth:`set` for the common property 'gml:description'.
+    
+    Set the description to a string:
+    ::
+    
+      feature.set_description('description')
+    """
+    
+    return feature.set(_gml_description_property_name, XsString(description))
+
+# Add the module function as a class method.
+Feature.set_description = set_description
+# Delete the module reference to the function - we only keep the class method.
+del set_description
 
 
 def get_name(feature, default='', property_return=PropertyReturn.exactly_one):
@@ -79,7 +104,7 @@ def get_name(feature, default='', property_return=PropertyReturn.exactly_one):
     empty name string *will* be added to the list.
     ======================================= ==============
     
-    Return the name of this feature as a string (defaults to an empty string if not exactly one found):
+    Return the name as a string (defaults to an empty string if not exactly one found):
     ::
     
       name = feature.get_name()
@@ -98,7 +123,7 @@ def get_name(feature, default='', property_return=PropertyReturn.exactly_one):
       if name:
         ...
     
-    Return the list of names of this feature as strings (defaults to an empty list if no names are found):
+    Return the list of names as strings (defaults to an empty list if no names are found):
     ::
     
       names = feature.get_name([], PropertyReturn.all)
@@ -141,6 +166,42 @@ Feature.get_name = get_name
 del get_name
 
 
+def set_name(feature, name):
+    """set_name(name) -> Property or list
+    Set the name (or names) of this feature.
+    
+    :param name: the name or names
+    :type name: string, or sequence of string
+    :returns: the property containing the name, or properties containing the names
+    :rtype: :class:`Property`, or list of :class:`Property`
+    
+    This is a convenience method that wraps :meth:`set` for the common property 'gml:name'.
+    
+    There can be more than one name for a feature but typically there will be only one.
+    
+    Set the name to a string:
+    ::
+    
+      feature.set_name('name')
+    
+    Set the names to strings:
+    ::
+    
+      feature.set_name(['name1', 'name2'])
+    """
+    
+    # If 'name' is a sequence.
+    if hasattr(name, '__iter__'):
+        return feature.set(_gml_name_property_name, [XsString(n) for n in name])
+    
+    return feature.set(_gml_name_property_name, XsString(name))
+
+# Add the module function as a class method.
+Feature.set_name = set_name
+# Delete the module reference to the function - we only keep the class method.
+del set_name
+
+
 def get_valid_time(feature, default=(float('inf'), float('-inf'))):
     """get_valid_time([default=(float('inf'), float('-inf'))]) -> begin_time, end_time
     Returns the valid time range of this feature.
@@ -152,7 +213,7 @@ def get_valid_time(feature, default=(float('inf'), float('-inf'))):
     
     This is a convenience method that wraps :meth:`get_value` for the common property 'gml:validTime'.
     
-    Return the valid time range of this feature as a tuple of begin and end times (defaults to all time if not exactly one found):
+    Return the valid time range as a tuple of begin and end times (defaults to all time if not exactly one found):
     ::
     
       begin_time, end_time = feature.get_valid_time()
@@ -188,6 +249,33 @@ Feature.get_valid_time = get_valid_time
 del get_valid_time
 
 
+def set_valid_time(feature, begin_time, end_time):
+    """set_valid_time(begin_time, end_time) -> Property
+    Sets the valid time range of this feature.
+    
+    :param begin_time: the begin time (time of appearance)
+    :type begin_time: float or :class:`GeoTimeInstant`
+    :param end_time: the end time (time of disappearance)
+    :type end_time: float or :class:`GeoTimeInstant`
+    :returns: the property containing the valid time range
+    :rtype: :class:`Property`
+    
+    This is a convenience method that wraps :meth:`set` for the common property 'gml:validTime'.
+    
+    Set the valid time range to include all geological time up until present day:
+    ::
+    
+      feature.set_valid_time(pygplates.GeoTimeInstant.create_distant_past(), 0)
+    """
+    
+    return feature.set(_gml_valid_time_property_name, GmlTimePeriod(begin_time, end_time))
+
+# Add the module function as a class method.
+Feature.set_valid_time = set_valid_time
+# Delete the module reference to the function - we only keep the class method.
+del set_valid_time
+
+
 def get_left_plate(feature, default=0):
     """get_left_plate([default=0]) -> int
     Returns the left plate ID of this feature.
@@ -199,7 +287,7 @@ def get_left_plate(feature, default=0):
     
     This is a convenience method that wraps :meth:`get_value` for the common property 'gpml:leftPlate'.
     
-    Return the left plate ID of this feature as an integer (defaults to zero if not exactly one found):
+    Return the left plate ID as an integer (defaults to zero if not exactly one found):
     ::
     
       left_plate = feature.get_left_plate()
@@ -212,7 +300,7 @@ def get_left_plate(feature, default=0):
         ...
     """
     
-    gpml_left_plate = feature.get_value(_gpml_left_plate)
+    gpml_left_plate = feature.get_value(_gpml_left_plate_property_name)
     if not gpml_left_plate:
         return default
     
@@ -229,6 +317,31 @@ Feature.get_left_plate = get_left_plate
 del get_left_plate
 
 
+def set_left_plate(feature, left_plate):
+    """set_left_plate(left_plate) -> Property
+    Sets the left plate ID of this feature.
+    
+    :param left_plate: the left plate id
+    :type left_plate: int
+    :returns: the property containing the left plate id
+    :rtype: :class:`Property`
+    
+    This is a convenience method that wraps :meth:`set` for the common property 'gpml:leftPlate'.
+    
+    Set the left plate ID to an integer:
+    ::
+    
+      feature.set_left_plate(201)
+    """
+    
+    return feature.set(_gpml_left_plate_property_name, GpmlPlateId(left_plate))
+
+# Add the module function as a class method.
+Feature.set_left_plate = set_left_plate
+# Delete the module reference to the function - we only keep the class method.
+del set_left_plate
+
+
 def get_right_plate(feature, default=0):
     """get_right_plate([default=0]) -> int
     Returns the right plate ID of this feature.
@@ -240,7 +353,7 @@ def get_right_plate(feature, default=0):
     
     This is a convenience method that wraps :meth:`get_value` for the common property 'gpml:rightPlate'.
     
-    Return the right plate ID of this feature as an integer (defaults to zero if not exactly one found):
+    Return the right plate ID as an integer (defaults to zero if not exactly one found):
     ::
     
       right_plate = feature.get_right_plate()
@@ -253,7 +366,7 @@ def get_right_plate(feature, default=0):
         ...
     """
     
-    gpml_right_plate = feature.get_value(_gpml_right_plate)
+    gpml_right_plate = feature.get_value(_gpml_right_plate_property_name)
     if not gpml_right_plate:
         return default
     
@@ -270,6 +383,31 @@ Feature.get_right_plate = get_right_plate
 del get_right_plate
 
 
+def set_right_plate(feature, right_plate):
+    """set_right_plate(right_plate) -> Property
+    Sets the right plate ID of this feature.
+    
+    :param right_plate: the right plate id
+    :type right_plate: int
+    :returns: the property containing the right plate id
+    :rtype: :class:`Property`
+    
+    This is a convenience method that wraps :meth:`set` for the common property 'gpml:rightPlate'.
+    
+    Set the right plate ID to an integer:
+    ::
+    
+      feature.set_right_plate(701)
+    """
+    
+    return feature.set(_gpml_right_plate_property_name, GpmlPlateId(right_plate))
+
+# Add the module function as a class method.
+Feature.set_right_plate = set_right_plate
+# Delete the module reference to the function - we only keep the class method.
+del set_right_plate
+
+
 def get_reconstruction_plate_id(feature, default=0):
     """get_reconstruction_plate_id([default=0]) -> int
     Returns the reconstruction plate ID of this feature.
@@ -281,7 +419,7 @@ def get_reconstruction_plate_id(feature, default=0):
     
     This is a convenience method that wraps :meth:`get_value` for the common property 'gpml:reconstructionPlateId'.
     
-    Return the reconstruction plate ID of this feature as an integer (defaults to zero if not exactly one found):
+    Return the reconstruction plate ID as an integer (defaults to zero if not exactly one found):
     ::
     
       reconstruction_plate_id = feature.get_reconstruction_plate_id()
@@ -294,7 +432,7 @@ def get_reconstruction_plate_id(feature, default=0):
         ...
     """
     
-    gpml_reconstruction_plate_id = feature.get_value(_gpml_reconstruction_plate_id)
+    gpml_reconstruction_plate_id = feature.get_value(_gpml_reconstruction_plate_id_property_name)
     if not gpml_reconstruction_plate_id:
         return default
     
@@ -309,6 +447,31 @@ def get_reconstruction_plate_id(feature, default=0):
 Feature.get_reconstruction_plate_id = get_reconstruction_plate_id
 # Delete the module reference to the function - we only keep the class method.
 del get_reconstruction_plate_id
+
+
+def set_reconstruction_plate_id(feature, reconstruction_plate_id):
+    """set_reconstruction_plate_id(reconstruction_plate_id) -> Property
+    Sets the reconstruction plate ID of this feature.
+    
+    :param reconstruction_plate_id: the reconstruction plate id
+    :type reconstruction_plate_id: int
+    :returns: the property containing the reconstruction plate id
+    :rtype: :class:`Property`
+    
+    This is a convenience method that wraps :meth:`set` for the common property 'gpml:reconstructionPlateId'.
+    
+    Set the reconstruction plate ID to an integer:
+    ::
+    
+      feature.set_reconstruction_plate_id(701)
+    """
+    
+    return feature.set(_gpml_reconstruction_plate_id_property_name, GpmlPlateId(reconstruction_plate_id))
+
+# Add the module function as a class method.
+Feature.set_reconstruction_plate_id = set_reconstruction_plate_id
+# Delete the module reference to the function - we only keep the class method.
+del set_reconstruction_plate_id
 
 
 def get_conjugate_plate_id(feature, default=0, property_return=PropertyReturn.exactly_one):
@@ -340,7 +503,7 @@ def get_conjugate_plate_id(feature, default=0, property_return=PropertyReturn.ex
     a zero plate ID *will* be added to the list.
     ======================================= ==============
     
-    Return the conjugate plate ID of this feature as an integer (defaults to zero if not exactly one found):
+    Return the conjugate plate ID as an integer (defaults to zero if not exactly one found):
     ::
     
       conjugate_plate_id = feature.get_conjugate_plate_id()
@@ -359,7 +522,7 @@ def get_conjugate_plate_id(feature, default=0, property_return=PropertyReturn.ex
       if conjugate_plate_id:
         ...
     
-    Return the list of conjugate plate IDs of this feature as integers (defaults to an empty list if no conjugate plate IDs are found):
+    Return the list of conjugate plate IDs as integers (defaults to an empty list if no conjugate plate IDs are found):
     ::
     
       conjugate_plate_ids = feature.get_conjugate_plate_id([], PropertyReturn.all)
@@ -379,7 +542,7 @@ def get_conjugate_plate_id(feature, default=0, property_return=PropertyReturn.ex
         ...
     """
     
-    gml_conjugate_plate_id = feature.get_value(_gpml_conjugate_plate_id, 0, property_return)
+    gml_conjugate_plate_id = feature.get_value(_gpml_conjugate_plate_id_property_name, 0, property_return)
     if gml_conjugate_plate_id:
         try:
             if property_return == PropertyReturn.all:
@@ -400,3 +563,39 @@ def get_conjugate_plate_id(feature, default=0, property_return=PropertyReturn.ex
 Feature.get_conjugate_plate_id = get_conjugate_plate_id
 # Delete the module reference to the function - we only keep the class method.
 del get_conjugate_plate_id
+
+
+def set_conjugate_plate_id(feature, conjugate_plate_id):
+    """set_conjugate_plate_id(conjugate_plate_id) -> Property or list
+    Set the conjugate plate ID (or IDs) of this feature.
+    
+    :param conjugate_plate_id: the conjugate plate ID or plate IDs
+    :type conjugate_plate_id: int, or sequence of int
+    :returns: the property containing the conjugate plate ID, or properties containing the conjugate plate IDs
+    :rtype: :class:`Property`, or list of :class:`Property`
+    
+    This is a convenience method that wraps :meth:`set` for the common property 'gpml:conjugatePlateId'.
+    
+    There can be more than one conjugate plate ID for a feature but typically there will be only one.
+    
+    Set the conjugate plate ID to an integer:
+    ::
+    
+      feature.set_conjugate_plate_id(201)
+    
+    Set the conjugate plate IDs to integers:
+    ::
+    
+      feature.set_conjugate_plate_id([903, 904])
+    """
+    
+    # If 'conjugate_plate_id' is a sequence.
+    if hasattr(conjugate_plate_id, '__iter__'):
+        return feature.set(_gpml_conjugate_plate_id_property_name, [GpmlPlateId(id) for id in conjugate_plate_id])
+    
+    return feature.set(_gpml_conjugate_plate_id_property_name, GpmlPlateId(conjugate_plate_id))
+
+# Add the module function as a class method.
+Feature.set_conjugate_plate_id = set_conjugate_plate_id
+# Delete the module reference to the function - we only keep the class method.
+del set_conjugate_plate_id

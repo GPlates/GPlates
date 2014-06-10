@@ -64,7 +64,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertFalse(pygplates.get_feature_geometry_properties_by_name(
                 self.feature, pygplates.PropertyName.create_gpml('position2'), pygplates.PointOnSphere))
     
-    def test_get_description(self):
+    def test_get_and_set_description(self):
         description = self.feature.get_description()
         self.assertTrue(description == 'Feature description')
         self.feature.remove(pygplates.PropertyName.create_gml('description'))
@@ -73,8 +73,14 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(description == '')
         # With property removed it should return our default (None).
         self.assertFalse(self.feature.get_description(None))
+        
+        self.feature.set_description('Another description')
+        self.assertTrue(self.feature.get_description() == 'Another description')
+        gml_description = self.feature.set_description('Yet another description')
+        self.assertTrue(gml_description.get_value().get_string() == self.feature.get_description())
+        self.assertTrue(self.feature.get_description() == 'Yet another description')
     
-    def test_get_name(self):
+    def test_get_and_set_name(self):
         self.assertTrue(self.feature.get_name() == 'Feature name')
         self.assertTrue(self.feature.get_name('', pygplates.PropertyReturn.first) == 'Feature name')
         self.feature.remove(pygplates.PropertyName.create_gml('name'))
@@ -83,8 +89,14 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertFalse(self.feature.get_name())
         # With property removed it should return default of an empty string.
         self.assertTrue(self.feature.get_name('', pygplates.PropertyReturn.first) == '')
+        
+        self.feature.set_name('Another name')
+        self.assertTrue(self.feature.get_name() == 'Another name')
+        gml_name = self.feature.set_name('Yet another name')
+        self.assertTrue(gml_name.get_value().get_string() == self.feature.get_name())
+        self.assertTrue(self.feature.get_name() == 'Yet another name')
     
-    def test_get_names(self):
+    def test_get_and_set_names(self):
         self.assertTrue(self.feature.get_name([], pygplates.PropertyReturn.all) == ['Feature name'])
         self.feature.remove(pygplates.PropertyName.create_gml('name'))
         # With property removed it should return default of an empty list.
@@ -104,8 +116,14 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         # With only a single name with empty string it should still return a non-empty list.
         self.assertTrue(self.feature.get_name([], pygplates.PropertyReturn.all) == [''])
         self.assertFalse(any(self.feature.get_name([], pygplates.PropertyReturn.all)))
+        
+        self.feature.set_name(['Another name1', 'Another name2'])
+        self.assertTrue('Another name1' in self.feature.get_name([], pygplates.PropertyReturn.all))
+        self.assertTrue('Another name2' in self.feature.get_name([], pygplates.PropertyReturn.all))
+        gml_name = self.feature.set_name(('Yet another name1', 'Yet another name2'))
+        self.assertTrue(len(gml_name) == 2)
     
-    def test_get_valid_time(self):
+    def test_get_and_set_valid_time(self):
         begin_time, end_time = self.feature.get_valid_time()
         self.assertTrue(pygplates.GeoTimeInstant(begin_time) == 50)
         self.assertTrue(pygplates.GeoTimeInstant(end_time) == 0)
@@ -116,24 +134,43 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(pygplates.GeoTimeInstant(end_time).is_distant_future())
         # With property removed it should return our default (None).
         self.assertFalse(self.feature.get_valid_time(None))
+        
+        self.feature.set_valid_time(pygplates.GeoTimeInstant.create_distant_past(), 0)
+        self.assertTrue(self.feature.get_valid_time() == (pygplates.GeoTimeInstant.create_distant_past(), 0))
+        gml_valid_time = self.feature.set_valid_time(100, 0)
+        self.assertTrue(gml_valid_time.get_value().get_begin_time() == 100)
+        self.assertTrue(gml_valid_time.get_value().get_end_time() == 0)
+        self.assertTrue(self.feature.get_valid_time() == (100, 0))
     
-    def test_get_left_plate(self):
+    def test_get_and_set_left_plate(self):
         self.assertTrue(self.feature.get_left_plate() == 11)
         self.feature.remove(pygplates.PropertyName.create_gpml('leftPlate'))
         # With property removed it should return default of zero.
         self.assertTrue(self.feature.get_left_plate() == 0)
         # With property removed it should return our default (None).
         self.assertFalse(self.feature.get_left_plate(None))
+        
+        self.feature.set_left_plate(201)
+        self.assertTrue(self.feature.get_left_plate() == 201)
+        gpml_left_plate = self.feature.set_left_plate(701)
+        self.assertTrue(gpml_left_plate.get_value().get_plate_id() == self.feature.get_left_plate())
+        self.assertTrue(self.feature.get_left_plate() == 701)
     
-    def test_get_right_plate(self):
+    def test_get_and_set_right_plate(self):
         self.assertTrue(self.feature.get_right_plate() == 12)
         self.feature.remove(pygplates.PropertyName.create_gpml('rightPlate'))
         # With property removed it should return default of zero.
         self.assertTrue(self.feature.get_right_plate() == 0)
         # With property removed it should return our default (None).
         self.assertFalse(self.feature.get_right_plate(None))
+        
+        self.feature.set_right_plate(201)
+        self.assertTrue(self.feature.get_right_plate() == 201)
+        gpml_right_plate = self.feature.set_right_plate(701)
+        self.assertTrue(gpml_right_plate.get_value().get_plate_id() == self.feature.get_right_plate())
+        self.assertTrue(self.feature.get_right_plate() == 701)
     
-    def test_get_reconstruction_plate_id(self):
+    def test_get_and_get_reconstruction_plate_id(self):
         # There are two reconstruction plate IDs so this should return zero (default when not exactly one property).
         self.assertTrue(self.feature.get_reconstruction_plate_id() == 0)
         self.assertFalse(self.feature.get_reconstruction_plate_id(None))
@@ -142,8 +179,14 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.feature.add(pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.GpmlPlateId(10))
         reconstruction_plate_id = self.feature.get_reconstruction_plate_id()
         self.assertTrue(reconstruction_plate_id == 10)
+        
+        self.feature.set_reconstruction_plate_id(201)
+        self.assertTrue(self.feature.get_reconstruction_plate_id() == 201)
+        gpml_reconstruction_plate_id = self.feature.set_reconstruction_plate_id(701)
+        self.assertTrue(gpml_reconstruction_plate_id.get_value().get_plate_id() == self.feature.get_reconstruction_plate_id())
+        self.assertTrue(self.feature.get_reconstruction_plate_id() == 701)
     
-    def test_get_conjugate_plate_id(self):
+    def test_get_and_set_conjugate_plate_id(self):
         self.assertTrue(self.feature.get_conjugate_plate_id() == 2)
         self.assertTrue(self.feature.get_conjugate_plate_id(0, pygplates.PropertyReturn.first) == 2)
         self.feature.remove(pygplates.PropertyName.create_gpml('conjugatePlateId'))
@@ -152,8 +195,14 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertFalse(self.feature.get_conjugate_plate_id())
         # With property removed it should return default of zero.
         self.assertTrue(self.feature.get_conjugate_plate_id(0, pygplates.PropertyReturn.first) == 0)
+        
+        self.feature.set_conjugate_plate_id(201)
+        self.assertTrue(self.feature.get_conjugate_plate_id() == 201)
+        gpml_conjugate_plate_id = self.feature.set_conjugate_plate_id(701)
+        self.assertTrue(gpml_conjugate_plate_id.get_value().get_plate_id() == self.feature.get_conjugate_plate_id())
+        self.assertTrue(self.feature.get_conjugate_plate_id() == 701)
     
-    def test_get_conjugate_plate_ids(self):
+    def test_get_and_set_conjugate_plate_ids(self):
         self.assertTrue(self.feature.get_conjugate_plate_id([], pygplates.PropertyReturn.all) == [2])
         self.feature.remove(pygplates.PropertyName.create_gpml('conjugatePlateId'))
         # With property removed it should return default of an empty list.
@@ -172,6 +221,12 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         # With only a single plate ID of zero it should still return a non-empty list.
         self.assertTrue(self.feature.get_conjugate_plate_id([], pygplates.PropertyReturn.all) == [0])
         self.assertFalse(any(self.feature.get_conjugate_plate_id([], pygplates.PropertyReturn.all)))
+        
+        self.feature.set_conjugate_plate_id([903, 904])
+        self.assertTrue(903 in self.feature.get_conjugate_plate_id([], pygplates.PropertyReturn.all))
+        self.assertTrue(904 in self.feature.get_conjugate_plate_id([], pygplates.PropertyReturn.all))
+        gpml_conjugate_plate_id = self.feature.set_conjugate_plate_id((905, 906))
+        self.assertTrue(len(gpml_conjugate_plate_id) == 2)
     
     def test_get_by_name(self):
         properties = self.feature.get(
