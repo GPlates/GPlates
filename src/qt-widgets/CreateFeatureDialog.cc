@@ -1582,6 +1582,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 					property_name,
 					conjugate_plate_id.get()->clone(),
 					true/*check_property_name_allowed_for_feature_type*/,
+					true/*check_property_multiplicity*/,
 					&add_property_error_code))
 			{
 				// Not successful in adding geometry; show error message.
@@ -1604,6 +1605,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 					property_name,
 					reconstruction_plate_id.get()->clone(),
 					true/*check_property_name_allowed_for_feature_type*/,
+					true/*check_property_multiplicity*/,
 					&add_property_error_code))
 			{
 				// Not successful in adding geometry; show error message.
@@ -1634,6 +1636,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 					property_name,
 					conjugate_name_property_value,
 					true/*check_property_name_allowed_for_feature_type*/,
+					true/*check_property_multiplicity*/,
 					&add_property_error_code))
 			{
 				// Not successful in adding geometry; show error message.
@@ -1726,6 +1729,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			(*geometry_property_iterator)->get_property_name(),
 			conjugate_geometry_property_value.get(),
 			true/*check_property_name_allowed_for_feature_type*/,
+			true/*check_property_multiplicity*/,
 			&add_property_error_code))
 	{
 		// Not successful in adding geometry; show error message.

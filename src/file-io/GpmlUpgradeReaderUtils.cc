@@ -739,6 +739,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 		d_network_property_name,
 		network_property_value,
 		true/*check_property_name_allowed_for_feature_type*/,
+		true/*check_property_multiplicity*/,
 		&add_property_error_code))
 	{
 		// The file we read from does not contain the newly added network property.

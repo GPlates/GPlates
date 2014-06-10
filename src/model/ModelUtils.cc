@@ -169,15 +169,15 @@ namespace
 
 boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type>
 GPlatesModel::ModelUtils::get_gpgim_property(
-		const GPlatesModel::PropertyName& property_name,
-		boost::optional<GPlatesModel::FeatureType> feature_type,
-		GPlatesModel::ModelUtils::TopLevelPropertyError::Type *error_code)
+		const PropertyName& property_name,
+		boost::optional<FeatureType> feature_type,
+		TopLevelPropertyError::Type *error_code)
 {
-	const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
+	const Gpgim &gpgim = Gpgim::instance();
 
 	// Get the GPGIM property using the property name (and optionally the feature type).
 	// Using the feature type results in stricter conformance to the GPGIM.
-	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
+	boost::optional<GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
 			feature_type
 			? gpgim.get_feature_property(feature_type.get(), property_name)
 			: gpgim.get_property(property_name);
@@ -194,13 +194,13 @@ GPlatesModel::ModelUtils::get_gpgim_property(
 			// the property name wasn't a name recognised for *any* feature type - we give
 			// preference to that error message (if that's the case here).
 			*error_code = gpgim.get_property(property_name)
-					? GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_NAME_NOT_RECOGNISED
+					? TopLevelPropertyError::PROPERTY_NAME_NOT_RECOGNISED
 					// Property name was recognised, but not supported by the feature type...
-					: GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_NAME_NOT_SUPPORTED_BY_FEATURE_TYPE;
+					: TopLevelPropertyError::PROPERTY_NAME_NOT_SUPPORTED_BY_FEATURE_TYPE;
 		}
 		else
 		{
-			*error_code = GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_NAME_NOT_RECOGNISED;
+			*error_code = TopLevelPropertyError::PROPERTY_NAME_NOT_RECOGNISED;
 		}
 	}
 
@@ -217,6 +217,7 @@ GPlatesModel::ModelUtils::get_error_message(
 		QT_TR_NOOP("GPlates cannot change the property name of a top-level property that does not have exactly one property value."),
 		QT_TR_NOOP("GPlates cannot change the property name of a top-level property that is not inline."),
 		QT_TR_NOOP("The property name was not recognised as a valid name by the GPGIM."),
+		QT_TR_NOOP("The property name can occur at most once in a feature."),
 		QT_TR_NOOP("The property name is not in the feature type's list of valid names."),
 		QT_TR_NOOP("GPlates was unable to wrap into a time-dependent property."),
 		QT_TR_NOOP("GPlates was unable to unwrap the existing time-dependent property."),
@@ -339,6 +340,7 @@ GPlatesModel::ModelUtils::add_property(
 		const PropertyName& property_name,
 		const PropertyValue::non_null_ptr_type &property_value,
 		bool check_property_name_allowed_for_feature_type,
+		bool check_property_multiplicity,
 		TopLevelPropertyError::Type *error_code)
 {
 	boost::optional<FeatureType> feature_type;
@@ -347,19 +349,24 @@ GPlatesModel::ModelUtils::add_property(
 		feature_type = feature->feature_type();
 	}
 
-	boost::optional<TopLevelProperty::non_null_ptr_type> top_level_property =
-			create_top_level_property(
+	// Get the GPGIM property using the property name (and optionally the feature type).
+	// Using the feature type results in stricter conformance to the GPGIM.
+	boost::optional<GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
+			get_gpgim_property(
 					property_name,
-					property_value,
 					feature_type,
 					error_code);
-	if (!top_level_property)
+	if (!gpgim_property)
 	{
-		return false;
+		return boost::none;
 	}
 
-	// Add the converted property value to the feature.
-	return feature->add(top_level_property.get());
+	return add_property(
+			feature,
+			*gpgim_property.get(),
+			property_value,
+			check_property_multiplicity,
+			error_code);
 }
 
 
@@ -368,8 +375,35 @@ GPlatesModel::ModelUtils::add_property(
 		const FeatureHandle::weak_ref &feature,
 		const GpgimProperty &gpgim_property,
 		const PropertyValue::non_null_ptr_type &property_value,
+		bool check_property_multiplicity,
 		TopLevelPropertyError::Type *error_code)
 {
+	if (check_property_multiplicity)
+	{
+		// If we're restricted to at most one property then check that we don't already have one.
+		if (gpgim_property.get_multiplicity() == GpgimProperty::ZERO_OR_ONE ||
+			gpgim_property.get_multiplicity() == GpgimProperty::ONE)
+		{
+			// Search for an existing property with the same name.
+			FeatureHandle::iterator properties_iter = feature->begin();
+			FeatureHandle::iterator properties_end = feature->end();
+			for ( ; properties_iter != properties_end; ++properties_iter)
+			{
+				TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+				if (gpgim_property.get_property_name() == feature_property->get_property_name())
+				{
+					if (error_code)
+					{
+						*error_code = TopLevelPropertyError::PROPERTY_NAME_CAN_OCCUR_AT_MOST_ONCE_IN_A_FEATURE;
+					}
+
+					return boost::none;
+				}
+			}
+		}
+	}
+
 	boost::optional<TopLevelProperty::non_null_ptr_type> top_level_property =
 			create_top_level_property(
 					gpgim_property,
@@ -382,6 +416,19 @@ GPlatesModel::ModelUtils::add_property(
 
 	// Add the converted property value to the feature.
 	return feature->add(top_level_property.get());
+}
+
+
+boost::optional<GPlatesModel::FeatureHandle::iterator>
+GPlatesModel::ModelUtils::set_property(
+		const FeatureHandle::weak_ref &feature,
+		const PropertyName& property_name,
+		const PropertyValue::non_null_ptr_type &property_value,
+		bool check_property_name_allowed_for_feature_type,
+		bool check_property_multiplicity,
+		TopLevelPropertyError::Type *error_code)
+{
+	return boost::none;
 }
 
 

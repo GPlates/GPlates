@@ -294,7 +294,7 @@ GPlatesQtWidgets::AddPropertyDialog::add_property()
 				GPlatesModel::PropertyValue::non_null_ptr_type property_value =
 						d_edit_widget_group_box_ptr->create_property_value_from_widget();
 
-				// Add the geometry property to the feature.
+				// Add the property to the feature.
 				GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
 				if (!GPlatesModel::ModelUtils::add_property(
 						d_feature_ref,
@@ -302,6 +302,7 @@ GPlatesQtWidgets::AddPropertyDialog::add_property()
 						property_value,
 						// We're allowing *any* property to be added to the feature...
 						false/*check_property_name_allowed_for_feature_type*/,
+						false/*check_property_multiplicity*/,
 						&add_property_error_code))
 				{
 					// Not successful in adding property; show error message.

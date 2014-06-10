@@ -213,6 +213,7 @@ namespace GPlatesModel
 				NOT_ONE_PROPERTY_VALUE,
 				NOT_TOP_LEVEL_PROPERTY_INLINE,
 				PROPERTY_NAME_NOT_RECOGNISED, // Not recognised by GPGIM.
+				PROPERTY_NAME_CAN_OCCUR_AT_MOST_ONCE_IN_A_FEATURE,
 				PROPERTY_NAME_NOT_SUPPORTED_BY_FEATURE_TYPE,
 				COULD_NOT_WRAP_INTO_A_TIME_DEPENDENT_PROPERTY,
 				COULD_NOT_UNWRAP_EXISTING_TIME_DEPENDENT_PROPERTY,
@@ -339,6 +340,10 @@ namespace GPlatesModel
 		 * checked to see if it's valid for the specified feature's type (and only added if it is).
 		 * This ensures a stricter level of conformance to the GPGIM.
 		 *
+		 * NOTE: If @a check_property_multiplicity is true then property multiplicity is checked.
+		 * This ensures that adding the property will not violate the number of properties
+		 * (named @a property_name) allowed in a feature.
+		 *
 		 * Returns none if any error is encountered (such as an unrecognised property name or inability
 		 * to convert time-dependent wrapper) in which case the property value is not added to the feature.
 		 * The error code can optionally be returned via @a error_code.
@@ -349,6 +354,7 @@ namespace GPlatesModel
 				const PropertyName& property_name,
 				const PropertyValue::non_null_ptr_type &property_value,
 				bool check_property_name_allowed_for_feature_type = true,
+				bool check_property_multiplicity = true,
 				TopLevelPropertyError::Type *error_code = NULL);
 
 
@@ -364,6 +370,21 @@ namespace GPlatesModel
 				const FeatureHandle::weak_ref &feature,
 				const GpgimProperty &gpgim_property,
 				const PropertyValue::non_null_ptr_type &property_value,
+				bool check_property_multiplicity = true,
+				TopLevelPropertyError::Type *error_code = NULL);
+
+
+		/**
+		 * This function is similar to @a add_property except it first removes any existing
+		 * properties named @a property_name.
+		 */
+		boost::optional<FeatureHandle::iterator>
+		set_property(
+				const FeatureHandle::weak_ref &feature,
+				const PropertyName& property_name,
+				const PropertyValue::non_null_ptr_type &property_value,
+				bool check_property_name_allowed_for_feature_type = true,
+				bool check_property_multiplicity = true,
 				TopLevelPropertyError::Type *error_code = NULL);
 
 

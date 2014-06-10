@@ -136,6 +136,7 @@ namespace GPlatesApi
 							property_name,
 							property_value,
 							true/*check_property_name_allowed_for_feature_type*/,
+							true/*check_property_multiplicity*/,
 							&add_property_error_code);
 			if (!feature_property_iter)
 			{
@@ -209,6 +210,7 @@ namespace GPlatesApi
 							property_name,
 							property_value,
 							true/*check_property_name_allowed_for_feature_type*/,
+							true/*check_property_multiplicity*/,
 							&add_property_error_code);
 			if (!feature_property_iter)
 			{
@@ -569,6 +571,132 @@ namespace GPlatesApi
 	}
 
 	bp::object
+	feature_handle_set_property(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			bp::object property_value_object,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		const char *type_error_string =
+				"Expected a PropertyName and PropertyValue, or PropertyName and sequence of PropertyValue";
+
+		// 'property_value_object' is either a property value or a sequence of property values.
+		bp::extract<GPlatesModel::PropertyValue::non_null_ptr_type> extract_property_value(property_value_object);
+		if (extract_property_value.check())
+		{
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value = extract_property_value();
+
+			if (verify_information_model == VerifyInformationModel::NO)
+			{
+				// Just create a top-level property without checking information model.
+				GPlatesModel::TopLevelProperty::non_null_ptr_type property =
+						GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
+
+				GPlatesModel::FeatureHandle::iterator property_iter = feature_handle.add(property);
+
+				// Return the newly added property.
+				return bp::object(*property_iter);
+			}
+
+			// Only add property if valid property name for the feature's type.
+			GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
+			boost::optional<GPlatesModel::FeatureHandle::iterator> feature_property_iter =
+					GPlatesModel::ModelUtils::set_property(
+							feature_handle.reference(),
+							property_name,
+							property_value,
+							true/*check_property_name_allowed_for_feature_type*/,
+							true/*check_property_multiplicity*/,
+							&add_property_error_code);
+			if (!feature_property_iter)
+			{
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)));
+			}
+
+			// Return the newly added property.
+			return bp::object(*feature_property_iter.get());
+		}
+		// ...else a sequence of property values.
+
+		// Attempt to extract a sequence of property values.
+		typedef std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> property_value_seq_type;
+		property_value_seq_type property_values;
+		try
+		{
+			// A sequence containing property values.
+			bp::stl_input_iterator<GPlatesModel::PropertyValue::non_null_ptr_type>
+					property_value_seq_begin(property_value_object),
+					property_value_seq_end;
+
+			// Copy into a vector.
+			std::copy(property_value_seq_begin, property_value_seq_end, std::back_inserter(property_values));
+		}
+		catch (const boost::python::error_already_set &)
+		{
+			PyErr_Clear();
+
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
+
+		if (verify_information_model == VerifyInformationModel::NO)
+		{
+			bp::list properties;
+
+			// Just create a top-level properties without checking information model.
+			property_value_seq_type::const_iterator property_values_iter = property_values.begin();
+			property_value_seq_type::const_iterator property_values_end = property_values.end();
+			for ( ; property_values_iter != property_values_end; ++property_values_iter)
+			{
+				GPlatesModel::PropertyValue::non_null_ptr_type property_value = *property_values_iter;
+
+				GPlatesModel::TopLevelProperty::non_null_ptr_type property =
+						GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
+
+				GPlatesModel::FeatureHandle::iterator feature_property_iter = feature_handle.add(property);
+
+				properties.append(*feature_property_iter);
+			}
+
+			// Return the property list.
+			return properties;
+		}
+
+		bp::list properties;
+
+		property_value_seq_type::const_iterator property_values_iter = property_values.begin();
+		property_value_seq_type::const_iterator property_values_end = property_values.end();
+		for ( ; property_values_iter != property_values_end; ++property_values_iter)
+		{
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value = *property_values_iter;
+
+			// Only add property if valid property name for the feature's type.
+			GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
+			boost::optional<GPlatesModel::FeatureHandle::iterator> feature_property_iter =
+					GPlatesModel::ModelUtils::set_property(
+							feature_handle.reference(),
+							property_name,
+							property_value,
+							true/*check_property_name_allowed_for_feature_type*/,
+							true/*check_property_multiplicity*/,
+							&add_property_error_code);
+			if (!feature_property_iter)
+			{
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)));
+			}
+
+			properties.append(*feature_property_iter.get());
+		}
+
+		// Return the property list.
+		return properties;
+	}
+
+	bp::object
 	feature_handle_get_property(
 			GPlatesModel::FeatureHandle &feature_handle,
 			bp::object property_query_object,
@@ -756,7 +884,7 @@ export_feature()
 					"  properties_in_feature = [property for property in feature]\n"
 					"  assert(num_properties == len(properties_in_feature))\n"
 					"\n"
-					"The following methods support generically adding, removing, getting and setting properties:\n"
+					"The following methods support adding, removing, getting and setting properties:\n"
 					"\n"
 					"* :meth:`add`\n"
 					"* :meth:`remove`\n"
@@ -782,7 +910,7 @@ export_feature()
 					"* :meth:`get_right_plate`\n"
 					"* :meth:`set_right_plate`\n"
 					"\n"
-					"...for other properties :meth:`get`, :meth:`get_value` and :meth:`set` should be used.\n",
+					"...for other properties :meth:`get`, :meth:`get_value` and :meth:`set` will still need to be used.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -923,7 +1051,7 @@ export_feature()
 				"  All feature properties matching any :class:`PropertyName`, or predicate callable, (if any specified) will "
 				"be removed. Any specified :class:`PropertyName`, or predicate callable, that does not match a property "
 				"in this feature is ignored. However if any specified :class:`Property` is not currently a property "
-				"in this feature then the ``ValueError`` exception is raised - note that the same property *instance* must "
+				"in this feature then the ``ValueError`` exception is raised - note that the same :class:`Property` *instance* must "
 				"have previously been added (in other words the property *values* are not compared - "
 				"it actually looks for the same property *instance*).\n"
 				"\n"
@@ -956,6 +1084,44 @@ export_feature()
 				"    feature.remove(\n"
 				"        lambda property: property.get_name() == pygplates.PropertyName.create_gpml('leftPlate') or\n"
 				"                         property.get_name() == pygplates.PropertyName.create_gpml('rightPlate'))\n")
+		.def("set",
+				&GPlatesApi::feature_handle_set_property,
+				(bp::arg("property_name"),
+						bp::arg("property_value"),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"set(property_name, property_value, [verify_information_model=VerifyInformationModel.yes]) "
+				"-> Property\n"
+				"  Sets a property (or properties) to this feature.\n"
+				"\n"
+				"  :param property_name: the name of the property (or properties) to set\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param property_value: the value (or values) of the property (or properties) to set\n"
+				"  :type property_value: :class:`PropertyValue`, or sequence (eg, ``list`` or ``tuple``) "
+				"of :class:`PropertyValue`\n"
+				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :returns: the property (or properties) set in the feature\n"
+				"  :rtype: :class:`Property`, or list of :class:`Property` depending on whether *property_value* "
+				"is a :class:`PropertyValue` or sequence of :class:`PropertyValue`\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and *property_name* is not a recognised property name or is not supported by the feature type\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    property = feature.set(property_name, property_value)\n"
+				"    properties = feature.set(property_name, [property_value1, property_value2])\n"
+				"    assert(len(properties) == 2)\n"
+				"\n"
+				"  This method essentially has the same effect as calling :meth:`remove` followed by :meth:`add`:\n"
+				"  ::\n"
+				"\n"
+				"    def set(feature, property_name, property_value, verify_information_model):\n"
+				"        feature.remove(property_name)\n"
+				"        return feature.add(property_name, property_value, verify_information_model)\n"
+				"\n"
+				"  Note that even a feature of type *gpml:UnclassifiedFeature* will raise *InformationModelError* "
+				"if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not "
+				"recognised by the GPlates Geological Information Model (GPGIM).\n")
 		.def("get",
 				&GPlatesApi::feature_handle_get_property,
 				(bp::arg("property_query"),
