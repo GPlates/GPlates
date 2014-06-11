@@ -431,6 +431,57 @@ class FeatureCollectionCase(unittest.TestCase):
                 lambda feature: feature.get_feature_id() == feature_to_remove1.get_feature_id(),
                 feature_to_remove2.get_feature_id()])
         self.assertTrue(len(self.feature_collection) == self.feature_count - 2)
+    
+    def test_get_by_feature_type(self):
+        features = self.feature_collection.get(
+                pygplates.FeatureType.create_gpml('Volcano'),
+                pygplates.FeatureReturn.all)
+        self.assertTrue(len(features) == 4)
+        # We won't get exactly one.
+        self.assertFalse(self.feature_collection.get(pygplates.FeatureType.create_gpml('Volcano')))
+        # There are no isochrons.
+        self.assertFalse(self.feature_collection.get(
+                pygplates.FeatureType.create_gpml('Isochron'),
+                pygplates.FeatureReturn.all))
+    
+    def test_get_by_feature_id(self):
+        # Get the first and second features.
+        feature_iter = iter(self.feature_collection)
+        feature1 = feature_iter.next()
+        feature2 = feature_iter.next()
+        
+        feature = self.feature_collection.get(feature1.get_feature_id())
+        self.assertTrue(feature.get_feature_id() == feature1.get_feature_id())
+        self.assertTrue(len(self.feature_collection.get(feature1.get_feature_id(), pygplates.FeatureReturn.all)) == 1)
+        feature = self.feature_collection.get(feature2.get_feature_id())
+        self.assertTrue(feature.get_feature_id() == feature2.get_feature_id())
+        self.assertFalse(self.feature_collection.get(pygplates.FeatureId.create_unique_id(), pygplates.FeatureReturn.all))
+    
+    def test_get_by_predicate(self):
+        # Get the first and second features.
+        feature_iter = iter(self.feature_collection)
+        feature1 = feature_iter.next()
+        feature2 = feature_iter.next()
+        
+        feature = self.feature_collection.get(
+                lambda feature: feature.get_feature_id() == feature1.get_feature_id())
+        self.assertTrue(feature.get_feature_id() == feature1.get_feature_id())
+        feature = self.feature_collection.get(
+                lambda feature: feature.get_feature_id() == feature2.get_feature_id())
+        self.assertTrue(feature.get_feature_id() == feature2.get_feature_id())
+        self.assertFalse(self.feature_collection.get(
+                lambda feature: feature.get_feature_id() == pygplates.FeatureId.create_unique_id(),
+                pygplates.FeatureReturn.all))
+        # Of the four volcano features only two have reconstruction plate ids less than 800.
+        features = self.feature_collection.get(
+                lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Volcano') and
+                                feature.get_reconstruction_plate_id() < 800,
+                pygplates.FeatureReturn.all)
+        self.assertTrue(len(features) == 2)
+        # There are no isochrons.
+        self.assertFalse(self.feature_collection.get(
+                lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Isochron'),
+                pygplates.FeatureReturn.all))
 
 
 class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):

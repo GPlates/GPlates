@@ -54,6 +54,20 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+	/**
+	 * Enumeration to determine how features are returned.
+	 */
+	namespace FeatureReturn
+	{
+		enum Value
+		{
+			EXACTLY_ONE, // Returns a single element only if there's one match to the query.
+			FIRST,       // Returns the first element that matches the query.
+			ALL          // Returns all elements that matches the query.
+		};
+	};
+
+
 	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 	feature_collection_handle_create(
 			bp::object features_object)
@@ -82,7 +96,7 @@ namespace GPlatesApi
 
 	void
 	feature_collection_handle_add(
-			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection_handle,
+			GPlatesModel::FeatureCollectionHandle &feature_collection_handle,
 			bp::object feature_object)
 	{
 		// See if a single feature.
@@ -90,7 +104,7 @@ namespace GPlatesApi
 		if (extract_feature.check())
 		{
 			GPlatesModel::FeatureHandle::non_null_ptr_type feature = extract_feature();
-			feature_collection_handle->add(feature);
+			feature_collection_handle.add(feature);
 
 			return;
 		}
@@ -105,7 +119,7 @@ namespace GPlatesApi
 
 			for ( ; features_iter != features_end; ++features_iter)
 			{
-				feature_collection_handle->add(*features_iter);
+				feature_collection_handle.add(*features_iter);
 			}
 
 			return;
@@ -433,6 +447,152 @@ namespace GPlatesApi
 				}
 			}
 		}
+	}
+
+	bp::object
+	feature_collection_handle_get_feature(
+			GPlatesModel::FeatureCollectionHandle &feature_collection_handle,
+			bp::object feature_query_object,
+			FeatureReturn::Value feature_return)
+	{
+		boost::optional<GPlatesModel::FeatureType> feature_type;
+		boost::optional<GPlatesModel::FeatureId> feature_id;
+
+		// See if feature query is a feature type.
+		bp::extract<GPlatesModel::FeatureType> extract_feature_type(feature_query_object);
+		if (extract_feature_type.check())
+		{
+			feature_type = extract_feature_type();
+		}
+		else
+		{
+			// See if feature query is a feature id.
+			bp::extract<GPlatesModel::FeatureId> extract_feature_id(feature_query_object);
+			if (extract_feature_id.check())
+			{
+				feature_id = extract_feature_id();
+			}
+		}
+
+		if (feature_return == FeatureReturn::EXACTLY_ONE)
+		{
+			boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type> feature;
+
+			// Search for the feature.
+			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
+			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
+
+				// See if current feature matches the query.
+				bool feature_query_result = false;
+				if (feature_type)
+				{
+					feature_query_result = (feature_type.get() == collection_feature->feature_type());
+				}
+				else if (feature_id)
+				{
+					feature_query_result = (feature_id.get() == collection_feature->feature_id());
+				}
+				else
+				{
+					// Property query is a callable predicate...
+					feature_query_result = bp::extract<bool>(feature_query_object(collection_feature));
+				}
+
+				if (feature_query_result)
+				{
+					if (feature)
+					{
+						// Found two features matching same query but expecting only one.
+						return bp::object()/*Py_None*/;
+					}
+
+					feature = collection_feature;
+				}
+			}
+
+			// Return exactly one found feature (if found).
+			if (feature)
+			{
+				return bp::object(feature.get());
+			}
+		}
+		else if (feature_return == FeatureReturn::FIRST)
+		{
+			// Search for the feature.
+			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
+			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
+
+				// See if current feature matches the query.
+				bool feature_query_result = false;
+				if (feature_type)
+				{
+					feature_query_result = (feature_type.get() == collection_feature->feature_type());
+				}
+				else if (feature_id)
+				{
+					feature_query_result = (feature_id.get() == collection_feature->feature_id());
+				}
+				else
+				{
+					// Property query is a callable predicate...
+					feature_query_result = bp::extract<bool>(feature_query_object(collection_feature));
+				}
+
+				if (feature_query_result)
+				{
+					// Return first found.
+					return bp::object(collection_feature);
+				}
+			}
+		}
+		else
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					feature_return == FeatureReturn::ALL,
+					GPLATES_ASSERTION_SOURCE);
+
+			bp::list features;
+
+			// Search for the features.
+			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
+			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
+
+				// See if current feature matches the query.
+				bool feature_query_result = false;
+				if (feature_type)
+				{
+					feature_query_result = (feature_type.get() == collection_feature->feature_type());
+				}
+				else if (feature_id)
+				{
+					feature_query_result = (feature_id.get() == collection_feature->feature_id());
+				}
+				else
+				{
+					// Property query is a callable predicate...
+					feature_query_result = bp::extract<bool>(feature_query_object(collection_feature));
+				}
+
+				if (feature_query_result)
+				{
+					features.append(collection_feature);
+				}
+			}
+
+			// Returned list could be empty if no features matched.
+			return features;
+		}
+
+		return bp::object()/*Py_None*/;
 	}
 
 
@@ -817,6 +977,12 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::get_files(
 void
 export_feature_collection()
 {
+	// An enumeration nested within 'pygplates (ie, current) module.
+	bp::enum_<GPlatesApi::FeatureReturn::Value>("FeatureReturn")
+			.value("exactly_one", GPlatesApi::FeatureReturn::EXACTLY_ONE)
+			.value("first", GPlatesApi::FeatureReturn::FIRST)
+			.value("all", GPlatesApi::FeatureReturn::ALL);
+
 	//
 	// FeatureCollection - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -843,7 +1009,12 @@ export_feature_collection()
 					"  num_features = len(feature_collection)\n"
 					"  features_in_collection = [feature for feature in feature_collection]\n"
 					"  assert(num_features == len(features_in_collection))\n"
-					"\n",
+					"\n"
+					"The following methods provide support for adding, removing and getting features:\n"
+					"\n"
+					"* :meth:`add`\n"
+					"* :meth:`remove`\n"
+					"* :meth:`get`\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -934,6 +1105,52 @@ export_feature_collection()
 				"    feature_collection.remove(\n"
 				"        lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Volcano') or\n"
 				"                         feature.get_feature_type() == pygplates.FeatureType.create_gpml('Isochron'))\n")
+		.def("get",
+				&GPlatesApi::feature_collection_handle_get_feature,
+				(bp::arg("feature_query"),
+						bp::arg("feature_query") = GPlatesApi::FeatureReturn::EXACTLY_ONE),
+				"get(feature_query, [feature_return=FeatureReturn.exactly_one]) "
+				"-> Feature or list or None\n"
+				"  Returns one or more features matching a feature type, feature id or predicate.\n"
+				"\n"
+				"  :param feature_query: the feature type, feature id or predicate function that matches the feature "
+				"(or features) to get\n"
+				"  :type feature_query: :class:`FeatureType`, or :class:`FeatureId`, or callable "
+				"(accepting single :class:`Feature` argument)\n"
+				"  :param feature_return: whether to return exactly one feature, the first feature or "
+				"all matching features\n"
+				"  :type feature_return: *FeatureReturn.exactly_one*, *FeatureReturn.first* or *FeatureReturn.all*\n"
+				"  :rtype: :class:`Feature`, or ``list`` of :class:`Feature`, or None\n"
+				"\n"
+				"  The following table maps *feature_return* values to return values:\n"
+				"\n"
+				"  ======================================= ==============\n"
+				"  FeatureReturn Value                      Description\n"
+				"  ======================================= ==============\n"
+				"  exactly_one                             Returns a :class:`Feature` only if "
+				"*feature_query* matches exactly one feature, otherwise ``None`` is returned.\n"
+				"  first                                   Returns the first :class:`Feature` that matches "
+				"*feature_query* - however note that a feature collection is an *unordered* collection of "
+				"features. If no features match then ``None`` is returned.\n"
+				"  all                                     Returns a ``list`` of :class:`features<Feature>` "
+				"matching *feature_query*. If no features match then the returned list will be empty.\n"
+				"  ======================================= ==============\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    isochron_feature_type = pygplates.FeatureType.create_gpml('Isochron')\n"
+				"    exactly_one_isochron = feature_collection.get(isochron_feature_type)\n"
+				"    first_isochron = feature_collection.get(isochron_feature_type, pygplates.FeatureReturn.first)\n"
+				"    all_isochrons = feature_collection.get(isochron_feature_type, pygplates.FeatureReturn.all)\n"
+				"    \n"
+				"    feature_matching_id = feature_collection.get(feature_id)\n"
+				"    \n"
+				"    # Using a predicate function that returns true if feature's type is 'gpml:Isochron' and \n"
+				"    # reconstruction plate ID is less than 700.\n"
+				"    recon_plate_id_less_700_isochrons = feature_collection.get(\n"
+				"        lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Isochron') and\n"
+				"                        feature.get_reconstruction_plate_id() < 700,\n"
+				"        pygplates.FeatureReturn.all)\n")
 	;
 
 	// Enable boost::optional<FeatureCollectionHandle::non_null_ptr_type> to be passed to and from python.
