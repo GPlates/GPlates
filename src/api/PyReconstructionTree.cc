@@ -1324,7 +1324,7 @@ export_reconstruction_tree()
 				"  :param total_reconstruction_pole: the *total reconstruction pole*\n"
 				"  :type total_reconstruction_pole: :class:`FiniteRotation`\n"
 				"\n"
-				"  The *total reconstruction pole* is also associated with the reconstruction time of "
+				"  The *total reconstruction pole* is associated with the reconstruction time of "
 				"the :class:`ReconstructionTree` that will be built by :meth:`build_reconstruction_tree`.\n"
 				"\n"
 				"  See the functions :func:`interpolate_finite_rotations`, "

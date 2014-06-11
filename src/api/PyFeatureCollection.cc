@@ -83,10 +83,10 @@ namespace GPlatesApi
 	void
 	feature_collection_handle_add(
 			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection_handle,
-			bp::object features_object)
+			bp::object feature_object)
 	{
 		// See if a single feature.
-		bp::extract<GPlatesModel::FeatureHandle::non_null_ptr_type> extract_feature(features_object);
+		bp::extract<GPlatesModel::FeatureHandle::non_null_ptr_type> extract_feature(feature_object);
 		if (extract_feature.check())
 		{
 			GPlatesModel::FeatureHandle::non_null_ptr_type feature = extract_feature();
@@ -100,7 +100,7 @@ namespace GPlatesApi
 		{
 			// Begin/end iterators over the python feature sequence.
 			bp::stl_input_iterator<GPlatesModel::FeatureHandle::non_null_ptr_type>
-					features_iter(features_object),
+					features_iter(feature_object),
 					features_end;
 
 			for ( ; features_iter != features_end; ++features_iter)
@@ -122,10 +122,56 @@ namespace GPlatesApi
 	void
 	feature_collection_handle_remove(
 			GPlatesModel::FeatureCollectionHandle &feature_collection_handle,
-			bp::object features_object)
+			bp::object feature_query_object)
 	{
+		// See if a single feature type.
+		bp::extract<GPlatesModel::FeatureType> extract_feature_type(feature_query_object);
+		if (extract_feature_type.check())
+		{
+			const GPlatesModel::FeatureType feature_type = extract_feature_type();
+
+			// Search for the feature type.
+			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
+			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
+
+				if (feature_type == collection_feature->feature_type())
+				{
+					// Note that removing a feature does not prevent us from incrementing to the next feature.
+					feature_collection_handle.remove(features_iter);
+				}
+			}
+
+			return;
+		}
+
+		// See if a single feature ID.
+		bp::extract<GPlatesModel::FeatureId> extract_feature_id(feature_query_object);
+		if (extract_feature_id.check())
+		{
+			const GPlatesModel::FeatureId feature_id = extract_feature_id();
+
+			// Search for the feature ID.
+			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
+			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
+
+				if (feature_id == collection_feature->feature_id())
+				{
+					// Note that removing a feature does not prevent us from incrementing to the next feature.
+					feature_collection_handle.remove(features_iter);
+				}
+			}
+
+			return;
+		}
+
 		// See if a single feature.
-		bp::extract<GPlatesModel::FeatureHandle::non_null_ptr_type> extract_feature(features_object);
+		bp::extract<GPlatesModel::FeatureHandle::non_null_ptr_type> extract_feature(feature_query_object);
 		if (extract_feature.check())
 		{
 			GPlatesModel::FeatureHandle::non_null_ptr_type feature = extract_feature();
@@ -152,57 +198,240 @@ namespace GPlatesApi
 			bp::throw_error_already_set();
 		}
 
-		// Try a sequence of features next.
-		typedef std::vector<GPlatesModel::FeatureHandle::non_null_ptr_type> features_seq_type;
-		features_seq_type features_seq;
+		// See if a single predicate callable.
+		if (PyObject_HasAttrString(feature_query_object.ptr(), "__call__"))
+		{
+			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
+			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
+
+				// See if current feature matches the query.
+				// Feature query is a callable predicate...
+				if (bp::extract<bool>(feature_query_object(collection_feature)))
+				{
+					// Note that removing a feature does not prevent us from incrementing to the next feature.
+					feature_collection_handle.remove(features_iter);
+				}
+			}
+
+			return;
+		}
+
+		const char *type_error_string = "Expected FeatureType, or FeatureId, or Feature, or predicate, "
+				"or a sequence of any combination of them";
+
+		// Try an iterable sequence next.
+		typedef std::vector<bp::object> feature_queries_seq_type;
+		feature_queries_seq_type feature_queries_seq;
 		try
 		{
-			// Begin/end iterators over the python feature sequence.
-			bp::stl_input_iterator<GPlatesModel::FeatureHandle::non_null_ptr_type>
-					features_begin(features_object),
-					features_end;
+			// Begin/end iterators over the python feature queries sequence.
+			bp::stl_input_iterator<bp::object>
+					feature_queries_begin(feature_query_object),
+					feature_queries_end;
 
 			// Copy into the vector.
-			std::copy(features_begin, features_end, std::back_inserter(features_seq));
-
-			// Remove duplicate feature pointers.
-			features_seq.erase(
-					std::unique(features_seq.begin(), features_seq.end()),
-					features_seq.end());
+			std::copy(feature_queries_begin, feature_queries_end, std::back_inserter(feature_queries_seq));
 		}
 		catch (const boost::python::error_already_set &)
 		{
 			PyErr_Clear();
 
-			PyErr_SetString(PyExc_TypeError, "Expected Feature or sequence of Feature's");
+			PyErr_SetString(PyExc_TypeError, type_error_string);
 			bp::throw_error_already_set();
 		}
 
-		// Search for the features.
-		GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
-		GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
-		for ( ; features_iter != features_end; ++features_iter)
-		{
-			GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
+		typedef std::vector<GPlatesModel::FeatureType> feature_types_seq_type;
+		feature_types_seq_type feature_types_seq;
 
-			// Compare pointers not pointed-to-objects.
-			features_seq_type::iterator features_seq_iter =
-					std::find(features_seq.begin(), features_seq.end(), collection_feature);
-			if (features_seq_iter != features_seq.end())
+		typedef std::vector<GPlatesModel::FeatureId> feature_ids_seq_type;
+		feature_ids_seq_type feature_ids_seq;
+
+		typedef std::vector<GPlatesModel::FeatureHandle::non_null_ptr_type> features_seq_type;
+		features_seq_type features_seq;
+
+		typedef std::vector<bp::object> predicates_seq_type;
+		predicates_seq_type predicates_seq;
+
+		// Extract the different feature query types into their own arrays.
+		feature_queries_seq_type::const_iterator feature_queries_iter = feature_queries_seq.begin();
+		feature_queries_seq_type::const_iterator feature_queries_end = feature_queries_seq.end();
+		for ( ; feature_queries_iter != feature_queries_end; ++feature_queries_iter)
+		{
+			const bp::object feature_query = *feature_queries_iter;
+
+			// See if a feature type.
+			bp::extract<GPlatesModel::FeatureType> extract_feature_type_element(feature_query);
+			if (extract_feature_type_element.check())
 			{
-				// Remove the feature from the collection.
-				// Note that removing a feature does not prevent us from incrementing to the next feature.
-				feature_collection_handle.remove(features_iter);
-				// Record that we have removed this feature.
-				features_seq.erase(features_seq_iter);
+				const GPlatesModel::FeatureType feature_type = extract_feature_type_element();
+				feature_types_seq.push_back(feature_type);
+				continue;
+			}
+
+			// See if a feature id.
+			bp::extract<GPlatesModel::FeatureId> extract_feature_id_element(feature_query);
+			if (extract_feature_id_element.check())
+			{
+				const GPlatesModel::FeatureId feature_id = extract_feature_id_element();
+				feature_ids_seq.push_back(feature_id);
+				continue;
+			}
+
+			// See if a feature.
+			bp::extract<GPlatesModel::FeatureHandle::non_null_ptr_type> extract_feature_element(feature_query);
+			if (extract_feature_element.check())
+			{
+				GPlatesModel::FeatureHandle::non_null_ptr_type feature = extract_feature_element();
+				features_seq.push_back(feature);
+				continue;
+			}
+
+			// See if a predicate callable.
+			if (PyObject_HasAttrString(feature_query.ptr(), "__call__"))
+			{
+				predicates_seq.push_back(feature_query);
+				continue;
+			}
+
+			// Unexpected feature query type so raise an error.
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
+
+		//
+		// Process features first to avoid unnecessarily throwing ValueError exception.
+		//
+
+		// Remove duplicate feature pointers.
+		features_seq.erase(
+				std::unique(features_seq.begin(), features_seq.end()),
+				features_seq.end());
+
+		if (!features_seq.empty())
+		{
+			// Search for the features.
+			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
+			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
+
+				// Compare pointers not pointed-to-objects.
+				features_seq_type::iterator features_seq_iter =
+						std::find(features_seq.begin(), features_seq.end(), collection_feature);
+				if (features_seq_iter != features_seq.end())
+				{
+					// Remove the feature from the collection.
+					// Note that removing a feature does not prevent us from incrementing to the next feature.
+					feature_collection_handle.remove(features_iter);
+					// Record that we have removed this feature.
+					features_seq.erase(features_seq_iter);
+				}
+			}
+
+			// Raise the 'ValueError' python exception if not all features were found.
+			if (!features_seq.empty())
+			{
+				PyErr_SetString(PyExc_ValueError, "Not all feature instances were found");
+				bp::throw_error_already_set();
 			}
 		}
 
-		// Raise the 'ValueError' python exception if not all features were found.
-		if (!features_seq.empty())
+		//
+		// Process feature types next.
+		//
+
+		// Remove duplicate feature types.
+		feature_types_seq.erase(
+				std::unique(feature_types_seq.begin(), feature_types_seq.end()),
+				feature_types_seq.end());
+
+		if (!feature_types_seq.empty())
 		{
-			PyErr_SetString(PyExc_ValueError, "Not all feature instances were found");
-			bp::throw_error_already_set();
+			// Search for the feature types.
+			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
+			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
+
+				feature_types_seq_type::iterator feature_types_seq_iter = std::find(
+						feature_types_seq.begin(),
+						feature_types_seq.end(),
+						collection_feature->feature_type());
+				if (feature_types_seq_iter != feature_types_seq.end())
+				{
+					// Remove the feature from the collection.
+					// Note that removing a feature does not prevent us from incrementing to the next feature.
+					feature_collection_handle.remove(features_iter);
+				}
+			}
+		}
+
+		//
+		// Process feature IDs next.
+		//
+
+		// Remove duplicate feature IDs.
+		feature_ids_seq.erase(
+				std::unique(feature_ids_seq.begin(), feature_ids_seq.end()),
+				feature_ids_seq.end());
+
+		if (!feature_ids_seq.empty())
+		{
+			// Search for the feature IDs.
+			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
+			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
+
+				feature_ids_seq_type::iterator feature_ids_seq_iter = std::find(
+						feature_ids_seq.begin(),
+						feature_ids_seq.end(),
+						collection_feature->feature_id());
+				if (feature_ids_seq_iter != feature_ids_seq.end())
+				{
+					// Remove the feature from the collection.
+					// Note that removing a feature does not prevent us from incrementing to the next feature.
+					feature_collection_handle.remove(features_iter);
+				}
+			}
+		}
+
+		//
+		// Process predicate callables next.
+		//
+
+		if (!predicates_seq.empty())
+		{
+			// Search for matching predicate callables.
+			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
+			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				GPlatesModel::FeatureHandle::non_null_ptr_type collection_feature = *features_iter;
+
+				// Test each predicate callable.
+				predicates_seq_type::const_iterator predicates_seq_iter = predicates_seq.begin();
+				predicates_seq_type::const_iterator predicates_seq_end = predicates_seq.end();
+				for ( ; predicates_seq_iter != predicates_seq_end; ++predicates_seq_iter)
+				{
+					bp::object predicate = *predicates_seq_iter;
+
+					// See if current feature matches the query.
+					// Feature query is a callable predicate...
+					if (bp::extract<bool>(predicate(collection_feature)))
+					{
+						// Note that removing a feature does not prevent us from incrementing to the next feature.
+						feature_collection_handle.remove(features_iter);
+						break;
+					}
+				}
+			}
 		}
 	}
 
@@ -640,12 +869,12 @@ export_feature_collection()
 		.def("__len__", &GPlatesModel::FeatureCollectionHandle::size)
 		.def("add",
 				&GPlatesApi::feature_collection_handle_add,
-				(bp::arg("features")),
-				"add(features)\n"
+				(bp::arg("feature")),
+				"add(feature)\n"
 				"  Adds one or more features to this collection.\n"
 				"\n"
-				"  :param features: one or more features to add\n"
-				"  :type features: :class:`Feature` or sequence (eg, ``list`` or ``tuple``) of :class:`Feature`\n"
+				"  :param feature: one or more features to add\n"
+				"  :type feature: :class:`Feature` or sequence (eg, ``list`` or ``tuple``) of :class:`Feature`\n"
 				"\n"
 				"  A feature collection is an *unordered* collection of features "
 				"so there is no concept of where a feature is inserted in the sequence of features.\n"
@@ -656,23 +885,55 @@ export_feature_collection()
 				"    feature_collection.add([feature1, feature2])\n")
 		.def("remove",
 				&GPlatesApi::feature_collection_handle_remove,
-				(bp::arg("features")),
-				"remove(features)\n"
-				"  Removes one or more features from this collection.\n"
+				(bp::arg("feature_query")),
+				"remove(feature_query)\n"
+				"  Removes features from this collection.\n"
 				"\n"
-				"  :param features: one or more feature instances that currently exist inside this collection\n"
-				"  :type features: :class:`Feature` or sequence (eg, ``list`` or ``tuple``) of :class:`Feature`\n"
-				"  :raises: ValueError if any specified feature is not currently in this collection\n"
+				"  :param feature_query: one or more feature types, feature IDs, feature instances or "
+				"predicate functions that determine which features to remove\n"
+				"  :type feature_query: :class:`FeatureType`, or :class:`FeatureId`, or :class:`Feature`, "
+				"or callable (accepting single :class:`Feature` argument), or a sequence (eg, ``list`` or ``tuple``) "
+				"of any combination of them\n"
+				"  :raises: ValueError if any specified :class:`Feature` is not currently a feature in this collection\n"
 				"\n"
-				"  Raises the ``ValueError`` exception if if any specified feature is not "
-				"currently in this collection. Note that the same feature *instance* must "
-				"have previously been added. In other words, *remove* does not compare the values of "
-				"the features of this collection - it actually looks for the same feature *instance*.\n"
+				"  All features matching any :class:`FeatureType`, :class:`FeatureId` or predicate callable "
+				"(if any specified) will be removed. Any specified :class:`FeatureType`, :class:`FeatureId` "
+				"or predicate callable that does not match a feature in this collection is ignored. "
+				"However if any specified :class:`Feature` is not currently a feature in this collection "
+				"then the ``ValueError`` exception is raised - note that the same :class:`Feature` *instance* "
+				"must have previously been added (in other words the feature *values* are not compared - "
+				"it actually looks for the same feature *instance*).\n"
 				"\n"
 				"  ::\n"
 				"\n"
-				"    feature_collection.remove(feature)\n"
-				"    feature_collection.remove([feature1, feature2])\n")
+				"    feature_collection.remove(feature_id)\n"
+				"    feature_collection.remove(pygplates.FeatureType.create_gpml('Volcano'))\n"
+				"    feature_collection.remove([\n"
+				"        pygplates.FeatureType.create_gpml('Volcano'),\n"
+				"        pygplates.FeatureType.create_gpml('Isochron')])\n"
+				"    \n"
+				"    for feature in feature_collection:\n"
+				"        if predicate(feature):\n"
+				"            feature_collection.remove(feature)\n"
+				"    feature_collection.remove([feature for feature in feature_collection if predicate(feature)])\n"
+				"    feature_collection.remove(predicate)\n"
+				"    \n"
+				"    # Mix different query types.\n"
+				"    # Remove a specific 'feature' instance and any features of type 'gpml:Isochron'...\n"
+				"    feature_collection.remove([feature, pygplates.FeatureType.create_gpml('Isochron')])\n"
+				"    \n"
+				"    # Remove features of type 'gpml:Isochron' with reconstruction plate IDs less than 700...\n"
+				"    feature_collection.remove(\n"
+				"        lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Isochron') and\n"
+				"                         feature.get_reconstruction_plate_id() < 700)\n"
+				"    \n"
+				"    # Remove features of type 'gpml:Volcano' and 'gpml:Isochron'...\n"
+				"    feature_collection.remove([\n"
+				"        lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Volcano'),\n"
+				"        pygplates.FeatureType.create_gpml('Isochron')])\n"
+				"    feature_collection.remove(\n"
+				"        lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Volcano') or\n"
+				"                         feature.get_feature_type() == pygplates.FeatureType.create_gpml('Isochron'))\n")
 	;
 
 	// Enable boost::optional<FeatureCollectionHandle::non_null_ptr_type> to be passed to and from python.

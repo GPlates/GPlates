@@ -306,32 +306,6 @@ class FeatureCollectionCase(unittest.TestCase):
                 "Expected " + str(self.feature_count) + " features, actual " + 
                 str(counter) + " features")
     
-    def test_remove(self):
-        # Get the second feature.
-        feature_iter = iter(self.feature_collection)
-        feature_iter.next(); # Skip first feature.
-        feature_to_remove = feature_iter.next()
-        
-        # Should not raise ValueError.
-        self.feature_collection.remove(feature_to_remove)
-        self.assertTrue(len(self.feature_collection) == self.feature_count - 1)
-        # Should not be able to find it now.
-        missing_feature = None
-        for feature in self.feature_collection:
-            if feature.get_feature_id() == feature_to_remove.get_feature_id():
-                missing_feature = feature
-                break
-        self.assertFalse(missing_feature)
-        # Should now raise ValueError.
-        self.assertRaises(ValueError, self.feature_collection.remove, feature_to_remove)
-        
-        # Add and remove again as a list.
-        self.feature_collection.add(feature_to_remove)
-        self.assertTrue(len(self.feature_collection) == self.feature_count)
-        # Duplicates list entries will be removed.
-        self.feature_collection.remove([feature_to_remove, feature_to_remove])
-        self.assertTrue(len(self.feature_collection) == self.feature_count - 1)
-    
     def test_add(self):
         # Create a feature with a new unique feature ID.
         feature_with_integer_property = pygplates.Feature()
@@ -358,6 +332,105 @@ class FeatureCollectionCase(unittest.TestCase):
         self.assertTrue(len(self.feature_collection) == self.feature_count)
         self.feature_collection.add([feature_with_integer_property])
         self.assertTrue(len(self.feature_collection) == self.feature_count + 1)
+    
+    def test_remove(self):
+        # Get the first and second features.
+        feature_iter = iter(self.feature_collection)
+        feature_to_remove1 = feature_iter.next()
+        feature_to_remove2 = feature_iter.next()
+        
+        # Should not raise ValueError.
+        self.feature_collection.remove(feature_to_remove2)
+        self.assertTrue(len(self.feature_collection) == self.feature_count - 1)
+        # Should not be able to find it now.
+        missing_feature = None
+        for feature in self.feature_collection:
+            if feature.get_feature_id() == feature_to_remove2.get_feature_id():
+                missing_feature = feature
+                break
+        self.assertFalse(missing_feature)
+        # Should now raise ValueError.
+        self.assertRaises(ValueError, self.feature_collection.remove, feature_to_remove2)
+        
+        # Add and remove again as a list.
+        self.feature_collection.add(feature_to_remove2)
+        self.assertTrue(len(self.feature_collection) == self.feature_count)
+        # Duplicates list entries will be removed.
+        self.feature_collection.remove([feature_to_remove2, feature_to_remove2])
+        self.assertTrue(len(self.feature_collection) == self.feature_count - 1)
+        self.feature_collection.add(feature_to_remove2)
+        self.assertTrue(len(self.feature_collection) == self.feature_count)
+        self.feature_collection.remove([feature_to_remove1, feature_to_remove2])
+        self.assertTrue(len(self.feature_collection) == self.feature_count - 2)
+    
+    def test_remove_by_feature_type(self):
+        # Get the first and second features.
+        feature_iter = iter(self.feature_collection)
+        feature_to_remove1 = feature_iter.next()
+        feature_to_remove2 = feature_iter.next()
+        
+        self.assertTrue(len(self.feature_collection) > 0)
+        self.feature_collection.remove(feature_to_remove2.get_feature_type())
+        self.assertTrue(len(self.feature_collection) == 0)
+        
+        # Add and remove again as a list.
+        self.feature_collection.add(feature_to_remove2)
+        self.assertTrue(len(self.feature_collection) == 1)
+        # Duplicates list entries will be removed.
+        self.feature_collection.remove([feature_to_remove2.get_feature_type(), feature_to_remove2.get_feature_type()])
+        self.assertTrue(len(self.feature_collection) == 0)
+        self.feature_collection.add(feature_to_remove1)
+        self.assertTrue(len(self.feature_collection) == 1)
+        self.feature_collection.remove([feature_to_remove1.get_feature_type(), feature_to_remove2.get_feature_type()])
+        self.assertTrue(len(self.feature_collection) == 0)
+    
+    def test_remove_by_feature_id(self):
+        # Get the first and second features.
+        feature_iter = iter(self.feature_collection)
+        feature_to_remove1 = feature_iter.next()
+        feature_to_remove2 = feature_iter.next()
+        
+        self.assertTrue(len(self.feature_collection) > 0)
+        self.feature_collection.remove(feature_to_remove2.get_feature_id())
+        self.assertTrue(len(self.feature_collection) == self.feature_count - 1)
+        
+        # Add and remove again as a list.
+        self.feature_collection.add(feature_to_remove2)
+        self.assertTrue(len(self.feature_collection) == self.feature_count)
+        # Duplicates list entries will be removed.
+        self.feature_collection.remove([feature_to_remove2.get_feature_id(), feature_to_remove2.get_feature_id()])
+        self.assertTrue(len(self.feature_collection) == self.feature_count - 1)
+        self.feature_collection.add(feature_to_remove2)
+        self.assertTrue(len(self.feature_collection) == self.feature_count)
+        self.feature_collection.remove([feature_to_remove1.get_feature_id(), feature_to_remove2.get_feature_id()])
+        self.assertTrue(len(self.feature_collection) == self.feature_count - 2)
+    
+    def test_remove_by_predicate(self):
+        # Get the first and second features.
+        feature_iter = iter(self.feature_collection)
+        feature_to_remove1 = feature_iter.next()
+        feature_to_remove2 = feature_iter.next()
+        
+        self.assertTrue(len(self.feature_collection) > 0)
+        self.feature_collection.remove(
+                lambda feature: feature.get_feature_id() == feature_to_remove2.get_feature_id())
+        self.assertTrue(len(self.feature_collection) == self.feature_count - 1)
+        
+        # Add and remove again as a list.
+        self.feature_collection.add(feature_to_remove2)
+        self.assertTrue(len(self.feature_collection) == self.feature_count)
+        self.feature_collection.remove([
+                lambda feature: feature.get_feature_id() == feature_to_remove1.get_feature_id(),
+                lambda feature: feature.get_feature_id() == feature_to_remove2.get_feature_id()])
+        self.assertTrue(len(self.feature_collection) == self.feature_count - 2)
+        
+        # Remove using mixed feature queries.
+        self.feature_collection.add([feature_to_remove1, feature_to_remove2])
+        self.assertTrue(len(self.feature_collection) == self.feature_count)
+        self.feature_collection.remove([
+                lambda feature: feature.get_feature_id() == feature_to_remove1.get_feature_id(),
+                feature_to_remove2.get_feature_id()])
+        self.assertTrue(len(self.feature_collection) == self.feature_count - 2)
 
 
 class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):
