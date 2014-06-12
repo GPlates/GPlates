@@ -133,19 +133,19 @@ def get_name(feature, default='', property_return=PropertyReturn.exactly_one):
     Return the list of names as strings (defaults to an empty list if no names are found):
     ::
     
-      names = feature.get_name([], PropertyReturn.all)
+      names = feature.get_name([], pygplates.PropertyReturn.all)
     
     Test if there are any 'gml:name' properties:
     ::
     
-      names = feature.get_names(None, PropertyReturn.all)
+      names = feature.get_names(None, pygplates.PropertyReturn.all)
       if names:
         ...
     
     Test if there are any 'gml:name' properties with a non-empty string:
     ::
     
-      names = feature.get_names(None, PropertyReturn.all)
+      names = feature.get_names(None, pygplates.PropertyReturn.all)
       if names and any(names):
         ...
     """
@@ -509,7 +509,7 @@ def get_conjugate_plate_id(feature, default=0, property_return=PropertyReturn.ex
     :type default: int or list or None
     :param property_return: whether to return exactly one ID, the first ID or all IDs
     :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*
-    :rtype: int, or list of ints, or type(*default*)
+    :rtype: int, or list of int, or type(*default*)
     
     This is a convenience method that wraps :meth:`get_value` for the common property 'gpml:conjugatePlateId'.
     
@@ -552,19 +552,19 @@ def get_conjugate_plate_id(feature, default=0, property_return=PropertyReturn.ex
     Return the list of conjugate plate IDs as integers (defaults to an empty list if no conjugate plate IDs are found):
     ::
     
-      conjugate_plate_ids = feature.get_conjugate_plate_id([], PropertyReturn.all)
+      conjugate_plate_ids = feature.get_conjugate_plate_id([], pygplates.PropertyReturn.all)
     
     Test if there are any 'gpml:conjugatePlateId' properties:
     ::
     
-      conjugate_plate_ids = feature.get_conjugate_plate_id(None, PropertyReturn.all)
+      conjugate_plate_ids = feature.get_conjugate_plate_id(None, pygplates.PropertyReturn.all)
       if conjugate_plate_ids:
         ...
     
     Test if there are any 'gpml:conjugatePlateId' properties with a non-zero plate ID:
     ::
     
-      conjugate_plate_ids = feature.get_conjugate_plate_id(None, PropertyReturn.all)
+      conjugate_plate_ids = feature.get_conjugate_plate_id(None, pygplates.PropertyReturn.all)
       if conjugate_plate_ids and any(conjugate_plate_ids):
         ...
     """

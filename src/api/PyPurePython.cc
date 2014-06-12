@@ -106,13 +106,11 @@ export_pure_python_api()
 	//
 
 	export_pure_python_code(":/python/api/Feature.py");
-	export_pure_python_code(":/python/api/get_property_value.py");
 	export_pure_python_code(":/python/api/GeometriesOnSphere.py");
 	export_pure_python_code(":/python/api/Ids.py");
 	export_pure_python_code(":/python/api/Property.py");
 	export_pure_python_code(":/python/api/PropertyValues.py");
 	export_pure_python_code(":/python/api/QualifiedXmlNames.py");
-	export_pure_python_code(":/python/api/ReconstructionGeometries.py");
 }
 
 #endif // GPLATES_NO_PYTHON

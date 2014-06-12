@@ -29,6 +29,8 @@
 
 #include "PythonConverterUtils.h"
 
+#include "app-logic/GeometryUtils.h"
+
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
@@ -90,6 +92,17 @@ namespace GPlatesApi
 			GPlatesModel::FeatureVisitor &visitor)
 	{
 		property_value.accept_visitor(visitor);
+	}
+
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+	property_value_get_geometry(
+			GPlatesModel::PropertyValue &property_value)
+	{
+		// Extract the geometry from the property value.
+		//
+		// Since GeometryOnSphere is polymorphic boost-python will downcast it to the
+		// derived geometry type before converting to a python object.
+		return GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(property_value);
 	}
 }
 
@@ -176,6 +189,55 @@ export_property_value()
 				"\n"
 				"  :param visitor: the visitor instance visiting this property value\n"
 				"  :type visitor: :class:`PropertyValueVisitor`\n")
+		.def("get_geometry",
+				&GPlatesApi::property_value_get_geometry,
+				"get_geometry() -> GeometryOnSphere or None\n"
+				"  Extracts the :class:`geometry<GeometryOnSphere>` if this property value contains a geometry.\n"
+				"\n"
+				"  :rtype: :class:`GeometryOnSphere` or None\n"
+				"\n"
+				"  This function searches for a geometry in the following standard geometry property value types:\n"
+				"\n"
+				"  * :class:`GmlPoint`\n"
+				"  * :class:`GmlMultiPoint`\n"
+				"  * :class:`GmlPolygon`\n"
+				"  * :class:`GmlLineString`\n"
+				"  * :class:`GmlOrientableCurve` (a possible wrapper around :class:`GmlLineString`)\n"
+				"  * :class:`GpmlConstantValue` (a possible wrapper around any of the above)\n"
+				"\n"
+				"  If this property value does not contain a geometry then ``None`` is returned.\n"
+				"\n"
+				"  Time-dependent geometry properties are *not* yet supported, so the only time-dependent "
+				"property value wrapper currently supported by this function is :class:`GpmlConstantValue`.\n"
+				"\n"
+				"  To extract geometry from a specific feature property:\n"
+				"  ::\n"
+				"\n"
+				"    property_value = feature.get_value(pygplates.PropertyName.create_gpml('polePosition'))\n"
+				"    if property_value:\n"
+				"        geometry = property_value.get_geometry()\n"
+				"\n"
+				"  ...however :meth:`Feature.get_geometry` provides an easier way to extract "
+				"geometry from a feature with:\n"
+				"  ::\n"
+				"\n"
+				"    geometry = feature.get_geometry(pygplates.PropertyName.create_gpml('polePosition'))\n"
+				"\n"
+				"  To extract all geometries from a feature (regardless of which properties they came from):\n"
+				"  ::\n"
+				"\n"
+				"    all_geometries = []\n"
+				"    for property in feature:\n"
+				"        property_value = property.get_value()\n"
+				"        if property_value:\n"
+				"            geometry = property_value.get_geometry()\n"
+				"            if geometry:\n"
+				"                all_geometries.append(geometry)\n"
+				"\n"
+				"  ...however again :meth:`Feature.get_geometry` does this more easily with:\n"
+				"  ::\n"
+				"\n"
+				"    all_geometries = feature.get_geometry(lambda property: True, pygplates.PropertyReturn.all)\n")
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))

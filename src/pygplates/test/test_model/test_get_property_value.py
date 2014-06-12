@@ -49,20 +49,30 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 # 'gpml:plateId' is not a (GPGIM) recognised property name...
                 pygplates.VerifyInformationModel.no)
         self.feature.add(
-                pygplates.PropertyName.create_gpml('position'),
+                pygplates.PropertyName.create_gpml('unclassifiedGeometry'),
                 pygplates.GpmlConstantValue(pygplates.GmlPoint(pygplates.PointOnSphere(0,1,0))))
     
     def test_get_geometry(self):
-        geometry_properties = pygplates.get_feature_geometry_properties(self.feature, pygplates.PointOnSphere)
+        # The default geometry property name for an unclassified feature type is 'gpml:unclassifiedGeometry'.
+        geometry_properties = self.feature.get_geometry(property_return=pygplates.PropertyReturn.all)
         self.assertTrue(len(geometry_properties) == 1)
-        self.assertTrue(isinstance(geometry_properties[0][1], pygplates.PointOnSphere))
-        geometry_properties = pygplates.get_feature_geometry_properties_by_name(
-                self.feature, pygplates.PropertyName.create_gpml('position'), pygplates.PointOnSphere)
-        self.assertTrue(len(geometry_properties) == 1)
-        self.assertTrue(isinstance(geometry_properties[0][1], pygplates.PointOnSphere))
-        self.assertFalse(pygplates.get_feature_geometry_properties(self.feature, pygplates.MultiPointOnSphere))
-        self.assertFalse(pygplates.get_feature_geometry_properties_by_name(
-                self.feature, pygplates.PropertyName.create_gpml('position2'), pygplates.PointOnSphere))
+        self.assertTrue(isinstance(geometry_properties[0], pygplates.PointOnSphere))
+        self.assertTrue(isinstance(self.feature.get_geometry(), pygplates.PointOnSphere))
+        self.feature.add(
+                pygplates.PropertyName.create_gpml('position'),
+                pygplates.GpmlConstantValue(pygplates.GmlPoint(pygplates.PointOnSphere(0,0,1))))
+        # There should now be two geometry properties.
+        self.assertTrue(len(self.feature.get_geometry(lambda property: True, pygplates.PropertyReturn.all)) == 2)
+        # Remove the default geometry property.
+        self.feature.remove(pygplates.PropertyName.create_gpml('unclassifiedGeometry'))
+        self.assertFalse(self.feature.get_geometry())
+        self.assertTrue(isinstance(self.feature.get_geometry(pygplates.PropertyName.create_gpml('position')), pygplates.PointOnSphere))
+        gml_orientable_curve = pygplates.GmlOrientableCurve(pygplates.GmlLineString(
+            pygplates.PolylineOnSphere([pygplates.PointOnSphere(1,0,0), pygplates.PointOnSphere(0,1,0)])))
+        self.feature.add(
+                pygplates.PropertyName.create_gpml('unclassifiedGeometry'),
+                pygplates.GpmlConstantValue(gml_orientable_curve))
+        self.assertTrue(isinstance(self.feature.get_geometry(), pygplates.PolylineOnSphere))
     
     def test_get_and_set_description(self):
         description = self.feature.get_description()
@@ -339,45 +349,22 @@ class GetGeometryFromPropertyValueCase(unittest.TestCase):
             pygplates.PolylineOnSphere([pygplates.PointOnSphere(1,0,0), pygplates.PointOnSphere(0,1,0)]))))
         self.gml_polygon = pygplates.GmlPolygon(
             pygplates.PolygonOnSphere([pygplates.PointOnSphere(1,0,0), pygplates.PointOnSphere(0,1,0), pygplates.PointOnSphere(0,0,1)]))
-        self.not_geometry = pygplates.GpmlPlateId(101)
 
     def test_get(self):
-        point_on_sphere = pygplates.get_geometry_from_property_value(self.gml_point)
+        point_on_sphere = self.gml_point.get_geometry()
         self.assertTrue(isinstance(point_on_sphere, pygplates.PointOnSphere))
-        point_on_sphere = pygplates.get_geometry_from_property_value(self.gml_point, pygplates.PointOnSphere)
+        point_on_sphere = self.gpml_constant_value_point.get_geometry()
         self.assertTrue(isinstance(point_on_sphere, pygplates.PointOnSphere))
-        point_on_sphere = pygplates.get_geometry_from_property_value(self.gpml_constant_value_point)
-        self.assertTrue(isinstance(point_on_sphere, pygplates.PointOnSphere))
-        multi_point_on_sphere = pygplates.get_geometry_from_property_value(self.gml_multi_point)
+        multi_point_on_sphere = self.gml_multi_point.get_geometry()
         self.assertTrue(isinstance(multi_point_on_sphere, pygplates.MultiPointOnSphere))
-        multi_point_on_sphere = pygplates.get_geometry_from_property_value(self.gml_multi_point, pygplates.MultiPointOnSphere)
-        self.assertTrue(isinstance(multi_point_on_sphere, pygplates.MultiPointOnSphere))
-        polyline_on_sphere = pygplates.get_geometry_from_property_value(self.gml_line_string)
+        polyline_on_sphere = self.gml_line_string.get_geometry()
         self.assertTrue(isinstance(polyline_on_sphere, pygplates.PolylineOnSphere))
-        polyline_on_sphere = pygplates.get_geometry_from_property_value(self.gml_line_string, pygplates.PolylineOnSphere)
+        polyline_on_sphere = self.gml_orientable_curve.get_geometry()
         self.assertTrue(isinstance(polyline_on_sphere, pygplates.PolylineOnSphere))
-        polyline_on_sphere = pygplates.get_geometry_from_property_value(self.gml_orientable_curve)
+        polyline_on_sphere = self.gpml_constant_value_orientable_curve.get_geometry()
         self.assertTrue(isinstance(polyline_on_sphere, pygplates.PolylineOnSphere))
-        polyline_on_sphere = pygplates.get_geometry_from_property_value(self.gml_orientable_curve, pygplates.PolylineOnSphere)
-        self.assertTrue(isinstance(polyline_on_sphere, pygplates.PolylineOnSphere))
-        polyline_on_sphere = pygplates.get_geometry_from_property_value(self.gpml_constant_value_orientable_curve)
-        self.assertTrue(isinstance(polyline_on_sphere, pygplates.PolylineOnSphere))
-        polyline_on_sphere = pygplates.get_geometry_from_property_value(self.gpml_constant_value_orientable_curve, pygplates.PolylineOnSphere)
-        self.assertTrue(isinstance(polyline_on_sphere, pygplates.PolylineOnSphere))
-        polygon_on_sphere = pygplates.get_geometry_from_property_value(self.gml_polygon)
+        polygon_on_sphere = self.gml_polygon.get_geometry()
         self.assertTrue(isinstance(polygon_on_sphere, pygplates.PolygonOnSphere))
-        polygon_on_sphere = pygplates.get_geometry_from_property_value(self.gml_polygon, pygplates.PolygonOnSphere)
-        self.assertTrue(isinstance(polygon_on_sphere, pygplates.PolygonOnSphere))
-        # Not a geometry.
-        self.assertFalse(pygplates.get_geometry_from_property_value(self.not_geometry))
-        # A geometry but wrong type.
-        self.assertFalse(pygplates.get_geometry_from_property_value(self.gml_point, pygplates.MultiPointOnSphere))
-        self.assertFalse(pygplates.get_geometry_from_property_value(self.gpml_constant_value_point, pygplates.MultiPointOnSphere))
-        self.assertFalse(pygplates.get_geometry_from_property_value(self.gml_multi_point, pygplates.PointOnSphere))
-        self.assertFalse(pygplates.get_geometry_from_property_value(self.gml_line_string, pygplates.PolygonOnSphere))
-        self.assertFalse(pygplates.get_geometry_from_property_value(self.gml_orientable_curve, pygplates.PointOnSphere))
-        self.assertFalse(pygplates.get_geometry_from_property_value(self.gpml_constant_value_orientable_curve, pygplates.MultiPointOnSphere))
-        self.assertFalse(pygplates.get_geometry_from_property_value(self.gml_polygon, pygplates.PolylineOnSphere))
 
 
 class GetPropertyValueCase(unittest.TestCase):

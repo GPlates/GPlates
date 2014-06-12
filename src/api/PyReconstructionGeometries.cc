@@ -27,6 +27,7 @@
 
 #include "PythonConverterUtils.h"
 
+#include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
 #include "global/python.h"
@@ -92,6 +93,39 @@ namespace GPlatesApi
 		get_reconstructed_geometry() const
 		{
 			return d_reconstructed_feature_geometry->reconstructed_geometry();
+		}
+
+		/**
+		 * Returns the present day geometry.
+		 *
+		 * boost::none could be returned but it normally shouldn't so we don't document that Py_None
+		 * could be returned to the caller.
+		 */
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		get_present_day_geometry() const
+		{
+			if (!d_property)
+			{
+				return boost::none;
+			}
+
+			// Call python since Property.get_value is implemented in python code...
+			bp::object property_value_object = bp::object(d_property.get()).attr("get_value")();
+			if (property_value_object == bp::object()/*Py_None*/)
+			{
+				return boost::none;
+			}
+
+			// Get the property value.
+			GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+					bp::extract<GPlatesModel::PropertyValue::non_null_ptr_type>(
+							property_value_object);
+
+			// Extract the geometry from the property value.
+			//
+			// Since GeometryOnSphere is polymorphic boost-python will downcast it to the
+			// derived geometry type before converting to a python object.
+			return GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(*property_value);
 		}
 
 		/**
@@ -255,6 +289,12 @@ export_reconstructed_feature_geometry()
 				"\n"
 				"  This is the :class:`Property` that the :meth:`present day geometry<get_present_day_geometry>` "
 				"and the :meth:`reconstructed geometry<get_reconstructed_geometry>` are obtained from.\n")
+		.def("get_present_day_geometry",
+				&GPlatesApi::ReconstructedFeatureGeometryWrapper::get_present_day_geometry,
+				"get_present_day_geometry() -> GeometryOnSphere\n"
+				"  Returns the present day geometry.\n"
+				"\n"
+				"  :rtype: :class:`GeometryOnSphere`\n")
 		.def("get_reconstructed_geometry",
 				&GPlatesApi::ReconstructedFeatureGeometryWrapper::get_reconstructed_geometry,
 				"get_reconstructed_geometry() -> GeometryOnSphere\n"

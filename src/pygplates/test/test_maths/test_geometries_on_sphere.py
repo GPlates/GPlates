@@ -23,6 +23,7 @@ class GeometryOnSphereCase(unittest.TestCase):
     
     def test_clone(self):
         self.assertEquals(self.point.clone(), self.point)
+        self.assertTrue(isinstance(self.point.clone(), pygplates.PointOnSphere))
 
 
 class PointOnSphereCase(unittest.TestCase):

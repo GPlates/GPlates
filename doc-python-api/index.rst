@@ -68,10 +68,7 @@ Contents:
 	pygplates.UnitVector3D
 	
 	pygplates.compose_finite_rotations
-	pygplates.get_feature_geometry_properties
-	pygplates.get_feature_geometry_properties_by_name
 	pygplates.get_equivalent_stage_rotation
-	pygplates.get_geometry_from_property_value
 	pygplates.get_relative_stage_rotation
 	pygplates.interpolate_finite_rotations
 	pygplates.reconstruct
