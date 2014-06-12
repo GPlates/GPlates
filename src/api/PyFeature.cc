@@ -397,7 +397,7 @@ namespace GPlatesApi
 			return;
 		}
 
-		const char *type_error_string = "Expected PropertyName, or predicate, or Property, "
+		const char *type_error_string = "Expected PropertyName, or Property, or predicate, "
 				"or a sequence of any combination of them";
 
 		// Try an iterable sequence next.
@@ -775,7 +775,7 @@ namespace GPlatesApi
 		{
 			boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> property;
 
-			// Search for the property name.
+			// Search for the property.
 			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
 			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
 			for ( ; properties_iter != properties_end; ++properties_iter)
@@ -792,7 +792,7 @@ namespace GPlatesApi
 				{
 					if (property)
 					{
-						// Found two properties with same name but client expecting only one.
+						// Found two properties matching same query but client expecting only one.
 						return bp::object()/*Py_None*/;
 					}
 
@@ -808,7 +808,7 @@ namespace GPlatesApi
 		}
 		else if (property_return == PropertyReturn::FIRST)
 		{
-			// Search for the property name.
+			// Search for the property.
 			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
 			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
 			for ( ; properties_iter != properties_end; ++properties_iter)
@@ -836,7 +836,7 @@ namespace GPlatesApi
 
 			bp::list properties;
 
-			// Search for the property name.
+			// Search for the properties.
 			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
 			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
 			for ( ; properties_iter != properties_end; ++properties_iter)
@@ -945,33 +945,40 @@ export_feature()
 					"  properties_in_feature = [property for property in feature]\n"
 					"  assert(num_properties == len(properties_in_feature))\n"
 					"\n"
-					"The following methods provide support for adding, removing, getting and setting properties:\n"
+					"The following methods return the :class:`feature type<FeatureType>` and :class:`feature id<FeatureId>`:\n"
+					"\n"
+					"* :meth:`get_feature_type`\n"
+					"* :meth:`get_feature_id`\n"
+					"\n"
+					"The following methods provide support for adding, removing, setting and getting properties:\n"
 					"\n"
 					"* :meth:`add`\n"
 					"* :meth:`remove`\n"
+					"* :meth:`set`\n"
 					"* :meth:`get`\n"
 					"* :meth:`get_value`\n"
-					"* :meth:`set`\n"
 					"\n"
-					"The following methods provide a more convenient way to get and set some of the properties "
+					"The following methods provide a more convenient way to set and get some of the properties "
 					"that are common to many feature types:\n"
 					"\n"
-					"* :meth:`get_name`\n"
 					"* :meth:`set_name`\n"
-					"* :meth:`get_description`\n"
+					"* :meth:`get_name`\n"
 					"* :meth:`set_description`\n"
-					"* :meth:`get_valid_time`\n"
+					"* :meth:`get_description`\n"
 					"* :meth:`set_valid_time`\n"
-					"* :meth:`get_reconstruction_plate_id`\n"
+					"* :meth:`get_valid_time`\n"
 					"* :meth:`set_reconstruction_plate_id`\n"
-					"* :meth:`get_conjugate_plate_id`\n"
+					"* :meth:`get_reconstruction_plate_id`\n"
 					"* :meth:`set_conjugate_plate_id`\n"
-					"* :meth:`get_left_plate`\n"
+					"* :meth:`get_conjugate_plate_id`\n"
 					"* :meth:`set_left_plate`\n"
-					"* :meth:`get_right_plate`\n"
+					"* :meth:`get_left_plate`\n"
 					"* :meth:`set_right_plate`\n"
+					"* :meth:`get_right_plate`\n"
+					"* :meth:`set_total_reconstruction_pole`\n"
+					"* :meth:`get_total_reconstruction_pole`\n"
 					"\n"
-					"...for other properties :meth:`get`, :meth:`get_value` and :meth:`set` will still need to be used.\n",
+					"...for other properties :meth:`set`, :meth:`get` and :meth:`get_value` will still need to be used.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1056,9 +1063,9 @@ export_feature()
 				"  A feature is an *unordered* collection of properties so there is no concept of "
 				"where a property is inserted in the sequence of properties.\n"
 				"\n"
-				"  Note that even a feature of type *gpml:UnclassifiedFeature* will raise *InformationModelError* "
-				"if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not "
-				"recognised by the GPlates Geological Information Model (GPGIM).\n")
+				"  Note that even a feature of :class:`type<FeatureType>` *gpml:UnclassifiedFeature* will raise "
+				"*InformationModelError* if *verify_information_model* is *VerifyInformationModel.yes* and "
+				"*property_name* is not recognised by the GPlates Geological Information Model (GPGIM).\n")
 		.def("add",
 				&GPlatesApi::feature_handle_add_properties,
 				(bp::arg("properties"),
@@ -1094,23 +1101,24 @@ export_feature()
 				"  A feature is an *unordered* collection of properties so there is no concept of where "
 				"a property is inserted in the sequence of properties.\n"
 				"\n"
-				"  Note that even a feature of type *gpml:UnclassifiedFeature* will raise *InformationModelError* "
-				"if *verify_information_model* is *VerifyInformationModel.yes* and a property name is not "
-				"recognised by the GPlates Geological Information Model (GPGIM).\n")
+				"  Note that even a feature of :class:`type<FeatureType>` *gpml:UnclassifiedFeature* will raise "
+				"*InformationModelError* if *verify_information_model* is *VerifyInformationModel.yes* and "
+				"*property_name* is not recognised by the GPlates Geological Information Model (GPGIM).\n")
 		.def("remove",
 				&GPlatesApi::feature_handle_remove,
 				(bp::arg("property_query")),
 				"remove(property_query)\n"
-				"  Removes one or more properties from this feature.\n"
+				"  Removes properties from this feature.\n"
 				"\n"
-				"  :param property_query: one or more property names, predicate functions or property instances "
+				"  :param property_query: one or more property names, property instances or predicate functions "
 				"that determine which properties to remove\n"
-				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument), "
-				"or :class:`Property`, or a sequence (eg, ``list`` or ``tuple``) of any combination of them\n"
+				"  :type property_query: :class:`PropertyName`, or :class:`Property`, or callable "
+				"(accepting single :class:`Property` argument), or a sequence (eg, ``list`` or ``tuple``) "
+				"of any combination of them\n"
 				"  :raises: ValueError if any specified :class:`Property` is not currently a property in this feature\n"
 				"\n"
-				"  All feature properties matching any :class:`PropertyName`, or predicate callable, (if any specified) will "
-				"be removed. Any specified :class:`PropertyName`, or predicate callable, that does not match a property "
+				"  All feature properties matching any :class:`PropertyName` or predicate callable (if any specified) will "
+				"be removed. Any specified :class:`PropertyName` or predicate callable that does not match a property "
 				"in this feature is ignored. However if any specified :class:`Property` is not currently a property "
 				"in this feature then the ``ValueError`` exception is raised - note that the same :class:`Property` *instance* must "
 				"have previously been added (in other words the property *values* are not compared - "
@@ -1180,9 +1188,9 @@ export_feature()
 				"        feature.remove(property_name)\n"
 				"        return feature.add(property_name, property_value, verify_information_model)\n"
 				"\n"
-				"  Note that even a feature of type *gpml:UnclassifiedFeature* will raise *InformationModelError* "
-				"if *verify_information_model* is *VerifyInformationModel.yes* and *property_name* is not "
-				"recognised by the GPlates Geological Information Model (GPGIM).\n")
+				"  Note that even a feature of :class:`type<FeatureType>` *gpml:UnclassifiedFeature* will raise "
+				"*InformationModelError* if *verify_information_model* is *VerifyInformationModel.yes* and "
+				"*property_name* is not recognised by the GPlates Geological Information Model (GPGIM).\n")
 		.def("get",
 				&GPlatesApi::feature_handle_get_property,
 				(bp::arg("property_query"),
@@ -1220,8 +1228,8 @@ export_feature()
 				"\n"
 				"    property_name = pygplates.PropertyName.create_gml('validTime')\n"
 				"    exactly_one_property = feature.get(property_name)\n"
-				"    first_property = feature.get(property_name, PropertyReturn.first)\n"
-				"    all_properties = feature.get(property_name, PropertyReturn.all)\n"
+				"    first_property = feature.get(property_name, pygplates.PropertyReturn.first)\n"
+				"    all_properties = feature.get(property_name, pygplates.PropertyReturn.all)\n"
 				"    \n"
 				"    # A predicate function that returns true if property is 'gpml:reconstructionPlateId' "
 				"with value less than 700.\n"
@@ -1276,8 +1284,8 @@ export_feature()
 				"\n"
 				"    property_name = pygplates.PropertyName.create_gml('validTime')\n"
 				"    exactly_one_property_value = feature.get_value(property_name)\n"
-				"    first_property_value = feature.get_value(property_name, property_return=PropertyReturn.first)\n"
-				"    all_property_values = feature.get_value(property_name, property_return=PropertyReturn.all)\n"
+				"    first_property_value = feature.get_value(property_name, property_return=pygplates.PropertyReturn.first)\n"
+				"    all_property_values = feature.get_value(property_name, property_return=pygplates.PropertyReturn.all)\n"
 				"    \n"
 				"    # Using a predicate function that returns true if property is 'gpml:reconstructionPlateId' "
 				"with value less than 700.\n"

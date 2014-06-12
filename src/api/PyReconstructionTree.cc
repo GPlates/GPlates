@@ -1327,10 +1327,16 @@ export_reconstruction_tree()
 				"  The *total reconstruction pole* is associated with the reconstruction time of "
 				"the :class:`ReconstructionTree` that will be built by :meth:`build_reconstruction_tree`.\n"
 				"\n"
-				"  See the functions :func:`interpolate_finite_rotations`, "
-				":func:`interpolate_total_reconstruction_pole` and "
-				":func:`interpolate_total_reconstruction_sequence` for typical ways to generate a "
-				"*total reconstruction pole*.\n")
+				"  A *total reconstruction pole* can be obtained from a (rotation) feature of :class:`type<FeatureType>` "
+				"'gpml:TotalReconstructionSequence' and inserted into a reconstruction tree builder:\n"
+				"  ::\n"
+				"\n"
+				"    fixed_plate_id, moving_plate_id, total_reconstruction_pole = "
+				"rotation_feature.get_total_reconstruction_pole()\n"
+				"    builder.insert_total_reconstruction_pole(\n"
+				"        fixed_plate_id,\n"
+				"        moving_plate_id,\n"
+				"        total_reconstruction_pole.get_value(reconstruction_time).get_finite_rotation())\n")
 		.def("build_reconstruction_tree",
 				&GPlatesApi::reconstruction_tree_builder_build_reconstruction_tree,
 				(bp::arg("anchor_plate_id"), bp::arg("reconstruction_time")),

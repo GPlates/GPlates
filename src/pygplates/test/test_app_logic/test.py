@@ -42,6 +42,44 @@ class InterpolateTotalReconstructionSequenceTest(unittest.TestCase):
         self.rotations = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'rotations.rot'))
 
+    def test_get(self):
+        # Get the third rotation feature (contains more interesting poles).
+        feature_iter = iter(self.rotations)
+        feature_iter.next();
+        feature_iter.next();
+        feature = feature_iter.next()
+        
+        total_reconstruction_pole = feature.get_total_reconstruction_pole()
+        self.assertTrue(total_reconstruction_pole)
+        fixed_plate_id, moving_plate_id, total_reconstruction_pole_rotations = total_reconstruction_pole
+        self.assertTrue(isinstance(total_reconstruction_pole_rotations, pygplates.GpmlIrregularSampling))
+        self.assertEquals(fixed_plate_id, 901)
+        self.assertEquals(moving_plate_id, 2)
+
+    def test_set(self):
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling(
+                [pygplates.GpmlTimeSample(
+                        pygplates.GpmlFiniteRotation(
+                                pygplates.FiniteRotation(
+                                        pygplates.PointOnSphere(1,0,0),
+                                        0.4)),
+                        0),
+                pygplates.GpmlTimeSample(
+                        pygplates.GpmlFiniteRotation(
+                                pygplates.FiniteRotation(
+                                        pygplates.PointOnSphere(0,1,0),
+                                        0.5)),
+                        10)])
+        feature = pygplates.Feature(pygplates.FeatureType.create_gpml('TotalReconstructionSequence'))
+        fixed_plate_property, moving_plate_property, total_pole_property = \
+                feature.set_total_reconstruction_pole(901, 2, gpml_irregular_sampling)
+        # Should have added three properties.
+        self.assertTrue(len(feature) == 3)
+        self.assertTrue(fixed_plate_property.get_value().get_plate_id() == 901)
+        self.assertTrue(moving_plate_property.get_value().get_plate_id() == 2)
+        interpolated_pole, interpolated_angle = total_pole_property.get_value(5).get_finite_rotation().get_euler_pole_and_angle()
+        self.assertTrue(abs(interpolated_angle) > 0.322 and abs(interpolated_angle) < 0.323)
+
     def test_interpolate(self):
         # Get the third rotation feature (contains more interesting poles).
         feature_iter = iter(self.rotations)

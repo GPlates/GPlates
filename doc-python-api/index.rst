@@ -73,7 +73,6 @@ Contents:
 	pygplates.get_equivalent_stage_rotation
 	pygplates.get_geometry_from_property_value
 	pygplates.get_relative_stage_rotation
-	pygplates.get_total_reconstruction_pole
 	pygplates.interpolate_finite_rotations
 	pygplates.interpolate_total_reconstruction_pole
 	pygplates.interpolate_total_reconstruction_sequence

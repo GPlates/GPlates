@@ -7,6 +7,9 @@ _gpml_left_plate_property_name = PropertyName.create_gpml('leftPlate')
 _gpml_right_plate_property_name = PropertyName.create_gpml('rightPlate')
 _gpml_reconstruction_plate_id_property_name = PropertyName.create_gpml('reconstructionPlateId')
 _gpml_conjugate_plate_id_property_name = PropertyName.create_gpml('conjugatePlateId')
+_gpml_fixed_reference_frame_property_name = PropertyName.create_gpml('fixedReferenceFrame')
+_gpml_moving_reference_frame_property_name = PropertyName.create_gpml('movingReferenceFrame')
+_gpml_total_reconstruction_pole_property_name = PropertyName.create_gpml('totalReconstructionPole')
 
 
 def get_description(feature, default=''):
@@ -79,7 +82,7 @@ def get_name(feature, default='', property_return=PropertyReturn.exactly_one):
     """get_name([default=''], [property_return=PropertyReturn.exactly_one]) -> str or list
     Return the name (or names) of this feature.
     
-    :param default: the default name (defaults to an empty string)
+    :param default: the default name (defaults to an empty string), or default names
     :type default: string or list or None
     :param property_return: whether to return exactly one name, the first name or all names
     :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*
@@ -478,7 +481,7 @@ def get_conjugate_plate_id(feature, default=0, property_return=PropertyReturn.ex
     """get_conjugate_plate_id([default=0], [property_return=PropertyReturn.exactly_one]) -> int or list
     Return the conjugate plate ID (or IDs) of this feature.
     
-    :param default: the default plate ID (defaults to zero)
+    :param default: the default plate ID (defaults to zero), or default plate IDs
     :type default: int or list or None
     :param property_return: whether to return exactly one ID, the first ID or all IDs
     :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*
@@ -599,3 +602,101 @@ def set_conjugate_plate_id(feature, conjugate_plate_id):
 Feature.set_conjugate_plate_id = set_conjugate_plate_id
 # Delete the module reference to the function - we only keep the class method.
 del set_conjugate_plate_id
+
+
+def get_total_reconstruction_pole(feature):
+    """get_total_reconstruction_pole() -> (int, int, GpmlIrregularSampling) or None
+    Returns the *time-dependent* total reconstruction pole of this feature.
+    
+    :rtype: tuple(int, int, :class:`GpmlIrregularSampling`) or None
+    :return: A tuple containing (fixed plate id, moving plate id, time sequence of finite rotations) or None
+    
+    This is a convenience method that wraps :meth:`get_value` for the common properties 'gpml:fixedReferenceFrame',
+    'gpml:movingReferenceFrame' and 'gpml:totalReconstructionPole'.
+    
+    Returns ``None`` if the feature does not contain a 'gpml:fixedReferenceFrame' plate id,
+    a 'gpml:movingReferenceFrame' plate id and a 'gpml:totalReconstructionPole' :class:`GpmlIrregularSampling` (with
+    time samples containing :class:`GpmlFiniteRotation` instances).
+    
+    A feature with :class:`type<FeatureType>` 'gpml:TotalReconstructionSequence' should have these properties
+    if it conforms to the GPlates Geological Information Model (GPGIM). These feature types are usually read from a
+    GPML rotation file or a PLATES4 rotation ('.rot') file.
+    
+    Calculate the interpolated :class:`finite rotation<FiniteRotation>` that represents the rotation of a
+    moving plate relative to a fixed plate from present day to a specific reconstruction time:
+    ::
+    
+      fixed_plate_id, moving_plate_id, total_reconstruction_pole = rotation_feature.get_total_reconstruction_pole()
+      interpolated_finite_rotation = total_reconstruction_pole.get_value(reconstruction_time).get_finite_rotation()
+    
+    ...although it is much easier to use :class:`RotationModel`.
+    """
+
+    fixed_plate_id_property_value = feature.get_value(_gpml_fixed_reference_frame_property_name)
+    if not fixed_plate_id_property_value:
+        return
+    
+    moving_plate_id_property_value = feature.get_value(_gpml_moving_reference_frame_property_name)
+    if not moving_plate_id_property_value:
+        return
+    
+    total_reconstruction_pole_property = feature.get(_gpml_total_reconstruction_pole_property_name)
+    if not total_reconstruction_pole_property:
+        return
+    total_reconstruction_pole_property_value = total_reconstruction_pole_property.get_time_dependent_container()
+    if not total_reconstruction_pole_property_value:
+        return
+    
+    try:
+        return (fixed_plate_id_property_value.get_plate_id(),
+                moving_plate_id_property_value.get_plate_id(),
+                total_reconstruction_pole_property_value)
+    except AttributeError:
+        # The property value type did not match the property name.
+        # This indicates the data does not conform to the GPlates Geological Information Model (GPGIM).
+        return
+
+# Add the module function as a class method.
+Feature.get_total_reconstruction_pole = get_total_reconstruction_pole
+# Delete the module reference to the function - we only keep the class method.
+del get_total_reconstruction_pole
+
+
+def set_total_reconstruction_pole(feature, fixed_plate_id, moving_plate_id, total_reconstruction_pole, verify_information_model=VerifyInformationModel.yes):
+    """set_total_reconstruction_pole(fixed_plate_id, moving_plate_id, total_reconstruction_pole, \
+    [verify_information_model=VerifyInformationModel.yes]) -> Property, Property, Property
+    Sets the *time-dependent* total reconstruction pole of this feature.
+    
+    :param fixed_plate_id: the fixed plate id
+    :type fixed_plate_id: int
+    :param moving_plate_id: the moving plate id
+    :type moving_plate_id: int
+    :param total_reconstruction_pole: the time-sequence of rotations
+    :type total_reconstruction_pole: :class:`GpmlIrregularSampling` of :class:`rotations<FiniteRotation>`
+    :returns: the fixed plate id property, the moving plate id property and the total reconstruction pole property
+    :rtype: tuple of three :class:`Property`
+    :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
+    does not support 'gpml:fixedReferenceFrame', 'gpml:movingReferenceFrame' and 'gpml:totalReconstructionPole' properties.
+    
+    This is a convenience method that wraps :meth:`set` for the common properties 'gpml:fixedReferenceFrame',
+    'gpml:movingReferenceFrame' and 'gpml:totalReconstructionPole'.
+    
+    A feature with :class:`type<FeatureType>` 'gpml:TotalReconstructionSequence' should support these properties
+    if it conforms to the GPlates Geological Information Model (GPGIM). These feature types are usually read from a
+    GPML rotation file or a PLATES4 rotation ('.rot') file.
+    
+    Set the total reconstruction pole with two integer plate IDs:
+    ::
+    
+      feature.set_total_reconstruction_pole(701, 201, total_reconstruction_pole)
+    """
+    
+    return (
+        feature.set(_gpml_fixed_reference_frame_property_name, GpmlPlateId(fixed_plate_id), verify_information_model),
+        feature.set(_gpml_moving_reference_frame_property_name, GpmlPlateId(moving_plate_id), verify_information_model),
+        feature.set(_gpml_total_reconstruction_pole_property_name, total_reconstruction_pole, verify_information_model))
+
+# Add the module function as a class method.
+Feature.set_total_reconstruction_pole = set_total_reconstruction_pole
+# Delete the module reference to the function - we only keep the class method.
+del set_total_reconstruction_pole
