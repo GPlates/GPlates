@@ -1333,10 +1333,12 @@ export_reconstruction_tree()
 				"\n"
 				"    fixed_plate_id, moving_plate_id, total_reconstruction_pole = "
 				"rotation_feature.get_total_reconstruction_pole()\n"
-				"    builder.insert_total_reconstruction_pole(\n"
-				"        fixed_plate_id,\n"
-				"        moving_plate_id,\n"
-				"        total_reconstruction_pole.get_value(reconstruction_time).get_finite_rotation())\n")
+				"    interpolated_rotation = total_reconstruction_pole.get_value(reconstruction_time)\n"
+				"    if interpolated_rotation:\n"
+				"        builder.insert_total_reconstruction_pole(\n"
+				"            fixed_plate_id,\n"
+				"            moving_plate_id,\n"
+				"            interpolated_rotation.get_finite_rotation())\n")
 		.def("build_reconstruction_tree",
 				&GPlatesApi::reconstruction_tree_builder_build_reconstruction_tree,
 				(bp::arg("anchor_plate_id"), bp::arg("reconstruction_time")),

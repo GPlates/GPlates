@@ -1,7 +1,6 @@
 <RCC>
   <qresource prefix="/">
     <file>python/api/get_property_value.py</file>
-    <file>python/api/interpolate_property_value.py</file>
     <file>python/api/Feature.py</file>
     <file>python/api/GeometriesOnSphere.py</file>
     <file>python/api/Ids.py</file>

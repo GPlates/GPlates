@@ -53,14 +53,18 @@ Feature.get_description = get_description
 del get_description
 
 
-def set_description(feature, description):
-    """set_description(description) -> Property
+def set_description(feature, description, verify_information_model=VerifyInformationModel.yes):
+    """set_description(description, [verify_information_model=VerifyInformationModel.yes]) -> Property
     Sets the description of this feature.
     
     :param description: the description
     :type description: string
+    :param verify_information_model: whether to check the information model before setting (default) or not
+    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
     :returns: the property containing the description
     :rtype: :class:`Property`
+    :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
+    does not support the 'gml:description' property.
     
     This is a convenience method that wraps :meth:`set` for the common property 'gml:description'.
     
@@ -70,7 +74,7 @@ def set_description(feature, description):
       feature.set_description('description')
     """
     
-    return feature.set(_gml_description_property_name, XsString(description))
+    return feature.set(_gml_description_property_name, XsString(description), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_description = set_description
@@ -169,14 +173,18 @@ Feature.get_name = get_name
 del get_name
 
 
-def set_name(feature, name):
-    """set_name(name) -> Property or list
+def set_name(feature, name, verify_information_model=VerifyInformationModel.yes):
+    """set_name(name, [verify_information_model=VerifyInformationModel.yes]) -> Property or list
     Set the name (or names) of this feature.
     
     :param name: the name or names
     :type name: string, or sequence of string
+    :param verify_information_model: whether to check the information model before setting (default) or not
+    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
     :returns: the property containing the name, or properties containing the names
     :rtype: :class:`Property`, or list of :class:`Property`
+    :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
+    does not support the 'gml:name' property.
     
     This is a convenience method that wraps :meth:`set` for the common property 'gml:name'.
     
@@ -195,9 +203,9 @@ def set_name(feature, name):
     
     # If 'name' is a sequence.
     if hasattr(name, '__iter__'):
-        return feature.set(_gml_name_property_name, [XsString(n) for n in name])
+        return feature.set(_gml_name_property_name, [XsString(n) for n in name], verify_information_model)
     
-    return feature.set(_gml_name_property_name, XsString(name))
+    return feature.set(_gml_name_property_name, XsString(name), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_name = set_name
@@ -252,16 +260,20 @@ Feature.get_valid_time = get_valid_time
 del get_valid_time
 
 
-def set_valid_time(feature, begin_time, end_time):
-    """set_valid_time(begin_time, end_time) -> Property
+def set_valid_time(feature, begin_time, end_time, verify_information_model=VerifyInformationModel.yes):
+    """set_valid_time(begin_time, end_time, [verify_information_model=VerifyInformationModel.yes]) -> Property
     Sets the valid time range of this feature.
     
     :param begin_time: the begin time (time of appearance)
     :type begin_time: float or :class:`GeoTimeInstant`
     :param end_time: the end time (time of disappearance)
     :type end_time: float or :class:`GeoTimeInstant`
+    :param verify_information_model: whether to check the information model before setting (default) or not
+    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
     :returns: the property containing the valid time range
     :rtype: :class:`Property`
+    :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
+    does not support the 'gml:validTime' property.
     
     This is a convenience method that wraps :meth:`set` for the common property 'gml:validTime'.
     
@@ -271,7 +283,7 @@ def set_valid_time(feature, begin_time, end_time):
       feature.set_valid_time(pygplates.GeoTimeInstant.create_distant_past(), 0)
     """
     
-    return feature.set(_gml_valid_time_property_name, GmlTimePeriod(begin_time, end_time))
+    return feature.set(_gml_valid_time_property_name, GmlTimePeriod(begin_time, end_time), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_valid_time = set_valid_time
@@ -320,14 +332,18 @@ Feature.get_left_plate = get_left_plate
 del get_left_plate
 
 
-def set_left_plate(feature, left_plate):
-    """set_left_plate(left_plate) -> Property
+def set_left_plate(feature, left_plate, verify_information_model=VerifyInformationModel.yes):
+    """set_left_plate(left_plate, [verify_information_model=VerifyInformationModel.yes]) -> Property
     Sets the left plate ID of this feature.
     
     :param left_plate: the left plate id
     :type left_plate: int
+    :param verify_information_model: whether to check the information model before setting (default) or not
+    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
     :returns: the property containing the left plate id
     :rtype: :class:`Property`
+    :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
+    does not support the 'gpml:leftPlate' property.
     
     This is a convenience method that wraps :meth:`set` for the common property 'gpml:leftPlate'.
     
@@ -337,7 +353,7 @@ def set_left_plate(feature, left_plate):
       feature.set_left_plate(201)
     """
     
-    return feature.set(_gpml_left_plate_property_name, GpmlPlateId(left_plate))
+    return feature.set(_gpml_left_plate_property_name, GpmlPlateId(left_plate), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_left_plate = set_left_plate
@@ -386,14 +402,18 @@ Feature.get_right_plate = get_right_plate
 del get_right_plate
 
 
-def set_right_plate(feature, right_plate):
-    """set_right_plate(right_plate) -> Property
+def set_right_plate(feature, right_plate, verify_information_model=VerifyInformationModel.yes):
+    """set_right_plate(right_plate, [verify_information_model=VerifyInformationModel.yes]) -> Property
     Sets the right plate ID of this feature.
     
     :param right_plate: the right plate id
     :type right_plate: int
+    :param verify_information_model: whether to check the information model before setting (default) or not
+    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
     :returns: the property containing the right plate id
     :rtype: :class:`Property`
+    :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
+    does not support the 'gpml:rightPlate' property.
     
     This is a convenience method that wraps :meth:`set` for the common property 'gpml:rightPlate'.
     
@@ -403,7 +423,7 @@ def set_right_plate(feature, right_plate):
       feature.set_right_plate(701)
     """
     
-    return feature.set(_gpml_right_plate_property_name, GpmlPlateId(right_plate))
+    return feature.set(_gpml_right_plate_property_name, GpmlPlateId(right_plate), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_right_plate = set_right_plate
@@ -452,14 +472,18 @@ Feature.get_reconstruction_plate_id = get_reconstruction_plate_id
 del get_reconstruction_plate_id
 
 
-def set_reconstruction_plate_id(feature, reconstruction_plate_id):
-    """set_reconstruction_plate_id(reconstruction_plate_id) -> Property
+def set_reconstruction_plate_id(feature, reconstruction_plate_id, verify_information_model=VerifyInformationModel.yes):
+    """set_reconstruction_plate_id(reconstruction_plate_id, [verify_information_model=VerifyInformationModel.yes]) -> Property
     Sets the reconstruction plate ID of this feature.
     
     :param reconstruction_plate_id: the reconstruction plate id
     :type reconstruction_plate_id: int
+    :param verify_information_model: whether to check the information model before setting (default) or not
+    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
     :returns: the property containing the reconstruction plate id
     :rtype: :class:`Property`
+    :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
+    does not support the 'gpml:reconstructionPlateId' property.
     
     This is a convenience method that wraps :meth:`set` for the common property 'gpml:reconstructionPlateId'.
     
@@ -469,7 +493,7 @@ def set_reconstruction_plate_id(feature, reconstruction_plate_id):
       feature.set_reconstruction_plate_id(701)
     """
     
-    return feature.set(_gpml_reconstruction_plate_id_property_name, GpmlPlateId(reconstruction_plate_id))
+    return feature.set(_gpml_reconstruction_plate_id_property_name, GpmlPlateId(reconstruction_plate_id), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_reconstruction_plate_id = set_reconstruction_plate_id
@@ -568,14 +592,18 @@ Feature.get_conjugate_plate_id = get_conjugate_plate_id
 del get_conjugate_plate_id
 
 
-def set_conjugate_plate_id(feature, conjugate_plate_id):
-    """set_conjugate_plate_id(conjugate_plate_id) -> Property or list
+def set_conjugate_plate_id(feature, conjugate_plate_id, verify_information_model=VerifyInformationModel.yes):
+    """set_conjugate_plate_id(conjugate_plate_id, [verify_information_model=VerifyInformationModel.yes]) -> Property or list
     Set the conjugate plate ID (or IDs) of this feature.
     
     :param conjugate_plate_id: the conjugate plate ID or plate IDs
     :type conjugate_plate_id: int, or sequence of int
+    :param verify_information_model: whether to check the information model before setting (default) or not
+    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
     :returns: the property containing the conjugate plate ID, or properties containing the conjugate plate IDs
     :rtype: :class:`Property`, or list of :class:`Property`
+    :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
+    does not support the 'gpml:conjugatePlateId' property.
     
     This is a convenience method that wraps :meth:`set` for the common property 'gpml:conjugatePlateId'.
     
@@ -594,9 +622,9 @@ def set_conjugate_plate_id(feature, conjugate_plate_id):
     
     # If 'conjugate_plate_id' is a sequence.
     if hasattr(conjugate_plate_id, '__iter__'):
-        return feature.set(_gpml_conjugate_plate_id_property_name, [GpmlPlateId(id) for id in conjugate_plate_id])
+        return feature.set(_gpml_conjugate_plate_id_property_name, [GpmlPlateId(id) for id in conjugate_plate_id], verify_information_model)
     
-    return feature.set(_gpml_conjugate_plate_id_property_name, GpmlPlateId(conjugate_plate_id))
+    return feature.set(_gpml_conjugate_plate_id_property_name, GpmlPlateId(conjugate_plate_id), verify_information_model)
 
 # Add the module function as a class method.
 Feature.set_conjugate_plate_id = set_conjugate_plate_id
@@ -627,7 +655,9 @@ def get_total_reconstruction_pole(feature):
     ::
     
       fixed_plate_id, moving_plate_id, total_reconstruction_pole = rotation_feature.get_total_reconstruction_pole()
-      interpolated_finite_rotation = total_reconstruction_pole.get_value(reconstruction_time).get_finite_rotation()
+      interpolated_finite_rotation_property_value = total_reconstruction_pole.get_value(reconstruction_time)
+      if interpolated_finite_rotation_property_value:
+          interpolated_finite_rotation = interpolated_finite_rotation_property_value.get_finite_rotation()
     
     ...although it is much easier to use :class:`RotationModel`.
     """
@@ -673,6 +703,8 @@ def set_total_reconstruction_pole(feature, fixed_plate_id, moving_plate_id, tota
     :type moving_plate_id: int
     :param total_reconstruction_pole: the time-sequence of rotations
     :type total_reconstruction_pole: :class:`GpmlIrregularSampling` of :class:`rotations<FiniteRotation>`
+    :param verify_information_model: whether to check the information model before setting (default) or not
+    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
     :returns: the fixed plate id property, the moving plate id property and the total reconstruction pole property
     :rtype: tuple of three :class:`Property`
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \

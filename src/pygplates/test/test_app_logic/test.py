@@ -11,32 +11,6 @@ import pygplates
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 
 
-class InterpolateTotalReconstructionPoleTest(unittest.TestCase):
-    def setUp(self):
-        self.gpml_irregular_sampling = pygplates.GpmlIrregularSampling(
-                [pygplates.GpmlTimeSample(
-                        pygplates.GpmlFiniteRotation(
-                                pygplates.FiniteRotation(
-                                        pygplates.PointOnSphere(1,0,0),
-                                        0.4)),
-                        pygplates.GeoTimeInstant(0)),
-                pygplates.GpmlTimeSample(
-                        pygplates.GpmlFiniteRotation(
-                                pygplates.FiniteRotation(
-                                        pygplates.PointOnSphere(0,1,0),
-                                        0.5)),
-                        pygplates.GeoTimeInstant(10))])
-
-    def test_interpolate(self):
-        interpolated_finite_rotation = pygplates.interpolate_total_reconstruction_pole(self.gpml_irregular_sampling, 5)
-        self.assertTrue(interpolated_finite_rotation)
-        self.assertTrue(isinstance(interpolated_finite_rotation, pygplates.FiniteRotation))
-        interpolated_pole, interpolated_angle = interpolated_finite_rotation.get_euler_pole_and_angle()
-        self.assertTrue(abs(interpolated_angle) > 0.322 and abs(interpolated_angle) < 0.323)
-        # Time outside range of time samples.
-        self.assertFalse(pygplates.interpolate_total_reconstruction_pole(self.gpml_irregular_sampling, 15))
-
-
 class InterpolateTotalReconstructionSequenceTest(unittest.TestCase):
     def setUp(self):
         self.rotations = pygplates.FeatureCollectionFileFormatRegistry().read(
@@ -87,9 +61,10 @@ class InterpolateTotalReconstructionSequenceTest(unittest.TestCase):
         feature_iter.next();
         feature = feature_iter.next()
         
-        trp = pygplates.interpolate_total_reconstruction_sequence(feature, 12.2)
-        self.assertTrue(trp)
-        fixed_plate_id, moving_plate_id, interpolated_finite_rotation = trp
+        total_reconstruction_pole = feature.get_total_reconstruction_pole()
+        self.assertTrue(total_reconstruction_pole)
+        fixed_plate_id, moving_plate_id, total_reconstruction_pole_rotations = total_reconstruction_pole
+        interpolated_finite_rotation = total_reconstruction_pole_rotations.get_value(12.2).get_finite_rotation()
         self.assertEquals(fixed_plate_id, 901)
         self.assertEquals(moving_plate_id, 2)
         pole, angle = interpolated_finite_rotation.get_euler_pole_and_angle()
@@ -169,12 +144,17 @@ class ReconstructionTreeCase(unittest.TestCase):
         
         # Build using a ReconstructionTreeBuilder.
         builder = pygplates.ReconstructionTreeBuilder()
+        reconstruction_time = self.reconstruction_tree.get_reconstruction_time()
         for rotation_feature in self.rotations:
-            trp = pygplates.interpolate_total_reconstruction_sequence(
-                    rotation_feature, self.reconstruction_tree.get_reconstruction_time())
+            trp = rotation_feature.get_total_reconstruction_pole()
             if trp:
-                fixed_plate_id, moving_plate_id, interpolated_rotation = trp
-                builder.insert_total_reconstruction_pole(fixed_plate_id, moving_plate_id, interpolated_rotation)
+                fixed_plate_id, moving_plate_id, total_reconstruction_pole = trp
+                interpolated_rotation = total_reconstruction_pole.get_value(reconstruction_time)
+                if interpolated_rotation:
+                    builder.insert_total_reconstruction_pole(
+                            fixed_plate_id,
+                            moving_plate_id,
+                            interpolated_rotation.get_finite_rotation())
         built_reconstruction_tree = builder.build_reconstruction_tree(
                 self.reconstruction_tree.get_anchor_plate_id(),
                 self.reconstruction_tree.get_reconstruction_time())
@@ -388,7 +368,6 @@ def suite():
     
     # Add test cases from this module.
     test_cases = [
-            InterpolateTotalReconstructionPoleTest,
             InterpolateTotalReconstructionSequenceTest,
             ReconstructTest,
             ReconstructionTreeCase,
