@@ -43,6 +43,8 @@
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
 #include <boost/python/stl_iterator.hpp>
 
+#include "maths/GeometryOnSphere.h"
+
 #include "model/FeatureHandle.h"
 #include "model/FeatureId.h"
 #include "model/FeatureType.h"
@@ -75,6 +77,137 @@ namespace GPlatesApi
 			ALL          // Returns all elements that matches the query.
 		};
 	};
+
+
+	/**
+	 * Returns the default geometry property name associated with the specified feature type.
+	 */
+	boost::optional<GPlatesModel::PropertyName>
+	get_default_geometry_property_name(
+			const GPlatesModel::FeatureType &feature_type)
+	{
+		const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
+
+		// Get the GPGIM feature class.
+		boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
+				gpgim.get_feature_class(feature_type);
+		if (!gpgim_feature_class)
+		{
+			return boost::none;
+		}
+
+		// Get the feature's default geometry property.
+		boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_geometry_feature_property =
+				gpgim_feature_class.get()->get_default_geometry_feature_property();
+		if (!default_geometry_feature_property)
+		{
+			return boost::none;
+		}
+
+		return default_geometry_feature_property.get()->get_property_name();
+	}
+
+	/**
+	 * Returns true if the specified property name supports the type of the specified geometry.
+	 */
+	bool
+	is_geometry_type_supported_by_property(
+			const GPlatesMaths::GeometryOnSphere &geometry,
+			const GPlatesModel::PropertyName &property_name)
+	{
+		const GPlatesMaths::GeometryType::Value geometry_type =
+				GPlatesAppLogic::GeometryUtils::get_geometry_type(geometry);
+
+		// Get the property value structural type associated with the geometry type.
+		boost::optional<GPlatesPropertyValues::StructuralType> geometry_structural_type;
+		switch (geometry_type)
+		{
+		case GPlatesMaths::GeometryType::POINT:
+			geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("Point");
+			break;
+
+		case GPlatesMaths::GeometryType::MULTIPOINT:
+			geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("MultiPoint");
+			break;
+
+		case GPlatesMaths::GeometryType::POLYLINE:
+			geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("LineString");
+			break;
+
+		case GPlatesMaths::GeometryType::POLYGON:
+			geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("Polygon");
+			break;
+
+		case GPlatesMaths::GeometryType::NONE:
+		default:
+			break;
+		}
+
+		if (!geometry_structural_type)
+		{
+			return false;
+		}
+
+		const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
+
+		// Get the GPGIM property using the property name.
+		boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
+				gpgim.get_property(property_name);
+		if (!gpgim_property)
+		{
+			return false;
+		}
+
+		const GPlatesModel::GpgimProperty::structural_type_seq_type &gpgim_structural_types =
+				gpgim_property.get()->get_structural_types();
+
+		// If any allowed structural type matches then the geometry type is supported.
+		BOOST_FOREACH(
+				GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type gpgim_structural_type,
+				gpgim_structural_types)
+		{
+			if (geometry_structural_type == gpgim_structural_type->get_structural_type())
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Return derived geometry type as a string.
+	 */
+	QString
+	get_geometry_type_as_string(
+			const GPlatesMaths::GeometryOnSphere &geometry)
+	{
+		const GPlatesMaths::GeometryType::Value geometry_type =
+				GPlatesAppLogic::GeometryUtils::get_geometry_type(geometry);
+
+		switch (geometry_type)
+		{
+		case GPlatesMaths::GeometryType::POINT:
+			return QString("PointOnSphere");
+
+		case GPlatesMaths::GeometryType::MULTIPOINT:
+			return QString("MultiPointOnSphere");
+
+		case GPlatesMaths::GeometryType::POLYLINE:
+			return QString("PolylineOnSphere");
+
+		case GPlatesMaths::GeometryType::POLYGON:
+			return QString("PolygonOnSphere");
+
+		case GPlatesMaths::GeometryType::NONE:
+		default:
+			break;
+		}
+
+		// Should not be able to get here.
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		return QString(); // Keep compiler happy.
+	}
 
 
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
@@ -581,8 +714,7 @@ namespace GPlatesApi
 			bp::object property_value_object,
 			VerifyInformationModel::Value verify_information_model)
 	{
-		const char *type_error_string =
-				"Expected a PropertyName and PropertyValue, or PropertyName and sequence of PropertyValue";
+		const char *type_error_string = "Expected a PropertyValue, or sequence of PropertyValue";
 
 		// 'property_value_object' is either a property value or a sequence of property values.
 		bp::extract<GPlatesModel::PropertyValue::non_null_ptr_type> extract_property_value(property_value_object);
@@ -911,6 +1043,111 @@ namespace GPlatesApi
 	}
 
 	bp::object
+	feature_handle_set_geometry(
+			GPlatesModel::FeatureHandle &feature_handle,
+			bp::object geometry_object,
+			boost::optional<GPlatesModel::PropertyName> property_name,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		const char *type_error_string = "Expected a GeometryOnSphere, or sequence of GeometryOnSphere";
+
+		// If a property name wasn't specified then determine the
+		// default geometry property name via the GPGIM.
+		if (!property_name)
+		{
+			property_name = get_default_geometry_property_name(feature_handle.feature_type());
+
+			// This exception will get converted to python 'InformationModelError'.
+			GPlatesGlobal::Assert<InformationModelException>(
+					property_name,
+					GPLATES_EXCEPTION_SOURCE,
+					QString("Unable to determine the default geometry property name from the feature type '") +
+							convert_qualified_xml_name_to_qstring(feature_handle.feature_type()) + "'");
+		}
+
+		// 'geometry_object' is either a geometry or a sequence of geometries.
+		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_geometry(geometry_object);
+		if (extract_geometry.check())
+		{
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = extract_geometry();
+
+			// Make sure geometry type is supported by property (if requested to check).
+			// This exception will get converted to python 'InformationModelError'.
+			GPlatesGlobal::Assert<InformationModelException>(
+					verify_information_model == VerifyInformationModel::NO ||
+						is_geometry_type_supported_by_property(*geometry, property_name.get()),
+					GPLATES_EXCEPTION_SOURCE,
+					QString("The geometry type '") +
+							get_geometry_type_as_string(*geometry) +
+							"' is not supported by property name '" +
+							convert_qualified_xml_name_to_qstring(property_name.get()) + "'");
+
+			// Wrap the geometry in a property value.
+			GPlatesModel::PropertyValue::non_null_ptr_type geometry_property_value =
+					GPlatesAppLogic::GeometryUtils::create_geometry_property_value(geometry);
+
+			// Set the geometry property value in the feature.
+			return feature_handle_set_property(
+					feature_handle,
+					property_name.get(),
+					bp::object(geometry_property_value),
+					verify_information_model);
+		}
+		// ...else a sequence of geometries.
+
+		// Attempt to extract a sequence of geometries.
+		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry_seq_type;
+		geometry_seq_type geometries;
+		try
+		{
+			// A sequence containing geometries.
+			bp::stl_input_iterator<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+					geometry_seq_begin(geometry_object),
+					geometry_seq_end;
+
+			// Copy into a sequence.
+			std::copy(geometry_seq_begin, geometry_seq_end, std::back_inserter(geometries));
+		}
+		catch (const boost::python::error_already_set &)
+		{
+			PyErr_Clear();
+
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
+
+		// Wrap the geometries in property values.
+		bp::list geometry_property_values;
+
+		BOOST_FOREACH(GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry, geometries)
+		{
+			// Make sure geometry type is supported by property (if requested to check).
+			// This exception will get converted to python 'InformationModelError'.
+			GPlatesGlobal::Assert<InformationModelException>(
+					verify_information_model == VerifyInformationModel::NO ||
+						is_geometry_type_supported_by_property(*geometry, property_name.get()),
+					GPLATES_EXCEPTION_SOURCE,
+					QString("The geometry type '") +
+							get_geometry_type_as_string(*geometry) +
+							"' is not supported by property name '" +
+							convert_qualified_xml_name_to_qstring(property_name.get()) + "'");
+
+			// Wrap the current geometry in a property value.
+			GPlatesModel::PropertyValue::non_null_ptr_type geometry_property_value =
+					GPlatesAppLogic::GeometryUtils::create_geometry_property_value(geometry);
+
+			geometry_property_values.append(geometry_property_value);
+		}
+
+		// Set the geometry property values in the feature.
+		return feature_handle_set_property(
+				feature_handle,
+				property_name.get(),
+				geometry_property_values,
+				verify_information_model);
+	}
+
+	bp::object
 	feature_handle_get_geometry(
 			GPlatesModel::FeatureHandle &feature_handle,
 			bp::object property_query_object,
@@ -920,25 +1157,14 @@ namespace GPlatesApi
 		// default geometry property name via the GPGIM.
 		if (property_query_object == bp::object()/*Py_None*/)
 		{
-			const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
-
-			// Get the GPGIM feature class.
-			boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
-					gpgim.get_feature_class(feature_handle.feature_type());
-			if (!gpgim_feature_class)
+			boost::optional<GPlatesModel::PropertyName> default_geometry_property_name =
+					get_default_geometry_property_name(feature_handle.feature_type());
+			if (!default_geometry_property_name)
 			{
 				return bp::object()/*Py_None*/;
 			}
 
-			// Get the feature's default geometry property.
-			boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_geometry_feature_property =
-					gpgim_feature_class.get()->get_default_geometry_feature_property();
-			if (!default_geometry_feature_property)
-			{
-				return bp::object()/*Py_None*/;
-			}
-
-			property_query_object = bp::object(default_geometry_feature_property.get()->get_property_name());
+			property_query_object = bp::object(default_geometry_property_name.get());
 		}
 
 		// Get the geometry property value(s).
@@ -1042,13 +1268,18 @@ export_feature()
 					"* :meth:`get_feature_type`\n"
 					"* :meth:`get_feature_id`\n"
 					"\n"
-					"The following methods provide support for adding, removing, setting and getting properties:\n"
+					"The following methods provide *generic* support for adding, removing, setting and getting properties:\n"
 					"\n"
 					"* :meth:`add`\n"
 					"* :meth:`remove`\n"
 					"* :meth:`set`\n"
 					"* :meth:`get`\n"
 					"* :meth:`get_value`\n"
+					"\n"
+					"The following methods provide a more convenient way to set and get feature :class:`geometry<GeometryOnSphere>`:\n"
+					"\n"
+					"* :meth:`set_geometry`\n"
+					"* :meth:`get_geometry`\n"
 					"\n"
 					"The following methods provide a more convenient way to set and get some of the properties "
 					"that are common to many feature types:\n"
@@ -1070,12 +1301,8 @@ export_feature()
 					"* :meth:`set_total_reconstruction_pole`\n"
 					"* :meth:`get_total_reconstruction_pole`\n"
 					"\n"
-					"...for other properties :meth:`set`, :meth:`get` and :meth:`get_value` will still need to be used.\n"
-					"\n"
-					"The following methods provide a convenient way to set and get feature :class:`geometry<GeometryOnSphere>`:\n"
-					"\n"
-					"* :meth:`set_geometry`\n"
-					"* :meth:`get_geometry`\n",
+					"...for other properties the generic :meth:`set`, :meth:`get` and :meth:`get_value` "
+					"methods will still need to be used.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1390,78 +1617,155 @@ export_feature()
 				"        lambda property: property.get_name() == pygplates.PropertyName.create_gpml('reconstructionPlateId') and\n"
 				"                         property.get_value().get_plate_id() < 700)\n"
 				"    assert(recon_plate_id_less_700_property_value.get_plate_id() < 700)\n")
+		.def("set_geometry",
+				&GPlatesApi::feature_handle_set_geometry,
+				(bp::arg("geometry"),
+						bp::arg("property_name") = boost::optional<GPlatesModel::PropertyName>(),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"set_geometry(geometry, [property_name], [verify_information_model=VerifyInformationModel.yes]) "
+				"-> Property or list\n"
+				"  Set the geometry (or geometries) of this feature.\n"
+				"\n"
+				"  :param geometry: the geometry (or geometries) of the property (or properties) to set\n"
+				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
+				"of :class:`GeometryOnSphere`\n"
+				"  :param property_name: the optional property name of the geometry property or properties to set, "
+				"if not specified then the default geometry property name associated with this feature's "
+				":class:`type<FeatureType>` is used instead\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :returns: the geometry property (or properties) set in the feature\n"
+				"  :rtype: :class:`Property`, or list of :class:`Property` depending on whether *geometry* "
+				"is a :class:`GeometryOnSphere` or sequence of :class:`GeometryOnSphere`\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and *property_name* is specified but is not a recognised property name or is not supported by "
+				"this feature's :class:`type<FeatureType>`\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and multiple geometries (if specified in *geometry*) are not supported by *property_name* "
+				"(or the default geometry property name if *property_name* not specified)\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and any :class:`geometry type<GeometryOnSphere>` in *geometry* is not supported for "
+				"*property_name* (or the default geometry property name if *property_name* not specified)\n"
+				"\n"
+				"  This is a convenience method to make setting geometry easier.\n"
+				"\n"
+				"  Usually a :class:`feature type<FeatureType>` supports *geometry* properties with more than "
+				"one property name (eg, 'gpml:centerLineOf' and 'gpml:unclassifiedGeometry'). "
+				"But only one of them is the default (eg, the default property that geometry data is imported into). "
+				"If *property_name* is not specified then this method determines the default property name "
+				"from this feature's :class:`type<FeatureType>` and sets the geometry in one or more "
+				"properties of that :class:`PropertyName`.\n"
+				"\n"
+				"  The question of how many distinct geometries are allowed per feature is a little more tricky. "
+				"Some geometry properties, such as 'gpml:centerLineOf', support multiple properties per "
+				"feature and support any :class:`geometry type<GeometryOnSphere>`. Other geometry "
+				"properties, such as 'gpml:boundary', tend to support only one property per feature "
+				"and only some :class:`geometry types<GeometryOnSphere>` (eg, only :class:`PolylineOnSphere` "
+				"and :class:`PolygonOnSphere`). However the :class:`geometry type<GeometryOnSphere>` is usually "
+				"apparent given the feature type. For example a 'gpml:Isochron' feature typically contains "
+				"a :class:`polyline<PolylineOnSphere>` whereas a 'gpml:HotSpot' feature contains a "
+				":class:`point<PointOnSphere>`.\n"
+				"\n"
+				"  Set the default geometry:\n"
+				"  ::\n"
+				"\n"
+				"    feature.set_geometry(default_geometry)\n"
+				"\n"
+				"  Set the list of default geometries:\n"
+				"  ::\n"
+				"\n"
+				"    default_geometries = []\n"
+				"    ...\n"
+				"    feature.set_geometry(default_geometries)\n"
+				"\n"
+				"  Set the geometry associated with a property named 'gpml:averageSampleSitePosition':\n"
+				"  ::\n"
+				"\n"
+				"    feature.set_geometry(\n"
+				"        average_sample_site_position,\n"
+				"        pygplates.PropertyName.create_gpml('averageSampleSitePosition'))\n"
+				"\n"
+				"  Set the list of geometries associated with the property name 'gpml:unclassifiedGeometry':\n"
+				"  ::\n"
+				"\n"
+				"    unclassified_geometries = []\n"
+				"    ...\n"
+				"    feature.set_geometry(\n"
+				"        unclassified_geometries,\n"
+				"        pygplates.PropertyName.create_gpml('unclassifiedGeometry'))\n")
 		.def("get_geometry",
 				&GPlatesApi::feature_handle_get_geometry,
 				(bp::arg("property_query") = bp::object()/*Py_None*/,
 						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE),
 				"get_geometry([property_query], [property_return=PropertyReturn.exactly_one]) -> GeometryOnSphere or list or None\n"
-			"  Return the geometry (or geometries) of this feature matching a property name or predicate.\n"
-			"\n"
-			"  :param property_query: the optional property name or predicate function used to find "
-			"the geometry property or properties, if not specified then the default geometry property "
-			"name associated with this feature's :class:`type<FeatureType>` is used instead\n"
-			"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
-			"  :param property_return: whether to return exactly one geometry, the first geometry or all geometries\n"
-			"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
-			"  :rtype: :class:`GeometryOnSphere`, or list of :class:`GeometryOnSphere`, or None\n"
-			"\n"
-			"  This is a convenience method to make geometry retrieval easier.\n"
-			"\n"
-			"  Usually a :class:`feature type<FeatureType>` supports *geometry* properties with more than "
-			"one property name (eg, 'gpml:centerLineOf' and 'gpml:unclassifiedGeometry'). "
-			"But only one of them is the default (eg, the default property that geometry data is imported into). "
-			"If *property_query* is not specified then this method determines the default property name "
-			"from this feature's :class:`type<FeatureType>` and retrieves the geometry from one or more "
-			"properties of that :class:`PropertyName`.\n"
-			"\n"
-			"  The question of how many distinct geometries are allowed per feature is a little more tricky. "
-			"Some geometry properties, such as 'gpml:centerLineOf', support multiple properties per "
-			"feature and support any :class:`geometry type<GeometryOnSphere>`. Other geometry "
-			"properties, such as 'gpml:boundary', tend to support only one property per feature "
-			"and only some :class:`geometry types<GeometryOnSphere>` (eg, only :class:`PolylineOnSphere` "
-			"and :class:`PolygonOnSphere`). However the :class:`geometry type<GeometryOnSphere>` is usually "
-			"apparent given the feature type. For example a 'gpml:Isochron' feature typically contains "
-			"a :class:`polyline<PolylineOnSphere>` whereas a 'gpml:HotSpot' feature contains a "
-			":class:`point<PointOnSphere>`.\n"
-			"\n"
-			"  The following table maps *property_return* values to return values:\n"
-			"\n"
-			"  ===================== ==============\n"
-			"  PropertyReturn Value   Description\n"
-			"  ===================== ==============\n"
-			"  exactly_one           Returns the geometry if exactly one matching geometry property is found, "
-			"otherwise ``None`` is returned.\n"
-			"  first                 Returns the geometry of the first matching geometry property - "
-			"however note that a feature is an *unordered* collection of properties. Returns ``none`` "
-			"if there are no matching geometry properties.\n"
-			"  all                   Returns a ``list`` of geometries of matching geometry properties. "
-			"Returns an empty list if there are no matching geometry properties.\n"
-			"  ===================== ==============\n"
-			"\n"
-			"  Return the default geometry (returns ``None`` if not exactly one default geometry property found):\n"
-			"  ::\n"
-			"\n"
-			"    default_geometry = feature.get_geometry()\n"
-			"    if default_geometry:\n"
-			"    ...\n"
-			"\n"
-			"  Return the list of default geometries (defaults to an empty list if no default geometry properties are found):\n"
-			"  ::\n"
-			"\n"
-			"    default_geometries = feature.get_geometry(property_return=pygplates.PropertyReturn.all)\n"
-			"\n"
-			"  Return the geometry associated with the property named 'gpml:averageSampleSitePosition':\n"
-			"  ::\n"
-			"\n"
-			"    average_sample_site_position = feature.get_geometry(\n"
-			"        pygplates.PropertyName.create_gpml('averageSampleSitePosition'))\n"
-			"\n"
-			"  Return the list of all geometries (regardless of which properties they came from):\n"
-			"  ::\n"
-			"\n"
-			"    all_geometries = feature.get_geometry(\n"
-			"        lambda property: True,\n"
-			"        pygplates.PropertyReturn.all)\n")
+				"  Return the geometry (or geometries) of this feature.\n"
+				"\n"
+				"  :param property_query: the optional property name or predicate function used to find "
+				"the geometry property or properties, if not specified then the default geometry property "
+				"name associated with this feature's :class:`type<FeatureType>` is used instead\n"
+				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
+				"  :param property_return: whether to return exactly one geometry, the first geometry or all geometries\n"
+				"  :type property_return: *PropertyReturn.exactly_one*, *PropertyReturn.first* or *PropertyReturn.all*\n"
+				"  :rtype: :class:`GeometryOnSphere`, or list of :class:`GeometryOnSphere`, or None\n"
+				"\n"
+				"  This is a convenience method to make geometry retrieval easier.\n"
+				"\n"
+				"  Usually a :class:`feature type<FeatureType>` supports *geometry* properties with more than "
+				"one property name (eg, 'gpml:centerLineOf' and 'gpml:unclassifiedGeometry'). "
+				"But only one of them is the default (eg, the default property that geometry data is imported into). "
+				"If *property_query* is not specified then this method determines the default property name "
+				"from this feature's :class:`type<FeatureType>` and retrieves the geometry from one or more "
+				"properties of that :class:`PropertyName`.\n"
+				"\n"
+				"  The question of how many distinct geometries are allowed per feature is a little more tricky. "
+				"Some geometry properties, such as 'gpml:centerLineOf', support multiple properties per "
+				"feature and support any :class:`geometry type<GeometryOnSphere>`. Other geometry "
+				"properties, such as 'gpml:boundary', tend to support only one property per feature "
+				"and only some :class:`geometry types<GeometryOnSphere>` (eg, only :class:`PolylineOnSphere` "
+				"and :class:`PolygonOnSphere`). However the :class:`geometry type<GeometryOnSphere>` is usually "
+				"apparent given the feature type. For example a 'gpml:Isochron' feature typically contains "
+				"a :class:`polyline<PolylineOnSphere>` whereas a 'gpml:HotSpot' feature contains a "
+				":class:`point<PointOnSphere>`.\n"
+				"\n"
+				"  The following table maps *property_return* values to return values:\n"
+				"\n"
+				"  ===================== ==============\n"
+				"  PropertyReturn Value   Description\n"
+				"  ===================== ==============\n"
+				"  exactly_one           Returns the geometry if exactly one matching geometry property is found, "
+				"otherwise ``None`` is returned.\n"
+				"  first                 Returns the geometry of the first matching geometry property - "
+				"however note that a feature is an *unordered* collection of properties. Returns ``none`` "
+				"if there are no matching geometry properties.\n"
+				"  all                   Returns a ``list`` of geometries of matching geometry properties. "
+				"Returns an empty list if there are no matching geometry properties.\n"
+				"  ===================== ==============\n"
+				"\n"
+				"  Return the default geometry (returns ``None`` if not exactly one default geometry property found):\n"
+				"  ::\n"
+				"\n"
+				"    default_geometry = feature.get_geometry()\n"
+				"    if default_geometry:\n"
+				"    ...\n"
+				"\n"
+				"  Return the list of default geometries (defaults to an empty list if no default geometry properties are found):\n"
+				"  ::\n"
+				"\n"
+				"    default_geometries = feature.get_geometry(property_return=pygplates.PropertyReturn.all)\n"
+				"\n"
+				"  Return the geometry associated with the property named 'gpml:averageSampleSitePosition':\n"
+				"  ::\n"
+				"\n"
+				"    average_sample_site_position = feature.get_geometry(\n"
+				"        pygplates.PropertyName.create_gpml('averageSampleSitePosition'))\n"
+				"\n"
+				"  Return the list of all geometries (regardless of which properties they came from):\n"
+				"  ::\n"
+				"\n"
+				"    all_geometries = feature.get_geometry(\n"
+				"        lambda property: True,\n"
+				"        pygplates.PropertyReturn.all)\n")
 		.def("get_feature_type",
 				&GPlatesModel::FeatureHandle::feature_type,
 				bp::return_value_policy<bp::copy_const_reference>(),

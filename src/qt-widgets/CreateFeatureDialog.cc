@@ -1714,20 +1714,16 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 					true /*reverse_reconstruct*/);
 
 	// Create a property value using the present-day geometry for the conjugate isochron.
-	const boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> conjugate_geometry_property_value =
+	GPlatesModel::PropertyValue::non_null_ptr_type conjugate_geometry_property_value =
 			GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 					conjugate_present_day_geometry);
-	if (!conjugate_geometry_property_value)
-	{
-		return;
-	}
 
 	// Add the geometry property to the conjugate isochron feature.
 	GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
 	if (!GPlatesModel::ModelUtils::add_property(
 			conjugate_isochron_feature->reference(),
 			(*geometry_property_iterator)->get_property_name(),
-			conjugate_geometry_property_value.get(),
+			conjugate_geometry_property_value,
 			true/*check_property_name_allowed_for_feature_type*/,
 			true/*check_property_multiplicity*/,
 			&add_property_error_code))

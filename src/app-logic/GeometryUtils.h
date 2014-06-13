@@ -198,7 +198,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Visits a @a geometry and attempts to create a suitable geometric @a PropertyValue using it.
 		 */
-		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_geometry_property_value(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry);
 		

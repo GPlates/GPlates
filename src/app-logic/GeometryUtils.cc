@@ -676,7 +676,7 @@ namespace
 			public GPlatesMaths::ConstGeometryOnSphereVisitor
 	{
 	public:
-		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_geometry_property(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry)
 		{
@@ -684,7 +684,12 @@ namespace
 
 			geometry->accept_visitor(*this);
 
-			return d_geometry_property;
+			// We visit all the GeometryOnSphere derived types so we should have a geometry property.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					d_geometry_property,
+					GPLATES_ASSERTION_SOURCE);
+
+			return d_geometry_property.get();
 		}
 
 	protected:
@@ -904,7 +909,7 @@ GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(
 }
 
 
-boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry)
 {

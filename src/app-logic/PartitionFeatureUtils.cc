@@ -825,16 +825,13 @@ GPlatesAppLogic::PartitionFeatureUtils::append_geometry_to_feature(
 		const GPlatesModel::PropertyName &geometry_property_name,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
-	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_property =
+	GPlatesModel::PropertyValue::non_null_ptr_type geometry_property =
 			GeometryUtils::create_geometry_property_value(geometry);
 
-	if (geometry_property)
-	{
-		feature_ref->add(
-				GPlatesModel::TopLevelPropertyInline::create(
+	feature_ref->add(
+			GPlatesModel::TopLevelPropertyInline::create(
 					geometry_property_name,
-					*geometry_property));
-	}
+					geometry_property));
 }
 
 
