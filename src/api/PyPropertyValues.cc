@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <iterator>
 #include <boost/optional.hpp>
+#include <boost/variant.hpp>
 
 #include "PythonConverterUtils.h"
 
@@ -63,6 +64,7 @@
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"
+#include "property-values/TextContent.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
@@ -1355,16 +1357,121 @@ export_gpml_key_value_dictionary()
 
 namespace GPlatesApi
 {
+	/**
+	 * The key-value dictionary element value types.
+	 */
+	typedef boost::variant<
+			int,    // 'int' before 'double' since otherwise all 'int's will match, and become, 'double's.
+			double,
+			GPlatesPropertyValues::TextContent>
+					dictionary_element_value_type;
+
+
+	/**
+	 * Visits a property value to retrieve the dictionary element value from it.
+	 */
+	class GetDictionaryElementValueFromPropertyValueVisitor : 
+			public GPlatesModel::ConstFeatureVisitor
+	{
+	public:
+
+		boost::optional<dictionary_element_value_type>
+		get_dictionary_element_value_from_property_value(
+				const GPlatesModel::PropertyValue &property_value)
+		{
+			d_dictionary_element_value = boost::none;
+
+			property_value.accept_visitor(*this);
+
+			return d_dictionary_element_value;
+		}
+
+	private:
+
+		virtual
+		void
+		visit_xs_boolean(
+				const GPlatesPropertyValues::XsBoolean &xs_boolean)
+		{
+			d_dictionary_element_value = dictionary_element_value_type(int(xs_boolean.get_value()));
+		}
+
+		virtual
+		void
+		visit_xs_double(
+				const GPlatesPropertyValues::XsDouble &xs_double)
+		{
+			d_dictionary_element_value = dictionary_element_value_type(xs_double.get_value());
+		}
+
+		virtual
+		void
+		visit_xs_integer(
+				const GPlatesPropertyValues::XsInteger& xs_integer)
+		{
+			d_dictionary_element_value = dictionary_element_value_type(xs_integer.get_value());
+		}
+
+		virtual
+		void
+		visit_xs_string(
+				const GPlatesPropertyValues::XsString &xs_string)
+		{
+			d_dictionary_element_value = dictionary_element_value_type(xs_string.get_value());
+		}
+
+
+		boost::optional<dictionary_element_value_type> d_dictionary_element_value;
+	};
+
+	/**
+	 * Visits a dictionary element value (variant) to wrap a property value around it.
+	 */
+	class GetPropertyValueFromDictionaryElementValueVisitor :
+			public boost::static_visitor<GPlatesModel::PropertyValue::non_null_ptr_type>
+	{
+	public:
+
+		GPlatesModel::PropertyValue::non_null_ptr_type
+		operator()(
+				int value) const
+		{
+			return GPlatesPropertyValues::XsInteger::create(value);
+		}
+
+		GPlatesModel::PropertyValue::non_null_ptr_type
+		operator()(
+				const double &value) const
+		{
+			return GPlatesPropertyValues::XsDouble::create(value);
+		}
+
+		GPlatesModel::PropertyValue::non_null_ptr_type
+		operator()(
+				const GPlatesPropertyValues::TextContent &value) const
+		{
+			return GPlatesPropertyValues::XsString::create(value.get());
+		}
+
+	};
+
+
 	// Make it easier for client by converting from a regular string to XsString.
 	const GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type
 	gpml_key_value_dictionary_element_create(
 			const GPlatesPropertyValues::TextContent &key,
-			GPlatesModel::PropertyValue::non_null_ptr_type value)
+			const dictionary_element_value_type &dictionary_element_value)
 	{
+		const GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+				boost::apply_visitor(
+						GetPropertyValueFromDictionaryElementValueVisitor(),
+						dictionary_element_value);
+
 		return GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
-				GPlatesPropertyValues::XsString::create(key.get()),
-				value,
-				value->get_structural_type());
+				GPlatesPropertyValues::XsString::create(
+						key.get()),
+						property_value,
+						property_value->get_structural_type());
 	}
 
 	// Make it easier for client by converting from XsString to a regular string.
@@ -1385,13 +1492,40 @@ namespace GPlatesApi
 				GPlatesPropertyValues::XsString::create(key.get()));
 	}
 
-	// Return base property value to python as its derived property value type.
-	bp::object/*derived property value non_null_intrusive_ptr*/
+	/**
+	 * Return the dictionary element value as an integer, float or string.
+	 *
+	 * boost::none could be returned but it normally shouldn't since shapefile attributes should
+	 * always be int, float or string so we don't document that Py_None could be returned to the caller.
+	 */
+	boost::optional<dictionary_element_value_type>
 	gpml_key_value_dictionary_element_get_value(
 			GPlatesPropertyValues::GpmlKeyValueDictionaryElement &gpml_key_value_dictionary_element)
 	{
-		// The derived property value type is needed otherwise python is unable to access the derived attributes.
-		return PythonConverterUtils::get_property_value_as_derived_type(gpml_key_value_dictionary_element.value());
+		GetDictionaryElementValueFromPropertyValueVisitor visitor;
+
+		// Get the int, float or string value from the property value.
+		return visitor.get_dictionary_element_value_from_property_value(
+				*gpml_key_value_dictionary_element.value());
+	}
+
+	void
+	gpml_key_value_dictionary_element_set_value(
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement &gpml_key_value_dictionary_element,
+			const dictionary_element_value_type &dictionary_element_value)
+	{
+		const GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+				boost::apply_visitor(
+						GetPropertyValueFromDictionaryElementValueVisitor(),
+						dictionary_element_value);
+
+#if 0
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				property_value->get_structural_type() == gpml_key_value_dictionary_element.get_value_type(),
+				GPLATES_ASSERTION_SOURCE);
+#endif
+
+		gpml_key_value_dictionary_element.set_value(property_value);
 	}
 }
 
@@ -1406,12 +1540,11 @@ export_gpml_key_value_dictionary_element()
 			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type,
 			boost::noncopyable>(
 					"GpmlKeyValueDictionaryElement",
-					"An entry in a dictionary of key/value pairs. The value is an arbitrary "
-					"property value that is associated with a specific key string.\n"
+					"An entry in a dictionary of key/value pairs. The value is an ``int``, ``float`` "
+					"or ``str`` that is associated with a specific key string.\n"
 					"\n"
 					"Dictionary elements are equality (``==``, ``!=``) comparable. "
-					"This includes comparing the property value in the two elements being compared "
-					"(see :class:`PropertyValue`) as well as the key string.\n",
+					"This includes comparing the values of the two elements as well as their key strings.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1421,16 +1554,17 @@ export_gpml_key_value_dictionary_element()
 						bp::default_call_policies(),
 						(bp::arg("key"), bp::arg("value"))),
 				"__init__(key, value)\n"
-				"  Create a key/value dictionary element given a key string and a property value.\n"
+				"  Create a key/value dictionary element given a key string and an "
+				"integer, float or string value.\n"
 				"\n"
 				"  :param key: key\n"
 				"  :type key: string\n"
-				"  :param value: arbitrary property value\n"
-				"  :type value: :class:`PropertyValue`\n"
+				"  :param value: the value of the dictionary element\n"
+				"  :type value: integer, float or string\n"
 				"\n"
 				"  ::\n"
 				"\n"
-				"    key_value_dictionary_element = pygplates.GpmlKeyValueDictionaryElement(key, property_value)\n")
+				"    key_value_dictionary_element = pygplates.GpmlKeyValueDictionaryElement('key', 10.1)\n")
 		.def("get_key",
 				&GPlatesApi::gpml_key_value_dictionary_element_get_key,
 				"get_key() -> string\n"
@@ -1447,22 +1581,20 @@ export_gpml_key_value_dictionary_element()
 				"  :type key: string\n")
 		.def("get_value",
 				&GPlatesApi::gpml_key_value_dictionary_element_get_value,
-				"get_value() -> PropertyValue\n"
-				"  Returns the property value of this dictionary element.\n"
+				"get_value() -> int or float or str\n"
+				"  Returns the value of this dictionary element.\n"
 				"\n"
-				"  :rtype: :class:`PropertyValue`\n")
+				"  :rtype: integer, float or string\n")
 		.def("set_value",
-				&GPlatesPropertyValues::GpmlKeyValueDictionaryElement::set_value,
+				&GPlatesApi::gpml_key_value_dictionary_element_set_value,
 				(bp::arg("value")),
 				"set_value(value)\n"
-				"  Sets the property value associated with the key of this dictionary element.\n"
+				"  Sets the value associated with the key of this dictionary element.\n"
 				"\n"
-				"  :param value: arbitrary property value\n"
-				"  :type value: :class:`PropertyValue`\n"
+				"  :param value: the value of the dictionary element\n"
+				"  :type value: integer, float or string\n"
 				"\n"
-				"  This essentially replaces the previous property value. "
-				"Note that an alternative is to directly modify the property value returned by :meth:`get_value` "
-				"using its property value methods.\n")
+				"  This replaces the previous value.\n")
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
 		// This is because the default '__hash__'is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.
@@ -1482,6 +1614,11 @@ export_gpml_key_value_dictionary_element()
 	boost::python::implicitly_convertible<
 			boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type>,
 			boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_to_const_type> >();
+
+	// Register the dictionary element value types.
+	GPlatesApi::PythonConverterUtils::register_variant_conversion<GPlatesApi::dictionary_element_value_type>();
+	// Enable boost::optional<dictionary_element_value_type> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::dictionary_element_value_type>();
 }
 
 

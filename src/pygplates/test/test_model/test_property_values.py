@@ -376,9 +376,7 @@ class GpmlKeyValueDictionaryCase(unittest.TestCase):
     def setUp(self):
         self.original_elements = []
         for i in range(0,4):
-            element = pygplates. GpmlKeyValueDictionaryElement(
-                str(i),
-                pygplates.XsInteger(i))
+            element = pygplates. GpmlKeyValueDictionaryElement(str(i), i)
             self.original_elements.append(element)
         
         self.gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary(self.original_elements)
@@ -396,39 +394,38 @@ class GpmlKeyValueDictionaryCase(unittest.TestCase):
 class GpmlKeyValueDictionaryElementCase(unittest.TestCase):
     def setUp(self):
         self.key1 = "701"
-        self.property_value1 = pygplates.GpmlPlateId(701)
-        self.gpml_key_value_dictionary_element1 = pygplates.GpmlKeyValueDictionaryElement(self.key1, self.property_value1)
+        self.value1 = 701
+        self.gpml_key_value_dictionary_element1 = pygplates.GpmlKeyValueDictionaryElement(self.key1, self.value1)
         
-        self.key2 = "201"
-        self.property_value2 = pygplates.GpmlPlateId(201)
-        self.gpml_key_value_dictionary_element2 = pygplates.GpmlKeyValueDictionaryElement(self.key2, self.property_value2)
+        self.key2 = "201.1"
+        self.value2 = 201.1
+        self.gpml_key_value_dictionary_element2 = pygplates.GpmlKeyValueDictionaryElement(self.key2, self.value2)
+        
+        self.key3 = "test_key"
+        self.value3 = "test_value"
+        self.gpml_key_value_dictionary_element3 = pygplates.GpmlKeyValueDictionaryElement(self.key3, self.value3)
 
     def test_get(self):
         self.assertTrue(self.gpml_key_value_dictionary_element1.get_key() == self.key1)
-        self.assertTrue(self.gpml_key_value_dictionary_element1.get_value() == self.property_value1)
+        self.assertTrue(self.gpml_key_value_dictionary_element1.get_value() == self.value1)
         
         self.assertTrue(self.gpml_key_value_dictionary_element2.get_key() == self.key2)
-        self.assertTrue(self.gpml_key_value_dictionary_element2.get_value() == self.property_value2)
+        self.assertTrue(self.gpml_key_value_dictionary_element2.get_value() == self.value2)
 
     def test_set(self):
         new_key = "801"
-        new_property_value = pygplates.GpmlPlateId(801)
+        new_value = 801
         self.gpml_key_value_dictionary_element1.set_key(new_key)
-        self.gpml_key_value_dictionary_element1.set_value(new_property_value)
+        self.gpml_key_value_dictionary_element1.set_value(new_value)
         self.assertTrue(self.gpml_key_value_dictionary_element1.get_key() == new_key)
-        self.assertTrue(self.gpml_key_value_dictionary_element1.get_value() == new_property_value)
+        self.assertTrue(self.gpml_key_value_dictionary_element1.get_value() == new_value)
 
     def test_comparison(self):
         self.assertTrue(self.gpml_key_value_dictionary_element1 == self.gpml_key_value_dictionary_element1)
         self.assertTrue(self.gpml_key_value_dictionary_element1 != self.gpml_key_value_dictionary_element2)
         
-        self.gpml_key_value_dictionary_element1.set_key(self.gpml_key_value_dictionary_element2.get_key())
-        # Different property value instance but same value (plate id).
-        self.gpml_key_value_dictionary_element1.get_value().set_plate_id(self.gpml_key_value_dictionary_element2.get_value().get_plate_id())
-        self.assertTrue(self.gpml_key_value_dictionary_element1 == self.gpml_key_value_dictionary_element2)
-        
-        # Same property value instance.
-        self.gpml_key_value_dictionary_element1.set_value(self.gpml_key_value_dictionary_element2.get_value())
+        self.gpml_key_value_dictionary_element2.set_key(self.gpml_key_value_dictionary_element1.get_key())
+        self.gpml_key_value_dictionary_element2.set_value(self.gpml_key_value_dictionary_element1.get_value())
         self.assertTrue(self.gpml_key_value_dictionary_element1 == self.gpml_key_value_dictionary_element2)
 
 
