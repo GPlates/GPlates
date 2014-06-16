@@ -45,7 +45,6 @@
 
 #include "model/RevisionedVector.h"
 
-#include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"
 
@@ -1005,7 +1004,6 @@ export_revisioned_vector()
 
 	// Export all required instantiations of class template RevisionedVector...
 
-	RevisionedVectorWrapper<GpmlKeyValueDictionaryElement>::wrap("GpmlKeyValueDictionaryElement");
 	RevisionedVectorWrapper<GpmlTimeSample>::wrap("GpmlTimeSample");
 	RevisionedVectorWrapper<GpmlTimeWindow>::wrap("GpmlTimeWindow");
 }

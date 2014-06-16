@@ -374,59 +374,53 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
 
 class GpmlKeyValueDictionaryCase(unittest.TestCase):
     def setUp(self):
-        self.original_elements = []
+        self.gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary()
         for i in range(0,4):
-            element = pygplates. GpmlKeyValueDictionaryElement(str(i), i)
-            self.original_elements.append(element)
-        
-        self.gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary(self.original_elements)
+            self.gpml_key_value_dictionary.set_value(str(i), i)
+
+    def test_len(self):
+        self.assertTrue(len(self.gpml_key_value_dictionary) == 4)
+        self.assertTrue(len(pygplates.GpmlKeyValueDictionary()) == 0)
+
+    def test_contains(self):
+        for i in range(0,4):
+            self.assertTrue(str(i) in self.gpml_key_value_dictionary)
+        self.assertTrue(str(4) not in self.gpml_key_value_dictionary)
+
+    def test_iter(self):
+        self.assertTrue(len(self.gpml_key_value_dictionary) == 4)
+        count = 0
+        for key in self.gpml_key_value_dictionary:
+            count += 1
+            self.assertTrue(key in self.gpml_key_value_dictionary)
+            self.assertTrue(key in [str(i) for i in range(0,4)])
+            self.assertTrue(self.gpml_key_value_dictionary.get_value(key) in range(0,4))
+        self.assertTrue(count == 4)
 
     def test_get(self):
-        self.assertTrue(list(self.gpml_key_value_dictionary.get_elements()) == self.original_elements)
+        for i in range(0,4):
+            self.assertTrue(self.gpml_key_value_dictionary.get_value(str(i)) == i)
+        self.assertFalse(self.gpml_key_value_dictionary.get_value(str(4)))
+        self.assertTrue(self.gpml_key_value_dictionary.get_value(str(4), 4) == 4)
 
     def test_set(self):
-        gpml_key_value_dictionary_element_list = self.gpml_key_value_dictionary.get_elements()
-        reversed_elements = list(reversed(self.original_elements))
-        gpml_key_value_dictionary_element_list[:] = reversed_elements
-        self.assertTrue(list(self.gpml_key_value_dictionary.get_elements()) == reversed_elements)
-
-
-class GpmlKeyValueDictionaryElementCase(unittest.TestCase):
-    def setUp(self):
-        self.key1 = "701"
-        self.value1 = 701
-        self.gpml_key_value_dictionary_element1 = pygplates.GpmlKeyValueDictionaryElement(self.key1, self.value1)
-        
-        self.key2 = "201.1"
-        self.value2 = 201.1
-        self.gpml_key_value_dictionary_element2 = pygplates.GpmlKeyValueDictionaryElement(self.key2, self.value2)
-        
-        self.key3 = "test_key"
-        self.value3 = "test_value"
-        self.gpml_key_value_dictionary_element3 = pygplates.GpmlKeyValueDictionaryElement(self.key3, self.value3)
-
-    def test_get(self):
-        self.assertTrue(self.gpml_key_value_dictionary_element1.get_key() == self.key1)
-        self.assertTrue(self.gpml_key_value_dictionary_element1.get_value() == self.value1)
-        
-        self.assertTrue(self.gpml_key_value_dictionary_element2.get_key() == self.key2)
-        self.assertTrue(self.gpml_key_value_dictionary_element2.get_value() == self.value2)
-
-    def test_set(self):
-        new_key = "801"
-        new_value = 801
-        self.gpml_key_value_dictionary_element1.set_key(new_key)
-        self.gpml_key_value_dictionary_element1.set_value(new_value)
-        self.assertTrue(self.gpml_key_value_dictionary_element1.get_key() == new_key)
-        self.assertTrue(self.gpml_key_value_dictionary_element1.get_value() == new_value)
-
-    def test_comparison(self):
-        self.assertTrue(self.gpml_key_value_dictionary_element1 == self.gpml_key_value_dictionary_element1)
-        self.assertTrue(self.gpml_key_value_dictionary_element1 != self.gpml_key_value_dictionary_element2)
-        
-        self.gpml_key_value_dictionary_element2.set_key(self.gpml_key_value_dictionary_element1.get_key())
-        self.gpml_key_value_dictionary_element2.set_value(self.gpml_key_value_dictionary_element1.get_value())
-        self.assertTrue(self.gpml_key_value_dictionary_element1 == self.gpml_key_value_dictionary_element2)
+        # Override existing value.
+        self.assertTrue(len(self.gpml_key_value_dictionary) == 4)
+        self.gpml_key_value_dictionary.set_value(str(1), 10)
+        self.assertTrue(len(self.gpml_key_value_dictionary) == 4)
+        for i in range(0,4):
+            if i == 1:
+                self.assertTrue(self.gpml_key_value_dictionary.get_value(str(1)) == 10)
+                self.assertTrue(isinstance(self.gpml_key_value_dictionary.get_value(str(1)), int))
+            else:
+                self.assertTrue(self.gpml_key_value_dictionary.get_value(str(i)) == i)
+        self.gpml_key_value_dictionary.set_value('test_key', 10.2)
+        self.assertTrue(self.gpml_key_value_dictionary.get_value('test_key') == 10.2)
+        self.gpml_key_value_dictionary.set_value('test_key', 'test_value')
+        self.assertTrue(self.gpml_key_value_dictionary.get_value('test_key') == 'test_value')
+        self.gpml_key_value_dictionary.set_value('test_key2', 'test_value2')
+        self.assertTrue(self.gpml_key_value_dictionary.get_value('test_key') == 'test_value')
+        self.assertTrue(self.gpml_key_value_dictionary.get_value('test_key2') == 'test_value2')
 
 
 class GpmlPiecewiseAggregationCase(unittest.TestCase):
@@ -654,7 +648,6 @@ def suite():
             
             GpmlIrregularSamplingCase,
             GpmlKeyValueDictionaryCase,
-            GpmlKeyValueDictionaryElementCase,
             GpmlPiecewiseAggregationCase,
             GpmlPlateIdCase,
             GpmlTimeSampleCase,
