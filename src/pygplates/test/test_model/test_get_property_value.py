@@ -284,6 +284,32 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         gpml_conjugate_plate_id = self.feature.set_conjugate_plate_id((905, 906))
         self.assertTrue(len(gpml_conjugate_plate_id) == 2)
     
+    def test_get_and_get_shapefile_attribute(self):
+        # Start off with feature that has no 'gpml:shapefileAttributes' property.
+        self.assertFalse(self.feature.get(pygplates.PropertyName.create_gpml('shapefileAttributes'), pygplates.PropertyReturn.all))
+        self.assertFalse(self.feature.get_shapefile_attribute('non_existent_key'))
+        self.assertTrue(self.feature.get_shapefile_attribute('non_existent_key', 'default_value') == 'default_value')
+        # Set shapefile attribute on feature that has no 'gpml:shapefileAttributes' property.
+        self.feature.set_shapefile_attribute('test_key', 'test_value')
+        self.assertTrue(self.feature.get_shapefile_attribute('test_key') == 'test_value')
+        self.assertTrue(self.feature.get(pygplates.PropertyName.create_gpml('shapefileAttributes'), pygplates.PropertyReturn.all))
+        self.assertTrue(len(self.feature.get(pygplates.PropertyName.create_gpml('shapefileAttributes')).get_value()) == 1)
+        self.feature.set_shapefile_attribute('test_key', 100)
+        self.assertTrue(self.feature.get_shapefile_attribute('test_key') == 100)
+        self.assertTrue(len(self.feature.get(pygplates.PropertyName.create_gpml('shapefileAttributes')).get_value()) == 1)
+        self.feature.set_shapefile_attribute('test_key', 101.0)
+        self.assertTrue(self.feature.get_shapefile_attribute('test_key') == 101.0)
+        self.assertTrue(len(self.feature.get(pygplates.PropertyName.create_gpml('shapefileAttributes')).get_value()) == 1)
+        self.feature.set_shapefile_attribute('test_key2', -100)
+        self.assertTrue(self.feature.get_shapefile_attribute('test_key2') == -100)
+        # Added a new key so should have one more element in the dictionary.
+        self.assertTrue(len(self.feature.get(pygplates.PropertyName.create_gpml('shapefileAttributes')).get_value()) == 2)
+        self.assertFalse(self.feature.get_shapefile_attribute('non_existent_key'))
+        self.assertTrue(self.feature.get_shapefile_attribute('non_existent_key', 'default_value') == 'default_value')
+    
+    # NOTE: Testing of Feature.set_total_reconstruction_pole() and Feature.get_total_reconstruction_pole()
+    # is done in 'test_app_logic/test.py".
+    
     def test_get_by_name(self):
         properties = self.feature.get(
                 pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'),

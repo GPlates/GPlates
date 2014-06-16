@@ -1534,7 +1534,7 @@ namespace GPlatesApi
 	 * Return a dictionary element value as an integer, float or string or None.
 	 */
 	bp::object
-	gpml_key_value_dictionary_get_value(
+	gpml_key_value_dictionary_get(
 			GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary,
 			const GPlatesPropertyValues::TextContent &key,
 			bp::object default_value)
@@ -1573,7 +1573,7 @@ namespace GPlatesApi
 	}
 
 	void
-	gpml_key_value_dictionary_set_value(
+	gpml_key_value_dictionary_set(
 			GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary,
 			const GPlatesPropertyValues::TextContent &key,
 			const dictionary_element_value_type &value)
@@ -1692,12 +1692,12 @@ export_gpml_key_value_dictionary()
 					"::\n"
 					"\n"
 					"  for key in dictionary:\n"
-					"      value = dictionary.get_value(key)\n"
+					"      value = dictionary.get(key)\n"
 					"\n"
 					"The following methods support getting, setting and removing elements in a dictionary:\n"
 					"\n"
-					"* :meth:`get_value`\n"
-					"* :meth:`set_value`\n"
+					"* :meth:`get`\n"
+					"* :meth:`set`\n"
 					"* :meth:`remove`\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
@@ -1714,11 +1714,11 @@ export_gpml_key_value_dictionary()
 		.def("__iter__", &GPlatesApi::gpml_key_value_dictionary_get_iter)
 		.def("__len__", &GPlatesApi::gpml_key_value_dictionary_len)
 		.def("__contains__", &GPlatesApi::gpml_key_value_dictionary_contains_key)
-		.def("get_value",
-				&GPlatesApi::gpml_key_value_dictionary_get_value,
+		.def("get",
+				&GPlatesApi::gpml_key_value_dictionary_get,
 				(bp::arg("key"),
 						bp::arg("default_value") = bp::object()/*Py_None*/),
-				"get_value(key, [default_value]) -> int or float or str or None\n"
+				"get(key, [default_value]) -> int or float or str or None\n"
 				"  Returns the value of the dictionary element associated with a key.\n"
 				"\n"
 				"  :param key: the key of the dictionary element\n"
@@ -1726,28 +1726,28 @@ export_gpml_key_value_dictionary()
 				"  :param default_value: the default value to return if the key does not exist in the "
 				"dictionary (if not specified then it defaults to None)\n"
 				"  :type default_value: int or float or str or None\n"
-				"  :returns: the value associated with *key*, otherwise *default* if *key* does not exit\n"
-				"  :rtype: integer, float or string or None\n"
+				"  :returns: the value associated with *key*, otherwise *default_value* if *key* does not exist\n"
+				"  :rtype: integer or float or string or type(*default_value*)\n"
 				"\n"
 				"  To test if a key is present and retrieve its value:\n"
 				"  ::\n"
 				"\n"
-				"    value = dictionary.get_value('key')\n"
+				"    value = dictionary.get('key')\n"
 				"    if value:\n"
 				"    ...\n"
 				"    # ...or a less efficient approach...\n"
 				"    if 'key' in dictionary:\n"
-				"        value = dictionary.get_value('key')\n"
+				"        value = dictionary.get('key')\n"
 				"\n"
-				"  Return the value of a plate ID (default to zero if not present):\n"
+				"  Return the integer value of the attribute associated with 'key' (default to zero if not present):\n"
 				"  ::\n"
 				"\n"
-				"    plate_id = dictionary.get_value('plateID', 0)\n")
-		.def("set_value",
-				&GPlatesApi::gpml_key_value_dictionary_set_value,
+				"    integer_value = dictionary.get('key', 0)\n")
+		.def("set",
+				&GPlatesApi::gpml_key_value_dictionary_set,
 				(bp::arg("key"),
 						bp::arg("value")),
-				"set_value(key, value)\n"
+				"set(key, value)\n"
 				"  Sets the value of the dictionary element associated with a key.\n"
 				"\n"
 				"  :param key: the key of the dictionary element\n"

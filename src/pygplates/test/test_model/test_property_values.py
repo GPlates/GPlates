@@ -376,7 +376,7 @@ class GpmlKeyValueDictionaryCase(unittest.TestCase):
     def setUp(self):
         self.gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary()
         for i in range(0,4):
-            self.gpml_key_value_dictionary.set_value(str(i), i)
+            self.gpml_key_value_dictionary.set(str(i), i)
 
     def test_len(self):
         self.assertTrue(len(self.gpml_key_value_dictionary) == 4)
@@ -394,33 +394,46 @@ class GpmlKeyValueDictionaryCase(unittest.TestCase):
             count += 1
             self.assertTrue(key in self.gpml_key_value_dictionary)
             self.assertTrue(key in [str(i) for i in range(0,4)])
-            self.assertTrue(self.gpml_key_value_dictionary.get_value(key) in range(0,4))
+            self.assertTrue(self.gpml_key_value_dictionary.get(key) in range(0,4))
         self.assertTrue(count == 4)
 
     def test_get(self):
         for i in range(0,4):
-            self.assertTrue(self.gpml_key_value_dictionary.get_value(str(i)) == i)
-        self.assertFalse(self.gpml_key_value_dictionary.get_value(str(4)))
-        self.assertTrue(self.gpml_key_value_dictionary.get_value(str(4), 4) == 4)
+            self.assertTrue(self.gpml_key_value_dictionary.get(str(i)) == i)
+        self.assertFalse(self.gpml_key_value_dictionary.get(str(4)))
+        self.assertTrue(self.gpml_key_value_dictionary.get(str(4), 4) == 4)
 
     def test_set(self):
         # Override existing value.
         self.assertTrue(len(self.gpml_key_value_dictionary) == 4)
-        self.gpml_key_value_dictionary.set_value(str(1), 10)
+        self.gpml_key_value_dictionary.set(str(1), 10)
         self.assertTrue(len(self.gpml_key_value_dictionary) == 4)
         for i in range(0,4):
             if i == 1:
-                self.assertTrue(self.gpml_key_value_dictionary.get_value(str(1)) == 10)
-                self.assertTrue(isinstance(self.gpml_key_value_dictionary.get_value(str(1)), int))
+                self.assertTrue(self.gpml_key_value_dictionary.get(str(1)) == 10)
+                self.assertTrue(isinstance(self.gpml_key_value_dictionary.get(str(1)), int))
             else:
-                self.assertTrue(self.gpml_key_value_dictionary.get_value(str(i)) == i)
-        self.gpml_key_value_dictionary.set_value('test_key', 10.2)
-        self.assertTrue(self.gpml_key_value_dictionary.get_value('test_key') == 10.2)
-        self.gpml_key_value_dictionary.set_value('test_key', 'test_value')
-        self.assertTrue(self.gpml_key_value_dictionary.get_value('test_key') == 'test_value')
-        self.gpml_key_value_dictionary.set_value('test_key2', 'test_value2')
-        self.assertTrue(self.gpml_key_value_dictionary.get_value('test_key') == 'test_value')
-        self.assertTrue(self.gpml_key_value_dictionary.get_value('test_key2') == 'test_value2')
+                self.assertTrue(self.gpml_key_value_dictionary.get(str(i)) == i)
+        self.gpml_key_value_dictionary.set('test_key', 10.2)
+        self.assertTrue(self.gpml_key_value_dictionary.get('test_key') == 10.2)
+        self.gpml_key_value_dictionary.set('test_key', 'test_value')
+        self.assertTrue(self.gpml_key_value_dictionary.get('test_key') == 'test_value')
+        self.gpml_key_value_dictionary.set('test_key2', 'test_value2')
+        self.assertTrue(self.gpml_key_value_dictionary.get('test_key') == 'test_value')
+        self.assertTrue(self.gpml_key_value_dictionary.get('test_key2') == 'test_value2')
+
+    def test_remove(self):
+        self.assertTrue(len(self.gpml_key_value_dictionary) == 4)
+        self.gpml_key_value_dictionary.remove(str(1))
+        self.assertTrue(len(self.gpml_key_value_dictionary) == 3)
+        # Removing same attribute twice should be fine.
+        self.gpml_key_value_dictionary.remove(str(1))
+        self.assertTrue(len(self.gpml_key_value_dictionary) == 3)
+        for i in range(0,4):
+            if i != 1:
+                self.assertTrue(self.gpml_key_value_dictionary.get(str(i)) == i)
+        self.assertFalse(self.gpml_key_value_dictionary.get(str(1)))
+        self.assertTrue(self.gpml_key_value_dictionary.get(str(1), 1) == 1)
 
 
 class GpmlPiecewiseAggregationCase(unittest.TestCase):

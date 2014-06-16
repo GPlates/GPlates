@@ -1276,12 +1276,17 @@ export_feature()
 					"* :meth:`get`\n"
 					"* :meth:`get_value`\n"
 					"\n"
-					"The following methods provide a more convenient way to set and get feature :class:`geometry<GeometryOnSphere>`:\n"
+					"The following methods provide a convenient way to set and get feature :class:`geometry<GeometryOnSphere>`:\n"
 					"\n"
 					"* :meth:`set_geometry`\n"
 					"* :meth:`get_geometry`\n"
 					"\n"
-					"The following methods provide a more convenient way to set and get some of the properties "
+					"The following methods provide a convenient way to set and get attributes imported from a Shapefile:\n"
+					"\n"
+					"* :meth:`set_shapefile_attribute`\n"
+					"* :meth:`get_shapefile_attribute`\n"
+					"\n"
+					"The following methods provide a convenient way to set and get some of the properties "
 					"that are common to many feature types:\n"
 					"\n"
 					"* :meth:`set_name`\n"
@@ -1301,7 +1306,7 @@ export_feature()
 					"* :meth:`set_total_reconstruction_pole`\n"
 					"* :meth:`get_total_reconstruction_pole`\n"
 					"\n"
-					"...for other properties the generic :meth:`set`, :meth:`get` and :meth:`get_value` "
+					"For other properties the generic :meth:`set`, :meth:`get` and :meth:`get_value` "
 					"methods will still need to be used.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
