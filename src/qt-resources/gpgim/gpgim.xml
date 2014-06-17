@@ -757,6 +757,7 @@
 			<Description>An optional error boundary for the feature.</Description>
 			<Type>gml:Point</Type>
 			<Type>gml:OrientableCurve</Type>
+			<Type>gml:LineString</Type>
 			<Type>gml:MultiPoint</Type>
 			<Type>gml:Polygon</Type>
 			<Type>gpml:TopologicalPolygon</Type>

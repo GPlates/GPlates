@@ -16,6 +16,7 @@ Contents:
 	:nosignatures:
 
 	pygplates
+	pygplates.Enumeration
 	pygplates.EnumerationType
 	pygplates.Feature
 	pygplates.FeatureCollection

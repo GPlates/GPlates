@@ -25,9 +25,12 @@
 
 #include <algorithm>
 #include <iterator>
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
+#include <QString>
 
+#include "PyInformationModel.h"
 #include "PythonConverterUtils.h"
 
 #include "app-logic/GeometryUtils.h"
@@ -42,8 +45,13 @@
 #include <boost/python/stl_iterator.hpp>
 
 #include "model/FeatureVisitor.h"
+#include "model/Gpgim.h"
+#include "model/GpgimEnumerationType.h"
 #include "model/ModelUtils.h"
 
+#include "property-values/Enumeration.h"
+#include "property-values/EnumerationContent.h"
+#include "property-values/EnumerationType.h"
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
@@ -69,6 +77,8 @@
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
 #include "property-values/XsString.h"
+
+#include "utils/UnicodeString.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -143,6 +153,7 @@ export_property_value()
 					"\n"
 					"The list of derived property value classes includes:\n"
 					"\n"
+					"* :class:`Enumeration`\n"
 					"* :class:`GmlLineString`\n"
 					"* :class:`GmlMultiPoint`\n"
 					"* :class:`GmlOrientableCurve`\n"
@@ -267,6 +278,162 @@ export_property_value()
 //////////////////////////////////////////////////////////////////////////
 // NOTE: Please keep the property values alphabetically ordered.
 //////////////////////////////////////////////////////////////////////////
+
+
+namespace GPlatesApi
+{
+	void
+	verify_enumeration_type_and_content(
+			const GPlatesPropertyValues::EnumerationType &type,
+			const QString &content)
+	{
+		// Get the GPGIM enumeration type.
+		boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type> gpgim_enumeration_type =
+				GPlatesModel::Gpgim::instance().get_property_enumeration_type(
+						GPlatesPropertyValues::StructuralType(type));
+		// This exception will get converted to python 'InformationModelError'.
+		GPlatesGlobal::Assert<InformationModelException>(
+				gpgim_enumeration_type,
+				GPLATES_EXCEPTION_SOURCE,
+				QString("The enumeration type '") +
+						convert_qualified_xml_name_to_qstring(type) +
+						"' was not recognised as a valid type by the GPGIM");
+
+		// Ensure the enumeration content is allowed, by the GPGIM, for the enumeration type.
+		bool is_content_valid = false;
+		const GPlatesModel::GpgimEnumerationType::content_seq_type &enum_contents =
+				gpgim_enumeration_type.get()->get_contents();
+		BOOST_FOREACH(const GPlatesModel::GpgimEnumerationType::Content &enum_content, enum_contents)
+		{
+			if (content == enum_content.value)
+			{
+				is_content_valid = true;
+				break;
+			}
+		}
+
+		// This exception will get converted to python 'InformationModelError'.
+		GPlatesGlobal::Assert<InformationModelException>(
+				is_content_valid,
+				GPLATES_EXCEPTION_SOURCE,
+				QString("The enumeration content '") +
+						content +
+						"' is not supported by enumeration type '" +
+						convert_qualified_xml_name_to_qstring(type) + "'");
+	}
+
+	const GPlatesPropertyValues::Enumeration::non_null_ptr_type
+	enumeration_create(
+			const GPlatesPropertyValues::EnumerationType &type,
+			const GPlatesUtils::UnicodeString &content,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		if (verify_information_model == VerifyInformationModel::YES)
+		{
+			verify_enumeration_type_and_content(type, content.qstring());
+		}
+
+		return GPlatesPropertyValues::Enumeration::create(type, content);
+	}
+
+	void
+	enumeration_set_content(
+			GPlatesPropertyValues::Enumeration &enumeration,
+			const GPlatesPropertyValues::EnumerationContent &content,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		if (verify_information_model == VerifyInformationModel::YES)
+		{
+			verify_enumeration_type_and_content(enumeration.get_type(), content.get().qstring());
+		}
+
+		enumeration.set_value(content);
+	}
+}
+
+void
+export_enumeration()
+{
+	//
+	// Enumeration - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::Enumeration,
+			GPlatesPropertyValues::Enumeration::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"Enumeration",
+					"A property value that represents a finite set of accepted (string) values per "
+					"enumeration type.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::enumeration_create,
+						bp::default_call_policies(),
+						(bp::arg("type"),
+								bp::arg("content"),
+								bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES)),
+				"__init__(type, content, [verify_information_model=VerifyInformationModel.yes])\n"
+				"  Create an enumeration property value from an enumeration type and content (value).\n"
+				"\n"
+				"  :param type: the type of the enumeration\n"
+				"  :type type: :class:`EnumerationType`\n"
+				"  :param content: the content (value) of the enumeration\n"
+				"  :type content: string\n"
+				"  :param verify_information_model: whether to check the information model for valid "
+				"enumeration *type* and *content*\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and either *type* is not a recognised enumeration type or *content* is not a valid value "
+				"for *type*\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    dip_slip_enum = pygplates.Enumeration(\n"
+				"        pygplates.EnumerationType.create_gpml('DipSlipEnumeration'),\n"
+				"        'Extension')\n")
+		.def("get_type",
+				&GPlatesPropertyValues::Enumeration::get_type,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_type() -> EnumerationType\n"
+				"  Returns the type of this enumeration.\n"
+				"\n"
+				"  :rtype: :class:`EnumerationType`\n")
+		.def("get_content",
+				&GPlatesPropertyValues::Enumeration::get_value,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_content() -> string\n"
+				"  Returns the content (value) of this enumeration.\n"
+				"\n"
+				"  :rtype: string\n")
+		.def("set_content",
+				&GPlatesApi::enumeration_set_content,
+				(bp::arg("content"),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"set_content(content, [verify_information_model=VerifyInformationModel.yes])\n"
+				"  Sets the content (value) of this enumeration.\n"
+				"\n"
+				"  :param content: the content (value)\n"
+				"  :type content: string\n"
+				"  :param verify_information_model: whether to check the information model for valid "
+				"enumeration *value*\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and *content* is not a valid value for this enumeration :meth:`type<get_type>`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    dip_slip_enum.set_content('Extension')\n")
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::Enumeration,
+			GPlatesModel::PropertyValue>();
+}
 
 
 void
@@ -2598,6 +2765,7 @@ export_property_values()
 	//       Unless there are inheritance dependencies.
 	//////////////////////////////////////////////////////////////////////////
 
+	export_enumeration();
 	export_gml_line_string();
 	export_gml_multi_point();
 	export_gml_orientable_curve();

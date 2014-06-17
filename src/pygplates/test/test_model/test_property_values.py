@@ -10,6 +10,36 @@ import pygplates
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 
 
+class EnumerationCase(unittest.TestCase):
+    def setUp(self):
+        self.enum_type = pygplates.EnumerationType.create_gpml('DipSlipEnumeration')
+        self.enum_content = 'Extension'
+        self.enumeration = pygplates.Enumeration(self.enum_type, self.enum_content)
+
+    def test_get_type(self):
+        self.assertTrue(self.enumeration.get_type() == self.enum_type)
+
+    def test_get_content(self):
+        self.assertTrue(self.enumeration.get_content() == self.enum_content)
+
+    def test_set_content(self):
+        new_content = 'Compression'
+        self.enumeration.set_content(new_content)
+        self.assertTrue(self.enumeration.get_content() == new_content)
+
+    def test_information_model(self):
+        unknown_enum_type = pygplates.EnumerationType.create_gpml('UnknownEnumType')
+        unknown_enum_content = 'UnknownContent'
+        self.assertRaises(pygplates.InformationModelError, pygplates.Enumeration, unknown_enum_type, 'Extension')
+        new_enumeration = pygplates.Enumeration(unknown_enum_type, unknown_enum_content, pygplates.VerifyInformationModel.no)
+        self.assertTrue(new_enumeration.get_type() == unknown_enum_type)
+        self.assertTrue(new_enumeration.get_content() == unknown_enum_content)
+        self.assertRaises(pygplates.InformationModelError,
+                pygplates.Enumeration.set_content, self.enumeration, unknown_enum_content)
+        self.enumeration.set_content(unknown_enum_content, pygplates.VerifyInformationModel.no)
+        self.assertTrue(self.enumeration.get_content() == unknown_enum_content)
+
+
 class GeoTimeInstantCase(unittest.TestCase):
     def setUp(self):
         self.distant_past = pygplates.GeoTimeInstant.create_distant_past()
@@ -645,6 +675,7 @@ def suite():
     
     # Add test cases from this module.
     test_cases = [
+            EnumerationCase,
             GeoTimeInstantCase,
             GmlLineStringCase,
             GmlMultiPointCase,
