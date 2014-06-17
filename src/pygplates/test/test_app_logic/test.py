@@ -78,7 +78,7 @@ class ReconstructTest(unittest.TestCase):
             os.path.join(FIXTURES, 'volcanoes.gpml'),
             os.path.join(FIXTURES, 'rotations.rot'),
             'test.xy',
-            10)
+            pygplates.GeoTimeInstant(10))
         
         reconstructed_feature_geometries = []
         pygplates.reconstruct(
@@ -119,7 +119,7 @@ class ReconstructTest(unittest.TestCase):
         pygplates.reverse_reconstruct(
             os.path.join(FIXTURES, 'volcanoes.gpml'),
             [os.path.join(FIXTURES, 'rotations.rot')],
-            10)
+            pygplates.GeoTimeInstant(10))
         
         # Test modifying the feature collection only (not the file it was read from).
         reconstructable_feature_collection = pygplates.FeatureCollectionFileFormatRegistry().read(
@@ -138,26 +138,49 @@ class ReconstructionTreeCase(unittest.TestCase):
 
     def test_create(self):
         self.assertTrue(isinstance(self.reconstruction_tree, pygplates.ReconstructionTree))
+        # Create again with a GeoTimeInstant instead of float.
+        self.reconstruction_tree = pygplates.ReconstructionTree([ self.rotations ], pygplates.GeoTimeInstant(10.0))
+        self.assertRaises(pygplates.InterpolationError,
+                pygplates.ReconstructionTree, [self.rotations], pygplates.GeoTimeInstant.create_distant_past())
         self.assertEqual(self.reconstruction_tree.get_anchor_plate_id(), 0)
         self.assertTrue(self.reconstruction_tree.get_reconstruction_time() > 9.9999 and
                 self.reconstruction_tree.get_reconstruction_time() < 10.00001)
         
+        def build_tree(builder, rotation_features, reconstruction_time):
+            for rotation_feature in rotation_features:
+                trp = rotation_feature.get_total_reconstruction_pole()
+                if trp:
+                    fixed_plate_id, moving_plate_id, total_reconstruction_pole = trp
+                    interpolated_rotation = total_reconstruction_pole.get_value(reconstruction_time)
+                    if interpolated_rotation:
+                        builder.insert_total_reconstruction_pole(
+                                fixed_plate_id,
+                                moving_plate_id,
+                                interpolated_rotation.get_finite_rotation())
+        
         # Build using a ReconstructionTreeBuilder.
         builder = pygplates.ReconstructionTreeBuilder()
         reconstruction_time = self.reconstruction_tree.get_reconstruction_time()
-        for rotation_feature in self.rotations:
-            trp = rotation_feature.get_total_reconstruction_pole()
-            if trp:
-                fixed_plate_id, moving_plate_id, total_reconstruction_pole = trp
-                interpolated_rotation = total_reconstruction_pole.get_value(reconstruction_time)
-                if interpolated_rotation:
-                    builder.insert_total_reconstruction_pole(
-                            fixed_plate_id,
-                            moving_plate_id,
-                            interpolated_rotation.get_finite_rotation())
+        build_tree(builder, self.rotations, reconstruction_time)
         built_reconstruction_tree = builder.build_reconstruction_tree(
                 self.reconstruction_tree.get_anchor_plate_id(),
-                self.reconstruction_tree.get_reconstruction_time())
+                reconstruction_time)
+        self.assertTrue(isinstance(built_reconstruction_tree, pygplates.ReconstructionTree))
+        self.assertEqual(built_reconstruction_tree.get_anchor_plate_id(), 0)
+        self.assertTrue(built_reconstruction_tree.get_reconstruction_time() > 9.9999 and
+                built_reconstruction_tree.get_reconstruction_time() < 10.00001)
+        self.assertTrue(len(built_reconstruction_tree.get_edges()) == 447)
+        # Building again without inserting poles will give an empty reconstruction tree.
+        built_reconstruction_tree = builder.build_reconstruction_tree(
+                self.reconstruction_tree.get_anchor_plate_id(),
+                reconstruction_time)
+        self.assertTrue(len(built_reconstruction_tree.get_edges()) == 0)
+        # Build again (because ReconstructionTreeBuilder.build_reconstruction_tree clears state).
+        build_tree(builder, self.rotations, pygplates.GeoTimeInstant(reconstruction_time))
+        # Build using GeoTimeInstant instead of float.
+        built_reconstruction_tree = builder.build_reconstruction_tree(
+                self.reconstruction_tree.get_anchor_plate_id(),
+                pygplates.GeoTimeInstant(reconstruction_time))
         self.assertTrue(isinstance(built_reconstruction_tree, pygplates.ReconstructionTree))
         self.assertEqual(built_reconstruction_tree.get_anchor_plate_id(), 0)
         self.assertTrue(built_reconstruction_tree.get_reconstruction_time() > 9.9999 and
@@ -296,7 +319,7 @@ class RotationModelCase(unittest.TestCase):
                 os.path.join(FIXTURES, 'rotations.rot'))
         self.rotation_model = pygplates.RotationModel([ os.path.join(FIXTURES, 'rotations.rot') ])
         self.from_time = 20.0
-        self.to_time = 10.0
+        self.to_time = pygplates.GeoTimeInstant(10.0)
         self.from_reconstruction_tree = pygplates.ReconstructionTree([ self.rotations ], self.from_time)
         self.to_reconstruction_tree = pygplates.ReconstructionTree([ self.rotations ], self.to_time)
 
@@ -311,14 +334,18 @@ class RotationModelCase(unittest.TestCase):
     def test_get_reconstruction_tree(self):
         to_reconstruction_tree = self.rotation_model.get_reconstruction_tree(self.to_time)
         self.assertTrue(isinstance(to_reconstruction_tree, pygplates.ReconstructionTree))
-        self.assertTrue(to_reconstruction_tree.get_reconstruction_time() > self.to_time - 1e-6 and
-                to_reconstruction_tree.get_reconstruction_time() < self.to_time + 1e-6)
+        self.assertTrue(to_reconstruction_tree.get_reconstruction_time() > self.to_time.get_value() - 1e-6 and
+                to_reconstruction_tree.get_reconstruction_time() < self.to_time.get_value() + 1e-6)
+        self.assertRaises(pygplates.InterpolationError,
+                pygplates.RotationModel.get_reconstruction_tree, self.rotation_model, pygplates.GeoTimeInstant.create_distant_past())
     
     def test_get_rotation(self):
         equivalent_total_rotation = self.rotation_model.get_rotation(self.to_time, 802)
         self.assertTrue(pygplates.represent_equivalent_rotations(
                 equivalent_total_rotation,
                 self.to_reconstruction_tree.get_equivalent_total_rotation(802)))
+        self.assertRaises(pygplates.InterpolationError,
+                pygplates.RotationModel.get_rotation, self.rotation_model, pygplates.GeoTimeInstant.create_distant_past(), 802)
         
         relative_total_rotation = self.rotation_model.get_rotation(self.to_time, 802, fixed_plate_id=291)
         self.assertTrue(pygplates.represent_equivalent_rotations(
@@ -353,7 +380,8 @@ class RotationModelCase(unittest.TestCase):
                         802,
                         291)))
         # Fixed plate id defaults to anchored plate id.
-        relative_stage_rotation = self.rotation_model.get_rotation(self.to_time, 802, self.from_time, anchor_plate_id=291)
+        relative_stage_rotation = self.rotation_model.get_rotation(
+                self.to_time, 802, pygplates.GeoTimeInstant(self.from_time), anchor_plate_id=291)
         self.assertTrue(pygplates.represent_equivalent_rotations(
                 relative_stage_rotation,
                 pygplates.get_relative_stage_rotation(

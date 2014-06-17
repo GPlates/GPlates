@@ -43,6 +43,8 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
 
+#include "property-values/GeoTimeInstant.h"
+
 #include "utils/ReferenceCount.h"
 
 
@@ -106,7 +108,7 @@ namespace GPlatesApi
 
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type
 		get_reconstruction_tree(
-				const double &reconstruction_time,
+				const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id);
 
 
@@ -117,9 +119,9 @@ namespace GPlatesApi
 		 */
 		boost::optional<GPlatesMaths::FiniteRotation>
 		get_rotation(
-				const double &to_time,
+				const GPlatesPropertyValues::GeoTimeInstant &to_time,
 				GPlatesModel::integer_plate_id_type moving_plate_id,
-				const double &from_time,
+				const GPlatesPropertyValues::GeoTimeInstant &from_time,
 				boost::optional<GPlatesModel::integer_plate_id_type> fixed_plate_id,
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				bool use_identity_for_missing_plate_ids);

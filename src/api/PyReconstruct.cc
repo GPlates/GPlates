@@ -37,6 +37,7 @@
 #include <QString>
 
 #include "PyFeatureCollection.h"
+#include "PyInterpolationException.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
 #include "PythonUtils.h"
@@ -52,6 +53,7 @@
 #include "file-io/ReadErrorAccumulation.h"
 #include "file-io/ReconstructedFeatureGeometryExport.h"
 
+#include "global/GPlatesAssert.h"
 #include "global/python.h"
 // This is not included by <boost/python.hpp>.
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
@@ -59,6 +61,8 @@
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
+
+#include "property-values/GeoTimeInstant.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -96,7 +100,7 @@ namespace GPlatesApi
 				std::vector<GPlatesFileIO::File::non_null_ptr_type> &reconstructable_files,
 				boost::optional<RotationModel::non_null_ptr_type> &rotation_model,
 				reconstructed_feature_geometries_argument_type &reconstructed_feature_geometries,
-				double &reconstruction_time,
+				GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 				GPlatesModel::integer_plate_id_type &anchor_plate_id,
 				bool &export_wrap_to_dateline)
 		{
@@ -107,7 +111,7 @@ namespace GPlatesApi
 			typedef boost::tuple<
 					FeatureCollectionSequenceFunctionArgument,
 					RotationModelFunctionArgument,
-					double,
+					double, // Note: This is not GPlatesPropertyValues::GeoTimeInstant.
 					GPlatesModel::integer_plate_id_type,
 					QString> // Only export filename supported (not a python list of RFG's).
 							reconstruct_args_type;
@@ -149,7 +153,7 @@ namespace GPlatesApi
 
 			boost::get<0>(reconstruct_args).get_files(reconstructable_files);
 			rotation_model = boost::get<1>(reconstruct_args).get_rotation_model();
-			reconstruction_time = boost::get<2>(reconstruct_args);
+			reconstruction_time = GPlatesPropertyValues::GeoTimeInstant(boost::get<2>(reconstruct_args));
 			anchor_plate_id = boost::get<3>(reconstruct_args);
 			reconstructed_feature_geometries = boost::get<4>(reconstruct_args);
 
@@ -170,7 +174,7 @@ namespace GPlatesApi
 				std::vector<GPlatesFileIO::File::non_null_ptr_type> &reconstructable_files,
 				boost::optional<RotationModel::non_null_ptr_type> &rotation_model,
 				reconstructed_feature_geometries_argument_type &reconstructed_feature_geometries,
-				double &reconstruction_time,
+				GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 				GPlatesModel::integer_plate_id_type &anchor_plate_id,
 				bool &export_wrap_to_dateline)
 		{
@@ -203,7 +207,7 @@ namespace GPlatesApi
 					FeatureCollectionSequenceFunctionArgument,
 					RotationModelFunctionArgument,
 					reconstructed_feature_geometries_argument_type,
-					double,
+					GPlatesPropertyValues::GeoTimeInstant,
 					GPlatesModel::integer_plate_id_type>
 							reconstruct_args_type;
 
@@ -297,7 +301,7 @@ namespace GPlatesApi
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstructable_files;
 		boost::optional<RotationModel::non_null_ptr_type> rotation_model;
 		reconstructed_feature_geometries_argument_type reconstructed_feature_geometries_argument;
-		double reconstruction_time;
+		GPlatesPropertyValues::GeoTimeInstant reconstruction_time(0);
 		GPlatesModel::integer_plate_id_type anchor_plate_id;
 		bool export_wrap_to_dateline;
 
@@ -310,6 +314,12 @@ namespace GPlatesApi
 				reconstruction_time,
 				anchor_plate_id,
 				export_wrap_to_dateline);
+
+		// Time must not be distant past/future.
+		GPlatesGlobal::Assert<InterpolationException>(
+				reconstruction_time.is_real(),
+				GPLATES_ASSERTION_SOURCE,
+				"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
 
 		// Extract reconstructable feature collection weak refs from their files.
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstructable_feature_collections;
@@ -331,7 +341,7 @@ namespace GPlatesApi
 		GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
 		GPlatesAppLogic::ReconstructUtils::reconstruct(
 				rfgs,
-				reconstruction_time,
+				reconstruction_time.value(),
 				reconstruct_method_registry,
 				reconstructable_feature_collections,
 				reconstruction_tree_creator);
@@ -375,7 +385,7 @@ namespace GPlatesApi
 						reconstructable_file_ptrs,
 						reconstruction_file_ptrs,
 						anchor_plate_id,
-						reconstruction_time,
+						reconstruction_time.value(),
 						// If exporting to Shapefile and there's only *one* input reconstructable file then
 						// shapefile attributes in input reconstructable file will get copied to output...
 						true/*export_single_output_file*/,
@@ -419,9 +429,15 @@ namespace GPlatesApi
 	reverse_reconstruct(
 			FeatureCollectionFunctionArgument reconstructable_features,
 			RotationModelFunctionArgument rotation_model,
-			const double &reconstruction_time,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 			GPlatesModel::integer_plate_id_type anchor_plate_id)
 	{
+		// Time must not be distant past/future.
+		GPlatesGlobal::Assert<InterpolationException>(
+				reconstruction_time.is_real(),
+				GPLATES_ASSERTION_SOURCE,
+				"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+
 		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
 		// This ensures we will reverse reconstruct using the correct anchor plate.
 		GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
@@ -478,7 +494,7 @@ namespace GPlatesApi
 								feature_reconstructed_geometry.geometry,
 								reconstruct_method_context,
 								// The reconstruction_time of the reconstructed feature geometry...
-								reconstruction_time/*reconstruction_time*/,
+								reconstruction_time.value()/*reconstruction_time*/,
 								true/*reverse_reconstruct*/);
 
 				// Set the reverse reconstructed (present day) geometry back onto the feature's geometry property.
@@ -526,7 +542,7 @@ export_reconstruct()
 			"to a file (with specified filename) or appended to a python ``list``\n"
 			"  :type reconstructed_feature_geometries: string or ``list``\n"
 			"  :param reconstruction_time: the specific geological time to reconstruct to\n"
-			"  :type reconstruction_time: float\n"
+			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 			"  :param anchor_plate_id: the anchored plate id used during reconstruction\n"
 			"  :type anchor_plate_id: int\n"
 			"  :param output_parameters: variable number of keyword arguments specifying output "
@@ -535,6 +551,9 @@ export_reconstruct()
 			"  :raises: FileFormatNotSupportedError if any input file format (identified by any "
 			"reconstructable and rotation filename extensions) does not support reading "
 			"(when filenames specified)\n"
+			"  :raises: InterpolationError if *reconstruction_time* is "
+			":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+			":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 			"\n"
 			"  The following optional keyword arguments are supported by *output_parameters*:\n"
 			"\n"
@@ -605,13 +624,16 @@ export_reconstruct()
 			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
 			"or sequence of :class:`FeatureCollection` instances and/or strings\n"
 			"  :param reconstruction_time: the specific geological time to reverse reconstruct from\n"
-			"  :type reconstruction_time: float\n"
+			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 			"  :param anchor_plate_id: the anchored plate id used during reverse reconstruction\n"
 			"  :type anchor_plate_id: int\n"
 			"  :raises: OpenFileForReadingError if any input file is not readable (when filenames specified)\n"
 			"  :raises: FileFormatNotSupportedError if any input file format (identified by any "
 			"reconstructable and rotation filename extensions) does not support reading "
 			"(when filenames specified)\n"
+			"  :raises: InterpolationError if *reconstruction_time* is "
+			":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+			":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 			"\n"
 			"  The effect of this function is to replace the present day geometries in each feature in "
 			"*reconstructable_features* with reverse reconstructed versions of those geometries. "

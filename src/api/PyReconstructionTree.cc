@@ -33,6 +33,7 @@
 #include "PyReconstructionTree.h"
 
 #include "PyGPlatesModule.h"
+#include "PyInterpolationException.h"
 #include "PythonConverterUtils.h"
 
 #include "global/GPlatesAssert.h"
@@ -50,6 +51,8 @@
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
+
+#include "property-values/GeoTimeInstant.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -326,9 +329,15 @@ namespace GPlatesApi
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type
 	reconstruction_tree_create(
 			bp::object feature_collections, // Any python iterable (eg, list, tuple).
-			const double &reconstruction_time,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 			GPlatesModel::integer_plate_id_type anchor_plate_id = 0)
 	{
+		// Time must not be distant past/future.
+		GPlatesGlobal::Assert<InterpolationException>(
+				reconstruction_time.is_real(),
+				GPLATES_ASSERTION_SOURCE,
+				"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+
 		// Begin/end iterators over the python feature collections iterable.
 		bp::stl_input_iterator<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>
 				feature_collections_iter(feature_collections),
@@ -353,7 +362,7 @@ namespace GPlatesApi
 		// In fact the whole idea of storing weak refs in the reconstruction tree is debatable.
 
 		return GPlatesAppLogic::create_reconstruction_tree(
-				reconstruction_time,
+				reconstruction_time.value(),
 				anchor_plate_id,
 				feature_collection_refs);
 	}
@@ -600,8 +609,14 @@ namespace GPlatesApi
 	reconstruction_tree_builder_build_reconstruction_tree(
 			GPlatesAppLogic::ReconstructionGraph &reconstruction_graph,
 			GPlatesModel::integer_plate_id_type anchor_plate_id,
-			const double &reconstruction_time)
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 	{
+		// Time must not be distant past/future.
+		GPlatesGlobal::Assert<InterpolationException>(
+				reconstruction_time.is_real(),
+				GPLATES_ASSERTION_SOURCE,
+				"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+
 		// We don't specify any rotation feature collections because we don't want to require
 		// the user to have to specify where their total reconstruction poles came from.
 		// It could be that they didn't even come from features.
@@ -613,7 +628,7 @@ namespace GPlatesApi
 		// come from different sources (not just rotation features).
 		return reconstruction_graph.build_tree(
 				anchor_plate_id,
-				reconstruction_time,
+				reconstruction_time.value(),
 				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>()/*empty*/);
 	}
 }
@@ -777,10 +792,13 @@ export_reconstruction_tree()
 				"  :param feature_collections: A sequence of :class:`FeatureCollection` instances\n"
 				"  :type feature_collections: Any sequence such as a ``list`` or a ``tuple``\n"
 				"  :param reconstruction_time: the time at which to generate the reconstruction tree\n"
-				"  :type reconstruction_time: float\n"
+				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 				"  :param anchor_plate_id: the id of the anchored plate that *equivalent* rotations "
 				"are calculated with respect to\n"
 				"  :type anchor_plate_id: int\n"
+				"  :raises: InterpolationError if *reconstruction_time* is "
+				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 				"\n"
 				"  *NOTE:* the anchored plate id can be any plate id (does not have to be zero). "
 				"All *equivalent* rotations are calculated relative to the *anchored* plate id.\n"
@@ -792,15 +810,17 @@ export_reconstruction_tree()
 				"        builder = pygplates.ReconstructionTreeBuilder()\n"
 				"        for feature_collection in feature_collections:\n"
 				"            for feature in feature_collection:\n"
-				"                trp = pygplates.interpolate_total_reconstruction_sequence(feature, reconstruction_time)\n"
+				"                trp = feature.get_total_reconstruction_pole()\n"
 				"                if trp:\n"
-				"                    fixed_plate_id, moving_plate_id, interpolated_rotation = trp\n"
-				"                    builder.insert_total_reconstruction_pole("
+				"                    fixed_plate_id, moving_plate_id, total_reconstruction_pole = trp\n"
+				"                    interpolated_rotation = total_reconstruction_pole.get_value(reconstruction_time)\n"
+				"                    if interpolated_rotation:\n"
+				"                        builder.insert_total_reconstruction_pole("
 				"fixed_plate_id, moving_plate_id, interpolated_rotation)\n"
 				"        return builder.build_reconstruction_tree(anchor_plate_id, reconstruction_time)\n"
 				"\n"
-				"  Note that the above example uses the class :class:`ReconstructionTreeBuilder` and "
-				"the function :func:`interpolate_total_reconstruction_sequence`\n")
+				"  Note that the above example uses :class:`ReconstructionTreeBuilder` and "
+				":meth:`Feature.get_total_reconstruction_pole`\n")
 		.def("get_reconstruction_time",
 				&GPlatesAppLogic::ReconstructionTree::get_reconstruction_time,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -1350,11 +1370,19 @@ export_reconstruction_tree()
 				"  :type anchor_plate_id: int\n"
 				"  :param reconstruction_time: the reconstruction time of *all* the total reconstruction "
 				"poles inserted\n"
-				"  :type reconstruction_time: float\n"
+				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+				"  :raises: InterpolationError if *reconstruction_time* is "
+				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 				"\n"
 				"  The top (root) of the tree is the plate *anchor_plate_id*. "
 				"The *total reconstruction poles* inserted via :meth:`insert_total_reconstruction_pole` "
-				"are all assumed to be for the time *reconstruction_time* - although this is not checked.\n")
+				"are all assumed to be for the time *reconstruction_time* - although this is not checked.\n"
+				"\n"
+				"  **NOTE:** This method resets the state of this :class:`ReconstructionTreeBuilder` "
+				"to where it was before any calls to :meth:`insert_total_reconstruction_pole`. So a "
+				"second call to this method (without any intervening calls to "
+				":meth:`insert_total_reconstruction_pole`) will result in an empty reconstruction tree.\n")
 	;
 
 	// Enable boost::optional<ReconstructionGraph> to be passed to and from python.

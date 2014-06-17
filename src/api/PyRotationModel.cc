@@ -36,6 +36,7 @@
 
 #include "PyRotationModel.h"
 
+#include "PyInterpolationException.h"
 #include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"
 
@@ -217,26 +218,38 @@ GPlatesApi::RotationModel::create(
 
 GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type
 GPlatesApi::RotationModel::get_reconstruction_tree(
-		const double &reconstruction_time,
+		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchor_plate_id)
 {
-	return d_reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time, anchor_plate_id);
+	// Time must not be distant past/future.
+	GPlatesGlobal::Assert<InterpolationException>(
+			reconstruction_time.is_real(),
+			GPLATES_ASSERTION_SOURCE,
+			"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+
+	return d_reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time.value(), anchor_plate_id);
 }
 
 
 boost::optional<GPlatesMaths::FiniteRotation>
 GPlatesApi::RotationModel::get_rotation(
-		const double &to_time,
+		const GPlatesPropertyValues::GeoTimeInstant &to_time,
 		GPlatesModel::integer_plate_id_type moving_plate_id,
-		const double &from_time,
+		const GPlatesPropertyValues::GeoTimeInstant &from_time,
 		boost::optional<GPlatesModel::integer_plate_id_type> fixed_plate_id,
 		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		bool use_identity_for_missing_plate_ids)
 {
+	// Times must not be distant past/future.
+	GPlatesGlobal::Assert<InterpolationException>(
+			to_time.is_real() && from_time.is_real(),
+			GPLATES_ASSERTION_SOURCE,
+			"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type to_reconstruction_tree =
 			get_reconstruction_tree(to_time, anchor_plate_id);
 
-	if (GPlatesMaths::are_almost_exactly_equal(from_time, 0))
+	if (from_time == GPlatesPropertyValues::GeoTimeInstant(0))
 	{
 		if (!fixed_plate_id)
 		{
@@ -456,11 +469,11 @@ export_rotation_model()
 				"plate and from the time *from_time* to the time *to_time*.\n"
 				"\n"
 				"  :param to_time: time at which the moving plate is being rotated *to* (in Ma)\n"
-				"  :type to_time: float\n"
+				"  :type to_time: float or :class:`GeoTimeInstant`\n"
 				"  :param moving_plate_id: the plate id of the moving plate\n"
 				"  :type moving_plate_id: int\n"
 				"  :param from_time: time at which the moving plate is being rotated *from* (in Ma)\n"
-				"  :type from_time: float\n"
+				"  :type from_time: float or :class:`GeoTimeInstant`\n"
 				"  :param fixed_plate_id: the plate id of the fixed plate (defaults to *anchor_plate_id* "
 				"if not specified)\n"
 				"  :type fixed_plate_id: int\n"
@@ -471,6 +484,9 @@ export_rotation_model()
 				"for missing plate ids (default is to use identity rotation)\n"
 				"  :type use_identity_for_missing_plate_ids: bool\n"
 				"  :rtype: :class:`FiniteRotation`, or None (if *use_identity_for_missing_plate_ids* is ``False``)\n"
+				"  :raises: InterpolationError if any time value is "
+				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 				"\n"
 				"  This method conveniently handles all four combinations of total/stage and "
 				"equivalent/relative rotations (see :class:`ReconstructionTree` for details) normally handled by "
@@ -528,11 +544,14 @@ export_rotation_model()
 				"geological time and anchored plate id.\n"
 				"\n"
 				"  :param reconstruction_time: time at which to create a reconstruction tree (in Ma)\n"
-				"  :type reconstruction_time: float\n"
+				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 				"  :param anchor_plate_id: the id of the anchored plate that *equivalent* rotations "
 				"are calculated with respect to\n"
 				"  :type anchor_plate_id: int\n"
 				"  :rtype: :class:`ReconstructionTree`\n"
+				"  :raises: InterpolationError if *reconstruction_time* is "
+				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 				"\n"
 				"  If the reconstruction tree for the specified reconstruction time and anchored plate id "
 				"is currently in the internal cache then it is returned, otherwise a new reconstruction "
