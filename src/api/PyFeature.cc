@@ -55,7 +55,12 @@
 #include "model/RevisionId.h"
 #include "model/TopLevelProperty.h"
 
+#include "property-values/Enumeration.h"
+#include "property-values/EnumerationContent.h"
+#include "property-values/EnumerationType.h"
 #include "property-values/GeoTimeInstant.h"
+
+#include "utils/UnicodeString.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -209,6 +214,77 @@ namespace GPlatesApi
 		return QString(); // Keep compiler happy.
 	}
 
+	/**
+	 * Throws InformationModelException if @a feature_type does not inherit directly or indirectly
+	 * from @a ancestor_feature_type.
+	 */
+	void
+	verify_feature_type_inherits(
+			const GPlatesModel::FeatureType &feature_type,
+			const GPlatesModel::FeatureType &ancestor_feature_type)
+	{
+		boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
+				GPlatesModel::Gpgim::instance().get_feature_class(feature_type);
+
+		// This exception will get converted to python 'InformationModelError'.
+		GPlatesGlobal::Assert<InformationModelException>(
+				gpgim_feature_class,
+				GPLATES_EXCEPTION_SOURCE,
+				QString("The feature type '") +
+						convert_qualified_xml_name_to_qstring(feature_type) +
+						"' was not recognised as a valid type by the GPGIM");
+
+		GPlatesGlobal::Assert<InformationModelException>(
+				gpgim_feature_class.get()->does_inherit_from(ancestor_feature_type),
+				GPLATES_EXCEPTION_SOURCE,
+				QString("The feature type '") +
+						convert_qualified_xml_name_to_qstring(feature_type) +
+						"' is not a reconstructable feature (does not inherit '" +
+						convert_qualified_xml_name_to_qstring(ancestor_feature_type) +
+						"')");
+	}
+
+	// FIXME: Avoid duplicating same function from "PyPropertyValues.cc".
+	void
+	feature_handle_verify_enumeration_type_and_content(
+			const GPlatesPropertyValues::EnumerationType &type,
+			const QString &content)
+	{
+		// Get the GPGIM enumeration type.
+		boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type> gpgim_enumeration_type =
+				GPlatesModel::Gpgim::instance().get_property_enumeration_type(
+						GPlatesPropertyValues::StructuralType(type));
+		// This exception will get converted to python 'InformationModelError'.
+		GPlatesGlobal::Assert<InformationModelException>(
+				gpgim_enumeration_type,
+				GPLATES_EXCEPTION_SOURCE,
+				QString("The enumeration type '") +
+						convert_qualified_xml_name_to_qstring(type) +
+						"' was not recognised as a valid type by the GPGIM");
+
+		// Ensure the enumeration content is allowed, by the GPGIM, for the enumeration type.
+		bool is_content_valid = false;
+		const GPlatesModel::GpgimEnumerationType::content_seq_type &enum_contents =
+				gpgim_enumeration_type.get()->get_contents();
+		BOOST_FOREACH(const GPlatesModel::GpgimEnumerationType::Content &enum_content, enum_contents)
+		{
+			if (content == enum_content.value)
+			{
+				is_content_valid = true;
+				break;
+			}
+		}
+
+		// This exception will get converted to python 'InformationModelError'.
+		GPlatesGlobal::Assert<InformationModelException>(
+				is_content_valid,
+				GPLATES_EXCEPTION_SOURCE,
+				QString("The enumeration content '") +
+						content +
+						"' is not supported by enumeration type '" +
+						convert_qualified_xml_name_to_qstring(type) + "'");
+	}
+
 
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
 	feature_handle_create(
@@ -227,7 +303,9 @@ namespace GPlatesApi
 			GPlatesGlobal::Assert<InformationModelException>(
 					GPlatesModel::Gpgim::instance().get_feature_class(feature_type.get()),
 					GPLATES_EXCEPTION_SOURCE,
-					QString("The feature type was not recognised as a valid type by the GPGIM"));
+					QString("The feature type '") +
+							convert_qualified_xml_name_to_qstring(feature_type.get()) +
+							"' was not recognised as a valid type by the GPGIM");
 		}
 
 		// Create a unique feature id if none specified.
@@ -1223,6 +1301,220 @@ namespace GPlatesApi
 					: bp::object()/*Py_None*/;
 		}
 	}
+
+	const GPlatesModel::FeatureHandle::non_null_ptr_type
+	feature_handle_create_reconstructable_feature(
+			const GPlatesModel::FeatureType &feature_type,
+			bp::object geometry,
+			boost::optional<QString> name,
+			boost::optional<QString> description,
+			bp::object valid_time,
+			boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
+			bp::object other_properties,
+			boost::optional<GPlatesModel::FeatureId> feature_id,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		GPlatesModel::FeatureHandle::non_null_ptr_type feature =
+				feature_handle_create(feature_type, feature_id, verify_information_model);
+		bp::object feature_object(feature);
+
+		// Make sure 'feature_type' inherits directly or indirectly from 'gpml:ReconstructableFeature'.
+		if (verify_information_model == VerifyInformationModel::YES)
+		{
+			static const GPlatesModel::FeatureType RECONSTRUCTABLE_FEATURE_TYPE =
+					GPlatesModel::FeatureType::create_gpml("ReconstructableFeature");
+
+			verify_feature_type_inherits(feature_type, RECONSTRUCTABLE_FEATURE_TYPE);
+		}
+
+		// Set the geometry (or geometries).
+		feature_handle_set_geometry(*feature, geometry, boost::none, verify_information_model);
+
+		if (name)
+		{
+			// Call python since Feature.set_name is implemented in python code...
+			feature_object.attr("set_name")(name.get(), verify_information_model);
+		}
+
+		if (description)
+		{
+			// Call python since Feature.set_description is implemented in python code...
+			feature_object.attr("set_description")(description.get(), verify_information_model);
+		}
+
+		if (valid_time != bp::object()/*Py_None*/)
+		{
+			bp::extract<bp::tuple> extract_tuple(valid_time);
+			if (!extract_tuple.check())
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting a (begin, end) tuple for 'valid_time'");
+				bp::throw_error_already_set();
+			}
+
+			bp::tuple valid_time_tuple = extract_tuple();
+			if (bp::len(valid_time_tuple) != 2)
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting a (begin, end) tuple for 'valid_time'");
+				bp::throw_error_already_set();
+			}
+
+			bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_begin_time(valid_time[0]);
+			bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_end_time(valid_time[1]);
+			if (!extract_begin_time.check() ||
+				!extract_end_time.check())
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting float or GeoTimeInstant for 'valid_time' tuple values");
+				bp::throw_error_already_set();
+			}
+
+			// Call python since Feature.set_valid_time is implemented in python code...
+			feature_object.attr("set_valid_time")(extract_begin_time(), extract_end_time(), verify_information_model);
+		}
+
+		if (reconstruction_plate_id)
+		{
+			// Call python since Feature.set_reconstruction_plate_id is implemented in python code...
+			feature_object.attr("set_reconstruction_plate_id")(reconstruction_plate_id.get(), verify_information_model);
+		}
+
+		// If there are other properties then add them.
+		if (other_properties != bp::object()/*Py_None*/)
+		{
+			feature_handle_add_properties(*feature, other_properties, verify_information_model);
+		}
+
+		return feature;
+	}
+
+	const GPlatesModel::FeatureHandle::non_null_ptr_type
+	feature_handle_create_tectonic_section(
+			const GPlatesModel::FeatureType &feature_type,
+			bp::object geometry,
+			boost::optional<QString> name,
+			boost::optional<QString> description,
+			bp::object valid_time,
+			boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
+			bp::object conjugate_plate_id,
+			boost::optional<GPlatesModel::integer_plate_id_type> left_plate,
+			boost::optional<GPlatesModel::integer_plate_id_type> right_plate,
+			boost::optional<GPlatesUtils::UnicodeString> reconstruction_method,
+			bp::object other_properties,
+			boost::optional<GPlatesModel::FeatureId> feature_id,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		GPlatesModel::FeatureHandle::non_null_ptr_type feature =
+				feature_handle_create(feature_type, feature_id, verify_information_model);
+		bp::object feature_object(feature);
+
+		// Make sure 'feature_type' inherits directly or indirectly from 'gpml:TectonicSection'.
+		if (verify_information_model == VerifyInformationModel::YES)
+		{
+			static const GPlatesModel::FeatureType TECTONIC_SECTION_TYPE =
+					GPlatesModel::FeatureType::create_gpml("TectonicSection");
+
+			verify_feature_type_inherits(feature_type, TECTONIC_SECTION_TYPE);
+		}
+
+		// Set the geometry (or geometries).
+		feature_handle_set_geometry(*feature, geometry, boost::none, verify_information_model);
+
+		if (name)
+		{
+			// Call python since Feature.set_name is implemented in python code...
+			feature_object.attr("set_name")(name.get(), verify_information_model);
+		}
+
+		if (description)
+		{
+			// Call python since Feature.set_description is implemented in python code...
+			feature_object.attr("set_description")(description.get(), verify_information_model);
+		}
+
+		if (valid_time != bp::object()/*Py_None*/)
+		{
+			bp::extract<bp::tuple> extract_tuple(valid_time);
+			if (!extract_tuple.check())
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting a (begin, end) tuple for 'valid_time'");
+				bp::throw_error_already_set();
+			}
+
+			bp::tuple valid_time_tuple = extract_tuple();
+			if (bp::len(valid_time_tuple) != 2)
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting a (begin, end) tuple for 'valid_time'");
+				bp::throw_error_already_set();
+			}
+
+			bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_begin_time(valid_time[0]);
+			bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_end_time(valid_time[1]);
+			if (!extract_begin_time.check() ||
+				!extract_end_time.check())
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting float or GeoTimeInstant for 'valid_time' tuple values");
+				bp::throw_error_already_set();
+			}
+
+			// Call python since Feature.set_valid_time is implemented in python code...
+			feature_object.attr("set_valid_time")(extract_begin_time(), extract_end_time(), verify_information_model);
+		}
+
+		if (reconstruction_plate_id)
+		{
+			// Call python since Feature.set_reconstruction_plate_id is implemented in python code...
+			feature_object.attr("set_reconstruction_plate_id")(reconstruction_plate_id.get(), verify_information_model);
+		}
+
+		if (conjugate_plate_id != bp::object()/*Py_None*/)
+		{
+			// Call python since Feature.set_conjugate_plate_id is implemented in python code...
+			feature_object.attr("set_conjugate_plate_id")(conjugate_plate_id, verify_information_model);
+		}
+
+		if (left_plate)
+		{
+			// Call python since Feature.set_left_plate is implemented in python code...
+			feature_object.attr("set_left_plate")(left_plate.get(), verify_information_model);
+		}
+
+		if (right_plate)
+		{
+			// Call python since Feature.set_right_plate is implemented in python code...
+			feature_object.attr("set_right_plate")(right_plate.get(), verify_information_model);
+		}
+
+		if (reconstruction_method)
+		{
+			static const GPlatesModel::PropertyName RECONSTRUCTION_METHOD_PROPERTY_NAME =
+					GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
+			static const GPlatesPropertyValues::EnumerationType RECONSTRUCTION_METHOD_ENUMERATION_TYPE =
+					GPlatesPropertyValues::EnumerationType::create_gpml("ReconstructionMethodEnumeration");
+
+			if (verify_information_model == VerifyInformationModel::YES)
+			{
+				feature_handle_verify_enumeration_type_and_content(
+						RECONSTRUCTION_METHOD_ENUMERATION_TYPE,
+						reconstruction_method->qstring());
+			}
+
+			feature_handle_add_property(
+					*feature,
+					RECONSTRUCTION_METHOD_PROPERTY_NAME,
+					bp::object(
+							GPlatesPropertyValues::Enumeration::create(
+									RECONSTRUCTION_METHOD_ENUMERATION_TYPE,
+									reconstruction_method.get())),
+					verify_information_model);
+		}
+
+		// If there are other properties then add them.
+		if (other_properties != bp::object()/*Py_None*/)
+		{
+			feature_handle_add_properties(*feature, other_properties, verify_information_model);
+		}
+
+		return feature;
+	}
 }
 
 
@@ -1262,6 +1554,11 @@ export_feature()
 					"  num_properties = len(feature)\n"
 					"  properties_in_feature = [property for property in feature]\n"
 					"  assert(num_properties == len(properties_in_feature))\n"
+					"\n"
+					"The following methods provide convenient ways to create :class:`features<Feature>`:\n"
+					"\n"
+					"* :meth:`create_reconstructable_feature`\n"
+					"* :meth:`create_tectonic_section`\n"
 					"\n"
 					"The following methods return the :class:`feature type<FeatureType>` and :class:`feature id<FeatureId>`:\n"
 					"\n"
@@ -1361,6 +1658,143 @@ export_feature()
 				"\n"
 				"  :rtype: :class:`Feature`\n")
 #endif
+		.def("create_reconstructable_feature",
+				&GPlatesApi::feature_handle_create_reconstructable_feature,
+				(bp::arg("feature_type"),
+						bp::arg("geometry"),
+						bp::arg("name") = boost::optional<QString>(),
+						bp::arg("description") = boost::optional<QString>(),
+						bp::arg("valid_time") = bp::object()/*Py_None*/,
+						bp::arg("reconstruction_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
+						bp::arg("other_properties") = bp::object()/*Py_None*/,
+						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"create_reconstructable_feature(feature_type, geometry, [name], [description], [valid_time], "
+				"[reconstruction_plate_id], [other_properties], [feature_id], "
+				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
+				"  Create a unique *FeatureId* by generating a unique string identifier.\n"
+				"\n"
+				"  :param feature_type: the type of feature to create\n"
+				"  :type feature_type: :class:`FeatureType`\n"
+				"  :param geometry: the geometry (or geometries) - see :meth:`set_geometry`\n"
+				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
+				"of :class:`GeometryOnSphere`\n"
+				"  :param name: the name or names, if not specified then no 'gml:name' properties are added\n"
+				"  :type name: string, or sequence of string\n"
+				"  :param description: the description, if not specified then a 'gml:description' property is not added\n"
+				"  :type description: string\n"
+				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a 'gml:validTime' "
+				"property is not added\n"
+				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
+				"  :param reconstruction_plate_id: the reconstruction plate id, if not specified then a "
+				"'gpml:reconstructionPlateId' property is not added\n"
+				"  :type reconstruction_plate_id: int\n"
+				"  :param other_properties: any extra property name/value pairs to add, these can also "
+				"be added later with :meth:`add`\n"
+				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
+				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
+				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param verify_information_model: whether to check the information model (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and *feature_type* is not a `reconstructable feature "
+				"<http://www.earthbyte.org/Resources/GPGIM/public/#ReconstructableFeature>`_.\n"
+				"\n"
+				"  This function creates a feature of :class:`type<FeatureType>` that falls in the category "
+				"of a `reconstructable feature <http://www.earthbyte.org/Resources/GPGIM/public/#ReconstructableFeature>`_ - "
+				"note that there are multiple :class:`feature types<FeatureType>` that fall into this category.\n"
+				"\n"
+				"  This function calls :meth:`set_geometry`, :meth:`set_name`, :meth:`set_description`, "
+				":meth:`set_valid_time`, :meth:`set_reconstruction_plate_id` and :meth:`add`.\n"
+				"\n"
+				"  Create a coastline feature:\n"
+				"  ::\n"
+				"\n"
+				"    east_antarctica_coastline_feature = pygplates.Feature.create_reconstructable_feature(\n"
+				"        pygplates.FeatureType.create_gpml('Coastline'),\n"
+				"        pygplates.PolylineOnSphere([...]),\n"
+				"        name='East Antarctica',\n"
+				"        valid_time=(600, pygplates.GeoTimeInstant.create_distant_future()),\n"
+				"        reconstruction_plate_id=802)\n")
+		.staticmethod("create_reconstructable_feature")
+		.def("create_tectonic_section",
+				&GPlatesApi::feature_handle_create_tectonic_section,
+				(bp::arg("feature_type"),
+						bp::arg("geometry"),
+						bp::arg("name") = boost::optional<QString>(),
+						bp::arg("description") = boost::optional<QString>(),
+						bp::arg("valid_time") = bp::object()/*Py_None*/,
+						bp::arg("reconstruction_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
+						bp::arg("conjugate_plate_id") = bp::object()/*Py_None*/,
+						bp::arg("left_plate") = boost::optional<GPlatesModel::integer_plate_id_type>(),
+						bp::arg("right_plate") = boost::optional<GPlatesModel::integer_plate_id_type>(),
+						bp::arg("reconstruction_method") = boost::optional<GPlatesUtils::UnicodeString>(),
+						bp::arg("other_properties") = bp::object()/*Py_None*/,
+						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"create_tectonic_section(feature_type, geometry, [name], [description], [valid_time], "
+				"[reconstruction_plate_id], [conjugate_plate_id], [left_plate], [right_plate], [reconstruction_method], "
+				"[other_properties], [feature_id], [verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
+				"  Create a unique *FeatureId* by generating a unique string identifier.\n"
+				"\n"
+				"  :param feature_type: the type of feature to create\n"
+				"  :type feature_type: :class:`FeatureType`\n"
+				"  :param geometry: the geometry (or geometries) - see :meth:`set_geometry`\n"
+				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
+				"of :class:`GeometryOnSphere`\n"
+				"  :param name: the name or names, if not specified then no 'gml:name' properties are added\n"
+				"  :type name: string, or sequence of string\n"
+				"  :param description: the description, if not specified then a 'gml:description' property is not added\n"
+				"  :type description: string\n"
+				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a 'gml:validTime' "
+				"property is not added\n"
+				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
+				"  :param reconstruction_plate_id: the reconstruction plate id, if not specified then a "
+				"'gpml:reconstructionPlateId' property is not added\n"
+				"  :type reconstruction_plate_id: int\n"
+				"  :param conjugate_plate_id: the conjugate plate ID or plate IDs, if not specified then no "
+				"'gpml:conjugatePlateId' properties are added\n"
+				"  :type conjugate_plate_id: int, or sequence of int\n"
+				"  :param left_plate: the left plate id, if not specified then a 'gpml:leftPlate' property is not added\n"
+				"  :type left_plate: int\n"
+				"  :param right_plate: the right plate id, if not specified then a 'gpml:rightPlate' property is not added\n"
+				"  :type right_plate: int\n"
+				"  :param reconstruction_method: the reconstruction method, if not specified then a 'gpml:reconstructionMethod' "
+				"property is not added\n"
+				"  :type reconstruction_method: string ('ByPlateId', 'HalfStageRotation' or 'HalfStageRotationVersion2')\n"
+				"  :param other_properties: any extra property name/value pairs to add, these can also "
+				"be added later with :meth:`add`\n"
+				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
+				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
+				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param verify_information_model: whether to check the information model (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and *feature_type* is not a `tectonic section "
+				"<http://www.earthbyte.org/Resources/GPGIM/public/#TectonicSection>`_.\n"
+				"\n"
+				"  This function creates a feature of :class:`type<FeatureType>` that falls in the category "
+				"of a `tectonic section <http://www.earthbyte.org/Resources/GPGIM/public/#TectonicSection>`_ - "
+				"note that there are multiple :class:`feature types<FeatureType>` that fall into this category.\n"
+				"\n"
+				"  This function calls :meth:`set_geometry`, :meth:`set_name`, :meth:`set_description`, "
+				":meth:`set_valid_time`, :meth:`set_reconstruction_plate_id`, :meth:`set_conjugate_plate_id`, "
+				":meth:`set_left_plate`, :meth:`set_right_plate` and :meth:`add`.\n"
+				"\n"
+				"  Create a mid-ocean ridge feature:\n"
+				"  ::\n"
+				"\n"
+				"    mid_ocean_ridge_feature = pygplates.Feature.create_tectonic_section(\n"
+				"        pygplates.FeatureType.create_gpml('MidOceanRidge'),\n"
+				"        pygplates.PolylineOnSphere([...]),\n"
+				"        name='ridge',\n"
+				"        valid_time=(600, pygplates.GeoTimeInstant.create_distant_future()),\n"
+				"        left_plate=201,\n"
+				"        right_plate=701,\n"
+				"        reconstruction_method='HalfStageRotationVersion2')\n")
+		.staticmethod("create_tectonic_section")
 		.def("add",
 				&GPlatesApi::feature_handle_add_property,
 				(bp::arg("property_name"),

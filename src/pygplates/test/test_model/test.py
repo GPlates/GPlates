@@ -15,6 +15,90 @@ import test_revisioned_vector
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 
 
+class CreateFeatureCase(unittest.TestCase):
+
+    def test_create_reconstructable_feature(self):
+        geometry = pygplates.PolylineOnSphere([
+                        pygplates.PointOnSphere(1, 0, 0),
+                        pygplates.PointOnSphere(0, 1, 0),
+                        pygplates.PointOnSphere(0, 0, 1)])
+        feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.create_gpml('Coastline'),
+                geometry,
+                name='East Antarctica',
+                description='a coasline',
+                valid_time=(600, pygplates.GeoTimeInstant.create_distant_future()),
+                reconstruction_plate_id=802)
+        self.assertTrue(len(feature) == 5)
+        self.assertTrue(feature.get_feature_type() == pygplates.FeatureType.create_gpml('Coastline'))
+        self.assertTrue(feature.get_geometry() == geometry)
+        self.assertTrue(feature.get_name() == 'East Antarctica')
+        self.assertTrue(feature.get_description() == 'a coasline')
+        self.assertTrue(feature.get_valid_time() == (600, pygplates.GeoTimeInstant.create_distant_future()))
+        self.assertTrue(feature.get_reconstruction_plate_id() == 802)
+        feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.create_gpml('Coastline'),
+                geometry,
+                name='East Antarctica',
+                other_properties=[
+                        (pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.GpmlPlateId(802)),
+                        (pygplates.PropertyName.create_gml('description'), pygplates.XsString('a coasline'))])
+        self.assertTrue(len(feature) == 4)
+        self.assertTrue(feature.get_feature_type() == pygplates.FeatureType.create_gpml('Coastline'))
+        self.assertTrue(feature.get_geometry() == geometry)
+        self.assertTrue(feature.get_name() == 'East Antarctica')
+        self.assertTrue(feature.get_description() == 'a coasline')
+        self.assertTrue(feature.get_reconstruction_plate_id() == 802)
+        # Should raise error if feature type is not reconstructable.
+        self.assertRaises(pygplates.InformationModelError,
+                pygplates.Feature.create_reconstructable_feature,
+                pygplates.FeatureType.create_gpml('TotalReconstructionSequence'),
+                geometry)
+        self.assertTrue(isinstance(
+                pygplates.Feature.create_reconstructable_feature(pygplates.FeatureType.create_gpml('Coastline'), geometry),
+                pygplates.Feature))
+
+    def test_create_tectonic_section(self):
+        geometry = pygplates.PolylineOnSphere([
+                        pygplates.PointOnSphere(1, 0, 0),
+                        pygplates.PointOnSphere(0, 1, 0),
+                        pygplates.PointOnSphere(0, 0, 1)])
+        feature = pygplates.Feature.create_tectonic_section(
+                pygplates.FeatureType.create_gpml('MidOceanRidge'),
+                geometry,
+                name='ridge',
+                description='a ridge',
+                valid_time=(600, pygplates.GeoTimeInstant.create_distant_future()),
+                conjugate_plate_id=801,
+                left_plate=201,
+                right_plate=701,
+                reconstruction_method='HalfStageRotationVersion2')
+        self.assertTrue(len(feature) == 8)
+        self.assertTrue(feature.get_feature_type() == pygplates.FeatureType.create_gpml('MidOceanRidge'))
+        self.assertTrue(feature.get_geometry() == geometry)
+        self.assertTrue(feature.get_name() == 'ridge')
+        self.assertTrue(feature.get_description() == 'a ridge')
+        self.assertTrue(feature.get_valid_time() == (600, pygplates.GeoTimeInstant.create_distant_future()))
+        self.assertTrue(feature.get_conjugate_plate_id() == 801)
+        self.assertTrue(feature.get_left_plate() == 201)
+        self.assertTrue(feature.get_right_plate() == 701)
+        self.assertTrue(feature.get_value(pygplates.PropertyName.create_gpml('reconstructionMethod')).get_content() == 'HalfStageRotationVersion2')
+        # Should raise error if feature type is not a tectonic section.
+        self.assertRaises(pygplates.InformationModelError,
+                pygplates.Feature.create_tectonic_section,
+                pygplates.FeatureType.create_gpml('Coastline'),
+                geometry)
+        self.assertTrue(isinstance(
+                pygplates.Feature.create_tectonic_section(pygplates.FeatureType.create_gpml('MidOceanRidge'), geometry),
+                pygplates.Feature))
+        # Invalid 'gpml:reconstructionMethod' value.
+        self.assertRaises(pygplates.InformationModelError,
+                pygplates.Feature.create_tectonic_section,
+                pygplates.FeatureType.create_gpml('MidOceanRidge'),
+                geometry,
+                reconstruction_method='UnknownReconstructionMethod')
+
+
 class FeatureCase(unittest.TestCase):
 
     def setUp(self):
@@ -622,6 +706,7 @@ def suite():
     
     # Add test cases from this module.
     test_cases = [
+            CreateFeatureCase,
             FeatureCase,
             FeatureCollectionCase,
             FeatureCollectionFileFormatRegistryCase,

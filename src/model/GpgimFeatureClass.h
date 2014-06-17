@@ -210,6 +210,14 @@ namespace GPlatesModel
 			return d_parent_feature_class;
 		}
 
+
+		/**
+		 * Returns true if this feature class inherits directly or indirectly from the specified feature type.
+		 */
+		bool
+		does_inherit_from(
+				const GPlatesModel::FeatureType &feature_type) const;
+
 	private:
 
 		//! The GPGIM feature type (string) of this feature class.
