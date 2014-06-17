@@ -413,7 +413,7 @@ namespace GPlatesFileIO
 							continue;
 						}
 
-						const GPlatesFileIO::File::Reference *file = map_iter->second;
+						const GPlatesFileIO::File::Reference *file = map_iter->second.first;
 						referenced_files.push_back(file);
 					}
 				}

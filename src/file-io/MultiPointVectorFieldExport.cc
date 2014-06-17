@@ -91,7 +91,8 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gpm
 	multi_point_vector_field_seq_type grouped_velocity_vector_field_seq;
 	group_reconstruction_geometries_with_their_feature(
 			grouped_velocity_vector_field_seq,
-			velocity_vector_field_seq);
+			velocity_vector_field_seq,
+			feature_to_collection_map);
 
 	if (export_single_output_file)
 	{
@@ -170,7 +171,8 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gmt
 	multi_point_vector_field_seq_type grouped_velocity_vector_field_seq;
 	group_reconstruction_geometries_with_their_feature(
 			grouped_velocity_vector_field_seq,
-			velocity_vector_field_seq);
+			velocity_vector_field_seq,
+			feature_to_collection_map);
 
 	if (export_single_output_file)
 	{
@@ -253,7 +255,8 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_ter
 	multi_point_vector_field_seq_type grouped_velocity_vector_field_seq;
 	group_reconstruction_geometries_with_their_feature(
 			grouped_velocity_vector_field_seq,
-			velocity_vector_field_seq);
+			velocity_vector_field_seq,
+			feature_to_collection_map);
 
 	// Group the feature-groups with their collections.
 	grouped_features_seq_type grouped_features_seq;
@@ -392,7 +395,8 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_cit
 	multi_point_vector_field_seq_type grouped_velocity_vector_field_seq;
 	group_reconstruction_geometries_with_their_feature(
 			grouped_velocity_vector_field_seq,
-			velocity_vector_field_seq);
+			velocity_vector_field_seq,
+			feature_to_collection_map);
 
 	// Group the feature-groups with their collections.
 	grouped_features_seq_type grouped_features_seq;

@@ -80,13 +80,22 @@ class ReconstructTest(unittest.TestCase):
             'test.xy',
             pygplates.GeoTimeInstant(10))
         
+        features = pygplates.FeatureCollectionFileFormatRegistry().read(
+                os.path.join(FIXTURES, 'volcanoes.gpml'))
+        self.assertEqual(len(features), 4)
         reconstructed_feature_geometries = []
         pygplates.reconstruct(
-            [os.path.join(FIXTURES, 'volcanoes.gpml')],
+            [os.path.join(FIXTURES, 'volcanoes.gpml'), os.path.join(FIXTURES, 'volcanoes.gpml')],
             os.path.join(FIXTURES, 'rotations.rot'),
             reconstructed_feature_geometries,
             0)
-        self.assertEqual(len(reconstructed_feature_geometries), 4)
+        # We've doubled up on the number of RFG's compared to number of features.
+        self.assertEqual(len(reconstructed_feature_geometries), 2 * len(features))
+        # The order of RFG's should match the order of features.
+        for index, feature in enumerate(features):
+            self.assertTrue(reconstructed_feature_geometries[index].get_feature().get_feature_id() == feature.get_feature_id())
+            # We've doubled up on the number of RFG's compared to number of features.
+            self.assertTrue(reconstructed_feature_geometries[index + len(features)].get_feature().get_feature_id() == feature.get_feature_id())
         # Test queries on ReconstructedFeatureGeometry.
         rfg1 = reconstructed_feature_geometries[0]
         self.assertTrue(rfg1.get_feature())

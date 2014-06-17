@@ -212,7 +212,7 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_ge
 	// Group the ReconstructionGeometry objects by their feature.
 	feature_geometry_group_seq_type grouped_recon_geom_seq;
 	group_reconstruction_geometries_with_their_feature(
-			grouped_recon_geom_seq, resolved_topological_geom_seq);
+			grouped_recon_geom_seq, resolved_topological_geom_seq, feature_to_collection_map);
 
 	// Group the feature-groups with their collections. 
 	grouped_features_seq_type grouped_features_seq;

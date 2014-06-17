@@ -69,9 +69,7 @@ Contents:
 	
 	pygplates.compose_finite_rotations
 	pygplates.get_equivalent_stage_rotation
-	pygplates.get_equivalent_total_rotation
 	pygplates.get_relative_stage_rotation
-	pygplates.get_relative_total_rotation
 	pygplates.interpolate_finite_rotations
 	pygplates.reconstruct
 	pygplates.reverse_reconstruct

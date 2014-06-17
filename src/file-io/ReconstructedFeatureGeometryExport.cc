@@ -217,7 +217,8 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_
 	feature_geometry_group_seq_type grouped_recon_geom_seq;
 	group_reconstruction_geometries_with_their_feature(
 			grouped_recon_geom_seq,
-			reconstructed_feature_geom_seq);
+			reconstructed_feature_geom_seq,
+			feature_to_collection_map);
 
 	// Group the feature-groups with their collections. 
 	grouped_features_seq_type grouped_features_seq;
