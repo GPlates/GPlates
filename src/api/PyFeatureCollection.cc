@@ -829,12 +829,12 @@ GPlatesFileIO::File::non_null_ptr_type
 GPlatesApi::FeatureCollectionFunctionArgument::initialise_feature_collection(
 		const function_argument_type &function_argument)
 {
-	if (const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type *feature_collection =
+	if (const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type *feature_collection_function_argument =
 		boost::get<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(&function_argument))
 	{
 		// Create a file with an empty filename - since we don't know if feature collection
 		// came from a file or not.
-		return GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(), *feature_collection);
+		return GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(), *feature_collection_function_argument);
 	}
 	else if (const QString *filename =
 		boost::get<QString>(&function_argument))
