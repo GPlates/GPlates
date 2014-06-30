@@ -45,7 +45,9 @@ namespace GPlatesApi
 	/**
 	 * A convenience class for receiving a feature collection function argument as either:
 	 *  (1) a feature collection, or
-	 *  (2) a filename (read into a feature collection).
+	 *  (2) a filename (read into a feature collection), or
+	 *  (3) a feature (loaded into a feature collection), or
+	 *  (4) a sequence of features - eg, a list or tuple (loaded into a feature collection).
 	 *
 	 * To get an instance of @a FeatureCollectionFunctionArgument you can either:
 	 *  (1) specify FeatureCollectionFunctionArgument directly as a function argument type
@@ -61,7 +63,9 @@ namespace GPlatesApi
 		 */
 		typedef boost::variant<
 				GPlatesModel::FeatureCollectionHandle::non_null_ptr_type,
-				QString> function_argument_type;
+				QString,
+				GPlatesModel::FeatureHandle::non_null_ptr_type,
+				boost::python::object/*sequence of features*/> function_argument_type;
 
 
 		/**
@@ -118,7 +122,9 @@ namespace GPlatesApi
 	 * A convenience class for receiving one or more feature collections from a function argument as either:
 	 *  (1) a feature collection, or
 	 *  (2) a filename (read into a feature collection), or
-	 *  (3) a sequence of feature collections and/or filenames.
+	 *  (3) a feature (loaded into a feature collection), or
+	 *  (4) a sequence of features (loaded into a feature collection), or
+	 *  (5) a sequence of any combination of (1)-(4) above.
 	 *
 	 * To get an instance of @a FeatureCollectionSequenceFunctionArgument you can either:
 	 *  (1) specify FeatureCollectionSequenceFunctionArgument directly as a function argument type
@@ -133,8 +139,7 @@ namespace GPlatesApi
 		 * Types of function argument.
 		 */
 		typedef boost::variant<
-				GPlatesModel::FeatureCollectionHandle::non_null_ptr_type,
-				QString,
+				FeatureCollectionFunctionArgument,
 				boost::python::object/*sequence*/> function_argument_type;
 
 

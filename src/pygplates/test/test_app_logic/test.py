@@ -80,22 +80,24 @@ class ReconstructTest(unittest.TestCase):
             'test.xy',
             pygplates.GeoTimeInstant(10))
         
-        features = pygplates.FeatureCollectionFileFormatRegistry().read(
+        feature_collection = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'volcanoes.gpml'))
-        self.assertEqual(len(features), 4)
+        self.assertEqual(len(feature_collection), 4)
+        rotation_features = pygplates.FeatureCollectionFileFormatRegistry().read(
+                os.path.join(FIXTURES, 'rotations.rot'))
         reconstructed_feature_geometries = []
         pygplates.reconstruct(
             [os.path.join(FIXTURES, 'volcanoes.gpml'), os.path.join(FIXTURES, 'volcanoes.gpml')],
-            os.path.join(FIXTURES, 'rotations.rot'),
+            rotation_features,
             reconstructed_feature_geometries,
             0)
         # We've doubled up on the number of RFG's compared to number of features.
-        self.assertEqual(len(reconstructed_feature_geometries), 2 * len(features))
+        self.assertEqual(len(reconstructed_feature_geometries), 2 * len(feature_collection))
         # The order of RFG's should match the order of features.
-        for index, feature in enumerate(features):
+        for index, feature in enumerate(feature_collection):
             self.assertTrue(reconstructed_feature_geometries[index].get_feature().get_feature_id() == feature.get_feature_id())
             # We've doubled up on the number of RFG's compared to number of features.
-            self.assertTrue(reconstructed_feature_geometries[index + len(features)].get_feature().get_feature_id() == feature.get_feature_id())
+            self.assertTrue(reconstructed_feature_geometries[index + len(feature_collection)].get_feature().get_feature_id() == feature.get_feature_id())
         # Test queries on ReconstructedFeatureGeometry.
         rfg1 = reconstructed_feature_geometries[0]
         self.assertTrue(rfg1.get_feature())
@@ -103,6 +105,61 @@ class ReconstructTest(unittest.TestCase):
         self.assertTrue(isinstance(rfg1.get_present_day_geometry(), pygplates.PointOnSphere))
         self.assertTrue(isinstance(rfg1.get_reconstructed_geometry(), pygplates.PointOnSphere))
         
+        # Reconstruct a feature collection.
+        reconstructed_feature_geometries = []
+        pygplates.reconstruct(
+            feature_collection,
+            rotation_features,
+            reconstructed_feature_geometries,
+            0)
+        self.assertEqual(len(reconstructed_feature_geometries), len(feature_collection))
+        for index, feature in enumerate(feature_collection):
+            self.assertTrue(reconstructed_feature_geometries[index].get_feature().get_feature_id() == feature.get_feature_id())
+        
+        # Reconstruct a list of features.
+        reconstructed_feature_geometries = []
+        pygplates.reconstruct(
+            [feature for feature in feature_collection],
+            rotation_features,
+            reconstructed_feature_geometries,
+            0)
+        self.assertEqual(len(reconstructed_feature_geometries), len(feature_collection))
+        for index, feature in enumerate(feature_collection):
+            self.assertTrue(reconstructed_feature_geometries[index].get_feature().get_feature_id() == feature.get_feature_id())
+        
+        # Reconstruct individual features.
+        for feature in feature_collection:
+            reconstructed_feature_geometries = []
+            pygplates.reconstruct(
+                feature,
+                rotation_features,
+                reconstructed_feature_geometries,
+                0)
+            self.assertEqual(len(reconstructed_feature_geometries), 1)
+            self.assertTrue(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())
+        
+        # Reconstruct a list that is a mixture of feature collection, filename, list of features and a feature.
+        reconstructed_feature_geometries = []
+        pygplates.reconstruct(
+            [
+                pygplates.FeatureCollectionFileFormatRegistry().read(os.path.join(FIXTURES, 'volcanoes.gpml')), # feature collection
+                os.path.join(FIXTURES, 'volcanoes.gpml'), # filename
+                [feature for feature in pygplates.FeatureCollectionFileFormatRegistry().read(os.path.join(FIXTURES, 'volcanoes.gpml'))], # list of features
+                next(iter(pygplates.FeatureCollectionFileFormatRegistry().read(os.path.join(FIXTURES, 'volcanoes.gpml')))) # single feature
+            ],
+            rotation_features,
+            reconstructed_feature_geometries,
+            0)
+        self.assertEqual(len(reconstructed_feature_geometries), 3 * len(feature_collection) + 1)
+        # The order of RFG's should match the order of features (provided we don't duplicate the features across the lists - which
+        # is why we loaded the features from scratch above instead of specifying derivatives of 'feature_collection').
+        for index, feature in enumerate(feature_collection):
+            self.assertTrue(reconstructed_feature_geometries[index].get_feature().get_feature_id() == feature.get_feature_id())
+            self.assertTrue(reconstructed_feature_geometries[index + len(feature_collection)].get_feature().get_feature_id() == feature.get_feature_id())
+            self.assertTrue(reconstructed_feature_geometries[index + 2 * len(feature_collection)].get_feature().get_feature_id() == feature.get_feature_id())
+        self.assertTrue(reconstructed_feature_geometries[3 * len(feature_collection)].get_feature().get_feature_id() == next(iter(feature_collection)).get_feature_id())
+        
+        # Reconstruct to 15Ma.
         reconstructed_feature_geometries = []
         pygplates.reconstruct(
             [os.path.join(FIXTURES, 'volcanoes.gpml')],
@@ -130,12 +187,39 @@ class ReconstructTest(unittest.TestCase):
             [os.path.join(FIXTURES, 'rotations.rot')],
             pygplates.GeoTimeInstant(10))
         
+        rotation_features = pygplates.FeatureCollectionFileFormatRegistry().read(
+                os.path.join(FIXTURES, 'rotations.rot'))
+        
         # Test modifying the feature collection only (not the file it was read from).
         reconstructable_feature_collection = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'volcanoes.gpml'))
         pygplates.reverse_reconstruct(
             reconstructable_feature_collection,
-            [os.path.join(FIXTURES, 'rotations.rot')],
+            [rotation_features],
+            10,
+            0)
+        
+        # Test modifying a list of features.
+        pygplates.reverse_reconstruct(
+            [feature for feature in reconstructable_feature_collection],
+            rotation_features,
+            10,
+            0)
+        
+        # Test modifying a single feature only.
+        pygplates.reverse_reconstruct(
+            next(iter(reconstructable_feature_collection)),
+            rotation_features,
+            10,
+            0)
+            
+        # Test modifying a mixture of the above.
+        pygplates.reverse_reconstruct([
+                os.path.join(FIXTURES, 'volcanoes.gpml'),
+                reconstructable_feature_collection,
+                [feature for feature in reconstructable_feature_collection],
+                next(iter(reconstructable_feature_collection))],
+            rotation_features,
             10,
             0)
         
@@ -339,6 +423,18 @@ class RotationModelCase(unittest.TestCase):
                 [ 'non_existent_file.rot' ])
         # Create using feature collections instead of filenames.
         rotation_model = pygplates.RotationModel([self.rotations])
+        # Create using a single feature collection.
+        rotation_model = pygplates.RotationModel(self.rotations)
+        # Create using a list of features.
+        rotation_model = pygplates.RotationModel([rotation for rotation in self.rotations])
+        # Create using a single feature.
+        rotation_model = pygplates.RotationModel(next(iter(self.rotations)))
+        # Create using a mixture of the above.
+        rotation_model = pygplates.RotationModel([
+                os.path.join(FIXTURES, 'rotations.rot'),
+                self.rotations,
+                [rotation for rotation in self.rotations],
+                next(iter(self.rotations))])
     
     def test_get_reconstruction_tree(self):
         to_reconstruction_tree = self.rotation_model.get_reconstruction_tree(self.to_time)

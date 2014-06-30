@@ -479,7 +479,7 @@ namespace GPlatesApi
 
 
 	/**
-	 * Loads a reconstructable feature collection (optionally from a file) @a reconstructable_features
+	 * Loads one or more reconstructable feature collections (optionally from a files) @a reconstructable_features
 	 * and assumes each feature geometry is *not* present day geometry but instead is the
 	 * reconstructed geometry for the specified reconstruction time @a reconstruction_time.
 	 *
@@ -493,7 +493,7 @@ namespace GPlatesApi
 	 */
 	void
 	reverse_reconstruct(
-			FeatureCollectionFunctionArgument reconstructable_features,
+			FeatureCollectionSequenceFunctionArgument reconstructable_features,
 			RotationModelFunctionArgument rotation_model,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 			GPlatesModel::integer_plate_id_type anchor_plate_id)
@@ -516,66 +516,77 @@ namespace GPlatesApi
 				GPlatesAppLogic::ReconstructParams(),
 				reconstruction_tree_creator);
 
-		GPlatesFileIO::File::non_null_ptr_type reconstructable_file = reconstructable_features.get_file();
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstructable_files;
+		reconstructable_features.get_files(reconstructable_files);
 
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &reconstructable_feature_collection =
-				reconstructable_file->get_reference().get_feature_collection();
-
-		GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
-
-		// Iterate over the features in the reconstructable feature collection.
-		GPlatesModel::FeatureCollectionHandle::iterator reconstructable_features_iter =
-				reconstructable_feature_collection->begin();
-		GPlatesModel::FeatureCollectionHandle::iterator reconstructable_features_end =
-				reconstructable_feature_collection->end();
-		for ( ; reconstructable_features_iter != reconstructable_features_end; ++reconstructable_features_iter)
+		// Iterate over the files.
+		std::vector<GPlatesFileIO::File::non_null_ptr_type>::const_iterator reconstructable_files_iter =
+				reconstructable_files.begin();
+		std::vector<GPlatesFileIO::File::non_null_ptr_type>::const_iterator reconstructable_files_end =
+				reconstructable_files.end();
+		for ( ; reconstructable_files_iter != reconstructable_files_end; ++reconstructable_files_iter)
 		{
-			const GPlatesModel::FeatureHandle::weak_ref reconstructable_feature =
-					(*reconstructable_features_iter)->reference();
+			GPlatesFileIO::File::non_null_ptr_type reconstructable_file = *reconstructable_files_iter;
 
-			// Find out how to reconstruct each geometry in a feature based on the feature's other properties.
-			// Get the reconstruct method so we can reverse reconstruct the geometry.
-			GPlatesAppLogic::ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
-					reconstruct_method_registry.create_reconstruct_method_or_default(
-							reconstructable_feature,
-							reconstruct_method_context);
+			const GPlatesModel::FeatureCollectionHandle::weak_ref &reconstructable_feature_collection =
+					reconstructable_file->get_reference().get_feature_collection();
 
-			// Get the (reconstructed - not present day) geometries for the current feature.
-			//
-			// NOTE: We are actually going to treat these geometries *not* as present day
-			// but as geometries at time 'reconstruction_time' - we're going to reverse reconstruct to get
-			// the present day geometries.
-			// Note: There should be one geometry for each geometry property that can be reconstructed.
-			std::vector<GPlatesAppLogic::ReconstructMethodInterface::Geometry> feature_reconstructed_geometries;
-			reconstruct_method->get_present_day_feature_geometries(feature_reconstructed_geometries);
+			GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
 
-			// Iterate over the reconstructed geometries for the current feature.
-			BOOST_FOREACH(
-					const GPlatesAppLogic::ReconstructMethodInterface::Geometry &feature_reconstructed_geometry,
-					feature_reconstructed_geometries)
+			// Iterate over the features in the reconstructable feature collection.
+			GPlatesModel::FeatureCollectionHandle::iterator reconstructable_features_iter =
+					reconstructable_feature_collection->begin();
+			GPlatesModel::FeatureCollectionHandle::iterator reconstructable_features_end =
+					reconstructable_feature_collection->end();
+			for ( ; reconstructable_features_iter != reconstructable_features_end; ++reconstructable_features_iter)
 			{
-				// Reverse reconstruct the current feature geometry from time 'reconstruction_time' to present day.
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
-						reconstruct_method->reconstruct_geometry(
-								feature_reconstructed_geometry.geometry,
-								reconstruct_method_context,
-								// The reconstruction_time of the reconstructed feature geometry...
-								reconstruction_time.value()/*reconstruction_time*/,
-								true/*reverse_reconstruct*/);
+				const GPlatesModel::FeatureHandle::weak_ref reconstructable_feature =
+						(*reconstructable_features_iter)->reference();
 
-				// Set the reverse reconstructed (present day) geometry back onto the feature's geometry property.
-				GPlatesFeatureVisitors::GeometrySetter(present_day_geometry).set_geometry(
-						(*feature_reconstructed_geometry.property_iterator).get());
+				// Find out how to reconstruct each geometry in a feature based on the feature's other properties.
+				// Get the reconstruct method so we can reverse reconstruct the geometry.
+				GPlatesAppLogic::ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
+						reconstruct_method_registry.create_reconstruct_method_or_default(
+								reconstructable_feature,
+								reconstruct_method_context);
+
+				// Get the (reconstructed - not present day) geometries for the current feature.
+				//
+				// NOTE: We are actually going to treat these geometries *not* as present day
+				// but as geometries at time 'reconstruction_time' - we're going to reverse reconstruct to get
+				// the present day geometries.
+				// Note: There should be one geometry for each geometry property that can be reconstructed.
+				std::vector<GPlatesAppLogic::ReconstructMethodInterface::Geometry> feature_reconstructed_geometries;
+				reconstruct_method->get_present_day_feature_geometries(feature_reconstructed_geometries);
+
+				// Iterate over the reconstructed geometries for the current feature.
+				BOOST_FOREACH(
+						const GPlatesAppLogic::ReconstructMethodInterface::Geometry &feature_reconstructed_geometry,
+						feature_reconstructed_geometries)
+				{
+					// Reverse reconstruct the current feature geometry from time 'reconstruction_time' to present day.
+					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type present_day_geometry =
+							reconstruct_method->reconstruct_geometry(
+									feature_reconstructed_geometry.geometry,
+									reconstruct_method_context,
+									// The reconstruction_time of the reconstructed feature geometry...
+									reconstruction_time.value()/*reconstruction_time*/,
+									true/*reverse_reconstruct*/);
+
+					// Set the reverse reconstructed (present day) geometry back onto the feature's geometry property.
+					GPlatesFeatureVisitors::GeometrySetter(present_day_geometry).set_geometry(
+							(*feature_reconstructed_geometry.property_iterator).get());
+				}
 			}
-		}
 
-		// If the feature collection came from a file (as opposed to being passed in directly as a
-		// feature collection) then write the current modified feature collection back out to the
-		// same file it came from.
-		if (reconstructable_file->get_reference().get_file_info().get_qfileinfo().exists())
-		{
-			GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
-			file_registry.write_feature_collection(reconstructable_file->get_reference());
+			// If the feature collection came from a file (as opposed to being passed in directly as a
+			// feature collection) then write the current modified feature collection back out to the
+			// same file it came from.
+			if (reconstructable_file->get_reference().get_file_info().get_qfileinfo().exists())
+			{
+				GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
+				file_registry.write_feature_collection(reconstructable_file->get_reference());
+			}
 		}
 	}
 }
@@ -595,17 +606,19 @@ export_reconstruct()
 			"reconstruction_time, [anchor_plate_id=0], [\\*\\*output_parameters])\n"
 			"  Reconstruct geological features to a specific geological time.\n"
 			"\n"
-			"  :param reconstructable_features: A reconstructable feature collection or a filename or a "
-			"sequence of feature collections and/or filenames\n"
-			"  :type reconstructable_features: :class:`FeatureCollection` or string or sequence of "
-			":class:`FeatureCollection` instances and/or strings\n"
+			"  :param reconstructable_features: A reconstructable feature collection, or filename, or "
+			"feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any "
+			"combination of those four types\n"
+			"  :type reconstructable_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
 			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
 			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
 			"or sequence of :class:`FeatureCollection` instances and/or strings\n"
 			"  :param reconstructed_feature_geometries: the "
 			":class:`reconstructed feature geometries<ReconstructedFeatureGeometry>` are either exported "
-			"to a file (with specified filename) or appended to a python ``list``\n"
+			"to a file (with specified filename) or *appended* to a python ``list`` (note that the list "
+			"is *not* cleared first)\n"
 			"  :type reconstructed_feature_geometries: string or ``list``\n"
 			"  :param reconstruction_time: the specific geological time to reconstruct to\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
@@ -659,9 +672,9 @@ export_reconstruct()
 			"or file). This is because shapefile attributes from multiple input feature collections are "
 			"not easily combined into a single output shapefile (due to different attribute field names).\n"
 			"\n"
-			"  Note that *reconstructable_features* can be a :class:`FeatureCollection` or a "
-			"filename or a sequence (eg, ``list`` or ``tuple``) containing :class:`FeatureCollection` "
-			"instances or filenames (or a mixture of both).\n"
+			"  Note that *reconstructable_features* can be a :class:`FeatureCollection` or a filename "
+			"or a feature or a sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any "
+			"combination of those four types.\n"
 			"\n"
 			"  Note that *rotation_model* can be either a :class:`RotationModel` or a "
 			"rotation :class:`FeatureCollection` or a rotation filename or a sequence "
@@ -671,7 +684,36 @@ export_reconstruct()
 			"function is called multiple times with the same rotation data).\n"
 			"\n"
 			"  If any filenames are specified then :class:`FeatureCollectionFileFormatRegistry` is "
-			"used internally to read feature collections from those files.\n";
+			"used internally to read feature collections from those files.\n"
+			"\n"
+			"  Reconstructing a file containing a feature collection to a shapefile at 10Ma:\n"
+			"  ::\n"
+			"\n"
+            "    pygplates.reconstruct('volcanoes.gpml', rotation_model, 'reconstructed_volcanoes_10Ma.shp', 10)\n"
+			"\n"
+			"  Reconstructing a file containing a feature collection to a list of reconstructed feature geometries at 10Ma:\n"
+			"  ::\n"
+			"\n"
+			"    reconstructed_feature_geometries = []\n"
+            "    pygplates.reconstruct('volcanoes.gpml', rotation_model, reconstructed_feature_geometries, 10)\n"
+			"\n"
+			"  Reconstructing a feature collection to a shapefile at 10Ma:\n"
+			"  ::\n"
+			"\n"
+			"    pygplates.reconstruct(pygplates.FeatureCollection([feature1, feature2]), rotation_model, "
+			"'reconstructed_features_10Ma.shp', 10)\n"
+			"\n"
+			"  Reconstructing a list of features to a shapefile at 10Ma:\n"
+			"  ::\n"
+			"\n"
+			"    pygplates.reconstruct([feature1, feature2], rotation_model, 'reconstructed_features_10Ma.shp', 10)\n"
+			"\n"
+			"  Reconstructing a single feature to a list of reconstructed feature geometries at 10Ma:\n"
+			"  ::\n"
+			"\n"
+			"    reconstructed_feature_geometries = []\n"
+            "    pygplates.reconstruct(feature, rotation_model, reconstructed_feature_geometries, 10)\n"
+			"    assert(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())\n";
 
 	// Register 'reconstructed feature geometries' variant.
 	GPlatesApi::PythonConverterUtils::register_variant_conversion<
@@ -687,9 +729,11 @@ export_reconstruct()
 			"reverse_reconstruct(reconstructable_features, rotation_model, reconstruction_time, [anchor_plate_id=0])\n"
 			"  Reverse reconstruct geological features from a specific geological time.\n"
 			"\n"
-			"  :param reconstructable_features: A reconstructable feature collection or a filename "
-			"(used as input and output)\n"
-			"  :type reconstructable_features: :class:`FeatureCollection` or string\n"
+			"  :param reconstructable_features: A reconstructable feature collection, or filename, or "
+			"feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any "
+			"combination of those four types - all features used as input and output\n"
+			"  :type reconstructable_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
 			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
 			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
@@ -714,9 +758,14 @@ export_reconstruct()
 			"This function reverses that reconstruction process to ensure present day geometries are "
 			"stored in the features.\n"
 			"\n"
-			"  Note that *reconstructable_features* can be a :class:`FeatureCollection` or a "
-			"filename. If loaded from a file then the modified feature collection (containing reverse "
-			"reconstructed geometries) is also written back out to the same file.\n"
+			"  Note that *reconstructable_features* can be a :class:`FeatureCollection` or a filename "
+			"or a feature or a sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any "
+			"combination of those four types.\n"
+			"\n"
+			"  If any filenames are specified in *reconstructable_features* then the modified feature "
+			"collection(s) (containing reverse reconstructed geometries) that are associated with those "
+			"files are written back out to those same files. :class:`FeatureCollectionFileFormatRegistry` "
+			"is used internally to read/write feature collections from/to those files.\n"
 			"\n"
 			"  Note that *rotation_model* can be either a :class:`RotationModel` or a "
 			"rotation :class:`FeatureCollection` or a rotation filename or a sequence "
@@ -725,8 +774,25 @@ export_reconstruct()
 			"then a temporary one is created internally (and hence is less efficient if this "
 			"function is called multiple times with the same rotation data).\n"
 			"\n"
-			"  If any filenames are specified then :class:`FeatureCollectionFileFormatRegistry` is "
-			"used internally to read feature collections from those files.\n");
+			"  Reverse reconstructing a file containing a feature collection from 10Ma:\n"
+			"  ::\n"
+			"\n"
+            "    pygplates.reverse_reconstruct('volcanoes.gpml', rotation_model, 10)\n"
+			"\n"
+			"  Reverse reconstructing a feature collection from 10Ma:\n"
+			"  ::\n"
+			"\n"
+			"    pygplates.reverse_reconstruct(pygplates.FeatureCollection([feature1, feature2]), rotation_model, 10)\n"
+			"\n"
+			"  Reverse reconstructing a list of features from 10Ma:\n"
+			"  ::\n"
+			"\n"
+			"    pygplates.reverse_reconstruct([feature1, feature2], rotation_model, 10)\n"
+			"\n"
+			"  Reconstructing a single feature from 10Ma:\n"
+			"  ::\n"
+			"\n"
+            "    pygplates.reconstruct(feature, rotation_model, 10)\n");
 }
 
 #endif

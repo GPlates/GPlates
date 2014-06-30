@@ -650,7 +650,7 @@ def get_shapefile_attribute(feature, key, default_value=None):
     This is a convenience method that wraps :meth:`get_value` for the common property 'gpml:shapefileAttributes' and
     accesses the attribute value associated with *key* within that property using :meth:`GpmlKeyValueDictionary.get`.
     
-    Note that ``None`` is returned if either a 'gpml:shapefileAttributes' property does not exist in this feature, or
+    Note that *default_value* is returned if either a 'gpml:shapefileAttributes' property does not exist in this feature, or
     one does exist but does not contain a shapefile attribute associated with *key*.
     
     To test if a key is present and retrieve its value:

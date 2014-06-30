@@ -762,7 +762,50 @@ bool
 GPlatesApi::FeatureCollectionFunctionArgument::is_convertible(
 		bp::object python_function_argument)
 {
-	return bp::extract<function_argument_type>(python_function_argument).check();
+	// If we fail to extract or iterate over the supported types then catch exception and return NULL.
+	try
+	{
+		// Test all supported types (in function_argument_type) except the bp::object (since that's a sequence).
+		if (bp::extract<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(python_function_argument).check() ||
+			bp::extract<QString>(python_function_argument).check() ||
+			bp::extract<GPlatesModel::FeatureHandle::non_null_ptr_type>(python_function_argument).check())
+		{
+			return true;
+		}
+
+		// Else it's a boost::python::object so we're expecting it to be a sequence of
+		// GPlatesModel::FeatureHandle::non_null_ptr_type's which requires further checking.
+
+		const bp::object sequence = python_function_argument;
+
+		// Iterate over the sequence of features.
+		//
+		// NOTE: We avoid iterating using 'bp::stl_input_iterator<GPlatesModel::FeatureHandle::non_null_ptr_type>'
+		// because we want to avoid actually extracting the features.
+		// We're just checking if there's a sequence of features here.
+		bp::object iter = sequence.attr("__iter__")();
+		while (bp::handle<> item = bp::handle<>(bp::allow_null(PyIter_Next(iter.ptr()))))
+		{
+			if (!bp::extract<GPlatesModel::FeatureHandle::non_null_ptr_type>(bp::object(item)).check())
+			{
+				return false;
+			}
+		}
+
+		if (PyErr_Occurred())
+		{
+			PyErr_Clear();
+			return false;
+		}
+
+		return true;
+	}
+	catch (const bp::error_already_set &)
+	{
+		PyErr_Clear();
+	}
+
+	return false;
 }
 
 
@@ -793,19 +836,53 @@ GPlatesApi::FeatureCollectionFunctionArgument::initialise_feature_collection(
 		// came from a file or not.
 		return GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(), *feature_collection);
 	}
+	else if (const QString *filename =
+		boost::get<QString>(&function_argument))
+	{
+		// Create a file with an empty feature collection.
+		GPlatesFileIO::File::non_null_ptr_type file =
+				GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(*filename));
 
-	const QString filename = boost::get<QString>(function_argument);
+		// Read new features from the file into the feature collection.
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
+		GPlatesFileIO::ReadErrorAccumulation read_errors;
+		file_registry.read_feature_collection(file->get_reference(), read_errors);
 
-	// Create a file with an empty feature collection.
-	GPlatesFileIO::File::non_null_ptr_type file =
-			GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(filename));
+		return file;
+	}
+	else if (const GPlatesModel::FeatureHandle::non_null_ptr_type *feature =
+		boost::get<GPlatesModel::FeatureHandle::non_null_ptr_type>(&function_argument))
+	{
+		// Create a feature collection with a single feature.
+		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
+				GPlatesModel::FeatureCollectionHandle::create();
+		feature_collection->add(*feature);
 
-	// Read new features from the file into the feature collection.
-	GPlatesFileIO::FeatureCollectionFileFormat::Registry file_registry;
-	GPlatesFileIO::ReadErrorAccumulation read_errors;
-	file_registry.read_feature_collection(file->get_reference(), read_errors);
+		// Create a file with an empty filename - since feature collection didn't come from a file.
+		return GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(), feature_collection);
+	}
+	else
+	{
+		//
+		// A sequence of features.
+		//
 
-	return file;
+		// Create a feature collection to add the features to.
+		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
+				GPlatesModel::FeatureCollectionHandle::create();
+
+		const bp::object sequence = boost::get<bp::object>(function_argument);
+
+		bp::stl_input_iterator<GPlatesModel::FeatureHandle::non_null_ptr_type> features_iter(sequence);
+		bp::stl_input_iterator<GPlatesModel::FeatureHandle::non_null_ptr_type> features_end;
+		for ( ; features_iter != features_end; ++features_iter)
+		{
+			feature_collection->add(*features_iter);
+		}
+
+		// Create a file with an empty filename - since feature collection didn't come from a file.
+		return GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(), feature_collection);
+	}
 }
 
 
@@ -840,8 +917,8 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::is_convertible(
 	// If we fail to extract or iterate over the supported types then catch exception and return NULL.
 	try
 	{
-		if (bp::extract<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(python_function_argument).check() ||
-			bp::extract<QString>(python_function_argument).check())
+		// Test all supported types (in function_argument_type) except the bp::object (since that's a sequence).
+		if (bp::extract<FeatureCollectionFunctionArgument>(python_function_argument).check())
 		{
 			return true;
 		}
@@ -910,14 +987,10 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::initialise_feature_collec
 		std::vector<FeatureCollectionFunctionArgument> &feature_collections,
 		const function_argument_type &function_argument)
 {
-	if (const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type *feature_collection =
-		boost::get<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(&function_argument))
+	if (const FeatureCollectionFunctionArgument *feature_collection_function_argument =
+		boost::get<FeatureCollectionFunctionArgument>(&function_argument))
 	{
-		feature_collections.push_back(FeatureCollectionFunctionArgument(*feature_collection));
-	}
-	else if (const QString *filename = boost::get<QString>(&function_argument))
-	{
-		feature_collections.push_back(FeatureCollectionFunctionArgument(*filename));
+		feature_collections.push_back(*feature_collection_function_argument);
 	}
 	else
 	{
