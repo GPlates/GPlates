@@ -95,7 +95,8 @@ void
 export_qualified_xml_name(
 		PythonClassType &qualified_xml_name_class,
 		const char *class_name,
-		const char *instance_name)
+		const char *instance_name,
+		const char *example_qualified_name)
 {
 	// The GPlatesModel::QualifiedXmlName<> type.
 	typedef typename PythonClassType::wrapped_type qualified_xml_name_type;
@@ -139,11 +140,15 @@ export_qualified_xml_name(
 	// Enable boost::optional<GPlatesModel::QualifiedXmlName<> > to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<qualified_xml_name_type>();
 
+	std::stringstream to_qualified_string_docstring_stream;
+	to_qualified_string_docstring_stream <<
+			"to_qualified_string() -> string\n"
+			"  Returns the fully qualified name. For example, '" << example_qualified_name << "'.\n";
+
 	// Member to-QString conversion function.
 	qualified_xml_name_class.def("to_qualified_string",
 			&GPlatesModel::convert_qualified_xml_name_to_qstring<qualified_xml_name_type>,
-			"to_qualified_string() -> string\n"
-			"  Returns the fully qualified name. For example, 'gml:validTime' (if created with 'create_gml()').\n");
+			to_qualified_string_docstring_stream.str().c_str());
 
 	std::stringstream from_qualified_string_docstring_stream;
 	from_qualified_string_docstring_stream <<
@@ -155,14 +160,15 @@ export_qualified_xml_name(
 			"  :rtype: " << class_name << " or None\n"
 			"\n"
 			"  The name string should have a ':' character separating the namespace alias from the unqualified name, "
-			"for example 'gml:validTime'. If the namespace alias is not recognised (as 'gpml', 'gml' or 'xsi') "
-			"then 'gpml' is assumed.\n"
+			"for example '" << example_qualified_name
+			<< "'. If the namespace alias is not recognised (as 'gpml', 'gml' or 'xsi') then 'gpml' is assumed.\n"
 			"\n"
 			"  An over-qualified name string (eg, containing two or more ':' characters) will result "
 			"in ``None`` being returned.\n"
 			"  ::\n"
 			"\n"
-			"    " << instance_name << " = pygplates." << class_name << ".create_from_qualified_string(name)\n";
+			"    " << instance_name << " = pygplates." << class_name
+			<< ".create_from_qualified_string('" << example_qualified_name << "')\n";
 
 	// Static-member from-QString conversion function.
 	qualified_xml_name_class.def("create_from_qualified_string",
@@ -195,11 +201,15 @@ export_enumeration_type()
 			"\n"
 			"  ::\n"
 			"\n"
-			"    enumeration_type = pygplates.EnumerationType.create_gpml(name)\n");
+			"    gpml_subduction_polarity_enumeration_type = pygplates.EnumerationType.create_gpml('SubductionPolarityEnumeration')\n");
 	enumeration_type_class.staticmethod("create_gpml");
 
 	// Add the parts common to each GPlatesModel::QualifiedXmlName template instantiation (code re-use).
-	export_qualified_xml_name(enumeration_type_class, "EnumerationType", "enumeration_type");
+	export_qualified_xml_name(
+			enumeration_type_class,
+			"EnumerationType",
+			"enumeration_type",
+			"gpml:SubductionPolarityEnumeration");
 }
 
 
@@ -226,11 +236,15 @@ export_feature_type()
 			"\n"
 			"  ::\n"
 			"\n"
-			"    feature_type = pygplates.FeatureType.create_gpml(name)\n");
+			"    gpml_coastline_feature_type = pygplates.FeatureType.create_gpml('Coastline')\n");
 	feature_type_class.staticmethod("create_gpml");
 
 	// Add the parts common to each GPlatesModel::QualifiedXmlName template instantiation (code re-use).
-	export_qualified_xml_name(feature_type_class, "FeatureType", "feature_type");
+	export_qualified_xml_name(
+			feature_type_class,
+			"FeatureType",
+			"feature_type",
+			"gpml:Coastline");
 }
 
 
@@ -257,7 +271,7 @@ export_property_name()
 				"\n"
 				"  ::\n"
 				"\n"
-				"    property_name = pygplates.PropertyName.create_gpml(name)\n");
+				"    gpml_reconstruction_plate_id_property_name = pygplates.PropertyName.create_gpml('reconstructionPlateId')\n");
 	property_name_class.staticmethod("create_gpml");
 	property_name_class.def("create_gml",
 			&GPlatesApi::qualified_xml_name_create_gml<GPlatesModel::PropertyName>,
@@ -269,7 +283,7 @@ export_property_name()
 				"\n"
 				"  ::\n"
 				"\n"
-				"    property_name = pygplates.PropertyName.create_gml(name)\n");
+				"    gml_valid_time_property_name = pygplates.PropertyName.create_gml('validTime')\n");
 	property_name_class.staticmethod("create_gml");
 	property_name_class.def("create_xsi",
 			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesModel::PropertyName>,
@@ -285,7 +299,11 @@ export_property_name()
 	property_name_class.staticmethod("create_xsi");
 
 	// Add the parts common to each GPlatesModel::QualifiedXmlName template instantiation (code re-use).
-	export_qualified_xml_name(property_name_class, "PropertyName", "property_name");
+	export_qualified_xml_name(
+			property_name_class,
+			"PropertyName",
+			"property_name",
+			"gpml:reconstructionPlateId");
 }
 
 
@@ -312,7 +330,7 @@ export_structural_type()
 				"\n"
 				"  ::\n"
 				"\n"
-				"    structural_type = pygplates.StructuralType.create_gpml(name)\n");
+				"    gpml_finite_rotation_structural_type = pygplates.StructuralType.create_gpml('FiniteRotation')\n");
 	structural_type_class.staticmethod("create_gpml");
 	structural_type_class.def("create_gml",
 			&GPlatesApi::qualified_xml_name_create_gml<GPlatesPropertyValues::StructuralType>,
@@ -324,7 +342,7 @@ export_structural_type()
 				"\n"
 				"  ::\n"
 				"\n"
-				"    structural_type = pygplates.StructuralType.create_gml(name)\n");
+				"    gml_time_period_structural_type = pygplates.StructuralType.create_gml('TimePeriod')\n");
 	structural_type_class.staticmethod("create_gml");
 	structural_type_class.def("create_xsi",
 			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesPropertyValues::StructuralType>,
@@ -336,11 +354,15 @@ export_structural_type()
 				"\n"
 				"  ::\n"
 				"\n"
-				"    structural_type = pygplates.StructuralType.create_xsi(name)\n");
+				"    xsi_double_structural_type = pygplates.StructuralType.create_xsi('double')\n");
 	structural_type_class.staticmethod("create_xsi");
 
 	// Add the parts common to each GPlatesModel::QualifiedXmlName template instantiation (code re-use).
-	export_qualified_xml_name(structural_type_class, "StructuralType", "structural_type");
+	export_qualified_xml_name(
+			structural_type_class,
+			"StructuralType",
+			"structural_type",
+			"gml:TimePeriod");
 }
 
 
