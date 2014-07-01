@@ -244,7 +244,8 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         # Add a reconstruction method with an invalid enumeration type.
         self.feature.add(
                 pygplates.PropertyName.create_gpml('reconstructionMethod'),
-                pygplates.Enumeration(pygplates.EnumerationType.create_gpml('UnknownEnumeration'), 'HalfStageRotationVersion2', pygplates.VerifyInformationModel.no))
+                pygplates.Enumeration(pygplates.EnumerationType.create_gpml('UnknownEnumeration'), 'HalfStageRotationVersion2', pygplates.VerifyInformationModel.no),
+                pygplates.VerifyInformationModel.no)
         self.assertFalse(self.feature.get_reconstruction_method(None))
     
     def test_get_and_get_reconstruction_plate_id(self):

@@ -215,6 +215,7 @@ namespace GPlatesModel
 				PROPERTY_NAME_NOT_RECOGNISED, // Not recognised by GPGIM.
 				PROPERTY_NAME_CAN_OCCUR_AT_MOST_ONCE_IN_A_FEATURE,
 				PROPERTY_NAME_NOT_SUPPORTED_BY_FEATURE_TYPE,
+				PROPERTY_VALUE_TYPE_NOT_SUPPORTED_BY_PROPERTY_NAME,
 				COULD_NOT_WRAP_INTO_A_TIME_DEPENDENT_PROPERTY,
 				COULD_NOT_UNWRAP_EXISTING_TIME_DEPENDENT_PROPERTY,
 				COULD_NOT_CONVERT_FROM_ONE_TIME_DEPENDENT_WRAPPER_TO_ANOTHER,
@@ -302,6 +303,10 @@ namespace GPlatesModel
 		 * If a feature type is specified then the property name is also checked to see if it's valid
 		 * for the specified feature type. This ensures a stricter level of conformance to the GPGIM.
 		 *
+		 * NOTE: If @a check_property_value_type is true then the (non-time-dependent) type of
+		 * @a property_value is checked to see if it is allowed for @a property_name.
+		 * This ensures a stricter level of conformance to the GPGIM.
+		 *
 		 * Returns boost::none if any error is encountered (such as an unrecognised property name or inability
 		 * to convert time-dependent wrapper).
 		 * The error code can optionally be returned via @a error_code.
@@ -311,12 +316,17 @@ namespace GPlatesModel
 				const PropertyName& property_name,
 				const PropertyValue::non_null_ptr_type &property_value,
 				boost::optional<FeatureType> feature_type = boost::none,
+				bool check_property_value_type = true,
 				TopLevelPropertyError::Type *error_code = NULL);
 
 
 		/**
 		 * An overload of @a create_top_level_property for when the GPGIM property has already been
 		 * determined by the caller (from the property name).
+		 *
+		 * NOTE: If @a check_property_value_type is true then the (non-time-dependent) type of
+		 * @a property_value is checked to see if it is a supported structural type of @a gpgim_property.
+		 * This ensures a stricter level of conformance to the GPGIM.
 		 *
 		 * Note that the caller is responsible for ensuring that the specified GPGIM property is allowed
 		 * for the feature type of the feature it will subsequently be added to (according to the GPGIM).
@@ -325,6 +335,7 @@ namespace GPlatesModel
 		create_top_level_property(
 				const GpgimProperty &gpgim_property,
 				const PropertyValue::non_null_ptr_type &property_value,
+				bool check_property_value_type = true,
 				TopLevelPropertyError::Type *error_code = NULL);
 
 
@@ -344,6 +355,10 @@ namespace GPlatesModel
 		 * This ensures that adding the property will not violate the number of properties
 		 * (named @a property_name) allowed in a feature.
 		 *
+		 * NOTE: If @a check_property_value_type is true then the (non-time-dependent) type of
+		 * @a property_value is checked to see if it is allowed for @a property_name.
+		 * This ensures a stricter level of conformance to the GPGIM.
+		 *
 		 * Returns none if any error is encountered (such as an unrecognised property name or inability
 		 * to convert time-dependent wrapper) in which case the property value is not added to the feature.
 		 * The error code can optionally be returned via @a error_code.
@@ -355,12 +370,17 @@ namespace GPlatesModel
 				const PropertyValue::non_null_ptr_type &property_value,
 				bool check_property_name_allowed_for_feature_type = true,
 				bool check_property_multiplicity = true,
+				bool check_property_value_type = true,
 				TopLevelPropertyError::Type *error_code = NULL);
 
 
 		/**
 		 * An overload of @a add_property for when the GPGIM property has already been
 		 * determined by the caller (from the property name).
+		 *
+		 * NOTE: If @a check_property_value_type is true then the (non-time-dependent) type of
+		 * @a property_value is checked to see if it is a supported structural type of @a gpgim_property.
+		 * This ensures a stricter level of conformance to the GPGIM.
 		 *
 		 * Note that the caller is responsible for ensuring that the specified GPGIM property
 		 * is allowed for the feature's type (according to the GPGIM).
@@ -371,12 +391,17 @@ namespace GPlatesModel
 				const GpgimProperty &gpgim_property,
 				const PropertyValue::non_null_ptr_type &property_value,
 				bool check_property_multiplicity = true,
+				bool check_property_value_type = true,
 				TopLevelPropertyError::Type *error_code = NULL);
 
 
 		/**
 		 * This function is similar to @a add_property except it first removes any existing
 		 * properties named @a property_name.
+		 *
+		 * NOTE: If @a check_property_value_type is true then the (non-time-dependent) type of
+		 * @a property_value is checked to see if it is allowed for @a property_name.
+		 * This ensures a stricter level of conformance to the GPGIM.
 		 *
 		 * Note that there is no need to check property multiplicity since we're setting only
 		 * one property (which is always supported).
@@ -387,12 +412,17 @@ namespace GPlatesModel
 				const PropertyName& property_name,
 				const PropertyValue::non_null_ptr_type &property_value,
 				bool check_property_name_allowed_for_feature_type = true,
+				bool check_property_value_type = true,
 				TopLevelPropertyError::Type *error_code = NULL);
 
 
 		/**
 		 * An overload of @a set_property for when the GPGIM property has already been
 		 * determined by the caller (from the property name).
+		 *
+		 * NOTE: If @a check_property_value_type is true then the (non-time-dependent) type of
+		 * @a property_value is checked to see if it is a supported structural type of @a gpgim_property.
+		 * This ensures a stricter level of conformance to the GPGIM.
 		 *
 		 * Note that the caller is responsible for ensuring that the specified GPGIM property
 		 * is allowed for the feature's type (according to the GPGIM).
@@ -402,6 +432,7 @@ namespace GPlatesModel
 				const FeatureHandle::weak_ref &feature,
 				const GpgimProperty &gpgim_property,
 				const PropertyValue::non_null_ptr_type &property_value,
+				bool check_property_value_type = true,
 				TopLevelPropertyError::Type *error_code = NULL);
 
 
@@ -410,6 +441,10 @@ namespace GPlatesModel
 		 *
 		 * The property values to be set are passed in @a property_values and
 		 * the properties set in the feature are returned in @a feature_properties.
+		 *
+		 * NOTE: If @a check_property_value_type is true then the (non-time-dependent) type of each
+		 * property value in @a property_values is checked to see if it is allowed for @a property_name.
+		 * This ensures a stricter level of conformance to the GPGIM.
 		 *
 		 * Returns false if there is an error setting any property.
 		 */
@@ -421,12 +456,17 @@ namespace GPlatesModel
 				const std::vector<PropertyValue::non_null_ptr_type> &property_values,
 				bool check_property_name_allowed_for_feature_type = true,
 				bool check_property_multiplicity = true,
+				bool check_property_value_type = true,
 				TopLevelPropertyError::Type *error_code = NULL);
 
 
 		/**
 		 * An overload of @a set_properties for when the GPGIM property has already been
 		 * determined by the caller (from the property name).
+		 *
+		 * NOTE: If @a check_property_value_type is true then the (non-time-dependent) type of each
+		 * property value in @a property_values is checked to see if it is a supported structural type
+		 * of @a gpgim_property. This ensures a stricter level of conformance to the GPGIM.
 		 *
 		 * Note that the caller is responsible for ensuring that the specified GPGIM property
 		 * is allowed for the feature's type (according to the GPGIM).
@@ -438,6 +478,7 @@ namespace GPlatesModel
 				const GpgimProperty &gpgim_property,
 				const std::vector<PropertyValue::non_null_ptr_type> &property_values,
 				bool check_property_multiplicity = true,
+				bool check_property_value_type = true,
 				TopLevelPropertyError::Type *error_code = NULL);
 
 

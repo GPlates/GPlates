@@ -591,6 +591,8 @@ namespace GPlatesApi
 	bool
 	multi_point_on_sphere_contains_point(
 			const GPlatesMaths::MultiPointOnSphere &multi_point_on_sphere,
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
 			const GPlatesMaths::PointOnSphere &point_on_sphere)
 	{
 		return std::find(
@@ -1403,6 +1405,8 @@ namespace GPlatesApi
 	bool
 	polygon_on_sphere_is_point_in_polygon(
 			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
 			const GPlatesMaths::PointOnSphere &point)
 	{
 		return polygon_on_sphere.is_point_in_polygon(point);
@@ -1718,7 +1722,8 @@ export_polygon_on_sphere()
 				"  Determines whether the specified point lies within the interior of this polygon.\n"
 				"\n"
 				"  :param point: the point to be tested\n"
-				"  :type point: :class:`PointOnSphere`\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude)"
+				", in degrees, or (x,y,z)\n"
 				"  :rtype: bool\n")
 		.def("get_boundary_centroid",
 				&GPlatesApi::polygon_on_sphere_get_boundary_centroid,

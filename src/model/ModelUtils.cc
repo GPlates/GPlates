@@ -165,6 +165,42 @@ namespace
 	}
 
 
+	/**
+	 * Ensure that the (non-time-dependent) property value structural type of @a property_value
+	 * is one of the supported structural types of @a gpgim_property.
+	 */
+	bool
+	check_property_value_type_supported(
+			const GPlatesModel::PropertyValue &property_value,
+			const GPlatesModel::GpgimProperty &gpgim_property,
+			GPlatesModel::ModelUtils::TopLevelPropertyError::Type *error_code)
+	{
+		const GPlatesPropertyValues::StructuralType property_value_structural_type =
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
+
+		const GPlatesModel::GpgimProperty::structural_type_seq_type &gpgim_structural_types =
+				gpgim_property.get_structural_types();
+
+		// If any allowed structural type matches then the geometry type is supported.
+		BOOST_FOREACH(
+				GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type gpgim_structural_type,
+				gpgim_structural_types)
+		{
+			if (property_value_structural_type == gpgim_structural_type->get_structural_type())
+			{
+				return true;
+			}
+		}
+
+		if (error_code)
+		{
+			*error_code = GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_VALUE_TYPE_NOT_SUPPORTED_BY_PROPERTY_NAME;
+		}
+
+		return false;
+	}
+
+
 	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
 	add_remove_or_convert_time_dependent_wrapper(
 			const GPlatesModel::PropertyValue::non_null_ptr_type &property_value,
@@ -256,6 +292,7 @@ GPlatesModel::ModelUtils::get_error_message(
 		QT_TR_NOOP("The property name was not recognised as a valid name by the GPGIM."),
 		QT_TR_NOOP("The property name can occur at most once in a feature."),
 		QT_TR_NOOP("The property name is not in the feature type's list of valid names."),
+		QT_TR_NOOP("The property value type is not in the property name's list of valid types."),
 		QT_TR_NOOP("GPlates was unable to wrap into a time-dependent property."),
 		QT_TR_NOOP("GPlates was unable to unwrap the existing time-dependent property."),
 		QT_TR_NOOP("GPlates was unable to convert from one time-dependent wrapper to another.")
@@ -328,6 +365,7 @@ GPlatesModel::ModelUtils::create_top_level_property(
 		const PropertyName& property_name,
 		const PropertyValue::non_null_ptr_type &property_value,
 		boost::optional<FeatureType> feature_type,
+		bool check_property_value_type,
 		TopLevelPropertyError::Type *error_code)
 {
 	// Get the GPGIM property using the property name (and optionally the feature type).
@@ -345,6 +383,7 @@ GPlatesModel::ModelUtils::create_top_level_property(
 	return create_top_level_property(
 			*gpgim_property.get(),
 			property_value,
+			check_property_value_type,
 			error_code);
 }
 
@@ -353,8 +392,17 @@ boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
 GPlatesModel::ModelUtils::create_top_level_property(
 		const GpgimProperty &gpgim_property,
 		const PropertyValue::non_null_ptr_type &property_value,
+		bool check_property_value_type,
 		TopLevelPropertyError::Type *error_code)
 {
+	if (check_property_value_type)
+	{
+		if (!check_property_value_type_supported(*property_value, gpgim_property, error_code))
+		{
+			return boost::none;
+		}
+	}
+
 	// Make sure property value has correct time-dependent wrapper (or none).
 	boost::optional<PropertyValue::non_null_ptr_type> converted_property_value =
 			::add_remove_or_convert_time_dependent_wrapper(
@@ -378,6 +426,7 @@ GPlatesModel::ModelUtils::add_property(
 		const PropertyValue::non_null_ptr_type &property_value,
 		bool check_property_name_allowed_for_feature_type,
 		bool check_property_multiplicity,
+		bool check_property_value_type,
 		TopLevelPropertyError::Type *error_code)
 {
 	boost::optional<FeatureType> feature_type;
@@ -403,6 +452,7 @@ GPlatesModel::ModelUtils::add_property(
 			*gpgim_property.get(),
 			property_value,
 			check_property_multiplicity,
+			check_property_value_type,
 			error_code);
 }
 
@@ -413,6 +463,7 @@ GPlatesModel::ModelUtils::add_property(
 		const GpgimProperty &gpgim_property,
 		const PropertyValue::non_null_ptr_type &property_value,
 		bool check_property_multiplicity,
+		bool check_property_value_type,
 		TopLevelPropertyError::Type *error_code)
 {
 	if (check_property_multiplicity)
@@ -427,6 +478,7 @@ GPlatesModel::ModelUtils::add_property(
 			create_top_level_property(
 					gpgim_property,
 					property_value,
+					check_property_value_type,
 					error_code);
 	if (!top_level_property)
 	{
@@ -444,6 +496,7 @@ GPlatesModel::ModelUtils::set_property(
 		const PropertyName& property_name,
 		const PropertyValue::non_null_ptr_type &property_value,
 		bool check_property_name_allowed_for_feature_type,
+		bool check_property_value_type,
 		TopLevelPropertyError::Type *error_code)
 {
 	boost::optional<FeatureType> feature_type;
@@ -468,6 +521,7 @@ GPlatesModel::ModelUtils::set_property(
 			feature,
 			*gpgim_property.get(),
 			property_value,
+			check_property_value_type,
 			error_code);
 }
 
@@ -477,12 +531,14 @@ GPlatesModel::ModelUtils::set_property(
 		const FeatureHandle::weak_ref &feature,
 		const GpgimProperty &gpgim_property,
 		const PropertyValue::non_null_ptr_type &property_value,
+		bool check_property_value_type,
 		TopLevelPropertyError::Type *error_code)
 {
 	boost::optional<TopLevelProperty::non_null_ptr_type> top_level_property =
 			create_top_level_property(
 					gpgim_property,
 					property_value,
+					check_property_value_type,
 					error_code);
 	if (!top_level_property)
 	{
@@ -532,6 +588,7 @@ GPlatesModel::ModelUtils::set_properties(
 		const std::vector<PropertyValue::non_null_ptr_type> &property_values,
 		bool check_property_name_allowed_for_feature_type,
 		bool check_property_multiplicity,
+		bool check_property_value_type,
 		TopLevelPropertyError::Type *error_code)
 {
 	boost::optional<FeatureType> feature_type;
@@ -558,6 +615,7 @@ GPlatesModel::ModelUtils::set_properties(
 			*gpgim_property.get(),
 			property_values,
 			check_property_multiplicity,
+			check_property_value_type,
 			error_code);
 }
 
@@ -569,6 +627,7 @@ GPlatesModel::ModelUtils::set_properties(
 		const GpgimProperty &gpgim_property,
 		const std::vector<PropertyValue::non_null_ptr_type> &property_values,
 		bool check_property_multiplicity,
+		bool check_property_value_type,
 		TopLevelPropertyError::Type *error_code)
 {
 	if (check_property_multiplicity)
@@ -615,6 +674,7 @@ GPlatesModel::ModelUtils::set_properties(
 						create_top_level_property(
 								gpgim_property,
 								property_value,
+								check_property_value_type,
 								error_code);
 				if (!top_level_property)
 				{
@@ -645,6 +705,7 @@ GPlatesModel::ModelUtils::set_properties(
 				create_top_level_property(
 						gpgim_property,
 						property_value,
+						check_property_value_type,
 						error_code);
 		if (!top_level_property)
 		{

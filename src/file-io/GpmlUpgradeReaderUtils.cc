@@ -99,15 +99,27 @@ namespace GPlatesFileIO
 		{
 			if (error_code == GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_NAME_NOT_RECOGNISED)
 			{
-				// The new property name is not allowed, by the GPGIM, for the feature type.
 				append_warning(feature_xml_element, reader_params,
 						GPlatesFileIO::ReadErrors::NecessaryPropertyNotFound,
 						GPlatesFileIO::ReadErrors::ElementNotNameChanged);
 			}
-			else if (error_code == GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_NAME_NOT_SUPPORTED_BY_FEATURE_TYPE)
+			else if (error_code == GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_NAME_CAN_OCCUR_AT_MOST_ONCE_IN_A_FEATURE)
 			{
 				append_warning(feature_xml_element, reader_params,
+						GPlatesFileIO::ReadErrors::DuplicateProperty,
+						GPlatesFileIO::ReadErrors::ElementNotNameChanged);
+			}
+			else if (error_code == GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_NAME_NOT_SUPPORTED_BY_FEATURE_TYPE)
+			{
+				// The new property name is not allowed, by the GPGIM, for the feature type.
+				append_warning(feature_xml_element, reader_params,
 						GPlatesFileIO::ReadErrors::PropertyNameNotRecognisedInFeatureType,
+						GPlatesFileIO::ReadErrors::ElementNotNameChanged);
+			}
+			else if (error_code == GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_VALUE_TYPE_NOT_SUPPORTED_BY_PROPERTY_NAME)
+			{
+				append_warning(feature_xml_element, reader_params,
+						GPlatesFileIO::ReadErrors::UnexpectedPropertyStructuralElement,
 						GPlatesFileIO::ReadErrors::ElementNotNameChanged);
 			}
 			else if (error_code == GPlatesModel::ModelUtils::TopLevelPropertyError::COULD_NOT_WRAP_INTO_A_TIME_DEPENDENT_PROPERTY)
@@ -740,6 +752,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 		network_property_value,
 		true/*check_property_name_allowed_for_feature_type*/,
 		true/*check_property_multiplicity*/,
+		true/*check_property_value_type*/,
 		&add_property_error_code))
 	{
 		// The file we read from does not contain the newly added network property.

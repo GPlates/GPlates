@@ -633,6 +633,8 @@ namespace GPlatesApi
 {
 	const GPlatesPropertyValues::GmlPoint::non_null_ptr_type
 	gml_point_create(
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
 			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 	{
 		// Use the default value for the second argument.
@@ -665,7 +667,8 @@ export_gml_point()
 				"  Create a property value representing a point geometry.\n"
 				"\n"
 				"  :param point: the point geometry\n"
-				"  :type point: :class:`PointOnSphere`\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude)"
+				", in degrees, or (x,y,z)\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -683,7 +686,8 @@ export_gml_point()
 				"  Sets the point geometry of this property value.\n"
 				"\n"
 				"  :param point: the point geometry\n"
-				"  :type point: :class:`PointOnSphere`\n")
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude)"
+				", in degrees, or (x,y,z)\n")
 	;
 
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.

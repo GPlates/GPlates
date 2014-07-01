@@ -42,6 +42,8 @@ namespace GPlatesApi
 {
 	boost::shared_ptr<GPlatesMaths::GreatCircleArc>
 	great_circle_arc_create(
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
 			const GPlatesMaths::PointOnSphere &start_point,
 			const GPlatesMaths::PointOnSphere &end_point)
 	{
@@ -94,9 +96,11 @@ export_great_circle_arc()
 				"  Create a great circle arc from two points.\n"
 				"\n"
 				"  :param start_point: the start point of the arc.\n"
-				"  :type start_point: :class:`PointOnSphere`\n"
+				"  :type start_point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude)"
+				", in degrees, or (x,y,z)\n"
 				"  :param end_point: the end point of the arc.\n"
-				"  :type end_point: :class:`PointOnSphere`\n"
+				"  :type end_point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude)"
+				", in degrees, or (x,y,z)\n"
 				"  :raises: IndeterminateResultError if points are antipodal (opposite each other)\n"
 				"\n"
 				"  An arc is specified by a start-point and an end-point:  If these two points are not "

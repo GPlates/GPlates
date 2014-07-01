@@ -320,6 +320,7 @@ GPlatesQtWidgets::CreateFeatureAddOrEditPropertyDialog::create_property_from_edi
 				GPlatesModel::ModelUtils::create_top_level_property(
 						*d_add_property->gpgim_property,
 						property_value,
+						true/*check_property_value_type*/,
 						&error_code);
 		if (!d_add_property->feature_property)
 		{

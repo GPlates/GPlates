@@ -599,6 +599,7 @@ GPlatesQtWidgets::TopologyToolsWidget::handle_apply()
 					topological_geometry_property_name.get(),
 					topological_geometry_property_value,
 					d_edit_topology_feature_ref.get()->feature_type(),
+					true/*check_property_value_type*/,
 					&add_property_error_code);
 	if (!top_level_property)
 	{

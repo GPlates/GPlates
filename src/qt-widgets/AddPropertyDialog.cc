@@ -303,6 +303,7 @@ GPlatesQtWidgets::AddPropertyDialog::add_property()
 						// We're allowing *any* property to be added to the feature...
 						false/*check_property_name_allowed_for_feature_type*/,
 						false/*check_property_multiplicity*/,
+						false/*check_property_value_type*/,
 						&add_property_error_code))
 				{
 					// Not successful in adding property; show error message.

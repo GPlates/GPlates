@@ -150,6 +150,16 @@ class FeatureCase(unittest.TestCase):
         # Should not be able to add a second 'gpml:reconstructionPlateId'.
         self.assertRaises(pygplates.InformationModelError, self.feature.add,
                 pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.GpmlPlateId(101))
+        self.feature.remove(pygplates.PropertyName.create_gpml('reconstructionPlateId'))
+        self.assertFalse(self.feature.get(pygplates.PropertyName.create_gpml('reconstructionPlateId')))
+        # Should not be able to add a valid property name without an unexpected property value *type*.
+        self.assertRaises(pygplates.InformationModelError, self.feature.add,
+                pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.XsInteger(101))
+        self.assertRaises(pygplates.InformationModelError, self.feature.add,
+                [(pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.XsInteger(101)),
+                (pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.XsInteger(102))])
+        # Add back a reconstruction plate id property to keep original property count.
+        self.feature.add(pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.GpmlPlateId(101))
         
         integer_property = self.feature.add(
                 pygplates.PropertyName.create_gpml('integer'),
@@ -278,6 +288,11 @@ class FeatureCase(unittest.TestCase):
         self.assertRaises(pygplates.InformationModelError, self.feature.set,
                 pygplates.PropertyName.create_gpml('reconstructionPlateId'),
                 [pygplates.GpmlPlateId(101), pygplates.GpmlPlateId(102)])
+        self.feature.remove(pygplates.PropertyName.create_gpml('reconstructionPlateId'))
+        self.assertFalse(self.feature.get(pygplates.PropertyName.create_gpml('reconstructionPlateId')))
+        # Should not be able to set a valid property name without an unexpected property value *type*.
+        self.assertRaises(pygplates.InformationModelError, self.feature.set,
+                pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.XsInteger(101))
         
         self.feature.set(pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.GpmlPlateId(10001))
         self.assertTrue(self.feature.get_reconstruction_plate_id() == 10001)

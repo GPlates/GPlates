@@ -352,6 +352,7 @@ namespace GPlatesApi
 							property_value,
 							true/*check_property_name_allowed_for_feature_type*/,
 							true/*check_property_multiplicity*/,
+							true/*check_property_value_type*/,
 							&add_property_error_code);
 			if (!feature_property_iter)
 			{
@@ -426,6 +427,7 @@ namespace GPlatesApi
 							property_value,
 							true/*check_property_name_allowed_for_feature_type*/,
 							true/*check_property_multiplicity*/,
+							true/*check_property_value_type*/,
 							&add_property_error_code);
 			if (!feature_property_iter)
 			{
@@ -847,6 +849,7 @@ namespace GPlatesApi
 							property_name,
 							property_value,
 							true/*check_property_name_allowed_for_feature_type*/,
+							true/*check_property_value_type*/,
 							&set_property_error_code);
 			if (!feature_property_iter)
 			{
@@ -953,6 +956,7 @@ namespace GPlatesApi
 						property_values.end()),
 				true/*check_property_name_allowed_for_feature_type*/,
 				true/*check_property_multiplicity*/,
+				true/*check_property_value_type*/,
 				&set_property_error_code))
 		{
 			throw InformationModelException(
@@ -1904,7 +1908,8 @@ export_feature()
 				"  :rtype: :class:`Property`, or list of :class:`Property` depending on whether *property_value* "
 				"is a :class:`PropertyValue` or sequence of :class:`PropertyValue`\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
-				"and *property_name* is not a recognised property name or is not supported by the feature type\n"
+				"and *property_name* is not a recognised property name or is not supported by the feature type, "
+				"or if *property_value* does not have a property value type supported by *property_name*\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -1934,7 +1939,8 @@ export_feature()
 				"  :returns: the list of properties added to the feature\n"
 				"  :rtype: ``list`` of :class:`Property`\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
-				"and any of the property names are not recognised property names or not supported by the feature type\n"
+				"and any of the property names are not recognised property names or not supported by the feature type, "
+				"or if any property value type is not supported by its associated property name\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -2025,7 +2031,8 @@ export_feature()
 				"  :rtype: :class:`Property`, or list of :class:`Property` depending on whether *property_value* "
 				"is a :class:`PropertyValue` or sequence of :class:`PropertyValue`\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
-				"and *property_name* is not a recognised property name or is not supported by the feature type\n"
+				"and *property_name* is not a recognised property name or is not supported by the feature type, "
+				"or if *property_value* does not have a property value type supported by *property_name*\n"
 				"\n"
 				"  ::\n"
 				"\n"
