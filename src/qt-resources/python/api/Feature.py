@@ -5,6 +5,8 @@ _gml_name_property_name = PropertyName.create_gml('name')
 _gml_valid_time_property_name = PropertyName.create_gml('validTime')
 _gpml_left_plate_property_name = PropertyName.create_gpml('leftPlate')
 _gpml_right_plate_property_name = PropertyName.create_gpml('rightPlate')
+_gpml_reconstruction_method_property_name = PropertyName.create_gpml('reconstructionMethod')
+_gpml_reconstruction_method_enumeration_type = EnumerationType.create_gpml('ReconstructionMethodEnumeration')
 _gpml_reconstruction_plate_id_property_name = PropertyName.create_gpml('reconstructionPlateId')
 _gpml_conjugate_plate_id_property_name = PropertyName.create_gpml('conjugatePlateId')
 _gpml_shapefile_attributes_property_name = PropertyName.create_gpml('shapefileAttributes')
@@ -14,7 +16,7 @@ _gpml_total_reconstruction_pole_property_name = PropertyName.create_gpml('totalR
 
 
 def get_description(feature, default=''):
-    """get_description([default='']) -> str
+    """get_description([default='']) -> string
     Return the description of this feature.
     
     :param default: the default description (defaults to an empty string)
@@ -84,7 +86,7 @@ del set_description
 
 
 def get_name(feature, default='', property_return=PropertyReturn.exactly_one):
-    """get_name([default=''], [property_return=PropertyReturn.exactly_one]) -> str or list
+    """get_name([default=''], [property_return=PropertyReturn.exactly_one]) -> string or list
     Return the name (or names) of this feature.
     
     :param default: the default name (defaults to an empty string), or default names
@@ -432,6 +434,84 @@ Feature.set_right_plate = set_right_plate
 del set_right_plate
 
 
+def get_reconstruction_method(feature, default='ByPlateId'):
+    """get_reconstruction_method([default='ByPlateId']) -> string
+    Returns the reconstruction method of this feature.
+    
+    :param default: the default reconstruction method (defaults to 'ByPlateId')
+    :type default: string or None
+    :returns: the reconstruction method ('ByPlateId', 'HalfStageRotation' or 'HalfStageRotationVersion2') \
+    if exactly one 'gpml:reconstructionMethod' property found containing an :class:`enumeration type<EnumerationType>` \
+    of 'gpml:ReconstructionMethodEnumeration', otherwise *default* is returned
+    :rtype: string, or type(*default*)
+    
+    This is a convenience method that wraps :meth:`get_value` for the common property 'gpml:reconstructionMethod'.
+    
+    Return the reconstruction method as a string (defaults to 'ByPlateId' if not exactly one found):
+    ::
+    
+      reconstruction_method = feature.get_reconstruction_method()
+    
+    Set *default* to ``None`` to test that there is exactly one 'gpml:reconstructionMethod' property:
+    ::
+    
+      reconstruction_method = feature.get_reconstruction_method(None)
+      if reconstruction_method:
+        ...
+    """
+    
+    gpml_reconstruction_method = feature.get_value(_gpml_reconstruction_method_property_name)
+    if gpml_reconstruction_method:
+        try:
+            # We're expecting a certain enumeration type - if we don't get it then we return 'default'.
+            if gpml_reconstruction_method.get_type() == _gpml_reconstruction_method_enumeration_type:
+                return gpml_reconstruction_method.get_content()
+        except AttributeError:
+            # The property value type did not match the property name.
+            # This indicates the data does not conform to the GPlates Geological Information Model (GPGIM).
+            pass
+    
+    # Return default.
+    return default
+
+# Add the module function as a class method.
+Feature.get_reconstruction_method = get_reconstruction_method
+# Delete the module reference to the function - we only keep the class method.
+del get_reconstruction_method
+
+
+def set_reconstruction_method(feature, reconstruction_method, verify_information_model=VerifyInformationModel.yes):
+    """set_reconstruction_method(reconstruction_method, [verify_information_model=VerifyInformationModel.yes]) -> Property
+    Sets the reconstruction method of this feature.
+    
+    :param reconstruction_method: the reconstruction method ('ByPlateId', 'HalfStageRotation' or 'HalfStageRotationVersion2')
+    :type reconstruction_method: string
+    :param verify_information_model: whether to check the information model before setting (default) or not
+    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :returns: the property containing the reconstruction method
+    :rtype: :class:`Property`
+    :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
+    does not support the 'gpml:reconstructionMethod' property, or *reconstruction_method* is not a recognised reconstruction method.
+    
+    This is a convenience method that wraps :meth:`set` for the common property 'gpml:reconstructionMethod'.
+    
+    Set the reconstruction method such that reconstructions of the feature will be done using half-stage rotations:
+    ::
+    
+      feature.set_reconstruction_method('HalfStageRotationVersion2')
+    """
+    
+    return feature.set(
+            _gpml_reconstruction_method_property_name,
+            Enumeration(_gpml_reconstruction_method_enumeration_type, reconstruction_method, verify_information_model),
+            verify_information_model)
+
+# Add the module function as a class method.
+Feature.set_reconstruction_method = set_reconstruction_method
+# Delete the module reference to the function - we only keep the class method.
+del set_reconstruction_method
+
+
 def get_reconstruction_plate_id(feature, default=0):
     """get_reconstruction_plate_id([default=0]) -> int
     Returns the reconstruction plate ID of this feature.
@@ -634,13 +714,13 @@ del set_conjugate_plate_id
 
 
 def get_shapefile_attribute(feature, key, default_value=None):
-    """get_shapefile_attribute(key, [default_value]) -> int or float or str or None
+    """get_shapefile_attribute(key, [default_value]) -> int or float or string or None
     Returns the value of a shapefile attribute associated with a key.
     
     :param key: the key of the shapefile attribute
     :type key: string
     :param default_value: the default value to return if *key* does not exist (if not specified then it defaults to None)
-    :type default_value: int or float or str or None
+    :type default_value: int or float or string or None
     :returns: the value of the shapefile attribute associated with *key*, otherwise *default_value* if *key* does not exist
     :rtype: integer or float or string or type(*default_value*)
     

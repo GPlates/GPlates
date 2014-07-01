@@ -226,6 +226,27 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(gpml_right_plate.get_value().get_plate_id() == self.feature.get_right_plate())
         self.assertTrue(self.feature.get_right_plate() == 701)
     
+    def test_get_and_get_reconstruction_method(self):
+        # There's no reconstruction method so should return default.
+        self.assertTrue(self.feature.get_reconstruction_method() == 'ByPlateId')
+        self.assertFalse(self.feature.get_reconstruction_method(None))
+        self.feature.set_reconstruction_method('HalfStageRotation')
+        self.assertTrue(self.feature.get_reconstruction_method() == 'HalfStageRotation')
+        gpml_reconstruction_method = self.feature.set_reconstruction_method('HalfStageRotationVersion2')
+        self.assertTrue(self.feature.get_reconstruction_method() == 'HalfStageRotationVersion2')
+        self.assertTrue(gpml_reconstruction_method.get_value().get_type() == pygplates.EnumerationType.create_gpml('ReconstructionMethodEnumeration'))
+        self.assertTrue(gpml_reconstruction_method.get_value().get_content() == 'HalfStageRotationVersion2')
+        self.assertRaises(pygplates.InformationModelError, self.feature.set_reconstruction_method, 'UnknownContent')
+        self.feature.set_reconstruction_method('UnknownContent', pygplates.VerifyInformationModel.no)
+        self.assertTrue(self.feature.get_reconstruction_method() == 'UnknownContent')
+        self.feature.remove(pygplates.PropertyName.create_gpml('reconstructionMethod'))
+        self.assertFalse(self.feature.get_reconstruction_method(None))
+        # Add a reconstruction method with an invalid enumeration type.
+        self.feature.add(
+                pygplates.PropertyName.create_gpml('reconstructionMethod'),
+                pygplates.Enumeration(pygplates.EnumerationType.create_gpml('UnknownEnumeration'), 'HalfStageRotationVersion2', pygplates.VerifyInformationModel.no))
+        self.assertFalse(self.feature.get_reconstruction_method(None))
+    
     def test_get_and_get_reconstruction_plate_id(self):
         # There are two reconstruction plate IDs so this should return zero (default when not exactly one property).
         self.assertTrue(self.feature.get_reconstruction_plate_id() == 0)
