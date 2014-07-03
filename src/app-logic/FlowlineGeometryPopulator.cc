@@ -38,22 +38,25 @@
 #include "ReconstructionTree.h"
 #include "RotationUtils.h"
 
+#include "app-logic/GeometryUtils.h"
+
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+#include "maths/MultiPointOnSphere.h"
+#include "maths/PointOnSphere.h"
+
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
-
 
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlTimeInstant.h"
-
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
-
-#include "maths/MultiPointOnSphere.h"
-#include "maths/PointOnSphere.h"
 
 namespace
 {
@@ -244,13 +247,29 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_multi_point(
 			d_reconstruction_tree_creator,
 			(current_top_level_propiter()->handle_weak_ref()));
 
-		GPlatesMaths::MultiPointOnSphere::const_iterator 
-			iter = gml_multi_point.get_multipoint()->begin(),
-			end = gml_multi_point.get_multipoint()->end();
+		boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type>
+				reconstructed_seed_multipoint_geometry =
+						GPlatesAppLogic::GeometryUtils::get_multi_point_on_sphere(*reconstructed_seed_geometry);
+		// It should be a multipoint geometry with the same number of points.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				reconstructed_seed_multipoint_geometry &&
+					reconstructed_seed_multipoint_geometry.get()->number_of_points() ==
+						gml_multi_point.get_multipoint()->number_of_points(),
+				GPLATES_ASSERTION_SOURCE);
 
-		for (; iter != end ; ++iter)
+		GPlatesMaths::MultiPointOnSphere::const_iterator 
+			seed_multipoint_iter = gml_multi_point.get_multipoint()->begin(),
+			seed_multipoint_end = gml_multi_point.get_multipoint()->end();
+		GPlatesMaths::MultiPointOnSphere::const_iterator 
+			reconstructed_seed_multipoint_iter = reconstructed_seed_multipoint_geometry.get()->begin();
+
+		for ( ;
+			seed_multipoint_iter != seed_multipoint_end;
+			++seed_multipoint_iter, ++reconstructed_seed_multipoint_iter)
 		{
-			create_flowline_geometry((*iter).get_non_null_pointer(),reconstructed_seed_geometry);	
+			create_flowline_geometry(
+					seed_multipoint_iter->get_non_null_pointer(),
+					reconstructed_seed_multipoint_iter->get_non_null_pointer());	
 		}
 	}
 	else
@@ -287,7 +306,16 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_point(
 			d_reconstruction_tree_creator,
 			(current_top_level_propiter()->handle_weak_ref()));
 
-		create_flowline_geometry(gml_point.get_point(),reconstructed_seed_geometry);	
+		boost::optional<const GPlatesMaths::PointOnSphere &> reconstructed_seed_point_geometry =
+				GPlatesAppLogic::GeometryUtils::get_point_on_sphere(*reconstructed_seed_geometry);
+		// It should be a point geometry.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				reconstructed_seed_point_geometry,
+				GPLATES_ASSERTION_SOURCE);
+
+		create_flowline_geometry(
+				gml_point.get_point(),
+				reconstructed_seed_point_geometry->get_non_null_pointer());	
 	}
 	else
 	{
@@ -308,7 +336,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gpml_constant_value(
 
 void
 GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon_plate_id(
-	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &present_day_seed_geometry)
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &present_day_seed_geometry)
 {
 	// We end up here if no times are defined in the flowline, or if the 
 	// recon-time is outwith the flowline time periods. We don't have enough information
@@ -360,8 +388,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon
 
 void
 GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
-	const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point_geometry,
-	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstructed_seed_geometry)
+		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point_geometry,
+		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &reconstructed_seed_point_geometry)
 {
 
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geom = present_day_seed_point_geometry;
@@ -429,7 +457,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 				reconstruction_tree,
 				d_reconstruction_tree_creator,
 				present_day_seed_point_geometry,
-				reconstructed_seed_geometry,
+				reconstructed_seed_point_geometry,
 				left_flowline_points,
 				right_flowline_points,
 				*d_flowline_property_finder.get_left_plate(),

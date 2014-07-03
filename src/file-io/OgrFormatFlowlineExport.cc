@@ -238,7 +238,7 @@ GPlatesFileIO::OgrFormatFlowlineExport::export_flowlines(
 					active_reconstruction_files,
 					reconstruction_time,
 					reconstruction_anchor_plate_id,
-					rf->seed_point(),
+					rf->present_day_seed_point(),
 					should_export_referenced_files);
 
 			exporter.export_geometry(rf->left_flowline_points(),kvd);

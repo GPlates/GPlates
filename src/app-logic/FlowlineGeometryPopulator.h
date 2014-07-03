@@ -111,14 +111,13 @@ namespace GPlatesAppLogic
 		 * Create a reconstructed flowline (incorporating both left- and right-hand parts) from the point given
 		 * by @a present_day_seed_point_geometry, and add this to the reconstruction geometry collection.
 		 *
-		 * @a reconstructed_seed_geometry is required so that we can associate the flowline geometry with the
-		 * seed points. This is the reconstructed version of the flowline feature's seed point geometry, in whatever
-		 * geometrical form it was originally in - it could be in multipoint form for example. 
+		 * @a reconstructed_seed_point_geometry is required so that we can associate the flowline geometry with the
+		 * @a present_day_seed_point_geometry. This is the reconstructed version of @a present_day_seed_point_geometry. 
 		 */
 		void
 		create_flowline_geometry(
 			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point_geometry,
-			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstructed_seed_geometry);
+			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &reconstructed_seed_point_geometry);
 
 
 
