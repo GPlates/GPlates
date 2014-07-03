@@ -110,6 +110,11 @@
 				Name[1]:
 					* The property name.
 					* The property name must unique among all property names listed in PropertyList.
+				
+				UserFriendlyName[0..1]:
+					* A user friendly version of the name of this property.
+					* This is what is displayed in the user interface - it is a more human-readable version of the property name.
+					* If not specified then it defaults to the local (unqualified) name part of the property name.
 					
 				Description[1]:
 					* A short description of the property.

@@ -15,8 +15,10 @@ FeatureType.__hash__ = qualified_xml_name_hash
 # Add the module function as a class method.
 PropertyName.__hash__ = qualified_xml_name_hash
 
-# Add the module function as a class method.
-StructuralType.__hash__ = qualified_xml_name_hash
+# There's no need to expose 'StructuralType' (yet)...
+#
+## Add the module function as a class method.
+#StructuralType.__hash__ = qualified_xml_name_hash
 
 # Delete the module reference to the function - we only keep the class methods.
 del qualified_xml_name_hash

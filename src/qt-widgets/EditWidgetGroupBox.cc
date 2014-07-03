@@ -173,7 +173,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map()
 	// (1) Edit Feature Properties widget selects Edit Time Sequence widget when it visits a 'gpml:Array' property.
 	// (2) Add Property dialog selects Edit Time Sequence widget when it finds the 'gpml:Array' string (eg, specified here).
 	// Later, when other template types are supported for 'gpml:Array', we'll need to be able to
-	// select the appropriate edit widget based not only on'gpml:Array' but also on its template type
+	// select the appropriate edit widget based not only on 'gpml:Array' but also on its template type
 	// (essentially both determine the actual type of the property).
 	//
 	// For now just hardwiring any template of 'gpml:Array' to the Edit Time Sequence widget.

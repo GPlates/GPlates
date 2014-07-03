@@ -117,7 +117,7 @@ namespace GPlatesPropertyValues
 		set_value(
 				GPlatesModel::PropertyValue::non_null_ptr_type value_);
 
-		// Note that no "setter" is provided:  The value type of a GpmlTimeSample instance
+		// Note that no "setter" is provided:  The value type of a GpmlKeyValueDictionaryElement instance
 		// should never be changed.
 		const StructuralType &
 		get_value_type() const

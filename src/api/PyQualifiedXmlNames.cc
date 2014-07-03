@@ -372,7 +372,9 @@ export_qualified_xml_names()
 	export_enumeration_type();
 	export_feature_type();
 	export_property_name();
+#if 0 // There's no need to expose 'StructuralType' (yet)...
 	export_structural_type();
+#endif
 }
 
 #endif // GPLATES_NO_PYTHON

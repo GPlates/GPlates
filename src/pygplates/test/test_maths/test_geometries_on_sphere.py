@@ -102,7 +102,7 @@ class MultiPointOnSphereCase(unittest.TestCase):
         self.points.append(pygplates.PointOnSphere(1, 0, 0))
         self.points.append(pygplates.PointOnSphere(0, 1, 0))
         self.points.append(pygplates.PointOnSphere(0, 0, 1))
-        self.points.append(pygplates.PointOnSphere(-1, 0, 0))
+        self.points.append(pygplates.PointOnSphere(0, -1, 0))
         self.multi_point = pygplates.MultiPointOnSphere(self.points)
 
     def test_construct(self):
@@ -117,6 +117,16 @@ class MultiPointOnSphereCase(unittest.TestCase):
         xyz_list_list = [list(point.to_xyz()) for point in self.points]
         multi_point = pygplates.MultiPointOnSphere(xyz_list_list)
         self.assertTrue(isinstance(multi_point, pygplates.MultiPointOnSphere))
+        # Can construct directly from other GeometryOnSphere types.
+        self.assertEquals(
+                list(pygplates.MultiPointOnSphere(pygplates.MultiPointOnSphere(self.points)).get_points()),
+                self.points)
+        self.assertEquals(
+                list(pygplates.MultiPointOnSphere(pygplates.PolylineOnSphere(self.points)).get_points()),
+                self.points)
+        self.assertEquals(
+                list(pygplates.MultiPointOnSphere(pygplates.PolygonOnSphere(self.points)).get_points()),
+                self.points)
     
     def test_convert(self):
         # Convert to (lat,lon) tuple list and back.
@@ -152,11 +162,15 @@ class MultiPointOnSphereCase(unittest.TestCase):
         iter(self.multi_point)
         points = [point for point in self.multi_point]
         self.assertEquals(self.points, points)
+        self.assertEquals(self.points, list(self.multi_point))
+    
+    def test_len(self):
+        self.assertTrue(len(self.multi_point) == len(self.points))
     
     def test_contains(self):
         self.assertTrue(self.points[0] in self.multi_point)
         self.assertTrue(pygplates.PointOnSphere(1, 0, 0) in self.multi_point)
-        self.assertTrue(pygplates.PointOnSphere(0, -1, 0) not in self.multi_point)
+        self.assertTrue(pygplates.PointOnSphere(0, 0, -1) not in self.multi_point)
 
     def test_get_item(self):
         for i in range(0, len(self.points)):
@@ -205,6 +219,16 @@ class PolylineOnSphereCase(unittest.TestCase):
         xyz_list_list = [list(point.to_xyz()) for point in self.points]
         polyline = pygplates.PolylineOnSphere(xyz_list_list)
         self.assertTrue(isinstance(polyline, pygplates.PolylineOnSphere))
+        # Can construct directly from other GeometryOnSphere types.
+        self.assertEquals(
+                list(pygplates.PolylineOnSphere(pygplates.MultiPointOnSphere(self.points)).get_points()),
+                self.points)
+        self.assertEquals(
+                list(pygplates.PolylineOnSphere(pygplates.PolylineOnSphere(self.points)).get_points()),
+                self.points)
+        self.assertEquals(
+                list(pygplates.PolylineOnSphere(pygplates.PolygonOnSphere(self.points)).get_points()),
+                self.points)
     
     def test_get_points(self):
         point_sequence = self.polyline.get_points()
@@ -212,6 +236,42 @@ class PolylineOnSphereCase(unittest.TestCase):
 
     def test_compare(self):
         self.assertEquals(self.polyline, pygplates.PolylineOnSphere(self.points))
+    
+    def test_iter(self):
+        iter(self.polyline)
+        points = [point for point in self.polyline]
+        self.assertEquals(self.points, points)
+        self.assertEquals(self.points, list(self.polyline))
+    
+    def test_len(self):
+        self.assertTrue(len(self.polyline) == len(self.points))
+    
+    def test_contains(self):
+        self.assertTrue(self.points[0] in self.polyline)
+        self.assertTrue(pygplates.PointOnSphere(1, 0, 0) in self.polyline)
+        self.assertTrue(pygplates.PointOnSphere(0, 0, -1) not in self.polyline)
+
+    def test_get_item(self):
+        for i in range(0, len(self.points)):
+            self.assertTrue(self.polyline[i] == self.points[i])
+        self.assertTrue(self.polyline[-1] == self.points[-1])
+        for i, point in enumerate(self.polyline):
+            self.assertTrue(point == self.polyline[i])
+        def get_point1():
+            self.polyline[len(self.polyline)]
+        self.assertRaises(IndexError, get_point1)
+
+    def test_get_slice(self):
+        slice = self.polyline[1:3]
+        self.assertTrue(len(slice) == 2)
+        for i in range(0, len(slice)):
+            self.assertTrue(slice[i] == self.points[i+1])
+
+    def test_get_extended_slice(self):
+        slice = self.polyline[1::2]
+        self.assertTrue(len(slice) == 2)
+        self.assertTrue(slice[0] == self.points[1])
+        self.assertTrue(slice[1] == self.points[3])
     
     def test_points_iter(self):
         iter(self.polyline.get_points_view())
@@ -312,6 +372,16 @@ class PolygonOnSphereCase(unittest.TestCase):
         xyz_list_list = [list(point.to_xyz()) for point in self.points]
         polygon = pygplates.PolygonOnSphere(xyz_list_list)
         self.assertTrue(isinstance(polygon, pygplates.PolygonOnSphere))
+        # Can construct directly from other GeometryOnSphere types.
+        self.assertEquals(
+                list(pygplates.PolygonOnSphere(pygplates.MultiPointOnSphere(self.points)).get_points()),
+                self.points)
+        self.assertEquals(
+                list(pygplates.PolygonOnSphere(pygplates.PolylineOnSphere(self.points)).get_points()),
+                self.points)
+        self.assertEquals(
+                list(pygplates.PolygonOnSphere(pygplates.PolygonOnSphere(self.points)).get_points()),
+                self.points)
     
     def test_get_points(self):
         point_sequence = self.polygon.get_points()
@@ -319,6 +389,42 @@ class PolygonOnSphereCase(unittest.TestCase):
 
     def test_compare(self):
         self.assertEquals(self.polygon, pygplates.PolygonOnSphere(self.points))
+    
+    def test_iter(self):
+        iter(self.polygon)
+        points = [point for point in self.polygon]
+        self.assertEquals(self.points, points)
+        self.assertEquals(self.points, list(self.polygon))
+    
+    def test_len(self):
+        self.assertTrue(len(self.polygon) == len(self.points))
+    
+    def test_contains(self):
+        self.assertTrue(self.points[0] in self.polygon)
+        self.assertTrue(pygplates.PointOnSphere(1, 0, 0) in self.polygon)
+        self.assertTrue(pygplates.PointOnSphere(0, 0, -1) not in self.polygon)
+
+    def test_get_item(self):
+        for i in range(0, len(self.points)):
+            self.assertTrue(self.polygon[i] == self.points[i])
+        self.assertTrue(self.polygon[-1] == self.points[-1])
+        for i, point in enumerate(self.polygon):
+            self.assertTrue(point == self.polygon[i])
+        def get_point1():
+            self.polygon[len(self.polygon)]
+        self.assertRaises(IndexError, get_point1)
+
+    def test_get_slice(self):
+        slice = self.polygon[1:3]
+        self.assertTrue(len(slice) == 2)
+        for i in range(0, len(slice)):
+            self.assertTrue(slice[i] == self.points[i+1])
+
+    def test_get_extended_slice(self):
+        slice = self.polygon[1::2]
+        self.assertTrue(len(slice) == 2)
+        self.assertTrue(slice[0] == self.points[1])
+        self.assertTrue(slice[1] == self.points[3])
     
     def test_points_iter(self):
         iter(self.polygon.get_points_view())

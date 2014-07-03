@@ -171,7 +171,7 @@ class GpmlTimeSampleListCase(unittest.TestCase):
 
     def test_extend2(self):
         # Add a revisioned vector.
-        self.gpml_time_sample_list.extend(self.gpml_time_sample_list)
+        self.gpml_time_sample_list.extend(t=self.gpml_time_sample_list)
         self.assertTrue(len(self.gpml_time_sample_list) == 8)
         for i in range(0,4):
             self.assertTrue(self.gpml_time_sample_list[i] == self.original_time_samples[i])
@@ -187,7 +187,7 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         self.assertTrue(self.gpml_time_sample_list[4] == self.original_time_samples[3])
         
         # Insert at the end.
-        self.gpml_time_sample_list.insert(len(self.gpml_time_sample_list), self.original_time_samples[2])
+        self.gpml_time_sample_list.insert(i=len(self.gpml_time_sample_list), x=self.original_time_samples[2])
         self.assertTrue(len(self.gpml_time_sample_list) == 6)
         self.assertTrue(self.gpml_time_sample_list[0] == self.original_time_samples[0])
         self.assertTrue(self.gpml_time_sample_list[1] == self.original_time_samples[3])
@@ -219,7 +219,7 @@ class GpmlTimeSampleListCase(unittest.TestCase):
     def test_index(self):
         self.assertTrue(self.gpml_time_sample_list.index(self.original_time_samples[1]) == 1)
         self.assertTrue(self.gpml_time_sample_list.index(self.original_time_samples[2], 1) == 2)
-        self.assertTrue(self.gpml_time_sample_list.index(self.original_time_samples[2], 1, 3) == 2)
+        self.assertTrue(self.gpml_time_sample_list.index(x=self.original_time_samples[2], i=1, j=3) == 2)
         # Value not in limited range.
         self.assertRaises(ValueError, self.gpml_time_sample_list.index, self.original_time_samples[2], 1, 2)
         # Indices of limited range are incorrect.
@@ -230,7 +230,7 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         self.gpml_time_sample_list.append(self.original_time_samples[3])
         self.assertTrue(self.gpml_time_sample_list.count(self.original_time_samples[3]) == 2)
         self.gpml_time_sample_list += (self.original_time_samples[0], self.original_time_samples[0])
-        self.assertTrue(self.gpml_time_sample_list.count(self.original_time_samples[0]) == 3)
+        self.assertTrue(self.gpml_time_sample_list.count(x=self.original_time_samples[0]) == 3)
 
     def test_reverse(self):
         self.gpml_time_sample_list.reverse()

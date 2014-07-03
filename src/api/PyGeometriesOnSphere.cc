@@ -1129,6 +1129,31 @@ namespace GPlatesApi
 	{
 		return GPlatesMaths::PointOnSphere(polyline_on_sphere.get_centroid());
 	}
+
+	bool
+	polyline_on_sphere_contains_point(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
+			const GPlatesMaths::PointOnSphere &point_on_sphere)
+	{
+		PolyGeometryOnSpherePointsView<GPlatesMaths::PolylineOnSphere> points_view(polyline_on_sphere);
+
+		return points_view.contains_point(point_on_sphere);
+	}
+
+	//
+	// Support for "__get_item__".
+	//
+	boost::python::object
+	polyline_on_sphere_get_item(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
+			boost::python::object i)
+	{
+		PolyGeometryOnSpherePointsView<GPlatesMaths::PolylineOnSphere> points_view(polyline_on_sphere);
+
+		return points_view.get_item(i);
+	}
 }
 
 
@@ -1189,6 +1214,27 @@ export_polyline_on_sphere()
 					"* a view of its *great circle arc* subsegments (between adjacent points) - see "
 					":meth:`get_great_circle_arcs_view`.\n"
 					"\n"
+					"In addition a polyline instance is directly iterable over its points:\n"
+					"::\n"
+					"\n"
+					"  polyline = pygplates.PolylineOnSphere(points)\n"
+					"  for i, point in enumerate(polyline):\n"
+					"      assert(point == polyline[i])\n"
+					"\n"
+					"...and so the following operations for accessing the points are supported:\n"
+					"\n"
+					"=========================== ==========================================================\n"
+					"Operation                   Result\n"
+					"=========================== ==========================================================\n"
+					"``len(polyline)``           length of *polyline*\n"
+					"``for p in polyline``       iterates over the points *p* of *polyline*\n"
+					"``p in polyline``           ``True`` if *p* is equal to a point in *polyline*\n"
+					"``p not in polyline``       ``False`` if *p* is equal to a point in *polyline*\n"
+					"``polyline[i]``             the point of *polyline* at index *i*\n"
+					"``polyline[i:j]``           slice of *polyline* from *i* to *j*\n"
+					"``polyline[i:j:k]``         slice of *polyline* from *i* to *j* with step *k*\n"
+					"=========================== ==========================================================\n"
+					"\n"
 					"Note that since a *PolylineOnSphere* is immutable it contains no operations or "
 					"methods that modify its state (such as adding or removing points). This is similar "
 					"to other immutable types in python such as ``str``. So instead of modifying an "
@@ -1197,7 +1243,7 @@ export_polyline_on_sphere()
 					"::\n"
 					"\n"
 					"  # Get a list of points from 'polyline'.\n"
-					"  points = list(polyline.get_points_view())\n"
+					"  points = list(polyline)\n"
 					"\n"
 					"  # Modify the points list somehow.\n"
 					"  points[0] = pygplates.PointOnSphere(...)\n"
@@ -1374,6 +1420,13 @@ export_polyline_on_sphere()
 				"  The centroid is calculated as a weighted average of the mid-points of the "
 				":class:`great circle arcs<GreatCircleArc>` of this polyline with weighting "
 				"proportional to the individual arc lengths.\n")
+		.def("__iter__",
+				bp::range(
+						&GPlatesMaths::PolylineOnSphere::vertex_begin,
+						&GPlatesMaths::PolylineOnSphere::vertex_end))
+		.def("__len__", &GPlatesMaths::PolylineOnSphere::number_of_vertices)
+		.def("__contains__", &GPlatesApi::polyline_on_sphere_contains_point)
+		.def("__getitem__", &GPlatesApi::polyline_on_sphere_get_item)
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
 		// This is because the default '__hash__'is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.
@@ -1424,6 +1477,31 @@ namespace GPlatesApi
 			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere)
 	{
 		return GPlatesMaths::PointOnSphere(polygon_on_sphere.get_interior_centroid());
+	}
+
+	bool
+	polygon_on_sphere_contains_point(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
+			const GPlatesMaths::PointOnSphere &point_on_sphere)
+	{
+		PolyGeometryOnSpherePointsView<GPlatesMaths::PolygonOnSphere> points_view(polygon_on_sphere);
+
+		return points_view.contains_point(point_on_sphere);
+	}
+
+	//
+	// Support for "__get_item__".
+	//
+	boost::python::object
+	polygon_on_sphere_get_item(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+			boost::python::object i)
+	{
+		PolyGeometryOnSpherePointsView<GPlatesMaths::PolygonOnSphere> points_view(polygon_on_sphere);
+
+		return points_view.get_item(i);
 	}
 }
 
@@ -1485,6 +1563,27 @@ export_polygon_on_sphere()
 					"* a view of its *great circle arc* subsegments (between adjacent points) - see "
 					":meth:`get_great_circle_arcs_view`.\n"
 					"\n"
+					"In addition a polygon instance is directly iterable over its points:\n"
+					"::\n"
+					"\n"
+					"  polygon = pygplates.PolygonOnSphere(points)\n"
+					"  for i, point in enumerate(polygon):\n"
+					"      assert(point == polygon[i])\n"
+					"\n"
+					"...and so the following operations for accessing the points are supported:\n"
+					"\n"
+					"=========================== ==========================================================\n"
+					"Operation                   Result\n"
+					"=========================== ==========================================================\n"
+					"``len(polygon)``            length of *polygon*\n"
+					"``for p in polygon``        iterates over the points *p* of *polygon*\n"
+					"``p in polygon``            ``True`` if *p* is equal to a point in *polygon*\n"
+					"``p not in polygon``        ``False`` if *p* is equal to a point in *polygon*\n"
+					"``polygon[i]``              the point of *polygon* at index *i*\n"
+					"``polygon[i:j]``            slice of *polygon* from *i* to *j*\n"
+					"``polygon[i:j:k]``          slice of *polygon* from *i* to *j* with step *k*\n"
+					"=========================== ==========================================================\n"
+					"\n"
 					"Note that since a *PolygonOnSphere* is immutable it contains no operations or "
 					"methods that modify its state (such as adding or removing points). This is similar "
 					"to other immutable types in python such as ``str``. So instead of modifying an "
@@ -1493,7 +1592,7 @@ export_polygon_on_sphere()
 					"::\n"
 					"\n"
 					"  # Get a list of points from 'polygon'.\n"
-					"  points = list(polygon.get_points_view())\n"
+					"  points = list(polygon)\n"
 					"\n"
 					"  # Modify the points list somehow.\n"
 					"  points[0] = pygplates.PointOnSphere(...)\n"
@@ -1506,7 +1605,7 @@ export_polygon_on_sphere()
 					":class:`PolylineOnSphere`:\n"
 					"::\n"
 					"\n"
-					"  polygon = pygplates.PolygonOnSphere(polyline.get_points_view())\n"
+					"  polygon = pygplates.PolygonOnSphere(polyline)\n"
 					"\n"
 					"...note that the polygon closes the loop between the last and first points "
 					"so there's no need to make the first and last points equal.\n",
@@ -1755,6 +1854,13 @@ export_polygon_on_sphere()
 				"For example, the *interior* centroid of a bottom-heavy, pear-shaped polygon will be "
 				"closer to the bottom of the polygon. This centroid is not exactly at the centre-of-mass, "
 				"but it will be a lot closer to the real centre-of-mass than :meth:`get_boundary_centroid`.\n")
+		.def("__iter__",
+				bp::range(
+						&GPlatesMaths::PolygonOnSphere::vertex_begin,
+						&GPlatesMaths::PolygonOnSphere::vertex_end))
+		.def("__len__", &GPlatesMaths::PolygonOnSphere::number_of_vertices)
+		.def("__contains__", &GPlatesApi::polygon_on_sphere_contains_point)
+		.def("__getitem__", &GPlatesApi::polygon_on_sphere_get_item)
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
 		// This is because the default '__hash__'is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.
