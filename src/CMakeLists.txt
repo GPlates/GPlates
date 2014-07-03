@@ -372,6 +372,10 @@ if (APPLE)
 	#
 	set_target_properties(${GPLATES_MAIN_TARGET}
 		PROPERTIES MACOSX_BUNDLE TRUE)
+	# Specify our own Info.plist template file.
+	# We add a couple of keys to ensure Qt 4.8.4 (and above) include support Mac Retina displays.
+	set_target_properties(${GPLATES_MAIN_TARGET}
+		PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/cmake/distribution/MacOSXBundleInfo.plist.in")
 	set_target_properties(${GPLATES_MAIN_TARGET}
 		PROPERTIES MACOSX_BUNDLE_INFO_STRING "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
 	set_target_properties(${GPLATES_MAIN_TARGET}
