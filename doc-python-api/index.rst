@@ -57,6 +57,7 @@ Contents:
 	pygplates.PropertyValue
 	pygplates.PropertyValueVisitor
 	pygplates.ReconstructedFeatureGeometry
+	pygplates.ReconstructedFlowline
 	pygplates.ReconstructionTree
 	pygplates.ReconstructionTreeBuilder
 	pygplates.ReconstructionTreeEdge

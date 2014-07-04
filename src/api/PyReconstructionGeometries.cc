@@ -546,9 +546,11 @@ export_reconstructed_flowline()
 					"\n"
 					"Note that, although a single flowline :class:`feature<Feature>` has only a single "
 					"seed geometry, that seed geometry can be either a :class:`PointOnSphere` or a "
-					":class:`MultiPointOnSphere`. And since there is one reconstructed flowline per "
-					"seed point there can be, in the case of a :class:`MultiPointOnSphere`, multiple "
-					"reconstructed flowlines per flowline feature.\n",
+					":class:`MultiPointOnSphere`. And since there is one "
+					":class:`reconstructed flowline<ReconstructedFlowline>` per seed point there can be, "
+					"in the case of a :class:`MultiPointOnSphere`, multiple "
+					":class:`reconstructed flowlines<ReconstructedFlowline>` per flowline "
+					":class:`feature<Feature>`.\n",
 					// Don't allow creation from python side...
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
@@ -565,7 +567,7 @@ export_reconstructed_flowline()
 		.def("get_property",
 				&GPlatesApi::ReconstructedFlowlineWrapper::get_property,
 				"get_property() -> Property\n"
-				"  Returns the feature property containing the seed point(s) associated with this "
+				"  Returns the feature property containing the seed point associated with this "
 				":class:`ReconstructedFlowline`.\n"
 				"\n"
 				"  :rtype: :class:`Property`\n"
@@ -581,7 +583,7 @@ export_reconstructed_flowline()
 				"\n"
 				"  Note that this is just one of the seed points in this :meth:`feature's<get_feature>` "
 				"seed geometry if that seed geometry is a :class:`MultiPointOnSphere`. The remaining "
-				"seed points will be in other :class:`RecontructedFlowline` instances.\n")
+				"seed points are associated with other :class:`ReconstructedFlowline` instances.\n")
 		.def("get_reconstructed_seed_point",
 				&GPlatesApi::ReconstructedFlowlineWrapper::get_reconstructed_seed_point,
 				"get_reconstructed_seed_point() -> PointOnSphere\n"
@@ -591,7 +593,7 @@ export_reconstructed_flowline()
 				"\n"
 				"  Note that this is just one of the seed points in this :meth:`feature's<get_feature>` "
 				"seed geometry if that seed geometry is a :class:`MultiPointOnSphere`. The remaining "
-				"seed points will be in other :class:`RecontructedFlowline` instances.\n")
+				"seed points are associated with other :class:`ReconstructedFlowline` instances.\n")
 		.def("get_left_flowline",
 				&GPlatesApi::ReconstructedFlowlineWrapper::get_left_flowline,
 				"get_left_flowline() -> PolylineOnSphere\n"
