@@ -30,6 +30,7 @@
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedFlowline.h"
+#include "app-logic/ReconstructedMotionPath.h"
 
 #include "global/python.h"
 
@@ -324,6 +325,314 @@ export_reconstructed_feature_geometry()
 	boost::python::implicitly_convertible<
 			boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>,
 			boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type> >();
+}
+
+
+namespace GPlatesApi
+{
+	/**
+	 * A wrapper around GPlatesAppLogic::ReconstructedMotionPath that keeps the referenced feature alive.
+	 *
+	 * Keeping the referenced feature alive (and the referenced property alive in case subsequently removed
+	 * from feature) is important because the unwrapped GPlatesAppLogic::ReconstructedMotionPath
+	 * stores only weak references which will be invalid if the referenced features are no longer
+	 * used (kept alive) in the user's python code.
+	 *
+	 * This is the type that gets stored in the python object.
+	 */
+	class ReconstructedMotionPathWrapper
+	{
+	public:
+
+		explicit
+		ReconstructedMotionPathWrapper(
+				const GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type &reconstructed_motion_path) :
+			d_reconstructed_motion_path(reconstructed_motion_path)
+		{
+			// The feature reference could be invalid. It should normally be valid though.
+			GPlatesModel::FeatureHandle::weak_ref feature_ref = reconstructed_motion_path->get_feature_ref();
+			if (feature_ref.is_valid())
+			{
+				d_feature = GPlatesModel::FeatureHandle::non_null_ptr_type(feature_ref.handle_ptr());
+			}
+
+			// The property iterator could be invalid. It should normally be valid though.
+			GPlatesModel::FeatureHandle::iterator property_iter = reconstructed_motion_path->property();
+			if (property_iter.is_still_valid())
+			{
+				d_property = *property_iter;
+			}
+		}
+
+		/**
+		 * Returns the wrapped GPlatesAppLogic::ReconstructedMotionPath.
+		 */
+		GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type
+		get_reconstructed_motion_path() const
+		{
+			return d_reconstructed_motion_path;
+		}
+
+		/**
+		 * Returns the motion path points.
+		 */
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+		get_motion_path() const
+		{
+			return d_reconstructed_motion_path->motion_path_points();
+		}
+
+		/**
+		 * Returns the reconstructed seed point.
+		 */
+		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+		get_reconstructed_seed_point() const
+		{
+			return d_reconstructed_motion_path->reconstructed_seed_point();
+		}
+
+		/**
+		 * Returns the present day seed point.
+		 */
+		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+		get_present_day_seed_point() const
+		{
+			return d_reconstructed_motion_path->present_day_seed_point();
+		}
+
+		/**
+		 * Returns the referenced feature.
+		 *
+		 * The feature reference could be invalid.
+		 * It should be normally be valid though so we don't document that Py_None could be returned
+		 * to the caller.
+		 */
+		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
+		get_feature() const
+		{
+			return d_feature;
+		}
+
+		/**
+		 * Returns the referenced feature property.
+		 *
+		 * The feature property reference could be invalid.
+		 * It should be normally be valid though so we don't document that Py_None could be returned
+		 * to the caller.
+		 */
+		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
+		get_property() const
+		{
+			return d_property;
+		}
+
+	private:
+
+		//! The wrapped reconstructed motion path itself.
+		GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type d_reconstructed_motion_path;
+
+		/**
+		 * Keep the feature alive (by using intrusive pointer instead of weak ref)
+		 * since GPlatesAppLogic::ReconstructedMotionPath only stores weak reference.
+		 */
+		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type> d_feature;
+
+		/**
+		 * Keep the geometry feature property alive (by using intrusive pointer instead of weak ref)
+		 * since GPlatesAppLogic::ReconstructedMotionPath only stores an iterator and
+		 * someone could remove the feature property in the meantime.
+		 */
+		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> d_property;
+
+	};
+
+
+	/**
+	 * Python converter from a GPlatesAppLogic::ReconstructedMotionPath to a
+	 * ReconstructedMotionPathWrapper (and vice versa).
+	 */
+	struct python_ReconstructedMotionPath :
+			private boost::noncopyable
+	{
+		struct Conversion
+		{
+			static
+			PyObject *
+			convert(
+					const GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type &rfg)
+			{
+				namespace bp = boost::python;
+
+				// Convert to ReconstructedMotionPathWrapper first.
+				// Then it'll get converted to python.
+				return bp::incref(bp::object(ReconstructedMotionPathWrapper(rfg)).ptr());
+			}
+		};
+
+		static
+		void *
+		convertible(
+				PyObject *obj)
+		{
+			namespace bp = boost::python;
+
+			// GPlatesAppLogic::ReconstructedMotionPath is obtained from a
+			// ReconstructedMotionPathWrapper (which in turn is already convertible).
+			return bp::extract<ReconstructedMotionPathWrapper>(obj).check() ? obj : NULL;
+		}
+
+		static
+		void
+		construct(
+				PyObject *obj,
+				boost::python::converter::rvalue_from_python_stage1_data *data)
+		{
+			namespace bp = boost::python;
+
+			void *const storage = reinterpret_cast<
+					bp::converter::rvalue_from_python_storage<
+							GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type> *>(
+									data)->storage.bytes;
+
+			new (storage) GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type(
+					bp::extract<ReconstructedMotionPathWrapper>(obj)()
+							.get_reconstructed_motion_path());
+
+			data->convertible = storage;
+		}
+	};
+
+
+	/**
+	 * Registers converter from a GPlatesAppLogic::ReconstructedMotionPath to a
+	 * ReconstructedMotionPathWrapper (and vice versa).
+	 */
+	void
+	register_reconstructed_motion_path()
+	{
+		// To python conversion.
+		bp::to_python_converter<
+				GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type,
+				python_ReconstructedMotionPath::Conversion>();
+
+		// From python conversion.
+		bp::converter::registry::push_back(
+				&python_ReconstructedMotionPath::convertible,
+				&python_ReconstructedMotionPath::construct,
+				bp::type_id<GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type>());
+	}
+}
+
+
+void
+export_reconstructed_motion_path()
+{
+	//
+	// ReconstructedMotionPath - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesApi::ReconstructedMotionPathWrapper>(
+					"ReconstructedMotionPath",
+					"The reconstructed history of a plate's motion in the form of a path of points "
+					"over geological time.\n"
+					"\n"
+					"Note that, although a single motion path :class:`feature<Feature>` has only a single "
+					"seed geometry, that seed geometry can be either a :class:`PointOnSphere` or a "
+					":class:`MultiPointOnSphere`. And since there is one "
+					":class:`reconstructed motion path<ReconstructedMotionPath>` per seed point there can be, "
+					"in the case of a :class:`MultiPointOnSphere`, multiple "
+					":class:`reconstructed motion paths<ReconstructedMotionPath>` per motion path "
+					":class:`feature<Feature>`.\n",
+					// Don't allow creation from python side...
+					// (Also there is no publicly-accessible default constructor).
+					bp::no_init)
+		.def("get_feature",
+				&GPlatesApi::ReconstructedMotionPathWrapper::get_feature,
+				"get_feature() -> Feature\n"
+				"  Returns the feature associated with this :class:`ReconstructedMotionPath`.\n"
+				"\n"
+				"  :rtype: :class:`Feature`\n"
+				"\n"
+				"  Note that multiple :class:`reconstructed motion paths<ReconstructedMotionPath>` "
+				"can be associated with the same motion path :class:`feature<Feature>` if its seed geometry "
+				"is a :class:`MultiPointOnSphere`.\n")
+		.def("get_property",
+				&GPlatesApi::ReconstructedMotionPathWrapper::get_property,
+				"get_property() -> Property\n"
+				"  Returns the feature property containing the seed point associated with this "
+				":class:`ReconstructedMotionPath`.\n"
+				"\n"
+				"  :rtype: :class:`Property`\n"
+				"\n"
+				"  This is the :class:`Property` that the :meth:`present day seed point<get_present_day_seed_point>` "
+				"and the :meth:`reconstructed seed point<get_reconstructed_seed_point>` are obtained from.\n")
+		.def("get_present_day_seed_point",
+				&GPlatesApi::ReconstructedMotionPathWrapper::get_present_day_seed_point,
+				"get_present_day_seed_point() -> PointOnSphere\n"
+				"  Returns the present day seed point.\n"
+				"\n"
+				"  :rtype: :class:`PointOnSphere`\n"
+				"\n"
+				"  Note that this is just one of the seed points in this :meth:`feature's<get_feature>` "
+				"seed geometry if that seed geometry is a :class:`MultiPointOnSphere`. The remaining "
+				"seed points are associated with other :class:`ReconstructedMotionPath` instances.\n")
+		.def("get_reconstructed_seed_point",
+				&GPlatesApi::ReconstructedMotionPathWrapper::get_reconstructed_seed_point,
+				"get_reconstructed_seed_point() -> PointOnSphere\n"
+				"  Returns the reconstructed seed point.\n"
+				"\n"
+				"  :rtype: :class:`PointOnSphere`\n"
+				"\n"
+				"  Note that this is just one of the seed points in this :meth:`feature's<get_feature>` "
+				"seed geometry if that seed geometry is a :class:`MultiPointOnSphere`. The remaining "
+				"seed points are associated with other :class:`ReconstructedMotionPath` instances.\n")
+		.def("get_motion_path",
+				&GPlatesApi::ReconstructedMotionPathWrapper::get_motion_path,
+				"get_motion_path() -> PolylineOnSphere\n"
+				"  Returns the motion path.\n"
+				"\n"
+				"  :rtype: :class:`PolylineOnSphere`\n"
+				"\n"
+				"  The returned points plot the history of motion of the "
+				":meth:`seed point<get_present_day_seed_point>` on the plate associated with "
+				"``get_feature().get_reconstruction_plate_id()`` relative to the plate associated "
+				"with ``get_feature().get_relative_plate()``.\n"
+				"\n"
+				"  The first point in the returned :class:`PolylineOnSphere` is the furthest in the "
+				"geological past and subsequent points are progressively more recent with the last "
+				"point being the :meth:`reconstructed seed point<get_reconstructed_seed_point>`.\n"
+				"\n"
+				"  Note that this is just one of the motion paths associated with this "
+				":meth:`feature's<get_feature>` seed geometry if that seed geometry is a "
+				":class:`MultiPointOnSphere`.\n"
+				"\n"
+				"  Iterate over the motion path points:\n"
+				"  ::\n"
+				"\n"
+				"    for point in reconstructed_motion_path.get_motion_path():\n"
+				"      ...\n")
+	;
+
+	// Enable python-wrapped ReconstructedMotionPathWrapper to be converted to
+	// a GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type (and vice versa).
+	GPlatesApi::register_reconstructed_motion_path();
+
+	//
+	// Now for the conversions that only involve GPlatesAppLogic::ReconstructedMotionPath
+	// (not ReconstructedMotionPathWrapper).
+	//
+
+	// Enable boost::optional<ReconstructedMotionPath::non_null_ptr_type> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<
+			GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type>();
+
+	// Registers 'non-const' to 'const' conversions.
+	boost::python::implicitly_convertible<
+			GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type,
+			GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_to_const_type>();
+	boost::python::implicitly_convertible<
+			boost::optional<GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type>,
+			boost::optional<GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_to_const_type> >();
 }
 
 
@@ -669,6 +978,7 @@ void
 export_reconstruction_geometries()
 {
 	export_reconstructed_feature_geometry();
+	export_reconstructed_motion_path();
 	export_reconstructed_flowline();
 }
 

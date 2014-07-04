@@ -240,7 +240,14 @@ DISABLE_GCC_WARNING("-Wshadow")
 				long index = -1);
 
 		// Default argument overloads of 'pop()'.
-		BOOST_PYTHON_FUNCTION_OVERLOADS(pop_overloads, pop, 1, 2)
+		// Avoiding BOOST_PYTHON_FUNCTION_OVERLOADS since it generates 'keywords' shadow warning.
+		static
+		element_type
+		pop1(
+				revisioned_vector_non_null_ptr_type revisioned_vector)
+		{
+			return pop(revisioned_vector);
+		}
 
 		static
 		long
@@ -254,7 +261,26 @@ DISABLE_GCC_WARNING("-Wshadow")
 				long j = 0);
 
 		// Default argument overloads of 'index()'.
-		BOOST_PYTHON_FUNCTION_OVERLOADS(index_overloads, index, 2, 4)
+		// Avoiding BOOST_PYTHON_FUNCTION_OVERLOADS since it generates 'keywords' shadow warning.
+		static
+		long
+		index2(
+				revisioned_vector_non_null_ptr_type revisioned_vector,
+				// Using bp::object instead of 'element_type' since need to throw ValueError if wrong type...
+				boost::python::object element_object)
+		{
+			return index(revisioned_vector, element_object);
+		}
+		static
+		long
+		index3(
+				revisioned_vector_non_null_ptr_type revisioned_vector,
+				// Using bp::object instead of 'element_type' since need to throw ValueError if wrong type...
+				boost::python::object element_object,
+				long i)
+		{
+			return index(revisioned_vector, element_object, i);
+		}
 
 		static
 		int
@@ -388,8 +414,11 @@ ENABLE_GCC_WARNING("-Wshadow")
 			.def("extend", &extend, (bp::arg("t")))
 			.def("insert", &insert, (bp::arg("i"), bp::arg("x")))
 			.def("remove", &remove, (bp::arg("x")))
-			.def("pop", &pop, pop_overloads((bp::arg("i"))))
-			.def("index", &index, index_overloads((bp::arg("x"), bp::arg("i"), bp::arg("j"))))
+			.def("pop", &pop, (bp::arg("i")))
+			.def("pop", &pop1)
+			.def("index", &index, (bp::arg("x"), bp::arg("i"), bp::arg("j")))
+			.def("index", &index2, (bp::arg("x")))
+			.def("index", &index3, (bp::arg("x"), bp::arg("i")))
 			.def("count", &count, (bp::arg("x")))
 			.def("reverse", &reverse)
 			.def("sort", &sort, (bp::arg("key"), bp::arg("reverse")=false))

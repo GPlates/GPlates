@@ -217,7 +217,7 @@ GPlatesFileIO::OgrFormatMotionPathExport::export_motion_paths(
 					active_reconstruction_files,
 					reconstruction_time,
 					reconstruction_anchor_plate_id,
-					rmt->seed_point(),
+					rmt->present_day_seed_point(),
 					should_export_referenced_files);
 
 			exporter.export_geometry(rmt->motion_path_points(),kvd);
