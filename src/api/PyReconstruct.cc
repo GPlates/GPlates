@@ -468,7 +468,7 @@ namespace GPlatesApi
 			// Append the ordered RFG's to the output list.
 			//
 
-			std::list<feature_geometry_group_type>::const_iterator feature_iter;
+			typename std::list<feature_geometry_group_type>::const_iterator feature_iter;
 			for (feature_iter = grouped_recon_geoms_seq.begin();
 				feature_iter != grouped_recon_geoms_seq.end();
 				++feature_iter)
@@ -483,7 +483,7 @@ namespace GPlatesApi
 				}
 
 				// Iterate through the reconstruction geometries of the current feature and write to output.
-				std::vector<const ReconstructionGeometryType *>::const_iterator rg_iter;
+				typename std::vector<const ReconstructionGeometryType *>::const_iterator rg_iter;
 				for (rg_iter = feature_geom_group.recon_geoms.begin();
 					rg_iter != feature_geom_group.recon_geoms.end();
 					++rg_iter)
