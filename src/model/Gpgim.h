@@ -30,6 +30,8 @@
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 #include <QString>
 #include <QXmlStreamReader>
 
@@ -38,6 +40,7 @@
 #include "GpgimFeatureClass.h"
 #include "GpgimProperty.h"
 #include "GpgimStructuralType.h"
+#include "GpgimTemplateStructuralType.h"
 #include "GpgimVersion.h"
 #include "PropertyName.h"
 #include "XmlNode.h"
@@ -85,6 +88,9 @@ namespace GPlatesModel
 
 		//! Typedef for a sequence of property structural types.
 		typedef std::vector<GpgimStructuralType::non_null_ptr_to_const_type> property_structural_type_seq_type;
+
+		//! Typedef for a sequence of property *template* structural types (instantiations).
+		typedef std::vector<GpgimTemplateStructuralType::non_null_ptr_to_const_type> property_template_structural_type_seq_type;
 
 		//! Typedef for a sequence of property enumeration (structural) types.
 		typedef std::vector<GpgimEnumerationType::non_null_ptr_to_const_type> property_enumeration_type_seq_type;
@@ -178,6 +184,11 @@ namespace GPlatesModel
 
 		/**
 		 * Returns all property structural types supported by the GPGIM.
+		 *
+		 * Note that this includes enumerations since they are a subset of all property structural types.
+		 *
+		 * Also note that this includes uninstantiated templates (ie, template structural types without
+		 * the contained value type specified).
 		 */
 		const property_structural_type_seq_type &
 		get_property_structural_types() const
@@ -193,10 +204,42 @@ namespace GPlatesModel
 		 *
 		 * Note that the returned structural type could be an enumeration since enumerations are
 		 * a subset of all property structural types.
+		 *
+		 * Also note that while @a get_property_template_structural_type will return a *template*
+		 * instantiation (ie, a structural type *and* a contained value type) this method will
+		 * return an uninstantiated template (ie, just the structural type).
 		 */
 		boost::optional<GpgimStructuralType::non_null_ptr_to_const_type>
 		get_property_structural_type(
 				const GPlatesPropertyValues::StructuralType &structural_type) const;
+
+
+		/**
+		 * Returns all property *template* structural type instantiations referenced in the GPGIM.
+		 *
+		 * Returns *template* instantiations. A template instantion is a structural type *and* a contained
+		 * value type, such as 'gpml:Array' and 'gml:TimePeriod', as opposed to an uninstantiated template
+		 * type which is just the structural type (eg, 'gpml:Array').
+		 * Uninstantiated template types are included in @a get_property_structural_types.
+		 */
+		const property_template_structural_type_seq_type &
+		get_property_template_structural_types() const
+		{
+			return d_property_template_structural_types;
+		}
+
+
+		/**
+		 * Returns the property *template* structural type associated with the specified
+		 * structural type and value type (template parameter).
+		 *
+		 * Returns boost::none if @a structural_type is not recognised by this GPGIM or it is
+		 * not a template structural type or it has no template instantiations for @a value_type.
+		 */
+		boost::optional<GpgimTemplateStructuralType::non_null_ptr_to_const_type>
+		get_property_template_structural_type(
+				const GPlatesPropertyValues::StructuralType &structural_type,
+				const GPlatesPropertyValues::StructuralType &value_type) const;
 
 
 		/**
@@ -244,6 +287,12 @@ namespace GPlatesModel
 				GpgimStructuralType::non_null_ptr_to_const_type>
 						property_structural_type_map_type;
 
+		//! Typedef for a map of *template* structural type to GPGIM structural type.
+		typedef std::map<
+				boost::tuple<GPlatesPropertyValues::StructuralType, GPlatesPropertyValues::StructuralType/*value type*/>,
+				GpgimTemplateStructuralType::non_null_ptr_to_const_type>
+						property_template_structural_type_map_type;
+
 		//! Typedef for a map of enumeration (structural) type to GPGIM structural type.
 		typedef std::map<
 				GPlatesPropertyValues::StructuralType,
@@ -271,9 +320,25 @@ namespace GPlatesModel
 		property_structural_type_seq_type d_property_structural_types;
 
 		/**
+		 * The list of all supported property *template* structural types (instantiations).
+		 *
+		 * Note that only those template instantiations required by properties (ie, structural type
+		 * *and* value type) are actually inserted.
+		 */
+		property_template_structural_type_seq_type d_property_template_structural_types;
+
+		/**
 		 * Used to retrieve GPGIM structural type from structural type.
 		 */
 		property_structural_type_map_type d_property_structural_type_map;
+
+		/**
+		 * Used to retrieve GPGIM *template* structural type from a structural type and value type.
+		 *
+		 * Note that only those template instantiations required by properties (ie, structural type
+		 * *and* value type) are actually inserted.
+		 */
+		property_template_structural_type_map_type d_property_template_structural_type_map;
 
 		/**
 		 * The list of all supported property *enumeration* types.
@@ -405,6 +470,28 @@ namespace GPlatesModel
 		read_feature_property_structural_types(
 				GpgimProperty::structural_type_seq_type &gpgim_property_structural_types,
 				const XmlElementNode::non_null_ptr_type &property_xml_element,
+				const QString &gpgim_resource_filename);
+
+		/**
+		 * Reads the non-template structural type from the specified property type XML element.
+		 *
+		 * Also adds the returned @a GpgimStructuralType to @a gpgim_property_structural_types.
+		 */
+		GpgimStructuralType::non_null_ptr_to_const_type
+		read_feature_property_non_template_structural_type(
+				GpgimProperty::structural_type_seq_type &gpgim_property_structural_types,
+				const XmlElementNode::non_null_ptr_type &property_type_element,
+				const QString &gpgim_resource_filename);
+
+		/**
+		 * Reads the template structural type from the specified property type XML element.
+		 *
+		 * Also adds the returned @a GpgimTemplateStructuralType to @a gpgim_property_structural_types.
+		 */
+		GpgimTemplateStructuralType::non_null_ptr_to_const_type
+		read_feature_property_template_structural_type(
+				GpgimProperty::structural_type_seq_type &gpgim_property_structural_types,
+				const XmlElementNode::non_null_ptr_type &property_template_type_element,
 				const QString &gpgim_resource_filename);
 
 		/**

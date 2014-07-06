@@ -88,7 +88,8 @@
 				* Developer note: Perhaps in the future this XML file can be extended to allow one to define nested structures of complex native property types - that would require implementing, among others things, an arbitrary Edit Widget that can be built from an XML property type description.
 				
 				Type[1]:
-					* The (namespace qualified) property type - such as 'gpml:PolarityChronId'.
+					* The (namespace qualified) property *non-template* type (such as 'gpml:PolarityChronId') or *template* type (such as 'gpml:Array').
+					* Property types that are templates ('TemplateType') are ones that will require a value type (template instantiation) when used in a property (see PropertyList.Property.TemplateType) - however there's no distinction between non-template and template types here.
 					
 				Description[1]:
 					* A short description of the property type.
@@ -119,13 +120,32 @@
 				Description[1]:
 					* A short description of the property.
 					
-				Type[1..*]:
-					* The type of the property.
+				Type[0..*]:
+					* The non-template type of the property (in contrast to template type 'TemplateType').
 					* References a NativeProperty or Enumeration (defined in PropertyTypeList).
 					* There is usually only one occurrence of 'Type' within a property.
 					* Multiple occurrences of 'Type' are typically useful when specifying a
 					  'geometry' property that can be, for example, a point, polyline, or polygon, etc.
 					* Note that multiple occurrences of 'Type' require the parent 'Property' element to have a 'gpgim:defaultType' attribute.
+					* NOTE: There must be at least one 'Type' or 'TemplateType' in the property.
+					
+				TemplateType[0..*]:
+					* The template type of the property (in contrast to non-template type 'Type').
+					* Typically used for property types that contain other property types (eg, 'gpml:Array').
+					* Most properties won't have a 'TemplateType' (will instead have one or more 'Type's).
+					* Multiple occurrences of 'TemplateType' are possible but unlikely.
+					* 'TemplateType' is essentially a superset of 'Type' (eg, can be referenced by 'gpgim:defaultType' attribute like 'Type').
+					* NOTE: There must be at least one 'Type' or 'TemplateType' in the property.
+					
+					Type[1]:
+						* The template container type of the property (eg, 'gpml:Array').
+						* References a NativeProperty (defined in PropertyTypeList).
+						* If 'gpgim:defaultType' references a template type then this 'Type' is what it references.
+					
+					ValueType[1]:
+						* The non-template element type within the template container (eg, 'gml:TimePeriod').
+						* References a NativeProperty (defined in PropertyTypeList).
+						* This is what instantiates a template type, ie, different properties can have different instantiations ('ValueType') of the same template type ('Type').
 					
 				Multiplicity[1]:
 					* The number of times the property can appear (in a feature).
@@ -1161,17 +1181,10 @@
 		<Property>
 			<Name>gpml:times</Name>
 			<Description>An array of time instants.</Description>
-			<!--
-				Developer note:
-				'gpml:Array' is currently the only *template* type (besides the time-dependent wrappers).
-				Currently GPlates assumes the template type is 'gml:TimePeriod' in the following ways:
-					(1) Edit Feature Properties widget selects Edit Time Sequence widget when it visits a 'gpml:Array' property.
-					(2) Add Property dialog selects Edit Time Sequence widget when it finds the 'gpml:Array' string (eg, specified here).
-				Later, when other template types are supported, we'll need to be able to specify the template type in this (XML) file.
-				And, in GPlates, we'll also need to be able to select the appropriate edit widget based not only on 'gpml:Array'
-				but also on its template type (essentially both determine the actual type of the property).
-			-->
-			<Type>gpml:Array</Type>
+			<TemplateType>
+				<Type>gpml:Array</Type>
+				<ValueType>gml:TimePeriod</ValueType>
+			</TemplateType>
 			<Multiplicity>1</Multiplicity>
 			<Comment>Typically used to store the time instants at which Flowline and MotionPath features output points along the time-path.</Comment>
 		</Property>
