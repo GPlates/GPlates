@@ -88,6 +88,20 @@ namespace GPlatesModel
 			return d_value_type;
 		}
 
+
+		/**
+		 * Returns the template's instantiation type (structural type plus value type).
+		 *
+		 * Template structural types (such as 'gpml:Array') need a value type to be specified
+		 * in order to complete the type or instantiate the type (eg, 'gpml:Array<gml:TimePeriod>').
+		 */
+		virtual
+		instantiation_type
+		get_instantiation_type() const
+		{
+			return instantiation_type(get_structural_type(), get_value_type());
+		}
+
 	protected:
 
 		GpgimTemplateStructuralType(

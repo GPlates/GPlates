@@ -26,6 +26,9 @@
 #ifndef GPLATES_MODEL_GPGIMSTRUCTURALTYPE_H
 #define GPLATES_MODEL_GPGIMSTRUCTURALTYPE_H
 
+#include <boost/optional.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 #include <QString>
 
 #include "property-values/StructuralType.h"
@@ -48,6 +51,80 @@ namespace GPlatesModel
 		//! A convenience typedef for a shared pointer to a const @a GpgimStructuralType.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpgimStructuralType> non_null_ptr_to_const_type;
 
+		/**
+		 * The instantiation type is the structural type of the property and an optional
+		 * value type (only used if structural type is a template such as 'gpml:Array').
+		 *
+		 * Template structural types (such as 'gpml:Array') need a value type to be specified
+		 * in order to complete the type or instantiate the type (eg, 'gpml:Array<gml:TimePeriod>').
+		 * Non-template structural types do not need a value type.
+		 *
+		 * TODO: If template types become more complex and have more than one template parameter
+		 * then may have to change this to something more suitable.
+		 */
+		class InstantiationType :
+				public boost::less_than_comparable<InstantiationType,
+						boost::equality_comparable<InstantiationType> >
+		{
+		public:
+
+			/**
+			 * Note: Allow implicit conversion from 'GPlatesPropertyValues::StructuralType'
+			 * (ie, no 'explicit') since it makes constructing non-template types easier.
+			 */
+			InstantiationType(
+					const GPlatesPropertyValues::StructuralType &structural_type,
+					boost::optional<GPlatesPropertyValues::StructuralType> value_type = boost::none) :
+				d_structural_type(structural_type),
+				d_value_type(value_type)
+			{  }
+
+			//! Returns true if the structural type is a template (ie, has a non-none value type).
+			bool
+			is_template() const
+			{
+				return d_value_type;
+			}
+
+			const GPlatesPropertyValues::StructuralType &
+			get_structural_type() const
+			{
+				return d_structural_type;
+			}
+
+			const boost::optional<GPlatesPropertyValues::StructuralType> &
+			get_value_type() const
+			{
+				return d_value_type;
+			}
+
+			//! Equality comparison operator.
+			bool
+			operator==(
+					const InstantiationType &rhs) const
+			{
+				return d_structural_type == rhs.d_structural_type &&
+						d_value_type == rhs.d_value_type;
+			}
+
+			//! Less than comparison operator.
+			bool
+			operator<(
+					const InstantiationType &rhs) const
+			{
+				return d_structural_type < rhs.d_structural_type ||
+					(d_structural_type == rhs.d_structural_type && d_value_type < rhs.d_value_type);
+			}
+
+		private:
+
+			GPlatesPropertyValues::StructuralType d_structural_type;
+			boost::optional<GPlatesPropertyValues::StructuralType> d_value_type;
+
+		};
+
+		typedef InstantiationType instantiation_type;
+
 
 		/**
 		 * Creates a @a GpgimStructuralType.
@@ -62,7 +139,11 @@ namespace GPlatesModel
 		}
 
 
-		//! Virtual destructor since @a GpgimEnumerationType is sub-class and GPlatesUtils::dynamic_pointer_cast is used.
+		/**
+		 * Virtual destructor since @a GpgimEnumerationType is sub-class and GPlatesUtils::dynamic_pointer_cast is used.
+		 *
+		 * Also we now have virtual methods.
+		 */
 		virtual
 		~GpgimStructuralType()
 		{  }
@@ -85,6 +166,23 @@ namespace GPlatesModel
 		get_description() const
 		{
 			return d_description;
+		}
+
+
+		/**
+		 * Returns the instantiation type.
+		 *
+		 * Template structural types (such as 'gpml:Array') need a value type to be specified
+		 * in order to complete the type or instantiate the type (eg, 'gpml:Array<gml:TimePeriod>').
+		 * Non-template structural types do not need a value type.
+		 */
+		virtual
+		instantiation_type
+		get_instantiation_type() const
+		{
+			// Base class has no value type.
+			// The structural type is what gets instantiated.
+			return instantiation_type(get_structural_type());
 		}
 
 	protected:

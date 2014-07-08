@@ -189,6 +189,7 @@ namespace GPlatesModel
 		 *
 		 * Also note that this includes uninstantiated templates (ie, template structural types without
 		 * the contained value type specified).
+		 * But this does *not* include instantiated templates.
 		 */
 		const property_structural_type_seq_type &
 		get_property_structural_types() const
@@ -208,6 +209,7 @@ namespace GPlatesModel
 		 * Also note that while @a get_property_template_structural_type will return a *template*
 		 * instantiation (ie, a structural type *and* a contained value type) this method will
 		 * return an uninstantiated template (ie, just the structural type).
+		 * But this does *not* include instantiated templates.
 		 */
 		boost::optional<GpgimStructuralType::non_null_ptr_to_const_type>
 		get_property_structural_type(

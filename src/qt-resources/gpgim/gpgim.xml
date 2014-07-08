@@ -524,14 +524,8 @@
 		<!-- NOTE: Please keep the 'gpml' <NativeProperty> elements ordered alphabetically by their '<Type>'. -->
 		<NativeProperty>
 			<!--
-				Developer note:
-				'gpml:Array' is currently the only *template* type (besides the time-dependent wrappers).
-				Currently GPlates assumes the template type is 'gml:TimePeriod' in the following ways:
-					(1) Edit Feature Properties widget selects Edit Time Sequence widget when it visits a 'gpml:Array' property.
-					(2) Add Property dialog selects Edit Time Sequence widget when it finds the 'gpml:Array' string (eg, specified here).
-				Later, when other template types are supported, we'll need to be able to specify the template type in this (XML) file.
-				And, in GPlates, we'll also need to be able to select the appropriate edit widget based not only on 'gpml:Array'
-				but also on its template type (essentially both determine the actual type of the property).
+				Note:
+				'gpml:Array' is a *template* type (see 'TemplateType' in 'gpml:times') and GPlates currently only supports the value type 'gml:TimePeriod' for it in the form of the Edit Time Sequence widget (adding and editing 'gpml:Array<gml:TimePeriod>').
 			-->
 			<Type>gpml:Array</Type>
 			<Description>A sequence of elements of a specified template type.</Description>

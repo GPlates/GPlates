@@ -35,6 +35,9 @@
 
 #include "FeatureHandleWeakRefBackInserter.h"
 #include "Gpgim.h"
+#include "GpgimProperty.h"
+#include "GpgimStructuralType.h"
+#include "GpgimTemplateStructuralType.h"
 #include "Model.h"
 
 #include "app-logic/FeatureCollectionFileState.h"
@@ -237,6 +240,92 @@ namespace
 
 		return boost::none;
 	}
+
+
+	/**
+	 * Visits a property value to retrieve the @a GpgimTemplateStructuralType associated with it (if any).
+	 *
+	 * Only non-time-dependent *template* property value types return a valid value.
+	 */
+	class GetGpgimTemplateStructuralTypeVisitor : 
+			public GPlatesModel::ConstFeatureVisitor
+	{
+	public:
+
+		boost::optional<GPlatesModel::GpgimTemplateStructuralType::non_null_ptr_to_const_type>
+		get_gpgim_template_structural_type_from_property(
+				const GPlatesModel::FeatureHandle::iterator &property)
+		{
+			d_gpgim_template_structural_type = boost::none;
+
+			(*property)->accept_visitor(*this);
+
+			return d_gpgim_template_structural_type;
+		}
+
+		boost::optional<GPlatesModel::GpgimTemplateStructuralType::non_null_ptr_to_const_type>
+		get_gpgim_template_structural_type_from_property(
+				const GPlatesModel::TopLevelProperty::non_null_ptr_type &property)
+		{
+			d_gpgim_template_structural_type = boost::none;
+
+			property->accept_visitor(*this);
+
+			return d_gpgim_template_structural_type;
+		}
+
+		boost::optional<GPlatesModel::GpgimTemplateStructuralType::non_null_ptr_to_const_type>
+		get_gpgim_template_structural_type_from_property_value(
+				const GPlatesModel::PropertyValue &property_value)
+		{
+			d_gpgim_template_structural_type = boost::none;
+
+			property_value.accept_visitor(*this);
+
+			return d_gpgim_template_structural_type;
+		}
+
+	private:
+
+		virtual
+		void
+		visit_gpml_constant_value(
+				const gpml_constant_value_type &gpml_constant_value)
+		{
+			gpml_constant_value.value()->accept_visitor(*this);
+		}
+
+		virtual
+		void
+		visit_gpml_piecewise_aggregation(
+				const gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
+		{
+			if (gpml_piecewise_aggregation.time_windows().empty())
+			{
+				return;
+			}
+
+			// Visit the first time window - doesn't matter which one since all time windows
+			// should have the same property value type.
+			gpml_piecewise_aggregation.time_windows().front().get()
+					->time_dependent_value()->accept_visitor(*this);
+		}
+
+		virtual
+		void
+		visit_gpml_array(
+				const gpml_array_type &gpml_array)
+		{
+			d_gpgim_template_structural_type =
+					GPlatesModel::Gpgim::instance().get_property_template_structural_type(
+							gpml_array.get_structural_type(),
+							gpml_array.get_value_type());
+		}
+
+
+		boost::optional<GPlatesModel::GpgimTemplateStructuralType::non_null_ptr_to_const_type>
+				d_gpgim_template_structural_type;
+	};
 }
 
 
@@ -281,6 +370,35 @@ GPlatesModel::ModelUtils::get_gpgim_property(
 }
 
 
+boost::optional<GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type>
+GPlatesModel::ModelUtils::get_non_time_dependent_gpgim_structural_type(
+		const PropertyValue &property_value,
+		TopLevelPropertyError::Type *error_code)
+{
+	// Attempt to find a *template* structural type instantiation first.
+	GetGpgimTemplateStructuralTypeVisitor visitor;
+	boost::optional<GPlatesModel::GpgimTemplateStructuralType::non_null_ptr_to_const_type>
+			gpgim_template_structural_type =
+					visitor.get_gpgim_template_structural_type_from_property_value(property_value);
+	if (gpgim_template_structural_type)
+	{
+		return GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type(
+				gpgim_template_structural_type.get());
+	}
+
+	// Not a template type so look for a regular (non-template) structural type.
+	boost::optional<GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type> gpgim_structural_type =
+			GPlatesModel::Gpgim::instance().get_property_structural_type(
+					get_non_time_dependent_property_structural_type(property_value));
+	if (!gpgim_structural_type)
+	{
+		*error_code = TopLevelPropertyError::PROPERTY_VALUE_TYPE_NOT_RECOGNISED;
+	}
+
+	return gpgim_structural_type;
+}
+
+
 const char *
 GPlatesModel::ModelUtils::get_error_message(
 		TopLevelPropertyError::Type error_code)
@@ -293,6 +411,7 @@ GPlatesModel::ModelUtils::get_error_message(
 		QT_TR_NOOP("The property name can occur at most once in a feature."),
 		QT_TR_NOOP("The property name is not in the feature type's list of valid names."),
 		QT_TR_NOOP("The property value type is not in the property name's list of valid types."),
+		QT_TR_NOOP("The property type was not recognised as a valid name by the GPGIM."),
 		QT_TR_NOOP("GPlates was unable to wrap into a time-dependent property."),
 		QT_TR_NOOP("GPlates was unable to unwrap the existing time-dependent property."),
 		QT_TR_NOOP("GPlates was unable to convert from one time-dependent wrapper to another.")

@@ -149,7 +149,7 @@ namespace GPlatesModel
 
 
 		/**
-		 * Returns the non-time-dependent structural type of the specified top-level property.
+		 * Returns the non-time-dependent structural type of the specified property value.
 		 *
 		 * If the specified property value is a time-dependent property then its *template* type is returned.
 		 * If the specified property value is *not* a time-dependent property then its *direct* type is returned.
@@ -216,6 +216,7 @@ namespace GPlatesModel
 				PROPERTY_NAME_CAN_OCCUR_AT_MOST_ONCE_IN_A_FEATURE,
 				PROPERTY_NAME_NOT_SUPPORTED_BY_FEATURE_TYPE,
 				PROPERTY_VALUE_TYPE_NOT_SUPPORTED_BY_PROPERTY_NAME,
+				PROPERTY_VALUE_TYPE_NOT_RECOGNISED, // Not recognised by GPGIM.
 				COULD_NOT_WRAP_INTO_A_TIME_DEPENDENT_PROPERTY,
 				COULD_NOT_UNWRAP_EXISTING_TIME_DEPENDENT_PROPERTY,
 				COULD_NOT_CONVERT_FROM_ONE_TIME_DEPENDENT_WRAPPER_TO_ANOTHER,
@@ -290,6 +291,22 @@ namespace GPlatesModel
 		get_gpgim_property(
 				const PropertyName& property_name,
 				boost::optional<FeatureType> feature_type = boost::none,
+				TopLevelPropertyError::Type *error_code = NULL);
+
+
+		/**
+		 * Get the non-time-dependent GPGIM structural type of the specified property value.
+		 *
+		 * This is similar to @a get_non_time_dependent_property_structural_type except
+		 * if the specified property value is a template structural type (eg, 'gpml:Array') then the
+		 * associated @a GpgimTemplateStructuralType is returned (which includes the value type
+		 * stored in the template type, eg, 'gml:TimePeriod' in 'gpml:Array'), otherwise
+		 * a @a GpgimStructuralType is returned.
+		 * Returns boost::none if the structural type in @a property_value is not recognised by the GPGIM.
+		 */
+		boost::optional<GpgimStructuralType::non_null_ptr_to_const_type>
+		get_non_time_dependent_gpgim_structural_type(
+				const PropertyValue &property_value,
 				TopLevelPropertyError::Type *error_code = NULL);
 
 

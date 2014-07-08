@@ -122,6 +122,12 @@ namespace GPlatesFileIO
 						GPlatesFileIO::ReadErrors::UnexpectedPropertyStructuralElement,
 						GPlatesFileIO::ReadErrors::ElementNotNameChanged);
 			}
+			else if (error_code == GPlatesModel::ModelUtils::TopLevelPropertyError::PROPERTY_VALUE_TYPE_NOT_RECOGNISED)
+			{
+				append_warning(feature_xml_element, reader_params,
+						GPlatesFileIO::ReadErrors::UnrecognisedChildFound,
+						GPlatesFileIO::ReadErrors::ElementNotNameChanged);
+			}
 			else if (error_code == GPlatesModel::ModelUtils::TopLevelPropertyError::COULD_NOT_WRAP_INTO_A_TIME_DEPENDENT_PROPERTY)
 			{
 				append_warning(feature_xml_element, reader_params,
