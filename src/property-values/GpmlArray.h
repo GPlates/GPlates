@@ -28,7 +28,6 @@
 #define GPLATES_PROPERTYVALUES_GPMLARRAY_H
 
 #include <vector>
-#include <boost/operators.hpp>
 
 #include "StructuralType.h"
 
@@ -39,6 +38,9 @@
 #include "model/PropertyValue.h"
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
+#include "model/RevisionedVector.h"
+
+#include "utils/QtStreamable.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -66,72 +68,6 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlArray> non_null_ptr_to_const_type;
 
 
-		/**
-		 * A member of the array.
-		 */
-		class Member :
-				public boost::equality_comparable<Member>
-		{
-		public:
-
-			/**
-			 * Member has value semantics where each @a Member instance has its own state.
-			 * So if you create a copy and modify the copy's state then it will not modify the state
-			 * of the original object.
-			 *
-			 * The constructor first clones the property value and then copy-on-write is used to allow
-			 * multiple @a Member objects to share the same state (until the state is modified).
-			 */
-			Member(
-					GPlatesModel::PropertyValue::non_null_ptr_type value) :
-				d_value(value)
-			{  }
-
-			/**
-			 * Returns the 'const' property value.
-			 */
-			const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
-			get_value() const
-			{
-				return d_value;
-			}
-
-			/**
-			 * Returns the 'non-const' property value.
-			 */
-			const GPlatesModel::PropertyValue::non_null_ptr_type
-			get_value()
-			{
-				return d_value;
-			}
-
-			void
-			set_value(
-					GPlatesModel::PropertyValue::non_null_ptr_type value)
-			{
-				d_value = value;
-			}
-
-			/**
-			 * Value equality comparison operator.
-			 *
-			 * Inequality provided by boost equality_comparable.
-			 */
-			bool
-			operator==(
-					const Member &other) const
-			{
-				return *d_value == *other.d_value;
-			}
-
-		private:
-			GPlatesModel::PropertyValue::non_null_ptr_type d_value;
-		};
-
-		//! Typedef for a sequence of array members.
-		typedef std::vector<Member> member_array_type;
-
-
 		virtual
 		~GpmlArray()
 		{  }
@@ -140,22 +76,28 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-			const StructuralType &value_type,		
-			const member_array_type &members)
+				const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members_,
+				const StructuralType &value_type_)
 		{
-			return create(value_type, members.begin(), members.end());
+			return create(members_.begin(), members_.end(), value_type_);
 		}
 
-		template<typename ForwardIterator>
+		template<typename PropertyValueIter>
 		static
 		const non_null_ptr_type
 		create(
-				const StructuralType &value_type,		
-				ForwardIterator begin,
-				ForwardIterator end)
+				PropertyValueIter members_begin,
+				PropertyValueIter members_end,
+				const StructuralType &value_type)
 		{
 			GPlatesModel::ModelTransaction transaction;
-			non_null_ptr_type ptr(new GpmlArray(transaction, value_type, begin, end));
+			non_null_ptr_type ptr(
+					new GpmlArray(
+							transaction,
+							GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::create(
+									members_begin,
+									members_end),
+							value_type));
 			transaction.commit();
 			return ptr;
 		}
@@ -167,27 +109,22 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * Returns the members.
-		 *
-		 * To modify any members:
-		 * (1) make additions/removals/modifications to a copy of the returned vector, and
-		 * (2) use @a set_members to set them.
-		 *
-		 * The returned members implement copy-on-write to promote resource sharing (until write)
-		 * and to ensure our internal state cannot be modified and bypass the revisioning system.
+		 * Returns the 'const' vector of members.
 		 */
-		const member_array_type &
-		get_members() const
+		const GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> &
+		members() const
 		{
-			return get_current_revision<Revision>().members;
+			return *get_current_revision<Revision>().members.get_revisionable();
 		}
 
 		/**
-		 * Sets the internal members.
+		 * Returns the 'non-const' vector of members.
 		 */
-		void
-		set_members(
-				const member_array_type &members);
+		GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> &
+		members()
+		{
+			return *get_current_revision<Revision>().members.get_revisionable();
+		}
 
 		// Note that no "setter" is provided:  The value type of a GpmlArray
 		// instance should never be changed.
@@ -246,13 +183,11 @@ namespace GPlatesPropertyValues
 
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		template<typename ForwardIterator>
 		GpmlArray(
 				GPlatesModel::ModelTransaction &transaction_,
-				const StructuralType &value_type,
-				ForwardIterator begin,
-				ForwardIterator end) :
-			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, begin, end))),
+				GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type members_,
+				const StructuralType &value_type) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, members_))),
 			d_value_type(value_type)
 		{  }
 
@@ -316,13 +251,14 @@ namespace GPlatesPropertyValues
 		struct Revision :
 				public PropertyValue::Revision
 		{
-			template<typename ForwardIterator>
 			Revision(
 					GPlatesModel::ModelTransaction &transaction_,
 					RevisionContext &child_context_,
-					ForwardIterator begin_,
-					ForwardIterator end_) :
-				members(begin_, end_)
+					GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type members_) :
+				members(
+						GPlatesModel::RevisionedReference<
+								GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> >::attach(
+										transaction_, child_context_, members_))
 			{  }
 
 			//! Deep-clone constructor.
@@ -334,6 +270,7 @@ namespace GPlatesPropertyValues
 				members(other_.members)
 			{
 				// Clone data members that were not deep copied.
+				members.clone(child_context_);
 			}
 
 			//! Shallow-clone constructor.
@@ -356,9 +293,15 @@ namespace GPlatesPropertyValues
 			virtual
 			bool
 			equality(
-					const GPlatesModel::Revision &other) const;
+					const GPlatesModel::Revision &other) const
+			{
+				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-			member_array_type members;
+				return *members.get_revisionable() == *other_revision.members.get_revisionable() &&
+						PropertyValue::Revision::equality(other);
+			}
+
+			GPlatesModel::RevisionedReference<GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> > members;
 		};
 
 		StructuralType d_value_type;

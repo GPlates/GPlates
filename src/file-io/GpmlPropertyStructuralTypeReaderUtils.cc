@@ -421,37 +421,8 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_array(
 	find_and_create_one_or_more_from_type(mem, type, MEMBER, members,
 			structural_type_reader, gpml_version, read_errors);
 
-	return GPlatesPropertyValues::GpmlArray::create(type, members.begin(), members.end());
+	return GPlatesPropertyValues::GpmlArray::create(members, type);
 }
-
-
-#if 0
-GPlatesPropertyValues::GpmlArrayMember
-GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_array_member(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
-		const GpmlPropertyStructuralTypeReader &structural_type_reader,
-		const GPlatesModel::GpgimVersion &gpml_version,
-		ReadErrorAccumulation &read_errors)
-{
-	static const GPlatesModel::XmlElementName
-		STRUCTURAL_TYPE = GPlatesModel::XmlElementName::create_gpml("ArrayMember"),
-		VALUE_TYPE = GPlatesModel::XmlElementName::create_gpml("valueType"),
-		VALUE = GPlatesModel::XmlElementName::create_gpml("value");
-
-
-	GPlatesModel::XmlElementNode::non_null_ptr_type 
-		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
-
-	GPlatesPropertyValues::StructuralType
-		type = find_and_create_one(elem, &create_template_type_parameter_type,
-				VALUE_TYPE, gpml_version, read_errors);
-	GPlatesModel::PropertyValue::non_null_ptr_type 
-		value = find_and_create_from_type(elem, type, VALUE,
-				structural_type_reader, gpml_version, read_errors);
-
-	return GPlatesPropertyValues::GpmlArrayMember(value, type);
-}
-#endif
 
 
 GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type

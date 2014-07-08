@@ -221,16 +221,6 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors);
 
 
-#if 0
-		GPlatesPropertyValues::GpmlArray::non_null_ptr_type
-        create_gpml_array_member(
-				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
-				const GpmlPropertyStructuralTypeReader &structural_type_reader,
-				const GPlatesModel::GpgimVersion &gpml_version,
-				ReadErrorAccumulation &read_errors);
-#endif
-
-
 		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 		create_gpml_constant_value(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,

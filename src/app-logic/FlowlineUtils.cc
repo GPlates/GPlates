@@ -62,9 +62,9 @@ GPlatesAppLogic::FlowlineUtils::get_times_from_time_period_array(
 		return;
 	}
 	
-	GPlatesPropertyValues::GpmlArray::member_array_type::const_iterator 
-		iter = gpml_array.get_members().begin(),
-		end = gpml_array.get_members().end();
+	const GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> &gpml_array_members = gpml_array.members();
+	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator iter = gpml_array_members.begin();
+	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator end = gpml_array_members.end();
 
 	// We will use the last gml_time_period_ptr after the loop has completed so declare it now.
        const GPlatesPropertyValues::GmlTimePeriod* gml_time_period_ptr = NULL;
@@ -72,7 +72,7 @@ GPlatesAppLogic::FlowlineUtils::get_times_from_time_period_array(
 		for (; iter != end ; ++iter)
 		{
 			gml_time_period_ptr =
-				dynamic_cast<const GPlatesPropertyValues::GmlTimePeriod*>(iter->get_value().get());
+				dynamic_cast<const GPlatesPropertyValues::GmlTimePeriod*>(iter->get().get());
 
 			GPlatesPropertyValues::GeoTimeInstant geo_time_instant = 
 				gml_time_period_ptr->end()->get_time_position();

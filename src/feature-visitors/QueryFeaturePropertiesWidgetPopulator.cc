@@ -860,11 +860,12 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_array(
 		add_child_to_current_item(d_tree_widget_builder, QObject::tr("gpml:members"));
 	d_tree_widget_builder.push_current_item(item_handle);
 
-	std::vector<GPlatesPropertyValues::GpmlArray::Member>::const_iterator 
-		iter = gpml_array.get_members().begin(),
-		end = gpml_array.get_members().end();
-	for ( ; iter != end; ++iter) {
-		iter->get_value()->accept_visitor(*this);
+	const GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> &members = gpml_array.members();
+	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator iter = members.begin();
+	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator end = members.end();
+	for ( ; iter != end; ++iter) 
+	{
+		iter->get()->accept_visitor(*this);
 	}
 	d_tree_widget_builder.pop_current_item();
 }

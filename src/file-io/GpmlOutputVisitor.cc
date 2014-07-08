@@ -1100,12 +1100,13 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_array(
 		d_output.writeEndElement();
 	
 	//d_output.writeStartGpmlElement("members");
-		std::vector<GPlatesPropertyValues::GpmlArray::Member>::const_iterator 
-			iter = gpml_array.get_members().begin(),
-			end = gpml_array.get_members().end();
-		for ( ; iter != end; ++iter) {
+		const GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> &members = gpml_array.members();
+		GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator iter = members.begin();
+		GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator end = members.end();
+		for ( ; iter != end; ++iter) 
+		{
 			d_output.writeStartGpmlElement("member");
-				iter->get_value()->accept_visitor(*this);
+				iter->get()->accept_visitor(*this);
 			d_output.writeEndElement();
 		}
 	d_output.writeEndElement();

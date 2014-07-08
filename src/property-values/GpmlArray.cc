@@ -22,42 +22,29 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QDebug>
-#include <boost/lambda/lambda.hpp>
+#include <iostream>
 
 #include "GpmlArray.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
-#include "global/NotYetImplementedException.h"
 
 #include "model/BubbleUpRevisionHandler.h"
-#include "model/ModelTransaction.h"
-
-
-void
-GPlatesPropertyValues::GpmlArray::set_members(
-		const member_array_type &members)
-{
-	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
-	revision_handler.get_revision<Revision>().members = members;
-	revision_handler.commit();
-}
 
 
 std::ostream &
 GPlatesPropertyValues::GpmlArray::print_to(
                 std::ostream &os) const
 {
-	const member_array_type &members = get_members();
+	const GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> &members_ = members();
 
 	os << "[ ";
 
-	for (member_array_type::const_iterator members_iter = members.begin();
-		members_iter != members.end();
-		++members_iter)
+	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator members_iter = members_.begin();
+	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator members_end = members_.end();
+	for ( ; members_iter != members_end; ++members_iter)
 	{
-		os << *members_iter->get_value();
+		os << *members_iter->get();
 	}
 
 	return os << " ]";
@@ -69,29 +56,18 @@ GPlatesPropertyValues::GpmlArray::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
 		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
-	// Currently this can't be reached because we don't attach to our children yet.
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
-}
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
 
-
-bool
-GPlatesPropertyValues::GpmlArray::Revision::equality(
-		const GPlatesModel::Revision &other) const
-{
-	const Revision &other_revision = dynamic_cast<const Revision &>(other);
-
-	if (members.size() != other_revision.members.size())
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+	if (child_revisionable == revision.members.get_revisionable())
 	{
-		return false;
+		return revision.members.clone_revision(transaction);
 	}
 
-	for (unsigned int n = 0; n < members.size(); ++n)
-	{
-		if (members[n] != other_revision.members[n])
-		{
-			return false;
-		}
-	}
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 
-	return PropertyValue::Revision::equality(other);
+	// To keep compiler happy - won't be able to get past 'Abort()'.
+	return GPlatesModel::Revision::non_null_ptr_type(NULL);
 }
