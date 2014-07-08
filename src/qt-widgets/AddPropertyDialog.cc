@@ -225,17 +225,45 @@ GPlatesQtWidgets::AddPropertyDialog::set_up_edit_widgets()
 void
 GPlatesQtWidgets::AddPropertyDialog::set_appropriate_edit_widget()
 {
-	// Get the property value type from the combobox_add_property_type text.
-	boost::optional<GPlatesPropertyValues::StructuralType> property_value_type =
-			GPlatesModel::convert_qstring_to_qualified_xml_name<
-					GPlatesPropertyValues::StructuralType>(
-							combobox_add_property_type->currentText());
-	// Should always be able to convert to a qualified XML name.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			property_value_type,
-			GPLATES_ASSERTION_SOURCE);
+	boost::optional<EditWidgetGroupBox::property_value_type> type_of_property;
 
-	d_edit_widget_group_box_ptr->activate_widget_by_property_value_type(property_value_type.get());
+	// Get the property value type from the combobox_add_property_type text.
+	const QString combobox_property_type_string = combobox_add_property_type->currentText();
+
+	// See if property type string is a template type (has a value type between '<' and '>').
+	const int template_left_angle_bracket_index = combobox_property_type_string.indexOf('<');
+	if (template_left_angle_bracket_index >= 0 &&
+		combobox_property_type_string.endsWith('>'))
+	{
+		const boost::optional<GPlatesPropertyValues::StructuralType> structural_type =
+				GPlatesModel::convert_qstring_to_qualified_xml_name<GPlatesPropertyValues::StructuralType>(
+						combobox_property_type_string.left(template_left_angle_bracket_index));
+		const boost::optional<GPlatesPropertyValues::StructuralType> value_type =
+				GPlatesModel::convert_qstring_to_qualified_xml_name<GPlatesPropertyValues::StructuralType>(
+						combobox_property_type_string.mid(
+								template_left_angle_bracket_index + 1,
+								combobox_property_type_string.size() - template_left_angle_bracket_index - 2));
+		// Should always be able to convert to a qualified XML name.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				structural_type && value_type,
+				GPLATES_ASSERTION_SOURCE);
+
+		type_of_property = EditWidgetGroupBox::property_value_type(structural_type.get(), value_type.get());
+	}
+	else
+	{
+		const boost::optional<GPlatesPropertyValues::StructuralType> structural_type =
+				GPlatesModel::convert_qstring_to_qualified_xml_name<GPlatesPropertyValues::StructuralType>(
+						combobox_property_type_string);
+		// Should always be able to convert to a qualified XML name.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				structural_type,
+				GPLATES_ASSERTION_SOURCE);
+
+		type_of_property = structural_type.get();
+	}
+
+	d_edit_widget_group_box_ptr->activate_widget_by_property_type(type_of_property.get());
 }
 
 
@@ -482,8 +510,8 @@ GPlatesQtWidgets::AddPropertyDialog::populate_property_type_combobox()
 	// Get the sequence of structural types allowed (by GPGIM) for the current property name.
 	// Only add property types supported by edit widgets, there's no point listing structural types
 	// that do not have an edit widget.
-	EditWidgetGroupBox::property_types_list_type structural_types;
-	if (!d_edit_widget_group_box_ptr->get_handled_property_types(*gpgim_property.get(), structural_types))
+	EditWidgetGroupBox::property_types_list_type property_types;
+	if (!d_edit_widget_group_box_ptr->get_handled_property_types(*gpgim_property.get(), property_types))
 	{
 		// None of the current property's structural types are supported by edit widgets.
 		return;
@@ -493,14 +521,22 @@ GPlatesQtWidgets::AddPropertyDialog::populate_property_type_combobox()
 	const GPlatesPropertyValues::StructuralType &default_structural_type =
 			gpgim_property.get()->get_default_structural_type()->get_structural_type();
 
-	BOOST_FOREACH(
-			const GPlatesPropertyValues::StructuralType &structural_type,
-			structural_types)
+	BOOST_FOREACH(const EditWidgetGroupBox::property_value_type &type_of_property, property_types)
 	{
-		combobox_add_property_type->addItem(convert_qualified_xml_name_to_qstring(structural_type));
+		if (type_of_property.is_template())
+		{
+			combobox_add_property_type->addItem(QString("%1<%2>")
+					.arg(convert_qualified_xml_name_to_qstring(type_of_property.get_structural_type()))
+					.arg(convert_qualified_xml_name_to_qstring(type_of_property.get_value_type().get())));
+		}
+		else
+		{
+			combobox_add_property_type->addItem(
+					convert_qualified_xml_name_to_qstring(type_of_property.get_structural_type()));
+		}
 
 		// Get the combobox index of the 'default' structural type.
-		if (structural_type == default_structural_type)
+		if (type_of_property.get_structural_type() == default_structural_type)
 		{
 			structural_type_index = combobox_add_property_type->count() - 1;
 		}

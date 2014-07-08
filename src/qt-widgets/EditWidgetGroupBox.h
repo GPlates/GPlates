@@ -36,6 +36,7 @@
 #include "AbstractEditWidget.h"
 
 #include "model/FeatureHandle.h"
+#include "model/GpgimStructuralType.h"
 #include "model/PropertyValue.h"
 
 #include "property-values/StructuralType.h"
@@ -107,10 +108,16 @@ namespace GPlatesQtWidgets
 	public:
 		
 		/**
-		 * List of property structural types that are handled by this EditWidgetGroupBox.
+		 * A property type is the structural type of the property and an optional
+		 * value type (only used if property value type is a template such as 'gpml:Array').
+		 */
+		typedef GPlatesModel::GpgimStructuralType::instantiation_type property_value_type;
+
+		/**
+		 * List of property types that are handled by this EditWidgetGroupBox.
 		 * Used by AddPropertyDialog.
 		 */
-		typedef std::list<GPlatesPropertyValues::StructuralType> property_types_list_type;
+		typedef std::list<property_value_type> property_types_list_type;
 		typedef property_types_list_type::const_iterator property_types_list_const_iterator;
 
 		
@@ -134,7 +141,7 @@ namespace GPlatesQtWidgets
 		}
 		
 		/**
-		 * List of property structural types that are handled by this EditWidgetGroupBox.
+		 * List of property types that are handled by this EditWidgetGroupBox.
 		 * Used by AddPropertyDialog.
 		 */
 		property_types_list_type
@@ -144,7 +151,7 @@ namespace GPlatesQtWidgets
 		 * Returns true if the specified GPGIM property has at least one structural type that is
 		 * supported by an edit widget.
 		 *
-		 * Optionally returns the list of structural types, of the GPGIM property, that are supported.
+		 * Optionally returns the list of property types, of the GPGIM property, that are supported.
 		 */
 		bool
 		get_handled_property_types(
@@ -180,12 +187,12 @@ namespace GPlatesQtWidgets
 				GPlatesModel::FeatureHandle::iterator it);
 		 
 		/**
-		 * Uses a dispatch table to activate the editing widget for a given
-		 * PropertyValue type name. Used by AddPropertyDialog.
+		 * Uses a dispatch table to activate the editing widget for a given property type.
+		 * Used by AddPropertyDialog.
 		 */
 		void
-		activate_widget_by_property_value_type(
-				const GPlatesPropertyValues::StructuralType &property_value_type);
+		activate_widget_by_property_type(
+				const property_value_type &type_of_property);
 		
 		/**
 		 * Call this function before you call create_property_value_from_widget()
@@ -429,9 +436,13 @@ namespace GPlatesQtWidgets
 	private:
 
 		/**
-		 * Map type used to activate appropriate edit widget given a property value type.
+		 * Map type used to activate appropriate edit widget given a property value type and
+		 * optional value type (only used if property type is a template).
 		 */
-		typedef std::map<GPlatesPropertyValues::StructuralType, AbstractEditWidget *> widget_map_type;
+		typedef std::map<
+				property_value_type,
+				AbstractEditWidget *>
+						widget_map_type;
 		typedef widget_map_type::const_iterator widget_map_const_iterator;
 
 
@@ -443,13 +454,13 @@ namespace GPlatesQtWidgets
 		build_widget_map();
 
 		/**
-		 * Given the name of a property value type, returns a pointer to the widget
-		 * responsible for editing it.
+		 * Given a property type, returns a pointer to the widget responsible for editing it.
+		 *
 		 * Returns NULL in the event that no such value type is registered.
 		 */
 		GPlatesQtWidgets::AbstractEditWidget *
-		get_widget_by_property_value_type(
-				const GPlatesPropertyValues::StructuralType &property_value_type);
+		get_widget_by_property_type(
+				const property_value_type &type_of_property);
 
 
 		/**
@@ -475,7 +486,7 @@ namespace GPlatesQtWidgets
 		GPlatesQtWidgets::EditTimeSequenceWidget *d_edit_time_sequence_widget_ptr;
 
 		/**
-		 * Map of property structural types to edit widgets.
+		 * Map of property types to edit widgets.
 		 */
 		widget_map_type d_widget_map;
 		
