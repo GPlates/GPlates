@@ -1054,7 +1054,7 @@ export_gpml_array()
 			"\n"
 			"    array = pygplates.GpmlArray(elements)\n");
 
-	// Used 'GPlatesApi::gpml_array_get_members()' to make 'GpmlArray' look like a python list.
+	// Used 'GPlatesApi::gpml_array_get_members()' to make 'GpmlArray' look like a python list (RevisionedVector).
 	GPlatesApi::wrap_python_class_as_revisioned_vector<
 			GPlatesPropertyValues::GpmlArray,
 			GPlatesModel::PropertyValue,

@@ -10,6 +10,7 @@ _gpml_reconstruction_method_enumeration_type = EnumerationType.create_gpml('Reco
 _gpml_reconstruction_plate_id_property_name = PropertyName.create_gpml('reconstructionPlateId')
 _gpml_conjugate_plate_id_property_name = PropertyName.create_gpml('conjugatePlateId')
 _gpml_relative_plate_property_name = PropertyName.create_gpml('relativePlate')
+_gpml_times_property_name = PropertyName.create_gpml('times')
 _gpml_shapefile_attributes_property_name = PropertyName.create_gpml('shapefileAttributes')
 _gpml_fixed_reference_frame_property_name = PropertyName.create_gpml('fixedReferenceFrame')
 _gpml_moving_reference_frame_property_name = PropertyName.create_gpml('movingReferenceFrame')
@@ -782,6 +783,108 @@ def set_relative_plate(feature, relative_plate, verify_information_model=VerifyI
 Feature.set_relative_plate = set_relative_plate
 # Delete the module reference to the function - we only keep the class method.
 del set_relative_plate
+
+
+def get_times(feature):
+    """get_times() -> list or None
+    Returns the list of times of this flowline or motion path feature.
+    
+    :returns: the list of times (if exactly one 'gpml:times' property found), otherwise None is returned
+    :rtype: list of float, or None
+    
+    This is a convenience method that wraps :meth:`get_value` for the common property 'gpml:times' used in flowlines and motion paths.
+    
+    The list is from most recent (closest to present day) to least recent (furthest in the geological past).
+    
+    Return the list of times (returns ``None`` if not exactly one 'gpml:times' property found):
+    ::
+    
+      times = feature.get_times()
+      if times:
+        for time in times:
+          ...
+    
+    Note that the 'gpml:times' property actually contains a :class:`list<GpmlArray>` of :class:`time periods<GmlTimePeriod>`
+    (not time instants). So this method converts the time periods to a list of time instants (by assuming the time periods
+    do not overlap each other and do not have gaps between them).
+    """
+    
+    gpml_times = feature.get_value(_gpml_times_property_name)
+    if gpml_times:
+        try:
+            times = []
+            
+            # Iterate over the GpmlArray property value.
+            for gml_time_period in gpml_times:
+                # Add end time of each time period.
+                times.append(gml_time_period.get_end_time())
+            
+            # Finish by adding begin time of last time period.
+            times.append(gpml_times[-1].get_begin_time())
+            
+            return times
+        except AttributeError:
+            # The property value type did not match the property name.
+            # This indicates the data does not conform to the GPlates Geological Information Model (GPGIM).
+            pass
+
+# Add the module function as a class method.
+Feature.get_times = get_times
+# Delete the module reference to the function - we only keep the class method.
+del get_times
+
+
+def set_times(feature, times, verify_information_model=VerifyInformationModel.yes):
+    """set_times(times, [verify_information_model=VerifyInformationModel.yes]) -> Property
+    Sets the list of times of this flowline or motion path feature.
+    
+    :param times: the list of times (if exactly one 'gpml:times' property found), otherwise None is returned
+    :type times: sequence (eg, ``list`` or ``tuple``) of float or :class:`GeoTimeInstant`
+    :param verify_information_model: whether to check the information model before setting (default) or not
+    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :returns: the property containing the list of times
+    :rtype: :class:`Property`
+    :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
+    does not support the 'gpml:times' property.
+    :raises: RuntimeError if the time values in *times* are not in monotonically increasing order, or there are fewer than two time values.
+    
+    This is a convenience method that wraps :meth:`set` for the common property 'gpml:times' used in flowlines and motion paths.
+    
+    The list of times must progressively be from most recent (closest to present day) to least recent (furthest in the geological past)
+    otherwise *RuntimeError* will be raised.
+    
+    Set the list of times:
+    ::
+    
+      feature.set_times([0, 10, 20, 30, 40])
+    
+    Note that the 'gpml:times' property actually contains a :class:`list<GpmlArray>` of :class:`time periods<GmlTimePeriod>`
+    (not time instants). So this method converts the time instants (in *times*) to adjoining time periods when creating the property.
+    """
+    
+    if len(times) < 2:
+        raise RuntimeError('Time sequence must contain at least two time values')
+    
+    gml_time_periods = []
+    
+    # Iterate over the times.
+    prev_time = times[0]
+    for time_index in range(1, len(times)):
+        time = times[time_index]
+        if time < prev_time:
+            raise RuntimeError('Time sequence is not in monotonically increasing order')
+        
+        # Add the time period from current time to previous time.
+        gml_time_periods.append(GmlTimePeriod(time, prev_time))
+        
+        prev_time = time
+    
+    return feature.set(_gpml_times_property_name, GpmlArray(gml_time_periods), verify_information_model)
+
+# Add the module function as a class method.
+Feature.set_times = set_times
+# Delete the module reference to the function - we only keep the class method.
+del set_times
 
 
 def get_shapefile_attribute(feature, key, default_value=None):

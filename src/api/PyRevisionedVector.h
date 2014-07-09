@@ -1121,7 +1121,24 @@ namespace GPlatesApi
 			void
 			wrap(
 					PythonClassType &python_class,
-					const char *class_name);
+					const char *class_name)
+			{
+				namespace bp = boost::python;
+
+				// The name of the list iterator class.
+				std::string iterator_class_name = std::string(class_name) + "Iterator";
+
+				typedef typename revisioned_vector_wrapper_type::Iterator iterator_type;
+
+				// Note: We don't docstring this - it's not an interface the python user needs to know about.
+				bp::class_<iterator_type>(iterator_class_name.c_str(), bp::no_init)
+					.def("__iter__", &iterator_type::self, bp::return_value_policy<bp::copy_non_const_reference>())
+					.def("next", &iterator_type::next)
+				;
+
+				// Add the 'def' methods to 'python_class'.
+				add_revisioned_vector_def_methods_to_python_class<this_type>(python_class);
+			}
 
 		private:
 
@@ -1349,35 +1366,6 @@ namespace GPlatesApi
 		};
 
 		ENABLE_GCC_WARNING("-Wshadow")
-
-
-		template <
-				class ClassType,
-				class RevisionableType,
-				typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type
-						(*GetRevisionedVectorFunction)(ClassType &)>
-		template <class PythonClassType>
-		void
-		RevisionedVectorDelegateWrapper<ClassType, RevisionableType, GetRevisionedVectorFunction>::wrap(
-				PythonClassType &python_class,
-				const char *class_name)
-		{
-			namespace bp = boost::python;
-
-			// The name of the list iterator class.
-			std::string iterator_class_name = std::string(class_name) + "Iterator";
-
-			typedef typename revisioned_vector_wrapper_type::Iterator iterator_type;
-
-			// Note: We don't docstring this - it's not an interface the python user needs to know about.
-			bp::class_<iterator_type>(iterator_class_name.c_str(), bp::no_init)
-				.def("__iter__", &iterator_type::self, bp::return_value_policy<bp::copy_non_const_reference>())
-				.def("next", &iterator_type::next)
-			;
-
-			// Add the 'def' methods to 'python_class'.
-			add_revisioned_vector_def_methods_to_python_class<this_type>(python_class);
-		}
 	}
 
 

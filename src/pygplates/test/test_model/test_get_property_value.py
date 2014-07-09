@@ -38,6 +38,13 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 pygplates.PropertyName.create_gpml('relativePlate'),
                 pygplates.GpmlPlateId(13))
         self.feature.add(
+                pygplates.PropertyName.create_gpml('times'),
+                pygplates.GpmlArray([
+                        pygplates.GmlTimePeriod(10, 0),
+                        pygplates.GmlTimePeriod(20, 10),
+                        pygplates.GmlTimePeriod(30, 20),
+                        pygplates.GmlTimePeriod(40, 30)]))
+        self.feature.add(
                 pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'),
                 pygplates.XsInteger(300))
         self.feature.add(
@@ -322,6 +329,26 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         gpml_relative_plate = self.feature.set_relative_plate(701)
         self.assertTrue(gpml_relative_plate.get_value().get_plate_id() == self.feature.get_relative_plate())
         self.assertTrue(self.feature.get_relative_plate() == 701)
+    
+    def test_get_and_set_times(self):
+        self.assertTrue(self.feature.get_times() == [0, 10, 20, 30, 40])
+        self.feature.remove(pygplates.PropertyName.create_gpml('times'))
+        # With property removed it should return default of None.
+        self.assertFalse(self.feature.get_times())
+        
+        self.feature.set_times([5, 15, 35])
+        self.assertTrue(self.feature.get_times() == [5, 15, 35])
+        gpml_times = self.feature.set_times([1, 2, 3])
+        # Property stores time periods (not time instants).
+        self.assertTrue(gpml_times.get_value()[:] == [pygplates.GmlTimePeriod(2, 1), pygplates.GmlTimePeriod(3, 2)])
+        self.assertTrue(self.feature.get_times() == [1, 2, 3])
+        # Raises error if less than two time values.
+        self.assertRaises(RuntimeError, self.feature.set_times, [5])
+        # Raises error if time sequence is not monotonically increasing.
+        self.assertRaises(RuntimeError, self.feature.set_times, [5, 4])
+        self.assertRaises(RuntimeError, self.feature.set_times, [5, 4, 6, 7])
+        self.assertRaises(RuntimeError, self.feature.set_times, [5, 6, 8, 7])
+        self.assertRaises(RuntimeError, self.feature.set_times, [5, 6, 8, 7, 9])
     
     def test_get_and_set_shapefile_attribute(self):
         # Start off with feature that has no 'gpml:shapefileAttributes' property.
