@@ -33,6 +33,7 @@ Contents:
 	pygplates.GmlPolygon
 	pygplates.GmlTimeInstant
 	pygplates.GmlTimePeriod
+	pygplates.GpmlArray
 	pygplates.GpmlConstantValue
 	pygplates.GpmlFiniteRotation
 	# Not including interpolation function since it is not really used (yet) in GPlates and hence

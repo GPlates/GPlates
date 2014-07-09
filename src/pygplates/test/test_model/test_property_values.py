@@ -294,6 +294,33 @@ class GmlTimePeriodCase(unittest.TestCase):
                 self.gml_time_period.set_end_time, pygplates.GeoTimeInstant(5.5))
 
 
+class GpmlArrayCase(unittest.TestCase):
+    """Test GpmlArray.
+    
+    NOTE: The testing of the array elements list implementation is handled in 'test_revisioned_vector.py'.
+    GpmlArray essentially just delegates to the RevisionedVector implementation so we just test a few delegate methods here."""
+    
+    def setUp(self):
+        self.original_elements = []
+        for i in range(0,4):
+            element = pygplates.XsInteger(i)
+            self.original_elements.append(element)
+        
+        self.gpml_array = pygplates.GpmlArray(self.original_elements)
+
+    def test_get(self):
+        self.assertTrue(list(self.gpml_array) == self.original_elements)
+        self.assertTrue([element for element in self.gpml_array] == self.original_elements)
+
+    def test_set(self):
+        reversed_elements = list(reversed(self.gpml_array))
+        self.gpml_array[:] = reversed_elements
+        self.assertTrue(list(self.gpml_array) == reversed_elements)
+        
+        # Need at least one time sample to create a GpmlArray.
+        self.assertRaises(RuntimeError, pygplates.GpmlArray, [])
+
+
 class GpmlConstantValueCase(unittest.TestCase):
     def setUp(self):
         self.property_value1 = pygplates.GpmlPlateId(701)
@@ -684,6 +711,7 @@ def suite():
             GmlPolygonCase,
             GmlTimeInstantCase,
             GmlTimePeriodCase,
+            GpmlArrayCase,
             GpmlConstantValueCase,
             GpmlFiniteRotationCase,
             # Not including interpolation function since it is not really used (yet) in GPlates and hence

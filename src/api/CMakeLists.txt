@@ -58,6 +58,7 @@ set(srcs
     PyReconstructionTree.cc
     PyReconstructionTree.h
     PyRevisionedVector.cc
+    PyRevisionedVector.h
     PyRotationModel.cc
     PyRotationModel.h
     PyStrings.cc

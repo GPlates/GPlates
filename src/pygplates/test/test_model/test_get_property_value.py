@@ -35,6 +35,9 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 pygplates.PropertyName.create_gpml('rightPlate'),
                 pygplates.GpmlPlateId(12))
         self.feature.add(
+                pygplates.PropertyName.create_gpml('relativePlate'),
+                pygplates.GpmlPlateId(13))
+        self.feature.add(
                 pygplates.PropertyName.create_gpml('subductionZoneSystemOrder'),
                 pygplates.XsInteger(300))
         self.feature.add(
@@ -226,7 +229,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(gpml_right_plate.get_value().get_plate_id() == self.feature.get_right_plate())
         self.assertTrue(self.feature.get_right_plate() == 701)
     
-    def test_get_and_get_reconstruction_method(self):
+    def test_get_and_set_reconstruction_method(self):
         # There's no reconstruction method so should return default.
         self.assertTrue(self.feature.get_reconstruction_method() == 'ByPlateId')
         self.assertFalse(self.feature.get_reconstruction_method(None))
@@ -248,7 +251,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 pygplates.VerifyInformationModel.no)
         self.assertFalse(self.feature.get_reconstruction_method(None))
     
-    def test_get_and_get_reconstruction_plate_id(self):
+    def test_get_and_set_reconstruction_plate_id(self):
         # There are two reconstruction plate IDs so this should return zero (default when not exactly one property).
         self.assertTrue(self.feature.get_reconstruction_plate_id() == 0)
         self.assertFalse(self.feature.get_reconstruction_plate_id(None))
@@ -306,7 +309,21 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         gpml_conjugate_plate_id = self.feature.set_conjugate_plate_id((905, 906))
         self.assertTrue(len(gpml_conjugate_plate_id) == 2)
     
-    def test_get_and_get_shapefile_attribute(self):
+    def test_get_and_set_relative_plate(self):
+        self.assertTrue(self.feature.get_relative_plate() == 13)
+        self.feature.remove(pygplates.PropertyName.create_gpml('relativePlate'))
+        # With property removed it should return default of zero.
+        self.assertTrue(self.feature.get_relative_plate() == 0)
+        # With property removed it should return our default (None).
+        self.assertFalse(self.feature.get_relative_plate(None))
+        
+        self.feature.set_relative_plate(201)
+        self.assertTrue(self.feature.get_relative_plate() == 201)
+        gpml_relative_plate = self.feature.set_relative_plate(701)
+        self.assertTrue(gpml_relative_plate.get_value().get_plate_id() == self.feature.get_relative_plate())
+        self.assertTrue(self.feature.get_relative_plate() == 701)
+    
+    def test_get_and_set_shapefile_attribute(self):
         # Start off with feature that has no 'gpml:shapefileAttributes' property.
         self.assertFalse(self.feature.get(pygplates.PropertyName.create_gpml('shapefileAttributes'), pygplates.PropertyReturn.all))
         self.assertFalse(self.feature.get_shapefile_attribute('non_existent_key'))

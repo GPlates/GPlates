@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <sstream>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
@@ -32,6 +33,7 @@
 
 #include "PyInformationModel.h"
 #include "PythonConverterUtils.h"
+#include "PyRevisionedVector.h"
 
 #include "app-logic/GeometryUtils.h"
 
@@ -60,6 +62,7 @@
 #include "property-values/GmlPolygon.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlArray.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
@@ -161,6 +164,7 @@ export_property_value()
 					"* :class:`GmlPolygon`\n"
 					"* :class:`GmlTimeInstant`\n"
 					"* :class:`GmlTimePeriod`\n"
+					"* :class:`GpmlArray`\n"
 					"* :class:`GpmlConstantValue`\n"
 					"* :class:`GpmlFiniteRotation`\n"
 					//"* :class:`GpmlFiniteRotationSlerp`\n"
@@ -958,6 +962,110 @@ export_gml_time_period()
 	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
 	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			GPlatesPropertyValues::GmlTimePeriod,
+			GPlatesModel::PropertyValue>();
+}
+
+
+namespace GPlatesApi
+{
+	const GPlatesPropertyValues::GpmlArray::non_null_ptr_type
+	gpml_array_create(
+			bp::object elements) // Any python sequence (eg, list, tuple).
+	{
+		// Begin/end iterators over the python elements sequence.
+		bp::stl_input_iterator<GPlatesModel::PropertyValue::non_null_ptr_type>
+				elements_begin(elements),
+				elements_end;
+
+		// Copy into a vector.
+		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> elements_vector;
+		std::copy(elements_begin, elements_end, std::back_inserter(elements_vector));
+
+		// We need at least one time sample to determine the value type, otherwise we need to
+		// ask the python user for it and that might be a little confusing for them.
+		if (elements_vector.empty())
+		{
+			PyErr_SetString(
+					PyExc_RuntimeError,
+					"pygplates.GpmlArray::create() requires a non-empty sequence of PropertyValue elements");
+			bp::throw_error_already_set();
+		}
+
+		return GPlatesPropertyValues::GpmlArray::create(
+				elements_vector,
+				elements_vector[0]->get_structural_type());
+	}
+
+	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type
+	gpml_array_get_members(
+			GPlatesPropertyValues::GpmlArray &gpml_array)
+	{
+		return GPlatesUtils::get_non_null_pointer(&gpml_array.members());
+	}
+}
+
+void
+export_gpml_array()
+{
+	const char *const gpml_array_class_name = "GpmlArray";
+
+	std::stringstream gpml_array_class_docstring_stream;
+	gpml_array_class_docstring_stream <<
+			"A sequence of property value elements.\n"
+			"\n"
+			<< gpml_array_class_name <<
+			" behaves like a regular python ``list`` in that the following operations are supported:\n"
+			"\n"
+			<< GPlatesApi::get_python_list_operations_docstring(gpml_array_class_name) <<
+			"\n"
+			"All elements should have the same type (such as :class:`GmlTimePeriod`).\n";
+
+	//
+	// GpmlArray - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GpmlArray,
+			GPlatesPropertyValues::GpmlArray::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable> gpml_array_class(
+					gpml_array_class_name,
+					gpml_array_class_docstring_stream.str().c_str(),
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init);
+
+	gpml_array_class.def("__init__",
+			bp::make_constructor(
+					&GPlatesApi::gpml_array_create,
+					bp::default_call_policies(),
+					(bp::arg("elements"))),
+			"__init__(elements)\n"
+			"  Create an array from a sequence of property value elements.\n"
+			"\n"
+			"  :param elements: A sequence of :class:`PropertyValue` elements.\n"
+			"  :type elements: Any sequence such as a ``list`` or a ``tuple``\n"
+			"  :raises: RuntimeError if sequence is empty\n"
+			"\n"
+			"  Note that all elements should have the same type (such as :class:`GmlTimePeriod`).\n"
+			"\n"
+			"  **NOTE** that the sequence of elements must **not** be empty (for technical implementation reasons), "
+			"otherwise a *RuntimeError* exception will be thrown.\n"
+			"  ::\n"
+			"\n"
+			"    array = pygplates.GpmlArray(elements)\n");
+
+	// Used 'GPlatesApi::gpml_array_get_members()' to make 'GpmlArray' look like a python list.
+	GPlatesApi::wrap_python_class_as_revisioned_vector<
+			GPlatesPropertyValues::GpmlArray,
+			GPlatesModel::PropertyValue,
+			&GPlatesApi::gpml_array_get_members>(
+					gpml_array_class,
+					gpml_array_class_name);
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GpmlArray,
 			GPlatesModel::PropertyValue>();
 }
 
@@ -2775,6 +2883,7 @@ export_property_values()
 	export_gml_time_instant();
 	export_gml_time_period();
 
+	export_gpml_array();
 	export_gpml_constant_value();
 
 	// GpmlInterpolationFunction and its derived classes.

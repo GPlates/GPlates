@@ -1604,6 +1604,8 @@ export_feature()
 					"* :meth:`get_left_plate`\n"
 					"* :meth:`set_right_plate`\n"
 					"* :meth:`get_right_plate`\n"
+					"* :meth:`set_relative_plate`\n"
+					"* :meth:`get_relative_plate`\n"
 					"* :meth:`set_reconstruction_method`\n"
 					"* :meth:`get_reconstruction_method`\n"
 					"* :meth:`set_total_reconstruction_pole`\n"

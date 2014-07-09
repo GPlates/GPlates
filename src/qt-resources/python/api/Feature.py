@@ -9,6 +9,7 @@ _gpml_reconstruction_method_property_name = PropertyName.create_gpml('reconstruc
 _gpml_reconstruction_method_enumeration_type = EnumerationType.create_gpml('ReconstructionMethodEnumeration')
 _gpml_reconstruction_plate_id_property_name = PropertyName.create_gpml('reconstructionPlateId')
 _gpml_conjugate_plate_id_property_name = PropertyName.create_gpml('conjugatePlateId')
+_gpml_relative_plate_property_name = PropertyName.create_gpml('relativePlate')
 _gpml_shapefile_attributes_property_name = PropertyName.create_gpml('shapefileAttributes')
 _gpml_fixed_reference_frame_property_name = PropertyName.create_gpml('fixedReferenceFrame')
 _gpml_moving_reference_frame_property_name = PropertyName.create_gpml('movingReferenceFrame')
@@ -711,6 +712,76 @@ def set_conjugate_plate_id(feature, conjugate_plate_id, verify_information_model
 Feature.set_conjugate_plate_id = set_conjugate_plate_id
 # Delete the module reference to the function - we only keep the class method.
 del set_conjugate_plate_id
+
+
+def get_relative_plate(feature, default=0):
+    """get_relative_plate([default=0]) -> int
+    Returns the relative plate ID of this feature.
+    
+    :param default: the default relative plate id (defaults zero)
+    :type default: int or None
+    :returns: the relative plate id (if exactly one 'gpml:relativePlate' property found), otherwise *default* is returned
+    :rtype: int, or type(*default*)
+    
+    This is a convenience method that wraps :meth:`get_value` for the common property 'gpml:relativePlate'.
+    
+    Return the relative plate ID as an integer (defaults to zero if not exactly one found):
+    ::
+    
+      relative_plate_id = feature.get_relative_plate()
+    
+    Set *default* to ``None`` to test that there is exactly one 'gpml:relativePlate' property:
+    ::
+    
+      relative_plate_id = feature.get_relative_plate(None)
+      if relative_plate_id:
+        ...
+    """
+    
+    gpml_relative_plate = feature.get_value(_gpml_relative_plate_property_name)
+    if not gpml_relative_plate:
+        return default
+    
+    try:
+        return gpml_relative_plate.get_plate_id()
+    except AttributeError:
+        # The property value type did not match the property name.
+        # This indicates the data does not conform to the GPlates Geological Information Model (GPGIM).
+        return default
+
+# Add the module function as a class method.
+Feature.get_relative_plate = get_relative_plate
+# Delete the module reference to the function - we only keep the class method.
+del get_relative_plate
+
+
+def set_relative_plate(feature, relative_plate, verify_information_model=VerifyInformationModel.yes):
+    """set_relative_plate(relative_plate, [verify_information_model=VerifyInformationModel.yes]) -> Property
+    Sets the relative plate ID of this feature.
+    
+    :param relative_plate: the relative plate id
+    :type relative_plate: int
+    :param verify_information_model: whether to check the information model before setting (default) or not
+    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :returns: the property containing the relative plate id
+    :rtype: :class:`Property`
+    :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
+    does not support the 'gpml:relativePlate' property.
+    
+    This is a convenience method that wraps :meth:`set` for the common property 'gpml:relativePlate'.
+    
+    Set the relative plate ID to an integer:
+    ::
+    
+      feature.set_relative_plate(701)
+    """
+    
+    return feature.set(_gpml_relative_plate_property_name, GpmlPlateId(relative_plate), verify_information_model)
+
+# Add the module function as a class method.
+Feature.set_relative_plate = set_relative_plate
+# Delete the module reference to the function - we only keep the class method.
+del set_relative_plate
 
 
 def get_shapefile_attribute(feature, key, default_value=None):
