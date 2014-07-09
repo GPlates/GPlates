@@ -1578,7 +1578,7 @@ namespace GPlatesApi
 				FLOWLINE_FEATURE_TYPE, feature_id, verify_information_model);
 		bp::object feature_object(feature);
 
-		// Set the see geometry.
+		// Set the seed geometry.
 		feature_handle_set_geometry(*feature, seed_geometry, boost::none, verify_information_model);
 
 		// Set the times.
@@ -1616,6 +1616,75 @@ namespace GPlatesApi
 		{
 			// Call python since Feature.set_right_plate is implemented in python code...
 			feature_object.attr("set_right_plate")(right_plate.get(), verify_information_model);
+		}
+
+		// If there are other properties then add them.
+		if (other_properties != bp::object()/*Py_None*/)
+		{
+			feature_handle_add_properties(*feature, other_properties, verify_information_model);
+		}
+
+		return feature;
+	}
+
+	const GPlatesModel::FeatureHandle::non_null_ptr_type
+	feature_handle_create_motion_path(
+			bp::object seed_geometry,
+			bp::object times,
+			boost::optional<QString> name,
+			boost::optional<QString> description,
+			bp::object valid_time,
+			boost::optional<GPlatesModel::integer_plate_id_type> relative_plate,
+			boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
+			bp::object other_properties,
+			boost::optional<GPlatesModel::FeatureId> feature_id,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		static const GPlatesModel::FeatureType MOTIONPATH_FEATURE_TYPE =
+				GPlatesModel::FeatureType::create_gpml("MotionPath");
+
+		GPlatesModel::FeatureHandle::non_null_ptr_type feature = feature_handle_create(
+				MOTIONPATH_FEATURE_TYPE, feature_id, verify_information_model);
+		bp::object feature_object(feature);
+
+		// Set the seed geometry.
+		feature_handle_set_geometry(*feature, seed_geometry, boost::none, verify_information_model);
+
+		// Set the times.
+		// Call python since Feature.set_times is implemented in python code...
+		feature_object.attr("set_times")(times, verify_information_model);
+
+		// Set the reconstruction method to by-plate-id.
+		// Call python since Feature.set_reconstruction_method is implemented in python code...
+		feature_object.attr("set_reconstruction_method")("ByPlateId", verify_information_model);
+
+		if (name)
+		{
+			// Call python since Feature.set_name is implemented in python code...
+			feature_object.attr("set_name")(name.get(), verify_information_model);
+		}
+
+		if (description)
+		{
+			// Call python since Feature.set_description is implemented in python code...
+			feature_object.attr("set_description")(description.get(), verify_information_model);
+		}
+
+		if (valid_time != bp::object()/*Py_None*/)
+		{
+			set_valid_time_from_tuple(feature_object, valid_time, verify_information_model);
+		}
+
+		if (relative_plate)
+		{
+			// Call python since Feature.set_relative_plate is implemented in python code...
+			feature_object.attr("set_relative_plate")(relative_plate.get(), verify_information_model);
+		}
+
+		if (reconstruction_plate_id)
+		{
+			// Call python since Feature.set_reconstruction_plate_id is implemented in python code...
+			feature_object.attr("set_reconstruction_plate_id")(reconstruction_plate_id.get(), verify_information_model);
 		}
 
 		// If there are other properties then add them.
@@ -1671,6 +1740,7 @@ export_feature()
 					"* :meth:`create_reconstructable_feature`\n"
 					"* :meth:`create_tectonic_section`\n"
 					"* :meth:`create_flowline`\n"
+					"* :meth:`create_motion_path`\n"
 					"* :meth:`create_total_reconstruction_sequence`\n"
 					"\n"
 					"The following methods return the :class:`feature type<FeatureType>` and :class:`feature id<FeatureId>`:\n"
@@ -2151,6 +2221,98 @@ export_feature()
 				"    flowline_feature.set_right_plate(701)\n"
 				"    pygplates.reverse_reconstruct(flowline_feature, rotation_model, 50)\n")
 		.staticmethod("create_flowline")
+		.def("create_motion_path",
+				&GPlatesApi::feature_handle_create_motion_path,
+				(bp::arg("seed_geometry"),
+						bp::arg("times"),
+						bp::arg("name") = boost::optional<QString>(),
+						bp::arg("description") = boost::optional<QString>(),
+						bp::arg("valid_time") = bp::object()/*Py_None*/,
+						bp::arg("relative_plate") = boost::optional<GPlatesModel::integer_plate_id_type>(),
+						bp::arg("reconstruction_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
+						bp::arg("other_properties") = bp::object()/*Py_None*/,
+						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"create_motion_path(seed_geometry, times, [name], [description], [valid_time], "
+				"[relative_plate], [reconstruction_plate_id], [other_properties], [feature_id], "
+				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
+				"  Create a motion path feature.\n"
+				"\n"
+				"  :param seed_geometry: the seed point (or points) - see :meth:`set_geometry` - if geometry "
+				"is not present-day geometry then the created feature will need to be reverse reconstructed "
+				"to present day using (using :func:`reverse_reconstruct`) before the feature can be "
+				"reconstructed to an arbitrary reconstruction time\n"
+				"  :type seed_geometry: :class:`PointOnSphere` or :class:`MultiPointOnSphere`\n"
+				"  :param times: the list of times\n"
+				"  :type times: sequence (eg, ``list`` or ``tuple``) of float or :class:`GeoTimeInstant`\n"
+				"  :param name: the name or names, if not specified then no 'gml:name' properties are added\n"
+				"  :type name: string, or sequence of string\n"
+				"  :param description: the description, if not specified then a 'gml:description' property is not added\n"
+				"  :type description: string\n"
+				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a 'gml:validTime' "
+				"property is not added\n"
+				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
+				"  :param relative_plate: the relative plate id, if not specified then a 'gpml:relativePlate' property is not added\n"
+				"  :type relative_plate: int\n"
+				"  :param reconstruction_plate_id: the reconstruction plate id, if not specified then a "
+				"'gpml:reconstructionPlateId' property is not added\n"
+				"  :type reconstruction_plate_id: int\n"
+				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
+				"be added later with :meth:`add`\n"
+				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
+				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
+				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param verify_information_model: whether to check the information model (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and *seed_geometry* is not a :class:`PointOnSphere` or a :class:`MultiPointOnSphere`.\n"
+				"\n"
+				"  This function calls :meth:`set_geometry`, :meth:`set_times`, :meth:`set_name`, "
+				":meth:`set_description`, :meth:`set_valid_time`, :meth:`set_relative_plate`, "
+				":meth:`set_reconstruction_plate_id`, :meth:`set_reconstruction_method` and :meth:`add`.\n"
+				"\n"
+				"  Create a motion path feature:\n"
+				"  ::\n"
+				"\n"
+				"    present_day_seed_geometry = pygplates.MultiPointOnSphere([...])\n"
+				"    motion_path_feature = pygplates.Feature.create_motion_path(\n"
+				"        present_day_seed_geometry,\n"
+				"        [0, 10, 20, 30, 40],\n"
+				"        valid_time=(50, 0),\n"
+				"        relative_plate=201,\n"
+				"        reconstruction_plate_id=701)\n"
+				"\n"
+				"  If *seed_geometry* is not present-day geometry then the created "
+				"feature will need to be reverse reconstructed to present day using (using :func:`reverse_reconstruct`) "
+				"before the feature can be reconstructed to an arbitrary reconstruction time - this is "
+				"because a feature is not complete until its geometry is *present day* geometry.\n"
+				"\n"
+				"  Create a motion path feature (note that it must also be reverse reconstructed since "
+				"the specified geometry is not present day geometry):\n"
+				"  ::\n"
+				"\n"
+				"    seed_geometry_at_50Ma = pygplates.MultiPointOnSphere([...])\n"
+				"    motion_path_feature = pygplates.Feature.create_motion_path(\n"
+				"        seed_geometry_at_50Ma,\n"
+				"        valid_time=(50, 0),\n"
+				"        relative_plate=201,\n"
+				"        reconstruction_plate_id=701)\n"
+				"    pygplates.reverse_reconstruct(motion_path_feature, rotation_model, 50)\n"
+				"\n"
+				"  The previous example is the equivalent of the following (note that the "
+				":func:`reverse reconstruction<reverse_reconstruct>` is done *after* the properties have "
+				"been set on the feature - this is necessary because reverse reconstruction looks at these "
+				"properties to determine how to reverse reconstruct):\n"
+				"  ::\n"
+				"\n"
+				"    motion_path_feature = pygplates.Feature(pygplates.FeatureType.create_gpml('MotionPath'))\n"
+				"    motion_path_feature.set_geometry(seed_geometry_at_50Ma)\n"
+				"    motion_path_feature.set_valid_time(50, 0)\n"
+				"    motion_path_feature.set_relative_plate(201)\n"
+				"    motion_path_feature.set_reconstruction_plate_id(701)\n"
+				"    pygplates.reverse_reconstruct(motion_path_feature, rotation_model, 50)\n")
+		.staticmethod("create_motion_path")
 		.def("add",
 				&GPlatesApi::feature_handle_add_property,
 				(bp::arg("property_name"),
