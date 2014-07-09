@@ -331,7 +331,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(self.feature.get_relative_plate() == 701)
     
     def test_get_and_set_times(self):
-        self.assertTrue(self.feature.get_times() == [0, 10, 20, 30, 40])
+        self.assertTrue(self.feature.get_times() == [0, 10, 20, pygplates.GeoTimeInstant(30), 40])
         self.feature.remove(pygplates.PropertyName.create_gpml('times'))
         # With property removed it should return default of None.
         self.assertFalse(self.feature.get_times())

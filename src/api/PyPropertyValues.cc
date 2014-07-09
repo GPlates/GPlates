@@ -286,44 +286,47 @@ export_property_value()
 
 namespace GPlatesApi
 {
-	void
-	verify_enumeration_type_and_content(
-			const GPlatesPropertyValues::EnumerationType &type,
-			const QString &content)
+	namespace
 	{
-		// Get the GPGIM enumeration type.
-		boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type> gpgim_enumeration_type =
-				GPlatesModel::Gpgim::instance().get_property_enumeration_type(
-						GPlatesPropertyValues::StructuralType(type));
-		// This exception will get converted to python 'InformationModelError'.
-		GPlatesGlobal::Assert<InformationModelException>(
-				gpgim_enumeration_type,
-				GPLATES_EXCEPTION_SOURCE,
-				QString("The enumeration type '") +
-						convert_qualified_xml_name_to_qstring(type) +
-						"' was not recognised as a valid type by the GPGIM");
-
-		// Ensure the enumeration content is allowed, by the GPGIM, for the enumeration type.
-		bool is_content_valid = false;
-		const GPlatesModel::GpgimEnumerationType::content_seq_type &enum_contents =
-				gpgim_enumeration_type.get()->get_contents();
-		BOOST_FOREACH(const GPlatesModel::GpgimEnumerationType::Content &enum_content, enum_contents)
+		void
+		verify_enumeration_type_and_content(
+				const GPlatesPropertyValues::EnumerationType &type,
+				const QString &content)
 		{
-			if (content == enum_content.value)
-			{
-				is_content_valid = true;
-				break;
-			}
-		}
+			// Get the GPGIM enumeration type.
+			boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type> gpgim_enumeration_type =
+					GPlatesModel::Gpgim::instance().get_property_enumeration_type(
+							GPlatesPropertyValues::StructuralType(type));
+			// This exception will get converted to python 'InformationModelError'.
+			GPlatesGlobal::Assert<InformationModelException>(
+					gpgim_enumeration_type,
+					GPLATES_EXCEPTION_SOURCE,
+					QString("The enumeration type '") +
+							convert_qualified_xml_name_to_qstring(type) +
+							"' was not recognised as a valid type by the GPGIM");
 
-		// This exception will get converted to python 'InformationModelError'.
-		GPlatesGlobal::Assert<InformationModelException>(
-				is_content_valid,
-				GPLATES_EXCEPTION_SOURCE,
-				QString("The enumeration content '") +
-						content +
-						"' is not supported by enumeration type '" +
-						convert_qualified_xml_name_to_qstring(type) + "'");
+			// Ensure the enumeration content is allowed, by the GPGIM, for the enumeration type.
+			bool is_content_valid = false;
+			const GPlatesModel::GpgimEnumerationType::content_seq_type &enum_contents =
+					gpgim_enumeration_type.get()->get_contents();
+			BOOST_FOREACH(const GPlatesModel::GpgimEnumerationType::Content &enum_content, enum_contents)
+			{
+				if (content == enum_content.value)
+				{
+					is_content_valid = true;
+					break;
+				}
+			}
+
+			// This exception will get converted to python 'InformationModelError'.
+			GPlatesGlobal::Assert<InformationModelException>(
+					is_content_valid,
+					GPLATES_EXCEPTION_SOURCE,
+					QString("The enumeration content '") +
+							content +
+							"' is not supported by enumeration type '" +
+							convert_qualified_xml_name_to_qstring(type) + "'");
+		}
 	}
 
 	const GPlatesPropertyValues::Enumeration::non_null_ptr_type

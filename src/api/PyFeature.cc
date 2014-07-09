@@ -71,6 +71,247 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+	namespace
+	{
+		/**
+		 * Returns the default geometry property name associated with the specified feature type.
+		 */
+		boost::optional<GPlatesModel::PropertyName>
+		get_default_geometry_property_name(
+				const GPlatesModel::FeatureType &feature_type)
+		{
+			const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
+
+			// Get the GPGIM feature class.
+			boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
+					gpgim.get_feature_class(feature_type);
+			if (!gpgim_feature_class)
+			{
+				return boost::none;
+			}
+
+			// Get the feature's default geometry property.
+			boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_geometry_feature_property =
+					gpgim_feature_class.get()->get_default_geometry_feature_property();
+			if (!default_geometry_feature_property)
+			{
+				return boost::none;
+			}
+
+			return default_geometry_feature_property.get()->get_property_name();
+		}
+
+		/**
+		 * Returns true if the specified property name supports the type of the specified geometry.
+		 */
+		bool
+		is_geometry_type_supported_by_property(
+				const GPlatesMaths::GeometryOnSphere &geometry,
+				const GPlatesModel::PropertyName &property_name)
+		{
+			const GPlatesMaths::GeometryType::Value geometry_type =
+					GPlatesAppLogic::GeometryUtils::get_geometry_type(geometry);
+
+			// Get the property value structural type associated with the geometry type.
+			boost::optional<GPlatesPropertyValues::StructuralType> geometry_structural_type;
+			switch (geometry_type)
+			{
+			case GPlatesMaths::GeometryType::POINT:
+				geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("Point");
+				break;
+
+			case GPlatesMaths::GeometryType::MULTIPOINT:
+				geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("MultiPoint");
+				break;
+
+			case GPlatesMaths::GeometryType::POLYLINE:
+				geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("LineString");
+				break;
+
+			case GPlatesMaths::GeometryType::POLYGON:
+				geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("Polygon");
+				break;
+
+			case GPlatesMaths::GeometryType::NONE:
+			default:
+				break;
+			}
+
+			if (!geometry_structural_type)
+			{
+				return false;
+			}
+
+			const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
+
+			// Get the GPGIM property using the property name.
+			boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
+					gpgim.get_property(property_name);
+			if (!gpgim_property)
+			{
+				return false;
+			}
+
+			const GPlatesModel::GpgimProperty::structural_type_seq_type &gpgim_structural_types =
+					gpgim_property.get()->get_structural_types();
+
+			// If any allowed structural type matches then the geometry type is supported.
+			BOOST_FOREACH(
+					GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type gpgim_structural_type,
+					gpgim_structural_types)
+			{
+				if (geometry_structural_type == gpgim_structural_type->get_structural_type())
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		/**
+		 * Return derived geometry type as a string.
+		 */
+		QString
+		get_geometry_type_as_string(
+				const GPlatesMaths::GeometryOnSphere &geometry)
+		{
+			const GPlatesMaths::GeometryType::Value geometry_type =
+					GPlatesAppLogic::GeometryUtils::get_geometry_type(geometry);
+
+			switch (geometry_type)
+			{
+			case GPlatesMaths::GeometryType::POINT:
+				return QString("PointOnSphere");
+
+			case GPlatesMaths::GeometryType::MULTIPOINT:
+				return QString("MultiPointOnSphere");
+
+			case GPlatesMaths::GeometryType::POLYLINE:
+				return QString("PolylineOnSphere");
+
+			case GPlatesMaths::GeometryType::POLYGON:
+				return QString("PolygonOnSphere");
+
+			case GPlatesMaths::GeometryType::NONE:
+			default:
+				break;
+			}
+
+			// Should not be able to get here.
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+			return QString(); // Keep compiler happy.
+		}
+
+		/**
+		 * Throws InformationModelException if @a feature_type does not inherit directly or indirectly
+		 * from @a ancestor_feature_type.
+		 */
+		void
+		verify_feature_type_inherits(
+				const GPlatesModel::FeatureType &feature_type,
+				const GPlatesModel::FeatureType &ancestor_feature_type)
+		{
+			boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
+					GPlatesModel::Gpgim::instance().get_feature_class(feature_type);
+
+			// This exception will get converted to python 'InformationModelError'.
+			GPlatesGlobal::Assert<InformationModelException>(
+					gpgim_feature_class,
+					GPLATES_EXCEPTION_SOURCE,
+					QString("The feature type '") +
+							convert_qualified_xml_name_to_qstring(feature_type) +
+							"' was not recognised as a valid type by the GPGIM");
+
+			GPlatesGlobal::Assert<InformationModelException>(
+					gpgim_feature_class.get()->does_inherit_from(ancestor_feature_type),
+					GPLATES_EXCEPTION_SOURCE,
+					QString("The feature type '") +
+							convert_qualified_xml_name_to_qstring(feature_type) +
+							"' is not a reconstructable feature (does not inherit '" +
+							convert_qualified_xml_name_to_qstring(ancestor_feature_type) +
+							"')");
+		}
+
+		// FIXME: Avoid duplicating same function from "PyPropertyValues.cc".
+		void
+		verify_enumeration_type_and_content(
+				const GPlatesPropertyValues::EnumerationType &type,
+				const QString &content)
+		{
+			// Get the GPGIM enumeration type.
+			boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type> gpgim_enumeration_type =
+					GPlatesModel::Gpgim::instance().get_property_enumeration_type(
+							GPlatesPropertyValues::StructuralType(type));
+			// This exception will get converted to python 'InformationModelError'.
+			GPlatesGlobal::Assert<InformationModelException>(
+					gpgim_enumeration_type,
+					GPLATES_EXCEPTION_SOURCE,
+					QString("The enumeration type '") +
+							convert_qualified_xml_name_to_qstring(type) +
+							"' was not recognised as a valid type by the GPGIM");
+
+			// Ensure the enumeration content is allowed, by the GPGIM, for the enumeration type.
+			bool is_content_valid = false;
+			const GPlatesModel::GpgimEnumerationType::content_seq_type &enum_contents =
+					gpgim_enumeration_type.get()->get_contents();
+			BOOST_FOREACH(const GPlatesModel::GpgimEnumerationType::Content &enum_content, enum_contents)
+			{
+				if (content == enum_content.value)
+				{
+					is_content_valid = true;
+					break;
+				}
+			}
+
+			// This exception will get converted to python 'InformationModelError'.
+			GPlatesGlobal::Assert<InformationModelException>(
+					is_content_valid,
+					GPLATES_EXCEPTION_SOURCE,
+					QString("The enumeration content '") +
+							content +
+							"' is not supported by enumeration type '" +
+							convert_qualified_xml_name_to_qstring(type) + "'");
+		}
+
+		/**
+		 * Extract the (begin, end) times from a tuple and set the valid time on the specified feature.
+		 */
+		void
+		set_valid_time_from_tuple(
+				bp::object feature_object,
+				bp::object valid_time,
+				VerifyInformationModel::Value verify_information_model)
+		{
+			bp::extract<bp::tuple> extract_tuple(valid_time);
+			if (!extract_tuple.check())
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting a (begin, end) tuple for 'valid_time'");
+				bp::throw_error_already_set();
+			}
+
+			bp::tuple valid_time_tuple = extract_tuple();
+			if (bp::len(valid_time_tuple) != 2)
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting a (begin, end) tuple for 'valid_time'");
+				bp::throw_error_already_set();
+			}
+
+			bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_begin_time(valid_time[0]);
+			bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_end_time(valid_time[1]);
+			if (!extract_begin_time.check() ||
+				!extract_end_time.check())
+			{
+				PyErr_SetString(PyExc_TypeError, "Expecting float or GeoTimeInstant for 'valid_time' tuple values");
+				bp::throw_error_already_set();
+			}
+
+			// Call python since Feature.set_valid_time is implemented in python code...
+			feature_object.attr("set_valid_time")(extract_begin_time(), extract_end_time(), verify_information_model);
+		}
+	}
+
+
 	/**
 	 * Enumeration to determine how properties are returned.
 	 */
@@ -83,208 +324,6 @@ namespace GPlatesApi
 			ALL          // Returns all elements that matches the query.
 		};
 	};
-
-
-	/**
-	 * Returns the default geometry property name associated with the specified feature type.
-	 */
-	boost::optional<GPlatesModel::PropertyName>
-	get_default_geometry_property_name(
-			const GPlatesModel::FeatureType &feature_type)
-	{
-		const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
-
-		// Get the GPGIM feature class.
-		boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
-				gpgim.get_feature_class(feature_type);
-		if (!gpgim_feature_class)
-		{
-			return boost::none;
-		}
-
-		// Get the feature's default geometry property.
-		boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_geometry_feature_property =
-				gpgim_feature_class.get()->get_default_geometry_feature_property();
-		if (!default_geometry_feature_property)
-		{
-			return boost::none;
-		}
-
-		return default_geometry_feature_property.get()->get_property_name();
-	}
-
-	/**
-	 * Returns true if the specified property name supports the type of the specified geometry.
-	 */
-	bool
-	is_geometry_type_supported_by_property(
-			const GPlatesMaths::GeometryOnSphere &geometry,
-			const GPlatesModel::PropertyName &property_name)
-	{
-		const GPlatesMaths::GeometryType::Value geometry_type =
-				GPlatesAppLogic::GeometryUtils::get_geometry_type(geometry);
-
-		// Get the property value structural type associated with the geometry type.
-		boost::optional<GPlatesPropertyValues::StructuralType> geometry_structural_type;
-		switch (geometry_type)
-		{
-		case GPlatesMaths::GeometryType::POINT:
-			geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("Point");
-			break;
-
-		case GPlatesMaths::GeometryType::MULTIPOINT:
-			geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("MultiPoint");
-			break;
-
-		case GPlatesMaths::GeometryType::POLYLINE:
-			geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("LineString");
-			break;
-
-		case GPlatesMaths::GeometryType::POLYGON:
-			geometry_structural_type = GPlatesPropertyValues::StructuralType::create_gml("Polygon");
-			break;
-
-		case GPlatesMaths::GeometryType::NONE:
-		default:
-			break;
-		}
-
-		if (!geometry_structural_type)
-		{
-			return false;
-		}
-
-		const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
-
-		// Get the GPGIM property using the property name.
-		boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_property =
-				gpgim.get_property(property_name);
-		if (!gpgim_property)
-		{
-			return false;
-		}
-
-		const GPlatesModel::GpgimProperty::structural_type_seq_type &gpgim_structural_types =
-				gpgim_property.get()->get_structural_types();
-
-		// If any allowed structural type matches then the geometry type is supported.
-		BOOST_FOREACH(
-				GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type gpgim_structural_type,
-				gpgim_structural_types)
-		{
-			if (geometry_structural_type == gpgim_structural_type->get_structural_type())
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Return derived geometry type as a string.
-	 */
-	QString
-	get_geometry_type_as_string(
-			const GPlatesMaths::GeometryOnSphere &geometry)
-	{
-		const GPlatesMaths::GeometryType::Value geometry_type =
-				GPlatesAppLogic::GeometryUtils::get_geometry_type(geometry);
-
-		switch (geometry_type)
-		{
-		case GPlatesMaths::GeometryType::POINT:
-			return QString("PointOnSphere");
-
-		case GPlatesMaths::GeometryType::MULTIPOINT:
-			return QString("MultiPointOnSphere");
-
-		case GPlatesMaths::GeometryType::POLYLINE:
-			return QString("PolylineOnSphere");
-
-		case GPlatesMaths::GeometryType::POLYGON:
-			return QString("PolygonOnSphere");
-
-		case GPlatesMaths::GeometryType::NONE:
-		default:
-			break;
-		}
-
-		// Should not be able to get here.
-		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-		return QString(); // Keep compiler happy.
-	}
-
-	/**
-	 * Throws InformationModelException if @a feature_type does not inherit directly or indirectly
-	 * from @a ancestor_feature_type.
-	 */
-	void
-	verify_feature_type_inherits(
-			const GPlatesModel::FeatureType &feature_type,
-			const GPlatesModel::FeatureType &ancestor_feature_type)
-	{
-		boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
-				GPlatesModel::Gpgim::instance().get_feature_class(feature_type);
-
-		// This exception will get converted to python 'InformationModelError'.
-		GPlatesGlobal::Assert<InformationModelException>(
-				gpgim_feature_class,
-				GPLATES_EXCEPTION_SOURCE,
-				QString("The feature type '") +
-						convert_qualified_xml_name_to_qstring(feature_type) +
-						"' was not recognised as a valid type by the GPGIM");
-
-		GPlatesGlobal::Assert<InformationModelException>(
-				gpgim_feature_class.get()->does_inherit_from(ancestor_feature_type),
-				GPLATES_EXCEPTION_SOURCE,
-				QString("The feature type '") +
-						convert_qualified_xml_name_to_qstring(feature_type) +
-						"' is not a reconstructable feature (does not inherit '" +
-						convert_qualified_xml_name_to_qstring(ancestor_feature_type) +
-						"')");
-	}
-
-	// FIXME: Avoid duplicating same function from "PyPropertyValues.cc".
-	void
-	feature_handle_verify_enumeration_type_and_content(
-			const GPlatesPropertyValues::EnumerationType &type,
-			const QString &content)
-	{
-		// Get the GPGIM enumeration type.
-		boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type> gpgim_enumeration_type =
-				GPlatesModel::Gpgim::instance().get_property_enumeration_type(
-						GPlatesPropertyValues::StructuralType(type));
-		// This exception will get converted to python 'InformationModelError'.
-		GPlatesGlobal::Assert<InformationModelException>(
-				gpgim_enumeration_type,
-				GPLATES_EXCEPTION_SOURCE,
-				QString("The enumeration type '") +
-						convert_qualified_xml_name_to_qstring(type) +
-						"' was not recognised as a valid type by the GPGIM");
-
-		// Ensure the enumeration content is allowed, by the GPGIM, for the enumeration type.
-		bool is_content_valid = false;
-		const GPlatesModel::GpgimEnumerationType::content_seq_type &enum_contents =
-				gpgim_enumeration_type.get()->get_contents();
-		BOOST_FOREACH(const GPlatesModel::GpgimEnumerationType::Content &enum_content, enum_contents)
-		{
-			if (content == enum_content.value)
-			{
-				is_content_valid = true;
-				break;
-			}
-		}
-
-		// This exception will get converted to python 'InformationModelError'.
-		GPlatesGlobal::Assert<InformationModelException>(
-				is_content_valid,
-				GPLATES_EXCEPTION_SOURCE,
-				QString("The enumeration content '") +
-						content +
-						"' is not supported by enumeration type '" +
-						convert_qualified_xml_name_to_qstring(type) + "'");
-	}
 
 
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
@@ -1318,11 +1357,11 @@ namespace GPlatesApi
 			boost::optional<GPlatesModel::FeatureId> feature_id,
 			VerifyInformationModel::Value verify_information_model)
 	{
-		static const GPlatesModel::FeatureType TOTAL_RECONSTRUCTION_SEQUENCE_TYPE =
+		static const GPlatesModel::FeatureType TOTAL_RECONSTRUCTION_SEQUENCE_FEATURE_TYPE =
 				GPlatesModel::FeatureType::create_gpml("TotalReconstructionSequence");
 
-		GPlatesModel::FeatureHandle::non_null_ptr_type feature =
-				feature_handle_create(TOTAL_RECONSTRUCTION_SEQUENCE_TYPE, feature_id, verify_information_model);
+		GPlatesModel::FeatureHandle::non_null_ptr_type feature = feature_handle_create(
+				TOTAL_RECONSTRUCTION_SEQUENCE_FEATURE_TYPE, feature_id, verify_information_model);
 		bp::object feature_object(feature);
 
 		if (name)
@@ -1395,31 +1434,7 @@ namespace GPlatesApi
 
 		if (valid_time != bp::object()/*Py_None*/)
 		{
-			bp::extract<bp::tuple> extract_tuple(valid_time);
-			if (!extract_tuple.check())
-			{
-				PyErr_SetString(PyExc_TypeError, "Expecting a (begin, end) tuple for 'valid_time'");
-				bp::throw_error_already_set();
-			}
-
-			bp::tuple valid_time_tuple = extract_tuple();
-			if (bp::len(valid_time_tuple) != 2)
-			{
-				PyErr_SetString(PyExc_TypeError, "Expecting a (begin, end) tuple for 'valid_time'");
-				bp::throw_error_already_set();
-			}
-
-			bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_begin_time(valid_time[0]);
-			bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_end_time(valid_time[1]);
-			if (!extract_begin_time.check() ||
-				!extract_end_time.check())
-			{
-				PyErr_SetString(PyExc_TypeError, "Expecting float or GeoTimeInstant for 'valid_time' tuple values");
-				bp::throw_error_already_set();
-			}
-
-			// Call python since Feature.set_valid_time is implemented in python code...
-			feature_object.attr("set_valid_time")(extract_begin_time(), extract_end_time(), verify_information_model);
+			set_valid_time_from_tuple(feature_object, valid_time, verify_information_model);
 		}
 
 		if (reconstruction_plate_id)
@@ -1460,10 +1475,10 @@ namespace GPlatesApi
 		// Make sure 'feature_type' inherits directly or indirectly from 'gpml:TectonicSection'.
 		if (verify_information_model == VerifyInformationModel::YES)
 		{
-			static const GPlatesModel::FeatureType TECTONIC_SECTION_TYPE =
+			static const GPlatesModel::FeatureType TECTONIC_SECTION_FEATURE_TYPE =
 					GPlatesModel::FeatureType::create_gpml("TectonicSection");
 
-			verify_feature_type_inherits(feature_type, TECTONIC_SECTION_TYPE);
+			verify_feature_type_inherits(feature_type, TECTONIC_SECTION_FEATURE_TYPE);
 		}
 
 		// Set the geometry (or geometries).
@@ -1483,31 +1498,7 @@ namespace GPlatesApi
 
 		if (valid_time != bp::object()/*Py_None*/)
 		{
-			bp::extract<bp::tuple> extract_tuple(valid_time);
-			if (!extract_tuple.check())
-			{
-				PyErr_SetString(PyExc_TypeError, "Expecting a (begin, end) tuple for 'valid_time'");
-				bp::throw_error_already_set();
-			}
-
-			bp::tuple valid_time_tuple = extract_tuple();
-			if (bp::len(valid_time_tuple) != 2)
-			{
-				PyErr_SetString(PyExc_TypeError, "Expecting a (begin, end) tuple for 'valid_time'");
-				bp::throw_error_already_set();
-			}
-
-			bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_begin_time(valid_time[0]);
-			bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_end_time(valid_time[1]);
-			if (!extract_begin_time.check() ||
-				!extract_end_time.check())
-			{
-				PyErr_SetString(PyExc_TypeError, "Expecting float or GeoTimeInstant for 'valid_time' tuple values");
-				bp::throw_error_already_set();
-			}
-
-			// Call python since Feature.set_valid_time is implemented in python code...
-			feature_object.attr("set_valid_time")(extract_begin_time(), extract_end_time(), verify_information_model);
+			set_valid_time_from_tuple(feature_object, valid_time, verify_information_model);
 		}
 
 		if (reconstruction_plate_id)
@@ -1543,7 +1534,7 @@ namespace GPlatesApi
 
 			if (verify_information_model == VerifyInformationModel::YES)
 			{
-				feature_handle_verify_enumeration_type_and_content(
+				verify_enumeration_type_and_content(
 						RECONSTRUCTION_METHOD_ENUMERATION_TYPE,
 						reconstruction_method->qstring());
 			}
@@ -1556,6 +1547,75 @@ namespace GPlatesApi
 									RECONSTRUCTION_METHOD_ENUMERATION_TYPE,
 									reconstruction_method.get())),
 					verify_information_model);
+		}
+
+		// If there are other properties then add them.
+		if (other_properties != bp::object()/*Py_None*/)
+		{
+			feature_handle_add_properties(*feature, other_properties, verify_information_model);
+		}
+
+		return feature;
+	}
+
+	const GPlatesModel::FeatureHandle::non_null_ptr_type
+	feature_handle_create_flowline(
+			bp::object seed_geometry,
+			bp::object times,
+			boost::optional<QString> name,
+			boost::optional<QString> description,
+			bp::object valid_time,
+			boost::optional<GPlatesModel::integer_plate_id_type> left_plate,
+			boost::optional<GPlatesModel::integer_plate_id_type> right_plate,
+			bp::object other_properties,
+			boost::optional<GPlatesModel::FeatureId> feature_id,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		static const GPlatesModel::FeatureType FLOWLINE_FEATURE_TYPE =
+				GPlatesModel::FeatureType::create_gpml("Flowline");
+
+		GPlatesModel::FeatureHandle::non_null_ptr_type feature = feature_handle_create(
+				FLOWLINE_FEATURE_TYPE, feature_id, verify_information_model);
+		bp::object feature_object(feature);
+
+		// Set the see geometry.
+		feature_handle_set_geometry(*feature, seed_geometry, boost::none, verify_information_model);
+
+		// Set the times.
+		// Call python since Feature.set_times is implemented in python code...
+		feature_object.attr("set_times")(times, verify_information_model);
+
+		// Set the reconstruction method to half-stage rotation.
+		// Call python since Feature.set_reconstruction_method is implemented in python code...
+		feature_object.attr("set_reconstruction_method")("HalfStageRotationVersion2", verify_information_model);
+
+		if (name)
+		{
+			// Call python since Feature.set_name is implemented in python code...
+			feature_object.attr("set_name")(name.get(), verify_information_model);
+		}
+
+		if (description)
+		{
+			// Call python since Feature.set_description is implemented in python code...
+			feature_object.attr("set_description")(description.get(), verify_information_model);
+		}
+
+		if (valid_time != bp::object()/*Py_None*/)
+		{
+			set_valid_time_from_tuple(feature_object, valid_time, verify_information_model);
+		}
+
+		if (left_plate)
+		{
+			// Call python since Feature.set_left_plate is implemented in python code...
+			feature_object.attr("set_left_plate")(left_plate.get(), verify_information_model);
+		}
+
+		if (right_plate)
+		{
+			// Call python since Feature.set_right_plate is implemented in python code...
+			feature_object.attr("set_right_plate")(right_plate.get(), verify_information_model);
 		}
 
 		// If there are other properties then add them.
@@ -1610,6 +1670,7 @@ export_feature()
 					"\n"
 					"* :meth:`create_reconstructable_feature`\n"
 					"* :meth:`create_tectonic_section`\n"
+					"* :meth:`create_flowline`\n"
 					"* :meth:`create_total_reconstruction_sequence`\n"
 					"\n"
 					"The following methods return the :class:`feature type<FeatureType>` and :class:`feature id<FeatureId>`:\n"
@@ -1999,6 +2060,97 @@ export_feature()
 				"    mid_ocean_ridge_feature.set_reconstruction_method('HalfStageRotationVersion2')\n"
 				"    pygplates.reverse_reconstruct(mid_ocean_ridge_feature, rotation_model, time_of_appearance)\n")
 		.staticmethod("create_tectonic_section")
+		.def("create_flowline",
+				&GPlatesApi::feature_handle_create_flowline,
+				(bp::arg("seed_geometry"),
+						bp::arg("times"),
+						bp::arg("name") = boost::optional<QString>(),
+						bp::arg("description") = boost::optional<QString>(),
+						bp::arg("valid_time") = bp::object()/*Py_None*/,
+						bp::arg("left_plate") = boost::optional<GPlatesModel::integer_plate_id_type>(),
+						bp::arg("right_plate") = boost::optional<GPlatesModel::integer_plate_id_type>(),
+						bp::arg("other_properties") = bp::object()/*Py_None*/,
+						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"create_flowline(seed_geometry, times, [name], [description], [valid_time], "
+				"[left_plate], [right_plate], [other_properties], [feature_id], "
+				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
+				"  Create a flowline feature.\n"
+				"\n"
+				"  :param seed_geometry: the seed point (or points) - see :meth:`set_geometry` - if geometry "
+				"is not present-day geometry then the created feature will need to be reverse reconstructed "
+				"to present day using (using :func:`reverse_reconstruct`) before the feature can be "
+				"reconstructed to an arbitrary reconstruction time\n"
+				"  :type seed_geometry: :class:`PointOnSphere` or :class:`MultiPointOnSphere`\n"
+				"  :param times: the list of times\n"
+				"  :type times: sequence (eg, ``list`` or ``tuple``) of float or :class:`GeoTimeInstant`\n"
+				"  :param name: the name or names, if not specified then no 'gml:name' properties are added\n"
+				"  :type name: string, or sequence of string\n"
+				"  :param description: the description, if not specified then a 'gml:description' property is not added\n"
+				"  :type description: string\n"
+				"  :param valid_time: the (begin_time, end_time) tuple, if not specified then a 'gml:validTime' "
+				"property is not added\n"
+				"  :type valid_time: a tuple of (float or :class:`GeoTimeInstant`, float or :class:`GeoTimeInstant`)\n"
+				"  :param left_plate: the left plate id, if not specified then a 'gpml:leftPlate' property is not added\n"
+				"  :type left_plate: int\n"
+				"  :param right_plate: the right plate id, if not specified then a 'gpml:rightPlate' property is not added\n"
+				"  :type right_plate: int\n"
+				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
+				"be added later with :meth:`add`\n"
+				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
+				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
+				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param verify_information_model: whether to check the information model (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and *seed_geometry* is not a :class:`PointOnSphere` or a :class:`MultiPointOnSphere`.\n"
+				"\n"
+				"  This function calls :meth:`set_geometry`, :meth:`set_times`, :meth:`set_name`, "
+				":meth:`set_description`, :meth:`set_valid_time`, :meth:`set_left_plate`, "
+				":meth:`set_right_plate`, :meth:`set_reconstruction_method` and :meth:`add`.\n"
+				"\n"
+				"  Create a flowline feature:\n"
+				"  ::\n"
+				"\n"
+				"    present_day_seed_geometry = pygplates.MultiPointOnSphere([...])\n"
+				"    flowline_feature = pygplates.Feature.create_flowline(\n"
+				"        present_day_seed_geometry,\n"
+				"        [0, 10, 20, 30, 40],\n"
+				"        valid_time=(50, 0),\n"
+				"        left_plate=201,\n"
+				"        right_plate=701)\n"
+				"\n"
+				"  If *seed_geometry* is not present-day geometry then the created "
+				"feature will need to be reverse reconstructed to present day using (using :func:`reverse_reconstruct`) "
+				"before the feature can be reconstructed to an arbitrary reconstruction time - this is "
+				"because a feature is not complete until its geometry is *present day* geometry.\n"
+				"\n"
+				"  Create a flowline feature (note that it must also be reverse reconstructed since "
+				"the specified geometry is not present day geometry):\n"
+				"  ::\n"
+				"\n"
+				"    seed_geometry_at_50Ma = pygplates.MultiPointOnSphere([...])\n"
+				"    flowline_feature = pygplates.Feature.create_flowline(\n"
+				"        seed_geometry_at_50Ma,\n"
+				"        valid_time=(50, 0),\n"
+				"        left_plate=201,\n"
+				"        right_plate=701)\n"
+				"    pygplates.reverse_reconstruct(flowline_feature, rotation_model, 50)\n"
+				"\n"
+				"  The previous example is the equivalent of the following (note that the "
+				":func:`reverse reconstruction<reverse_reconstruct>` is done *after* the properties have "
+				"been set on the feature - this is necessary because reverse reconstruction looks at these "
+				"properties to determine how to reverse reconstruct):\n"
+				"  ::\n"
+				"\n"
+				"    flowline_feature = pygplates.Feature(pygplates.FeatureType.create_gpml('Flowline'))\n"
+				"    flowline_feature.set_geometry(seed_geometry_at_50Ma)\n"
+				"    flowline_feature.set_valid_time(50, 0)\n"
+				"    flowline_feature.set_left_plate(201)\n"
+				"    flowline_feature.set_right_plate(701)\n"
+				"    pygplates.reverse_reconstruct(flowline_feature, rotation_model, 50)\n")
+		.staticmethod("create_flowline")
 		.def("add",
 				&GPlatesApi::feature_handle_add_property,
 				(bp::arg("property_name"),

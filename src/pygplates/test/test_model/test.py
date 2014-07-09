@@ -98,6 +98,36 @@ class CreateFeatureCase(unittest.TestCase):
                 geometry,
                 reconstruction_method='UnknownReconstructionMethod')
 
+    def test_create_flowline(self):
+        seed_point = pygplates.PointOnSphere((0, 90))
+        times = [0, 10, 20, 30]
+        feature = pygplates.Feature.create_flowline(
+                seed_point,
+                times,
+                name='Test flowline',
+                description='a flowline feature',
+                valid_time=(30, 0),
+                left_plate=201,
+                right_plate=701)
+        self.assertTrue(len(feature) == 7+1) # Extra property is the 'gpml:reconstructionMethod'.
+        self.assertTrue(feature.get_feature_type() == pygplates.FeatureType.create_gpml('Flowline'))
+        self.assertTrue(feature.get_geometry() == seed_point)
+        self.assertTrue(feature.get_times() == times)
+        self.assertTrue(feature.get_name() == 'Test flowline')
+        self.assertTrue(feature.get_description() == 'a flowline feature')
+        self.assertTrue(feature.get_valid_time() == (30, 0))
+        self.assertTrue(feature.get_reconstruction_method() == 'HalfStageRotationVersion2')
+        self.assertTrue(feature.get_left_plate() == 201)
+        self.assertTrue(feature.get_right_plate() == 701)
+        
+        seed_multi_point = pygplates.MultiPointOnSphere([(0, 90), (0, 100)])
+        self.assertTrue(pygplates.Feature.create_flowline(seed_multi_point, times).get_geometry() == seed_multi_point)
+        # Cannot create from a polyline or polygon.
+        self.assertRaises(pygplates.InformationModelError,
+                pygplates.Feature.create_flowline, pygplates.PolylineOnSphere([(0, 90), (0, 100)]), times)
+        self.assertRaises(pygplates.InformationModelError,
+                pygplates.Feature.create_flowline, pygplates.PolygonOnSphere([(0, 90), (0, 100), (0, 110)]), times)
+
     def test_create_total_reconstruction_sequence(self):
         rotations = [
                 pygplates.FiniteRotation((90,0), 1.0),
