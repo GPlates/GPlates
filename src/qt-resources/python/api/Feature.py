@@ -1061,7 +1061,7 @@ def set_total_reconstruction_pole(feature, fixed_plate_id, moving_plate_id, tota
     :param moving_plate_id: the moving plate id
     :type moving_plate_id: int
     :param total_reconstruction_pole: the time-sequence of rotations
-    :type total_reconstruction_pole: :class:`GpmlIrregularSampling` of :class:`rotations<FiniteRotation>`
+    :type total_reconstruction_pole: :class:`GpmlIrregularSampling` of :class:`GpmlFiniteRotation`
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
     :returns: the fixed plate id property, the moving plate id property and the total reconstruction pole property
@@ -1079,7 +1079,7 @@ def set_total_reconstruction_pole(feature, fixed_plate_id, moving_plate_id, tota
     Set the total reconstruction pole with two integer plate IDs:
     ::
     
-      feature.set_total_reconstruction_pole(701, 201, total_reconstruction_pole)
+      feature.set_total_reconstruction_pole(550, 801, total_reconstruction_pole)
     """
     
     return (

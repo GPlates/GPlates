@@ -59,6 +59,7 @@
 #include "property-values/EnumerationContent.h"
 #include "property-values/EnumerationType.h"
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/GpmlIrregularSampling.h"
 
 #include "utils/UnicodeString.h"
 
@@ -1307,6 +1308,52 @@ namespace GPlatesApi
 	}
 
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
+	feature_handle_create_total_reconstruction_sequence(
+			GPlatesModel::integer_plate_id_type fixed_plate_id,
+			GPlatesModel::integer_plate_id_type moving_plate_id,
+			GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type total_reconstruction_pole,
+			boost::optional<QString> name,
+			boost::optional<QString> description,
+			bp::object other_properties,
+			boost::optional<GPlatesModel::FeatureId> feature_id,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		static const GPlatesModel::FeatureType TOTAL_RECONSTRUCTION_SEQUENCE_TYPE =
+				GPlatesModel::FeatureType::create_gpml("TotalReconstructionSequence");
+
+		GPlatesModel::FeatureHandle::non_null_ptr_type feature =
+				feature_handle_create(TOTAL_RECONSTRUCTION_SEQUENCE_TYPE, feature_id, verify_information_model);
+		bp::object feature_object(feature);
+
+		if (name)
+		{
+			// Call python since Feature.set_name is implemented in python code...
+			feature_object.attr("set_name")(name.get(), verify_information_model);
+		}
+
+		if (description)
+		{
+			// Call python since Feature.set_description is implemented in python code...
+			feature_object.attr("set_description")(description.get(), verify_information_model);
+		}
+
+		// Call python since Feature.set_total_reconstruction_pole is implemented in python code...
+		feature_object.attr("set_total_reconstruction_pole")(
+				fixed_plate_id,
+				moving_plate_id,
+				total_reconstruction_pole,
+				verify_information_model);
+
+		// If there are other properties then add them.
+		if (other_properties != bp::object()/*Py_None*/)
+		{
+			feature_handle_add_properties(*feature, other_properties, verify_information_model);
+		}
+
+		return feature;
+	}
+
+	const GPlatesModel::FeatureHandle::non_null_ptr_type
 	feature_handle_create_reconstructable_feature(
 			const GPlatesModel::FeatureType &feature_type,
 			bp::object geometry,
@@ -1563,6 +1610,7 @@ export_feature()
 					"\n"
 					"* :meth:`create_reconstructable_feature`\n"
 					"* :meth:`create_tectonic_section`\n"
+					"* :meth:`create_total_reconstruction_sequence`\n"
 					"\n"
 					"The following methods return the :class:`feature type<FeatureType>` and :class:`feature id<FeatureId>`:\n"
 					"\n"
@@ -1668,6 +1716,65 @@ export_feature()
 				"\n"
 				"  :rtype: :class:`Feature`\n")
 #endif
+		.def("create_total_reconstruction_sequence",
+				&GPlatesApi::feature_handle_create_total_reconstruction_sequence,
+				(bp::arg("fixed_plate_id"),
+						bp::arg("moving_plate_id"),
+						bp::arg("total_reconstruction_pole"),
+						bp::arg("name") = boost::optional<QString>(),
+						bp::arg("description") = boost::optional<QString>(),
+						bp::arg("other_properties") = bp::object()/*Py_None*/,
+						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"create_total_reconstruction_sequence(fixed_plate_id, moving_plate_id, total_reconstruction_pole, "
+				"[name], [description], [other_properties], [feature_id], "
+				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
+				"  Create a rotation feature for a fixed/moving plate pair.\n"
+				"\n"
+				"  :param fixed_plate_id: the fixed plate id\n"
+				"  :type fixed_plate_id: int\n"
+				"  :param moving_plate_id: the moving plate id\n"
+				"  :type moving_plate_id: int\n"
+				"  :param total_reconstruction_pole: the time-sequence of rotations\n"
+				"  :type total_reconstruction_pole: :class:`GpmlIrregularSampling` of :class:`GpmlFiniteRotation`\n"
+				"  :param name: the name or names, if not specified then no 'gml:name' properties are added\n"
+				"  :type name: string, or sequence of string\n"
+				"  :param description: the description, if not specified then a 'gml:description' property is not added\n"
+				"  :type description: string\n"
+				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
+				"be added later with :meth:`add`\n"
+				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
+				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
+				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
+				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param verify_information_model: whether to check the information model (default) or not\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"\n"
+				"  This function creates a rotation feature containing a "
+				":meth:`total reconstruction pole<get_total_reconstruction_pole>` (a time sequence of "
+				":class:`finite rotations<GpmlFiniteRotation>`) for a fixed/moving plate pair. "
+				"The :class:`feature type<FeatureType>` is a `total reconstruction sequence "
+				"<http://www.earthbyte.org/Resources/GPGIM/public/#TotalReconstructionSequence>`_.\n"
+				"\n"
+				"  This function calls :meth:`set_name`, :meth:`set_description`, "
+				":meth:`set_total_reconstruction_pole` and :meth:`add`.\n"
+				"\n"
+				"  Create a rotation feature:\n"
+				"  ::\n"
+				"\n"
+				"    rotation_feature = pygplates.Feature.create_total_reconstruction_sequence(\n"
+				"        550,\n"
+				"        801,\n"
+				"        total_reconstruction_pole_801_rel_550,\n"
+				"        name='INA-AUS Muller et.al 2000')\n"
+				"\n"
+				"  The previous example is the equivalent of the following:\n"
+				"  ::\n"
+				"\n"
+				"    rotation_feature = pygplates.Feature(pygplates.FeatureType.create_gpml('TotalReconstructionSequence'))\n"
+				"    rotation_feature.set_name('INA-AUS Muller et.al 2000')\n"
+				"    rotation_feature.set_total_reconstruction_pole(550, 801, total_reconstruction_pole_801_rel_550)\n")
+		.staticmethod("create_total_reconstruction_sequence")
 		.def("create_reconstructable_feature",
 				&GPlatesApi::feature_handle_create_reconstructable_feature,
 				(bp::arg("feature_type"),

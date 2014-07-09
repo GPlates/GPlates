@@ -26,14 +26,14 @@ class CreateFeatureCase(unittest.TestCase):
                 pygplates.FeatureType.create_gpml('Coastline'),
                 geometry,
                 name='East Antarctica',
-                description='a coasline',
+                description='a coastline',
                 valid_time=(600, pygplates.GeoTimeInstant.create_distant_future()),
                 reconstruction_plate_id=802)
         self.assertTrue(len(feature) == 5)
         self.assertTrue(feature.get_feature_type() == pygplates.FeatureType.create_gpml('Coastline'))
         self.assertTrue(feature.get_geometry() == geometry)
         self.assertTrue(feature.get_name() == 'East Antarctica')
-        self.assertTrue(feature.get_description() == 'a coasline')
+        self.assertTrue(feature.get_description() == 'a coastline')
         self.assertTrue(feature.get_valid_time() == (600, pygplates.GeoTimeInstant.create_distant_future()))
         self.assertTrue(feature.get_reconstruction_plate_id() == 802)
         feature = pygplates.Feature.create_reconstructable_feature(
@@ -42,12 +42,12 @@ class CreateFeatureCase(unittest.TestCase):
                 name='East Antarctica',
                 other_properties=[
                         (pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.GpmlPlateId(802)),
-                        (pygplates.PropertyName.create_gml('description'), pygplates.XsString('a coasline'))])
+                        (pygplates.PropertyName.create_gml('description'), pygplates.XsString('a coastline'))])
         self.assertTrue(len(feature) == 4)
         self.assertTrue(feature.get_feature_type() == pygplates.FeatureType.create_gpml('Coastline'))
         self.assertTrue(feature.get_geometry() == geometry)
         self.assertTrue(feature.get_name() == 'East Antarctica')
-        self.assertTrue(feature.get_description() == 'a coasline')
+        self.assertTrue(feature.get_description() == 'a coastline')
         self.assertTrue(feature.get_reconstruction_plate_id() == 802)
         # Should raise error if feature type is not reconstructable.
         self.assertRaises(pygplates.InformationModelError,
@@ -97,6 +97,25 @@ class CreateFeatureCase(unittest.TestCase):
                 pygplates.FeatureType.create_gpml('MidOceanRidge'),
                 geometry,
                 reconstruction_method='UnknownReconstructionMethod')
+
+    def test_create_total_reconstruction_sequence(self):
+        rotations = [
+                pygplates.FiniteRotation((90,0), 1.0),
+                pygplates.FiniteRotation((0,90), 1.0)]
+        gpml_irregular_sampling = pygplates.GpmlIrregularSampling(
+                [pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(rotations[index]), index)
+                    for index in range(len(rotations))])
+        feature = pygplates.Feature.create_total_reconstruction_sequence(
+                name='Test sequence',
+                description='a rotation feature',
+                fixed_plate_id=550,
+                moving_plate_id=801,
+                total_reconstruction_pole=gpml_irregular_sampling)
+        self.assertTrue(len(feature) == 5)
+        self.assertTrue(feature.get_feature_type() == pygplates.FeatureType.create_gpml('TotalReconstructionSequence'))
+        self.assertTrue(feature.get_name() == 'Test sequence')
+        self.assertTrue(feature.get_description() == 'a rotation feature')
+        self.assertTrue(feature.get_total_reconstruction_pole() == (550, 801, gpml_irregular_sampling))
 
 
 class FeatureCase(unittest.TestCase):
