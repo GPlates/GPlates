@@ -72,6 +72,7 @@ namespace GPlatesFileIO
 
 namespace GPlatesAppLogic
 {
+	class AgeModelCollection;
 	class FeatureCollectionFileIO;
 	class LayerTask;
 	class LayerTaskRegistry;
@@ -247,6 +248,18 @@ namespace GPlatesAppLogic
 		get_chron_to_time_interval_map() const
 		{
 			return d_chron_to_time_interval_map;
+		}
+
+		const AgeModelCollection &
+		get_age_model_collection() const
+		{
+			return *d_age_model_collection;
+		}
+
+		AgeModelCollection &
+		get_age_model_collection()
+		{
+			return *d_age_model_collection;
 		}
 
 
@@ -554,6 +567,8 @@ namespace GPlatesAppLogic
 
 		// Make friend so can call @a begin_reconstruct_on_scope_exit and @a end_reconstruct_on_scope_exit.
 		friend class ScopedReconstructGuard;
+
+		boost::scoped_ptr<AgeModelCollection> d_age_model_collection;
 	};
 }
 

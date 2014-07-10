@@ -33,7 +33,7 @@
 
 namespace
 {
-            const int MIN_NUM_FIELDS = 5;
+			const int MIN_NUM_FIELDS = 5;
 
 #if 0
             void
@@ -66,7 +66,7 @@ namespace
 			latitude_ok(
 					const QString &s, double &latitude)
 			{
-				bool ok;
+					bool ok;
 				latitude = s.toDouble(&ok);
 				return((ok) && GPlatesMaths::LatLonPoint::is_valid_latitude(latitude));
 			}

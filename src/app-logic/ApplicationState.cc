@@ -28,6 +28,7 @@
 
 #include "ApplicationState.h"
 
+#include "AgeModelCollection.h"
 #include "AppLogicUtils.h"
 #include "FeatureCollectionFileIO.h"
 #include "Layer.h"
@@ -103,7 +104,8 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_scoped_reconstruct_nesting_count(0),
 	d_reconstruct_on_scope_exit(false),
 	d_suppress_auto_layer_creation(false),
-	d_callback_feature_store(d_model->root())
+	d_callback_feature_store(d_model->root()),
+	d_age_model_collection(new AgeModelCollection())
 {
 	// Register the default file formats for reading and/or writing feature collections.
 	register_default_file_formats(*d_feature_collection_file_format_registry, d_model, *d_gpgim);
