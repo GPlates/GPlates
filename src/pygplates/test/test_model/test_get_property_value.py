@@ -21,13 +21,13 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 pygplates.XsString('Feature name'))
         self.feature.add(
                 pygplates.PropertyName.create_gpml('reconstructionPlateId'),
-                pygplates.GpmlPlateId(1))
+                pygplates.GpmlPlateId(201))
         self.feature.add(
                 pygplates.PropertyName.create_gpml('conjugatePlateId'),
                 pygplates.GpmlPlateId(2))
         self.feature.add(
                 pygplates.PropertyName.create_gpml('reconstructionPlateId'),
-                pygplates.GpmlPlateId(3))
+                pygplates.GpmlPlateId(801))
         self.feature.add(
                 pygplates.PropertyName.create_gpml('leftPlate'),
                 pygplates.GpmlPlateId(11))
@@ -88,6 +88,22 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         point = pygplates.PointOnSphere(1,0,0)
         self.feature.set_geometry(point)
         self.assertTrue(self.feature.get_geometry() == point)
+        
+        # Test reverse reconstruction of geometry.
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        self.feature.set_geometry(point)
+        pygplates.reverse_reconstruct(self.feature, rotation_model, 10.0)
+        point1 = self.feature.get_geometry()
+        self.feature.set_geometry(point, reverse_reconstruct=(rotation_model, 10.0))
+        point2 = self.feature.get_geometry()
+        self.assertTrue(point1 == point2)
+        self.feature.set_geometry(point, reverse_reconstruct=(rotation_model, 10.0, 0))
+        point3 = self.feature.get_geometry()
+        self.assertTrue(point1 == point3)
+        # Raises error if reverse_reconstruct parameters in wrong order.
+        self.assertRaises(TypeError,
+                pygplates.Feature.set_geometry, self.feature, point, reverse_reconstruct=(10.0, rotation_model))
+        
         multi_point = pygplates.MultiPointOnSphere([pygplates.PointOnSphere(1,0,0), pygplates.PointOnSphere(0,1,0)])
         self.feature.set_geometry(multi_point)
         self.assertTrue(self.feature.get_geometry() == multi_point)
@@ -117,7 +133,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         # ...unless we don't check the information model.
         self.assertTrue(
                 len(hot_spot_feature.set_geometry((point, point), pygplates.PropertyName.create_gpml('position'),
-                        pygplates.VerifyInformationModel.no)) == 2)
+                        verify_information_model=pygplates.VerifyInformationModel.no)) == 2)
         # Setting multiple points on 'gpml:position' property on a 'gpml:UnclassifiedFeature' feature is fine though.
         points = self.feature.set_geometry((point, point), pygplates.PropertyName.create_gpml('position'))
         self.assertTrue(len(points) == 2)
@@ -128,7 +144,7 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 self.feature.set_geometry, multi_point, pygplates.PropertyName.create_gpml('position'))
         # ...unless we don't check the information model.
         self.assertTrue(self.feature.set_geometry(
-                multi_point, pygplates.PropertyName.create_gpml('position'), pygplates.VerifyInformationModel.no))
+                multi_point, pygplates.PropertyName.create_gpml('position'), verify_information_model=pygplates.VerifyInformationModel.no))
     
     def test_get_and_set_description(self):
         description = self.feature.get_description()
@@ -343,12 +359,12 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(gpml_times.get_value()[:] == [pygplates.GmlTimePeriod(2, 1), pygplates.GmlTimePeriod(3, 2)])
         self.assertTrue(self.feature.get_times() == [1, 2, 3])
         # Raises error if less than two time values.
-        self.assertRaises(RuntimeError, self.feature.set_times, [5])
+        self.assertRaises(ValueError, self.feature.set_times, [5])
         # Raises error if time sequence is not monotonically increasing.
-        self.assertRaises(RuntimeError, self.feature.set_times, [5, 4])
-        self.assertRaises(RuntimeError, self.feature.set_times, [5, 4, 6, 7])
-        self.assertRaises(RuntimeError, self.feature.set_times, [5, 6, 8, 7])
-        self.assertRaises(RuntimeError, self.feature.set_times, [5, 6, 8, 7, 9])
+        self.assertRaises(ValueError, self.feature.set_times, [5, 4])
+        self.assertRaises(ValueError, self.feature.set_times, [5, 4, 6, 7])
+        self.assertRaises(ValueError, self.feature.set_times, [5, 6, 8, 7])
+        self.assertRaises(ValueError, self.feature.set_times, [5, 6, 8, 7, 9])
     
     def test_get_and_set_shapefile_attribute(self):
         # Start off with feature that has no 'gpml:shapefileAttributes' property.
@@ -393,12 +409,12 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 pygplates.PropertyName.create_gpml('reconstructionPlateId'),
                 property_return=pygplates.PropertyReturn.all)
         self.assertTrue(len(properties) == 2)
-        self.assertTrue(properties[0].get_plate_id() in (1,3))
-        self.assertTrue(properties[1].get_plate_id() in (1,3))
+        self.assertTrue(properties[0].get_plate_id() in (201,801))
+        self.assertTrue(properties[1].get_plate_id() in (201,801))
         property = self.feature.get_value(
                 pygplates.PropertyName.create_gpml('reconstructionPlateId'),
                 property_return=pygplates.PropertyReturn.first)
-        self.assertTrue(property.get_plate_id() == 1)
+        self.assertTrue(property.get_plate_id() == 201)
         properties = self.feature.get(
                 pygplates.PropertyName.create_gpml('conjugatePlateId'),
                 property_return=pygplates.PropertyReturn.all)
@@ -437,18 +453,18 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 lambda property: property.get_name() == pygplates.PropertyName.create_gpml('reconstructionPlateId'),
                 property_return=pygplates.PropertyReturn.all)
         self.assertTrue(len(properties) == 2)
-        self.assertTrue(properties[0].get_plate_id() in (1,3))
-        self.assertTrue(properties[1].get_plate_id() in (1,3))
+        self.assertTrue(properties[0].get_plate_id() in (201,801))
+        self.assertTrue(properties[1].get_plate_id() in (201,801))
         properties = self.feature.get_value(
                 lambda property: property.get_name() == pygplates.PropertyName.create_gpml('reconstructionPlateId') and
-                    property.get_value().get_plate_id() < 3,
+                    property.get_value().get_plate_id() == 201,
                 property_return=pygplates.PropertyReturn.all)
         self.assertTrue(len(properties) == 1)
-        self.assertTrue(properties[0].get_plate_id() == 1)
+        self.assertTrue(properties[0].get_plate_id() == 201)
         property = self.feature.get_value(
                 lambda property: property.get_name() == pygplates.PropertyName.create_gpml('reconstructionPlateId'),
                 property_return=pygplates.PropertyReturn.first)
-        self.assertTrue(property.get_plate_id() == 1)
+        self.assertTrue(property.get_plate_id() == 201)
         properties = self.feature.get(
                 lambda property: property.get_name() == pygplates.PropertyName.create_gpml('conjugatePlateId'),
                 property_return=pygplates.PropertyReturn.all)

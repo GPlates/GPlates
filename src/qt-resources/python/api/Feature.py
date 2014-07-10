@@ -846,12 +846,12 @@ def set_times(feature, times, verify_information_model=VerifyInformationModel.ye
     :rtype: :class:`Property`
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
     does not support the 'gpml:times' property.
-    :raises: RuntimeError if the time values in *times* are not in monotonically increasing order, or there are fewer than two time values.
+    :raises: ValueError if the time values in *times* are not in monotonically increasing order, or there are fewer than two time values.
     
     This is a convenience method that wraps :meth:`set` for the common property 'gpml:times' used in flowlines and motion paths.
     
     The list of times must progressively be from most recent (closest to present day) to least recent (furthest in the geological past)
-    otherwise *RuntimeError* will be raised.
+    otherwise *ValueError* will be raised.
     
     Set the list of times:
     ::
@@ -863,7 +863,7 @@ def set_times(feature, times, verify_information_model=VerifyInformationModel.ye
     """
     
     if len(times) < 2:
-        raise RuntimeError('Time sequence must contain at least two time values')
+        raise ValueError('Time sequence must contain at least two time values')
     
     gml_time_periods = []
     
@@ -872,7 +872,7 @@ def set_times(feature, times, verify_information_model=VerifyInformationModel.ye
     for time_index in range(1, len(times)):
         time = times[time_index]
         if time < prev_time:
-            raise RuntimeError('Time sequence is not in monotonically increasing order')
+            raise ValueError('Time sequence is not in monotonically increasing order')
         
         # Add the time period from current time to previous time.
         gml_time_periods.append(GmlTimePeriod(time, prev_time))

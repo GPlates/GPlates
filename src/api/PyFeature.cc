@@ -31,7 +31,9 @@
 #include <boost/optional.hpp>
 #include <QString>
 
+#include "PyGPlatesModule.h"
 #include "PyInformationModel.h"
+#include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
 
 #include "app-logic/GeometryUtils.h"
@@ -308,6 +310,66 @@ namespace GPlatesApi
 
 			// Call python since Feature.set_valid_time is implemented in python code...
 			feature_object.attr("set_valid_time")(extract_begin_time(), extract_end_time(), verify_information_model);
+		}
+
+		/**
+		 * Reverse reconstruct the specified feature using the specified reverse reconstruct parameters.
+		 */
+		void
+		reverse_reconstruct(
+				GPlatesModel::FeatureHandle &feature_handle,
+				bp::object reverse_reconstruct_object)
+		{
+			const char *type_error_string =
+					"Expecting a (rotation model, reconstruction time [, anchor plate id]) "
+					"tuple for 'reverse_reconstruct'";
+
+			bp::extract<bp::tuple> extract_tuple(reverse_reconstruct_object);
+			if (!extract_tuple.check())
+			{
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+
+			bp::tuple reverse_reconstruct_tuple = extract_tuple();
+			const unsigned int tuple_len = bp::len(reverse_reconstruct_tuple);
+			if (tuple_len != 3 && tuple_len != 2)
+			{
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+
+			bp::extract<GPlatesApi::RotationModel::non_null_ptr_type> extract_rotation_model(reverse_reconstruct_tuple[0]);
+			bp::extract<double> extract_reconstruction_time(reverse_reconstruct_tuple[1]);
+			if (!extract_rotation_model.check() ||
+				!extract_reconstruction_time.check())
+			{
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+
+			const GPlatesApi::RotationModel::non_null_ptr_type rotation_model = extract_rotation_model();
+			const double reconstruction_time = extract_reconstruction_time();
+
+			GPlatesModel::integer_plate_id_type anchor_plate_id = 0;
+			if (tuple_len == 3)
+			{
+				bp::extract<GPlatesModel::integer_plate_id_type> extract_anchor_plate_id(reverse_reconstruct_tuple[2]);
+				if (!extract_anchor_plate_id.check())
+				{
+					PyErr_SetString(PyExc_TypeError, type_error_string);
+					bp::throw_error_already_set();
+				}
+
+				anchor_plate_id = extract_anchor_plate_id();
+			}
+
+			// Call python since Feature.set_valid_time is implemented in python code...
+			get_pygplates_module().attr("reverse_reconstruct")(
+					bp::object(GPlatesUtils::get_non_null_pointer(&feature_handle)),
+					rotation_model,
+					reconstruction_time,
+					anchor_plate_id);
 		}
 	}
 
@@ -1169,10 +1231,9 @@ namespace GPlatesApi
 			GPlatesModel::FeatureHandle &feature_handle,
 			bp::object geometry_object,
 			boost::optional<GPlatesModel::PropertyName> property_name,
+			bp::object reverse_reconstruct_object,
 			VerifyInformationModel::Value verify_information_model)
 	{
-		const char *type_error_string = "Expected a GeometryOnSphere, or sequence of GeometryOnSphere";
-
 		// If a property name wasn't specified then determine the
 		// default geometry property name via the GPGIM.
 		if (!property_name)
@@ -1209,11 +1270,20 @@ namespace GPlatesApi
 					GPlatesAppLogic::GeometryUtils::create_geometry_property_value(geometry);
 
 			// Set the geometry property value in the feature.
-			return feature_handle_set_property(
+			bp::object property_object = feature_handle_set_property(
 					feature_handle,
 					property_name.get(),
 					bp::object(geometry_property_value),
 					verify_information_model);
+
+			// If we need to reverse reconstruct the geometry.
+			// Note that we do this after setting the geometry.
+			if (reverse_reconstruct_object != bp::object()/*Py_None*/)
+			{
+				reverse_reconstruct(feature_handle, reverse_reconstruct_object);
+			}
+
+			return property_object;
 		}
 		// ...else a sequence of geometries.
 
@@ -1234,7 +1304,7 @@ namespace GPlatesApi
 		{
 			PyErr_Clear();
 
-			PyErr_SetString(PyExc_TypeError, type_error_string);
+			PyErr_SetString(PyExc_TypeError, "Expected a GeometryOnSphere, or sequence of GeometryOnSphere");
 			bp::throw_error_already_set();
 		}
 
@@ -1262,11 +1332,20 @@ namespace GPlatesApi
 		}
 
 		// Set the geometry property values in the feature.
-		return feature_handle_set_property(
+		bp::object property_list_object = feature_handle_set_property(
 				feature_handle,
 				property_name.get(),
 				geometry_property_values,
 				verify_information_model);
+
+		// If we need to reverse reconstruct the geometries.
+		// Note that we do this after setting the geometries.
+		if (reverse_reconstruct_object != bp::object()/*Py_None*/)
+		{
+			reverse_reconstruct(feature_handle, reverse_reconstruct_object);
+		}
+
+		return property_list_object;
 	}
 
 	bp::object
@@ -1402,6 +1481,7 @@ namespace GPlatesApi
 			boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
 			bp::object other_properties,
 			boost::optional<GPlatesModel::FeatureId> feature_id,
+			bp::object reverse_reconstruct_object,
 			VerifyInformationModel::Value verify_information_model)
 	{
 		GPlatesModel::FeatureHandle::non_null_ptr_type feature =
@@ -1416,9 +1496,6 @@ namespace GPlatesApi
 
 			verify_feature_type_inherits(feature_type, RECONSTRUCTABLE_FEATURE_TYPE);
 		}
-
-		// Set the geometry (or geometries).
-		feature_handle_set_geometry(*feature, geometry, boost::none, verify_information_model);
 
 		if (name)
 		{
@@ -1449,6 +1526,12 @@ namespace GPlatesApi
 			feature_handle_add_properties(*feature, other_properties, verify_information_model);
 		}
 
+		// Set the geometry (or geometries).
+		// NOTE: We *must* set the geometry after all other properties have been set since
+		// reverse reconstructing uses those properties.
+		feature_handle_set_geometry(
+				*feature, geometry, boost::none, reverse_reconstruct_object, verify_information_model);
+
 		return feature;
 	}
 
@@ -1466,6 +1549,7 @@ namespace GPlatesApi
 			boost::optional<GPlatesUtils::UnicodeString> reconstruction_method,
 			bp::object other_properties,
 			boost::optional<GPlatesModel::FeatureId> feature_id,
+			bp::object reverse_reconstruct_object,
 			VerifyInformationModel::Value verify_information_model)
 	{
 		GPlatesModel::FeatureHandle::non_null_ptr_type feature =
@@ -1480,9 +1564,6 @@ namespace GPlatesApi
 
 			verify_feature_type_inherits(feature_type, TECTONIC_SECTION_FEATURE_TYPE);
 		}
-
-		// Set the geometry (or geometries).
-		feature_handle_set_geometry(*feature, geometry, boost::none, verify_information_model);
 
 		if (name)
 		{
@@ -1555,6 +1636,12 @@ namespace GPlatesApi
 			feature_handle_add_properties(*feature, other_properties, verify_information_model);
 		}
 
+		// Set the geometry (or geometries).
+		// NOTE: We *must* set the geometry after all other properties have been set since
+		// reverse reconstructing uses those properties.
+		feature_handle_set_geometry(
+				*feature, geometry, boost::none, reverse_reconstruct_object, verify_information_model);
+
 		return feature;
 	}
 
@@ -1569,6 +1656,7 @@ namespace GPlatesApi
 			boost::optional<GPlatesModel::integer_plate_id_type> right_plate,
 			bp::object other_properties,
 			boost::optional<GPlatesModel::FeatureId> feature_id,
+			bp::object reverse_reconstruct_object,
 			VerifyInformationModel::Value verify_information_model)
 	{
 		static const GPlatesModel::FeatureType FLOWLINE_FEATURE_TYPE =
@@ -1577,9 +1665,6 @@ namespace GPlatesApi
 		GPlatesModel::FeatureHandle::non_null_ptr_type feature = feature_handle_create(
 				FLOWLINE_FEATURE_TYPE, feature_id, verify_information_model);
 		bp::object feature_object(feature);
-
-		// Set the seed geometry.
-		feature_handle_set_geometry(*feature, seed_geometry, boost::none, verify_information_model);
 
 		// Set the times.
 		// Call python since Feature.set_times is implemented in python code...
@@ -1624,6 +1709,12 @@ namespace GPlatesApi
 			feature_handle_add_properties(*feature, other_properties, verify_information_model);
 		}
 
+		// Set the seed geometry.
+		// NOTE: We *must* set the geometry after all other properties have been set since
+		// reverse reconstructing uses those properties.
+		feature_handle_set_geometry(
+				*feature, seed_geometry, boost::none, reverse_reconstruct_object, verify_information_model);
+
 		return feature;
 	}
 
@@ -1638,6 +1729,7 @@ namespace GPlatesApi
 			boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
 			bp::object other_properties,
 			boost::optional<GPlatesModel::FeatureId> feature_id,
+			bp::object reverse_reconstruct_object,
 			VerifyInformationModel::Value verify_information_model)
 	{
 		static const GPlatesModel::FeatureType MOTIONPATH_FEATURE_TYPE =
@@ -1646,9 +1738,6 @@ namespace GPlatesApi
 		GPlatesModel::FeatureHandle::non_null_ptr_type feature = feature_handle_create(
 				MOTIONPATH_FEATURE_TYPE, feature_id, verify_information_model);
 		bp::object feature_object(feature);
-
-		// Set the seed geometry.
-		feature_handle_set_geometry(*feature, seed_geometry, boost::none, verify_information_model);
 
 		// Set the times.
 		// Call python since Feature.set_times is implemented in python code...
@@ -1692,6 +1781,12 @@ namespace GPlatesApi
 		{
 			feature_handle_add_properties(*feature, other_properties, verify_information_model);
 		}
+
+		// Set the seed geometry.
+		// NOTE: We *must* set the geometry after all other properties have been set since
+		// reverse reconstructing uses those properties.
+		feature_handle_set_geometry(
+				*feature, seed_geometry, boost::none, reverse_reconstruct_object, verify_information_model);
 
 		return feature;
 	}
@@ -1916,9 +2011,10 @@ export_feature()
 						bp::arg("reconstruction_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
 						bp::arg("other_properties") = bp::object()/*Py_None*/,
 						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
+						bp::arg("reverse_reconstruct") = bp::object()/*Py_None*/,
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"create_reconstructable_feature(feature_type, geometry, [name], [description], [valid_time], "
-				"[reconstruction_plate_id], [other_properties], [feature_id], "
+				"[reconstruction_plate_id], [other_properties], [feature_id], [reverse_reconstruct], "
 				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
 				"  Create a reconstructable feature.\n"
 				"\n"
@@ -1926,8 +2022,8 @@ export_feature()
 				"  :type feature_type: :class:`FeatureType`\n"
 				"  :param geometry: the geometry (or geometries) - see :meth:`set_geometry` - if geometry "
 				"is not present-day geometry then the created feature will need to be reverse reconstructed "
-				"to present day using (using :func:`reverse_reconstruct`) before the feature can be "
-				"reconstructed to an arbitrary reconstruction time\n"
+				"to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) "
+				"before the feature can be reconstructed to an arbitrary reconstruction time\n"
 				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
 				"of :class:`GeometryOnSphere`\n"
 				"  :param name: the name or names, if not specified then no 'gml:name' properties are added\n"
@@ -1946,6 +2042,12 @@ export_feature()
 				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
 				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) "
+				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
+				"then *geometry* is reverse reconstructed using those parameters and any specified feature properties "
+				"(eg, *reconstruction_plate_id*) - this is only required if *geometry* is not present day - "
+				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
+				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
@@ -1971,9 +2073,10 @@ export_feature()
 				"        reconstruction_plate_id=802)\n"
 				"\n"
 				"  If *geometry* is not present-day geometry (see isochron example below) then the created "
-				"feature will need to be reverse reconstructed to present day using (using :func:`reverse_reconstruct`) "
-				"before the feature can be reconstructed to an arbitrary reconstruction time - this is "
-				"because a feature is not complete until its geometry is *present day* geometry.\n"
+				"feature will need to be reverse reconstructed to present day using (using either the "
+				"*reverse_reconstruct* parameter or :func:`reverse_reconstruct`) before the feature can "
+				"be reconstructed to an arbitrary reconstruction time - this is because a feature is not "
+				"complete until its geometry is *present day* geometry.\n"
 				"\n"
 				"  Create an isochron feature (note that it must also be reverse reconstructed since "
 				"the specified geometry is not present day geometry but instead the geometry of the "
@@ -1990,8 +2093,8 @@ export_feature()
 				"        reconstruction_plate_id=201,\n"
 				"        other_properties=[\n"
 				"            (pygplates.PropertyName.create_gpml('conjugatePlateId'),\n"
-				"             pygplates.GpmlPlateId(701))])\n"
-				"    pygplates.reverse_reconstruct(isochron_feature, rotation_model, time_of_appearance)\n"
+				"             pygplates.GpmlPlateId(701))],\n"
+				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n"
 				"    \n"
 				"    # ...or...\n"
 				"    \n"
@@ -2016,7 +2119,19 @@ export_feature()
 				"    isochron_feature.set_valid_time(time_of_appearance, pygplates.GeoTimeInstant.create_distant_future())\n"
 				"    isochron_feature.set_reconstruction_plate_id(201)\n"
 				"    isochron_feature.set_conjugate_plate_id(701)\n"
-				"    pygplates.reverse_reconstruct(isochron_feature, rotation_model, time_of_appearance)\n")
+				"    pygplates.reverse_reconstruct(isochron_feature, rotation_model, time_of_appearance)\n"
+				"    \n"
+				"    # ...or...\n"
+				"    \n"
+				"    isochron_feature = pygplates.Feature(pygplates.FeatureType.create_gpml('Isochron'))\n"
+				"    isochron_feature.set_name('SOUTH ATLANTIC, SOUTH AMERICA-AFRICA ANOMALY 13 ISOCHRON')\n"
+				"    isochron_feature.set_valid_time(time_of_appearance, pygplates.GeoTimeInstant.create_distant_future())\n"
+				"    isochron_feature.set_reconstruction_plate_id(201)\n"
+				"    isochron_feature.set_conjugate_plate_id(701)\n"
+				"    # Set geometry and reverse reconstruct *after* other feature properties have been set.\n"
+				"    isochron_feature.set_geometry(\n"
+				"        geometry_at_time_of_appearance,\n"
+				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n")
 		.staticmethod("create_reconstructable_feature")
 		.def("create_tectonic_section",
 				&GPlatesApi::feature_handle_create_tectonic_section,
@@ -2032,18 +2147,20 @@ export_feature()
 						bp::arg("reconstruction_method") = boost::optional<GPlatesUtils::UnicodeString>(),
 						bp::arg("other_properties") = bp::object()/*Py_None*/,
 						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
+						bp::arg("reverse_reconstruct") = bp::object()/*Py_None*/,
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"create_tectonic_section(feature_type, geometry, [name], [description], [valid_time], "
 				"[reconstruction_plate_id], [conjugate_plate_id], [left_plate], [right_plate], [reconstruction_method], "
-				"[other_properties], [feature_id], [verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
+				"[other_properties], [feature_id], [reverse_reconstruct], "
+				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
 				"  Create a tectonic section feature.\n"
 				"\n"
 				"  :param feature_type: the type of feature to create\n"
 				"  :type feature_type: :class:`FeatureType`\n"
 				"  :param geometry: the geometry (or geometries) - see :meth:`set_geometry` - if geometry "
 				"is not present-day geometry then the created feature will need to be reverse reconstructed "
-				"to present day using (using :func:`reverse_reconstruct`) before the feature can be "
-				"reconstructed to an arbitrary reconstruction time\n"
+				"to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) "
+				"before the feature can be reconstructed to an arbitrary reconstruction time\n"
 				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
 				"of :class:`GeometryOnSphere`\n"
 				"  :param name: the name or names, if not specified then no 'gml:name' properties are added\n"
@@ -2074,6 +2191,12 @@ export_feature()
 				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
 				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) "
+				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
+				"then *geometry* is reverse reconstructed using those parameters and any specified feature properties "
+				"(eg, *reconstruction_plate_id*) - this is only required if *geometry* is not present day - "
+				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
+				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
@@ -2089,13 +2212,13 @@ export_feature()
 				":meth:`set_left_plate`, :meth:`set_right_plate` and :meth:`add`.\n"
 				"\n"
 				"  If *geometry* is not present-day geometry then the created feature will need to be "
-				"reverse reconstructed to present day using (using :func:`reverse_reconstruct`) "
-				"before the feature can be reconstructed to an arbitrary reconstruction time - this is "
-				"because a feature is not complete until its geometry is *present day* geometry. "
-				"This is usually the case for features that are reconstructed using half-stage rotations "
-				"(see *reconstruction_method*) since it is typically much easier to specify the geometry "
-				"at the time of appearance (as opposed to present-day). The mid-ocean ridge "
-				"example below demonstrates this.\n"
+				"reverse reconstructed to present day using (using either the *reverse_reconstruct* "
+				"parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an "
+				"arbitrary reconstruction time - this is because a feature is not complete until its "
+				"geometry is *present day* geometry. This is usually the case for features that are "
+				"reconstructed using half-stage rotations (see *reconstruction_method*) since it is "
+				"typically much easier to specify the geometry at the time of appearance (as opposed "
+				"to present-day). The mid-ocean ridge example below demonstrates this.\n"
 				"\n"
 				"  Create a mid-ocean ridge feature (note that it must also be reverse reconstructed since "
 				"the specified geometry is not present day geometry but instead the geometry of the "
@@ -2112,8 +2235,8 @@ export_feature()
 				"        valid_time=(time_of_appearance, time_of_disappearance),\n"
 				"        left_plate=201,\n"
 				"        right_plate=701,\n"
-				"        reconstruction_method='HalfStageRotationVersion2')\n"
-				"    pygplates.reverse_reconstruct(mid_ocean_ridge_feature, rotation_model, time_of_appearance)\n"
+				"        reconstruction_method='HalfStageRotationVersion2',\n"
+				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n"
 				"\n"
 				"  The previous example is the equivalent of the following (note that the "
 				":func:`reverse reconstruction<reverse_reconstruct>` is done *after* the properties have "
@@ -2128,7 +2251,20 @@ export_feature()
 				"    mid_ocean_ridge_feature.set_left_plate(201)\n"
 				"    mid_ocean_ridge_feature.set_right_plate(701)\n"
 				"    mid_ocean_ridge_feature.set_reconstruction_method('HalfStageRotationVersion2')\n"
-				"    pygplates.reverse_reconstruct(mid_ocean_ridge_feature, rotation_model, time_of_appearance)\n")
+				"    pygplates.reverse_reconstruct(mid_ocean_ridge_feature, rotation_model, time_of_appearance)\n"
+				"    \n"
+				"    # ...or...\n"
+				"    \n"
+				"    mid_ocean_ridge_feature = pygplates.Feature(pygplates.FeatureType.create_gpml('MidOceanRidge'))\n"
+				"    mid_ocean_ridge_feature.set_name('SOUTH ATLANTIC, SOUTH AMERICA-AFRICA')\n"
+				"    mid_ocean_ridge_feature.set_valid_time(time_of_appearance, time_of_disappearance)\n"
+				"    mid_ocean_ridge_feature.set_left_plate(201)\n"
+				"    mid_ocean_ridge_feature.set_right_plate(701)\n"
+				"    mid_ocean_ridge_feature.set_reconstruction_method('HalfStageRotationVersion2')\n"
+				"    # Set geometry and reverse reconstruct *after* other feature properties have been set.\n"
+				"    mid_ocean_ridge_feature.set_geometry(\n"
+				"        geometry_at_time_of_appearance,\n"
+				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n")
 		.staticmethod("create_tectonic_section")
 		.def("create_flowline",
 				&GPlatesApi::feature_handle_create_flowline,
@@ -2141,16 +2277,17 @@ export_feature()
 						bp::arg("right_plate") = boost::optional<GPlatesModel::integer_plate_id_type>(),
 						bp::arg("other_properties") = bp::object()/*Py_None*/,
 						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
+						bp::arg("reverse_reconstruct") = bp::object()/*Py_None*/,
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"create_flowline(seed_geometry, times, [name], [description], [valid_time], "
-				"[left_plate], [right_plate], [other_properties], [feature_id], "
+				"[left_plate], [right_plate], [other_properties], [feature_id], [reverse_reconstruct], "
 				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
 				"  Create a flowline feature.\n"
 				"\n"
 				"  :param seed_geometry: the seed point (or points) - see :meth:`set_geometry` - if geometry "
 				"is not present-day geometry then the created feature will need to be reverse reconstructed "
-				"to present day using (using :func:`reverse_reconstruct`) before the feature can be "
-				"reconstructed to an arbitrary reconstruction time\n"
+				"to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) "
+				"before the feature can be reconstructed to an arbitrary reconstruction time\n"
 				"  :type seed_geometry: :class:`PointOnSphere` or :class:`MultiPointOnSphere`\n"
 				"  :param times: the list of times\n"
 				"  :type times: sequence (eg, ``list`` or ``tuple``) of float or :class:`GeoTimeInstant`\n"
@@ -2171,6 +2308,12 @@ export_feature()
 				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
 				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param reverse_reconstruct: the tuple (rotation model, seed geometry reconstruction time [, anchor plate id]) "
+				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
+				"then *seed_geometry* is reverse reconstructed using those parameters and any specified feature properties "
+				"(eg, *left_plate*) - this is only required if *seed_geometry* is not present day - "
+				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
+				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
@@ -2191,10 +2334,11 @@ export_feature()
 				"        left_plate=201,\n"
 				"        right_plate=701)\n"
 				"\n"
-				"  If *seed_geometry* is not present-day geometry then the created "
-				"feature will need to be reverse reconstructed to present day using (using :func:`reverse_reconstruct`) "
-				"before the feature can be reconstructed to an arbitrary reconstruction time - this is "
-				"because a feature is not complete until its geometry is *present day* geometry.\n"
+				"  If *seed_geometry* is not present-day geometry then the created feature will need to "
+				"be reverse reconstructed to present day using (using either the *reverse_reconstruct* "
+				"parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an "
+				"arbitrary reconstruction time - this is because a feature is not complete until its "
+				"geometry is *present day* geometry.\n"
 				"\n"
 				"  Create a flowline feature (note that it must also be reverse reconstructed since "
 				"the specified geometry is not present day geometry):\n"
@@ -2205,8 +2349,8 @@ export_feature()
 				"        seed_geometry_at_50Ma,\n"
 				"        valid_time=(50, 0),\n"
 				"        left_plate=201,\n"
-				"        right_plate=701)\n"
-				"    pygplates.reverse_reconstruct(flowline_feature, rotation_model, 50)\n"
+				"        right_plate=701,\n"
+				"        reverse_reconstruct=(rotation_model, 50))\n"
 				"\n"
 				"  The previous example is the equivalent of the following (note that the "
 				":func:`reverse reconstruction<reverse_reconstruct>` is done *after* the properties have "
@@ -2219,7 +2363,18 @@ export_feature()
 				"    flowline_feature.set_valid_time(50, 0)\n"
 				"    flowline_feature.set_left_plate(201)\n"
 				"    flowline_feature.set_right_plate(701)\n"
-				"    pygplates.reverse_reconstruct(flowline_feature, rotation_model, 50)\n")
+				"    pygplates.reverse_reconstruct(flowline_feature, rotation_model, 50)\n"
+				"    \n"
+				"    # ...or...\n"
+				"    \n"
+				"    flowline_feature = pygplates.Feature(pygplates.FeatureType.create_gpml('Flowline'))\n"
+				"    flowline_feature.set_valid_time(50, 0)\n"
+				"    flowline_feature.set_left_plate(201)\n"
+				"    flowline_feature.set_right_plate(701)\n"
+				"    # Set geometry and reverse reconstruct *after* other feature properties have been set.\n"
+				"    flowline_feature.set_geometry(\n"
+				"        seed_geometry_at_50Ma,\n"
+				"        reverse_reconstruct=(rotation_model, 50))\n")
 		.staticmethod("create_flowline")
 		.def("create_motion_path",
 				&GPlatesApi::feature_handle_create_motion_path,
@@ -2232,16 +2387,17 @@ export_feature()
 						bp::arg("reconstruction_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
 						bp::arg("other_properties") = bp::object()/*Py_None*/,
 						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
+						bp::arg("reverse_reconstruct") = bp::object()/*Py_None*/,
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"create_motion_path(seed_geometry, times, [name], [description], [valid_time], "
 				"[relative_plate], [reconstruction_plate_id], [other_properties], [feature_id], "
-				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
+				"[reverse_reconstruct], [verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
 				"  Create a motion path feature.\n"
 				"\n"
 				"  :param seed_geometry: the seed point (or points) - see :meth:`set_geometry` - if geometry "
 				"is not present-day geometry then the created feature will need to be reverse reconstructed "
-				"to present day using (using :func:`reverse_reconstruct`) before the feature can be "
-				"reconstructed to an arbitrary reconstruction time\n"
+				"to present day (using either the *reverse_reconstruct* parameter or :func:`reverse_reconstruct`) "
+				"before the feature can be reconstructed to an arbitrary reconstruction time\n"
 				"  :type seed_geometry: :class:`PointOnSphere` or :class:`MultiPointOnSphere`\n"
 				"  :param times: the list of times\n"
 				"  :type times: sequence (eg, ``list`` or ``tuple``) of float or :class:`GeoTimeInstant`\n"
@@ -2263,6 +2419,12 @@ export_feature()
 				":class:`PropertyValue` or sequence of :class:`PropertyValue`)\n"
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
 				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param reverse_reconstruct: the tuple (rotation model, seed geometry reconstruction time [, anchor plate id]) "
+				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
+				"then *seed_geometry* is reverse reconstructed using those parameters and any specified feature properties "
+				"(eg, *reconstruction_plate_id*) - this is only required if *seed_geometry* is not present day - "
+				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
+				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
@@ -2283,10 +2445,11 @@ export_feature()
 				"        relative_plate=201,\n"
 				"        reconstruction_plate_id=701)\n"
 				"\n"
-				"  If *seed_geometry* is not present-day geometry then the created "
-				"feature will need to be reverse reconstructed to present day using (using :func:`reverse_reconstruct`) "
-				"before the feature can be reconstructed to an arbitrary reconstruction time - this is "
-				"because a feature is not complete until its geometry is *present day* geometry.\n"
+				"  If *seed_geometry* is not present-day geometry then the created feature will need to "
+				"be reverse reconstructed to present day using (using either the *reverse_reconstruct* "
+				"parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an "
+				"arbitrary reconstruction time - this is because a feature is not complete until its "
+				"geometry is *present day* geometry.\n"
 				"\n"
 				"  Create a motion path feature (note that it must also be reverse reconstructed since "
 				"the specified geometry is not present day geometry):\n"
@@ -2297,8 +2460,8 @@ export_feature()
 				"        seed_geometry_at_50Ma,\n"
 				"        valid_time=(50, 0),\n"
 				"        relative_plate=201,\n"
-				"        reconstruction_plate_id=701)\n"
-				"    pygplates.reverse_reconstruct(motion_path_feature, rotation_model, 50)\n"
+				"        reconstruction_plate_id=701,\n"
+				"        reverse_reconstruct=(rotation_model, 50))\n"
 				"\n"
 				"  The previous example is the equivalent of the following (note that the "
 				":func:`reverse reconstruction<reverse_reconstruct>` is done *after* the properties have "
@@ -2311,7 +2474,18 @@ export_feature()
 				"    motion_path_feature.set_valid_time(50, 0)\n"
 				"    motion_path_feature.set_relative_plate(201)\n"
 				"    motion_path_feature.set_reconstruction_plate_id(701)\n"
-				"    pygplates.reverse_reconstruct(motion_path_feature, rotation_model, 50)\n")
+				"    pygplates.reverse_reconstruct(motion_path_feature, rotation_model, 50)\n"
+				"    \n"
+				"    # ...or...\n"
+				"    \n"
+				"    motion_path_feature = pygplates.Feature(pygplates.FeatureType.create_gpml('MotionPath'))\n"
+				"    motion_path_feature.set_valid_time(50, 0)\n"
+				"    motion_path_feature.set_relative_plate(201)\n"
+				"    motion_path_feature.set_reconstruction_plate_id(701)\n"
+				"    # Set geometry and reverse reconstruct *after* other feature properties have been set.\n"
+				"    motion_path_feature.set_geometry(\n"
+				"        seed_geometry_at_50Ma,\n"
+				"        reverse_reconstruct=(rotation_model, 50))\n")
 		.staticmethod("create_motion_path")
 		.def("add",
 				&GPlatesApi::feature_handle_add_property,
@@ -2581,21 +2755,29 @@ export_feature()
 				&GPlatesApi::feature_handle_set_geometry,
 				(bp::arg("geometry"),
 						bp::arg("property_name") = boost::optional<GPlatesModel::PropertyName>(),
+						bp::arg("reverse_reconstruct") = bp::object()/*Py_None*/,
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
-				"set_geometry(geometry, [property_name], [verify_information_model=VerifyInformationModel.yes]) "
-				"-> Property or list\n"
+				"set_geometry(geometry, [property_name], [reverse_reconstruct], "
+				"[verify_information_model=VerifyInformationModel.yes]) -> Property or list\n"
 				"  Set the geometry (or geometries) of this feature.\n"
 				"\n"
 				"  :param geometry: the geometry (or geometries) of the property (or properties) to set "
 				"- if the geometry(s) is not present-day geometry then this feature will need to be "
-				"reverse reconstructed to present day using (using :func:`reverse_reconstruct`) before "
-				"this feature can be reconstructed to an arbitrary reconstruction time\n"
+				"reverse reconstructed to present day using (using either the *reverse_reconstruct* "
+				"parameter or :func:`reverse_reconstruct`) before this feature can be reconstructed to "
+				"an arbitrary reconstruction time\n"
 				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
 				"of :class:`GeometryOnSphere`\n"
 				"  :param property_name: the optional property name of the geometry property or properties to set, "
 				"if not specified then the default geometry property name associated with this feature's "
 				":class:`type<FeatureType>` is used instead\n"
 				"  :type property_name: :class:`PropertyName`\n"
+				"  :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) "
+				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
+				"then *geometry* is reverse reconstructed using those parameters and this feature's existing properties "
+				"(eg, reconstruction plate id) - this is only required if *geometry* is not present day - "
+				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
+				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
 				"  :returns: the geometry property (or properties) set in the feature\n"
@@ -2659,12 +2841,22 @@ export_feature()
 				"        pygplates.PropertyName.create_gpml('unclassifiedGeometry'))\n"
 				"\n"
 				"  If *geometry* is not present-day geometry then the created feature will need to be "
-				"reverse reconstructed to present day using (using :func:`reverse_reconstruct`) "
-				"before the feature can be reconstructed to an arbitrary reconstruction time - this is "
-				"because a feature is not complete until its geometry is *present day* geometry. "
-				"This is usually the case for features that are reconstructed using half-stage rotations "
-				"since it is typically much easier to specify the geometry at the geological time at "
-				"which the feature is digitised (as opposed to present-day) as the following example demonstrates:\n"
+				"reverse reconstructed to present day using (using either the *reverse_reconstruct* "
+				"parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to "
+				"an arbitrary reconstruction time - this is because a feature is not complete until its "
+				"geometry is *present day* geometry. This is usually the case for features that are "
+				"reconstructed using half-stage rotations since it is typically much easier to specify "
+				"the geometry at the geological time at which the feature is digitised (as opposed to "
+				"present-day) as the following example demonstrates:\n"
+				"  ::\n"
+				"\n"
+				"    time_of_digitisation = 50\n"
+				"    ridge_geometry_at_digitisation_time = pygplates.PolylineOnSphere([...])\n"
+				"    mid_ocean_ridge_feature.set_geometry(\n"
+				"        ridge_geometry_at_digitisation_time,\n"
+				"        reverse_reconstruct=(rotation_model, time_of_digitisation))\n"
+				"\n"
+				"  The previous example is the equivalent of the following):\n"
 				"  ::\n"
 				"\n"
 				"    time_of_digitisation = 50\n"

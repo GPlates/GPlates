@@ -169,6 +169,140 @@ class ReconstructTest(unittest.TestCase):
         # One volcano does not exist at 15Ma.
         self.assertEqual(len(reconstructed_feature_geometries), 3)
         
+    def test_reconstruct_feature_geometry(self):
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        reconstruction_time = 15
+        geometry = pygplates.PointOnSphere((0,0))
+        feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.create_gpml('Coastline'),
+                geometry,
+                valid_time=(30, 0),
+                reconstruction_plate_id=801)
+        reconstructed_feature_geometries = []
+        pygplates.reconstruct(feature, rotation_model, reconstructed_feature_geometries, reconstruction_time)
+        self.assertEqual(len(reconstructed_feature_geometries), 1)
+        self.assertTrue(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())
+        self.assertTrue(geometry == reconstructed_feature_geometries[0].get_present_day_geometry())
+        
+        # Test reverse reconstruction.
+        geometry_at_reconstruction_time = pygplates.PointOnSphere((0,0))
+        feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.create_gpml('Coastline'),
+                geometry,
+                valid_time=(30, 0),
+                reconstruction_plate_id=801,
+                reverse_reconstruct=(rotation_model, reconstruction_time))
+        geometry_at_present_day = feature.get_geometry()
+        reconstructed_feature_geometries = []
+        pygplates.reconstruct(feature, rotation_model, reconstructed_feature_geometries, reconstruction_time)
+        self.assertEqual(len(reconstructed_feature_geometries), 1)
+        self.assertTrue(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())
+        self.assertTrue(geometry_at_present_day == reconstructed_feature_geometries[0].get_present_day_geometry())
+        self.assertTrue(geometry_at_reconstruction_time == reconstructed_feature_geometries[0].get_reconstructed_geometry())
+        
+    def test_reconstruct_flowline(self):
+        pygplates.reconstruct(
+            os.path.join(FIXTURES, 'flowline.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            'test.xy',
+            pygplates.GeoTimeInstant(10),
+            reconstruct_type=pygplates.ReconstructType.flowline)
+        
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        reconstruction_time = 15
+        seed_points = pygplates.MultiPointOnSphere([(0,0), (0,90)])
+        flowline_feature = pygplates.Feature.create_flowline(
+                seed_points,
+                [0, 10, 20, 30, 40],
+                valid_time=(30, 0),
+                left_plate=201,
+                right_plate=801)
+        reconstructed_flowlines = []
+        # First without specifying flowlines.
+        pygplates.reconstruct(flowline_feature, rotation_model, reconstructed_flowlines, reconstruction_time)
+        self.assertEqual(len(reconstructed_flowlines), 0)
+        # Now specify flowlines.
+        pygplates.reconstruct(
+                flowline_feature, rotation_model, reconstructed_flowlines, reconstruction_time,
+                reconstruct_type=pygplates.ReconstructType.flowline)
+        self.assertEqual(len(reconstructed_flowlines), 2)
+        for index, reconstructed_flowline in enumerate(reconstructed_flowlines):
+            self.assertTrue(reconstructed_flowline.get_feature().get_feature_id() == flowline_feature.get_feature_id())
+            self.assertTrue(seed_points[index] == reconstructed_flowline.get_present_day_seed_point())
+        
+        # Test reverse reconstruction.
+        seed_points_at_reconstruction_time = pygplates.MultiPointOnSphere([(0,0), (0,90)])
+        flowline_feature = pygplates.Feature.create_flowline(
+                seed_points_at_reconstruction_time,
+                [0, 10, 20, 30, 40],
+                valid_time=(30, 0),
+                left_plate=201,
+                right_plate=801,
+                reverse_reconstruct=(rotation_model, reconstruction_time))
+        seed_points_at_present_day = flowline_feature.get_geometry()
+        reconstructed_flowlines = []
+        pygplates.reconstruct(
+                flowline_feature, rotation_model, reconstructed_flowlines, reconstruction_time,
+                reconstruct_type=pygplates.ReconstructType.flowline)
+        self.assertEqual(len(reconstructed_flowlines), 2)
+        for index, reconstructed_flowline in enumerate(reconstructed_flowlines):
+            self.assertTrue(reconstructed_flowline.get_feature().get_feature_id() == flowline_feature.get_feature_id())
+            self.assertTrue(seed_points_at_present_day[index] == reconstructed_flowline.get_present_day_seed_point())
+            self.assertTrue(seed_points_at_reconstruction_time[index] == reconstructed_flowline.get_reconstructed_seed_point())
+            # At 15Ma there should be four points (15, 20, 30, 40).
+            self.assertTrue(len(reconstructed_flowline.get_left_flowline()) == 4)
+            self.assertTrue(len(reconstructed_flowline.get_right_flowline()) == 4)
+            # First point in left/right flowline is reconstructed seed point.
+            self.assertTrue(reconstructed_flowline.get_left_flowline()[0] == reconstructed_flowline.get_reconstructed_seed_point())
+            self.assertTrue(reconstructed_flowline.get_right_flowline()[0] == reconstructed_flowline.get_reconstructed_seed_point())
+        
+    def test_reconstruct_motion_path(self):
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        reconstruction_time = 15
+        seed_points = pygplates.MultiPointOnSphere([(0,0), (0,90)])
+        motion_path_feature = pygplates.Feature.create_motion_path(
+                seed_points,
+                [0, 10, 20, 30, 40],
+                valid_time=(30, 0),
+                relative_plate=201,
+                reconstruction_plate_id=801)
+        reconstructed_motion_paths = []
+        # First without specifying motion paths.
+        pygplates.reconstruct(motion_path_feature, rotation_model, reconstructed_motion_paths, reconstruction_time)
+        self.assertEqual(len(reconstructed_motion_paths), 0)
+        # Now specify motion paths.
+        pygplates.reconstruct(
+                motion_path_feature, rotation_model, reconstructed_motion_paths, reconstruction_time,
+                reconstruct_type=pygplates.ReconstructType.motion_path)
+        self.assertEqual(len(reconstructed_motion_paths), 2)
+        for index, reconstructed_motion_path in enumerate(reconstructed_motion_paths):
+            self.assertTrue(reconstructed_motion_path.get_feature().get_feature_id() == motion_path_feature.get_feature_id())
+            self.assertTrue(seed_points[index] == reconstructed_motion_path.get_present_day_seed_point())
+        
+        # Test reverse reconstruction.
+        seed_points_at_reconstruction_time = pygplates.MultiPointOnSphere([(0,0), (0,90)])
+        motion_path_feature = pygplates.Feature.create_motion_path(
+                seed_points_at_reconstruction_time,
+                [0, 10, 20, 30, 40],
+                valid_time=(30, 0),
+                relative_plate=201,
+                reconstruction_plate_id=801,
+                reverse_reconstruct=(rotation_model, reconstruction_time))
+        seed_points_at_present_day = motion_path_feature.get_geometry()
+        reconstructed_motion_paths = []
+        pygplates.reconstruct(
+                motion_path_feature, rotation_model, reconstructed_motion_paths, reconstruction_time,
+                reconstruct_type=pygplates.ReconstructType.motion_path)
+        self.assertEqual(len(reconstructed_motion_paths), 2)
+        for index, reconstructed_motion_path in enumerate(reconstructed_motion_paths):
+            self.assertTrue(reconstructed_motion_path.get_feature().get_feature_id() == motion_path_feature.get_feature_id())
+            self.assertTrue(seed_points_at_present_day[index] == reconstructed_motion_path.get_present_day_seed_point())
+            self.assertTrue(seed_points_at_reconstruction_time[index] == reconstructed_motion_path.get_reconstructed_seed_point())
+            # At 15Ma there should be four points (15, 20, 30, 40).
+            self.assertTrue(len(reconstructed_motion_path.get_motion_path()) == 4)
+            # Last point in motion path is reconstructed seed point.
+            self.assertTrue(reconstructed_motion_path.get_motion_path()[-1] == reconstructed_motion_path.get_reconstructed_seed_point())
+        
     def test_deprecated_reconstruct(self):
         # We continue to support the deprecated version of 'reconstruct()' since
         # it was one of the few python API functions that's been around since
