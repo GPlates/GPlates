@@ -29,6 +29,9 @@ set(srcs
     AddPropertyDialog.cc
     AddPropertyDialog.h
     AddPropertyDialogUi.ui
+    AgeModelManagerDialog.cc
+    AgeModelManagerDialog.h
+    AgeModelManagerDialogUi.ui
     AnimateControlWidget.cc
     AnimateControlWidget.h
     AnimateControlWidgetUi.ui
