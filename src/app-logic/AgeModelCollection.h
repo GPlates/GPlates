@@ -24,14 +24,27 @@
 #ifndef GPLATES_APP_LOGIC_AGEMODELCOLLECTION_H
 #define GPLATES_APP_LOGIC_AGEMODELCOLLECTION_H
 
+#include <map>
 #include <vector>
 #include "boost/optional.hpp"
+#include <QString>
 
 namespace GPlatesAppLogic
 {
 
+	typedef std::map<QString,double> age_model_map_type;
+
 struct AgeModel
 {
+	/**
+	 * @brief d_identifier - A brief name for the model, for example CandeKent95
+	 */
+	QString d_identifier;
+
+	/**
+	 * @brief d_model - a map of chron (e.g. "2An.1ny") to time (Ma)
+	 */
+	age_model_map_type d_model;
 };
 
 class AgeModelCollection
@@ -45,6 +58,17 @@ public:
 	{
 		return boost::none;
 	}
+
+private:
+
+	std::vector<AgeModel> d_age_models;
+
+	/**
+	 * @brief d_chron_comment - additional information relating to the chron - comments, references etc
+	 * Ultimately we might have several metadata fields here; for now I'm bundling everything into one QString.
+	 */
+	std::map<QString,QString> d_chron_metadata;
+
 
 };
 

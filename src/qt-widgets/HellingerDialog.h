@@ -495,7 +495,7 @@ namespace GPlatesQtWidgets
 				bool current_state = true);
 
 		void
-		set_up_test_chron_map();
+		set_up_test_age_model_collection();
 
 
 		GPlatesPresentation::ViewState &d_view_state;

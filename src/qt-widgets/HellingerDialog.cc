@@ -36,6 +36,7 @@
 
 
 #include "api/PythonInterpreterLocker.h"
+#include "app-logic/AgeModelCollection.h"
 #include "app-logic/ApplicationState.h"
 #include "app-logic/UserPreferences.h"
 #include "file-io/HellingerReader.h"
@@ -110,7 +111,7 @@ namespace{
 
 		NUM_STATES
 	};
-
+#if 0
 	/**
 	 * @brief set_chron_time
 	 * @param chron_time - if we find a matching chron string in the @param map, then @param chron_time is changed on return
@@ -163,6 +164,31 @@ namespace{
 			{
 				chron_time = iter->second.second;
 			}
+		}
+	}
+#endif
+	/**
+	 * @brief set_chron_time
+	 * @param chron_time - if we find a matching chron string in the @param map, then @param chron_time is changed on return
+	 * @param chron_string - QString of form <chron>.<y|o>
+	 * where <y|o> can be "y" or "o", indicating which of the
+	 * younger or older ends of the time interval is to be used.
+	 *
+	 * @param map - a map of <QString chron> to <double younger_time,double older_time>
+	 */
+	void
+	set_chron_time(
+			double &chron_time,
+			const QString &chron_string,
+			const GPlatesAppLogic::AgeModelCollection &age_model_collection)
+	{
+		boost::optional<GPlatesAppLogic::AgeModel &> active_age_model =
+				age_model_collection.get_active_age_model();
+
+		if (active_age_model)
+		{
+			GPlatesAppLogic::age_model_map_type age_model_map = active_age_model->d_model;
+			Q_UNUSED(age_model_map);
 		}
 	}
 
@@ -544,7 +570,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	initialise_widgets();
 
-	set_up_test_chron_map();
+	set_up_test_age_model_collection();
 }
 
 void
@@ -944,7 +970,7 @@ GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 	set_chron_time(
 				d_chron_time,
 				d_hellinger_model->get_chron_string(),
-				d_view_state.get_application_state().get_chron_to_time_interval_map());
+				d_view_state.get_application_state().get_age_model_collection());
 	spinbox_chron->setValue(d_chron_time);
 
 	update_buttons();
@@ -1927,22 +1953,66 @@ GPlatesQtWidgets::HellingerDialog::update_hovered_item(
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::set_up_test_chron_map()
+GPlatesQtWidgets::HellingerDialog::set_up_test_age_model_collection()
 {
-	// A few hard-coded chrons and time-intervals for testing.
-	// (The values are "real" and are taken from Gee and Kent 2007 :
-	// http://academiccommons.columbia.edu/catalog/ac:144328
-	// in case anyone's curious).
+	// A few hard-coded age models for testing.
+	// (The values are "real" and are taken from:
+	// Cande and Kent 1995;
+	// Lourens et al 2004;
+	// Gee and Kent 2007; and
+	// Ogg 2012).
 
-	GPlatesAppLogic::ApplicationState::chron_to_time_interval_map_type &map =
-			d_view_state.get_application_state().get_chron_to_time_interval_map();
 
-	map.insert(std::make_pair(QString("C1n"),std::make_pair(0.,0.78)));
-	map.insert(std::make_pair(QString("C1r.1n"),std::make_pair(0.99,1.07)));
-	map.insert(std::make_pair(QString("C1r.2r-1n"),std::make_pair(1.201,1.211)));
-	map.insert(std::make_pair(QString("C2n"),std::make_pair(1.770,1.950)));
-	map.insert(std::make_pair(QString("C2r.1n"),std::make_pair(2.140,2.150)));
+	GPlatesAppLogic::AgeModelCollection &age_model_collection =
+			d_view_state.get_application_state().get_age_model_collection();
+	Q_UNUSED(age_model_collection);
 
+	GPlatesAppLogic::AgeModel cande_and_kent_model;
+	GPlatesAppLogic::AgeModel lourens_model;
+	GPlatesAppLogic::AgeModel gee_and_kent_model;
+
+	cande_and_kent_model.d_identifier = QString("CandeKent1995");
+	cande_and_kent_model.d_model.insert(std::make_pair(QString("2An.3no"),3.58));
+	cande_and_kent_model.d_model.insert(std::make_pair(QString("4Any"),8.699));
+	cande_and_kent_model.d_model.insert(std::make_pair(QString("5r.2no"),11.531));
+	cande_and_kent_model.d_model.insert(std::make_pair(QString("5Cn.1no"),16.293));
+
+	lourens_model.d_identifier = QString("Lourens2004");
+	lourens_model.d_model.insert(std::make_pair(QString("1no"),0.781));
+	lourens_model.d_model.insert(std::make_pair(QString("2ny"),1.778));
+	lourens_model.d_model.insert(std::make_pair(QString("2An.1ny"),2.581));
+	lourens_model.d_model.insert(std::make_pair(QString("2An.3no"),3.596));
+	lourens_model.d_model.insert(std::make_pair(QString("3n.1ny"),4.187));
+	lourens_model.d_model.insert(std::make_pair(QString("3n.4no"),5.235));
+	lourens_model.d_model.insert(std::make_pair(QString("3An.1ny"),6.033));
+	lourens_model.d_model.insert(std::make_pair(QString("4n.1ny"),7.528));
+	lourens_model.d_model.insert(std::make_pair(QString("4n.2no"),8.108));
+	lourens_model.d_model.insert(std::make_pair(QString("4Any"),8.769));
+	lourens_model.d_model.insert(std::make_pair(QString("4Ao"),9.098));
+	lourens_model.d_model.insert(std::make_pair(QString("5n.1ny"),9.779));
+	lourens_model.d_model.insert(std::make_pair(QString("5n.2no"),11.040));
+	lourens_model.d_model.insert(std::make_pair(QString("5An.2o"),12.415));
+	lourens_model.d_model.insert(std::make_pair(QString("5ACy"),13.734));
+	lourens_model.d_model.insert(std::make_pair(QString("5ADo"),14.581));
+	lourens_model.d_model.insert(std::make_pair(QString("5Cn.1ny"),15.974));
+
+	gee_and_kent_model.d_identifier = QString("GeeKent2004");
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("1no"),0.780));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("2ny"),1.770));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("2An.1ny"),2.581));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("2An.3no"),3.580));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("3n.1ny"),4.290));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("3n.4no"),5.230));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("3An.1ny"),5.894));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("4n.1ny"),7.432));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("4n.2no"),8.072));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("4Ao"),9.025));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("5n.1ny"),9.740));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("5n.2no"),10.949));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("5An.2o"),12.401));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("5ACy"),13.703));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("5ADo"),14.612));
+	gee_and_kent_model.d_model.insert(std::make_pair(QString("5Cn.1ny"),16.014));
 
 }
 
