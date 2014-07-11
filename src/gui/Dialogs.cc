@@ -52,6 +52,7 @@
 // #includes for all dialogs managed by us.
 ////////////////////////////////////////////////
 #include "qt-widgets/AboutDialog.h"
+#include "qt-widgets/AgeModelManagerDialog.h"
 #include "qt-widgets/AnimateDialog.h"
 #include "qt-widgets/AssignReconstructionPlateIdsDialog.h"
 #include "qt-widgets/CalculateReconstructionPoleDialog.h"
@@ -129,6 +130,28 @@ void
 GPlatesGui::Dialogs::pop_up_about_dialog()
 {
 	about_dialog().exec();
+}
+
+GPlatesQtWidgets::AgeModelManagerDialog &
+GPlatesGui::Dialogs::age_model_manager_dialog()
+{
+	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
+	const DialogType dialog_type = DIALOG_AGE_MODEL_MANAGER;
+	typedef GPlatesQtWidgets::AgeModelManagerDialog dialog_typename;
+
+	if (d_dialogs[dialog_type].isNull())
+	{
+		d_dialogs[dialog_type] = new dialog_typename(
+					&viewport_window());
+	}
+
+	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
+}
+
+void
+GPlatesGui::Dialogs::pop_up_age_model_manager_dialog()
+{
+	age_model_manager_dialog().pop_up();
 }
 
 

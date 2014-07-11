@@ -53,6 +53,7 @@ namespace GPlatesQtWidgets
 	// Forward declarations for our dialogs.
 	////////////////////////////////////////////////
 	class AboutDialog;
+	class AgeModelManagerDialog;
 	class AnimateDialog;
 	class AssignReconstructionPlateIdsDialog;
 	class CalculateReconstructionPoleDialog;
@@ -132,6 +133,9 @@ namespace GPlatesGui
 
 		GPlatesQtWidgets::AboutDialog &
 		about_dialog();
+
+		GPlatesQtWidgets::AgeModelManagerDialog &
+		age_model_manager_dialog();
 
 		GPlatesQtWidgets::AnimateDialog &
 		animate_dialog();
@@ -250,6 +254,9 @@ namespace GPlatesGui
 		pop_up_about_dialog();
 
 		void
+		pop_up_age_model_manager_dialog();
+
+		void
 		pop_up_animate_dialog();
 
 		void
@@ -360,6 +367,7 @@ namespace GPlatesGui
 		enum DialogType
 		{
 			DIALOG_ABOUT,
+			DIALOG_AGE_MODEL_MANAGER,
 			DIALOG_ANIMATE,
 			DIALOG_ASSIGN_RECONSTRUCTION_PLATE_IDS,
 			DIALOG_CALCULATE_RECONSTRUCTION_POLE,

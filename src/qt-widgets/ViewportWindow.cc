@@ -761,7 +761,12 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 	QObject::connect(action_Finite_Rotation_Calculator, SIGNAL(triggered()),
 		&dialogs(), SLOT(pop_up_finite_rotation_calculator_dialog()));
 
-	
+	// TODO: Consider if this is the best location for this; the Reconstruction menu is a possibility;
+	// and if we one day store the model as a GPML feature, then the Feature menu would probably be the
+	// place for it.
+	QObject::connect(action_Manage_Age_Models, SIGNAL(triggered()),
+			&dialogs(), SLOT(pop_up_age_model_manager_dialog()));
+
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
 			GPlatesUtils::ComponentManager::Component::python()))
 	{
