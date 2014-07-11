@@ -50,14 +50,14 @@ struct AgeModel
 class AgeModelCollection
 {
 public:
-	AgeModelCollection()
-	{};
+	AgeModelCollection();
 
-	const boost::optional<AgeModel &>
-	get_active_age_model() const
-	{
-		return boost::none;
-	}
+	boost::optional<const AgeModel &>
+	get_active_age_model() const;
+
+	void
+	set_active_age_model(
+			unsigned int index);
 
 private:
 
@@ -69,6 +69,7 @@ private:
 	 */
 	std::map<QString,QString> d_chron_metadata;
 
+	boost::optional<unsigned int> d_active_model_index;
 
 };
 

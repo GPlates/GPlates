@@ -167,29 +167,32 @@ namespace{
 		}
 	}
 #endif
+
 	/**
-	 * @brief set_chron_time
-	 * @param chron_time - if we find a matching chron string in the @param map, then @param chron_time is changed on return
-	 * @param chron_string - QString of form <chron>.<y|o>
-	 * where <y|o> can be "y" or "o", indicating which of the
-	 * younger or older ends of the time interval is to be used.
-	 *
-	 * @param map - a map of <QString chron> to <double younger_time,double older_time>
+	 * @brief try_to_find_chron_time
+	 * @param chron_string - QString of form.....
+	 * @param age_model_collection - AgeModelCollection to be searched
+	 * @return if we find a matching chron_string in the active AgeModel, we return an optional form of the time (Ma) of that chron.
 	 */
-	void
-	set_chron_time(
-			double &chron_time,
+	boost::optional<double>
+	try_to_find_chron_time(
 			const QString &chron_string,
 			const GPlatesAppLogic::AgeModelCollection &age_model_collection)
 	{
-		boost::optional<GPlatesAppLogic::AgeModel &> active_age_model =
+		boost::optional<const GPlatesAppLogic::AgeModel &> active_age_model =
 				age_model_collection.get_active_age_model();
 
 		if (active_age_model)
 		{
 			GPlatesAppLogic::age_model_map_type age_model_map = active_age_model->d_model;
-			Q_UNUSED(age_model_map);
+			GPlatesAppLogic::age_model_map_type::const_iterator it = age_model_map.find(chron_string);
+			if (it != age_model_map.end())
+			{
+				return boost::optional<double>(it->second);
+			}
 		}
+
+		return boost::none;
 	}
 
 	bool
@@ -967,10 +970,16 @@ GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 
 	line_import_file->setText(path);
 
-	set_chron_time(
-				d_chron_time,
+	boost::optional<double> chron_time =
+			try_to_find_chron_time(
 				d_hellinger_model->get_chron_string(),
 				d_view_state.get_application_state().get_age_model_collection());
+
+	if (chron_time)
+	{
+		d_chron_time = *chron_time;
+	}
+
 	spinbox_chron->setValue(d_chron_time);
 
 	update_buttons();

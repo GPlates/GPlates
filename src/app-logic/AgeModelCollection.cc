@@ -24,3 +24,31 @@
 #include <map>
 
 #include "AgeModelCollection.h"
+
+GPlatesAppLogic::AgeModelCollection::AgeModelCollection()
+{
+}
+
+boost::optional<const GPlatesAppLogic::AgeModel &>
+GPlatesAppLogic::AgeModelCollection::get_active_age_model() const
+{
+	if (d_active_model_index)
+	{
+		if (static_cast<std::size_t>(*d_active_model_index) < d_age_models.size())
+		{
+			return boost::optional<const GPlatesAppLogic::AgeModel &>(d_age_models.at(*d_active_model_index));
+		}
+	}
+
+	return boost::none;
+}
+
+void
+GPlatesAppLogic::AgeModelCollection::set_active_age_model(
+		unsigned int index)
+{
+	if (static_cast<std::size_t>(index) < d_age_models.size())
+	{
+		d_active_model_index.reset(index);
+	}
+}
