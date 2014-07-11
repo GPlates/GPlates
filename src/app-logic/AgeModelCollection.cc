@@ -52,3 +52,10 @@ GPlatesAppLogic::AgeModelCollection::set_active_age_model(
 		d_active_model_index.reset(index);
 	}
 }
+
+void
+GPlatesAppLogic::AgeModelCollection::add_age_model(
+		const GPlatesAppLogic::AgeModel &age_model)
+{
+	d_age_models.push_back(age_model);
+}

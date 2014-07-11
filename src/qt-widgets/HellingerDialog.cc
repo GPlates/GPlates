@@ -179,11 +179,13 @@ namespace{
 			const QString &chron_string,
 			const GPlatesAppLogic::AgeModelCollection &age_model_collection)
 	{
+		qDebug() << "Trying to find chron time for string: " << chron_string;
 		boost::optional<const GPlatesAppLogic::AgeModel &> active_age_model =
 				age_model_collection.get_active_age_model();
 
 		if (active_age_model)
 		{
+			qDebug() << "Found active age model.";
 			GPlatesAppLogic::age_model_map_type age_model_map = active_age_model->d_model;
 			GPlatesAppLogic::age_model_map_type::const_iterator it = age_model_map.find(chron_string);
 			if (it != age_model_map.end())
@@ -1974,7 +1976,6 @@ GPlatesQtWidgets::HellingerDialog::set_up_test_age_model_collection()
 
 	GPlatesAppLogic::AgeModelCollection &age_model_collection =
 			d_view_state.get_application_state().get_age_model_collection();
-	Q_UNUSED(age_model_collection);
 
 	GPlatesAppLogic::AgeModel cande_and_kent_model;
 	GPlatesAppLogic::AgeModel lourens_model;
@@ -2023,6 +2024,10 @@ GPlatesQtWidgets::HellingerDialog::set_up_test_age_model_collection()
 	gee_and_kent_model.d_model.insert(std::make_pair(QString("5ADo"),14.612));
 	gee_and_kent_model.d_model.insert(std::make_pair(QString("5Cn.1ny"),16.014));
 
+	age_model_collection.add_age_model(cande_and_kent_model);
+	age_model_collection.add_age_model(lourens_model);
+	age_model_collection.add_age_model(gee_and_kent_model);
+	age_model_collection.set_active_age_model(1);
 }
 
 void

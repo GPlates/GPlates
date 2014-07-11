@@ -59,6 +59,10 @@ public:
 	set_active_age_model(
 			unsigned int index);
 
+	void
+	add_age_model(
+			const AgeModel &age_model);
+
 private:
 
 	std::vector<AgeModel> d_age_models;

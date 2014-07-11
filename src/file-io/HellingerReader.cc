@@ -326,7 +326,7 @@ namespace
 			 * @brief parse_filename_for_chron_string
 			 * @param filename
 			 * @return  the string lying between the last dash ("-") or last underscore ("_")  (whichever lies closest to the end)
-			 * and the last full stop (".") .
+			 * and the last full stop ("."). If the resultant string has a leading "C" character, this is stripped before returning.
 			 */
 			QString
 			parse_filename_for_chron_string(
@@ -352,8 +352,17 @@ namespace
 				int index = qMax(dash_index,underscore_index);
 				int l = base_name.length();
 
-				qDebug() << "Chron string: " << base_name.right(l-index-1);
-				return base_name.right(l-index-1);
+				QString chron_string = base_name.right(l-index-1);
+				qDebug() << "Chron string: " << chron_string;
+
+				if (chron_string.startsWith('C'))
+				{
+					// Remove leading character
+					chron_string.remove(0,1);
+				}
+				qDebug() << "Stripped chron string: " << chron_string;
+
+				return chron_string;
 			}
 
 
