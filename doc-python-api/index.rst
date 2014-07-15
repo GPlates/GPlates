@@ -45,6 +45,7 @@ Contents:
 	pygplates.GpmlKeyValueDictionary
 	pygplates.GpmlPiecewiseAggregation
 	pygplates.GpmlPlateId
+	pygplates.GpmlPolarityChronId
 	pygplates.GpmlTimeSample
 	pygplates.GpmlTimeWindow
 	pygplates.GreatCircleArc

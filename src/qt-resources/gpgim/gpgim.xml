@@ -277,7 +277,7 @@
 			</Content>
 			<Content>
 				<Value>Other</Value>
-				<Description>The 'Other' type is not the "option #4" which Trond was talking about, ie "relative to any other plate in the hierachy", but rather a way out in case there actually -is- a fourth type which we don't know about.</Description>
+				<Description>The 'Other' type is not the "option #4" which Trond was talking about, ie "relative to any other plate in the hierarchy", but rather a way out in case there actually -is- a fourth type which we don't know about.</Description>
 			</Content>
 		</Enumeration>
 		<Enumeration>
@@ -548,7 +548,7 @@
 			<Type>gpml:HotSpotTrailMark</Type>
 			<Description>The marks that define the HotSpotTrail.</Description>
 			<Comment>You can draw the line through them, but it is more accurate to store the individual points and their positions in space and time.</Comment>
-			<Comment>In the Rotation hierachy, will depend on a Platelike AbsoluteReferenceFrame.</Comment>
+			<Comment>In the Rotation hierarchy, will depend on a Platelike AbsoluteReferenceFrame.</Comment>
 		</NativeProperty>
 		<NativeProperty>
 			<Type>gpml:KeyValueDictionary</Type>
@@ -1609,7 +1609,7 @@
 			<Property>gpml:multiPosition</Property>
 			<Property>gpml:trail</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
-			<Comment>In the Rotation hierachy, these features will depend on a Hotspot AbsoluteReferenceFrame.</Comment>
+			<Comment>In the Rotation hierarchy, these features will depend on a Hotspot AbsoluteReferenceFrame.</Comment>
 			<Comment>HotSpots are a little unique as they don't move with the plates, but under them (if they move at all).</Comment>
 		</FeatureClass>
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:unclassifiedGeometry">

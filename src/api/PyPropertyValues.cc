@@ -73,6 +73,7 @@
 #include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
+#include "property-values/GpmlPolarityChronId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"
 #include "property-values/TextContent.h"
@@ -173,6 +174,7 @@ export_property_value()
 					"* :class:`GpmlKeyValueDictionary`\n"
 					"* :class:`GpmlPiecewiseAggregation`\n"
 					"* :class:`GpmlPlateId`\n"
+					"* :class:`GpmlPolarityChronId`\n"
 					"* :class:`XsBoolean`\n"
 					"* :class:`XsDouble`\n"
 					"* :class:`XsInteger`\n"
@@ -2217,6 +2219,171 @@ export_gpml_plate_id()
 
 namespace GPlatesApi
 {
+	namespace
+	{
+		void
+		verify_era(
+				const QString &era)
+		{
+			// This exception will get converted to python 'InformationModelError'.
+			GPlatesGlobal::Assert<InformationModelException>(
+					era == "Cenozoic" || era == "Mesozoic",
+					GPLATES_EXCEPTION_SOURCE,
+					QString("The era '") + era +
+							"' was not recognised as a valid value by the GPGIM");
+		}
+	}
+
+	const GPlatesPropertyValues::GpmlPolarityChronId::non_null_ptr_type
+	gpml_polarity_chron_id_create(
+			boost::optional<QString> era,
+			boost::optional<unsigned int> major_region,
+			boost::optional<QString> minor_region,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		if (verify_information_model == VerifyInformationModel::YES)
+		{
+			if (era)
+			{
+				verify_era(era.get());
+			}
+		}
+
+		return GPlatesPropertyValues::GpmlPolarityChronId::create(era, major_region, minor_region);
+	}
+
+	void
+	gpml_polarity_chron_id_set_era(
+			GPlatesPropertyValues::GpmlPolarityChronId &gpml_polarity_chron_id,
+			const QString &era,
+			VerifyInformationModel::Value verify_information_model)
+	{
+		if (verify_information_model == VerifyInformationModel::YES)
+		{
+			verify_era(era);
+		}
+
+		gpml_polarity_chron_id.set_era(era);
+	}
+}
+
+
+void
+export_gpml_polarity_chron_id()
+{
+	//
+	// GpmlPolarityChronId - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GpmlPolarityChronId,
+			GPlatesPropertyValues::GpmlPolarityChronId::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GpmlPolarityChronId",
+					"A property value that identifies an :class:`Isochron<FeatureType>` or "
+					":class:`Isochron<MagneticAnomalyIdentification>`.",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::gpml_polarity_chron_id_create,
+						bp::default_call_policies(),
+						(bp::arg("era") = boost::optional<QString>(),
+								bp::arg("major_region") = boost::optional<unsigned int>(),
+								bp::arg("minor_region") = boost::optional<QString>(),
+								bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES)),
+				"__init__([era], [major_region], [minor_region], [verify_information_model=VerifyInformationModel.yes])\n"
+				"  Create a polarity chron id property value.\n"
+				"\n"
+				"  :param era: the era of the chron ('Cenozoic' or 'Mesozoic')\n"
+				"  :type era: string\n"
+				"  :param major_region: the number indicating the major region the chron is in - "
+				"Cenozoic isochrons have been classified into broad regions identified by the numbers 1 to 34, "
+				"Mesozoic isochrons use the numbers 1 to 29\n"
+				"  :type major_region: int\n"
+				"  :param minor_region: the sequence of letters indicating the sub-region the chron is "
+				"located in - the letters a-z are used for the initial sub-region, and if further polarity "
+				"reversals have been discovered within that chron, a second letter is appended, and so on\n"
+				"  :type minor_region: string\n"
+				"  :param verify_information_model: whether to check the information model for valid *era*\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and *era* is not a recognised era value\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    # Create the identifier 'C34ad' for Cenozoic isochron, major region 34, sub region a, sub region d:\n"
+				"    polarity_chron_id_property = pygplates.GpmlPolarityChronId('Cenozoic', 34, 'ad')\n")
+		.def("get_era",
+				&GPlatesPropertyValues::GpmlPolarityChronId::get_era,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_era() -> string or None\n"
+				"  Returns the era.\n"
+				"\n"
+				"  :returns: the era, or None if the era was not initialised\n"
+				"  :rtype: string or None\n")
+		.def("set_era",
+				&GPlatesApi::gpml_polarity_chron_id_set_era,
+				(bp::arg("era"),
+						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
+				"set_era(era, [verify_information_model=VerifyInformationModel.yes])\n"
+				"  Sets the era.\n"
+				"\n"
+				"  :param era: the era of the chron ('Cenozoic' or 'Mesozoic')\n"
+				"  :type era: string\n"
+				"  :param verify_information_model: whether to check the information model for valid *era*\n"
+				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
+				"and *era* is not a recognised era string value\n")
+		.def("get_major_region",
+				&GPlatesPropertyValues::GpmlPolarityChronId::get_major_region,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_major_region() -> int or None\n"
+				"  Returns the major region.\n"
+				"\n"
+				"  :returns: the major region, or None if the major region was not initialised\n"
+				"  :rtype: int or None\n")
+		.def("set_major_region",
+				&GPlatesPropertyValues::GpmlPolarityChronId::set_major_region,
+				(bp::arg("major_region")),
+				"set_major_region(major_region)\n"
+				"  Sets the major region.\n"
+				"\n"
+				"  :param major_region: the number indicating the major region the chron is in - "
+				"Cenozoic isochrons have been classified into broad regions identified by the numbers 1 to 34, "
+				"Mesozoic isochrons use the numbers 1 to 29\n"
+				"  :type major_region: int\n")
+		.def("get_minor_region",
+				&GPlatesPropertyValues::GpmlPolarityChronId::get_minor_region,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_minor_region() -> string or None\n"
+				"  Returns the minor region.\n"
+				"\n"
+				"  :returns: the minor region, or None if the minor region was not initialised\n"
+				"  :rtype: string or None\n")
+		.def("set_minor_region",
+				&GPlatesPropertyValues::GpmlPolarityChronId::set_minor_region,
+				(bp::arg("minor_region")),
+				"set_minor_region(minor_region)\n"
+				"  Sets the minor region.\n"
+				"\n"
+				"  :param minor_region: the sequence of letters indicating the sub-region the chron is "
+				"located in - the letters a-z are used for the initial sub-region, and if further polarity "
+				"reversals have been discovered within that chron, a second letter is appended, and so on\n"
+				"  :type minor_region: string\n")
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GpmlPolarityChronId,
+			GPlatesModel::PropertyValue>();
+}
+
+
+namespace GPlatesApi
+{
 	const GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 	gpml_time_sample_create(
 			GPlatesModel::PropertyValue::non_null_ptr_type property_value,
@@ -2899,6 +3066,7 @@ export_property_values()
 	export_gpml_irregular_sampling();
 	export_gpml_key_value_dictionary();
 	export_gpml_piecewise_aggregation();
+	export_gpml_polarity_chron_id();
 	export_gpml_plate_id();
 	export_gpml_time_sample(); // Not actually a property value.
 	export_gpml_time_window(); // Not actually a property value.

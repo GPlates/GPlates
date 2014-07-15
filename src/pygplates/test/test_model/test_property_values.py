@@ -536,6 +536,39 @@ class GpmlPlateIdCase(unittest.TestCase):
         self.assertTrue(self.gpml_plate_id.get_plate_id() == new_plate_id)
 
 
+class GpmlPolarityChronIdCase(unittest.TestCase):
+    def setUp(self):
+        self.era = 'Cenozoic'
+        self.major_region = 34
+        self.minor_region = 'ad'
+        self.gpml_polarity_chron_id = pygplates.GpmlPolarityChronId(
+                self.era, self.major_region, self.minor_region)
+
+    def test_get(self):
+        self.assertTrue(self.gpml_polarity_chron_id.get_era() == self.era)
+        self.assertTrue(self.gpml_polarity_chron_id.get_major_region() == self.major_region)
+        self.assertTrue(self.gpml_polarity_chron_id.get_minor_region() == self.minor_region)
+
+    def test_set(self):
+        new_era = 'Mesozoic'
+        new_major_region = 20
+        new_minor_region = 'c'
+        self.gpml_polarity_chron_id.set_era(new_era)
+        self.assertTrue(self.gpml_polarity_chron_id.get_era() == new_era)
+        self.gpml_polarity_chron_id.set_major_region(new_major_region)
+        self.assertTrue(self.gpml_polarity_chron_id.get_major_region() == new_major_region)
+        self.gpml_polarity_chron_id.set_minor_region(new_minor_region)
+        self.assertTrue(self.gpml_polarity_chron_id.get_minor_region() == new_minor_region)
+        
+        self.assertTrue(pygplates.GpmlPolarityChronId(major_region=34, minor_region='ad').get_era() is None)
+        self.assertTrue(pygplates.GpmlPolarityChronId(era='Cenozoic', minor_region='ad').get_major_region() is None)
+        self.assertTrue(pygplates.GpmlPolarityChronId(era='Cenozoic', major_region=34).get_minor_region() is None)
+        
+        # Violate the era class invariant.
+        self.assertRaises(pygplates.InformationModelError, pygplates.GpmlPolarityChronId, 'UnknownEra')
+        self.assertRaises(pygplates.InformationModelError, pygplates.GpmlPolarityChronId.set_era, self.gpml_polarity_chron_id, 'UnknownEra')
+
+
 class GpmlTimeSampleCase(unittest.TestCase):
     def setUp(self):
         self.property_value1 = pygplates.GpmlPlateId(701)
@@ -722,6 +755,7 @@ def suite():
             GpmlKeyValueDictionaryCase,
             GpmlPiecewiseAggregationCase,
             GpmlPlateIdCase,
+            GpmlPolarityChronIdCase,
             GpmlTimeSampleCase,
             GpmlTimeWindowCase,
             XsBooleanCase,
