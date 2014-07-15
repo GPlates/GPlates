@@ -2281,7 +2281,7 @@ export_gpml_polarity_chron_id()
 			boost::noncopyable>(
 					"GpmlPolarityChronId",
 					"A property value that identifies an :class:`Isochron<FeatureType>` or "
-					":class:`Isochron<MagneticAnomalyIdentification>`.",
+					":class:`MagneticAnomalyIdentification<FeatureType>`.",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

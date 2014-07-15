@@ -1479,6 +1479,7 @@ namespace GPlatesApi
 			boost::optional<QString> description,
 			bp::object valid_time,
 			boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
+			bp::object conjugate_plate_id,
 			bp::object other_properties,
 			boost::optional<GPlatesModel::FeatureId> feature_id,
 			bp::object reverse_reconstruct_object,
@@ -1518,6 +1519,12 @@ namespace GPlatesApi
 		{
 			// Call python since Feature.set_reconstruction_plate_id is implemented in python code...
 			feature_object.attr("set_reconstruction_plate_id")(reconstruction_plate_id.get(), verify_information_model);
+		}
+
+		if (conjugate_plate_id != bp::object()/*Py_None*/)
+		{
+			// Call python since Feature.set_conjugate_plate_id is implemented in python code...
+			feature_object.attr("set_conjugate_plate_id")(conjugate_plate_id, verify_information_model);
 		}
 
 		// If there are other properties then add them.
@@ -2009,12 +2016,13 @@ export_feature()
 						bp::arg("description") = boost::optional<QString>(),
 						bp::arg("valid_time") = bp::object()/*Py_None*/,
 						bp::arg("reconstruction_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
+						bp::arg("conjugate_plate_id") = bp::object()/*Py_None*/,
 						bp::arg("other_properties") = bp::object()/*Py_None*/,
 						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
 						bp::arg("reverse_reconstruct") = bp::object()/*Py_None*/,
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"create_reconstructable_feature(feature_type, geometry, [name], [description], [valid_time], "
-				"[reconstruction_plate_id], [other_properties], [feature_id], [reverse_reconstruct], "
+				"[reconstruction_plate_id], [conjugate_plate_id], [other_properties], [feature_id], [reverse_reconstruct], "
 				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
 				"  Create a reconstructable feature.\n"
 				"\n"
@@ -2036,6 +2044,11 @@ export_feature()
 				"  :param reconstruction_plate_id: the reconstruction plate id, if not specified then a "
 				"'gpml:reconstructionPlateId' property is not added\n"
 				"  :type reconstruction_plate_id: int\n"
+				"  :param conjugate_plate_id: the conjugate plate ID or plate IDs, if not specified then no "
+				"'gpml:conjugatePlateId' properties are added - **note** that not all `reconstructable features "
+				"<http://www.earthbyte.org/Resources/GPGIM/public/#ReconstructableFeature>`_ have a conjugate "
+				"plate id (*conjugate_plate_id* is provided to support the :class:`Isochron feature type<FeatureType>`)\n"
+				"  :type conjugate_plate_id: int, or sequence of int\n"
 				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
 				"be added later with :meth:`add`\n"
 				"  :type other_properties: a sequence (eg, ``list`` or ``tuple``) of (:class:`PropertyName`, "
@@ -2059,7 +2072,8 @@ export_feature()
 				"note that there are multiple :class:`feature types<FeatureType>` that fall into this category.\n"
 				"\n"
 				"  This function calls :meth:`set_geometry`, :meth:`set_name`, :meth:`set_description`, "
-				":meth:`set_valid_time`, :meth:`set_reconstruction_plate_id` and :meth:`add`.\n"
+				":meth:`set_valid_time`, :meth:`set_reconstruction_plate_id`, :meth:`set_conjugate_plate_id` "
+				"and :meth:`add`.\n"
 				"\n"
 				"  Create a coastline feature:\n"
 				"  ::\n"
@@ -2091,9 +2105,7 @@ export_feature()
 				"        name='SOUTH ATLANTIC, SOUTH AMERICA-AFRICA ANOMALY 13 ISOCHRON',\n"
 				"        valid_time=(time_of_appearance, pygplates.GeoTimeInstant.create_distant_future()),\n"
 				"        reconstruction_plate_id=201,\n"
-				"        other_properties=[\n"
-				"            (pygplates.PropertyName.create_gpml('conjugatePlateId'),\n"
-				"             pygplates.GpmlPlateId(701))],\n"
+				"        conjugate_plate_id=701,\n"
 				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n"
 				"    \n"
 				"    # ...or...\n"
@@ -2103,8 +2115,8 @@ export_feature()
 				"        geometry_at_time_of_appearance,\n"
 				"        name='SOUTH ATLANTIC, SOUTH AMERICA-AFRICA ANOMALY 13 ISOCHRON',\n"
 				"        valid_time=(time_of_appearance, pygplates.GeoTimeInstant.create_distant_future()),\n"
-				"        reconstruction_plate_id=201)\n"
-				"    isochron_feature.set_conjugate_plate_id(701)\n"
+				"        reconstruction_plate_id=201,\n"
+				"        conjugate_plate_id=701)\n"
 				"    pygplates.reverse_reconstruct(isochron_feature, rotation_model, time_of_appearance)\n"
 				"\n"
 				"  The previous example is the equivalent of the following (note that the "

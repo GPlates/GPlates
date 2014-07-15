@@ -57,7 +57,19 @@ class CreateFeatureCase(unittest.TestCase):
         self.assertTrue(isinstance(
                 pygplates.Feature.create_reconstructable_feature(pygplates.FeatureType.create_gpml('Coastline'), geometry),
                 pygplates.Feature))
-
+        # Should raise error if feature type is reconstructable but does not support conjugate plate ids.
+        self.assertRaises(pygplates.InformationModelError,
+                pygplates.Feature.create_reconstructable_feature,
+                pygplates.FeatureType.create_gpml('Coastline'),
+                geometry,
+                conjugate_plate_id=201)
+        # Isochron is a feature type that is reconstructable and supports conjugate plate ids.
+        feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.create_gpml('Isochron'),
+                geometry,
+                conjugate_plate_id=201)
+        self.assertTrue(feature.get_conjugate_plate_id() == 201)
+ 
     def test_create_tectonic_section(self):
         geometry = pygplates.PolylineOnSphere([
                         pygplates.PointOnSphere(1, 0, 0),
