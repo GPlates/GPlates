@@ -39,14 +39,14 @@ class CreateFeatureCase(unittest.TestCase):
         feature = pygplates.Feature.create_reconstructable_feature(
                 pygplates.FeatureType.create_gpml('Coastline'),
                 geometry,
-                name='East Antarctica',
+                name=['East Antarctica1', 'East Antarctica2'],
                 other_properties=[
                         (pygplates.PropertyName.create_gpml('reconstructionPlateId'), pygplates.GpmlPlateId(802)),
                         (pygplates.PropertyName.create_gml('description'), pygplates.XsString('a coastline'))])
-        self.assertTrue(len(feature) == 4)
+        self.assertTrue(len(feature) == 5)
         self.assertTrue(feature.get_feature_type() == pygplates.FeatureType.create_gpml('Coastline'))
         self.assertTrue(feature.get_geometry() == geometry)
-        self.assertTrue(feature.get_name() == 'East Antarctica')
+        self.assertTrue(feature.get_name([], pygplates.PropertyReturn.all) == ['East Antarctica1', 'East Antarctica2'])
         self.assertTrue(feature.get_description() == 'a coastline')
         self.assertTrue(feature.get_reconstruction_plate_id() == 802)
         # Should raise error if feature type is not reconstructable.
@@ -66,17 +66,17 @@ class CreateFeatureCase(unittest.TestCase):
         feature = pygplates.Feature.create_tectonic_section(
                 pygplates.FeatureType.create_gpml('MidOceanRidge'),
                 geometry,
-                name='ridge',
+                name=['ridge1', 'ridge2'],
                 description='a ridge',
                 valid_time=(600, pygplates.GeoTimeInstant.create_distant_future()),
                 conjugate_plate_id=801,
                 left_plate=201,
                 right_plate=701,
                 reconstruction_method='HalfStageRotationVersion2')
-        self.assertTrue(len(feature) == 8)
+        self.assertTrue(len(feature) == 9)
         self.assertTrue(feature.get_feature_type() == pygplates.FeatureType.create_gpml('MidOceanRidge'))
         self.assertTrue(feature.get_geometry() == geometry)
-        self.assertTrue(feature.get_name() == 'ridge')
+        self.assertTrue(feature.get_name([], pygplates.PropertyReturn.all) == ['ridge1', 'ridge2'])
         self.assertTrue(feature.get_description() == 'a ridge')
         self.assertTrue(feature.get_valid_time() == (600, pygplates.GeoTimeInstant.create_distant_future()))
         self.assertTrue(feature.get_conjugate_plate_id() == 801)
@@ -104,16 +104,16 @@ class CreateFeatureCase(unittest.TestCase):
         feature = pygplates.Feature.create_flowline(
                 seed_point,
                 times,
-                name='Test flowline',
+                name=['Test flowline1', 'Test flowline2'],
                 description='a flowline feature',
                 valid_time=(30, 0),
                 left_plate=201,
                 right_plate=701)
-        self.assertTrue(len(feature) == 7+1) # Extra property is the 'gpml:reconstructionMethod'.
+        self.assertTrue(len(feature) == 8+1) # Extra property is the 'gpml:reconstructionMethod'.
         self.assertTrue(feature.get_feature_type() == pygplates.FeatureType.create_gpml('Flowline'))
         self.assertTrue(feature.get_geometry() == seed_point)
         self.assertTrue(feature.get_times() == times)
-        self.assertTrue(feature.get_name() == 'Test flowline')
+        self.assertTrue(feature.get_name([], pygplates.PropertyReturn.all) == ['Test flowline1', 'Test flowline2'])
         self.assertTrue(feature.get_description() == 'a flowline feature')
         self.assertTrue(feature.get_valid_time() == (30, 0))
         self.assertTrue(feature.get_reconstruction_method() == 'HalfStageRotationVersion2')
@@ -134,16 +134,16 @@ class CreateFeatureCase(unittest.TestCase):
         feature = pygplates.Feature.create_motion_path(
                 seed_point,
                 times,
-                name='Test motion path',
+                name=['Test motion path1', 'Test motion path2'],
                 description='a motion path feature',
                 valid_time=(30, 0),
                 relative_plate=201,
                 reconstruction_plate_id=701)
-        self.assertTrue(len(feature) == 7+1) # Extra property is the 'gpml:reconstructionMethod'.
+        self.assertTrue(len(feature) == 8+1) # Extra property is the 'gpml:reconstructionMethod'.
         self.assertTrue(feature.get_feature_type() == pygplates.FeatureType.create_gpml('MotionPath'))
         self.assertTrue(feature.get_geometry() == seed_point)
         self.assertTrue(feature.get_times() == times)
-        self.assertTrue(feature.get_name() == 'Test motion path')
+        self.assertTrue(feature.get_name([], pygplates.PropertyReturn.all) == ['Test motion path1', 'Test motion path2'])
         self.assertTrue(feature.get_description() == 'a motion path feature')
         self.assertTrue(feature.get_valid_time() == (30, 0))
         self.assertTrue(feature.get_reconstruction_method() == 'ByPlateId')
@@ -166,14 +166,14 @@ class CreateFeatureCase(unittest.TestCase):
                 [pygplates.GpmlTimeSample(pygplates.GpmlFiniteRotation(rotations[index]), index)
                     for index in range(len(rotations))])
         feature = pygplates.Feature.create_total_reconstruction_sequence(
-                name='Test sequence',
+                name=['Test sequence1', 'Test sequence2'],
                 description='a rotation feature',
                 fixed_plate_id=550,
                 moving_plate_id=801,
                 total_reconstruction_pole=gpml_irregular_sampling)
-        self.assertTrue(len(feature) == 5)
+        self.assertTrue(len(feature) == 6)
         self.assertTrue(feature.get_feature_type() == pygplates.FeatureType.create_gpml('TotalReconstructionSequence'))
-        self.assertTrue(feature.get_name() == 'Test sequence')
+        self.assertTrue(feature.get_name([], pygplates.PropertyReturn.all) == ['Test sequence1', 'Test sequence2'])
         self.assertTrue(feature.get_description() == 'a rotation feature')
         self.assertTrue(feature.get_total_reconstruction_pole() == (550, 801, gpml_irregular_sampling))
 

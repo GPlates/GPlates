@@ -1430,7 +1430,7 @@ namespace GPlatesApi
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id,
 			GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type total_reconstruction_pole,
-			boost::optional<QString> name,
+			bp::object name,
 			boost::optional<QString> description,
 			bp::object other_properties,
 			boost::optional<GPlatesModel::FeatureId> feature_id,
@@ -1443,10 +1443,10 @@ namespace GPlatesApi
 				TOTAL_RECONSTRUCTION_SEQUENCE_FEATURE_TYPE, feature_id, verify_information_model);
 		bp::object feature_object(feature);
 
-		if (name)
+		if (name != bp::object()/*Py_None*/)
 		{
 			// Call python since Feature.set_name is implemented in python code...
-			feature_object.attr("set_name")(name.get(), verify_information_model);
+			feature_object.attr("set_name")(name, verify_information_model);
 		}
 
 		if (description)
@@ -1475,7 +1475,7 @@ namespace GPlatesApi
 	feature_handle_create_reconstructable_feature(
 			const GPlatesModel::FeatureType &feature_type,
 			bp::object geometry,
-			boost::optional<QString> name,
+			bp::object name,
 			boost::optional<QString> description,
 			bp::object valid_time,
 			boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
@@ -1497,10 +1497,10 @@ namespace GPlatesApi
 			verify_feature_type_inherits(feature_type, RECONSTRUCTABLE_FEATURE_TYPE);
 		}
 
-		if (name)
+		if (name != bp::object()/*Py_None*/)
 		{
 			// Call python since Feature.set_name is implemented in python code...
-			feature_object.attr("set_name")(name.get(), verify_information_model);
+			feature_object.attr("set_name")(name, verify_information_model);
 		}
 
 		if (description)
@@ -1539,7 +1539,7 @@ namespace GPlatesApi
 	feature_handle_create_tectonic_section(
 			const GPlatesModel::FeatureType &feature_type,
 			bp::object geometry,
-			boost::optional<QString> name,
+			bp::object name,
 			boost::optional<QString> description,
 			bp::object valid_time,
 			boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
@@ -1565,10 +1565,10 @@ namespace GPlatesApi
 			verify_feature_type_inherits(feature_type, TECTONIC_SECTION_FEATURE_TYPE);
 		}
 
-		if (name)
+		if (name != bp::object()/*Py_None*/)
 		{
 			// Call python since Feature.set_name is implemented in python code...
-			feature_object.attr("set_name")(name.get(), verify_information_model);
+			feature_object.attr("set_name")(name, verify_information_model);
 		}
 
 		if (description)
@@ -1649,7 +1649,7 @@ namespace GPlatesApi
 	feature_handle_create_flowline(
 			bp::object seed_geometry,
 			bp::object times,
-			boost::optional<QString> name,
+			bp::object name,
 			boost::optional<QString> description,
 			bp::object valid_time,
 			boost::optional<GPlatesModel::integer_plate_id_type> left_plate,
@@ -1674,10 +1674,10 @@ namespace GPlatesApi
 		// Call python since Feature.set_reconstruction_method is implemented in python code...
 		feature_object.attr("set_reconstruction_method")("HalfStageRotationVersion2", verify_information_model);
 
-		if (name)
+		if (name != bp::object()/*Py_None*/)
 		{
 			// Call python since Feature.set_name is implemented in python code...
-			feature_object.attr("set_name")(name.get(), verify_information_model);
+			feature_object.attr("set_name")(name, verify_information_model);
 		}
 
 		if (description)
@@ -1722,7 +1722,7 @@ namespace GPlatesApi
 	feature_handle_create_motion_path(
 			bp::object seed_geometry,
 			bp::object times,
-			boost::optional<QString> name,
+			bp::object name,
 			boost::optional<QString> description,
 			bp::object valid_time,
 			boost::optional<GPlatesModel::integer_plate_id_type> relative_plate,
@@ -1747,10 +1747,10 @@ namespace GPlatesApi
 		// Call python since Feature.set_reconstruction_method is implemented in python code...
 		feature_object.attr("set_reconstruction_method")("ByPlateId", verify_information_model);
 
-		if (name)
+		if (name != bp::object()/*Py_None*/)
 		{
 			// Call python since Feature.set_name is implemented in python code...
-			feature_object.attr("set_name")(name.get(), verify_information_model);
+			feature_object.attr("set_name")(name, verify_information_model);
 		}
 
 		if (description)
@@ -1947,7 +1947,7 @@ export_feature()
 				(bp::arg("fixed_plate_id"),
 						bp::arg("moving_plate_id"),
 						bp::arg("total_reconstruction_pole"),
-						bp::arg("name") = boost::optional<QString>(),
+						bp::arg("name") = bp::object()/*Py_None*/,
 						bp::arg("description") = boost::optional<QString>(),
 						bp::arg("other_properties") = bp::object()/*Py_None*/,
 						bp::arg("feature_id") = boost::optional<GPlatesModel::FeatureId>(),
@@ -2005,7 +2005,7 @@ export_feature()
 				&GPlatesApi::feature_handle_create_reconstructable_feature,
 				(bp::arg("feature_type"),
 						bp::arg("geometry"),
-						bp::arg("name") = boost::optional<QString>(),
+						bp::arg("name") = bp::object()/*Py_None*/,
 						bp::arg("description") = boost::optional<QString>(),
 						bp::arg("valid_time") = bp::object()/*Py_None*/,
 						bp::arg("reconstruction_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
@@ -2137,7 +2137,7 @@ export_feature()
 				&GPlatesApi::feature_handle_create_tectonic_section,
 				(bp::arg("feature_type"),
 						bp::arg("geometry"),
-						bp::arg("name") = boost::optional<QString>(),
+						bp::arg("name") = bp::object()/*Py_None*/,
 						bp::arg("description") = boost::optional<QString>(),
 						bp::arg("valid_time") = bp::object()/*Py_None*/,
 						bp::arg("reconstruction_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
@@ -2270,7 +2270,7 @@ export_feature()
 				&GPlatesApi::feature_handle_create_flowline,
 				(bp::arg("seed_geometry"),
 						bp::arg("times"),
-						bp::arg("name") = boost::optional<QString>(),
+						bp::arg("name") = bp::object()/*Py_None*/,
 						bp::arg("description") = boost::optional<QString>(),
 						bp::arg("valid_time") = bp::object()/*Py_None*/,
 						bp::arg("left_plate") = boost::optional<GPlatesModel::integer_plate_id_type>(),
@@ -2380,7 +2380,7 @@ export_feature()
 				&GPlatesApi::feature_handle_create_motion_path,
 				(bp::arg("seed_geometry"),
 						bp::arg("times"),
-						bp::arg("name") = boost::optional<QString>(),
+						bp::arg("name") = bp::object()/*Py_None*/,
 						bp::arg("description") = boost::optional<QString>(),
 						bp::arg("valid_time") = bp::object()/*Py_None*/,
 						bp::arg("relative_plate") = boost::optional<GPlatesModel::integer_plate_id_type>(),
