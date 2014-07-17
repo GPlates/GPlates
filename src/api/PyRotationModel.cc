@@ -36,6 +36,7 @@
 
 #include "PyRotationModel.h"
 
+#include "PyFeatureCollection.h"
 #include "PyInterpolationException.h"
 #include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"
@@ -148,17 +149,12 @@ const unsigned int GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_
 
 GPlatesApi::RotationModel::non_null_ptr_type
 GPlatesApi::RotationModel::create(
-		bp::object rotation_features_python_object,
+		const FeatureCollectionSequenceFunctionArgument &rotation_features,
 		unsigned int reconstruction_tree_cache_size)
 {
-	// Use convenience class 'FeatureCollectionSequenceFunctionArgument' to extract the
-	// rotation features allowing a variety of ways for the user to specify the features.
-	const FeatureCollectionSequenceFunctionArgument feature_collections_function_argument =
-			bp::extract<FeatureCollectionSequenceFunctionArgument>(rotation_features_python_object);
-
 	// Copy feature collection files into a vector.
 	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
-	feature_collections_function_argument.get_files(feature_collection_files);
+	rotation_features.get_files(feature_collection_files);
 
 	return create(feature_collection_files, reconstruction_tree_cache_size);
 }
@@ -385,7 +381,7 @@ export_rotation_model()
 {
 	// Select the desired overload...
 	GPlatesApi::RotationModel::non_null_ptr_type (*rotation_model_create)(
-			boost::python::object,
+			const GPlatesApi::FeatureCollectionSequenceFunctionArgument &,
 			unsigned int) =
 					&GPlatesApi::RotationModel::create;
 

@@ -27,11 +27,13 @@
 #include <iterator>
 #include <vector>
 #include <boost/cast.hpp>
+#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
 #include "PyReconstructionTree.h"
 
+#include "PyFeatureCollection.h"
 #include "PyGPlatesModule.h"
 #include "PyInterpolationException.h"
 #include "PythonConverterUtils.h"
@@ -328,7 +330,7 @@ namespace GPlatesApi
 
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type
 	reconstruction_tree_create(
-			bp::object feature_collections, // Any python iterable (eg, list, tuple).
+			const FeatureCollectionSequenceFunctionArgument &rotation_features,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 			GPlatesModel::integer_plate_id_type anchor_plate_id = 0)
 	{
@@ -338,18 +340,16 @@ namespace GPlatesApi
 				GPLATES_ASSERTION_SOURCE,
 				"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
 
-		// Begin/end iterators over the python feature collections iterable.
-		bp::stl_input_iterator<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>
-				feature_collections_iter(feature_collections),
-				feature_collections_end;
+		// Copy feature collections into a vector.
+		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collections;
+		rotation_features.get_feature_collections(feature_collections);
 
 		// Convert the feature collections to weak refs.
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
-		for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
+		BOOST_FOREACH(
+				GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
+				feature_collections)
 		{
-			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
-					*feature_collections_iter;
-
 			feature_collection_refs.push_back(feature_collection->reference());
 		}
 
@@ -782,15 +782,18 @@ export_reconstruction_tree()
 				bp::make_constructor(
 						&GPlatesApi::reconstruction_tree_create,
 						bp::default_call_policies(),
-						(bp::arg("feature_collections"),
+						(bp::arg("rotation_features"),
 							bp::arg("reconstruction_time"),
 							bp::arg("anchor_plate_id") = 0)),
-				"__init__(feature_collections, reconstruction_time, [anchor_plate_id=0])\n"
+				"__init__(rotation_features, reconstruction_time, [anchor_plate_id=0])\n"
 				"  Create a plate-reconstruction hierarchy at the specified reconstruction time "
 				"with *equivalent* rotations relative to the specified anchored plate.\n"
 				"\n"
-				"  :param feature_collections: A sequence of :class:`FeatureCollection` instances\n"
-				"  :type feature_collections: Any sequence such as a ``list`` or a ``tuple``\n"
+				"  :param rotation_features: A rotation feature collection, or rotation filename, or "
+				"rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) "
+				"of any combination of those four types\n"
+				"  :type rotation_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+				"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 				"  :param reconstruction_time: the time at which to generate the reconstruction tree\n"
 				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 				"  :param anchor_plate_id: the id of the anchored plate that *equivalent* rotations "
@@ -800,22 +803,28 @@ export_reconstruction_tree()
 				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 				"\n"
+				"  Note that *rotation_features* can be a rotation :class:`FeatureCollection` or a "
+				"rotation filename or a rotation feature or a sequence of rotation features, or a sequence "
+				"(eg, ``list`` or ``tuple``) of any combination of those four types.\n"
+				"\n"
+				"  If any rotation filenames are specified then this method uses "
+				":class:`FeatureCollectionFileFormatRegistry` internally to read the rotation files.\n"
+				"\n"
 				"  *NOTE:* the anchored plate id can be any plate id (does not have to be zero). "
 				"All *equivalent* rotations are calculated relative to the *anchored* plate id.\n"
 				"\n"
 				"  This method essentially does the following:\n"
 				"  ::\n"
 				"\n"
-				"    def create_reconstruction_tree(feature_collections, reconstruction_time, anchor_plate_id):\n"
+				"    def create_reconstruction_tree(rotation_features, reconstruction_time, anchor_plate_id):\n"
 				"        builder = pygplates.ReconstructionTreeBuilder()\n"
-				"        for feature_collection in feature_collections:\n"
-				"            for feature in feature_collection:\n"
-				"                trp = feature.get_total_reconstruction_pole()\n"
-				"                if trp:\n"
-				"                    fixed_plate_id, moving_plate_id, total_reconstruction_pole = trp\n"
-				"                    interpolated_rotation = total_reconstruction_pole.get_value(reconstruction_time)\n"
-				"                    if interpolated_rotation:\n"
-				"                        builder.insert_total_reconstruction_pole("
+				"        for rotation_feature in rotation_features:\n"
+				"            trp = rotation_feature.get_total_reconstruction_pole()\n"
+				"            if trp:\n"
+				"                fixed_plate_id, moving_plate_id, total_reconstruction_pole = trp\n"
+				"                interpolated_rotation = total_reconstruction_pole.get_value(reconstruction_time)\n"
+				"                if interpolated_rotation:\n"
+				"                    builder.insert_total_reconstruction_pole("
 				"fixed_plate_id, moving_plate_id, interpolated_rotation)\n"
 				"        return builder.build_reconstruction_tree(anchor_plate_id, reconstruction_time)\n"
 				"\n"

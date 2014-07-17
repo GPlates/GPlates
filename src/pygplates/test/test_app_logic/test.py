@@ -373,6 +373,27 @@ class ReconstructionTreeCase(unittest.TestCase):
         self.assertTrue(self.reconstruction_tree.get_reconstruction_time() > 9.9999 and
                 self.reconstruction_tree.get_reconstruction_time() < 10.00001)
         
+        self.assertRaises(
+                pygplates.OpenFileForReadingError,
+                pygplates.ReconstructionTree,
+                [ 'non_existent_file.rot' ],
+                10.0)
+        # Create using feature collections.
+        reconstruction_tree = pygplates.ReconstructionTree([self.rotations], 10.0)
+        # Create using a single feature collection.
+        reconstruction_tree = pygplates.ReconstructionTree(self.rotations, 10.0)
+        # Create using a list of features.
+        reconstruction_tree = pygplates.ReconstructionTree([rotation for rotation in self.rotations], 10.0)
+        # Create using a single feature.
+        reconstruction_tree = pygplates.ReconstructionTree(next(iter(self.rotations)), 10.0)
+        # Create using a feature collection, list of features and a single feature (dividing the rotation features between them).
+        reconstruction_tree = pygplates.ReconstructionTree(
+                [ pygplates.FeatureCollection(self.rotations.get(lambda feature: True, pygplates.FeatureReturn.all)[0:2]), # First and second features
+                    list(self.rotations)[2:-1], # All but first, second and last features
+                    list(self.rotations)[-1]], # Last feature
+                10.0)
+
+    def test_build(self):
         def build_tree(builder, rotation_features, reconstruction_time):
             for rotation_feature in rotation_features:
                 trp = rotation_feature.get_total_reconstruction_pole()

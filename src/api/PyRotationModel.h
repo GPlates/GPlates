@@ -72,7 +72,8 @@ namespace GPlatesApi
 		 * Create a rotation model (from rotations features) that will cache reconstruction trees
 		 * up to a cache size of @a reconstruction_tree_cache_size.
 		 *
-		 * @a rotation_features must satisfy FeatureCollectionSequenceFunctionArgument::is_convertible().
+		 * @a rotation_features captures anything that satisfies
+		 * FeatureCollectionSequenceFunctionArgument::is_convertible().
 		 *
 		 * Alternatively you can just use boost::python::extract<RotationModel::non_null_ptr_type>()
 		 * on any python object satisfying FeatureCollectionSequenceFunctionArgument::is_convertible().
@@ -80,7 +81,7 @@ namespace GPlatesApi
 		static
 		non_null_ptr_type
 		create(
-				boost::python::object rotation_features,
+				const FeatureCollectionSequenceFunctionArgument &rotation_features,
 				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE);
 
 
