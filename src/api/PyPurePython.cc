@@ -105,6 +105,7 @@ export_pure_python_api()
 	// does not need to prefix 'pygplates.' if it calls the GPlates python API.
 	//
 
+	export_pure_python_code(":/python/api/Crossovers.py");
 	export_pure_python_code(":/python/api/Feature.py");
 	export_pure_python_code(":/python/api/GeometriesOnSphere.py");
 	export_pure_python_code(":/python/api/Ids.py");

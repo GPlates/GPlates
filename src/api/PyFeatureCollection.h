@@ -174,6 +174,15 @@ namespace GPlatesApi
 		to_python() const;
 
 		/**
+		 * Return the individual feature collection function arguments.
+		 */
+		const std::vector<FeatureCollectionFunctionArgument> &
+		get_feature_collection_function_arguments() const
+		{
+			return d_feature_collections;
+		}
+
+		/**
 		 * Return the function argument as a sequence of feature collections appended to @a feature_collections.
 		 */
 		void

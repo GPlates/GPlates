@@ -11,7 +11,26 @@ import pygplates
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 
 
-class InterpolateTotalReconstructionSequenceTest(unittest.TestCase):
+class CrossoverTestCase(unittest.TestCase):
+    def test_find_crossovers(self):
+        crossovers = pygplates.find_crossovers(os.path.join(FIXTURES, 'rotations.rot'))
+        self.assertTrue(len(crossovers) == 134)
+        
+        # TODO: Add more tests.
+
+    def test_synchronise_crossovers(self):
+        # This writes back to the rotation file.
+        pygplates.synchronise_crossovers(os.path.join(FIXTURES, 'rotations.rot'))
+        
+        # This does not write back to the rotation file.
+        rotation_feature_collection = pygplates.FeatureCollectionFileFormatRegistry().read(
+                os.path.join(FIXTURES, 'rotations.rot'))
+        pygplates.synchronise_crossovers(rotation_feature_collection)
+        
+        # TODO: Add more tests.
+
+
+class InterpolateTotalReconstructionSequenceTestCase(unittest.TestCase):
     def setUp(self):
         self.rotations = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'rotations.rot'))
@@ -72,7 +91,7 @@ class InterpolateTotalReconstructionSequenceTest(unittest.TestCase):
         # TODO: Compare pole.
 
 
-class ReconstructTest(unittest.TestCase):
+class ReconstructTestCase(unittest.TestCase):
     def test_reconstruct(self):
         pygplates.reconstruct(
             os.path.join(FIXTURES, 'volcanoes.gpml'),
@@ -656,8 +675,9 @@ def suite():
     
     # Add test cases from this module.
     test_cases = [
-            InterpolateTotalReconstructionSequenceTest,
-            ReconstructTest,
+            CrossoverTestCase,
+            InterpolateTotalReconstructionSequenceTestCase,
+            ReconstructTestCase,
             ReconstructionTreeCase,
             RotationModelCase
         ]

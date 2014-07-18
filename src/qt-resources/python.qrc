@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="/">
+    <file>python/api/Crossovers.py</file>
     <file>python/api/Feature.py</file>
     <file>python/api/GeometriesOnSphere.py</file>
     <file>python/api/Ids.py</file>

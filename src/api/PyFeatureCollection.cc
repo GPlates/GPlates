@@ -910,6 +910,61 @@ GPlatesApi::FeatureCollectionFunctionArgument::get_file() const
 }
 
 
+namespace GPlatesApi
+{
+	namespace
+	{
+		/**
+		 * Returns true if can convert python object to a @a FeatureCollectionFunctionArgument.
+		 */
+		bool
+		is_feature_collection_function_argument(
+				bp::object function_argument)
+		{
+			return FeatureCollectionFunctionArgument::is_convertible(function_argument);
+		}
+
+		/**
+		 * Convenience function so pure python code can convert a @a FeatureCollectionFunctionArgument
+		 * to a @a FeatureCollectionHandle.
+		 */
+		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
+		get_feature_collection_from_function_argument(
+				const FeatureCollectionFunctionArgument &function_argument)
+		{
+			return function_argument.get_feature_collection();
+		}
+
+		/**
+		 * Convenience function so pure python code can convert a @a FeatureCollectionFunctionArgument
+		 * to a (FeatureCollectionHandle, filename) tuple.
+		 *
+		 * If the filename does not exist then Py_None is stored as the filename.
+		 */
+		bp::tuple
+		get_file_from_function_argument(
+				const FeatureCollectionFunctionArgument &function_argument)
+		{
+			// Get the file.
+			GPlatesFileIO::File::non_null_ptr_type feature_collection_file = function_argument.get_file();
+
+			const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
+					GPlatesUtils::get_non_null_pointer(
+							feature_collection_file->get_reference().get_feature_collection().handle_ptr());
+
+			bp::object feature_collection_filename; // Py_None
+			if (feature_collection_file->get_reference().get_file_info().get_qfileinfo().exists())
+			{
+				feature_collection_filename = bp::object(
+						feature_collection_file->get_reference().get_file_info().get_qfileinfo().absoluteFilePath());
+			}
+
+			return bp::make_tuple(feature_collection, feature_collection_filename);
+		}
+	}
+}
+
+
 bool
 GPlatesApi::FeatureCollectionSequenceFunctionArgument::is_convertible(
 		bp::object python_function_argument)
@@ -1043,6 +1098,75 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::get_files(
 	BOOST_FOREACH(const FeatureCollectionFunctionArgument &feature_collection, d_feature_collections)
 	{
 		feature_collection_files.push_back(feature_collection.get_file());
+	}
+}
+
+
+namespace GPlatesApi
+{
+	namespace
+	{
+		/**
+		 * Returns true if can convert python object to a @a FeatureCollectionSequenceFunctionArgument.
+		 */
+		bool
+		is_feature_collection_sequence_function_argument(
+				bp::object function_argument)
+		{
+			return FeatureCollectionSequenceFunctionArgument::is_convertible(function_argument);
+		}
+
+		/**
+		 * Convenience function so pure python code can convert a @a FeatureCollectionSequenceFunctionArgument
+		 * to a list of @a FeatureCollectionHandle.
+		 */
+		bp::list
+		get_feature_collection_sequence_from_function_argument(
+				const FeatureCollectionSequenceFunctionArgument &function_argument)
+		{
+			// Get the feature collections.
+			std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collections;
+			function_argument.get_feature_collections(feature_collections);
+
+			bp::list feature_collections_list_object;
+
+			// Add the feature collections to a python list.
+			BOOST_FOREACH(
+					GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
+					feature_collections)
+			{
+				feature_collections_list_object.append(feature_collection);
+			}
+
+			return feature_collections_list_object;
+		}
+
+		/**
+		 * Convenience function so pure python code can convert a @a FeatureCollectionSequenceFunctionArgument
+		 * to a list of (FeatureCollectionHandle, filename) tuples.
+		 *
+		 * If a filename does not exist then Py_None is stored as the filename.
+		 */
+		bp::list
+		get_file_sequence_from_function_argument(
+				const FeatureCollectionSequenceFunctionArgument &function_argument)
+		{
+			const std::vector<FeatureCollectionFunctionArgument> &feature_collection_function_arguments =
+					function_argument.get_feature_collection_function_arguments();
+
+			bp::list feature_collection_files_list_object;
+
+			// Add (feature collection, filename) tuples to a python list.
+			BOOST_FOREACH(
+					const FeatureCollectionFunctionArgument &feature_collection_function_argument,
+					feature_collection_function_arguments)
+			{
+				feature_collection_files_list_object.append(
+						get_file_from_function_argument(feature_collection_function_argument));
+			}
+
+			return feature_collection_files_list_object;
+		}
 	}
 }
 
@@ -1242,6 +1366,24 @@ export_feature_collection()
 
 	// Register converter from a feature collection or a string filename to a @a FeatureCollectionSequenceFunctionArgument.
 	GPlatesApi::register_feature_collection_sequence_function_argument_conversion();
+
+	// This is a private function (has leading '_'), and we don't provide a docstring.
+	// This method is accessed by pure python API code to convert a FeatureCollectionFunctionArgument
+	// to a FeatureCollectionHandle.
+	bp::def("_is_feature_collection_function_argument",
+			&GPlatesApi::is_feature_collection_function_argument);
+	bp::def("_get_feature_collection_from_function_argument",
+			&GPlatesApi::get_feature_collection_from_function_argument);
+	bp::def("_get_file_from_function_argument",
+			&GPlatesApi::get_file_from_function_argument);
+	// This method is accessed by pure python API code to convert a FeatureCollectionSequenceFunctionArgument
+	// to a 'list' of FeatureCollectionHandle.
+	bp::def("_is_feature_collection_sequence_function_argument",
+			&GPlatesApi::is_feature_collection_sequence_function_argument);
+	bp::def("_get_feature_collection_sequence_from_function_argument",
+			&GPlatesApi::get_feature_collection_sequence_from_function_argument);
+	bp::def("_get_file_sequence_from_function_argument",
+			&GPlatesApi::get_file_sequence_from_function_argument);
 }
 
 #endif // GPLATES_NO_PYTHON

@@ -72,12 +72,14 @@ Contents:
 	pygplates.UnitVector3D
 	
 	pygplates.compose_finite_rotations
+	pygplates.find_crossovers
 	pygplates.get_equivalent_stage_rotation
 	pygplates.get_relative_stage_rotation
 	pygplates.interpolate_finite_rotations
 	pygplates.reconstruct
 	pygplates.reverse_reconstruct
 	pygplates.represent_equivalent_rotations
+	pygplates.synchronise_crossovers
 
 .. NOTE: Only document the new API for now, exclude classes/functions not in the new API.
 .. NOTE: Only classes (and their methods) that are documented (that have docstrings) will appear in the generated documentation.
