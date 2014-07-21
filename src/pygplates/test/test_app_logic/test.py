@@ -191,7 +191,7 @@ class ReconstructTestCase(unittest.TestCase):
     def test_reconstruct_feature_geometry(self):
         rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
         reconstruction_time = 15
-        geometry = pygplates.PointOnSphere((0,0))
+        geometry = pygplates.PolylineOnSphere([(0,0), (10, 10)])
         feature = pygplates.Feature.create_reconstructable_feature(
                 pygplates.FeatureType.create_gpml('Coastline'),
                 geometry,
@@ -204,7 +204,7 @@ class ReconstructTestCase(unittest.TestCase):
         self.assertTrue(geometry == reconstructed_feature_geometries[0].get_present_day_geometry())
         
         # Test reverse reconstruction.
-        geometry_at_reconstruction_time = pygplates.PointOnSphere((0,0))
+        geometry_at_reconstruction_time = geometry
         feature = pygplates.Feature.create_reconstructable_feature(
                 pygplates.FeatureType.create_gpml('Coastline'),
                 geometry,

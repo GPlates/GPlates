@@ -53,12 +53,7 @@ namespace GPlatesApi
 		return GPlatesModel::TopLevelPropertyInline::create(property_name, property_value);
 	}
 
-	/**
-	 * A wrapper than returns the actual derived property value type (converted to boost::python::object).
-	 *
-	 * The derived type is needed otherwise python is unable to access the derived attributes.
-	 */
-	bp::object/*derived property value non_null_intrusive_ptr*/
+	GPlatesModel::PropertyValue::non_null_ptr_type
 	top_level_property_get_property_value(
 			GPlatesModel::TopLevelProperty &top_level_property)
 	{
@@ -71,7 +66,7 @@ namespace GPlatesApi
 				property_value,
 				GPLATES_ASSERTION_SOURCE);
 
-		return PythonConverterUtils::get_property_value_as_derived_type(property_value.get());
+		return property_value.get();
 	}
 }
 

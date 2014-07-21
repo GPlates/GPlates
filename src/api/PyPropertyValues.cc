@@ -92,15 +92,6 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
-	// Return cloned property value to python as its derived property value type.
-	bp::object/*derived property value non_null_intrusive_ptr*/
-	property_value_clone(
-			GPlatesModel::PropertyValue &property_value)
-	{
-		// The derived property value type is needed otherwise python is unable to access the derived attributes.
-		return PythonConverterUtils::get_property_value_as_derived_type(property_value.clone());
-	}
-
 	// Select the 'non-const' overload of 'PropertyValue::accept_visitor()'.
 	void
 	property_value_accept_visitor(
@@ -115,9 +106,6 @@ namespace GPlatesApi
 			GPlatesModel::PropertyValue &property_value)
 	{
 		// Extract the geometry from the property value.
-		//
-		// Since GeometryOnSphere is polymorphic boost-python will downcast it to the
-		// derived geometry type before converting to a python object.
 		return GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(property_value);
 	}
 }
@@ -132,17 +120,6 @@ export_property_value()
 	 * Base property value wrapper class.
 	 *
 	 * Enables 'isinstance(obj, PropertyValue)' in python - not that it's that useful.
-	 *
-	 * NOTE: We don't normally return a 'PropertyValue::non_null_ptr_type' to python because then
-	 * python is unable to access the attributes of the derived property value type.
-	 * For this reason usually the derived property value is returned using:
-	 *   'PythonConverterUtils::get_property_value_as_derived_type()'
-	 * which returns a 'non_null_ptr_type' to the *derived* property value type.
-	 * UPDATE: Actually boost-python will convert a 'PropertyValue::non_null_ptr_type' to a reference
-	 * to a derived property value type (eg, 'PropertyValue::non_null_ptr_type' -> 'GpmlPlateId &')
-	 * but it can't convert to a 'non_null_ptr_type' of derived property value type
-	 * (eg, 'PropertyValue::non_null_ptr_type' -> 'GpmlPlateId::non_null_ptr_type') so
-	 * 'PythonConverterUtils::get_property_value_as_derived_type()' is still needed for that.
 	 */
 	bp::class_<
 			GPlatesModel::PropertyValue,
@@ -190,7 +167,7 @@ export_property_value()
 					"from a time-dependent wrapper.\n",
 					bp::no_init)
 		.def("clone",
-				&GPlatesApi::property_value_clone,
+				&GPlatesModel::PropertyValue::clone,
 				"clone() -> PropertyValue\n"
 				"  Create a duplicate of this property value (derived) instance, including a recursive copy "
 				"of any nested property values that this instance might contain.\n"
@@ -1086,13 +1063,12 @@ namespace GPlatesApi
 		return GPlatesModel::ModelUtils::create_gpml_constant_value(property_value, description);
 	}
 
-	// Return base property value to python as its derived property value type.
-	bp::object/*derived property value non_null_intrusive_ptr*/
+	// Select the 'non-const' overload of 'GpmlConstantValue::value()'.
+	GPlatesModel::PropertyValue::non_null_ptr_type
 	gpml_constant_value_get_value(
 			GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 	{
-		// The derived property value type is needed otherwise python is unable to access the derived attributes.
-		return PythonConverterUtils::get_property_value_as_derived_type(gpml_constant_value.value());
+		return gpml_constant_value.value();
 	}
 }
 
@@ -1357,11 +1333,6 @@ export_gpml_interpolation_function()
 	 * Base class for interpolation function property values.
 	 *
 	 * Enables 'isinstance(obj, GpmlInterpolationFunction)' in python - not that it's that useful.
-	 *
-	 * NOTE: We don't return a 'GpmlInterpolationFunction::non_null_ptr_type' to python because then
-	 * python is unable to access the attributes of the derived interpolation function property value type.
-	 * For this reason usually the derived interpolation function property value is returned using:
-	 *   'PythonConverterUtils::get_property_value_as_derived_type()'
 	 */
 	bp::class_<
 			GPlatesPropertyValues::GpmlInterpolationFunction,
@@ -2405,13 +2376,12 @@ namespace GPlatesApi
 				!is_enabled/*is_disabled*/);
 	}
 
-	// Return base property value to python as its derived property value type.
-	bp::object/*derived property value non_null_intrusive_ptr*/
+	// Select the 'non-const' overload of 'GpmlTimeSample::value()'.
+	GPlatesModel::PropertyValue::non_null_ptr_type
 	gpml_time_sample_get_value(
 			GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
 	{
-		// The derived property value type is needed otherwise python is unable to access the derived attributes.
-		return PythonConverterUtils::get_property_value_as_derived_type(gpml_time_sample.value());
+		return gpml_time_sample.value();
 	}
 
 	GPlatesPropertyValues::GeoTimeInstant
@@ -2640,13 +2610,12 @@ namespace GPlatesApi
 				property_value->get_structural_type());
 	}
 
-	// Return base property value to python as its derived property value type.
-	bp::object/*derived property value non_null_intrusive_ptr*/
+	// Select the 'non-const' overload of 'GpmlTimeWindow::time_dependent_value()'.
+	GPlatesModel::PropertyValue::non_null_ptr_type
 	gpml_time_window_get_value(
 			GPlatesPropertyValues::GpmlTimeWindow &gpml_time_window)
 	{
-		// The derived property value type is needed otherwise python is unable to access the derived attributes.
-		return PythonConverterUtils::get_property_value_as_derived_type(gpml_time_window.time_dependent_value());
+		return gpml_time_window.time_dependent_value();
 	}
 
 	GPlatesPropertyValues::GeoTimeInstant

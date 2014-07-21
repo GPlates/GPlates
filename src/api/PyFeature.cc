@@ -1398,9 +1398,7 @@ namespace GPlatesApi
 						GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(*property_value);
 				if (geometry)
 				{
-					geometries.append(
-							// Convert to python object as derived GeometryOnSphere type...
-							PythonConverterUtils::get_geometry_on_sphere_as_derived_type(geometry.get()));
+					geometries.append(geometry.get());
 				}
 			}
 
@@ -1418,10 +1416,7 @@ namespace GPlatesApi
 			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry =
 					GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(*property_value);
 
-			return geometry
-					// Convert to python object as derived GeometryOnSphere type...
-					? PythonConverterUtils::get_geometry_on_sphere_as_derived_type(geometry.get())
-					: bp::object()/*Py_None*/;
+			return geometry ? bp::object(geometry.get()) : bp::object()/*Py_None*/;
 		}
 	}
 

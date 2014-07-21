@@ -60,30 +60,6 @@ namespace GPlatesApi
 	namespace PythonConverterUtils
 	{
 		/**
-		 * Returns the actual *derived* property value (converted to boost::python::object).
-		 *
-		 * The derived type is needed otherwise python is unable to access the attributes of the
-		 * derived property value type. In other words 'PropertyValue::non_null_ptr_type' is
-		 * never returned to python without first going through this function.
-		 */
-		boost::python::object/*derived property value non_null_intrusive_ptr*/
-		get_property_value_as_derived_type(
-				GPlatesModel::PropertyValue::non_null_ptr_type property_value);
-
-
-		/**
-		 * Returns the actual *derived* GeometryOnSphere (converted to boost::python::object).
-		 *
-		 * The derived type is needed otherwise python is unable to access the attributes of the
-		 * derived geometry-on-sphere type. In other words 'GeometryOnSphere::non_null_ptr_to_const_type'
-		 * is never returned to python without first going through this function.
-		 */
-		boost::python::object/*derived geometry-on-sphere non_null_ptr_to_const_type*/
-		get_geometry_on_sphere_as_derived_type(
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere);
-
-
-		/**
 		 * Enables boost::optional<T> to be passed to and from python.
 		 *
 		 * A python object that is None will become boost::none and vice versa.
@@ -252,6 +228,38 @@ namespace GPlatesApi
 		template <typename T>
 		void
 		register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion();
+
+
+		/**
+		 * Enables a GeometryOnSphere::non_null_ptr_to_const_type to be passed to python
+		 * even though a GPlatesUtils::non_null_intrusive_ptr<GeometryOnSphere> is
+		 * expected (because the HeldType of the 'bp::class_' wrapper of the type 'GeometryOnSphere'
+		 * is the non-const version).
+		 * 
+		 * This is the same as @a register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion
+		 * except it also converts an instance of GeometryOnSphere::non_null_ptr_to_const_type to
+		 * its derived GeometryOnSphere type first - this ensures that the python object contains
+		 * a pointer to the 'derived' type - if we don't do this then it appears that boost-python
+		 * will convert, for example, a GeometryOnSphere::non_null_ptr_to_const_type to a
+		 * GPlatesUtils::non_null_intrusive_ptr<GeometryOnSphere> and then, via the
+		 * bp::bases<GPlatesMaths::GeometryOnSphere> in the PolylineOnSphere bp::class_ wrapper,
+		 * store the GPlatesUtils::non_null_intrusive_ptr<GeometryOnSphere> in a python *PolylineOnSphere*
+		 * - however it doesn't seem to store GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere>
+		 * in the python *PolylineOnSphere* object - so in order to achieve this we need this converter
+		 * to convert *directly* from GeometryOnSphere::non_null_ptr_to_const_type to
+		 * PolylineOnSphere::non_null_ptr_to_const_type (for example) and then the registered
+		 * const to non-const PolylineOnSphere converter takes care of the rest - this seems to ensure
+		 * that a GPlatesUtils::non_null_intrusive_ptr<PolylineOnSphere> gets stored in the python object.
+		 * An interesting note is that PointOnSphere (derived from GeometryOnSphere) doesn't need
+		 * this (like PolylineOnSphere does) - this could be because PointOnSphere's bp::class_
+		 * wrapper allows copying (ie, does not declare boost::noncopyable) and hence boost-python
+		 * can create a GPlatesUtils::non_null_intrusive_ptr<PointOnSphere> by copying the
+		 * PointOnSphere out of the GPlatesUtils::non_null_intrusive_ptr<GeometryOnSphere> python object,
+		 * created (by @a register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion),
+		 * which it knows by polymorphism is really a GPlatesUtils::non_null_intrusive_ptr<PointOnSphere>.
+		 */
+		void
+		register_to_python_const_to_non_const_geometry_on_sphere_conversion();
 	}
 }
 

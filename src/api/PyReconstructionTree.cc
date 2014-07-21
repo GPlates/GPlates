@@ -220,7 +220,7 @@ namespace GPlatesApi
 		}
 
 		//
-		// Support for "__get_item__".
+		// Support for "__getitem__".
 		//
 		boost::python::object
 		get_item(

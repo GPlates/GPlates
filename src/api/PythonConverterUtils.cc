@@ -59,190 +59,6 @@ namespace bp = boost::python;
 namespace GPlatesApi
 {
 	/**
-	 * Visits a property value and converts from its derived type to a python object.
-	 */
-	class GetPropertyValueAsDerivedTypeVisitor : 
-			public GPlatesModel::FeatureVisitor
-	{
-	public:
-
-		/**
-		 * The derived property value retrieved after visiting a property value.
-		 */
-		bp::object
-		get_property_value_as_derived_type()
-		{
-			return d_property_value;
-		}
-
-		virtual
-		void 
-		visit_gml_line_string(
-				gml_line_string_type &gml_line_string)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(gml_line_string_type::non_null_ptr_type(&gml_line_string));
-		}
-
-		virtual
-		void 
-		visit_gml_multi_point(
-				gml_multi_point_type &gml_multi_point)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(gml_multi_point_type::non_null_ptr_type(&gml_multi_point));
-		}
-
-		virtual
-		void 
-		visit_gml_orientable_curve(
-				gml_orientable_curve_type &gml_orientable_curve)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(gml_orientable_curve_type::non_null_ptr_type(&gml_orientable_curve));
-		}
-
-		virtual
-		void 
-		visit_gml_point(
-				gml_point_type &gml_point)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(gml_point_type::non_null_ptr_type(&gml_point));
-		}
-
-		virtual
-		void 
-		visit_gml_polygon(
-				gml_polygon_type &gml_polygon)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(gml_polygon_type::non_null_ptr_type(&gml_polygon));
-		}
-
-		virtual
-		void 
-		visit_gml_time_instant(
-				gml_time_instant_type &gml_time_instant)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(gml_time_instant_type::non_null_ptr_type(&gml_time_instant));
-		}
-
-		virtual
-		void
-		visit_gml_time_period(
-				gml_time_period_type &gml_time_period)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(gml_time_period_type::non_null_ptr_type(&gml_time_period));
-		}
-
-		virtual
-		void
-		visit_gpml_constant_value(
-				gpml_constant_value_type &gpml_constant_value)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(gpml_constant_value_type::non_null_ptr_type(&gpml_constant_value));
-		}
-
-		virtual
-		void
-		visit_gpml_finite_rotation(
-				gpml_finite_rotation_type &gpml_finite_rotation)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(gpml_finite_rotation_type::non_null_ptr_type(&gpml_finite_rotation));
-		}
-
-		virtual
-		void
-		visit_gpml_finite_rotation_slerp(
-				gpml_finite_rotation_slerp_type &gpml_finite_rotation_slerp)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(gpml_finite_rotation_slerp_type::non_null_ptr_type(&gpml_finite_rotation_slerp));
-		}
-
-		virtual
-		void
-		visit_gpml_irregular_sampling(
-				gpml_irregular_sampling_type &gpml_irregular_sampling)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(gpml_irregular_sampling_type::non_null_ptr_type(&gpml_irregular_sampling));
-		}
-
-		virtual
-		void
-		visit_gpml_key_value_dictionary(
-				gpml_key_value_dictionary_type &gpml_key_value_dictionary)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(gpml_key_value_dictionary_type::non_null_ptr_type(&gpml_key_value_dictionary));
-		}
-
-		virtual
-		void
-		visit_gpml_piecewise_aggregation(
-				gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(gpml_piecewise_aggregation_type::non_null_ptr_type(&gpml_piecewise_aggregation));
-		}
-
-		virtual
-		void
-		visit_gpml_plate_id(
-				gpml_plate_id_type &gpml_plate_id)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(gpml_plate_id_type::non_null_ptr_type(&gpml_plate_id));
-		}
-
-		virtual
-		void
-		visit_xs_boolean(
-				xs_boolean_type &xs_boolean)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(xs_boolean_type::non_null_ptr_type(&xs_boolean));
-		}
-
-		virtual
-		void
-		visit_xs_double(
-				xs_double_type &xs_double)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(xs_double_type::non_null_ptr_type(&xs_double));
-		}
-
-		virtual
-		void
-		visit_xs_integer(
-				xs_integer_type &xs_integer)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(xs_integer_type::non_null_ptr_type(&xs_integer));
-		}
-
-		virtual
-		void
-		visit_xs_string(
-				xs_string_type &xs_string)
-		{
-			// Use to-python converter registered for derived property value's 'non_null_ptr_type'.
-			d_property_value = bp::object(xs_string_type::non_null_ptr_type(&xs_string));
-		}
-
-	private:
-		bp::object d_property_value;
-	};
-
-
-	/**
 	 * Visits a @a GeometryOnSphere and converts from its derived type to a python object.
 	 */
 	class GetGeometryOnSphereAsDerivedTypeVisitor:
@@ -298,50 +114,52 @@ namespace GPlatesApi
 	private:
 		bp::object d_geometry_on_sphere;
 	};
-}
 
 
-bp::object/*derived property value*/
-GPlatesApi::PythonConverterUtils::get_property_value_as_derived_type(
-		GPlatesModel::PropertyValue::non_null_ptr_type property_value)
-{
-	GetPropertyValueAsDerivedTypeVisitor visitor;
-	property_value->accept_visitor(visitor);
-
-	bp::object derived_property_value = visitor.get_property_value_as_derived_type();
-
-	//////////////////////////////////////////////////////////////////////////
-	// TEMPORARY
-	//
-	// The following handles derived property value types that have not yet been bound to python.
-	// They will only have access to the base class PropertyValue functionality.
-	//
-	// TODO: Remove when all derived PropertyValue types have been bound to python. Some derived
-	// PropertyValue types will need to have a better, more solid interface before this can happen.
-	//
-	if (derived_property_value == bp::object())
+	namespace
 	{
-		// If we didn't visit a derived property value then just return the base PropertyValue to python.
-		//
-		// Only the exposed methods in the base PropertyValue class will be available to the python user.
-		return bp::object(property_value);
+		/**
+		 * This is the same as @a to_python_ConstToNonConst<T>
+		 * except it also converts an instance of GeometryOnSphere::non_null_ptr_to_const_type to
+		 * its derived GeometryOnSphere type first - this ensures that the python object contains
+		 * a pointer to the 'derived' type.
+		 */
+		struct to_python_ConstToNonConstGeometryOnSphere :
+				private boost::noncopyable
+		{
+			struct Conversion
+			{
+				static
+				PyObject *
+				convert(
+						const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry_on_sphere)
+				{
+					namespace bp = boost::python;
+
+					GetGeometryOnSphereAsDerivedTypeVisitor visitor;
+					geometry_on_sphere->accept_visitor(visitor);
+
+					// Note that his returns a 'DerivedGeometryOnSphere::non_null_ptr_to_const_type'
+					// and not a 'GPlatesUtils::non_null_intrusive_ptr<DerivedGeometryOnSphere>'
+					// (which is the HeldType of the 'bp::class_' wrapper of the DerivedGeometryOnSphere type)
+					// so a conversion from the former to the latter via the to-python converter registered by
+					// register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion<DerivedGeometryOnSphere>()
+					// is still required to complete the conversion to python.
+					return bp::incref(visitor.get_geometry_on_sphere_as_derived_type().ptr());
+				};
+			};
+		};
 	}
-	//
-	//////////////////////////////////////////////////////////////////////////
-
-	return derived_property_value;
 }
 
 
-boost::python::object/*derived geometry-on-sphere non_null_ptr_to_const_type*/
-GPlatesApi::PythonConverterUtils::get_geometry_on_sphere_as_derived_type(
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere)
+void
+GPlatesApi::PythonConverterUtils::register_to_python_const_to_non_const_geometry_on_sphere_conversion()
 {
-	GetGeometryOnSphereAsDerivedTypeVisitor visitor;
-	geometry_on_sphere->accept_visitor(visitor);
-
-	return visitor.get_geometry_on_sphere_as_derived_type();
+	// To python conversion.
+	bp::to_python_converter<
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
+			typename to_python_ConstToNonConstGeometryOnSphere::Conversion>();
 }
-
 
 #endif // GPLATES_NO_PYTHON

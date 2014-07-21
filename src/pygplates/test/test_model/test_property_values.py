@@ -10,6 +10,20 @@ import pygplates
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 
 
+class PropertyValueCase(unittest.TestCase):
+    def test_clone(self):
+        plate_id = 701
+        gpml_plate_id = pygplates.GpmlPlateId(plate_id)
+        self.assertTrue(gpml_plate_id.clone().get_plate_id() == plate_id)
+
+    def test_get_geometry(self):
+        polyline = pygplates.PolylineOnSphere([(0,0), (10,0), (10,10)])
+        gml_line_string = pygplates.GpmlConstantValue(pygplates.GmlLineString(polyline))
+        # Using 'clone()' ensures C++ code returns a base PropertyValue
+        # (which boost-python converts to derived).
+        self.assertTrue(gml_line_string.clone().get_geometry() == polyline)
+
+
 class EnumerationCase(unittest.TestCase):
     def setUp(self):
         self.enum_type = pygplates.EnumerationType.create_gpml('DipSlipEnumeration')
@@ -735,6 +749,7 @@ def suite():
     
     # Add test cases from this module.
     test_cases = [
+            PropertyValueCase,
             EnumerationCase,
             GeoTimeInstantCase,
             GmlLineStringCase,

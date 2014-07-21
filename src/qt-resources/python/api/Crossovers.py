@@ -58,8 +58,8 @@ def find_crossovers(rotation_features, crossover_filter=None):
     <http://www.earthbyte.org/Resources/GPGIM/public/#TotalReconstructionSequence>`_ and contains a time sequence
     of :class:`finite rotations<GpmlFiniteRotation>` (see :meth:`total reconstruction pole<Feature.get_total_reconstruction_pole>`)
     for a specific fixed/moving plate pair. Each crossover essentially returns information of the
-    :meth:`total reconstruction pole<Feature.get_total_reconstruction_pole>` for the rotation feature both before and
-    after the crossover as well as the time of the crossover - note that both rotation features will have the same
+    :meth:`total reconstruction pole<Feature.get_total_reconstruction_pole>` for the rotation feature before the crossover and
+    for the rotation feature after the crossover as well as the time of the crossover - note that both rotation features will have the same
     moving plate id but differing fixed plate ids.
     
     Note that modifying the rotation sequences in the returned crossovers will modify the rotation features.
@@ -232,7 +232,7 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
     # Get the rotation feature collections - we do this because we need to include the modifications to these features at
     # each iteration of the crossovers loop (in RotationModel) - if we passed files to RotationModel then we'd be forced
     # to write the modifications back out to file for each iteration of the crossovers loop.
-    rotation_feature_collections = [file_collection for file_collection, filename in rotation_files]
+    rotation_feature_collections = [feature_collection for feature_collection, filename in rotation_files]
 
     # If caller specified a sequence of crossovers then use them, otherwise find them in the rotation features.
     if hasattr(crossover_filter, '__iter__'):
@@ -302,7 +302,8 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
     # If any rotation features came from files then write those feature collections back out to the same files.
     #
     # Only interested in those feature collections that came from files (have filenames).
-    rotation_feature_collections_from_file = [rotation_file for rotation_file in rotation_files if rotation_file[1]]
+    rotation_feature_collections_from_file = [
+            (feature_collection, filename) for feature_collection, filename in rotation_files if filename]
     if rotation_feature_collections_from_file:
         file_format_registry = FeatureCollectionFileFormatRegistry()
         for feature_collection, filename in rotation_feature_collections_from_file:

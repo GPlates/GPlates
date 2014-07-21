@@ -124,9 +124,6 @@ namespace GPlatesApi
 							property_value_object);
 
 			// Extract the geometry from the property value.
-			//
-			// Since GeometryOnSphere is polymorphic boost-python will downcast it to the
-			// derived geometry type before converting to a python object.
 			return GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(*property_value);
 		}
 
