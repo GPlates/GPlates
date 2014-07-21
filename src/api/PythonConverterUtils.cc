@@ -159,7 +159,7 @@ GPlatesApi::PythonConverterUtils::register_to_python_const_to_non_const_geometry
 	// To python conversion.
 	bp::to_python_converter<
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
-			typename to_python_ConstToNonConstGeometryOnSphere::Conversion>();
+			to_python_ConstToNonConstGeometryOnSphere::Conversion>();
 }
 
 #endif // GPLATES_NO_PYTHON
