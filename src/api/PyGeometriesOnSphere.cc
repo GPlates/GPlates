@@ -56,19 +56,6 @@
 namespace bp = boost::python;
 
 
-namespace GPlatesApi
-{
-	// Return cloned geometry to python as its derived geometry type.
-	bp::object/*derived geometry-on-sphere non_null_intrusive_ptr*/
-	geometry_on_sphere_clone(
-			const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
-	{
-		// The derived geometry-on-sphere type is needed otherwise python is unable to access the derived attributes.
-		return PythonConverterUtils::get_geometry_on_sphere_as_derived_type(
-				geometry_on_sphere.clone_as_geometry());
-	}
-}
-
 void
 export_geometry_on_sphere()
 {
@@ -76,23 +63,11 @@ export_geometry_on_sphere()
 	 * GeometryOnSphere - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	 *
 	 * Base geometry-on-sphere wrapper class.
-	 *
-	 * Enables 'isinstance(obj, GeometryOnSphere)' in python - not that it's that useful.
-	 *
-	 * NOTE: We don't normally return a 'GeometryOnSphere::non_null_ptr_to_const_type' to python
-	 * because then python is unable to access the attributes of the derived geometry type.
-	 * For this reason usually the derived geometry type is returned using:
-	 *   'PythonConverterUtils::get_geometry_on_sphere_as_derived_type()'
-	 * which returns a 'non_null_ptr_type' to the *derived* geometry type.
-	 * UPDATE: Actually boost-python will convert a 'GeometryOnSphere::non_null_ptr_to_const_type' to a reference
-	 * to a derived geometry type (eg, 'GeometryOnSphere::non_null_ptr_to_const_type' -> 'const PointOnSphere &')
-	 * but it can't convert to a 'non_null_ptr_to_const_type' of derived geometry type
-	 * (eg, 'GeometryOnSphere::non_null_ptr_to_const_type' -> 'PointOnSphere::non_null_ptr_to_const_type') so
-	 * 'PythonConverterUtils::get_geometry_on_sphere_as_derived_type()' is still needed for that.
 	 */
 	bp::class_<
 			GPlatesMaths::GeometryOnSphere,
-			// NOTE: See note in 'python_ConstGeometryOnSphere' for why this is 'non-const' instead of 'const'...
+			// NOTE: See note in 'register_to_python_const_to_non_const_geometry_on_sphere_conversion()'
+			// for why this is 'non-const' instead of 'const'...
 			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::GeometryOnSphere>,
 			boost::noncopyable>(
 					"GeometryOnSphere",
@@ -106,7 +81,7 @@ export_geometry_on_sphere()
 					"* :class:`PolygonOnSphere`\n",
 					bp::no_init)
 		.def("clone",
-				&GPlatesApi::geometry_on_sphere_clone,
+				&GPlatesMaths::GeometryOnSphere::clone_as_geometry,
 				"clone() -> GeometryOnSphere\n"
 				"  Create a duplicate of this geometry (derived) instance.\n"
 				"\n"
@@ -114,8 +89,7 @@ export_geometry_on_sphere()
 	;
 
 	// Register to-python conversion for GeometryOnSphere::non_null_ptr_to_const_type.
-	GPlatesApi::PythonConverterUtils::register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion<
-			GPlatesMaths::GeometryOnSphere>();
+	GPlatesApi::PythonConverterUtils::register_to_python_const_to_non_const_geometry_on_sphere_conversion();
 	// Register from-python 'non-const' to 'const' conversion.
 	boost::python::implicitly_convertible<
 			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::GeometryOnSphere>,
@@ -383,7 +357,8 @@ export_point_on_sphere()
 	//
 	bp::class_<
 			GPlatesMaths::PointOnSphere,
-			// NOTE: See note in 'python_ConstGeometryOnSphere' for why this is 'non-const' instead of 'const'...
+			// NOTE: See note in 'register_to_python_const_to_non_const_geometry_on_sphere_conversion()'
+			// for why this is 'non-const' instead of 'const'...
 			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>,
 			bp::bases<GPlatesMaths::GeometryOnSphere>
 			// NOTE: PointOnSphere is the only GeometryOnSphere type that is copyable.
@@ -603,7 +578,7 @@ namespace GPlatesApi
 	}
 
 	//
-	// Support for "__get_item__".
+	// Support for "__getitem__".
 	//
 	boost::python::object
 	multi_point_on_sphere_get_item(
@@ -688,7 +663,8 @@ export_multi_point_on_sphere()
 	//
 	bp::class_<
 			GPlatesMaths::MultiPointOnSphere,
-			// NOTE: See note in 'python_ConstGeometryOnSphere' for why this is 'non-const' instead of 'const'...
+			// NOTE: See note in 'register_to_python_const_to_non_const_geometry_on_sphere_conversion()'
+			// for why this is 'non-const' instead of 'const'...
 			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere>,
 			bp::bases<GPlatesMaths::GeometryOnSphere>,
 			boost::noncopyable>(
@@ -909,7 +885,7 @@ namespace GPlatesApi
 		}
 
 		//
-		// Support for "__get_item__".
+		// Support for "__getitem__".
 		//
 		boost::python::object
 		get_item(
@@ -1041,7 +1017,7 @@ namespace GPlatesApi
 		}
 
 		//
-		// Support for "__get_item__".
+		// Support for "__getitem__".
 		//
 		boost::python::object
 		get_item(
@@ -1123,36 +1099,38 @@ namespace GPlatesApi
 		return PolyGeometryOnSphereArcsView<PolyGeometryOnSphereType>(poly_geometry_on_sphere);
 	}
 
-	GPlatesMaths::PointOnSphere
-	polyline_on_sphere_get_centroid(
-			const GPlatesMaths::PolylineOnSphere &polyline_on_sphere)
-	{
-		return GPlatesMaths::PointOnSphere(polyline_on_sphere.get_centroid());
-	}
-
+	template <class PolyGeometryOnSphereType>
 	bool
-	polyline_on_sphere_contains_point(
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
+	poly_geometry_on_sphere_contains_point(
+			typename PolyGeometryOnSphereType::non_null_ptr_to_const_type poly_geometry_on_sphere,
 			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
 			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
 			const GPlatesMaths::PointOnSphere &point_on_sphere)
 	{
-		PolyGeometryOnSpherePointsView<GPlatesMaths::PolylineOnSphere> points_view(polyline_on_sphere);
+		PolyGeometryOnSpherePointsView<PolyGeometryOnSphereType> points_view(poly_geometry_on_sphere);
 
 		return points_view.contains_point(point_on_sphere);
 	}
 
 	//
-	// Support for "__get_item__".
+	// Support for "__getitem__".
 	//
+	template <class PolyGeometryOnSphereType>
 	boost::python::object
-	polyline_on_sphere_get_item(
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
+	poly_geometry_on_sphere_get_item(
+			typename PolyGeometryOnSphereType::non_null_ptr_to_const_type poly_geometry_on_sphere,
 			boost::python::object i)
 	{
-		PolyGeometryOnSpherePointsView<GPlatesMaths::PolylineOnSphere> points_view(polyline_on_sphere);
+		PolyGeometryOnSpherePointsView<PolyGeometryOnSphereType> points_view(poly_geometry_on_sphere);
 
 		return points_view.get_item(i);
+	}
+
+	GPlatesMaths::PointOnSphere
+	polyline_on_sphere_get_centroid(
+			const GPlatesMaths::PolylineOnSphere &polyline_on_sphere)
+	{
+		return GPlatesMaths::PointOnSphere(polyline_on_sphere.get_centroid());
 	}
 }
 
@@ -1199,7 +1177,8 @@ export_polyline_on_sphere()
 	//
 	bp::class_<
 			GPlatesMaths::PolylineOnSphere,
-			// NOTE: See note in 'python_ConstGeometryOnSphere' for why this is 'non-const' instead of 'const'...
+			// NOTE: See note in 'register_to_python_const_to_non_const_geometry_on_sphere_conversion()'
+			// for why this is 'non-const' instead of 'const'...
 			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>,
 			bp::bases<GPlatesMaths::GeometryOnSphere>,
 			boost::noncopyable>(
@@ -1425,8 +1404,8 @@ export_polyline_on_sphere()
 						&GPlatesMaths::PolylineOnSphere::vertex_begin,
 						&GPlatesMaths::PolylineOnSphere::vertex_end))
 		.def("__len__", &GPlatesMaths::PolylineOnSphere::number_of_vertices)
-		.def("__contains__", &GPlatesApi::polyline_on_sphere_contains_point)
-		.def("__getitem__", &GPlatesApi::polyline_on_sphere_get_item)
+		.def("__contains__", &GPlatesApi::poly_geometry_on_sphere_contains_point<GPlatesMaths::PolylineOnSphere>)
+		.def("__getitem__", &GPlatesApi::poly_geometry_on_sphere_get_item<GPlatesMaths::PolylineOnSphere>)
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
 		// This is because the default '__hash__'is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.
@@ -1478,31 +1457,6 @@ namespace GPlatesApi
 	{
 		return GPlatesMaths::PointOnSphere(polygon_on_sphere.get_interior_centroid());
 	}
-
-	bool
-	polygon_on_sphere_contains_point(
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
-			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
-			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
-			const GPlatesMaths::PointOnSphere &point_on_sphere)
-	{
-		PolyGeometryOnSpherePointsView<GPlatesMaths::PolygonOnSphere> points_view(polygon_on_sphere);
-
-		return points_view.contains_point(point_on_sphere);
-	}
-
-	//
-	// Support for "__get_item__".
-	//
-	boost::python::object
-	polygon_on_sphere_get_item(
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
-			boost::python::object i)
-	{
-		PolyGeometryOnSpherePointsView<GPlatesMaths::PolygonOnSphere> points_view(polygon_on_sphere);
-
-		return points_view.get_item(i);
-	}
 }
 
 
@@ -1548,7 +1502,8 @@ export_polygon_on_sphere()
 	//
 	bp::scope polygon_on_sphere_class = bp::class_<
 			GPlatesMaths::PolygonOnSphere,
-			// NOTE: See note in 'python_ConstGeometryOnSphere' for why this is 'non-const' instead of 'const'...
+			// NOTE: See note in 'register_to_python_const_to_non_const_geometry_on_sphere_conversion()'
+			// for why this is 'non-const' instead of 'const'...
 			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>,
 			bp::bases<GPlatesMaths::GeometryOnSphere>,
 			boost::noncopyable>(
@@ -1859,8 +1814,8 @@ export_polygon_on_sphere()
 						&GPlatesMaths::PolygonOnSphere::vertex_begin,
 						&GPlatesMaths::PolygonOnSphere::vertex_end))
 		.def("__len__", &GPlatesMaths::PolygonOnSphere::number_of_vertices)
-		.def("__contains__", &GPlatesApi::polygon_on_sphere_contains_point)
-		.def("__getitem__", &GPlatesApi::polygon_on_sphere_get_item)
+		.def("__contains__", &GPlatesApi::poly_geometry_on_sphere_contains_point<GPlatesMaths::PolygonOnSphere>)
+		.def("__getitem__", &GPlatesApi::poly_geometry_on_sphere_get_item<GPlatesMaths::PolygonOnSphere>)
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
 		// This is because the default '__hash__'is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.

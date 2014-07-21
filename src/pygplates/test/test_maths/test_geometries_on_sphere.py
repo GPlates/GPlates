@@ -24,6 +24,11 @@ class GeometryOnSphereCase(unittest.TestCase):
     def test_clone(self):
         self.assertEquals(self.point.clone(), self.point)
         self.assertTrue(isinstance(self.point.clone(), pygplates.PointOnSphere))
+        # Call a method that only PointOnSphere has.
+        self.assertTrue(self.point.clone().get_position_vector() == self.point.get_position_vector())
+        self.assertTrue(list(self.point.clone().get_points()) == list(self.point.get_points()))
+        polyline = pygplates.PolylineOnSphere([(0,0), (10,0), (10,10)])
+        self.assertTrue(list(polyline.clone().get_points()) == list(polyline.get_points()))
 
 
 class PointOnSphereCase(unittest.TestCase):
@@ -242,6 +247,7 @@ class PolylineOnSphereCase(unittest.TestCase):
         points = [point for point in self.polyline]
         self.assertEquals(self.points, points)
         self.assertEquals(self.points, list(self.polyline))
+        self.assertEquals(list(reversed(self.points)), list(reversed(self.polyline)))
     
     def test_len(self):
         self.assertTrue(len(self.polyline) == len(self.points))
@@ -395,7 +401,8 @@ class PolygonOnSphereCase(unittest.TestCase):
         points = [point for point in self.polygon]
         self.assertEquals(self.points, points)
         self.assertEquals(self.points, list(self.polygon))
-    
+        self.assertEquals(list(reversed(self.points)), list(reversed(self.polygon)))
+
     def test_len(self):
         self.assertTrue(len(self.polygon) == len(self.points))
     
