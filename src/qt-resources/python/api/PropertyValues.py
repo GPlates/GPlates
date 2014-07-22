@@ -208,6 +208,11 @@ def gpml_irregular_sampling_get_value(gpml_irregular_sampling, time=0):
     otherwise ``None`` is returned. The function :func:`interpolate_finite_rotations` is used
     internally when the extracted property value type is :class:`GpmlFiniteRotation`.
     
+    **NOTE:** modifying the returned :class:`property value<PropertyValue>` does **not** modify the sequence
+    of :meth:`time samples<get_time_samples>` (because the returned :class:`property value<PropertyValue>`
+    is a new interpolated time sample that does not exist in the :meth:`sequence<get_time_samples>`).
+    Instead :meth:`set_value` can be used to modify the sequence for a specific time value.
+    
     This method overrides :meth:`PropertyValue.get_value`.
     """
     
@@ -234,6 +239,72 @@ def gpml_irregular_sampling_get_value(gpml_irregular_sampling, time=0):
 GpmlIrregularSampling.get_value = gpml_irregular_sampling_get_value
 # Delete the module reference to the function - we only keep the class method.
 del gpml_irregular_sampling_get_value
+
+
+def gpml_irregular_sampling_set_value(gpml_irregular_sampling, property_value, time, description=None, is_enabled=True):
+    """set_value(property_value, time, [description], [is_enabled=True]) -> GpmlTimeSample
+    Sets the value at the reconstruction *time*.
+    
+    :param property_value: the property value to set
+    :type property_value: :class:`PropertyValue`
+    :param time: the time to set the value
+    :type time: float or :class:`GeoTimeInstant`
+    :param description: description of the time sample
+    :type description: string or None
+    :param is_enabled: whether time sample is enabled
+    :type is_enabled: bool or None
+    :returns: the time sample that is modified or inserted into the time sequence
+    :rtype: :class:`GpmlTimeSample`
+    :raises: ValueError if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
+    :meth:`distant future<GeoTimeInstant.is_distant_future>`
+
+    If an existing :meth:`time sample<get_time_samples>` matches *time* then it will be modified,
+    otherwise a new :class:`time sample<GpmlTimeSample>` will be inserted into (or appended to)
+    the sequence such that the :meth:`time samples<get_time_samples>` remain ordered by time.
+    
+    This method assumes the precondition that the :meth:`time samples<get_time_samples>` are
+    ordered by time from most recent to least recent.
+    
+    Note that *time* can be outside the time range of :meth:`time samples<get_time_samples>`.
+    """
+    
+    # Use GeoTimeInstant to compare (within epsilon) floating point time values.
+    time = GeoTimeInstant(time)
+    
+    # Time must not be distant past/future.
+    if not time.is_real():
+        raise ValueError("Time value cannot be distant-past (float('inf')) or distant-future (float('-inf')).")
+    
+    time_samples = gpml_irregular_sampling.get_time_samples()
+    
+    # Insert a new time sample or modify existing time sample
+    # (based on whether time matches an existing time sample).
+    # This assumes time samples are ordered by time (most recent to least recent).
+    for time_sample_index, time_sample in enumerate(time_samples):
+        time_sample_time = time_sample.get_time();
+        if time < time_sample_time:
+            # Insert new time sample.
+            new_time_sample = GpmlTimeSample(property_value, time, description, is_enabled)
+            time_samples.insert(time_sample_index, new_time_sample)
+            return new_time_sample
+        elif time == time_sample_time:
+            # Times match so modify existing time sample.
+            time_sample.set_value(property_value)
+            time_sample.set_time(time)
+            time_sample.set_description(description)
+            time_sample.set_enabled(is_enabled)
+            return time_sample
+    
+    # Time is further in the past than any existing time samples (so just append to end of sequence).
+    new_time_sample = GpmlTimeSample(property_value, time, description, is_enabled)
+    time_samples.append(new_time_sample)
+    
+    return new_time_sample
+
+# Add the module function as a class method.
+GpmlIrregularSampling.set_value = gpml_irregular_sampling_set_value
+# Delete the module reference to the function - we only keep the class method.
+del gpml_irregular_sampling_set_value
 
 
 def gpml_irregular_sampling_get_enabled_time_samples(gpml_irregular_sampling):
