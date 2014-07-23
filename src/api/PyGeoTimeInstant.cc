@@ -600,7 +600,7 @@ export_geo_time_instant()
 				"  Create a GeoTimeInstant instance for the distant future.\n"
 				"  ::\n"
 				"\n"
-				"    distant_past = pygplates.GeoTimeInstant.create_distant_past()\n"
+				"    distant_future = pygplates.GeoTimeInstant.create_distant_future()\n"
 				"\n"
 				"  This is basically creating a time-instant which is infinitely far in the future.\n"
 				"\n"

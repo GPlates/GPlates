@@ -297,6 +297,7 @@ def set_valid_time(feature, begin_time, end_time, verify_information_model=Verif
     :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
     :returns: the property containing the valid time range
     :rtype: :class:`Property`
+    :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
     :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
     does not support the 'gml:validTime' property.
     

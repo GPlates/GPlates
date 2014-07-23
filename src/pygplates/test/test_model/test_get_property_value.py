@@ -623,24 +623,118 @@ class GetTimeSamplesCase(unittest.TestCase):
         self.assertAlmostEqual(gpml_time_sample.get_time(), 4)
         self.assertTrue(gpml_time_sample.get_description() == 'sample4')
         self.assertTrue(gpml_time_sample.is_enabled())
+        # Make sure the times are in the correct order.
+        self.assertTrue([pygplates.GeoTimeInstant(ts.get_time()) for ts in self.gpml_irregular_sampling.get_time_samples()] ==
+                [pygplates.GeoTimeInstant(t) for t in (0, 1, 2, 2.5, 3, 4)])
 
 
 class GetTimeWindowsCase(unittest.TestCase):
     def setUp(self):
         self.gpml_piecewise_aggregation = pygplates.GpmlPiecewiseAggregation([
                 pygplates.GpmlTimeWindow(pygplates.XsInteger(0), pygplates.GeoTimeInstant(1), pygplates.GeoTimeInstant(0)),
-                pygplates.GpmlTimeWindow(pygplates.XsInteger(1), pygplates.GeoTimeInstant(2), 1),
-                pygplates.GpmlTimeWindow(pygplates.XsInteger(2), 3, pygplates.GeoTimeInstant(2)),
-                pygplates.GpmlTimeWindow(pygplates.XsInteger(3), 4, 3)])
+                pygplates.GpmlTimeWindow(pygplates.XsInteger(10), pygplates.GeoTimeInstant(2), 1),
+                pygplates.GpmlTimeWindow(pygplates.XsInteger(20), 3, pygplates.GeoTimeInstant(2)),
+                pygplates.GpmlTimeWindow(pygplates.XsInteger(30), 4, 3)])
 
     def test_get(self):
         time_window = self.gpml_piecewise_aggregation.get_time_window_containing_time(1.5)
         self.assertTrue(time_window)
-        self.assertTrue(time_window.get_value().get_integer() == 1)
+        self.assertTrue(time_window.get_value().get_integer() == 10)
         # Should be able to specify time using 'GeoTimeInstant' also.
         time_window = self.gpml_piecewise_aggregation.get_time_window_containing_time(pygplates.GeoTimeInstant(2.5))
         self.assertTrue(time_window)
-        self.assertTrue(time_window.get_value().get_integer() == 2)
+        self.assertTrue(time_window.get_value().get_integer() == 20)
+
+    def test_set(self):
+        self.assertRaises(pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError,
+                pygplates.GpmlPiecewiseAggregation.set_value, self.gpml_piecewise_aggregation,
+                pygplates.XsInteger(10), 1.3, 1.4)
+        self.assertTrue(len(self.gpml_piecewise_aggregation.get_time_windows()) == 4)
+        
+        # Insert a new time window (completely within an existing time window).
+        gpml_time_window = self.gpml_piecewise_aggregation.set_value(pygplates.XsInteger(23), 2.7, 2.3)
+        self.assertTrue(len(self.gpml_piecewise_aggregation.get_time_windows()) == 6)
+        # Make sure the times are in the correct order.
+        self.assertTrue([pygplates.GeoTimeInstant(tw.get_begin_time()) for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.GeoTimeInstant(t) for t in (1, 2, 2.3, 2.7, 3, 4)])
+        self.assertTrue([pygplates.GeoTimeInstant(tw.get_end_time()) for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.GeoTimeInstant(t) for t in (0, 1, 2, 2.3, 2.7, 3)])
+        # Make sure the values are correct.
+        self.assertTrue([tw.get_value() for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.XsInteger(i) for i in (0, 10, 20, 23, 20, 30)])
+        
+        # Insert a new time window (completely overlapping two existing time windows).
+        gpml_time_window = self.gpml_piecewise_aggregation.set_value(pygplates.XsInteger(25), 2.8, 1.7)
+        self.assertTrue(len(self.gpml_piecewise_aggregation.get_time_windows()) == 5)
+        # Make sure the times are in the correct order.
+        self.assertTrue([pygplates.GeoTimeInstant(tw.get_begin_time()) for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.GeoTimeInstant(t) for t in (1, 1.7, 2.8, 3, 4)])
+        self.assertTrue([pygplates.GeoTimeInstant(tw.get_end_time()) for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.GeoTimeInstant(t) for t in (0, 1, 1.7, 2.8, 3)])
+        # Make sure the values are correct.
+        self.assertTrue([tw.get_value() for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.XsInteger(i) for i in (0, 10, 25, 20, 30)])
+        
+        # Insert a new time window (clipping two existing time windows).
+        gpml_time_window = self.gpml_piecewise_aggregation.set_value(pygplates.XsInteger(9), 1.1, 0.9)
+        self.assertTrue(len(self.gpml_piecewise_aggregation.get_time_windows()) == 6)
+        # Make sure the times are in the correct order.
+        self.assertTrue([pygplates.GeoTimeInstant(tw.get_begin_time()) for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.GeoTimeInstant(t) for t in (0.9, 1.1, 1.7, 2.8, 3, 4)])
+        self.assertTrue([pygplates.GeoTimeInstant(tw.get_end_time()) for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.GeoTimeInstant(t) for t in (0, 0.9, 1.1, 1.7, 2.8, 3)])
+        # Make sure the values are correct.
+        self.assertTrue([tw.get_value() for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.XsInteger(i) for i in (0, 9, 10, 25, 20, 30)])
+        
+        # Insert a new time window (clipping first time window).
+        gpml_time_window = self.gpml_piecewise_aggregation.set_value(pygplates.XsInteger(5), 0.5, 0)
+        self.assertTrue(len(self.gpml_piecewise_aggregation.get_time_windows()) == 7)
+        # Make sure the times are in the correct order.
+        self.assertTrue([pygplates.GeoTimeInstant(tw.get_begin_time()) for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.GeoTimeInstant(t) for t in (0.5, 0.9, 1.1, 1.7, 2.8, 3, 4)])
+        self.assertTrue([pygplates.GeoTimeInstant(tw.get_end_time()) for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.GeoTimeInstant(t) for t in (0, 0.5, 0.9, 1.1, 1.7, 2.8, 3)])
+        # Make sure the values are correct.
+        self.assertTrue([tw.get_value() for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.XsInteger(i) for i in (5, 0, 9, 10, 25, 20, 30)])
+        
+        # Insert a new time window (clipping last time window).
+        gpml_time_window = self.gpml_piecewise_aggregation.set_value(pygplates.XsInteger(35), 4.2, 3.9)
+        self.assertTrue(len(self.gpml_piecewise_aggregation.get_time_windows()) == 8)
+        # Make sure the times are in the correct order.
+        self.assertTrue([pygplates.GeoTimeInstant(tw.get_begin_time()) for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.GeoTimeInstant(t) for t in (0.5, 0.9, 1.1, 1.7, 2.8, 3, 3.9, 4.2)])
+        self.assertTrue([pygplates.GeoTimeInstant(tw.get_end_time()) for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.GeoTimeInstant(t) for t in (0, 0.5, 0.9, 1.1, 1.7, 2.8, 3, 3.9)])
+        # Make sure the values are correct.
+        self.assertTrue([tw.get_value() for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.XsInteger(i) for i in (5, 0, 9, 10, 25, 20, 30, 35)])
+        
+        # Insert a new time window (not overlapping any time windows).
+        gpml_time_window = self.gpml_piecewise_aggregation.set_value(pygplates.XsInteger(45), 5.0, 4.2)
+        self.assertTrue(len(self.gpml_piecewise_aggregation.get_time_windows()) == 9)
+        # Make sure the times are in the correct order.
+        self.assertTrue([pygplates.GeoTimeInstant(tw.get_begin_time()) for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.GeoTimeInstant(t) for t in (0.5, 0.9, 1.1, 1.7, 2.8, 3, 3.9, 4.2, 5.0)])
+        self.assertTrue([pygplates.GeoTimeInstant(tw.get_end_time()) for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.GeoTimeInstant(t) for t in (0, 0.5, 0.9, 1.1, 1.7, 2.8, 3, 3.9, 4.2)])
+        # Make sure the values are correct.
+        self.assertTrue([tw.get_value() for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.XsInteger(i) for i in (5, 0, 9, 10, 25, 20, 30, 35, 45)])
+        
+        # Insert a new time window (replacing all time windows).
+        gpml_time_window = self.gpml_piecewise_aggregation.set_value(pygplates.XsInteger(100),
+                pygplates.GeoTimeInstant.create_distant_past(), pygplates.GeoTimeInstant.create_distant_future())
+        self.assertTrue(len(self.gpml_piecewise_aggregation.get_time_windows()) == 1)
+        # Make sure the times are in the correct order.
+        self.assertTrue([pygplates.GeoTimeInstant(tw.get_begin_time()) for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.GeoTimeInstant(t) for t in (pygplates.GeoTimeInstant.create_distant_past(),)])
+        self.assertTrue([pygplates.GeoTimeInstant(tw.get_end_time()) for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.GeoTimeInstant(t) for t in (pygplates.GeoTimeInstant.create_distant_future(),)])
+        # Make sure the values are correct.
+        self.assertTrue([tw.get_value() for tw in self.gpml_piecewise_aggregation.get_time_windows()] ==
+                [pygplates.XsInteger(i) for i in (100,)])
 
 
 def suite():

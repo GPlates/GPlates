@@ -131,7 +131,7 @@ def gpml_constant_value_get_value(gpml_constant_value, time=0):
     """
     
     # Get the nested property value using a private method.
-    nested_property_value = gpml_constant_value._get_value();
+    nested_property_value = gpml_constant_value._get_value()
     
     # Recurse to extract contained property value.
     # Also note that it could be another time-dependent sequence (not that it should happen).
@@ -168,6 +168,106 @@ GpmlPiecewiseAggregation.get_value = gpml_piecewise_aggregation_get_value
 del gpml_piecewise_aggregation_get_value
 
 
+def gpml_piecewise_aggregation_set_value(gpml_piecewise_aggregation, property_value, begin_time, end_time):
+    """set_value(property_value, begin_time, end_time) -> GpmlTimeWindow
+    Sets the value in the specified time window.
+    
+    :param property_value: the property value to set
+    :type property_value: :class:`PropertyValue`
+    :param begin_time: the begin time of the time window for the new property value
+    :type begin_time: float or :class:`GeoTimeInstant`
+    :param end_time: the end time of the time window for the new property value
+    :type end_time: float or :class:`GeoTimeInstant`
+    :returns: the time window that is modified, or inserted into the time window sequence
+    :rtype: :class:`GpmlTimeWindow`
+    :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
+
+    Any existing :meth:`time windows<get_time_windows>` that overlap the new time window
+    (*begin_time*, *end_time*) are clipped, removed or split (depending on how they overlap) such
+    that they no longer overlap with the new time window. The new time window is then inserted into
+    the existing sequence such that the :meth:`time windows<get_time_windows>` remained ordered by time.
+    
+    This method assumes the precondition that the :meth:`time windows<get_time_windows>` are
+    ordered by time from most recent to least recent.
+    
+    Note that *begin_time* can be :meth:`distant past<GeoTimeInstant.create_distant_past>` and/or
+    *end_time* can be :meth:`distant future<GeoTimeInstant.create_distant_future>`
+    
+    Set the property value between :meth:`distant past<GeoTimeInstant.create_distant_past>` and 10Ma:
+    ::
+    
+      piecewise_aggregation.set_value(property_value, pygplates.GeoTimeInstant.create_distant_past(), 10)
+    
+    Alternatively you can change the value in an existing time window (if you just want to change
+    the value within that time window and not affect other time windows):
+    ::
+    
+      time_window = piecewise_aggregation.get_time_window_containing_time(time)
+      if time_window:
+          time_window.set_value(property_value)
+    """
+    
+    # Use GeoTimeInstant to compare (within epsilon) floating point time values.
+    begin_time = GeoTimeInstant(begin_time)
+    end_time = GeoTimeInstant(end_time)
+    
+    if begin_time < end_time:
+        raise GmlTimePeriodBeginTimeLaterThanEndTimeError("Begin time cannot be later than end time.")
+    
+    time_windows = gpml_piecewise_aggregation.get_time_windows()
+    len_time_windows = len(time_windows)
+    
+    # Loop over existing time windows and adjust their extents if they overlap with new time window.
+    time_window_index = 0
+    while time_window_index < len_time_windows:
+        time_window = time_windows[time_window_index]
+        time_window_begin_time = time_window.get_begin_time()
+        time_window_end_time = time_window.get_end_time()
+        
+        # If current time window overlaps new time window...
+        if begin_time > time_window_end_time and end_time < time_window_begin_time:
+            if begin_time >= time_window_begin_time:
+                if end_time > time_window_end_time:
+                    time_window.set_begin_time(end_time)
+                else:
+                    # Current time window is completely overlapped by new time window so delete current window.
+                    del time_windows[time_window_index]
+                    time_window_index = time_window_index - 1
+                    len_time_windows = len_time_windows - 1
+            else:
+                if end_time <= time_window_end_time:
+                    time_window.set_end_time(begin_time)
+                else:
+                    # Current time window completely overlaps the new time window so split current window into two.
+                    time_window.set_end_time(begin_time)
+                    # The second split window needs to be created - clone the property value of the first split window.
+                    adjusted_time_window = GpmlTimeWindow(time_window.get_value().clone(), end_time, time_window_end_time)
+                    # Insert just before the current time window (since inserted window is more recent).
+                    time_windows.insert(time_window_index, adjusted_time_window)
+                    time_window_index = time_window_index + 1
+                    len_time_windows = len_time_windows + 1
+        
+        time_window_index = time_window_index + 1
+    
+    # Insert the new time window into the existing windows in the correct time order.
+    for time_window_index, time_window in enumerate(time_windows):
+        if begin_time < time_window.get_begin_time():
+            new_time_window = GpmlTimeWindow(property_value, begin_time, end_time)
+            time_windows.insert(time_window_index, new_time_window)
+            return new_time_window
+    
+    # The begin time of the new window is further in the past than any existing time windows (so just append to end of sequence).
+    new_time_window = GpmlTimeWindow(property_value, begin_time, end_time)
+    time_windows.append(new_time_window)
+    
+    return new_time_window
+
+# Add the module function as a class method.
+GpmlPiecewiseAggregation.set_value = gpml_piecewise_aggregation_set_value
+# Delete the module reference to the function - we only keep the class method.
+del gpml_piecewise_aggregation_set_value
+
+
 def gpml_piecewise_aggregation_get_time_window_containing_time(gpml_piecewise_aggregation, time):
     """get_time_window_containing_time(time) -> GpmlTimeWindow or None
     Return the :class:`time window<GpmlTimeWindow>` that contains *time*.
@@ -181,7 +281,7 @@ def gpml_piecewise_aggregation_get_time_window_containing_time(gpml_piecewise_ag
     
     # Find the time window containing the time.
     for window in gpml_piecewise_aggregation.get_time_windows():
-        # Time period includes begin time but not end time.
+        # Time period includes begin time and end time.
         if time <= window.get_begin_time() and time >= window.get_end_time():
             return window
 
@@ -253,7 +353,7 @@ def gpml_irregular_sampling_set_value(gpml_irregular_sampling, property_value, t
     :type description: string or None
     :param is_enabled: whether time sample is enabled
     :type is_enabled: bool or None
-    :returns: the time sample that is modified or inserted into the time sequence
+    :returns: the time sample that is modified, or inserted into the time sequence
     :rtype: :class:`GpmlTimeSample`
     :raises: ValueError if *time* is :meth:`distant past<GeoTimeInstant.is_distant_past>` or \
     :meth:`distant future<GeoTimeInstant.is_distant_future>`
@@ -265,7 +365,7 @@ def gpml_irregular_sampling_set_value(gpml_irregular_sampling, property_value, t
     This method assumes the precondition that the :meth:`time samples<get_time_samples>` are
     ordered by time from most recent to least recent.
     
-    Note that *time* can be outside the time range of :meth:`time samples<get_time_samples>`.
+    Note that *time* can be outside the time range of existing :meth:`time samples<get_time_samples>`.
     """
     
     # Use GeoTimeInstant to compare (within epsilon) floating point time values.
@@ -281,7 +381,7 @@ def gpml_irregular_sampling_set_value(gpml_irregular_sampling, property_value, t
     # (based on whether time matches an existing time sample).
     # This assumes time samples are ordered by time (most recent to least recent).
     for time_sample_index, time_sample in enumerate(time_samples):
-        time_sample_time = time_sample.get_time();
+        time_sample_time = time_sample.get_time()
         if time < time_sample_time:
             # Insert new time sample.
             new_time_sample = GpmlTimeSample(property_value, time, description, is_enabled)
