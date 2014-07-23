@@ -39,11 +39,15 @@
 const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
 GPlatesPropertyValues::GmlTimePeriod::create(
 		GmlTimeInstant::non_null_ptr_type begin_,
-		GmlTimeInstant::non_null_ptr_type end_)
+		GmlTimeInstant::non_null_ptr_type end_,
+		bool check_begin_end_times)
 {
-	GPlatesGlobal::Assert<BeginTimeLaterThanEndTimeException>(
-			begin_->get_time_position() <= end_->get_time_position(),
-			GPLATES_ASSERTION_SOURCE);
+	if (check_begin_end_times)
+	{
+		GPlatesGlobal::Assert<BeginTimeLaterThanEndTimeException>(
+				begin_->get_time_position() <= end_->get_time_position(),
+				GPLATES_ASSERTION_SOURCE);
+	}
 
 	GPlatesModel::ModelTransaction transaction;
 	non_null_ptr_type ptr(new GmlTimePeriod(transaction, begin_, end_));
@@ -55,8 +59,16 @@ GPlatesPropertyValues::GmlTimePeriod::create(
 
 void
 GPlatesPropertyValues::GmlTimePeriod::set_begin(
-		GmlTimeInstant::non_null_ptr_type begin_)
+		GmlTimeInstant::non_null_ptr_type begin_,
+		bool check_begin_end_times)
 {
+	if (check_begin_end_times)
+	{
+		GPlatesGlobal::Assert<BeginTimeLaterThanEndTimeException>(
+				begin_->get_time_position() <= end()->get_time_position(),
+				GPLATES_ASSERTION_SOURCE);
+	}
+
 	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().begin.change(
 			revision_handler.get_model_transaction(), begin_);
@@ -66,8 +78,16 @@ GPlatesPropertyValues::GmlTimePeriod::set_begin(
 
 void
 GPlatesPropertyValues::GmlTimePeriod::set_end(
-		GmlTimeInstant::non_null_ptr_type end_)
+		GmlTimeInstant::non_null_ptr_type end_,
+		bool check_begin_end_times)
 {
+	if (check_begin_end_times)
+	{
+		GPlatesGlobal::Assert<BeginTimeLaterThanEndTimeException>(
+				begin()->get_time_position() <= end_->get_time_position(),
+				GPLATES_ASSERTION_SOURCE);
+	}
+
 	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
 	revision_handler.get_revision<Revision>().end.change(
 			revision_handler.get_model_transaction(), end_);

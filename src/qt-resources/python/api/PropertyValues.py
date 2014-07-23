@@ -412,7 +412,7 @@ def gpml_irregular_sampling_get_enabled_time_samples(gpml_irregular_sampling):
     Filter out the disabled :class:`time samples<GpmlTimeSample>` and return a list of enabled time samples.
     
     :rtype: list
-    :return: the list of enabled :class:`time samples<GpmlTimeSample>` (if any) or None
+    :return: the list of enabled :class:`time samples<GpmlTimeSample>` (if any)
     
     Returns an empty list if all time samples are disabled.
     

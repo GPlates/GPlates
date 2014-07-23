@@ -306,6 +306,8 @@ class GmlTimePeriodCase(unittest.TestCase):
                 self.gml_time_period.set_begin_time, pygplates.GeoTimeInstant(1.0))
         self.assertRaises(pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError,
                 self.gml_time_period.set_end_time, pygplates.GeoTimeInstant(5.5))
+        self.assertRaises(pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError,
+                pygplates.GmlTimePeriod, 1.0, 2.0)
 
 
 class GpmlArrayCase(unittest.TestCase):
@@ -660,6 +662,14 @@ class GpmlTimeWindowCase(unittest.TestCase):
         self.assertTrue(self.gpml_time_window.get_end_time() == self.end_time)
 
     def test_set(self):
+        # Violate the begin/end time class invariant.
+        self.assertRaises(pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError,
+                pygplates.GpmlTimeWindow, self.property_value, 1.0, 2.0)
+        self.assertRaises(pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError,
+                self.gpml_time_window.set_begin_time, 1.0)
+        self.assertRaises(pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError,
+                self.gpml_time_window.set_end_time, 30)
+
         new_property_value = pygplates.GpmlPlateId(801)
         new_begin_time = pygplates.GeoTimeInstant(40)
         new_end_time = pygplates.GeoTimeInstant(30)

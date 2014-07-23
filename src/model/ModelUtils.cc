@@ -1242,7 +1242,8 @@ GPlatesModel::ModelUtils::create_gml_orientable_curve(
 const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
 GPlatesModel::ModelUtils::create_gml_time_period(
 		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_begin,
-		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_end)
+		const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_end,
+		bool check_begin_end_times)
 {
 	std::map<XmlAttributeName, XmlAttributeValue> xml_attributes;
 	XmlAttributeName xml_attribute_name = XmlAttributeName::create_gml("frame");
@@ -1255,7 +1256,10 @@ GPlatesModel::ModelUtils::create_gml_time_period(
 	GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type gml_time_instant_end =
 			GPlatesPropertyValues::GmlTimeInstant::create(geo_time_instant_end, xml_attributes);
 
-	return GPlatesPropertyValues::GmlTimePeriod::create(gml_time_instant_begin, gml_time_instant_end);
+	return GPlatesPropertyValues::GmlTimePeriod::create(
+			gml_time_instant_begin,
+			gml_time_instant_end,
+			check_begin_end_times);
 }
 
 

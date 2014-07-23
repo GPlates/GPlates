@@ -72,10 +72,22 @@ namespace GPlatesModel
 				bool reverse_orientation = false);
 
 
+		/**
+		 * Create a GmlTimePeriod instance which begins at @a geo_time_instant_begin and
+		 * ends at @a geo_time_instant_end.
+		 *
+		 * Note that the time instant represented by @a geo_time_instant_begin must not be later
+		 * than (ie, more recent than) the time instant represented by @a geo_time_instant_end.
+		 *
+		 * @throws BeginTimeLaterThanEndTimeException if @a check_begin_end_times is true and
+		 * begin time is later than end time. By default @a check_begin_end_times is false since
+		 * there exists a lot of data from files that violates this condition.
+		 */
 		const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
 		create_gml_time_period(
 				const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_begin,
-				const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_end);
+				const GPlatesPropertyValues::GeoTimeInstant &geo_time_instant_end,
+				bool check_begin_end_times = false);
 
 
 		const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type

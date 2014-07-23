@@ -107,13 +107,16 @@ namespace GPlatesPropertyValues
 		 * Note that the time instant represented by @a begin_ must not be later than (ie,
 		 * more recent than) the time instant represented by @a end_.
 		 *
-		 * @throws BeginTimeLaterThanEndTimeException if begin time is later than end time.
+		 * @throws BeginTimeLaterThanEndTimeException if @a check_begin_end_times is true and
+		 * begin time is later than end time. By default @a check_begin_end_times is false since
+		 * there exists a lot of data from files that violates this condition.
 		 */
 		static
 		const non_null_ptr_type
 		create(
 				GmlTimeInstant::non_null_ptr_type begin_,
-				GmlTimeInstant::non_null_ptr_type end_);
+				GmlTimeInstant::non_null_ptr_type end_,
+				bool check_begin_end_times = false);
 
 		const non_null_ptr_type
 		clone() const
@@ -147,10 +150,15 @@ namespace GPlatesPropertyValues
 		 *
 		 * Note that it is an invariant of this class that the "begin" attribute must not
 		 * be later than the "end" attribute.
+		 *
+		 * @throws BeginTimeLaterThanEndTimeException if @a check_begin_end_times is true and
+		 * begin time is later than end time. By default @a check_begin_end_times is false since
+		 * there exists a lot of data from files that violates this condition.
 		 */
 		void
 		set_begin(
-				GmlTimeInstant::non_null_ptr_type begin_);
+				GmlTimeInstant::non_null_ptr_type begin_,
+				bool check_begin_end_times = false);
 
 		/**
 		 * Return the "end" attribute of this GmlTimePeriod instance.
@@ -178,10 +186,15 @@ namespace GPlatesPropertyValues
 		 *
 		 * Note that it is an invariant of this class that the "end" attribute must not
 		 * be earlier than the "begin" attribute.
+		 *
+		 * @throws BeginTimeLaterThanEndTimeException if @a check_begin_end_times is true and
+		 * begin time is later than end time. By default @a check_begin_end_times is false since
+		 * there exists a lot of data from files that violates this condition.
 		 */
 		void
 		set_end(
-				GmlTimeInstant::non_null_ptr_type end_);
+				GmlTimeInstant::non_null_ptr_type end_,
+				bool check_begin_end_times = false);
 
 		/**
 		 * Determine whether @a geo_time lies within the temporal span of this
