@@ -318,7 +318,7 @@ class GpmlArrayCase(unittest.TestCase):
     
     def setUp(self):
         self.original_elements = []
-        for i in range(0,4):
+        for i in range(4):
             element = pygplates.XsInteger(i)
             self.original_elements.append(element)
         
@@ -332,6 +332,10 @@ class GpmlArrayCase(unittest.TestCase):
         reversed_elements = list(reversed(self.gpml_array))
         self.gpml_array[:] = reversed_elements
         self.assertTrue(list(self.gpml_array) == reversed_elements)
+        self.assertTrue(list(self.gpml_array) == [pygplates.XsInteger(i) for i in range(3,-1,-1)])
+        
+        self.gpml_array.sort(key = lambda i: i.get_integer())
+        self.assertTrue(list(self.gpml_array) == [pygplates.XsInteger(i) for i in range(4)])
         
         # Need at least one time sample to create a GpmlArray.
         self.assertRaises(RuntimeError, pygplates.GpmlArray, [])
@@ -409,7 +413,7 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
     
     def setUp(self):
         self.original_time_samples = []
-        for i in range(0,4):
+        for i in range(4):
             ts = pygplates.GpmlTimeSample(pygplates.XsInteger(i), i)
             self.original_time_samples.append(ts)
         
@@ -426,12 +430,27 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
         #self.assertTrue(isinstance(self.gpml_irregular_sampling.get_interpolation_function(), pygplates.GpmlInterpolationFunction))
         
         self.assertTrue(list(self.gpml_irregular_sampling.get_time_samples()) == self.original_time_samples)
+        self.assertTrue(list(self.gpml_irregular_sampling) == self.original_time_samples)
+        self.assertTrue([time_sample for time_sample in self.gpml_irregular_sampling] == self.original_time_samples)
 
     def test_set(self):
         gpml_time_sample_list = self.gpml_irregular_sampling.get_time_samples()
         reversed_time_samples = list(reversed(self.original_time_samples))
         gpml_time_sample_list[:] = reversed_time_samples
         self.assertTrue(list(self.gpml_irregular_sampling.get_time_samples()) == reversed_time_samples)
+        self.assertTrue(list(self.gpml_irregular_sampling.get_time_samples()) ==
+                [pygplates.GpmlTimeSample(pygplates.XsInteger(i), i) for i in range(3,-1,-1)])
+
+        reversed_time_samples = list(reversed(self.gpml_irregular_sampling))
+        self.gpml_irregular_sampling[:] = reversed_time_samples
+        self.assertTrue(list(self.gpml_irregular_sampling) == reversed_time_samples)
+        self.assertTrue(list(self.gpml_irregular_sampling) ==
+                [pygplates.GpmlTimeSample(pygplates.XsInteger(i), i) for i in range(4)])
+        
+        # Should be able to do list operations directly on the GpmlIrregularSampling instance.
+        self.gpml_irregular_sampling.sort(key = lambda ts: -ts.get_time())
+        self.assertTrue(list(self.gpml_irregular_sampling) ==
+                [pygplates.GpmlTimeSample(pygplates.XsInteger(i), i) for i in range(3,-1,-1)])
         
         # Not including interpolation function since it is not really used (yet) in GPlates and hence
         # is just extra baggage for the python API user (we can add it later though)...
@@ -448,7 +467,7 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
 class GpmlKeyValueDictionaryCase(unittest.TestCase):
     def setUp(self):
         self.gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary()
-        for i in range(0,4):
+        for i in range(4):
             self.gpml_key_value_dictionary.set(str(i), i)
 
     def test_len(self):
@@ -456,7 +475,7 @@ class GpmlKeyValueDictionaryCase(unittest.TestCase):
         self.assertTrue(len(pygplates.GpmlKeyValueDictionary()) == 0)
 
     def test_contains(self):
-        for i in range(0,4):
+        for i in range(4):
             self.assertTrue(str(i) in self.gpml_key_value_dictionary)
         self.assertTrue(str(4) not in self.gpml_key_value_dictionary)
 
@@ -466,12 +485,12 @@ class GpmlKeyValueDictionaryCase(unittest.TestCase):
         for key in self.gpml_key_value_dictionary:
             count += 1
             self.assertTrue(key in self.gpml_key_value_dictionary)
-            self.assertTrue(key in [str(i) for i in range(0,4)])
-            self.assertTrue(self.gpml_key_value_dictionary.get(key) in range(0,4))
+            self.assertTrue(key in [str(i) for i in range(4)])
+            self.assertTrue(self.gpml_key_value_dictionary.get(key) in range(4))
         self.assertTrue(count == 4)
 
     def test_get(self):
-        for i in range(0,4):
+        for i in range(4):
             self.assertTrue(self.gpml_key_value_dictionary.get(str(i)) == i)
         self.assertFalse(self.gpml_key_value_dictionary.get(str(4)))
         self.assertTrue(self.gpml_key_value_dictionary.get(str(4), 4) == 4)
@@ -481,7 +500,7 @@ class GpmlKeyValueDictionaryCase(unittest.TestCase):
         self.assertTrue(len(self.gpml_key_value_dictionary) == 4)
         self.gpml_key_value_dictionary.set(str(1), 10)
         self.assertTrue(len(self.gpml_key_value_dictionary) == 4)
-        for i in range(0,4):
+        for i in range(4):
             if i == 1:
                 self.assertTrue(self.gpml_key_value_dictionary.get(str(1)) == 10)
                 self.assertTrue(isinstance(self.gpml_key_value_dictionary.get(str(1)), int))
@@ -502,7 +521,7 @@ class GpmlKeyValueDictionaryCase(unittest.TestCase):
         # Removing same attribute twice should be fine.
         self.gpml_key_value_dictionary.remove(str(1))
         self.assertTrue(len(self.gpml_key_value_dictionary) == 3)
-        for i in range(0,4):
+        for i in range(4):
             if i != 1:
                 self.assertTrue(self.gpml_key_value_dictionary.get(str(i)) == i)
         self.assertFalse(self.gpml_key_value_dictionary.get(str(1)))
@@ -516,7 +535,7 @@ class GpmlPiecewiseAggregationCase(unittest.TestCase):
     
     def setUp(self):
         self.original_time_windows = []
-        for i in range(0,4):
+        for i in range(4):
             tw = pygplates.GpmlTimeWindow(
                 pygplates.XsInteger(i),
                 pygplates.GeoTimeInstant(i+1), # begin time - earlier
@@ -527,15 +546,41 @@ class GpmlPiecewiseAggregationCase(unittest.TestCase):
 
     def test_get(self):
         self.assertTrue(list(self.gpml_piecewise_aggregation.get_time_windows()) == self.original_time_windows)
+        self.assertTrue(list(self.gpml_piecewise_aggregation) == self.original_time_windows)
+        self.assertTrue([time_window for time_window in self.gpml_piecewise_aggregation] == self.original_time_windows)
 
     def test_set(self):
+        # Need at least one time sample to create a GpmlPiecewiseAggregation.
+        self.assertRaises(RuntimeError, pygplates.GpmlPiecewiseAggregation, [])
+
         gpml_time_window_list = self.gpml_piecewise_aggregation.get_time_windows()
         reversed_time_windows = list(reversed(self.original_time_windows))
         gpml_time_window_list[:] = reversed_time_windows
         self.assertTrue(list(self.gpml_piecewise_aggregation.get_time_windows()) == reversed_time_windows)
+        self.assertTrue(list(self.gpml_piecewise_aggregation.get_time_windows()) ==
+                [pygplates.GpmlTimeWindow(pygplates.XsInteger(i), i+1, i) for i in range(3,-1,-1)])
+
+        reversed_time_windows = list(reversed(self.gpml_piecewise_aggregation))
+        self.gpml_piecewise_aggregation[:] = reversed_time_windows
+        self.assertTrue(list(self.gpml_piecewise_aggregation) == reversed_time_windows)
+        self.assertTrue(list(self.gpml_piecewise_aggregation) ==
+                [pygplates.GpmlTimeWindow(pygplates.XsInteger(i), i+1, i) for i in range(4)])
         
-        # Need at least one time sample to create a GpmlPiecewiseAggregation.
-        self.assertRaises(RuntimeError, pygplates.GpmlPiecewiseAggregation, [])
+        # Should be able to do list operations directly on the GpmlPiecewiseAggregation instance.
+        self.gpml_piecewise_aggregation.sort(key = lambda tw: -tw.get_begin_time())
+        self.assertTrue(list(self.gpml_piecewise_aggregation) ==
+                [pygplates.GpmlTimeWindow(pygplates.XsInteger(i), i+1, i) for i in range(3,-1,-1)])
+        self.gpml_piecewise_aggregation.sort(key = lambda tw: tw.get_begin_time())
+        self.assertTrue(list(self.gpml_piecewise_aggregation) ==
+                [pygplates.GpmlTimeWindow(pygplates.XsInteger(i), i+1, i) for i in range(4)])
+        
+        # Replace the second and third time windows with a new time window that spans both.
+        self.gpml_piecewise_aggregation[1:3] = [
+                pygplates.GpmlTimeWindow(pygplates.XsInteger(10),
+                self.gpml_piecewise_aggregation[2].get_begin_time(),
+                self.gpml_piecewise_aggregation[1].get_end_time())]
+        self.assertTrue(list(self.gpml_piecewise_aggregation) ==
+                [pygplates.GpmlTimeWindow(pygplates.XsInteger(i), bt, et) for i, bt, et in [(0,1,0), (10,3,1), (3,4,3)]])
 
 
 class GpmlPlateIdCase(unittest.TestCase):

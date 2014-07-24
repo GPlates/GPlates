@@ -178,7 +178,7 @@ def gpml_piecewise_aggregation_set_value(gpml_piecewise_aggregation, property_va
     :type begin_time: float or :class:`GeoTimeInstant`
     :param end_time: the end time of the time window for the new property value
     :type end_time: float or :class:`GeoTimeInstant`
-    :returns: the time window that is modified, or inserted into the time window sequence
+    :returns: the time window that is inserted into the time window sequence
     :rtype: :class:`GpmlTimeWindow`
     :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time
 
@@ -359,8 +359,8 @@ def gpml_irregular_sampling_set_value(gpml_irregular_sampling, property_value, t
     :meth:`distant future<GeoTimeInstant.is_distant_future>`
 
     If an existing :meth:`time sample<get_time_samples>` matches *time* then it will be modified,
-    otherwise a new :class:`time sample<GpmlTimeSample>` will be inserted into (or appended to)
-    the sequence such that the :meth:`time samples<get_time_samples>` remain ordered by time.
+    otherwise a new :class:`time sample<GpmlTimeSample>` will be inserted into the sequence
+    such that the :meth:`time samples<get_time_samples>` remain ordered by time.
     
     This method assumes the precondition that the :meth:`time samples<get_time_samples>` are
     ordered by time from most recent to least recent.

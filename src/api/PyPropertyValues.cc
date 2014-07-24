@@ -1370,7 +1370,7 @@ export_gpml_interpolation_function()
 
 namespace GPlatesApi
 {
-	const GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
+	GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
 	gpml_irregular_sampling_create(
 			bp::object time_samples // Any python sequence (eg, list, tuple).
 			// Not including interpolation function since it is not really used (yet) in GPlates and hence
@@ -1413,7 +1413,7 @@ namespace GPlatesApi
 				time_samples_vector[0]->get_value_type());
 	}
 
-	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::non_null_ptr_type
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::non_null_ptr_type
 	gpml_irregular_sampling_get_time_samples(
 			GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 	{
@@ -1433,6 +1433,28 @@ export_gpml_irregular_sampling()
 					&GPlatesPropertyValues::GpmlIrregularSampling::interpolation_function;
 #endif
 
+	const char *const gpml_irregular_sampling_class_name = "GpmlIrregularSampling";
+
+	std::stringstream gpml_irregular_sampling_class_docstring_stream;
+	gpml_irregular_sampling_class_docstring_stream <<
+			"A time-dependent property consisting of a sequence of time samples irregularly spaced in time.\n"
+			"\n"
+			<< gpml_irregular_sampling_class_name <<
+			" behaves like a regular python ``list`` (of :class:`GpmlTimeSample` elements) in that "
+			"the following operations are supported:\n"
+			"\n"
+			<< GPlatesApi::get_python_list_operations_docstring(gpml_irregular_sampling_class_name) <<
+			"\n"
+			"For example:\n"
+			"::\n"
+			"\n"
+			"  # Sort samples by time.\n"
+			"  irregular_sampling = pygplates.GpmlIrregularSampling([pygplates.GpmlTimeSample(...), ...])\n"
+			"  ...\n"
+			"  irregular_sampling.sort(key = lambda ts: ts.get_time())\n"
+			"\n"
+			"In addition to the above ``list``-style operations there are also the following methods...\n";
+
 	//
 	// GpmlIrregularSampling - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -1440,12 +1462,14 @@ export_gpml_irregular_sampling()
 			GPlatesPropertyValues::GpmlIrregularSampling,
 			GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type,
 			bp::bases<GPlatesModel::PropertyValue>,
-			boost::noncopyable>(
-					"GpmlIrregularSampling",
-					"A time-dependent property consisting of a sequence of time samples irregularly spaced in time.\n",
+			boost::noncopyable> gpml_irregular_sampling_class(
+					gpml_irregular_sampling_class_name,
+					gpml_irregular_sampling_class_docstring_stream.str().c_str(),
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
-					bp::no_init)
+					bp::no_init);
+
+	gpml_irregular_sampling_class
 		.def("__init__",
 				bp::make_constructor(
 						&GPlatesApi::gpml_irregular_sampling_create,
@@ -1496,13 +1520,20 @@ export_gpml_irregular_sampling()
 				"  :rtype: :class:`GpmlTimeSampleList`\n"
 				"\n"
 				"  Modifying the returned sequence will modify the internal state of the *GpmlIrregularSampling* "
-				"instance.\n"
+				"instance:\n"
 				"  ::\n"
 				"\n"
 				"    time_samples = irregular_sampling.get_time_samples()\n"
 				"\n"
-				"    # Sort samples by time\n"
-				"    time_samples.sort(key = lambda x: x.get_time())\n")
+				"    # Sort samples by time.\n"
+				"    time_samples.sort(key = lambda ts: ts.get_time())\n"
+				"\n"
+				"  The same effect can be achieved by working directly on the *GpmlIrregularSampling* "
+				"instance:\n"
+				"  ::\n"
+				"\n"
+				"    # Sort samples by time.\n"
+				"    irregular_sampling.sort(key = lambda ts: ts.get_time())\n")
 		// Not including interpolation function since it is not really used (yet) in GPlates and hence
 		// is just extra baggage for the python API user (we can add it later though)...
 #if 0
@@ -1524,6 +1555,15 @@ export_gpml_irregular_sampling()
 				"  :type interpolation_function: an instance derived from :class:`GpmlInterpolationFunction`, or None\n")
 #endif
 	;
+
+	// Used 'GPlatesApi::gpml_irregular_sampling_get_time_samples()' to make 'GpmlIrregularSampling'
+	// look like a python list (RevisionedVector).
+	GPlatesApi::wrap_python_class_as_revisioned_vector<
+			GPlatesPropertyValues::GpmlIrregularSampling,
+			GPlatesPropertyValues::GpmlTimeSample,
+			&GPlatesApi::gpml_irregular_sampling_get_time_samples>(
+					gpml_irregular_sampling_class,
+					gpml_irregular_sampling_class_name);
 
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
 	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
@@ -2047,7 +2087,7 @@ export_gpml_key_value_dictionary()
 
 namespace GPlatesApi
 {
-	const GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
+	GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
 	gpml_piecewise_aggregation_create(
 			bp::object time_windows) // Any python sequence (eg, list, tuple).
 	{
@@ -2076,7 +2116,7 @@ namespace GPlatesApi
 				time_windows_vector[0]->get_value_type());
 	}
 
-	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::non_null_ptr_type
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::non_null_ptr_type
 	gpml_piecewise_aggregation_get_time_windows(
 			GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 	{
@@ -2087,6 +2127,32 @@ namespace GPlatesApi
 void
 export_gpml_piecewise_aggregation()
 {
+	const char *const gpml_piecewise_aggregation_class_name = "GpmlPiecewiseAggregation";
+
+	std::stringstream gpml_piecewise_aggregation_class_docstring_stream;
+	gpml_piecewise_aggregation_class_docstring_stream <<
+			"A time-dependent property consisting of a sequence of time windows each with a *constant* property value.\n"
+			"\n"
+			<< gpml_piecewise_aggregation_class_name <<
+			" behaves like a regular python ``list`` (of :class:`GpmlTimeWindow` elements) in that "
+			"the following operations are supported:\n"
+			"\n"
+			<< GPlatesApi::get_python_list_operations_docstring(gpml_piecewise_aggregation_class_name) <<
+			"\n"
+			"For example:\n"
+			"::\n"
+			"\n"
+			"  # Replace the second and third time windows with a new time window that spans both.\n"
+			"  piecewise_aggregation = pygplates.GpmlPiecewiseAggregation([pygplates.GpmlTimeWindow(...), ...])\n"
+			"  ...\n"
+			"  piecewise_aggregation[1:3] = [\n"
+			"      pygplates.GpmlTimeWindow(\n"
+			"          new_property_value,\n"
+			"          piecewise_aggregation[2].get_begin_time(),\n"
+			"          piecewise_aggregation[1].get_end_time())]\n"
+			"\n"
+			"In addition to the above ``list``-style operations there are also the following methods...\n";
+
 	//
 	// GpmlPiecewiseAggregation - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -2094,13 +2160,14 @@ export_gpml_piecewise_aggregation()
 			GPlatesPropertyValues::GpmlPiecewiseAggregation,
 			GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type,
 			bp::bases<GPlatesModel::PropertyValue>,
-			boost::noncopyable>(
-					"GpmlPiecewiseAggregation",
-					"A time-dependent property consisting of a sequence of time windows each with a *constant* "
-					"property value.\n",
+			boost::noncopyable> gpml_piecewise_aggregation_class(
+					gpml_piecewise_aggregation_class_name,
+					gpml_piecewise_aggregation_class_docstring_stream.str().c_str(),
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
-					bp::no_init)
+					bp::no_init);
+
+	gpml_piecewise_aggregation_class
 		.def("__init__",
 				bp::make_constructor(
 						&GPlatesApi::gpml_piecewise_aggregation_create,
@@ -2126,14 +2193,30 @@ export_gpml_piecewise_aggregation()
 				"  :rtype: :class:`GpmlTimeWindowList`\n"
 				"\n"
 				"  Modifying the returned sequence will modify the internal state of the *GpmlPiecewiseAggregation* "
-				"instance.\n"
+				"instance:\n"
 				"  ::\n"
 				"\n"
 				"    time_windows = piecewise_aggregation.get_time_windows()\n"
 				"\n"
 				"    # Sort windows by begin time\n"
-				"    time_windows.sort(key = lambda x: x.get_begin_time())\n")
+				"    time_windows.sort(key = lambda tw: tw.get_begin_time())\n"
+				"\n"
+				"  The same effect can be achieved by working directly on the *GpmlPiecewiseAggregation* "
+				"instance:\n"
+				"  ::\n"
+				"\n"
+				"    # Sort windows by begin time.\n"
+				"    piecewise_aggregation.sort(key = lambda tw: tw.get_begin_time())\n")
 	;
+
+	// Used 'GPlatesApi::gpml_piecewise_aggregation_get_time_windows()' to make 'GpmlPiecewiseAggregation'
+	// look like a python list (RevisionedVector).
+	GPlatesApi::wrap_python_class_as_revisioned_vector<
+			GPlatesPropertyValues::GpmlPiecewiseAggregation,
+			GPlatesPropertyValues::GpmlTimeWindow,
+			&GPlatesApi::gpml_piecewise_aggregation_get_time_windows>(
+					gpml_piecewise_aggregation_class,
+					gpml_piecewise_aggregation_class_name);
 
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
 	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
