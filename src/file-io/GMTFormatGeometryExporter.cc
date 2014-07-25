@@ -24,9 +24,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <string>
 #include <QtGlobal>
 #include <QTextStream>
-#include <string>
 
 #include "GMTFormatGeometryExporter.h"
 
@@ -117,19 +117,19 @@ namespace
 // but that requires non-trivial modifications to a build system which will (ideally) be
 // deprecated soon in favour of CMake.
 GPlatesFileIO::GMTFormatGeometryExporter::GMTFormatGeometryExporter(
-	QTextStream &output_stream,
-	bool reverse_coordinate_order,
-	bool polygon_terminating_point):
-d_stream_ptr(&output_stream),
-d_reverse_coordinate_order(reverse_coordinate_order),
-d_polygon_terminating_point(polygon_terminating_point)
+		QTextStream &output_stream,
+		bool reverse_coordinate_order,
+		bool polygon_terminating_point) :
+	d_stream_ptr(&output_stream),
+	d_reverse_coordinate_order(reverse_coordinate_order),
+	d_polygon_terminating_point(polygon_terminating_point)
 {
 }
 
 
 void
 GPlatesFileIO::GMTFormatGeometryExporter::export_geometry(
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr)
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr)
 {
 	// Write the coordinate list of the geometry.
 	geometry_ptr->accept_visitor(*this);
@@ -147,7 +147,8 @@ GPlatesFileIO::GMTFormatGeometryExporter::visit_multi_point_on_sphere(
 	GPlatesMaths::MultiPointOnSphere::const_iterator end = multi_point_on_sphere->end();
 
 	// Output all points to produce the line segments.
-	for ( ; iter != end; ++iter) {
+	for ( ; iter != end; ++iter)
+	{
 		print_gmt_coordinate_line(*d_stream_ptr, *iter, d_reverse_coordinate_order);
 	}
 }
@@ -155,7 +156,7 @@ GPlatesFileIO::GMTFormatGeometryExporter::visit_multi_point_on_sphere(
 
 void
 GPlatesFileIO::GMTFormatGeometryExporter::visit_point_on_sphere(
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
 	print_gmt_coordinate_line(*d_stream_ptr, *point_on_sphere, d_reverse_coordinate_order);
 }
@@ -163,20 +164,22 @@ GPlatesFileIO::GMTFormatGeometryExporter::visit_point_on_sphere(
 
 void
 GPlatesFileIO::GMTFormatGeometryExporter::visit_polygon_on_sphere(
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 {
 	// Write out each point of the polygon.
 	GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon_on_sphere->vertex_begin();
 	GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_on_sphere->vertex_end();
 
 	// Output all the points of the polygon.
-	for ( ; iter != end; ++iter) {
+	for ( ; iter != end; ++iter)
+	{
 		print_gmt_coordinate_line(*d_stream_ptr, *iter, d_reverse_coordinate_order);
 	}
 
 	// Finally, to produce a closed polygon ring, we should return to the initial point
 	// (Assuming that option was specified, which it is by default).
-	if (d_polygon_terminating_point) {
+	if (d_polygon_terminating_point)
+	{
 		print_gmt_coordinate_line(*d_stream_ptr, *polygon_on_sphere->vertex_begin(),
 			d_reverse_coordinate_order);
 	}
@@ -185,14 +188,15 @@ GPlatesFileIO::GMTFormatGeometryExporter::visit_polygon_on_sphere(
 
 void
 GPlatesFileIO::GMTFormatGeometryExporter::visit_polyline_on_sphere(
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
 {
 	// Write out each point of the polyline.
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator iter = polyline_on_sphere->vertex_begin();
 	GPlatesMaths::PolylineOnSphere::vertex_const_iterator end = polyline_on_sphere->vertex_end();
 
 	// Output all points to produce the line segments.
-	for ( ; iter != end; ++iter) {
+	for ( ; iter != end; ++iter)
+	{
 		print_gmt_coordinate_line(*d_stream_ptr, *iter, d_reverse_coordinate_order);
 	}
 }

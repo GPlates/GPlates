@@ -212,6 +212,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 		bool export_separate_output_directory_per_input_file,
 		bool export_topological_lines,
 		bool export_topological_polygons,
+		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 		bool wrap_to_dateline)
 {
 	// Get any ReconstructionGeometry objects that are visible in any active layers
@@ -266,5 +267,6 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 			export_single_output_file,
 			export_per_input_file,
 			export_separate_output_directory_per_input_file,
+			force_polygon_orientation,
 			wrap_to_dateline);
 }
