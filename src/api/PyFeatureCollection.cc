@@ -46,6 +46,8 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureCollectionHandle.h"
 
+#include "utils/ReferenceCount.h"
+
 
 #if !defined(GPLATES_NO_PYTHON)
 
@@ -598,24 +600,11 @@ namespace GPlatesApi
 
 	/**
 	 * A from-python converter from a feature collection or a string filename to a
-	 * @a FeatureCollectionFunctionArgument and to-python converter back to feature collection.
+	 * @a FeatureCollectionFunctionArgument.
 	 */
 	struct python_FeatureCollectionFunctionArgument :
 			private boost::noncopyable
 	{
-		struct Conversion
-		{
-			static
-			PyObject *
-			convert(
-					const FeatureCollectionFunctionArgument &function_arg)
-			{
-				namespace bp = boost::python;
-
-				return bp::incref(function_arg.to_python().ptr());
-			}
-		};
-
 		static
 		void *
 		convertible(
@@ -663,10 +652,7 @@ namespace GPlatesApi
 		PythonConverterUtils::register_variant_conversion<
 				FeatureCollectionFunctionArgument::function_argument_type>();
 
-		// To python conversion.
-		bp::to_python_converter<
-				FeatureCollectionFunctionArgument,
-				python_FeatureCollectionFunctionArgument::Conversion>();
+		// NOTE: We don't define a to-python conversion.
 
 		// From python conversion.
 		bp::converter::registry::push_back(
@@ -678,25 +664,11 @@ namespace GPlatesApi
 
 	/**
 	 * A from-python converter from a feature collection or a string filename or a sequence of feature
-	 * collections and/or string filenames to a @a FeatureCollectionSequenceFunctionArgument, and
-	 * a to-python converter back to a list of feature collections.
+	 * collections and/or string filenames to a @a FeatureCollectionSequenceFunctionArgument.
 	 */
 	struct python_FeatureCollectionSequenceFunctionArgument :
 			private boost::noncopyable
 	{
-		struct Conversion
-		{
-			static
-			PyObject *
-			convert(
-					const FeatureCollectionSequenceFunctionArgument &function_arg)
-			{
-				namespace bp = boost::python;
-
-				return bp::incref(function_arg.to_python().ptr());
-			}
-		};
-
 		static
 		void *
 		convertible(
@@ -744,10 +716,7 @@ namespace GPlatesApi
 		PythonConverterUtils::register_variant_conversion<
 				FeatureCollectionSequenceFunctionArgument::function_argument_type>();
 
-		// To python conversion.
-		bp::to_python_converter<
-				FeatureCollectionSequenceFunctionArgument,
-				python_FeatureCollectionSequenceFunctionArgument::Conversion>();
+		// NOTE: We don't define a to-python conversion.
 
 		// From python conversion.
 		bp::converter::registry::push_back(
@@ -886,14 +855,6 @@ GPlatesApi::FeatureCollectionFunctionArgument::initialise_feature_collection(
 }
 
 
-bp::object
-GPlatesApi::FeatureCollectionFunctionArgument::to_python() const
-{
-	// Wrap feature collection in a python object.
-	return bp::object(get_feature_collection());
-}
-
-
 GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 GPlatesApi::FeatureCollectionFunctionArgument::get_feature_collection() const
 {
@@ -907,61 +868,6 @@ GPlatesFileIO::File::non_null_ptr_type
 GPlatesApi::FeatureCollectionFunctionArgument::get_file() const
 {
 	return d_feature_collection;
-}
-
-
-namespace GPlatesApi
-{
-	namespace
-	{
-		/**
-		 * Returns true if can convert python object to a @a FeatureCollectionFunctionArgument.
-		 */
-		bool
-		is_feature_collection_function_argument(
-				bp::object function_argument)
-		{
-			return FeatureCollectionFunctionArgument::is_convertible(function_argument);
-		}
-
-		/**
-		 * Convenience function so pure python code can convert a @a FeatureCollectionFunctionArgument
-		 * to a @a FeatureCollectionHandle.
-		 */
-		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
-		get_feature_collection_from_function_argument(
-				const FeatureCollectionFunctionArgument &function_argument)
-		{
-			return function_argument.get_feature_collection();
-		}
-
-		/**
-		 * Convenience function so pure python code can convert a @a FeatureCollectionFunctionArgument
-		 * to a (FeatureCollectionHandle, filename) tuple.
-		 *
-		 * If the filename does not exist then Py_None is stored as the filename.
-		 */
-		bp::tuple
-		get_file_from_function_argument(
-				const FeatureCollectionFunctionArgument &function_argument)
-		{
-			// Get the file.
-			GPlatesFileIO::File::non_null_ptr_type feature_collection_file = function_argument.get_file();
-
-			const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
-					GPlatesUtils::get_non_null_pointer(
-							feature_collection_file->get_reference().get_feature_collection().handle_ptr());
-
-			bp::object feature_collection_filename; // Py_None
-			if (feature_collection_file->get_reference().get_file_info().get_qfileinfo().exists())
-			{
-				feature_collection_filename = bp::object(
-						feature_collection_file->get_reference().get_file_info().get_qfileinfo().absoluteFilePath());
-			}
-
-			return bp::make_tuple(feature_collection, feature_collection_filename);
-		}
-	}
 }
 
 
@@ -1066,20 +972,6 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::initialise_feature_collec
 }
 
 
-bp::object
-GPlatesApi::FeatureCollectionSequenceFunctionArgument::to_python() const
-{
-	// Add feature collections to a python list.
-	bp::list python_feature_collections;
-	BOOST_FOREACH(const FeatureCollectionFunctionArgument &feature_collection, d_feature_collections)
-	{
-		python_feature_collections.append(feature_collection.get_feature_collection());
-	}
-
-	return python_feature_collections;
-}
-
-
 void
 GPlatesApi::FeatureCollectionSequenceFunctionArgument::get_feature_collections(
 		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections) const
@@ -1104,55 +996,79 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::get_files(
 
 namespace GPlatesApi
 {
-	namespace
+	/**
+	 * This is a convenience wrapper class for python users to access the functionality provided
+	 * by 'FeatureCollectionSequenceFunctionArgument' (which is otherwise only available to C++ code).
+	 */
+	class FeaturesFunctionArgument :
+			public GPlatesUtils::ReferenceCount<FeaturesFunctionArgument>
 	{
+	public:
+
+		typedef GPlatesUtils::non_null_intrusive_ptr<FeaturesFunctionArgument> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const FeaturesFunctionArgument> non_null_ptr_to_const_type;
+
+
 		/**
-		 * Returns true if can convert python object to a @a FeatureCollectionSequenceFunctionArgument.
+		 * Returns true if can extract features from python object (function argument).
 		 */
+		static
 		bool
-		is_feature_collection_sequence_function_argument(
+		contains_features(
 				bp::object function_argument)
 		{
 			return FeatureCollectionSequenceFunctionArgument::is_convertible(function_argument);
 		}
 
+		static
+		non_null_ptr_type
+		create(
+				const FeatureCollectionSequenceFunctionArgument &features_function_argument)
+		{
+			return non_null_ptr_type(new FeaturesFunctionArgument(features_function_argument));
+		}
+
+
 		/**
-		 * Convenience function so pure python code can convert a @a FeatureCollectionSequenceFunctionArgument
-		 * to a list of @a FeatureCollectionHandle.
+		 * Extract a list of features from the function argument.
 		 */
 		bp::list
-		get_feature_collection_sequence_from_function_argument(
-				const FeatureCollectionSequenceFunctionArgument &function_argument)
+		get_features() const
 		{
-			// Get the feature collections.
 			std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collections;
-			function_argument.get_feature_collections(feature_collections);
+			d_features_function_argument.get_feature_collections(feature_collections);
 
-			bp::list feature_collections_list_object;
+			// Add the features in the feature collections to a python list.
+			bp::list features_list_object;
 
-			// Add the feature collections to a python list.
 			BOOST_FOREACH(
 					GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
 					feature_collections)
 			{
-				feature_collections_list_object.append(feature_collection);
+				// Iterate over the features in the collection.
+				GPlatesModel::FeatureCollectionHandle::iterator feature_collection_iter = feature_collection->begin();
+				GPlatesModel::FeatureCollectionHandle::iterator feature_collection_end = feature_collection->end();
+				for ( ; feature_collection_iter != feature_collection_end; ++feature_collection_iter)
+				{
+					GPlatesModel::FeatureHandle::non_null_ptr_type feature = *feature_collection_iter;
+
+					features_list_object.append(feature);
+				}
 			}
 
-			return feature_collections_list_object;
+			return features_list_object;
 		}
 
 		/**
-		 * Convenience function so pure python code can convert a @a FeatureCollectionSequenceFunctionArgument
-		 * to a list of (FeatureCollectionHandle, filename) tuples.
+		 * Extract a list of (feature collection, filename) tuples that came from existing files.
 		 *
-		 * If a filename does not exist then Py_None is stored as the filename.
+		 * Feature collections that did not come from files are not included in the returned list.
 		 */
 		bp::list
-		get_file_sequence_from_function_argument(
-				const FeatureCollectionSequenceFunctionArgument &function_argument)
+		get_files() const
 		{
 			const std::vector<FeatureCollectionFunctionArgument> &feature_collection_function_arguments =
-					function_argument.get_feature_collection_function_arguments();
+					d_features_function_argument.get_feature_collection_function_arguments();
 
 			bp::list feature_collection_files_list_object;
 
@@ -1161,13 +1077,41 @@ namespace GPlatesApi
 					const FeatureCollectionFunctionArgument &feature_collection_function_argument,
 					feature_collection_function_arguments)
 			{
+				// Get the file.
+				GPlatesFileIO::File::non_null_ptr_type feature_collection_file =
+						feature_collection_function_argument.get_file();
+
+				// Skip feature collections that didn't come from (existing) files.
+				if (!feature_collection_file->get_reference().get_file_info().get_qfileinfo().exists())
+				{
+					continue;
+				}
+
+				const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
+						GPlatesUtils::get_non_null_pointer(
+								feature_collection_file->get_reference().get_feature_collection().handle_ptr());
+
+				QString feature_collection_filename =
+						feature_collection_file->get_reference().get_file_info().get_qfileinfo().absoluteFilePath();
+
 				feature_collection_files_list_object.append(
-						get_file_from_function_argument(feature_collection_function_argument));
+						bp::make_tuple(feature_collection, feature_collection_filename));
 			}
 
 			return feature_collection_files_list_object;
 		}
-	}
+
+	private:
+
+		explicit
+		FeaturesFunctionArgument(
+				const FeatureCollectionSequenceFunctionArgument &features_function_argument) :
+			d_features_function_argument(features_function_argument)
+		{  }
+
+		FeatureCollectionSequenceFunctionArgument d_features_function_argument;
+
+	};
 }
 
 
@@ -1367,23 +1311,183 @@ export_feature_collection()
 	// Register converter from a feature collection or a string filename to a @a FeatureCollectionSequenceFunctionArgument.
 	GPlatesApi::register_feature_collection_sequence_function_argument_conversion();
 
-	// This is a private function (has leading '_'), and we don't provide a docstring.
-	// This method is accessed by pure python API code to convert a FeatureCollectionFunctionArgument
-	// to a FeatureCollectionHandle.
-	bp::def("_is_feature_collection_function_argument",
-			&GPlatesApi::is_feature_collection_function_argument);
-	bp::def("_get_feature_collection_from_function_argument",
-			&GPlatesApi::get_feature_collection_from_function_argument);
-	bp::def("_get_file_from_function_argument",
-			&GPlatesApi::get_file_from_function_argument);
-	// This method is accessed by pure python API code to convert a FeatureCollectionSequenceFunctionArgument
-	// to a 'list' of FeatureCollectionHandle.
-	bp::def("_is_feature_collection_sequence_function_argument",
-			&GPlatesApi::is_feature_collection_sequence_function_argument);
-	bp::def("_get_feature_collection_sequence_from_function_argument",
-			&GPlatesApi::get_feature_collection_sequence_from_function_argument);
-	bp::def("_get_file_sequence_from_function_argument",
-			&GPlatesApi::get_file_sequence_from_function_argument);
+
+	//
+	// FeaturesFunctionArgument - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	// This is a convenience wrapper class for python users to access the functionality provided
+	// by 'FeatureCollectionSequenceFunctionArgument' (which is otherwise only available to C++ code).
+	//
+	bp::class_<
+			GPlatesApi::FeaturesFunctionArgument,
+			GPlatesApi::FeaturesFunctionArgument::non_null_ptr_type,
+			boost::noncopyable>(
+					"FeaturesFunctionArgument",
+					"A utility class for extracting features from files and/or collections of features.\n"
+					"\n"
+					"This is useful when defining your own function that accepts features from a variety "
+					"of sources. It avoids the hassle of having to explicitly test for each source type.\n"
+					"\n"
+					"The currently supported source types are:\n"
+					"\n"
+					"* :class:`FeatureCollection`\n"
+					"* filename (string)\n"
+					"* :class:`Feature`\n"
+					"* sequence of :class:`Feature`\n"
+					"* sequence of any combination of the above four types\n"
+					"\n"
+					"The following is an example of a user-defined function that accepts features "
+					"in any of the above forms:\n"
+					"::\n"
+					"\n"
+					"  def my_function(features):\n"
+					"      # Turn function argument into something more convenient for extracting features.\n"
+					"      features = pygplates.FeaturesFunctionArgument(features)\n"
+					"      \n"
+					"      # Iterate over features from the function argument.\n"
+					"      for feature in features.get_features()\n"
+					"          ...\n"
+					"  \n"
+					"  # Some examples of calling the above function:\n"
+					"  my_function('file.gpml')\n"
+					"  my_function(['file1.gpml', 'file2.gpml'])\n"
+					"  my_function(['file.gpml', feature_collection])\n"
+					"  my_function([feature1, feature2])\n"
+					"  my_function([feature_collection,  feature1, feature2 ])\n"
+					"  my_function([feature_collection, [feature1, feature2]])\n"
+					"  my_function(feature)\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::FeaturesFunctionArgument::create,
+						bp::default_call_policies(),
+						(bp::arg("function_argument"))),
+				"__init__(function_argument)\n"
+				"  Extract features from files and/or collections of features.\n"
+				"\n"
+				"  :param function_argument: A feature collection, or filename, or feature, or "
+				"sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any combination "
+				"of those four types\n"
+				"  :type function_argument: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+				"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
+				"  :raises: OpenFileForReadingError if any file is not readable (when filenames specified)\n"
+				"  :raises: FileFormatNotSupportedError if any file format (identified by the filename "
+				"extensions) does not support reading (when filenames specified)\n"
+				"\n"
+				"  The features are extracted from *function_argument*.\n"
+				"\n"
+				"  If any filenames are specified (in *function_argument*) then this method uses "
+				":class:`FeatureCollectionFileFormatRegistry` internally to read those files. "
+				"Those files contain the subset of features returned by :meth:`get_files`.\n"
+				"\n"
+				"  To turn an argument of your function into a list of features:\n"
+				"  ::\n"
+				"\n"
+				"    def my_function(features):\n"
+				"        # Turn function argument into something more convenient for extracting features.\n"
+				"        features = pygplates.FeaturesFunctionArgument(features)\n"
+				"        \n"
+				"        # Iterate over features from the function argument.\n"
+				"        for feature in features.get_features()\n"
+				"            ...\n"
+				"    \n"
+				"    my_function(['file1.gpml', 'file2.gpml'])\n")
+		.def("contains_features",
+				&GPlatesApi::FeaturesFunctionArgument::contains_features,
+				(bp::arg("function_argument")),
+				"contains_features(function_argument) -> bool\n"
+				"  Return whether *function_argument* contains features.\n"
+				"\n"
+				"  :param function_argument: the function argument to test for features\n"
+				"\n"
+				"  This method returns ``True`` if *function_argument* is a "
+				":class:`feature collection<FeatureCollection>`, or filename, or :class:`feature<Feature>`, "
+				"or sequence of :class:`features<Feature>`, or a sequence (eg, ``list`` or ``tuple``) "
+				"of any combination of those four types.\n"
+				"\n"
+				"  To define a function that raises ``TypeError`` if its function argument does not contain features:\n"
+				"  ::\n"
+				"\n"
+				"    def my_function(features):\n"
+				"        if not pygplates.FeaturesFunctionArgument.contains_features(features):\n"
+				"            raise TypeError(\"Unexpected type for argument 'features' in function 'my_function'.\")\n"
+				"        \n"
+				"        # Turn function argument into something more convenient for extracting features.\n"
+				"        features = pygplates.FeaturesFunctionArgument(features)\n"
+				"        ...\n"
+				"\n"
+				"  Note that it is not necessary to call :meth:`contains_features` before constructing "
+				"a :class:`FeaturesFunctionArgument` because the :meth:`constructor<__init__>` will "
+				"raise an error if the function argument does not contain features. However raising "
+				"your own error (as in the example above) helps to clarify the source of the error for user "
+				"(caller) of your function.\n")
+		.staticmethod("contains_features")
+		.def("get_features",
+				&GPlatesApi::FeaturesFunctionArgument::get_features,
+				"get_features()\n"
+				"  Returns a list of all features specified in the :meth:`constructor<__init__>`.\n"
+				"\n"
+				"  :rtype: list of :class:`Feature`\n"
+				"\n"
+				"  Note that any features coming from files are loaded only once in the "
+				":meth:`constructor<__init__>`. They are not loaded each time this method is called.\n"
+				"\n"
+				"  Define a function that extract features and processes them:\n"
+				"  ::\n"
+				"\n"
+				"    def my_function(features):\n"
+				"        # Turn function argument into something more convenient for extracting features.\n"
+				"        features = pygplates.FeaturesFunctionArgument(features)\n"
+				"        \n"
+				"        # Iterate over features from the function argument.\n"
+				"        for feature in features.get_features():\n"
+				"            ...\n"
+				"    \n"
+				"    # Process features in 'file.gpml', 'feature_collection' and 'feature'.\n"
+				"    my_function(['file.gpml', feature_collection, feature])\n")
+		.def("get_files",
+				&GPlatesApi::FeaturesFunctionArgument::get_files,
+				"get_files()\n"
+				"  Returns a list of feature collections that were loaded from files specified in "
+				"the :meth:`constructor<__init__>`.\n"
+				"\n"
+				"  :returns: a list of (feature collection, filename) tuples\n"
+				"  :rtype: list of (:class:`FeatureCollection`, string) tuples\n"
+				"\n"
+				"  Only those feature collections associated with filenames (specified in the function "
+				"argument in :meth:`constructor<__init__>`) are returned. :class:`Features<Feature>` "
+				"and :class:`feature collections<FeatureCollection>` that were directly specified "
+				"(in the function argument in :meth:`constructor<__init__>`) are not returned here.\n"
+				"\n"
+				"  Note that the returned features (coming from files) are loaded only once in the "
+				":meth:`constructor<__init__>`. They are not loaded each time this method is called.\n"
+				"\n"
+				"  Define a function that extract features, modifies them and writes those features "
+				"that came from files back out to those same files:\n"
+				"  ::\n"
+				"\n"
+				"    def my_function(features):\n"
+				"        # Turn function argument into something more convenient for extracting features.\n"
+				"        features = pygplates.FeaturesFunctionArgument(features)\n"
+				"        \n"
+				"        # Modify features in some way.\n"
+				"        for feature in features.get_features():\n"
+				"            ...\n"
+				"        \n"
+				"        # Write those (modified) feature collections that came from files (if any) back to file.\n"
+				"        files = features.get_files()\n"
+				"        if files:\n"
+				"            file_format_registry = pygplates.FeatureCollectionFileFormatRegistry()\n"
+				"            for feature_collection, filename in files:\n"
+				"                # This can raise pygplates.OpenFileForWritingError if file is not writable.\n"
+				"                file_format_registry.write(feature_collection, filename)\n"
+				"    \n"
+				"    # Modify features in 'file.gpml' and 'feature_collection'.\n"
+				"    # Modified features from 'file.gpml' will get written back out to 'file.gpml'.\n"
+				"    my_function(['file.gpml', feature_collection])\n")
+	;
 }
 
 #endif // GPLATES_NO_PYTHON

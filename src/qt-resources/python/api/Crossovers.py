@@ -93,23 +93,22 @@ def find_crossovers(rotation_features, crossover_filter=None):
           lambda crossover: crossover.moving_plate_id==801)
     """
     
-    # Use private C++ function to convert 'rotation_features' argument to a list of feature collections.
-    rotation_feature_collections = _get_feature_collection_sequence_from_function_argument(rotation_features)
+    # Use helper class to convert 'rotation_features' argument to a list of features.
+    rotation_features = FeaturesFunctionArgument(rotation_features)
     
     # A 'dict' to map each moving plate to a list of total reconstruction poles
     # (one per moving/fixed plate pair)
     total_reconstruction_poles_by_moving_plate = {}
     
     # Get the moving/fixed total reconstruction poles.
-    for rotation_feature_collection in rotation_feature_collections:
-        for rotation_feature in rotation_feature_collection:
-            total_reconstruction_pole = rotation_feature.get_total_reconstruction_pole()
-            # If the current feature is a valid rotation feature...
-            if total_reconstruction_pole:
-                fixed_plate_id, moving_plate_id, rotation_sequence = total_reconstruction_pole
-                # Each moving plate has a list of fixed plates.
-                total_reconstruction_poles_by_moving_plate.setdefault(
-                    moving_plate_id, []).append(total_reconstruction_pole)
+    for rotation_feature in rotation_features.get_features():
+        total_reconstruction_pole = rotation_feature.get_total_reconstruction_pole()
+        # If the current feature is a valid rotation feature...
+        if total_reconstruction_pole:
+            fixed_plate_id, moving_plate_id, rotation_sequence = total_reconstruction_pole
+            # Each moving plate has a list of fixed plates.
+            total_reconstruction_poles_by_moving_plate.setdefault(
+                moving_plate_id, []).append(total_reconstruction_pole)
     
     crossovers = []
     
@@ -227,12 +226,14 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
           lambda crossover: crossover.time <= 20)
     """
     
-    # Use private C++ function to convert 'rotation_features' argument to a list of files (feature collection and filename).
-    rotation_files = _get_file_sequence_from_function_argument(rotation_features)
-    # Get the rotation feature collections - we do this because we need to include the modifications to these features at
-    # each iteration of the crossovers loop (in RotationModel) - if we passed files to RotationModel then we'd be forced
-    # to write the modifications back out to file for each iteration of the crossovers loop.
-    rotation_feature_collections = [feature_collection for feature_collection, filename in rotation_files]
+    # Use helper class to convert 'rotation_features' argument to a list of features.
+    rotation_features = FeaturesFunctionArgument(rotation_features)
+    
+    # Also note that using 'FeaturesFunctionArgument' for 'rotation_features' ensures that the rotation features
+    # are not getting reloaded (from files, if any) at each iteration of the crossovers loop (into RotationModel).
+    # If we passed files (if any) directly to RotationModel then we'd be forced to write the modifications back
+    # out to file for each iteration of the crossovers loop.
+    rotation_feature_sequence = rotation_features.get_features()
 
     # If caller specified a sequence of crossovers then use them, otherwise find them in the rotation features.
     if hasattr(crossover_filter, '__iter__'):
@@ -243,7 +244,7 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
         crossovers = sorted(crossover_filter, key = lambda crossover: crossover.time)
     else: # ...'crossover_filter' is None or a callable...
         # The returned sequence is already sorted by time.
-        crossovers = find_crossovers(rotation_feature_collections, crossover_filter)
+        crossovers = find_crossovers(rotation_feature_sequence, crossover_filter)
     
     for crossover in crossovers:
         #print 'Fixing crossover at time(%f), mpid(%d), pre_fpid(%d), post_fpid(%d)' % (
@@ -256,7 +257,7 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
         # the modifications were made to the properties of the rotation features that we're passing
         # into the rotation model here.
         # So it is important that this RotationModel is created *inside* the loop over crossovers.
-        rotation_model = RotationModel(rotation_feature_collections)
+        rotation_model = RotationModel(rotation_feature_sequence)
         
         # Get the post-crossover rotation time samples - ignore disabled samples.
         post_crossover_time_samples = crossover.post_crossover_rotation_sequence.get_enabled_time_samples()
@@ -302,10 +303,9 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
     # If any rotation features came from files then write those feature collections back out to the same files.
     #
     # Only interested in those feature collections that came from files (have filenames).
-    rotation_feature_collections_from_file = [
-            (feature_collection, filename) for feature_collection, filename in rotation_files if filename]
-    if rotation_feature_collections_from_file:
+    rotation_files = rotation_features.get_files()
+    if rotation_files:
         file_format_registry = FeatureCollectionFileFormatRegistry()
-        for feature_collection, filename in rotation_feature_collections_from_file:
+        for feature_collection, filename in rotation_files:
             # This can raise OpenFileForWritingError if file is not writable.
             file_format_registry.write(feature_collection, filename)

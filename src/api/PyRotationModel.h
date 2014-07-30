@@ -225,12 +225,6 @@ namespace GPlatesApi
 				const function_argument_type &function_argument);
 
 		/**
-		 * Returns function argument as a rotation model (for passing to python).
-		 */
-		boost::python::object
-		to_python() const;
-
-		/**
 		 * Return the function argument as a rotation model.
 		 */
 		RotationModel::non_null_ptr_type

@@ -23,6 +23,7 @@ Contents:
 	pygplates.FeatureCollectionFileFormatRegistry
 	pygplates.FeatureId
 	pygplates.FeatureType
+	pygplates.FeaturesFunctionArgument
 	pygplates.FiniteRotation
 	pygplates.GeometryOnSphere
 	pygplates.GeoTimeInstant

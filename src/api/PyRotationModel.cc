@@ -64,24 +64,11 @@ namespace GPlatesApi
 	{
 		/**
 		 * A from-python converter from a rotation model or a sequence of feature collections to a
-		 * @a RotationModelFunctionArgument, and a to-python convert back to a rotation model.
+		 * @a RotationModelFunctionArgument.
 		 */
 		struct python_RotationModelFunctionArgument :
 				private boost::noncopyable
 		{
-			struct Conversion
-			{
-				static
-				PyObject *
-				convert(
-						const RotationModelFunctionArgument &function_arg)
-				{
-					namespace bp = boost::python;
-
-					return bp::incref(function_arg.to_python().ptr());
-				}
-			};
-
 			static
 			void *
 			convertible(
@@ -129,11 +116,8 @@ namespace GPlatesApi
 			PythonConverterUtils::register_variant_conversion<
 					RotationModelFunctionArgument::function_argument_type>();
 
-			// To python conversion.
-			bp::to_python_converter<
-					RotationModelFunctionArgument,
-					python_RotationModelFunctionArgument::Conversion>();
-
+			// NOTE: We don't define a to-python conversion.
+			// 
 			// From python conversion.
 			bp::converter::registry::push_back(
 					&python_RotationModelFunctionArgument::convertible,
@@ -358,14 +342,6 @@ GPlatesApi::RotationModelFunctionArgument::initialise_rotation_model(
 	feature_collections_function_argument.get_files(feature_collection_files);
 
 	return RotationModel::create(feature_collection_files);
-}
-
-
-bp::object
-GPlatesApi::RotationModelFunctionArgument::to_python() const
-{
-	// Wrap rotation model in a python object.
-	return bp::object(get_rotation_model());
 }
 
 

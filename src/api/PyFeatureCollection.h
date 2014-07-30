@@ -87,12 +87,6 @@ namespace GPlatesApi
 				const function_argument_type &function_argument);
 
 		/**
-		 * Returns function argument as a feature collection (for passing to python).
-		 */
-		boost::python::object
-		to_python() const;
-
-		/**
 		 * Return the function argument as a feature collection.
 		 */
 		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
@@ -166,12 +160,6 @@ namespace GPlatesApi
 		explicit
 		FeatureCollectionSequenceFunctionArgument(
 				const std::vector<FeatureCollectionFunctionArgument> &feature_collections);
-
-		/**
-		 * Returns function argument as a boost::python::list of feature collections (for passing to python).
-		 */
-		boost::python::object
-		to_python() const;
 
 		/**
 		 * Return the individual feature collection function arguments.
