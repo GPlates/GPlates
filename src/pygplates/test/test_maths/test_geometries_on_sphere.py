@@ -25,7 +25,7 @@ class GeometryOnSphereCase(unittest.TestCase):
         self.assertEquals(self.point.clone(), self.point)
         self.assertTrue(isinstance(self.point.clone(), pygplates.PointOnSphere))
         # Call a method that only PointOnSphere has.
-        self.assertTrue(self.point.clone().get_position_vector() == self.point.get_position_vector())
+        self.assertTrue(self.point.clone().get_x() == self.point.get_x())
         self.assertTrue(list(self.point.clone().get_points()) == list(self.point.get_points()))
         polyline = pygplates.PolylineOnSphere([(0,0), (10,0), (10,10)])
         self.assertTrue(list(polyline.clone().get_points()) == list(polyline.get_points()))
@@ -33,15 +33,11 @@ class GeometryOnSphereCase(unittest.TestCase):
 
 class PointOnSphereCase(unittest.TestCase):
     def setUp(self):
-        self.unit_vector_3d = pygplates.UnitVector3D(1, 0, 0)
+        self.xyz = (1, 0, 0)
     
     def test_construct(self):
-        point1 = pygplates.PointOnSphere(self.unit_vector_3d)
-        point2 = pygplates.PointOnSphere(
-                self.unit_vector_3d.get_x(), self.unit_vector_3d.get_y(), self.unit_vector_3d.get_z())
-        self.assertEquals(point1, point2)
-        self.assertEquals(point1.get_position_vector(), self.unit_vector_3d)
-        self.assertEquals(point2.get_position_vector(), self.unit_vector_3d)
+        point = pygplates.PointOnSphere(self.xyz[0], self.xyz[1], self.xyz[2])
+        self.assertEquals(point.to_xyz(), self.xyz)
         # A non-unit length vector raises error.
         self.assertRaises(pygplates.ViolatedUnitVectorInvariantError, pygplates.PointOnSphere, 1, 1, 1)
         # A non-unit length vector is fine if normalisation requested.
@@ -51,7 +47,7 @@ class PointOnSphereCase(unittest.TestCase):
         self.assertRaises(pygplates.UnableToNormaliseZeroVectorError, pygplates.PointOnSphere, 0, 0, 0, True)
     
     def test_convert(self):
-        point_on_sphere = pygplates.PointOnSphere(self.unit_vector_3d)
+        point_on_sphere = pygplates.PointOnSphere(self.xyz)
         # Can construct from PointOnSphere.
         point_on_sphere = pygplates.PointOnSphere(point_on_sphere)
         self.assertTrue(isinstance(point_on_sphere, pygplates.PointOnSphere))

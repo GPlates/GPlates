@@ -244,7 +244,6 @@ export_finite_rotation()
 					"``fr * polyline``            Rotates :class:`PolylineOnSphere` *polyline* using finite rotation *fr*\n"
 					"``fr * polygon``             Rotates :class:`PolygonOnSphere` *polygon* using finite rotation *fr*\n"
 					"``fr * great_circle_arc``    Rotates :class:`GreatCircleArc` *great_circle_arc* using finite rotation *fr*\n"
-					"``fr * unit_vector_3d``      Rotates :class:`UnitVector3D` *unit_vector_3d* using finite rotation *fr*\n"
 					"=========================== =======================================================================\n"
 					"\n"
 					"For example, the rotation of a :class:`PolylineOnSphere`:\n"
@@ -388,8 +387,8 @@ export_finite_rotation()
 				"  Create a finite rotation from an Euler pole and a rotation angle (in *radians*).\n"
 				"\n"
 				"  :param pole: the Euler pole.\n"
-				"  :type pole: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude)"
-				", in degrees, or (x,y,z)\n"
+				"  :type pole: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
 				"  :param angle_radians: the rotation angle (in *radians*).\n"
 				"  :type angle_radians: float\n"
 				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
@@ -527,7 +526,6 @@ export_finite_rotation()
 		// Multiply two finite rotations...
 		.def("__mul__", compose)
 		// Rotations...
-		.def(bp::self * bp::other<GPlatesMaths::UnitVector3D>())
 		.def(bp::self * bp::other<GPlatesMaths::GreatCircleArc>())
 		.def(bp::self * bp::other<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>())
 		.def(bp::self * bp::other<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>())

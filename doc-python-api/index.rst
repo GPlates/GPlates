@@ -70,7 +70,6 @@ Contents:
 	pygplates.XsDouble
 	pygplates.XsInteger
 	pygplates.XsString
-	pygplates.UnitVector3D
 	
 	pygplates.compose_finite_rotations
 	pygplates.find_crossovers

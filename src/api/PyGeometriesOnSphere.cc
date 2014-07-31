@@ -260,7 +260,7 @@ namespace GPlatesApi
 	};
 
 
-	// Convenience constructor to create from (x,y,z) without having to first create a UnitVector3D.
+	// Convenience constructor to create from (x,y,z).
 	//
 	// We can't use bp::make_constructor with a function that returns a non-pointer, so instead we
 	// return 'non_null_intrusive_ptr'.
@@ -307,8 +307,8 @@ namespace GPlatesApi
 					new GPlatesMaths::PointOnSphere(extract_unit_vector_3d()));
 		}
 
-		PyErr_SetString(PyExc_TypeError, "Expected PointOnSphere or UnitVector3D or LatLonPoint or "
-				"(latitude,longitude) or (x,y,z)");
+		PyErr_SetString(PyExc_TypeError, "Expected PointOnSphere or LatLonPoint or "
+				"tuple (latitude,longitude) or tuple (x,y,z)");
 		bp::throw_error_already_set();
 
 		// Shouldn't be able to get here.
@@ -399,6 +399,31 @@ export_point_on_sphere()
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
+						&GPlatesApi::point_on_sphere_create,
+						bp::default_call_policies(),
+						(bp::arg("point"))),
+				"__init__(point)\n"
+				"  Create a *PointOnSphere* instance from a (x,y,z) or (latitude,longitude) point.\n"
+				"\n"
+				"  :param point: (x,y,z) point, or (latitude,longitude) point (in degrees)\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or "
+				"tuple (float,float,float) or tuple (float,float)\n"
+				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
+				"  :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude\n"
+				"\n"
+				"  The following example shows a few different ways to use this method:\n"
+				"  ::\n"
+				"\n"
+				"    point = pygplates.PointOnSphere((x,y,z))\n"
+				"    point = pygplates.PointOnSphere([x,y,z])\n"
+				"    point = pygplates.PointOnSphere(numpy.array([x,y,z]))\n"
+				"    point = pygplates.PointOnSphere(pygplates.LatLonPoint(latitude,longitude))\n"
+				"    point = pygplates.PointOnSphere((latitude,longitude))\n"
+				"    point = pygplates.PointOnSphere([latitude,longitude])\n"
+				"    point = pygplates.PointOnSphere(numpy.array([latitude,longitude]))\n"
+				"    point = pygplates.PointOnSphere(pygplates.PointOnSphere(x,y,z))\n")
+		.def("__init__",
+				bp::make_constructor(
 						&GPlatesApi::point_on_sphere_create_xyz,
 						bp::default_call_policies(),
 						(bp::arg("x"), bp::arg("y"), bp::arg("z"), bp::arg("normalise") = false)),
@@ -431,39 +456,6 @@ export_point_on_sphere()
 				"\n"
 				"    # If (x,y,z) might not be on the unit sphere.\n"
 				"    point = pygplates.PointOnSphere(x, y, z, normalise=True)\n")
-		.def("__init__",
-				bp::make_constructor(
-						&GPlatesApi::point_on_sphere_create,
-						bp::default_call_policies(),
-						(bp::arg("point"))),
-				"__init__(point)\n"
-				"  Create a *PointOnSphere* instance from a (x,y,z) or (latitude,longitude) point.\n"
-				"\n"
-				"  :param point: (x,y,z) point, or (latitude,longitude) point (in degrees)\n"
-				"  :type point: :class:`PointOnSphere` or :class:`UnitVector3D` or :class:`LatLonPoint` or "
-				"(float,float,float) or (float,float)\n"
-				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
-				"  :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude\n"
-				"\n"
-				"  The following example shows a few different ways to use this method:\n"
-				"  ::\n"
-				"\n"
-				"    point = pygplates.PointOnSphere(pygplates.UnitVector3D(x,y,z))\n"
-				"    point = pygplates.PointOnSphere(pygplates.PointOnSphere(x,y,z))\n"
-				"    point = pygplates.PointOnSphere((x,y,z))\n"
-				"    point = pygplates.PointOnSphere([x,y,z])\n"
-				"    point = pygplates.PointOnSphere(numpy.array([x,y,z]))\n"
-				"    point = pygplates.PointOnSphere(pygplates.LatLonPoint(latitude,longitude))\n"
-				"    point = pygplates.PointOnSphere((latitude,longitude))\n"
-				"    point = pygplates.PointOnSphere([latitude,longitude])\n"
-				"    point = pygplates.PointOnSphere(numpy.array([latitude,longitude]))\n")
-		.def("get_position_vector",
-				&GPlatesMaths::PointOnSphere::position_vector,
-				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_position_vector() -> UnitVector3D\n"
-				"  Returns the position on the unit sphere as a unit length vector.\n"
-				"\n"
-				"  :rtype: :class:`UnitVector3D`\n")
 		.def("get_x",
 				&GPlatesApi::point_on_sphere_get_x,
 				"get_x() -> float\n"
@@ -737,8 +729,8 @@ export_multi_point_on_sphere()
 				"  Create a multi-point from a sequence of (x,y,z) or (latitude,longitude) points.\n"
 				"\n"
 				"  :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).\n"
-				"  :type points: Any sequence of :class:`PointOnSphere` or :class:`UnitVector3D` or "
-				":class:`LatLonPoint` or (float,float,float) or (float,float)\n"
+				"  :type points: Any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
+				"tuple (float,float,float) or tuple (float,float)\n"
 				"  :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid\n"
 				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
 				"  :raises: InsufficientPointsForMultiPointConstructionError if point sequence is empty\n"
@@ -1266,8 +1258,8 @@ export_polyline_on_sphere()
 				"  Create a polyline from a sequence of (x,y,z) or (latitude,longitude) points.\n"
 				"\n"
 				"  :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).\n"
-				"  :type points: Any sequence of :class:`PointOnSphere` or :class:`UnitVector3D` or "
-				":class:`LatLonPoint` or (float,float,float) or (float,float)\n"
+				"  :type points: Any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
+				"tuple (float,float,float) or tuple (float,float)\n"
 				"  :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid\n"
 				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
 				"  :raises: InvalidPointsForPolylineConstructionError if sequence has less than two points\n"
@@ -1600,8 +1592,8 @@ export_polygon_on_sphere()
 				"  Create a polygon from a sequence of (x,y,z) or (latitude,longitude) points.\n"
 				"\n"
 				"  :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).\n"
-				"  :type points: Any sequence of :class:`PointOnSphere` or :class:`UnitVector3D` or "
-				":class:`LatLonPoint` or (float,float,float) or (float,float)\n"
+				"  :type points: Any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
+				"tuple (float,float,float) or tuple (float,float)\n"
 				"  :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid\n"
 				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
 				"  :raises: InvalidPointsForPolygonConstructionError if sequence has less than three points\n"

@@ -653,8 +653,8 @@ export_gml_point()
 				"  Create a property value representing a point geometry.\n"
 				"\n"
 				"  :param point: the point geometry\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude)"
-				", in degrees, or (x,y,z)\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -672,8 +672,8 @@ export_gml_point()
 				"  Sets the point geometry of this property value.\n"
 				"\n"
 				"  :param point: the point geometry\n"
-				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude)"
-				", in degrees, or (x,y,z)\n")
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n")
 	;
 
 	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.

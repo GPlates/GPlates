@@ -57,10 +57,6 @@ class FiniteRotationCase(unittest.TestCase):
     
     # Attempt to rotate each supported geometry type - an error will be raised if not supported...
     
-    def test_rotate_unit_vector_3d(self):
-        rotated_unit_vector_3d = self.finite_rotation * pygplates.UnitVector3D(1, 0, 0)
-        self.assertTrue(isinstance(rotated_unit_vector_3d, pygplates.UnitVector3D))
-    
     def test_rotate_great_circle_arc(self):
         rotated_great_circle_arc = self.finite_rotation * pygplates.GreatCircleArc(
                 pygplates.PointOnSphere(1, 0, 0),
@@ -162,8 +158,8 @@ class FiniteRotationCase(unittest.TestCase):
 
 class GreatCircleArcCase(unittest.TestCase):
     def setUp(self):
-        self.start_point = pygplates.PointOnSphere(0, 0, 1)
-        self.end_point = pygplates.PointOnSphere(0, 1, 0)
+        self.start_point = pygplates.PointOnSphere(0, 1, 0)
+        self.end_point = pygplates.PointOnSphere(0, 0, 1)
         self.gca = pygplates.GreatCircleArc(self.start_point, self.end_point)
     
     def test_compare(self):
@@ -177,13 +173,15 @@ class GreatCircleArcCase(unittest.TestCase):
         self.assertEquals(self.gca.get_end_point(), self.end_point)
         arc_length = self.gca.get_arc_length()
         self.assertTrue(arc_length > 0.5 * math.pi - 1e-6 and arc_length < 0.5 * math.pi + 1e-6)
+        self.assertTrue(self.gca.get_rotation_axis() == (1, 0, 0))
+        self.assertTrue(self.gca.get_rotation_axis_lat_lon() == (0, 0))
     
     def test_zero_length(self):
         self.assertFalse(self.gca.is_zero_length())
-        self.assertFalse(self.gca.get_rotation_axis() is None)
         zero_length_gca = pygplates.GreatCircleArc(self.start_point, self.start_point)
         self.assertTrue(zero_length_gca.is_zero_length())
         self.assertRaises(pygplates.IndeterminateArcRotationAxisError, zero_length_gca.get_rotation_axis)
+        self.assertRaises(pygplates.IndeterminateArcRotationAxisError, zero_length_gca.get_rotation_axis_lat_lon)
 
 
 class LatLonPointCase(unittest.TestCase):

@@ -43,7 +43,6 @@ void export_geometries_on_sphere();
 void export_integer();
 void export_lat_lon_point();
 void export_real();
-void export_unit_vector_3d();
 
 // file-io namespace
 void export_feature_collection_file_format_registry();
@@ -140,7 +139,6 @@ export_cpp_python_api()
 	export_integer();
 	export_lat_lon_point();
 	export_real();
-	export_unit_vector_3d();
 
 	// file-io namespace
 	export_feature_collection_file_format_registry();

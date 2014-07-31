@@ -31,6 +31,7 @@
 #include "global/python.h"
 
 #include "maths/GreatCircleArc.h"
+#include "maths/LatLonPoint.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -57,6 +58,27 @@ namespace GPlatesApi
 			const GPlatesMaths::GreatCircleArc &great_circle_arc)
 	{
 		return acos(great_circle_arc.dot_of_endpoints());
+	}
+
+	bp::tuple
+	great_circle_arc_get_rotation_axis(
+			const GPlatesMaths::GreatCircleArc &great_circle_arc)
+	{
+		const GPlatesMaths::UnitVector3D &axis = great_circle_arc.rotation_axis();
+
+		return bp::make_tuple(axis.x(), axis.y(), axis.z());
+	}
+
+	bp::tuple
+	great_circle_arc_get_rotation_axis_lat_lon(
+			const GPlatesMaths::GreatCircleArc &great_circle_arc)
+	{
+		const GPlatesMaths::UnitVector3D &axis = great_circle_arc.rotation_axis();
+
+		const GPlatesMaths::LatLonPoint axis_lat_lon =
+				GPlatesMaths::make_lat_lon_point(GPlatesMaths::PointOnSphere(axis));
+
+		return bp::make_tuple(axis_lat_lon.latitude(), axis_lat_lon.longitude());
 	}
 }
 
@@ -96,11 +118,11 @@ export_great_circle_arc()
 				"  Create a great circle arc from two points.\n"
 				"\n"
 				"  :param start_point: the start point of the arc.\n"
-				"  :type start_point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude)"
-				", in degrees, or (x,y,z)\n"
+				"  :type start_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
 				"  :param end_point: the end point of the arc.\n"
-				"  :type end_point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude)"
-				", in degrees, or (x,y,z)\n"
+				"  :type end_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
 				"  :raises: IndeterminateResultError if points are antipodal (opposite each other)\n"
 				"\n"
 				"  An arc is specified by a start-point and an end-point:  If these two points are not "
@@ -142,13 +164,28 @@ export_great_circle_arc()
 				"\n"
 				"  To convert to distance, multiply the result by the Earth radius.\n")
 		.def("get_rotation_axis",
-				&GPlatesMaths::GreatCircleArc::rotation_axis,
-				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_rotation_axis() -> UnitVector3D\n"
-				"  Return the rotation axis of the arc.\n"
+				&GPlatesApi::great_circle_arc_get_rotation_axis,
+				"get_rotation_axis() -> x, y, z\n"
+				"  Return the rotation axis of the arc as a 3D vector.\n"
 				"\n"
-				"  :rtype: :class:`UnitVector3D`\n"
+				"  :returns: the unit-length 3D vector (x,y,z)\n"
+				"  :rtype: the tuple (float, float, float)\n"
 				"  :raises: IndeterminateArcRotationAxisError if arc is zero length\n"
+				"\n"
+				"  The rotation axis is the unit-length 3D vector (x,y,z) returned in the tuple.\n"
+				"\n"
+				"  If the arc start and end points are the same (if :meth:`is_zero_length` is ``True``) "
+				"then *IndeterminateArcRotationAxisError* is raised.\n")
+		.def("get_rotation_axis_lat_lon",
+				&GPlatesApi::great_circle_arc_get_rotation_axis_lat_lon,
+				"get_rotation_axis_lat_lon() -> latitude, longitude\n"
+				"  Return the (latitude, longitude) equivalent of :meth:`get_rotation_axis`.\n"
+				"\n"
+				"  :returns: the axis as (latitude, longitude)\n"
+				"  :rtype: the tuple (float, float)\n"
+				"  :raises: IndeterminateArcRotationAxisError if arc is zero length\n"
+				"\n"
+				"  The rotation axis is the (latitude, longitude) returned in the tuple.\n"
 				"\n"
 				"  If the arc start and end points are the same (if :meth:`is_zero_length` is ``True``) "
 				"then *IndeterminateArcRotationAxisError* is raised.\n")
