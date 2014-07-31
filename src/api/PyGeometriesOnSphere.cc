@@ -47,6 +47,8 @@
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
+#include "maths/UnitVector3D.h"
+#include "maths/Vector3D.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 
@@ -275,10 +277,14 @@ namespace GPlatesApi
 	point_on_sphere_create_xyz(
 			const GPlatesMaths::real_t &x,
 			const GPlatesMaths::real_t &y,
-			const GPlatesMaths::real_t &z)
+			const GPlatesMaths::real_t &z,
+			bool normalise)
 	{
 		return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(
-				new GPlatesMaths::PointOnSphere(GPlatesMaths::UnitVector3D(x, y, z)));
+				new GPlatesMaths::PointOnSphere(
+						normalise
+						? GPlatesMaths::Vector3D(x, y, z).get_normalisation()
+						: GPlatesMaths::UnitVector3D(x, y, z)));
 	}
 
 	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
@@ -395,8 +401,8 @@ export_point_on_sphere()
 				bp::make_constructor(
 						&GPlatesApi::point_on_sphere_create_xyz,
 						bp::default_call_policies(),
-						(bp::arg("x"), bp::arg("y"), bp::arg("z"))),
-				"__init__(x, y, z)\n"
+						(bp::arg("x"), bp::arg("y"), bp::arg("z"), bp::arg("normalise") = false)),
+				"__init__(x, y, z, [normalise=False])\n"
 				"  Create a *PointOnSphere* instance from a 3D cartesian coordinate consisting of "
 				"floating-point coordinates *x*, *y* and *z*.\n"
 				"\n"
@@ -406,13 +412,25 @@ export_point_on_sphere()
 				"  :type y: float\n"
 				"  :param z: the *z* component of the 3D unit vector\n"
 				"  :type z: float\n"
-				"  :raises: ViolatedUnitVectorInvariantError if resulting vector does not have unit magnitude\n"
+				"  :param normalise: whether to normalise (to unit-length magnitude) the "
+				"vector (x,y,z) - defaults to ``False``\n"
+				"  :type normalise: bool\n"
+				"  :raises: ViolatedUnitVectorInvariantError if *normalise* is ``False`` and "
+				"the resulting vector does not have unit magnitude\n"
+				"  :raises: UnableToNormaliseZeroVectorError if *normalise* is ``True`` and "
+				"the resulting vector is (0,0,0) (has zero magnitude)\n"
 				"\n"
-				"  **NOTE:** The length of 3D vector (x,y,z) must be 1.0, otherwise "
+				"  **NOTE:** If the length of the 3D vector (x,y,z) is not 1.0 then you should set "
+				"*normalise* to ``True`` (to normalise the vector components such that the 3D vector "
+				"has unit magnitude). Otherwise if (x,y,z) is not unit magnitude then "
 				"*ViolatedUnitVectorInvariantError* is raised.\n"
 				"  ::\n"
 				"\n"
-				"    point = pygplates.PointOnSphere(x, y, z)\n")
+				"    # If you know that (x,y,z) has unit magnitude (is on the unit sphere).\n"
+				"    point = pygplates.PointOnSphere(x, y, z)\n"
+				"\n"
+				"    # If (x,y,z) might not be on the unit sphere.\n"
+				"    point = pygplates.PointOnSphere(x, y, z, normalise=True)\n")
 		.def("__init__",
 				bp::make_constructor(
 						&GPlatesApi::point_on_sphere_create,
@@ -473,7 +491,13 @@ export_point_on_sphere()
 				"\n"
 				"  ::\n"
 				"\n"
-				"    x, y, z = point.to_xyz()\n")
+				"    x, y, z = point.to_xyz()\n"
+				"\n"
+				"  This is also useful for performing vector dot and cross products using numpy:\n"
+				"  ::\n"
+				"\n"
+				"    dot_product = numpy.dot(point1.to_xyz(), point2.to_xyz())\n"
+				"    cross_product = numpy.cross(point1.to_xyz(), point2.to_xyz())\n")
 		.def("to_lat_lon_point",
 				&GPlatesMaths::make_lat_lon_point,
 				"to_lat_lon_point() -> LatLonPoint\n"

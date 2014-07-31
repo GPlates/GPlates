@@ -44,6 +44,11 @@ class PointOnSphereCase(unittest.TestCase):
         self.assertEquals(point2.get_position_vector(), self.unit_vector_3d)
         # A non-unit length vector raises error.
         self.assertRaises(pygplates.ViolatedUnitVectorInvariantError, pygplates.PointOnSphere, 1, 1, 1)
+        # A non-unit length vector is fine if normalisation requested.
+        self.assertTrue(pygplates.PointOnSphere(2, 0, 0, True) == pygplates.PointOnSphere(1, 0, 0))
+        self.assertTrue(pygplates.PointOnSphere(2, 2, 2, True) == pygplates.PointOnSphere(1, 1, 1, True))
+        # A zero-length vector raises error if normalisation requested.
+        self.assertRaises(pygplates.UnableToNormaliseZeroVectorError, pygplates.PointOnSphere, 0, 0, 0, True)
     
     def test_convert(self):
         point_on_sphere = pygplates.PointOnSphere(self.unit_vector_3d)

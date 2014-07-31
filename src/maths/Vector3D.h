@@ -129,10 +129,10 @@ namespace GPlatesMaths {
 		 * Generate a vector having the same direction as @a this,
 		 * but which has unit magnitude.
 		 *
-		 * @throws IndeterminateResultException if @a this has zero
-		 *   magnitude.
+		 * @throws UnableToNormaliseZeroVectorException if @a this has zero magnitude.
 		 */
-		UnitVector3D get_normalisation() const;
+		UnitVector3D
+		get_normalisation() const;
 
 	protected:
 		real_t d_x, d_y, d_z;

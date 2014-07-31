@@ -50,8 +50,7 @@ GPlatesMaths::Vector3D::get_normalisation() const
 
 	GPlatesGlobal::Assert<UnableToNormaliseZeroVectorException>(
 			mag_sqrd > 0.0,
-			GPLATES_EXCEPTION_SOURCE,
-			*this);
+			GPLATES_EXCEPTION_SOURCE);
 
 	real_t scale = 1 / sqrt(mag_sqrd);
 	return UnitVector3D(d_x * scale, d_y * scale, d_z * scale);

@@ -80,6 +80,7 @@ namespace GPlatesApi
 	extern boost::python::object OpenFileForReadingError;
 	extern boost::python::object OpenFileForWritingError;
 	extern boost::python::object PreconditionViolationError;
+	extern boost::python::object UnableToNormaliseZeroVectorError;
 	extern boost::python::object ViolatedUnitVectorInvariantError;
 
 

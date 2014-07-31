@@ -49,6 +49,7 @@
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
+#include "maths/UnableToNormaliseZeroVectorException.h"
 #include "maths/ViolatedUnitVectorInvariantException.h"
 
 #include "property-values/GmlTimePeriod.h"
@@ -213,6 +214,7 @@ namespace GPlatesApi
 	bp::object OpenFileForReadingError;
 	bp::object OpenFileForWritingError;
 	bp::object PreconditionViolationError;
+	bp::object UnableToNormaliseZeroVectorError;
 	bp::object ViolatedUnitVectorInvariantError;
 }
 
@@ -308,6 +310,10 @@ export_exceptions()
 	GPlatesApi::IndeterminateResultError =
 			export_exception<GPlatesMaths::IndeterminateResultException>(
 					"IndeterminateResultError",
+					GPlatesApi::MathematicalError);
+	GPlatesApi::UnableToNormaliseZeroVectorError =
+			export_exception<GPlatesMaths::UnableToNormaliseZeroVectorException>(
+					"UnableToNormaliseZeroVectorError",
 					GPlatesApi::MathematicalError);
 	GPlatesApi::ViolatedUnitVectorInvariantError =
 			export_exception<GPlatesMaths::ViolatedUnitVectorInvariantException>(
