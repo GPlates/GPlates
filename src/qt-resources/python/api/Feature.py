@@ -55,6 +55,14 @@ def get_description(feature, default=''):
     ::
     
       description = feature.get_description(None)
+      # Compare with None since an empty string evaluates to False.
+      if description is not None:
+        ...
+    
+    Test that there is exactly one 'gml:description' property and that it is not the empty string:
+    ::
+    
+      description = feature.get_description()
       if description:
         ...
     """
@@ -143,7 +151,8 @@ def get_name(feature, default='', property_return=PropertyReturn.exactly_one):
     ::
     
       name = feature.get_name(None)
-      if name:
+      # Compare with None since an empty string evaluates to False.
+      if name is not None:
         ...
     
     Test that there is exactly one 'gml:name' property and that it is not the empty string:
@@ -335,7 +344,8 @@ def get_left_plate(feature, default=0):
     ::
     
       left_plate = feature.get_left_plate(None)
-      if left_plate:
+      # Compare with None since a plate id of zero evaluates to False.
+      if left_plate is not None:
         ...
     """
     
@@ -405,7 +415,8 @@ def get_right_plate(feature, default=0):
     ::
     
       right_plate = feature.get_right_plate(None)
-      if right_plate:
+      # Compare with None since a plate id of zero evaluates to False.
+      if right_plate is not None:
         ...
     """
     
@@ -553,7 +564,8 @@ def get_reconstruction_plate_id(feature, default=0):
     ::
     
       reconstruction_plate_id = feature.get_reconstruction_plate_id(None)
-      if reconstruction_plate_id:
+      # Compare with None since a plate id of zero evaluates to False.
+      if reconstruction_plate_id is not None:
         ...
     """
     
@@ -641,7 +653,8 @@ def get_conjugate_plate_id(feature, default=0, property_return=PropertyReturn.ex
     ::
     
       conjugate_plate_id = feature.get_conjugate_plate_id(None)
-      if conjugate_plate_id:
+      # Compare with None since a plate id of zero evaluates to False.
+      if conjugate_plate_id is not None:
         ...
     
     Test that there is exactly one 'gpml:conjugatePlateId' property and that it is not zero:
@@ -754,7 +767,8 @@ def get_relative_plate(feature, default=0):
     ::
     
       relative_plate_id = feature.get_relative_plate(None)
-      if relative_plate_id:
+      # Compare with None since a plate id of zero evaluates to False.
+      if relative_plate_id is not None:
         ...
     """
     
@@ -915,7 +929,7 @@ def get_shapefile_attribute(feature, key, default_value=None):
     :param default_value: the default value to return if *key* does not exist (if not specified then it defaults to None)
     :type default_value: int or float or string or None
     :returns: the value of the shapefile attribute associated with *key*, otherwise *default_value* if *key* does not exist
-    :rtype: integer or float or string or type(*default_value*)
+    :rtype: integer or float or string or type(*default_value*) or None
     
     Shapefile attributes are stored in a :class:`GpmlKeyValueDictionary` property named 'gpml:shapefileAttributes' and
     contain attributes imported from a Shapefile.
@@ -930,7 +944,8 @@ def get_shapefile_attribute(feature, key, default_value=None):
     ::
     
       value = feature.get_shapefile_attribute('key')
-      if value:
+      # Compare with None since an integer (or float) value of zero, or an empty string, evaluates to False.
+      if value is not None:
       ...
     
     Return the integer value of the attribute associated with 'key' (default to zero if not present):

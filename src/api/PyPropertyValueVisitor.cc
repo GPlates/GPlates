@@ -549,7 +549,7 @@ export_property_value_visitor()
 			"    plate_id = plate_id_visitor.get_plate_id()\n"
 			"\n"
 			"    # If we found a 'GpmlPlateId' then print its plate id.\n"
-			"    if plate_id:\n"
+			"    if plate_id is not None:\n"
 			"        print 'plate id: %d' % plate_id\n"
 			"\n"
 			"NOTE: You must call the base class *__init__* otherwise you will "
