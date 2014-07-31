@@ -92,7 +92,7 @@ Contents:
 ..       then they don't get documented by Sphinx. In other words only the '__init__' special members with docstrings will show up.
 .. automodule:: pygplates
 	:members:
-	:exclude-members: Colour, OldFeature, OldFeatureCollection, Palette, PaletteKey
+	:exclude-members: Crossover, Colour, OldFeature, OldFeatureCollection, Palette, PaletteKey
 	:show-inheritance:
 	:special-members:
 
