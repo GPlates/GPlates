@@ -118,7 +118,7 @@ class FiniteRotationCase(unittest.TestCase):
         reverse_pole = pygplates.PointOnSphere(-self.pole.get_x(), -self.pole.get_y(), -self.pole.get_z())
         reverse_angle = -self.angle
         finite_rotation = pygplates.FiniteRotation(reverse_pole, reverse_angle)
-        self.assertTrue(pygplates.represent_equivalent_rotations(self.finite_rotation, finite_rotation))
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(self.finite_rotation, finite_rotation))
     
     def test_inverse(self):
         inverse_rotation = self.finite_rotation.get_inverse()
@@ -132,26 +132,26 @@ class FiniteRotationCase(unittest.TestCase):
         composed_rotation = inverse_rotation * self.finite_rotation
         self.assertTrue(isinstance(composed_rotation, pygplates.FiniteRotation))
         # Another way to compose.
-        composed_rotation = pygplates.compose_finite_rotations(inverse_rotation, self.finite_rotation)
+        composed_rotation = pygplates.FiniteRotation.compose(inverse_rotation, self.finite_rotation)
         self.assertTrue(isinstance(composed_rotation, pygplates.FiniteRotation))
     
     def test_interpolate(self):
         finite_rotation2 = pygplates.FiniteRotation(pygplates.PointOnSphere(0, 1, 0), 0.25 * math.pi)
-        interpolated_rotation = pygplates.interpolate_finite_rotations(
+        interpolated_rotation = pygplates.FiniteRotation.interpolate(
                 self.finite_rotation, finite_rotation2,
                 10, pygplates.GeoTimeInstant(20), 15)
         self.assertTrue(isinstance(interpolated_rotation, pygplates.FiniteRotation))
         # Cannot use distant past/future for any of the time values.
         self.assertRaises(pygplates.InterpolationError,
-                pygplates.interpolate_finite_rotations,
+                pygplates.FiniteRotation.interpolate,
                 self.finite_rotation, finite_rotation2,
                 pygplates.GeoTimeInstant.create_distant_past(), 20, 15)
         self.assertRaises(pygplates.InterpolationError,
-                pygplates.interpolate_finite_rotations,
+                pygplates.FiniteRotation.interpolate,
                 self.finite_rotation, finite_rotation2,
                 10, pygplates.GeoTimeInstant.create_distant_future(), 15)
         self.assertRaises(pygplates.InterpolationError,
-                pygplates.interpolate_finite_rotations,
+                pygplates.FiniteRotation.interpolate,
                 self.finite_rotation, finite_rotation2,
                 10, 20, pygplates.GeoTimeInstant.create_distant_past())
 

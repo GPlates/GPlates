@@ -519,10 +519,10 @@ class ReconstructionTreeCase(unittest.TestCase):
                 # Pick plates that are in different sub-trees.
                 self.reconstruction_tree.get_relative_total_rotation(802, 291),
                 pygplates.FiniteRotation))
-        self.assertTrue(pygplates.represent_equivalent_rotations(
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
                 self.reconstruction_tree.get_equivalent_total_rotation(802),
                 self.reconstruction_tree.get_relative_total_rotation(802, 0)))
-        self.assertTrue(pygplates.represent_equivalent_rotations(
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
                 self.reconstruction_tree.get_edge(802).get_relative_total_rotation(),
                 self.reconstruction_tree.get_relative_total_rotation(
                         802,
@@ -544,39 +544,41 @@ class ReconstructionTreeCase(unittest.TestCase):
                 # Further in the past...
                 self.reconstruction_tree.get_reconstruction_time() + 1)
         
-        equivalent_stage_rotation = pygplates.get_equivalent_stage_rotation(from_reconstruction_tree, self.reconstruction_tree, 802)
+        equivalent_stage_rotation = pygplates.ReconstructionTree.get_equivalent_stage_rotation(
+                from_reconstruction_tree, self.reconstruction_tree, 802)
         self.assertTrue(isinstance(equivalent_stage_rotation, pygplates.FiniteRotation))
         # Should return identity rotation.
-        self.assertTrue(pygplates.get_equivalent_stage_rotation(
+        self.assertTrue(pygplates.ReconstructionTree.get_equivalent_stage_rotation(
                 from_reconstruction_tree,
                 self.reconstruction_tree,
                 self.reconstruction_tree.get_anchor_plate_id())
                         .represents_identity_rotation())
         # Should return None for an unknown plate id.
-        self.assertFalse(pygplates.get_equivalent_stage_rotation(
+        self.assertFalse(pygplates.ReconstructionTree.get_equivalent_stage_rotation(
                 from_reconstruction_tree, self.reconstruction_tree, 10000, use_identity_for_missing_plate_ids=False))
         # Should raise error for differing anchor plate ids (0 versus 291).
         self.assertRaises(
                 pygplates.DifferentAnchoredPlatesInReconstructionTreesError,
-                pygplates.get_equivalent_stage_rotation,
+                pygplates.ReconstructionTree.get_equivalent_stage_rotation,
                 pygplates.ReconstructionTree([self.rotations], 11, 291),
                 self.reconstruction_tree,
                 802)
         
-        relative_stage_rotation = pygplates.get_relative_stage_rotation(from_reconstruction_tree, self.reconstruction_tree, 802, 291)
+        relative_stage_rotation = pygplates.ReconstructionTree.get_relative_stage_rotation(
+                from_reconstruction_tree, self.reconstruction_tree, 802, 291)
         self.assertTrue(isinstance(relative_stage_rotation, pygplates.FiniteRotation))
         # Should return identity rotation.
-        self.assertTrue(pygplates.get_relative_stage_rotation(
+        self.assertTrue(pygplates.ReconstructionTree.get_relative_stage_rotation(
                 from_reconstruction_tree,
                 self.reconstruction_tree,
                 self.reconstruction_tree.get_anchor_plate_id(),
                 self.reconstruction_tree.get_anchor_plate_id())
                         .represents_identity_rotation())
         # Should return None for an unknown plate id.
-        self.assertFalse(pygplates.get_relative_stage_rotation(
+        self.assertFalse(pygplates.ReconstructionTree.get_relative_stage_rotation(
                 from_reconstruction_tree, self.reconstruction_tree, 802, 10000, use_identity_for_missing_plate_ids=False))
         # Should return None for an unknown relative plate id.
-        self.assertFalse(pygplates.get_relative_stage_rotation(
+        self.assertFalse(pygplates.ReconstructionTree.get_relative_stage_rotation(
                 from_reconstruction_tree, self.reconstruction_tree, 10000, 291, use_identity_for_missing_plate_ids=False))
 
 
@@ -620,40 +622,40 @@ class RotationModelCase(unittest.TestCase):
     
     def test_get_rotation(self):
         equivalent_total_rotation = self.rotation_model.get_rotation(self.to_time, 802)
-        self.assertTrue(pygplates.represent_equivalent_rotations(
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
                 equivalent_total_rotation,
                 self.to_reconstruction_tree.get_equivalent_total_rotation(802)))
         self.assertRaises(pygplates.InterpolationError,
                 pygplates.RotationModel.get_rotation, self.rotation_model, pygplates.GeoTimeInstant.create_distant_past(), 802)
         
         relative_total_rotation = self.rotation_model.get_rotation(self.to_time, 802, fixed_plate_id=291)
-        self.assertTrue(pygplates.represent_equivalent_rotations(
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
                 relative_total_rotation,
                 self.to_reconstruction_tree.get_relative_total_rotation(802, 291)))
         # Fixed plate id defaults to anchored plate id.
         relative_total_rotation = self.rotation_model.get_rotation(self.to_time, 802, anchor_plate_id=291)
-        self.assertTrue(pygplates.represent_equivalent_rotations(
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
                 relative_total_rotation,
                 self.to_reconstruction_tree.get_relative_total_rotation(802, 291)))
         # Shouldn't really matter what the anchor plate id is (as long as there's a plate circuit
         # path from anchor plate to both fixed and moving plates.
         relative_total_rotation = self.rotation_model.get_rotation(self.to_time, 802, fixed_plate_id=291, anchor_plate_id=802)
-        self.assertTrue(pygplates.represent_equivalent_rotations(
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
                 relative_total_rotation,
                 self.to_reconstruction_tree.get_relative_total_rotation(802, 291)))
         
         equivalent_stage_rotation = self.rotation_model.get_rotation(self.to_time, 802, self.from_time)
-        self.assertTrue(pygplates.represent_equivalent_rotations(
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
                 equivalent_stage_rotation,
-                pygplates.get_equivalent_stage_rotation(
+                pygplates.ReconstructionTree.get_equivalent_stage_rotation(
                         self.from_reconstruction_tree,
                         self.to_reconstruction_tree,
                         802)))
         
         relative_stage_rotation = self.rotation_model.get_rotation(self.to_time, 802, self.from_time, 291)
-        self.assertTrue(pygplates.represent_equivalent_rotations(
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
                 relative_stage_rotation,
-                pygplates.get_relative_stage_rotation(
+                pygplates.ReconstructionTree.get_relative_stage_rotation(
                         self.from_reconstruction_tree,
                         self.to_reconstruction_tree,
                         802,
@@ -661,9 +663,9 @@ class RotationModelCase(unittest.TestCase):
         # Fixed plate id defaults to anchored plate id.
         relative_stage_rotation = self.rotation_model.get_rotation(
                 self.to_time, 802, pygplates.GeoTimeInstant(self.from_time), anchor_plate_id=291)
-        self.assertTrue(pygplates.represent_equivalent_rotations(
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
                 relative_stage_rotation,
-                pygplates.get_relative_stage_rotation(
+                pygplates.ReconstructionTree.get_relative_stage_rotation(
                         self.from_reconstruction_tree,
                         self.to_reconstruction_tree,
                         802,

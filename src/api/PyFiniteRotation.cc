@@ -231,7 +231,7 @@ export_finite_rotation()
 					"* a positive angle represents an anti-clockwise rotation around the rotation vector,\n"
 					"* a negative angle corresponds to a clockwise rotation.\n"
 					"\n"
-					"To compare finite rotations use the function :func:`represent_equivalent_rotations` "
+					"To compare finite rotations use :meth:`are_equivalent` "
 					"- finite rotations are *not* equality (``==``, ``!=``) comparable.\n"
 					"\n"
 					"Multiplication operations can be used to rotate various geometry types:\n"
@@ -253,19 +253,19 @@ export_finite_rotation()
 					"  finite_rotation = pygplates.FiniteRotation(pole, angle)\n"
 					"  rotated_polyline = finite_rotation * polyline\n"
 					"\n"
-					"Two finite rotations can be interpolated using the :func:`interpolate_finite_rotations` function:\n"
+					"Two finite rotations can be interpolated using :meth:`interpolate`:\n"
 					"::\n"
 					"\n"
-					"  interpolated_rotation = pygplates.interpolate_finite_rotations("
+					"  interpolated_rotation = pygplates.FiniteRotation.interpolate("
 					"finite_rotation1, finite_rotation2, time1, time2, target_time)\n"
 					"\n"
 					"Two finite rotations can be composed in either of the following equivalent ways:\n"
 					"\n"
 					"* ``composed_finite_rotation = finite_rotation1 * finite_rotation2``\n"
-					"* ``composed_finite_rotation = pygplates.compose_finite_rotations("
+					"* ``composed_finite_rotation = pygplates.FiniteRotation.compose("
 					"finite_rotation1, finite_rotation2)``\n"
 					"\n"
-					"The latter technique uses the :func:`compose_finite_rotations` function. "
+					"The latter technique uses :meth:`compose`. "
 					"Note that rotation composition is *not* commutative (``A*B != B*A``)\n"
 					"\n"
 					"**The following is general information on composing finite rotations in various "
@@ -373,7 +373,7 @@ export_finite_rotation()
 					"     = inverse[R(0->t2,A->F)] * R(0->t2,A->M) * inverse[R(0->t1,A->M)] * R(0->t1,A->F)\n"
 					"\n"
 					"...where ``A`` is the anchor plate, ``F`` is the fixed plate and ``M`` is the moving plate "
-					"(see :func:`get_relative_stage_rotation`).\n"
+					"(see :meth:`ReconstructionTree.get_relative_stage_rotation`).\n"
 					"\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
@@ -438,13 +438,106 @@ export_finite_rotation()
 				"\n"
 				"    identity_finite_rotation = pygplates.FiniteRotation(any_euler_pole, 0)\n")
 		.staticmethod("create_identity_rotation")
+		.def("are_equivalent",
+				&GPlatesApi::finite_rotation_represent_equivalent_rotations,
+				(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
+				"are_equivalent(finite_rotation1, finite_rotation2) -> bool\n"
+				"  Return whether two finite rotations represent equivalent rotations.\n"
+				"\n"
+				"  :param finite_rotation1: the first finite rotation\n"
+				"  :type finite_rotation1: :class:`FiniteRotation`\n"
+				"  :param finite_rotation2: the second finite rotation\n"
+				"  :type finite_rotation2: :class:`FiniteRotation`\n"
+				"  :rtype: bool\n"
+				"\n"
+				"  Equivalent rotations are rotations that rotate a geometry to the same final location "
+				"even though the underlying rotation poles/angles might be different.\n"
+				"\n"
+				"  Some examples of equivalent rotations (where the underlying pole/angle differs):\n"
+				"\n"
+				"  * Negating both a finite rotation's Euler pole (making it antipodal) and its angle.\n"
+				"  * Negating a finite rotation's Euler pole (making it antipodal) and setting its angle "
+				"to '360 - angle' degrees (making the rotation go the other way around the globe).\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    if pygplates.FiniteRotation.are_equivalent(finite_rotation1, finite_rotation2):\n"
+				"        ....\n")
+		.staticmethod("are_equivalent")
+		.def("compose",
+				compose,
+				(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
+				"compose(finite_rotation1, finite_rotation2) -> FiniteRotation\n"
+				"  Composes two finite rotations and returns the composed finite rotation.\n"
+				"\n"
+				"  :param finite_rotation1: the left-hand-side finite rotation\n"
+				"  :type finite_rotation1: :class:`FiniteRotation`\n"
+				"  :param finite_rotation2: the right-hand-side finite rotation\n"
+				"  :type finite_rotation2: :class:`FiniteRotation`\n"
+				"  :rtype: :class:`FiniteRotation`\n"
+				"\n"
+				"  This method does the same as ``finite_rotation1 * finite_rotation2``.\n"
+				"\n"
+				"  See :class:`FiniteRotation` for more details on composing finite rotations.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    composed_rotation = pygplates.FiniteRotation.compose(finite_rotation1, finite_rotation2)\n"
+				"    #...or...\n"
+				"    composed_rotation = finite_rotation1 * finite_rotation2\n")
+		.staticmethod("compose")
+		.def("interpolate",
+				&GPlatesApi::finite_rotation_interpolate,
+				(bp::arg("finite_rotation1"),
+					bp::arg("finite_rotation2"),
+					bp::arg("time1"),
+					bp::arg("time2"),
+					bp::arg("target_time")),
+				"interpolate(finite_rotation1, finite_rotation2, time1, time2, target_time) -> FiniteRotation\n"
+				"  Calculate the finite rotation which is the interpolation of two finite rotations.\n"
+				"\n"
+				"  :param finite_rotation1: the left-hand-side finite rotation\n"
+				"  :type finite_rotation1: :class:`FiniteRotation`\n"
+				"  :param finite_rotation2: the right-hand-side finite rotation\n"
+				"  :type finite_rotation2: :class:`FiniteRotation`\n"
+				"  :param time1: the time associated with the left-hand-side finite rotation\n"
+				"  :type time1: float or :class:`GeoTimeInstant`\n"
+				"  :param time2: the time associated with the right-hand-side finite rotation\n"
+				"  :type time2: float or :class:`GeoTimeInstant`\n"
+				"  :param target_time: the time associated with the result of the interpolation\n"
+				"  :type target_time: float or :class:`GeoTimeInstant`\n"
+				"  :rtype: :class:`FiniteRotation`\n"
+				"  :raises: InterpolationError if any time value is "
+				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+				"\n"
+				"\n"
+				"  The finite rotations *finite_rotation1* and *finite_rotation2* are associated with "
+				"times *time1* and *time2*, respectively. The result of the interpolation is associated "
+				"with *target_time*. The interpolated finite rotation is generated using Spherical Linear "
+				"intERPolation (SLERP) with the interpolation factor ``(target_time - time1) / (time2 - time1)``.\n"
+				"\n"
+				"  *target_time* can be any time - it does not have to be between *time1* and *time2*.\n"
+				"\n"
+				"  If *time1* and *time2* are equal then *finite_rotation1* is returned.\n"
+				"  ::\n"
+				"\n"
+				"    interpolated_rotation = pygplates.FiniteRotation.interpolate("
+				"finite_rotation1, finite_rotation2, time1, time2, target_time)\n")
+		.staticmethod("interpolate")
 		.def("represents_identity_rotation",
 				&GPlatesApi::finite_rotation_represents_identity_rotation,
 				"represents_identity_rotation() -> bool\n"
 				"  Return whether this finite rotation represents an identity rotation (a rotation "
 				"which maps a vector onto the same vector).\n"
 				"\n"
-				"  :rtype: bool\n")
+				"  :rtype: bool\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    # Create an identity rotation using zero angle and any pole location.\n"
+				"    identity_finite_rotation = pygplates.FiniteRotation(any_pole, 0)\n"
+				"    assert(identity_finite_rotation.represents_identity_rotation())\n")
 		.def("get_inverse",
 				&GPlatesMaths::get_reverse,
 				"get_inverse() -> FiniteRotation\n"
@@ -482,7 +575,7 @@ export_finite_rotation()
 				"return the euler pole as latitude/longitude and angle (all in degrees).\n"
 				"\n"
 				"  Note that (pole, angle) and (-pole, -angle) represent equivalent rotations "
-				"(see :func:`represent_equivalent_rotations`) and either could be returned. "
+				"(see :meth:`are_equivalent`) and either could be returned. "
 				"However, if this finite rotation was created with *__init__(pole, angle)* then the "
 				"same pole and angle will be returned here.\n"
 				"\n"
@@ -514,7 +607,7 @@ export_finite_rotation()
 				"otherwise *IndeterminateResultError* is raised.\n"
 				"\n"
 				"  Note that (latitude, longitude, angle) and (-latitude, longitude-180, -angle) "
-				"represent equivalent rotations (see :func:`represent_equivalent_rotations`) and "
+				"represent equivalent rotations (see :meth:`are_equivalent`) and "
 				"either could be returned. However, if this finite rotation was created with "
 				"*__init__(pole, angle)* then the same pole and angle will be returned here.\n"
 				"\n"
@@ -534,7 +627,7 @@ export_finite_rotation()
 		.def(bp::self * bp::other<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>())
 		// Comparison operators...
 		// NOTE: We don't currently include these since equality also compares the internal axis hint which
-		// could be misleading for users. Instead it's better if they use 'represent_equivalent_rotations()'...
+		// could be misleading for users. Instead it's better if they use 'are_equivalent()'...
 #if 0
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
 		// This is because the default '__hash__'is based on 'id()' which is not compatible and
@@ -550,81 +643,32 @@ export_finite_rotation()
 	;
 
 	// Non-member equivalent rotations function...
+	//
+	// NOTE: This will get deprecated at some stage in favour of the equivalent static class method.
+	// There's no docstring because we are only documenting the static class method version.
 	bp::def("represent_equivalent_rotations",
 			&GPlatesApi::finite_rotation_represent_equivalent_rotations,
-			(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
-			"represent_equivalent_rotations(finite_rotation1, finite_rotation2) -> bool\n"
-			"  Return whether two finite rotations represent equivalent rotations.\n"
-			"\n"
-			"  :param finite_rotation1: the first finite rotation\n"
-			"  :type finite_rotation1: :class:`FiniteRotation`\n"
-			"  :param finite_rotation2: the second finite rotation\n"
-			"  :type finite_rotation2: :class:`FiniteRotation`\n"
-			"  :rtype: bool\n"
-			"\n"
-			"  For example, negating both a finite rotation's Euler pole (making it antipodal) and its angle "
-			"will generate the same equivalent rotation (even though the underlying pole/angle will be "
-			"different). Another example is negating a finite rotation's Euler pole (making it antipodal) "
-			"and setting its angle to '360 - angle' degrees (making the rotation go the other way around the "
-			"globe). They are all the same equivalent rotation because they all rotate a geometry to "
-			"the same final location.\n");
+			(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")));
 
 	// Non-member conversion function...
+	//
+	// NOTE: This will get deprecated at some stage in favour of the equivalent static class method.
+	// There's no docstring because we are only documenting the static class method version.
 	bp::def("compose_finite_rotations",
 			compose,
-			(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
-			"compose_finite_rotations(finite_rotation1, finite_rotation2) -> FiniteRotation\n"
-			"  Composes two finite rotations and returns the composed finite rotation.\n"
-			"\n"
-			"  :param finite_rotation1: the left-hand-side finite rotation\n"
-			"  :type finite_rotation1: :class:`FiniteRotation`\n"
-			"  :param finite_rotation2: the right-hand-side finite rotation\n"
-			"  :type finite_rotation2: :class:`FiniteRotation`\n"
-			"  :rtype: :class:`FiniteRotation`\n"
-			"\n"
-			"  This method does the same as ``finite_rotation1 * finite_rotation2``.\n"
-			"\n"
-			"  See :class:`FiniteRotation` for more details on composing finite rotations.\n");
+			(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")));
 
 	// Non-member interpolation function...
+	//
+	// NOTE: This will get deprecated at some stage in favour of the equivalent static class method.
+	// There's no docstring because we are only documenting the static class method version.
 	bp::def("interpolate_finite_rotations",
 			&GPlatesApi::finite_rotation_interpolate,
 			(bp::arg("finite_rotation1"),
 				bp::arg("finite_rotation2"),
 				bp::arg("time1"),
 				bp::arg("time2"),
-				bp::arg("target_time")),
-			"interpolate_finite_rotations(finite_rotation1, finite_rotation2, time1, time2, target_time) -> FiniteRotation\n"
-			"  Calculate the finite rotation which is the interpolation of two finite rotations.\n"
-			"\n"
-			"  :param finite_rotation1: the left-hand-side finite rotation\n"
-			"  :type finite_rotation1: :class:`FiniteRotation`\n"
-			"  :param finite_rotation2: the right-hand-side finite rotation\n"
-			"  :type finite_rotation2: :class:`FiniteRotation`\n"
-			"  :param time1: the time associated with the left-hand-side finite rotation\n"
-			"  :type time1: float or :class:`GeoTimeInstant`\n"
-			"  :param time2: the time associated with the right-hand-side finite rotation\n"
-			"  :type time2: float or :class:`GeoTimeInstant`\n"
-			"  :param target_time: the time associated with the result of the interpolation\n"
-			"  :type target_time: float or :class:`GeoTimeInstant`\n"
-			"  :rtype: :class:`FiniteRotation`\n"
-			"  :raises: InterpolationError if any time value is "
-			":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-			":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
-			"\n"
-			"\n"
-			"  The finite rotations *finite_rotation1* and *finite_rotation2* are associated with "
-			"times *time1* and *time2*, respectively. The result of the interpolation is associated "
-			"with *target_time*. The interpolated finite rotation is generated using Spherical Linear "
-			"intERPolation (SLERP) with the interpolation factor ``(target_time - time1) / (time2 - time1)``.\n"
-			"\n"
-			"  *target_time* can be any time - it does not have to be between *time1* and *time2*.\n"
-			"\n"
-			"  If *time1* and *time2* are equal then *finite_rotation1* is returned.\n"
-			"  ::\n"
-			"\n"
-			"    interpolated_rotation = pygplates.interpolate_finite_rotations("
-			"finite_rotation1, finite_rotation2, time1, time2, target_time)\n");
+				bp::arg("target_time")));
 
 	// Enable boost::optional<FiniteRotation> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::FiniteRotation>();

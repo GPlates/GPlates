@@ -41,11 +41,11 @@ class _InterpolateVisitor(PropertyValueVisitor):
     # Currently only GpmlFiniteRotation and XsDouble can be interpolated...
     
     def visit_gpml_finite_rotation(self, gpml_finite_rotation1):
-        # No need to test 'time1==time2' since 'interpolate_finite_rotations()' does that for us.
+        # No need to test 'time1==time2' since 'FiniteRotation.interpolate()' does that for us.
         
         # Second property value should also be the same type.
         self.interpolated_property_value = GpmlFiniteRotation(
-            interpolate_finite_rotations(
+            FiniteRotation.interpolate(
                 gpml_finite_rotation1.get_finite_rotation(), self.property_value2.get_finite_rotation(),
                 self.time1, self.time2, self.target_time))
     
@@ -303,7 +303,7 @@ def gpml_irregular_sampling_get_value(gpml_irregular_sampling, time=0):
     
     Note that the extracted property value is interpolated (at reconstruction *time*) if property
     value can be interpolated (currently only :class:`GpmlFiniteRotation` and :class:`XsDouble`),
-    otherwise ``None`` is returned. The function :func:`interpolate_finite_rotations` is used
+    otherwise ``None`` is returned. The function :meth:`FiniteRotation.interpolate` is used
     internally when the extracted property value type is :class:`GpmlFiniteRotation`.
     
     **NOTE:** modifying the returned :class:`property value<PropertyValue>` does **not** modify the sequence

@@ -186,9 +186,10 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
     a sequence of named-tuple 'Crossover' (float, int, int, int, :class:`GpmlIrregularSampling`, :class:`GpmlIrregularSampling`)
     
     A crossover occurs when the motion of a (moving) plate crosses over from one (fixed) plate to move relative
-    to another (fixed) plate at a particular geological time. Synchronising a crossover involves adjusting the finite rotation
+    to another (fixed) plate at a particular geological time. Synchronising a crossover involves adjusting the finite rotations
     after the crossover to match the finite rotation before the crossover. Before (pre) means younger (more recent)
-    and after (post) means older (less recent).
+    and after (post) means older (less recent). Crossovers are synchronised in time order from most recent to least recent
+    (since more recent crossovers can only affect crossovers further in the past).
     
     Note that *rotation_features* should contain all features that directly or indirectly affect the crossovers to be
     synchronised (typically *rotation_features* is an entire rotation file), otherwise crossovers may not be correctly synchronised.
