@@ -728,6 +728,93 @@ class GeoTimeInstantCase(unittest.TestCase):
         self.assertTrue(instant.is_distant_past())
 
 
+class HashableCase(unittest.TestCase):
+    def test_hashable(self):
+        # We create clones in order that 'id()' returns a different value (even though they compare equal).
+        feature_id1 = pygplates.FeatureId.create_unique_id()
+        feature_id2 = pygplates.FeatureId.create_unique_id()
+        feature_type = pygplates.FeatureType.create_gpml('FeatureType')
+        feature_type_clone = pygplates.FeatureType.create_from_qualified_string(feature_type.to_qualified_string())
+        enumeration_type = pygplates.EnumerationType.create_gpml('EnumerationType')
+        enumeration_type_clone = pygplates.EnumerationType.create_from_qualified_string(enumeration_type.to_qualified_string())
+        property_name = pygplates.PropertyName.create_gpml('PropertyName')
+        property_name_clone = pygplates.PropertyName.create_from_qualified_string(property_name.to_qualified_string())
+
+        # Should be able to insert hashable types into dictionary without raising TypeError.
+        # And also retrieve them properly (this will fail if __eq__ is defined but __hash__
+        # is left to default implementation based on 'id()' - in python 2.7 anyway).
+        d = {}
+        
+        # Insert originals.
+        d[feature_id1] = 'test1'
+        d[feature_id2] = 'test2'
+        d[feature_type] = 'FeatureType value'
+        d[enumeration_type] = 'EnumerationType value'
+        d[property_name] = 'PropertyName value'
+        
+        # Test using clones where possible (since clone gives different value for 'id()').
+        self.assertTrue(d[feature_id1] == 'test1')
+        self.assertTrue(d[feature_id2] == 'test2')
+        self.assertTrue(d[feature_type_clone] == 'FeatureType value')
+        self.assertTrue(d[enumeration_type_clone] == 'EnumerationType value')
+        self.assertTrue(d[property_name_clone] == 'PropertyName value')
+
+    def test_unhashable(self):
+        d = {}
+        # Make sure the following types are unhashable (ie, __hash__ has been set to None).
+        self.assertRaises(TypeError, d.get, pygplates.GeoTimeInstant(0))
+        self.assertRaises(TypeError, d.get, pygplates.FiniteRotation((0,0), 0))
+        # All property value types are unhashable (due to base PropertyValue defining __hash__ to None)
+        # So just test one derived property value type.
+        self.assertRaises(TypeError, d.get, pygplates.XsInteger(0))
+        self.assertRaises(TypeError, d.get, pygplates.Property(pygplates.PropertyName.create_gpml('name'), pygplates.XsInteger(0)))
+        self.assertRaises(TypeError, d.get, pygplates.GpmlTimeSample(pygplates.XsInteger(0), 10))
+        self.assertRaises(TypeError, d.get, pygplates.GpmlTimeWindow(pygplates.XsInteger(0), 20, 10))
+        self.assertRaises(TypeError, d.get, pygplates.PointOnSphere((0,0)))
+        self.assertRaises(TypeError, d.get, pygplates.MultiPointOnSphere([(0,0), (0,1)]))
+        self.assertRaises(TypeError, d.get, pygplates.PolylineOnSphere([(0,0), (0,1)]))
+        self.assertRaises(TypeError, d.get, pygplates.PolygonOnSphere([(0,0), (0,1), (1,0)]))
+        self.assertRaises(TypeError, d.get, pygplates.GreatCircleArc((0,0), (0,1)))
+        self.assertRaises(TypeError, d.get, pygplates.LatLonPoint(0, 0))
+        
+        # Only way to create reconstructed geometries is to use 'reconstruct().
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        reconstructed_feature_geometries = []
+        pygplates.reconstruct(
+                pygplates.Feature.create_reconstructable_feature(
+                        pygplates.FeatureType.create_gpml('Coastline'),
+                        pygplates.PointOnSphere((0,0)),
+                        valid_time=(10, 0),
+                        reconstruction_plate_id=801),
+                rotation_model, reconstructed_feature_geometries, 0)
+        self.assertEqual(len(reconstructed_feature_geometries), 1)
+        self.assertRaises(TypeError, d.get, reconstructed_feature_geometries[0])
+        
+        reconstructed_motion_paths = []
+        pygplates.reconstruct(
+                pygplates.Feature.create_motion_path(
+                        pygplates.PointOnSphere((0,0)),
+                        [0, 10, 20, 30, 40],
+                        valid_time=(40, 0),
+                        relative_plate=201,
+                        reconstruction_plate_id=801),
+                rotation_model, reconstructed_motion_paths, 0, reconstruct_type=pygplates.ReconstructType.motion_path)
+        self.assertEqual(len(reconstructed_motion_paths), 1)
+        self.assertRaises(TypeError, d.get, reconstructed_motion_paths[0])
+        
+        reconstructed_flowlines = []
+        pygplates.reconstruct(
+                pygplates.Feature.create_flowline(
+                        pygplates.PointOnSphere((0,0)),
+                        [0, 10, 20, 30, 40],
+                        valid_time=(40, 0),
+                        left_plate=201,
+                        right_plate=801),
+                rotation_model, reconstructed_flowlines, 0, reconstruct_type=pygplates.ReconstructType.flowline)
+        self.assertEqual(len(reconstructed_flowlines), 1)
+        self.assertRaises(TypeError, d.get, reconstructed_flowlines[0])
+
+
 class PropertyCase(unittest.TestCase):
     def setUp(self):
         self.property1 = pygplates.Property(
@@ -817,6 +904,7 @@ def suite():
             FeatureCollectionCase,
             FeatureCollectionFileFormatRegistryCase,
             GeoTimeInstantCase,
+            HashableCase,
             PropertyCase,
             PropertyNameCase,
             PropertyValueCase

@@ -26,6 +26,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
+#include "PyGPlatesModule.h"
 #include "PythonConverterUtils.h"
 
 #include "global/python.h"
@@ -46,6 +47,13 @@ namespace GPlatesApi
 	{
 		return GPlatesModel::FeatureId();
 	}
+
+	bp::object
+	feature_id_hash(
+			const GPlatesModel::FeatureId &feature_id)
+	{
+		return get_pygplates_module().attr("__builtins__").attr("hash")(feature_id.get());
+	}
 }
 
 void
@@ -59,8 +67,10 @@ export_feature_id()
 	//
 	bp::class_<GPlatesModel::FeatureId>(
 			"FeatureId",
-			"A feature ID acts as a persistent unique identifier for a feature. "
-			"Feature IDs are equality (``==``, ``!=``) comparable.\n"
+			"A feature ID acts as a persistent unique identifier for a feature.\n"
+			"\n"
+			"Feature IDs are equality (``==``, ``!=``) comparable and "
+			"hashable (can be used a key in a ``dict``).\n"
 			"\n"
 			"The format of a feature ID is 'GPlates-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' where each "
 			"*x* is a hexadecimal digit (0-9, a-f).\n",
@@ -84,7 +94,7 @@ export_feature_id()
 		// This is because the default '__hash__'is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.
 		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
-		.setattr("__hash__", bp::object()/*None*/) // make unhashable
+		.def("__hash__", &GPlatesApi::feature_id_hash)
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 		// For '__str__' return the string form...
@@ -105,6 +115,13 @@ namespace GPlatesApi
 	{
 		return GPlatesModel::RevisionId();
 	}
+
+	bp::object
+	revision_id_hash(
+			const GPlatesModel::RevisionId &revision_id)
+	{
+		return get_pygplates_module().attr("__builtins__").attr("hash")(revision_id.get());
+	}
 }
 
 void
@@ -117,8 +134,10 @@ export_revision_id()
 	//
 	bp::class_<GPlatesModel::RevisionId>(
 			"RevisionId",
-			"A revision ID acts as a persistent unique identifier for a feature. "
-			"Revision IDs are equality (``==``, ``!=``) comparable.\n"
+			"A revision ID acts as a persistent unique identifier for a feature.\n"
+			"\n"
+			"Revision IDs are equality (``==``, ``!=``) comparable and "
+			"hashable (can be used a key in a ``dict``).\n"
 			"\n"
 			"The format of a revision ID is 'GPlates-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' where each "
 			"*x* is a hexadecimal digit (0-9, a-f).\n",
@@ -142,7 +161,7 @@ export_revision_id()
 		// This is because the default '__hash__'is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.
 		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
-		.setattr("__hash__", bp::object()/*None*/) // make unhashable
+		.def("__hash__", &GPlatesApi::revision_id_hash)
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 		// For '__str__' return the string form...

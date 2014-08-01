@@ -265,7 +265,10 @@ export_reconstructed_feature_geometry()
 					"Note that a single feature can have multiple geometry properties, and hence multiple "
 					"reconstructed feature geometries, associated with it. "
 					"Therefore each :class:`ReconstructedFeatureGeometry` references a different property of "
-					"the feature via :meth:`get_property`.\n",
+					"the feature via :meth:`get_property`.\n"
+					"\n"
+					"Reconstructed feature geometries are *not* equality (``==``, ``!=``) comparable and "
+					"are not hashable (cannot be used as a key in a ``dict``).\n",
 					// Don't allow creation from python side...
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
@@ -300,6 +303,7 @@ export_reconstructed_feature_geometry()
 				"  Returns the reconstructed geometry.\n"
 				"\n"
 				"  :rtype: :class:`GeometryOnSphere`\n")
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 	;
 
 	// Enable python-wrapped ReconstructedFeatureGeometryWrapper to be converted to
@@ -539,7 +543,10 @@ export_reconstructed_motion_path()
 					":class:`reconstructed motion path<ReconstructedMotionPath>` per seed point there can be, "
 					"in the case of a :class:`MultiPointOnSphere`, multiple "
 					":class:`reconstructed motion paths<ReconstructedMotionPath>` per motion path "
-					":class:`feature<Feature>`.\n",
+					":class:`feature<Feature>`.\n"
+					"\n"
+					"Reconstructed motion paths are *not* equality (``==``, ``!=``) comparable and "
+					"are not hashable (cannot be used as a key in a ``dict``).\n",
 					// Don't allow creation from python side...
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
@@ -608,6 +615,7 @@ export_reconstructed_motion_path()
 				"\n"
 				"    for point in reconstructed_motion_path.get_motion_path():\n"
 				"      ...\n")
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 	;
 
 	// Enable python-wrapped ReconstructedMotionPathWrapper to be converted to
@@ -856,7 +864,10 @@ export_reconstructed_flowline()
 					":class:`reconstructed flowline<ReconstructedFlowline>` per seed point there can be, "
 					"in the case of a :class:`MultiPointOnSphere`, multiple "
 					":class:`reconstructed flowlines<ReconstructedFlowline>` per flowline "
-					":class:`feature<Feature>`.\n",
+					":class:`feature<Feature>`.\n"
+					"\n"
+					"Reconstructed flowlines are *not* equality (``==``, ``!=``) comparable and "
+					"are not hashable (cannot be used as a key in a ``dict``).\n",
 					// Don't allow creation from python side...
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
@@ -946,6 +957,7 @@ export_reconstructed_flowline()
 				"\n"
 				"    for right_point in reconstructed_flowline.get_right_flowline():\n"
 				"      ...\n")
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 	;
 
 	// Enable python-wrapped ReconstructedFlowlineWrapper to be converted to

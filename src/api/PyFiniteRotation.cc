@@ -232,7 +232,8 @@ export_finite_rotation()
 					"* a negative angle corresponds to a clockwise rotation.\n"
 					"\n"
 					"To compare finite rotations use :meth:`are_equivalent` "
-					"- finite rotations are *not* equality (``==``, ``!=``) comparable.\n"
+					"- finite rotations are *not* equality (``==``, ``!=``) comparable and are not "
+					"hashable (cannot be used as a key in a ``dict``).\n"
 					"\n"
 					"Multiplication operations can be used to rotate various geometry types:\n"
 					"\n"
@@ -627,7 +628,9 @@ export_finite_rotation()
 		.def(bp::self * bp::other<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>())
 		// Comparison operators...
 		// NOTE: We don't currently include these since equality also compares the internal axis hint which
-		// could be misleading for users. Instead it's better if they use 'are_equivalent()'...
+		// could be misleading for users. Instead it's better if they use 'are_equivalent()'.
+		// We still make FiniteRotation unhashable though - so can't be used as a key in a dict...
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 #if 0
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
 		// This is because the default '__hash__'is based on 'id()' which is not compatible and

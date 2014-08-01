@@ -542,7 +542,9 @@ export_geo_time_instant()
 					"+/- infinity). "
 					"The advantage with :class:`GeoTimeInstant` is comparisons use a numerical tolerance such "
 					"that they compare equal when close enough to each other, and there are explicit methods "
-					"to create and test *distant past* and *distant future*.\n"
+					"to create and test *distant past* and *distant future*. Note that due to the numerical "
+					"tolerance in comparisons, a GeoTimeInstant is not hashable and hence cannot be used "
+					"as a key in a ``dict`` - however the ``float`` returned by :meth:`get_value` can be.\n"
 					"\n"
 					"Comparisons can also be made between a GeoTimeInstant and a ``float`` (or ``int``, etc).\n"
 					"::\n"
@@ -650,6 +652,8 @@ export_geo_time_instant()
 		// This is because the default '__hash__'is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.
 		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
+		//
+		// Due to the numerical tolerance in comparisons we cannot make GeoTimeInstant hashable.
 		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 		.def("__eq__", &GPlatesApi::geo_time_instant_eq)
 		.def("__ne__", &GPlatesApi::geo_time_instant_ne)

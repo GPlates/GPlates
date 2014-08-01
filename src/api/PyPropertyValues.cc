@@ -127,7 +127,8 @@ export_property_value()
 			boost::noncopyable>(
 					"PropertyValue",
 					"The base class inherited by all derived property value classes. "
-					"Property values are equality (``==``, ``!=``) comparable. Two property values will only "
+					"Property values are equality (``==``, ``!=``) comparable (but not hashable "
+					"- cannot be used as a key in a ``dict``). Two property values will only "
 					"compare equal if they have the same derived property value *type* (and the same internal values). "
 					"For example, a :class:`GpmlPlateId` property value instance and a :class:`XsInteger` "
 					"property value instance will always compare as ``False``.\n"
@@ -2555,7 +2556,8 @@ export_gpml_time_sample()
 					"Typically a sequence of time samples are used in a :class:`GpmlIrregularSampling`. "
 					"The most common example of this is a time-dependent sequence of total reconstruction poles.\n"
 					"\n"
-					"Time samples are equality (``==``, ``!=``) comparable. This includes comparing the property value "
+					"Time samples are equality (``==``, ``!=``) comparable (but not hashable "
+					"- cannot be used as a key in a ``dict``). This includes comparing the property value "
 					"in the two time samples being compared (see :class:`PropertyValue`) as well as the time instant, "
 					"description string and disabled flag.\n",
 					// We need this (even though "__init__" is defined) since
@@ -2769,7 +2771,8 @@ export_gpml_time_window()
 					"property value over time (since each time window has a *constant* property value) "
 					"assuming the windows do not have overlaps or gaps in time.\n"
 					"\n"
-					"Time windows are equality (``==``, ``!=``) comparable. This includes comparing the property value "
+					"Time windows are equality (``==``, ``!=``) comparable (but not hashable "
+					"- cannot be used as a key in a ``dict``). This includes comparing the property value "
 					"in the two time windows being compared (see :class:`PropertyValue`) as well as the time period.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...

@@ -26,6 +26,7 @@
 #include <sstream>
 #include <boost/noncopyable.hpp>
 
+#include "PyGPlatesModule.h"
 #include "PythonConverterUtils.h"
 
 #include "global/python.h"
@@ -87,6 +88,17 @@ namespace GPlatesApi
 		// Use the single argument overload.
 		return QualifiedXmlNameType::create_xsi(name);
 	}
+
+	template <class QualifiedXmlNameType>
+	bp::object
+	qualified_xml_name_hash(
+			const QualifiedXmlNameType &qualified_xml_name)
+	{
+		// Use python builtin hash() function to hash the fully-qualified string.
+		return get_pygplates_module().attr("__builtins__").attr("hash")(
+				GPlatesModel::convert_qualified_xml_name_to_qstring<QualifiedXmlNameType>(
+						qualified_xml_name));
+	}
 }
 
 
@@ -126,7 +138,7 @@ export_qualified_xml_name(
 		// This is because the default '__hash__'is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.
 		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
-		.setattr("__hash__", bp::object()/*None*/) // make unhashable
+		.def("__hash__", &GPlatesApi::qualified_xml_name_hash<qualified_xml_name_type>)
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 		.def(bp::self < bp::self)
@@ -188,7 +200,8 @@ export_enumeration_type()
 			"EnumerationType",
 			"The namespace-qualified type of an enumeration.\n"
 			"\n"
-			"All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
+			"All comparison operators (==, !=, <, <=, >, >=) are supported. EnumerationType is "
+			"hashable (can be used a key in a ``dict``).\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	enumeration_type_class.def("create_gpml",
@@ -223,7 +236,8 @@ export_feature_type()
 			"FeatureType",
 			"The namespace-qualified type of a feature.\n"
 			"\n"
-			"All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
+			"All comparison operators (==, !=, <, <=, >, >=) are supported. FeatureType is "
+			"hashable (can be used a key in a ``dict``).\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	feature_type_class.def("create_gpml",
@@ -258,7 +272,8 @@ export_property_name()
 			"PropertyName",
 			"The namespace-qualified name of a property.\n"
 			"\n"
-			"All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
+			"All comparison operators (==, !=, <, <=, >, >=) are supported. PropertyName is "
+			"hashable (can be used a key in a ``dict``).\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	property_name_class.def("create_gpml",
@@ -317,7 +332,8 @@ export_structural_type()
 			"StructuralType",
 			"The namespace-qualified structural type.\n"
 			"\n"
-			"All comparison operators (==, !=, <, <=, >, >=) are supported.\n",
+			"All comparison operators (==, !=, <, <=, >, >=) are supported. StructuralType is "
+			"hashable (can be used a key in a ``dict``).\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	structural_type_class.def("create_gpml",

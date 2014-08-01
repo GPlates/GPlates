@@ -67,7 +67,10 @@ export_lat_lon_point()
 	//
 	bp::class_<GPlatesMaths::LatLonPoint>(
 					"LatLonPoint",
-					"Represents a point in 2D geographic coordinates (latitude and longitude).\n",
+					"Represents a point in 2D geographic coordinates (latitude and longitude).\n"
+					"\n"
+					"LatLonPoints are *not* equality (``==``, ``!=``) comparable and are not "
+					"hashable (cannot be used as a key in a ``dict``).\n",
 					bp::init<double,double>(
 							(bp::arg("latitude"), bp::arg("longitude")),
 							"__init__(latitude, longitude)\n"
@@ -158,6 +161,7 @@ export_lat_lon_point()
 				"  ::\n"
 				"\n"
 				"    latitude, longitude = lat_lon_point.to_lat_lon()\n")
+		.setattr("__hash__", bp::object()/*None*/) // make unhashable
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))

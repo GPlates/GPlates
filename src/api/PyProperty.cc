@@ -84,7 +84,8 @@ export_top_level_property()
 					"Property",
 					"Associates a property name with a property value.\n"
 					"\n"
-					"Properties are equality (``==``, ``!=``) comparable. This includes comparing the property value "
+					"Properties are equality (``==``, ``!=``) comparable (but not hashable "
+					"- cannot be used as a key in a ``dict``). This includes comparing the property value "
 					"in the two properties being compared (see :class:`PropertyValue`) as well as the property name.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
