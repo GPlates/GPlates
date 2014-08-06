@@ -27,6 +27,7 @@
 #include <boost/optional.hpp>
 
 #include "PythonConverterUtils.h"
+#include "PythonHashDefVisitor.h"
 
 #include "global/python.h"
 
@@ -57,6 +58,43 @@ namespace GPlatesApi
 	{
 		return bp::make_tuple(lat_lon_point.latitude(), lat_lon_point.longitude());
 	}
+
+	bp::object
+	lat_lon_point_eq(
+			const GPlatesMaths::LatLonPoint &lat_lon_point,
+			bp::object other)
+	{
+		bp::extract<const GPlatesMaths::LatLonPoint &> extract_other_llp_instance(other);
+		// Prevent equality comparisons between LatLonPoints.
+		if (extract_other_llp_instance.check())
+		{
+			PyErr_SetString(PyExc_TypeError, "Cannot equality compare (==, !=) LatLonPoints");
+			bp::throw_error_already_set();
+		}
+
+		// Return NotImplemented so python can continue looking for a match
+		// (eg, in case 'other' is a class that implements relational operators with LatLonPoint).
+		//
+		// NOTE: This will most likely fall back to python's default handling which uses 'id()'
+		// and hence will compare based on *python* object address rather than *C++* object address.
+		return bp::object(bp::handle<>(bp::borrowed(Py_NotImplemented)));
+	}
+
+	bp::object
+	lat_lon_point_ne(
+			const GPlatesMaths::LatLonPoint &lat_lon_point,
+			bp::object other)
+	{
+		bp::object ne_result = lat_lon_point_eq(lat_lon_point, other);
+		if (ne_result.ptr() == Py_NotImplemented)
+		{
+			// Return NotImplemented.
+			return ne_result;
+		}
+
+		// Invert the result.
+		return bp::object(!bp::extract<bool>(ne_result));
+	}
 }
 
 void
@@ -69,8 +107,8 @@ export_lat_lon_point()
 					"LatLonPoint",
 					"Represents a point in 2D geographic coordinates (latitude and longitude).\n"
 					"\n"
-					"LatLonPoints are *not* equality (``==``, ``!=``) comparable and are not "
-					"hashable (cannot be used as a key in a ``dict``).\n",
+					"LatLonPoints are *not* equality (``==``, ``!=``) comparable (will raise ``TypeError`` "
+					"when compared) and are not hashable (cannot be used as a key in a ``dict``).\n",
 					bp::init<double,double>(
 							(bp::arg("latitude"), bp::arg("longitude")),
 							"__init__(latitude, longitude)\n"
@@ -161,7 +199,13 @@ export_lat_lon_point()
 				"  ::\n"
 				"\n"
 				"    latitude, longitude = lat_lon_point.to_lat_lon()\n")
-		.setattr("__hash__", bp::object()/*None*/) // make unhashable
+		// Due to wrapping of longitude values representing unequal but equivalent positions
+		// we prevent equality comparisons and also make unhashable since user will expect hashing
+		// to be based on object value and not object identity (address).
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
+		.def("__eq__", &GPlatesApi::lat_lon_point_eq)
+		.def("__ne__", &GPlatesApi::lat_lon_point_ne)
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))

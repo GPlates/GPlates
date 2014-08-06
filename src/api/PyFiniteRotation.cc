@@ -29,6 +29,7 @@
 
 #include "PyInterpolationException.h"
 #include "PythonConverterUtils.h"
+#include "PythonHashDefVisitor.h"
 
 #include "global/python.h"
 
@@ -187,6 +188,41 @@ namespace GPlatesApi
 				lat_lon_pole.longitude(),
 				GPlatesMaths::convert_rad_to_deg(rotation_params.angle));
 	}
+
+	bp::object
+	finite_rotation_eq(
+			const GPlatesMaths::FiniteRotation &finite_rotation,
+			bp::object other)
+	{
+		bp::extract<const GPlatesMaths::FiniteRotation &> extract_other_finite_rotation(other);
+		if (extract_other_finite_rotation.check())
+		{
+			return bp::object(finite_rotation.unit_quat() == extract_other_finite_rotation().unit_quat());
+		}
+
+		// Return NotImplemented so python can continue looking for a match
+		// (eg, in case 'other' is a class that implements relational operators with FiniteRotation).
+		//
+		// NOTE: This will most likely fall back to python's default handling which uses 'id()'
+		// and hence will compare based on *python* object address rather than *C++* object address.
+		return bp::object(bp::handle<>(bp::borrowed(Py_NotImplemented)));
+	}
+
+	bp::object
+	finite_rotation_ne(
+			GPlatesMaths::FiniteRotation &finite_rotation,
+			bp::object other)
+	{
+		bp::object ne_result = finite_rotation_eq(finite_rotation, other);
+		if (ne_result.ptr() == Py_NotImplemented)
+		{
+			// Return NotImplemented.
+			return ne_result;
+		}
+
+		// Invert the result.
+		return bp::object(!bp::extract<bool>(ne_result));
+	}
 }
 
 void
@@ -231,9 +267,12 @@ export_finite_rotation()
 					"* a positive angle represents an anti-clockwise rotation around the rotation vector,\n"
 					"* a negative angle corresponds to a clockwise rotation.\n"
 					"\n"
-					"To compare finite rotations use :meth:`are_equivalent` "
-					"- finite rotations are *not* equality (``==``, ``!=``) comparable and are not "
-					"hashable (cannot be used as a key in a ``dict``).\n"
+					"Finite rotations are equality (``==``, ``!=``) comparable (but not hashable "
+					"- cannot be used as a key in a dict).\n"
+					"\n"
+					"Finite rotations can also be compared using :meth:`are_equivalent` to detect "
+					"equivalent rotations (that rotate a geometry to the same final position but rotate "
+					"in opposite directions around the globe).\n"
 					"\n"
 					"Multiplication operations can be used to rotate various geometry types:\n"
 					"\n"
@@ -451,14 +490,22 @@ export_finite_rotation()
 				"  :type finite_rotation2: :class:`FiniteRotation`\n"
 				"  :rtype: bool\n"
 				"\n"
-				"  Equivalent rotations are rotations that rotate a geometry to the same final location "
-				"even though the underlying rotation poles/angles might be different.\n"
+				"  Two rotations are equivalent if they rotate a geometry to the same final location. "
+				"This includes rotating in opposite directions around the globe.\n"
 				"\n"
-				"  Some examples of equivalent rotations (where the underlying pole/angle differs):\n"
+				"  Some examples of equivalent rotations:\n"
 				"\n"
-				"  * Negating both a finite rotation's Euler pole (making it antipodal) and its angle.\n"
-				"  * Negating a finite rotation's Euler pole (making it antipodal) and setting its angle "
+				"  1. Negating a finite rotation's Euler pole (making it antipodal) and negating its angle.\n"
+				"  2. Negating a finite rotation's Euler pole (making it antipodal) and setting its angle "
 				"to '360 - angle' degrees (making the rotation go the other way around the globe).\n"
+				"  3. Setting a finite rotation's angle to 'angle - 360' degrees (making the rotation "
+				"go the other way around the globe).\n"
+				"\n"
+				"  Note that in (1) the finite rotations also compare equal (``==``), even though they "
+				"were created with a different pole/angle, whereas in (2) and (3) the finite rotations "
+				"compare unequal (``!=``). This is because (1) generates the exact same rotation whereas "
+				"(2) and (3) generate rotations that go the opposite direction around the globe. "
+				"Note however that all three rotations are still *equivalent*.\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -627,19 +674,11 @@ export_finite_rotation()
 		.def(bp::self * bp::other<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>())
 		.def(bp::self * bp::other<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>())
 		// Comparison operators...
-		// NOTE: We don't currently include these since equality also compares the internal axis hint which
-		// could be misleading for users. Instead it's better if they use 'are_equivalent()'.
-		// We still make FiniteRotation unhashable though - so can't be used as a key in a dict...
-		.setattr("__hash__", bp::object()/*None*/) // make unhashable
-#if 0
-		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
-		// This is because the default '__hash__'is based on 'id()' which is not compatible and
-		// would cause errors when used as key in a dictionary.
-		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
-		.setattr("__hash__", bp::object()/*None*/) // make unhashable
-		.def(bp::self == bp::self)
-		.def(bp::self != bp::self)
-#endif
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
+		.def("__eq__", &GPlatesApi::finite_rotation_eq)
+		.def("__ne__", &GPlatesApi::finite_rotation_ne)
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
