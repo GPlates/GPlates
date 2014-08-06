@@ -202,12 +202,13 @@ CGAL
 
   1. Get and install the CGAL 3.8 source code from http://www.cgal.org/:
      * Download and run 'CGAL-3.8-Setup.exe'.
-     * Under 'Select Default Variants' leave everything unticked (except for 'Platforms').
-     * Under 'Choose Components' untick everything ('Main CGAL' cannot be unticked).
+     * Under 'Choose Components' untick everything except:
+	     * 'GMP and MPFR precompiled libs' (note that 'Main CGAL' cannot be unticked).
      * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-3.8'.
          * In particular, do not install under Program Files on Windows Vista and
            above because you will likely run into permissions issues later.
      * Tick 'CGAL_DIR' environment variable - note: this is necessary for GPlates to be able to find CGAL.
+	 * Tick 'Add CGAL/auxiliary/gmp/lib to PATH'.
   2. Prepare CGAL for building by running 'cmake-gui.exe' (this requires CMAKE to have already been installed):
      * NOTE: Make sure you run 'cmake-gui.exe' as administrator (right-click and select 'Run as administrator').
      * Specify the CGAL installation location as the source and build directories.
@@ -215,7 +216,9 @@ CGAL
          * If an error dialog pops up and there's red text that complains it cannot find the boost library
            boost_thread then (if it's not a path issue) it could be that you don't have the 'static' library
            versions of the boost libraries (the ones with the 'lib' prefix in the library filenames).
-     * Untick all 'WITH_*' options.
+     * Untick all 'WITH_*' options except:
+	     * WITH_CGAL_Core and
+		 * WITH_GMP.
      * Change 'CMAKE_INSTALL_PREFIX' to the installation location (eg, 'C:/SDK/cgal/CGAL-3.8').
      * Click the 'Configure' button again.
      * Click the 'Generate' button.

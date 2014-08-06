@@ -68,6 +68,29 @@ namespace GPlatesMaths
 	// about lack of external linkage when compiling CGAL.
 	//
 
+	//
+	// NOTE:
+	//
+	// We can't use CGAL::Exact_predicates_exact_constructions_kernel because mesh refinement
+	// requires CGAL::Exact_predicates_exact_constructions_kernel_with_sqrt (ie, added support for'sqrt')...
+	// See http://cgal-discuss.949826.n4.nabble.com/Working-kernels-for-make-conforming-2-and-refine-Delaynay-mesh-2-tt4655362.html#a4655363
+	//
+	// And using CGAL::Exact_predicates_exact_constructions_kernel_with_sqrt requires CORE
+	// (which uses GMP) but so slow that is it unusable and also seems to crash on data that
+	// inexact constructions has no problem with. So there must be something I'm overlooking there
+	// because a relatively simple polygon with 31 vertices takes 30 seconds to refine and that is
+	// way too slow. The paper "Efficient Exact Geometric Predicates For Delaunay Triangulations"
+	// has timings for MP_float with interval arithmetic (roughly equivalent to
+	// CGAL::Exact_predicates_exact_constructions_kernel) and timings for CORE Expr (roughly
+	// equivalent to CGAL::Exact_predicates_exact_constructions_kernel_with_sqrt).
+	// The latter is about ten times slower than the former at about 1 second per 1,000 points
+	// which is much better than what we're getting - but then again those timings are for the
+	// triangulation whereas our timing includes the meshing (which is where all the time is spent).
+	//
+	// And unfortunately cannot adapt another number type (like in GMP) to add support for 'sqrt'...
+	// See http://cgal-discuss.949826.n4.nabble.com/Working-kernels-for-make-conforming-2-and-refine-Delaynay-mesh-2-tt4655362.html#a4655420
+	//
+
 	typedef CGAL::Exact_predicates_inexact_constructions_kernel polygon_mesh_kernel_type;
 	typedef CGAL::Triangulation_vertex_base_2<polygon_mesh_kernel_type> polygon_mesh_vertex_type;
 	typedef CGAL::Delaunay_mesh_face_base_2<polygon_mesh_kernel_type> polygon_mesh_face_type;
