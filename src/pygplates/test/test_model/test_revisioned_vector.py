@@ -23,9 +23,13 @@ class GpmlTimeSampleListCase(unittest.TestCase):
             self.original_time_samples.append(ts)
             
         # Store the actual GpmlTimeSampleList (ie, RevisionedVector) for use by the test cases.
-        gpml_irregular_sampling = pygplates.GpmlIrregularSampling(self.original_time_samples)
-        self.gpml_time_sample_list = gpml_irregular_sampling.get_time_samples()
+        self.gpml_irregular_sampling = pygplates.GpmlIrregularSampling(self.original_time_samples)
+        self.gpml_time_sample_list = self.gpml_irregular_sampling.get_time_samples()
 
+    def test_equality(self):
+        gpml_irregular_sampling_clone = self.gpml_irregular_sampling.clone()
+        self.assertTrue(gpml_irregular_sampling_clone.get_time_samples() == self.gpml_irregular_sampling.get_time_samples())
+    
     def test_iter(self):
         """Test iteration over revisioned vector."""
         

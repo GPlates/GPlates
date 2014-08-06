@@ -114,11 +114,31 @@ class FiniteRotationCase(unittest.TestCase):
         self.assertRaises(pygplates.IndeterminateResultError, identity_finite_rotation.get_euler_pole_and_angle, False)
         self.assertRaises(pygplates.IndeterminateResultError, identity_finite_rotation.get_lat_lon_euler_pole_and_angle_degrees, False)
     
-    def test_equivalent(self):
+    def test_equality(self):
+        # Reversing pole and angle creates the same exact rotation.
         reverse_pole = pygplates.PointOnSphere(-self.pole.get_x(), -self.pole.get_y(), -self.pole.get_z())
         reverse_angle = -self.angle
         finite_rotation = pygplates.FiniteRotation(reverse_pole, reverse_angle)
+        self.assertTrue(self.finite_rotation == finite_rotation)
+    
+    def test_equivalent(self):
+        pole = pygplates.PointOnSphere(-self.pole.get_x(), -self.pole.get_y(), -self.pole.get_z())
+        angle = -self.angle
+        finite_rotation = pygplates.FiniteRotation(pole, angle)
         self.assertTrue(pygplates.FiniteRotation.are_equivalent(self.finite_rotation, finite_rotation))
+        self.assertTrue(self.finite_rotation == finite_rotation)
+        
+        pole = pygplates.PointOnSphere(-self.pole.get_x(), -self.pole.get_y(), -self.pole.get_z())
+        angle = math.radians(360 - math.degrees(self.angle))
+        finite_rotation = pygplates.FiniteRotation(pole, angle)
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(self.finite_rotation, finite_rotation))
+        self.assertTrue(self.finite_rotation != finite_rotation)
+        
+        pole = self.pole
+        angle = math.radians(math.degrees(self.angle) - 360)
+        finite_rotation = pygplates.FiniteRotation(pole, angle)
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(self.finite_rotation, finite_rotation))
+        self.assertTrue(self.finite_rotation != finite_rotation)
     
     def test_inverse(self):
         inverse_rotation = self.finite_rotation.get_inverse()

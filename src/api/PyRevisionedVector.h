@@ -38,6 +38,7 @@
 #include <boost/optional.hpp>
 
 #include "PythonConverterUtils.h"
+#include "PythonHashDefVisitor.h"
 
 #include "global/CompilerWarnings.h"
 
@@ -475,6 +476,16 @@ namespace GPlatesApi
 
 			// Add the 'def' methods.
 			add_revisioned_vector_def_methods_to_python_class<this_type>(revisioned_vector_class);
+
+			// Also add equality comparison operators.
+			//
+			// Due to the numerical tolerance in comparisons we cannot make hashable.
+			// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+			revisioned_vector_class
+					.def(GPlatesApi::NoHashDefVisitor(false, true))
+					.def(bp::self == bp::self)
+					.def(bp::self != bp::self)
+			;
 		}
 
 

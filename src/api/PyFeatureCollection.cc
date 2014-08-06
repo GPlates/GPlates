@@ -34,6 +34,7 @@
 #include "PyFeatureCollection.h"
 
 #include "PythonConverterUtils.h"
+#include "PythonHashDefVisitor.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/ReadErrorAccumulation.h"
@@ -1487,6 +1488,8 @@ export_feature_collection()
 				"    # Modify features in 'file.gpml' and 'feature_collection'.\n"
 				"    # Modified features from 'file.gpml' will get written back out to 'file.gpml'.\n"
 				"    my_function(['file.gpml', feature_collection])\n")
+		// Make hash and comparisons based on C++ object identity (not python object identity)...
+		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 }
 

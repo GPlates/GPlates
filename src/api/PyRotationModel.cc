@@ -40,6 +40,7 @@
 #include "PyInterpolationException.h"
 #include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"
+#include "PythonHashDefVisitor.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
@@ -530,6 +531,8 @@ export_rotation_model()
 				"is currently in the internal cache then it is returned, otherwise a new reconstruction "
 				"tree is created and stored in the cache (after evicting the reconstruction tree associated "
 				"with the least recently requested reconstruction time and anchored plate id if necessary).\n")
+		// Make hash and comparisons based on C++ object identity (not python object identity)...
+		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
 	// Enable boost::optional<RotationModel::non_null_ptr_type> to be passed to and from python.

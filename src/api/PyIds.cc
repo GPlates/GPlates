@@ -70,7 +70,7 @@ export_feature_id()
 			"A feature ID acts as a persistent unique identifier for a feature.\n"
 			"\n"
 			"Feature IDs are equality (``==``, ``!=``) comparable and "
-			"hashable (can be used a key in a ``dict``).\n"
+			"hashable (can be used as a key in a ``dict``).\n"
 			"\n"
 			"The format of a feature ID is 'GPlates-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' where each "
 			"*x* is a hexadecimal digit (0-9, a-f).\n",
@@ -137,7 +137,7 @@ export_revision_id()
 			"A revision ID acts as a persistent unique identifier for a feature.\n"
 			"\n"
 			"Revision IDs are equality (``==``, ``!=``) comparable and "
-			"hashable (can be used a key in a ``dict``).\n"
+			"hashable (can be used as a key in a ``dict``).\n"
 			"\n"
 			"The format of a revision ID is 'GPlates-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' where each "
 			"*x* is a hexadecimal digit (0-9, a-f).\n",

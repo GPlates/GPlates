@@ -27,6 +27,7 @@
 #include <boost/optional.hpp>
 
 #include "PythonConverterUtils.h"
+#include "PythonHashDefVisitor.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -120,11 +121,9 @@ export_top_level_property()
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
-		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
-		// This is because the default '__hash__'is based on 'id()' which is not compatible and
-		// would cause errors when used as key in a dictionary.
-		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
-		.setattr("__hash__", bp::object()/*None*/) // make unhashable
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;

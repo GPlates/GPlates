@@ -37,6 +37,7 @@
 #include "PyGPlatesModule.h"
 #include "PyInterpolationException.h"
 #include "PythonConverterUtils.h"
+#include "PythonHashDefVisitor.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
@@ -1227,6 +1228,8 @@ export_reconstruction_tree()
 				"\n"
 				"    for anchor_plate_edge in reconstruction_tree.get_anchor plate_edges():\n"
 				"        traverse_sub_tree(anchor_plate_edge)\n")
+		// Make hash and comparisons based on C++ object identity (not python object identity)...
+		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
 	// Non-member equivalent stage rotation function...

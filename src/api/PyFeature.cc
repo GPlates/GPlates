@@ -35,6 +35,7 @@
 #include "PyInformationModel.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
+#include "PythonHashDefVisitor.h"
 
 #include "app-logic/GeometryUtils.h"
 
@@ -1935,6 +1936,8 @@ export_feature()
 				"        pygplates.FeatureType.create_gpml('UnclassifiedFeature'))\n")
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
 		.def("__len__", &GPlatesModel::FeatureHandle::size)
+		// Make hash and comparisons based on C++ object identity (not python object identity)...
+		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 #if 0 // TODO: Add once clone does a proper deep-copy...
 		.def("clone",
 				&GPlatesApi::feature_handle_clone,

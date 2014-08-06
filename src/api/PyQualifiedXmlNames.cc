@@ -201,7 +201,7 @@ export_enumeration_type()
 			"The namespace-qualified type of an enumeration.\n"
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported. EnumerationType is "
-			"hashable (can be used a key in a ``dict``).\n",
+			"hashable (can be used as a key in a ``dict``).\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	enumeration_type_class.def("create_gpml",
@@ -237,7 +237,7 @@ export_feature_type()
 			"The namespace-qualified type of a feature.\n"
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported. FeatureType is "
-			"hashable (can be used a key in a ``dict``).\n",
+			"hashable (can be used as a key in a ``dict``).\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	feature_type_class.def("create_gpml",
@@ -273,7 +273,7 @@ export_property_name()
 			"The namespace-qualified name of a property.\n"
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported. PropertyName is "
-			"hashable (can be used a key in a ``dict``).\n",
+			"hashable (can be used as a key in a ``dict``).\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	property_name_class.def("create_gpml",
@@ -333,7 +333,7 @@ export_structural_type()
 			"The namespace-qualified structural type.\n"
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported. StructuralType is "
-			"hashable (can be used a key in a ``dict``).\n",
+			"hashable (can be used as a key in a ``dict``).\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	structural_type_class.def("create_gpml",

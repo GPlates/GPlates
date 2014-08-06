@@ -27,6 +27,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "PythonConverterUtils.h"
+#include "PythonHashDefVisitor.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -533,7 +534,8 @@ export_geo_time_instant()
 					"times in the *future*. This can be confusing at first, but the reason for this is "
 					"geological times are represented by how far in the *past* to go back compared to present day.\n"
 					"\n"
-					"All comparison operators (==, !=, <, <=, >, >=) are supported. The comparisons are such that "
+					"All comparison operators (==, !=, <, <=, >, >=) are supported (but GeoTimeInstant is "
+					"not hashable - cannot be used as a key in a ``dict``). The comparisons are such that "
 					"times further in the past are *greater than* more recent times. Note that this is the opposite "
 					"how we normally think of time (where future time values are greater than past values).\n"
 					"\n"
@@ -648,13 +650,9 @@ export_geo_time_instant()
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
-		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
-		// This is because the default '__hash__'is based on 'id()' which is not compatible and
-		// would cause errors when used as key in a dictionary.
-		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
-		//
-		// Due to the numerical tolerance in comparisons we cannot make GeoTimeInstant hashable.
-		.setattr("__hash__", bp::object()/*None*/) // make unhashable
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, false))
 		.def("__eq__", &GPlatesApi::geo_time_instant_eq)
 		.def("__ne__", &GPlatesApi::geo_time_instant_ne)
 		.def("__lt__", &GPlatesApi::geo_time_instant_lt)
