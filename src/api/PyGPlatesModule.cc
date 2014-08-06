@@ -133,12 +133,12 @@ export_cpp_python_api()
 	export_strings();
 
 	// maths namespace
+	export_real(); // Must be called before 'export_geometries_on_sphere()'.
 	export_finite_rotation();
 	export_great_circle_arc();
 	export_geometries_on_sphere();
 	export_integer();
 	export_lat_lon_point();
-	export_real();
 
 	// file-io namespace
 	export_feature_collection_file_format_registry();

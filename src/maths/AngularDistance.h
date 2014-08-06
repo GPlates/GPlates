@@ -39,7 +39,7 @@ namespace GPlatesMaths
 	 * An angular distance stored as cosine instead of the actual angle.
 	 *
 	 * This class is very similar to @a AngularExtent, but is more lightweight and doesn't
-	 * support addition/subtraction and angular distances. This class, @a AngularDistance, is
+	 * support addition/subtraction of angular distances. This class, @a AngularDistance, is
 	 * used when only angular distance comparisons are require and it is also the same size as a
 	 * 'double' so it's useful for returning from distance calculations. @a AngularExtent is more
 	 * useful as an angular threshold or angular bounds where the bounds can be extended/contracted

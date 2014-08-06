@@ -374,7 +374,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
-	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * If the threshold is exceeded then the closest points are *not* stored in
 	 * @a closest_positions_on_arcs (even if it's not none).
 	 *
 	 * If @a closest_positions_on_arcs is specified then the closest point on each arc is stored in
@@ -396,7 +396,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
-	 * If the threshold is exceeded then then closest point is *not* stored in
+	 * If the threshold is exceeded then the closest point is *not* stored in
 	 * @a closest_position_on_great_circle_arc (even if it's not none).
 	 *
 	 * If @a closest_position_on_great_circle_arc is specified then the closest point on the arc
@@ -469,7 +469,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a maximum_distance_threshold is specified then the returned distance will either be greater
 	 * than the threshold or AngularDistance::ZERO (minimum possible distance) to signify threshold not exceeded.
-	 * If the threshold is not exceeded then then furthest points are *not* stored in
+	 * If the threshold is not exceeded then the furthest points are *not* stored in
 	 * @a furthest_positions_on_arcs (even if it's not none).
 	 *
 	 * If @a furthest_positions_on_arcs is specified then the furthest point on each arc is stored in
@@ -491,7 +491,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a maximum_distance_threshold is specified then the returned distance will either be greater
 	 * than the threshold or AngularDistance::ZERO (minimum possible distance) to signify threshold not exceeded.
-	 * If the threshold is not exceeded then then furthest point is *not* stored in
+	 * If the threshold is not exceeded then the furthest point is *not* stored in
 	 * @a furthest_position_on_great_circle_arc (even if it's not none).
 	 *
 	 * If @a furthest_position_on_great_circle_arc is specified then the furthest point on the arc

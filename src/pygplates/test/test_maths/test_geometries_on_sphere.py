@@ -18,17 +18,37 @@ FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 
 
 class GeometryOnSphereCase(unittest.TestCase):
-    def setUp(self):
-        self.point = pygplates.PointOnSphere(1, 0, 0)
-    
     def test_clone(self):
-        self.assertEquals(self.point.clone(), self.point)
-        self.assertTrue(isinstance(self.point.clone(), pygplates.PointOnSphere))
+        point = pygplates.PointOnSphere(1, 0, 0)
+        self.assertEquals(point.clone(), point)
+        self.assertTrue(isinstance(point.clone(), pygplates.PointOnSphere))
         # Call a method that only PointOnSphere has.
-        self.assertTrue(self.point.clone().get_x() == self.point.get_x())
-        self.assertTrue(list(self.point.clone().get_points()) == list(self.point.get_points()))
+        self.assertTrue(point.clone().get_x() == point.get_x())
+        self.assertTrue(list(point.clone().get_points()) == list(point.get_points()))
         polyline = pygplates.PolylineOnSphere([(0,0), (10,0), (10,10)])
         self.assertTrue(list(polyline.clone().get_points()) == list(polyline.get_points()))
+    
+    def test_distance(self):
+        point1 = pygplates.PointOnSphere((0, 0))
+        point2 = pygplates.PointOnSphere((0, math.degrees(math.pi / 3)))
+        polyline1 = pygplates.PolylineOnSphere([
+                (0, math.degrees(math.pi / 13)),
+                (0, math.degrees(math.pi / 6)),
+                (0, math.degrees(math.pi / 5))])
+        polyline2 = pygplates.PolylineOnSphere([
+                (math.degrees(math.pi / 18), math.degrees(math.pi / 13)),
+                (math.degrees(math.pi / 17), math.degrees(math.pi / 6)),
+                (math.degrees(math.pi / 18), math.degrees(math.pi / 4.9))])
+        self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(point1, point2), math.pi / 3)
+        self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(point1, polyline1), math.pi / 13)
+        self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(polyline1, polyline2), math.pi / 18)
+        distance, closest1, closest2 = pygplates.GeometryOnSphere.distance(polyline1, polyline2, return_closest_positions=True)
+        self.assertAlmostEqual(distance, math.pi / 18)
+        self.assertTrue(closest1 == pygplates.PointOnSphere((0, math.degrees(math.pi / 13))))
+        self.assertTrue(closest2 == pygplates.PointOnSphere((math.degrees(math.pi / 18), math.degrees(math.pi / 13))))
+        # Test using distance thresholds.
+        self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(polyline1, polyline2, math.pi / 17), math.pi / 18)
+        self.assertTrue(pygplates.GeometryOnSphere.distance(polyline1, polyline2, math.pi / 19) is None)
 
 
 class PointOnSphereCase(unittest.TestCase):

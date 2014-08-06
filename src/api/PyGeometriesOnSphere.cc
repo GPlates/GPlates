@@ -29,8 +29,10 @@
 #include <boost/cast.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include "PythonConverterUtils.h"
+#include "PythonHashDefVisitor.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -41,6 +43,9 @@
 #include <boost/python/slice.hpp>
 #include <boost/python/stl_iterator.hpp>
 
+#include "maths/AngularDistance.h"
+#include "maths/AngularExtent.h"
+#include "maths/GeometryDistance.h"
 #include "maths/GeometryOnSphere.h"
 #include "maths/LatLonPoint.h"
 #include "maths/MultiPointOnSphere.h"
@@ -57,6 +62,72 @@
 
 namespace bp = boost::python;
 
+
+namespace GPlatesApi
+{
+	/**
+	 * Calculate the (minimum) distance between two geometries.
+	 */
+	bp::object
+	geometry_on_sphere_distance(
+			const GPlatesMaths::GeometryOnSphere &geometry1,
+			const GPlatesMaths::GeometryOnSphere &geometry2,
+			boost::optional<GPlatesMaths::real_t> distance_threshold_radians,
+			bool return_closest_positions,
+			bool geometry1_is_solid,
+			bool geometry2_is_solid)
+	{
+		// Specify the distance threshold if requested.
+		boost::optional<const GPlatesMaths::AngularExtent &> minimum_distance_threshold;
+		GPlatesMaths::AngularExtent threshold_storage = GPlatesMaths::AngularExtent::PI/*dummy value*/;
+		if (distance_threshold_radians)
+		{
+			threshold_storage = GPlatesMaths::AngularExtent::create_from_angle(distance_threshold_radians.get());
+			minimum_distance_threshold = threshold_storage;
+		}
+
+		// Reference closest points on each geometry if requested.
+		boost::optional<
+				boost::tuple<
+						GPlatesMaths::UnitVector3D &/*geometry1*/,
+						GPlatesMaths::UnitVector3D &/*geometry2*/>
+						> closest_positions;
+		GPlatesMaths::UnitVector3D closest_point1 = GPlatesMaths::UnitVector3D::xBasis()/*dummy value*/;
+		GPlatesMaths::UnitVector3D closest_point2 = GPlatesMaths::UnitVector3D::xBasis()/*dummy value*/;
+		if (return_closest_positions)
+		{
+			closest_positions = boost::make_tuple(boost::ref(closest_point1), boost::ref(closest_point2));
+		}
+
+		const GPlatesMaths::AngularDistance angular_distance =
+				GPlatesMaths::minimum_distance(
+						geometry1,
+						geometry2,
+						geometry1_is_solid,
+						geometry2_is_solid,
+						minimum_distance_threshold,
+						closest_positions);
+
+		// If a threshold was requested and was exceeded then return Py_None.
+		if (minimum_distance_threshold &&
+			angular_distance == GPlatesMaths::AngularDistance::PI)
+		{
+			return bp::object()/*Py_None*/;
+		}
+
+		// The distance (in radians).
+		const GPlatesMaths::real_t distance = angular_distance.calculate_angle();
+
+		// Return closest positions (along with distance) in a tuple if requested,
+		// otherwise just return the distance.
+		return return_closest_positions
+				? bp::make_tuple(
+						distance,
+						GPlatesMaths::PointOnSphere(closest_point1),
+						GPlatesMaths::PointOnSphere(closest_point2))
+				: bp::object(distance);
+	}
+}
 
 void
 export_geometry_on_sphere()
@@ -88,6 +159,44 @@ export_geometry_on_sphere()
 				"  Create a duplicate of this geometry (derived) instance.\n"
 				"\n"
 				"  :rtype: :class:`GeometryOnSphere`\n")
+		.def("distance",
+				&GPlatesApi::geometry_on_sphere_distance,
+				(bp::arg("geometry1"), bp::arg("geometry2"),
+						bp::arg("distance_threshold_radians") = boost::optional<GPlatesMaths::real_t>(),
+						bp::arg("return_closest_positions") = false,
+						bp::arg("geometry1_is_solid") = false,
+						bp::arg("geometry2_is_solid") = false),
+				"distance(geometry1, geometry2, [distance_threshold_radians], "
+				"[return_closest_positions=False], [geometry1_is_solid=False], "
+				"[geometry2_is_solid=False])\n"
+				"  Returns the (minimum) distance between two geometries (in radians).\n"
+				"\n"
+				"  :param geometry1: the first geometry\n"
+				"  :type geometry1: :class:`GeometryOnSphere`\n"
+				"  :param geometry2: the second geometry\n"
+				"  :type geometry2: :class:`GeometryOnSphere`\n"
+				"  :param distance_threshold_radians: optional distance threshold in radians - "
+				"threshold should be in the range [0,PI] if specified\n"
+				"  :type distance_threshold_radians: float or None\n"
+				"  :param return_closest_positions: whether to also return the closest point on each "
+				"geometry - default is ``False``\n"
+				"  :type return_closest_positions: bool\n"
+				"  :param geometry1_is_solid: whether the interior of *geometry1* is solid "
+				"or not - this parameter is ignored if *geometry1* is not a :class:`PolygonOnSphere` "
+				"- default is ``False``\n"
+				"  :type geometry1_is_solid: bool\n"
+				"  :param geometry2_is_solid: whether the interior of *geometry2* is solid "
+				"or not - this parameter is ignored if *geometry2* is not a :class:`PolygonOnSphere` "
+				"- default is ``False``\n"
+				"  :type geometry2_is_solid: bool\n"
+				"  :returns: distance (in radians), or a tuple containing distance and the "
+				"closest point on each geometry if *return_closest_positions* is ``True``, or ``None`` "
+				"if *distance_threshold_radians* is specified and exceeded\n"
+				"  :rtype: float or tuple (float, :class:`PointOnSphere`, :class:`PointOnSphere`) or None\n"
+				"\n"
+				"  If *distance_threshold_radians* is specified and the (minimum) distance between the "
+				"two geometries exceeds this threshold then ``None`` is returned.\n")
+		.staticmethod("distance")
 	;
 
 	// Register to-python conversion for GeometryOnSphere::non_null_ptr_to_const_type.
@@ -385,7 +494,8 @@ export_point_on_sphere()
 					"PointOnSphere",
 					"Represents a point on the surface of the unit length sphere in 3D cartesian coordinates.\n"
 					"\n"
-					"Points are equality (``==``, ``!=``) comparable where two points are considered "
+					"Points are equality (``==``, ``!=``) comparable (but not hashable "
+					"- cannot be used as a key in a ``dict``). Two points are considered "
 					"equal if their coordinates match within a *very* small numerical epsilon that accounts "
 					"for the limits of floating-point precision. Note that usually two points will only compare "
 					"equal if they are the same point or created from the exact same input data. If two "
@@ -508,11 +618,9 @@ export_point_on_sphere()
 				"    latitude, longitude = point.to_lat_lon()\n"
 				"\n"
 				"  This is similar to :meth:`LatLonPoint.to_lat_lon`.\n")
-		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
-		// This is because the default '__hash__'is based on 'id()' which is not compatible and
-		// would cause errors when used as key in a dictionary.
-		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
-		.setattr("__hash__", bp::object()/*None*/) // make unhashable
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 		// Generate '__str__' from 'operator<<'...
@@ -686,7 +794,8 @@ export_multi_point_on_sphere()
 			boost::noncopyable>(
 					"MultiPointOnSphere",
 					"Represents a multi-point (collection of points) on the surface of the unit length sphere. "
-					"Multi-points are equality (``==``, ``!=``) comparable - see :class:`PointOnSphere` "
+					"Multi-points are equality (``==``, ``!=``) comparable (but not hashable "
+					"- cannot be used as a key in a ``dict``). See :class:`PointOnSphere` "
 					"for an overview of equality in the presence of limited floating-point precision.\n"
 					"\n"
 					"A multi-point instance is iterable over its points:\n"
@@ -793,11 +902,9 @@ export_multi_point_on_sphere()
 		.def("__len__", &GPlatesMaths::MultiPointOnSphere::number_of_points)
 		.def("__contains__", &GPlatesApi::multi_point_on_sphere_contains_point)
 		.def("__getitem__", &GPlatesApi::multi_point_on_sphere_get_item)
-		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
-		// This is because the default '__hash__'is based on 'id()' which is not compatible and
-		// would cause errors when used as key in a dictionary.
-		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
-		.setattr("__hash__", bp::object()/*None*/) // make unhashable
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;
@@ -1200,7 +1307,8 @@ export_polyline_on_sphere()
 			boost::noncopyable>(
 					"PolylineOnSphere",
 					"Represents a polyline on the surface of the unit length sphere. "
-					"Polylines are equality (``==``, ``!=``) comparable - see :class:`PointOnSphere` "
+					"Polylines are equality (``==``, ``!=``) comparable (but not hashable "
+					"- cannot be used as a key in a ``dict``). See :class:`PointOnSphere` "
 					"for an overview of equality in the presence of limited floating-point precision.\n"
 					"\n"
 					"A polyline instance provides two types of *views*:\n"
@@ -1422,11 +1530,9 @@ export_polyline_on_sphere()
 		.def("__len__", &GPlatesMaths::PolylineOnSphere::number_of_vertices)
 		.def("__contains__", &GPlatesApi::poly_geometry_on_sphere_contains_point<GPlatesMaths::PolylineOnSphere>)
 		.def("__getitem__", &GPlatesApi::poly_geometry_on_sphere_get_item<GPlatesMaths::PolylineOnSphere>)
-		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
-		// This is because the default '__hash__'is based on 'id()' which is not compatible and
-		// would cause errors when used as key in a dictionary.
-		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
-		.setattr("__hash__", bp::object()/*None*/) // make unhashable
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;
@@ -1525,7 +1631,8 @@ export_polygon_on_sphere()
 			boost::noncopyable>(
 					"PolygonOnSphere",
 					"Represents a polygon on the surface of the unit length sphere. "
-					"Polygons are equality (``==``, ``!=``) comparable - see :class:`PointOnSphere` "
+					"Polygons are equality (``==``, ``!=``) comparable (but not hashable "
+					"- cannot be used as a key in a ``dict``). See :class:`PointOnSphere` "
 					"for an overview of equality in the presence of limited floating-point precision.\n"
 					"\n"
 					"A polygon instance provides two types of *views*:\n"
@@ -1832,11 +1939,9 @@ export_polygon_on_sphere()
 		.def("__len__", &GPlatesMaths::PolygonOnSphere::number_of_vertices)
 		.def("__contains__", &GPlatesApi::poly_geometry_on_sphere_contains_point<GPlatesMaths::PolygonOnSphere>)
 		.def("__getitem__", &GPlatesApi::poly_geometry_on_sphere_get_item<GPlatesMaths::PolygonOnSphere>)
-		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
-		// This is because the default '__hash__'is based on 'id()' which is not compatible and
-		// would cause errors when used as key in a dictionary.
-		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
-		.setattr("__hash__", bp::object()/*None*/) // make unhashable
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;

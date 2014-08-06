@@ -58,7 +58,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
-	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * If the threshold is exceeded then the closest points are *not* stored in
 	 * @a closest_positions (even if it's not none).
 	 *
 	 * If @a closest_positions is specified then the closest point on each geometry
@@ -94,7 +94,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
-	 * If the threshold is exceeded then then closest point is *not* stored in
+	 * If the threshold is exceeded then the closest point is *not* stored in
 	 * @a closest_position_in_multipoint (even if it's not none).
 	 *
 	 * If @a closest_position_in_multipoint is specified then the closest point in the multi-point
@@ -113,7 +113,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
-	 * If the threshold is exceeded then then closest point is *not* stored in
+	 * If the threshold is exceeded then the closest point is *not* stored in
 	 * @a closest_position_on_polyline (even if it's not none).
 	 *
 	 * If @a closest_position_on_polyline is specified then the closest point on the polyline
@@ -135,7 +135,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
-	 * If the threshold is exceeded then then closest point is *not* stored in
+	 * If the threshold is exceeded then the closest point is *not* stored in
 	 * @a closest_position_on_polygon (even if it's not none).
 	 *
 	 * If @a closest_position_on_polygon is specified then the closest point on the polygon
@@ -174,7 +174,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
-	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * If the threshold is exceeded then the closest points are *not* stored in
 	 * @a closest_positions (even if it's not none).
 	 *
 	 * If @a closest_positions is specified then the closest point in each multi-point
@@ -195,7 +195,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
-	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * If the threshold is exceeded then the closest points are *not* stored in
 	 * @a closest_positions (even if it's not none).
 	 *
 	 * If @a closest_positions is specified then the closest point in the multi-point and on the polyline
@@ -219,7 +219,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
-	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * If the threshold is exceeded then the closest points are *not* stored in
 	 * @a closest_positions (even if it's not none).
 	 *
 	 * If @a closest_positions is specified then the closest point in the multi-point and in/on the polygon
@@ -275,7 +275,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
-	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * If the threshold is exceeded then the closest points are *not* stored in
 	 * @a closest_positions (even if it's not none).
 	 *
 	 * If @a closest_positions is specified then the closest point on each polyline
@@ -299,7 +299,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
-	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * If the threshold is exceeded then the closest points are *not* stored in
 	 * @a closest_positions (even if it's not none).
 	 *
 	 * If @a closest_positions is specified then the closest points on the polyline and polygon
@@ -383,7 +383,7 @@ namespace GPlatesMaths
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
-	 * If the threshold is exceeded then then closest points are *not* stored in
+	 * If the threshold is exceeded then the closest points are *not* stored in
 	 * @a closest_positions (even if it's not none).
 	 *
 	 * If @a closest_positions is specified then the closest point on each polygon

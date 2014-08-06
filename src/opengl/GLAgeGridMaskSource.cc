@@ -683,7 +683,7 @@ GPlatesOpenGL::GLAgeGridMaskSource::render_age_grid_mask(
 
 		//
 		// The initial alpha channel render target value is 1 from the above clear.
-		// If an intermediate texture pixel has zero alpha then then zero is written to the render target,
+		// If an intermediate texture pixel has zero alpha then the zero is written to the render target,
 		// otherwise it is left as 1.
 		// The intermediate texture is either Ah or Al (the high or low byte of the age-grid age texture)
 		// when the age mask should be 1 or 0 when it should be 0.
