@@ -259,6 +259,46 @@ class PolylineOnSphereCase(unittest.TestCase):
     def test_get_points(self):
         point_sequence = self.polyline.get_points()
         self.assertEquals(self.polyline, pygplates.PolylineOnSphere(point_sequence))
+    
+    def test_join(self):
+        # Should work on any GeometryOnSphere type.
+        self.assertTrue(
+                isinstance(
+                        pygplates.PolylineOnSphere.join(
+                                pygplates.PointOnSphere((0,10)),
+                                pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)]),
+                                math.radians(2.1)),
+                        pygplates.PolylineOnSphere))
+        self.assertTrue(
+                pygplates.PolylineOnSphere.join(
+                        pygplates.MultiPointOnSphere([(0,0), (0,10)]),
+                        pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)]),
+                        math.radians(2.1)) ==
+                pygplates.PolylineOnSphere([(0,0), (0,10), (0,8), (10,8), (20,8)]))
+        
+        polyline1 = pygplates.PolylineOnSphere([(0,0), (0,10)])
+        polyline2 = pygplates.PolylineOnSphere([(20,8), (0,8)])
+        # Too far apart.
+        self.assertFalse(pygplates.PolylineOnSphere.join(polyline1, polyline2, math.radians(1)))
+        # polyline1 + reversed(polyline2)
+        self.assertTrue(
+                pygplates.PolylineOnSphere.join(polyline1, polyline2, math.radians(2.1)) ==
+                pygplates.PolylineOnSphere([(0,0), (0,10), (0,8), (20,8)]))
+        # polyline1 + polyline2
+        self.assertTrue(
+                pygplates.PolylineOnSphere.join(
+                        polyline1, pygplates.PolylineOnSphere([(0,12), (0,15)]), math.radians(2.1)) ==
+                pygplates.PolylineOnSphere([(0,0), (0,10), (0,12), (0,15)]))
+        # polyline2 + polyline1
+        self.assertTrue(
+                pygplates.PolylineOnSphere.join(
+                        polyline1, pygplates.PolylineOnSphere([(10,1), (0,1)]), math.radians(2.1)) ==
+                pygplates.PolylineOnSphere([(10,1), (0,1), (0,0), (0,10)]))
+        # reversed(polyline2) + polyline1
+        self.assertTrue(
+                pygplates.PolylineOnSphere.join(
+                        polyline1, pygplates.PolylineOnSphere([(0,1), (10,1)]), math.radians(2.1)) ==
+                pygplates.PolylineOnSphere([(10,1), (0,1), (0,0), (0,10)]))
 
     def test_compare(self):
         self.assertEquals(self.polyline, pygplates.PolylineOnSphere(self.points))
