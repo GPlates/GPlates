@@ -1324,7 +1324,7 @@ export_feature_collection()
 			GPlatesApi::FeaturesFunctionArgument::non_null_ptr_type,
 			boost::noncopyable>(
 					"FeaturesFunctionArgument",
-					"A utility class for extracting features from files and/or collections of features.\n"
+					"A utility class for extracting features from collections and files.\n"
 					"\n"
 					"This is useful when defining your own function that accepts features from a variety "
 					"of sources. It avoids the hassle of having to explicitly test for each source type.\n"
@@ -1399,7 +1399,10 @@ export_feature_collection()
 				&GPlatesApi::FeaturesFunctionArgument::contains_features,
 				(bp::arg("function_argument")),
 				"contains_features(function_argument) -> bool\n"
-				"  Return whether *function_argument* contains features.\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Return whether *function_argument* contains features.\n"
 				"\n"
 				"  :param function_argument: the function argument to test for features\n"
 				"\n"

@@ -78,7 +78,10 @@ export_feature_id()
 		.def("create_unique_id",
 				&GPlatesApi::feature_id_create_unique_id,
 				"create_unique_id() -> FeatureId\n"
-				"  Create a unique *FeatureId* by generating a unique string identifier.\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a unique *FeatureId* by generating a unique string identifier.\n"
 				"  ::\n"
 				"\n"
 				"    feature_id = pygplates.FeatureId.create_unique_id()\n")
@@ -145,7 +148,10 @@ export_revision_id()
 		.def("create_unique_id",
 				&GPlatesApi::revision_id_create_unique_id,
 				"create_unique_id() -> RevisionId\n"
-				"  Create a unique *RevisionId* by generating a unique string identifier.\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a unique *RevisionId* by generating a unique string identifier.\n"
 				"  ::\n"
 				"\n"
 				"    revision_id = pygplates.RevisionId.create_unique_id()\n")

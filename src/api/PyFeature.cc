@@ -1960,7 +1960,10 @@ export_feature()
 				"create_total_reconstruction_sequence(fixed_plate_id, moving_plate_id, total_reconstruction_pole, "
 				"[name], [description], [other_properties], [feature_id], "
 				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
-				"  Create a rotation feature for a fixed/moving plate pair.\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a rotation feature for a fixed/moving plate pair.\n"
 				"\n"
 				"  :param fixed_plate_id: the fixed plate id\n"
 				"  :type fixed_plate_id: int\n"
@@ -2022,7 +2025,10 @@ export_feature()
 				"create_reconstructable_feature(feature_type, geometry, [name], [description], [valid_time], "
 				"[reconstruction_plate_id], [conjugate_plate_id], [other_properties], [feature_id], [reverse_reconstruct], "
 				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
-				"  Create a reconstructable feature.\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a reconstructable feature.\n"
 				"\n"
 				"  :param feature_type: the type of feature to create\n"
 				"  :type feature_type: :class:`FeatureType`\n"
@@ -2045,7 +2051,8 @@ export_feature()
 				"  :param conjugate_plate_id: the conjugate plate ID or plate IDs, if not specified then no "
 				"'gpml:conjugatePlateId' properties are added - **note** that not all `reconstructable features "
 				"<http://www.earthbyte.org/Resources/GPGIM/public/#ReconstructableFeature>`_ have a conjugate "
-				"plate id (*conjugate_plate_id* is provided to support the :class:`Isochron feature type<FeatureType>`)\n"
+				"plate id (*conjugate_plate_id* is provided to support the "
+				"`Isochron feature type <http://www.earthbyte.org/Resources/GPGIM/public/#Isochron>`_)\n"
 				"  :type conjugate_plate_id: int, or sequence of int\n"
 				"  :param other_properties: any extra property name/value pairs to add, these can alternatively "
 				"be added later with :meth:`add`\n"
@@ -2164,7 +2171,10 @@ export_feature()
 				"[reconstruction_plate_id], [conjugate_plate_id], [left_plate], [right_plate], [reconstruction_method], "
 				"[other_properties], [feature_id], [reverse_reconstruct], "
 				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
-				"  Create a tectonic section feature.\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a tectonic section feature.\n"
 				"\n"
 				"  :param feature_type: the type of feature to create\n"
 				"  :type feature_type: :class:`FeatureType`\n"
@@ -2294,7 +2304,10 @@ export_feature()
 				"create_flowline(seed_geometry, times, [name], [description], [valid_time], "
 				"[left_plate], [right_plate], [other_properties], [feature_id], [reverse_reconstruct], "
 				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
-				"  Create a flowline feature.\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a flowline feature.\n"
 				"\n"
 				"  :param seed_geometry: the seed point (or points) - see :meth:`set_geometry` - if geometry "
 				"is not present-day geometry then the created feature will need to be reverse reconstructed "
@@ -2405,7 +2418,10 @@ export_feature()
 				"create_motion_path(seed_geometry, times, [name], [description], [valid_time], "
 				"[relative_plate], [reconstruction_plate_id], [other_properties], [feature_id], "
 				"[reverse_reconstruct], [verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
-				"  Create a motion path feature.\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a motion path feature.\n"
 				"\n"
 				"  :param seed_geometry: the seed point (or points) - see :meth:`set_geometry` - if geometry "
 				"is not present-day geometry then the created feature will need to be reverse reconstructed "

@@ -587,7 +587,10 @@ export_geo_time_instant()
 		.def("create_distant_past",
 				&GPlatesApi::GeoTimeInstant::create_distant_past,
 				"create_distant_past() -> GeoTimeInstant\n"
-				"  Create a GeoTimeInstant instance for the distant past.\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a GeoTimeInstant instance for the distant past.\n"
 				"  ::\n"
 				"\n"
 				"    distant_past = pygplates.GeoTimeInstant.create_distant_past()\n"
@@ -601,7 +604,10 @@ export_geo_time_instant()
 		.def("create_distant_future",
 				&GPlatesApi::GeoTimeInstant::create_distant_future,
 				"create_distant_future() -> GeoTimeInstant\n"
-				"  Create a GeoTimeInstant instance for the distant future.\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a GeoTimeInstant instance for the distant future.\n"
 				"  ::\n"
 				"\n"
 				"    distant_future = pygplates.GeoTimeInstant.create_distant_future()\n"

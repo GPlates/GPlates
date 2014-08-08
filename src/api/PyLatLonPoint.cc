@@ -130,7 +130,10 @@ export_lat_lon_point()
 				&GPlatesMaths::LatLonPoint::is_valid_latitude,
 				(bp::arg("latitude")),
 				"is_valid_latitude(latitude) -> bool\n"
-				"  Returns ``True`` if *latitude* is in the range [-90, 90].\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Returns ``True`` if *latitude* is in the range [-90, 90].\n"
 				"\n"
 				"  :param latitude: the latitude (in degrees)\n"
 				"  :type latitude: float\n"
@@ -145,7 +148,10 @@ export_lat_lon_point()
 				&GPlatesMaths::LatLonPoint::is_valid_longitude,
 				(bp::arg("longitude")),
 				"is_valid_longitude(longitude) -> bool\n"
-				"  Returns ``True`` if *longitude* is in the range [-360, 360].\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Returns ``True`` if *longitude* is in the range [-360, 360].\n"
 				"\n"
 				"  :param longitude: the longitude (in degrees)\n"
 				"  :type longitude: float\n"

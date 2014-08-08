@@ -460,7 +460,10 @@ export_finite_rotation()
 		.def("create_identity_rotation",
 				&GPlatesApi::finite_rotation_create_identity_rotation,
 				"create_identity_rotation() -> FiniteRotation\n"
-				"  Creates a finite rotation that does not rotate (it maps a vector onto the same vector).\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Creates a finite rotation that does not rotate (it maps a vector onto the same vector).\n"
 				"\n"
 				"  :rtype: :class:`FiniteRotation`\n"
 				"\n"
@@ -482,7 +485,10 @@ export_finite_rotation()
 				&GPlatesApi::finite_rotation_represent_equivalent_rotations,
 				(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
 				"are_equivalent(finite_rotation1, finite_rotation2) -> bool\n"
-				"  Return whether two finite rotations represent equivalent rotations.\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Return whether two finite rotations represent equivalent rotations.\n"
 				"\n"
 				"  :param finite_rotation1: the first finite rotation\n"
 				"  :type finite_rotation1: :class:`FiniteRotation`\n"
@@ -516,7 +522,10 @@ export_finite_rotation()
 				compose,
 				(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
 				"compose(finite_rotation1, finite_rotation2) -> FiniteRotation\n"
-				"  Composes two finite rotations and returns the composed finite rotation.\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Composes two finite rotations and returns the composed finite rotation.\n"
 				"\n"
 				"  :param finite_rotation1: the left-hand-side finite rotation\n"
 				"  :type finite_rotation1: :class:`FiniteRotation`\n"
@@ -542,7 +551,10 @@ export_finite_rotation()
 					bp::arg("time2"),
 					bp::arg("target_time")),
 				"interpolate(finite_rotation1, finite_rotation2, time1, time2, target_time) -> FiniteRotation\n"
-				"  Calculate the finite rotation which is the interpolation of two finite rotations.\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Calculate the finite rotation which is the interpolation of two finite rotations.\n"
 				"\n"
 				"  :param finite_rotation1: the left-hand-side finite rotation\n"
 				"  :type finite_rotation1: :class:`FiniteRotation`\n"
