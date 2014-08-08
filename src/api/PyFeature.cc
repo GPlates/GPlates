@@ -1370,55 +1370,75 @@ namespace GPlatesApi
 		}
 
 		// Get the geometry property value(s).
+		//
+		// Note that we're querying all matching property values, not the number of (geometry)
+		// properties requested by our caller, because the property query might match non-geometry
+		// properties (which we'll later filter out the geometry properties and test the number of those).
 		bp::object property_value_object =
 				feature_handle_get_property_value(
 						feature_handle,
 						property_query_object,
 						GPlatesPropertyValues::GeoTimeInstant(0),
-						property_return);
+						// Query all matching property values (ie, not what user requested)...
+						PropertyReturn::ALL);
 		if (property_value_object == bp::object()/*Py_None*/)
 		{
 			return bp::object()/*Py_None*/;
 		}
 
-		if (property_return == PropertyReturn::ALL)
+		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries;
+
+		const unsigned int num_property_values = bp::len(property_value_object);
+		for (unsigned int n = 0; n < num_property_values; ++n)
 		{
-			// We're expecting a list for 'PropertyReturn::ALL'.
-			bp::list geometries;
-
-			const unsigned int num_property_values = bp::len(property_value_object);
-			for (unsigned int n = 0; n < num_property_values; ++n)
-			{
-				// Get the current property value.
-				GPlatesModel::PropertyValue::non_null_ptr_type property_value =
-						bp::extract<GPlatesModel::PropertyValue::non_null_ptr_type>(
-								property_value_object[n]);
-
-				// Extract the geometry from the property value.
-				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry =
-						GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(*property_value);
-				if (geometry)
-				{
-					geometries.append(geometry.get());
-				}
-			}
-
-			// Returned list could be empty if no properties matched.
-			return geometries;
-		}
-		else
-		{
-			// Get the property value.
+			// Get the current property value.
 			GPlatesModel::PropertyValue::non_null_ptr_type property_value =
 					bp::extract<GPlatesModel::PropertyValue::non_null_ptr_type>(
-							property_value_object);
+							property_value_object[n]);
 
 			// Extract the geometry from the property value.
 			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry =
 					GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(*property_value);
+			if (geometry)
+			{
+				// Optimisations - to return early.
+				if (property_return == PropertyReturn::FIRST)
+				{
+					// Return first object immediately.
+					return bp::object(geometry.get());
+				}
+				else if (property_return == PropertyReturn::EXACTLY_ONE)
+				{
+					// If we've already found one geometry (and now we'll have two) then return Py_None.
+					if (geometries.size() == 1)
+					{
+						return bp::object()/*Py_None*/;
+					}
+				}
 
-			return geometry ? bp::object(geometry.get()) : bp::object()/*Py_None*/;
+				geometries.push_back(geometry.get());
+			}
 		}
+
+		if (property_return == PropertyReturn::ALL)
+		{
+			bp::list geometries_list;
+
+			BOOST_FOREACH(GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry, geometries)
+			{
+				geometries_list.append(geometry);
+			}
+
+			return geometries_list;
+		}
+
+		if (property_return == PropertyReturn::EXACTLY_ONE)
+		{
+			return (geometries.size() == 1) ? bp::object(geometries.front()) : bp::object()/*Py_None*/;
+		}
+
+		// ...else PropertyReturn::FIRST
+		return !geometries.empty() ? bp::object(geometries.front()) : bp::object()/*Py_None*/;
 	}
 
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
@@ -2946,7 +2966,7 @@ export_feature()
 				"\n"
 				"    default_geometry = feature.get_geometry()\n"
 				"    if default_geometry:\n"
-				"    ...\n"
+				"        ...\n"
 				"\n"
 				"  Return the list of default geometries (defaults to an empty list if no default geometry properties are found):\n"
 				"  ::\n"
@@ -2964,7 +2984,15 @@ export_feature()
 				"\n"
 				"    all_geometries = feature.get_geometry(\n"
 				"        lambda property: True,\n"
-				"        pygplates.PropertyReturn.all)\n")
+				"        pygplates.PropertyReturn.all)\n"
+				"\n"
+				"  Return the geometry (regardless of which property it came from) - returns ``None`` "
+				"if not exactly one geometry property found:\n"
+				"  ::\n"
+				"\n"
+				"    geometry = feature.get_geometry(lambda property: True)\n"
+				"    if geometry:\n"
+				"        ...\n")
 		.def("get_feature_type",
 				&GPlatesModel::FeatureHandle::feature_type,
 				bp::return_value_policy<bp::copy_const_reference>(),

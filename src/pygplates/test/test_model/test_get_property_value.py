@@ -68,11 +68,14 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(len(geometry_properties) == 1)
         self.assertTrue(isinstance(geometry_properties[0], pygplates.PointOnSphere))
         self.assertTrue(isinstance(self.feature.get_geometry(), pygplates.PointOnSphere))
+        self.assertTrue(isinstance(self.feature.get_geometry(property_return=pygplates.PropertyReturn.first), pygplates.PointOnSphere))
+        self.assertTrue(self.feature.get_geometry(lambda property: True)) # Succeeds since only one geometry.
         self.feature.add(
                 pygplates.PropertyName.create_gpml('position'),
                 pygplates.GpmlConstantValue(pygplates.GmlPoint(pygplates.PointOnSphere(0,0,1))))
         # There should now be two geometry properties.
         self.assertTrue(len(self.feature.get_geometry(lambda property: True, pygplates.PropertyReturn.all)) == 2)
+        self.assertFalse(self.feature.get_geometry(lambda property: True)) # Only succeeds if one geometry.
         # Remove the default geometry property.
         self.feature.remove(pygplates.PropertyName.create_gpml('unclassifiedGeometry'))
         self.assertFalse(self.feature.get_geometry())
@@ -145,6 +148,15 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         # ...unless we don't check the information model.
         self.assertTrue(self.feature.set_geometry(
                 multi_point, pygplates.PropertyName.create_gpml('position'), verify_information_model=pygplates.VerifyInformationModel.no))
+        
+        # Remove all *default* geometries.
+        self.feature.set_geometry([])
+        # There are now no *default* geometries.
+        self.assertTrue(len(self.feature.get_geometry(property_return=pygplates.PropertyReturn.all)) == 0)
+        self.assertFalse(self.feature.get_geometry(property_return=pygplates.PropertyReturn.first))
+        self.assertFalse(self.feature.get_geometry())
+        # However there is still a non-default geometry 'gpml:position'.
+        self.assertTrue(self.feature.get_geometry(lambda property: True) == multi_point)
     
     def test_get_and_set_description(self):
         description = self.feature.get_description()
