@@ -65,6 +65,12 @@ class PointOnSphereCase(unittest.TestCase):
         self.assertTrue(pygplates.PointOnSphere(2, 2, 2, True) == pygplates.PointOnSphere(1, 1, 1, True))
         # A zero-length vector raises error if normalisation requested.
         self.assertRaises(pygplates.UnableToNormaliseZeroVectorError, pygplates.PointOnSphere, 0, 0, 0, True)
+        
+        lat, lon = 45, 60
+        point = pygplates.PointOnSphere(lat, lon)
+        self.assertAlmostEqual(point.to_lat_lon()[0], lat)
+        self.assertAlmostEqual(point.to_lat_lon()[1], lon)
+        self.assertRaises(pygplates.InvalidLatLonError, pygplates.PointOnSphere, 95, 60)
     
     def test_convert(self):
         point_on_sphere = pygplates.PointOnSphere(self.xyz)

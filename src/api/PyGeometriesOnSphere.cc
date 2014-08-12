@@ -400,6 +400,17 @@ namespace GPlatesApi
 	}
 
 	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
+	point_on_sphere_create_lat_lon(
+			const GPlatesMaths::real_t &latitude,
+			const GPlatesMaths::real_t &longitude)
+	{
+		return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(
+				new GPlatesMaths::PointOnSphere(
+						make_point_on_sphere(
+								GPlatesMaths::LatLonPoint(latitude.dval(), longitude.dval()))));
+	}
+
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
 	point_on_sphere_create(
 			bp::object point_object)
 	{
@@ -410,13 +421,6 @@ namespace GPlatesApi
 		{
 			return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(
 					new GPlatesMaths::PointOnSphere(extract_point_on_sphere()));
-		}
-
-		bp::extract<GPlatesMaths::UnitVector3D> extract_unit_vector_3d(point_object);
-		if (extract_unit_vector_3d.check())
-		{
-			return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(
-					new GPlatesMaths::PointOnSphere(extract_unit_vector_3d()));
 		}
 
 		PyErr_SetString(PyExc_TypeError, "Expected PointOnSphere or LatLonPoint or "
@@ -535,6 +539,26 @@ export_point_on_sphere()
 				"    point = pygplates.PointOnSphere([latitude,longitude])\n"
 				"    point = pygplates.PointOnSphere(numpy.array([latitude,longitude]))\n"
 				"    point = pygplates.PointOnSphere(pygplates.PointOnSphere(x,y,z))\n")
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::point_on_sphere_create_lat_lon,
+						bp::default_call_policies(),
+						(bp::arg("latitude"), bp::arg("longitude"))),
+				"__init__(latitude, longitude)\n"
+				"  Create a *PointOnSphere* instance from a *latitude* and *longitude*.\n"
+				"\n"
+				"  :param latitude: the latitude (in degrees)\n"
+				"  :type latitude: float\n"
+				"  :param longitude: the longitude (in degrees)\n"
+				"  :type longitude: float\n"
+				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
+				"\n"
+				"  **NOTE** that *latitude* must satisfy :meth:`LatLonPoint.is_valid_latitude` and "
+				"*longitude* must satisfy :meth:`LatLonPoint.is_valid_longitude`, otherwise "
+				"*InvalidLatLonError* will be raised.\n"
+				"  ::\n"
+				"\n"
+				"    point = pygplates.PointOnSphere(latitude, longitude)\n")
 		.def("__init__",
 				bp::make_constructor(
 						&GPlatesApi::point_on_sphere_create_xyz,
