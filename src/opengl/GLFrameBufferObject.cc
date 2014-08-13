@@ -544,11 +544,34 @@ GPlatesOpenGL::GLFrameBufferObject::gl_detach(
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				attachment_point->texture && attachment_point->texture_level,
 				GPLATES_ASSERTION_SOURCE);
+		//
+		// Some graphics systems generate an 'invalid value' error here
+		// (eg, nVidia driver 275.33 on 460SE hardware).
+		// So we'll use glFramebufferRenderbufferEXT instead of glFramebufferTextureEXT
+		// to detach the attachment point.
+		//
+		// According to the '' spec...
+		//
+		// "If the user calls either FramebufferTexture with a zero
+        // texture name, or FramebufferRenderbuffer with a zero
+		// renderbuffer name, then the it as if nothing is attached to
+        // the specified attachment point."
+		//
+		// ...so we should be able to use either to 'detach' an attachment point.
+		//
+#if 0
 		glFramebufferTextureEXT(
 				GL_FRAMEBUFFER_EXT,
 				attachment_point->attachment,
 				0/*texture*/,
 				attachment_point->texture_level.get());
+#else
+		glFramebufferRenderbufferEXT(
+				GL_FRAMEBUFFER_EXT,
+				attachment_point->attachment,
+				GL_RENDERBUFFER_EXT, // value ignored for zero render buffer
+				0/*render buffer*/);
+#endif
 		break;
 
 	case ATTACHMENT_RENDER_BUFFER:
