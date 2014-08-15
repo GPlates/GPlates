@@ -31,7 +31,50 @@
 
 namespace GPlatesGlobal 
 {
+	/**
+	 * The string "GPlates <MAJOR>.<MINOR>.<PATCH>".
+	 *
+	 * For example "GPlates 1.4.0".
+	 */
 	extern const char VersionString[];
+
+	/**
+	 * The MAJOR.MINOR.PATCH version number of GPlates.
+	 *
+	 * For example "1.4.0".
+	 */
+	extern const char GPlatesVersion[];
+
+	/**
+	 * The MAJOR version number of GPlates.
+	 *
+	 * For example "1".
+	 */
+	extern const char GPlatesVersionMajor[];
+
+	/**
+	 * The MINOR version number of GPlates.
+	 *
+	 * For example "4".
+	 */
+	extern const char GPlatesVersionMinor[];
+
+	/**
+	 * The PATCH version number of GPlates.
+	 *
+	 * For example "0".
+	 */
+	extern const char GPlatesVersionPatch[];
+
+	/**
+	 * A single revision number for the pygplates API.
+	 *
+	 * For example "207".
+	 *
+	 * Note: Changes to the API ideally should result is this number being (manually) incremented.
+	 * And this number never gets reset to zero (not even at public releases).
+	 */
+	extern const char PygplatesRevision[];
 
 	extern const char CopyrightString[];
 

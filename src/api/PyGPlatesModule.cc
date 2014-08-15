@@ -68,6 +68,7 @@ void export_reconstruction_tree();
 void export_rotation_model();
 
 // api directory.
+void export_version();
 void export_console_reader();
 void export_console_writer();
 
@@ -131,6 +132,9 @@ export_cpp_python_api()
 #endif	
 	// utils namespace
 	export_strings();
+
+	// api directory
+	export_version(); // Must be called after 'export_strings()'.
 
 	// maths namespace
 	export_real(); // Must be called before 'export_geometries_on_sphere()'.

@@ -13,6 +13,8 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     AbstractConsole.h
     AbstractPythonRunner.h
+    APIVersion.cc
+    APIVersion.h
     ConsoleReader.cc
     ConsoleReader.h
     ConsoleWriter.cc
