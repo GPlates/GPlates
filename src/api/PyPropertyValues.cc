@@ -72,6 +72,7 @@
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
+#include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlPolarityChronId.h"
@@ -2085,6 +2086,276 @@ export_gpml_key_value_dictionary()
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::dictionary_element_value_type>();
 }
 
+void
+export_gpml_old_plates_header()
+{
+	//
+	// GpmlOldPlatesHeader - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GpmlOldPlatesHeader,
+			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GpmlOldPlatesHeader",
+					"A property value containing metadata inherited from imported PLATES data files.\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesPropertyValues::GpmlOldPlatesHeader::create,
+						bp::default_call_policies(),
+						(bp::arg("region_number"),
+								bp::arg("reference_number"),
+								bp::arg("string_number"),
+								bp::arg("geographic_description"),
+								bp::arg("plate_id_number"),
+								bp::arg("age_of_appearance"),
+								bp::arg("age_of_disappearance"),
+								bp::arg("data_type_code"),
+								bp::arg("data_type_code_number"),
+								bp::arg("data_type_code_number_additional"),
+								bp::arg("conjugate_plate_id_number"),
+								bp::arg("colour_code"),
+								bp::arg("number_of_points"))),
+				"__init__(region_number, "
+				"reference_number, "
+				"string_number, "
+				"geographic_description, "
+				"plate_id_number, "
+				"age_of_appearance, "
+				"age_of_disappearance, "
+				"data_type_code, "
+				"data_type_code_number, "
+				"data_type_code_number_additional, "
+				"conjugate_plate_id_number, "
+				"colour_code, "
+				"number_of_points)\n"
+				"  Create a property value containing PLATES metadata.\n"
+				"\n"
+				"  :param region_number: region number\n"
+				"  :type region_number: int\n"
+				"  :param reference_number: reference number\n"
+				"  :type reference_number: int\n"
+				"  :param string_number: string number\n"
+				"  :type string_number: int\n"
+				"  :param geographic_description: geographic description\n"
+				"  :type geographic_description: string\n"
+				"  :param plate_id_number: plate id number\n"
+				"  :type plate_id_number: float\n"
+				"  :param age_of_appearance: age of appearance\n"
+				"  :type age_of_appearance: float\n"
+				"  :param age_of_disappearance: age of disappearance\n"
+				"  :type age_of_disappearance: int\n"
+				"  :param data_type_code: data type code\n"
+				"  :type data_type_code: string\n"
+				"  :param data_type_code_number: data type code number\n"
+				"  :type data_type_code_number: int\n"
+				"  :param data_type_code_number_additional: data type code number additional\n"
+				"  :type data_type_code_number_additional: string\n"
+				"  :param conjugate_plate_id_number: conjugate plate id number\n"
+				"  :type conjugate_plate_id_number: int\n"
+				"  :param colour_code: colour code\n"
+				"  :type colour_code: int\n"
+				"  :param number_of_points: number of points - not counting the final 'terminator' "
+				"point (99.0000,99.0000)\n"
+				"  :type number_of_points: int\n")
+		.def("get_region_number",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_region_number,
+				"get_region_number() -> int\n"
+				"  Returns the region number.\n"
+				"\n"
+				"  :rtype: int\n")
+		.def("set_region_number",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_region_number,
+				(bp::arg("region_number")),
+				"set_region_number(region_number)\n"
+				"  Sets the region number.\n"
+				"\n"
+				"  :param region_number: region number\n"
+				"  :type region_number: int\n")
+		.def("get_reference_number",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_reference_number,
+				"get_reference_number() -> int\n"
+				"  Returns the reference number.\n"
+				"\n"
+				"  :rtype: int\n")
+		.def("set_reference_number",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_reference_number,
+				(bp::arg("reference_number")),
+				"set_reference_number(reference_number)\n"
+				"  Sets the reference number.\n"
+				"\n"
+				"  :param reference_number: reference number\n"
+				"  :type reference_number: int\n")
+		.def("get_string_number",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_string_number,
+				"get_string_number() -> int\n"
+				"  Returns the string number.\n"
+				"\n"
+				"  :rtype: int\n")
+		.def("set_string_number",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_string_number,
+				(bp::arg("string_number")),
+				"set_string_number(string_number)\n"
+				"  Sets the string number.\n"
+				"\n"
+				"  :param string_number: string number\n"
+				"  :type string_number: int\n")
+		.def("get_geographic_description",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_geographic_description,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_geographic_description() -> string\n"
+				"  Returns the geographic description.\n"
+				"\n"
+				"  :rtype: string\n")
+		.def("set_geographic_description",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_geographic_description,
+				(bp::arg("geographic_description")),
+				"set_geographic_description(geographic_description)\n"
+				"  Sets the geographic description.\n"
+				"\n"
+				"  :param geographic_description: geographic description\n"
+				"  :type geographic_description: string\n")
+		.def("get_plate_id_number",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_plate_id_number,
+				"get_plate_id_number() -> int\n"
+				"  Returns the plate id number.\n"
+				"\n"
+				"  :rtype: int\n")
+		.def("set_plate_id_number",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_plate_id_number,
+				(bp::arg("plate_id_number")),
+				"set_plate_id_number(plate_id_number)\n"
+				"  Sets the plate id number.\n"
+				"\n"
+				"  :param plate_id_number: plate id number\n"
+				"  :type plate_id_number: int\n")
+		.def("get_age_of_appearance",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_age_of_appearance,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_age_of_appearance() -> float\n"
+				"  Returns the age of appearance.\n"
+				"\n"
+				"  :rtype: float\n")
+		.def("set_age_of_appearance",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_age_of_appearance,
+				(bp::arg("age_of_appearance")),
+				"set_age_of_appearance(age_of_appearance)\n"
+				"  Sets the age of appearance.\n"
+				"\n"
+				"  :param age_of_appearance: age of appearance\n"
+				"  :type age_of_appearance: float\n")
+		.def("get_age_of_disappearance",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_age_of_disappearance,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_age_of_disappearance() -> float\n"
+				"  Returns the age of disappearance.\n"
+				"\n"
+				"  :rtype: float\n")
+		.def("set_age_of_disappearance",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_age_of_disappearance,
+				(bp::arg("age_of_disappearance")),
+				"set_age_of_disappearance(age_of_disappearance)\n"
+				"  Sets the age of disappearance.\n"
+				"\n"
+				"  :param age_of_disappearance: age of disappearance\n"
+				"  :type age_of_disappearance: float\n")
+		.def("get_data_type_code",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_data_type_code,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_data_type_code() -> string\n"
+				"  Returns the data type code.\n"
+				"\n"
+				"  :rtype: string\n")
+		.def("set_data_type_code",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_data_type_code,
+				(bp::arg("data_type_code")),
+				"set_data_type_code(data_type_code)\n"
+				"  Sets the data type code.\n"
+				"\n"
+				"  :param data_type_code: data type code\n"
+				"  :type data_type_code: string\n")
+		.def("get_data_type_code_number",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_data_type_code_number,
+				"get_data_type_code_number() -> int\n"
+				"  Returns the data type code number.\n"
+				"\n"
+				"  :rtype: int\n")
+		.def("set_data_type_code_number",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_data_type_code_number,
+				(bp::arg("data_type_code_number")),
+				"set_data_type_code_number(data_type_code_number)\n"
+				"  Sets the data type code number.\n"
+				"\n"
+				"  :param data_type_code_number: data type code number\n"
+				"  :type data_type_code_number: int\n")
+		.def("get_data_type_code_number_additional",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_data_type_code_number_additional,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_data_type_code_number_additional() -> string\n"
+				"  Returns the data type code number additional.\n"
+				"\n"
+				"  :rtype: string\n")
+		.def("set_data_type_code_number_additional",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_data_type_code_number_additional,
+				(bp::arg("data_type_code_number_additional")),
+				"set_data_type_code_number_additional(data_type_code_number_additional)\n"
+				"  Sets the data type code number additional.\n"
+				"\n"
+				"  :param data_type_code_number_additional: data type code number additional\n"
+				"  :type data_type_code_number_additional: string\n")
+		.def("get_conjugate_plate_id_number",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_conjugate_plate_id_number,
+				"get_conjugate_plate_id_number() -> int\n"
+				"  Returns the conjugate plate id number.\n"
+				"\n"
+				"  :rtype: int\n")
+		.def("set_conjugate_plate_id_number",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_conjugate_plate_id_number,
+				(bp::arg("conjugate_plate_id_number")),
+				"set_conjugate_plate_id_number(conjugate_plate_id_number)\n"
+				"  Sets the conjugate plate id number.\n"
+				"\n"
+				"  :param conjugate_plate_id_number: conjugate plate id number\n"
+				"  :type conjugate_plate_id_number: int\n")
+		.def("get_colour_code",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_colour_code,
+				"get_colour_code() -> int\n"
+				"  Returns the colour code.\n"
+				"\n"
+				"  :rtype: int\n")
+		.def("set_colour_code",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_colour_code,
+				(bp::arg("colour_code")),
+				"set_colour_code(colour_code)\n"
+				"  Sets the colour code.\n"
+				"\n"
+				"  :param colour_code: colour code\n"
+				"  :type colour_code: int\n")
+		.def("get_number_of_points",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_number_of_points,
+				"get_number_of_points() -> int\n"
+				"  Returns the number of points.\n"
+				"\n"
+				"  :rtype: int\n")
+		.def("set_number_of_points",
+				&GPlatesPropertyValues::GpmlOldPlatesHeader::set_number_of_points,
+				(bp::arg("number_of_points")),
+				"set_number_of_points(number_of_points)\n"
+				"  Sets the number of points.\n"
+				"\n"
+				"  :param number_of_points: number of points\n"
+				"  :type number_of_points: int\n")
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GpmlOldPlatesHeader,
+			GPlatesModel::PropertyValue>();
+}
 
 namespace GPlatesApi
 {
@@ -3130,6 +3401,7 @@ export_property_values()
 	export_gpml_hot_spot_trail_mark();
 	export_gpml_irregular_sampling();
 	export_gpml_key_value_dictionary();
+	export_gpml_old_plates_header();
 	export_gpml_piecewise_aggregation();
 	export_gpml_polarity_chron_id();
 	export_gpml_plate_id();

@@ -528,6 +528,67 @@ class GpmlKeyValueDictionaryCase(unittest.TestCase):
         self.assertTrue(self.gpml_key_value_dictionary.get(str(1), 1) == 1)
 
 
+class GpmlOldPlatesHeaderCase(unittest.TestCase):
+    def setUp(self):
+        self.gpml_old_plates_header = pygplates.GpmlOldPlatesHeader(
+                region_number=10,
+                reference_number=11,
+                string_number=12,
+                geographic_description='geographic description',
+                plate_id_number=201,
+                age_of_appearance=20.6,
+                age_of_disappearance=10.2,
+                data_type_code='RI',
+                data_type_code_number=13,
+                data_type_code_number_additional='a',
+                conjugate_plate_id_number=701,
+                colour_code=14,
+                number_of_points=15)
+
+    def test_get(self):
+        self.assertTrue(self.gpml_old_plates_header.get_region_number() == 10)
+        self.assertTrue(self.gpml_old_plates_header.get_reference_number() == 11)
+        self.assertTrue(self.gpml_old_plates_header.get_string_number() == 12)
+        self.assertTrue(self.gpml_old_plates_header.get_geographic_description() == 'geographic description')
+        self.assertTrue(self.gpml_old_plates_header.get_plate_id_number() == 201)
+        self.assertAlmostEqual(self.gpml_old_plates_header.get_age_of_appearance(), 20.6)
+        self.assertAlmostEqual(self.gpml_old_plates_header.get_age_of_disappearance(), 10.2)
+        self.assertTrue(self.gpml_old_plates_header.get_data_type_code() == 'RI')
+        self.assertTrue(self.gpml_old_plates_header.get_data_type_code_number() == 13)
+        self.assertTrue(self.gpml_old_plates_header.get_data_type_code_number_additional() == 'a')
+        self.assertTrue(self.gpml_old_plates_header.get_conjugate_plate_id_number() == 701)
+        self.assertTrue(self.gpml_old_plates_header.get_colour_code() == 14)
+        self.assertTrue(self.gpml_old_plates_header.get_number_of_points() == 15)
+
+    def test_set(self):
+        self.gpml_old_plates_header.set_region_number(20)
+        self.assertTrue(self.gpml_old_plates_header.get_region_number() == 20)
+        self.gpml_old_plates_header.set_reference_number(21)
+        self.assertTrue(self.gpml_old_plates_header.get_reference_number() == 21)
+        self.gpml_old_plates_header.set_string_number(22)
+        self.assertTrue(self.gpml_old_plates_header.get_string_number() == 22)
+        self.gpml_old_plates_header.set_geographic_description('another geographic description')
+        self.assertTrue(self.gpml_old_plates_header.get_geographic_description() == 'another geographic description')
+        self.gpml_old_plates_header.set_plate_id_number(202)
+        self.assertTrue(self.gpml_old_plates_header.get_plate_id_number() == 202)
+        self.gpml_old_plates_header.set_age_of_appearance(30.6)
+        self.assertAlmostEqual(self.gpml_old_plates_header.get_age_of_appearance(), 30.6)
+        self.gpml_old_plates_header.set_age_of_disappearance(20.2)
+        self.assertAlmostEqual(self.gpml_old_plates_header.get_age_of_disappearance(), 20.2)
+        self.gpml_old_plates_header.set_data_type_code('TF')
+        self.assertTrue(self.gpml_old_plates_header.get_data_type_code() == 'TF')
+        self.gpml_old_plates_header.set_data_type_code_number(23)
+        self.assertTrue(self.gpml_old_plates_header.get_data_type_code_number() == 23)
+        self.gpml_old_plates_header.set_data_type_code_number_additional('b')
+        self.assertTrue(self.gpml_old_plates_header.get_data_type_code_number_additional() == 'b')
+        self.gpml_old_plates_header.set_conjugate_plate_id_number(702)
+        self.assertTrue(self.gpml_old_plates_header.get_conjugate_plate_id_number() == 702)
+        self.gpml_old_plates_header.set_colour_code(24)
+        self.assertTrue(self.gpml_old_plates_header.get_colour_code() == 24)
+        self.gpml_old_plates_header.set_number_of_points(25)
+        self.assertTrue(self.gpml_old_plates_header.get_number_of_points() == 25)
+
+
 class GpmlPiecewiseAggregationCase(unittest.TestCase):
     """Test GpmlPiecewiseAggregation.
     
@@ -823,6 +884,7 @@ def suite():
             
             GpmlIrregularSamplingCase,
             GpmlKeyValueDictionaryCase,
+            GpmlOldPlatesHeaderCase,
             GpmlPiecewiseAggregationCase,
             GpmlPlateIdCase,
             GpmlPolarityChronIdCase,
