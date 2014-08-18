@@ -22,14 +22,15 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+//The "global/python.h" must stay at the top. 
+//Otherwise, there will be strange compiling errors on Mac.
+#include "global/python.h"
 
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
 #include "PyGPlatesModule.h"
 #include "PythonConverterUtils.h"
-
-#include "global/python.h"
 
 #include "model/FeatureId.h"
 #include "model/RevisionId.h"
