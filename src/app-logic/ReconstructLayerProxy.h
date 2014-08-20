@@ -39,6 +39,7 @@
 #include "ReconstructContext.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionLayerProxy.h"
+#include "TopologyNetworkResolverLayerProxy.h"
 
 #include "opengl/GLReconstructedStaticPolygonMeshes.h"
 
