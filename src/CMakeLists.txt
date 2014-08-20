@@ -6,7 +6,7 @@ endforeach(lib)
 
 # The following Boost libraries are both required and dynamically linked.
 set(Boost_USE_STATIC_LIBS FALSE)
-set(boost_components program_options thread)
+set(boost_components program_options thread system)
 if(NOT GPLATES_NO_PYTHON)
 	set(boost_components ${boost_components} python)
 endif(NOT GPLATES_NO_PYTHON)
