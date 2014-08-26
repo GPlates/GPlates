@@ -86,6 +86,11 @@ public:
 		return d_age_models;
 	}
 
+	unsigned int
+	number_of_age_models() const
+	{
+		return static_cast<unsigned int>(d_age_models.size());
+	}
 
 private:
 

@@ -49,7 +49,16 @@ namespace
 			QStandardItemModel *standard_model)
 	{
 		standard_model->setHorizontalHeaderItem(GPlatesQtWidgets::AgeModelManagerDialog::CHRON_COLUMN,new QStandardItem(QObject::tr("Chron")));
+
+		int column = GPlatesQtWidgets::AgeModelManagerDialog::NUM_FIXED_COLUMNS;
+		BOOST_FOREACH(const GPlatesAppLogic::AgeModel model, age_model_collection.get_age_models())
+		{
+			standard_model->setHorizontalHeaderItem(column,new QStandardItem(model.d_identifier));
+			++column;
+		}
+
 		standard_model->setRowCount(0);
+
 	}
 }
 
