@@ -57,11 +57,28 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         self.gpml_time_sample_list[1:3] = [ts1, ts2, ts3]
         # The length should increase by one.
         self.assertTrue(len(self.gpml_time_sample_list) == 5)
-        self.assertTrue(self.gpml_time_sample_list[0] == self.original_time_samples[0])
-        self.assertTrue(self.gpml_time_sample_list[1] == ts1)
-        self.assertTrue(self.gpml_time_sample_list[2] == ts2)
-        self.assertTrue(self.gpml_time_sample_list[3] == ts3)
-        self.assertTrue(self.gpml_time_sample_list[4] == self.original_time_samples[3])
+        self.assertTrue(list(self.gpml_time_sample_list) == [
+                self.original_time_samples[0], ts1, ts2, ts3, self.original_time_samples[3]])
+        ts4 = pygplates.GpmlTimeSample(pygplates.XsInteger(400), 400)
+        # Insert an entry (without deleting any).
+        self.gpml_time_sample_list[1:1] = [ts4]
+        self.assertTrue(list(self.gpml_time_sample_list) == [
+                self.original_time_samples[0], ts4, ts1, ts2, ts3, self.original_time_samples[3]])
+        self.gpml_time_sample_list[0:0] = [ts1]
+        self.assertTrue(list(self.gpml_time_sample_list) == [
+                ts1, self.original_time_samples[0], ts4, ts1, ts2, ts3, self.original_time_samples[3]])
+        self.gpml_time_sample_list[:0] = [ts2]
+        self.assertTrue(list(self.gpml_time_sample_list) == [
+                ts2, ts1, self.original_time_samples[0], ts4, ts1, ts2, ts3, self.original_time_samples[3]])
+        self.gpml_time_sample_list[-1:-1] = [ts4]
+        self.assertTrue(list(self.gpml_time_sample_list) == [
+                ts2, ts1, self.original_time_samples[0], ts4, ts1, ts2, ts3, ts4, self.original_time_samples[3]])
+        self.gpml_time_sample_list[100:100] = [ts2]
+        self.assertTrue(list(self.gpml_time_sample_list) == [
+                ts2, ts1, self.original_time_samples[0], ts4, ts1, ts2, ts3, ts4, self.original_time_samples[3], ts2])
+        self.gpml_time_sample_list[-100:-100] = [ts4]
+        self.assertTrue(list(self.gpml_time_sample_list) == [
+                ts4, ts2, ts1, self.original_time_samples[0], ts4, ts1, ts2, ts3, ts4, self.original_time_samples[3], ts2])
 
     def test_set_extended_slice(self):
         ts1 = pygplates.GpmlTimeSample(pygplates.XsInteger(100), 100)
@@ -87,6 +104,11 @@ class GpmlTimeSampleListCase(unittest.TestCase):
         self.assertTrue(slice[0] == self.original_time_samples[1])
         self.assertTrue(slice[1] == self.original_time_samples[2])
         self.assertTrue(slice[2] == self.original_time_samples[3])
+        # Return empty list.
+        self.assertTrue(list(self.gpml_time_sample_list[:0]) == [])
+        self.assertTrue(list(self.gpml_time_sample_list[0:0]) == [])
+        self.assertTrue(list(self.gpml_time_sample_list[5:5]) == [])
+        self.assertTrue(list(self.gpml_time_sample_list[-1:-1]) == [])
 
     def test_get_extended_slice(self):
         slice = self.gpml_time_sample_list[1::2]
@@ -96,10 +118,12 @@ class GpmlTimeSampleListCase(unittest.TestCase):
 
     def test_del_item(self):
         del self.gpml_time_sample_list[2]
-        self.assertTrue(len(self.gpml_time_sample_list) == 3)
-        self.assertTrue(self.gpml_time_sample_list[0] == self.original_time_samples[0])
-        self.assertTrue(self.gpml_time_sample_list[1] == self.original_time_samples[1])
-        self.assertTrue(self.gpml_time_sample_list[2] == self.original_time_samples[3])
+        self.assertTrue(list(self.gpml_time_sample_list) == [
+                self.original_time_samples[0], self.original_time_samples[1], self.original_time_samples[3]])
+        # Deleting empty range shouldn't change anything.
+        del self.gpml_time_sample_list[1:1]
+        self.assertTrue(list(self.gpml_time_sample_list) == [
+                self.original_time_samples[0], self.original_time_samples[1], self.original_time_samples[3]])
 
     def test_del_slice(self):
         del self.gpml_time_sample_list[1:3]

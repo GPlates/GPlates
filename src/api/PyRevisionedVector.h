@@ -503,18 +503,83 @@ namespace GPlatesApi
 			bp::extract<bp::slice> extract_slice(i);
 			if (extract_slice.check())
 			{
-				boost::optional<bp::slice::range<iterator_type> >
-						slice_range = get_slice_range(revisioned_vector, extract_slice());
-				if (!slice_range)
-				{
-					// Invalid slice.
-					return;
-				}
-
 				// Begin/end iterators over the python sequence.
 				bp::stl_input_iterator<element_type>
 						new_elements_begin(v),
 						new_elements_end;
+
+				// Copy the new elements into a vector so we can count the number of new elements.
+				const std::vector<element_type> new_elements(new_elements_begin, new_elements_end);
+
+				const bp::slice slice_object = extract_slice;
+				boost::optional<bp::slice::range<iterator_type> >
+						slice_range = get_slice_range(revisioned_vector, slice_object);
+				if (!slice_range)
+				{
+					// Empty range, so delete nothing.
+					// But still need to insert new elements at the correct location.
+
+					// Since bp::slice::get_indices(), in 'get_slice_range()', doesn't return
+					// empty slices we have to explicitly look at start, stop and step ourselves.
+					bp::object slice_start = slice_object.start();
+					bp::object slice_step = slice_object.step();
+
+					if (slice_step != bp::object() &&
+						bp::extract<long>(slice_step)() != 1)
+					{
+						// Note the step size has already been checked for zero by 'get_slice_range()'.
+						std::stringstream error_string_stream;
+						error_string_stream << "attempt to assign sequence of size "
+								<< new_elements.size()
+								<< " to extended slice of size 0";
+
+						PyErr_SetString(PyExc_ValueError, error_string_stream.str().c_str());
+						bp::throw_error_already_set();
+					}
+					// ...else step size is 1 (which is OK for inserting - anything else isn't).
+
+					iterator_type insert_iter = revisioned_vector->begin();
+
+					if (slice_start == bp::object())
+					{
+						insert_iter = revisioned_vector->begin();
+					}
+					else
+					{
+						const iterator_difference_type max_dist =
+								std::distance(revisioned_vector->begin(), revisioned_vector->end());
+
+						const iterator_difference_type start = bp::extract<long>(slice_start);
+						// If at, or past, the end then set to the end.
+						if (start >= max_dist)
+						{
+							insert_iter = revisioned_vector->end();
+						}
+						else if (start >= 0)
+						{
+							// Advance towards end.
+							insert_iter = revisioned_vector->begin();
+							std::advance(insert_iter, start);
+						}
+						else if (start >= -max_dist)
+						{
+							// Advance towards beginning.
+							insert_iter = revisioned_vector->end();
+							std::advance(insert_iter, start);
+						}
+						else
+						{
+							insert_iter = revisioned_vector->begin();
+						}
+					}
+
+					// Insert the new elements.
+					revisioned_vector->insert(
+							insert_iter,
+							new_elements.begin(),
+							new_elements.end());
+					return;
+				}
 
 				// If single (forward) step then can erase range in one call.
 				if (slice_range->step == iterator_difference_type(1))
@@ -527,15 +592,11 @@ namespace GPlatesApi
 					// Erase the existing elements and insert the new elements.
 					revisioned_vector->insert(
 							revisioned_vector->erase(erase_begin, erase_end),
-							new_elements_begin,
-							new_elements_end);
+							new_elements.begin(),
+							new_elements.end());
 
 					return;
 				}
-
-				// Copy into a vector so we can count the number of new elements.
-				std::vector<element_type> new_elements_vector;
-				std::copy(new_elements_begin, new_elements_end, std::back_inserter(new_elements_vector));
 
 				// Count the number of elements in the extended slice.
 				std::size_t extended_slice_size = 1; 
@@ -545,11 +606,11 @@ namespace GPlatesApi
 					++extended_slice_size;
 				}
 
-				if (new_elements_vector.size() != extended_slice_size)
+				if (new_elements.size() != extended_slice_size)
 				{
 					std::stringstream error_string_stream;
 					error_string_stream << "attempt to assign sequence of size "
-							<< new_elements_vector.size()
+							<< new_elements.size()
 							<< " to extended slice of size " << extended_slice_size;
 
 					PyErr_SetString(PyExc_ValueError, error_string_stream.str().c_str());
@@ -558,7 +619,7 @@ namespace GPlatesApi
 				}
 
 				// Assign the new elements to the revisioned vector.
-				typename std::vector<element_type>::const_iterator new_elements_iter = new_elements_vector.begin();
+				typename std::vector<element_type>::const_iterator new_elements_iter = new_elements.begin();
 				iter = slice_range->start;
 				for ( ; iter != slice_range->stop; std::advance(iter, slice_range->step))
 				{
@@ -613,7 +674,7 @@ namespace GPlatesApi
 						slice_range = get_slice_range(revisioned_vector, extract_slice());
 				if (!slice_range)
 				{
-					// Invalid slice.
+					// Empty range - nothing to delete.
 					return;
 				}
 
@@ -687,7 +748,7 @@ namespace GPlatesApi
 						slice_range = get_slice_range(revisioned_vector, extract_slice());
 				if (!slice_range)
 				{
-					// Invalid slice - return empty list.
+					// Empty range - return empty list.
 					return bp::list();
 				}
 
@@ -1048,6 +1109,7 @@ namespace GPlatesApi
 			}
 			catch (std::invalid_argument)
 			{
+				// The range was empty.
 			}
 
 			// Empty range.

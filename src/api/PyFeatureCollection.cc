@@ -1425,8 +1425,8 @@ export_feature_collection()
 				"  Note that it is not necessary to call :meth:`contains_features` before constructing "
 				"a :class:`FeaturesFunctionArgument` because the :meth:`constructor<__init__>` will "
 				"raise an error if the function argument does not contain features. However raising "
-				"your own error (as in the example above) helps to clarify the source of the error for user "
-				"(caller) of your function.\n")
+				"your own error (as in the example above) helps to clarify the source of the error "
+				"for the user (caller) of your function.\n")
 		.staticmethod("contains_features")
 		.def("get_features",
 				&GPlatesApi::FeaturesFunctionArgument::get_features,
