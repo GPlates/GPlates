@@ -2027,6 +2027,7 @@ GPlatesQtWidgets::HellingerDialog::set_up_test_age_model_collection()
 	age_model_collection.add_age_model(cande_and_kent_model);
 	age_model_collection.add_age_model(lourens_model);
 	age_model_collection.add_age_model(gee_and_kent_model);
+	age_model_collection.set_filename("Dummy filename");
 	age_model_collection.set_active_age_model(1);
 }
 

@@ -27,6 +27,7 @@
 #include <map>
 #include <vector>
 #include "boost/optional.hpp"
+#include <QFile>
 #include <QString>
 
 namespace GPlatesAppLogic
@@ -63,6 +64,20 @@ public:
 	add_age_model(
 			const AgeModel &age_model);
 
+	const QString &
+	get_filename() const
+	{
+		return d_filename;
+	}
+
+	void
+	set_filename(
+			const QString &filename)
+	{
+		d_filename = filename;
+	}
+
+
 private:
 
 	std::vector<AgeModel> d_age_models;
@@ -74,6 +89,11 @@ private:
 	std::map<QString,QString> d_chron_metadata;
 
 	boost::optional<unsigned int> d_active_model_index;
+
+	/**
+	 * @brief filename of file containing the loaded model collection
+	 */
+	QString d_filename;
 
 };
 

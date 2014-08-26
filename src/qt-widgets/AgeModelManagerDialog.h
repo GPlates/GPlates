@@ -27,6 +27,12 @@
 #include "AgeModelManagerDialogUi.h"
 
 
+namespace GPlatesAppLogic
+{
+	class AgeModelCollection;
+	class ApplicationState;
+}
+
 namespace GPlatesQtWidgets
 {
 class AgeModelManagerDialog:
@@ -36,7 +42,27 @@ class AgeModelManagerDialog:
 	Q_OBJECT
 public:
 	AgeModelManagerDialog(
+		GPlatesAppLogic::ApplicationState &app_state,
 		QWidget *parent_ = NULL);
+
+
+private Q_SLOTS:
+
+	void
+	handle_import();
+
+	void
+	handle_combo_box_selection_changed();
+
+private:
+
+	void
+	setup_widgets();
+
+	void
+	setup_connections();
+
+	GPlatesAppLogic::AgeModelCollection &d_age_model_collection;
 };
 
 

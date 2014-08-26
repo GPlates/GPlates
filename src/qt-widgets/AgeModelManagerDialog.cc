@@ -23,11 +23,47 @@
 
 
 #include "AgeModelManagerDialog.h"
+#include "app-logic/AgeModelCollection.h"
+#include "app-logic/ApplicationState.h"
+
 
 GPlatesQtWidgets::AgeModelManagerDialog::AgeModelManagerDialog(
+		GPlatesAppLogic::ApplicationState &app_state,
 		QWidget *parent_):
 	GPlatesDialog(
 		parent_,
-		Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
+		Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
+	d_age_model_collection(app_state.get_age_model_collection())
 {
+	setupUi(this);
+
+	setup_widgets();
+
+	setup_connections();
 }
+
+void
+GPlatesQtWidgets::AgeModelManagerDialog::handle_import()
+{
+
+}
+
+void
+GPlatesQtWidgets::AgeModelManagerDialog::handle_combo_box_selection_changed()
+{
+
+}
+
+void
+GPlatesQtWidgets::AgeModelManagerDialog::setup_widgets()
+{
+	line_edit_collection->setText(d_age_model_collection.get_filename());
+}
+
+void
+GPlatesQtWidgets::AgeModelManagerDialog::setup_connections()
+{
+
+}
+
+
