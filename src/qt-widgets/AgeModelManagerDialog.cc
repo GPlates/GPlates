@@ -22,10 +22,36 @@
  */
 
 
+#include "boost/foreach.hpp"
+
+#include <QStandardItemModel>
+
 #include "AgeModelManagerDialog.h"
 #include "app-logic/AgeModelCollection.h"
 #include "app-logic/ApplicationState.h"
 
+namespace
+{
+	void
+	add_model_identifiers_to_combo_box(
+			const GPlatesAppLogic::AgeModelCollection &age_model_collection,
+			QComboBox *combo_box)
+	{
+		BOOST_FOREACH(const GPlatesAppLogic::AgeModel model,age_model_collection.get_age_models())
+		{
+			combo_box->addItem(model.d_identifier);
+		}
+	}
+
+	void
+	fill_table_model(
+			const GPlatesAppLogic::AgeModelCollection &age_model_collection,
+			QStandardItemModel *standard_model)
+	{
+		standard_model->setHorizontalHeaderItem(GPlatesQtWidgets::AgeModelManagerDialog::CHRON_COLUMN,new QStandardItem(QObject::tr("Chron")));
+		standard_model->setRowCount(0);
+	}
+}
 
 GPlatesQtWidgets::AgeModelManagerDialog::AgeModelManagerDialog(
 		GPlatesAppLogic::ApplicationState &app_state,
@@ -33,7 +59,8 @@ GPlatesQtWidgets::AgeModelManagerDialog::AgeModelManagerDialog(
 	GPlatesDialog(
 		parent_,
 		Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-	d_age_model_collection(app_state.get_age_model_collection())
+	d_age_model_collection(app_state.get_age_model_collection()),
+	d_standard_model(new QStandardItemModel(this))
 {
 	setupUi(this);
 
@@ -49,7 +76,7 @@ GPlatesQtWidgets::AgeModelManagerDialog::handle_import()
 }
 
 void
-GPlatesQtWidgets::AgeModelManagerDialog::handle_combo_box_selection_changed()
+GPlatesQtWidgets::AgeModelManagerDialog::handle_combo_box_current_index_changed()
 {
 
 }
@@ -58,12 +85,20 @@ void
 GPlatesQtWidgets::AgeModelManagerDialog::setup_widgets()
 {
 	line_edit_collection->setText(d_age_model_collection.get_filename());
+
+	add_model_identifiers_to_combo_box(d_age_model_collection,combo_active_model);
+
+	fill_table_model(d_age_model_collection,d_standard_model);
+
+	table_age_models->setModel(d_standard_model);
+	table_age_models->verticalHeader()->setVisible(false);
 }
 
 void
 GPlatesQtWidgets::AgeModelManagerDialog::setup_connections()
 {
-
+	QObject::connect(button_import,SIGNAL(clicked()),this,SLOT(handle_import()));
+	QObject::connect(combo_active_model,SIGNAL(currentIndexChanged(QString)),this,SLOT(handle_combo_box_current_index_changed()));
 }
 
 

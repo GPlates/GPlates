@@ -33,7 +33,7 @@
 namespace GPlatesAppLogic
 {
 
-	typedef std::map<QString,double> age_model_map_type;
+typedef std::map<QString,double> age_model_map_type;
 
 struct AgeModel
 {
@@ -47,6 +47,9 @@ struct AgeModel
 	 */
 	age_model_map_type d_model;
 };
+
+
+typedef std::vector<AgeModel> age_model_container_type;
 
 class AgeModelCollection
 {
@@ -77,10 +80,16 @@ public:
 		d_filename = filename;
 	}
 
+	const age_model_container_type &
+	get_age_models() const
+	{
+		return d_age_models;
+	}
+
 
 private:
 
-	std::vector<AgeModel> d_age_models;
+	age_model_container_type d_age_models;
 
 	/**
 	 * @brief d_chron_comment - additional information relating to the chron - comments, references etc

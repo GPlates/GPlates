@@ -26,6 +26,7 @@
 #include "GPlatesDialog.h"
 #include "AgeModelManagerDialogUi.h"
 
+class QStandardItemModel;
 
 namespace GPlatesAppLogic
 {
@@ -41,6 +42,13 @@ class AgeModelManagerDialog:
 {
 	Q_OBJECT
 public:
+
+	enum AgeModelTableFixedColumns{
+		CHRON_COLUMN,
+
+		NUM_FIXED_COLUMNS
+	};
+
 	AgeModelManagerDialog(
 		GPlatesAppLogic::ApplicationState &app_state,
 		QWidget *parent_ = NULL);
@@ -52,7 +60,7 @@ private Q_SLOTS:
 	handle_import();
 
 	void
-	handle_combo_box_selection_changed();
+	handle_combo_box_current_index_changed();
 
 private:
 
@@ -63,6 +71,8 @@ private:
 	setup_connections();
 
 	GPlatesAppLogic::AgeModelCollection &d_age_model_collection;
+
+	QStandardItemModel *d_standard_model;
 };
 
 
