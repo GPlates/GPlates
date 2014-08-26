@@ -962,6 +962,34 @@ export_gml_time_period()
 
 namespace GPlatesApi
 {
+	namespace
+	{
+		template <typename PropertyValueIterator>
+		const GPlatesPropertyValues::GpmlArray::non_null_ptr_type
+		gpml_array_create_impl(
+				PropertyValueIterator elements_begin,
+				PropertyValueIterator elements_end)
+		{
+			// Copy into a vector.
+			std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> elements_vector;
+			std::copy(elements_begin, elements_end, std::back_inserter(elements_vector));
+
+			// We need at least one time sample to determine the value type, otherwise we need to
+			// ask the python user for it and that might be a little confusing for them.
+			if (elements_vector.empty())
+			{
+				PyErr_SetString(
+						PyExc_RuntimeError,
+						"pygplates.GpmlArray::create() requires a non-empty sequence of PropertyValue elements");
+				bp::throw_error_already_set();
+			}
+
+			return GPlatesPropertyValues::GpmlArray::create(
+					elements_vector,
+					elements_vector[0]->get_structural_type());
+		}
+	}
+
 	const GPlatesPropertyValues::GpmlArray::non_null_ptr_type
 	gpml_array_create(
 			bp::object elements) // Any python sequence (eg, list, tuple).
@@ -971,27 +999,26 @@ namespace GPlatesApi
 				elements_begin(elements),
 				elements_end;
 
-		// Copy into a vector.
-		std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> elements_vector;
-		std::copy(elements_begin, elements_end, std::back_inserter(elements_vector));
+		return gpml_array_create_impl(elements_begin, elements_end);
+	}
 
-		// We need at least one time sample to determine the value type, otherwise we need to
-		// ask the python user for it and that might be a little confusing for them.
-		if (elements_vector.empty())
-		{
-			PyErr_SetString(
-					PyExc_RuntimeError,
-					"pygplates.GpmlArray::create() requires a non-empty sequence of PropertyValue elements");
-			bp::throw_error_already_set();
-		}
+	GPlatesPropertyValues::GpmlArray::non_null_ptr_type
+	gpml_array_create_from_revisioned_vector(
+			GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type revisioned_vector,
+			const GPlatesPropertyValues::GpmlArray &other_gpml_array)
+	{
+		return gpml_array_create_impl(revisioned_vector->begin(), revisioned_vector->end());
+	}
 
-		return GPlatesPropertyValues::GpmlArray::create(
-				elements_vector,
-				elements_vector[0]->get_structural_type());
+	GPlatesPropertyValues::GpmlArray::non_null_ptr_type
+	gpml_array_return_as_non_null_ptr_type(
+			GPlatesPropertyValues::GpmlArray &gpml_array)
+	{
+		return GPlatesUtils::get_non_null_pointer(&gpml_array);
 	}
 
 	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type
-	gpml_array_get_members(
+	gpml_array_get_revisioned_vector(
 			GPlatesPropertyValues::GpmlArray &gpml_array)
 	{
 		return GPlatesUtils::get_non_null_pointer(&gpml_array.members());
@@ -1048,11 +1075,14 @@ export_gpml_array()
 			"\n"
 			"    array = pygplates.GpmlArray(elements)\n");
 
-	// Used 'GPlatesApi::gpml_array_get_members()' to make 'GpmlArray' look like a python list (RevisionedVector).
+	// Used 'GPlatesApi::gpml_array_get_revisioned_vector()' to make 'GpmlArray' look like a python list (RevisionedVector).
 	GPlatesApi::wrap_python_class_as_revisioned_vector<
 			GPlatesPropertyValues::GpmlArray,
 			GPlatesModel::PropertyValue,
-			&GPlatesApi::gpml_array_get_members>(
+			GPlatesPropertyValues::GpmlArray::non_null_ptr_type,
+			&GPlatesApi::gpml_array_create_from_revisioned_vector,
+			&GPlatesApi::gpml_array_return_as_non_null_ptr_type,
+			&GPlatesApi::gpml_array_get_revisioned_vector>(
 					gpml_array_class,
 					gpml_array_class_name);
 
@@ -1371,6 +1401,49 @@ export_gpml_interpolation_function()
 
 namespace GPlatesApi
 {
+	namespace
+	{
+		template <typename TimeSampleIterator>
+		GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
+		gpml_irregular_sampling_create_impl(
+				TimeSampleIterator time_samples_begin,
+				TimeSampleIterator time_samples_end
+				// Not including interpolation function since it is not really used (yet) in GPlates and hence
+				// is just extra baggage for the python API user (we can add it later though)...
+#if 0
+				, boost::optional<GPlatesPropertyValues::GpmlInterpolationFunction::non_null_ptr_type>
+						interpolation_function = boost::none
+#endif
+				)
+		{
+			// Copy into a vector.
+			std::vector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type> time_samples_vector;
+			std::copy(time_samples_begin, time_samples_end, std::back_inserter(time_samples_vector));
+
+			// We need at least one time sample to determine the value type, otherwise we need to
+			// ask the python user for it and that might be a little confusing for them.
+			if (time_samples_vector.empty())
+			{
+				PyErr_SetString(
+						PyExc_RuntimeError,
+						"pygplates.GpmlIrregularSampling::create() requires a non-empty "
+							"sequence of GpmlTimeSample elements");
+				bp::throw_error_already_set();
+			}
+
+			return GPlatesPropertyValues::GpmlIrregularSampling::create(
+					time_samples_vector,
+					// Not including interpolation function since it is not really used (yet) in GPlates and hence
+					// is just extra baggage for the python API user (we can add it later though)...
+#if 0
+					interpolation_function,
+#else
+					boost::none,
+#endif
+					time_samples_vector[0]->get_value_type());
+		}
+	}
+
 	GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
 	gpml_irregular_sampling_create(
 			bp::object time_samples // Any python sequence (eg, list, tuple).
@@ -1387,31 +1460,7 @@ namespace GPlatesApi
 				time_samples_begin(time_samples),
 				time_samples_end;
 
-		// Copy into a vector.
-		std::vector<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type> time_samples_vector;
-		std::copy(time_samples_begin, time_samples_end, std::back_inserter(time_samples_vector));
-
-		// We need at least one time sample to determine the value type, otherwise we need to
-		// ask the python user for it and that might be a little confusing for them.
-		if (time_samples_vector.empty())
-		{
-			PyErr_SetString(
-					PyExc_RuntimeError,
-					"pygplates.GpmlIrregularSampling::create() requires a non-empty "
-						"sequence of GpmlTimeSample elements");
-			bp::throw_error_already_set();
-		}
-
-		return GPlatesPropertyValues::GpmlIrregularSampling::create(
-				time_samples_vector,
-				// Not including interpolation function since it is not really used (yet) in GPlates and hence
-				// is just extra baggage for the python API user (we can add it later though)...
-#if 0
-				interpolation_function,
-#else
-				boost::none,
-#endif
-				time_samples_vector[0]->get_value_type());
+		return gpml_irregular_sampling_create_impl(time_samples_begin, time_samples_end);
 	}
 
 	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::non_null_ptr_type
@@ -1419,6 +1468,28 @@ namespace GPlatesApi
 			GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 	{
 		return &gpml_irregular_sampling.time_samples();
+	}
+
+	GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
+	gpml_irregular_sampling_create_from_revisioned_vector(
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::non_null_ptr_type revisioned_vector,
+			const GPlatesPropertyValues::GpmlIrregularSampling &other_gpml_irregular_sampling)
+	{
+		return gpml_irregular_sampling_create_impl(revisioned_vector->begin(), revisioned_vector->end());
+	}
+
+	GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
+	gpml_irregular_sampling_return_as_non_null_ptr_type(
+			GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+	{
+		return GPlatesUtils::get_non_null_pointer(&gpml_irregular_sampling);
+	}
+
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::non_null_ptr_type
+	gpml_irregular_sampling_get_revisioned_vector(
+			GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+	{
+		return gpml_irregular_sampling_get_time_samples(gpml_irregular_sampling);
 	}
 }
 
@@ -1562,7 +1633,10 @@ export_gpml_irregular_sampling()
 	GPlatesApi::wrap_python_class_as_revisioned_vector<
 			GPlatesPropertyValues::GpmlIrregularSampling,
 			GPlatesPropertyValues::GpmlTimeSample,
-			&GPlatesApi::gpml_irregular_sampling_get_time_samples>(
+			GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type,
+			&GPlatesApi::gpml_irregular_sampling_create_from_revisioned_vector,
+			&GPlatesApi::gpml_irregular_sampling_return_as_non_null_ptr_type,
+			&GPlatesApi::gpml_irregular_sampling_get_revisioned_vector>(
 					gpml_irregular_sampling_class,
 					gpml_irregular_sampling_class_name);
 
@@ -2359,6 +2433,35 @@ export_gpml_old_plates_header()
 
 namespace GPlatesApi
 {
+	namespace
+	{
+		template <typename TimeWindowIterator>
+		GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
+		gpml_piecewise_aggregation_create_impl(
+				TimeWindowIterator time_windows_begin,
+				TimeWindowIterator time_windows_end)
+		{
+			// Copy into a vector.
+			std::vector<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type> time_windows_vector;
+			std::copy(time_windows_begin, time_windows_end, std::back_inserter(time_windows_vector));
+
+			// We need at least one time sample to determine the value type, otherwise we need to
+			// ask the python user for it and that might be a little confusing for them.
+			if (time_windows_vector.empty())
+			{
+				PyErr_SetString(
+						PyExc_RuntimeError,
+						"pygplates.GpmlPiecewiseAggregation::create() requires a non-empty "
+							"sequence of GpmlTimeWindow elements");
+				bp::throw_error_already_set();
+			}
+
+			return GPlatesPropertyValues::GpmlPiecewiseAggregation::create(
+					time_windows_vector,
+					time_windows_vector[0]->get_value_type());
+		}
+	}
+
 	GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
 	gpml_piecewise_aggregation_create(
 			bp::object time_windows) // Any python sequence (eg, list, tuple).
@@ -2368,24 +2471,7 @@ namespace GPlatesApi
 				time_windows_begin(time_windows),
 				time_windows_end;
 
-		// Copy into a vector.
-		std::vector<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type> time_windows_vector;
-		std::copy(time_windows_begin, time_windows_end, std::back_inserter(time_windows_vector));
-
-		// We need at least one time sample to determine the value type, otherwise we need to
-		// ask the python user for it and that might be a little confusing for them.
-		if (time_windows_vector.empty())
-		{
-			PyErr_SetString(
-					PyExc_RuntimeError,
-					"pygplates.GpmlPiecewiseAggregation::create() requires a non-empty "
-						"sequence of GpmlTimeWindow elements");
-			bp::throw_error_already_set();
-		}
-
-		return GPlatesPropertyValues::GpmlPiecewiseAggregation::create(
-				time_windows_vector,
-				time_windows_vector[0]->get_value_type());
+		return gpml_piecewise_aggregation_create_impl(time_windows_begin, time_windows_end);
 	}
 
 	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::non_null_ptr_type
@@ -2393,6 +2479,28 @@ namespace GPlatesApi
 			GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
 	{
 		return &gpml_piecewise_aggregation.time_windows();
+	}
+
+	GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
+	gpml_piecewise_aggregation_create_from_revisioned_vector(
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::non_null_ptr_type revisioned_vector,
+			const GPlatesPropertyValues::GpmlPiecewiseAggregation &other_gpml_piecewise_aggregation)
+	{
+		return gpml_piecewise_aggregation_create_impl(revisioned_vector->begin(), revisioned_vector->end());
+	}
+
+	GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type
+	gpml_piecewise_aggregation_return_as_non_null_ptr_type(
+			GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+	{
+		return GPlatesUtils::get_non_null_pointer(&gpml_piecewise_aggregation);
+	}
+
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::non_null_ptr_type
+	gpml_piecewise_aggregation_get_revisioned_vector(
+			GPlatesPropertyValues::GpmlPiecewiseAggregation &gpml_piecewise_aggregation)
+	{
+		return gpml_piecewise_aggregation_get_time_windows(gpml_piecewise_aggregation);
 	}
 }
 
@@ -2486,7 +2594,10 @@ export_gpml_piecewise_aggregation()
 	GPlatesApi::wrap_python_class_as_revisioned_vector<
 			GPlatesPropertyValues::GpmlPiecewiseAggregation,
 			GPlatesPropertyValues::GpmlTimeWindow,
-			&GPlatesApi::gpml_piecewise_aggregation_get_time_windows>(
+			GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type,
+			&GPlatesApi::gpml_piecewise_aggregation_create_from_revisioned_vector,
+			&GPlatesApi::gpml_piecewise_aggregation_return_as_non_null_ptr_type,
+			&GPlatesApi::gpml_piecewise_aggregation_get_revisioned_vector>(
 					gpml_piecewise_aggregation_class,
 					gpml_piecewise_aggregation_class_name);
 

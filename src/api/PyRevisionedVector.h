@@ -62,18 +62,32 @@ namespace GPlatesApi
 	 * Template parameter 'ClassType' is the C++ class from which the revisioned vector is obtained
 	 * via template parameter function 'GetRevisionedVectorFunction'.
 	 * Template parameter 'PythonClassType' is the boost::python::class_ that wraps 'ClassType'.
+	 * Template parameter 'PythonClassHeldType' is the 'HeldType' of the 'PythonClassType' boost::python::class_.
+	 * Template parameter function 'ConvertClassToPointerFunction' converts a non-const reference
+	 * of 'ClassType' to 'PythonClassHeldType'.
+	 * Template parameter function 'CreateClassFromVectorFunction' creates a new 'PythonClassHeldType'
+	 * from a RevisionedVector (also accepts a 'ClassType' object which is an original object -
+	 * this is used for '__add__' and '__radd__' which create new 'PythonClassHeldType' objects).
 	 */
 	template <
 			class ClassType,
 			class RevisionableType,
+			class PythonClassHeldType,
+			PythonClassHeldType
+					(*CreateClassFromVectorFunction)(
+							typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type,
+							const ClassType &),
+			PythonClassHeldType
+					(*ConvertClassToPointerFunction)(
+							ClassType &),
 			typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type
-					(*GetRevisionedVectorFunction)(ClassType &),
+					(*GetRevisionedVectorFunction)(
+							ClassType &),
 			class PythonClassType>
 	void
 	wrap_python_class_as_revisioned_vector(
 			PythonClassType &python_class,
-			const char *class_name,
-			const char *element_class_name);
+			const char *class_name);
 
 
 	/**
@@ -1152,13 +1166,19 @@ namespace GPlatesApi
 		 * Implements wrapped functions for types that wish to behave like a python list by
 		 * delegating to a contained @a RevisionedVector.
 		 *
-		 * Template parameter 'ClassType' is the C++ class from which the revisioned vector is obtained
-		 * via template parameter function 'GetRevisionedVectorFunction'.
-		 * Template parameter 'PythonClassType' is the boost::python::class_ that wraps 'ClassType'.
+		 * See @a wrap_python_class_as_revisioned_vector for more details on the template parameters.
 		 */
 		template <
 				class ClassType,
 				class RevisionableType,
+				class PythonClassHeldType,
+				PythonClassHeldType
+						(*CreateClassFromVectorFunction)(
+								typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type,
+								const ClassType &),
+				PythonClassHeldType
+						(*ConvertClassToPointerFunction)(
+								ClassType &),
 				typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type
 						(*GetRevisionedVectorFunction)(ClassType &)>
 		class RevisionedVectorDelegateWrapper
@@ -1216,7 +1236,14 @@ namespace GPlatesApi
 		private:
 
 			//! Typedef for this type.
-			typedef RevisionedVectorDelegateWrapper<ClassType, RevisionableType, GetRevisionedVectorFunction> this_type;
+			typedef RevisionedVectorDelegateWrapper<
+					ClassType,
+					RevisionableType,
+					PythonClassHeldType,
+					CreateClassFromVectorFunction,
+					ConvertClassToPointerFunction,
+					GetRevisionedVectorFunction>
+							this_type;
 
 		public:
 
@@ -1279,33 +1306,41 @@ namespace GPlatesApi
 			}
 
 			static
-			revisioned_vector_non_null_ptr_type
+			PythonClassHeldType
 			add(
 					class_type &class_instance,
 					boost::python::object sequence)
 			{
-				return revisioned_vector_wrapper_type::add(
-						GetRevisionedVectorFunction(class_instance), sequence);
+				const revisioned_vector_non_null_ptr_type revisioned_vector =
+						revisioned_vector_wrapper_type::add(
+								GetRevisionedVectorFunction(class_instance), sequence);
+
+				return CreateClassFromVectorFunction(revisioned_vector, class_instance);
 			}
 
 			static
-			revisioned_vector_non_null_ptr_type
+			PythonClassHeldType
 			radd(
 					class_type &class_instance,
 					boost::python::object sequence)
 			{
-				return revisioned_vector_wrapper_type::radd(
-						GetRevisionedVectorFunction(class_instance), sequence);
+				const revisioned_vector_non_null_ptr_type revisioned_vector =
+						revisioned_vector_wrapper_type::radd(
+								GetRevisionedVectorFunction(class_instance), sequence);
+
+				return CreateClassFromVectorFunction(revisioned_vector, class_instance);
 			}
 
 			static
-			revisioned_vector_non_null_ptr_type
+			PythonClassHeldType
 			iadd(
 					class_type &class_instance,
 					boost::python::object sequence)
 			{
-				return revisioned_vector_wrapper_type::iadd(
+				revisioned_vector_wrapper_type::iadd(
 						GetRevisionedVectorFunction(class_instance), sequence);
+
+				return ConvertClassToPointerFunction(class_instance);
 			}
 
 			static
@@ -1445,16 +1480,31 @@ namespace GPlatesApi
 	template <
 			class ClassType,
 			class RevisionableType,
+			class PythonClassHeldType,
+			PythonClassHeldType
+					(*CreateClassFromVectorFunction)(
+							typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type,
+							const ClassType &),
+			PythonClassHeldType
+					(*ConvertClassToPointerFunction)(
+							ClassType &),
 			typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type
-					(*GetRevisionedVectorFunction)(ClassType &),
+					(*GetRevisionedVectorFunction)(
+							ClassType &),
 			class PythonClassType>
 	void
 	wrap_python_class_as_revisioned_vector(
 			PythonClassType &python_class,
 			const char *class_name)
 	{
-		Implementation::RevisionedVectorDelegateWrapper<ClassType, RevisionableType, GetRevisionedVectorFunction>
-				::wrap(python_class, class_name);
+		Implementation::RevisionedVectorDelegateWrapper<
+				ClassType,
+				RevisionableType,
+				PythonClassHeldType,
+				CreateClassFromVectorFunction,
+				ConvertClassToPointerFunction,
+				GetRevisionedVectorFunction>
+						::wrap(python_class, class_name);
 	}
 }
 
