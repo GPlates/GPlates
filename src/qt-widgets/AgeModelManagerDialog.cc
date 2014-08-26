@@ -44,6 +44,17 @@ namespace
 	}
 
 	void
+	add_row_to_standard_model(
+			QStandardItemModel *model,
+			const QString &chron,
+			const GPlatesAppLogic::age_model_container_type &models)
+	{
+		int row = model->rowCount();
+		model->insertRow(row);
+		model->setData(model->index(row,GPlatesQtWidgets::AgeModelManagerDialog::CHRON_COLUMN),chron);
+	}
+
+	void
 	fill_table_model(
 			const GPlatesAppLogic::AgeModelCollection &age_model_collection,
 			QStandardItemModel *standard_model)
@@ -58,6 +69,21 @@ namespace
 		}
 
 		standard_model->setRowCount(0);
+
+		std::set<QString> unique_chrons;
+		BOOST_FOREACH(const GPlatesAppLogic::AgeModel model, age_model_collection.get_age_models())
+		{
+			BOOST_FOREACH(const GPlatesAppLogic::age_model_pair_type pair, model.d_model)
+			{
+				unique_chrons.insert(pair.first);
+			}
+		}
+
+		BOOST_FOREACH(QString chron, unique_chrons)
+		{
+			qDebug() << "Chron: " << chron;
+			add_row_to_standard_model(standard_model,chron,age_model_collection.get_age_models());
+		}
 
 	}
 }

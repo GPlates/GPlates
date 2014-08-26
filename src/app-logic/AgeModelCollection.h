@@ -34,6 +34,7 @@ namespace GPlatesAppLogic
 {
 
 typedef std::map<QString,double> age_model_map_type;
+typedef std::pair<QString,double> age_model_pair_type;
 
 struct AgeModel
 {
