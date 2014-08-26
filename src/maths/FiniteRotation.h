@@ -90,6 +90,19 @@ namespace GPlatesMaths
 				const real_t &angle);
 
 		/**
+		 * Create a finite rotation that rotates from @a from_point to @a to_point along the
+		 * great circle arc connecting them.
+		 *
+		 * If the two points are the same or antipodal then an arbitrary rotation axis
+		 * (among the infinite possible choices) is selected.
+		 */
+		static
+		const FiniteRotation
+		create(
+				const PointOnSphere &from_point,
+				const PointOnSphere &to_point);
+
+		/**
 		 * Create a finite rotation corresponding to the rotation effected by the
 		 * unit quaternion @a uq.
 		 */

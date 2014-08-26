@@ -25,7 +25,7 @@ class FiniteRotationCase(unittest.TestCase):
         self.angle = 0.5 * math.pi
         self.finite_rotation = pygplates.FiniteRotation(self.pole, self.angle)
     
-    def test_construct(self):
+    def test_construct_from_pole_and_angle(self):
         # Can construct from PointOnSphere pole.
         finite_rotation = pygplates.FiniteRotation(self.pole, self.angle)
         self.assertTrue(isinstance(finite_rotation, pygplates.FiniteRotation))
@@ -54,6 +54,18 @@ class FiniteRotationCase(unittest.TestCase):
         if imported_numpy:
             finite_rotation = pygplates.FiniteRotation(numpy.array(lat_lon_tuple), self.angle)
             self.assertTrue(isinstance(finite_rotation, pygplates.FiniteRotation))
+    
+    def test_construct_rotation_between_two_points(self):
+        self.assertTrue(pygplates.FiniteRotation((10,10), (55,132)) * pygplates.PointOnSphere(10,10)
+                == pygplates.PointOnSphere(55,132))
+        self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
+                pygplates.FiniteRotation((10,10), (10,10))))
+        self.assertAlmostEqual(pygplates.FiniteRotation((10,10), (-10,-170))
+                .get_lat_lon_euler_pole_and_angle_degrees()[2], 180, 4)
+        lat, lon, angle = pygplates.FiniteRotation((10,10), (-30,10)).get_lat_lon_euler_pole_and_angle_degrees()
+        self.assertAlmostEqual(lat, 0)
+        self.assertAlmostEqual(lon, 100)
+        self.assertAlmostEqual(angle, 40)
     
     # Attempt to rotate each supported geometry type - an error will be raised if not supported...
     
@@ -99,6 +111,15 @@ class FiniteRotationCase(unittest.TestCase):
         pole_lat, pole_long, angle_degrees = self.finite_rotation.get_lat_lon_euler_pole_and_angle_degrees()
         self.assertTrue(abs(math.radians(angle_degrees)) > 0.5 * math.pi - 0.00001 and
             abs(math.radians(angle_degrees)) < 0.5 * math.pi + 0.00001)
+    
+    def test_get_rotation_distance(self):
+        self.assertAlmostEqual(self.finite_rotation.get_rotation_distance((90,0)), 0)
+        self.assertAlmostEqual(self.finite_rotation.get_rotation_distance((-90,0)), 0)
+        # Rotating along great circle arc.
+        self.assertAlmostEqual(self.finite_rotation.get_rotation_distance((0,0)), 0.5 * math.pi)
+        # Rotating along small circle arc.
+        self.assertAlmostEqual(self.finite_rotation.get_rotation_distance((45,0)), math.sin(math.radians(45)) * 0.5 * math.pi)
+        self.assertAlmostEqual(self.finite_rotation.get_rotation_distance((-45,0)), math.sin(math.radians(45)) * 0.5 * math.pi)
     
     def test_identity(self):
         # Create identity rotation explicitly.

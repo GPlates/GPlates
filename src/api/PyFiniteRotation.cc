@@ -54,7 +54,7 @@ namespace bp = boost::python;
 namespace GPlatesApi
 {
 	boost::shared_ptr<GPlatesMaths::FiniteRotation>
-	finite_rotation_create(
+	finite_rotation_create_from_euler_pole_and_angle(
 			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
 			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
 			const GPlatesMaths::PointOnSphere &pole,
@@ -63,6 +63,18 @@ namespace GPlatesApi
 		return boost::shared_ptr<GPlatesMaths::FiniteRotation>(
 				new GPlatesMaths::FiniteRotation(
 						GPlatesMaths::FiniteRotation::create(pole, angle_radians)));
+	}
+
+	boost::shared_ptr<GPlatesMaths::FiniteRotation>
+	finite_rotation_create_between_two_points(
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
+			const GPlatesMaths::PointOnSphere &from_point,
+			const GPlatesMaths::PointOnSphere &to_point)
+	{
+		return boost::shared_ptr<GPlatesMaths::FiniteRotation>(
+				new GPlatesMaths::FiniteRotation(
+						GPlatesMaths::FiniteRotation::create(from_point, to_point)));
 	}
 
 	boost::shared_ptr<GPlatesMaths::FiniteRotation>
@@ -189,6 +201,27 @@ namespace GPlatesApi
 				GPlatesMaths::convert_rad_to_deg(rotation_params.angle));
 	}
 
+	GPlatesMaths::real_t
+	finite_rotation_get_rotation_distance(
+			const GPlatesMaths::FiniteRotation &finite_rotation,
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
+			const GPlatesMaths::PointOnSphere &from_point)
+	{
+		if (GPlatesMaths::represents_identity_rotation(finite_rotation.unit_quat()))
+		{
+			return 0;
+		}
+
+		const GPlatesMaths::UnitQuaternion3D::RotationParams rotation_params =
+				finite_rotation.unit_quat().get_rotation_params(finite_rotation.axis_hint());
+
+		const GPlatesMaths::real_t small_circle_radius =
+				cross(rotation_params.axis, from_point.position_vector()).magnitude();
+
+		return small_circle_radius * rotation_params.angle;
+	}
+
 	bp::object
 	finite_rotation_eq(
 			const GPlatesMaths::FiniteRotation &finite_rotation,
@@ -256,9 +289,10 @@ export_finite_rotation()
 					"FiniteRotation",
 					"Represents the motion of plates on the surface of the globe.\n"
 					"\n"
-					"A finite rotation is a rotation about an *Euler pole* (a point on the surface of the \n"
-					"globe, which is the intersection point of a rotation vector (the semi-axis of rotation) \n"
-					"which extends from the centre of the globe), by an angular distance. \n"
+					"A finite rotation is a rotation about an *Euler pole* by an angular distance. "
+					"An Euler pole is represented by a point on the surface of the globe where a "
+					"rotation vector (radially extending from the centre of the globe) intersects "
+					"the surface of the (unit radius) globe.\n"
 					"\n"
 					"An Euler pole is specified by a point on the surface of the globe. \n"
 					"\n"
@@ -267,12 +301,17 @@ export_finite_rotation()
 					"* a positive angle represents an anti-clockwise rotation around the rotation vector,\n"
 					"* a negative angle corresponds to a clockwise rotation.\n"
 					"\n"
-					"Finite rotations are equality (``==``, ``!=``) comparable (but not hashable "
-					"- cannot be used as a key in a dict).\n"
+					"A finite rotation can be :meth:`created<__init__>`:\n"
 					"\n"
-					"Finite rotations can also be compared using :meth:`are_equivalent` to detect "
-					"equivalent rotations (that rotate a geometry to the same final position but rotate "
-					"in opposite directions around the globe).\n"
+					"* explicitly from an Euler pole and an angle, or\n"
+					"* from two points (rotates one point to the other along great circle arc), or\n"
+					"* as an :meth:`identity<create_identity_rotation>` rotation (no rotation).\n"
+					"\n"
+					"The Euler pole and angle can be retrieved using:\n"
+					"\n"
+					"* :meth:`get_euler_pole_and_angle` as a tuple of Euler pole and angle (radians), or\n"
+					"* :meth:`get_lat_lon_euler_pole_and_angle_degrees` as a tuple of Euler pole "
+					"latitude and longitude and angle (all in degrees).\n"
 					"\n"
 					"Multiplication operations can be used to rotate various geometry types:\n"
 					"\n"
@@ -293,11 +332,8 @@ export_finite_rotation()
 					"  finite_rotation = pygplates.FiniteRotation(pole, angle)\n"
 					"  rotated_polyline = finite_rotation * polyline\n"
 					"\n"
-					"Two finite rotations can be interpolated using :meth:`interpolate`:\n"
-					"::\n"
-					"\n"
-					"  interpolated_rotation = pygplates.FiniteRotation.interpolate("
-					"finite_rotation1, finite_rotation2, time1, time2, target_time)\n"
+					"The distance that a point is rotated along its small circle rotation arc can be found "
+					"using :meth:`get_rotation_distance`.\n"
 					"\n"
 					"Two finite rotations can be composed in either of the following equivalent ways:\n"
 					"\n"
@@ -307,6 +343,22 @@ export_finite_rotation()
 					"\n"
 					"The latter technique uses :meth:`compose`. "
 					"Note that rotation composition is *not* commutative (``A*B != B*A``)\n"
+					"\n"
+					"The reverse, or inverse, of a finite rotation can be found using :meth:`get_inverse`.\n"
+					"\n"
+					"Two finite rotations can be interpolated using :meth:`interpolate`:\n"
+					"::\n"
+					"\n"
+					"  interpolated_rotation = pygplates.FiniteRotation.interpolate("
+					"finite_rotation1, finite_rotation2, time1, time2, target_time)\n"
+					"\n"
+					"Finite rotations are equality (``==``, ``!=``) comparable (but not hashable "
+					"- cannot be used as a key in a dict).\n"
+					"\n"
+					"Finite rotations can also be compared using :meth:`are_equivalent` to detect "
+					"equivalent rotations (that rotate a geometry to the same final position but might rotate "
+					"in opposite directions around the globe). A finite rotation can be tested to see if "
+					"it is an :meth:`identity<represents_identity_rotation>` rotation (no rotation).\n"
 					"\n"
 					"**The following is general information on composing finite rotations in various "
 					"plate tectonic scenarios**...\n"
@@ -420,7 +472,7 @@ export_finite_rotation()
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::finite_rotation_create,
+						&GPlatesApi::finite_rotation_create_from_euler_pole_and_angle,
 						bp::default_call_policies(),
 						(bp::arg("pole"), bp::arg("angle_radians"))),
 				"__init__(pole, angle_radians)\n"
@@ -445,6 +497,31 @@ export_finite_rotation()
 				"    finite_rotation = pygplates.FiniteRotation((latitude,longitude), angle_radians)\n"
 				"    finite_rotation = pygplates.FiniteRotation([latitude,longitude], math.radians(angle_degrees))\n"
 				"    finite_rotation = pygplates.FiniteRotation(numpy.array([latitude,longitude]), angle_radians)\n")
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::finite_rotation_create_between_two_points,
+						bp::default_call_policies(),
+						(bp::arg("from_point"), bp::arg("to_point"))),
+				"__init__(from_point, to_point)\n"
+				"  Create a finite rotation that rotates one point to another along the "
+				"great circle arc connecting them.\n"
+				"\n"
+				"  :param from_point: the point to rotate *from*\n"
+				"  :type from_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
+				"  :param to_point: the point to rotate *to*\n"
+				"  :type to_point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
+				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
+				"  :raises: ViolatedUnitVectorInvariantError if (x,y,z) is not unit magnitude\n"
+				"\n"
+				"  If *from_point* and *to_point* are the same or antipodal (opposite sides of globe) "
+				"then an arbitrary rotation axis (among the infinite possible choices) is selected.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    finite_rotation = pygplates.FiniteRotation(from_point, to_point)\n"
+				"    assert(to_point == finite_rotation * from_point)\n")
 		.def("__init__",
 				bp::make_constructor(
 						&GPlatesApi::finite_rotation_create_identity_rotation,
@@ -676,6 +753,25 @@ export_finite_rotation()
 				"    finite_rotation = pygplates.FiniteRotation(pole, angle_radians)\n"
 				"    pole_latitude, pole_longitude, angle_degrees = "
 				"finite_rotation.get_lat_lon_euler_pole_and_angle_degrees()\n")
+		.def("get_rotation_distance",
+				&GPlatesApi::finite_rotation_get_rotation_distance,
+				(bp::arg("point")),
+				"get_rotation_distance(point) -> float\n"
+				"  Return the distance that a point rotates along its small circle rotation arc (in radians).\n"
+				"\n"
+				"  :param point: the point being rotated (the start point of the rotation arc)\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
+				"  :rtype: float\n"
+				"\n"
+				"  Returns the distance along the (small circle) rotation arc from the start point "
+				"*point* to the end point ``finite_rotation * point``. Note that the returned distance "
+				"is not the angle of rotation - it is the actual distance on the unit radius sphere "
+				"(hence radians). To convert to distance on the Earth's surface multiply by the Earth radius.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    rotated_distance_radians = finite_rotation.get_rotation_distance(point)\n")
 		// Multiply two finite rotations...
 		.def("__mul__", compose)
 		// Rotations...

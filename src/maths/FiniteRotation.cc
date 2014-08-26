@@ -167,6 +167,24 @@ GPlatesMaths::FiniteRotation::create(
 	return FiniteRotation(uq, axis);
 }
 
+const GPlatesMaths::FiniteRotation
+GPlatesMaths::FiniteRotation::create(
+		const PointOnSphere &from_point,
+		const PointOnSphere &to_point)
+{
+	const Vector3D rotation_axis = cross(from_point.position_vector(), to_point.position_vector());
+
+	// If the points are the same or antipodal then there are an infinite number of rotation axes
+	// possible, so we just pick one arbitrarily.
+	const PointOnSphere pole = (rotation_axis.magSqrd() == 0)
+			? PointOnSphere(generate_perpendicular(from_point.position_vector()))
+			: PointOnSphere(rotation_axis.get_normalisation());
+
+	const real_t angle = acos(dot(from_point.position_vector(), to_point.position_vector()));
+
+	return create(pole, angle);
+}
+
 
 const GPlatesMaths::FiniteRotation
 GPlatesMaths::FiniteRotation::create(
