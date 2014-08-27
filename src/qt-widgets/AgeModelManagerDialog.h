@@ -23,6 +23,8 @@
 #ifndef GPLATES_QTWIDGETS_AGEMODELMANAGERDIALOG_H
 #define GPLATES_QTWIDGETS_AGEMODELMANAGERDIALOG_H
 
+#include "boost/scoped_ptr.hpp"
+
 #include "GPlatesDialog.h"
 #include "AgeModelManagerDialogUi.h"
 
@@ -34,8 +36,16 @@ namespace GPlatesAppLogic
 	class ApplicationState;
 }
 
+namespace GPlatesPresentation
+{
+	class ViewState;
+}
+
 namespace GPlatesQtWidgets
 {
+
+class OpenFileDialog;
+
 class AgeModelManagerDialog:
 		public GPlatesDialog,
 		protected Ui_AgeModelManagerDialog
@@ -50,8 +60,10 @@ public:
 	};
 
 	AgeModelManagerDialog(
-		GPlatesAppLogic::ApplicationState &app_state,
+		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_ = NULL);
+
+	~AgeModelManagerDialog();
 
 
 private Q_SLOTS:
@@ -73,6 +85,10 @@ private:
 	GPlatesAppLogic::AgeModelCollection &d_age_model_collection;
 
 	QStandardItemModel *d_standard_model;
+
+	GPlatesAppLogic::ApplicationState &d_application_state;
+
+	boost::scoped_ptr<OpenFileDialog> d_open_file_dialog;
 };
 
 

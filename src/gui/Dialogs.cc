@@ -142,7 +142,7 @@ GPlatesGui::Dialogs::age_model_manager_dialog()
 	if (d_dialogs[dialog_type].isNull())
 	{
 		d_dialogs[dialog_type] = new dialog_typename(
-					view_state().get_application_state(),
+					view_state(),
 					&viewport_window());
 	}
 

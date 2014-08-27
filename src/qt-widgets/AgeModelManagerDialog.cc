@@ -29,6 +29,8 @@
 #include "AgeModelManagerDialog.h"
 #include "app-logic/AgeModelCollection.h"
 #include "app-logic/ApplicationState.h"
+#include "presentation/ViewState.h"
+#include "qt-widgets/OpenFileDialog.h"
 
 namespace
 {
@@ -45,13 +47,30 @@ namespace
 
 	void
 	add_row_to_standard_model(
-			QStandardItemModel *model,
+			QStandardItemModel *standard_model,
 			const QString &chron,
 			const GPlatesAppLogic::age_model_container_type &models)
 	{
-		int row = model->rowCount();
-		model->insertRow(row);
-		model->setData(model->index(row,GPlatesQtWidgets::AgeModelManagerDialog::CHRON_COLUMN),chron);
+		int row = standard_model->rowCount();
+		standard_model->insertRow(row);
+
+		// Add the chron string to the first column.
+		standard_model->setData(standard_model->index(row,GPlatesQtWidgets::AgeModelManagerDialog::CHRON_COLUMN),chron);
+
+
+		// Check each model for the chron key - if it's there, add the model's time.
+
+		int column = GPlatesQtWidgets::AgeModelManagerDialog::NUM_FIXED_COLUMNS;
+		BOOST_FOREACH(GPlatesAppLogic::AgeModel age_model, models)
+		{
+			GPlatesAppLogic::age_model_map_type::const_iterator it = age_model.d_model.find(chron);
+
+			if (it != age_model.d_model.end())
+			{
+				standard_model->setData(standard_model->index(row,column),it->second);
+			}
+			++column;
+		}
 	}
 
 	void
@@ -70,6 +89,8 @@ namespace
 
 		standard_model->setRowCount(0);
 
+		// Each model might only define times for a subset of all possible chrons; find the set of all
+		// chrons used in all the models.
 		std::set<QString> unique_chrons;
 		BOOST_FOREACH(const GPlatesAppLogic::AgeModel model, age_model_collection.get_age_models())
 		{
@@ -79,6 +100,7 @@ namespace
 			}
 		}
 
+		// For each unique chron, add a row to the table containing the ages (where they exist) for each model.
 		BOOST_FOREACH(QString chron, unique_chrons)
 		{
 			qDebug() << "Chron: " << chron;
@@ -86,16 +108,53 @@ namespace
 		}
 
 	}
+
+	void
+	highlight_cell(
+			int row,
+			int column,
+			QStandardItemModel *standard_model)
+	{
+			standard_model->setData(standard_model->index(row,column),Qt::yellow,Qt::BackgroundColorRole);
+	}
+
+	void
+	highlight_column(
+			int column,
+			QStandardItemModel *standard_model)
+	{
+		int rows = standard_model->rowCount();
+		for (int row = 0; row < rows ; ++row)
+		{
+			highlight_cell(row,column,standard_model);
+		}
+	}
+
+	void
+	highlight_selected_age_model(
+			QComboBox *combo_box,
+			QStandardItemModel *standard_model)
+	{
+		int index = combo_box->currentIndex();
+		int column = GPlatesQtWidgets::AgeModelManagerDialog::NUM_FIXED_COLUMNS + index;
+		highlight_column(column,standard_model);
+	}
 }
 
 GPlatesQtWidgets::AgeModelManagerDialog::AgeModelManagerDialog(
-		GPlatesAppLogic::ApplicationState &app_state,
+		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
 	GPlatesDialog(
 		parent_,
 		Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-	d_age_model_collection(app_state.get_age_model_collection()),
-	d_standard_model(new QStandardItemModel(this))
+	d_age_model_collection(view_state.get_application_state().get_age_model_collection()),
+	d_standard_model(new QStandardItemModel(this)),
+	d_application_state(view_state.get_application_state()),
+	d_open_file_dialog(new OpenFileDialog(
+						   this,
+						   "Select age model file",
+						   "Age model file (*.dat)",
+						   view_state))
 {
 	setupUi(this);
 
@@ -104,16 +163,29 @@ GPlatesQtWidgets::AgeModelManagerDialog::AgeModelManagerDialog(
 	setup_connections();
 }
 
-void
-GPlatesQtWidgets::AgeModelManagerDialog::handle_import()
+GPlatesQtWidgets::AgeModelManagerDialog::~AgeModelManagerDialog()
 {
 
 }
 
 void
+GPlatesQtWidgets::AgeModelManagerDialog::handle_import()
+{
+	QString filename = d_open_file_dialog->get_open_file_name();
+	if (filename.isEmpty())
+	{
+		return;
+	}
+
+	line_edit_collection->setText(filename);
+}
+
+void
 GPlatesQtWidgets::AgeModelManagerDialog::handle_combo_box_current_index_changed()
 {
-
+	fill_table_model(d_age_model_collection,d_standard_model);
+	highlight_selected_age_model(combo_active_model,d_standard_model);
+	d_age_model_collection.set_active_age_model(combo_active_model->currentIndex());
 }
 
 void
@@ -124,6 +196,7 @@ GPlatesQtWidgets::AgeModelManagerDialog::setup_widgets()
 	add_model_identifiers_to_combo_box(d_age_model_collection,combo_active_model);
 
 	fill_table_model(d_age_model_collection,d_standard_model);
+	highlight_selected_age_model(combo_active_model,d_standard_model);
 
 	table_age_models->setModel(d_standard_model);
 	table_age_models->verticalHeader()->setVisible(false);
