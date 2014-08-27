@@ -283,11 +283,32 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
             # Note: Setting anchor plate instead of fixed plate in case there's no plate circuit path
             # from plate zero (default anchor plate) to moving or fixed plates (see pygplates API docs)...
             anchor_plate_id=crossover.post_crossover_fixed_plate_id)
-        
+            
         # Determine the crossover adjustment to apply to all post-crossover time samples.
-        crossover_adjustment = \
-            new_post_crossover_moving_fixed_relative_rotation * \
-            old_post_crossover_moving_fixed_relative_rotation.get_inverse()
+        #
+        # The pre-crossover total rotation at time t2 (assuming t2 is a crossover time):
+        #   R(0->t2, Fa->M)
+        # The old post-crossover total rotation at time t2:
+        #   R(0->t2, Fb->M)
+        # The new (fixed) post-crossover total rotation at time t2:
+        #   R'(0->t2, Fb->M)
+        #
+        # The old post-crossover total rotation at an older time t4 is composed of stage poles:
+        #   R(0->t4) = R(t3->t4) * R(t2->t3) * R(0->t2, Fb->M)
+        #            = R(t2->t4) * R(0->t2, Fb->M)
+        # The stage pole from t2->t4:
+        #   R(t2->t4) = R(0->t4) * inverse[R(0->t2, Fb->M)]
+        # The new post-crossover total rotation at an older time t4 is composed of stage poles:
+        #   R'(0->t4) = R(t3->t4) * R(t2->t3) * R'(0->t2, Fb->M)
+        #             = R(t2->t4) * R'(0->t2, Fb->M)
+        # Which, using the stage pole above to replace 'R(t2->t4)', is:
+        #   R'(0->t4) = R(0->t4) * inverse[R(0->t2, Fb->M)] * R'(0->t2, Fb->M)
+        #             = R(0->t4) * crossover_adjustment
+        # So each total pole gets post-multiplied by a constant crossover adjustment of:
+        #   crossover_adjustment = inverse[R(0->t2, Fb->M)] * R'(0->t2, Fb->M)
+        #
+        crossover_adjustment = (old_post_crossover_moving_fixed_relative_rotation.get_inverse() *
+                new_post_crossover_moving_fixed_relative_rotation)
         
         # Change the first time sample.
         post_crossover_time_samples[0].get_value().set_finite_rotation(
@@ -296,7 +317,7 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
         for post_crossover_time_sample in post_crossover_time_samples[1:]:
             # Get, adjust and set.
             post_crossover_rotation = post_crossover_time_sample.get_value().get_finite_rotation()
-            post_crossover_rotation = crossover_adjustment * post_crossover_rotation
+            post_crossover_rotation = post_crossover_rotation * crossover_adjustment
             post_crossover_time_sample.get_value().set_finite_rotation(post_crossover_rotation)
 
     # If any rotation features came from files then write those feature collections back out to the same files.
