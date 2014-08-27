@@ -40,6 +40,7 @@ namespace
 			const GPlatesAppLogic::AgeModelCollection &age_model_collection,
 			QComboBox *combo_box)
 	{
+		combo_box->clear();
 		BOOST_FOREACH(const GPlatesAppLogic::AgeModel model,age_model_collection.get_age_models())
 		{
 			combo_box->addItem(model.d_identifier);
@@ -79,6 +80,10 @@ namespace
 			const GPlatesAppLogic::AgeModelCollection &age_model_collection,
 			QStandardItemModel *standard_model)
 	{
+
+		standard_model->setColumnCount(0);
+		standard_model->setRowCount(0);
+
 		standard_model->setHorizontalHeaderItem(GPlatesQtWidgets::AgeModelManagerDialog::CHRON_COLUMN,new QStandardItem(QObject::tr("Chron")));
 
 		int column = GPlatesQtWidgets::AgeModelManagerDialog::NUM_FIXED_COLUMNS;
@@ -88,7 +93,6 @@ namespace
 			++column;
 		}
 
-		standard_model->setRowCount(0);
 
 		// Each model might only define times for a subset of all possible chrons; find the set of all
 		// chrons used in all the models.
@@ -173,11 +177,13 @@ void
 GPlatesQtWidgets::AgeModelManagerDialog::handle_import()
 {
 	QString filename = d_open_file_dialog->get_open_file_name();
+	qDebug() << "Filename: " << filename;
 	if (filename.isEmpty())
 	{
 		return;
 	}
 
+	qDebug() << "Handle import";
 	line_edit_collection->setText(filename);
 
 	try{
@@ -191,6 +197,8 @@ GPlatesQtWidgets::AgeModelManagerDialog::handle_import()
 	{
 		qWarning() << "Unknown error reading age model file " << filename;
 	}
+
+	update_dialog();
 }
 
 void
@@ -220,6 +228,15 @@ GPlatesQtWidgets::AgeModelManagerDialog::setup_connections()
 {
 	QObject::connect(button_import,SIGNAL(clicked()),this,SLOT(handle_import()));
 	QObject::connect(combo_active_model,SIGNAL(currentIndexChanged(QString)),this,SLOT(handle_combo_box_current_index_changed()));
+}
+
+void
+GPlatesQtWidgets::AgeModelManagerDialog::update_dialog()
+{
+	line_edit_collection->setText(d_age_model_collection.get_filename());
+	add_model_identifiers_to_combo_box(d_age_model_collection,combo_active_model);
+	fill_table_model(d_age_model_collection,d_standard_model);
+	highlight_selected_age_model(combo_active_model,d_standard_model);
 }
 
 

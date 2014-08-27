@@ -21,15 +21,67 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <QFile>
+#include <QStringList>
+
 
 #include "AgeModelReader.h"
+
+
 #include "ErrorOpeningFileForReadingException.h"
+#include "app-logic/AgeModelCollection.h"
+
+namespace
+{
+	void
+	parse_geotimescale(
+			const QString &line,
+			GPlatesAppLogic::AgeModelCollection &model)
+	{
+		// Hardcoded for now...13 is the length of @GEOTIMESCALE"
+		QString temp = line;
+		temp.remove(0,14);
+		qDebug() << "After stripping geotimescale: " << temp;
+		temp = temp.split("|").first();
+		qDebug() << temp;
+	}
+
+	void
+	parse_chron_line(
+			const QString &line,
+			GPlatesAppLogic::AgeModelCollection &model)
+	{
+
+	}
+
+	void
+	parse_line(
+		const QString &line,
+		GPlatesAppLogic::AgeModelCollection &model)
+	{
+		if (line.startsWith("#"))
+		{
+			return;
+		}
+		qDebug() << line;
+
+		if (line.startsWith("@GEOTIMESCALE"))
+		{
+			parse_geotimescale(line,model);
+		}
+		else
+		{
+			parse_chron_line(line,model);
+		}
+	}
+
+}
 
 void
 GPlatesFileIO::AgeModelReader::read_file(
 		const QString &filename,
 		GPlatesAppLogic::AgeModelCollection &model)
 {
+	qDebug() << "Filename: " << filename;
 	QFile file(filename);
 
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -37,4 +89,15 @@ GPlatesFileIO::AgeModelReader::read_file(
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 
+
+
+	QTextStream input(&file);
+
+
+	while(!input.atEnd())
+	{
+		parse_line(input.readLine(),model);
+	}
+
+	model.set_filename(filename);
 }

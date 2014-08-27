@@ -63,7 +63,7 @@
     </layout>
    </item>
    <item row="2" column="0" colspan="2">
-    <widget class="QTableView" name="table_models"/>
+    <widget class="QTableView" name="table_age_models"/>
    </item>
    <item row="3" column="0" colspan="2">
     <layout class="QHBoxLayout" name="horizontalLayout">

@@ -82,6 +82,9 @@ private:
 	void
 	setup_connections();
 
+	void
+	update_dialog();
+
 	GPlatesAppLogic::AgeModelCollection &d_age_model_collection;
 
 	QStandardItemModel *d_standard_model;
