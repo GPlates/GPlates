@@ -12,6 +12,8 @@ include_directories(${internal_INCLUDE_DIRS})
 
 
 set(srcs
+    AgeModelReader.cc
+    AgeModelReader.h
     ArbitraryNodeProcessor.h
     ArbitraryXmlProfile.h
     ArbitraryXmlReader.cc

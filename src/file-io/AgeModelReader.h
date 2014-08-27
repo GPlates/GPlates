@@ -1,9 +1,9 @@
 /**
  * \file
- * $Revision: 8672 $
- * $Date: 2010-06-10 07:00:38 +0200 (to, 10 jun 2010) $
+ * $Revision: 15361 $
+ * $Date: 2014-07-10 16:30:58 +0200 (Thu, 10 Jul 2014) $
  *
- * Copyright (C) 2010 Geological Survey of Norway
+ * Copyright (C) 2014 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -21,33 +21,29 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_FILEIO_SYMBOLFILEREADER_H
-#define GPLATES_FILEIO_SYMBOLFILEREADER_H
+#ifndef AGEMODELREADER_H
+#define AGEMODELREADER_H
 
-#include "gui/Symbol.h"
+#include <boost/noncopyable.hpp>
+#include <QString>
+
+namespace GPlatesAppLogic
+{
+	class AgeModelCollection;
+}
 
 namespace GPlatesFileIO
 {
-
-
-    /**
-     * Class for reading a simple symbol file, and using
-     * the content to
-     * fill the @a symbol_map
-     * as appropriate.
-     *
-     */
-	class SymbolFileReader
+	class AgeModelReader:
+			private boost::noncopyable
 	{
 	public:
-
 		static
 		void
 		read_file(
 				const QString &filename,
-				GPlatesGui::symbol_map_type &symbol_map);
+				GPlatesAppLogic::AgeModelCollection &model);
 	};
-
 }
 
-#endif // GPLATES_FILEIO_SYMBOLFILEREADER_H
+#endif // AGEMODELREADER_H

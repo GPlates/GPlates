@@ -29,6 +29,7 @@
 #include "AgeModelManagerDialog.h"
 #include "app-logic/AgeModelCollection.h"
 #include "app-logic/ApplicationState.h"
+#include "file-io/AgeModelReader.h"
 #include "presentation/ViewState.h"
 #include "qt-widgets/OpenFileDialog.h"
 
@@ -178,6 +179,18 @@ GPlatesQtWidgets::AgeModelManagerDialog::handle_import()
 	}
 
 	line_edit_collection->setText(filename);
+
+	try{
+		GPlatesFileIO::AgeModelReader::read_file(filename,d_age_model_collection);
+	}
+	catch(std::exception &exception)
+	{
+		qWarning() << "Error reading age model file " << filename << ": " << exception.what();
+	}
+	catch(...)
+	{
+		qWarning() << "Unknown error reading age model file " << filename;
+	}
 }
 
 void
