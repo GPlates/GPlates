@@ -21,8 +21,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-
 #include "boost/foreach.hpp"
+#include "boost/unordered_set.hpp"
 
 #include <QStandardItemModel>
 
@@ -65,7 +65,10 @@ namespace
 		int column = GPlatesQtWidgets::AgeModelManagerDialog::NUM_FIXED_COLUMNS;
 		BOOST_FOREACH(GPlatesAppLogic::AgeModel age_model, models)
 		{
-			GPlatesAppLogic::age_model_map_type::const_iterator it = age_model.d_model.find(chron);
+//			GPlatesAppLogic::age_model_map_type::const_iterator it = age_model.d_model.find(chron);
+			GPlatesAppLogic::age_model_map_type::const_iterator it =
+					std::find_if(age_model.d_model.begin(),age_model.d_model.end(),
+								boost::bind(&GPlatesAppLogic::age_model_pair_type::first, _1) == chron);
 
 			if (it != age_model.d_model.end())
 			{
@@ -96,6 +99,8 @@ namespace
 
 		// Each model might only define times for a subset of all possible chrons; find the set of all
 		// chrons used in all the models.
+		// TODO: this will be ordered alphabetically, but we don't want this - our final table output order currently
+		// follows the ordering of this set. For example 2ny will get placed after 2An.1ny.
 		std::set<QString> unique_chrons;
 		BOOST_FOREACH(const GPlatesAppLogic::AgeModel model, age_model_collection.get_age_models())
 		{

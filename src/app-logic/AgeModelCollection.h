@@ -26,6 +26,7 @@
 
 #include <map>
 #include <vector>
+#include "boost/noncopyable.hpp"
 #include "boost/optional.hpp"
 #include <QFile>
 #include <QString>
@@ -33,11 +34,20 @@
 namespace GPlatesAppLogic
 {
 
-typedef std::map<QString,double> age_model_map_type;
+//typedef std::map<QString,double> age_model_map_type;
+typedef std::vector<std::pair<QString,double> > age_model_map_type;
 typedef std::pair<QString,double> age_model_pair_type;
 
 struct AgeModel
 {
+	AgeModel()
+	{};
+
+	AgeModel(
+			const QString &model_id):
+		d_identifier(model_id)
+	{}
+
 	/**
 	 * @brief d_identifier - A brief name for the model, for example CandeKent95
 	 */
@@ -52,7 +62,8 @@ struct AgeModel
 
 typedef std::vector<AgeModel> age_model_container_type;
 
-class AgeModelCollection
+class AgeModelCollection:
+		public boost::noncopyable
 {
 public:
 	AgeModelCollection();
@@ -67,6 +78,24 @@ public:
 	void
 	add_age_model(
 			const AgeModel &age_model);
+
+	void
+	add_chron_to_model(
+			const QString &model_id,
+			const QString &chron,
+			double age);
+
+
+	void
+	add_chron_to_model(
+			int index,
+			const QString &chron,
+			double age);
+
+	void
+	add_chron_metadata(
+			const QString &chron,
+			const QString &chron_metadata);
 
 	const QString &
 	get_filename() const
@@ -87,11 +116,25 @@ public:
 		return d_age_models;
 	}
 
-	unsigned int
+	void
+	set_age_models(
+			const age_model_container_type &models)
+	{
+		d_age_models = models;
+	}
+
+	int
 	number_of_age_models() const
 	{
 		return static_cast<unsigned int>(d_age_models.size());
 	}
+
+	void
+	clear();
+
+	QString
+	get_model_id(
+			int index) const;
 
 private:
 

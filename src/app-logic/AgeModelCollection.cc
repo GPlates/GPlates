@@ -59,3 +59,54 @@ GPlatesAppLogic::AgeModelCollection::add_age_model(
 {
 	d_age_models.push_back(age_model);
 }
+
+void
+GPlatesAppLogic::AgeModelCollection::add_chron_to_model(
+		const QString &model_id,
+		const QString &chron,
+		double age)
+{
+
+}
+
+void
+GPlatesAppLogic::AgeModelCollection::add_chron_to_model(
+		int index,
+		const QString &chron,
+		double age)
+{
+	if (index > static_cast<int>(d_age_models.size()))
+	{
+		return;
+	}
+	AgeModel &age_model = d_age_models.at(index);
+	age_model.d_model.push_back(std::make_pair(chron,age));
+}
+
+void
+GPlatesAppLogic::AgeModelCollection::add_chron_metadata(
+		const QString &chron,
+		const QString &chron_metadata)
+{
+	d_chron_metadata.insert(std::make_pair(chron,chron_metadata));
+}
+
+
+void GPlatesAppLogic::AgeModelCollection::clear()
+{
+	d_age_models.clear();
+	d_chron_metadata.clear();
+	d_filename = QString();
+	d_active_model_index.reset();
+}
+
+QString
+GPlatesAppLogic::AgeModelCollection::get_model_id(
+		int index) const
+{
+	if (index > static_cast<int>(d_age_models.size()))
+	{
+		return QString();
+	}
+	return d_age_models.at(index).d_identifier;
+}

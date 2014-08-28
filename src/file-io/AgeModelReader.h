@@ -43,6 +43,12 @@ namespace GPlatesFileIO
 		read_file(
 				const QString &filename,
 				GPlatesAppLogic::AgeModelCollection &model);
+
+	private:
+
+		static QString s_delimiter;
+		static QString s_geotimescale_marker;
+		static QString s_comment_marker;
 	};
 }
 
