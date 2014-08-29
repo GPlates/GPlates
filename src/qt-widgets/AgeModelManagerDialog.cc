@@ -33,8 +33,27 @@
 #include "presentation/ViewState.h"
 #include "qt-widgets/OpenFileDialog.h"
 
+const int CHRON_COLUMN_WIDTH = 100;
+const int MODEL_COLUMN_WIDTH = 140;
+
 namespace
 {
+	void
+	resize_columns(
+			QTableView *table_view,
+			int number_of_models)
+	{
+		int number_of_fixed_columns = GPlatesQtWidgets::AgeModelManagerDialog::NUM_FIXED_COLUMNS;
+		table_view->horizontalHeader()->resizeSection(GPlatesQtWidgets::AgeModelManagerDialog::CHRON_COLUMN,CHRON_COLUMN_WIDTH);
+		for (int i = number_of_fixed_columns;
+			 i < number_of_fixed_columns + number_of_models ;
+			 ++i)
+		{
+			table_view->horizontalHeader()->resizeSection(i,MODEL_COLUMN_WIDTH);
+		}
+		table_view->horizontalHeader()->setStretchLastSection(true);
+	}
+
 	void
 	add_model_identifiers_to_combo_box(
 			const GPlatesAppLogic::AgeModelCollection &age_model_collection,
@@ -229,6 +248,7 @@ void
 GPlatesQtWidgets::AgeModelManagerDialog::handle_combo_box_current_index_changed()
 {
 	fill_table_model(d_age_model_collection,d_standard_model);
+	resize_columns(table_age_models,d_age_model_collection.number_of_age_models());
 	highlight_selected_age_model(combo_active_model,d_standard_model);
 	d_age_model_collection.set_active_age_model(combo_active_model->currentIndex());
 }
@@ -261,6 +281,7 @@ GPlatesQtWidgets::AgeModelManagerDialog::update_dialog()
 	line_edit_collection->setText(d_age_model_collection.get_filename());
 	add_model_identifiers_to_combo_box(d_age_model_collection,combo_active_model);
 	fill_table_model(d_age_model_collection,d_standard_model);
+	resize_columns(table_age_models,d_age_model_collection.number_of_age_models());
 	highlight_selected_age_model(combo_active_model,d_standard_model);
 }
 
