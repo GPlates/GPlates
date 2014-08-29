@@ -22,13 +22,13 @@
  */
 
 #include "boost/foreach.hpp"
-#include "boost/unordered_set.hpp"
 
 #include <QStandardItemModel>
 
 #include "AgeModelManagerDialog.h"
 #include "app-logic/AgeModelCollection.h"
 #include "app-logic/ApplicationState.h"
+#include "app-logic/UserPreferences.h"
 #include "file-io/AgeModelReader.h"
 #include "presentation/ViewState.h"
 #include "qt-widgets/OpenFileDialog.h"
@@ -210,12 +210,31 @@ GPlatesQtWidgets::AgeModelManagerDialog::AgeModelManagerDialog(
 
 	setup_connections();
 
+	const GPlatesAppLogic::UserPreferences &preferences = d_application_state.get_user_preferences();
+	QVariant variant = preferences.get_value("paths/last_used_age_model");
+	QString last_used_age_model_path = variant.toString();
+
+
+	qDebug() << "Last used age model path: " << last_used_age_model_path;
+
+	static const QString default_age_model_path("SampleData/sample-age-model.dat");
+
+
+	if (!last_used_age_model_path.isEmpty())
+	{
+		load_file(last_used_age_model_path);
+	}
+	else
+	{
+		load_file(default_age_model_path);
+	}
+
 
 }
 
 GPlatesQtWidgets::AgeModelManagerDialog::~AgeModelManagerDialog()
 {
-
+// Destructor required due to boost::scoped_ptr member variable.
 }
 
 void
@@ -226,22 +245,8 @@ GPlatesQtWidgets::AgeModelManagerDialog::handle_import()
 	{
 		return;
 	}
+	load_file(filename);
 
-	line_edit_collection->setText(filename);
-
-	try{
-		GPlatesFileIO::AgeModelReader::read_file(filename,d_age_model_collection);
-	}
-	catch(std::exception &exception)
-	{
-		qWarning() << "Error reading age model file " << filename << ": " << exception.what();
-	}
-	catch(...)
-	{
-		qWarning() << "Unknown error reading age model file " << filename;
-	}
-
-	update_dialog();
 }
 
 void
@@ -283,6 +288,27 @@ GPlatesQtWidgets::AgeModelManagerDialog::update_dialog()
 	fill_table_model(d_age_model_collection,d_standard_model);
 	resize_columns(table_age_models,d_age_model_collection.number_of_age_models());
 	highlight_selected_age_model(combo_active_model,d_standard_model);
+}
+
+void
+GPlatesQtWidgets::AgeModelManagerDialog::load_file(
+		const QString &filename)
+{
+	try{
+		GPlatesFileIO::AgeModelReader::read_file(filename,d_age_model_collection);
+	}
+	catch(std::exception &exception)
+	{
+		qWarning() << "Error reading age model file " << filename << ": " << exception.what();
+	}
+	catch(...)
+	{
+		qWarning() << "Unknown error reading age model file " << filename;
+	}
+
+	GPlatesAppLogic::UserPreferences &preferences = d_application_state.get_user_preferences();
+	preferences.set_value("paths/last_used_age_model",QVariant(filename));
+	update_dialog();
 }
 
 

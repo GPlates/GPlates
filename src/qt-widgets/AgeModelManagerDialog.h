@@ -85,6 +85,10 @@ private:
 	void
 	update_dialog();
 
+	void
+	load_file(
+			const QString &filename);
+
 	GPlatesAppLogic::AgeModelCollection &d_age_model_collection;
 
 	QStandardItemModel *d_standard_model;

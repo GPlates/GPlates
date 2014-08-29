@@ -25,9 +25,6 @@
 
 #include "AgeModelCollection.h"
 
-GPlatesAppLogic::AgeModelCollection::AgeModelCollection()
-{
-}
 
 boost::optional<const GPlatesAppLogic::AgeModel &>
 GPlatesAppLogic::AgeModelCollection::get_active_age_model() const

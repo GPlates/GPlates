@@ -68,7 +68,8 @@ class AgeModelCollection:
 		public boost::noncopyable
 {
 public:
-	AgeModelCollection();
+	AgeModelCollection()
+	{};
 
 	boost::optional<const AgeModel &>
 	get_active_age_model() const;
@@ -180,7 +181,6 @@ private:
 	 *
 	 */
 	std::vector<QString> d_ordered_chrons;
-
 };
 
 

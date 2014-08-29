@@ -152,7 +152,6 @@ GPlatesFileIO::AgeModelReader::read_file(
 		const QString &filename,
 		GPlatesAppLogic::AgeModelCollection &model)
 {
-	qDebug() << "Filename: " << filename;
 	QFile file(filename);
 
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
