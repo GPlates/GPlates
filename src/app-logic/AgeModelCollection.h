@@ -34,9 +34,10 @@
 namespace GPlatesAppLogic
 {
 
-//typedef std::map<QString,double> age_model_map_type;
-typedef std::vector<std::pair<QString,double> > age_model_map_type;
+typedef std::map<QString,double> age_model_map_type;
+//typedef std::vector<std::pair<QString,double> > age_model_map_type;
 typedef std::pair<QString,double> age_model_pair_type;
+typedef std::vector<QString> ordered_chron_container_type;
 
 struct AgeModel
 {
@@ -136,6 +137,13 @@ public:
 	get_model_id(
 			int index) const;
 
+	void
+	add_next_ordered_chron(
+			const QString &chron);
+
+	const std::vector<QString> &
+	get_ordered_chrons() const;
+
 private:
 
 	age_model_container_type d_age_models;
@@ -149,9 +157,25 @@ private:
 	boost::optional<unsigned int> d_active_model_index;
 
 	/**
-	 * @brief filename of file containing the loaded model collection
+	 * @brief Name of file from which the age models were imported.
 	 */
 	QString d_filename;
+
+	/**
+	 * @brief An ordered vector of chrons, from youngest to oldest.
+	 *
+	 * The chrons are stored as QStrings, and their default sorted order
+	 * would not be chronological (e.g. 2ny would come after 2An.1ny...)
+	 *
+	 * While it might be possible to set up some sort of customised sort so that
+	 * they're displayed in chronological order, here I'm taking a more brute
+	 * force approach and storing the sorted order here.
+	 *
+	 * We assume that the order provided in the age model text file is chronological;
+	 * for each chron line in the file, we add a new chron to d_ordered_chrons.
+	 *
+	 */
+	std::vector<QString> d_ordered_chrons;
 
 };
 

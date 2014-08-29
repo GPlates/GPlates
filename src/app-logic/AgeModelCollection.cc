@@ -80,7 +80,7 @@ GPlatesAppLogic::AgeModelCollection::add_chron_to_model(
 		return;
 	}
 	AgeModel &age_model = d_age_models.at(index);
-	age_model.d_model.push_back(std::make_pair(chron,age));
+	age_model.d_model.insert(std::make_pair(chron,age));
 }
 
 void
@@ -92,12 +92,14 @@ GPlatesAppLogic::AgeModelCollection::add_chron_metadata(
 }
 
 
-void GPlatesAppLogic::AgeModelCollection::clear()
+void
+GPlatesAppLogic::AgeModelCollection::clear()
 {
 	d_age_models.clear();
 	d_chron_metadata.clear();
 	d_filename = QString();
 	d_active_model_index.reset();
+	d_ordered_chrons.clear();
 }
 
 QString
@@ -109,4 +111,17 @@ GPlatesAppLogic::AgeModelCollection::get_model_id(
 		return QString();
 	}
 	return d_age_models.at(index).d_identifier;
+}
+
+void
+GPlatesAppLogic::AgeModelCollection::add_next_ordered_chron(
+		const QString &chron)
+{
+	d_ordered_chrons.push_back(chron);
+}
+
+const std::vector<QString> &
+GPlatesAppLogic::AgeModelCollection::get_ordered_chrons() const
+{
+	return d_ordered_chrons;
 }

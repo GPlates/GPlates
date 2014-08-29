@@ -78,6 +78,7 @@ namespace
 		// for each of the models in @a model.
 		QString chron = list.first();
 		qDebug() << "Chron: " << chron;
+		model.add_next_ordered_chron(chron);
 
 
 		if (list.length() < 2)

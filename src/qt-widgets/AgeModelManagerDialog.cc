@@ -65,11 +65,12 @@ namespace
 		int column = GPlatesQtWidgets::AgeModelManagerDialog::NUM_FIXED_COLUMNS;
 		BOOST_FOREACH(GPlatesAppLogic::AgeModel age_model, models)
 		{
-//			GPlatesAppLogic::age_model_map_type::const_iterator it = age_model.d_model.find(chron);
+			GPlatesAppLogic::age_model_map_type::const_iterator it = age_model.d_model.find(chron);
+#if 0
 			GPlatesAppLogic::age_model_map_type::const_iterator it =
 					std::find_if(age_model.d_model.begin(),age_model.d_model.end(),
 								boost::bind(&GPlatesAppLogic::age_model_pair_type::first, _1) == chron);
-
+#endif
 			if (it != age_model.d_model.end())
 			{
 				standard_model->setData(standard_model->index(row,column),it->second);
@@ -96,7 +97,7 @@ namespace
 			++column;
 		}
 
-
+#if 0
 		// Each model might only define times for a subset of all possible chrons; find the set of all
 		// chrons used in all the models.
 		// TODO: this will be ordered alphabetically, but we don't want this - our final table output order currently
@@ -116,7 +117,11 @@ namespace
 			qDebug() << "Chron: " << chron;
 			add_row_to_standard_model(standard_model,chron,age_model_collection.get_age_models());
 		}
-
+#endif
+		BOOST_FOREACH(QString chron,age_model_collection.get_ordered_chrons())
+		{
+			add_row_to_standard_model(standard_model,chron,age_model_collection.get_age_models());
+		}
 	}
 
 	void
