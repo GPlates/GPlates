@@ -51,7 +51,8 @@ namespace
 	add_row_to_standard_model(
 			QStandardItemModel *standard_model,
 			const QString &chron,
-			const GPlatesAppLogic::age_model_container_type &models)
+			const GPlatesAppLogic::age_model_container_type &models,
+			const GPlatesAppLogic::chron_comment_map_type &chron_comments)
 	{
 		int row = standard_model->rowCount();
 		standard_model->insertRow(row);
@@ -77,6 +78,13 @@ namespace
 			}
 			++column;
 		}
+
+		// Add the chron comment
+		GPlatesAppLogic::chron_comment_map_type::const_iterator it = chron_comments.find(chron);
+		if (it != chron_comments.end())
+		{
+			standard_model->setData(standard_model->index(row,column),it->second);
+		}
 	}
 
 	void
@@ -96,6 +104,8 @@ namespace
 			standard_model->setHorizontalHeaderItem(column,new QStandardItem(model.d_identifier));
 			++column;
 		}
+
+		standard_model->setHorizontalHeaderItem(column,new QStandardItem(QObject::tr("Comment")));
 
 #if 0
 		// Each model might only define times for a subset of all possible chrons; find the set of all
@@ -120,7 +130,11 @@ namespace
 #endif
 		BOOST_FOREACH(QString chron,age_model_collection.get_ordered_chrons())
 		{
-			add_row_to_standard_model(standard_model,chron,age_model_collection.get_age_models());
+			add_row_to_standard_model(
+						standard_model,
+						chron,
+						age_model_collection.get_age_models(),
+						age_model_collection.get_chron_comment_map());
 		}
 	}
 
@@ -176,6 +190,8 @@ GPlatesQtWidgets::AgeModelManagerDialog::AgeModelManagerDialog(
 	setup_widgets();
 
 	setup_connections();
+
+
 }
 
 GPlatesQtWidgets::AgeModelManagerDialog::~AgeModelManagerDialog()
@@ -187,13 +203,11 @@ void
 GPlatesQtWidgets::AgeModelManagerDialog::handle_import()
 {
 	QString filename = d_open_file_dialog->get_open_file_name();
-	qDebug() << "Filename: " << filename;
 	if (filename.isEmpty())
 	{
 		return;
 	}
 
-	qDebug() << "Handle import";
 	line_edit_collection->setText(filename);
 
 	try{
@@ -231,6 +245,7 @@ GPlatesQtWidgets::AgeModelManagerDialog::setup_widgets()
 
 	table_age_models->setModel(d_standard_model);
 	table_age_models->verticalHeader()->setVisible(false);
+	table_age_models->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }
 
 void

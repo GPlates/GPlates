@@ -38,6 +38,7 @@ typedef std::map<QString,double> age_model_map_type;
 //typedef std::vector<std::pair<QString,double> > age_model_map_type;
 typedef std::pair<QString,double> age_model_pair_type;
 typedef std::vector<QString> ordered_chron_container_type;
+typedef std::map<QString,QString> chron_comment_map_type;
 
 struct AgeModel
 {
@@ -141,8 +142,11 @@ public:
 	add_next_ordered_chron(
 			const QString &chron);
 
-	const std::vector<QString> &
+	const ordered_chron_container_type &
 	get_ordered_chrons() const;
+
+	const chron_comment_map_type &
+	get_chron_comment_map() const;
 
 private:
 
@@ -150,9 +154,9 @@ private:
 
 	/**
 	 * @brief d_chron_comment - additional information relating to the chron - comments, references etc
-	 * Ultimately we might have several metadata fields here; for now I'm bundling everything into one QString.
+	 * Ultimately we might have several fields here; for now I'm bundling everything into one QString.
 	 */
-	std::map<QString,QString> d_chron_metadata;
+	chron_comment_map_type d_chron_comments;
 
 	boost::optional<unsigned int> d_active_model_index;
 

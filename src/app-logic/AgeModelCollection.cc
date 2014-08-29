@@ -88,7 +88,7 @@ GPlatesAppLogic::AgeModelCollection::add_chron_metadata(
 		const QString &chron,
 		const QString &chron_metadata)
 {
-	d_chron_metadata.insert(std::make_pair(chron,chron_metadata));
+	d_chron_comments.insert(std::make_pair(chron,chron_metadata));
 }
 
 
@@ -96,7 +96,7 @@ void
 GPlatesAppLogic::AgeModelCollection::clear()
 {
 	d_age_models.clear();
-	d_chron_metadata.clear();
+	d_chron_comments.clear();
 	d_filename = QString();
 	d_active_model_index.reset();
 	d_ordered_chrons.clear();
@@ -120,7 +120,13 @@ GPlatesAppLogic::AgeModelCollection::add_next_ordered_chron(
 	d_ordered_chrons.push_back(chron);
 }
 
-const std::vector<QString> &
+const GPlatesAppLogic::chron_comment_map_type &
+GPlatesAppLogic::AgeModelCollection::get_chron_comment_map() const
+{
+	return d_chron_comments;
+}
+
+const GPlatesAppLogic::ordered_chron_container_type &
 GPlatesAppLogic::AgeModelCollection::get_ordered_chrons() const
 {
 	return d_ordered_chrons;

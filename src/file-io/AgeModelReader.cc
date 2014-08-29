@@ -68,6 +68,10 @@ namespace
 		if (split_at_comment.length()>1)
 		{
 			comment = split_at_comment.at(1);
+
+			//Remove first and last characters (quotation marks)
+			comment.remove(0,1);
+			comment.remove(comment.length()-1,1);
 		}
 		qDebug() << "Comment: " << comment;
 
@@ -77,7 +81,6 @@ namespace
 		// From here we assume that the first term in "list" is the Chron string, and subsequent terms are the ages (or NULL marker)
 		// for each of the models in @a model.
 		QString chron = list.first();
-		qDebug() << "Chron: " << chron;
 		model.add_next_ordered_chron(chron);
 
 
