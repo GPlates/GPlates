@@ -42,6 +42,8 @@ set(srcs
     GeometryDistance.cc
     GeometryDistance.h
     GeometryForwardDeclarations.h
+    GeometryInterpolation.cc
+    GeometryInterpolation.h
     GeometryOnSphere.h
     GeometryType.h
     GreatCircle.cc
