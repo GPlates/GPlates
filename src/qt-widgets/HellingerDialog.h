@@ -344,6 +344,13 @@ namespace GPlatesQtWidgets
 		void
 		hide_child_dialogs();
 
+		/**
+		 * @brief update_chron_time - check the chron string against the active age model, and convert
+		 * it to an age if appropriate.
+		 */
+		void
+		update_chron_time();
+
 
 	private Q_SLOTS:
 
@@ -445,6 +452,9 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_update_segment_editing();
+
+		void
+		handle_active_age_model_changed();
 
 	private:
 

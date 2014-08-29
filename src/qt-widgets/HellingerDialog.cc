@@ -698,6 +698,12 @@ GPlatesQtWidgets::HellingerDialog::handle_update_segment_editing()
 }
 
 void
+GPlatesQtWidgets::HellingerDialog::handle_active_age_model_changed()
+{
+	update_chron_time();
+}
+
+void
 GPlatesQtWidgets::HellingerDialog::initialise_widgets()
 {
 	progress_bar->setEnabled(false);
@@ -977,18 +983,8 @@ GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 
 	line_import_file->setText(path);
 
-	boost::optional<double> chron_time =
-			try_to_find_chron_time(
-				d_hellinger_model->get_chron_string(),
-				d_view_state.get_application_state().get_age_model_collection());
 
-	if (chron_time)
-	{
-		d_chron_time = *chron_time;
-	}
-
-	spinbox_chron->setValue(d_chron_time);
-
+	update_chron_time();
 	update_buttons();
 	update_from_model();
 	handle_expand_all();
@@ -1812,6 +1808,26 @@ void GPlatesQtWidgets::HellingerDialog::hide_child_dialogs()
 }
 
 void
+GPlatesQtWidgets::HellingerDialog::update_chron_time()
+{
+	boost::optional<double> chron_time =
+			try_to_find_chron_time(
+				d_hellinger_model->get_chron_string(),
+				d_view_state.get_application_state().get_age_model_collection());
+
+	if (chron_time)
+	{
+		d_chron_time = *chron_time;
+	}
+
+	spinbox_chron->setValue(d_chron_time);
+
+	// If the chron time has changed, we'll want to update the oldest possible time on
+	// the reconstruction slider, and this may also require an update of the canvas.
+	handle_chron_time_changed(d_chron_time);
+}
+
+void
 GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 {
 
@@ -2187,9 +2203,16 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(d_hellinger_edit_segment_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
 	QObject::connect(d_hellinger_new_segment_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
 
+	// Connection to the app-state's AgeModelCollection, so that we are notified of changes to the active model.
+	QObject::connect(&d_view_state.get_application_state().get_age_model_collection(),
+					 SIGNAL(active_age_model_changed()),
+					 this,
+					 SLOT(handle_active_age_model_changed()));
+
 }
 
-void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
+void
+GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
 {
 	// Delay any notification of changes to the rendered geometry collection
 	// until end of current scope block. This is so we can do multiple changes
@@ -2236,7 +2259,8 @@ void GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
 				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
 }
 
-void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
+void
+GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
 {
 	d_pick_layer_ptr->set_active(activate);
 	d_hover_layer_ptr->set_active(activate);
@@ -2245,7 +2269,8 @@ void GPlatesQtWidgets::HellingerDialog::activate_layers(bool activate)
 	d_pole_estimate_layer_ptr->set_active(activate);
 }
 
-void GPlatesQtWidgets::HellingerDialog::clear_rendered_geometries()
+void
+GPlatesQtWidgets::HellingerDialog::clear_rendered_geometries()
 {
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 	d_pick_layer_ptr->clear_rendered_geometries();
@@ -2289,7 +2314,8 @@ GPlatesQtWidgets::HellingerDialog::store_expanded_status()
 	}
 }
 
-void GPlatesQtWidgets::HellingerDialog::close()
+void
+GPlatesQtWidgets::HellingerDialog::close()
 {
 	qDebug() << "HellingerDialog::close()";
 	handle_close();
@@ -2297,7 +2323,8 @@ void GPlatesQtWidgets::HellingerDialog::close()
 	GPlatesDialog::hide();
 }
 
-void GPlatesQtWidgets::HellingerDialog::hide()
+void
+GPlatesQtWidgets::HellingerDialog::hide()
 {
 	hide_child_dialogs();
 	GPlatesDialog::hide();
@@ -2323,7 +2350,8 @@ GPlatesQtWidgets::HellingerDialog::restore_expanded_status()
 	QObject::connect(tree_widget,SIGNAL(expanded(QModelIndex)),this,SLOT(store_expanded_status()));
 }
 
-void GPlatesQtWidgets::HellingerDialog::expand_segment(
+void
+GPlatesQtWidgets::HellingerDialog::expand_segment(
 		const unsigned int segment_number)
 {
 	int top_level_items = tree_widget->topLevelItemCount();
@@ -2343,22 +2371,26 @@ void GPlatesQtWidgets::HellingerDialog::expand_segment(
 	}
 }
 
-GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GPlatesQtWidgets::HellingerDialog::get_pick_layer()
+GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+GPlatesQtWidgets::HellingerDialog::get_pick_layer()
 {
 	return d_pick_layer_ptr;
 }
 
-GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GPlatesQtWidgets::HellingerDialog::get_editing_layer()
+GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+GPlatesQtWidgets::HellingerDialog::get_editing_layer()
 {
 	return d_editing_layer_ptr;
 }
 
-GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GPlatesQtWidgets::HellingerDialog::get_feature_highlight_layer()
+GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+GPlatesQtWidgets::HellingerDialog::get_feature_highlight_layer()
 {
 	return d_feature_highlight_layer_ptr;
 }
 
-GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type GPlatesQtWidgets::HellingerDialog::get_pole_estimate_layer()
+GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+GPlatesQtWidgets::HellingerDialog::get_pole_estimate_layer()
 {
 	return d_pole_estimate_layer_ptr;
 }
