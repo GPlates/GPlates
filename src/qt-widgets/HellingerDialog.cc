@@ -196,6 +196,7 @@ namespace{
 
 			if (it != age_model_map.end())
 			{
+				qDebug() << "Found age for chron. Chron: " << it->first << ", Age: " << it->second;
 				return boost::optional<double>(it->second);
 			}
 		}
@@ -580,8 +581,6 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	update_from_model();
 
 	initialise_widgets();
-
-	set_up_test_age_model_collection();
 }
 
 void

@@ -29,6 +29,7 @@
 #include "boost/noncopyable.hpp"
 #include "boost/optional.hpp"
 #include <QFile>
+#include <QObject>
 #include <QString>
 
 namespace GPlatesAppLogic
@@ -65,11 +66,13 @@ struct AgeModel
 typedef std::vector<AgeModel> age_model_container_type;
 
 class AgeModelCollection:
+		public QObject,
 		public boost::noncopyable
 {
+	Q_OBJECT
 public:
-	AgeModelCollection()
-	{};
+	AgeModelCollection(
+			QObject *parent_ = NULL);
 
 	boost::optional<const AgeModel &>
 	get_active_age_model() const;
@@ -148,6 +151,11 @@ public:
 
 	const chron_comment_map_type &
 	get_chron_comment_map() const;
+
+Q_SIGNALS:
+
+	void
+	active_age_model_changed();
 
 private:
 

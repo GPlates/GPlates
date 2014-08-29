@@ -214,9 +214,6 @@ GPlatesQtWidgets::AgeModelManagerDialog::AgeModelManagerDialog(
 	QVariant variant = preferences.get_value("paths/last_used_age_model");
 	QString last_used_age_model_path = variant.toString();
 
-
-	qDebug() << "Last used age model path: " << last_used_age_model_path;
-
 	static const QString default_age_model_path("SampleData/sample-age-model.dat");
 
 

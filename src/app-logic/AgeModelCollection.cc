@@ -22,9 +22,14 @@
  */
 
 #include <map>
+#include <QObject>
 
 #include "AgeModelCollection.h"
 
+GPlatesAppLogic::AgeModelCollection::AgeModelCollection(
+		QObject *parent_):
+	QObject(parent_)
+{}
 
 boost::optional<const GPlatesAppLogic::AgeModel &>
 GPlatesAppLogic::AgeModelCollection::get_active_age_model() const
@@ -48,6 +53,8 @@ GPlatesAppLogic::AgeModelCollection::set_active_age_model(
 	{
 		d_active_model_index.reset(index);
 	}
+
+	Q_EMIT active_age_model_changed();
 }
 
 void

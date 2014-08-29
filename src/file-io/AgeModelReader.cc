@@ -73,7 +73,6 @@ namespace
 			comment.remove(0,1);
 			comment.remove(comment.length()-1,1);
 		}
-		qDebug() << "Comment: " << comment;
 
 		QStringList list = split_at_comment.first().split(delimiter,QString::SkipEmptyParts);
 
@@ -132,8 +131,6 @@ namespace
 		{
 			return;
 		}
-
-		qDebug() << line;
 
 		if (line.startsWith(geotimescale_marker))
 		{
