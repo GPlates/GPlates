@@ -43,8 +43,10 @@ namespace GPlatesMaths
 	 * NOTE: The original polylines @a from_polyline and @a to_polyline are also returned in
 	 * @a interpolated_polylines since the points in each geometry are ordered from closest to
 	 * @a rotation_axis to furthest (which may be different than the order in the originals).
+	 *
+	 * Returns false if the polylines do not overlap in latitude (where North pole is @a rotation_axis).
 	 */
-	void
+	bool
 	interpolate(
 			std::vector<PolylineOnSphere::non_null_ptr_to_const_type> &interpolated_polylines,
 			const PolylineOnSphere::non_null_ptr_to_const_type &from_polyline,
