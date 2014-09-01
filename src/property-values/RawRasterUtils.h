@@ -364,6 +364,46 @@ namespace GPlatesPropertyValues
 						const raster_element_type &no_data_value)
 				{
 					raster.set_no_data_value(no_data_value);
+
+					// Rasters that have data will be caught by the next specialisation which will
+					// alter the data matching the old no-data value to the new no-data value...
+				}
+			};
+
+			// Specialisation for rasters that have a no-data value that can be set *and* have data.
+			template<typename T, class StatisticsPolicy>
+			struct AddNoDataValue<
+				RawRasterImpl<T, RawRasterDataPolicies::WithData,
+					StatisticsPolicy, RawRasterNoDataValuePolicies::WithNoDataValue> >
+			{
+				typedef RawRasterImpl<T, RawRasterDataPolicies::WithData, StatisticsPolicy,
+					RawRasterNoDataValuePolicies::WithNoDataValue> RawRasterType;
+				typedef typename RawRasterType::element_type raster_element_type;
+
+				static
+				void
+				add_no_data_value(
+						RawRasterType &raster,
+						const raster_element_type &no_data_value)
+				{
+					// If there is already a no-data value on the raster and it is different than
+					// 'no_data_value' then convert all values that match the previous no-data value
+					// to 'no_data_value'.
+					if (raster.no_data_value() &&
+						!raster.is_no_data_value(no_data_value))
+					{
+						raster_element_type *const data = raster.data();
+						const unsigned int num_pixels = raster.width() * raster.height();
+						for (unsigned int n = 0; n < num_pixels; ++n)
+						{
+							if (raster.is_no_data_value(data[n]))
+							{
+								data[n] = no_data_value;
+							}
+						}
+					}
+
+					raster.set_no_data_value(no_data_value);
 				}
 			};
 
@@ -645,17 +685,6 @@ namespace GPlatesPropertyValues
 
 
 		/**
-		 * Writes @a raster out to @a filename.
-		 *
-		 * Returns whether the write was successful.
-		 */
-		bool
-		write_rgba8_raster(
-				const Rgba8RawRaster::non_null_ptr_type &raster,
-				const QString &filename);
-
-
-		/**
 		 * Returns true if @a raster has any pixels with an alpha value of 255.
 		 */
 		bool
@@ -682,7 +711,12 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Adds a no-data value to a raster - also converts no-data pixel values (in raster data)
-		 * from the value used to load the raster data to the value expected by the raster type.
+		 * from the value used to load the raster data to the value expected by the raster type
+		 * (this applies to floating-point raster types - they always have NaN as the no-data value).
+		 *
+		 * If there is a previous no-data value set on the raster and it differs from @a no_data_value
+		 * then pixel values matching the previous no-data value will be converted to @a no_data_value
+		 * (this applies to integer raster types - they have no-data values that can be any integer).
 		 *
 		 * This is useful when you've loaded data into a raster and need to set the no-data value
 		 * that's appropriate for the data loaded.

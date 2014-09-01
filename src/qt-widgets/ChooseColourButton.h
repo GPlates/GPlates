@@ -45,6 +45,11 @@ namespace GPlatesQtWidgets
 		ChooseColourButton(
 				QWidget *parent_ = NULL);
 
+		/**
+		 * Set the colour.
+		 *
+		 * NOTE: This emits the 'colour_changed' signal.
+		 */
 		void
 		set_colour(
 				const GPlatesGui::Colour &colour);
@@ -54,6 +59,13 @@ namespace GPlatesQtWidgets
 		{
 			return d_colour;
 		}
+
+	Q_SIGNALS:
+
+		//! Emitted if user changes colour via GUI or if @a set_colour is explicitly called.
+		void
+		colour_changed(
+				GPlatesQtWidgets::ChooseColourButton &);
 
 	private Q_SLOTS:
 

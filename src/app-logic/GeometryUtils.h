@@ -35,6 +35,7 @@
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
+#include "maths/PolygonOrientation.h"
 #include "maths/PolylineOnSphere.h"
 
 #include "model/FeatureHandle.h"
@@ -147,6 +148,29 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
 		convert_geometry_to_polygon(
 				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
+
+		/**
+		 * Convert the polygon to the specified orientation (if necessary).
+		 *
+		 * If the polygon is already the correct orientation then it is simply returned.
+		 */
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+		convert_polygon_to_oriented_polygon(
+				const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
+				GPlatesMaths::PolygonOrientation::Orientation polygon_orientation);
+
+
+		/**
+		 * Converts @a geometry to the specified orientation if it's a polygon and has
+		 * a different orientation, otherwise @a geometry is returned.
+		 *
+		 * Note that for a point, multipoint or polyline this simply returns the geometry.
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		convert_geometry_to_oriented_geometry(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+				GPlatesMaths::PolygonOrientation::Orientation polygon_orientation);
 
 
 		/**

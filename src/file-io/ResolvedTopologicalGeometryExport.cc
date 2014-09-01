@@ -56,8 +56,10 @@ namespace GPlatesFileIO
 					Format export_format,
 					const feature_geometry_group_seq_type &grouped_recon_geoms_seq,
 					const std::vector<const File::Reference *> &referenced_files,
+					const std::vector<const File::Reference *> &active_reconstruction_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
+					boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 					bool wrap_to_dateline)
 			{
 				switch (export_format)
@@ -67,8 +69,10 @@ namespace GPlatesFileIO
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
+						force_polygon_orientation,
 						wrap_to_dateline);
 					break;
 
@@ -77,8 +81,10 @@ namespace GPlatesFileIO
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);		
+						reconstruction_time,
+						force_polygon_orientation);		
 					break;
 
 				case GMT:
@@ -86,8 +92,10 @@ namespace GPlatesFileIO
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);
+						reconstruction_time,
+						force_polygon_orientation);
 					break;
 
 				default:
@@ -102,8 +110,10 @@ namespace GPlatesFileIO
 					Format export_format,
 					const feature_geometry_group_seq_type &grouped_recon_geoms_seq,
 					const std::vector<const File::Reference *> &referenced_files,
+					const std::vector<const File::Reference *> &active_reconstruction_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
+					boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 					bool wrap_to_dateline)
 			{
 				switch(export_format)
@@ -113,8 +123,10 @@ namespace GPlatesFileIO
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
+						force_polygon_orientation,
 						wrap_to_dateline);
 					break;
 				case OGRGMT:
@@ -122,16 +134,20 @@ namespace GPlatesFileIO
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);
+						reconstruction_time,
+						force_polygon_orientation);
 					break;
 				case GMT:
 					GMTFormatResolvedTopologicalGeometryExport::export_geometries(
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
+						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);
+						reconstruction_time,
+						force_polygon_orientation);
 					break;
 				default:
 					throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
@@ -181,11 +197,13 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_ge
 		Format export_format,
 		const std::vector<const GPlatesAppLogic::ResolvedTopologicalGeometry *> &resolved_topological_geom_seq,
 		const std::vector<const File::Reference *> &active_files,
+		const std::vector<const File::Reference *> &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file,
+		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 		bool wrap_to_dateline)
 {
 	// Get the list of active reconstructable feature collection files that contain
@@ -208,8 +226,10 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_ge
 				export_format,
 				grouped_recon_geom_seq,
 				referenced_files,
+				active_reconstruction_files,
 				reconstruction_anchor_plate_id,
 				reconstruction_time,
+				force_polygon_orientation,
 				wrap_to_dateline);
 	}
 
@@ -240,8 +260,10 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_ge
 					export_format,
 					grouped_features_iter->feature_geometry_groups,
 					referenced_files,
+					active_reconstruction_files,
 					reconstruction_anchor_plate_id,
 					reconstruction_time,
+					force_polygon_orientation,
 					wrap_to_dateline);
 		}
 	}

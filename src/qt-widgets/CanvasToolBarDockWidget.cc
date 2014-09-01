@@ -182,6 +182,12 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_view_workflow()
 			view_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE,
 			action_Zoom_Globe);
+#if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
+	add_tool_action_to_workflow(
+			view_workflow,
+			GPlatesGui::CanvasToolWorkflows::TOOL_CHANGE_LIGHTING,
+			action_Change_Lighting);
+#endif
 }
 
 
@@ -324,6 +330,10 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_pole_manipulation_workflow()
 			action_Click_Geometry);
 	add_tool_action_to_workflow(
 			pole_manipulation_workflow,
+			GPlatesGui::CanvasToolWorkflows::TOOL_MOVE_POLE,
+			action_Move_Pole);
+	add_tool_action_to_workflow(
+			pole_manipulation_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE,
 			action_Manipulate_Pole);
 }
@@ -430,9 +440,9 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::add_tool_action_to_workflow(
 
 	// NOTE: We can't have the same shortcut for two or more QActions which can occur when
 	// the same tool type is used by multiple workflows.
-	// To get around this we will use the shortcuts on the original (unique) QActions but they
-	// won't be visible - instead, when they are triggered by a keyboard shortcut, we will determine
-	// which workflow is currently active to determine which of the  multiple canvas tools
+	// To get around this we will use the shortcuts on the original (unique) QActions but those QAction
+	// instances won't be visible - instead, when they are triggered by a keyboard shortcut, we will
+	// determine which workflow is currently active to determine which of the  multiple canvas tools
 	// (using that same shortcut) we should target.
 	// This will be done in "set_up_canvas_tool_shortcuts()".
 #if 0
@@ -503,6 +513,9 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_canvas_tool_shortcuts()
 	// (using that same shortcut) we should target.
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE, action_Drag_Globe);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE, action_Zoom_Globe);
+#if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_CHANGE_LIGHTING, action_Change_Lighting);
+#endif
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MEASURE_DISTANCE, action_Measure_Distance);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY, action_Click_Geometry);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYLINE, action_Digitise_New_Polyline);
@@ -513,6 +526,7 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_canvas_tool_shortcuts()
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_INSERT_VERTEX, action_Insert_Vertex);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_SPLIT_FEATURE, action_Split_Feature);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE, action_Manipulate_Pole);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MOVE_POLE, action_Move_Pole);	
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES, action_Select_Hellinger_Geometries);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY, action_Build_Line_Topology);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_BOUNDARY_TOPOLOGY, action_Build_Boundary_Topology);

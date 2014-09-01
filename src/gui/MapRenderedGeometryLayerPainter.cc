@@ -56,21 +56,22 @@
 #include "opengl/GLRenderer.h"
 
 #include "view-operations/RenderedArrowedPolyline.h"
+#include "view-operations/RenderedCircleSymbol.h"
 #include "view-operations/RenderedColouredEdgeSurfaceMesh.h"
 #include "view-operations/RenderedColouredTriangleSurfaceMesh.h"
 #include "view-operations/RenderedCrossSymbol.h"
-#include "view-operations/RenderedDirectionArrow.h"
 #include "view-operations/RenderedEllipse.h"
 #include "view-operations/RenderedMultiPointOnSphere.h"
 #include "view-operations/RenderedPointOnSphere.h"
-#include "view-operations/RenderedPolylineOnSphere.h"
 #include "view-operations/RenderedPolygonOnSphere.h"
+#include "view-operations/RenderedPolylineOnSphere.h"
+#include "view-operations/RenderedRadialArrow.h"
 #include "view-operations/RenderedResolvedRaster.h"
 #include "view-operations/RenderedSmallCircle.h"
 #include "view-operations/RenderedSmallCircleArc.h"
 #include "view-operations/RenderedSquareSymbol.h"
-#include "view-operations/RenderedCircleSymbol.h"
 #include "view-operations/RenderedString.h"
+#include "view-operations/RenderedTangentialArrow.h"
 #include "view-operations/RenderedTriangleSymbol.h"
 
 // Temporary includes for symbol testing
@@ -778,28 +779,145 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_ellipse(
 }
 
 void
-GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_direction_arrow(
-	const GPlatesViewOperations::RenderedDirectionArrow &rendered_direction_arrow)
+GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_radial_arrow(
+		const GPlatesViewOperations::RenderedRadialArrow &rendered_radial_arrow)
+{
+	// We don't render the radial arrow in the map view (it's radial and hence always pointing
+	// directly out of the map). We only render the symbol.
+
+    boost::optional<Colour> symbol_colour = rendered_radial_arrow.get_symbol_colour().get_colour(d_colour_scheme);
+    if (!symbol_colour)
+    {
+		return;
+	}
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_symbol_colour = Colour::to_rgba8(*symbol_colour);
+
+	// Get the small circle position in scene coordinates.
+	const QPointF small_circle_centre = get_projected_unwrapped_position(rendered_radial_arrow.get_position());
+
+	// The symbol is a small circle with diameter equal to the symbol size.
+	// The symbol size is specified in *scene* coordinates.
+	const double small_circle_radius = 0.5 * rendered_radial_arrow.get_symbol_size() * d_inverse_zoom_factor;
+
+	// Tessellate the circle on the plane of the map.
+	coloured_vertex_seq_type small_circle_vertices;
+	tessellate_on_plane(
+			small_circle_vertices,
+			small_circle_centre,
+			small_circle_radius,
+			SMALL_CIRCLE_ANGULAR_INCREMENT,
+			rgba8_symbol_colour);
+
+	// Draw the small circle outline.
+	// We do this even if we're filling the small circle because it gives a nice soft anti-aliased edge.
+
+	// The factor of 2 gives a nice look.
+	const float small_circle_line_width = 2.0f * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+	// Get the stream for the small circle lines.
+	stream_primitives_type &small_circle_line_stream =
+			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(small_circle_line_width);
+
+	// Used to add a line loop to the stream.
+	stream_primitives_type::LineLoops stream_small_circle_line_loops(small_circle_line_stream);
+	stream_small_circle_line_loops.begin_line_loop();
+	BOOST_FOREACH(const coloured_vertex_type &small_circle_vertex, small_circle_vertices)
+	{
+		stream_small_circle_line_loops.add_vertex(small_circle_vertex);
+	}
+	stream_small_circle_line_loops.end_line_loop();
+
+	// Draw the filled small circle.
+	if (rendered_radial_arrow.get_symbol_type() == GPlatesViewOperations::RenderedRadialArrow::SYMBOL_FILLED_CIRCLE)
+	{
+		stream_primitives_type &triangle_stream =
+			d_layer_painter->translucent_drawables_on_the_sphere.get_triangles_stream();
+
+		stream_primitives_type::TriangleFans stream_triangle_fans(triangle_stream);
+
+		stream_triangle_fans.begin_triangle_fan();
+
+		// Add centre of small circle (apex of triangle fan).
+		stream_triangle_fans.add_vertex(
+					coloured_vertex_type(small_circle_centre.x(), small_circle_centre.y(), 0, rgba8_symbol_colour));
+
+		// Add small circle points.
+		BOOST_FOREACH(const coloured_vertex_type &small_circle_vertex, small_circle_vertices)
+		{
+			stream_small_circle_line_loops.add_vertex(small_circle_vertex);
+		}
+
+		stream_triangle_fans.end_triangle_fan();
+	}
+
+	// Draw the small circle centre point.
+	if (rendered_radial_arrow.get_symbol_type() == GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_POINT)
+	{
+		// The factor of 2 gives a nice look.
+		const float point_size = 2.0f * POINT_SIZE_ADJUSTMENT * d_scale;
+		stream_primitives_type &point_stream =
+				d_layer_painter->translucent_drawables_on_the_sphere.get_points_stream(point_size);
+
+		stream_primitives_type::Points stream_points(point_stream);
+		stream_points.begin_points();
+		stream_points.add_vertex(
+				coloured_vertex_type(small_circle_centre.x(), small_circle_centre.y(), 0, rgba8_symbol_colour));
+		stream_points.end_points();
+	}
+
+	// Draw a cross in the small circle.
+	if (rendered_radial_arrow.get_symbol_type() == GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS)
+	{
+		// The factor of 1.5 ensures the cross is not too fat.
+		const float cross_line_width = 1.5f * LINE_WIDTH_ADJUSTMENT * d_scale;
+
+		// Get the stream for the cross lines.
+		stream_primitives_type &cross_line_stream =
+				d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(cross_line_width);
+
+		stream_primitives_type::LineStrips stream_cross_line_strips(cross_line_stream);
+
+		stream_cross_line_strips.begin_line_strip();
+		stream_cross_line_strips.add_vertex(
+				coloured_vertex_type(small_circle_centre.x() - small_circle_radius, small_circle_centre.y(), 0, rgba8_symbol_colour));
+		stream_cross_line_strips.add_vertex(
+				coloured_vertex_type(small_circle_centre.x() + small_circle_radius, small_circle_centre.y(), 0, rgba8_symbol_colour));
+		stream_cross_line_strips.end_line_strip();
+
+		stream_cross_line_strips.begin_line_strip();
+		stream_cross_line_strips.add_vertex(
+				coloured_vertex_type(small_circle_centre.x(), small_circle_centre.y() - small_circle_radius, 0, rgba8_symbol_colour));
+		stream_cross_line_strips.add_vertex(
+				coloured_vertex_type(small_circle_centre.x(), small_circle_centre.y() + small_circle_radius, 0, rgba8_symbol_colour));
+		stream_cross_line_strips.end_line_strip();
+	}
+}
+
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
+	const GPlatesViewOperations::RenderedTangentialArrow &rendered_tangential_arrow)
 {
 	if (!d_render_settings.show_arrows())
 	{
 		return;
 	}
 
-	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_direction_arrow);
+	boost::optional<Colour> colour = get_colour_of_rendered_geometry(rendered_tangential_arrow);
 	if (!colour)
 	{
 		return;
 	}
 
 	// Start of arrow.
-	const GPlatesMaths::UnitVector3D &start = rendered_direction_arrow.get_start_position().position_vector();
+	const GPlatesMaths::UnitVector3D &start = rendered_tangential_arrow.get_start_position().position_vector();
 
 	// Calculate position from start point along tangent direction to
 	// end point off the globe. The length of the arrow in world space
 	// is inversely proportional to the zoom or magnification.
 	const GPlatesMaths::Vector3D end = GPlatesMaths::Vector3D(start) +
-			MAP_VELOCITY_SCALE_FACTOR * d_inverse_zoom_factor * rendered_direction_arrow.get_arrow_direction();
+			MAP_VELOCITY_SCALE_FACTOR * d_inverse_zoom_factor * rendered_tangential_arrow.get_arrow_direction();
 
 	const GPlatesMaths::Vector3D arrowline = end - GPlatesMaths::Vector3D(start);
 	const GPlatesMaths::real_t arrowline_length = arrowline.magnitude();
@@ -810,8 +928,10 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_direction_arrow(
 		return;
 	}
 
-	double arrowhead_size = d_inverse_zoom_factor * rendered_direction_arrow.get_arrowhead_projected_size();
-	const float min_ratio_arrowhead_to_arrowline = rendered_direction_arrow.get_min_ratio_arrowhead_to_arrowline();
+	double arrowhead_size =
+			d_inverse_zoom_factor * rendered_tangential_arrow.get_arrowhead_projected_size();
+	const float max_ratio_arrowhead_to_arrowline_length =
+			rendered_tangential_arrow.get_max_ratio_arrowhead_to_arrowline_length();
 
 	// We want to keep the projected arrowhead size constant regardless of the
 	// the length of the arrowline, except...
@@ -819,15 +939,15 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_direction_arrow(
 	// ...if the ratio of arrowhead size to arrowline length is large enough then
 	// we need to start scaling the arrowhead size by the arrowline length so
 	// that the arrowhead disappears as the arrowline disappears.
-	if (arrowhead_size > min_ratio_arrowhead_to_arrowline * arrowline_length.dval())
+	if (arrowhead_size > max_ratio_arrowhead_to_arrowline_length * arrowline_length.dval())
 	{
-		arrowhead_size = min_ratio_arrowhead_to_arrowline * arrowline_length.dval();
+		arrowhead_size = max_ratio_arrowhead_to_arrowline_length * arrowline_length.dval();
 	}
 	// Adjust the arrow head size for the map view.
 	arrowhead_size *= GLOBE_TO_MAP_SCALE_FACTOR;
 
 	// Get the drawables for lines of the current line width.
-	const float line_width = rendered_direction_arrow.get_arrowline_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+	const float line_width = rendered_tangential_arrow.get_map_view_arrowline_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
 	stream_primitives_type &line_stream =
 			d_layer_painter->drawables_off_the_sphere.get_lines_stream(line_width);
 

@@ -27,10 +27,13 @@
 #define GPLATES_FILE_IO_RESOLVEDTOPOLOGICALGEOMETRYEXPORT_H
 
 #include <vector>
+#include <boost/optional.hpp>
 #include <QFileInfo>
 #include <QString>
 
 #include "file-io/File.h"
+
+#include "maths/PolygonOrientation.h"
 
 #include "model/types.h"
 
@@ -85,6 +88,9 @@ namespace GPlatesFileIO
 		 * @param export_separate_output_directory_per_input_file
 		 *        Save each exported file to a different directory based on the file basename.
 		 *        Only applies if @a export_per_input_file is 'true'.
+		 * @param force_polygon_orientation
+		 *        Optionally force polygon orientation (clockwise or counter-clockwise).
+		 *        Only applies to resolved topological *polygons*.
 		 * @param wrap_to_dateline if true then exported geometries are wrapped/clipped to
 		 *        the dateline (currently only applies to @a SHAPEFILE format).
 		 *
@@ -100,11 +106,14 @@ namespace GPlatesFileIO
 				Format export_format,
 				const std::vector<const GPlatesAppLogic::ResolvedTopologicalGeometry *> &resolved_topological_geom_seq,
 				const std::vector<const File::Reference *> &active_files,
+				const std::vector<const File::Reference *> &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file,
+				boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
+						force_polygon_orientation = boost::none,
 				bool wrap_to_dateline = true);
 	}
 }

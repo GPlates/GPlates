@@ -318,6 +318,7 @@ GPlatesModel::Gpgim::Gpgim(
 
 	// Create the feature classes.
 	create_feature_classes(feature_class_xml_element_node_map, gpgim_resource_filename);
+
 }
 
 

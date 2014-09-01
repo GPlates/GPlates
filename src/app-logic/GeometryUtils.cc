@@ -24,8 +24,9 @@
  */
 
 #include <algorithm>
-#include <iostream>
 #include <cmath>
+#include <iostream>
+#include <iterator>
 #include <vector>
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
@@ -858,6 +859,43 @@ GPlatesAppLogic::GeometryUtils::convert_geometry_to_polygon(
 	geometry_on_sphere.accept_visitor(visitor);
 
 	return visitor.get_polygon();
+}
+
+
+GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::GeometryUtils::convert_polygon_to_oriented_polygon(
+		const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
+		GPlatesMaths::PolygonOrientation::Orientation polygon_orientation)
+{
+	// If the polygon's orientation matches then just return the polygon.
+	if (polygon_on_sphere.get_orientation() == polygon_orientation)
+	{
+		return &polygon_on_sphere;
+	}
+
+	// Return a reversed version.
+	return GPlatesMaths::PolygonOnSphere::create_on_heap(
+			std::reverse_iterator<GPlatesMaths::PolygonOnSphere::vertex_const_iterator>(
+					polygon_on_sphere.vertex_end()),
+			std::reverse_iterator<GPlatesMaths::PolygonOnSphere::vertex_const_iterator>(
+					polygon_on_sphere.vertex_begin()));
+}
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::GeometryUtils::convert_geometry_to_oriented_geometry(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+		GPlatesMaths::PolygonOrientation::Orientation polygon_orientation)
+{
+	// See if geometry is a polygon.
+	boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon =
+			get_polygon_on_sphere(*geometry);
+	if (polygon)
+	{
+		return convert_polygon_to_oriented_polygon(*polygon.get(), polygon_orientation);
+	}
+
+	return geometry;
 }
 
 

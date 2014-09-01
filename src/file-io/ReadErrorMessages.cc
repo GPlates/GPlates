@@ -322,7 +322,7 @@ namespace
 				QT_TR_NOOP("Duplicate raster band name found"),
 				QT_TR_NOOP("The list of band names in a raster Feature element contained duplicates.") },
 
-		// The following descriptions are related to ESRI shapefile input errors:
+		// The following descriptions are related to ESRI shapefiles and other OGR-supported vector formats:
 		{ GPlatesFileIO::ReadErrors::NoLayersFoundInFile,
 				QT_TR_NOOP("No layers found."),
 				QT_TR_NOOP("No layers were found in the shapefile.") },
@@ -395,6 +395,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::InvalidShapefileReconstructionMethod,
 				QT_TR_NOOP("Invalid reconstruction method."),
 				QT_TR_NOOP("An invalid reconstruction method was found.") },
+		{ GPlatesFileIO::ReadErrors::UnableToMatchOgrGeometryWithFeature,
+				QT_TR_NOOP("Unable to match OGR geometry with feature."),
+				QT_TR_NOOP("The OGR geometry type is not compatible with the feature type.") },
 
 		// Errors relating to raster files in general
 		{ GPlatesFileIO::ReadErrors::InsufficientMemoryToLoadRaster,
@@ -540,7 +543,7 @@ namespace
 		{ GPlatesFileIO::ReadErrors::AttributesIgnored,
 				QT_TR_NOOP("The attributes were ignored.") },
 
-		// The following results apply to ESRI shapefile input errors:
+		// The following results apply to ESRI shapefiles and other OGR-supported vector formats:
 		{ GPlatesFileIO::ReadErrors::MultipleLayersIgnored,
 				QT_TR_NOOP("Only the first layer was read.") },
 		{ GPlatesFileIO::ReadErrors::GeometryFlattenedTo2D,
@@ -563,6 +566,8 @@ namespace
 				QT_TR_NOOP("The attribute was not mapped to a model property.") },
 		{ GPlatesFileIO::ReadErrors::UnclassifiedOgrFeatureCreated,
 				QT_TR_NOOP("An unclassifiedFeature was created.") },
+		{ GPlatesFileIO::ReadErrors::FeatureIgnored,
+				QT_TR_NOOP("The feature was ignored.") },
 				
 		// The following apply to time-dependent raster file sets
 		{ GPlatesFileIO::ReadErrors::NoRasterSetsLoaded,

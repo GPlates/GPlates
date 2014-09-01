@@ -618,11 +618,13 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::react_citcoms_gmt_velocity_stride
 void
 GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 {
+	QString output_description;
+
 	// Write a description depending on the file format and velocity vector format.
 	switch (d_export_configuration->file_format)
 	{
 	case GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GPML:
-		output_description_label->setText("Velocities will be exported in (Colatitude, Longitude) format.");
+		output_description = "Velocities will be exported in (Colatitude, Longitude) format.\n";
 		break;
 
 	case GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GMT:
@@ -632,7 +634,7 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 					dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
 							*d_export_configuration);
 
-			QString output_description = tr("Velocities will be exported as:\n");
+			output_description = tr("Velocities will be exported as:\n");
 
 			if (configuration.include_domain_point)
 			{
@@ -676,17 +678,17 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 				break;
 			}
 
-			output_description_label->setText(output_description);
+			output_description += "\n";
 		}
 		break;
 
 	case GPlatesGui::ExportVelocityAnimationStrategy::Configuration::TERRA_TEXT:
-		output_description_label->setText(
+		output_description =
 				tr("'%1' will be replaced by the local processor number in each exported velocity file name.\n"
 					"The header lines, beginning with '>', contain Terra grid parameters and age.\n"
 					"Then each velocity line contains:\n"
-					"  velocity_x  velocity_y  velocity_z")
-					.arg(GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING));
+					"  velocity_x  velocity_y  velocity_z\n")
+					.arg(GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING);
 		break;
 
 	case GPlatesGui::ExportVelocityAnimationStrategy::Configuration::CITCOMS_GLOBAL:
@@ -696,7 +698,7 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 					dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::CitcomsGlobalConfiguration &>(
 							*d_export_configuration);
 
-			QString output_description = tr(
+			output_description = tr(
 					"In each exported velocity file name, '%1'"
 					" will be replaced by the diamond cap number.\n")
 							.arg(GPlatesFileIO::ExportTemplateFilename::PLACEHOLDER_FORMAT_STRING);
@@ -713,8 +715,6 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 						"Each velocity line in a GMT ('.xy') file contains:\n"
 						"  domain_point_lat  domain_point_lon  velocity_azimuth  velocity_magnitude\n");
 			}
-
-			output_description_label->setText(output_description);
 		}
 		break;
 
@@ -723,4 +723,10 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 		break;
 	}
+
+	// Add a description of the velocity (magnitude) units.
+	output_description += "\nNote: velocities are in cm/year.\n";
+
+	// Set the label text.
+	velocity_output_description_label->setText(output_description);
 }

@@ -40,13 +40,13 @@
 #include "ResolvedTopologicalNetwork.h"
 #include "TopologyGeometryResolverLayerProxy.h"
 
+#include "global/PointerTraits.h"
+
 #include "utils/SubjectObserverToken.h"
 
 
 namespace GPlatesAppLogic
 {
-	class ReconstructLayerProxy;
-
 	/**
 	 * A layer proxy that resolves topological networks from feature collection(s)
 	 * containing topological network features.
@@ -182,7 +182,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		set_current_reconstructed_geometry_topological_sections_layer_proxies(
-				const std::vector<ReconstructLayerProxy::non_null_ptr_type> &
+				const std::vector<GPlatesGlobal::PointerTraits<ReconstructLayerProxy>::non_null_ptr_type> &
 						reconstructed_geometry_topological_sections_layer_proxies);
 
 		/**
@@ -190,7 +190,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		set_current_resolved_line_topological_sections_layer_proxies(
-				const std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> &
+				const std::vector<GPlatesGlobal::PointerTraits<TopologyGeometryResolverLayerProxy>::non_null_ptr_type> &
 						resolved_line_topological_sections_layer_proxies);
 
 		/**

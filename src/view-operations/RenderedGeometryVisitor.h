@@ -35,12 +35,12 @@ namespace GPlatesViewOperations
 	class RenderedColouredEdgeSurfaceMesh;
 	class RenderedColouredTriangleSurfaceMesh;
 	class RenderedCrossSymbol;
-	class RenderedDirectionArrow;
 	class RenderedEllipse;
 	class RenderedMultiPointOnSphere;
 	class RenderedPointOnSphere;
 	class RenderedPolygonOnSphere;
 	class RenderedPolylineOnSphere;
+	class RenderedRadialArrow;
 	class RenderedReconstructionGeometry;
 	class RenderedResolvedRaster;
 	class RenderedResolvedScalarField3D;
@@ -49,6 +49,7 @@ namespace GPlatesViewOperations
 	class RenderedSquareSymbol;
 	class RenderedStrainMarkerSymbol;
 	class RenderedString;
+	class RenderedTangentialArrow;
 	class RenderedTriangleSymbol;
 
 	/**
@@ -95,17 +96,6 @@ namespace GPlatesViewOperations
 				const GPlatesViewOperations::RenderedCrossSymbol &)
 		{  }
 
-		/**
-		 * Note that this is not the same as a polyline with a symbol decoration.
-		 *
-		 * This is a single direction arrow that does not 
-		 */
-		virtual
-		void
-		visit_rendered_direction_arrow(
-				const RenderedDirectionArrow &)
-		{  }
-
 		virtual
 		void
 		visit_rendered_ellipse(
@@ -135,7 +125,13 @@ namespace GPlatesViewOperations
 		visit_rendered_polyline_on_sphere(
 				const RenderedPolylineOnSphere &)
 		{  }
-		
+
+		virtual
+		void
+		visit_rendered_radial_arrow(
+				const RenderedRadialArrow &)
+		{  }
+
 		/**
 		 * This rendered geometry is a composite object as opposed to the others.
 		 *
@@ -187,6 +183,17 @@ namespace GPlatesViewOperations
 		void
 		visit_rendered_string(
 				const RenderedString &)
+		{  }
+
+		/**
+		 * Note that this is not the same as a polyline with a symbol decoration.
+		 *
+		 * This is a single directional arrow tangential to the globe's surface.
+		 */
+		virtual
+		void
+		visit_rendered_tangential_arrow(
+				const RenderedTangentialArrow &)
 		{  }
 
 		virtual

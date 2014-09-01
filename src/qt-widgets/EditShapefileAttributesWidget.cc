@@ -27,6 +27,7 @@
 #include <QVariant>
 
 #include "feature-visitors/ToQvariantConverter.h"
+#include "file-io/OgrUtils.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/XsDouble.h"
@@ -41,24 +42,6 @@ namespace {
 	enum KeyValueColumnLayout{
 		COLUMN_KEY, COLUMN_TYPE, COLUMN_VALUE
 	};
-
-	QVariant
-	get_qvariant_from_element(
-		const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
-	{
-		GPlatesFeatureVisitors::ToQvariantConverter converter;
-
-		element.value()->accept_visitor(converter);
-
-		if (converter.found_values_begin() != converter.found_values_end())
-		{
-			return *converter.found_values_begin();
-		}
-		else
-		{
-			return QVariant();
-		}
-	}
 
 	QString
 	get_type_qstring_from_qvariant(
@@ -187,7 +170,7 @@ GPlatesQtWidgets::EditShapefileAttributesWidget::update_property_value_from_widg
 			
 			if (!field_is_valid){
 				// An invalid field was entered, so reset the cell to the value in the dictionary element.
-				QString value_string = get_qvariant_from_element(dictionary_element).toString();
+				QString value_string = GPlatesFileIO::OgrUtils::get_qvariant_from_kvd_element(dictionary_element).toString();
 				QTableWidgetItem *value_item = new QTableWidgetItem(value_string);
 				value_item->setFlags(value_item->flags() | Qt::ItemIsEditable);
 				table_elements->setItem(row,COLUMN_VALUE,value_item); 	
@@ -221,7 +204,7 @@ GPlatesQtWidgets::EditShapefileAttributesWidget::update_widget_from_key_value_di
 	{
 
 		QString key_string = GPlatesUtils::make_qstring_from_icu_string(it->key()->value().get());
-		QVariant value_variant = get_qvariant_from_element(*it);
+		QVariant value_variant = GPlatesFileIO::OgrUtils::get_qvariant_from_kvd_element(*it);
 
 		// Key field.
 		QTableWidgetItem *key_string_item = new QTableWidgetItem(key_string);

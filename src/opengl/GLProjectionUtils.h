@@ -27,6 +27,7 @@
 #ifndef GPLATES_OPENGL_GLPROJECTIONUTILS_H
 #define GPLATES_OPENGL_GLPROJECTIONUTILS_H
 
+#include <utility>
 #include <opengl/OpenGL.h>
 
 #include "GLMatrix.h"
@@ -75,7 +76,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns an estimate of the minimum size of a viewport pixel when projected onto
+		 * Returns an estimate of the minimum and maximum sizes of viewport pixels projected onto
 		 * the unit sphere using the specified model-view and projection transforms.
 		 *
 		 * This assumes the globe is a sphere of radius one centred at the origin in model space.
@@ -89,11 +90,49 @@ namespace GPlatesOpenGL
 		 * Returned result is in the range (0, Pi] where Pi is the distance between north and
 		 * south poles on the unit sphere.
 		 */
+		std::pair<double/*min*/, double/*max*/>
+		get_min_max_pixel_size_on_unit_sphere(
+				const GLViewport &viewport,
+				const GLMatrix &model_view_transform,
+				const GLMatrix &projection_transform);
+
+
+		/**
+		 * Returns the minimum value of @a get_min_max_pixel_size_on_unit_sphere.
+		 *
+		 * See @a get_min_max_pixel_size_on_unit_sphere for more details.
+		 */
+		inline
 		double
 		get_min_pixel_size_on_unit_sphere(
 				const GLViewport &viewport,
 				const GLMatrix &model_view_transform,
-				const GLMatrix &projection_transform);
+				const GLMatrix &projection_transform)
+		{
+			return get_min_max_pixel_size_on_unit_sphere(
+					viewport,
+					model_view_transform,
+					projection_transform).first/*min*/;
+		}
+
+
+		/**
+		 * Returns the maximum value of @a get_min_max_pixel_size_on_unit_sphere.
+		 *
+		 * See @a get_min_max_pixel_size_on_unit_sphere for more details.
+		 */
+		inline
+		double
+		get_max_pixel_size_on_unit_sphere(
+				const GLViewport &viewport,
+				const GLMatrix &model_view_transform,
+				const GLMatrix &projection_transform)
+		{
+			return get_min_max_pixel_size_on_unit_sphere(
+					viewport,
+					model_view_transform,
+					projection_transform).second/*max*/;
+		}
 	};
 }
 

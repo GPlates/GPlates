@@ -26,6 +26,7 @@
 #include <exception>
 #include <iostream>
 #include <map>
+#include <set>
 #include <boost/cast.hpp>
 #include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
@@ -76,6 +77,54 @@ GPlatesOpenGL::GLRenderer::GLRenderer(
 void
 GPlatesOpenGL::GLRenderer::begin_render()
 {
+	// It's very likely that Qt (eg, some previous QPainter) has set up the modelview and projection
+	// matrices to non-default values before it exited (especially the projection to that match the viewport).
+	// So we need to load identity matrices to match the default OpenGL state.
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity(); // The default modelview matrix
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity(); // The default projection matrix
+	glMatrixMode(GL_MODELVIEW); // The default matrix mode.
+
+	begin_render_internal();
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::begin_render(
+		QPainter &qpainter,
+		bool paint_device_is_framebuffer)
+{
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			!d_qpainter_info,
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_NO_ACTIVE_QPAINTER);
+
+	d_qpainter_info = boost::in_place(boost::ref(qpainter), paint_device_is_framebuffer);
+
+	// The QPainter should currently be active.
+	GPlatesGlobal::Assert<GLRendererAPIError>(
+			d_qpainter_info->qpainter.isActive(),
+			GPLATES_ASSERTION_SOURCE,
+			GLRendererAPIError::SHOULD_HAVE_ACTIVE_QPAINTER);
+
+	// Suspend the QPainter so we can start making calls directly to OpenGL without interfering with
+	// the QPainter's OpenGL state (if it uses an OpenGL paint engine).
+	suspend_qpainter();
+
+	begin_render_internal();
+
+	// This is one of the rare cases where we need to apply the OpenGL state encapsulated in
+	// GLRenderer directly to OpenGL - in this case we need to make sure our last applied state
+	// actually represents the state of OpenGL - which it may not because QPainter may have
+	// changed the model-view and projection matrices (if it uses an OpenGL paint engine).
+	apply_current_state_to_opengl();
+}
+
+
+void
+GPlatesOpenGL::GLRenderer::begin_render_internal()
+{
 	// Start a rendering frame.
 	d_context->begin_render();
 
@@ -119,38 +168,6 @@ GPlatesOpenGL::GLRenderer::begin_render()
 	const GLCompiledDrawState::non_null_ptr_to_const_type default_vertex_array_state =
 			create_unbound_vertex_array_compiled_draw_state(*this);
 	apply_compiled_draw_state(*default_vertex_array_state);
-}
-
-
-void
-GPlatesOpenGL::GLRenderer::begin_render(
-		QPainter &qpainter,
-		bool paint_device_is_framebuffer)
-{
-	GPlatesGlobal::Assert<GLRendererAPIError>(
-			!d_qpainter_info,
-			GPLATES_ASSERTION_SOURCE,
-			GLRendererAPIError::SHOULD_HAVE_NO_ACTIVE_QPAINTER);
-
-	d_qpainter_info = boost::in_place(boost::ref(qpainter), paint_device_is_framebuffer);
-
-	// The QPainter should currently be active.
-	GPlatesGlobal::Assert<GLRendererAPIError>(
-			d_qpainter_info->qpainter.isActive(),
-			GPLATES_ASSERTION_SOURCE,
-			GLRendererAPIError::SHOULD_HAVE_ACTIVE_QPAINTER);
-
-	// Suspend the QPainter so we can start making calls directly to OpenGL without interfering with
-	// the QPainter's OpenGL state (if it uses an OpenGL paint engine).
-	suspend_qpainter();
-
-	begin_render();
-
-	// This is one of the rare cases where we need to apply the OpenGL state encapsulated in
-	// GLRenderer directly to OpenGL - in this case we need to make sure our last applied state
-	// actually represents the state of OpenGL - which it may not because QPainter may have
-	// changed the model-view and projection matrices (if it uses an OpenGL paint engine).
-	apply_current_state_to_opengl();
 }
 
 
@@ -2003,10 +2020,14 @@ GPlatesOpenGL::GLRenderer::suspend_qpainter()
 		// us to restore the modelview (and projection?) matrices if we've modified them.
 		// So we push the modelview and projection matrices onto the OpenGL matrix stack so that we
 		// modify copies of them and we restore the originals when resuming the QPainter later.
+		// Also we need to set these matrices to identity to match the default OpenGL state which
+		// GLRenderer will assume from here onwards.
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
+		glLoadIdentity(); // The default modelview matrix.
 		glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
+		glLoadIdentity(); // The default projection matrix.
 		glMatrixMode(GL_MODELVIEW); // The default matrix mode.
 	}
 }
@@ -2272,18 +2293,23 @@ GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 
 	// Classify our frame buffer object according to texture (mipmap level) format/dimensions, etc.
 	GLFrameBufferObject::Classification frame_buffer_object_classification;
-	frame_buffer_object_classification.set_dimensions(texture_level_width, texture_level_height);
-	frame_buffer_object_classification.set_texture_internal_format(
+	frame_buffer_object_classification.set_dimensions(*this, texture_level_width, texture_level_height);
+	frame_buffer_object_classification.set_attached_texture_2D(
+			*this,
 			render_texture_target.texture->get_internal_format().get());
 	if (depth_render_buffer)
 	{
-		frame_buffer_object_classification.set_depth_buffer_internal_format(
-				depth_render_buffer.get()->get_internal_format().get());
+		frame_buffer_object_classification.set_attached_render_buffer(
+				*this,
+				depth_render_buffer.get()->get_internal_format().get(),
+				GL_DEPTH_ATTACHMENT_EXT);
 	}
 	if (stencil_render_buffer)
 	{
-		frame_buffer_object_classification.set_stencil_buffer_internal_format(
-				stencil_render_buffer.get()->get_internal_format().get());
+		frame_buffer_object_classification.set_attached_render_buffer(
+				*this,
+				stencil_render_buffer.get()->get_internal_format().get(),
+				GL_STENCIL_ATTACHMENT_EXT);
 	}
 
 	// Acquire a frame buffer object.
@@ -2326,6 +2352,27 @@ GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 			frame_buffer_object,
 			frame_buffer_object_classification))
 	{
+		// Only output warning once for each framebuffer object classification.
+		static std::set<GLFrameBufferObject::Classification::tuple_type> warning_map;
+		if (warning_map.find(frame_buffer_object_classification.get_tuple()) == warning_map.end())
+		{
+			qWarning() << "Texture internal format '"
+				<< render_texture_target.texture->get_internal_format().get()
+				<< "' failed frame buffer object completeness check.";
+
+			// Also emit a warning if the texture is floating-point because we are going to fall back
+			// to using the main framebuffer as a render target, but the main framebuffer is
+			// fixed-point (not floating-point).
+			if (GLTexture::is_format_floating_point(render_texture_target.texture->get_internal_format().get()))
+			{
+				qWarning() << "...incorrect results are likely since floating-point render-texture "
+					"is emulated with (fixed-point) main framebuffer.";
+			}
+
+			// Flag warning has been output.
+			warning_map.insert(frame_buffer_object_classification.get_tuple());
+		}
+
 		// Detach from the framebuffer object before we return it to the framebuffer object cache.
 		frame_buffer_object->gl_detach_all(*this);
 

@@ -143,6 +143,7 @@ namespace GPlatesViewOperations
 			RECONSTRUCTION_LAYER,
 
 			// Canvas tool workflow layers...
+			VIEW_CANVAS_TOOL_WORKFLOW_LAYER,
 			FEATURE_INSPECTION_CANVAS_TOOL_WORKFLOW_LAYER,
 			DIGITISATION_CANVAS_TOOL_WORKFLOW_LAYER,
 			TOPOLOGY_CANVAS_TOOL_WORKFLOW_LAYER,
@@ -229,7 +230,7 @@ namespace GPlatesViewOperations
 		 *
 		 * The types of rendered geometries that are affected currently includes
 		 * anything that has a point representation such as a rendered point on sphere
-		 * and rendered direction arrow (starting point). Other rendered geometry types
+		 * and rendered arrow (starting point). Other rendered geometry types
 		 * are treated the same as if we'd created a normal rendered geometry layer.
 		 *
 		 * The uniform spacing is such that only one geometry of potentially

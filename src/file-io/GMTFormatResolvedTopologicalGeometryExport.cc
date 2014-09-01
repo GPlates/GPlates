@@ -34,6 +34,7 @@
 #include "GMTFormatGeometryExporter.h"
 #include "GMTFormatHeader.h"
 
+#include "app-logic/GeometryUtils.h"
 #include "app-logic/ResolvedTopologicalGeometry.h"
 
 #include "file-io/FileInfo.h"
@@ -60,6 +61,7 @@ namespace GPlatesFileIO
 			get_global_header_lines(
 					std::vector<QString>& header_lines,
 					const referenced_files_collection_type &referenced_files,
+					const referenced_files_collection_type &active_reconstruction_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time)
 			{
@@ -71,27 +73,8 @@ namespace GPlatesFileIO
 				header_lines.push_back(
 						QString("reconstructionTime ") + QString::number(reconstruction_time));
 
-				// Print the list of feature collection filenames that the exported
-				// geometries came from.
-				QStringList filenames;
-				referenced_files_collection_type::const_iterator file_iter;
-				for (file_iter = referenced_files.begin();
-					file_iter != referenced_files.end();
-					++file_iter)
-				{
-					const File::Reference *file = *file_iter;
-
-					// Some files might not actually exist yet if the user created a new
-					// feature collection internally and hasn't saved it to file yet.
-					if (!GPlatesFileIO::file_exists(file->get_file_info()))
-					{
-						continue;
-					}
-
-					filenames << file->get_file_info().get_display_name(false/*use_absolute_path_name*/);
-				}
-
-				header_lines.push_back(filenames.join(" "));
+				GPlatesFileIO::GMTFormatHeader::add_filenames_to_header(header_lines,referenced_files);
+				GPlatesFileIO::GMTFormatHeader::add_filenames_to_header(header_lines,active_reconstruction_files);
 			}
 		}
 	}
@@ -103,8 +86,10 @@ GPlatesFileIO::GMTFormatResolvedTopologicalGeometryExport::export_geometries(
 		const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
+		const referenced_files_collection_type &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const double &reconstruction_time,
+		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation)
 {
 	// Open the file.
 	QFile output_file(file_info.filePath());
@@ -122,7 +107,8 @@ GPlatesFileIO::GMTFormatResolvedTopologicalGeometryExport::export_geometries(
 	// Write out the global header (at the top of the exported file).
 	std::vector<QString> global_header_lines;
 	get_global_header_lines(global_header_lines,
-			referenced_files, reconstruction_anchor_plate_id, reconstruction_time);
+			referenced_files, active_reconstruction_files,
+			reconstruction_anchor_plate_id, reconstruction_time);
 	gmt_header_printer.print_global_header_lines(output_stream, global_header_lines);
 
 	// Used to write the reconstructed geometry in GMT format.
@@ -162,8 +148,16 @@ GPlatesFileIO::GMTFormatResolvedTopologicalGeometryExport::export_geometries(
 			// Print the header lines.
 			gmt_header_printer.print_feature_header_lines(output_stream, header_lines);
 
+			// Orient polygon if forcing orientation and geometry is a polygon.
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geometry =
+					force_polygon_orientation
+					? GPlatesAppLogic::GeometryUtils::convert_geometry_to_oriented_geometry(
+							rtg->resolved_topology_geometry(),
+							force_polygon_orientation.get())
+					: rtg->resolved_topology_geometry();
+
 			// Write the resolved geometry.
-			geom_exporter.export_geometry(rtg->resolved_topology_geometry()); 
+			geom_exporter.export_geometry(resolved_geometry);
 		}
 	}
 }

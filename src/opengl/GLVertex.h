@@ -102,6 +102,14 @@ namespace GPlatesOpenGL
 			z(vertex_.z().dval())
 		{  }
 
+		explicit
+		GLVertex(
+				const GPlatesMaths::Vector3D &vertex_) :
+			x(vertex_.x().dval()),
+			y(vertex_.y().dval()),
+			z(vertex_.z().dval())
+		{  }
+
 
 		GLfloat x, y, z;
 	};
@@ -140,6 +148,15 @@ namespace GPlatesOpenGL
 
 		GLColourVertex(
 				const GPlatesMaths::UnitVector3D &vertex_,
+				GPlatesGui::rgba8_t colour_) :
+			x(vertex_.x().dval()),
+			y(vertex_.y().dval()),
+			z(vertex_.z().dval()),
+			colour(colour_)
+		{  }
+
+		GLColourVertex(
+				const GPlatesMaths::Vector3D &vertex_,
 				GPlatesGui::rgba8_t colour_) :
 			x(vertex_.x().dval()),
 			y(vertex_.y().dval()),
@@ -188,6 +205,17 @@ namespace GPlatesOpenGL
 
 		GLTextureVertex(
 				const GPlatesMaths::UnitVector3D &vertex_,
+				GLfloat u_,
+				GLfloat v_) :
+			x(vertex_.x().dval()),
+			y(vertex_.y().dval()),
+			z(vertex_.z().dval()),
+			u(u_),
+			v(v_)
+		{  }
+
+		GLTextureVertex(
+				const GPlatesMaths::Vector3D &vertex_,
 				GLfloat u_,
 				GLfloat v_) :
 			x(vertex_.x().dval()),
@@ -251,6 +279,19 @@ namespace GPlatesOpenGL
 			r(r_)
 		{  }
 
+		GLTexture3DVertex(
+				const GPlatesMaths::Vector3D &vertex_,
+				GLfloat s_,
+				GLfloat t_,
+				GLfloat r_) :
+			x(vertex_.x().dval()),
+			y(vertex_.y().dval()),
+			z(vertex_.z().dval()),
+			s(s_),
+			t(t_),
+			r(r_)
+		{  }
+
 
 		GLfloat x, y, z;
 		GLfloat s, t, r;
@@ -294,6 +335,19 @@ namespace GPlatesOpenGL
 
 		GLColourTextureVertex(
 				const GPlatesMaths::UnitVector3D &vertex_,
+				GLfloat u_,
+				GLfloat v_,
+				GPlatesGui::rgba8_t colour_) :
+			x(vertex_.x().dval()),
+			y(vertex_.y().dval()),
+			z(vertex_.z().dval()),
+			u(u_),
+			v(v_),
+			colour(colour_)
+		{  }
+
+		GLColourTextureVertex(
+				const GPlatesMaths::Vector3D &vertex_,
 				GLfloat u_,
 				GLfloat v_,
 				GPlatesGui::rgba8_t colour_) :

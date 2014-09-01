@@ -60,9 +60,32 @@ namespace GPlatesQtWidgets
 		generate_velocity_domain();
 
 		void
+		react_top_extents_spin_box_value_changed(
+				double value);
+		void
+		react_bottom_extents_spin_box_value_changed(
+				double value);
+		void
+		react_left_extents_spin_box_value_changed(
+				double value);
+		void
+		react_right_extents_spin_box_value_changed(
+				double value);
+
+		void
+		handle_use_global_extents_button_clicked();
+
+		void
 		handle_num_latitude_grid_intervals_value_changed(
 				int num_latitude_grid_intervals);
-		
+
+		void
+		handle_num_longitude_grid_intervals_value_changed(
+				int num_longitude_grid_intervals);
+
+		void
+		react_cell_centred_check_box_changed();
+
 		void
 		set_path();
 		
@@ -77,6 +100,12 @@ namespace GPlatesQtWidgets
 		ViewportWindow &d_main_window;
 
 		unsigned int d_num_latitude_grid_intervals;
+		unsigned int d_num_longitude_grid_intervals;
+		double d_extents_top;
+		double d_extents_bottom;
+		double d_extents_left;
+		double d_extents_right;
+		bool d_cell_centred_nodes;
 
 		QString d_path;
 		std::string d_file_name_template;
@@ -87,8 +116,14 @@ namespace GPlatesQtWidgets
 		OpenDirectoryDialog d_open_directory_dialog;
 
 
+		unsigned int
+		get_num_latitude_nodes() const;
+
+		unsigned int
+		get_num_longitude_nodes() const;
+
 		void
-		set_num_nodes();
+		display_num_nodes();
 
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
 		generate_lat_lon_domain();

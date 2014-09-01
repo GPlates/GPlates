@@ -796,6 +796,8 @@ GPlatesQtWidgets::ViewportWindow::connect_tools_menu_actions()
 	// extras which aren't regular canvas tools and should be connected here:-
 	QObject::connect(action_Use_Small_Icons, SIGNAL(toggled(bool)),
 		d_canvas_tools_dock_ptr, SLOT(use_small_canvas_tool_icons(bool)));
+	QObject::connect(action_Configure_Geometry_Rendering, SIGNAL(triggered()),
+			&dialogs(), SLOT(pop_up_configure_canvas_tool_geometry_render_parameters_dialog()));
 
 	// Populate the Tools menu with a sub-menu for each canvas tool workflow.
 	// And for each workflow populate its sub-menu with the workflow tool actions.
@@ -1315,6 +1317,12 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 		// We don't pick a tab - the previous tab from another canvas tool workflow will remain.
 		break;
 
+#if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
+	case GPlatesGui::CanvasToolWorkflows::TOOL_CHANGE_LIGHTING:
+		d_task_panel_ptr->choose_lighting_tab();
+		break;
+#endif
+
 	case GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY:
 		d_task_panel_ptr->choose_feature_tab();
 		break;
@@ -1353,6 +1361,10 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 
 	case GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE:
 		d_task_panel_ptr->choose_modify_pole_tab();
+		break;
+
+	case GPlatesGui::CanvasToolWorkflows::TOOL_MOVE_POLE:
+		d_task_panel_ptr->choose_move_pole_tab();
 		break;
 
 	case GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY:

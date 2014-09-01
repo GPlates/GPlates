@@ -6,7 +6,7 @@ endforeach(lib)
 
 # The following Boost libraries are both required and dynamically linked.
 set(Boost_USE_STATIC_LIBS FALSE)
-set(boost_components program_options thread)
+set(boost_components program_options thread system)
 if(NOT GPLATES_NO_PYTHON)
 	set(boost_components ${boost_components} python)
 endif(NOT GPLATES_NO_PYTHON)
@@ -38,13 +38,6 @@ find_package("Boost" 1.34.1 COMPONENTS unit_test_framework)
 if (NOT Boost_INCLUDE_DIR)
 	message(FATAL_ERROR "Boost include path not found - please make sure boost is installed.")
 endif (NOT Boost_INCLUDE_DIR)
-
-# Special case for ImageMagick, because we need to specify the Magick++
-# component.
-find_package(ImageMagick COMPONENTS Magick++)
-if (NOT ImageMagick_INCLUDE_DIRS)
-	message(FATAL_ERROR "ImageMagick include path not found - please make sure ImageMagick is installed.")
-endif (NOT ImageMagick_INCLUDE_DIRS)
 
 if (Boost_UNIT_TEST_FRAMEWORK_FOUND)
     set(ADD_UNIT_TEST_TARGET TRUE)
@@ -230,8 +223,7 @@ set(external_INCLUDE_DIRS
 	${GDAL_PORT_INCLUDE_DIR}
 	${GDAL_FRMTS_INCLUDE_DIR}
 	${Boost_INCLUDE_DIR}
-	${PROJ4_INCLUDE_DIR}
-	${ImageMagick_INCLUDE_DIRS})
+	${PROJ4_INCLUDE_DIR})
 if(NOT GPLATES_NO_PYTHON)
 	set(external_INCLUDE_DIRS
 		${external_INCLUDE_DIRS}
@@ -380,6 +372,10 @@ if (APPLE)
 	#
 	set_target_properties(${GPLATES_MAIN_TARGET}
 		PROPERTIES MACOSX_BUNDLE TRUE)
+	# Specify our own Info.plist template file.
+	# We add a couple of keys to ensure Qt 4.8.4 (and above) include support Mac Retina displays.
+	set_target_properties(${GPLATES_MAIN_TARGET}
+		PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/cmake/distribution/MacOSXBundleInfo.plist.in")
 	set_target_properties(${GPLATES_MAIN_TARGET}
 		PROPERTIES MACOSX_BUNDLE_INFO_STRING "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
 	set_target_properties(${GPLATES_MAIN_TARGET}
@@ -409,8 +405,7 @@ set(dependency_LIBS
 	${QT_LIBRARIES}
 	${GLEW_LIBRARY}
 	${OPENGL_LIBRARIES}
-	${PROJ4_LIBRARY}
-	${ImageMagick_LIBRARIES})
+	${PROJ4_LIBRARY})
 	
 if(NOT GPLATES_NO_PYTHON)
 	set(dependency_LIBS

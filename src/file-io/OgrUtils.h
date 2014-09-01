@@ -7,7 +7,7 @@
 * Most recent change:
 *   $Date$
 * 
-* Copyright (C) 2009, 2010, 2012 Geological Survey of Norway
+* Copyright (C) 2009, 2010, 2012, 2014 Geological Survey of Norway
 *
 * This file is part of GPlates.
 *
@@ -28,10 +28,30 @@
 #ifndef GPLATES_FILEIO_SHAPEFILEUTILS_H
 #define GPLATES_FILEIO_SHAPEFILEUTILS_H
 
+#ifdef HAVE_CONFIG_H
+// We're building on a UNIX-y system, and can thus expect "global/config.h".
+
+// On some systems, it's <ogrsf_frmts.h>, on others, <gdal/ogrsf_frmts.h>.
+// The "CMake" script should have determined which one to use.
+#include "global/config.h"
+#ifdef HAVE_GDAL_OGRSF_FRMTS_H
+#include <gdal/ogrsf_frmts.h>
+#else
+#include <ogrsf_frmts.h>
+#endif
+
+#else  // We're not building on a UNIX-y system.  We'll have to assume it's <ogrsf_frmts.h>.
+#include <ogrsf_frmts.h>
+#endif  // HAVE_CONFIG_H
+
+#include "boost/optional.hpp"
+
 #include <QFileInfo>
 #include <QMap>
 #include <QString>
 
+#include "model/GpgimFeatureClass.h"
+#include "model/GpgimStructuralType.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "PropertyMapper.h"
 #include "ReconstructionGeometryExportImpl.h"
@@ -44,22 +64,22 @@ namespace GPlatesFileIO
 		 * Typedef for a sequence of referenced files.
 		 */
 		typedef ReconstructionGeometryExportImpl::referenced_files_collection_type
-				referenced_files_collection_type;
+		referenced_files_collection_type;
 
 
 #if 0
 		typedef std::map<QString, std::pair<QString,QString> > feature_map_type;
-		typedef feature_map_type::const_iterator feature_map_const_iterator;		
+		typedef feature_map_type::const_iterator feature_map_const_iterator;
 
 		const feature_map_type &
-			build_feature_map()
+		build_feature_map()
 		{
 
-			// The data for the following map has been taken from 
-			// 1. (feature-type-to-two-letter-code) The "build_feature_map_type" map in PlatesLineFormatReader.cc 
+			// The data for the following map has been taken from
+			// 1. (feature-type-to-two-letter-code) The "build_feature_map_type" map in PlatesLineFormatReader.cc
 			// 2. (geometry-type-to-feature-type) The various "create_*" functions in PlatesLinesFormatReader.cc
 			//
-			// FIXME: we should get this information from a common source, rather than having two independent sources.  
+			// FIXME: we should get this information from a common source, rather than having two independent sources.
 			static feature_map_type map;
 			map["AR"] = std::make_pair("AseismicRidge","centerLineOf");
 			map["BA"] = std::make_pair("Bathymetry","centerLineOf");
@@ -120,22 +140,56 @@ namespace GPlatesFileIO
 			map["XT"] = std::make_pair("SubductionZone","centerLineOf");
 
 			return map;
-		}	
+		}
 #endif
 
 		typedef QMap<QString, QString > feature_map_type;
-		typedef feature_map_type::const_iterator feature_map_const_iterator;		
+		typedef feature_map_type::const_iterator feature_map_const_iterator;
 
+		typedef std::vector<GPlatesModel::PropertyName> geometrical_property_sequence_type;
 		
+		/**
+		 * @brief build_feature_map
+		 *
+		 * Build the map of feature-type two-letter codes to feature-type string. Two-letter
+		 * codes are used in many shapefiles to describe the feature type.
+		 *
+		 * (Not all shapefiles will use this code, as the feature type can also be encoded in a
+		 * GPGIM_TYPE attribute field which contains the gpml style string representation.
+		 */
 		const feature_map_type &
-			build_feature_map();
+		build_feature_map();
+
+
+		/**
+		 * @brief wkb_type_belongs_to_structural_types
+		 * @param wkb_type
+		 * @param structural_types
+		 *
+		 * @return true if @param wkb_type is a type which can be contained in any of the structural types in
+		 * @param structural_types
+		 */
+		bool
+		wkb_type_belongs_to_structural_types(
+				const OGRwkbGeometryType &wkb_type,
+				const GPlatesModel::GpgimProperty::structural_type_seq_type &structural_types);
+
+		/**
+		 * @brief get_structural_type_of_wkb_type
+		 * @param wkb_type
+		 *
+		 * @return the GpgimStructuralType corresponding to the @param wkb_type
+		 */
+		boost::optional<GPlatesPropertyValues::StructuralType>
+		get_structural_type_of_wkb_type(
+				const OGRwkbGeometryType &wkb_type);
 
 		/*!
 		 * Return a QString description of the variant type - used for debug information.
 		 */
 		QString
 		get_type_qstring_from_qvariant(
-			const QVariant &variant);
+				const QVariant &variant);
 
 		/**
 		 * Returns true if the attribute field name for feature type in the
@@ -151,89 +205,126 @@ namespace GPlatesFileIO
 		*/
 		QString
 		make_ogr_xml_filename(
-			const QFileInfo &file_info);
+				const QFileInfo &file_info);
 
 		/**
 		* Writes the data in the QMap<QString,QString> to an xml file.
 		*/
 		void
 		save_attribute_map_as_xml_file(
-			const QString &filename,
-			const QMap<QString,QString> &model_to_attribute_map);
-	
+				const QString &filename,
+				const QMap<QString,QString> &model_to_attribute_map);
+
 		void
 		create_default_kvd_from_collection(
-			const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
-			boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type> 
+				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
+				boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type>
 				&default_key_value_dictionary);
 
 		void
 		add_plate_id_to_kvd(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
 
 		void
 		add_reconstruction_fields_to_kvd(
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd,
-			const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-			const double &reconstruction_time);
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd,
+				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+				const double &reconstruction_time);
 
 		void
 		add_referenced_files_to_kvd(
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd,
-			const referenced_files_collection_type &referenced_files);
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd,
+				const referenced_files_collection_type &referenced_files);
+
+		void
+		add_reconstruction_files_to_kvd(
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd,
+				const referenced_files_collection_type &reconstruction_files);
 
 		void
 		add_standard_properties_to_kvd(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
 
 		void
 		add_feature_type_to_kvd(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
 
 		void
 		add_begin_and_end_time_to_kvd(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
 
 		void
 		add_name_to_kvd(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
 
 		void
 		add_description_to_kvd(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
 
 		void
 		add_feature_id_to_kvd(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
 
 		void
 		add_conjugate_plate_id_to_kvd(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);	
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
 
 
 		void
 		add_left_plate_to_kvd(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
 
 		void
 		add_right_plate_to_kvd(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
 
 		void
 		add_reconstruction_method_to_kvd(
-			const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
-}
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
+
+		void
+		add_spreading_asymmetry_to_kvd(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
+
+		QVariant
+		get_qvariant_from_kvd_element(
+				const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element);
+
+		void
+		add_filename_sequence_to_kvd(
+				const QString &root_attribute_name,
+				const referenced_files_collection_type &files,
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type &dictionary);
+
+		/**
+		 * Write kvd to debug output
+		 */
+		void
+		write_kvd(
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd);
+
+		/**
+		 * Write kvd to debug output
+		 */
+		void
+		write_kvd(
+				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type kvd);
+
+
+
+	}
 
 
 

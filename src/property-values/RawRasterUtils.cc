@@ -25,13 +25,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "global/CompilerWarnings.h"
-
-PUSH_MSVC_WARNINGS
-DISABLE_MSVC_WARNING( 4251 )
-#include <Magick++.h>
-POP_MSVC_WARNINGS
-
 #include "RawRasterUtils.h"
 
 #include "global/GPlatesAssert.h"
@@ -360,15 +353,7 @@ GPlatesPropertyValues::RawRasterUtils::does_raster_contain_numerical_data(
 {
 	const RasterType::Type raster_type = get_raster_type(raster);
 
-	return
-		raster_type == GPlatesPropertyValues::RasterType::FLOAT ||
-		raster_type == GPlatesPropertyValues::RasterType::DOUBLE ||
-		raster_type == GPlatesPropertyValues::RasterType::INT8 ||
-		raster_type == GPlatesPropertyValues::RasterType::UINT8 ||
-		raster_type == GPlatesPropertyValues::RasterType::INT16 ||
-		raster_type == GPlatesPropertyValues::RasterType::UINT16 ||
-		raster_type == GPlatesPropertyValues::RasterType::INT32 ||
-		raster_type == GPlatesPropertyValues::RasterType::UINT32;
+	return RasterType::is_integer(raster_type) || RasterType::is_floating_point(raster_type);
 }
 
 
@@ -403,30 +388,6 @@ GPlatesPropertyValues::RawRasterUtils::apply_coverage_raster(
 
 		++source_data;
 		++coverage_data;
-	}
-}
-
-
-bool
-GPlatesPropertyValues::RawRasterUtils::write_rgba8_raster(
-		const Rgba8RawRaster::non_null_ptr_type &raster,
-		const QString &filename)
-{
-	try
-	{
-		Magick::Image image(raster->width(), raster->height(), "RGBA", Magick::CharPixel, raster->data());
-		image.write(filename.toStdString());
-		return true;
-	}
-	catch (std::exception &exc)
-	{
-		qWarning() << "GPlatesPropertyValues::RawRasterUtils::write_rgba8_raster: " << exc.what();
-		return false;
-	}
-	catch (...)
-	{
-		qWarning() << "GPlatesPropertyValues::RawRasterUtils::write_rgba8_raster: unknown error";
-		return false;
 	}
 }
 

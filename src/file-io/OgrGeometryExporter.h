@@ -29,16 +29,19 @@
 #define GPLATES_FILEIO_SHAPEFILEGEOMETRYEXPORTER_H
 
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 
 #include <QFile>
 
 #include "GeometryExporter.h"
-#include "property-values/GpmlKeyValueDictionary.h"
+
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/MultiPointOnSphere.h"
+#include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
-#include "maths/PointOnSphere.h"
+
+#include "property-values/GpmlKeyValueDictionary.h"
 
 
 namespace GPlatesFileIO

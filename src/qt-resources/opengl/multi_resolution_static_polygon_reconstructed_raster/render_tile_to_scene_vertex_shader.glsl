@@ -27,9 +27,6 @@
 // Vertex shader source code to render reconstructed raster tiles to the scene.
 //
 
-// Temporarily remove directional lighting for normal maps until GPlates 1.4 (when introduce light canvas tool)...
-#define TEMPORARY_HACK_NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
-
 uniform mat4 source_raster_texture_transform;
 uniform mat4 clip_texture_transform;
 varying vec4 source_raster_texture_coordinate;
@@ -48,7 +45,9 @@ varying vec4 clip_texture_coordinate;
             uniform mat4 normal_map_texture_transform;
             varying vec4 normal_map_texture_coordinate;
             #ifndef MAP_VIEW
-                uniform vec3 world_space_light_direction;
+				#ifndef NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
+					uniform vec3 world_space_light_direction;
+				#endif
                 varying vec3 model_space_light_direction;
             #endif
         #endif
@@ -83,7 +82,8 @@ void main (void)
                 // instead of world-space so reverse rotate light direction into model space.
                 vec4 plate_reverse_rotation_quaternion =
                     vec4(-plate_rotation_quaternion.xyz, plate_rotation_quaternion.w);
-				#ifdef TEMPORARY_HACK_NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
+				#ifdef NO_DIRECTIONAL_LIGHT_FOR_NORMAL_MAPS
+					// Use the radial sphere normal as the pseudo light direction.
 					model_space_light_direction = rotate_vector_by_quaternion(
 						plate_reverse_rotation_quaternion, world_space_sphere_normal);
 				#else

@@ -58,8 +58,19 @@ namespace GPlatesAppLogic
 
 		/**
 		 * The maximum number of reconstruction trees to cache for different reconstruction times.
+		 *
+		 * This is set to a reasonably high value to avoid slowing down flowlines.
+		 * When the number of flowline time samples exceeds the cache size then there's a very
+		 * noticeable slowdown in flowline reconstruction. This is the total number of unique time
+		 * samples across all loaded flowlines (if two flowlines have some samples at the same times
+		 * then those samples only count once towards this limit). So having multiple flowlines loaded,
+		 * each with different time sample ranges, can increase the cache size requirements noticeably.
+		 *
+		 * If all 512 trees are populated then GPlates uses about 370Mb of memory (when it normally
+		 * uses about 150Mb for a cache size of 64) - the test was done using a flowline with
+		 * time samples from 0Ma to 126Ma in 0.25My increments (giving just under 512 time samples).
 		 */
-		static const unsigned int DEFAULT_MAX_NUM_RECONSTRUCTION_TREES_IN_CACHE = 64;
+		static const unsigned int DEFAULT_MAX_NUM_RECONSTRUCTION_TREES_IN_CACHE = 512;
 
 
 		/**

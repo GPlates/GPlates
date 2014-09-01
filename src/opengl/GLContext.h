@@ -535,6 +535,9 @@ namespace GPlatesOpenGL
 			 *
 			 * In any case we cache the results to ensure the same check is not repeated more than
 			 * once for this context and for a particular frame buffer object classification.
+			 *
+			 * NOTE: You need to actually setup the framebuffer (set attachments, etc) before
+			 * checking for completeness.
 			 */
 			bool
 			check_framebuffer_object_completeness(

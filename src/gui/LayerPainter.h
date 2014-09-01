@@ -74,18 +74,71 @@ namespace GPlatesGui
 		//! Typedef for a vertex element (index).
 		typedef GLuint vertex_element_type;
 
+		//! Typedef for a sequence of vertex elements.
+		typedef std::vector<vertex_element_type> vertex_element_seq_type;
+
 		//! Typedef for a coloured vertex.
 		typedef GPlatesOpenGL::GLColourVertex coloured_vertex_type;
 
 		//! Typedef for a sequence of coloured vertices.
 		typedef std::vector<coloured_vertex_type> coloured_vertex_seq_type;
 
-		//! Typedef for a sequence of vertex elements.
-		typedef std::vector<vertex_element_type> vertex_element_seq_type;
-
 		//! Typedef for a primitives stream containing coloured vertices.
 		typedef GPlatesOpenGL::GLDynamicStreamPrimitives<coloured_vertex_type, vertex_element_type>
 				stream_primitives_type;
+
+		/**
+		 * A vertex of an axially symmetric (about model-space z-axis) triangle mesh.
+		 *
+		 * This enables the mesh have correct surface lighting (when lighting is supported and enabled).
+		 * When the mesh is not lit then the extra lighting-specific vertex attributes are ignored.
+		 *
+		 * NOTE: In order for mesh surface lighting to work correctly the mesh must be axially
+		 * symmetric about its model-space z-axis (ie, the mesh must be created with this in mind).
+		 * If this isn't the case then the fragment shader used to light the mesh will not work.
+		 *
+		 * The mesh normal (used when calculating lighting in vertex/fragment shaders) is determined
+		 * by weighting the radial normal and the axial normal. We do this instead of the usual
+		 * storing of per-vertex normals because for a cone (used in arrow heads) it is difficult
+		 * to get the correct lighting at the cone apex (even when using multiple apex vertices
+		 * with same position but with different normals). For more details see
+		 * http://stackoverflow.com/questions/15283508/low-polygon-cone-smooth-shading-at-the-tip
+		 */
+		struct AxiallySymmetricMeshVertex
+		{
+			AxiallySymmetricMeshVertex()
+			{  }
+
+			AxiallySymmetricMeshVertex(
+					const GPlatesMaths::Vector3D &world_space_position_,
+					GPlatesGui::rgba8_t colour_,
+					const GPlatesMaths::UnitVector3D &world_space_x_axis_,
+					const GPlatesMaths::UnitVector3D &world_space_y_axis_,
+					const GPlatesMaths::UnitVector3D &world_space_z_axis_,
+					GLfloat model_space_x_position_,
+					GLfloat model_space_y_position_,
+					GLfloat radial_normal_weight_,
+					GLfloat axial_normal_weight_);
+
+
+			// These should be declared first (our non-generic attribute binding relies on this)...
+			GLfloat world_space_position[3]; // vertex position in world space.
+			GPlatesGui::rgba8_t colour; // colour is same size as GLfloat, so no structure packing issues here.
+
+			// Lighting-specific attributes...
+			GLfloat world_space_x_axis[3];
+			GLfloat world_space_y_axis[3];
+			GLfloat world_space_z_axis[3];
+			GLfloat model_space_radial_position[2]; // x and y components of model-space vertex position.
+			GLfloat radial_and_axial_normal_weights[2]; // normal is weighted by radial (x,y) normal and axial (z) normal.
+		};
+
+		//! Typedef for a sequence of axially symmetric mesh vertices.
+		typedef std::vector<AxiallySymmetricMeshVertex> axially_symmetric_mesh_vertex_seq_type;
+
+		//! Typedef for a primitives stream containing vertices of an axially symmetric mesh.
+		typedef GPlatesOpenGL::GLDynamicStreamPrimitives<AxiallySymmetricMeshVertex, vertex_element_type>
+				axially_symmetric_mesh_stream_primitives_type;
 
 		/**
 		 * Typedef for an opaque object that caches a particular painting.
@@ -114,12 +167,16 @@ namespace GPlatesGui
 					GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
 					GPlatesOpenGL::GLBuffer &vertex_buffer_data,
 					GPlatesOpenGL::GLVertexArray &vertex_array,
+					GPlatesOpenGL::GLVertexArray &unlit_axially_symmetric_mesh_vertex_array,
+					GPlatesOpenGL::GLVertexArray &lit_axially_symmetric_mesh_vertex_array,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
 					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
 							render_point_line_polygon_lighting_in_globe_view_program_object,
 					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
-							render_point_line_polygon_lighting_in_map_view_program_object);
+							render_point_line_polygon_lighting_in_map_view_program_object,
+					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+							render_axially_symmetric_mesh_lighting_program_object);
 
 			/**
 			 * Returns the stream for points of size @a point_size.
@@ -138,11 +195,34 @@ namespace GPlatesGui
 			/**
 			 * Returns the stream for triangle meshes.
 			 *
-			 * There's no point size of line width equivalent for polygons
+			 * There's no point size or line width equivalent for polygons
 			 * so they all get lumped into a single stream.
 			 */
 			stream_primitives_type &
 			get_triangles_stream();
+
+			/**
+			 * Returns the stream for triangle meshes that are rotationally symmetric about an axis.
+			 *
+			 * An axially symmetric triangle mesh should be symmetric about its model space z-axis
+			 * (see @a AxiallySymmetricMeshVertex for more details).
+			 *
+			 * The triangles in the mesh should have their front (outward-facing) faces oriented
+			 * counter-clockwise (the default front-face mode in OpenGL) since back faces
+			 * (triangles facing away from the camera) are culled (the default in OpenGL).
+			 * This culling is done in case the mesh is semi-transparent (in which case you don't
+			 * want to see the back faces because their lighting will be incorrect - it's meant for
+			 * the other side of the face).
+			 *
+			 * As noted above, back faces are culled, so the mesh should ideally be generated such
+			 * that its interior is not visible (eg, a closed mesh).
+			 *
+			 * The use of this stream (for axially symmetric meshes) means surface lighting
+			 * (when supported and enabled) will work correctly in the presence of difficult-to-light
+			 * objects such as cones (see @a AxiallySymmetricMeshVertex for more details).
+			 */
+			axially_symmetric_mesh_stream_primitives_type &
+			get_axially_symmetric_mesh_triangles_stream();
 
 			/**
 			 * Drawables that get filled in their interior (for rendering to the 3D globe view).
@@ -170,9 +250,11 @@ namespace GPlatesGui
 			/**
 			 * Information to render a group of primitives (point, line or triangle primitives).
 			 */
+			template <class VertexType>
 			class Drawables
 			{
 			public:
+
 				void
 				begin_painting();
 
@@ -184,11 +266,13 @@ namespace GPlatesGui
 						GPlatesOpenGL::GLVertexArray &vertex_array,
 						GLenum mode);
 
-				stream_primitives_type &
-				get_stream()
-				{
-					return d_stream->stream_primitives;
-				}
+				// Can only be called between @a begin_painting and @a end_painting.
+				GPlatesOpenGL::GLDynamicStreamPrimitives<VertexType, vertex_element_type> &
+				get_stream();
+
+				// Can only be called between @a begin_painting and @a end_painting.
+				bool
+				has_primitives() const;
 
 			private:
 				//! The vertex (and vertex elements) stream - only used between @a begin_painting and @a end_painting.
@@ -198,13 +282,13 @@ namespace GPlatesGui
 						stream_target(stream_primitives)
 					{  }
 
-					stream_primitives_type stream_primitives;
+					GPlatesOpenGL::GLDynamicStreamPrimitives<VertexType, vertex_element_type> stream_primitives;
 					// Must be declared *after* @a stream_primitives...
-					stream_primitives_type::StreamTarget stream_target;
+					typename GPlatesOpenGL::GLDynamicStreamPrimitives<VertexType, vertex_element_type>::StreamTarget stream_target;
 				};
 
 				vertex_element_seq_type d_vertex_elements;
-				coloured_vertex_seq_type d_vertices;
+				std::vector<VertexType> d_vertices;
 
 				boost::shared_ptr<Stream> d_stream;
 
@@ -230,23 +314,30 @@ namespace GPlatesGui
 			 * Typedef for mapping point size to drawable.
 			 * All points of the same size will get grouped together.
 			 */
-			typedef std::map<GPlatesMaths::real_t, Drawables> point_size_to_drawables_map_type;
+			typedef std::map<GPlatesMaths::real_t, Drawables<coloured_vertex_type> > point_size_to_drawables_map_type;
 
 			/**
 			 * Typedef for mapping line width to drawable.
 			 * All lines of the same width will get grouped together.
 			 */
-			typedef std::map<GPlatesMaths::real_t, Drawables> line_width_to_drawables_map_type;
+			typedef std::map<GPlatesMaths::real_t, Drawables<coloured_vertex_type> > line_width_to_drawables_map_type;
 
 
 			point_size_to_drawables_map_type d_point_drawables_map;
 			line_width_to_drawables_map_type d_line_drawables_map;
 
-			/*
+			/**
+			 * Regular drawables (coloured vertices).
+			 *
 			 * There's no point size or line width equivalent for triangles so they can be lumped
 			 * into a single drawables group.
 			 */
-			Drawables d_triangle_drawables;
+			Drawables<coloured_vertex_type> d_triangle_drawables;
+
+			/**
+			 * Axially symmetric drawables.
+			 */
+			Drawables<AxiallySymmetricMeshVertex> d_axially_symmetric_mesh_triangle_drawables;
 
 			//! For collecting filled polygons during a render call to render to the 3D globe view.
 			GPlatesOpenGL::GLFilledPolygonsGlobeView::filled_drawables_type d_filled_polygons_globe_view;
@@ -260,6 +351,35 @@ namespace GPlatesGui
 					GPlatesOpenGL::GLRenderer &renderer,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection);
+
+			/**
+			 * Sets generic lighting for point/line/polygon primitives.
+			 *
+			 * Returns true if lighting is supported and enabled for point/line/polygons,
+			 * otherwise does not set any state (ie, just uses existing state).
+			 */
+			bool
+			set_generic_point_line_polygon_lighting_state(
+					GPlatesOpenGL::GLRenderer &renderer,
+					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
+					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
+					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+							render_point_line_polygon_lighting_in_globe_view_program_object,
+					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+							render_point_line_polygon_lighting_in_map_view_program_object);
+
+			/**
+			 * Sets lighting for axially symmetric meshes.
+			 *
+			 * Returns true if lighting is supported and enabled, otherwise does not set
+			 * any state (ie, just uses existing state).
+			 */
+			bool
+			set_axially_symmetric_mesh_lighting_state(
+					GPlatesOpenGL::GLRenderer &renderer,
+					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
+					boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+							render_axially_symmetric_mesh_lighting_program_object);
 		};
 
 
@@ -471,8 +591,26 @@ namespace GPlatesGui
 		//! Used to stream vertices to.
 		GPlatesOpenGL::GLVertexBuffer::shared_ptr_type d_vertex_buffer;
 
-		//! Used to bind vertices and vertex elements of @a d_vertex_element_buffer and @a d_vertex_buffer.
+		/**
+		 * Used when vertices of type @a coloured_vertex_type (streamed to @a d_vertex_buffer).
+		 *
+		 * This is the standard vertex array - most vertex data is rendered this way.
+		 */
 		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_vertex_array;
+
+		/**
+		 * Used when vertices of type @a AxiallySymmetricMeshVertex are rendered *without* lighting.
+		 *
+		 * This is the vertex array used for *unlit* axially symmetric meshes.
+		 */
+		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_unlit_axially_symmetric_mesh_vertex_array;
+
+		/**
+		 * Used when vertices of type @a AxiallySymmetricMeshVertex are rendered *with* lighting.
+		 *
+		 * This is the vertex array used for *lit* axially symmetric meshes.
+		 */
+		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_lit_axially_symmetric_mesh_vertex_array;
 
 		/**
 		 * Used for rendering to a 2D map view (is none for 3D globe view).
@@ -496,6 +634,15 @@ namespace GPlatesGui
 		 */
 		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
 				d_render_point_line_polygon_lighting_in_map_view_program_object;
+
+		/**
+		 * Shader program for lighting axially symmetric meshes.
+		 *
+		 * Is boost::none if not supported by the runtime system -
+		 * the fixed-function pipeline is then used (with no lighting).
+		 */
+		boost::optional<GPlatesOpenGL::GLProgramObject::shared_ptr_type>
+				d_render_axially_symmetric_mesh_lighting_program_object;
 	};
 }
 

@@ -34,6 +34,8 @@
 #include "ExportAnimationStrategy.h"
 #include "ExportOptionsUtils.h"
 
+#include "maths/PolygonOrientation.h"
+
 #include "utils/ReferenceCount.h"
 
 #include "view-operations/VisibleReconstructionGeometryExport.h"
@@ -82,12 +84,15 @@ namespace GPlatesGui
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
 					bool export_topological_lines_ = true,
 					bool export_topological_polygons_ = true,
+					boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
+							force_polygon_orientation_ = boost::none,
 					bool wrap_to_dateline_ = true) :
 				ConfigurationBase(filename_template_),
 				file_format(file_format_),
 				file_options(file_options_),
 				export_topological_lines(export_topological_lines_),
 				export_topological_polygons(export_topological_polygons_),
+				force_polygon_orientation(force_polygon_orientation_),
 				wrap_to_dateline(wrap_to_dateline_)
 			{  }
 
@@ -102,6 +107,8 @@ namespace GPlatesGui
 			ExportOptionsUtils::ExportFileOptions file_options;
 			bool export_topological_lines;
 			bool export_topological_polygons;
+			//! Only applies when @a export_topological_polygons is true.
+			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation;
 			bool wrap_to_dateline;
 		};
 
@@ -150,6 +157,11 @@ namespace GPlatesGui
 		 */
 		GPlatesViewOperations::VisibleReconstructionGeometryExport::files_collection_type
 				d_loaded_files;
+
+		/**
+		 * The active and loaded reconstruction file(s) used in the reconstruction.
+		 */
+		GPlatesViewOperations::VisibleReconstructionGeometryExport::files_collection_type d_loaded_reconstruction_files;
 
 		//! Export configuration parameters.
 		const_configuration_ptr d_configuration;

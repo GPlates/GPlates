@@ -152,3 +152,32 @@ GPlatesOpenGL::GLMapCubeMeshGenerator::create_cube_face_quadrant_mesh_vertices(
 		}
 	}
 }
+
+
+GPlatesOpenGL::GLMapCubeMeshGenerator::Point
+GPlatesOpenGL::GLMapCubeMeshGenerator::create_pole_mesh_vertex(
+		const double &pole_longitude,
+		bool north_pole) const
+{
+	const double &central_meridian_longitude = d_map_projection.central_llp().longitude();
+
+	// The map-projected point - it's not yet projected though.
+	Point2D map_point =
+	{
+		pole_longitude + central_meridian_longitude,
+		double(north_pole ? 90 : -90)
+	};
+
+	// Map project the point.
+	d_map_projection.forward_transform(map_point.x, map_point.y);
+
+	// The associated point-on-sphere is independent of the longitude at the poles.
+	const GPlatesMaths::UnitVector3D point_on_sphere = north_pole
+			? GPlatesMaths::UnitVector3D::zBasis()
+			: -GPlatesMaths::UnitVector3D::zBasis();
+
+	// Store the original point-on-sphere and the map-projected point.
+	const Point point = { point_on_sphere, map_point };
+
+	return point;
+}

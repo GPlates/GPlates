@@ -83,6 +83,8 @@ set(srcs
     ExportFileNameTemplateValidationUtils.h
     ExportFlowlineAnimationStrategy.cc
     ExportFlowlineAnimationStrategy.h
+    ExportImageAnimationStrategy.cc
+    ExportImageAnimationStrategy.h
     ExportMotionPathAnimationStrategy.cc
     ExportMotionPathAnimationStrategy.h
     ExportOptionsUtils.h
@@ -190,6 +192,7 @@ set(srcs
     RasterColourPalette.cc
     RasterColourPalette.h
     RenderSettings.h
+    SceneLightingParameters.cc
     SceneLightingParameters.h
     SessionMenu.cc
     SessionMenu.h

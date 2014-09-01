@@ -555,12 +555,28 @@ namespace GPlatesFileIO
 				const GPlatesModel::GpgimVersion &gpml_version,
 				GPlatesFileIO::ReadErrorAccumulation &read_errors);
 
-
 		// Similar to create_pos but returns it as (lon, lat) pair.
 		// This is to ensure that the longitude doesn't get wiped when reading in a
 		// point physically at the north pole.
-		std::pair<double, double>
+		//
+		// NOTE: (lon, lat) is considered the standard GML order, but GPML stores as (lat, lon).
+		std::pair<double/*lon*/, double/*lat*/>
 		create_lon_lat_pos(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+				const GPlatesModel::GpgimVersion &gpml_version,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors);
+
+		// Similar to create_lon_lat_pos but does not assume the position is latitude/longitude and
+		// does not check position is in a valid latitude/longitude range.
+		// This is because some points such as the georeferenced origin in a rectified grid are
+		// georeferenced in a *projection* coordinate system which is not generally lat/lon
+		// (it's only lat/lon *after* unprojecting).
+		//
+		// NOTE: If the returned pair is to be interpreted as latitude and longitude then
+		// the order is (lat, lon) which is the order GPML stores, but is the reverse of the
+		// order returned by 'create_lon_lat_pos' (which is GML order).
+		std::pair<double, double>
+		create_pos_2d(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 				const GPlatesModel::GpgimVersion &gpml_version,
 				GPlatesFileIO::ReadErrorAccumulation &read_errors);
@@ -576,8 +592,28 @@ namespace GPlatesFileIO
 				const GPlatesModel::GpgimVersion &gpml_version,
 				GPlatesFileIO::ReadErrorAccumulation &read_errors);
 
-		std::pair<double, double>
+		// Similar to create_coordinates but returns it as (lon, lat) pair.
+		// This is to ensure that the longitude doesn't get wiped when reading in a
+		// point physically at the north pole.
+		//
+		// NOTE: (lon, lat) is considered the standard GML order, but GPML stores as (lat, lon).
+		std::pair<double/*lon*/, double/*lat*/>
 		create_lon_lat_coordinates(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+				const GPlatesModel::GpgimVersion &gpml_version,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors);
+
+		// Similar to create_lon_lat_coordinates but does not assume the position is latitude/longitude and
+		// does not check position is in a valid latitude/longitude range.
+		// This is because some points such as the georeferenced origin in a rectified grid are
+		// georeferenced in a *projection* coordinate system which is not generally lat/lon
+		// (it's only lat/lon *after* unprojecting).
+		//
+		// NOTE: If the returned pair is to be interpreted as latitude and longitude then
+		// the order is (lat, lon) which is the order GPML stores, but is the reverse of the
+		// order returned by 'create_lon_lat_coordinates' (which is GML order).
+		std::pair<double, double>
+		create_coordinates_2d(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 				const GPlatesModel::GpgimVersion &gpml_version,
 				GPlatesFileIO::ReadErrorAccumulation &read_errors);
@@ -617,9 +653,28 @@ namespace GPlatesFileIO
 				const GPlatesModel::GpgimVersion &gpml_version,
 				GPlatesFileIO::ReadErrorAccumulation &read_errors);
 
-
-		std::pair<std::pair<double, double>, GPlatesPropertyValues::GmlPoint::GmlProperty>
+		// Similar to create_point_on_sphere but returns it as (lon, lat) pair.
+		// This is to ensure that the longitude doesn't get wiped when reading in a
+		// point physically at the north pole.
+		//
+		// NOTE: (lon, lat) is considered the standard GML order, but GPML stores as (lat, lon).
+		std::pair<std::pair<double/*lon*/, double/*lat*/>, GPlatesPropertyValues::GmlPoint::GmlProperty>
 		create_lon_lat_point_on_sphere(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+				const GPlatesModel::GpgimVersion &gpml_version,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors);
+
+		// Similar to create_lon_lat_point_on_sphere but does not assume the position is latitude/longitude and
+		// does not check position is in a valid latitude/longitude range.
+		// This is because some points such as the georeferenced origin in a rectified grid are
+		// georeferenced in a *projection* coordinate system which is not generally lat/lon
+		// (it's only lat/lon *after* unprojecting).
+		//
+		// NOTE: If the returned pair is to be interpreted as latitude and longitude then
+		// the order is (lat, lon) which is the order GPML stores, but is the reverse of the
+		// order returned by 'create_lon_lat_point_on_sphere' (which is GML order).
+		std::pair<std::pair<double, double>, GPlatesPropertyValues::GmlPoint::GmlProperty>
+		create_point_2d(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
 				const GPlatesModel::GpgimVersion &gpml_version,
 				GPlatesFileIO::ReadErrorAccumulation &read_errors);

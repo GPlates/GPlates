@@ -13,6 +13,8 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     AddPointGeometryOperation.cc
     AddPointGeometryOperation.h
+    ChangeLightDirectionOperation.cc
+    ChangeLightDirectionOperation.h
     CloneOperation.cc
     CloneOperation.h
     DeleteFeatureOperation.cc
@@ -33,6 +35,8 @@ set(srcs
     InsertVertexGeometryOperation.h
     InternalGeometryBuilder.cc
     InternalGeometryBuilder.h
+    MovePoleOperation.cc
+    MovePoleOperation.h
     MoveVertexGeometryOperation.cc
     MoveVertexGeometryOperation.h
     QueryProximityThreshold.h
@@ -41,7 +45,6 @@ set(srcs
     RenderedColouredEdgeSurfaceMesh.h
     RenderedColouredTriangleSurfaceMesh.h
     RenderedCrossSymbol.h
-    RenderedDirectionArrow.h
     RenderedEllipse.h
     RenderedGeometry.cc
     RenderedGeometry.h
@@ -64,6 +67,7 @@ set(srcs
     RenderedPointOnSphere.h
     RenderedPolygonOnSphere.h
     RenderedPolylineOnSphere.h
+    RenderedRadialArrow.h
     RenderedReconstructionGeometry.h
     RenderedResolvedRaster.h
     RenderedResolvedScalarField3D.h
@@ -72,6 +76,7 @@ set(srcs
     RenderedSquareSymbol.h
     RenderedStrainMarkerSymbol.h
     RenderedString.h
+    RenderedTangentialArrow.h
     RenderedTriangleSymbol.h
     ScalarField3DRenderParameters.cc
     ScalarField3DRenderParameters.h

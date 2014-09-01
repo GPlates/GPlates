@@ -35,6 +35,8 @@
 #include "canvas-tools/CanvasToolAdapterForMap.h"
 #include "canvas-tools/ClickGeometry.h"
 #include "canvas-tools/ManipulatePole.h"
+#include "canvas-tools/MovePoleGlobe.h"
+#include "canvas-tools/MovePoleMap.h"
 
 #include "global/GPlatesAssert.h"
 
@@ -49,7 +51,9 @@
 #include "qt-widgets/TaskPanel.h"
 #include "qt-widgets/ViewportWindow.h"
 
+#include "view-operations/MovePoleOperation.h"
 #include "view-operations/RenderedGeometryCollection.h"
+#include "view-operations/RenderedGeometryParameters.h"
 
 
 namespace GPlatesGui
@@ -77,6 +81,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::PoleManipulationCanvasToolWorkfl
 			CanvasToolWorkflows::TOOL_MANIPULATE_POLE),
 	d_feature_focus(view_state.get_feature_focus()),
 	d_rendered_geom_collection(view_state.get_rendered_geometry_collection()),
+	d_rendered_geometry_parameters(view_state.get_rendered_geometry_parameters()),
 	d_symbol_map(view_state.get_feature_type_symbol_map())
 {
 	create_canvas_tools(
@@ -154,7 +159,32 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 					viewport_window.map_view(),
 					view_state.get_map_transform()));
 
+	//
+	// Move pole canvas tool.
+	//
 
+	const GPlatesViewOperations::MovePoleOperation::non_null_ptr_type move_pole_operation =
+			GPlatesViewOperations::MovePoleOperation::create(
+					view_state.get_viewport_zoom(),
+					view_state.get_rendered_geometry_collection(),
+					WORKFLOW_RENDER_LAYER,
+					viewport_window.task_panel_ptr()->move_pole_widget());
+
+	// For the globe view.
+	d_globe_move_pole_tool.reset(
+			new GPlatesCanvasTools::MovePoleGlobe(
+					move_pole_operation,
+					viewport_window.globe_canvas().globe(),
+					viewport_window.globe_canvas(),
+					viewport_window));
+	// For the map view.
+	d_map_move_pole_tool.reset(
+			new GPlatesCanvasTools::MovePoleMap(
+					move_pole_operation,
+					viewport_window.map_view().map_canvas(),
+					viewport_window.map_view(),
+					viewport_window,
+					view_state));
 }
 
 
@@ -184,15 +214,22 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::activate_workflow()
 			&d_feature_focus,
 			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+			SLOT(draw_feature_focus()));
 	QObject::connect(
 			&d_feature_focus,
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+			SLOT(draw_feature_focus()));
+
+	// Re-draw the focused feature when the render geometry parameters change.
+	QObject::connect(
+			&d_rendered_geometry_parameters,
+			SIGNAL(parameters_changed(GPlatesViewOperations::RenderedGeometryParameters &)),
+			this,
+			SLOT(draw_feature_focus()));
 
 	// Draw the focused feature (or draw nothing) in case the focused feature changed while we were inactive.
-	draw_feature_focus(d_feature_focus);
+	draw_feature_focus();
 }
 
 
@@ -207,12 +244,17 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::deactivate_workflow()
 			&d_feature_focus,
 			SIGNAL(focus_changed(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+			SLOT(draw_feature_focus()));
 	QObject::disconnect(
 			&d_feature_focus,
 			SIGNAL(focused_feature_modified(GPlatesGui::FeatureFocus &)),
 			this,
-			SLOT(draw_feature_focus(GPlatesGui::FeatureFocus &)));
+			SLOT(draw_feature_focus()));
+	QObject::disconnect(
+			&d_rendered_geometry_parameters,
+			SIGNAL(parameters_changed(GPlatesViewOperations::RenderedGeometryParameters &)),
+			this,
+			SLOT(draw_feature_focus()));
 }
 
 
@@ -228,6 +270,9 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::get_selected_globe_and_map_canva
 	case CanvasToolWorkflows::TOOL_MANIPULATE_POLE:
 		return std::make_pair(d_globe_manipulate_pole_tool.get(), d_map_manipulate_pole_tool.get());
 
+	case CanvasToolWorkflows::TOOL_MOVE_POLE:
+		return std::make_pair(d_globe_move_pole_tool.get(), d_map_move_pole_tool.get());
+
 	default:
 		break;
 	}
@@ -237,13 +282,13 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::get_selected_globe_and_map_canva
 
 
 void
-GPlatesGui::PoleManipulationCanvasToolWorkflow::draw_feature_focus(
-		GPlatesGui::FeatureFocus &feature_focus)
+GPlatesGui::PoleManipulationCanvasToolWorkflow::draw_feature_focus()
 {
 	GeometryFocusHighlight::draw_focused_geometry(
-			feature_focus,
+			d_feature_focus,
 			*d_rendered_geom_collection.get_main_rendered_layer(WORKFLOW_RENDER_LAYER),
 			d_rendered_geom_collection,
+			d_rendered_geometry_parameters,
 			d_symbol_map);
 }
 
@@ -272,4 +317,5 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::update_manipulate_pole_tool()
 	}
 
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MANIPULATE_POLE, enable_manipulate_pole_tool);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_MOVE_POLE, true);
 }

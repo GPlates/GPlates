@@ -39,6 +39,15 @@ namespace GPlatesFileIO
 	namespace GdalUtils
 	{
 		/**
+		 * A convenience function that wraps GDALAllRegister.
+		 *
+		 * The first time this function is called it will call GDALAllRegister.
+		 */
+		void
+		gdal_register_drivers();
+
+
+		/**
 		 * A convenience function that wraps around GDALOpen. The file with
 		 * @a filename is opened for read-only access.
 		 *
@@ -47,6 +56,8 @@ namespace GPlatesFileIO
 		 *
 		 * For systems that segfault on GDALOpen, this function traps the segfault
 		 * signal, and fails gracefully.
+		 *
+		 * This function calls @a gdal_register_drivers internally.
 		 */
 		GDALDataset *
 		gdal_open(

@@ -75,6 +75,9 @@ set(srcs
     ColouringDialogUi.ui
     ColourScaleWidget.cc
     ColourScaleWidget.h
+    ConfigureCanvasToolGeometryRenderParametersDialog.cc
+    ConfigureCanvasToolGeometryRenderParametersDialog.h
+    ConfigureCanvasToolGeometryRenderParametersDialogUi.ui
     ConfigureExportParametersDialog.cc
     ConfigureExportParametersDialog.h
     ConfigureExportParametersDialogUi.ui
@@ -214,6 +217,8 @@ set(srcs
     ExportFileOptionsWidget.h
     ExportFileOptionsWidgetUi.ui
     ExportFlowlineOptionsWidget.h
+    ExportImageOptionsWidget.cc
+    ExportImageOptionsWidget.h
     ExportImageResolutionOptionsWidget.cc
     ExportImageResolutionOptionsWidget.h
     ExportImageResolutionOptionsWidgetUi.ui
@@ -221,6 +226,7 @@ set(srcs
     ExportOptionsWidget.h
     ExportRasterOptionsWidget.cc
     ExportRasterOptionsWidget.h
+    ExportRasterOptionsWidgetUi.ui
     ExportReconstructedGeometryOptionsWidget.h
     ExportResolvedTopologyOptionsWidget.cc
     ExportResolvedTopologyOptionsWidget.h
@@ -262,9 +268,6 @@ set(srcs
     GenerateVelocityDomainTerraDialog.cc
     GenerateVelocityDomainTerraDialog.h
     GenerateVelocityDomainTerraDialogUi.ui
-    GeoreferencingPage.cc
-    GeoreferencingPage.h
-    GeoreferencingPageUi.ui
     GlobeAndMapWidget.cc
     GlobeAndMapWidget.h
     GlobeCanvas.cc
@@ -319,6 +322,9 @@ set(srcs
     LeaveFullScreenButtonUi.ui
     LicenseDialog.cc
     LicenseDialog.h
+    LightingWidget.cc
+    LightingWidget.h
+    LightingWidgetUi.ui
     LinkWidget.cc
     LinkWidget.h
     LogDialog.cc
@@ -348,6 +354,9 @@ set(srcs
     ModifyReconstructionPoleWidget.cc
     ModifyReconstructionPoleWidget.h
     ModifyReconstructionPoleWidgetUi.ui
+    MovePoleWidget.cc
+    MovePoleWidget.h
+    MovePoleWidgetUi.ui
     NoActiveEditWidgetException.h
     OpenDirectoryDialog.cc
     OpenDirectoryDialog.h
@@ -401,6 +410,9 @@ set(srcs
     RasterFeatureCollectionPage.cc
     RasterFeatureCollectionPage.h
     RasterFeatureCollectionPageUi.ui
+    RasterGeoreferencingPage.cc
+    RasterGeoreferencingPage.h
+    RasterGeoreferencingPageUi.ui
     RasterLayerOptionsWidget.cc
     RasterLayerOptionsWidget.h
     RasterLayerOptionsWidgetUi.ui
@@ -431,6 +443,12 @@ set(srcs
     ScalarField3DDepthLayersPage.cc
     ScalarField3DDepthLayersPage.h
     ScalarField3DDepthLayersPageUi.ui
+    ScalarField3DFeatureCollectionPage.cc
+    ScalarField3DFeatureCollectionPage.h
+    ScalarField3DFeatureCollectionPageUi.ui
+    ScalarField3DGeoreferencingPage.cc
+    ScalarField3DGeoreferencingPage.h
+    ScalarField3DGeoreferencingPageUi.ui
     ScalarField3DLayerOptionsWidget.cc
     ScalarField3DLayerOptionsWidget.h
     ScalarField3DLayerOptionsWidgetUi.ui

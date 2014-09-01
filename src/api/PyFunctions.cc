@@ -81,7 +81,7 @@ namespace
 	}
 
 	void
-	recontruct(
+	reconstruct(
 			bp::list recon_files,
 			bp::list rot_files,
 			bp::object time,
@@ -135,6 +135,15 @@ namespace
 		{
 			reconstructable_file_ptrs.push_back(&(*file_iter)->get_reference());
 		}
+
+		// Get the sequence of reconstruction files as File pointers.
+		std::vector<const File::Reference *> reconstruction_file_ptrs;
+		file_iter = p_rot_files.begin();
+		file_end = p_rot_files.end();
+		for ( ; file_iter != file_end; ++file_iter)
+		{
+			reconstruction_file_ptrs.push_back(&(*file_iter)->get_reference());
+		}
 		
 		QString export_file_name_q = QString(bp::extract<const char *>(export_file_name));
 
@@ -146,6 +155,7 @@ namespace
 					format,
 					rfgs_p,
 					reconstructable_file_ptrs,
+					reconstruction_file_ptrs,
 					anchor_pid,
 					recon_time,
 					true/*export_single_output_file*/,
@@ -170,7 +180,7 @@ namespace
 	 * perform the reverse reconstruction.
 	 */
 	void
-	reverse_recontruct(
+	reverse_reconstruct(
 			bp::list python_reconstructable_filenames,
 			bp::list python_reconstruction_filenames,
 			bp::object python_time,
@@ -291,8 +301,8 @@ namespace
 void
 export_functions()
 {
-	bp::def("reconstruct", &recontruct);
-	bp::def("reverse_reconstruct", &reverse_recontruct);
+	bp::def("reconstruct", &reconstruct);
+	bp::def("reverse_reconstruct", &reverse_reconstruct);
 }
 #endif
 

@@ -66,6 +66,7 @@
 #include "view-operations/FocusedFeatureGeometryManipulator.h"
 #include "view-operations/GeometryBuilder.h"
 #include "view-operations/RenderedGeometryCollection.h"
+#include "view-operations/RenderedGeometryParameters.h"
 
 
 namespace
@@ -119,6 +120,12 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesViewOperations::FocusedFeatureGeometryManipulator(
 				*d_focused_feature_geometry_builder,
 				*this)),
+	d_render_settings(
+			new GPlatesGui::RenderSettings()),
+	d_rendered_geometry_parameters(
+			new GPlatesViewOperations::RenderedGeometryParameters()),
+	d_scene_lighting_parameters(
+			new GPlatesGui::SceneLightingParameters()),
 	d_visual_layers(
 			new VisualLayers(
 				d_application_state,
@@ -126,10 +133,6 @@ GPlatesPresentation::ViewState::ViewState(
 				*d_rendered_geometry_collection)),
 	d_visual_layer_registry(
 			new VisualLayerRegistry()),
-	d_render_settings(
-			new GPlatesGui::RenderSettings()),
-	d_scene_lighting_parameters(
-			new GPlatesGui::SceneLightingParameters()),
 	d_map_transform(
 			new GPlatesGui::MapTransform(
 				*d_viewport_zoom)),
@@ -308,6 +311,27 @@ GPlatesPresentation::ViewState::get_colour_scheme_delegator()
 }
 
 
+GPlatesGui::RenderSettings &
+GPlatesPresentation::ViewState::get_render_settings()
+{
+	return *d_render_settings;
+}
+
+
+GPlatesViewOperations::RenderedGeometryParameters &
+GPlatesPresentation::ViewState::get_rendered_geometry_parameters()
+{
+	return *d_rendered_geometry_parameters;
+}
+
+
+GPlatesGui::SceneLightingParameters &
+GPlatesPresentation::ViewState::get_scene_lighting_parameters()
+{
+	return *d_scene_lighting_parameters;
+}
+
+
 GPlatesPresentation::VisualLayers &
 GPlatesPresentation::ViewState::get_visual_layers()
 {
@@ -319,20 +343,6 @@ GPlatesPresentation::VisualLayerRegistry &
 GPlatesPresentation::ViewState::get_visual_layer_registry()
 {
 	return *d_visual_layer_registry;
-}
-
-
-GPlatesGui::RenderSettings &
-GPlatesPresentation::ViewState::get_render_settings()
-{
-	return *d_render_settings;
-}
-
-
-GPlatesGui::SceneLightingParameters &
-GPlatesPresentation::ViewState::get_scene_lighting_parameters()
-{
-	return *d_scene_lighting_parameters;
 }
 
 

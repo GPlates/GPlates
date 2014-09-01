@@ -7,7 +7,7 @@
 * Most recent change:
 *   $Date$
 * 
-* Copyright (C) 2009, 2010, 2012, 2013 Geological Survey of Norway
+* Copyright (C) 2009, 2010, 2012, 2013, 2014 Geological Survey of Norway
 *
 * This file is part of GPlates.
 *
@@ -28,10 +28,16 @@
 #include <QMessageBox>
 #include <QVariant>
 
+#include "boost/foreach.hpp"
+
 #include "feature-visitors/KeyValueDictionaryFinder.h"
+#include "feature-visitors/ToQvariantConverter.h"
+#include "model/GpgimProperty.h"
+#include "model/GpgimStructuralType.h"
 #include "property-values/Enumeration.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlPlateId.h"
+#include "property-values/StructuralType.h"
 #include "property-values/XsInteger.h"
 #include "property-values/XsDouble.h"
 #include "OgrUtils.h"
@@ -223,7 +229,7 @@ GPlatesFileIO::OgrUtils::add_plate_id_to_kvd(
 	// Shapefile attribute field names are limited to 10 characters in length
 	// and should not contain spaces.
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
-		GPlatesPropertyValues::XsString::create("PLATE_ID");
+		GPlatesPropertyValues::XsString::create("PLATEID1");
 
 	// Set up a default plate-id value, which we'll use if the feature doesn't have a plate-id.
 	GPlatesModel::integer_plate_id_type plate_id_value = 0;
@@ -324,6 +330,48 @@ GPlatesFileIO::OgrUtils::add_referenced_files_to_kvd(
 }
 
 void
+GPlatesFileIO::OgrUtils::add_reconstruction_files_to_kvd(
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd,
+		const GPlatesFileIO::OgrUtils::referenced_files_collection_type &reconstruction_files)
+{
+	// Attribute field names will have the form "RECONFILE1", "RECONFILE2" etc...
+	QString file_string("RECONFILE");
+
+	int file_count = 1;
+	referenced_files_collection_type::const_iterator file_iter;
+	for (file_iter = reconstruction_files.begin();
+		file_iter != reconstruction_files.end();
+		++file_iter, ++file_count)
+	{
+		const GPlatesFileIO::File::Reference *file = *file_iter;
+
+		QString count_string = QString("%1").arg(file_count);
+		QString field_name = file_string + count_string;
+
+		// Some files might not actually exist yet if the user created a new
+		// feature collection internally and hasn't saved it to file yet.
+		if (!GPlatesFileIO::file_exists(file->get_file_info()))
+		{
+			continue;
+		}
+
+		QString filename = file->get_file_info().get_display_name(false/*use_absolute_path_name*/);
+
+		GPlatesPropertyValues::XsString::non_null_ptr_type key =
+			GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(field_name));
+		GPlatesPropertyValues::XsString::non_null_ptr_type file_value =
+			GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(filename));
+
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
+			key,
+			file_value,
+			GPlatesPropertyValues::StructuralType::create_xsi("string"));
+		kvd->elements().push_back(element);
+	}
+}
+
+
+void
 GPlatesFileIO::OgrUtils::add_standard_properties_to_kvd(
 	const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
@@ -340,6 +388,7 @@ GPlatesFileIO::OgrUtils::add_standard_properties_to_kvd(
 	add_reconstruction_method_to_kvd(feature,kvd);
 	add_left_plate_to_kvd(feature,kvd);
 	add_right_plate_to_kvd(feature,kvd);
+	add_spreading_asymmetry_to_kvd(feature,kvd);
 }
 
 void
@@ -665,6 +714,34 @@ GPlatesFileIO::OgrUtils::add_reconstruction_method_to_kvd(
 	kvd->elements().push_back(element);
 }
 
+void
+GPlatesFileIO::OgrUtils::add_spreading_asymmetry_to_kvd(
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
+{
+	static const GPlatesModel::PropertyName spreading_asymmetry_property_name =
+			GPlatesModel::PropertyName::create_gpml("spreadingAsymmetry");
+
+	const GPlatesPropertyValues::XsDouble  *spreading_asymmetry;
+
+	// Default string.
+	GPlatesPropertyValues::XsDouble::non_null_ptr_type value = GPlatesPropertyValues::XsDouble::create(0.);
+
+	// If we found a spreading asymmetry, add it.
+	if (GPlatesFeatureVisitors::get_property_value(feature,spreading_asymmetry_property_name,spreading_asymmetry))
+	{
+		value = GPlatesPropertyValues::XsDouble::create(spreading_asymmetry->value());
+	}
+	GPlatesPropertyValues::XsString::non_null_ptr_type key =
+			GPlatesPropertyValues::XsString::create("SPREAD_ASY");
+
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement element(
+				key,
+				value,
+				GPlatesPropertyValues::StructuralType::create_xsi("double"));
+	kvd->elements().push_back(element);
+}
+
 bool
 GPlatesFileIO::OgrUtils::feature_type_field_is_gpgim_type(
 		const model_to_attribute_map_type &model_to_attribute_map)
@@ -686,5 +763,180 @@ GPlatesFileIO::OgrUtils::feature_type_field_is_gpgim_type(
 	else
 	{
 		return false;
+	}
+}
+
+QVariant
+GPlatesFileIO::OgrUtils::get_qvariant_from_kvd_element(
+		const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element)
+{
+	GPlatesFeatureVisitors::ToQvariantConverter converter;
+
+	element.value()->accept_visitor(converter);
+
+	if (converter.found_values_begin() != converter.found_values_end())
+	{
+		return *converter.found_values_begin();
+	}
+	else
+	{
+		return QVariant();
+	}
+}
+
+/**
+ * Write kvd to debug output
+ */
+void
+GPlatesFileIO::OgrUtils::write_kvd(
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
+{
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator it =
+			kvd->elements().begin();
+
+	for (; it != kvd->elements().end(); ++it)
+	{
+		qDebug() << "Key: " <<
+					GPlatesUtils::make_qstring_from_icu_string((*it).key()->value().get()) <<
+					", Value: " <<
+					get_qvariant_from_kvd_element(*it);
+	}
+}
+
+/**
+ * Write kvd to debug output
+ */
+void
+GPlatesFileIO::OgrUtils::write_kvd(
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type kvd)
+{
+	std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator it =
+			kvd->elements().begin();
+
+	for (; it != kvd->elements().end(); ++it)
+	{
+		qDebug() << "Key: " <<
+					GPlatesUtils::make_qstring_from_icu_string((*it).key()->value().get()) <<
+					", Value: " <<
+					get_qvariant_from_kvd_element(*it);
+	}
+}
+
+
+bool
+GPlatesFileIO::OgrUtils::wkb_type_belongs_to_structural_types(
+		const OGRwkbGeometryType &wkb_type,
+		const GPlatesModel::GpgimProperty::structural_type_seq_type &structural_types)
+{
+	static const GPlatesPropertyValues::StructuralType point_type = GPlatesPropertyValues::StructuralType::create_gml("Point");
+	static const GPlatesPropertyValues::StructuralType multi_point_type = GPlatesPropertyValues::StructuralType::create_gml("MultiPoint");
+	static const GPlatesPropertyValues::StructuralType polyline_type = GPlatesPropertyValues::StructuralType::create_gml("LineString");
+	static const GPlatesPropertyValues::StructuralType polygon_type = GPlatesPropertyValues::StructuralType::create_gml("Polygon");
+
+	GPlatesPropertyValues::StructuralType wkb_structural_type = point_type;
+
+	switch(wkb_type)
+	{
+	case wkbPoint:
+		wkb_structural_type = point_type;
+		break;
+	case wkbMultiPoint:
+		wkb_structural_type = multi_point_type;
+		break;
+	case wkbLineString:
+		wkb_structural_type = polyline_type;
+		break;
+	case wkbMultiLineString:
+		wkb_structural_type = polyline_type;
+		break;
+	case wkbPolygon:
+		wkb_structural_type = polygon_type;
+		break;
+	case wkbMultiPolygon:
+		wkb_structural_type = polygon_type;
+		break;
+	default: ;
+	}
+
+	BOOST_FOREACH(GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type type, structural_types)
+	{
+		if (type->get_structural_type() == wkb_structural_type)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+
+boost::optional<GPlatesPropertyValues::StructuralType>
+GPlatesFileIO::OgrUtils::get_structural_type_of_wkb_type(
+		const OGRwkbGeometryType &wkb_type)
+{
+	switch(wkb_type)
+	{
+	case wkbPoint:
+		return GPlatesPropertyValues::StructuralType::create_gml("Point");
+		break;
+	case wkbMultiPoint:
+		return GPlatesPropertyValues::StructuralType::create_gml("MultiPoint");
+		break;
+	case wkbLineString:
+		return GPlatesPropertyValues::StructuralType::create_gml("LineString");
+		break;
+	case wkbMultiLineString:
+		return GPlatesPropertyValues::StructuralType::create_gml("LineString");
+		break;
+	case wkbPolygon:
+		return GPlatesPropertyValues::StructuralType::create_gml("Polygon");
+		break;
+	case wkbMultiPolygon:
+		return GPlatesPropertyValues::StructuralType::create_gml("Polygon");
+		break;
+	default:
+		return boost::none;
+	}
+}
+
+
+
+
+void
+GPlatesFileIO::OgrUtils::add_filename_sequence_to_kvd(
+		const QString &root_attribute_name,
+		const GPlatesFileIO::OgrUtils::referenced_files_collection_type &files,
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type &dictionary)
+{
+	using namespace GPlatesPropertyValues;
+
+	int file_count = 1;
+	referenced_files_collection_type::const_iterator file_iter;
+	for (file_iter = files.begin();
+		file_iter != files.end();
+		++file_iter, ++file_count)
+	{
+		const GPlatesFileIO::File::Reference *file = *file_iter;
+
+		QString count_string = QString("%1").arg(file_count);
+		QString field_name = root_attribute_name + count_string;
+
+		// Some files might not actually exist yet if the user created a new
+		// feature collection internally and hasn't saved it to file yet.
+		if (!GPlatesFileIO::file_exists(file->get_file_info()))
+		{
+			continue;
+		}
+
+		QString filename = file->get_file_info().get_display_name(false/*use_absolute_path_name*/);
+
+		XsString::non_null_ptr_type key = XsString::create(GPlatesUtils::make_icu_string_from_qstring(field_name));
+		XsString::non_null_ptr_type file_value =
+			XsString::create(GPlatesUtils::make_icu_string_from_qstring(filename));
+
+		GpmlKeyValueDictionaryElement element(
+			key,
+			file_value,
+			StructuralType::create_xsi("string"));
+		dictionary->elements().push_back(element);
 	}
 }

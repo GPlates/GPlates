@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>780</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -165,6 +165,7 @@
      <string>&amp;Tools</string>
     </property>
     <addaction name="action_Use_Small_Icons"/>
+    <addaction name="action_Configure_Geometry_Rendering"/>
     <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menu_Features">
@@ -1127,6 +1128,11 @@
   <action name="action_Manage_Age_Models">
    <property name="text">
     <string>Manage &amp;Age Models</string>
+   </property>
+  </action>
+  <action name="action_Configure_Geometry_Rendering">
+   <property name="text">
+    <string>Configure Geometry Rendering...</string>
    </property>
   </action>
  </widget>

@@ -48,6 +48,7 @@ namespace GPlatesQtWidgets
 namespace GPlatesViewOperations
 {
 	class RenderedGeometryCollection;
+	class RenderedGeometryParameters;
 }
 
 namespace GPlatesGui
@@ -92,8 +93,7 @@ namespace GPlatesGui
 	private Q_SLOTS:
 
 		void
-		draw_feature_focus(
-				GPlatesGui::FeatureFocus &feature_focus);
+		draw_feature_focus();
 
 		void
 		update_enable_state();
@@ -108,6 +108,9 @@ namespace GPlatesGui
 		//! For rendering purposes
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
 
+		//! Parameters for rendering geometries in canvas tools.
+		const GPlatesViewOperations::RenderedGeometryParameters &d_rendered_geometry_parameters;
+
 		const GPlatesGui::symbol_map_type &d_symbol_map;
 
 		//! For clicking geometries in the 3D globe view.
@@ -119,6 +122,11 @@ namespace GPlatesGui
 		boost::scoped_ptr<GlobeCanvasTool> d_globe_manipulate_pole_tool;
 		//! For manipulating poles in the 2D map view.
 		boost::scoped_ptr<MapCanvasTool> d_map_manipulate_pole_tool;
+
+		//! For moving poles in the 3D globe view.
+		boost::scoped_ptr<GlobeCanvasTool> d_globe_move_pole_tool;
+		//! For moving poles in the 2D map view.
+		boost::scoped_ptr<MapCanvasTool> d_map_move_pole_tool;
 
 
 		void

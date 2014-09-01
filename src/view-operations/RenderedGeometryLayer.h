@@ -162,9 +162,8 @@ namespace GPlatesViewOperations
 		 * per bin is returned (the closest to the centre of the bin) and the
 		 * order returned by query is not the same as the order of addition.
 		 * Although this only applies to certain types of rendered geometry such as
-		 * rendered point on sphere and rendered direction arrow which have single
-		 * point geometry - the other geometries are treated in a zoom-independent
-		 * manner.
+		 * rendered point on sphere and rendered arrow which have single point geometry
+		 * - the other geometries are treated in a zoom-independent manner.
 		 *
 		 * @param ratio_zoom_dependent_bin_dimension_to_globe_radius the size of the
 		 *        zoom-dependent bin size relative to the globe radius when the globe fills

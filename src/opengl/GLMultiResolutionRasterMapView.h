@@ -70,6 +70,10 @@ namespace GPlatesOpenGL
 		/**
 		 * Creates a @a GLMultiResolutionRasterMapView object.
 		 *
+		 * NOTE: The world transform gets set on @a multi_resolution_cube_raster according to the
+		 * central meridian of the map projection.
+		 * This means the input cube raster will get re-oriented.
+		 *
 		 * @a tile_texel_dimension is the (possibly unadapted) dimension of each square tile texture
 		 * (returned by @a get_tile_texture).
 		 */
@@ -148,11 +152,19 @@ namespace GPlatesOpenGL
 		 */
 		unsigned int d_tile_texel_dimension;
 
+		//! 1.0 / 'd_tile_texel_dimension'.
+		float d_inverse_tile_texel_dimension;
+
 		/**
 		 * The map projection's central meridian longitude is used as a transform when
 		 * rendering the source raster (to align it with the map cube mesh).
 		 */
 		double d_map_projection_central_meridian_longitude;
+
+		/**
+		 * The transform used for the map projection's central meridian longitude.
+		 */
+		GLMatrix d_world_transform;
 
 		/**
 		 * Shader program to render tiles to the scene.

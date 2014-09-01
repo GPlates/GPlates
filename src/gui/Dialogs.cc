@@ -59,6 +59,7 @@
 #include "qt-widgets/FiniteRotationCalculatorDialog.h"
 #include "qt-widgets/ChooseFeatureCollectionDialog.h"
 #include "qt-widgets/ColouringDialog.h"
+#include "qt-widgets/ConfigureCanvasToolGeometryRenderParametersDialog.h"
 #include "qt-widgets/ConfigureGraticulesDialog.h"
 #include "qt-widgets/ConfigureTextOverlayDialog.h"
 #include "qt-widgets/ConnectWFSDialog.h"
@@ -269,6 +270,29 @@ GPlatesGui::Dialogs::pop_up_colouring_dialog()
 	colouring_dialog().pop_up();
 }
 
+
+GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog &
+GPlatesGui::Dialogs::configure_canvas_tool_geometry_render_parameters_dialog()
+{
+	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
+	const DialogType dialog_type = DIALOG_CONFIGURE_CANVAS_TOOL_GEOMETRY_RENDER_PARAMETERS;
+	typedef GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog dialog_typename;
+
+	if (d_dialogs[dialog_type].isNull())
+	{
+		d_dialogs[dialog_type] = new dialog_typename(
+				view_state().get_rendered_geometry_parameters(),
+				&viewport_window());
+	}
+
+	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
+}
+
+void
+GPlatesGui::Dialogs::pop_up_configure_canvas_tool_geometry_render_parameters_dialog()
+{
+	configure_canvas_tool_geometry_render_parameters_dialog().pop_up();
+}
 
 
 GPlatesQtWidgets::ConfigureGraticulesDialog &
