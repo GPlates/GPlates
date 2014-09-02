@@ -173,10 +173,10 @@ namespace GPlatesMaths
 			//   c1 = [d1 - d2*(n1.n2)] / [1 - (n1.n2)^2]
 			//   c2 = [d2 - d1*(n1.n2)] / [1 - (n1.n2)^2]
 			//   A  = c1 * n1 + c2 * n2
-			//   B  = n1 x n2 / |n1 x n2|
+			//   B  = n1 x n2
 			// ...and first plane is small circle (d1!=0) and second plane is great circle arc (d2==0).
 			//   c1 = d1 / [1 - (n1.n2)^2]
-			//   c2 = d1*(n1.n2) / [1 - (n1.n2)^2]
+			//   c2 = -d1*(n1.n2) / [1 - (n1.n2)^2]
 			//
 			// Line intersects unit sphere when...
 			//   |r|   = 1
@@ -209,23 +209,23 @@ namespace GPlatesMaths
 				return point1;
 			}
 
-			const double inv_c12 = 1.0 / (1 - n1_dot_n2.dval());
+			const double inv_c12 = 1.0 / (1 - (n1_dot_n2 * n1_dot_n2).dval());
 			const double c1 = small_circle_axis_dot_product * inv_c12;
-			const double c2 = c1 * n1_dot_n2.dval();
+			const double c2 = -c1 * n1_dot_n2.dval();
 			const Vector3D A = c1 * small_circle_axis + c2 * gca_axis;
-			const UnitVector3D &B = gca_axis;
+			const Vector3D B = cross(small_circle_axis, gca_axis);
 			const real_t a = dot(B, B);
 			const real_t b = 2 * dot(A, B);
 			const real_t c = dot(A, A) - 1;
 			const real_t discriminant = b * b - 4 * a * c;
-			if (discriminant < 0) // epsilon test
-			{
-				// We shouldn't get here - so just return 'point1'.
-				qWarning() << "GeometryInterpolation.cc: no solution to intersection - returning 'point1'.";
-				return point1;
-			}
 			if (discriminant <= 0) // epsilon test
 			{
+				// We really shouldn't get too negative a result so emit warning if we do.
+				if (discriminant.dval() < -0.001)
+				{
+					qWarning() << "GeometryInterpolation.cc: negative discriminant.";
+				}
+
 				// Only one intersection point.
 				const real_t t = -b / (2 * a);
 				return PointOnSphere((A + t * B).get_normalisation());
@@ -305,17 +305,31 @@ namespace GPlatesMaths
 			std::list<PointOnSphere>::iterator prev_dst_start_points_iter = dst_start_points_iter;
 			--prev_dst_start_points_iter;
 
-			// Insert the new point before the current point.
+			// Calculate the new interpolated point.
 			const PointOnSphere interp_start_point = 
 					intersect_small_circle_with_great_circle_arc(
 							*prev_dst_start_points_iter,
 							*dst_start_points_iter,
 							dot(src_start_polyline_point.position_vector(), rotation_axis).dval(),
 							rotation_axis);
-			dst_start_points_iter = dst_start_polyline_points.insert(dst_start_points_iter, interp_start_point);
 
 			// Erase those points that are outside the overlapping latitude range.
 			dst_start_polyline_points.erase(dst_start_polyline_points.begin(), dst_start_points_iter);
+
+			// Ensure the new point is inserted at the correct location in the sequence such that
+			// the points remain monotonically decreasing in latitude.
+			// Due to numerical tolerance in interpolated position the latitudes can be slightly re-ordered.
+			for (dst_start_points_iter = dst_start_polyline_points.begin();
+				dst_start_points_iter != dst_start_polyline_points.end();
+				++dst_start_points_iter)
+			{
+				if (dot(dst_start_points_iter->position_vector(), rotation_axis).dval() <=
+					dot(interp_start_point.position_vector(), rotation_axis).dval())
+				{
+					break;
+				}
+			}
+			dst_start_polyline_points.insert(dst_start_points_iter, interp_start_point);
 
 
 			//
@@ -359,6 +373,7 @@ namespace GPlatesMaths
 			std::list<PointOnSphere>::iterator prev_dst_end_points_iter = dst_end_points_iter;
 			++prev_dst_end_points_iter;
 
+			// Calculate the new interpolated point.
 			// Insert the new point after the current point (which is before the previous point).
 			const PointOnSphere interp_end_point = 
 					intersect_small_circle_with_great_circle_arc(
@@ -366,10 +381,27 @@ namespace GPlatesMaths
 							*dst_end_points_iter,
 							dot(src_end_polyline_point.position_vector(), rotation_axis).dval(),
 							rotation_axis);
-			dst_end_points_iter = dst_end_polyline_points.insert(prev_dst_end_points_iter, interp_end_point);
 
 			// Erase those points that are outside the overlapping latitude range.
 			dst_end_polyline_points.erase(prev_dst_end_points_iter, dst_end_polyline_points.end());
+
+			// Ensure the new point is inserted at the correct location in the sequence such that
+			// the points remain monotonically decreasing in latitude.
+			// Due to numerical tolerance in interpolated position the latitudes can be slightly re-ordered.
+			for (dst_end_points_iter = dst_end_polyline_points.end();
+				dst_end_points_iter != dst_end_polyline_points.begin();
+				)
+			{
+				--dst_end_points_iter;
+
+				if (dot(dst_end_points_iter->position_vector(), rotation_axis).dval() >
+					dot(interp_end_point.position_vector(), rotation_axis).dval())
+				{
+					++dst_end_points_iter;
+					break;
+				}
+			}
+			dst_end_polyline_points.insert(dst_end_points_iter, interp_end_point);
 
 
 			// Polylines overlap in latitude.
@@ -392,25 +424,26 @@ namespace GPlatesMaths
 							all_points.size() >= points.size(),
 					GPLATES_ASSERTION_SOURCE);
 
-			// The start point should have same latitude as first point in 'all' points due
-			// to 'limit_latitude_range()'.
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					dot(points.front().position_vector(), rotation_axis) ==
-						dot(all_points.front().position_vector(), rotation_axis), // epsilon test
-					GPLATES_ASSERTION_SOURCE);
-
-			// The end point should have same latitude as last point in 'all' points due
-			// to 'limit_latitude_range()'.
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					dot(points.back().position_vector(), rotation_axis) ==
-						dot(all_points.back().position_vector(), rotation_axis), // epsilon test
-					GPLATES_ASSERTION_SOURCE);
-
 			std::list<PointOnSphere>::iterator points_iter = points.begin();
 			std::list<PointOnSphere>::iterator points_end = points.end();
 
 			std::vector<PointOnSphere>::const_iterator all_points_iter = all_points.begin();
 			std::vector<PointOnSphere>::const_iterator all_points_end = all_points.end();
+
+			// Insert duplicate starting points if there are higher latitudes (in the other polyline).
+			// This is only needed due to numerical tolerance because the 'limit_latitude_range()'
+			// function should have already ensured equal latitude ranges for both polylines.
+			for ( ; all_points_iter != all_points_end; ++all_points_iter)
+			{
+				if (dot(points_iter->position_vector(), rotation_axis).dval() >=
+					dot(all_points_iter->position_vector(), rotation_axis).dval())
+				{
+					break;
+				}
+
+				// The latitudes are equal to within numerical tolerance (so no interpolation needed).
+				points.insert(points.begin(), *points_iter);
+			}
 
 			// Iterate over the latitude range that is common to both polylines.
 			while (points_iter != points_end &&
@@ -457,11 +490,26 @@ namespace GPlatesMaths
 				++all_points_iter;
 			}
 
-			// We should run out of points at the same time as we run out of 'all' points.
+			// We should run out of points before (or at same time as) we run out of 'all' points.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					points_iter == points_end &&
-							all_points_iter == all_points_end,
+					points_iter == points_end,
 					GPLATES_ASSERTION_SOURCE);
+
+			// Insert duplicate ending points if there are lower latitudes (in the other polyline).
+			// All remaining points are points that are not in the polyline (so must be in other polyline).
+			// This is only needed due to numerical tolerance because the 'limit_latitude_range()'
+			// function should have already ensured equal latitude ranges for both polylines.
+			for ( ; all_points_iter != all_points_end; ++all_points_iter)
+			{
+				// Any remaining 'all' points should have lower (or equal) latitudes.
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						dot(all_points_iter->position_vector(), rotation_axis) <=
+								dot(points.back().position_vector(), rotation_axis), // epsilon test
+						GPLATES_ASSERTION_SOURCE);
+
+				// The latitudes are equal to within numerical tolerance (so no interpolation needed).
+				points.push_back(points.back());
+			}
 
 			// We should have same number of points as 'all' points.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
