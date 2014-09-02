@@ -232,11 +232,11 @@ def polyline_on_sphere_join(polyline1, polyline2, distance_threshold_radians):
     """join(polyline1, polyline2, distance_threshold_radians) -> PolylineOnSphere or None
     Joins two polylines if their end points are close enough.
     
-    :polyline1: the first of two polylines to join
-    :polyline1: :class:`PolylineOnSphere` (though any :class:`GeometryOnSphere` will work\
+    :param polyline1: the first of two polylines to join
+    :type polyline1: :class:`PolylineOnSphere` (though any :class:`GeometryOnSphere` will work\
     since :meth:`GeometryOnSphere.get_points` is used internally to query end points)
-    :polyline2: the second of two polylines to join
-    :polyline2: :class:`PolylineOnSphere` (though any :class:`GeometryOnSphere` will work\
+    :param polyline2: the second of two polylines to join
+    :type polyline2: :class:`PolylineOnSphere` (though any :class:`GeometryOnSphere` will work\
     since :meth:`GeometryOnSphere.get_points` is used internally to query end points)
     :returns: the joined polyline, or ``None`` if neither end point of *polyline1* is within \
     *distance_threshold_radians* radians of either end point of *polyline2*

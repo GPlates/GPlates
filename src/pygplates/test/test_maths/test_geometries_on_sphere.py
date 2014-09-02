@@ -305,6 +305,33 @@ class PolylineOnSphereCase(unittest.TestCase):
                 pygplates.PolylineOnSphere.join(
                         polyline1, pygplates.PolylineOnSphere([(0,1), (10,1)]), math.radians(2.1)) ==
                 pygplates.PolylineOnSphere([(10,1), (0,1), (0,0), (0,10)]))
+    
+    def test_rotation_interpolate(self):
+        # Two polylines whose latitude ranges do not overlap.
+        self.assertFalse(pygplates.PolylineOnSphere.rotation_interpolate(
+                pygplates.PolylineOnSphere([(10,0), (-10,0)]),
+                pygplates.PolylineOnSphere([(30,10), (20,10)]),
+                pygplates.PointOnSphere(90,0),
+                math.radians(1)))
+        self.assertTrue(pygplates.PolylineOnSphere.rotation_interpolate(
+                pygplates.PolylineOnSphere([(10,0), (-10,0)]),
+                pygplates.PolylineOnSphere([(20,10), (0,10)]),
+                pygplates.PointOnSphere(90,0),
+                math.radians(1)))
+        # Temporary: To be able to view interpolated isochrons in GPlates.
+        #polylines = pygplates.PolylineOnSphere.rotation_interpolate(
+        #        pygplates.PolylineOnSphere([(10,0), (-10,0)]),
+        #        pygplates.PolylineOnSphere([(20,10), (0,10)]),
+        #        pygplates.PointOnSphere(90,0),
+        #        math.radians(1))
+        #feature_collection = pygplates.FeatureCollection()
+        #for polyline in polylines:
+        #    feature = pygplates.Feature.create_reconstructable_feature(
+        #            pygplates.FeatureType.create_gpml('Isochron'),
+        #            polyline)
+        #    feature_collection.add(feature)
+        #file_registry = pygplates.FeatureCollectionFileFormatRegistry()
+        #file_registry.write(feature_collection, 'isochrons.gpml')
 
     def test_compare(self):
         self.assertEquals(self.polyline, pygplates.PolylineOnSphere(self.points))
