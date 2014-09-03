@@ -44,7 +44,6 @@ DISABLE_GCC_WARNING("-Wuninitialized")
 #include "AngularDistance.h"
 #include "GeometryDistance.h"
 #include "GreatCircleArc.h"
-#include "Centroid.h"
 #include "MathsUtils.h"
 #include "PointOnSphere.h"
 #include "Rotation.h"
