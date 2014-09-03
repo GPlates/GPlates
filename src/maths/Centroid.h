@@ -27,7 +27,8 @@
 #ifndef GPLATES_MATHS_CENTROID_H
 #define GPLATES_MATHS_CENTROID_H
 
-#include "FastMaths.h"
+#include <cmath>
+
 #include "MultiPointOnSphere.h"
 #include "PointOnSphere.h"
 #include "PolygonOnSphere.h"
@@ -390,7 +391,7 @@ namespace GPlatesMaths
 				// This is a faster approximation of "acos" (inverse cosine).
 				// We don't really need too much accuracy here because we're not doing a proper line integral.
 				// So the faster version of 'acos' is fine.
-				const double approx_arc_length = FastMaths::acos(cosine_arc_length);
+				const double approx_arc_length = std::acos(cosine_arc_length);
 
 				const Vector3D edge_centroid = 0.5 * (
 						Vector3D(edge.start_point().position_vector()) +
