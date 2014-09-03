@@ -545,40 +545,68 @@ namespace GPlatesMaths
 		 */
 		void
 		flatten_longitude_overlaps(
-				const UnitVector3D &from_polyline_centroid,
-				const UnitVector3D &to_polyline_centroid,
 				std::list<PointOnSphere> &from_polyline_points,
 				std::list<PointOnSphere> &to_polyline_points,
 				const UnitVector3D &rotation_axis)
 		{
-			const bool is_from_polyline_mostly_left_of_to_polyline =
-					point1_is_left_of_point2(
-							from_polyline_centroid,
-							to_polyline_centroid,
-							rotation_axis);
-
-			std::list<PointOnSphere>::iterator from_points_iter = from_polyline_points.begin();
-			std::list<PointOnSphere>::iterator from_points_end = from_polyline_points.end();
-
-			std::list<PointOnSphere>::iterator to_points_iter = to_polyline_points.begin();
-			std::list<PointOnSphere>::iterator to_points_end = to_polyline_points.end();
-
 			// We should have same number of points in both polylines.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 					from_polyline_points.size() == to_polyline_points.size(),
 					GPLATES_ASSERTION_SOURCE);
 
-			for ( ; from_points_iter != from_points_end; ++from_points_iter, ++to_points_iter)
+			// Initialise with false values.
+			std::vector<bool> from_points_left_of_to_points(from_polyline_points.size());
+
+			std::list<PointOnSphere>::iterator from_points_iter = from_polyline_points.begin();
+			const std::list<PointOnSphere>::iterator from_points_end = from_polyline_points.end();
+
+			std::list<PointOnSphere>::iterator to_points_iter = to_polyline_points.begin();
+
+			std::vector<bool>::iterator from_points_left_of_to_points_iter =
+					from_points_left_of_to_points.begin();
+			unsigned int num_from_points_left_of_to_points = 0;
+			unsigned int num_to_points_left_of_from_points = 0;
+
+			// Loop through all points and determine which of 'from' and 'to' points is on left side.
+			for ( ;
+				from_points_iter != from_points_end;
+				++from_points_iter, ++to_points_iter, ++from_points_left_of_to_points_iter)
 			{
-				const bool points_overlap = is_from_polyline_mostly_left_of_to_polyline
-						? point1_is_left_of_point2(
-								to_points_iter->position_vector(),
-								from_points_iter->position_vector(),
-								rotation_axis)
-						: point1_is_left_of_point2(
+				const bool from_point_is_left_of_to_point =
+						point1_is_left_of_point2(
 								from_points_iter->position_vector(),
 								to_points_iter->position_vector(),
 								rotation_axis);
+				if (from_point_is_left_of_to_point)
+				{
+					++num_from_points_left_of_to_points;
+				}
+				else
+				{
+					++num_to_points_left_of_from_points;
+				}
+
+				*from_points_left_of_to_points_iter = from_point_is_left_of_to_point;
+			}
+
+			// 'from' polyline is left of 'to' polyline is most of its points are on the left side.
+			const bool is_from_polyline_mostly_left_of_to_polyline =
+					num_from_points_left_of_to_points > num_to_points_left_of_from_points;
+
+			from_points_iter = from_polyline_points.begin();
+			to_points_iter = to_polyline_points.begin();
+			from_points_left_of_to_points_iter = from_points_left_of_to_points.begin();
+
+			// Loop through points and flatten overlaps as needed.
+			for ( ;
+				from_points_iter != from_points_end;
+				++from_points_iter, ++to_points_iter, ++from_points_left_of_to_points_iter)
+			{
+				const bool from_point_is_left_of_to_point = *from_points_left_of_to_points_iter;
+
+				const bool points_overlap = is_from_polyline_mostly_left_of_to_polyline
+						? !from_point_is_left_of_to_point
+						: from_point_is_left_of_to_point;
 				if (points_overlap)
 				{
 					// The points overlap - favour the 'from' point by assigning it to the 'to' point.
@@ -805,8 +833,6 @@ GPlatesMaths::interpolate(
 
 	// Make sure the polylines don't overlap in longitude.
 	RotationInterpolateImpl::flatten_longitude_overlaps(
-			Centroid::calculate_outline_centroid(*from_polyline),
-			Centroid::calculate_outline_centroid(*to_polyline),
 			from_polyline_points,
 			to_polyline_points,
 			rotation_axis);
