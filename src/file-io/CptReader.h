@@ -1301,7 +1301,7 @@ namespace GPlatesFileIO
 		*/
 
 		QStringList
-		GPlatesFileIO::CptParser::split_into_tokens(
+		split_into_tokens(
 				const QString& line);
 		/*
 		Fill examples: 
