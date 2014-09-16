@@ -622,7 +622,7 @@ namespace GPlatesApi
 	gml_point_create(
 			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
 			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+			const GPlatesMaths::PointOnSphere &point_on_sphere)
 	{
 		// Use the default value for the second argument.
 		return GPlatesPropertyValues::GmlPoint::create(point_on_sphere);

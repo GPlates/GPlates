@@ -235,6 +235,12 @@ class GmlPointCase(unittest.TestCase):
         self.point = pygplates.PointOnSphere(1,0,0)
         self.gml_point = pygplates.GmlPoint(self.point)
 
+    def test_convert(self):
+        self.assertTrue(pygplates.GmlPoint([0, 0]) == self.gml_point)
+        self.assertTrue(pygplates.GmlPoint([1, 0, 0]) == self.gml_point)
+        self.assertTrue(pygplates.GmlPoint((90, 0)) == pygplates.GmlPoint(pygplates.PointOnSphere(0, 0, 1)))
+        self.assertTrue(pygplates.GmlPoint((0, 0, 1)) == pygplates.GmlPoint(pygplates.PointOnSphere(0, 0, 1)))
+
     def test_get(self):
         self.assertTrue(self.gml_point.get_point() == self.point)
 
