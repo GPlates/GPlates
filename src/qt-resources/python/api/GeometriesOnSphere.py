@@ -220,7 +220,7 @@ del multi_point_on_sphere_get_points
 
 
 def polyline_on_sphere_get_points(polyline_on_sphere):
-    return polyline_on_sphere.get_points_view()
+    return polyline_on_sphere
 
 # Add the module function as a class method.
 PolylineOnSphere._get_points = polyline_on_sphere_get_points
@@ -228,60 +228,100 @@ PolylineOnSphere._get_points = polyline_on_sphere_get_points
 del polyline_on_sphere_get_points
 
 
-def polyline_on_sphere_join(polyline1, polyline2, distance_threshold_radians):
-    """join(polyline1, polyline2, distance_threshold_radians) -> PolylineOnSphere or None
-    Joins two polylines if their end points are close enough.
+def polyline_on_sphere_join(polylines, distance_threshold_radians):
+    """join(polylines, distance_threshold_radians) -> list
+    Joins polylines that have end points closer than a distance threshold.
     
-    :param polyline1: the first of two polylines to join
-    :type polyline1: :class:`PolylineOnSphere` (though any :class:`GeometryOnSphere` will work\
-    since :meth:`GeometryOnSphere.get_points` is used internally to query end points)
-    :param polyline2: the second of two polylines to join
-    :type polyline2: :class:`PolylineOnSphere` (though any :class:`GeometryOnSphere` will work\
-    since :meth:`GeometryOnSphere.get_points` is used internally to query end points)
-    :returns: the joined polyline, or ``None`` if neither end point of *polyline1* is within \
-    *distance_threshold_radians* radians of either end point of *polyline2*
-    :rtype: :class:`PolylineOnSphere` or None
+    :param polylines: the polylines to join
+    :type polyline: sequence (eg, ``list`` or ``tuple``) of :class:`PolylineOnSphere` - though any \
+    :class:`GeometryOnSphere` will work since :meth:`GeometryOnSphere.get_points` is used internally to query end points
+    :param distance_threshold_radians: closeness distance threshold in radians for joining to occur
+    :type distance_threshold_radians: float
+    :returns: a list of joined polylines - the list will contain all polylines in *polylines* if none were joined
+    :rtype: list of :class:`PolylineOnSphere`
     
-    The closest pair of end points (one from *polyline1* and one from *polyline2*) determine which
-    end of each polyline to join, provided their distance is less than *distance_threshold_radians*
-    radians, otherwise ``None`` is returned.
+    All pairs of polylines are tested for joining and only those closer than *distance_threshold_radians*
+    radians are joined. Each joined polyline is further joined if possible until there are no more
+    possibilities for joining (or there is a single joined polyline that is a concatenation of all
+    polylines in *polylines*).
     
-    The joined polyline is created by prepending or appending a (possibly reversed) copy of the
-    points in *polyline2* to a copy of the points in *polyline1*. The joined polyline will always
-    have points ordered in the same direction as *polyline1* (only the points from *polyline2*
-    are reversed if necessary).
+    When determining if two polylines A and B can be joined the closest pair of end points
+    (one from A and one from B) decides which end of each polyline can be joined, provided their
+    distance is less than *distance_threshold_radians* radians. If a third polyline C also has an end
+    point close enough to A then the closest of B and C is joined to A.
     
-    Join two polylines if their end points are within 3 degrees of each other:
+    Two polylines A and B are joined by prepending or appending a (possibly reversed) copy of the
+    points in polyline B to a copy of the points in polyline A. Hence the joined polyline will always
+    have points ordered in the same direction as polyline A (only the points from polyline B are
+    reversed if necessary). So polylines earlier in the *polylines* sequence determine the direction
+    of joined polylines.
+    
+    Join three polylines if their end points are within 3 degrees of another:
     ::
     
-      polyline1 = pygplates.PolylineOnSphere(...)
-      polyline2 = pygplates.PolylineOnSphere(...)
-      joined_polyline = pygplates.PolylineOnSphere.join(polyline1, polyline2, math.radians(3))
-      if joined_polyline:
-          ....
+      # If all three polylines join then the returned list will have one joined polyline.
+      # If only two polylines join then the returned list will have two polylines (one original and one joined).
+      # If no polylines join then the returned list will have the three original polylines.
+      joined_polylines = pygplates.PolylineOnSphere.join((polyline1, polyline2, polyline3), math.radians(3))
     """
-    # Make sure works with any GeometryOnSphere type by calling 'get_points()'.
-    polyline1 = polyline1.get_points()
-    polyline2 = polyline2.get_points()
     
-    # Calculate distance between four combinations of polyline1/polyline2 end points.
-    dist00 = GeometryOnSphere.distance(polyline1[0], polyline2[0])
-    dist01 = GeometryOnSphere.distance(polyline1[0], polyline2[-1])
-    dist10 = GeometryOnSphere.distance(polyline1[-1], polyline2[0])
-    dist11 = GeometryOnSphere.distance(polyline1[-1], polyline2[-1])
+    # Start with all original polylines and then reduce number in list as polylines are joined.
+    joined_polylines = list(polylines)
+    
+    #
+    # Do N^2 search over pairs of polylines to test for joining.
+    #
+    
+    # Iterate over all polylines except last one.
+    # Using len() since some polylines are removed during iteration.
+    # Note: If there are fewer than two polylines then the loop is not entered.
+    polyline1_index = 0
+    while polyline1_index < len(joined_polylines) - 1:
+        # Make sure works with any GeometryOnSphere type by calling 'get_points()'.
+        polyline1 = joined_polylines[polyline1_index].get_points()
+        
+        min_dist = distance_threshold_radians
+        join_polylines = None
+        
+        # Iterate over the remaining polylines (after 'polyline1') and find the closest
+        # polyline (if any less than threshold).
+        for polyline2_index in range(polyline1_index + 1, len(joined_polylines)):
+            # Make sure works with any GeometryOnSphere type by calling 'get_points()'.
+            polyline2 = joined_polylines[polyline2_index].get_points()
+            
+            # Calculate distance between four combinations of polyline1/polyline2 end points.
+            dist00 = GeometryOnSphere.distance(polyline1[0], polyline2[0])
+            dist01 = GeometryOnSphere.distance(polyline1[0], polyline2[-1])
+            dist10 = GeometryOnSphere.distance(polyline1[-1], polyline2[0])
+            dist11 = GeometryOnSphere.distance(polyline1[-1], polyline2[-1])
 
-    min_dist = min(dist00, dist01, dist10, dist11)
-    
-    # Only return a polyline if the minimum distance was below the theshold.
-    if min_dist < distance_threshold_radians:
-        if min_dist == dist00:
-            return PolylineOnSphere(itertools.chain(reversed(polyline2), polyline1))
-        elif min_dist == dist01:
-            return PolylineOnSphere(itertools.chain(polyline2, polyline1))
-        elif min_dist == dist10:
-            return PolylineOnSphere(itertools.chain(polyline1, polyline2))
+            dist = min(dist00, dist01, dist10, dist11)
+            
+            # See if the minimum distance was below the theshold (and is the shortest distance so far).
+            if dist <= min_dist:
+                min_dist = dist
+                # Record the iterator that joins 'polyline1' and 'polyline2' and also record the
+                # index of 'polyline2' (so it can be removed later if it's the closest polyline).
+                if dist == dist00:
+                    join_polylines = (itertools.chain(reversed(polyline2), polyline1), polyline2_index)
+                elif dist == dist01:
+                    join_polylines = (itertools.chain(polyline2, polyline1), polyline2_index)
+                elif dist == dist10:
+                    join_polylines = (itertools.chain(polyline1, polyline2), polyline2_index)
+                else:
+                    join_polylines = (itertools.chain(polyline1, reversed(polyline2)), polyline2_index)
+            
+        if join_polylines:
+            # Replace 'polyline1' with the joined polyline.
+            joined_polylines[polyline1_index] = PolylineOnSphere(join_polylines[0])
+            # Remove the 'polyline2' that was joined with 'polyline1'.
+            del joined_polylines[join_polylines[1]]
+            # Note that we don't increment 'polyline1_index' because we want to test the
+            # newly joined polyline with subsequent polyline2.
         else:
-            return PolylineOnSphere(itertools.chain(polyline1, reversed(polyline2)))
+            polyline1_index += 1
+    
+    return joined_polylines
 
 # Add the module function as a class static-method.
 PolylineOnSphere.join = staticmethod(polyline_on_sphere_join)
@@ -290,7 +330,7 @@ del polyline_on_sphere_join
 
 
 def polygon_on_sphere_get_points(polygon_on_sphere):
-    return polygon_on_sphere.get_points_view()
+    return polygon_on_sphere
 
 # Add the module function as a class method.
 PolygonOnSphere._get_points = polygon_on_sphere_get_points

@@ -39,7 +39,7 @@ set(GPLATES_PACKAGE_VERSION_PATCH "0")
 # Also it does not need to be incremented at each public release - for example the revision number
 # just prior to the GPlates 1.5.0 release and just after might be the same (if API did not change
 # during that time).
-set(PYGPLATES_REVISION 1)
+set(PYGPLATES_REVISION 2)
 
 # The GPlates package version.
 set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION_MAJOR}.${GPLATES_PACKAGE_VERSION_MINOR}.${GPLATES_PACKAGE_VERSION_PATCH}")
