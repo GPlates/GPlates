@@ -196,6 +196,19 @@ class FeatureCase(unittest.TestCase):
         self.property_count = 4
         self.feature = iter(pygplates.FeatureCollectionFileFormatRegistry().read(
             os.path.join(FIXTURES, 'volcanoes.gpml'))).next()
+    
+    def test_clone(self):
+        # Modify original and make sure clone is not affected.
+        feature_clone = self.feature.clone()
+        self.assertTrue(len(feature_clone) == len(self.feature))
+        self.assertTrue(feature_clone.get_reconstruction_plate_id() == self.feature.get_reconstruction_plate_id())
+        self.feature.set_reconstruction_plate_id(999)
+        self.assertTrue(feature_clone.get_reconstruction_plate_id() != self.feature.get_reconstruction_plate_id())
+        
+        feature_clone = self.feature.clone()
+        self.assertTrue(len(feature_clone) == len(self.feature))
+        self.feature.remove(pygplates.PropertyName.create_gpml('reconstructionPlateId'))
+        self.assertTrue(len(feature_clone) != len(self.feature))
 
     def test_len(self):
         self.assertEquals(len(self.feature), self.property_count)
@@ -736,18 +749,25 @@ class PropertyCase(unittest.TestCase):
         self.property2 = pygplates.Property(
                 pygplates.PropertyName.create_gpml('test_integer'),
                 pygplates.XsInteger(300))
-        self.property3 =  pygplates.Property(
+        self.property3 = pygplates.Property(
                 pygplates.PropertyName.create_gpml('plateId'),
                 pygplates.GpmlPiecewiseAggregation([pygplates.GpmlTimeWindow(pygplates.GpmlPlateId(100), 10, 0)]))
-        self.property4=  pygplates.Property(
+        self.property4 = pygplates.Property(
                 pygplates.PropertyName.create_gpml('double'),
                 pygplates.GpmlIrregularSampling([
                         pygplates.GpmlTimeSample(pygplates.XsDouble(100), 0),
                         pygplates.GpmlTimeSample(pygplates.XsDouble(200), 10)]))
-        self.property5 =  pygplates.Property(
+        self.property5 = pygplates.Property(
                 pygplates.PropertyName.create_gpml('plateId'),
                 pygplates.GpmlConstantValue(pygplates.GpmlPlateId(300)))
     
+    def test_clone(self):
+        property1_clone = self.property1.clone()
+        self.assertTrue(property1_clone == self.property1)
+        # Modify original and make sure clone is not affected.
+        self.property1.get_value().set_plate_id(2)
+        self.assertTrue(property1_clone != self.property1)
+
     def test_get_time_dependent_container(self):
         self.assertFalse(self.property1.get_time_dependent_container())
         self.assertFalse(self.property2.get_time_dependent_container())

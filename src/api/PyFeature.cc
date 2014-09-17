@@ -420,6 +420,34 @@ namespace GPlatesApi
 		return GPlatesModel::FeatureHandle::create(feature_type.get(), feature_id.get());
 	}
 
+	/**
+	 * Clone an existing feature.
+	 *
+	 * NOTE: We don't use FeatureHandle::clone() because it currently does a shallow copy
+	 * instead of a deep copy.
+	 * FIXME: Once FeatureHandle has been updated to use the same revisioning system as
+	 * TopLevelProperty and PropertyValue then just delegate directly to FeatureHandle::clone().
+	 */
+	const GPlatesModel::FeatureHandle::non_null_ptr_type
+	feature_handle_clone(
+			GPlatesModel::FeatureHandle &feature_handle)
+	{
+		GPlatesModel::FeatureHandle::non_null_ptr_type cloned_feature =
+				GPlatesModel::FeatureHandle::create(feature_handle.feature_type());
+
+		// Iterate over the properties of the feature and clone them.
+		GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
+		GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
+		for ( ; properties_iter != properties_end; ++properties_iter)
+		{
+			GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+			cloned_feature->add(feature_property->clone());
+		}
+
+		return cloned_feature;
+	}
+
 	bp::object
 	feature_handle_add_property_internal(
 			GPlatesModel::FeatureHandle &feature_handle,
@@ -1954,19 +1982,19 @@ export_feature()
 				"    # This does the same thing as the code above.\n"
 				"    unclassified_feature = pygplates.Feature(\n"
 				"        pygplates.FeatureType.create_gpml('UnclassifiedFeature'))\n")
+		.def("clone",
+				&GPlatesApi::feature_handle_clone,
+				"clone() -> Feature\n"
+				"  Create a duplicate of this feature instance.\n"
+				"\n"
+				"  :rtype: :class:``Feature``\n"
+				"\n"
+				"  This creates a new :class:`Feature` instance with cloned versions of the properties "
+				"of *feature*. And the cloned feature is created with its own unique :class:`FeatureId`.\n")
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
 		.def("__len__", &GPlatesModel::FeatureHandle::size)
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
-#if 0 // TODO: Add once clone does a proper deep-copy...
-		.def("clone",
-				&GPlatesApi::feature_handle_clone,
-				"clone() -> Feature\n"
-				"  Create a duplicate of this feature instance, including a recursive copy "
-				"of its property values.\n"
-				"\n"
-				"  :rtype: :class:`Feature`\n")
-#endif
 		.def("create_total_reconstruction_sequence",
 				&GPlatesApi::feature_handle_create_total_reconstruction_sequence,
 				(bp::arg("fixed_plate_id"),

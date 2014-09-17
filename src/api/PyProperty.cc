@@ -107,6 +107,14 @@ export_top_level_property()
 				"  ::\n"
 				"\n"
 				"    property = pygplates.Property(property_name, property_value)\n")
+		.def("clone",
+				&GPlatesModel::TopLevelProperty::clone,
+				"clone() -> Property\n"
+				"  Create a duplicate of this property instance.\n"
+				"\n"
+				"  :rtype: :class:`Property`\n"
+				"\n"
+				"  This clones the :class:`PropertyName` and the :class:`PropertyValue`.\n")
   		.def("get_name",
 				&GPlatesModel::TopLevelProperty::get_property_name,
 				bp::return_value_policy<bp::copy_const_reference>(),

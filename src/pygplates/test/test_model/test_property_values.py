@@ -15,6 +15,17 @@ class PropertyValueCase(unittest.TestCase):
         plate_id = 701
         gpml_plate_id = pygplates.GpmlPlateId(plate_id)
         self.assertTrue(gpml_plate_id.clone().get_plate_id() == plate_id)
+        
+        gpml_array = pygplates.GpmlArray([pygplates.XsInteger(1), pygplates.XsInteger(2)])
+        gpml_array_clone = gpml_array.clone()
+        self.assertTrue(gpml_array_clone == pygplates.GpmlArray([pygplates.XsInteger(1), pygplates.XsInteger(2)]))
+        # Modify original and make sure clone is not affected.
+        gpml_array[0] = pygplates.XsInteger(100)
+        self.assertTrue(gpml_array == pygplates.GpmlArray([pygplates.XsInteger(100), pygplates.XsInteger(2)]))
+        self.assertTrue(gpml_array_clone == pygplates.GpmlArray([pygplates.XsInteger(1), pygplates.XsInteger(2)]))
+        del gpml_array[0]
+        self.assertTrue(gpml_array == pygplates.GpmlArray([pygplates.XsInteger(2)]))
+        self.assertTrue(gpml_array_clone == pygplates.GpmlArray([pygplates.XsInteger(1), pygplates.XsInteger(2)]))
 
     def test_get_geometry(self):
         polyline = pygplates.PolylineOnSphere([(0,0), (10,0), (10,10)])
