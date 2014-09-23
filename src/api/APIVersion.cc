@@ -187,7 +187,7 @@ export_version()
 			"revision number ``10``:\n"
 			"::\n"
 			"\n"
-			"  print 'imported pygplates version: %s' % pygplates.Version(10)\n"
+			"  print 'pygplates version: %s' % pygplates.Version(10)\n"
 			"\n"
 			"There is also a ``pygplates.__version__`` string equal to the concatenation of the GPlates "
 			"version and the pygplates revision of the imported pygplates library. For pygplates revision "

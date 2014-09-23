@@ -1939,7 +1939,9 @@ export_feature()
 					"* :meth:`get_total_reconstruction_pole`\n"
 					"\n"
 					"For other properties the generic :meth:`set`, :meth:`get` and :meth:`get_value` "
-					"methods will still need to be used.\n",
+					"methods will still need to be used.\n"
+					"\n"
+					"A feature can be deep copied using :meth:`clone`.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1987,10 +1989,10 @@ export_feature()
 				"clone() -> Feature\n"
 				"  Create a duplicate of this feature instance.\n"
 				"\n"
-				"  :rtype: :class:``Feature``\n"
+				"  :rtype: :class:`Feature`\n"
 				"\n"
-				"  This creates a new :class:`Feature` instance with cloned versions of the properties "
-				"of *feature*. And the cloned feature is created with its own unique :class:`FeatureId`.\n")
+				"  This creates a new :class:`Feature` instance with cloned versions of this feature's properties. "
+				"And the cloned feature is created with its own unique :class:`FeatureId`.\n")
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
 		.def("__len__", &GPlatesModel::FeatureHandle::size)
 		// Make hash and comparisons based on C++ object identity (not python object identity)...

@@ -442,20 +442,26 @@ namespace GPlatesApi
 				get_equivalent_total_rotation(
 						reconstruction_tree,
 						moving_plate_id,
-						use_identity_for_missing_plate_ids);
+						false/*use_identity_for_missing_plate_ids*/);
 		if (!equivalent_plate_rotation)
 		{
-			return boost::none;
+			return use_identity_for_missing_plate_ids
+					? GPlatesMaths::FiniteRotation::create(
+							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
 		}
 
 		boost::optional<GPlatesMaths::FiniteRotation> equivalent_relative_plate_rotation =
 				get_equivalent_total_rotation(
 						reconstruction_tree,
 						fixed_plate_id,
-						use_identity_for_missing_plate_ids);
+						false/*use_identity_for_missing_plate_ids*/);
 		if (!equivalent_relative_plate_rotation)
 		{
-			return boost::none;
+			return use_identity_for_missing_plate_ids
+					? GPlatesMaths::FiniteRotation::create(
+							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
 		}
 
 		// Rotation from anchor plate 'Anchor' to plate 'To' (via plate 'From'):
@@ -489,20 +495,26 @@ namespace GPlatesApi
 				get_equivalent_total_rotation(
 						from_reconstruction_tree,
 						plate_id,
-						use_identity_for_missing_plate_ids);
+						false/*use_identity_for_missing_plate_ids*/);
 		if (!plate_from_rotation)
 		{
-			return boost::none;
+			return use_identity_for_missing_plate_ids
+					? GPlatesMaths::FiniteRotation::create(
+							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
 		}
 
 		boost::optional<GPlatesMaths::FiniteRotation> plate_to_rotation =
 				get_equivalent_total_rotation(
 						to_reconstruction_tree,
 						plate_id,
-						use_identity_for_missing_plate_ids);
+						false/*use_identity_for_missing_plate_ids*/);
 		if (!plate_to_rotation)
 		{
-			return boost::none;
+			return use_identity_for_missing_plate_ids
+					? GPlatesMaths::FiniteRotation::create(
+							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
 		}
 
 		//
@@ -531,40 +543,52 @@ namespace GPlatesApi
 				get_equivalent_total_rotation(
 						from_reconstruction_tree,
 						fixed_plate_id,
-						use_identity_for_missing_plate_ids);
+						false/*use_identity_for_missing_plate_ids*/);
 		if (!fixed_plate_from_rotation)
 		{
-			return boost::none;
+			return use_identity_for_missing_plate_ids
+					? GPlatesMaths::FiniteRotation::create(
+							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
 		}
 
 		boost::optional<GPlatesMaths::FiniteRotation> fixed_plate_to_rotation =
 				get_equivalent_total_rotation(
 						to_reconstruction_tree,
 						fixed_plate_id,
-						use_identity_for_missing_plate_ids);
+						false/*use_identity_for_missing_plate_ids*/);
 		if (!fixed_plate_to_rotation)
 		{
-			return boost::none;
+			return use_identity_for_missing_plate_ids
+					? GPlatesMaths::FiniteRotation::create(
+							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
 		}
 
 		boost::optional<GPlatesMaths::FiniteRotation> moving_plate_from_rotation =
 				get_equivalent_total_rotation(
 						from_reconstruction_tree,
 						moving_plate_id,
-						use_identity_for_missing_plate_ids);
+						false/*use_identity_for_missing_plate_ids*/);
 		if (!moving_plate_from_rotation)
 		{
-			return boost::none;
+			return use_identity_for_missing_plate_ids
+					? GPlatesMaths::FiniteRotation::create(
+							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
 		}
 
 		boost::optional<GPlatesMaths::FiniteRotation> moving_plate_to_rotation =
 				get_equivalent_total_rotation(
 						to_reconstruction_tree,
 						moving_plate_id,
-						use_identity_for_missing_plate_ids);
+						false/*use_identity_for_missing_plate_ids*/);
 		if (!moving_plate_to_rotation)
 		{
-			return boost::none;
+			return use_identity_for_missing_plate_ids
+					? GPlatesMaths::FiniteRotation::create(
+							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
 		}
 
 		// This is the same as ReconstructUtils::get_stage_pole() but we return 'boost::none'
@@ -851,7 +875,7 @@ export_reconstruction_tree()
 				"  :type to_reconstruction_tree: :class:`ReconstructionTree`\n"
 				"  :param plate_id: the plate id of the plate\n"
 				"  :type plate_id: int\n"
-				"  :param use_identity_for_missing_plate_ids: whether to use an "
+				"  :param use_identity_for_missing_plate_ids: whether to return an "
 				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` or return ``None`` "
 				"for missing plate ids (default is to use identity rotation)\n"
 				"  :type use_identity_for_missing_plate_ids: bool\n"
@@ -881,9 +905,8 @@ export_reconstruction_tree()
 				"\n"
 				"  If there is no plate circuit path from *plate_id* to the anchor plate (in either "
 				"reconstruction tree) then an :meth:`identity rotation<FiniteRotation.create_identity_rotation>` "
-				"is used for that plate's rotation if *use_identity_for_missing_plate_ids* is ``True``, "
-				"otherwise this function returns immediately with ``None``. See :class:`ReconstructionTree` "
-				"for details on how a plate id can go missing and how to work around it.\n"
+				"is returned if *use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
+				"See :class:`ReconstructionTree` for details on how a plate id can go missing and how to work around it.\n"
 				"\n"
 				"  The only real advantage of this function over :meth:`get_relative_stage_rotation` is "
 				"it is a bit faster when the *fixed* plate is the *anchored* plate.\n"
@@ -943,7 +966,7 @@ export_reconstruction_tree()
 				"  :type moving_plate_id: int\n"
 				"  :param fixed_plate_id: the plate id of the fixed plate\n"
 				"  :type fixed_plate_id: int\n"
-				"  :param use_identity_for_missing_plate_ids: whether to use an "
+				"  :param use_identity_for_missing_plate_ids: whether to return an "
 				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` or return ``None`` "
 				"for missing plate ids (default is to use identity rotation)\n"
 				"  :type use_identity_for_missing_plate_ids: bool\n"
@@ -970,9 +993,8 @@ export_reconstruction_tree()
 				"\n"
 				"  If there is no plate circuit path from *fixed_plate_id* or *moving_plate_id* to the anchor "
 				"plate (in either reconstruction tree) then an :meth:`identity rotation<FiniteRotation.create_identity_rotation>` "
-				"is used for that plate's rotation if *use_identity_for_missing_plate_ids* is ``True``, "
-				"otherwise this function returns immediately with ``None``. See :class:`ReconstructionTree` "
-				"for details on how a plate id can go missing and how to work around it.\n"
+				"is returned if *use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
+				"See :class:`ReconstructionTree` for details on how a plate id can go missing and how to work around it.\n"
 				"\n"
 				"  This function essentially does the following:\n"
 				"  ::\n"
@@ -1032,7 +1054,7 @@ export_reconstruction_tree()
 				"\n"
 				"  :param plate_id: the plate id of plate to calculate the equivalent rotation\n"
 				"  :type plate_id: int\n"
-				"  :param use_identity_for_missing_plate_ids: whether to use an "
+				"  :param use_identity_for_missing_plate_ids: whether to return an "
 				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` or return ``None`` "
 				"for missing plate ids (default is to use identity rotation)\n"
 				"  :type use_identity_for_missing_plate_ids: bool\n"
@@ -1052,11 +1074,11 @@ export_reconstruction_tree()
 				"  The *total* in the method name indicates that the rotation is also relative to *present day*.\n"
 				"\n"
 				"  If there is no plate circuit path from *plate_id* to the anchor plate then an "
-				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` is used for the "
-				"plate's rotation if *use_identity_for_missing_plate_ids* is ``True``, "
-				"otherwise ``None`` is returned. See :class:`ReconstructionTree` for details on how a "
-				"plate id can go missing and how to work around it. If *plate_id* matches more than "
-				"one plate id in this *ReconstructionTree* then the first match is returned.\n"
+				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` is returned "
+				"if *use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
+				"See :class:`ReconstructionTree` for details on how a plate id can go missing and how "
+				"to work around it. If *plate_id* matches more than one plate id in this *ReconstructionTree* "
+				"then the first match is returned.\n"
 				"\n"
 				"  This method essentially does the following:\n"
 				"  ::\n"
@@ -1084,7 +1106,7 @@ export_reconstruction_tree()
 				"  :type moving_plate_id: int\n"
 				"  :param fixed_plate_id: the plate id of plate that the rotation is relative to\n"
 				"  :type fixed_plate_id: int\n"
-				"  :param use_identity_for_missing_plate_ids: whether to use an "
+				"  :param use_identity_for_missing_plate_ids: whether to return an "
 				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` or return ``None`` "
 				"for missing plate ids (default is to use identity rotation)\n"
 				"  :type use_identity_for_missing_plate_ids: bool\n"
@@ -1112,9 +1134,8 @@ export_reconstruction_tree()
 				"\n"
 				"  If there is no plate circuit path from *fixed_plate_id* or *moving_plate_id* to the "
 				"anchor plate then an :meth:`identity rotation<FiniteRotation.create_identity_rotation>` "
-				"is used for that plate's rotation if *use_identity_for_missing_plate_ids* is ``True``, "
-				"otherwise this method returns immediately with ``None``. See :class:`ReconstructionTree` "
-				"for details on how a plate id can go missing and how to work around it.\n"
+				"is returned if *use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
+				"See :class:`ReconstructionTree` for details on how a plate id can go missing and how to work around it.\n"
 				"\n"
 				"  This method essentially does the following:\n"
 				"  ::\n"

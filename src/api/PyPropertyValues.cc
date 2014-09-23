@@ -167,7 +167,9 @@ export_property_value()
 					"* :class:`GpmlPiecewiseAggregation`\n"
 					"\n"
 					"You can use :meth:`get_value` to extract a value at a specific time "
-					"from a time-dependent wrapper.\n",
+					"from a time-dependent wrapper.\n"
+					"\n"
+					"A property value can be deep copied using :meth:`clone`.\n",
 					bp::no_init)
 		.def("clone",
 				&GPlatesModel::PropertyValue::clone,

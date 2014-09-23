@@ -87,7 +87,7 @@ namespace GPlatesApi
 	/**
 	 * Get relative total rotation.
 	 *
-	 * If @a use_identity_for_missing_plate_ids is true then uses identity rotation for those plate ids
+	 * If @a use_identity_for_missing_plate_ids is true then returns identity if any plate ids
 	 * not found in the reconstruction tree.
 	 * When @a use_identity_for_missing_plate_ids is true then a finite rotation is always returned.
 	 *
@@ -103,7 +103,7 @@ namespace GPlatesApi
 	/**
 	 * Get equivalent stage rotation.
 	 *
-	 * If @a use_identity_for_missing_plate_ids is true then uses identity rotation for those plate ids
+	 * If @a use_identity_for_missing_plate_ids is true then returns identity rotation if any plate ids
 	 * not found in the reconstruction trees.
 	 * When @a use_identity_for_missing_plate_ids is true then a finite rotation is always returned.
 	 *
@@ -119,7 +119,7 @@ namespace GPlatesApi
 	/**
 	 * Get relative stage rotation.
 	 *
-	 * If @a use_identity_for_missing_plate_ids is true then uses identity rotation for those plate ids
+	 * If @a use_identity_for_missing_plate_ids is true then returns identity rotation if any plate ids
 	 * not found in the reconstruction trees.
 	 * When @a use_identity_for_missing_plate_ids is true then a finite rotation is always returned.
 	 *
