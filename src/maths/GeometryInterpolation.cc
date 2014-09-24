@@ -624,21 +624,23 @@ namespace GPlatesMaths
 		}
 
 		/**
-		 * Returns the number of interpolations between the two polylines based on the maximum
-		 * distance between related points and the interpolation resolution.
+		 * Returns the number of interpolations between the two polylines based on the 80th percentile
+		 * distance (between related points) and the interpolation resolution.
 		 *
-		 * Returns zero if no interpolations are needed (eg, if maximum distance between polylines
-		 * is less than the resolution).
+		 * Returns zero if no interpolations are needed (eg, if 80th percentile distance between
+		 * polylines is less than the resolution).
+		 *
+		 * Returns none if any corresponding pair of points (same latitude) are separated by a
+		 * distance of more than @a max_distance_threshold_radians (if specified).
 		 */
-		unsigned int
+		boost::optional<unsigned int>
 		calculate_num_interpolations(
 				const std::list<PointOnSphere> &from_polyline_points,
 				const std::list<PointOnSphere> &to_polyline_points,
 				const UnitVector3D &rotation_axis,
-				const double &interpolate_resolution_radians)
+				const double &interpolate_resolution_radians,
+				boost::optional<double> max_distance_threshold_radians)
 		{
-			AngularDistance max_from_to_point_distance = AngularDistance::ZERO;
-
 			std::list<PointOnSphere>::const_iterator from_points_iter = from_polyline_points.begin();
 			const std::list<PointOnSphere>::const_iterator from_points_end = from_polyline_points.end();
 
@@ -649,18 +651,31 @@ namespace GPlatesMaths
 					from_polyline_points.size() == to_polyline_points.size(),
 					GPLATES_ASSERTION_SOURCE);
 
+			std::vector<real_t> from_to_point_distances;
 			for ( ; from_points_iter != from_points_end; ++from_points_iter, ++to_points_iter)
 			{
-				const AngularDistance distance_between_points =
-						minimum_distance(*from_points_iter, *to_points_iter);
-				if (distance_between_points.is_precisely_greater_than(max_from_to_point_distance))
+				const real_t distance = minimum_distance(*from_points_iter, *to_points_iter).calculate_angle();
+				if (max_distance_threshold_radians &&
+					distance.is_precisely_greater_than(max_distance_threshold_radians.get()))
 				{
-					max_from_to_point_distance = distance_between_points;
+					return boost::none;
 				}
+
+				from_to_point_distances.push_back(distance);
 			}
 
+			// Find the 80th percentile distance.
+			// We don't use the maximum distance since it's possible to get some outliers and
+			// we don't use the median because we want to bias towards the maximum distance.
+			const unsigned int percentile_index = static_cast<unsigned int>(0.8 * from_to_point_distances.size());
+			std::nth_element(
+					from_to_point_distances.begin(),
+					from_to_point_distances.begin() + percentile_index,
+					from_to_point_distances.end());
+			const real_t percentile_from_to_point_distance = from_to_point_distances[percentile_index];
+
 			return static_cast<unsigned int>(
-					max_from_to_point_distance.calculate_angle().dval() / interpolate_resolution_radians);
+					percentile_from_to_point_distance.dval() / interpolate_resolution_radians);
 		}
 
 		/**
@@ -793,7 +808,8 @@ GPlatesMaths::interpolate(
 		const PolylineOnSphere::non_null_ptr_to_const_type &from_polyline,
 		const PolylineOnSphere::non_null_ptr_to_const_type &to_polyline,
 		const UnitVector3D &rotation_axis,
-		const double &interpolate_resolution_radians)
+		const double &interpolate_resolution_radians,
+		boost::optional<double> max_distance_threshold_radians)
 {
 	// Get a copy of the polyline points so we can insert, modify and erase them as needed.
 	std::list<PointOnSphere> from_polyline_points(from_polyline->vertex_begin(), from_polyline->vertex_end());
@@ -843,12 +859,17 @@ GPlatesMaths::interpolate(
 			to_polyline_points,
 			rotation_axis);
 
-	const unsigned int num_interpolations =
+	const boost::optional<unsigned int> num_interpolations =
 			RotationInterpolateImpl::calculate_num_interpolations(
 					from_polyline_points,
 					to_polyline_points,
 					rotation_axis,
-					interpolate_resolution_radians);
+					interpolate_resolution_radians,
+					max_distance_threshold_radians);
+	if (!num_interpolations)
+	{
+		return false;
+	}
 
 	std::vector<Rotation> interpolate_point_rotations;
 	RotationInterpolateImpl::calculate_interpolate_point_rotations(
@@ -856,7 +877,7 @@ GPlatesMaths::interpolate(
 			from_polyline_points,
 			to_polyline_points,
 			rotation_axis,
-			num_interpolations);
+			num_interpolations.get());
 
 	// Generate the interpolated polylines.
 	// Add both the interpolated polylines and the 'from' and 'to' polylines to 'interpolated_polylines'.
@@ -865,7 +886,7 @@ GPlatesMaths::interpolate(
 			from_polyline_points,
 			to_polyline_points,
 			interpolate_point_rotations,
-			num_interpolations);
+			num_interpolations.get());
 
 	return true;
 }

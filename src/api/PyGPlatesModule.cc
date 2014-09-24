@@ -42,6 +42,7 @@ void export_great_circle_arc();
 void export_geometries_on_sphere();
 void export_integer();
 void export_lat_lon_point();
+void export_float();
 void export_real();
 
 // file-io namespace
@@ -137,6 +138,7 @@ export_cpp_python_api()
 	export_version(); // Must be called after 'export_strings()'.
 
 	// maths namespace
+	export_float(); // Must be called before 'export_geometries_on_sphere()'.
 	export_real(); // Must be called before 'export_geometries_on_sphere()'.
 	export_finite_rotation();
 	export_great_circle_arc();

@@ -233,12 +233,14 @@ def polyline_on_sphere_join(polylines, distance_threshold_radians):
     Joins polylines that have end points closer than a distance threshold.
     
     :param polylines: the polylines to join
-    :type polyline: sequence (eg, ``list`` or ``tuple``) of :class:`PolylineOnSphere` - though any \
+    :type polylines: sequence (eg, ``list`` or ``tuple``) of :class:`PolylineOnSphere` - though any \
     :class:`GeometryOnSphere` will work since :meth:`GeometryOnSphere.get_points` is used internally to query end points
     :param distance_threshold_radians: closeness distance threshold in radians for joining to occur
     :type distance_threshold_radians: float
     :returns: a list of joined polylines - the list will contain all polylines in *polylines* if none were joined
-    :rtype: list of :class:`PolylineOnSphere`
+    :rtype: list of :class:`PolylineOnSphere` - though note that any geometries in *polylines* that are \
+    not joined will be returned unchanged which means :class:`polylines<PolylineOnSphere>` are guaranteed \
+    to be returned only if all geometries in *polylines* are :class:`PolylineOnSphere`
     
     All pairs of polylines are tested for joining and only those closer than *distance_threshold_radians*
     radians are joined. Each joined polyline is further joined if possible until there are no more
@@ -297,7 +299,7 @@ def polyline_on_sphere_join(polylines, distance_threshold_radians):
 
             dist = min(dist00, dist01, dist10, dist11)
             
-            # See if the minimum distance was below the theshold (and is the shortest distance so far).
+            # See if the minimum distance was below the threshold (and is the shortest distance so far).
             if dist <= min_dist:
                 min_dist = dist
                 # Record the iterator that joins 'polyline1' and 'polyline2' and also record the
@@ -317,7 +319,7 @@ def polyline_on_sphere_join(polylines, distance_threshold_radians):
             # Remove the 'polyline2' that was joined with 'polyline1'.
             del joined_polylines[join_polylines[1]]
             # Note that we don't increment 'polyline1_index' because we want to test the
-            # newly joined polyline with subsequent polyline2.
+            # newly joined polyline with subsequent polyline2's.
         else:
             polyline1_index += 1
     

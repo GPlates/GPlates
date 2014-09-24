@@ -27,6 +27,7 @@
 #define GPLATES_MATHS_GEOMETRYINTERPOLATION_H
 
 #include <vector>
+#include <boost/optional.hpp>
 
 #include "PolylineOnSphere.h"
 #include "types.h"
@@ -44,7 +45,10 @@ namespace GPlatesMaths
 	 * @a interpolated_polylines since the points in each geometry are ordered from closest to
 	 * @a rotation_axis to furthest (which may be different than the order in the originals).
 	 *
-	 * Returns false if the polylines do not overlap in latitude (where North pole is @a rotation_axis).
+	 * Returns false if:
+	 *  1) the polylines do not overlap in latitude (where North pole is @a rotation_axis), or
+	 *  2) any corresponding pair of points (same latitude) of the polylines are separated by a
+	 *     distance of more than @a max_distance_threshold_radians (if specified).
 	 */
 	bool
 	interpolate(
@@ -52,7 +56,8 @@ namespace GPlatesMaths
 			const PolylineOnSphere::non_null_ptr_to_const_type &from_polyline,
 			const PolylineOnSphere::non_null_ptr_to_const_type &to_polyline,
 			const UnitVector3D &rotation_axis,
-			const double &interpolate_resolution_radians);
+			const double &interpolate_resolution_radians,
+			boost::optional<double> max_distance_threshold_radians = boost::none);
 }
 
 #endif // GPLATES_MATHS_GEOMETRYINTERPOLATION_H

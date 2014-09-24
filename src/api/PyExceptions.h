@@ -66,6 +66,7 @@ namespace GPlatesApi
 	extern boost::python::object AssertionFailureError;
 	extern boost::python::object DifferentAnchoredPlatesInReconstructionTreesError;
 	extern boost::python::object FileFormatNotSupportedError;
+	extern boost::python::object GeometryTypeError;
 	extern boost::python::object GmlTimePeriodBeginTimeLaterThanEndTimeError;
 	extern boost::python::object GPlatesError;
 	extern boost::python::object IndeterminateArcRotationAxisError;

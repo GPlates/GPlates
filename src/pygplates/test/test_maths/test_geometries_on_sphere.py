@@ -280,6 +280,14 @@ class PolylineOnSphereCase(unittest.TestCase):
                 math.radians(2.1))
         self.assertTrue(len(joined_polylines) == 1)
         self.assertTrue(isinstance(joined_polylines[0], pygplates.PolylineOnSphere))
+        joined_polylines = pygplates.PolylineOnSphere.join(
+                [pygplates.MultiPointOnSphere([(0,0), (0,10)]),
+                pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)])],
+                math.radians(0.1))
+        self.assertTrue(len(joined_polylines) == 2)
+        # Anything not joined retains its original geometry type.
+        self.assertTrue(isinstance(joined_polylines[0], pygplates.MultiPointOnSphere))
+        self.assertTrue(isinstance(joined_polylines[1], pygplates.PolygonOnSphere))
         
         polyline1 = pygplates.PolylineOnSphere([(0,0), (0,10)])
         polyline2 = pygplates.PolylineOnSphere([(20,8), (0,8)])
@@ -317,6 +325,18 @@ class PolylineOnSphereCase(unittest.TestCase):
                 pygplates.PolylineOnSphere([(20,10), (0,10)]),
                 pygplates.PointOnSphere(90,0),
                 math.radians(1)))
+        self.assertFalse(pygplates.PolylineOnSphere.rotation_interpolate(
+                pygplates.PolylineOnSphere([(10,0), (-10,0)]),
+                pygplates.PolylineOnSphere([(20,10), (0,10)]),
+                pygplates.PointOnSphere(90,0),
+                math.radians(1),
+                math.radians(9)))
+        self.assertTrue(pygplates.PolylineOnSphere.rotation_interpolate(
+                pygplates.PolylineOnSphere([(10,0), (-10,0)]),
+                pygplates.PolylineOnSphere([(20,10), (0,10)]),
+                pygplates.PointOnSphere(90,0),
+                math.radians(1),
+                math.radians(11)))
         # Temporary: To be able to view interpolated isochrons in GPlates.
         #polylines = pygplates.PolylineOnSphere.rotation_interpolate(
         #        pygplates.PolylineOnSphere([(10,0), (-10,0)]),

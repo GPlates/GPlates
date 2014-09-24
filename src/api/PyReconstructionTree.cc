@@ -448,7 +448,7 @@ namespace GPlatesApi
 			return use_identity_for_missing_plate_ids
 					? GPlatesMaths::FiniteRotation::create(
 							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
-					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
+					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
 		boost::optional<GPlatesMaths::FiniteRotation> equivalent_relative_plate_rotation =
@@ -461,7 +461,7 @@ namespace GPlatesApi
 			return use_identity_for_missing_plate_ids
 					? GPlatesMaths::FiniteRotation::create(
 							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
-					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
+					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
 		// Rotation from anchor plate 'Anchor' to plate 'To' (via plate 'From'):
@@ -501,7 +501,7 @@ namespace GPlatesApi
 			return use_identity_for_missing_plate_ids
 					? GPlatesMaths::FiniteRotation::create(
 							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
-					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
+					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
 		boost::optional<GPlatesMaths::FiniteRotation> plate_to_rotation =
@@ -514,7 +514,7 @@ namespace GPlatesApi
 			return use_identity_for_missing_plate_ids
 					? GPlatesMaths::FiniteRotation::create(
 							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
-					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
+					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
 		//
@@ -549,7 +549,7 @@ namespace GPlatesApi
 			return use_identity_for_missing_plate_ids
 					? GPlatesMaths::FiniteRotation::create(
 							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
-					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
+					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
 		boost::optional<GPlatesMaths::FiniteRotation> fixed_plate_to_rotation =
@@ -562,7 +562,7 @@ namespace GPlatesApi
 			return use_identity_for_missing_plate_ids
 					? GPlatesMaths::FiniteRotation::create(
 							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
-					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
+					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
 		boost::optional<GPlatesMaths::FiniteRotation> moving_plate_from_rotation =
@@ -575,7 +575,7 @@ namespace GPlatesApi
 			return use_identity_for_missing_plate_ids
 					? GPlatesMaths::FiniteRotation::create(
 							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
-					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
+					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
 		boost::optional<GPlatesMaths::FiniteRotation> moving_plate_to_rotation =
@@ -588,7 +588,7 @@ namespace GPlatesApi
 			return use_identity_for_missing_plate_ids
 					? GPlatesMaths::FiniteRotation::create(
 							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
-					: boost::optional<GPlatesMaths::FiniteRotation>(boost::none);
+					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
 		// This is the same as ReconstructUtils::get_stage_pole() but we return 'boost::none'

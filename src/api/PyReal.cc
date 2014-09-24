@@ -118,6 +118,23 @@ ENABLE_GCC_WARNING("-Wold-style-cast")
 
 
 void
+export_float()
+{
+	//
+	// Note: We don't need to register to-from python converters for floating-point types because
+	// boost-python takes care of that for us.
+	// However we do need to register converters for boost::optional<double>, etc, so that python's
+	// "None" (ie, Py_None) can be used as a function argument for example.
+	//
+
+	// Enable boost::optional<double> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<double>();
+
+	// Enable boost::optional<float> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<float>();
+}
+
+void
 export_real()
 {
 	// Registers the python to/from converters for GPlatesMaths::Real.

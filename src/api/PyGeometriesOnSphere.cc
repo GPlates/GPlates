@@ -32,6 +32,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 
+#include "PyGeometriesOnSphere.h"
+
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 
@@ -1292,20 +1294,19 @@ namespace GPlatesApi
 			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &from_geometry_on_sphere,
 			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &to_geometry_on_sphere,
 			const GPlatesMaths::PointOnSphere &rotation_axis,
-			const double &interpolate_resolution_radians)
+			const double &interpolate_resolution_radians,
+			boost::optional<double> maximum_distance_threshold_radians)
 	{
-		// Raise 'TypeError' if geometries are not polylines.
+		// Raise 'GeometryTypeError' if geometries are not polylines.
 		// Doing this enables user to try/except in case they don't know the types of the geometries.
 		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> from_polyline_on_sphere =
 				GPlatesAppLogic::GeometryUtils::get_polyline_on_sphere(*from_geometry_on_sphere);
 		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> to_polyline_on_sphere =
 				GPlatesAppLogic::GeometryUtils::get_polyline_on_sphere(*to_geometry_on_sphere);
-		if (!from_polyline_on_sphere ||
-			!to_polyline_on_sphere)
-		{
-			PyErr_SetString(PyExc_TypeError, "Expected a PolylineOnSphere");
-			bp::throw_error_already_set();
-		}
+		GPlatesGlobal::Assert<GeometryTypeException>(
+				from_polyline_on_sphere && to_polyline_on_sphere,
+				GPLATES_ASSERTION_SOURCE,
+				"Expected PolylineOnSphere geometries");
 
 		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> interpolated_polylines;
 		if (!GPlatesMaths::interpolate(
@@ -1313,7 +1314,8 @@ namespace GPlatesApi
 				from_polyline_on_sphere.get(),
 				to_polyline_on_sphere.get(),
 				rotation_axis.position_vector(),
-				interpolate_resolution_radians))
+				interpolate_resolution_radians,
+				maximum_distance_threshold_radians))
 		{
 			return bp::object()/*Py_None*/;
 		}
@@ -1504,9 +1506,10 @@ export_polyline_on_sphere()
 				&GPlatesApi::polyline_on_sphere_rotation_interpolate,
 				(bp::arg("from_polyline"), bp::arg("to_polyline"),
 						bp::arg("rotation_pole"),
-						bp::arg("interpolate_resolution_radians")),
+						bp::arg("interpolate_resolution_radians"),
+						bp::arg("maximum_distance_threshold_radians") = boost::optional<double>()),
 				"rotation_interpolate(from_polyline, to_polyline, rotation_pole, "
-				"interpolate_resolution_radians) -> list or None\n"
+				"interpolate_resolution_radians[, maximum_distance_threshold_radians]) -> list or None\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -1521,16 +1524,25 @@ export_polyline_on_sphere()
 				"  :param interpolate_resolution_radians: maximum distance (in radians) between "
 				"adjacent interpolated polylines\n"
 				"  :type interpolate_resolution_radians: float\n"
-				"  :returns: list of interpolated polylines including *from_polyline* and *to_polyline*, or"
+				"  :param maximum_distance_threshold_radians: maximum distance (in radians) between "
+				"*from_polyline* and *to_polyline* - if specified and if exceeded then ``None`` is returned\n"
+				"  :type maximum_distance_threshold_radians: float\n"
+				"  :returns: list of interpolated polylines including *from_polyline* and *to_polyline*, or "
 				"``None`` if *from_polyline* and *to_polyline* do not have overlapping latitude ranges "
-				"(in coordinate frame where *rotation_pole* is the North pole)\n"
+				"(in coordinate frame where *rotation_pole* is the North pole) or, if "
+				"*maximum_distance_threshold_radians* is specified then, if any corresponding pair "
+				"of points (same latitude) of *from_polyline* and *to_polyline* are separated by a "
+				"distance of more than *maximum_distance_threshold_radians*.\n"
 				"  :rtype: list of :class:`PolylineOnSphere` or None\n"
+				"  :raises: GeometryTypeError if *from_polyline* or *to_polyline* are not of type "
+				":class:`PolylineOnSphere`\n"
 				"\n"
-				"  To interpolate polylines with a spacing of 2 minutes:\n"
+				"  To interpolate polylines with a spacing of 2 minutes (with no distance threshold):\n"
 				"  ::\n"
 				"\n"
-				"    interpolated_polylines = pygplates.PolylineOnSphere.rotation_interpolate("
-				"from_polyline, to_polyline, rotation_pole, math.radians(2.0/60))\n")
+				"    interpolated_polylines = pygplates.PolylineOnSphere.rotation_interpolate(\n"
+				"        from_polyline, to_polyline, rotation_pole,\n"
+				"        math.radians(2.0/60))\n")
 		.staticmethod("rotation_interpolate")
 		.def("get_points_view",
 				&GPlatesApi::poly_geometry_on_sphere_get_points_view<GPlatesMaths::PolylineOnSphere>,

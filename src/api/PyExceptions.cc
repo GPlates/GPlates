@@ -28,6 +28,7 @@
 
 #include "PyExceptions.h"
 
+#include "PyGeometriesOnSphere.h"
 #include "PyInformationModel.h"
 #include "PyInterpolationException.h"
 #include "PyReconstructionTree.h"
@@ -200,6 +201,7 @@ namespace GPlatesApi
 	bp::object AssertionFailureError;
 	bp::object DifferentAnchoredPlatesInReconstructionTreesError;
 	bp::object FileFormatNotSupportedError;
+	bp::object GeometryTypeError;
 	bp::object GmlTimePeriodBeginTimeLaterThanEndTimeError;
 	bp::object GPlatesError;
 	bp::object IndeterminateArcRotationAxisError;
@@ -263,13 +265,17 @@ export_exceptions()
 			export_exception<GPlatesGlobal::PreconditionViolationError>(
 					"PreconditionViolationError",
 					GPlatesApi::GPlatesError);
-	GPlatesApi::GmlTimePeriodBeginTimeLaterThanEndTimeError =
-			export_exception<GPlatesPropertyValues::GmlTimePeriod::BeginTimeLaterThanEndTimeException>(
-					"GmlTimePeriodBeginTimeLaterThanEndTimeError",
-					GPlatesApi::PreconditionViolationError);
 	GPlatesApi::DifferentAnchoredPlatesInReconstructionTreesError =
 			export_exception<DifferentAnchoredPlatesInReconstructionTreesException>(
 					"DifferentAnchoredPlatesInReconstructionTreesError",
+					GPlatesApi::PreconditionViolationError);
+	GPlatesApi::GeometryTypeError =
+			export_exception<GeometryTypeException>(
+					"GeometryTypeError",
+					GPlatesApi::PreconditionViolationError);
+	GPlatesApi::GmlTimePeriodBeginTimeLaterThanEndTimeError =
+			export_exception<GPlatesPropertyValues::GmlTimePeriod::BeginTimeLaterThanEndTimeException>(
+					"GmlTimePeriodBeginTimeLaterThanEndTimeError",
 					GPlatesApi::PreconditionViolationError);
 	GPlatesApi::IndeterminateArcRotationAxisError =
 			export_exception<GPlatesMaths::IndeterminateArcRotationAxisException>(
