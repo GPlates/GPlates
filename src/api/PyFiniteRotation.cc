@@ -82,9 +82,7 @@ namespace GPlatesApi
 	{
 		return boost::shared_ptr<GPlatesMaths::FiniteRotation>(
 				new GPlatesMaths::FiniteRotation(
-						GPlatesMaths::FiniteRotation::create(
-								GPlatesMaths::UnitQuaternion3D::create_identity_rotation(),
-								boost::none)));
+						GPlatesMaths::FiniteRotation::create_identity_rotation()));
 	}
 
 	GPlatesMaths::FiniteRotation

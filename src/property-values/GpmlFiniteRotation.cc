@@ -78,9 +78,7 @@ GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation()
 {
 	using namespace ::GPlatesMaths;
 
-	FiniteRotation fr = FiniteRotation::create(
-			UnitQuaternion3D::create_identity_rotation(),
-			boost::none);
+	FiniteRotation fr = FiniteRotation::create_identity_rotation();
 
 	return create(fr);
 }

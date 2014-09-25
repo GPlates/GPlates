@@ -109,9 +109,7 @@ namespace GPlatesAppLogic
 				ReconstructMethodFiniteRotation(
 						ReconstructMethod::BY_PLATE_ID,
 						// Create the identify rotation...
-						GPlatesMaths::FiniteRotation::create(
-								GPlatesMaths::UnitQuaternion3D::create_identity_rotation(),
-								boost::none))
+						GPlatesMaths::FiniteRotation::create_identity_rotation())
 			{  }
 
 			virtual

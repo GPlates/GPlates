@@ -219,6 +219,20 @@ GPlatesMaths::Rotation::create(
 }
 
 
+const GPlatesMaths::Rotation
+GPlatesMaths::Rotation::create_identity_rotation()
+{
+	UnitQuaternion3D uq = UnitQuaternion3D::create_identity_rotation();
+
+	// These values are used to optimise rotation of points on the sphere.
+	real_t d = calculate_d_value(uq);
+	Vector3D e = calculate_e_value(uq);
+
+	// Since it's an identity rotation we can use any axis we like (because rotation angle is zero).
+	return Rotation(UnitVector3D::zBasis(), 0, uq, d, e);
+}
+
+
 const GPlatesMaths::UnitVector3D
 GPlatesMaths::Rotation::operator*(
 		const UnitVector3D &uv) const

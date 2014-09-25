@@ -291,8 +291,7 @@ GPlatesAppLogic::ReconstructionTree::get_composed_absolute_rotation(
 	// rotation.
 	if (moving_plate_id == d_anchor_plate_id) {
 		return std::make_pair(
-				FiniteRotation::create(UnitQuaternion3D::create_identity_rotation(),
-						boost::none),
+				FiniteRotation::create_identity_rotation(),
 				ExactlyOnePlateIdMatchFound);
 	}
 
@@ -302,8 +301,7 @@ GPlatesAppLogic::ReconstructionTree::get_composed_absolute_rotation(
 	if (range.first == range.second) {
 		// No matches.  Let's return the identity rotation and inform the client code.
 		return std::make_pair(
-				FiniteRotation::create(UnitQuaternion3D::create_identity_rotation(),
-						boost::none),
+				FiniteRotation::create_identity_rotation(),
 				NoPlateIdMatchesFound);
 	}
 	if (std::distance(range.first, range.second) > 1) {

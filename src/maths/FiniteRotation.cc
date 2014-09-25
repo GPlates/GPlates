@@ -195,6 +195,13 @@ GPlatesMaths::FiniteRotation::create(
 }
 
 
+const GPlatesMaths::FiniteRotation
+GPlatesMaths::FiniteRotation::create_identity_rotation()
+{
+	return FiniteRotation(UnitQuaternion3D::create_identity_rotation(), boost::none);
+}
+
+
 GPlatesMaths::FiniteRotation::FiniteRotation(
 		const UnitQuaternion3D &unit_quat_,
 		const boost::optional<UnitVector3D> &axis_hint_):

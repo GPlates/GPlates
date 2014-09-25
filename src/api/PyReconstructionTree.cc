@@ -446,8 +446,7 @@ namespace GPlatesApi
 		if (!equivalent_plate_rotation)
 		{
 			return use_identity_for_missing_plate_ids
-					? GPlatesMaths::FiniteRotation::create(
-							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					? GPlatesMaths::FiniteRotation::create_identity_rotation()
 					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
@@ -459,8 +458,7 @@ namespace GPlatesApi
 		if (!equivalent_relative_plate_rotation)
 		{
 			return use_identity_for_missing_plate_ids
-					? GPlatesMaths::FiniteRotation::create(
-							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					? GPlatesMaths::FiniteRotation::create_identity_rotation()
 					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
@@ -499,8 +497,7 @@ namespace GPlatesApi
 		if (!plate_from_rotation)
 		{
 			return use_identity_for_missing_plate_ids
-					? GPlatesMaths::FiniteRotation::create(
-							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					? GPlatesMaths::FiniteRotation::create_identity_rotation()
 					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
@@ -512,8 +509,7 @@ namespace GPlatesApi
 		if (!plate_to_rotation)
 		{
 			return use_identity_for_missing_plate_ids
-					? GPlatesMaths::FiniteRotation::create(
-							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					? GPlatesMaths::FiniteRotation::create_identity_rotation()
 					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
@@ -547,8 +543,7 @@ namespace GPlatesApi
 		if (!fixed_plate_from_rotation)
 		{
 			return use_identity_for_missing_plate_ids
-					? GPlatesMaths::FiniteRotation::create(
-							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					? GPlatesMaths::FiniteRotation::create_identity_rotation()
 					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
@@ -560,8 +555,7 @@ namespace GPlatesApi
 		if (!fixed_plate_to_rotation)
 		{
 			return use_identity_for_missing_plate_ids
-					? GPlatesMaths::FiniteRotation::create(
-							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					? GPlatesMaths::FiniteRotation::create_identity_rotation()
 					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
@@ -573,8 +567,7 @@ namespace GPlatesApi
 		if (!moving_plate_from_rotation)
 		{
 			return use_identity_for_missing_plate_ids
-					? GPlatesMaths::FiniteRotation::create(
-							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					? GPlatesMaths::FiniteRotation::create_identity_rotation()
 					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 
@@ -586,8 +579,7 @@ namespace GPlatesApi
 		if (!moving_plate_to_rotation)
 		{
 			return use_identity_for_missing_plate_ids
-					? GPlatesMaths::FiniteRotation::create(
-							GPlatesMaths::UnitQuaternion3D::create_identity_rotation(), boost::none)
+					? GPlatesMaths::FiniteRotation::create_identity_rotation()
 					: boost::optional<GPlatesMaths::FiniteRotation>();
 		}
 

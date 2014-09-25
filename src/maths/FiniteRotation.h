@@ -113,6 +113,13 @@ namespace GPlatesMaths
 				const boost::optional<UnitVector3D> &axis_hint_);
 
 		/**
+		 * Create an identity rotation.
+		 */
+		static
+		const FiniteRotation
+		create_identity_rotation();
+
+		/**
 		 * Return a unit quaternion which would effect the rotation of this finite
 		 * rotation.
 		 */
