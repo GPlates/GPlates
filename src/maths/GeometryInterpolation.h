@@ -40,10 +40,26 @@ namespace GPlatesMaths
 	 * Interpolates between two polylines along small circle arcs emanating from @a rotation_axis.
 	 *
 	 * The maximum distance between adjacent interpolated polylines is @a interpolate_resolution_radians.
+	 * This determines the interpolation interval spacing.
 	 *
-	 * NOTE: The original polylines @a from_polyline and @a to_polyline are also returned in
+	 * The original polylines @a from_polyline and @a to_polyline are also returned in
 	 * @a interpolated_polylines since the points in each geometry are ordered from closest to
 	 * @a rotation_axis to furthest (which may be different than the order in the originals).
+	 * The original polylines (returned in @a interpolated_polylines) are also modified, if needed, such that
+	 * they have monotonically decreasing latitudes (in North pole reference frame of @a rotation_axis).
+	 * They are also modified to have a common overlapping latitude range (with a certain amount
+	 * of non-overlapping allowed if @a max_latitude_non_overlap_radians is specified).
+	 * They may also be modified due to @a flatten_overlaps (see below).
+	 *
+	 * If @a max_latitude_non_overlap_radians is non-zero then an extra range of non-overlapping
+	 * latitudes at the top and bottom of @a from_polyline and @a to_polyline is allowed - this is
+	 * useful when one polyline is slightly above and/or below the other polyline (in terms of latitude).
+	 * Otherwise only the common overlapping latitude region of both polylines is interpolated.
+	 *
+	 * If @a flatten_overlaps is true then ensures longitudes of points of the left-most polyline
+	 * (in North pole reference frame of @a rotation_axis) don't overlap right-most polyline.
+	 * For those point pairs where overlap occurs the points in @a to_polyline are
+	 * assigned the corresponding (same latitude) points in @a from_polyline.
 	 *
 	 * Returns false if:
 	 *  1) the polylines do not overlap in latitude (where North pole is @a rotation_axis), or
@@ -57,7 +73,9 @@ namespace GPlatesMaths
 			const PolylineOnSphere::non_null_ptr_to_const_type &to_polyline,
 			const UnitVector3D &rotation_axis,
 			const double &interpolate_resolution_radians,
-			boost::optional<double> max_distance_threshold_radians = boost::none);
+			const double &maximum_latitude_non_overlap_radians = 0,
+			boost::optional<double> max_distance_threshold_radians = boost::none,
+			bool flatten_overlaps = true);
 }
 
 #endif // GPLATES_MATHS_GEOMETRYINTERPOLATION_H
