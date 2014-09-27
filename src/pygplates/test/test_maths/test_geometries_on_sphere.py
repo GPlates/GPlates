@@ -331,12 +331,14 @@ class PolylineOnSphereCase(unittest.TestCase):
                 pygplates.PointOnSphere(90,0),
                 math.radians(1),
                 0,
+                0,
                 math.radians(9)))
         self.assertTrue(pygplates.PolylineOnSphere.rotation_interpolate(
                 pygplates.PolylineOnSphere([(10,0), (-10,0)]),
                 pygplates.PolylineOnSphere([(20,10), (0,10)]),
                 pygplates.PointOnSphere(90,0),
                 math.radians(1),
+                0,
                 0,
                 math.radians(11)))
         # Temporary: To be able to view interpolated isochrons in GPlates.

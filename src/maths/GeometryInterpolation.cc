@@ -88,6 +88,76 @@ namespace GPlatesMaths
 			UnitVector3D d_north_pole;
 		};
 
+
+		/**
+		 * Ensure the latitude (distance from rotation axis) overlap of the polylines exceeds
+		 * the minimum requested amount.
+		 *
+		 * Since we later restrict the range of latitudes (for each polyline) to the range
+		 * between its first and last points, we can simply use the first and last points.
+		 */
+		bool
+		overlap(
+				const PolylineOnSphere::non_null_ptr_to_const_type &from_polyline,
+				const PolylineOnSphere::non_null_ptr_to_const_type &to_polyline,
+				const UnitVector3D &rotation_axis,
+				const double &minimum_latitude_overlap_radians)
+		{
+			// 'minimum_latitude_overlap_radians' must be non-negative.
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					minimum_latitude_overlap_radians >= 0,
+					GPLATES_ASSERTION_SOURCE);
+
+			// Calculate distance to stage pole of the geometry1/geometry2 start/end points.
+			const double dist_start_of_from_polyline = acos(
+					dot(rotation_axis, from_polyline->start_point().position_vector())).dval();
+			const double dist_end_of_from_polyline = acos(
+					dot(rotation_axis, from_polyline->end_point().position_vector())).dval();
+			const double dist_start_of_to_polyline = acos(
+					dot(rotation_axis, to_polyline->start_point().position_vector())).dval();
+			const double dist_end_of_to_polyline = acos(
+					dot(rotation_axis, to_polyline->end_point().position_vector())).dval();
+
+			// Orient start/end points so that front is closer to the stage pole than back.
+			double dist_front_of_from_polyline, dist_back_of_from_polyline;
+			if (dist_start_of_from_polyline < dist_end_of_from_polyline)
+			{
+				dist_front_of_from_polyline = dist_start_of_from_polyline;
+				dist_back_of_from_polyline = dist_end_of_from_polyline;
+			}
+			else
+			{
+				dist_front_of_from_polyline = dist_end_of_from_polyline;
+				dist_back_of_from_polyline = dist_start_of_from_polyline;
+			}
+		    
+			// Orient start/end points so that front is closer to the stage pole than back.
+			double dist_front_of_to_polyline, dist_back_of_to_polyline;
+			if (dist_start_of_to_polyline < dist_end_of_to_polyline)
+			{
+				dist_front_of_to_polyline = dist_start_of_to_polyline;
+				dist_back_of_to_polyline = dist_end_of_to_polyline;
+			}
+			else
+			{
+				dist_front_of_to_polyline = dist_end_of_to_polyline;
+				dist_back_of_to_polyline = dist_start_of_to_polyline;
+			}
+		    
+			// Note that we include the distance between end points of each geometry to reject
+			// geometries smaller than the minimum overlap.
+			if (dist_back_of_from_polyline - dist_front_of_from_polyline < minimum_latitude_overlap_radians ||
+				dist_back_of_to_polyline - dist_front_of_to_polyline < minimum_latitude_overlap_radians ||
+				dist_back_of_from_polyline - dist_front_of_to_polyline < minimum_latitude_overlap_radians ||
+				dist_back_of_to_polyline - dist_front_of_from_polyline < minimum_latitude_overlap_radians)
+			{
+				return false;
+			}
+
+			return true;
+		}
+
+
 		/**
 		 * Ensure polyline has points that are monotonically decreasing in latitude
 		 * (distance from rotation axis).
@@ -104,6 +174,8 @@ namespace GPlatesMaths
 			{
 				polyline_points.reverse();
 			}
+
+			bool sort_final_points = false;
 
 			// Ensure polyline points are monotonically decreasing in latitude.
 			std::list<PointOnSphere>::iterator polyline_points_iter = polyline_points.begin();
@@ -149,9 +221,17 @@ namespace GPlatesMaths
 					}
 					else
 					{
-						// The current point is too close to the rotation axis to rotate it away
-						// from the rotation axis - so we'll just set it equal to the rotation axis.
-						*polyline_points_iter = PointOnSphere(rotation_axis);
+						// ...else leave the point alone. It's either too close to the rotation axis
+						// too close to the antipodal of the rotation axis to be able to rotate it away
+						// from the rotation axis. In either case it's at the limits of latitude
+						// (North or South).
+						//
+						// However, it's still possible to violate ordered latitudes here so
+						// we'll flag that the points need sorting at the end of this function
+						// even though this will change the order of the current point in the sequence.
+						// We do this mainly to avoid an error or crash later on due to using
+						// an unsorted sequence where a sorted one is expected.
+						sort_final_points = true;
 					}
 				}
 				else
@@ -159,11 +239,17 @@ namespace GPlatesMaths
 					southmost_dot_product_so_far = dot_product;
 				}
 			}
+
+			if (sort_final_points)
+			{
+				polyline_points.sort(RotationInterpolateImpl::LatitudeGreaterCompare(rotation_axis));
+			}
 		}
 
+
 		/**
-		 * Linearly interpolate between the @a point1 and @a point2 (along their connecting great
-		 * circle arc) such that the resultant point has a dot product with @a small_circle_axis of
+		 * Interpolate between the @a point1 and @a point2 (along their connecting great circle arc)
+		 * such that the resultant point has a dot product with @a small_circle_axis of
 		 * @a small_circle_axis_dot_product.
 		 *
 		 * It is assumed that one of the points is above, and one below, the small circle.
@@ -254,6 +340,7 @@ namespace GPlatesMaths
 					: PointOnSphere(intersect2);
 		}
 
+
 		/**
 		 * Clip away any latitude ranges of either polyline that is not common to both polylines.
 		 * The non-clipped points are the latitude overlapping points.
@@ -273,15 +360,17 @@ namespace GPlatesMaths
 				const UnitVector3D &rotation_axis,
 				std::vector<GreatCircleArc> &north_non_overlapping_latitude_arcs,
 				std::vector<GreatCircleArc> &south_non_overlapping_latitude_arcs,
-				const double &max_latitude_non_overlap_radians)
+				boost::optional<double> max_latitude_non_overlap_radians)
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 					from_polyline_points.size() >= 2 &&
 							to_polyline_points.size() >= 2,
 					GPLATES_ASSERTION_SOURCE);
 
+			// If 'max_latitude_non_overlap_radians' specified then it should be non-negative.
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					max_latitude_non_overlap_radians >= 0,
+					!max_latitude_non_overlap_radians ||
+							max_latitude_non_overlap_radians.get() >= 0,
 					GPLATES_ASSERTION_SOURCE);
 
 
@@ -305,13 +394,13 @@ namespace GPlatesMaths
 
 			std::list<PointOnSphere>::iterator dst_start_points_iter = dst_start_polyline_points.begin();
 
-			if (max_latitude_non_overlap_radians != 0)
+			if (max_latitude_non_overlap_radians)
 			{
 				// Search for two consecutive points of 'dst' that overlap the latitude of
 				// the first 'src' point plus 'max_latitude_non_overlap_radians'.
 				const real_t src_start_polyline_point_plus_non_overlap_radians = 
 						acos(dot(src_start_polyline_point.position_vector(), rotation_axis)) -
-						max_latitude_non_overlap_radians;
+						max_latitude_non_overlap_radians.get();
 				const real_t dot_src_start_polyline_point_plus_non_overlap_radians =
 						src_start_polyline_point_plus_non_overlap_radians.is_precisely_less_than(0)
 								? 1.0
@@ -355,6 +444,11 @@ namespace GPlatesMaths
 					dst_start_polyline_points.erase(dst_start_polyline_points.begin(), dst_start_points_iter);
 
 					// Insert the new interpolated point at the beginning.
+					//
+					// Due to numerical tolerance in interpolated position the latitudes can get slightly re-ordered.
+					// So normally we'd need to insert at the correct location to maintain that order.
+					// However, because these points are not used in std::merge() by our caller, we don't
+					// need to worry about maintaining sort order.
 					dst_start_polyline_points.insert(dst_start_polyline_points.begin(), interp_start_point);
 				}
 
@@ -385,7 +479,7 @@ namespace GPlatesMaths
 			--prev_dst_start_points_iter;
 
 			// Calculate the new interpolated point.
-			const PointOnSphere interp_start_point = 
+			PointOnSphere interp_start_point = 
 					intersect_small_circle_with_great_circle_arc(
 							*prev_dst_start_points_iter,
 							*dst_start_points_iter,
@@ -393,7 +487,7 @@ namespace GPlatesMaths
 							rotation_axis);
 
 			// Add any non-overlapping points to the North great circle arcs.
-			if (max_latitude_non_overlap_radians != 0)
+			if (max_latitude_non_overlap_radians)
 			{
 				std::list<PointOnSphere>::iterator dst_points_iter = dst_start_polyline_points.begin();
 				for ( ; dst_points_iter != dst_start_points_iter; ++dst_points_iter)
@@ -410,19 +504,43 @@ namespace GPlatesMaths
 
 			// Ensure the new point is inserted at the correct location in the sequence such that
 			// the points remain monotonically decreasing in latitude.
+			//
 			// Due to numerical tolerance in interpolated position the latitudes can get slightly re-ordered
-			// and we need to keep them sorted since later will use std::merge().
-			for (dst_start_points_iter = dst_start_polyline_points.begin();
-				dst_start_points_iter != dst_start_polyline_points.end();
-				++dst_start_points_iter)
+			// and we need to keep them sorted since later will use std::merge() in our caller's function.
+			//
+			// So increase the latitude slightly to ensure this by rotating the interpolated point towards
+			// the rotation axis.
+			const Vector3D rotate_slightly_northward_axis =
+					cross(interp_start_point.position_vector(), rotation_axis);
+			if (rotate_slightly_northward_axis.magSqrd() > 0)
 			{
-				if (dot(dst_start_points_iter->position_vector(), rotation_axis).dval() <=
-					dot(interp_start_point.position_vector(), rotation_axis).dval())
-				{
-					break;
-				}
+				// An angle of 2e-6 radians equates to a distance of about 10 metres and a minimum
+				// dot product difference of about 1e-12.
+				const Rotation rotate_slightly_northward = Rotation::create(
+						rotate_slightly_northward_axis.get_normalisation(),
+						2e-6);
+
+				// Rotate the interpolated point slightly.
+				interp_start_point = rotate_slightly_northward * interp_start_point;
+
+	 			dst_start_polyline_points.insert(dst_start_polyline_points.begin(), interp_start_point);
 			}
-			dst_start_polyline_points.insert(dst_start_points_iter, interp_start_point);
+			else
+			{
+				// It's either too close to the rotation axis (or its antipodal) to be able to rotate
+				// it towards the rotation axis. So instead just insert in the correct (sorted) location.
+				for (dst_start_points_iter = dst_start_polyline_points.begin();
+					dst_start_points_iter != dst_start_polyline_points.end();
+					++dst_start_points_iter)
+				{
+					if (dot(dst_start_points_iter->position_vector(), rotation_axis).dval() <=
+						dot(interp_start_point.position_vector(), rotation_axis).dval())
+					{
+						break;
+					}
+				}
+				dst_start_polyline_points.insert(dst_start_points_iter, interp_start_point);
+			}
 
 
 			//
@@ -445,13 +563,13 @@ namespace GPlatesMaths
 
 			std::list<PointOnSphere>::iterator dst_end_points_iter = dst_end_polyline_points.end();
 
-			if (max_latitude_non_overlap_radians != 0)
+			if (max_latitude_non_overlap_radians)
 			{
 				// Search for two consecutive points of 'dst' that overlap the latitude of
 				// the last 'src' point minus 'max_latitude_non_overlap_radians'.
 				const real_t src_end_polyline_point_minus_non_overlap_radians = 
 						acos(dot(src_end_polyline_point.position_vector(), rotation_axis)) +
-						max_latitude_non_overlap_radians;
+						max_latitude_non_overlap_radians.get();
 				const real_t dot_src_end_polyline_point_plus_non_overlap_radians =
 						src_end_polyline_point_minus_non_overlap_radians.is_precisely_greater_than(PI)
 								? -1.0
@@ -496,6 +614,11 @@ namespace GPlatesMaths
 					dst_end_polyline_points.erase(prev_dst_end_points_iter, dst_end_polyline_points.end());
 
 					// Insert the new interpolated point at the end.
+					//
+					// Due to numerical tolerance in interpolated position the latitudes can get slightly re-ordered.
+					// So normally we'd need to insert at the correct location to maintain that order.
+					// However, because these points are not used in std::merge() by our caller, we don't
+					// need to worry about maintaining sort order.
 					dst_end_polyline_points.insert(dst_end_polyline_points.end(), interp_end_point);
 				}
 
@@ -528,7 +651,7 @@ namespace GPlatesMaths
 
 			// Calculate the new interpolated point.
 			// Insert the new point after the current point (which is before the previous point).
-			const PointOnSphere interp_end_point = 
+			PointOnSphere interp_end_point = 
 					intersect_small_circle_with_great_circle_arc(
 							*prev_dst_end_points_iter,
 							*dst_end_points_iter,
@@ -536,7 +659,7 @@ namespace GPlatesMaths
 							rotation_axis);
 
 			// Add any non-overlapping points to the South great circle arcs.
-			if (max_latitude_non_overlap_radians != 0)
+			if (max_latitude_non_overlap_radians)
 			{
 				std::list<PointOnSphere>::iterator dst_points_iter = prev_dst_end_points_iter;
 				for ( ; dst_points_iter != dst_end_polyline_points.end(); ++dst_points_iter)
@@ -553,27 +676,52 @@ namespace GPlatesMaths
 
 			// Ensure the new point is inserted at the correct location in the sequence such that
 			// the points remain monotonically decreasing in latitude.
+			//
 			// Due to numerical tolerance in interpolated position the latitudes can get slightly re-ordered
-			// and we need to keep them sorted since later will use std::merge().
-			for (dst_end_points_iter = dst_end_polyline_points.end();
-				dst_end_points_iter != dst_end_polyline_points.begin();
-				)
+			// and we need to keep them sorted since later will use std::merge() in our caller's function.
+			//
+			// So decrease the latitude slightly to ensure this by rotating the interpolated point away
+			// from the rotation axis.
+			const Vector3D rotate_slightly_southward_axis =
+					cross(rotation_axis, interp_end_point.position_vector());
+			if (rotate_slightly_southward_axis.magSqrd() > 0)
 			{
-				--dst_end_points_iter;
+				// An angle of 2e-6 radians equates to a distance of about 10 metres and a minimum
+				// dot product difference of about 1e-12.
+				const Rotation rotate_slightly_southward = Rotation::create(
+						rotate_slightly_southward_axis.get_normalisation(),
+						2e-6);
 
-				if (dot(dst_end_points_iter->position_vector(), rotation_axis).dval() >
-					dot(interp_end_point.position_vector(), rotation_axis).dval())
-				{
-					++dst_end_points_iter;
-					break;
-				}
+				// Rotate the interpolated point slightly.
+				interp_end_point = rotate_slightly_southward * interp_end_point;
+
+				dst_end_polyline_points.insert(dst_end_polyline_points.end(), interp_end_point);
 			}
-			dst_end_polyline_points.insert(dst_end_points_iter, interp_end_point);
+			else
+			{
+				// It's either too close to the rotation axis (or its antipodal) to be able to rotate
+				// it away from the rotation axis. So instead just insert in the correct (sorted) location.
+				for (dst_end_points_iter = dst_end_polyline_points.end();
+					dst_end_points_iter != dst_end_polyline_points.begin();
+					)
+				{
+					--dst_end_points_iter;
+
+					if (dot(dst_end_points_iter->position_vector(), rotation_axis).dval() >
+						dot(interp_end_point.position_vector(), rotation_axis).dval())
+					{
+						++dst_end_points_iter;
+						break;
+					}
+				}
+				dst_end_polyline_points.insert(dst_end_points_iter, interp_end_point);
+			}
 
 
 			// Polylines overlap in latitude.
 			return true;
 		}
+
 
 		/**
 		 * Ensure that @a points has a point at each latitude in @a all_points.
@@ -658,6 +806,10 @@ namespace GPlatesMaths
 								*points_iter,
 								all_point_dot_product.dval(),
 								rotation_axis);
+				// Due to numerical tolerance in interpolated position the latitudes can get slightly re-ordered.
+				// So normally we'd need to insert at the correct location to maintain that order.
+				// However, because these points are used after std::merge() by our caller, we don't
+				// need to worry about maintaining sort order.
 				points.insert(points_iter, interp_point);
 
 				++all_points_iter;
@@ -690,6 +842,7 @@ namespace GPlatesMaths
 					GPLATES_ASSERTION_SOURCE);
 		}
 
+
 		/**
 		 * Returns true if @a point1 is mostly to the left of @a point2
 		 * in the reference frame where @a rotation_axis is the North pole.
@@ -709,6 +862,7 @@ namespace GPlatesMaths
 			// then it means 'point1' is to the left (longitude-wise) of 'point2'.
 			return is_strictly_positive(dot(from_point_dividing_plane_normal, point2));
 		}
+
 
 		/**
 		 * Ensures longitudes of points of the left-most polyline (in North pole reference frame)
@@ -789,6 +943,7 @@ namespace GPlatesMaths
 			}
 		}
 
+
 		/**
 		 * Returns the number of interpolations between the two polylines based on the 90th percentile
 		 * distance (between related points) and the interpolation resolution.
@@ -843,6 +998,7 @@ namespace GPlatesMaths
 			return static_cast<unsigned int>(
 					percentile_from_to_point_distance.dval() / interpolate_resolution_radians);
 		}
+
 
 		/**
 		 * Create a rotation for each 'from' / 'to' point pair that rotates one interpolation interval.
@@ -981,6 +1137,7 @@ namespace GPlatesMaths
 			}
 		}
 
+
 		/**
 		 * Generate interpolated polylines and append to @a interpolated_polylines.
 		 */
@@ -1047,10 +1204,21 @@ GPlatesMaths::interpolate(
 		const PolylineOnSphere::non_null_ptr_to_const_type &to_polyline,
 		const UnitVector3D &rotation_axis,
 		const double &interpolate_resolution_radians,
+		const double &minimum_latitude_overlap_radians,
 		const double &max_latitude_non_overlap_radians,
 		boost::optional<double> max_distance_threshold_radians,
 		bool flatten_overlaps)
 {
+	// Ensure the latitude overlap of the polylines exceeds the minimum requested amount.
+	if (!RotationInterpolateImpl::overlap(
+			from_polyline,
+			to_polyline,
+			rotation_axis,
+			minimum_latitude_overlap_radians))
+	{
+		return false;
+	}
+
 	// Get a copy of the polyline points so we can insert, modify and erase them as needed.
 	std::list<PointOnSphere> from_polyline_points(from_polyline->vertex_begin(), from_polyline->vertex_end());
 	std::list<PointOnSphere> to_polyline_points(to_polyline->vertex_begin(), to_polyline->vertex_end());
@@ -1078,7 +1246,9 @@ GPlatesMaths::interpolate(
 			rotation_axis,
 			north_non_overlapping_latitude_arcs,
 			south_non_overlapping_latitude_arcs,
-			max_latitude_non_overlap_radians))
+			are_almost_exactly_equal(max_latitude_non_overlap_radians, 0)
+					? boost::optional<double>()
+					: max_latitude_non_overlap_radians))
 	{
 		// If the 'from' and 'to' polylines don't overlap in latitude then we cannot interpolate.
 		return false;

@@ -51,6 +51,9 @@ namespace GPlatesMaths
 	 * of non-overlapping allowed if @a max_latitude_non_overlap_radians is specified).
 	 * They may also be modified due to @a flatten_overlaps (see below).
 	 *
+	 * @a minimum_latitude_overlap_radians specifies the amount that @a from_polyline and @a to_polyline
+	 * must overlap in latitude (North pole reference frame of @a rotation_axis).
+	 *
 	 * If @a max_latitude_non_overlap_radians is non-zero then an extra range of non-overlapping
 	 * latitudes at the top and bottom of @a from_polyline and @a to_polyline is allowed - this is
 	 * useful when one polyline is slightly above and/or below the other polyline (in terms of latitude).
@@ -62,7 +65,8 @@ namespace GPlatesMaths
 	 * assigned the corresponding (same latitude) points in @a from_polyline.
 	 *
 	 * Returns false if:
-	 *  1) the polylines do not overlap in latitude (where North pole is @a rotation_axis), or
+	 *  1) the polylines do not overlap in latitude by at least @a minimum_latitude_overlap_radians
+	 *     radians (where North pole is @a rotation_axis), or
 	 *  2) any corresponding pair of points (same latitude) of the polylines are separated by a
 	 *     distance of more than @a max_distance_threshold_radians (if specified).
 	 */
@@ -73,6 +77,7 @@ namespace GPlatesMaths
 			const PolylineOnSphere::non_null_ptr_to_const_type &to_polyline,
 			const UnitVector3D &rotation_axis,
 			const double &interpolate_resolution_radians,
+			const double &minimum_latitude_overlap_radians = 0,
 			const double &maximum_latitude_non_overlap_radians = 0,
 			boost::optional<double> max_distance_threshold_radians = boost::none,
 			bool flatten_overlaps = true);
