@@ -47,6 +47,8 @@ namespace GPlatesMaths
 	 * @a rotation_axis to furthest (which may be different than the order in the originals).
 	 * The original polylines (returned in @a interpolated_polylines) are also modified, if needed, such that
 	 * they have monotonically decreasing latitudes (in North pole reference frame of @a rotation_axis).
+	 * The latitude range of each polyline is restricted to be between the latitudes of its first
+	 * and last points.
 	 * They are also modified to have a common overlapping latitude range (with a certain amount
 	 * of non-overlapping allowed if @a max_latitude_non_overlap_radians is specified).
 	 * They may also be modified due to @a flatten_overlaps (see below).

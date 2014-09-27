@@ -161,6 +161,8 @@ namespace GPlatesMaths
 		/**
 		 * Ensure polyline has points that are monotonically decreasing in latitude
 		 * (distance from rotation axis).
+		 *
+		 * Also ensures the range of latitudes is not outside the range between first and last points.
 		 */
 		void
 		ensure_points_are_monotonically_decreasing_in_latitude(
@@ -175,6 +177,9 @@ namespace GPlatesMaths
 				polyline_points.reverse();
 			}
 
+			// The latitude of the last point.
+			const real_t southmost_dot_product = dot(polyline_points.back().position_vector(), rotation_axis);
+
 			bool sort_final_points = false;
 
 			// Ensure polyline points are monotonically decreasing in latitude.
@@ -187,56 +192,78 @@ namespace GPlatesMaths
 			{
 				const real_t dot_product = dot(polyline_points_iter->position_vector(), rotation_axis);
 
-				if (dot_product >= southmost_dot_product_so_far) // epsilon test
+				const bool monotonically_decreasing_latitude =
+						dot_product < southmost_dot_product_so_far; // epsilon test
+
+				const bool north_of_last_point =
+						dot_product.dval() >= southmost_dot_product.dval();
+
+				// If current point is north of last point and has a monotonically decreasing latitude
+				// then nothing to do except record current southmost latitude and continue to next point.
+				if (north_of_last_point &&
+					monotonically_decreasing_latitude)
 				{
-					// Reduce the southmost latitude slightly to ensure our latitudes are decreasing.
-					// Otherwise due to numerical tolerance the rotated point might not have a lower latitude.
-					// A reduction of 1e-10 equates to a maximum angular deviation of 80 metres distance
-					// at the pole (rotation axis).
-					southmost_dot_product_so_far -= 1e-10;
-					if (southmost_dot_product_so_far.is_precisely_less_than(-1))
-					{
-						// The lowest possible latitude is the antipodal of the rotation axis.
-						southmost_dot_product_so_far = -1;
-						*polyline_points_iter = PointOnSphere(-rotation_axis);
-						continue;
-					}
+					southmost_dot_product_so_far = dot_product;
+					continue;
+				}
 
-					// Rotate the current point away from the rotation axis so that it has a slightly
-					// lower latitude than the current southmost point.
-					const Vector3D rotate_to_southmost_latitude_axis =
-							cross(rotation_axis, polyline_points_iter->position_vector());
-					if (rotate_to_southmost_latitude_axis.magSqrd() > 0)
+				// Prevent any points from having a latitude less than the last point.
+				if (!north_of_last_point)
+				{
+					// Set the southmost latitude (so far) to the latitude of the last point if it's
+					// currently at a higher latitude (lower dot product).
+					//
+					// Note that due to slight decreases in 'southmost_dot_product_so_far' below, we can
+					// get points with slightly lower latitudes than this, but that's OK since they are
+					// close enough and all the points still have monotonically decreasing latitudes.
+					if (southmost_dot_product_so_far.dval() > southmost_dot_product.dval())
 					{
-						const real_t southmost_distance_so_far = acos(southmost_dot_product_so_far);
-						const real_t distance = acos(dot_product);
-						const real_t rotate_to_southmost_latitude_angle = southmost_distance_so_far - distance;
-
-						const Rotation rotate_to_southmost_latitude = Rotation::create(
-								rotate_to_southmost_latitude_axis.get_normalisation(),
-								rotate_to_southmost_latitude_angle);
-
-						// Rotate the current point to satisfy decreasing latitude requirement.
-						*polyline_points_iter = rotate_to_southmost_latitude * *polyline_points_iter;
+						southmost_dot_product_so_far = southmost_dot_product;
 					}
-					else
-					{
-						// ...else leave the point alone. It's either too close to the rotation axis
-						// too close to the antipodal of the rotation axis to be able to rotate it away
-						// from the rotation axis. In either case it's at the limits of latitude
-						// (North or South).
-						//
-						// However, it's still possible to violate ordered latitudes here so
-						// we'll flag that the points need sorting at the end of this function
-						// even though this will change the order of the current point in the sequence.
-						// We do this mainly to avoid an error or crash later on due to using
-						// an unsorted sequence where a sorted one is expected.
-						sort_final_points = true;
-					}
+				}
+
+				// Reduce the southmost latitude (so far) slightly to ensure our latitudes are decreasing.
+				// Otherwise due to numerical tolerance the rotated point might not have a lower latitude.
+				// A reduction of 1e-10 equates to a maximum angular deviation of 80 metres distance
+				// at the pole (rotation axis).
+				southmost_dot_product_so_far -= 1e-10;
+				if (southmost_dot_product_so_far.is_precisely_less_than(-1))
+				{
+					// The lowest possible latitude is the antipodal of the rotation axis.
+					southmost_dot_product_so_far = -1;
+					*polyline_points_iter = PointOnSphere(-rotation_axis);
+					continue;
+				}
+
+				// Rotate the current point to the current southmost latitude.
+				const Vector3D rotate_to_southmost_latitude_axis =
+						cross(rotation_axis, polyline_points_iter->position_vector());
+				if (rotate_to_southmost_latitude_axis.magSqrd() > 0)
+				{
+					const real_t southmost_distance_so_far = acos(southmost_dot_product_so_far);
+					const real_t distance = acos(dot_product);
+					const real_t rotate_to_southmost_latitude_angle = southmost_distance_so_far - distance;
+
+					const Rotation rotate_to_southmost_latitude = Rotation::create(
+							rotate_to_southmost_latitude_axis.get_normalisation(),
+							rotate_to_southmost_latitude_angle);
+
+					// Rotate the current point to satisfy decreasing latitude requirement.
+					*polyline_points_iter = rotate_to_southmost_latitude * *polyline_points_iter;
 				}
 				else
 				{
-					southmost_dot_product_so_far = dot_product;
+					// ...else leave the point alone. It's either too close to the rotation axis or
+					// too close to the antipodal of the rotation axis to be able to rotate it away
+					// from the rotation axis. In either case it's at the limits of latitude
+					// (North or South).
+					//
+					// However, it's still possible to violate ordered latitudes here so
+					// we'll flag that the points need sorting at the end of this function
+					// even though this will change the order of the current point in the sequence.
+					// We do this mainly to avoid an error or crash later on due to using
+					// an unsorted sequence where a sorted one is expected.
+					sort_final_points = true;
 				}
 			}
 
