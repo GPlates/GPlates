@@ -1293,8 +1293,11 @@ namespace GPlatesApi
 	polyline_on_sphere_rotation_interpolate(
 			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &from_geometry_on_sphere,
 			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &to_geometry_on_sphere,
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
 			const GPlatesMaths::PointOnSphere &rotation_axis,
 			const double &interpolate_resolution_radians,
+			const double &minimum_latitude_overlap_radians,
 			const double &maximum_latitude_non_overlap_radians,
 			boost::optional<double> maximum_distance_threshold_radians,
 			bool flatten_longitude_overlaps)
@@ -1317,6 +1320,7 @@ namespace GPlatesApi
 				to_polyline_on_sphere.get(),
 				rotation_axis.position_vector(),
 				interpolate_resolution_radians,
+				minimum_latitude_overlap_radians,
 				maximum_latitude_non_overlap_radians,
 				maximum_distance_threshold_radians,
 				flatten_longitude_overlaps))
@@ -1511,11 +1515,13 @@ export_polyline_on_sphere()
 				(bp::arg("from_polyline"), bp::arg("to_polyline"),
 						bp::arg("rotation_pole"),
 						bp::arg("interpolate_resolution_radians"),
+						bp::arg("minimum_latitude_overlap_radians") = 0,
 						bp::arg("maximum_latitude_non_overlap_radians") = 0,
 						bp::arg("maximum_distance_threshold_radians") = boost::optional<double>(),
 						bp::arg("flatten_longitude_overlaps") = true),
 				"rotation_interpolate(from_polyline, to_polyline, rotation_pole, "
 				"interpolate_resolution_radians, "
+				"[minimum_latitude_overlap_radians=0], "
 				"[maximum_latitude_non_overlap_radians=0], "
 				"[maximum_distance_threshold_radians], "
 				"[flatten_longitude_overlaps=True]) -> list or None\n"
@@ -1529,20 +1535,23 @@ export_polyline_on_sphere()
 				"  :param to_polyline: the polyline to interpolate *to*\n"
 				"  :type to_polyline: :class:`PolylineOnSphere`\n"
 				"  :param rotation_pole: the rotation axis to interpolate around\n"
-				"  :type rotation_pole: :class:`PointOnSphere`\n"
+				"  :type rotation_pole: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
 				"  :param interpolate_resolution_radians: maximum distance (in radians) between "
 				"adjacent interpolated polylines\n"
-				"  :type interpolate_resolution_radians: float - defaults to zero\n"
+				"  :type interpolate_resolution_radians: float\n"
+				"  :param minimum_latitude_overlap_radians: required amount of latitude overlap of polylines\n"
+				"  :type minimum_latitude_overlap_radians: float - defaults to zero\n"
 				"  :param maximum_latitude_non_overlap_radians: allowed non-overlapping latitude region\n"
-				"  :type maximum_latitude_non_overlap_radians: float\n"
+				"  :type maximum_latitude_non_overlap_radians: float - defaults to zero\n"
 				"  :param maximum_distance_threshold_radians: maximum distance (in radians) between "
 				"*from_polyline* and *to_polyline* - if specified and if exceeded then ``None`` is returned\n"
-				"  :type maximum_distance_threshold_radians: float\n"
+				"  :type maximum_distance_threshold_radians: float - default is no threshold detection\n"
 				"  :param flatten_longitude_overlaps: whether to ensure *from_polyline* and *to_polyline* "
 				"do not overlap in longitude (in North pole reference frame of *rotation_pole*)\n"
 				"  :type flatten_longitude_overlaps: bool - defaults to ``True``\n"
-				"  :returns: list of interpolated polylines including *from_polyline* and *to_polyline*, or "
-				"``None`` if polylines do not have overlapping latitude ranges or if maximum distance "
+				"  :returns: list of interpolated polylines including modified versions of *from_polyline* and "
+				"*to_polyline*, or ``None`` if polylines do not have overlapping latitude ranges or if maximum distance "
 				"threshold exceeded.\n"
 				"  :rtype: list of :class:`PolylineOnSphere` or None\n"
 				"  :raises: GeometryTypeError if *from_polyline* or *to_polyline* are not of type "
@@ -1560,29 +1569,94 @@ export_polyline_on_sphere()
 				"*max_latitude_non_overlap_radians* is non-zero). They may also be modified due to "
 				"*flatten_longitude_overlaps* (see below).\n"
 				"\n"
+				"  *minimum_latitude_overlap_radians* specifies the amount that *from_polyline* and "
+				"*to_polyline* must overlap in latitude (North pole reference frame of *rotation_pole*), "
+				"otherwise ``None`` is returned. Note that this also means if the range of latitudes "
+				"of either polyline is smaller than the minimum overlap then ``None`` is returned. "
+				"The following diagram shows the original latitude overlapping polylines on the left "
+				"and the resultant interpolated polylines on the right clipped to the latitude "
+				"overlapping range (in *rotation_pole* reference frame):\n"
+				"  ::\n"
+				"\n"
+				"    |\n"
+				"    ---\n"
+				"      |\n"
+				"      |         |                         |    |    |\n"
+				"      |         |                         |    |    |\n"
+				"      ---       ---         ===>          ---  ---  ---\n"
+				"        |         |                         |    |    |\n"
+				"        |         |                         |    |    |\n"
+				"                  |\n"
+				"                  ---\n"
+				"                    |\n"
+				"\n"
 				"  If *maximum_latitude_non_overlap_radians* is non-zero then an extra range of non-overlapping "
 				"latitudes at the North and South (in *rotation_pole* reference frame) of *from_polyline* and "
-				"*to_polyline* is allowed. Otherwise only the common overlapping latitude region of both "
-				"polylines is returned.\n"
+				"*to_polyline* is allowed. "
+				"The following diagram shows the original latitude overlapping polylines on the left and the "
+				"resultant interpolated polylines on the right with a limited amount of non-overlapping "
+				"interpolation from the North end of one polyline and from the South end of the other "
+				"(in *rotation_pole* reference frame):\n"
+				"  ::\n"
+				"\n"
+				"      |\n"
+				"      |\n"
+				"      |                                   |\n"
+				"      |                                   |    |\n"
+				"      |         |                         |    |    |\n"
+				"      |         |                         |    |    |\n"
+				"      ---       ---         ===>          ---  ---  ---\n"
+				"        |         |                         |    |    |\n"
+				"        |         |                         |    |    |\n"
+				"                  |                              |    |\n"
+				"                  |                                   |\n"
+				"                  |\n"
+				"                  |\n"
 				"\n"
 				"  If *flatten_longitude_overlaps* is ``True`` then this function ensures the longitudes of "
 				"points of the leftmost polyline (of *from_polyline* and *to_polyline* in North pole reference "
 				"frame of *rotation_pole*) don't overlap the rightmost polyline. For those point pairs "
 				"where overlap occurs, the points in *to_polyline* are assigned the corresponding "
-				"(same latitude) points in *from_polyline*.\n"
+				"(same latitude) points in *from_polyline* to essentially remove or flatten the overlap. "
+				"The following diagram shows the original longitude overlapping polylines on the left and the "
+				"resultant interpolated polylines on the right (in *rotation_pole* reference frame) after "
+				"longitude flattening:\n"
+				"  ::\n"
+				"\n"
+				"       \\     /                             \\  |  /\n"
+				"        \\   /                               \\ | /\n"
+				"         \\ /                                 \\|/\n"
+				"          .                                   .\n"
+				"         / \\                                   \\\n"
+				"        /   \\                                   \\\n"
+				"       /     \\                                   \\\n"
+				"      |       |                                   |\n"
+				"      |       |           ===>                    |\n"
+				"      |       |                                   |\n"
+				"       \\     /                                   /\n"
+				"        \\   /                                   /\n"
+				"         \\ /                                   /\n"
+				"          .                                   .\n"
+				"         / \\                                 /|\\\n"
+				"        /   \\                               / | \\\n"
+				"       /     \\                             /  |  \\\n"
+				"      /       \\                           /   |   \\\n"
 				"\n"
 				"  Returns ``None`` if:\n"
 				"\n"
-				"  * the polylines do not overlap in latitude (where North pole is *rotation_pole*), or\n"
+				"  * the polylines do not overlap by at least *minimum_latitude_overlap_radians* "
+				"radians (where North pole is *rotation_axis*), or\n"
 				"  * any corresponding pair of points (same latitude) of the polylines are separated by a "
 				"distance of more than *max_distance_threshold_radians* (if specified).\n"
 				"\n"
-				"  To interpolate polylines with a spacing of 2 minutes (with latitudes constrained to "
-				"the common overlap region of both polylines and with no distance threshold):\n"
+				"  To interpolate polylines with a spacing of 2 minutes (with a minimum required latitude "
+				"overlap of 1 degree and with an allowed latitude non-overlap of up to 3 degrees and "
+				"with no distance threshold and with longitude overlaps flattened):\n"
 				"  ::\n"
 				"\n"
 				"    interpolated_polylines = pygplates.PolylineOnSphere.rotation_interpolate(\n"
-				"        from_polyline, to_polyline, rotation_pole, math.radians(2.0/60))\n")
+				"        from_polyline, to_polyline, rotation_pole, math.radians(2.0/60), "
+				"math.radians(1), math.radians(3))\n")
 		.staticmethod("rotation_interpolate")
 		.def("get_points_view",
 				&GPlatesApi::poly_geometry_on_sphere_get_points_view<GPlatesMaths::PolylineOnSphere>,
