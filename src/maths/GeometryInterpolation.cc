@@ -56,6 +56,10 @@ DISABLE_GCC_WARNING("-Wuninitialized")
 #include "global/GPlatesAssert.h"
 
 
+// Define this to make our monotonically decreasing latitudes behave like the original Intertec program.
+#define INTERTEC_MONOTONICALLY_DECREASING_LATITUDE_BEHAVIOUR
+
+
 namespace GPlatesMaths
 {
 	/**
@@ -92,9 +96,6 @@ namespace GPlatesMaths
 		/**
 		 * Ensure the latitude (distance from rotation axis) overlap of the polylines exceeds
 		 * the minimum requested amount.
-		 *
-		 * Since we later restrict the range of latitudes (for each polyline) to the range
-		 * between its first and last points, we can simply use the first and last points.
 		 */
 		bool
 		overlap(
@@ -107,6 +108,84 @@ namespace GPlatesMaths
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					minimum_latitude_overlap_radians >= 0,
 					GPLATES_ASSERTION_SOURCE);
+
+#if defined(INTERTEC_MONOTONICALLY_DECREASING_LATITUDE_BEHAVIOUR)
+			//
+			// Determine whether start or end point of 'from' polyline is Northmost point.
+			//
+
+			const real_t dot_product_from_polyline_start =
+					dot(rotation_axis, from_polyline->start_point().position_vector());
+			const real_t dot_product_from_polyline_end =
+					dot(rotation_axis, from_polyline->end_point().position_vector());
+			const double dist_front_of_from_polyline =
+					dot_product_from_polyline_start.is_precisely_greater_than(dot_product_from_polyline_end.dval())
+					? acos(dot_product_from_polyline_start).dval()
+					: acos(dot_product_from_polyline_end).dval();
+
+			//
+			// Find the Southmost latitude of 'from' polyline.
+			//
+
+			PolylineOnSphere::vertex_const_iterator from_polyline_vertex_iter = from_polyline->vertex_begin();
+			PolylineOnSphere::vertex_const_iterator from_polyline_vertex_end = from_polyline->vertex_end();
+			// Dot product of first point.
+			real_t southmost_dot_product_so_far_of_from_polyline =
+					dot(rotation_axis, from_polyline_vertex_iter->position_vector());
+			for (++from_polyline_vertex_iter; // Start at second point
+				from_polyline_vertex_iter != from_polyline_vertex_end;
+				++from_polyline_vertex_iter)
+			{
+				const real_t dot_product = dot(rotation_axis, from_polyline_vertex_iter->position_vector());
+
+				// If latitude of current vertex is lower than southmost point so far...
+				if (dot_product.dval() < southmost_dot_product_so_far_of_from_polyline.dval())
+				{
+					southmost_dot_product_so_far_of_from_polyline = dot_product;
+				}
+			}
+			const double dist_back_of_from_polyline = acos(southmost_dot_product_so_far_of_from_polyline).dval();
+
+			//
+			// Determine whether start or end point of 'to' polyline is Northmost point.
+			//
+
+			const real_t dot_product_to_polyline_start =
+					dot(rotation_axis, to_polyline->start_point().position_vector());
+			const real_t dot_product_to_polyline_end =
+					dot(rotation_axis, to_polyline->end_point().position_vector());
+			const double dist_front_of_to_polyline =
+					dot_product_to_polyline_start.is_precisely_greater_than(dot_product_to_polyline_end.dval())
+					? acos(dot_product_to_polyline_start).dval()
+					: acos(dot_product_to_polyline_end).dval();
+
+			//
+			// Find the Southmost latitude of 'to' polyline.
+			//
+
+			PolylineOnSphere::vertex_const_iterator to_polyline_vertex_iter = to_polyline->vertex_begin();
+			PolylineOnSphere::vertex_const_iterator to_polyline_vertex_end = to_polyline->vertex_end();
+			// Dot product of first point.
+			real_t southmost_dot_product_so_far_of_to_polyline =
+					dot(rotation_axis, to_polyline_vertex_iter->position_vector());
+			for (++to_polyline_vertex_iter; // Start at second point
+				to_polyline_vertex_iter != to_polyline_vertex_end;
+				++to_polyline_vertex_iter)
+			{
+				const real_t dot_product = dot(rotation_axis, to_polyline_vertex_iter->position_vector());
+
+				// If latitude of current vertex is lower than southmost point so far...
+				if (dot_product.dval() < southmost_dot_product_so_far_of_to_polyline.dval())
+				{
+					southmost_dot_product_so_far_of_to_polyline = dot_product;
+				}
+			}
+			const double dist_back_of_to_polyline = acos(southmost_dot_product_so_far_of_to_polyline).dval();
+#else
+			//
+			// Since we later restrict the range of latitudes (for each polyline) to the range
+			// between its first and last points, we can simply use the first and last points.
+			//
 
 			// Calculate distance to stage pole of the geometry1/geometry2 start/end points.
 			const double dist_start_of_from_polyline = acos(
@@ -143,6 +222,7 @@ namespace GPlatesMaths
 				dist_front_of_to_polyline = dist_end_of_to_polyline;
 				dist_back_of_to_polyline = dist_start_of_to_polyline;
 			}
+#endif
 		    
 			// Note that we include the distance between end points of each geometry to reject
 			// geometries smaller than the minimum overlap.
@@ -177,8 +257,10 @@ namespace GPlatesMaths
 				polyline_points.reverse();
 			}
 
+#if !defined(INTERTEC_MONOTONICALLY_DECREASING_LATITUDE_BEHAVIOUR)
 			// The latitude of the last point.
 			const real_t southmost_dot_product = dot(polyline_points.back().position_vector(), rotation_axis);
+#endif
 
 			bool sort_final_points = false;
 
@@ -195,18 +277,24 @@ namespace GPlatesMaths
 				const bool monotonically_decreasing_latitude =
 						dot_product < southmost_dot_product_so_far; // epsilon test
 
+#if !defined(INTERTEC_MONOTONICALLY_DECREASING_LATITUDE_BEHAVIOUR)
 				const bool north_of_last_point =
 						dot_product.dval() >= southmost_dot_product.dval();
+#endif
 
 				// If current point is north of last point and has a monotonically decreasing latitude
 				// then nothing to do except record current southmost latitude and continue to next point.
-				if (north_of_last_point &&
+				if (
+#if !defined(INTERTEC_MONOTONICALLY_DECREASING_LATITUDE_BEHAVIOUR)
+					north_of_last_point &&
+#endif
 					monotonically_decreasing_latitude)
 				{
 					southmost_dot_product_so_far = dot_product;
 					continue;
 				}
 
+#if !defined(INTERTEC_MONOTONICALLY_DECREASING_LATITUDE_BEHAVIOUR)
 				// Prevent any points from having a latitude less than the last point.
 				if (!north_of_last_point)
 				{
@@ -221,6 +309,7 @@ namespace GPlatesMaths
 						southmost_dot_product_so_far = southmost_dot_product;
 					}
 				}
+#endif
 
 				// Reduce the southmost latitude (so far) slightly to ensure our latitudes are decreasing.
 				// Otherwise due to numerical tolerance the rotated point might not have a lower latitude.
