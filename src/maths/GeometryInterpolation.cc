@@ -984,15 +984,21 @@ namespace GPlatesMaths
 		 * Ensures longitudes of points of the left-most polyline (in North pole reference frame)
 		 * don't overlap right-most polyline.
 		 *
-		 * For those point pairs where overlap occurs the point in @a to_polyline_points is
-		 * assigned the corresponding point in @a from_polyline_points.
+		 * For those point pairs where overlap occurs, @a flatten_longitude_overlaps determines
+		 * whether to copy 'from' points to 'to' points or vice versa.
 		 */
 		void
-		flatten_longitude_overlaps(
+		flatten_overlaps_in_longitude(
 				std::list<PointOnSphere> &from_polyline_points,
 				std::list<PointOnSphere> &to_polyline_points,
-				const UnitVector3D &rotation_axis)
+				const UnitVector3D &rotation_axis,
+				FlattenLongitudeOverlaps::Value flatten_longitude_overlaps)
 		{
+			if (flatten_longitude_overlaps == FlattenLongitudeOverlaps::NO)
+			{
+				return;
+			}
+
 			// We should have same number of points in both polylines.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 					from_polyline_points.size() == to_polyline_points.size(),
@@ -1033,7 +1039,7 @@ namespace GPlatesMaths
 				*from_points_left_of_to_points_iter = from_point_is_left_of_to_point;
 			}
 
-			// 'from' polyline is left of 'to' polyline is most of its points are on the left side.
+			// 'from' polyline is left of 'to' polyline if most of its points are on the left side.
 			const bool is_from_polyline_mostly_left_of_to_polyline =
 					num_from_points_left_of_to_points > num_to_points_left_of_from_points;
 
@@ -1053,8 +1059,17 @@ namespace GPlatesMaths
 						: from_point_is_left_of_to_point;
 				if (points_overlap)
 				{
-					// The points overlap - favour the 'from' point by assigning it to the 'to' point.
-					*to_points_iter = *from_points_iter;
+					// The points overlap.
+					if (flatten_longitude_overlaps == FlattenLongitudeOverlaps::USE_FROM)
+					{
+						// Favour the 'from' point by assigning it to the 'to' point.
+						*to_points_iter = *from_points_iter;
+					}
+					else
+					{
+						// Favour the 'to' point by assigning it to the 'from' point.
+						*from_points_iter = *to_points_iter;
+					}
 				}
 			}
 		}
@@ -1323,7 +1338,7 @@ GPlatesMaths::interpolate(
 		const double &minimum_latitude_overlap_radians,
 		const double &max_latitude_non_overlap_radians,
 		boost::optional<double> max_distance_threshold_radians,
-		bool flatten_overlaps)
+		FlattenLongitudeOverlaps::Value flatten_longitude_overlaps)
 {
 	// Ensure the latitude overlap of the polylines exceeds the minimum requested amount.
 	if (!RotationInterpolateImpl::overlap(
@@ -1396,13 +1411,11 @@ GPlatesMaths::interpolate(
 			rotation_axis);
 
 	// Make sure the latitude overlapping points don't overlap in longitude (if requested).
-	if (flatten_overlaps)
-	{
-		RotationInterpolateImpl::flatten_longitude_overlaps(
-				from_polyline_points,
-				to_polyline_points,
-				rotation_axis);
-	}
+	RotationInterpolateImpl::flatten_overlaps_in_longitude(
+			from_polyline_points,
+			to_polyline_points,
+			rotation_axis,
+			flatten_longitude_overlaps);
 
 	// Calculate the number of interpolations based on the latitude overlapping points only.
 	const boost::optional<unsigned int> num_interpolations =

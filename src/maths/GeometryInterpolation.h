@@ -37,6 +37,19 @@
 namespace GPlatesMaths
 {
 	/**
+	 * Enumeration to determine how to flatten longitude overlaps in rotation interpolation function @a interpolate.
+	 */
+	namespace FlattenLongitudeOverlaps
+	{
+		enum Value
+		{
+			NO,        // Don't flatten longitude overlaps.
+			USE_FROM,  // Use points in 'from' polyline to zero overlap (copy 'from' points into 'to' points).
+			USE_TO     // Use points in 'to' polyline to zero overlap (copy 'to' points into 'from' points).
+		};
+	};
+
+	/**
 	 * Interpolates between two polylines along small circle arcs emanating from @a rotation_axis.
 	 *
 	 * The maximum distance between adjacent interpolated polylines is @a interpolate_resolution_radians.
@@ -51,7 +64,7 @@ namespace GPlatesMaths
 	 * and last points.
 	 * They are also modified to have a common overlapping latitude range (with a certain amount
 	 * of non-overlapping allowed if @a max_latitude_non_overlap_radians is specified).
-	 * They may also be modified due to @a flatten_overlaps (see below).
+	 * They may also be modified due to @a flatten_longitude_overlaps (see below).
 	 *
 	 * @a minimum_latitude_overlap_radians specifies the amount that @a from_polyline and @a to_polyline
 	 * must overlap in latitude (North pole reference frame of @a rotation_axis).
@@ -61,10 +74,14 @@ namespace GPlatesMaths
 	 * useful when one polyline is slightly above and/or below the other polyline (in terms of latitude).
 	 * Otherwise only the common overlapping latitude region of both polylines is interpolated.
 	 *
-	 * If @a flatten_overlaps is true then ensures longitudes of points of the left-most polyline
+	 * Flattening longitude overlaps ensures longitudes of points of the left-most polyline
 	 * (in North pole reference frame of @a rotation_axis) don't overlap right-most polyline.
-	 * For those point pairs where overlap occurs the points in @a to_polyline are
-	 * assigned the corresponding (same latitude) points in @a from_polyline.
+	 * So @a flatten_longitude_overlaps determines whether, and how, to flatten overlaps in longitude:
+	 *   1) FlattenLongitudeOverlaps::NO: Don't flatten overlaps.
+	 *   2) FlattenLongitudeOverlaps::USE_FROM: For those point pairs where overlap occurs, the points
+	 *      in @a from_polyline are copied to the corresponding (same latitude) points in @a to_polyline.
+	 *   3) FlattenLongitudeOverlaps::USE_TO: For those point pairs where overlap occurs, the points
+	 *      in @a to_polyline are copied to the corresponding (same latitude) points in @a from_polyline.
 	 *
 	 * Returns false if:
 	 *  1) the polylines do not overlap in latitude by at least @a minimum_latitude_overlap_radians
@@ -82,7 +99,7 @@ namespace GPlatesMaths
 			const double &minimum_latitude_overlap_radians = 0,
 			const double &maximum_latitude_non_overlap_radians = 0,
 			boost::optional<double> max_distance_threshold_radians = boost::none,
-			bool flatten_overlaps = true);
+			FlattenLongitudeOverlaps::Value flatten_longitude_overlaps = FlattenLongitudeOverlaps::NO);
 }
 
 #endif // GPLATES_MATHS_GEOMETRYINTERPOLATION_H
