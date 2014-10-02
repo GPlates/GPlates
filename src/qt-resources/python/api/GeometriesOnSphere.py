@@ -228,34 +228,47 @@ PolylineOnSphere._get_points = polyline_on_sphere_get_points
 del polyline_on_sphere_get_points
 
 
-def polyline_on_sphere_join(polylines, distance_threshold_radians):
-    """join(polylines, distance_threshold_radians) -> list
-    Joins polylines that have end points closer than a distance threshold.
+def polygon_on_sphere_get_points(polygon_on_sphere):
+    return polygon_on_sphere
+
+# Add the module function as a class method.
+PolygonOnSphere._get_points = polygon_on_sphere_get_points
+# Delete the module reference to the function - we only keep the class method.
+del polygon_on_sphere_get_points
+
+
+def polyline_on_sphere_join(geometries, distance_threshold_radians, geometry_conversion=PolylineConversion.convert_to_polyline):
+    """join(geometries, distance_threshold_radians, geometry_conversion=PolylineConversion.convert_to_polyline) -> list
+    Joins geometries that have end points closer than a distance threshold.
     
-    :param polylines: the polylines to join
-    :type polylines: sequence (eg, ``list`` or ``tuple``) of :class:`PolylineOnSphere` - though any \
-    :class:`GeometryOnSphere` will work since :meth:`GeometryOnSphere.get_points` is used internally to query end points
+    :param geometries: the geometries to join
+    :type geometries: sequence (eg, ``list`` or ``tuple``) of :class:`GeometryOnSphere`
     :param distance_threshold_radians: closeness distance threshold in radians for joining to occur
     :type distance_threshold_radians: float
-    :returns: a list of joined polylines - the list will contain all polylines in *polylines* if none were joined
-    :rtype: list of :class:`PolylineOnSphere` - though note that any geometries in *polylines* that are \
-    not joined will be returned unchanged which means :class:`polylines<PolylineOnSphere>` are guaranteed \
-    to be returned only if all geometries in *polylines* are :class:`PolylineOnSphere`
+    :param geometry_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore \
+    those geometries in *geometries* that are not :class:`PolylineOnSphere` - defaults to \
+    *PolylineConversion.convert_to_polyline*
+    :type geometry_conversion: *PolylineConversion.convert_to_polyline*, *PolylineConversion.ignore_non_polyline* \
+    or *PolylineConversion.raise_if_non_polyline*
+    :returns: a list of joined polylines
+    :rtype: list of :class:`PolylineOnSphere`
+    :raises: GeometryTypeError if *geometry_conversion* is *PolylineConversion.raise_if_non_polyline* and \
+    any geometry in *geometries* is not a :class:`PolylineOnSphere`
     
-    All pairs of polylines are tested for joining and only those closer than *distance_threshold_radians*
+    All pairs of geometries are tested for joining and only those closer than *distance_threshold_radians*
     radians are joined. Each joined polyline is further joined if possible until there are no more
     possibilities for joining (or there is a single joined polyline that is a concatenation of all
-    polylines in *polylines*).
+    geometries in *geometries* - depending on *geometry_conversion*).
     
-    When determining if two polylines A and B can be joined the closest pair of end points
-    (one from A and one from B) decides which end of each polyline can be joined, provided their
-    distance is less than *distance_threshold_radians* radians. If a third polyline C also has an end
-    point close enough to A then the closest of B and C is joined to A.
+    When determining if two geometries A and B can be joined the closest pair of end points
+    (one from A and one from B) decides which end of each geometry can be joined, provided their
+    distance is less than *distance_threshold_radians* radians. If a third geometries C also has an
+    end point close enough to A then the closest of B and C is joined to A.
     
-    Two polylines A and B are joined by prepending or appending a (possibly reversed) copy of the
-    points in polyline B to a copy of the points in polyline A. Hence the joined polyline will always
-    have points ordered in the same direction as polyline A (only the points from polyline B are
-    reversed if necessary). So polylines earlier in the *polylines* sequence determine the direction
+    Two geometries A and B are joined by prepending or appending a (possibly reversed) copy of the
+    points in geometry B to a copy of the points in geometry A. Hence the joined polyline will
+    always have points ordered in the same direction as geometry A (only the points from geometry B are
+    reversed if necessary). So geometries earlier in the *geometries* sequence determine the direction
     of joined polylines.
     
     Join three polylines if their end points are within 3 degrees of another:
@@ -265,18 +278,44 @@ def polyline_on_sphere_join(polylines, distance_threshold_radians):
       # If only two polylines join then the returned list will have two polylines (one original and one joined).
       # If no polylines join then the returned list will have the three original polylines.
       joined_polylines = pygplates.PolylineOnSphere.join((polyline1, polyline2, polyline3), math.radians(3))
-    """
     
-    # Start with all original polylines and then reduce number in list as polylines are joined.
-    joined_polylines = list(polylines)
+    Other geometries besides :class:`PolylineOnSphere` can be joined if *geometry_conversion* is
+    *PolylineConversion.convert_to_polyline*. This is useful for joining nearby points into polylines for example:
+    ::
+    
+      # If all points are close enough then the returned list will have one joined polyline,
+      # otherwise there will be multiple polylines each representing a subset of the points.
+      # If none of the points are close to each other then the returned list will have degenerate
+      # polylines that each look like a point (each polyline has two identical points).
+      joined_polylines = pygplates.PolylineOnSphere.join(
+              points, math.radians(3), pygplates.PolylineConversion.convert_to_polyline)
+      """
+    
+    # Start with all original geometries in 'joined_polylines' and
+    # then reduce number in list as geometries are joined.
+    if geometry_conversion == PolylineConversion.convert_to_polyline:
+        # Convert all geometries to PolylineOnSphere's if necessary.
+        joined_polylines = [PolylineOnSphere(geometry, allow_one_point=True) for geometry in geometries]
+    elif geometry_conversion == PolylineConversion.ignore_non_polyline:
+        # Only add PolylineOnSphere geometries.
+        joined_polylines = []
+        for geometry in geometries:
+            if isinstance(geometry, PolylineOnSphere):
+                joined_polylines.append(geometry)
+    else: # geometry_conversion == PolylineConversion.raise_if_non_polyline
+        # Raise error if any geometry is not a PolylineOnSphere.
+        for geometry in geometries:
+            if not isinstance(geometry, PolylineOnSphere):
+                raise GeometryTypeError('Expected PolylineOnSphere geometries')
+        joined_polylines = list(geometries)
     
     #
-    # Do N^2 search over pairs of polylines to test for joining.
+    # Do N^2 search over pairs of geometries to test for joining.
     #
     
-    # Iterate over all polylines except last one.
-    # Using len() since some polylines are removed during iteration.
-    # Note: If there are fewer than two polylines then the loop is not entered.
+    # Iterate over all geometries except last one.
+    # Using len() since some geometries are removed during iteration.
+    # Note: If there are fewer than two geometries then the loop is not entered.
     polyline1_index = 0
     while polyline1_index < len(joined_polylines) - 1:
         # Make sure works with any GeometryOnSphere type by calling 'get_points()'.
@@ -321,6 +360,7 @@ def polyline_on_sphere_join(polylines, distance_threshold_radians):
             # Note that we don't increment 'polyline1_index' because we want to test the
             # newly joined polyline with subsequent polyline2's.
         else:
+            # We're keeping the original geometry.
             polyline1_index += 1
     
     return joined_polylines
@@ -329,12 +369,3 @@ def polyline_on_sphere_join(polylines, distance_threshold_radians):
 PolylineOnSphere.join = staticmethod(polyline_on_sphere_join)
 # Delete the module reference to the function - we only keep the class method.
 del polyline_on_sphere_join
-
-
-def polygon_on_sphere_get_points(polygon_on_sphere):
-    return polygon_on_sphere
-
-# Add the module function as a class method.
-PolygonOnSphere._get_points = polygon_on_sphere_get_points
-# Delete the module reference to the function - we only keep the class method.
-del polygon_on_sphere_get_points

@@ -316,24 +316,49 @@ class PolylineOnSphereCase(unittest.TestCase):
         # Should work on any GeometryOnSphere type.
         joined_polylines = pygplates.PolylineOnSphere.join(
                 [pygplates.PointOnSphere((0,10)),
-                pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)])],
+                    pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)])],
                 math.radians(2.1))
         self.assertTrue(len(joined_polylines) == 1)
         self.assertTrue(isinstance(joined_polylines[0], pygplates.PolylineOnSphere))
         joined_polylines = pygplates.PolylineOnSphere.join(
                 [pygplates.MultiPointOnSphere([(0,0), (0,10)]),
-                pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)])],
+                    pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)])],
                 math.radians(2.1))
         self.assertTrue(len(joined_polylines) == 1)
         self.assertTrue(isinstance(joined_polylines[0], pygplates.PolylineOnSphere))
         joined_polylines = pygplates.PolylineOnSphere.join(
                 [pygplates.MultiPointOnSphere([(0,0), (0,10)]),
-                pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)])],
+                    pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)])],
                 math.radians(0.1))
         self.assertTrue(len(joined_polylines) == 2)
         # Anything not joined should get converted to PolylineOnSphere.
         self.assertTrue(isinstance(joined_polylines[0], pygplates.PolylineOnSphere))
         self.assertTrue(isinstance(joined_polylines[1], pygplates.PolylineOnSphere))
+        
+        joined_polylines = pygplates.PolylineOnSphere.join(
+                [pygplates.MultiPointOnSphere([(0,0), (0,10)]),
+                    pygplates.PolylineOnSphere([(20,8), (10,8), (0,8)])],
+                math.radians(1.9),
+                pygplates.PolylineConversion.convert_to_polyline)
+        self.assertTrue(len(joined_polylines) == 2)
+        joined_polylines = pygplates.PolylineOnSphere.join(
+                [pygplates.MultiPointOnSphere([(0,0), (0,10)]),
+                    pygplates.PolylineOnSphere([(20,8), (10,8), (0,8)])],
+                math.radians(1.9),
+                pygplates.PolylineConversion.ignore_non_polyline)
+        self.assertTrue(len(joined_polylines) == 1)
+        self.assertRaises(pygplates.GeometryTypeError,
+                pygplates.PolylineOnSphere.join,
+                [pygplates.MultiPointOnSphere([(0,0), (0,10)]),
+                    pygplates.PolylineOnSphere([(20,8), (10,8), (0,8)])],
+                math.radians(1.9),
+                pygplates.PolylineConversion.raise_if_non_polyline)
+        joined_polylines = pygplates.PolylineOnSphere.join(
+                [pygplates.PolylineOnSphere([(0,0), (0,10)]),
+                    pygplates.PolylineOnSphere([(20,8), (10,8), (0,8)])],
+                math.radians(1.9),
+                pygplates.PolylineConversion.raise_if_non_polyline)
+        self.assertTrue(len(joined_polylines) == 2)
         
         polyline1 = pygplates.PolylineOnSphere([(0,0), (0,10)])
         polyline2 = pygplates.PolylineOnSphere([(20,8), (0,8)])

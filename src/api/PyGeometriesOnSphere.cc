@@ -1362,9 +1362,9 @@ namespace GPlatesApi
 	}
 
 	/**
-	 * Enumeration to determine how properties are returned.
+	 * Enumeration to determine conversion of geometries to PolylineOnSphere.
 	 */
-	namespace PolylineArgument
+	namespace PolylineConversion
 	{
 		enum Value
 		{
@@ -1437,10 +1437,10 @@ export_polyline_on_sphere()
 			.value("use_to", GPlatesMaths::FlattenLongitudeOverlaps::USE_TO);
 
 	// An enumeration nested within 'pygplates (ie, current) module.
-	bp::enum_<GPlatesApi::PolylineArgument::Value>("PolylineArgument")
-			.value("convert_to_polyline", GPlatesApi::PolylineArgument::CONVERT_TO_POLYLINE)
-			.value("ignore_non_polyline", GPlatesApi::PolylineArgument::IGNORE_NON_POLYLINE)
-			.value("raise_if_non_polyline", GPlatesApi::PolylineArgument::RAISE_IF_NON_POLYLINE);
+	bp::enum_<GPlatesApi::PolylineConversion::Value>("PolylineConversion")
+			.value("convert_to_polyline", GPlatesApi::PolylineConversion::CONVERT_TO_POLYLINE)
+			.value("ignore_non_polyline", GPlatesApi::PolylineConversion::IGNORE_NON_POLYLINE)
+			.value("raise_if_non_polyline", GPlatesApi::PolylineConversion::RAISE_IF_NON_POLYLINE);
 
 	//
 	// A wrapper around view access to the *points* of a PolylineOnSphere.
