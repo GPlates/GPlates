@@ -317,19 +317,22 @@ class PolylineOnSphereCase(unittest.TestCase):
         joined_polylines = pygplates.PolylineOnSphere.join(
                 [pygplates.PointOnSphere((0,10)),
                     pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)])],
-                math.radians(2.1))
+                math.radians(2.1),
+                pygplates.PolylineConversion.convert_to_polyline)
         self.assertTrue(len(joined_polylines) == 1)
         self.assertTrue(isinstance(joined_polylines[0], pygplates.PolylineOnSphere))
         joined_polylines = pygplates.PolylineOnSphere.join(
                 [pygplates.MultiPointOnSphere([(0,0), (0,10)]),
                     pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)])],
-                math.radians(2.1))
+                math.radians(2.1),
+                pygplates.PolylineConversion.convert_to_polyline)
         self.assertTrue(len(joined_polylines) == 1)
         self.assertTrue(isinstance(joined_polylines[0], pygplates.PolylineOnSphere))
         joined_polylines = pygplates.PolylineOnSphere.join(
                 [pygplates.MultiPointOnSphere([(0,0), (0,10)]),
                     pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)])],
-                math.radians(0.1))
+                math.radians(0.1),
+                pygplates.PolylineConversion.convert_to_polyline)
         self.assertTrue(len(joined_polylines) == 2)
         # Anything not joined should get converted to PolylineOnSphere.
         self.assertTrue(isinstance(joined_polylines[0], pygplates.PolylineOnSphere))
@@ -414,20 +417,32 @@ class PolylineOnSphereCase(unittest.TestCase):
                 0,
                 math.radians(11),
                 pygplates.FlattenLongitudeOverlaps.no))
-        # Temporary: To be able to view interpolated isochrons in GPlates.
-        #polylines = pygplates.PolylineOnSphere.rotation_interpolate(
-        #        pygplates.PolylineOnSphere([(10,0), (-10,0)]),
-        #        pygplates.PolylineOnSphere([(20,10), (0,10)]),
-        #        pygplates.PointOnSphere(90,0),
-        #        math.radians(1))
-        #feature_collection = pygplates.FeatureCollection()
-        #for polyline in polylines:
-        #    feature = pygplates.Feature.create_reconstructable_feature(
-        #            pygplates.FeatureType.create_gpml('Isochron'),
-        #            polyline)
-        #    feature_collection.add(feature)
-        #file_registry = pygplates.FeatureCollectionFileFormatRegistry()
-        #file_registry.write(feature_collection, 'isochrons.gpml')
+        
+        self.assertRaises(pygplates.GeometryTypeError,
+                pygplates.PolylineOnSphere.rotation_interpolate,
+                pygplates.MultiPointOnSphere([(10,0), (-10,0)]),
+                pygplates.PolylineOnSphere([(20,10), (0,10)]),
+                pygplates.PointOnSphere(90,0),
+                math.radians(1))
+        self.assertRaises(pygplates.GeometryTypeError,
+                pygplates.PolylineOnSphere.rotation_interpolate,
+                pygplates.MultiPointOnSphere([(10,0), (-10,0)]),
+                pygplates.PolylineOnSphere([(20,10), (0,10)]),
+                pygplates.PointOnSphere(90,0),
+                math.radians(1),
+                polyline_conversion=pygplates.PolylineConversion.raise_if_non_polyline)
+        self.assertFalse(pygplates.PolylineOnSphere.rotation_interpolate(
+                pygplates.MultiPointOnSphere([(10,0), (-10,0)]),
+                pygplates.PolylineOnSphere([(20,10), (0,10)]),
+                pygplates.PointOnSphere(90,0),
+                math.radians(1),
+                polyline_conversion=pygplates.PolylineConversion.ignore_non_polyline))
+        self.assertTrue(pygplates.PolylineOnSphere.rotation_interpolate(
+                pygplates.MultiPointOnSphere([(10,0), (-10,0)]),
+                pygplates.PolylineOnSphere([(20,10), (0,10)]),
+                pygplates.PointOnSphere(90,0),
+                math.radians(1),
+                polyline_conversion=pygplates.PolylineConversion.convert_to_polyline))
 
     def test_compare(self):
         self.assertEquals(self.polyline, pygplates.PolylineOnSphere(self.points))

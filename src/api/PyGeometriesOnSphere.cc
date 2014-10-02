@@ -1385,18 +1385,46 @@ namespace GPlatesApi
 			const double &minimum_latitude_overlap_radians,
 			const double &maximum_latitude_non_overlap_radians,
 			boost::optional<double> maximum_distance_threshold_radians,
-			GPlatesMaths::FlattenLongitudeOverlaps::Value flatten_longitude_overlaps)
+			GPlatesMaths::FlattenLongitudeOverlaps::Value flatten_longitude_overlaps,
+			PolylineConversion::Value polyline_conversion)
 	{
-		// Raise 'GeometryTypeError' if geometries are not polylines.
-		// Doing this enables user to try/except in case they don't know the types of the geometries.
-		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> from_polyline_on_sphere =
-				GPlatesAppLogic::GeometryUtils::get_polyline_on_sphere(*from_geometry_on_sphere);
-		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> to_polyline_on_sphere =
-				GPlatesAppLogic::GeometryUtils::get_polyline_on_sphere(*to_geometry_on_sphere);
-		GPlatesGlobal::Assert<GeometryTypeException>(
-				from_polyline_on_sphere && to_polyline_on_sphere,
-				GPLATES_ASSERTION_SOURCE,
-				"Expected PolylineOnSphere geometries");
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> from_polyline_on_sphere;
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> to_polyline_on_sphere;
+
+		if (polyline_conversion == PolylineConversion::CONVERT_TO_POLYLINE)
+		{
+			from_polyline_on_sphere = GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type(
+					polyline_on_sphere_create_from_geometry(
+							*from_geometry_on_sphere,
+							/*allow_one_point*/true));
+			to_polyline_on_sphere = GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type(
+					polyline_on_sphere_create_from_geometry(
+							*to_geometry_on_sphere,
+							/*allow_one_point*/true));
+		}
+		else
+		{
+			from_polyline_on_sphere = GPlatesAppLogic::GeometryUtils::get_polyline_on_sphere(*from_geometry_on_sphere);
+			to_polyline_on_sphere = GPlatesAppLogic::GeometryUtils::get_polyline_on_sphere(*to_geometry_on_sphere);
+
+			if (polyline_conversion == PolylineConversion::IGNORE_NON_POLYLINE)
+			{
+				// If either or both are not polylines then there is no overlap - return Py_None.
+				if (!from_polyline_on_sphere ||
+					!to_polyline_on_sphere)
+				{
+					return bp::object()/*Py_None*/;
+				}
+			}
+			else // ...raise 'GeometryTypeError' if geometries are not polylines...
+			{
+				// Doing this enables user to try/except in case they don't know the types of the geometries.
+				GPlatesGlobal::Assert<GeometryTypeException>(
+						from_polyline_on_sphere && to_polyline_on_sphere,
+						GPLATES_ASSERTION_SOURCE,
+						"Expected PolylineOnSphere geometries");
+			}
+		}
 
 		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> interpolated_polylines;
 		if (!GPlatesMaths::interpolate(
@@ -1669,22 +1697,24 @@ export_polyline_on_sphere()
 						bp::arg("minimum_latitude_overlap_radians") = 0,
 						bp::arg("maximum_latitude_non_overlap_radians") = 0,
 						bp::arg("maximum_distance_threshold_radians") = boost::optional<double>(),
-						bp::arg("flatten_longitude_overlaps") = GPlatesMaths::FlattenLongitudeOverlaps::NO),
+						bp::arg("flatten_longitude_overlaps") = GPlatesMaths::FlattenLongitudeOverlaps::NO,
+						bp::arg("polyline_conversion") = GPlatesApi::PolylineConversion::RAISE_IF_NON_POLYLINE),
 				"rotation_interpolate(from_polyline, to_polyline, rotation_pole, "
 				"interpolate_resolution_radians, "
 				"[minimum_latitude_overlap_radians=0], "
 				"[maximum_latitude_non_overlap_radians=0], "
 				"[maximum_distance_threshold_radians], "
-				"[flatten_longitude_overlaps=FlattenLongitudeOverlaps.no]) -> list or None\n"
+				"[flatten_longitude_overlaps=FlattenLongitudeOverlaps.no], "
+				"[polyline_conversion=PolylineConversion.raise_if_non_polyline]) -> list or None\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
 				"  [*staticmethod*] Interpolates between two polylines about a rotation pole.\n"
 				"\n"
 				"  :param from_polyline: the polyline to interpolate *from*\n"
-				"  :type from_polyline: :class:`PolylineOnSphere`\n"
+				"  :type from_polyline: :class:`GeometryOnSphere`\n"
 				"  :param to_polyline: the polyline to interpolate *to*\n"
-				"  :type to_polyline: :class:`PolylineOnSphere`\n"
+				"  :type to_polyline: :class:`GeometryOnSphere`\n"
 				"  :param rotation_pole: the rotation axis to interpolate around\n"
 				"  :type rotation_pole: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
@@ -1703,12 +1733,18 @@ export_polyline_on_sphere()
 				"correct the overlap\n"
 				"  :type flatten_longitude_overlaps: *FlattenLongitudeOverlaps.no*, *FlattenLongitudeOverlaps.use_from* "
 				"or *FlattenLongitudeOverlaps.use_to* - defaults to *FlattenLongitudeOverlaps.no*\n"
+				"  :param polyline_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore "
+				"*from_polyline* and *to_polyline* if they are not :class:`PolylineOnSphere` (ignoring equates "
+				"to returning ``None``) - defaults to *PolylineConversion.raise_if_non_polyline*\n"
+				"  :type polyline_conversion: *PolylineConversion.convert_to_polyline*, "
+				"*PolylineConversion.ignore_non_polyline* or *PolylineConversion.raise_if_non_polyline*\n"
 				"  :returns: list of interpolated polylines including modified versions of *from_polyline* and "
-				"*to_polyline*, or ``None`` if polylines do not have overlapping latitude ranges or if maximum distance "
-				"threshold exceeded.\n"
+				"*to_polyline* - or ``None`` if polylines do not have overlapping latitude ranges or if maximum "
+				"distance threshold exceeded or if either polyline is not a :class:`PolylineOnSphere` (and "
+				"*polyline_conversion* is *PolylineConversion.ignore_non_polyline*)\n"
 				"  :rtype: list of :class:`PolylineOnSphere` or None\n"
 				"  :raises: GeometryTypeError if *from_polyline* or *to_polyline* are not of type "
-				":class:`PolylineOnSphere`\n"
+				":class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.raise_if_non_polyline*)\n"
 				"\n"
 				"  The maximum distance between adjacent interpolated polylines is *interpolate_resolution_radians* - "
 				"so this essentially determines the interpolation interval spacing (in radians).\n"

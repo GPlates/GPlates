@@ -237,28 +237,28 @@ PolygonOnSphere._get_points = polygon_on_sphere_get_points
 del polygon_on_sphere_get_points
 
 
-def polyline_on_sphere_join(geometries, distance_threshold_radians, geometry_conversion=PolylineConversion.convert_to_polyline):
-    """join(geometries, distance_threshold_radians, geometry_conversion=PolylineConversion.convert_to_polyline) -> list
+def polyline_on_sphere_join(geometries, distance_threshold_radians, polyline_conversion=PolylineConversion.ignore_non_polyline):
+    """join(geometries, distance_threshold_radians, polyline_conversion=PolylineConversion.ignore_non_polyline) -> list
     Joins geometries that have end points closer than a distance threshold.
     
     :param geometries: the geometries to join
     :type geometries: sequence (eg, ``list`` or ``tuple``) of :class:`GeometryOnSphere`
     :param distance_threshold_radians: closeness distance threshold in radians for joining to occur
     :type distance_threshold_radians: float
-    :param geometry_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore \
+    :param polyline_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore \
     those geometries in *geometries* that are not :class:`PolylineOnSphere` - defaults to \
-    *PolylineConversion.convert_to_polyline*
-    :type geometry_conversion: *PolylineConversion.convert_to_polyline*, *PolylineConversion.ignore_non_polyline* \
+    *PolylineConversion.ignore_non_polyline*
+    :type polyline_conversion: *PolylineConversion.convert_to_polyline*, *PolylineConversion.ignore_non_polyline* \
     or *PolylineConversion.raise_if_non_polyline*
     :returns: a list of joined polylines
     :rtype: list of :class:`PolylineOnSphere`
-    :raises: GeometryTypeError if *geometry_conversion* is *PolylineConversion.raise_if_non_polyline* and \
+    :raises: GeometryTypeError if *polyline_conversion* is *PolylineConversion.raise_if_non_polyline* and \
     any geometry in *geometries* is not a :class:`PolylineOnSphere`
     
     All pairs of geometries are tested for joining and only those closer than *distance_threshold_radians*
     radians are joined. Each joined polyline is further joined if possible until there are no more
     possibilities for joining (or there is a single joined polyline that is a concatenation of all
-    geometries in *geometries* - depending on *geometry_conversion*).
+    geometries in *geometries* - depending on *polyline_conversion*).
     
     When determining if two geometries A and B can be joined the closest pair of end points
     (one from A and one from B) decides which end of each geometry can be joined, provided their
@@ -279,7 +279,7 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians, geometry_con
       # If no polylines join then the returned list will have the three original polylines.
       joined_polylines = pygplates.PolylineOnSphere.join((polyline1, polyline2, polyline3), math.radians(3))
     
-    Other geometries besides :class:`PolylineOnSphere` can be joined if *geometry_conversion* is
+    Other geometries besides :class:`PolylineOnSphere` can be joined if *polyline_conversion* is
     *PolylineConversion.convert_to_polyline*. This is useful for joining nearby points into polylines for example:
     ::
     
@@ -293,16 +293,16 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians, geometry_con
     
     # Start with all original geometries in 'joined_polylines' and
     # then reduce number in list as geometries are joined.
-    if geometry_conversion == PolylineConversion.convert_to_polyline:
+    if polyline_conversion == PolylineConversion.convert_to_polyline:
         # Convert all geometries to PolylineOnSphere's if necessary.
         joined_polylines = [PolylineOnSphere(geometry, allow_one_point=True) for geometry in geometries]
-    elif geometry_conversion == PolylineConversion.ignore_non_polyline:
+    elif polyline_conversion == PolylineConversion.ignore_non_polyline:
         # Only add PolylineOnSphere geometries.
         joined_polylines = []
         for geometry in geometries:
             if isinstance(geometry, PolylineOnSphere):
                 joined_polylines.append(geometry)
-    else: # geometry_conversion == PolylineConversion.raise_if_non_polyline
+    else: # polyline_conversion == PolylineConversion.raise_if_non_polyline
         # Raise error if any geometry is not a PolylineOnSphere.
         for geometry in geometries:
             if not isinstance(geometry, PolylineOnSphere):
