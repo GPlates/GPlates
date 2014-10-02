@@ -692,7 +692,7 @@ namespace GPlatesApi
 {
 	// Create a multi-point from a sequence of points.
 	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere>
-	multi_point_on_sphere_create(
+	multi_point_on_sphere_create_from_points(
 			bp::object points) // Any python sequence (eg, list, tuple).
 	{
 		// Begin/end iterators over the python points sequence.
@@ -718,6 +718,22 @@ namespace GPlatesApi
 				GPlatesMaths::MultiPointOnSphere::create_on_heap(
 						points_vector.begin(),
 						points_vector.end()));
+	}
+
+	// Create a MultiPointOnSphere from a GeometryOnSphere.
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere>
+	multi_point_on_sphere_create_from_geometry(
+			const GPlatesMaths::GeometryOnSphere &geometry)
+	{
+		// With boost 1.42 we get the following compile error...
+		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
+		// ...if we return 'GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type' and rely on
+		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
+		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
+		//
+		// So we avoid it by returning a pointer to 'non-const' MultiPointOnSphere.
+		return GPlatesUtils::const_pointer_cast<GPlatesMaths::MultiPointOnSphere>(
+				GPlatesAppLogic::GeometryUtils::convert_geometry_to_multi_point(geometry));
 	}
 
 	bool
@@ -864,7 +880,7 @@ export_multi_point_on_sphere()
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::multi_point_on_sphere_create,
+						&GPlatesApi::multi_point_on_sphere_create_from_points,
 						bp::default_call_policies(),
 						(bp::arg("points"))),
 				"__init__(points)\n"
@@ -922,6 +938,21 @@ export_multi_point_on_sphere()
 				"    # Lon/lat list of tuples (ie, different latitude/longitude order).\n"
 				"    points = [(lon1, lat1), (lon2, lat2), (lon3, lat3)]\n"
 				"    multi_point = pygplates.MultiPointOnSphere([(lat,lon) for lon, lat in points])\n")
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::multi_point_on_sphere_create_from_geometry,
+						bp::default_call_policies(),
+						(bp::arg("geometry"))),
+				"__init__(geometry)\n"
+				"  Create a multipoint from a :class:`GeometryOnSphere`.\n"
+				"\n"
+				"  :param geometry: The point, multi-point, polyline or polygon geometry to convert from.\n"
+				"  :type geometry: :class:`GeometryOnSphere`\n"
+				"\n"
+				"  To create a MultiPointOnSphere from any geometry type:\n"
+				"  ::\n"
+				"\n"
+				"    multipoint = pygplates.MultiPointOnSphere(geometry)\n")
 		.def("get_centroid",
 				&GPlatesApi::multi_point_on_sphere_get_centroid,
 				"get_centroid() -> PointOnSphere\n"
@@ -964,7 +995,7 @@ namespace GPlatesApi
 	// Create a polyline/polygon from a sequence of points.
 	template <class PolyGeometryOnSphereType>
 	GPlatesUtils::non_null_intrusive_ptr<PolyGeometryOnSphereType>
-	poly_geometry_on_sphere_create(
+	poly_geometry_on_sphere_create_from_points(
 			bp::object points) // Any python sequence (eg, list, tuple).
 	{
 		// Begin/end iterators over the python points sequence.
@@ -991,6 +1022,47 @@ namespace GPlatesApi
 				PolyGeometryOnSphereType::create_on_heap(
 						points_vector.begin(),
 						points_vector.end()));
+	}
+
+	// Create a PolylineOnSphere from a GeometryOnSphere.
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>
+	polyline_on_sphere_create_from_geometry(
+			const GPlatesMaths::GeometryOnSphere &geometry,
+			bool allow_one_point)
+	{
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline =
+				GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(geometry);
+		if (!polyline)
+		{
+			// There were less than two points.
+			// 
+			// Retrieve the point.
+			std::vector<GPlatesMaths::PointOnSphere> geometry_points;
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(geometry, geometry_points);
+
+			// There should be a single point.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					!geometry_points.empty(),
+					GPLATES_ASSERTION_SOURCE);
+
+			// Duplicate the point if caller allows one point, otherwise let
+			// 'PolylineOnSphere::create_on_heap()' throw InvalidPointsForPolylineConstructionError.
+			if (allow_one_point)
+			{
+				geometry_points.push_back(geometry_points.back());
+			}
+
+			polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(geometry_points);
+		}
+
+		// With boost 1.42 we get the following compile error...
+		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
+		// ...if we return 'GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type' and rely on
+		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
+		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
+		//
+		// So we avoid it by returning a pointer to 'non-const' PolylineOnSphere.
+		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolylineOnSphere>(polyline.get());
 	}
 
 	/**
@@ -1289,6 +1361,19 @@ namespace GPlatesApi
 		return GPlatesMaths::PointOnSphere(polyline_on_sphere.get_centroid());
 	}
 
+	/**
+	 * Enumeration to determine how properties are returned.
+	 */
+	namespace PolylineArgument
+	{
+		enum Value
+		{
+			CONVERT_TO_POLYLINE,   // Arguments that are not a PolylineOnSphere are converted to one.
+			IGNORE_NON_POLYLINE,   // Ignore arguments that are not a PolylineOnSphere - may result in no-op.
+			RAISE_IF_NON_POLYLINE  // Raises GeometryTypeError if argument(s) is not a PolylineOnSphere.
+		};
+	};
+
 	bp::object
 	polyline_on_sphere_rotation_interpolate(
 			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &from_geometry_on_sphere,
@@ -1350,6 +1435,12 @@ export_polyline_on_sphere()
 			.value("no", GPlatesMaths::FlattenLongitudeOverlaps::NO)
 			.value("use_from", GPlatesMaths::FlattenLongitudeOverlaps::USE_FROM)
 			.value("use_to", GPlatesMaths::FlattenLongitudeOverlaps::USE_TO);
+
+	// An enumeration nested within 'pygplates (ie, current) module.
+	bp::enum_<GPlatesApi::PolylineArgument::Value>("PolylineArgument")
+			.value("convert_to_polyline", GPlatesApi::PolylineArgument::CONVERT_TO_POLYLINE)
+			.value("ignore_non_polyline", GPlatesApi::PolylineArgument::IGNORE_NON_POLYLINE)
+			.value("raise_if_non_polyline", GPlatesApi::PolylineArgument::RAISE_IF_NON_POLYLINE);
 
 	//
 	// A wrapper around view access to the *points* of a PolylineOnSphere.
@@ -1450,7 +1541,7 @@ export_polyline_on_sphere()
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::poly_geometry_on_sphere_create<GPlatesMaths::PolylineOnSphere>,
+						&GPlatesApi::poly_geometry_on_sphere_create_from_points<GPlatesMaths::PolylineOnSphere>,
 						bp::default_call_policies(),
 						(bp::arg("points"))),
 				"__init__(points)\n"
@@ -1461,7 +1552,9 @@ export_polyline_on_sphere()
 				"tuple (float,float,float) or tuple (float,float)\n"
 				"  :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid\n"
 				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
-				"  :raises: InvalidPointsForPolylineConstructionError if sequence has less than two points\n"
+				"  :raises: InvalidPointsForPolylineConstructionError if sequence has less than two points "
+				"or if any two points (adjacent in the *points* sequence) are antipodal to each other "
+				"(on opposite sides of the globe)\n"
 				"\n"
 				"  **NOTE** that the sequence must contain at least two points in order to be a valid "
 				"polyline, otherwise *InvalidPointsForPolylineConstructionError* will be raised.\n"
@@ -1472,7 +1565,9 @@ export_polyline_on_sphere()
 				"  It is *not* an error for adjacent points in the sequence to be coincident. In this "
 				"case each :class:`GreatCircleArc` between two such adjacent points will have zero length "
 				"(:meth:`GreatCircleArc.is_zero_length` will return ``True``) and will have no "
-				"rotation axis (:meth:`GreatCircleArc.get_rotation_axis` will raise an error).\n"
+				"rotation axis (:meth:`GreatCircleArc.get_rotation_axis` will raise an error). "
+				"However if two such adjacent points are antipodal (on opposite sides of the globe) "
+				"then InvalidPointsForPolylineConstructionError will be raised.\n"
 				"\n"
 				"  The following example shows a few different ways to create a :class:`polyline<PolylineOnSphere>`:\n"
 				"  ::\n"
@@ -1516,6 +1611,56 @@ export_polyline_on_sphere()
 				"    # Lon/lat list of tuples (ie, different latitude/longitude order).\n"
 				"    points = [(lon1, lat1), (lon2, lat2), (lon3, lat3)]\n"
 				"    polyline = pygplates.PolylineOnSphere([(lat,lon) for lon, lat in points])\n")
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::polyline_on_sphere_create_from_geometry,
+						bp::default_call_policies(),
+						(bp::arg("geometry"),
+								bp::arg("allow_one_point") = false)),
+				"__init__(geometry, [allow_one_point=False])\n"
+				"  Create a polyline from a :class:`GeometryOnSphere`.\n"
+				"\n"
+				"  :param geometry: The point, multi-point, polyline or polygon geometry to convert from.\n"
+				"  :type geometry: :class:`GeometryOnSphere`\n"
+				"  :param allow_one_point: Whether *geometry* is allowed to be a :class:`PointOnSphere` or "
+				"a :class:`MultiPointOnSphere` containing only a single point - if allowed then that single "
+				"point is duplicated since a PolylineOnSphere requires at least two points - "
+				"default is ``False``.\n"
+				"  :type allow_one_point: bool\n"
+				"  :raises: InvalidPointsForPolylineConstructionError if *geometry* is a "
+				":class:`PointOnSphere` (and *allow_one_point* is ``False``), or a "
+				":class:`MultiPointOnSphere` with one point (and *allow_one_point* is ``False``), or "
+				"if any two consecutive points in a :class:`MultiPointOnSphere` are antipodal to each "
+				"other (on opposite sides of the globe)\n"
+				"\n"
+				"  If *allow_one_point* is ``False`` then *geometry* must be a :class:`PolylineOnSphere`, "
+				"or a :class:`PolygonOnSphere`, or a :class:`MultiPointOnSphere` containing at least "
+				"two points to avoid raising *InvalidPointsForPolylineConstructionError*. "
+				"If *allow_one_point* is ``True`` then *geometry* can be :class:`PointOnSphere`, "
+				":class:`MultiPointOnSphere`, :class:`PolylineOnSphere` or :class:`PolygonOnSphere`.\n"
+				"\n"
+				"  During creation, a :class:`GreatCircleArc` is created between each adjacent pair of "
+				"geometry points - see :meth:`get_great_circle_arcs_view`.\n"
+				"\n"
+				"  It is *not* an error for adjacent points in a geometry sequence to be coincident. In this "
+				"case each :class:`GreatCircleArc` between two such adjacent points will have zero length "
+				"(:meth:`GreatCircleArc.is_zero_length` will return ``True``) and will have no "
+				"rotation axis (:meth:`GreatCircleArc.get_rotation_axis` will raise an error). "
+				"However if two such adjacent points are antipodal (on opposite sides of the globe) "
+				"then InvalidPointsForPolylineConstructionError will be raised\n"
+				"\n"
+				"  To create a PolylineOnSphere from any geometry type:\n"
+				"  ::\n"
+				"\n"
+				"    polyline = pygplates.PolylineOnSphere(geometry, allow_one_point=True)\n"
+				"\n"
+				"  To create a PolylineOnSphere from any geometry containing at least two points:\n"
+				"  ::\n"
+				"\n"
+				"    try:\n"
+				"        polyline = pygplates.PolylineOnSphere(geometry)\n"
+				"    except pygplates.InvalidPointsForPolylineConstructionError:\n"
+				"        ... # Handle failure to convert 'geometry' to a PolylineOnSphere.\n")
 		.def("rotation_interpolate",
 				&GPlatesApi::polyline_on_sphere_rotation_interpolate,
 				(bp::arg("from_polyline"), bp::arg("to_polyline"),
@@ -1591,9 +1736,9 @@ export_polyline_on_sphere()
 				"            |                          |\n"
 				"             \\                          \\\n"
 				"              \\                          \\\n"
-				"              |                           |\n"
-				"              | /                         |\n"
-				"              |/                          |__\n"
+				"               |                          |\n"
+				"               | /                        |\n"
+				"               |/                         |__\n"
 				"\n"
 				"  The modified (returned) versions of polylines *from_polyline* and *to_polyline* are also "
 				"clipped to have a common overlapping latitude range (with a certain amount of non-overlapping "
@@ -1624,6 +1769,7 @@ export_polyline_on_sphere()
 				"polylines in the top of the diagram and the resultant interpolated polylines in the "
 				"bottom of the diagram:\n"
 				"  ::\n"
+				"\n"
 				"                                 \\\n"
 				"                                  \\\n"
 				"             ______                \\\n"
@@ -1708,7 +1854,7 @@ export_polyline_on_sphere()
 				"\n"
 				"  To interpolate polylines with a spacing of 2 minutes (with a minimum required latitude "
 				"overlap of 1 degree and with an allowed latitude non-overlap of up to 3 degrees and "
-				"with no distance threshold and with longitude overlaps flattened):\n"
+				"with no distance threshold and with no longitude overlaps flattened):\n"
 				"  ::\n"
 				"\n"
 				"    interpolated_polylines = pygplates.PolylineOnSphere.rotation_interpolate(\n"
@@ -1850,6 +1996,50 @@ export_polyline_on_sphere()
 
 namespace GPlatesApi
 {
+	// Create a PolygonOnSphere from a GeometryOnSphere.
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>
+	polygon_on_sphere_create_from_geometry(
+			const GPlatesMaths::GeometryOnSphere &geometry,
+			bool allow_one_or_two_points)
+	{
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon =
+				GPlatesAppLogic::GeometryUtils::convert_geometry_to_polygon(geometry);
+		if (!polygon)
+		{
+			// There were less than three points.
+			// 
+			// Retrieve the points.
+			std::vector<GPlatesMaths::PointOnSphere> geometry_points;
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(geometry, geometry_points);
+
+			// There should be one or two points.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					!geometry_points.empty(),
+					GPLATES_ASSERTION_SOURCE);
+
+			// Duplicate the last point until we have three points if caller allows one or two points,
+			// otherwise let 'PolygonOnSphere::create_on_heap()' throw InvalidPointsForPolygonConstructionError.
+			if (allow_one_or_two_points)
+			{
+				while (geometry_points.size() < 3)
+				{
+					geometry_points.push_back(geometry_points.back());
+				}
+			}
+
+			polygon = GPlatesMaths::PolygonOnSphere::create_on_heap(geometry_points);
+		}
+
+		// With boost 1.42 we get the following compile error...
+		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
+		// ...if we return 'GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type' and rely on
+		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
+		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
+		//
+		// So we avoid it by returning a pointer to 'non-const' PolygonOnSphere.
+		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolygonOnSphere>(polygon.get());
+	}
+
 	bool
 	polygon_on_sphere_is_point_in_polygon(
 			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
@@ -1987,7 +2177,7 @@ export_polygon_on_sphere()
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::poly_geometry_on_sphere_create<GPlatesMaths::PolygonOnSphere>,
+						&GPlatesApi::poly_geometry_on_sphere_create_from_points<GPlatesMaths::PolygonOnSphere>,
 						bp::default_call_policies(),
 						(bp::arg("points"))),
 				"__init__(points)\n"
@@ -1998,7 +2188,9 @@ export_polygon_on_sphere()
 				"tuple (float,float,float) or tuple (float,float)\n"
 				"  :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid\n"
 				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
-				"  :raises: InvalidPointsForPolygonConstructionError if sequence has less than three points\n"
+				"  :raises: InvalidPointsForPolygonConstructionError if sequence has less than three points "
+				"or if any two points (adjacent in the *points* sequence) are antipodal to each other "
+				"(on opposite sides of the globe)\n"
 				"\n"
 				"  **NOTE** that the sequence must contain at least three points in order to be a valid "
 				"polygon, otherwise *InvalidPointsForPolygonConstructionError* will be raised.\n"
@@ -2057,6 +2249,55 @@ export_polygon_on_sphere()
 				"    # Lon/lat list of tuples (ie, different latitude/longitude order).\n"
 				"    points = [(lon1, lat1), (lon2, lat2), (lon3, lat3)]\n"
 				"    polygon = pygplates.PolygonOnSphere([(lat,lon) for lon, lat in points])\n")
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::polygon_on_sphere_create_from_geometry,
+						bp::default_call_policies(),
+						(bp::arg("geometry"),
+								bp::arg("allow_one_or_two_points") = false)),
+				"__init__(geometry, [allow_one_or_two_points=False])\n"
+				"  Create a polygon from a :class:`GeometryOnSphere`.\n"
+				"\n"
+				"  :param geometry: The point, multi-point, polyline or polygon geometry to convert from.\n"
+				"  :type geometry: :class:`GeometryOnSphere`\n"
+				"  :param allow_one_or_two_points: Whether *geometry* is allowed to be a :class:`PointOnSphere` or "
+				"a :class:`MultiPointOnSphere` containing only one or two points - if allowed then one of those "
+				"points is duplicated since a PolygonOnSphere requires at least three points - "
+				"default is ``False``.\n"
+				"  :type allow_one_or_two_points: bool\n"
+				"  :raises: InvalidPointsForPolygonConstructionError if *geometry* is a "
+				":class:`PointOnSphere`, or a :class:`MultiPointOnSphere` with one or two points "
+				"(and *allow_one_or_two_points* is ``False``), or if any two consecutive points in a "
+				":class:`MultiPointOnSphere` are antipodal to each other (on opposite sides of the globe)\n"
+				"\n"
+				"  If *allow_one_or_two_points* is ``False`` then *geometry* must be a :class:`PolygonOnSphere`, "
+				"or a :class:`MultiPointOnSphere` or :class:`PolylineOnSphere` containing at least "
+				"three points to avoid raising *InvalidPointsForPolygonConstructionError*. "
+				"If *allow_one_or_two_points* is ``True`` then *geometry* can be :class:`PointOnSphere`, "
+				":class:`MultiPointOnSphere`, :class:`PolylineOnSphere` or :class:`PolygonOnSphere`.\n"
+				"\n"
+				"  During creation, a :class:`GreatCircleArc` is created between each adjacent pair of "
+				"geometry points - see :meth:`get_great_circle_arcs_view`.\n"
+				"\n"
+				"  It is *not* an error for adjacent points in a geometry sequence to be coincident. In this "
+				"case each :class:`GreatCircleArc` between two such adjacent points will have zero length "
+				"(:meth:`GreatCircleArc.is_zero_length` will return ``True``) and will have no "
+				"rotation axis (:meth:`GreatCircleArc.get_rotation_axis` will raise an error). "
+				"However if two such adjacent points are antipodal (on opposite sides of the globe) "
+				"then InvalidPointsForPolygonConstructionError will be raised\n"
+				"\n"
+				"  To create a PolygonOnSphere from any geometry type:\n"
+				"  ::\n"
+				"\n"
+				"    polygon = pygplates.PolygonOnSphere(geometry, allow_one_or_two_points=True)\n"
+				"\n"
+				"  To create a PolygonOnSphere from any geometry containing at least three points:\n"
+				"  ::\n"
+				"\n"
+				"    try:\n"
+				"        polygon = pygplates.PolygonOnSphere(geometry)\n"
+				"    except pygplates.InvalidPointsForPolygonConstructionError:\n"
+				"        ... # Handle failure to convert 'geometry' to a PolygonOnSphere.\n")
 		.def("get_points_view",
 				&GPlatesApi::poly_geometry_on_sphere_get_points_view<GPlatesMaths::PolygonOnSphere>,
 				"get_points_view() -> PolygonOnSpherePointsView\n"

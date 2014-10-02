@@ -139,6 +139,18 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Converts the specified geometry to a @a PolylineOnSphere if it is a polygon or multipoint
+		 * (or already a polyline) by treating the geometry points as a linear list of polyline points.
+		 *
+		 * Returns boost::none if the specified geometry has less than two points
+		 * (ie, not enough to form a polyline) or the specified geometry is a point geometry.
+		 */
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
+		convert_geometry_to_polyline(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
+
+		/**
 		 * Converts the specified geometry to a @a PolygonOnSphere if it is a polyline or multipoint
 		 * (or already a polygon) by treating the geometry points as a linear list of polygon points.
 		 *

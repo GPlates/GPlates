@@ -484,6 +484,65 @@ namespace
 
 
 	/**
+	 * Uses the points in a derived @a GeometryOnSphere object to create a polyline.
+	 */
+	class ConvertGeometryToPolyline :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		const boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &
+		get_polyline() const
+		{
+			return d_polyline;
+		}
+
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			// Cannot form a polyline from a point.
+		}
+
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			if (multi_point_on_sphere->number_of_points() >= 2)
+			{
+				d_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(
+						multi_point_on_sphere->begin(),
+						multi_point_on_sphere->end());
+			}
+		}
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			// A polygon has at least three points - enough for a polyline.
+			d_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(
+					polygon_on_sphere->vertex_begin(),
+					polygon_on_sphere->vertex_end());
+		}
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			d_polyline = polyline_on_sphere;
+		}
+
+	private:
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> d_polyline;
+	};
+
+
+	/**
 	 * Uses the points in a derived @a GeometryOnSphere object to create a polygon.
 	 */
 	class ConvertGeometryToPolygon :
@@ -864,6 +923,18 @@ GPlatesAppLogic::GeometryUtils::convert_geometry_to_multi_point(
 	geometry_on_sphere.accept_visitor(visitor);
 
 	return visitor.get_multi_point();
+}
+
+
+boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
+GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	ConvertGeometryToPolyline visitor;
+
+	geometry_on_sphere.accept_visitor(visitor);
+
+	return visitor.get_polyline();
 }
 
 

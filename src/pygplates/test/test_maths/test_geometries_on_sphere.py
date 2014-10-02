@@ -183,6 +183,23 @@ class MultiPointOnSphereCase(unittest.TestCase):
             multi_point = pygplates.MultiPointOnSphere(xyz_array)
             self.assertTrue(isinstance(multi_point, pygplates.MultiPointOnSphere))
     
+    def test_convert_geometry(self):
+        # Convert point to multipoint.
+        self.assertTrue(pygplates.MultiPointOnSphere(pygplates.PointOnSphere(1, 0, 0))
+                == pygplates.MultiPointOnSphere([pygplates.PointOnSphere(1, 0, 0)]))
+        # Convert multipoint to multipoint.
+        self.assertTrue(
+                pygplates.MultiPointOnSphere(pygplates.MultiPointOnSphere(pygplates.PointOnSphere(1, 0, 0)))
+                == pygplates.MultiPointOnSphere([pygplates.PointOnSphere(1, 0, 0)]))
+        # Convert polyline to multipoint.
+        self.assertTrue(
+                pygplates.MultiPointOnSphere(pygplates.PolylineOnSphere([(0,0), (10,0)]))
+                == pygplates.MultiPointOnSphere([(0,0), (10,0)]))
+        # Convert polygon to multipoint.
+        self.assertTrue(
+                pygplates.MultiPointOnSphere(pygplates.PolygonOnSphere([(0,0), (10,0), (20,0)]))
+                == pygplates.MultiPointOnSphere([(0,0), (10,0), (20,0)]))
+    
     def test_get_points(self):
         point_sequence = self.multi_point.get_points()
         self.assertEquals(self.multi_point, pygplates.MultiPointOnSphere(point_sequence))
@@ -262,6 +279,35 @@ class PolylineOnSphereCase(unittest.TestCase):
                 list(pygplates.PolylineOnSphere(pygplates.PolygonOnSphere(self.points)).get_points()),
                 self.points)
     
+    def test_convert_geometry(self):
+        # Need at least two points.
+        self.assertRaises(
+                pygplates.InvalidPointsForPolylineConstructionError,
+                pygplates.PolylineOnSphere,
+                pygplates.PointOnSphere(1, 0, 0))
+        self.assertRaises(
+                pygplates.InvalidPointsForPolylineConstructionError,
+                pygplates.PolylineOnSphere,
+                pygplates.MultiPointOnSphere([pygplates.PointOnSphere(1, 0, 0)]))
+        # Unless allow one point - gets duplicated.
+        self.assertTrue(pygplates.PolylineOnSphere(pygplates.PointOnSphere(1, 0, 0), allow_one_point=True)
+                == pygplates.PolylineOnSphere([pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0)]))
+        self.assertTrue(
+                pygplates.PolylineOnSphere(pygplates.MultiPointOnSphere([pygplates.PointOnSphere(1, 0, 0)]), allow_one_point=True)
+                == pygplates.PolylineOnSphere([pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0)]))
+        
+        # Convert polyline to polyline.
+        self.assertTrue(
+                pygplates.PolylineOnSphere(pygplates.PointOnSphere(1, 0, 0), allow_one_point=True)
+                == pygplates.PolylineOnSphere(
+                    pygplates.PolylineOnSphere(pygplates.PointOnSphere(1, 0, 0), allow_one_point=True)))
+        # Convert polygon to polyline.
+        self.assertTrue(
+                pygplates.PolylineOnSphere(
+                        [pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0)])
+                == pygplates.PolylineOnSphere(
+                    pygplates.PolygonOnSphere(pygplates.PointOnSphere(1, 0, 0), allow_one_or_two_points=True)))
+    
     def test_get_points(self):
         point_sequence = self.polyline.get_points()
         self.assertEquals(self.polyline, pygplates.PolylineOnSphere(point_sequence))
@@ -285,9 +331,9 @@ class PolylineOnSphereCase(unittest.TestCase):
                 pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)])],
                 math.radians(0.1))
         self.assertTrue(len(joined_polylines) == 2)
-        # Anything not joined retains its original geometry type.
-        self.assertTrue(isinstance(joined_polylines[0], pygplates.MultiPointOnSphere))
-        self.assertTrue(isinstance(joined_polylines[1], pygplates.PolygonOnSphere))
+        # Anything not joined should get converted to PolylineOnSphere.
+        self.assertTrue(isinstance(joined_polylines[0], pygplates.PolylineOnSphere))
+        self.assertTrue(isinstance(joined_polylines[1], pygplates.PolylineOnSphere))
         
         polyline1 = pygplates.PolylineOnSphere([(0,0), (0,10)])
         polyline2 = pygplates.PolylineOnSphere([(20,8), (0,8)])
@@ -507,6 +553,37 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertEquals(
                 list(pygplates.PolygonOnSphere(pygplates.PolygonOnSphere(self.points)).get_points()),
                 self.points)
+    
+    def test_convert_geometry(self):
+        # Need at least three points.
+        self.assertRaises(
+                pygplates.InvalidPointsForPolygonConstructionError,
+                pygplates.PolygonOnSphere,
+                pygplates.PointOnSphere(1, 0, 0))
+        self.assertRaises(
+                pygplates.InvalidPointsForPolygonConstructionError,
+                pygplates.PolygonOnSphere,
+                pygplates.MultiPointOnSphere([pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(0, 1, 0)]))
+        self.assertRaises(
+                pygplates.InvalidPointsForPolygonConstructionError,
+                pygplates.PolygonOnSphere,
+                pygplates.PolylineOnSphere([pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(0, 1, 0)]))
+        # Unless allow one or two points - gets duplicated.
+        self.assertTrue(
+                pygplates.PolygonOnSphere(pygplates.PointOnSphere((0,0)), allow_one_or_two_points=True)
+                == pygplates.PolygonOnSphere([(0,0), (0,0), (0,0)]))
+        self.assertTrue(
+                pygplates.PolygonOnSphere(pygplates.MultiPointOnSphere([(0,0)]), allow_one_or_two_points=True)
+                == pygplates.PolygonOnSphere([(0,0), (0,0), (0,0)]))
+        self.assertTrue(
+                pygplates.PolygonOnSphere(pygplates.PolylineOnSphere([(0,0), (0,0)]), allow_one_or_two_points=True)
+                == pygplates.PolygonOnSphere([(0,0), (0,0), (0,0)]))
+        
+        # Convert polygon to polygon.
+        self.assertTrue(
+                pygplates.PolygonOnSphere(pygplates.PointOnSphere(1, 0, 0), allow_one_or_two_points=True)
+                == pygplates.PolygonOnSphere(
+                    pygplates.PolygonOnSphere(pygplates.PointOnSphere(1, 0, 0), allow_one_or_two_points=True)))
     
     def test_get_points(self):
         point_sequence = self.polygon.get_points()
