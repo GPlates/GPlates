@@ -313,13 +313,12 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians, polyline_con
     # Do N^2 search over pairs of geometries to test for joining.
     #
     
-    # Iterate over all geometries except last one.
-    # Using len() since some geometries are removed during iteration.
-    # Note: If there are fewer than two geometries then the loop is not entered.
+    # Iterate over all polylines except last one.
+    # Using len() since some polylines are removed during iteration.
+    # Note: If there are fewer than two polylines then the loop is not entered.
     polyline1_index = 0
     while polyline1_index < len(joined_polylines) - 1:
-        # Make sure works with any GeometryOnSphere type by calling 'get_points()'.
-        polyline1 = joined_polylines[polyline1_index].get_points()
+        polyline1 = joined_polylines[polyline1_index]
         
         min_dist = distance_threshold_radians
         join_polylines = None
@@ -327,8 +326,7 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians, polyline_con
         # Iterate over the remaining polylines (after 'polyline1') and find the closest
         # polyline (if any less than threshold).
         for polyline2_index in range(polyline1_index + 1, len(joined_polylines)):
-            # Make sure works with any GeometryOnSphere type by calling 'get_points()'.
-            polyline2 = joined_polylines[polyline2_index].get_points()
+            polyline2 = joined_polylines[polyline2_index]
             
             # Calculate distance between four combinations of polyline1/polyline2 end points.
             dist00 = GeometryOnSphere.distance(polyline1[0], polyline2[0])

@@ -418,6 +418,18 @@ class PolylineOnSphereCase(unittest.TestCase):
                 math.radians(11),
                 pygplates.FlattenLongitudeOverlaps.no))
         
+        # Using a list of interpolate ratios.
+        self.assertTrue(len(pygplates.PolylineOnSphere.rotation_interpolate(
+                pygplates.PolylineOnSphere([(10,0), (-10,0)]),
+                pygplates.PolylineOnSphere([(20,10), (0,10)]),
+                pygplates.PointOnSphere(90,0),
+                [0.1, 0.5, 0.8])) == 3)
+        self.assertTrue(len(pygplates.PolylineOnSphere.rotation_interpolate(
+                pygplates.PolylineOnSphere([(10,0), (20,0)]),
+                pygplates.PolylineOnSphere([(5,10), (15,10)]),
+                pygplates.PointOnSphere(90,0),
+                [0])) == 1)
+        
         self.assertRaises(pygplates.GeometryTypeError,
                 pygplates.PolylineOnSphere.rotation_interpolate,
                 pygplates.MultiPointOnSphere([(10,0), (-10,0)]),

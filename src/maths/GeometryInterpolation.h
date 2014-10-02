@@ -100,6 +100,29 @@ namespace GPlatesMaths
 			const double &maximum_latitude_non_overlap_radians = 0,
 			boost::optional<double> max_distance_threshold_radians = boost::none,
 			FlattenLongitudeOverlaps::Value flatten_longitude_overlaps = FlattenLongitudeOverlaps::NO);
+
+	/**
+	 * Interpolates between two polylines along small circle arcs emanating from @a rotation_axis.
+	 *
+	 * This is the same as the other rotation @a interpolate overload except it accepts a sequence
+	 * of interpolation factors in @a interpolate_ratios instead of a distance interval.
+	 *
+	 * Each interpolate factor in @a interpolate_ratios must be in the range [0,1].
+	 * If @a interpolate_ratios is empty then true or false is still returned but there will be no
+	 * polylines returned - this can be used as a way to test if @a from_polyline and @a to_polyline
+	 * can possibly be interpolated between.
+	 */
+	bool
+	interpolate(
+			std::vector<PolylineOnSphere::non_null_ptr_to_const_type> &interpolated_polylines,
+			const PolylineOnSphere::non_null_ptr_to_const_type &from_polyline,
+			const PolylineOnSphere::non_null_ptr_to_const_type &to_polyline,
+			const UnitVector3D &rotation_axis,
+			const std::vector<double> &interpolate_ratios,
+			const double &minimum_latitude_overlap_radians = 0,
+			const double &maximum_latitude_non_overlap_radians = 0,
+			boost::optional<double> max_distance_threshold_radians = boost::none,
+			FlattenLongitudeOverlaps::Value flatten_longitude_overlaps = FlattenLongitudeOverlaps::NO);
 }
 
 #endif // GPLATES_MATHS_GEOMETRYINTERPOLATION_H

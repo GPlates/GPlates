@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <utility>
 #include <vector>
 #include <boost/cast.hpp>
 #include <boost/foreach.hpp>
@@ -1381,7 +1382,7 @@ namespace GPlatesApi
 			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
 			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
 			const GPlatesMaths::PointOnSphere &rotation_axis,
-			const double &interpolate_resolution_radians,
+			bp::object interpolate_object,
 			const double &minimum_latitude_overlap_radians,
 			const double &maximum_latitude_non_overlap_radians,
 			boost::optional<double> maximum_distance_threshold_radians,
@@ -1427,18 +1428,64 @@ namespace GPlatesApi
 		}
 
 		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> interpolated_polylines;
-		if (!GPlatesMaths::interpolate(
-				interpolated_polylines,
-				from_polyline_on_sphere.get(),
-				to_polyline_on_sphere.get(),
-				rotation_axis.position_vector(),
-				interpolate_resolution_radians,
-				minimum_latitude_overlap_radians,
-				maximum_latitude_non_overlap_radians,
-				maximum_distance_threshold_radians,
-				flatten_longitude_overlaps))
+
+		// Attempt to extract a single interpolate interval parameter.
+		bp::extract<double> extract_interpolate_resolution_radians(interpolate_object);
+		if (extract_interpolate_resolution_radians.check())
 		{
-			return bp::object()/*Py_None*/;
+			const double interpolate_resolution_radians =
+					extract_interpolate_resolution_radians();
+
+			if (!GPlatesMaths::interpolate(
+					interpolated_polylines,
+					from_polyline_on_sphere.get(),
+					to_polyline_on_sphere.get(),
+					rotation_axis.position_vector(),
+					interpolate_resolution_radians,
+					minimum_latitude_overlap_radians,
+					maximum_latitude_non_overlap_radians,
+					maximum_distance_threshold_radians,
+					flatten_longitude_overlaps))
+			{
+				return bp::object()/*Py_None*/;
+			}
+		}
+		else
+		{
+			// Attempt to extract a sequence of interpolate ratios.
+			std::vector<double> interpolate_ratios;
+			try
+			{
+				bp::stl_input_iterator<double>
+						interpolate_ratio_seq_begin(interpolate_object),
+						interpolate_ratio_seq_end;
+
+				// Copy into a sequence.
+				std::copy(interpolate_ratio_seq_begin, interpolate_ratio_seq_end, std::back_inserter(interpolate_ratios));
+			}
+			catch (const boost::python::error_already_set &)
+			{
+				PyErr_Clear();
+
+				PyErr_SetString(PyExc_TypeError,
+						"Expected an interpolate resolution (float) or "
+						"a sequence of interpolate ratios (eg, list or tuple of float)");
+				bp::throw_error_already_set();
+			}
+
+			if (!GPlatesMaths::interpolate(
+					interpolated_polylines,
+					from_polyline_on_sphere.get(),
+					to_polyline_on_sphere.get(),
+					rotation_axis.position_vector(),
+					interpolate_ratios,
+					minimum_latitude_overlap_radians,
+					maximum_latitude_non_overlap_radians,
+					maximum_distance_threshold_radians,
+					flatten_longitude_overlaps))
+			{
+				return bp::object()/*Py_None*/;
+			}
 		}
 
 		bp::list interpolated_polylines_list;
@@ -1693,14 +1740,14 @@ export_polyline_on_sphere()
 				&GPlatesApi::polyline_on_sphere_rotation_interpolate,
 				(bp::arg("from_polyline"), bp::arg("to_polyline"),
 						bp::arg("rotation_pole"),
-						bp::arg("interpolate_resolution_radians"),
+						bp::arg("interpolate"),
 						bp::arg("minimum_latitude_overlap_radians") = 0,
 						bp::arg("maximum_latitude_non_overlap_radians") = 0,
 						bp::arg("maximum_distance_threshold_radians") = boost::optional<double>(),
 						bp::arg("flatten_longitude_overlaps") = GPlatesMaths::FlattenLongitudeOverlaps::NO,
 						bp::arg("polyline_conversion") = GPlatesApi::PolylineConversion::RAISE_IF_NON_POLYLINE),
 				"rotation_interpolate(from_polyline, to_polyline, rotation_pole, "
-				"interpolate_resolution_radians, "
+				"interpolate, "
 				"[minimum_latitude_overlap_radians=0], "
 				"[maximum_latitude_non_overlap_radians=0], "
 				"[maximum_distance_threshold_radians], "
@@ -1718,9 +1765,12 @@ export_polyline_on_sphere()
 				"  :param rotation_pole: the rotation axis to interpolate around\n"
 				"  :type rotation_pole: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n"
-				"  :param interpolate_resolution_radians: maximum distance (in radians) between "
-				"adjacent interpolated polylines\n"
-				"  :type interpolate_resolution_radians: float\n"
+				"  :param interpolate: if a single number then *interpolate* is the interval spacing, in radians, "
+				"between *from_polyline* and *to_polyline* at which to generate interpolated polylines - "
+				"otherwise if a sequence of numbers (eg, list or tuple) then *interpolate* is the sequence of "
+				"interpolate ratios, in the range [0,1], at which to generate interpolated polylines "
+				"(with 0 meaning *from_polyline* and 1 meaning *to_polyline*)\n"
+				"  :type interpolate: float, or list of float\n"
 				"  :param minimum_latitude_overlap_radians: required amount of latitude overlap of polylines\n"
 				"  :type minimum_latitude_overlap_radians: float - defaults to zero\n"
 				"  :param maximum_latitude_non_overlap_radians: allowed non-overlapping latitude region\n"
@@ -1738,25 +1788,30 @@ export_polyline_on_sphere()
 				"to returning ``None``) - defaults to *PolylineConversion.raise_if_non_polyline*\n"
 				"  :type polyline_conversion: *PolylineConversion.convert_to_polyline*, "
 				"*PolylineConversion.ignore_non_polyline* or *PolylineConversion.raise_if_non_polyline*\n"
-				"  :returns: list of interpolated polylines including modified versions of *from_polyline* and "
-				"*to_polyline* - or ``None`` if polylines do not have overlapping latitude ranges or if maximum "
-				"distance threshold exceeded or if either polyline is not a :class:`PolylineOnSphere` (and "
-				"*polyline_conversion* is *PolylineConversion.ignore_non_polyline*)\n"
+				"  :returns: list of interpolated polylines - or ``None`` if polylines do not have overlapping "
+				"latitude ranges or if maximum distance threshold exceeded or if either polyline is not a "
+				":class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.ignore_non_polyline*)\n"
 				"  :rtype: list of :class:`PolylineOnSphere` or None\n"
 				"  :raises: GeometryTypeError if *from_polyline* or *to_polyline* are not of type "
 				":class:`PolylineOnSphere` (and *polyline_conversion* is *PolylineConversion.raise_if_non_polyline*)\n"
 				"\n"
-				"  The maximum distance between adjacent interpolated polylines is *interpolate_resolution_radians* - "
-				"so this essentially determines the interpolation interval spacing (in radians).\n"
+				"  If *interpolate* is a single number then it is the distance interval spacing, in radians, "
+				"between *from_polyline* and *to_polyline* at which to generate interpolated polylines. "
+				"Also modified versions of *from_polyline* and *to_polyline* are returned along with the "
+				"interpolated polylines.\n"
 				"\n"
-				"  Modified versions of the original polylines *from_polyline* and *to_polyline* are returned "
-				"along with the interpolated polylines. The points in the returned polylines are ordered from "
-				"closest (latitude) to *rotation_pole* to furthest (which may be different than the order in "
-				"the original polylines). The modified (returned) versions of polylines *from_polyline* and "
-				"*to_polyline*, and hence all interpolated polylines, have monotonically decreasing latitudes "
-				"(in North pole reference frame of *rotation_pole*) starting with the northmost polyline end-point "
-				"and (monotonically) decreasing southward such that subsequent points have latitudes lower than, "
-				"or equal to, all previous points as shown in the following diagram:\n"
+				"  If *interpolate* is a sequence of numbers (eg, list or tuple) then it is the sequence of "
+				"interpolate ratios, in the range [0,1], at which to generate interpolated polylines "
+				"(with 0 meaning *from_polyline* and 1 meaning *to_polyline* and values between meaning "
+				"interpolated polylines).\n"
+				"\n"
+				"  The points in the returned polylines are ordered from closest (latitude) to *rotation_pole* "
+				"to furthest (which may be different than the order in the original polylines). The modified "
+				"versions of polylines *from_polyline* and *to_polyline*, and hence all interpolated polylines, "
+				"have monotonically decreasing latitudes (in North pole reference frame of *rotation_pole*) "
+				"starting with the northmost polyline end-point and (monotonically) decreasing southward such "
+				"that subsequent points have latitudes lower than, or equal to, all previous points as shown "
+				"in the following diagram:\n"
 				"  ::\n"
 				"\n"
 				"     /|\n"
@@ -1776,8 +1831,8 @@ export_polyline_on_sphere()
 				"               | /                        |\n"
 				"               |/                         |__\n"
 				"\n"
-				"  The modified (returned) versions of polylines *from_polyline* and *to_polyline* are also "
-				"clipped to have a common overlapping latitude range (with a certain amount of non-overlapping "
+				"  The modified versions of polylines *from_polyline* and *to_polyline* are also clipped "
+				"to have a common overlapping latitude range (with a certain amount of non-overlapping "
 				"allowed if *max_latitude_non_overlap_radians* is non-zero).\n"
 				"\n"
 				"  *minimum_latitude_overlap_radians* specifies the amount that *from_polyline* and "
@@ -1895,7 +1950,27 @@ export_polyline_on_sphere()
 				"\n"
 				"    interpolated_polylines = pygplates.PolylineOnSphere.rotation_interpolate(\n"
 				"        from_polyline, to_polyline, rotation_pole, math.radians(2.0/60), "
-				"math.radians(1), math.radians(3))\n")
+				"math.radians(1), math.radians(3))\n"
+				"\n"
+				"  To interpolate polylines at interpolate ratios between 0 and 1 at 0.1 intervals "
+				"(with a minimum required latitude overlap of 1 degree and with an allowed latitude "
+				"non-overlap of up to 3 degrees and with no distance threshold and with no longitude "
+				"overlaps flattened):\n"
+				"  ::\n"
+				"\n"
+				"    interpolated_polylines = pygplates.PolylineOnSphere.rotation_interpolate(\n"
+				"        from_polyline, to_polyline, rotation_pole, range(0, 1.01, 0.1), "
+				"math.radians(1), math.radians(3))\n"
+				"\n"
+				"  An easy way to test whether two polylines can possibly be interpolated without "
+				"actually interpolating anything is to specify an empty list of interpolate ratios:\n"
+				"  ::\n"
+				"\n"
+				"    if pygplates.PolylineOnSphere.rotation_interpolate(\n"
+				"            from_polyline, to_polyline, rotation_pole, [], ...) is not None:\n"
+				"        # 'from_polyline' and 'to_polyline' can be interpolated (ie, they overlap\n"
+				"        # and don't exceed the maximum distance threshold)\n"
+				"        ...\n")
 		.staticmethod("rotation_interpolate")
 		.def("get_points_view",
 				&GPlatesApi::poly_geometry_on_sphere_get_points_view<GPlatesMaths::PolylineOnSphere>,
