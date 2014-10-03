@@ -1691,8 +1691,8 @@ export_polyline_on_sphere()
 						&GPlatesApi::polyline_on_sphere_create_from_geometry,
 						bp::default_call_policies(),
 						(bp::arg("geometry"),
-								bp::arg("allow_one_point") = false)),
-				"__init__(geometry, [allow_one_point=False])\n"
+								bp::arg("allow_one_point") = true)),
+				"__init__(geometry, [allow_one_point=True])\n"
 				"  Create a polyline from a :class:`GeometryOnSphere`.\n"
 				"\n"
 				"  :param geometry: The point, multi-point, polyline or polygon geometry to convert from.\n"
@@ -1700,7 +1700,7 @@ export_polyline_on_sphere()
 				"  :param allow_one_point: Whether *geometry* is allowed to be a :class:`PointOnSphere` or "
 				"a :class:`MultiPointOnSphere` containing only a single point - if allowed then that single "
 				"point is duplicated since a PolylineOnSphere requires at least two points - "
-				"default is ``False``.\n"
+				"default is ``True``.\n"
 				"  :type allow_one_point: bool\n"
 				"  :raises: InvalidPointsForPolylineConstructionError if *geometry* is a "
 				":class:`PointOnSphere` (and *allow_one_point* is ``False``), or a "
@@ -1708,11 +1708,11 @@ export_polyline_on_sphere()
 				"if any two consecutive points in a :class:`MultiPointOnSphere` are antipodal to each "
 				"other (on opposite sides of the globe)\n"
 				"\n"
-				"  If *allow_one_point* is ``False`` then *geometry* must be a :class:`PolylineOnSphere`, "
+				"  If *allow_one_point* is ``True`` then *geometry* can be :class:`PointOnSphere`, "
+				":class:`MultiPointOnSphere`, :class:`PolylineOnSphere` or :class:`PolygonOnSphere`. "
+				"However if *allow_one_point* is ``False`` then *geometry* must be a :class:`PolylineOnSphere`, "
 				"or a :class:`PolygonOnSphere`, or a :class:`MultiPointOnSphere` containing at least "
-				"two points to avoid raising *InvalidPointsForPolylineConstructionError*. "
-				"If *allow_one_point* is ``True`` then *geometry* can be :class:`PointOnSphere`, "
-				":class:`MultiPointOnSphere`, :class:`PolylineOnSphere` or :class:`PolygonOnSphere`.\n"
+				"two points to avoid raising *InvalidPointsForPolylineConstructionError*.\n"
 				"\n"
 				"  During creation, a :class:`GreatCircleArc` is created between each adjacent pair of "
 				"geometry points - see :meth:`get_great_circle_arcs_view`.\n"
@@ -1727,13 +1727,13 @@ export_polyline_on_sphere()
 				"  To create a PolylineOnSphere from any geometry type:\n"
 				"  ::\n"
 				"\n"
-				"    polyline = pygplates.PolylineOnSphere(geometry, allow_one_point=True)\n"
+				"    polyline = pygplates.PolylineOnSphere(geometry)\n"
 				"\n"
 				"  To create a PolylineOnSphere from any geometry containing at least two points:\n"
 				"  ::\n"
 				"\n"
 				"    try:\n"
-				"        polyline = pygplates.PolylineOnSphere(geometry)\n"
+				"        polyline = pygplates.PolylineOnSphere(geometry, allow_one_point=False)\n"
 				"    except pygplates.InvalidPointsForPolylineConstructionError:\n"
 				"        ... # Handle failure to convert 'geometry' to a PolylineOnSphere.\n")
 		.def("rotation_interpolate",
@@ -1745,14 +1745,14 @@ export_polyline_on_sphere()
 						bp::arg("maximum_latitude_non_overlap_radians") = 0,
 						bp::arg("maximum_distance_threshold_radians") = boost::optional<double>(),
 						bp::arg("flatten_longitude_overlaps") = GPlatesMaths::FlattenLongitudeOverlaps::NO,
-						bp::arg("polyline_conversion") = GPlatesApi::PolylineConversion::RAISE_IF_NON_POLYLINE),
+						bp::arg("polyline_conversion") = GPlatesApi::PolylineConversion::IGNORE_NON_POLYLINE),
 				"rotation_interpolate(from_polyline, to_polyline, rotation_pole, "
 				"interpolate, "
 				"[minimum_latitude_overlap_radians=0], "
 				"[maximum_latitude_non_overlap_radians=0], "
 				"[maximum_distance_threshold_radians], "
 				"[flatten_longitude_overlaps=FlattenLongitudeOverlaps.no], "
-				"[polyline_conversion=PolylineConversion.raise_if_non_polyline]) -> list or None\n"
+				"[polyline_conversion=PolylineConversion.ignore_non_polyline]) -> list or None\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -1785,7 +1785,7 @@ export_polyline_on_sphere()
 				"or *FlattenLongitudeOverlaps.use_to* - defaults to *FlattenLongitudeOverlaps.no*\n"
 				"  :param polyline_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore "
 				"*from_polyline* and *to_polyline* if they are not :class:`PolylineOnSphere` (ignoring equates "
-				"to returning ``None``) - defaults to *PolylineConversion.raise_if_non_polyline*\n"
+				"to returning ``None``) - defaults to *PolylineConversion.ignore_non_polyline*\n"
 				"  :type polyline_conversion: *PolylineConversion.convert_to_polyline*, "
 				"*PolylineConversion.ignore_non_polyline* or *PolylineConversion.raise_if_non_polyline*\n"
 				"  :returns: list of interpolated polylines - or ``None`` if polylines do not have overlapping "
@@ -2365,8 +2365,8 @@ export_polygon_on_sphere()
 						&GPlatesApi::polygon_on_sphere_create_from_geometry,
 						bp::default_call_policies(),
 						(bp::arg("geometry"),
-								bp::arg("allow_one_or_two_points") = false)),
-				"__init__(geometry, [allow_one_or_two_points=False])\n"
+								bp::arg("allow_one_or_two_points") = true)),
+				"__init__(geometry, [allow_one_or_two_points=True])\n"
 				"  Create a polygon from a :class:`GeometryOnSphere`.\n"
 				"\n"
 				"  :param geometry: The point, multi-point, polyline or polygon geometry to convert from.\n"
@@ -2374,18 +2374,18 @@ export_polygon_on_sphere()
 				"  :param allow_one_or_two_points: Whether *geometry* is allowed to be a :class:`PointOnSphere` or "
 				"a :class:`MultiPointOnSphere` containing only one or two points - if allowed then one of those "
 				"points is duplicated since a PolygonOnSphere requires at least three points - "
-				"default is ``False``.\n"
+				"default is ``True``.\n"
 				"  :type allow_one_or_two_points: bool\n"
 				"  :raises: InvalidPointsForPolygonConstructionError if *geometry* is a "
 				":class:`PointOnSphere`, or a :class:`MultiPointOnSphere` with one or two points "
 				"(and *allow_one_or_two_points* is ``False``), or if any two consecutive points in a "
 				":class:`MultiPointOnSphere` are antipodal to each other (on opposite sides of the globe)\n"
 				"\n"
-				"  If *allow_one_or_two_points* is ``False`` then *geometry* must be a :class:`PolygonOnSphere`, "
+				"  If *allow_one_or_two_points* is ``True`` then *geometry* can be :class:`PointOnSphere`, "
+				":class:`MultiPointOnSphere`, :class:`PolylineOnSphere` or :class:`PolygonOnSphere`. "
+				"However if *allow_one_or_two_points* is ``False`` then *geometry* must be a :class:`PolygonOnSphere`, "
 				"or a :class:`MultiPointOnSphere` or :class:`PolylineOnSphere` containing at least "
-				"three points to avoid raising *InvalidPointsForPolygonConstructionError*. "
-				"If *allow_one_or_two_points* is ``True`` then *geometry* can be :class:`PointOnSphere`, "
-				":class:`MultiPointOnSphere`, :class:`PolylineOnSphere` or :class:`PolygonOnSphere`.\n"
+				"three points to avoid raising *InvalidPointsForPolygonConstructionError*.\n"
 				"\n"
 				"  During creation, a :class:`GreatCircleArc` is created between each adjacent pair of "
 				"geometry points - see :meth:`get_great_circle_arcs_view`.\n"
@@ -2400,13 +2400,13 @@ export_polygon_on_sphere()
 				"  To create a PolygonOnSphere from any geometry type:\n"
 				"  ::\n"
 				"\n"
-				"    polygon = pygplates.PolygonOnSphere(geometry, allow_one_or_two_points=True)\n"
+				"    polygon = pygplates.PolygonOnSphere(geometry)\n"
 				"\n"
 				"  To create a PolygonOnSphere from any geometry containing at least three points:\n"
 				"  ::\n"
 				"\n"
 				"    try:\n"
-				"        polygon = pygplates.PolygonOnSphere(geometry)\n"
+				"        polygon = pygplates.PolygonOnSphere(geometry, allow_one_or_two_points=False)\n"
 				"    except pygplates.InvalidPointsForPolygonConstructionError:\n"
 				"        ... # Handle failure to convert 'geometry' to a PolygonOnSphere.\n")
 		.def("get_points_view",
