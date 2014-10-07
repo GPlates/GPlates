@@ -28,8 +28,11 @@
 
 #include <iterator>  // std::distance, std::advance
 #include <utility>
+#include <boost/iterator/iterator_traits.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+#include <boost/static_assert.hpp>
+#include <boost/type_traits/is_same.hpp>
 
 #include "Centroid.h"
 #include "GeometryOnSphere.h"
@@ -52,8 +55,20 @@ namespace GPlatesMaths
 	 *
 	 * @a GreatCircleArcConstIteratorType should be iterable over @a GreatCircleArc.
 	 * Typically this is 'PolylineOnSphere::const_iterator' or 'PolygonOnSphere::const_iterator'.
+	 *
+	 * Note that GreatCircleArcConstIteratorType should ideally be a random-access iterator in all
+	 * cases, otherwise construction and querying will be slow (due to inability of std::advance()
+	 * to efficiently skip over large numbers of great circle arcs).
+	 *
+	 * If @a RequireRandomAccessIterator is true (the default) then @a GreatCircleArcConstIteratorType
+	 * must be a random-access iterator otherwise the code will not compile.
+	 * This is really to catch cases where a non-random-access iterator is used and force the user
+	 * to explicitly set @a RequireRandomAccessIterator to false as an acknowledgement that the
+	 * code will run slowly.
 	 */
-	template <typename GreatCircleArcConstIteratorType>
+	template <
+			typename GreatCircleArcConstIteratorType,
+			bool RequireRandomAccessIterator = true>
 	class PolyGreatCircleArcBoundingTree :
 			private boost::noncopyable
 	{
@@ -65,8 +80,10 @@ namespace GPlatesMaths
 		{
 			NodeImpl(
 					const BoundingSmallCircle &bounding_small_circle_,
+					unsigned int bounded_great_circle_arcs_begin_index_,
 					unsigned int num_bounded_great_circle_arcs_) :
 				bounding_small_circle(bounding_small_circle_),
+				bounded_great_circle_arcs_begin_index(bounded_great_circle_arcs_begin_index_),
 				num_bounded_great_circle_arcs(num_bounded_great_circle_arcs_)
 			{
 				// Default is no children.
@@ -75,10 +92,12 @@ namespace GPlatesMaths
 
 			NodeImpl(
 					const BoundingSmallCircle &bounding_small_circle_,
+					unsigned int bounded_great_circle_arcs_begin_index_,
 					unsigned int num_bounded_great_circle_arcs_,
 					unsigned int first_child_node_index,
 					unsigned int second_child_node_index) :
 				bounding_small_circle(bounding_small_circle_),
+				bounded_great_circle_arcs_begin_index(bounded_great_circle_arcs_begin_index_),
 				num_bounded_great_circle_arcs(num_bounded_great_circle_arcs_)
 			{
 				child_node_indices[0] = first_child_node_index;
@@ -87,6 +106,9 @@ namespace GPlatesMaths
 
 			//! The small circle that bounds the current node (and the great circle arcs within).
 			BoundingSmallCircle bounding_small_circle;
+
+			//! The index of the first great circle arc bounded by this node.
+			unsigned int bounded_great_circle_arcs_begin_index;
 
 			//! The number of great circle arcs bounded by this node.
 			unsigned int num_bounded_great_circle_arcs;
@@ -130,19 +152,47 @@ namespace GPlatesMaths
 			/**
 			 * Returns the begin iterator over the contiguous sequence of great circle arcs bounded by this node.
 			 */
-			const great_circle_arc_const_iterator_type &
+			great_circle_arc_const_iterator_type
 			get_bounded_great_circle_arcs_begin() const
 			{
-				return d_bounded_great_circle_arcs_begin;
+				GreatCircleArcConstIteratorType bounded_great_circle_arcs_begin = d_begin_great_circle_arcs;
+				std::advance(bounded_great_circle_arcs_begin, get_bounded_great_circle_arcs_begin_index());
+
+				return bounded_great_circle_arcs_begin;
 			}
 
 			/**
 			 * Returns the end iterator over the contiguous sequence of great circle arcs bounded by this node.
 			 */
-			const great_circle_arc_const_iterator_type &
+			great_circle_arc_const_iterator_type
 			get_bounded_great_circle_arcs_end() const
 			{
-				return d_bounded_great_circle_arcs_end;
+				GreatCircleArcConstIteratorType bounded_great_circle_arcs_end = d_begin_great_circle_arcs;
+				std::advance(bounded_great_circle_arcs_end,
+						get_bounded_great_circle_arcs_begin_index() + get_num_bounded_great_circle_arcs());
+
+				return bounded_great_circle_arcs_end;
+			}
+
+			/**
+			 * Returns the index of the first great circle arc bounded by this node.
+			 *
+			 * This is the index into the PolylineOnSphere or PolygonOnSphere or sequence of
+			 * great circle arcs passed into PolyGreatCircleArcBoundingTree constructor.
+			 */
+			unsigned int
+			get_bounded_great_circle_arcs_begin_index() const
+			{
+				return d_node_impl->bounded_great_circle_arcs_begin_index;
+			}
+
+			/**
+			 * Returns the number of great circle arcs bounded by this node.
+			 */
+			unsigned int
+			get_num_bounded_great_circle_arcs() const
+			{
+				return d_node_impl->num_bounded_great_circle_arcs;
 			}
 
 			/**
@@ -171,24 +221,22 @@ namespace GPlatesMaths
 		private:
 			const NodeImpl *d_node_impl;
 
-			// NOTE: We save memory if we place the iterators (each iterator is size 8) here
-			// rather than in NodeImpl.
-			great_circle_arc_const_iterator_type d_bounded_great_circle_arcs_begin;
-			great_circle_arc_const_iterator_type d_bounded_great_circle_arcs_end;
+			//! Iterator to beginning of *entire* sequence of GCAs (not just the ones bounded by this node).
+			great_circle_arc_const_iterator_type d_begin_great_circle_arcs;
 
 
 			Node(
 					const NodeImpl &node_impl,
-					const great_circle_arc_const_iterator_type &bounded_great_circle_arcs_begin,
-					const great_circle_arc_const_iterator_type &bounded_great_circle_arcs_end) :
+					great_circle_arc_const_iterator_type begin_great_circle_arcs) :
 				d_node_impl(&node_impl),
-				d_bounded_great_circle_arcs_begin(bounded_great_circle_arcs_begin),
-				d_bounded_great_circle_arcs_end(bounded_great_circle_arcs_end)
+				d_begin_great_circle_arcs(begin_great_circle_arcs)
 			{
 			}
 
 			// Make a friend so can construct and access node implementation.
-			friend class PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>;
+			friend class PolyGreatCircleArcBoundingTree<
+					GreatCircleArcConstIteratorType,
+					RequireRandomAccessIterator>;
 		};
 
 		//! Typedef for bounding tree node.
@@ -300,7 +348,7 @@ namespace GPlatesMaths
 
 		unsigned int
 		create_node(
-				GreatCircleArcConstIteratorType begin_node_great_circle_arcs,
+				unsigned int begin_node_great_circle_arcs_index,
 				unsigned int num_node_great_circle_arcs,
 				unsigned int max_num_node_great_circle_arcs_per_leaf_node);
 	};
@@ -311,8 +359,8 @@ namespace GPlatesMaths
 	////////////////////
 
 
-	template <typename GreatCircleArcConstIteratorType>
-	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::PolyGreatCircleArcBoundingTree(
+	template <typename GreatCircleArcConstIteratorType, bool RequireRandomAccessIterator>
+	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType, RequireRandomAccessIterator>::PolyGreatCircleArcBoundingTree(
 			const PolylineOnSphere::non_null_ptr_to_const_type &polyline,
 			bool keep_shared_reference_to_polyline,
 			unsigned int max_num_node_great_circle_arcs_per_leaf_node)
@@ -326,8 +374,8 @@ namespace GPlatesMaths
 	}
 
 
-	template <typename GreatCircleArcConstIteratorType>
-	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::PolyGreatCircleArcBoundingTree(
+	template <typename GreatCircleArcConstIteratorType, bool RequireRandomAccessIterator>
+	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType, RequireRandomAccessIterator>::PolyGreatCircleArcBoundingTree(
 			const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
 			bool keep_shared_reference_to_polygon,
 			unsigned int max_num_node_great_circle_arcs_per_leaf_node)
@@ -341,8 +389,8 @@ namespace GPlatesMaths
 	}
 
 
-	template <typename GreatCircleArcConstIteratorType>
-	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::PolyGreatCircleArcBoundingTree(
+	template <typename GreatCircleArcConstIteratorType, bool RequireRandomAccessIterator>
+	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType, RequireRandomAccessIterator>::PolyGreatCircleArcBoundingTree(
 			GreatCircleArcConstIteratorType begin_great_circle_arcs,
 			GreatCircleArcConstIteratorType end_great_circle_arcs,
 			unsigned int max_num_node_great_circle_arcs_per_leaf_node)
@@ -351,13 +399,20 @@ namespace GPlatesMaths
 	}
 
 
-	template <typename GreatCircleArcConstIteratorType>
+	template <typename GreatCircleArcConstIteratorType, bool RequireRandomAccessIterator>
 	void
-	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::initialise(
+	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType, RequireRandomAccessIterator>::initialise(
 			GreatCircleArcConstIteratorType begin_great_circle_arcs,
 			GreatCircleArcConstIteratorType end_great_circle_arcs,
 			unsigned int max_num_node_great_circle_arcs_per_leaf_node)
 	{
+		// Fail to compile if caller is supposed to be providing a random-access iterator but doesn't.
+		BOOST_STATIC_ASSERT(
+				!RequireRandomAccessIterator ||
+					(boost::is_same<
+							boost::iterator_category<GreatCircleArcConstIteratorType>::type,
+							std::random_access_iterator_tag>::value));
+
 		d_root_node_index = 0;
 		d_begin_great_circle_arcs = begin_great_circle_arcs;
 
@@ -372,16 +427,16 @@ namespace GPlatesMaths
 		// Start a recursion to build the binary tree.
 		d_root_node_index =
 				create_node(
-						d_begin_great_circle_arcs,
+						0/*begin_node_great_circle_arcs_index*/,
 						num_great_circle_arcs,
 						max_num_node_great_circle_arcs_per_leaf_node);
 	}
 
 
-	template <typename GreatCircleArcConstIteratorType>
+	template <typename GreatCircleArcConstIteratorType, bool RequireRandomAccessIterator>
 	unsigned int
-	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::create_node(
-			GreatCircleArcConstIteratorType begin_node_great_circle_arcs,
+	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType, RequireRandomAccessIterator>::create_node(
+			unsigned int begin_node_great_circle_arcs_index,
 			unsigned int num_node_great_circle_arcs,
 			unsigned int max_num_node_great_circle_arcs_per_leaf_node)
 	{
@@ -393,23 +448,22 @@ namespace GPlatesMaths
 			// a better algorithm could be used here if it makes a noticeable difference.
 
 			// Create the first child node.
-			GreatCircleArcConstIteratorType first_child_node_great_circle_arcs_iter =
-					begin_node_great_circle_arcs;
+			const unsigned int first_child_begin_node_great_circle_arcs_index =
+					begin_node_great_circle_arcs_index;
 			const unsigned int first_child_node_num_node_great_circle_arcs =
 					num_node_great_circle_arcs >> 1;
 			const unsigned int first_child_node_index = create_node(
-					first_child_node_great_circle_arcs_iter,
+					first_child_begin_node_great_circle_arcs_index,
 					first_child_node_num_node_great_circle_arcs,
 					max_num_node_great_circle_arcs_per_leaf_node);
 
 			// Create the second child node.
-			GreatCircleArcConstIteratorType second_child_node_great_circle_arcs_iter =
-					first_child_node_great_circle_arcs_iter;
-			std::advance(second_child_node_great_circle_arcs_iter, first_child_node_num_node_great_circle_arcs);
+			const unsigned int second_child_begin_node_great_circle_arcs_index =
+					first_child_begin_node_great_circle_arcs_index + first_child_node_num_node_great_circle_arcs;
 			const unsigned int second_child_node_num_node_great_circle_arcs =
 					num_node_great_circle_arcs - first_child_node_num_node_great_circle_arcs;
 			const unsigned int second_child_node_index = create_node(
-					second_child_node_great_circle_arcs_iter,
+					second_child_begin_node_great_circle_arcs_index,
 					second_child_node_num_node_great_circle_arcs,
 					max_num_node_great_circle_arcs_per_leaf_node);
 
@@ -426,6 +480,7 @@ namespace GPlatesMaths
 							create_optimal_bounding_small_circle(
 									first_child_node_impl.bounding_small_circle,
 									second_child_node_impl.bounding_small_circle),
+							begin_node_great_circle_arcs_index,
 							num_node_great_circle_arcs,
 							first_child_node_index,
 							second_child_node_index));
@@ -435,8 +490,11 @@ namespace GPlatesMaths
 
 		// Create a leaf node.
 
-		GreatCircleArcConstIteratorType end_node_great_circle_arcs = begin_node_great_circle_arcs;
-		std::advance(end_node_great_circle_arcs, num_node_great_circle_arcs);
+		GreatCircleArcConstIteratorType begin_node_great_circle_arcs = d_begin_great_circle_arcs;
+		std::advance(begin_node_great_circle_arcs, begin_node_great_circle_arcs_index);
+
+		GreatCircleArcConstIteratorType end_node_great_circle_arcs = d_begin_great_circle_arcs;
+		std::advance(end_node_great_circle_arcs, begin_node_great_circle_arcs_index + num_node_great_circle_arcs);
 
 		// Use the centroid of the node edges as the centre of the node's bounding small circle.
 		BoundingSmallCircleBuilder bounding_small_circle_builder(
@@ -450,29 +508,26 @@ namespace GPlatesMaths
 		d_nodes.push_back(
 				NodeImpl(
 						bounding_small_circle_builder.get_bounding_small_circle(),
+						begin_node_great_circle_arcs_index,
 						num_node_great_circle_arcs));
 
 		return node_index;
 	}
 
 
-	template <typename GreatCircleArcConstIteratorType>
-	typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::node_type
-	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::get_root_node() const
+	template <typename GreatCircleArcConstIteratorType, bool RequireRandomAccessIterator>
+	typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType, RequireRandomAccessIterator>::node_type
+	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType, RequireRandomAccessIterator>::get_root_node() const
 	{
 		const NodeImpl &root_node_impl = d_nodes[d_root_node_index];
 
-		return node_type(
-				root_node_impl,
-				d_begin_great_circle_arcs,
-				// We're expecting a random access iterator since much faster - will fail to compile otherwise...
-				d_begin_great_circle_arcs + root_node_impl.num_bounded_great_circle_arcs);
+		return node_type(root_node_impl, d_begin_great_circle_arcs);
 	}
 
 
-	template <typename GreatCircleArcConstIteratorType>
-	typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::node_type
-	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType>::get_child_node(
+	template <typename GreatCircleArcConstIteratorType, bool RequireRandomAccessIterator>
+	typename PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType, RequireRandomAccessIterator>::node_type
+	PolyGreatCircleArcBoundingTree<GreatCircleArcConstIteratorType, RequireRandomAccessIterator>::get_child_node(
 			const node_type &parent_node,
 			unsigned int child_offset) const
 	{
@@ -480,34 +535,10 @@ namespace GPlatesMaths
 		//		child_offset < 2 && parent_node.is_internal_node(),
 		//		GPLATES_ASSERTION_SOURCE);
 
-		if (child_offset == 0)
-		{
-			const int first_child_node_index = parent_node.d_node_impl->child_node_indices[0];
-			const NodeImpl &first_child_node_impl = d_nodes[first_child_node_index];
+		const int child_node_index = parent_node.d_node_impl->child_node_indices[child_offset];
+		const NodeImpl &child_node_impl = d_nodes[child_node_index];
 
-			return node_type(
-					first_child_node_impl,
-					parent_node.d_bounded_great_circle_arcs_begin,
-					// We're expecting a random access iterator since much faster - will fail to compile otherwise...
-					parent_node.d_bounded_great_circle_arcs_begin +
-							first_child_node_impl.num_bounded_great_circle_arcs);
-		}
-		else // child_offset == 1
-		{
-			const int first_child_node_index = parent_node.d_node_impl->child_node_indices[0];
-			const NodeImpl &first_child_node_impl = d_nodes[first_child_node_index];
-			const int second_child_node_index = parent_node.d_node_impl->child_node_indices[1];
-			const NodeImpl &second_child_node_impl = d_nodes[second_child_node_index];
-
-			return node_type(
-					second_child_node_impl,
-					// We're expecting a random access iterator since much faster - will fail to compile otherwise...
-					parent_node.d_bounded_great_circle_arcs_begin +
-							first_child_node_impl.num_bounded_great_circle_arcs,
-					// We're expecting a random access iterator since much faster - will fail to compile otherwise...
-					parent_node.d_bounded_great_circle_arcs_begin +
-							parent_node.d_node_impl->num_bounded_great_circle_arcs);
-		}
+		return node_type(child_node_impl, d_begin_great_circle_arcs);
 	}
 }
 

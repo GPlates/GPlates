@@ -54,7 +54,7 @@ namespace GPlatesMaths
 	}
 	class BoundingSmallCircle;
 
-	template <typename GreatCircleArcConstIteratorType>
+	template <typename GreatCircleArcConstIteratorType, bool RequireRandomAccessIterator>
 	class PolyGreatCircleArcBoundingTree;
 
 
@@ -155,7 +155,8 @@ namespace GPlatesMaths
 		/**
 		 * Typedef for the bounding tree of great circle arcs in a polyline.
 		 */
-		typedef PolyGreatCircleArcBoundingTree<const_iterator> bounding_tree_type;
+		typedef PolyGreatCircleArcBoundingTree<const_iterator, true/*RequireRandomAccessIterator*/>
+				bounding_tree_type;
 
 
 		/**
