@@ -36,6 +36,7 @@
 #include "GeometryOnSphere.h"
 #include "PointOnSphere.h"
 
+#include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
 
@@ -347,6 +348,21 @@ namespace GPlatesMaths
 		number_of_points() const
 		{
 			return d_points.size();
+		}
+
+
+		/**
+		 * Return the point in this multi-point at the specified index.
+		 */
+		const PointOnSphere &
+		get_point(
+				size_type point_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					point_index < number_of_points(),
+					GPLATES_ASSERTION_SOURCE);
+
+			return d_points[point_index];
 		}
 
 

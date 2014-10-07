@@ -42,6 +42,7 @@
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
 
+#include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
 
@@ -690,6 +691,21 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Return the segment in this polyline at the specified index.
+		 */
+		const GreatCircleArc &
+		get_segment(
+				size_type segment_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					segment_index < number_of_segments(),
+					GPLATES_ASSERTION_SOURCE);
+
+			return d_seq[segment_index];
+		}
+
+
+		/**
 		 * Return the "begin" const_iterator to iterate over the vertices of this polyline.
 		 *
 		 * Note that it's intentional that the instance returned is non-const: If the
@@ -724,6 +740,25 @@ namespace GPlatesMaths
 		number_of_vertices() const
 		{
 			return d_seq.size() + 1;
+		}
+
+
+		/**
+		 * Return the vertex in this polyline at the specified index.
+		 */
+		const PointOnSphere &
+		get_vertex(
+				size_type vertex_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					vertex_index < number_of_vertices(),
+					GPLATES_ASSERTION_SOURCE);
+
+			vertex_const_iterator vertex_iter = vertex_begin();
+			// This should be fast since iterator type is random access...
+			std::advance(vertex_iter, vertex_index);
+
+			return *vertex_iter;
 		}
 
 

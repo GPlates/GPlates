@@ -995,10 +995,13 @@ GPlatesMaths::minimum_distance(
 		}
 	}
 
+	boost::optional<unsigned int &> closest_position_index_in_multipoint;
+
 	// Iterate over the points in the multi-point.
 	MultiPointOnSphere::const_iterator multipoint_iter = multipoint.begin();
 	MultiPointOnSphere::const_iterator multipoint_end = multipoint.end();
-	for ( ; multipoint_iter != multipoint_end; ++multipoint_iter)
+	unsigned int point_index = 0;
+	for ( ; multipoint_iter != multipoint_end; ++multipoint_iter, ++point_index)
 	{
 		const PointOnSphere &multipoint_point = *multipoint_iter;
 
@@ -1014,6 +1017,10 @@ GPlatesMaths::minimum_distance(
 			if (closest_position_in_multipoint)
 			{
 				closest_position_in_multipoint.get() = multipoint_point.position_vector();
+			}
+			if (closest_position_index_in_multipoint)
+			{
+				closest_position_index_in_multipoint.get() = point_index;
 			}
 		}
 	}

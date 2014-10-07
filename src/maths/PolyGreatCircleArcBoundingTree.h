@@ -410,7 +410,7 @@ namespace GPlatesMaths
 		BOOST_STATIC_ASSERT(
 				!RequireRandomAccessIterator ||
 					(boost::is_same<
-							boost::iterator_category<GreatCircleArcConstIteratorType>::type,
+							typename boost::iterator_category<GreatCircleArcConstIteratorType>::type,
 							std::random_access_iterator_tag>::value));
 
 		d_root_node_index = 0;

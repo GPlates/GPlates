@@ -487,6 +487,21 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Return the segment in this polygon at the specified index.
+		 */
+		const GreatCircleArc &
+		get_segment(
+				size_type segment_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					segment_index < number_of_segments(),
+					GPLATES_ASSERTION_SOURCE);
+
+			return d_seq[segment_index];
+		}
+
+
+		/**
 		 * Return the "begin" const_iterator to iterate over the
 		 * vertices of this polygon.
 		 */
@@ -521,6 +536,25 @@ namespace GPlatesMaths
 		number_of_vertices() const
 		{
 			return d_seq.size();
+		}
+
+
+		/**
+		 * Return the vertex in this polygon at the specified index.
+		 */
+		const PointOnSphere &
+		get_vertex(
+				size_type vertex_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					vertex_index < number_of_vertices(),
+					GPLATES_ASSERTION_SOURCE);
+
+			vertex_const_iterator vertex_iter = vertex_begin();
+			// This should be fast since iterator type is random access...
+			std::advance(vertex_iter, vertex_index);
+
+			return *vertex_iter;
 		}
 
 
