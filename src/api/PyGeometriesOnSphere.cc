@@ -81,6 +81,7 @@ namespace GPlatesApi
 			const GPlatesMaths::GeometryOnSphere &geometry2,
 			boost::optional<GPlatesMaths::real_t> distance_threshold_radians,
 			bool return_closest_positions,
+			bool return_closest_indices,
 			bool geometry1_is_solid,
 			bool geometry2_is_solid)
 	{
@@ -106,6 +107,15 @@ namespace GPlatesApi
 			closest_positions = boost::make_tuple(boost::ref(closest_point1), boost::ref(closest_point2));
 		}
 
+		// Reference closest point or segment indices on each geometry if requested.
+		boost::optional< boost::tuple<unsigned int &/*geometry1*/, unsigned int &/*geometry2*/> > closest_indices;
+		unsigned int closest_index1;
+		unsigned int closest_index2;
+		if (return_closest_indices)
+		{
+			closest_indices = boost::make_tuple(boost::ref(closest_index1), boost::ref(closest_index2));
+		}
+
 		const GPlatesMaths::AngularDistance angular_distance =
 				GPlatesMaths::minimum_distance(
 						geometry1,
@@ -113,7 +123,8 @@ namespace GPlatesApi
 						geometry1_is_solid,
 						geometry2_is_solid,
 						minimum_distance_threshold,
-						closest_positions);
+						closest_positions,
+						closest_indices);
 
 		// If a threshold was requested and was exceeded then return Py_None.
 		if (minimum_distance_threshold &&
@@ -125,14 +136,38 @@ namespace GPlatesApi
 		// The distance (in radians).
 		const GPlatesMaths::real_t distance = angular_distance.calculate_angle();
 
-		// Return closest positions (along with distance) in a tuple if requested,
-		// otherwise just return the distance.
-		return return_closest_positions
-				? bp::make_tuple(
-						distance,
-						GPlatesMaths::PointOnSphere(closest_point1),
-						GPlatesMaths::PointOnSphere(closest_point2))
-				: bp::object(distance);
+		//
+		// If returning closest positions and/or closest indices then return a python tuple.
+		//
+
+		if (return_closest_positions)
+		{
+			if (return_closest_indices)
+			{
+				return bp::make_tuple(
+								distance,
+								GPlatesMaths::PointOnSphere(closest_point1),
+								GPlatesMaths::PointOnSphere(closest_point2),
+								closest_index1,
+								closest_index2);
+			}
+
+			return bp::make_tuple(
+							distance,
+							GPlatesMaths::PointOnSphere(closest_point1),
+							GPlatesMaths::PointOnSphere(closest_point2));
+		}
+
+		if (return_closest_indices)
+		{
+			return bp::make_tuple(
+							distance,
+							closest_index1,
+							closest_index2);
+		}
+
+		// Just return the distance.
+		return bp::object(distance);
 	}
 }
 
@@ -171,11 +206,12 @@ export_geometry_on_sphere()
 				(bp::arg("geometry1"), bp::arg("geometry2"),
 						bp::arg("distance_threshold_radians") = boost::optional<GPlatesMaths::real_t>(),
 						bp::arg("return_closest_positions") = false,
+						bp::arg("return_closest_indices") = false,
 						bp::arg("geometry1_is_solid") = false,
 						bp::arg("geometry2_is_solid") = false),
 				"distance(geometry1, geometry2, [distance_threshold_radians], "
-				"[return_closest_positions=False], [geometry1_is_solid=False], "
-				"[geometry2_is_solid=False])\n"
+				"[return_closest_positions=False], [return_closest_indices=False], "
+				"[geometry1_is_solid=False], [geometry2_is_solid=False])\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -191,6 +227,10 @@ export_geometry_on_sphere()
 				"  :param return_closest_positions: whether to also return the closest point on each "
 				"geometry - default is ``False``\n"
 				"  :type return_closest_positions: bool\n"
+				"  :param return_closest_indices: whether to also return the index of the closest "
+				":class:`point<PointOnSphere>` (for multi-points) or the index of the closest "
+				":class:`segment<GreatCircleArc>` (for polylines and polygons) - default is ``False``\n"
+				"  :type return_closest_indices: bool\n"
 				"  :param geometry1_is_solid: whether the interior of *geometry1* is solid "
 				"or not - this parameter is ignored if *geometry1* is not a :class:`PolygonOnSphere` "
 				"- default is ``False``\n"
@@ -200,12 +240,109 @@ export_geometry_on_sphere()
 				"- default is ``False``\n"
 				"  :type geometry2_is_solid: bool\n"
 				"  :returns: distance (in radians), or a tuple containing distance and the "
-				"closest point on each geometry if *return_closest_positions* is ``True``, or ``None`` "
-				"if *distance_threshold_radians* is specified and exceeded\n"
-				"  :rtype: float or tuple (float, :class:`PointOnSphere`, :class:`PointOnSphere`) or None\n"
+				"closest point on each geometry if *return_closest_positions* is ``True``, or a tuple "
+				"containing distance and the indices of the closest :class:`point<PointOnSphere>` "
+				"(for multi-points) or :class:`segment<GreatCircleArc>` (for polylines and polygons) "
+				"on each geometry if *return_closest_indices* is ``True``, or a tuple containing distance "
+				"and the closest point on each geometry and the indices of the closest :class:`point<PointOnSphere>` "
+				"(for multi-points) or :class:`segment<GreatCircleArc>` (for polylines and polygons) "
+				"on each geometry if both *return_closest_positions* and *return_closest_indices* are ``True``, "
+				"or ``None`` if *distance_threshold_radians* is specified and exceeded\n"
+				"  :rtype: float, or tuple (float, :class:`PointOnSphere`, :class:`PointOnSphere`) if "
+				"*return_closest_positions* is True, or tuple (float, int, int) if *return_closest_indices* "
+				"is True, or tuple (float, :class:`PointOnSphere`, :class:`PointOnSphere`, int, int) "
+				"if both *return_closest_positions* and *return_closest_indices* are True, or None\n"
+				"\n"
+				"  Each geometry (*geometry1* and *geometry2*) can be any of the four geometry types "
+				"(:class:`PointOnSphere`, :class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and "
+				":class:`PolygonOnSphere`) allowing all combinations of distance calculations:\n"
+				"  ::\n"
+				"\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(point1, point2)\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(point1, multi_point2)\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(point1, polyline2)\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(point1, polygon2)\n"
+				"\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, point2)\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, multi_point2)\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, polyline2)\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(multi_point1, polygon2)\n"
+				"\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(polyline1, point2)\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(polyline1, multi_point2)\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(polyline1, polyline2)\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(polyline1, polygon2)\n"
+				"\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(polygon1, point2)\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(polygon1, multi_point2)\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(polygon1, polyline2)\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(polygon1, polygon2)\n"
 				"\n"
 				"  If *distance_threshold_radians* is specified and the (minimum) distance between the "
-				"two geometries exceeds this threshold then ``None`` is returned.\n")
+				"two geometries exceeds this threshold then ``None`` is returned.\n"
+				"  ::\n"
+				"\n"
+				"    # Calculate minimum distance between two geometries if within 1 degree of each other\n"
+				"    # (this is the maximum allowed great circle arc distance between them).\n"
+				"    distance_radians = pygplates.GeometryOnSphere.distance(geometry1, geometry2, math.radians(1))\n"
+				"    if distance_radians is not None:\n"
+				"        ...\n"
+				"\n"
+				"  Note that it is more efficient to specify a distance threshold parameter (as shown "
+				"in the above example) than it is to explicitly compare the returned distance to a threshold "
+				"yourself. This is because internally each polyline/polygon geometry has an inbuilt spatial "
+				"tree that optimises distance queries.\n"
+				"\n"
+				"  The minimum distance between two geometries is zero (and hence does not exceed any "
+				"distance threshold):\n"
+				"\n"
+				"  * if they intersect each other (for example if each geometry is a polyline/polygon), or\n"
+				"  * if *geometry1_is_solid* is ``True`` and *geometry1* is a :class:`PolygonOnSphere` "
+				"and *geometry2* overlaps the interior of the polygon (even if it doesn't intersect the "
+				"polygon boundary) - similarly for *geometry2_is_solid*. However note that "
+				"*geometry1_is_solid* is ignored if *geometry1* is not a :class:`PolygonOnSphere` - "
+				"similarly for *geometry2_is_solid*.\n"
+				"\n"
+				"  If *return_closest_positions* is ``True`` then the closest point on each geometry "
+				"is returned (unless the distance threshold is exceeded, if specified). "
+				"Note that for polygons the closest point is always on the polygon boundary regardless "
+				"of whether the polygon is solid or not (see *geometry1_is_solid* and *geometry2_is_solid*). "
+				"Also note that the closest position on a polyline/polygon can be anywhere along any of its "
+				":class:`segments<GreatCircleArc>`. In other words it's not the nearest vertex of the "
+				"polyline/polygon - it's the nearest point *on* the polyline/polygon itself. "
+				"If both geometries are polyline/polygon and they intersect then the intersection point "
+				"is returned (same point for both geometries). If both geometries are polyline/polygon and "
+				"they intersect more than once then any intersection point can be returned (but the same "
+				"point is returned for both geometries).\n"
+				"  ::\n"
+				"\n"
+				"    distance_radians, closest_point_on_geometry1, closest_point_on_geometry2 = \\\n"
+				"        pygplates.GeometryOnSphere.distance(geometry1, geometry2, return_closest_positions=True)\n"
+				"\n"
+				"  If *return_closest_indices* is ``True`` then the index of the closest :class:`point<PointOnSphere>` "
+				"(for multi-points) or the index of the closest :class:`segment<GreatCircleArc>` "
+				"(for polylines and polygons) is returned (unless the threshold is exceeded, if specified). "
+				"Note that for :class:`point<PointOnSphere>` geometries the index will always be zero. "
+				"The point indices can be used to index directly into :class:`MultiPointOnSphere` and the segment "
+				"indices can be used with :meth:`PolylineOnSphere.get_great_circle_arcs_view` or "
+				":meth:`PolygonOnSphere.get_great_circle_arcs_view` as shown in the following example:\n"
+				"  ::\n"
+				"\n"
+				"    distance_radians, closest_point_index_on_multipoint, closest_segment_index_on_polyline = \\\n"
+				"        pygplates.GeometryOnSphere.distance(multipoint, polyline, return_closest_indices=True)\n"
+				"\n"
+				"    closest_point_on_multipoint = multipoint[closest_point_index_on_multipoint]\n"
+				"    closest_segment_on_polyline = polyline.get_great_circle_arcs_view()[closest_segment_index_on_polyline]\n"
+				"    closest_segment_normal_vector = closest_segment_on_polyline.get_rotation_axis()\n"
+				"\n"
+				"  If both *return_closest_positions* and *return_closest_indices* are ``True``:\n"
+				"  ::\n"
+				"\n"
+				"    # Distance between a polyline and a solid polygon.\n"
+				"    distance_radians, polyline_point, polygon_point, polyline_segment_index, polygon_segment_index = \\\n"
+				"        pygplates.GeometryOnSphere.distance(polyline, polygon,\n"
+				"            return_closest_positions=True, return_closest_indices=True,\n"
+				"            geometry2_is_solid=True)\n")
 		.staticmethod("distance")
 	;
 
@@ -1570,7 +1707,7 @@ export_polyline_on_sphere()
 					"A polyline instance provides two types of *views*:\n"
 					"\n"
 					"* a view of its points - see :meth:`get_points_view`, and\n"
-					"* a view of its *great circle arc* subsegments (between adjacent points) - see "
+					"* a view of its *great circle arc* segments (between adjacent points) - see "
 					":meth:`get_great_circle_arcs_view`.\n"
 					"\n"
 					"In addition a polyline instance is directly iterable over its points (without "
@@ -2233,7 +2370,7 @@ export_polygon_on_sphere()
 					"A polygon instance provides two types of *views*:\n"
 					"\n"
 					"* a view of its points - see :meth:`get_points_view`, and\n"
-					"* a view of its *great circle arc* subsegments (between adjacent points) - see "
+					"* a view of its *great circle arc* segments (between adjacent points) - see "
 					":meth:`get_great_circle_arcs_view`.\n"
 					"\n"
 					"In addition a polygon instance is directly iterable over its points (without "
