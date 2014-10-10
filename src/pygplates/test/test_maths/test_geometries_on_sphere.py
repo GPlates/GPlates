@@ -56,6 +56,28 @@ class GeometryOnSphereCase(unittest.TestCase):
         # Test using distance thresholds.
         self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(polyline1, polyline2, math.pi / 18), math.pi / 19)
         self.assertTrue(pygplates.GeometryOnSphere.distance(polyline1, polyline2, math.pi / 20) is None)
+        
+        # Read some test data.
+        # The distances were determined using the Measure canvas tool in GPlates.
+        features = pygplates.FeatureCollectionFileFormatRegistry().read(
+                os.path.join(FIXTURES, 'geometry_distance.gpml'))
+        features = list(features)
+        self.assertTrue(len(features) == 3)
+        
+        # 'features[0]' is a polygon.
+        distance, closest_point1, closest_point2 = pygplates.GeometryOnSphere.distance(
+                features[0].get_geometry(), features[1].get_geometry(),
+                return_closest_positions=True, geometry1_is_solid=True)
+        # One of the points of the multi-point is inside the (solid) polygon.
+        self.assertAlmostEqual(distance, 0)
+        self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(closest_point1, closest_point2), 0.03407617)
+        
+        distance, closest_point1, closest_point2 = pygplates.GeometryOnSphere.distance(
+                features[0].get_geometry(), features[2].get_geometry(),
+                return_closest_positions=True, geometry1_is_solid=True)
+        # The polyline intersects the polygon.
+        self.assertAlmostEqual(distance, 0)
+        self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(closest_point1, closest_point2), 0)
 
 
 class PointOnSphereCase(unittest.TestCase):
