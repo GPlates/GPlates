@@ -171,7 +171,7 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
 		std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_lines,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_line_features_collection,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
+		const double &reconstruction_time,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles)
 {
 	// Get the next global reconstruct handle - it'll be stored in each RTG.
@@ -187,7 +187,7 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
 			resolve_geometry_flags,
 			reconstruct_handle,
 			reconstruction_tree_creator,
-			reconstruction_tree,
+			reconstruction_time,
 			topological_sections_reconstruct_handles);
 
 	AppLogicUtils::visit_feature_collections(
@@ -246,7 +246,7 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
 		std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
+		const double &reconstruction_time,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles)
 {
 	// Get the next global reconstruct handle - it'll be stored in each RTG.
@@ -262,7 +262,7 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
 			resolve_geometry_flags,
 			reconstruct_handle,
 			reconstruction_tree_creator,
-			reconstruction_tree,
+			reconstruction_time,
 			topological_sections_reconstruct_handles);
 
 	AppLogicUtils::visit_feature_collections(

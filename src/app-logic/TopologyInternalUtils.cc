@@ -510,9 +510,8 @@ namespace
 
 		if (found_rgs.empty())
 		{
-			// If we found no RFG that is reconstructed from 'geometry_property' then it probably means
-			// the reconstruction time is outside the age range of the feature containing 'geometry_property'.
-			// This is ok - it's not necessarily an error.
+			// If we found no RFG then it probably means the reconstruction time is outside the age range
+			// of the referenced features. This is ok - it's not necessarily an error.
 			// In fact we only report an error if any of the referenced features exist at the current
 			// reconstruction time because, with the addition of resolved *line* topologies, one use
 			// case is emulating a time-dependent section list by using a single list where a subset
@@ -946,7 +945,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 	// load multiple features with the same feature id into GPlates because both features
 	// will get found and it'll be ambiguous as to which one to use.
 	//
-	// However there are situations where this is can happen such as loading two different
+	// However there are situations where this can happen such as loading two different
 	// topology datasets that happen to have the same feature ids (presumably because one GPML
 	// file was copied to another and the second one modified to be different than the first).
 	// In this case the user might load both files (creating two separate layers) and compare them.
@@ -958,9 +957,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 	geometry_delegate.get_feature_id().find_back_ref_targets(
 			GPlatesModel::append_as_weak_refs(resolved_features));
 
-	// We didn't get exactly one feature with the feature id so something is
-	// not right (user loaded same file twice or didn't load at all)
-	// so print debug message and return null feature reference.
+	// If there are no features with the delegate feature id...
 	if (resolved_features.empty())
 	{
 		qWarning() 

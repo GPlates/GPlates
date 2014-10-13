@@ -105,7 +105,6 @@ namespace GPlatesAppLogic
 		 * NOTE: The sections are resolved by referencing already reconstructed topological section
 		 * features which in turn must have already have been reconstructed.
 		 *
-		 * @param reconstruction_tree is associated with the output resolved topological lines.
 		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that
 		 *        identifies the subset, of all RFGs observing the topological section features,
 		 *        that should be searched when resolving the topological lines.
@@ -119,7 +118,7 @@ namespace GPlatesAppLogic
 				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_lines,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_line_features_collection,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
+				const double &reconstruction_time,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
 
 
@@ -146,7 +145,6 @@ namespace GPlatesAppLogic
 		 * features which in turn must have already have been reconstructed.
 		 * This includes any resolved topological lines that form sections.
 		 *
-		 * @param reconstruction_tree is associated with the output resolved topological boundaries.
 		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that
 		 *        identifies the subset, of all RFGs observing the topological section features,
 		 *        and all resolved topological lines (@a ResolvedTopologicalGeometry containing polylines)
@@ -162,7 +160,7 @@ namespace GPlatesAppLogic
 				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
+				const double &reconstruction_time,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
 
 

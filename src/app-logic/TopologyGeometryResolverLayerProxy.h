@@ -137,7 +137,7 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Returns the resolved topological lines (polylines), for the current reconstruction time,
-		 * by appending them to them to @a resolved_topological_geometries.
+		 * by appending them to them to @a resolved_topological_lines.
 		 *
 		 * NOTE: These are resolved topological geometries that are *polylines*.
 		 *
@@ -156,7 +156,7 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Returns the resolved topological lines (polylines), at the specified time, by appending
-		 * them to them to @a resolved_topological_geometries.
+		 * them to them to @a resolved_topological_lines.
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_lines(

@@ -102,7 +102,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 						resolved_topological_lines,
 						partitioning_feature_collections,
 						reconstruction_tree_cache, 
-						reconstruction_tree_cache.get_reconstruction_tree(reconstruction_time),
+						reconstruction_time,
 						// Resolved topo lines use the reconstructed non-topo geometries...
 						reconstruct_handles);
 
@@ -122,7 +122,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 				resolved_topological_boundaries,
 				partitioning_feature_collections,
 				reconstruction_tree_cache, 
-				reconstruction_tree_cache.get_reconstruction_tree(reconstruction_time),
+				reconstruction_time,
 				// Resolved topo boundaries use the resolved topo lines *and* the reconstructed non-topo geometries...
 				reconstruct_handles);
 	}

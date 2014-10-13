@@ -165,6 +165,9 @@ namespace GPlatesAppLogic
 				// sequence which also lists least specialised to most specialised reconstruct
 				// methods and so we are the least specialised and also get queried last - so if
 				// there are any more specialised methods then they will have precedence.
+				//
+				// NOTE: A regular, *non-topological* geometry is required here so this won't
+				// pick up topological features (which are handled by a different framework).
 
 #if 0
 				// Firstly find a reconstruction plate ID and reconstruct method.

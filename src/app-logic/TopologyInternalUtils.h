@@ -163,7 +163,7 @@ namespace GPlatesAppLogic
 		 * - there are multiple RGs satisfying the specified constraints (reconstruct handles)
 		 *   and they came from *different* features (it's ok to have more than one feature with
 		 *   same feature id but the constraints, reconstruct handles, must reduce the set of RGs
-		 *   such that they come from only *one* feature (in this case an warning message is
+		 *   such that they come from only *one* feature (in this case a warning message is
 		 *   output to the console).
 		 *
 		 * If there is no RG that is reconstructed from @a geometry_delegate, and satisfying the

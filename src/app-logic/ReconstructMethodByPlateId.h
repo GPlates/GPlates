@@ -52,7 +52,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns true if can reconstruct the specified feature.
 		 *
-		 * It must have a geometry and a "gpml:reconstructionPlateId" property.
+		 * It only needs to have a non-topological geometry to pass this test.
 		 */
 		static
 		bool

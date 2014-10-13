@@ -150,8 +150,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_bo
 						d_cached_resolved_boundaries.cached_resolved_topological_boundaries.get(),
 						d_current_topological_geometry_feature_collections,
 						d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
-						d_current_reconstruction_layer_proxy.get_input_layer_proxy()
-								->get_reconstruction_tree(reconstruction_time),
+						reconstruction_time,
 						topological_sections_reconstruct_handles);
 	}
 
@@ -238,8 +237,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_li
 						d_cached_resolved_lines.cached_resolved_topological_lines.get(),
 						d_current_topological_geometry_feature_collections,
 						d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
-						d_current_reconstruction_layer_proxy.get_input_layer_proxy()
-								->get_reconstruction_tree(reconstruction_time),
+						reconstruction_time,
 						topological_sections_reconstruct_handles);
 	}
 

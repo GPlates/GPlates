@@ -91,7 +91,6 @@ namespace GPlatesAppLogic
 		 *
 		 * @a resolve_geometry_flags specifies which topological geometry types to resolve.
 		 * @param reconstruct_handle is placed in all resolved topological geometries as a reconstruction identifier.
-		 * @param reconstruction_tree is associated with the output resolved topological geometries.
 		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that identifies
 		 *        the subset, of all reconstruction geometries observing the topological section features,
 		 *        that should be searched when resolving the topological geometries.
@@ -102,7 +101,7 @@ namespace GPlatesAppLogic
 				const resolve_geometry_flags_type &resolve_geometry_flags,
 				ReconstructHandle::type reconstruct_handle,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const double &reconstruction_time,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles);
 
 		virtual

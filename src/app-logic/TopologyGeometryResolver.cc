@@ -63,15 +63,15 @@ GPlatesAppLogic::TopologyGeometryResolver::TopologyGeometryResolver(
 		const resolve_geometry_flags_type &resolve_geometry_flags,
 		ReconstructHandle::type reconstruct_handle,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+		const double &reconstruction_time,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles) :
 	d_resolved_topological_geometries(resolved_topological_geometries),
 	d_resolve_geometry_flags(resolve_geometry_flags),
 	d_reconstruct_handle(reconstruct_handle),
 	d_reconstruction_tree_creator(reconstruction_tree_creator),
-	d_reconstruction_tree(reconstruction_tree),
+	d_reconstruction_tree(reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)),
 	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles),
-	d_reconstruction_params(reconstruction_tree->get_reconstruction_time())
+	d_reconstruction_params(reconstruction_time)
 {  
 }
 
