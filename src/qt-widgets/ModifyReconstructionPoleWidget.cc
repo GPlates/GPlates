@@ -767,21 +767,6 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 		return;
 	}
 
-	// Get the focused geometry's reconstruct context/handle.
-	// If there is none then we return early since we won't be able to find/populate any matching RFGs.
-	boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
-			focused_rfg = get_focused_feature_geometry();
-	if (!focused_rfg)
-	{
-		return;
-	}
-	boost::optional<GPlatesAppLogic::ReconstructHandle::type> focused_reconstruct_handle =
-			focused_rfg.get()->get_reconstruct_handle();
-	if (!focused_reconstruct_handle)
-	{
-		return;
-	}
-
 	std::vector<GPlatesModel::integer_plate_id_type> plate_id_collection;
 	plate_id_collection.push_back(*d_plate_id);
 
@@ -797,7 +782,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 
 	//
 	// Iterate over all the reconstruction geometries that were reconstructed using the same
-	// reconstruction context/handle as the focused feature geometry.
+	// reconstruction tree as the focused feature geometry.
 	//
 
 	// Get the layer outputs.
@@ -830,9 +815,8 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 			{
 				const GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type &rfg = *rfg_iter;
 
-				// Make sure the current RFG was created from the same reconstruction tree as
-				// the focused geometry.
-				if (rfg->get_reconstruct_handle() != focused_reconstruct_handle)
+				// Make sure the current RFG was created from the same reconstruction tree as the focused geometry.
+				if (rfg->get_reconstruction_tree() != *d_reconstruction_tree)
 				{
 					continue;
 				}
