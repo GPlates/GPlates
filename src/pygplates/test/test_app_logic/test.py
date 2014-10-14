@@ -20,12 +20,17 @@ class CrossoverTestCase(unittest.TestCase):
 
     def test_synchronise_crossovers(self):
         # This writes back to the rotation file.
-        pygplates.synchronise_crossovers(os.path.join(FIXTURES, 'rotations.rot'))
+        #pygplates.synchronise_crossovers(os.path.join(FIXTURES, 'rotations.rot'))
         
         # This does not write back to the rotation file.
         rotation_feature_collection = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'rotations.rot'))
-        pygplates.synchronise_crossovers(rotation_feature_collection)
+        synchronised_crossovers = []
+        pygplates.synchronise_crossovers(
+                rotation_feature_collection,
+                lambda crossover: True,
+                0.01, # 2 decimal places
+                synchronised_crossovers)
         
         # TODO: Add more tests.
 

@@ -17,6 +17,7 @@
 
 
 from collections import namedtuple
+import math
 
 
 Crossover = namedtuple("Crossover",
@@ -41,6 +42,11 @@ def find_crossovers(rotation_features, crossover_filter=None):
     (time, moving_plate_id, pre_crossover_fixed_plate_id, post_crossover_fixed_plate_id, \
     pre_crossover_rotation_sequence, post_crossover_rotation_sequence)
     :rtype: list of named-tuple 'Crossover' (float, int, int, int, :class:`GpmlIrregularSampling`, :class:`GpmlIrregularSampling`)
+    
+    A crossover is a named-tuple 'Crossover' with named elements (time, moving_plate_id,
+    pre_crossover_fixed_plate_id, post_crossover_fixed_plate_id,
+    pre_crossover_rotation_sequence, post_crossover_rotation_sequence) and with type
+    (float, int, int, int, :class:`GpmlIrregularSampling`, :class:`GpmlIrregularSampling`).
     
     A crossover occurs when the motion of a (moving) plate crosses over from one (fixed) plate to move relative
     to another (fixed) plate at a particular geological time. The named-tuple 'Crossover' stores the crossover time,
@@ -167,8 +173,12 @@ def find_crossovers(rotation_features, crossover_filter=None):
     return crossovers
 
 
-def synchronise_crossovers(rotation_features, crossover_filter=None):
-    """synchronise_crossovers(rotation_features[, crossover_filter])
+def synchronise_crossovers(
+        rotation_features,
+        crossover_filter=None,
+        crossover_threshold_degrees=None,
+        synchronised_crossovers=None):
+    """synchronise_crossovers(rotation_features, [crossover_filter], [crossover_threshold_degrees], [synchronised_crossovers])
     Synchronise crossovers in rotation features.
     
     :param rotation_features: A rotation feature collection, or rotation filename, or \
@@ -184,6 +194,18 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
     pre_crossover_rotation_sequence, post_crossover_rotation_sequence)
     :type crossover_filter: a callable accepting a single named-tuple 'Crossover' argument, or \
     a sequence of named-tuple 'Crossover' (float, int, int, int, :class:`GpmlIrregularSampling`, :class:`GpmlIrregularSampling`)
+    :param crossover_threshold_degrees: If specified then crossovers are synchronised (fixed) only if the \
+    post-crossover rotation latitude, longitude or angle differ from those in pre-crossover rotation by \
+    more than this amount
+    :type crossover_threshold_degrees: float or None
+    :param synchronised_crossovers: if specified then those crossovers that are synchronised are appended \
+    to this list (note that the list is *not* cleared first) - default is None
+    :type synchronised_crossovers: list or None
+    
+    A crossover is a named-tuple 'Crossover' with named elements (time, moving_plate_id,
+    pre_crossover_fixed_plate_id, post_crossover_fixed_plate_id,
+    pre_crossover_rotation_sequence, post_crossover_rotation_sequence) and with type
+    (float, int, int, int, :class:`GpmlIrregularSampling`, :class:`GpmlIrregularSampling`).
     
     A crossover occurs when the motion of a (moving) plate crosses over from one (fixed) plate to move relative
     to another (fixed) plate at a particular geological time. Synchronising a crossover involves adjusting the finite rotations
@@ -207,6 +229,12 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
     predicate test will be synchronised. If *crossover_filter* is a sequence of crossovers then only crossovers in that sequence will be
     synchronised.
     
+    *crossover_threshold_degrees* can optionally be used to synchronise (fix) only those crossovers whose
+    difference in pre and post crossover rotation latitudes, longitudes or angles exceeds this amount. This is
+    useful some PLATES rotation files that are typically accurate to 2 decimal places (or threshold of 0.01).
+    
+    *synchronised_crossovers* can optionally be used to obtain a list of crossovers that were synchronised.
+    
     A rotation feature has a :class:`feature type<FeatureType>` of `total reconstruction sequence
     <http://www.earthbyte.org/Resources/GPGIM/public/#TotalReconstructionSequence>`_ and contains a time sequence
     of :class:`finite rotations<GpmlFiniteRotation>` (see :meth:`total reconstruction pole<Feature.get_total_reconstruction_pole>`)
@@ -217,12 +245,17 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
     
       pygplates.synchronise_crossovers('rotations.rot')
     
-    Synchronise crossovers between present day and 20Ma found in a rotation file (and save modifications back to the same rotation file):
+    Synchronise crossovers between present day and 20Ma found in a PLATES rotation file that has rotation
+    latitudes, longitudes and angles rounded to 2 decimal places (and save modifications back to the same rotation file):
     ::
       
+      synchronised_crossovers = []
       pygplates.synchronise_crossovers(
           'rotations.rot',
-          lambda crossover: crossover.time <= 20)
+          lambda crossover: crossover.time <= 20,
+          0.01, # Equivalent to 2 decimal places
+          synchronised_crossovers)
+      print 'Fixed %d crossovers' % len(synchronised_crossovers)
     """
     
     # Use helper class to convert 'rotation_features' argument to a list of features.
@@ -233,6 +266,10 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
     # If we passed files (if any) directly to RotationModel then we'd be forced to write the modifications back
     # out to file for each iteration of the crossovers loop.
     rotation_feature_sequence = rotation_features.get_features()
+    
+    # Make sure threshold is a number.
+    if crossover_threshold_degrees is not None:
+        crossover_threshold_degrees = float(crossover_threshold_degrees)
 
     # If caller specified a sequence of crossovers then use them, otherwise find them in the rotation features.
     if hasattr(crossover_filter, '__iter__'):
@@ -310,6 +347,42 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
         crossover_adjustment = (old_post_crossover_moving_fixed_relative_rotation.get_inverse() *
                 new_post_crossover_moving_fixed_relative_rotation)
         
+        # Skip fixing crossover if no adjustment is needed.
+        crossover_passed = False
+        if crossover_threshold_degrees is not None:
+            old_post_crossover_lat, old_post_crossover_lon, old_post_crossover_angle = \
+                    old_post_crossover_moving_fixed_relative_rotation.get_lat_lon_euler_pole_and_angle_degrees()
+            
+            new_post_crossover_pole, new_post_crossover_angle_radians = \
+                    new_post_crossover_moving_fixed_relative_rotation.get_euler_pole_and_angle()
+            new_post_crossover_lat, new_post_crossover_lon = new_post_crossover_pole.to_lat_lon()
+            new_post_crossover_angle = math.degrees(new_post_crossover_angle_radians)
+            
+            # See if both rotations are close enough that we don't require crossover adjustments.
+            if (abs(new_post_crossover_lat - old_post_crossover_lat) <= crossover_threshold_degrees and
+                abs(new_post_crossover_lon - old_post_crossover_lon) <= crossover_threshold_degrees and
+                abs(new_post_crossover_angle - old_post_crossover_angle) <= crossover_threshold_degrees):
+                crossover_passed = True
+            else:
+                # The antipodal rotation pole with a negated angle represents the exact same rotation.
+                # So we compare that for closeness also.
+                new_post_crossover_pole_x, new_post_crossover_pole_y, new_post_crossover_pole_z = \
+                        new_post_crossover_pole.to_xyz()
+                new_post_crossover_pole_antipodal = PointOnSphere((
+                        -new_post_crossover_pole_x, -new_post_crossover_pole_y, -new_post_crossover_pole_z))
+                new_post_crossover_lat_antipodal, new_post_crossover_lon_antipodal = \
+                        new_post_crossover_pole_antipodal.to_lat_lon()
+                new_post_crossover_angle_antipodal = -new_post_crossover_angle
+                if (abs(new_post_crossover_lat_antipodal - old_post_crossover_lat) <= crossover_threshold_degrees and
+                    abs(new_post_crossover_lon_antipodal - old_post_crossover_lon) <= crossover_threshold_degrees and
+                    abs(new_post_crossover_angle_antipodal - old_post_crossover_angle) <= crossover_threshold_degrees):
+                    crossover_passed = True
+        elif crossover_adjustment.represents_identity_rotation():
+            crossover_passed = True
+        
+        if crossover_passed:
+            continue
+        
         # Change the first time sample.
         post_crossover_time_samples[0].get_value().set_finite_rotation(
             new_post_crossover_moving_fixed_relative_rotation)
@@ -319,6 +392,10 @@ def synchronise_crossovers(rotation_features, crossover_filter=None):
             post_crossover_rotation = post_crossover_time_sample.get_value().get_finite_rotation()
             post_crossover_rotation = post_crossover_rotation * crossover_adjustment
             post_crossover_time_sample.get_value().set_finite_rotation(post_crossover_rotation)
+        
+        # Add to the list of synchronised crossovers if requested.
+        if synchronised_crossovers is not None:
+            synchronised_crossovers.append(crossover)
 
     # If any rotation features came from files then write those feature collections back out to the same files.
     #
