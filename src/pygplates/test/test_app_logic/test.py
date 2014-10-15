@@ -25,12 +25,14 @@ class CrossoverTestCase(unittest.TestCase):
         # This does not write back to the rotation file.
         rotation_feature_collection = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'rotations.rot'))
-        synchronised_crossovers = []
+        crossover_results = []
         pygplates.synchronise_crossovers(
                 rotation_feature_collection,
-                lambda crossover: True,
+                lambda crossover: crossover.time < 600,
                 0.01, # 2 decimal places
-                synchronised_crossovers)
+                crossover_results)
+        # Due to filtering of crossover times less than 600Ma we have 124 instead of 134 crossovers.
+        self.assertTrue(len(crossover_results) == 124)
         
         # TODO: Add more tests.
 
