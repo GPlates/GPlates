@@ -26,10 +26,13 @@
 #ifndef GPLATES_FILE_IO_OGRFORMATRESOLVEDTOPOLOGICALGEOMETRYXPORT_H
 #define GPLATES_FILE_IO_OGRFORMATRESOLVEDTOPOLOGICALGEOMETRYXPORT_H
 
+#include <boost/optional.hpp>
 #include <QFileInfo>
 
 #include "ReconstructionGeometryExportImpl.h"
 #include "CitcomsResolvedTopologicalBoundaryExportImpl.h"
+
+#include "maths/PolygonOrientation.h"
 
 #include "model/types.h"
 
@@ -57,10 +60,16 @@ namespace GPlatesFileIO
 
 
 		/**
-		* Exports @a ResolvedTopologicalGeometry objects to OGR format.
-		*
-		* If @a wrap_to_dateline is true then exported polyline/polygon geometries are wrapped/clipped to the dateline.
-		*/
+		 * Exports @a ResolvedTopologicalGeometry objects to OGR format.
+		 *
+		 * If @a force_polygon_orientation is not none then polygon are exported to the specified
+		 * orientation (clockwise or counter-clockwise).
+		 * NOTE: This option is essentially ignored for the *Shapefile* OGR format because the
+		 * OGR Shapefile driver will overwrite our orientation (if counter-clockwise) and just
+		 * store exterior rings as clockwise and interior rings as counter-clockwise.
+		 *
+		 * If @a wrap_to_dateline is true then exported polyline/polygon geometries are wrapped/clipped to the dateline.
+		 */
 		void
 		export_geometries(
 				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
@@ -69,13 +78,21 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
+				boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
+						force_polygon_orientation = boost::none,
 				bool wrap_to_dateline = true);
 
 		/**
-		* Exports @a ResolvedTopologicalGeometry objects to OGR format.
-		*
-		* If @a wrap_to_dateline is true then exported polyline/polygon geometries are wrapped/clipped to the dateline.
-		*/
+		 * Exports @a ResolvedTopologicalGeometry objects to OGR format.
+		 *
+		 * If @a force_polygon_orientation is not none then polygon are exported to the specified
+		 * orientation (clockwise or counter-clockwise).
+		 * NOTE: This option is essentially ignored for the *Shapefile* OGR format because the
+		 * OGR Shapefile driver will overwrite our orientation (if counter-clockwise) and just
+		 * store exterior rings as clockwise and interior rings as counter-clockwise.
+		 *
+		 * If @a wrap_to_dateline is true then exported polyline/polygon geometries are wrapped/clipped to the dateline.
+		 */
 		void
 		export_geometries_per_collection(
 				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
@@ -84,6 +101,8 @@ namespace GPlatesFileIO
 				const std::vector<const File::Reference *> &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
+				boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
+						force_polygon_orientation = boost::none,
 				bool wrap_to_dateline = true);
 
 

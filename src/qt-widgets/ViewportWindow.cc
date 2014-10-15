@@ -790,6 +790,8 @@ GPlatesQtWidgets::ViewportWindow::connect_tools_menu_actions()
 	// extras which aren't regular canvas tools and should be connected here:-
 	QObject::connect(action_Use_Small_Icons, SIGNAL(toggled(bool)),
 		d_canvas_tools_dock_ptr, SLOT(use_small_canvas_tool_icons(bool)));
+	QObject::connect(action_Configure_Geometry_Rendering, SIGNAL(triggered()),
+			&dialogs(), SLOT(pop_up_configure_canvas_tool_geometry_render_parameters_dialog()));
 
 	// Populate the Tools menu with a sub-menu for each canvas tool workflow.
 	// And for each workflow populate its sub-menu with the workflow tool actions.

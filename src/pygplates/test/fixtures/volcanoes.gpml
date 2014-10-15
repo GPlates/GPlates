@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0325" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0327" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
     <gml:featureMember>
         <gpml:Volcano>
             <gpml:identity>GPlates-d13bba7f-57f5-419d-bbd4-105a8e72e177</gpml:identity>
@@ -27,7 +27,7 @@
             </gpml:reconstructionPlateId>
             <gpml:position>
                 <gml:Point>
-                    <gml:pos>62.308293606156916 101.70619571034702</gml:pos>
+                    <gml:pos>70.863376287171306 94.509279889688727</gml:pos>
                 </gml:Point>
             </gpml:position>
         </gpml:Volcano>
@@ -59,7 +59,7 @@
             </gpml:reconstructionPlateId>
             <gpml:position>
                 <gml:Point>
-                    <gml:pos>-64.610598622692706 104.42855257543557</gml:pos>
+                    <gml:pos>-66.490975053887624 107.22963514852258</gml:pos>
                 </gml:Point>
             </gpml:position>
         </gpml:Volcano>
@@ -91,7 +91,7 @@
             </gpml:reconstructionPlateId>
             <gpml:position>
                 <gml:Point>
-                    <gml:pos>-21.951908842039384 -179.59110132650545</gml:pos>
+                    <gml:pos>-24.609913950639044 -176.82647221961545</gml:pos>
                 </gml:Point>
             </gpml:position>
         </gpml:Volcano>
@@ -123,7 +123,7 @@
             </gpml:reconstructionPlateId>
             <gpml:position>
                 <gml:Point>
-                    <gml:pos>42.068443587247842 169.49894447458863</gml:pos>
+                    <gml:pos>40.953657377882678 164.58907535028209</gml:pos>
                 </gml:Point>
             </gpml:position>
         </gpml:Volcano>

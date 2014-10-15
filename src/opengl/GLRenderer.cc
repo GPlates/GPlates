@@ -26,6 +26,7 @@
 #include <exception>
 #include <iostream>
 #include <map>
+#include <set>
 #include <boost/cast.hpp>
 #include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
@@ -2292,18 +2293,23 @@ GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 
 	// Classify our frame buffer object according to texture (mipmap level) format/dimensions, etc.
 	GLFrameBufferObject::Classification frame_buffer_object_classification;
-	frame_buffer_object_classification.set_dimensions(texture_level_width, texture_level_height);
-	frame_buffer_object_classification.set_texture_internal_format(
+	frame_buffer_object_classification.set_dimensions(*this, texture_level_width, texture_level_height);
+	frame_buffer_object_classification.set_attached_texture_2D(
+			*this,
 			render_texture_target.texture->get_internal_format().get());
 	if (depth_render_buffer)
 	{
-		frame_buffer_object_classification.set_depth_buffer_internal_format(
-				depth_render_buffer.get()->get_internal_format().get());
+		frame_buffer_object_classification.set_attached_render_buffer(
+				*this,
+				depth_render_buffer.get()->get_internal_format().get(),
+				GL_DEPTH_ATTACHMENT_EXT);
 	}
 	if (stencil_render_buffer)
 	{
-		frame_buffer_object_classification.set_stencil_buffer_internal_format(
-				stencil_render_buffer.get()->get_internal_format().get());
+		frame_buffer_object_classification.set_attached_render_buffer(
+				*this,
+				stencil_render_buffer.get()->get_internal_format().get(),
+				GL_STENCIL_ATTACHMENT_EXT);
 	}
 
 	// Acquire a frame buffer object.
@@ -2346,6 +2352,27 @@ GPlatesOpenGL::GLRenderer::begin_framebuffer_object_2D(
 			frame_buffer_object,
 			frame_buffer_object_classification))
 	{
+		// Only output warning once for each framebuffer object classification.
+		static std::set<GLFrameBufferObject::Classification::tuple_type> warning_map;
+		if (warning_map.find(frame_buffer_object_classification.get_tuple()) == warning_map.end())
+		{
+			qWarning() << "Texture internal format '"
+				<< render_texture_target.texture->get_internal_format().get()
+				<< "' failed frame buffer object completeness check.";
+
+			// Also emit a warning if the texture is floating-point because we are going to fall back
+			// to using the main framebuffer as a render target, but the main framebuffer is
+			// fixed-point (not floating-point).
+			if (GLTexture::is_format_floating_point(render_texture_target.texture->get_internal_format().get()))
+			{
+				qWarning() << "...incorrect results are likely since floating-point render-texture "
+					"is emulated with (fixed-point) main framebuffer.";
+			}
+
+			// Flag warning has been output.
+			warning_map.insert(frame_buffer_object_classification.get_tuple());
+		}
+
 		// Detach from the framebuffer object before we return it to the framebuffer object cache.
 		frame_buffer_object->gl_detach_all(*this);
 

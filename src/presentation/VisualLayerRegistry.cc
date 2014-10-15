@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QPixmap>
 
@@ -470,7 +471,12 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				SCALAR_FIELD_3D),
 			&GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::create,
-			&ScalarField3DVisualLayerParams::create,
+			boost::bind(
+					&ScalarField3DVisualLayerParams::create,
+					// NOTE: We pass in ViewState and not the GlobeAndMapWidget, obtained from
+					// ViewportWindow, because ViewportWindow is not yet available (a reference to
+					// it not yet been initialised inside ViewState) so accessing it would crash...
+					_1, boost::ref(view_state)),
 			true);
 
 	// DERIVED_DATA group.
@@ -519,7 +525,9 @@ GPlatesPresentation::register_default_visual_layers(
 				layer_task_registry,
 				VELOCITY_FIELD_CALCULATOR),
 			&GPlatesQtWidgets::VelocityFieldCalculatorLayerOptionsWidget::create,
-			&VelocityFieldCalculatorVisualLayerParams::create,
+			boost::bind(
+					&VelocityFieldCalculatorVisualLayerParams::create,
+					_1, boost::cref(view_state.get_rendered_geometry_parameters())),
 			true);
 
 	using namespace  GPlatesUtils;

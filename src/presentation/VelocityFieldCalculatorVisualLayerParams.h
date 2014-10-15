@@ -44,9 +44,10 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-			GPlatesAppLogic::LayerTaskParams &layer_task_params)
+			GPlatesAppLogic::LayerTaskParams &layer_task_params,
+			const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters)
 		{
-			return new VelocityFieldCalculatorVisualLayerParams( layer_task_params );
+			return new VelocityFieldCalculatorVisualLayerParams(layer_task_params, rendered_geometry_parameters);
 		}
 
 
@@ -123,13 +124,15 @@ namespace GPlatesPresentation
 
 		explicit 
 		VelocityFieldCalculatorVisualLayerParams( 
-				GPlatesAppLogic::LayerTaskParams &layer_task_params ) :
+				GPlatesAppLogic::LayerTaskParams &layer_task_params,
+				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters) :
 			VisualLayerParams(layer_task_params),
-			d_arrow_spacing(GPlatesViewOperations::RenderedLayerParameters::VELOCITY_ARROW_SPACING),
-			d_arrow_body_scale(GPlatesViewOperations::RenderedLayerParameters
-					::RECONSTRUCTION_RATIO_ARROW_UNIT_VECTOR_DIRECTION_TO_GLOBE_RADIUS),
-			d_arrowhead_scale(GPlatesViewOperations::RenderedLayerParameters
-					::RECONSTRUCTION_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS)
+			d_arrow_spacing(rendered_geometry_parameters
+					.get_reconstruction_layer_arrow_spacing()),
+			d_arrow_body_scale(rendered_geometry_parameters
+					.get_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius()),
+			d_arrowhead_scale(rendered_geometry_parameters
+					.get_reconstruction_layer_ratio_arrowhead_size_to_globe_radius())
 		{  }
 
 	private:

@@ -25,6 +25,7 @@
 
 #include <cmath>
 #include <limits>
+#include <set>
 #include <boost/scoped_array.hpp>
 /*
  * The OpenGL Extension Wrangler Library (GLEW).
@@ -169,9 +170,11 @@ namespace GPlatesOpenGL
 			// Classify our frame buffer object according to texture format/dimensions.
 			GLFrameBufferObject::Classification framebuffer_object_classification;
 			framebuffer_object_classification.set_dimensions(
+					renderer,
 					texture->get_width().get(),
 					texture->get_height().get());
-			framebuffer_object_classification.set_texture_internal_format(
+			framebuffer_object_classification.set_attached_texture_array_layer(
+					renderer,
 					texture->get_internal_format().get());
 
 			// Acquire and bind a frame buffer object.
@@ -410,7 +413,92 @@ GPlatesOpenGL::GLScalarField3D::is_supported(
 			return false;
 		}
 
-		// TODO: Add framebuffer check status for rendering to layered texture array (surface fill mask).
+		// If we get this far then we have support.
+		supported = true;
+	}
+
+	return supported;
+}
+
+
+bool
+GPlatesOpenGL::GLScalarField3D::supports_surface_fill_mask(
+		GLRenderer &renderer)
+{
+	static bool supported = false;
+
+	// Only test for support the first time we're called.
+	static bool tested_for_support = false;
+	if (!tested_for_support)
+	{
+		tested_for_support = true;
+
+		// We only use a surface fill mask when we're actually rendering an isosurface or cross sections.
+		if (!is_supported(renderer))
+		{
+			return false;
+		}
+
+		// Make sure we leave the OpenGL state the way it was.
+		GLRenderer::StateBlockScope save_restore_state_scope(renderer);
+
+		const GLCapabilities &capabilities = renderer.get_capabilities();
+
+		//
+		// Check framebuffer status for rendering to layered texture array (surface fill mask).
+		//
+
+		unsigned int surface_fill_mask_resolution = SURFACE_FILL_MASK_RESOLUTION;
+		// It can't be larger than the maximum texture dimension for the current system.
+		if (surface_fill_mask_resolution > capabilities.texture.gl_max_texture_size)
+		{
+			surface_fill_mask_resolution = capabilities.texture.gl_max_texture_size;
+		}
+
+		// Temporarily acquire a texture array to test rendering the surface fill mask into.
+		GLTexture::shared_ptr_to_const_type surface_fill_mask_texture =
+				acquire_surface_fill_mask_texture(renderer, surface_fill_mask_resolution);
+
+		// Classify our frame buffer object according to texture format/dimensions.
+		GLFrameBufferObject::Classification framebuffer_object_classification;
+		framebuffer_object_classification.set_dimensions(
+				renderer,
+				surface_fill_mask_texture->get_width().get(),
+				surface_fill_mask_texture->get_height().get());
+		framebuffer_object_classification.set_attached_texture_array(
+				renderer,
+				surface_fill_mask_texture->get_internal_format().get());
+
+		// Acquire and bind a frame buffer object.
+		GLFrameBufferObject::shared_ptr_type framebuffer_object =
+				renderer.get_context().get_non_shared_state()->acquire_frame_buffer_object(
+						renderer,
+						framebuffer_object_classification);
+		renderer.gl_bind_frame_buffer(framebuffer_object);
+
+		// Begin rendering to the entire texture array (layered texture rendering).
+		// We will be using a geometry shader to direct each filled primitive to all six layers of the texture array.
+		framebuffer_object->gl_attach_texture_array(
+				renderer,
+				surface_fill_mask_texture,
+				0, // level - note that this is mipmap level and not the layer number
+				GL_COLOR_ATTACHMENT0_EXT);
+
+		// Check for framebuffer completeness (after attaching to texture array).
+		// It seems some hardware fails even though we checked OpenGL capabilities in 'is_supported()'
+		// such as 'gl_EXT_geometry_shader4' and we are using nice power-of-two texture dimensions, etc.
+		if (!renderer.get_context().get_non_shared_state()->check_framebuffer_object_completeness(
+				renderer,
+				framebuffer_object,
+				framebuffer_object_classification))
+		{
+			qWarning() << "Scalar field surface polygon masking not supported: failed framebuffer completeness check.";
+
+			// Detach from the framebuffer object before it gets returned to the framebuffer object cache.
+			framebuffer_object->gl_detach_all(renderer);
+
+			return false;
+		}
 
 		// If we get this far then we have support.
 		supported = true;
@@ -435,6 +523,59 @@ GPlatesOpenGL::GLScalarField3D::create(
 					renderer,
 					scalar_field_filename,
 					light));
+}
+
+
+GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
+GPlatesOpenGL::GLScalarField3D::acquire_surface_fill_mask_texture(
+		GLRenderer &renderer,
+		unsigned int surface_fill_mask_resolution)
+{
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
+	const unsigned int texture_depth = 6;
+
+	// Acquire an RGBA8 texture.
+	const GLTexture::shared_ptr_type surface_fill_mask_texture =
+			renderer.get_context().get_shared_state()->acquire_texture(
+					renderer,
+					GL_TEXTURE_2D_ARRAY_EXT,
+					GL_RGBA8,
+					surface_fill_mask_resolution,
+					surface_fill_mask_resolution,
+					texture_depth);
+
+	// 'acquire_texture' initialises the texture memory (to empty) but does not set the filtering
+	// state when it creates a new texture.
+	// Also it might have been used by another client that specified different filtering settings for it.
+	// So we set the filtering settings each time we acquire.
+
+	// Linear filtering.
+	surface_fill_mask_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	surface_fill_mask_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// Turn off any anisotropic filtering - we don't need it.
+	// Besides, it anisotropic filtering needs explicit gradients in GLSL code for texture accesses in non-uniform flow.
+	if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
+	{
+		surface_fill_mask_texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
+	}
+
+
+	// Clamp texture coordinates to centre of edge texels -
+	// it's easier for hardware to implement - and doesn't affect our calculations.
+	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
+		capabilities.texture.gl_SGIS_texture_edge_clamp)
+	{
+		surface_fill_mask_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		surface_fill_mask_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+	else
+	{
+		surface_fill_mask_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		surface_fill_mask_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	}
+
+	return surface_fill_mask_texture;
 }
 
 
@@ -1134,14 +1275,16 @@ GPlatesOpenGL::GLScalarField3D::render_surface_fill_mask(
 	renderer.gl_bind_program_object(d_render_surface_fill_mask_program_object.get());
 
 	// Temporarily acquire a texture array to render the surface fill mask into.
-	surface_fill_mask_texture = acquire_surface_fill_mask_texture(renderer);
+	surface_fill_mask_texture = acquire_surface_fill_mask_texture(renderer, d_surface_fill_mask_resolution);
 
 	// Classify our frame buffer object according to texture format/dimensions.
 	GLFrameBufferObject::Classification framebuffer_object_classification;
 	framebuffer_object_classification.set_dimensions(
+			renderer,
 			surface_fill_mask_texture->get_width().get(),
 			surface_fill_mask_texture->get_height().get());
-	framebuffer_object_classification.set_texture_internal_format(
+	framebuffer_object_classification.set_attached_texture_array(
+			renderer,
 			surface_fill_mask_texture->get_internal_format().get());
 
 	// Acquire and bind a frame buffer object.
@@ -1158,6 +1301,31 @@ GPlatesOpenGL::GLScalarField3D::render_surface_fill_mask(
 			surface_fill_mask_texture,
 			0, // level - note that this is mipmap level and not the layer number
 			GL_COLOR_ATTACHMENT0_EXT);
+
+	// Check for framebuffer completeness (after attaching to texture array).
+	// It seems some hardware fails even though we checked OpenGL capabilities in 'is_supported()'
+	// such as 'gl_EXT_geometry_shader4' and we are using nice power-of-two texture dimensions, etc.
+	// Note that the expensive completeness check is cached so it shouldn't slow us down.
+	if (!renderer.get_context().get_non_shared_state()->check_framebuffer_object_completeness(
+			renderer,
+			framebuffer_object,
+			framebuffer_object_classification))
+	{
+		// Only output warning once for each framebuffer object classification.
+		static std::set<GLFrameBufferObject::Classification::tuple_type> warning_map;
+		if (warning_map.find(framebuffer_object_classification.get_tuple()) == warning_map.end())
+		{
+			qWarning() << "Scalar field surface polygons mask failed framebuffer completeness check.";
+
+			// Flag warning has been output.
+			warning_map.insert(framebuffer_object_classification.get_tuple());
+		}
+
+		// Detach from the framebuffer object before it gets returned to the framebuffer object cache.
+		framebuffer_object->gl_detach_all(renderer);
+
+		return false;
+	}
 
 	// Clear all layers of texture array.
 	renderer.gl_clear_color(); // Clear colour to all zeros.
@@ -2937,58 +3105,6 @@ GPlatesOpenGL::GLScalarField3D::create_colour_palette_texture(
 
 	// Check there are no OpenGL errors.
 	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
-}
-
-
-GPlatesOpenGL::GLTexture::shared_ptr_to_const_type
-GPlatesOpenGL::GLScalarField3D::acquire_surface_fill_mask_texture(
-		GLRenderer &renderer)
-{
-	const GLCapabilities &capabilities = renderer.get_capabilities();
-
-	const unsigned int texture_depth = 6;
-
-	// Acquire an RGBA8 texture.
-	const GLTexture::shared_ptr_type surface_fill_mask_texture =
-			renderer.get_context().get_shared_state()->acquire_texture(
-					renderer,
-					GL_TEXTURE_2D_ARRAY_EXT,
-					GL_RGBA8,
-					d_surface_fill_mask_resolution,
-					d_surface_fill_mask_resolution,
-					texture_depth);
-
-	// 'acquire_texture' initialises the texture memory (to empty) but does not set the filtering
-	// state when it creates a new texture.
-	// Also it might have been used by another client that specified different filtering settings for it.
-	// So we set the filtering settings each time we acquire.
-
-	// Linear filtering.
-	surface_fill_mask_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	surface_fill_mask_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	// Turn off any anisotropic filtering - we don't need it.
-	// Besides, it anisotropic filtering needs explicit gradients in GLSL code for texture accesses in non-uniform flow.
-	if (capabilities.texture.gl_EXT_texture_filter_anisotropic)
-	{
-		surface_fill_mask_texture->gl_tex_parameterf(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1.0f);
-	}
-
-
-	// Clamp texture coordinates to centre of edge texels -
-	// it's easier for hardware to implement - and doesn't affect our calculations.
-	if (capabilities.texture.gl_EXT_texture_edge_clamp ||
-		capabilities.texture.gl_SGIS_texture_edge_clamp)
-	{
-		surface_fill_mask_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		surface_fill_mask_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	}
-	else
-	{
-		surface_fill_mask_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		surface_fill_mask_texture->gl_tex_parameteri(renderer, GL_TEXTURE_2D_ARRAY_EXT, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	}
-
-	return surface_fill_mask_texture;
 }
 
 

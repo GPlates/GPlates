@@ -303,7 +303,7 @@ namespace GPlatesGui
 		set_key(
 				int key_)
 		{
-			d_key = key;
+			d_key = key_;
 		}
 
 		const Colour &

@@ -206,9 +206,11 @@ namespace GPlatesAppLogic
 			explicit
 			ReconstructFeature(
 					std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+					const ReconstructHandle::type &reconstruct_handle,
 					const ReconstructParams &reconstruct_params,
 					const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 					const ReconstructionTreeCreator &reconstruction_tree_creator) :
+				d_reconstruct_handle(reconstruct_handle),
 				d_reconstruction_tree(reconstruction_tree),
 				d_reconstruction_tree_creator(reconstruction_tree_creator),
 				d_reconstruct_params(reconstruct_params),
@@ -275,7 +277,8 @@ namespace GPlatesAppLogic
 									*(*d_VGP_params.d_vgp_iterator).handle_weak_ref(),
 									(*d_VGP_params.d_vgp_iterator),
 									d_reconstruction_params.get_recon_plate_id(),
-									d_reconstruction_params.get_time_of_appearance());
+									d_reconstruction_params.get_time_of_appearance(),
+									d_reconstruct_handle);
 					d_reconstructed_feature_geometries.push_back(rfg_ptr);
 				}
 
@@ -290,7 +293,8 @@ namespace GPlatesAppLogic
 									(*d_VGP_params.d_site_point),
 									ReconstructMethod::VIRTUAL_GEOMAGNETIC_POLE,
 									d_reconstruction_params.get_recon_plate_id(),
-									d_reconstruction_params.get_time_of_appearance());
+									d_reconstruction_params.get_time_of_appearance(),
+									d_reconstruct_handle);
 					d_reconstructed_feature_geometries.push_back(rfg_ptr);
 				}
 			}
@@ -366,6 +370,7 @@ namespace GPlatesAppLogic
 			}
 
 		private:
+			const ReconstructHandle::type &d_reconstruct_handle;
 			ReconstructionTree::non_null_ptr_to_const_type d_reconstruction_tree;
 			const ReconstructionTreeCreator &d_reconstruction_tree_creator;
 			const ReconstructParams &d_reconstruct_params;
@@ -417,6 +422,7 @@ GPlatesAppLogic::ReconstructMethodVirtualGeomagneticPole::reconstruct_feature_ge
 
 	ReconstructFeature visitor(
 			reconstructed_feature_geometries,
+			reconstruct_handle,
 			context.reconstruct_params,
 			reconstruction_tree,
 			context.reconstruction_tree_creator);

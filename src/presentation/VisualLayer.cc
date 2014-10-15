@@ -39,14 +39,19 @@
 
 #include "file-io/FileInfo.h"
 
+#include "view-operations/RenderedGeometryParameters.h"
+
+
 GPlatesPresentation::VisualLayer::VisualLayer(
 		VisualLayers &visual_layers,
 		const VisualLayerRegistry &visual_layer_registry,
 		GPlatesAppLogic::Layer &layer,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
+		const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
 		int layer_number) :
 	d_visual_layers(visual_layers),
 	d_visual_layer_registry(visual_layer_registry),
+	d_rendered_geometry_parameters(rendered_geometry_parameters),
 	d_layer(layer),
 	// Create a child rendered geometry layer in the main RECONSTRUCTION layer.
 	d_rendered_geometry_layer_index(
@@ -133,7 +138,8 @@ GPlatesPresentation::VisualLayer::create_rendered_geometries(
 	}
 
 	// This creates the RenderedGeometry's from the ReconstructionGeometry's.
-	ReconstructionGeometryRenderer::RenderParamsPopulator render_params_populator;
+	ReconstructionGeometryRenderer::RenderParamsPopulator render_params_populator(
+			d_rendered_geometry_parameters);
 	d_visual_layer_params->accept_visitor(render_params_populator);
 	ReconstructionGeometryRenderer reconstruction_geometry_renderer(
 			render_params_populator.get_render_params(),

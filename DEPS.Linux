@@ -68,7 +68,7 @@ GL              See note below.
 GLU             See note below.
 GLEW            libglew-dev 
 Python          python-dev
-Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev
+Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev
 Qt              libqt4-gui libqt4-dev (See note below.)
 GDAL            libgdal1-dev
 CGAL            libcgal-dev

@@ -1297,14 +1297,12 @@ namespace GPlatesFileIO
 				const QString& line);
 
 		/*
-		* This function will concatenate strings between quotation marks.
-		* for example, 'CrysI' 255/000/000 'Crystallisation (plutonic)' should be three tokens instead of four.
-		* 'Crystallisation (plutonic)' should be treated as one string.
+		* Parse a line of cpt file according to GMT cpt specification..
 		*/
-		void
-		concat_quoted_strings(
-				QStringList& tokens);
 
+		QStringList
+		split_into_tokens(
+				const QString& line);
 		/*
 		Fill examples: 
 			-G128				Solid gray

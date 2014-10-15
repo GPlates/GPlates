@@ -26,7 +26,7 @@
 #if defined(__APPLE__)
 //On mac, this header file must be included here to workaround a boost python bug.
 //If you don't do this, you will get strange error messages when compiling on mac.
-#include <python.h> 
+#include <Python.h> 
 #endif
 
 #include <utility>
