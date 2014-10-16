@@ -676,6 +676,7 @@ GPlatesGui::register_default_export_animation_types(
 	const GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::OutputOptions
 			default_citcoms_resolved_topology_export_options(
 					/*wrap_geometries_to_the_dateline*/true,
+					/*non_overlapping_sub_segments*/true,
 
 					/*export_individual_plate_polygon_files*/false,
 					/*export_all_plate_polygons_to_a_single_file*/true,

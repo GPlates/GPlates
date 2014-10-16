@@ -548,3 +548,12 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 
 	return reconstruct_handle;
 }
+
+
+void
+GPlatesAppLogic::TopologyUtils::find_shared_sub_segments(
+		std::vector<ResolvedTopologicalSharedSubSegment> & shared_sub_segments,
+		const std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries,
+		const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks)
+{
+}

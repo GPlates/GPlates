@@ -36,6 +36,7 @@
 #include "AppLogicFwd.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionTreeCreator.h"
+#include "ResolvedTopologicalSharedSubSegment.h"
 #include "TopologyGeometryType.h"
 
 #include "maths/LatLonPoint.h"
@@ -353,6 +354,24 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles);
+
+
+		/**
+		 * Finds all sub-segments shared by resolved topology boundaries and network boundaries.
+		 *
+		 * These sub-segments have been separated into non-overlapping sections.
+		 * This is in contrast to simply gathering all sub-segments of these resolved boundaries
+		 * which will overlap each other (eg, two plate polygons share parts of their boundary
+		 * leading to duplication).
+		 *
+		 * @a resolved_topological_boundaries are expected to be @a ResolvedTopogicalGeometry
+		 * containing *polygon* geometry.
+		 */
+		void
+		find_shared_sub_segments(
+				std::vector<ResolvedTopologicalSharedSubSegment> & shared_sub_segments,
+				const std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries,
+				const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks);
 	}
 }
 

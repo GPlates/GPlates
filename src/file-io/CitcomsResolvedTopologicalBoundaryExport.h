@@ -101,6 +101,9 @@ namespace GPlatesFileIO
 					// Wrap polyline/polygon geometries to the dateline (mainly useful for ArcGIS shapefile users)...
 					bool wrap_geometries_to_the_dateline_ = true,
 
+					// Avoid sub-segment geometry duplication by removing overlap.
+					bool non_overlapping_sub_segments_ = true,
+
 					// plate polygon options
 					bool export_individual_plate_polygon_files_         = false,
 					bool export_all_plate_polygons_to_a_single_file_    = false,
@@ -161,6 +164,8 @@ namespace GPlatesFileIO
 					const QString &placeholder_slab_edge_side_ = "slab_edges_side") :
 
 				wrap_geometries_to_the_dateline(wrap_geometries_to_the_dateline_),
+				non_overlapping_sub_segments(non_overlapping_sub_segments_),
+
 				// plate polygon options
 				export_individual_plate_polygon_files(export_individual_plate_polygon_files_),
 				export_all_plate_polygons_to_a_single_file(export_all_plate_polygons_to_a_single_file_),
@@ -225,6 +230,9 @@ namespace GPlatesFileIO
 
 			// Wrap polyline/polygon geometries to the dateline (mainly useful for ArcGIS shapefile users)...
 			bool wrap_geometries_to_the_dateline;
+
+			// Avoid sub-segment geometry duplication by removing overlap.
+			bool non_overlapping_sub_segments;
 
 			// plate polygon options 
 			bool export_individual_plate_polygon_files;

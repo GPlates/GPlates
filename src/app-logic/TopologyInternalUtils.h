@@ -497,10 +497,13 @@ namespace GPlatesAppLogic
 		 * sub-segment sequence is returned. The combined sub-segment is joined with the end point
 		 * of the previous (non-joined) sub-segment and with the start point of the next (non-joined)
 		 * sub-segment - unless *all* sub-segments are joined.
+		 * The feature reference and reconstruction geometry associated with each joined sub-segment
+		 * is that of the *first* sub-segment in the sequence that were joined - this is a bit
+		 * arbitrary but highlights that this joining is a hack (see below).
 		 *
-		 * This was meant to be a temporary hack to be removed when resolved *line* topologies were
-		 * implemented. However, unfortunately it seems we need to keep this hack in place for any
-		 * old data files that use the old method.
+		 * This was meant to be a temporary hack to be removed now that resolved *line* topologies
+		 * have been implemented. However, unfortunately it seems we need to keep this hack in place
+		 * for any old data files that use the old method.
 		 *
 		 * Prior to the ability to have resolved *line* topologies, a deforming zone was deformed by
 		 * individually moving point geometries spread out along the deforming zone (each moving
