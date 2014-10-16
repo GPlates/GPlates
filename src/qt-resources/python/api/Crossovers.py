@@ -233,7 +233,7 @@ def synchronise_crossovers(
     
     *crossover_threshold_degrees* can optionally be used to synchronise (fix) only those crossovers whose
     difference in pre and post crossover rotation latitudes, longitudes or angles exceeds this amount. This is
-    useful some PLATES rotation files that are typically accurate to 2 decimal places (or threshold of 0.01).
+    useful since some PLATES rotation files are typically only accurate to 2 decimal places (or threshold of 0.01).
     
     *crossover_results* can optionally be used to obtain a list of the synchronisation results of all
     filtered crossovers (see *crossover_filter*). Each list element is a tuple of (Crossover, bool)

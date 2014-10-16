@@ -27,6 +27,7 @@
 #include <iostream>
 #include <cmath>
 #include <deque>
+#include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/none.hpp>
@@ -35,6 +36,7 @@
 
 #include "TopologyInternalUtils.h"
 
+#include "GeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructionGeometryFinder.h"
@@ -1026,38 +1028,6 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 }
 
 
-boost::optional<GPlatesMaths::FiniteRotation>
-GPlatesAppLogic::TopologyInternalUtils::get_finite_rotation(
-		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_plateid_feature,
-		const ReconstructionTree &reconstruction_tree)
-{
-	if (!reconstruction_plateid_feature.is_valid())
-	{
-		return boost::none;
-	}
-
-	// Get the plate id from the reference point feature.
-	static const GPlatesModel::PropertyName plate_id_property_name =
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-
-	// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
-	// which can still give a non-identity rotation if the anchor plate id is non-zero.
-	GPlatesModel::integer_plate_id_type reconstruction_plate_id = 0;
-	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
-		GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
-				reconstruction_plateid_feature,
-				plate_id_property_name);
-	if (recon_plate_id)
-	{
-		reconstruction_plate_id = recon_plate_id.get()->get_value();
-	}
-
-	// The feature has a reconstruction plate ID.
-	// Return the rotation.
-	return reconstruction_tree.get_composed_absolute_rotation(reconstruction_plate_id).first;
-}
-
-
 boost::tuple<
 		boost::optional<GPlatesMaths::PointOnSphere>/*intersection point*/, 
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type/*first_section_closest_segment*/,
@@ -1770,6 +1740,210 @@ GPlatesAppLogic::TopologyInternalUtils::find_closest_intersected_segment_to_refe
 	return (closeness_first_segment > closeness_second_segment)
 			? first_intersected_segment
 			: second_intersected_segment;
+}
+
+
+void
+GPlatesAppLogic::TopologyInternalUtils::join_adjacent_deforming_points(
+		sub_segment_seq_type &merged_sub_segments,
+		const sub_segment_seq_type &sub_segment_seq,
+		const double &reconstruction_time)
+{
+	// A flag for each subsegment that's true if it's a deforming point.
+	std::vector<bool> deforming_point_flags;
+
+	// Iterate over the subsegments in the merged sub-segments list.
+	sub_segment_seq_type::const_iterator sub_segment_iter = sub_segment_seq.begin();
+	const sub_segment_seq_type::const_iterator sub_segment_end = sub_segment_seq.end();
+	bool found_deforming_points = false;
+	for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
+	{
+		const ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
+
+		bool is_deforming_point = false;
+
+		// This procedure works for any feature type and not just subduction zones.
+		// All the feature types are expected to be the same along a sequence of deforming point
+		// features but we don't check for that since it should already be the case and we expect
+		// a sequence of deforming points to be delineated by a polyline feature on either side.
+		// 
+		// Look for a geometry property with property name "gpml:unclassifiedGeometry"
+		// and if it's a point then we've found a deforming point that can be merged. 
+		static const GPlatesModel::PropertyName unclassified_geometry_property_name =
+				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry");
+		if (GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlPoint>(
+				sub_segment.get_feature_ref(),
+				unclassified_geometry_property_name,
+				reconstruction_time))
+		{
+			found_deforming_points = true;
+			is_deforming_point = true;
+		}
+
+		deforming_point_flags.push_back(is_deforming_point);
+	}
+
+	if (!found_deforming_points)
+	{
+		// No deforming points so just copy the input subsegment sequence to the output sequence.
+		merged_sub_segments.insert(
+				merged_sub_segments.end(),
+				sub_segment_seq.begin(),
+				sub_segment_seq.end());
+		return;
+	}
+
+	// The first previous subsegment is the last entry (its previous to the first entry).
+	bool prev_is_deforming_point = deforming_point_flags.back();
+	const ResolvedTopologicalGeometrySubSegment *prev_sub_segment =
+			&*--sub_segment_seq.end();
+
+	// Find the start of a sequence of deforming points.
+	unsigned int sub_segment_index = 0;
+	for (sub_segment_iter = sub_segment_seq.begin();
+		sub_segment_index < deforming_point_flags.size();
+		++sub_segment_iter, ++sub_segment_index)
+	{
+		const ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
+		const bool is_deforming_point = deforming_point_flags[sub_segment_index];
+
+		if (is_deforming_point)
+		{
+			if (!prev_is_deforming_point)
+			{
+				// We've found the start of a sequence of deforming points.
+				break;
+			}
+		}
+
+		prev_is_deforming_point = is_deforming_point;
+		prev_sub_segment = &sub_segment;
+	}
+
+	if (sub_segment_index == deforming_point_flags.size())
+	{
+		// All subsegments are deforming points so just create a single deforming polyline
+		// and return it as a single subsegment in the output sequence.
+
+		std::vector<GPlatesMaths::PointOnSphere> merged_deforming_polyline_points;
+
+		for (sub_segment_iter = sub_segment_seq.begin();
+			sub_segment_iter != sub_segment_end;
+			++sub_segment_iter)
+		{
+			// Add the current deforming point to the merged deforming polyline.
+			GeometryUtils::get_geometry_points(
+					*sub_segment_iter->get_geometry(),
+					merged_deforming_polyline_points,
+					false/*reverse_points*/);
+		}
+
+		// Create the merged deforming polyline.
+		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type merged_deforming_polyline =
+				GPlatesMaths::PolylineOnSphere::create_on_heap(
+						merged_deforming_polyline_points);
+
+		// Add to the final list of subsegments.
+		merged_sub_segments.push_back(
+				ResolvedTopologicalGeometrySubSegment(
+						merged_deforming_polyline,
+						// Note: We'll use the previous subsegment deforming point,
+						// out of all the merged deforming points, as the feature
+						// for the merged deforming polyline. This is quite dodgy
+						// which is why this whole thing is a big hack.
+						prev_sub_segment->get_reconstruction_geometry(),
+						prev_sub_segment->get_feature_ref(),
+						false/*use_reverse*/));
+		return;
+	}
+
+	std::vector<GPlatesMaths::PointOnSphere> merged_deforming_polyline_points;
+
+	// Iterate over the sub-segments at our new start point and join contiguous sequences
+	// of deforming points into deforming polylines.
+	unsigned int sub_segment_count = 0;
+	for ( ;
+		sub_segment_count < deforming_point_flags.size();
+		++sub_segment_iter, ++sub_segment_index, ++sub_segment_count)
+	{
+		// Handle wraparound...
+		if (sub_segment_index == deforming_point_flags.size())
+		{
+			sub_segment_index = 0;
+			sub_segment_iter = sub_segment_seq.begin();
+		}
+
+		const ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
+		const bool is_deforming_point = deforming_point_flags[sub_segment_index];
+
+		if (is_deforming_point)
+		{
+			if (!prev_is_deforming_point)
+			{
+				// Start of a merged deforming line.
+				// Grab the end point of the last subsegment as the first point.
+				std::pair<
+					GPlatesMaths::PointOnSphere/*start point*/,
+					GPlatesMaths::PointOnSphere/*end point*/>
+						prev_sub_segment_geometry_end_points =
+							GeometryUtils::get_geometry_end_points(
+									*prev_sub_segment->get_geometry(),
+									prev_sub_segment->get_use_reverse());
+				merged_deforming_polyline_points.push_back(
+						prev_sub_segment_geometry_end_points.second/*end point*/);
+			}
+
+			// Add the current deforming point to the merged deforming polyline.
+			GeometryUtils::get_geometry_points(
+					*sub_segment.get_geometry(),
+					merged_deforming_polyline_points,
+					false/*reverse_points*/);
+		}
+		else // current subsegment is *not* a deforming point...
+		{
+			if (prev_is_deforming_point)
+			{
+				// End of current merged deforming line.
+				// Grab the start point of the current subsegment as the end point.
+				std::pair<
+					GPlatesMaths::PointOnSphere/*start point*/,
+					GPlatesMaths::PointOnSphere/*end point*/>
+						sub_segment_geometry_end_points =
+							GeometryUtils::get_geometry_end_points(
+									*sub_segment.get_geometry(),
+									sub_segment.get_use_reverse());
+				merged_deforming_polyline_points.push_back(
+						sub_segment_geometry_end_points.first/*start point*/);
+
+				// Create the merged deforming polyline.
+				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type merged_subduction_polyline =
+						GPlatesMaths::PolylineOnSphere::create_on_heap(
+								merged_deforming_polyline_points);
+
+				// Add to the final list of subsegments.
+				merged_sub_segments.push_back(
+						ResolvedTopologicalGeometrySubSegment(
+								merged_subduction_polyline,
+								// Note: We'll use the previous subsegment deforming point,
+								// out of all the merged deforming points, as the feature
+								// for the merged deforming polyline. This is quite dodgy
+								// which is why this whole thing is a big hack.
+								prev_sub_segment->get_reconstruction_geometry(),
+								prev_sub_segment->get_feature_ref(),
+								false/*use_reverse*/));
+
+				// Clear for the next merged sequence of deforming points.
+				merged_deforming_polyline_points.clear();
+			}
+
+			// The current subsegment is not a deforming point so just output it
+			// to the final list of subsegments.
+			merged_sub_segments.push_back(sub_segment);
+		}
+
+		prev_is_deforming_point = is_deforming_point;
+		prev_sub_segment = &sub_segment;
+	}
 }
 
 

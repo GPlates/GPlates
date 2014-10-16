@@ -1047,6 +1047,17 @@ qDebug() << "create_resolved_topology_network: boundary_points.size(): " << boun
 					d_shape_factor,
 					d_max_edge);
 
+	// Join adjacent deforming points that are spread along a deforming zone boundary.
+	//
+	// This was meant to be a temporary hack to be removed when resolved *line* topologies were
+	// implemented. However, unfortunately it seems we need to keep this hack in place for any
+	// old data files that use the old method.
+	std::vector<ResolvedTopologicalGeometrySubSegment> joined_boundary_subsegments;
+	TopologyInternalUtils::join_adjacent_deforming_points(
+			joined_boundary_subsegments,
+			boundary_subsegments,
+			d_reconstruction_time);
+
 	// Create the network RTN 
 	const ResolvedTopologicalNetwork::non_null_ptr_type network =
 			ResolvedTopologicalNetwork::create(
@@ -1054,8 +1065,8 @@ qDebug() << "create_resolved_topology_network: boundary_points.size(): " << boun
 					triangulation_network,
 					*(current_top_level_propiter()->handle_weak_ref()),
 					*(current_top_level_propiter()),
-					boundary_subsegments.begin(),
-					boundary_subsegments.end(),
+					joined_boundary_subsegments.begin(),
+					joined_boundary_subsegments.end(),
 					d_reconstruction_params.get_recon_plate_id(),
 					d_reconstruction_params.get_time_of_appearance(),
 					d_reconstruct_handle/*identify where/when this RTN was resolved*/);

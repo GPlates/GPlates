@@ -695,6 +695,20 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 		return;
 	}
 
+	// Join adjacent deforming points that are spread along a deforming zone boundary.
+	// Note that even though we are creating a resolved topological *boundary*, and not a
+	// resolved topological deforming *network*, the boundary can still be deforming
+	// (via independentally moving points).
+	//
+	// This was meant to be a temporary hack to be removed when resolved *line* topologies were
+	// implemented. However, unfortunately it seems we need to keep this hack in place for any
+	// old data files that use the old method.
+	std::vector<ResolvedTopologicalGeometrySubSegment> joined_output_subsegments;
+	TopologyInternalUtils::join_adjacent_deforming_points(
+			joined_output_subsegments,
+			output_subsegments,
+			d_reconstruction_tree->get_reconstruction_time());
+
 	//
 	// Create the RTG for the plate polygon.
 	//
@@ -705,8 +719,8 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 			*plate_polygon,
 			*(current_top_level_propiter()->handle_weak_ref()),
 			*(current_top_level_propiter()),
-			output_subsegments.begin(),
-			output_subsegments.end(),
+			joined_output_subsegments.begin(),
+			joined_output_subsegments.end(),
 			d_reconstruction_params.get_recon_plate_id(),
 			d_reconstruction_params.get_time_of_appearance(),
 			d_reconstruct_handle/*identify where/when this RTG was resolved*/);

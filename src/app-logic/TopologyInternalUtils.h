@@ -32,6 +32,7 @@
 #include <QString>
 
 #include "ReconstructedFeatureGeometry.h"
+#include "ResolvedTopologicalGeometrySubSegment.h"
 #include "TopologyGeometryType.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -230,20 +231,6 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureHandle::iterator &geometry_property,
 				const double &reconstruction_time,
 				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
-
-
-		/**
-		 * Returns the @a FiniteRotation obtained by looking up @a reconstruction_tree
-		 * using the plate id from the "gpml:reconstructionPlateId" property of
-		 * @a reconstruction_plateid_feature.
-		 *
-		 * If @a reconstruction_plateid_feature is not valid or
-		 * no "gpml:reconstructionPlateId" property is found then false is returned.
-		 */
-		boost::optional<GPlatesMaths::FiniteRotation>
-		get_finite_rotation(
-				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_plateid_feature,
-				const ReconstructionTree &reconstruction_tree);
 
 
 		/**
@@ -501,6 +488,31 @@ namespace GPlatesAppLogic
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_intersected_segment,
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_intersected_segment);
 
+
+		/**
+		 * Join adjacent deforming points that are spread along a deforming zone.
+		 *
+		 * Contiguous sub-segments, each whose feature contains a 'gpml:unclassifiedGeometry' point
+		 * geometry, are combined into a single sub-segment. If none are found then the original
+		 * sub-segment sequence is returned. The combined sub-segment is joined with the end point
+		 * of the previous (non-joined) sub-segment and with the start point of the next (non-joined)
+		 * sub-segment - unless *all* sub-segments are joined.
+		 *
+		 * This was meant to be a temporary hack to be removed when resolved *line* topologies were
+		 * implemented. However, unfortunately it seems we need to keep this hack in place for any
+		 * old data files that use the old method.
+		 *
+		 * Prior to the ability to have resolved *line* topologies, a deforming zone was deformed by
+		 * individually moving point geometries spread out along the deforming zone (each moving
+		 * according to a separate Plate ID). Exporting these required joining adjacent deforming
+		 * point geometries into one deforming polyline subsegment. That's no longer needed now that
+		 * resolved *line* topologies can be used.
+		 */
+		void
+		join_adjacent_deforming_points(
+				sub_segment_seq_type &merged_sub_segments,
+				const sub_segment_seq_type &sub_segments,
+				const double &reconstruction_time);
 
 		
 		/**
