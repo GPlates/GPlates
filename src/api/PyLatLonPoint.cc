@@ -33,6 +33,7 @@
 
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
+#include "maths/UnitVector3D.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -42,6 +43,15 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+	// North and south poles.
+	const GPlatesMaths::LatLonPoint lat_lon_point_north_pole(
+			make_lat_lon_point(
+					GPlatesMaths::PointOnSphere(GPlatesMaths::UnitVector3D::zBasis())));
+	const GPlatesMaths::LatLonPoint lat_lon_point_south_pole(
+			make_lat_lon_point(
+					GPlatesMaths::PointOnSphere(-GPlatesMaths::UnitVector3D::zBasis())));
+
+
 	bp::tuple
 	lat_lon_point_to_xyz(
 			const GPlatesMaths::LatLonPoint &lat_lon_point)
@@ -108,7 +118,12 @@ export_lat_lon_point()
 					"Represents a point in 2D geographic coordinates (latitude and longitude).\n"
 					"\n"
 					"LatLonPoints are *not* equality (``==``, ``!=``) comparable (will raise ``TypeError`` "
-					"when compared) and are not hashable (cannot be used as a key in a ``dict``).\n",
+					"when compared) and are not hashable (cannot be used as a key in a ``dict``).\n"
+					"\n"
+					"Convenience class static data are available for the North and South poles:\n"
+					"\n"
+					"* ``pygplates.LatLonPoint.north_pole``\n"
+					"* ``pygplates.LatLonPoint.south_pole``\n",
 					bp::init<double,double>(
 							(bp::arg("latitude"), bp::arg("longitude")),
 							"__init__(latitude, longitude)\n"
@@ -163,6 +178,10 @@ export_lat_lon_point()
 				"    if pygplates.LatLonPoint.is_valid_longitude(longitude):\n"
 				"      ...\n")
 		.staticmethod("is_valid_longitude")
+		// Static property 'pygplates.LatLonPoint.north_pole'...
+		.def_readonly("north_pole", GPlatesApi::lat_lon_point_north_pole)
+		// Static property 'pygplates.LatLonPoint.south_pole'...
+		.def_readonly("south_pole", GPlatesApi::lat_lon_point_south_pole)
 		.def("get_latitude",
 				&GPlatesMaths::LatLonPoint::latitude,
 				bp::return_value_policy<bp::copy_const_reference>(),

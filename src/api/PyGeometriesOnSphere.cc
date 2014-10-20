@@ -525,6 +525,11 @@ namespace GPlatesApi
 	};
 
 
+	// North and south poles.
+	const GPlatesMaths::PointOnSphere point_on_sphere_north_pole(GPlatesMaths::UnitVector3D::zBasis());
+	const GPlatesMaths::PointOnSphere point_on_sphere_south_pole(-GPlatesMaths::UnitVector3D::zBasis());
+
+
 	// Convenience constructor to create from (x,y,z).
 	//
 	// We can't use bp::make_constructor with a function that returns a non-pointer, so instead we
@@ -663,7 +668,12 @@ export_point_on_sphere()
 					"will most likely *not* compare equal even if mathematically they should be identical.\n"
 					"\n"
 					"Note that since a *PointOnSphere* is immutable it contains no operations or "
-					"methods that modify its state.\n",
+					"methods that modify its state.\n"
+					"\n"
+					"Convenience class static data are available for the North and South poles:\n"
+					"\n"
+					"* ``pygplates.PointOnSphere.north_pole``\n"
+					"* ``pygplates.PointOnSphere.south_pole``\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -746,6 +756,10 @@ export_point_on_sphere()
 				"\n"
 				"    # If (x,y,z) might not be on the unit sphere.\n"
 				"    point = pygplates.PointOnSphere(x, y, z, normalise=True)\n")
+		// Static property 'pygplates.PointOnSphere.north_pole'...
+		.def_readonly("north_pole", GPlatesApi::point_on_sphere_north_pole)
+		// Static property 'pygplates.PointOnSphere.south_pole'...
+		.def_readonly("south_pole", GPlatesApi::point_on_sphere_south_pole)
 		.def("get_x",
 				&GPlatesApi::point_on_sphere_get_x,
 				"get_x() -> float\n"

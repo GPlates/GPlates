@@ -230,6 +230,10 @@ class LatLonPointCase(unittest.TestCase):
         self.latitude = 50
         self.longitude = 145
         self.lat_lon_point = pygplates.LatLonPoint(self.latitude, self.longitude)
+    
+    def test_static_data_members(self):
+        self.assertAlmostEqual(pygplates.LatLonPoint.north_pole.get_latitude(), 90)
+        self.assertAlmostEqual(pygplates.LatLonPoint.south_pole.get_latitude(), -90)
 
     def test_get(self):
         self.assertTrue(self.lat_lon_point.get_latitude() == self.latitude)

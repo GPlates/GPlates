@@ -84,6 +84,10 @@ class PointOnSphereCase(unittest.TestCase):
     def setUp(self):
         self.xyz = (1, 0, 0)
     
+    def test_static_data_members(self):
+        self.assertTrue(pygplates.PointOnSphere.north_pole == pygplates.PointOnSphere(0,0,1))
+        self.assertTrue(pygplates.PointOnSphere.south_pole == pygplates.PointOnSphere(0,0,-1))
+    
     def test_construct(self):
         point = pygplates.PointOnSphere(self.xyz[0], self.xyz[1], self.xyz[2])
         self.assertEquals(point.to_xyz(), self.xyz)

@@ -132,7 +132,7 @@ namespace GPlatesApi
 		 * Returns the referenced feature.
 		 *
 		 * The feature reference could be invalid.
-		 * It should be normally be valid though so we don't document that Py_None could be returned
+		 * It should normally be valid though so we don't document that Py_None could be returned
 		 * to the caller.
 		 */
 		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
@@ -145,7 +145,7 @@ namespace GPlatesApi
 		 * Returns the referenced feature property.
 		 *
 		 * The feature property reference could be invalid.
-		 * It should be normally be valid though so we don't document that Py_None could be returned
+		 * It should normally be valid though so we don't document that Py_None could be returned
 		 * to the caller.
 		 */
 		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
@@ -404,7 +404,7 @@ namespace GPlatesApi
 		 * Returns the referenced feature.
 		 *
 		 * The feature reference could be invalid.
-		 * It should be normally be valid though so we don't document that Py_None could be returned
+		 * It should normally be valid though so we don't document that Py_None could be returned
 		 * to the caller.
 		 */
 		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
@@ -417,7 +417,7 @@ namespace GPlatesApi
 		 * Returns the referenced feature property.
 		 *
 		 * The feature property reference could be invalid.
-		 * It should be normally be valid though so we don't document that Py_None could be returned
+		 * It should normally be valid though so we don't document that Py_None could be returned
 		 * to the caller.
 		 */
 		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
@@ -723,7 +723,7 @@ namespace GPlatesApi
 		 * Returns the referenced feature.
 		 *
 		 * The feature reference could be invalid.
-		 * It should be normally be valid though so we don't document that Py_None could be returned
+		 * It should normally be valid though so we don't document that Py_None could be returned
 		 * to the caller.
 		 */
 		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
@@ -736,7 +736,7 @@ namespace GPlatesApi
 		 * Returns the referenced feature property.
 		 *
 		 * The feature property reference could be invalid.
-		 * It should be normally be valid though so we don't document that Py_None could be returned
+		 * It should normally be valid though so we don't document that Py_None could be returned
 		 * to the caller.
 		 */
 		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
