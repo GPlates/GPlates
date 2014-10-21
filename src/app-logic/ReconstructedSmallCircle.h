@@ -108,6 +108,14 @@ namespace GPlatesAppLogic
 		accept_visitor(
 				ReconstructionGeometryVisitor &visitor);
 
+		/**
+		 * Accept a WeakObserverVisitor instance.
+		 */
+		virtual
+		void
+		accept_weak_observer_visitor(
+				GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor);
+
 
 		small_circle_centre_type 
 		centre() const

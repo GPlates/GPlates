@@ -42,7 +42,8 @@
 #include "ReconstructionGeometryFinder.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionTree.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalLine.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -1980,7 +1981,7 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_line_topological_sec
 	// to a topology layer (to deform it). In this situation the RFG would disappear from the
 	// topology's boundary (or interior) as soon as its layer was connected a topology layer.
 	//
-	// In any case it'll be up to the topology builder user to not used deformed geometries as
+	// In any case it'll be up to the topology builder user to not use deformed geometries as
 	// topological sections.
 
 	return true;
@@ -1997,21 +1998,17 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_boundary_topological
 		return true;
 	}
 
-	// See if RTG.
-	boost::optional<const ResolvedTopologicalGeometry *> resolved_topological_geometry =
+	// See if RTL.
+	boost::optional<const ResolvedTopologicalLine *> resolved_topological_line =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const ResolvedTopologicalGeometry>(recon_geom);
-	if (resolved_topological_geometry)
+					const ResolvedTopologicalLine>(recon_geom);
+	if (resolved_topological_line)
 	{
-		// Return true if an RTG with a polyline geometry (a resolved topological line).
-		if (resolved_topological_geometry.get()->resolved_topology_line())
-		{
-			// NOTE: We don't need to check that the resolved line was not formed from
-			// RFGs that were deformed - see 'can_use_as_resolved_line_topological_section()' -
-			// because the layer system prevents layers containing deformed RFGs from being searched
-			// for topological sections (hence the resolved lines won't find them).
-			return true;
-		}
+		// NOTE: We don't need to check that the resolved line was not formed from
+		// RFGs that were deformed - see 'can_use_as_resolved_line_topological_section()' -
+		// because the layer system prevents layers containing deformed RFGs from being searched
+		// for topological sections (hence the resolved lines won't find them).
+		return true;
 	}
 
 	return false;

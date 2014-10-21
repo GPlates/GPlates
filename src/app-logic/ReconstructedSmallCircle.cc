@@ -42,3 +42,9 @@ GPlatesAppLogic::ReconstructedSmallCircle::accept_visitor(
 }
 
 
+void
+GPlatesAppLogic::ReconstructedSmallCircle::accept_weak_observer_visitor(
+		GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor)
+{
+	visitor.visit_reconstructed_small_circle(*this);
+}

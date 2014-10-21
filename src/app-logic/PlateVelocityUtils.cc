@@ -40,7 +40,7 @@
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructionTree.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
 #include "ResolvedTriangulationNetwork.h"
 #include "ResolvedTriangulationUtils.h"
@@ -308,7 +308,7 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 
 			boost::optional< std::pair<
 					GPlatesModel::integer_plate_id_type,
-					const ResolvedTopologicalGeometry * > > recon_plate_id_opt =
+					const ResolvedTopologicalBoundary * > > recon_plate_id_opt =
 							TopologyUtils::find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
 									resolved_topological_boundaries_containing_point);
 			if (!recon_plate_id_opt)
@@ -322,7 +322,7 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 			}
 
 			const GPlatesModel::integer_plate_id_type recon_plate_id = recon_plate_id_opt->first;
-			const ResolvedTopologicalGeometry *resolved_topo_boundary = recon_plate_id_opt->second;
+			const ResolvedTopologicalBoundary *resolved_topo_boundary = recon_plate_id_opt->second;
 
 			// Compute the velocity for this domain point.
 			const GPlatesMaths::Vector3D vector_xyz =
@@ -949,7 +949,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 		const double &reconstruction_time,
 		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &velocity_domains,
 		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
-		const std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
+		const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
 		const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &velocity_surface_resolved_topological_networks,
 		const boost::optional<VelocitySmoothingOptions> &velocity_smoothing_options)
 {

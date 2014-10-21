@@ -218,11 +218,12 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the *boundary* subsegment sequence for the specified resolved topology.
 		 *
-		 * @a reconstruction_geom_ptr should be either a @a ResolvedTopologicalGeometry (with a
-		 * *polygon* geometry - not a polyline) or a @a ResolvedTopologicalNetwork (the network boundary).
+		 * @a reconstruction_geom_ptr should be either a @a ResolvedTopologicalBoundary or a
+		 * @a ResolvedTopologicalNetwork (the network boundary).
 		 * Resolved topological lines are excluded as they do not form a closed boundary.
 		 *
-		 * Returns boost::none if the specified reconstruction geometry is not a resolved topology.
+		 * Returns boost::none if the specified reconstruction geometry is not one of the above
+		 * resolved topology types.
 		 */
 		template <typename ReconstructionGeometryPointer>
 		boost::optional<const sub_segment_seq_type &>
@@ -230,12 +231,13 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryPointer reconstruction_geom_ptr);
 
 		/**
-		 * Returns the boundary polygon of the specified resolved topological geometry.
+		 * Returns the boundary polygon of the specified resolved topology.
 		 *
-		 * @a reconstruction_geom_ptr can be either a @a ResolvedTopologicalGeometry or @a ResolvedTopologicalNetwork.
-		 * However only @a ResolvedTopologicalGeometry objects containing *polylines* are ignored.
+		 * @a reconstruction_geom_ptr can be either a @a ResolvedTopologicalBoundary or @a ResolvedTopologicalNetwork.
+		 * However @a ResolvedTopologicalLine objects are ignored.
 		 *
-		 * Returns boost::none if the specified reconstruction geometry is not a resolved topological geometry.
+		 * Returns boost::none if the specified reconstruction geometry is not one of the above
+		 * resolved topology types.
 		 */
 		template <typename ReconstructionGeometryPointer>
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
@@ -246,7 +248,8 @@ namespace GPlatesAppLogic
 		 * Returns the boundary polygon of the specified reconstruction geometry.
 		 *
 		 * @a reconstruction_geom_ptr can be a @a ReconstructedFeatureGeometry (or derived from it),
-		 * a @a ResolvedTopologicalGeometry or a @a ResolvedTopologicalNetwork.
+		 * a @a ResolvedTopologicalBoundary or a @a ResolvedTopologicalNetwork.
+		 * However @a ResolvedTopologicalLine objects are ignored.
 		 *
 		 * Returns boost::none if the specified reconstruction geometry does not contain a *polygon* geometry.
 		 */
@@ -394,7 +397,7 @@ namespace GPlatesAppLogic
 			reconstruction_geom_ptr->accept_visitor(recon_geom_derived_type_finder);
 
 			// Get the sequence of any found ReconstructionGeometry derived types.
-			// Can only be one as most though.
+			// Can only be one at most though.
 			const typename reconstruction_geometry_derived_type_finder_type::container_type &
 					derived_type_seq = recon_geom_derived_type_finder.get_geometry_type_sequence();
 
@@ -469,12 +472,12 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 			// Derivations of ReconstructedFeatureGeometry default to its implementation...
-
 			virtual
 			void
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
 
+			// Derivations of ResolvedTopologicalGeometry default to its implementation...
 			virtual
 			void
 			visit(
@@ -528,12 +531,12 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 			// Derivations of ReconstructedFeatureGeometry default to its implementation...
-
 			virtual
 			void
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
 
+			// Derivations of ResolvedTopologicalGeometry default to its implementation...
 			virtual
 			void
 			visit(
@@ -587,12 +590,12 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 			// Derivations of ReconstructedFeatureGeometry default to its implementation...
-
 			virtual
 			void
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
 
+			// Derivations of ResolvedTopologicalGeometry default to its implementation...
 			virtual
 			void
 			visit(
@@ -638,12 +641,12 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 			// Derivations of ReconstructedFeatureGeometry default to its implementation...
-
 			virtual
 			void
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
 
+			// Derivations of ResolvedTopologicalGeometry default to its implementation...
 			virtual
 			void
 			visit(
@@ -697,12 +700,12 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 			// Derivations of ReconstructedFeatureGeometry default to its implementation...
-
 			virtual
 			void
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
 
+			// Derivations of ResolvedTopologicalGeometry default to its implementation...
 			virtual
 			void
 			visit(
@@ -740,12 +743,12 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 			// Derivations of ReconstructedFeatureGeometry default to its implementation...
-
 			virtual
 			void
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
 
+			// Derivations of ResolvedTopologicalGeometry default to its implementation...
 			virtual
 			void
 			visit(
@@ -802,7 +805,7 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg);
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb);
 
 			virtual
 			void
@@ -842,7 +845,7 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg);
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb);
 
 			virtual
 			void
@@ -887,7 +890,7 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			visit(
-					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg);
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb);
 
 			virtual
 			void

@@ -35,7 +35,8 @@
 #include "GeometryUtils.h"
 #include "Reconstruction.h"
 #include "ReconstructionGeometryUtils.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalLine.h"
 #include "ResolvedTopologicalNetwork.h"
 #include "TopologyGeometryResolver.h"
 #include "TopologyInternalUtils.h"
@@ -67,7 +68,7 @@ namespace GPlatesAppLogic
 		struct PlateIdLessThanComparison
 		{
 			typedef std::pair<GPlatesModel::integer_plate_id_type,
-					const GPlatesAppLogic::ResolvedTopologicalGeometry *> plate_id_and_boundary_type;
+					const GPlatesAppLogic::ResolvedTopologicalBoundary *> plate_id_and_boundary_type;
 
 			PlateIdLessThanComparison()
 			{  }
@@ -168,7 +169,7 @@ GPlatesAppLogic::TopologyUtils::has_topological_line_features(
 
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
-		std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_lines,
+		std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_line_features_collection,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time,
@@ -177,14 +178,9 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
 	// Get the next global reconstruct handle - it'll be stored in each RTG.
 	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
 
-	// Resolve topological lines (not boundaries).
-	TopologyGeometryResolver::resolve_geometry_flags_type resolve_geometry_flags;
-	resolve_geometry_flags.set(TopologyGeometryResolver::RESOLVE_LINE);
-
 	// Visit topological line features.
 	TopologyGeometryResolver topology_line_resolver(
 			resolved_topological_lines,
-			resolve_geometry_flags,
 			reconstruct_handle,
 			reconstruction_tree_creator,
 			reconstruction_time,
@@ -243,7 +239,7 @@ GPlatesAppLogic::TopologyUtils::has_topological_boundary_features(
 
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
-		std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries,
+		std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const double &reconstruction_time,
@@ -252,14 +248,9 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
 	// Get the next global reconstruct handle - it'll be stored in each RTG.
 	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
 
-	// Resolve topological boundaries (not lines).
-	TopologyGeometryResolver::resolve_geometry_flags_type resolve_geometry_flags;
-	resolve_geometry_flags.set(TopologyGeometryResolver::RESOLVE_BOUNDARY);
-
 	// Visit topological boundary features.
 	TopologyGeometryResolver topology_boundary_resolver(
 			resolved_topological_boundaries,
-			resolve_geometry_flags,
 			reconstruct_handle,
 			reconstruction_tree_creator,
 			reconstruction_time,
@@ -276,30 +267,25 @@ GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
 
 
 GPlatesAppLogic::TopologyUtils::ResolvedBoundariesForGeometryPartitioning::ResolvedBoundariesForGeometryPartitioning(
-		const std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries)
+		const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries)
 {
 	// Reserve memory.
 	d_resolved_boundaries.reserve(resolved_topological_boundaries.size());
 
 	// Iterate through the resolved topological boundaries and generate polygons for geometry partitioning.
-	std::vector<resolved_topological_geometry_non_null_ptr_type>::const_iterator rtb_iter =
+	std::vector<resolved_topological_boundary_non_null_ptr_type>::const_iterator rtb_iter =
 			resolved_topological_boundaries.begin();
-	std::vector<resolved_topological_geometry_non_null_ptr_type>::const_iterator rtb_end =
+	std::vector<resolved_topological_boundary_non_null_ptr_type>::const_iterator rtb_end =
 			resolved_topological_boundaries.end();
 	for ( ; rtb_iter != rtb_end; ++rtb_iter)
 	{
-		const ResolvedTopologicalGeometry::non_null_ptr_type &rtb = *rtb_iter;
+		const ResolvedTopologicalBoundary::non_null_ptr_type &rtb = *rtb_iter;
 
-		boost::optional<ResolvedTopologicalGeometry::resolved_topology_boundary_ptr_type>
-				resolved_topology_boundary_polygon = rtb->resolved_topology_boundary();
-		if (resolved_topology_boundary_polygon)
-		{
-			const GeometryPartitioning resolved_boundary_for_geometry_partitioning(
-					rtb.get(),
-					GPlatesMaths::PolygonIntersections::create(resolved_topology_boundary_polygon.get()));
+		const GeometryPartitioning resolved_boundary_for_geometry_partitioning(
+				rtb.get(),
+				GPlatesMaths::PolygonIntersections::create(rtb->resolved_topology_boundary()));
 
-			d_resolved_boundaries.push_back(resolved_boundary_for_geometry_partitioning);
-		}
+		d_resolved_boundaries.push_back(resolved_boundary_for_geometry_partitioning);
 	}
 }
 
@@ -441,12 +427,12 @@ GPlatesAppLogic::TopologyUtils::ResolvedBoundariesForGeometryPartitioning::parti
 
 boost::optional< std::pair<
 		GPlatesModel::integer_plate_id_type,
-		const GPlatesAppLogic::ResolvedTopologicalGeometry * > >
+		const GPlatesAppLogic::ResolvedTopologicalBoundary * > >
 GPlatesAppLogic::TopologyUtils::find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
 		const resolved_topological_boundary_seq_type &resolved_boundaries)
 {
 	typedef std::pair<GPlatesModel::integer_plate_id_type,
-			const ResolvedTopologicalGeometry *> plate_id_and_boundary_type;
+			const ResolvedTopologicalBoundary *> plate_id_and_boundary_type;
 
 	std::vector<plate_id_and_boundary_type> reconstruction_plate_ids;
 	reconstruction_plate_ids.reserve(resolved_boundaries.size());
@@ -457,7 +443,7 @@ GPlatesAppLogic::TopologyUtils::find_reconstruction_plate_id_furthest_from_ancho
 		rtb_iter != resolved_boundaries.end();
 		++rtb_iter)
 	{
-		const ResolvedTopologicalGeometry *rtb = *rtb_iter;
+		const ResolvedTopologicalBoundary *rtb = *rtb_iter;
 
 		if (rtb->plate_id())
 		{

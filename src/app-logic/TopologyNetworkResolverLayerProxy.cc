@@ -30,7 +30,7 @@
 
 #include "TopologyNetworkResolverLayerProxy.h"
 
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalLine.h"
 #include "ResolvedTopologicalNetwork.h"
 #include "TopologyUtils.h"
 
@@ -483,7 +483,7 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_
 	// Topological boundary sections and/or interior geometries that are resolved topological lines...
 	// We're ensuring that all potential (resolved line) topologically-referenced geometries are
 	// resolved before we resolve topological networks (which reference them indirectly via feature-id).
-	std::vector<resolved_topological_geometry_non_null_ptr_type> topologically_referenced_resolved_lines;
+	std::vector<resolved_topological_line_non_null_ptr_type> topologically_referenced_resolved_lines;
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &resolved_line_topological_sections_layer_proxy,
 			d_current_resolved_line_topological_sections_layer_proxies.get_input_layer_proxies())

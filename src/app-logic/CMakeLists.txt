@@ -163,9 +163,10 @@ set(srcs
     ResolvedRaster.h
     ResolvedScalarField3D.cc
     ResolvedScalarField3D.h
-    ResolvedTopologicalGeometry.cc
+    ResolvedTopologicalBoundary.h
     ResolvedTopologicalGeometry.h
     ResolvedTopologicalGeometrySubSegment.h
+    ResolvedTopologicalLine.h
     ResolvedTopologicalNetwork.cc
     ResolvedTopologicalNetwork.h
     ResolvedTopologicalSharedSubSegment.h

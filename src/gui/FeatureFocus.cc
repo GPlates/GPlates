@@ -110,7 +110,6 @@ namespace
 
 
 		// Derivations of ReconstructedFeatureGeometry default to its implementation...
-
 		virtual
 		void
 		visit(
@@ -124,6 +123,7 @@ namespace
 			}
 		}
 
+		// Derivations of ResolvedTopologicalGeometry default to its implementation...
 		virtual
 		void
 		visit(

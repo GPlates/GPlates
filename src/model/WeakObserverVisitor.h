@@ -31,6 +31,8 @@
 
 namespace GPlatesAppLogic
 {
+	class CoRegistrationData;
+	class DeformedFeatureGeometry;
 	class MultiPointVectorField;
 	class ReconstructedFeatureGeometry;
 	class ReconstructedFlowline;
@@ -39,7 +41,9 @@ namespace GPlatesAppLogic
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
 	class ResolvedScalarField3D;
+	class ResolvedTopologicalBoundary;
 	class ResolvedTopologicalGeometry;
+	class ResolvedTopologicalLine;
 	class ResolvedTopologicalNetwork;
 }
 
@@ -75,19 +79,6 @@ namespace GPlatesModel
 		~WeakObserverVisitor()
 		{
 		}
-
-		// Please keep these reconstruction geometry derivations ordered alphabetically.
-
-#if 0
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit_reconstructed_feature_geometry(
-				GPlatesAppLogic::ReconstructedFeatureGeometry &rfg)
-		{  }
-#endif
 
 #if 0
 		/**
@@ -143,6 +134,23 @@ namespace GPlatesModel
 		 */
 		virtual
 		void
+		visit_co_registration_data(
+				GPlatesAppLogic::CoRegistrationData &crd)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_deformed_feature_geometry(
+				GPlatesAppLogic::DeformedFeatureGeometry &dfg);
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
 		visit_multi_point_vector_field(
 				GPlatesAppLogic::MultiPointVectorField &mpvf)
 		{  }
@@ -162,8 +170,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_reconstructed_flowline(
-				GPlatesAppLogic::ReconstructedFlowline &rf)
-		{  }
+				GPlatesAppLogic::ReconstructedFlowline &rf);
 
 		/**
 		 * Override this function in your own derived class.
@@ -171,8 +178,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_reconstructed_motion_path(
-				GPlatesAppLogic::ReconstructedMotionPath &rmp)
-		{  }
+				GPlatesAppLogic::ReconstructedMotionPath &rmp);
 
 		/**
 		 * Override this function in your own derived class.
@@ -180,8 +186,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_reconstructed_small_circle(
-				GPlatesAppLogic::ReconstructedSmallCircle &rsc)
-		{  }
+				GPlatesAppLogic::ReconstructedSmallCircle &rsc);
 
 		/**
 		 * Override this function in your own derived class.
@@ -189,8 +194,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_reconstructed_virtual_geomagnetic_pole(
-				GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp)
-		{  }
+				GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp);
 
 		/**
 		 * Override this function in your own derived class.
@@ -215,9 +219,25 @@ namespace GPlatesModel
 		 */
 		virtual
 		void
+		visit_resolved_topological_boundary(
+				GPlatesAppLogic::ResolvedTopologicalBoundary &rtb);
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
 		visit_resolved_topological_geometry(
-				GPlatesAppLogic::ResolvedTopologicalGeometry &rtb)
+				GPlatesAppLogic::ResolvedTopologicalGeometry &rtg)
 		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_resolved_topological_line(
+				GPlatesAppLogic::ResolvedTopologicalLine &rtl);
 
 		/**
 		 * Override this function in your own derived class.

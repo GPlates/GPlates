@@ -116,7 +116,7 @@ namespace GPlatesFileIO
 				sub_segment_group_seq_type lines;
 
 				// plate polygons
-				resolved_geom_seq_type platepolygons;
+				resolved_topologies_seq_type platepolygons;
 
 				// plate polygon sub_segment types
 				sub_segment_group_seq_type ridge_transforms;
@@ -125,7 +125,7 @@ namespace GPlatesFileIO
 				sub_segment_group_seq_type right_subductions;
 
 				// network polygons
-				resolved_geom_seq_type network_polygons;
+				resolved_topologies_seq_type network_polygons;
 
 				// network polygon sub_segment types
 				sub_segment_group_seq_type network_ridge_transforms;
@@ -134,7 +134,7 @@ namespace GPlatesFileIO
 				sub_segment_group_seq_type network_right_subductions;
 
 				// slab polygons
-				resolved_geom_seq_type slab_polygons;
+				resolved_topologies_seq_type slab_polygons;
 
 				// slab polygon sub_segment types
 				sub_segment_group_seq_type slab_edge_leading;
@@ -208,7 +208,7 @@ namespace GPlatesFileIO
 				boost::optional<const GPlatesAppLogic::sub_segment_seq_type &> boundary_sub_segments =
 						GPlatesAppLogic::ReconstructionGeometryUtils
 								::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
-				// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
+				// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
 				if (!boundary_sub_segments)
 				{
 					return;
@@ -290,7 +290,7 @@ namespace GPlatesFileIO
 				boost::optional<const GPlatesAppLogic::sub_segment_seq_type &> boundary_sub_segments =
 						GPlatesAppLogic::ReconstructionGeometryUtils
 								::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
-				// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
+				// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
 				if (!boundary_sub_segments)
 				{
 					return;
@@ -468,7 +468,7 @@ namespace GPlatesFileIO
 				boost::optional<const GPlatesAppLogic::sub_segment_seq_type &> boundary_sub_segments =
 						GPlatesAppLogic::ReconstructionGeometryUtils
 								::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
-				// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
+				// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
 				if (!boundary_sub_segments)
 				{
 					return;
@@ -592,15 +592,15 @@ namespace GPlatesFileIO
 
 			void
 			collect_exports(
-					const resolved_geom_seq_type &resolved_geom_seq,
+					const resolved_topologies_seq_type &resolved_topologies,
 					const double &reconstruction_time,
 					const OutputOptions &output_options,
 					Output &output)
 			{
 				// Iterate over the resolved topological geometries and
 				// collect information for the file format exporter.
-				resolved_geom_seq_type::const_iterator resolved_seq_iter = resolved_geom_seq.begin();
-				resolved_geom_seq_type::const_iterator resolved_seq_end = resolved_geom_seq.end();
+				resolved_topologies_seq_type::const_iterator resolved_seq_iter = resolved_topologies.begin();
+				resolved_topologies_seq_type::const_iterator resolved_seq_end = resolved_topologies.end();
 				for ( ; resolved_seq_iter != resolved_seq_end; ++resolved_seq_iter)
 				{
 					const GPlatesAppLogic::ReconstructionGeometry *resolved_geom = *resolved_seq_iter;
@@ -676,14 +676,14 @@ namespace GPlatesFileIO
 					const QString &filename,
 					Format export_format,
 					ResolvedTopologicalBoundaryExportType export_type,
-					const resolved_geom_seq_type &resolved_geoms,
+					const resolved_topologies_seq_type &resolved_topologies,
 					const std::vector<const File::Reference *> &referenced_files,
 					const std::vector<const File::Reference *> &active_reconstruction_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
 					bool wrap_to_dateline)
 			{
-				if (resolved_geoms.empty())
+				if (resolved_topologies.empty())
 				{
 					return;
 				}
@@ -692,7 +692,7 @@ namespace GPlatesFileIO
 				{
 				case GMT:
 					CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
-						resolved_geoms,
+						resolved_topologies,
 						export_type,
 						filename,
 						referenced_files,
@@ -706,7 +706,7 @@ namespace GPlatesFileIO
 				case SHAPEFILE:
                 case OGRGMT:
 					OgrFormatResolvedTopologicalGeometryExport::export_citcoms_resolved_topological_boundaries(
-						resolved_geoms,
+						resolved_topologies,
 						filename,
 						referenced_files,
 						active_reconstruction_files,
@@ -793,7 +793,7 @@ namespace GPlatesFileIO
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
 					const QString &placeholder,
-					const resolved_geom_seq_type &resolved_geoms,
+					const resolved_topologies_seq_type &resolved_topologies,
 					const feature_handle_to_collection_map_type &feature_to_collection_map,
 					const std::vector<const File::Reference *> &active_reconstruction_files,
 					bool wrap_to_dateline)
@@ -809,14 +809,14 @@ namespace GPlatesFileIO
 				std::vector<const File::Reference *> referenced_files;
 				ReconstructionGeometryExportImpl::get_unique_list_of_referenced_files(
 						referenced_files,
-						resolved_geoms,
+						resolved_topologies,
 						feature_to_collection_map);
 
 				export_resolved_topological_boundaries_file(
 						filename,
 						export_format,
 						export_type,
-						resolved_geoms,
+						resolved_topologies,
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
@@ -1436,7 +1436,7 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::export_resolved_topolog
 		const QString &placeholder_format_string,
 		const OutputOptions &output_options,
 		Format export_format,
-		const resolved_geom_seq_type &resolved_geom_seq,
+		const resolved_topologies_seq_type &resolved_topologies,
 		const std::vector<const File::Reference *> &loaded_files,
 		const std::vector<const File::Reference *> &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -1446,7 +1446,7 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::export_resolved_topolog
 	Output output;
 
 	collect_exports(
-			resolved_geom_seq,
+			resolved_topologies,
 			reconstruction_time,
 			output_options,
 			output);

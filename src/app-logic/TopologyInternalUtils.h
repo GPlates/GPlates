@@ -532,7 +532,7 @@ namespace GPlatesAppLogic
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved boundary.
 		 *
 		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry or a
-		 * resolved topological line (@a ResolvedTopologicalGeometry with a *polyline* geometry).
+		 * resolved topological line (@a ResolvedTopologicalLine).
 		 */
 		bool
 		can_use_as_resolved_boundary_topological_section(
@@ -543,7 +543,7 @@ namespace GPlatesAppLogic
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved network.
 		 *
 		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry or a
-		 * resolved topological line (@a ResolvedTopologicalGeometry with a *polyline* geometry).
+		 * resolved topological line (@a ResolvedTopologicalLine).
 		 */
 		bool
 		can_use_as_resolved_network_topological_section(

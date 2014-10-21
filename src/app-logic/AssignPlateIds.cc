@@ -32,7 +32,8 @@
 #include "ReconstructLayerProxy.h"
 #include "ReconstructParams.h"
 #include "ReconstructUtils.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalLine.h"
 #include "ResolvedTopologicalNetwork.h"
 #include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyNetworkResolverLayerProxy.h"
@@ -91,7 +92,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	std::vector<ReconstructHandle::type> reconstruct_handles(1, reconstruct_handle);
 
 	// Contains the resolved topological line sections referenced by topological polygons and networks.
-	std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_topological_lines;
+	std::vector<resolved_topological_line_non_null_ptr_type> resolved_topological_lines;
 	if (allow_partitioning_using_topological_plate_polygons ||
 		allow_partitioning_using_topological_networks)
 	{
@@ -110,7 +111,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	}
 
 	// Contains the resolved topological polygons used for cookie-cutting.
-	std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_topological_boundaries;
+	std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
 
 	// Contains the resolved topological networks used for cookie-cutting.
 	// See comment in header for why a deforming region is currently used to assign plate ids.
@@ -178,7 +179,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_static_polygons;
 
 	// Contains the resolved topological polygons used for cookie-cutting.
-	std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_topological_boundaries;
+	std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
 
 	// Contains the resolved topological networks used for cookie-cutting.
 	// See comment in header for why a deforming region is currently used to assign plate ids.

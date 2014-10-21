@@ -2341,7 +2341,7 @@ GPlatesGui::TopologyTools::reconstruct_boundary_sections()
 	if (d_topology_geometry_type == GPlatesAppLogic::TopologyGeometry::BOUNDARY ||
 		d_topology_geometry_type == GPlatesAppLogic::TopologyGeometry::NETWORK)
 	{
-		std::vector<GPlatesAppLogic::ResolvedTopologicalGeometry::non_null_ptr_type> resolved_topological_lines;
+		std::vector<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type> resolved_topological_lines;
 		GPlatesAppLogic::LayerProxyUtils::get_resolved_topological_lines(
 				resolved_topological_lines,
 				topological_section_reconstruct_handles,

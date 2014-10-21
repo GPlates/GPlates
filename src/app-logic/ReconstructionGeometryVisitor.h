@@ -64,7 +64,9 @@ namespace GPlatesAppLogic
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
 	class ResolvedScalarField3D;
+	class ResolvedTopologicalBoundary;
 	class ResolvedTopologicalGeometry;
+	class ResolvedTopologicalLine;
 	class ResolvedTopologicalNetwork;
 	class CoRegistrationData;
 
@@ -86,15 +88,21 @@ namespace GPlatesAppLogic
 	class ReconstructionGeometryVisitorBase
 	{
 	public:
-		//! Typedef for @a MultiPointVectorField of appropriate const-ness.
+
+		//! Typedef for @a CoRegistrationData of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
-				ReconstructionGeometryType, MultiPointVectorField>::type
-						multi_point_vector_field_type;
+				ReconstructionGeometryType, CoRegistrationData>::type
+						co_registration_data_type;
 
 		//! Typedef for @a DeformedFeatureGeometry of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, DeformedFeatureGeometry>::type
 						deformed_feature_geometry_type;
+
+		//! Typedef for @a MultiPointVectorField of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, MultiPointVectorField>::type
+						multi_point_vector_field_type;
 
 		//! Typedef for @a ReconstructedFeatureGeometry of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
@@ -111,6 +119,11 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryType, ReconstructedMotionPath>::type
 						reconstructed_motion_path_type;
 
+		//! Typedef for @a ReconstructedSmallCircle of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, ReconstructedSmallCircle>::type
+						reconstructed_small_circle_type;
+
 		//! Typedef for @a ReconstructedFeatureGeometry of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, ReconstructedVirtualGeomagneticPole>::type
@@ -126,25 +139,25 @@ namespace GPlatesAppLogic
 				ReconstructionGeometryType, ResolvedScalarField3D>::type
 						resolved_scalar_field_3d_type;
 
+		//! Typedef for @a ResolvedTopologicalBoundary of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, ResolvedTopologicalBoundary>::type
+						resolved_topological_boundary_type;
+
 		//! Typedef for @a ResolvedTopologicalGeometry of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, ResolvedTopologicalGeometry>::type
 						resolved_topological_geometry_type;
 
+		//! Typedef for @a ResolvedTopologicalLine of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, ResolvedTopologicalLine>::type
+						resolved_topological_line_type;
+
 		//! Typedef for @a ResolvedTopologicalNetwork of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, ResolvedTopologicalNetwork>::type
 						resolved_topological_network_type;
-
-		//! Typedef for @a CoRegistrationData of appropriate const-ness.
-		typedef typename GPlatesUtils::CopyConst<
-				ReconstructionGeometryType, CoRegistrationData>::type
-						co_registration_data_type;
-
-		//! Typedef for @a ReconstructedSmallCircle of appropriate const-ness.
-		typedef typename GPlatesUtils::CopyConst<
-				ReconstructionGeometryType, ReconstructedSmallCircle>::type
-						reconstructed_small_circle_type;
 
 		// We'll make this function pure virtual so that the class is abstract.  The class
 		// *should* be abstract, but wouldn't be unless we did this, since all the virtual
@@ -160,7 +173,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crd)
 		{  }
 
 		/**
@@ -170,6 +183,15 @@ namespace GPlatesAppLogic
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<deformed_feature_geometry_type> &dfg);
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
+		{  }
 
 		/**
 		 * Override this function in your own derived class.
@@ -196,6 +218,13 @@ namespace GPlatesAppLogic
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp);
 
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc);
 
 		/**
 		 * Override this function in your own derived class.
@@ -232,6 +261,14 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb);
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
 		{  }
 
@@ -241,19 +278,16 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_line_type> &rtl);
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 		{  }
-
-		virtual
-		void
-		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crd)
-		{  }
-
-		virtual
-		void
-		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc);
 
 
 	private:

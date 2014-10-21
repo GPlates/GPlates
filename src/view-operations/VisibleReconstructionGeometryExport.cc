@@ -26,8 +26,6 @@
 #include <algorithm>
 #include <iterator>
 #include <vector>
-#include <boost/bind.hpp>
-#include <boost/mem_fn.hpp>
 
 #include "VisibleReconstructionGeometryExport.h"
 
@@ -35,7 +33,9 @@
 #include "RenderedGeometryCollection.h"
 
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalGeometry.h"
+#include "app-logic/ResolvedTopologicalLine.h"
 
 #include "file-io/ReconstructedFeatureGeometryExport.h"
 #include "file-io/ReconstructedFlowlineExport.h"
@@ -225,35 +225,34 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 			// Don't want to export a duplicate reconstructed geometry if one is currently in focus...
 			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
-	// Get any ReconstructionGeometry objects that are of type ResolvedTopologicalGeometry.
 	resolved_topological_geom_seq_type resolved_topological_geom_seq;
-	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-			reconstruction_geom_seq.begin(),
-			reconstruction_geom_seq.end(),
-			resolved_topological_geom_seq);
 
-	// Remove topological lines if they should not be exported...
-	if (!export_topological_lines)
+	// Get the ResolvedTopologicalLine objects (if requested)...
+	if (export_topological_lines)
 	{
-		resolved_topological_geom_seq.erase(
-				std::remove_if(resolved_topological_geom_seq.begin(), resolved_topological_geom_seq.end(),
-						// The explicit template parameter and boost::mem_fn were added to avoid MSVC2005 compile error...
-						boost::bind< boost::optional<GPlatesAppLogic::ResolvedTopologicalGeometry::resolved_topology_line_ptr_type> >(
-								boost::mem_fn(&GPlatesAppLogic::ResolvedTopologicalGeometry::resolved_topology_line),
-								_1)),
-				resolved_topological_geom_seq.end());
+		std::vector<const GPlatesAppLogic::ResolvedTopologicalLine *> resolved_topological_lines;
+		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
+				reconstruction_geom_seq.begin(),
+				reconstruction_geom_seq.end(),
+				resolved_topological_lines);
+		std::copy(
+				resolved_topological_lines.begin(),
+				resolved_topological_lines.end(),
+				std::back_inserter(resolved_topological_geom_seq));
 	}
 
-	// Remove topological polygons if they should not be exported...
-	if (!export_topological_polygons)
+	// Get the ResolvedTopologicalBoundary objects (if requested)...
+	if (export_topological_polygons)
 	{
-		resolved_topological_geom_seq.erase(
-				std::remove_if(resolved_topological_geom_seq.begin(), resolved_topological_geom_seq.end(),
-						// The explicit template parameter and boost::mem_fn were added to avoid MSVC2005 compile error...
-						boost::bind< boost::optional<GPlatesAppLogic::ResolvedTopologicalGeometry::resolved_topology_boundary_ptr_type> >(
-								boost::mem_fn(&GPlatesAppLogic::ResolvedTopologicalGeometry::resolved_topology_boundary),
-								_1)),
-				resolved_topological_geom_seq.end());
+		std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> resolved_topological_boundaries;
+		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
+				reconstruction_geom_seq.begin(),
+				reconstruction_geom_seq.end(),
+				resolved_topological_boundaries);
+		std::copy(
+				resolved_topological_boundaries.begin(),
+				resolved_topological_boundaries.end(),
+				std::back_inserter(resolved_topological_geom_seq));
 	}
 
 	// Export the RTGs to a file format based on the filename extension.

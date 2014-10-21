@@ -1046,7 +1046,7 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_resolve
 		// Get the resolved boundary subsegments.
 		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment> &> boundary_sub_segments =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
-		// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
+		// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
 		if (!boundary_sub_segments)
 		{
 			continue;
@@ -1054,7 +1054,7 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_resolve
 
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> boundary_polygon =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_polygon(resolved_geom);
-		// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
+		// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
 		if (!boundary_polygon)
 		{
 			continue;
@@ -1135,7 +1135,7 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_sub_seg
 		// The topological geometry feature.
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> resolved_geom_feature_ref =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
-						sub_segment_group.resolved_topological_geometry);
+						sub_segment_group.resolved_topology);
 		if (!resolved_geom_feature_ref || !resolved_geom_feature_ref->is_valid())
 		{
 			continue;

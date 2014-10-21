@@ -151,9 +151,10 @@ namespace GPlatesViewOperations
 
 
 		/**
-		 * Collects visible resolved topologies including @a ResolvedTopologicalGeometry objects and
-		 * @a ResolvedTopologicalNetwork objects that are displayed using @a rendered_geom_collection
-		 * and exports to a file depending on the file extension of @a filename.
+		 * Collects visible resolved topologies including @a ResolvedTopologicalLine,
+		 * @a ResolvedTopologicalBoundary and @a ResolvedTopologicalNetwork objects that are
+		 * displayed using @a rendered_geom_collection and exports to a file depending on the
+		 * file extension of @a filename.
 		 *
 		 * @param active_files used to determine which files the resolved topologies came from.
 		 * @param reconstruction_anchor_plate_id the anchor plate id used in the reconstruction.

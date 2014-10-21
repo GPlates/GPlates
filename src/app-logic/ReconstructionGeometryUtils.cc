@@ -33,7 +33,8 @@
 #include "ReconstructedVirtualGeomagneticPole.h"
 #include "Reconstruction.h"
 #include "ReconstructionGeometryFinder.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalLine.h"
 #include "ResolvedTopologicalNetwork.h"
 
 
@@ -382,13 +383,9 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTreeCreator::visi
 
 void
 GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundarySubSegmentSequence::visit(
-		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
 {
-	// Only a resolved topological geometry with a *polygon* is a resolved topological *boundary*.
-	if (rtg->resolved_topology_boundary())
-	{
-		d_sub_segment_sequence = rtg->get_sub_segment_sequence();
-	}
+	d_sub_segment_sequence = rtb->get_sub_segment_sequence();
 }
 
 
@@ -402,11 +399,9 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundarySubS
 
 void
 GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundaryPolygon::visit(
-		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
 {
-	// See if the resolved topology geometry is a polygon.
-	// It might be a polyline in which case boost::none is returned.
-	d_boundary_polygon = rtg->resolved_topology_boundary();
+	d_boundary_polygon = rtb->resolved_topology_boundary();
 }
 
 
@@ -430,11 +425,9 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetBoundaryPolygon::visit(
 
 void
 GPlatesAppLogic::ReconstructionGeometryUtils::GetBoundaryPolygon::visit(
-		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
 {
-	// See if the resolved topology geometry is a polygon.
-	// It might be a polyline in which case boost::none is returned.
-	d_boundary_polygon = rtg->resolved_topology_boundary();
+	d_boundary_polygon = rtb->resolved_topology_boundary();
 }
 
 

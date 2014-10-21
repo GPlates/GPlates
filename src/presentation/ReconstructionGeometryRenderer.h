@@ -309,12 +309,17 @@ namespace GPlatesPresentation
 		virtual
 		void
 		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
+				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crr);
 
 		virtual
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<deformed_feature_geometry_type> &dfg);
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf);
 
 		virtual
 		void
@@ -361,11 +366,6 @@ namespace GPlatesPresentation
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
-
-		virtual
-		void
-		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crr);
 
 	private:
 

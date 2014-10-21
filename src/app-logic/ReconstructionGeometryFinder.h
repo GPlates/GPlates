@@ -163,36 +163,18 @@ namespace GPlatesAppLogic
 		}
 
 	protected:
+
+		// Handles @a ReconstructedFeatureGeometry and its derived classes.
 		virtual
 		void
 		visit_reconstructed_feature_geometry(
 				ReconstructedFeatureGeometry &rfg);
 
-
-		virtual
-		void
-		visit_reconstructed_flowline(
-				ReconstructedFlowline &rf);
-
-		virtual
-		void
-		visit_reconstructed_motion_path(
-				ReconstructedMotionPath &rmp);
-
-		virtual
-		void
-		visit_reconstructed_small_circle(
-				GPlatesAppLogic::ReconstructedSmallCircle &rsc);
-
-		virtual
-		void
-		visit_reconstructed_virtual_geomagnetic_pole(
-				GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp);
-
+		// Handles @a ResolvedTopologicalGeometry and its derived classes.
 		virtual
 		void
 		visit_resolved_topological_geometry(
-				ResolvedTopologicalGeometry &rtb);
+				ResolvedTopologicalGeometry &rtg);
 
 		virtual
 		void

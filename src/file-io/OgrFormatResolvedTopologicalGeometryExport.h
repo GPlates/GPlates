@@ -113,7 +113,7 @@ namespace GPlatesFileIO
 		*/
 		void
 		export_citcoms_resolved_topological_boundaries(
-				const CitcomsResolvedTopologicalBoundaryExportImpl::resolved_geom_seq_type &resolved_topological_geometries,
+				const CitcomsResolvedTopologicalBoundaryExportImpl::resolved_topologies_seq_type &resolved_topological_geometries,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const referenced_files_collection_type &active_reconstruction_files,

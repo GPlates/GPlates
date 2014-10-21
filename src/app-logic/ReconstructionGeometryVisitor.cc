@@ -31,6 +31,8 @@
 #include "ReconstructedMotionPath.h"
 #include "ReconstructedSmallCircle.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalLine.h"
 
 
 template <class ReconstructionGeometryType>
@@ -66,6 +68,16 @@ GPlatesAppLogic::ReconstructionGeometryVisitorBase<ReconstructionGeometryType>::
 template <class ReconstructionGeometryType>
 void
 GPlatesAppLogic::ReconstructionGeometryVisitorBase<ReconstructionGeometryType>::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
+{
+	// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
+	visit(GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(rsc));
+}
+
+
+template <class ReconstructionGeometryType>
+void
+GPlatesAppLogic::ReconstructionGeometryVisitorBase<ReconstructionGeometryType>::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp)
 {
 	// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
@@ -76,11 +88,22 @@ GPlatesAppLogic::ReconstructionGeometryVisitorBase<ReconstructionGeometryType>::
 template <class ReconstructionGeometryType>
 void
 GPlatesAppLogic::ReconstructionGeometryVisitorBase<ReconstructionGeometryType>::visit(
-		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc)
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
 {
-	// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
-	visit(GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(rsc));
+	// Default implementation delegates to base class 'ResolvedTopologicalGeometry'.
+	visit(GPlatesUtils::static_pointer_cast<resolved_topological_geometry_type>(rtb));
 }
+
+
+template <class ReconstructionGeometryType>
+void
+GPlatesAppLogic::ReconstructionGeometryVisitorBase<ReconstructionGeometryType>::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_line_type> &rtl)
+{
+	// Default implementation delegates to base class 'ResolvedTopologicalGeometry'.
+	visit(GPlatesUtils::static_pointer_cast<resolved_topological_geometry_type>(rtl));
+}
+
 
 // Explicit template instantiation for the two types of visitors:
 // 1) ReconstructionGeometryVisitor

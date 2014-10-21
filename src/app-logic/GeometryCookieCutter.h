@@ -116,7 +116,7 @@ namespace GPlatesAppLogic
 		GeometryCookieCutter(
 				const double &reconstruction_time,
 				boost::optional<const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &> reconstructed_static_polygons,
-				boost::optional<const std::vector<resolved_topological_geometry_non_null_ptr_type> &> resolved_topological_boundaries,
+				boost::optional<const std::vector<resolved_topological_boundary_non_null_ptr_type> &> resolved_topological_boundaries,
 				boost::optional<const std::vector<resolved_topological_network_non_null_ptr_type> &> resolved_topological_networks);
 
 
@@ -209,11 +209,11 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Adds all @a ResolvedTopologicalGeometry objects, that are polygon boundaries, as partitioning geometries.
+		 * Adds all @a ResolvedTopologicalBoundary objects as partitioning geometries.
 		 */
 		void
 		add_partitioning_resolved_topological_boundaries(
-				const std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries);
+				const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries);
 
 		/**
 		 * Adds all @a ResolvedTopologicalNetwork objects as partitioning geometries.

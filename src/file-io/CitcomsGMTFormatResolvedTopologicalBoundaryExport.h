@@ -34,11 +34,6 @@
 #include "model/types.h"
 
 
-namespace GPlatesAppLogic
-{
-	class ResolvedTopologicalGeometry;
-}
-
 namespace GPlatesFileIO
 {
 	/**
@@ -55,7 +50,7 @@ namespace GPlatesFileIO
 		/**
 		 * Typedef for a feature geometry group of resolved topological geometries.
 		 */
-		typedef CitcomsResolvedTopologicalBoundaryExportImpl::resolved_geom_seq_type resolved_geom_seq_type;
+		typedef CitcomsResolvedTopologicalBoundaryExportImpl::resolved_topologies_seq_type resolved_geom_seq_type;
 
 		/**
 		 * Typedef for a sequence of @a SubSegmentGroup objects.
@@ -64,7 +59,7 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Exports @a ResolvedTopologicalGeometry objects to GMT format.
+		 * Exports @a ResolvedTopologicalBoundary and @a ResolvedTopologicalNetwork objects to GMT format.
 		 */
 		void
 		export_resolved_topological_boundaries(

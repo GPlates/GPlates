@@ -28,9 +28,6 @@
 #include "ReconstructedFeatureGeometryFinder.h"
 
 #include "ReconstructedFeatureGeometry.h"
-#include "ReconstructedFlowline.h"
-#include "ReconstructedMotionPath.h"
-#include "ReconstructedVirtualGeomagneticPole.h"
 
 
 namespace
@@ -144,28 +141,4 @@ GPlatesAppLogic::ReconstructedFeatureGeometryFinder::visit_reconstructed_feature
 
 	// If we get here then collect any and all RFGs.
 	d_found_rfgs.push_back(rfg.get_non_null_pointer());
-}
-
-
-void
-GPlatesAppLogic::ReconstructedFeatureGeometryFinder::visit_reconstructed_flowline(
-		ReconstructedFlowline &rf)
-{
-	visit_reconstructed_feature_geometry(rf);
-}
-
-
-void
-GPlatesAppLogic::ReconstructedFeatureGeometryFinder::visit_reconstructed_motion_path(
-		ReconstructedMotionPath &rmp)
-{
-	visit_reconstructed_feature_geometry(rmp);
-}
-
-
-void
-GPlatesAppLogic::ReconstructedFeatureGeometryFinder::visit_reconstructed_virtual_geomagnetic_pole(
-		GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp)
-{
-	visit_reconstructed_feature_geometry(rvgp);
 }

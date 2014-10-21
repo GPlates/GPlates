@@ -325,7 +325,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries_per
 
 void
 GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_citcoms_resolved_topological_boundaries(
-		const CitcomsResolvedTopologicalBoundaryExportImpl::resolved_geom_seq_type &resolved_topological_geometries,
+		const CitcomsResolvedTopologicalBoundaryExportImpl::resolved_topologies_seq_type &resolved_topological_geometries,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const referenced_files_collection_type &active_reconstruction_files,
@@ -339,7 +339,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_citcoms_resolv
 	GPlatesFileIO::OgrGeometryExporter geom_exporter(file_path, false/*multiple_geometries*/, wrap_to_dateline);
 
 	// Iterate through the resolved topological geometries and write to output.
-	CitcomsResolvedTopologicalBoundaryExportImpl::resolved_geom_seq_type::const_iterator resolved_geom_iter;
+	CitcomsResolvedTopologicalBoundaryExportImpl::resolved_topologies_seq_type::const_iterator resolved_geom_iter;
 	for (resolved_geom_iter = resolved_topological_geometries.begin();
 		resolved_geom_iter != resolved_topological_geometries.end();
 		++resolved_geom_iter)
@@ -349,7 +349,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_citcoms_resolv
 		// Get the resolved boundary subsegments.
 		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment> &> boundary_sub_segments =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
-		// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
+		// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
 		if (!boundary_sub_segments)
 		{
 			continue;
@@ -357,7 +357,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_citcoms_resolv
 
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> boundary_polygon =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_polygon(resolved_geom);
-		// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
+		// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
 		if (!boundary_polygon)
 		{
 			continue;
@@ -412,7 +412,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_citcoms_sub_se
 
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
-						sub_segment_group.resolved_topological_geometry);
+						sub_segment_group.resolved_topology);
 		if (!feature_ref || !feature_ref->is_valid())
 		{
 			continue;

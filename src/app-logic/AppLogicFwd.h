@@ -98,9 +98,17 @@ namespace GPlatesAppLogic
 	typedef GPlatesGlobal::PointerTraits<ResolvedScalarField3D>::non_null_ptr_type resolved_scalar_field_3d_non_null_ptr_type;
 	typedef GPlatesGlobal::PointerTraits<const ResolvedScalarField3D>::non_null_ptr_type resolved_scalar_field_3d_non_null_ptr_to_const_type;
 
+	class ResolvedTopologicalBoundary;
+	typedef GPlatesGlobal::PointerTraits<ResolvedTopologicalBoundary>::non_null_ptr_type resolved_topological_boundary_non_null_ptr_type;
+	typedef GPlatesGlobal::PointerTraits<const ResolvedTopologicalBoundary>::non_null_ptr_type resolved_topological_boundary_non_null_ptr_to_const_type;
+
 	class ResolvedTopologicalGeometry;
 	typedef GPlatesGlobal::PointerTraits<ResolvedTopologicalGeometry>::non_null_ptr_type resolved_topological_geometry_non_null_ptr_type;
 	typedef GPlatesGlobal::PointerTraits<const ResolvedTopologicalGeometry>::non_null_ptr_type resolved_topological_geometry_non_null_ptr_to_const_type;
+
+	class ResolvedTopologicalLine;
+	typedef GPlatesGlobal::PointerTraits<ResolvedTopologicalLine>::non_null_ptr_type resolved_topological_line_non_null_ptr_type;
+	typedef GPlatesGlobal::PointerTraits<const ResolvedTopologicalLine>::non_null_ptr_type resolved_topological_line_non_null_ptr_to_const_type;
 
 	class ResolvedTopologicalNetwork;
 	typedef GPlatesGlobal::PointerTraits<ResolvedTopologicalNetwork>::non_null_ptr_type resolved_topological_network_non_null_ptr_type;

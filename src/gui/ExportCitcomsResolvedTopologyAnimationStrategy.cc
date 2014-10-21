@@ -25,8 +25,6 @@
 
 #include <algorithm>
 #include <iterator>
-#include <boost/bind.hpp>
-#include <boost/mem_fn.hpp>
 #include <boost/optional.hpp>
 #include <QFileInfo>
 #include <QString>
@@ -40,7 +38,8 @@
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/Reconstruction.h"
-#include "app-logic/ResolvedTopologicalGeometry.h"
+#include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/ResolvedTopologicalNetwork.h"
 
 #include "presentation/ViewState.h"
 
@@ -161,26 +160,20 @@ GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::do_export_iteration(
 			// Don't want to export a duplicate resolved topology if one is currently in focus...
 			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
-	// Get any ReconstructionGeometry objects that are of type ResolvedTopologicalGeometry or
+	// Get any ReconstructionGeometry objects that are of type ResolvedTopologicalBoundary or
 	// ResolvedTopologicalNetwork since both these types have topological boundaries.
 	resolved_geom_seq_type resolved_topological_geometries;
 
-	// Get the ResolvedTopologicalGeometry objects...
-	std::vector<const GPlatesAppLogic::ResolvedTopologicalGeometry *> resolved_topological_boundaries;
+	// Get the ResolvedTopologicalBoundary objects...
+	std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> resolved_topological_boundaries;
 	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
 			reconstruction_geom_seq.begin(),
 			reconstruction_geom_seq.end(),
 			resolved_topological_boundaries);
-	// Only copy those resolved topological geometries containing a *polygon*.
-	// They are the resolved boundaries (as opposed to resolved lines).
-	std::remove_copy_if(
+	std::copy(
 			resolved_topological_boundaries.begin(),
 			resolved_topological_boundaries.end(),
-			std::back_inserter(resolved_topological_geometries),
-			// The explicit template parameter and boost::mem_fn were added to avoid MSVC2005 compile error...
-			boost::bind< boost::optional<GPlatesAppLogic::ResolvedTopologicalGeometry::resolved_topology_line_ptr_type> >(
-					boost::mem_fn(&GPlatesAppLogic::ResolvedTopologicalGeometry::resolved_topology_line),
-					_1));
+			std::back_inserter(resolved_topological_geometries));
 
 	// Get the ResolvedTopologicalNetwork objects...
 	std::vector<const GPlatesAppLogic::ResolvedTopologicalNetwork *> resolved_topological_networks;
