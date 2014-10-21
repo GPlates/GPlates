@@ -302,6 +302,9 @@ namespace GPlatesPresentation
 
 	private:
 
+		// Bring base class visit methods into scope of current class.
+		using GPlatesAppLogic::ConstReconstructionGeometryVisitor::visit;
+
 		//
 		// The following methods are for visiting derived @a ReconstructionGeometry objects.
 		//
