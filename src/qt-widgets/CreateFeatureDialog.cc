@@ -92,6 +92,7 @@
 #include "property-values/GpmlTopologicalLine.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalNetwork.h"
+#include "property-values/StructuralType.h"
 #include "property-values/XsString.h"
 
 #include "utils/UnicodeStringUtils.h"
@@ -100,59 +101,82 @@ namespace
 {
 	bool
 	is_topological_line(
-			const GPlatesModel::PropertyValue &property_value)
+			const GPlatesPropertyValues::StructuralType &property_type)
 	{
 		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_LINE =
 				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalLine");
 
-		const GPlatesPropertyValues::StructuralType property_type =
-				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
-
 		return property_type == GPML_TOPOLOGICAL_LINE;
+	}
+
+	bool
+	is_topological_line(
+			const GPlatesModel::PropertyValue &property_value)
+	{
+		return is_topological_line(
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value));
 	}
 
 
 	bool
 	is_topological_polygon(
-			const GPlatesModel::PropertyValue &property_value)
+			const GPlatesPropertyValues::StructuralType &property_type)
 	{
 		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_POLYGON =
 				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalPolygon");
 
-		const GPlatesPropertyValues::StructuralType property_type =
-				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
-
 		return property_type == GPML_TOPOLOGICAL_POLYGON;
+	}
+
+	bool
+	is_topological_polygon(
+			const GPlatesModel::PropertyValue &property_value)
+	{
+		return is_topological_polygon(
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value));
 	}
 
 
 	bool
 	is_topological_network(
-			const GPlatesModel::PropertyValue &property_value)
+			const GPlatesPropertyValues::StructuralType &property_type)
 	{
 		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_NETWORK =
 				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalNetwork");
 
-		const GPlatesPropertyValues::StructuralType property_type =
-				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
-
 		return property_type == GPML_TOPOLOGICAL_NETWORK;
+	}
+
+	bool
+	is_topological_network(
+			const GPlatesModel::PropertyValue &property_value)
+	{
+		return is_topological_network(
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value));
 	}
 
 
 	bool
 	is_topological_geometry(
+			const GPlatesPropertyValues::StructuralType &property_type)
+	{
+		return is_topological_line(property_type) ||
+				is_topological_polygon(property_type) ||
+				is_topological_network(property_type);
+	}
+
+	bool
+	is_topological_geometry(
 			const GPlatesModel::PropertyValue &property_value)
 	{
-		return is_topological_line(property_value) ||
-				is_topological_polygon(property_value) ||
-				is_topological_network(property_value);
+		return is_topological_geometry(
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value));
 	}
 
 
 	bool
 	is_non_topological_geometry(
-			const GPlatesModel::PropertyValue &property_value)
+			const GPlatesPropertyValues::StructuralType &property_type)
 	{
 		static const GPlatesPropertyValues::StructuralType GML_LINE_STRING =
 				GPlatesPropertyValues::StructuralType::create_gml("LineString");
@@ -165,9 +189,6 @@ namespace
 		static const GPlatesPropertyValues::StructuralType GML_POLYGON =
 				GPlatesPropertyValues::StructuralType::create_gml("Polygon");
 
-		const GPlatesPropertyValues::StructuralType property_type =
-				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
-
 		return property_type == GML_LINE_STRING ||
 			property_type == GML_ORIENTABLE_CURVE ||
 			property_type == GML_MULTI_POINT ||
@@ -176,11 +197,28 @@ namespace
 	}
 
 	bool
+	is_non_topological_geometry(
+			const GPlatesModel::PropertyValue &property_value)
+	{
+		return is_non_topological_geometry(
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value));
+	}
+
+
+	bool
+	is_geometry(
+			const GPlatesPropertyValues::StructuralType &property_type)
+	{
+		return is_non_topological_geometry(property_type) ||
+			is_topological_geometry(property_type);
+	}
+
+	bool
 	is_geometry(
 			const GPlatesModel::PropertyValue &property_value)
 	{
-		return is_non_topological_geometry(property_value) ||
-			is_topological_geometry(property_value);
+		return is_geometry(
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value));
 	}
 
 
@@ -639,18 +677,9 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_collection_page()
 void
 GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_list()
 {
-	boost::optional<GPlatesPropertyValues::StructuralType> geometric_property_type;
-	// Get the structural type of the geometric property.
-	if (d_geometry_property_value)
-	{
-		geometric_property_type =
-				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(
-						*d_geometry_property_value.get());
-	}
-
 	// Populate list of feature types that support the geometric property type.
 	// If no geometric property type (not selected by user yet) then select all feature types.
-	d_choose_feature_type_widget->populate(geometric_property_type);
+	d_choose_feature_type_widget->populate(d_geometry_property_type);
 
 	// Note that we don't set the feature type selection.
 	// If the previously selected feature type is in the new list of feature types then
@@ -672,13 +701,13 @@ GPlatesQtWidgets::CreateFeatureDialog::select_default_feature_type()
 	// designated as a 'topological line'.
 	if (d_geometry_property_value)
 	{
-		if (is_topological_polygon(*d_geometry_property_value.get()))
+		if (is_topological_polygon(d_geometry_property_type.get()))
 		{
 			static const GPlatesModel::FeatureType TOPOLOGICAL_CLOSED_PLATE_BOUNDARY_FEATURE_TYPE =
 					GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary");
 			default_feature_type = TOPOLOGICAL_CLOSED_PLATE_BOUNDARY_FEATURE_TYPE;
 		}
-		else if (is_topological_network(*d_geometry_property_value.get()))
+		else if (is_topological_network(d_geometry_property_type.get()))
 		{
 			static const GPlatesModel::FeatureType TOPOLOGICAL_NETWORK_FEATURE_TYPE =
 					GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
@@ -702,13 +731,8 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_geometric_property_list()
 		return;
 	}
 
-	// Get the structural type of the geometric property.
-	const GPlatesPropertyValues::StructuralType geometric_property_type =
-			GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(
-					*d_geometry_property_value.get());
-
 	// Populate the listwidget_geometry_destinations based on what is legal right now.
-	d_listwidget_geometry_destinations->populate(feature_type_opt.get(), geometric_property_type);
+	d_listwidget_geometry_destinations->populate(feature_type_opt.get(), d_geometry_property_type.get());
 
 	//
 	// Set the default geometry property name (if there is one) for the feature type.
@@ -736,7 +760,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_geometric_property_list()
 				gpgim_geometry_properties,
 				d_gpgim,
 				feature_type_opt.get(),
-				geometric_property_type);
+				d_geometry_property_type.get());
 
 		// If the default geometry property name appears in the list then select it.
 		BOOST_FOREACH(
@@ -918,12 +942,21 @@ GPlatesQtWidgets::CreateFeatureDialog::set_geometry_and_display(
 
 	d_geometry_property_value = geometry_property_value;
 
-	return display();
+	// Get the structural type of the geometric property.
+	const boost::optional<GPlatesPropertyValues::StructuralType>
+			prev_geometric_property_type = d_geometry_property_type;
+	d_geometry_property_type =
+			GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(
+					*geometry_property_value);
+
+	// Display dialog and update as necessary if geometry property type has changed.
+	return display(d_geometry_property_type != prev_geometric_property_type);
 }
 
 
 bool
-GPlatesQtWidgets::CreateFeatureDialog::display()
+GPlatesQtWidgets::CreateFeatureDialog::display(
+		bool geometry_property_type_has_changed)
 {
 	// Populate the d_choose_feature_type_widget based on what features support
 	// the geometric property type.
@@ -939,7 +972,14 @@ GPlatesQtWidgets::CreateFeatureDialog::display()
 
 	// Select the default feature type based on the geometry property type.
 	// We only do this once for each time this dialog is invoked.
-	select_default_feature_type();
+	// And only if the geometry property type has changed because that's the only way the
+	// feature type can change and we want to keep the previously selected feature type
+	// (from the last Create Feature dialog invocation) so user can quickly digitise the
+	// same feature type repeatedly.
+	if (geometry_property_type_has_changed)
+	{
+		select_default_feature_type();
+	}
 
 	// The Feature Collections list needs to be repopulated each time.
 	d_choose_feature_collection_widget->initialise();
@@ -1038,7 +1078,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 		d_create_conjugate_isochron_checkbox->setVisible(
 			// Currently only allow user to select if there's a non-topological geometry because creating
 			// conjugate requires reverse reconstructing using non-topological reconstruction...
-			is_non_topological_geometry(*d_geometry_property_value.get()) &&
+			is_non_topological_geometry(d_geometry_property_type.get()) &&
 				should_offer_create_conjugate_isochron_checkbox(d_choose_feature_type_widget));
 		set_recon_method_state(
 			d_recon_method_widget,

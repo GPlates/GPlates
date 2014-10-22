@@ -51,6 +51,8 @@
 #include "model/PropertyValue.h"
 #include "model/TopLevelProperty.h"
 
+#include "property-values/StructuralType.h"
+
 
 class QComboBox;
 
@@ -211,7 +213,8 @@ namespace GPlatesQtWidgets
 				const GPlatesModel::FeatureType &feature_type);
 
 		bool
-		display();
+		display(
+				bool geometry_property_type_has_changed);
 
 		boost::optional<GPlatesModel::FeatureHandle::iterator>
 		add_geometry_property(
@@ -276,6 +279,13 @@ namespace GPlatesQtWidgets
 		 * This may be boost::none if the create dialog has not been fed any geometry yet.
 		 */
 		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> d_geometry_property_value;
+
+		/**
+		 * The geometry type of the geometry that is to be included with the feature.
+		 * 
+		 * This may be boost::none if the create dialog has not been fed any geometry yet.
+		 */
+		boost::optional<GPlatesPropertyValues::StructuralType> d_geometry_property_type;
 
 		/**
 		 * The custom edit widget for reconstruction. Memory managed by Qt.
