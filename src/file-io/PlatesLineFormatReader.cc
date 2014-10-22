@@ -49,10 +49,10 @@
 #include "maths/PolylineOnSphere.h"
 
 #include "model/ChangesetHandle.h"
-#include "model/Model.h"
 #include "model/FeatureRevision.h"
-#include "model/TopLevelPropertyInline.h"
+#include "model/Model.h"
 #include "model/ModelUtils.h"
+#include "model/TopLevelPropertyInline.h"
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
@@ -618,6 +618,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				create_feature(feature_type, collection, header);
 
 		const integer_plate_id_type plate_id = header->get_plate_id_number();
+		const integer_plate_id_type conjugate_plate_id = header->get_conjugate_plate_id_number();
 		const GeoTimeInstant geo_time_instant_begin(
 				create_geo_time_instant(header->get_age_of_appearance()));
 		const GeoTimeInstant geo_time_instant_end(
@@ -630,6 +631,20 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 				TopLevelPropertyInline::create(
 					PropertyName::create_gpml("reconstructionPlateId"),
 					ModelUtils::create_gpml_constant_value(recon_plate_id)));
+
+		// Ignore a conjugate plate id of 999 (it's a hard-coded default value for no-plate-id).
+		if (conjugate_plate_id != 999)
+		{
+			// Attempt to add the conjugate plate id to the feature.
+			// If the feature type does not support it (according to GPGIM) then it won't get added.
+			GPlatesModel::ModelUtils::add_property(
+					feature_handle,
+					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
+					GpmlPlateId::create(conjugate_plate_id),
+					true/*check_property_name_allowed_for_feature_type*/,
+					false/*check_property_multiplicity*/,
+					false/*check_property_value_type*/);
+		}
 
 		// For each geometry in the feature append the appropriate geometry property value
 		// to the current feature.
@@ -1086,17 +1101,9 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		GPlatesModel::FeatureHandle::weak_ref feature =
-		   	create_common(collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("Isochron"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
-		const GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type conj_plate_id =
-				GPlatesPropertyValues::GpmlPlateId::create(header->get_conjugate_plate_id_number());
-		feature->add(
-				GPlatesModel::TopLevelPropertyInline::create(
-					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
-					conj_plate_id));
-		return feature;
 	}
 
 
