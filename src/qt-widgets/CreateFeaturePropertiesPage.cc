@@ -107,26 +107,41 @@ namespace
 
 
 	/**
-	 * Returns true if any properties in @a feature_properties, or @a geometry_property_name, match
-	 * @a property_name.
+	 * Returns true if any properties in @a feature_properties, or @a reserved_feature_properties,
+	 * match @a property_name.
 	 */
 	bool
 	feature_has_property_name(
 			const GPlatesModel::PropertyName &property_name,
-			const GPlatesModel::PropertyName &geometry_property_name,
-			const GPlatesQtWidgets::CreateFeaturePropertiesPage::property_seq_type &feature_properties)
+			const GPlatesQtWidgets::CreateFeaturePropertiesPage::property_seq_type &feature_properties,
+			const GPlatesQtWidgets::CreateFeaturePropertiesPage::property_name_seq_type &reserved_feature_properties)
 	{
 		// Iterate over all feature properties.
-		GPlatesQtWidgets::CreateFeaturePropertiesPage::property_seq_type::const_iterator iter =
-				feature_properties.begin();
-		GPlatesQtWidgets::CreateFeaturePropertiesPage::property_seq_type::const_iterator end =
-				feature_properties.end();
-		for ( ; iter != end; ++iter)
+		GPlatesQtWidgets::CreateFeaturePropertiesPage::property_seq_type::const_iterator
+				feature_properties_iter = feature_properties.begin();
+		GPlatesQtWidgets::CreateFeaturePropertiesPage::property_seq_type::const_iterator
+				feature_properties_end = feature_properties.end();
+		for ( ; feature_properties_iter != feature_properties_end; ++feature_properties_iter)
 		{
-			const GPlatesModel::PropertyName &feature_property_name = (*iter)->property_name();
+			const GPlatesModel::PropertyName &feature_property_name = (*feature_properties_iter)->property_name();
 
-			if (property_name == feature_property_name ||
-				property_name == geometry_property_name)
+			if (property_name == feature_property_name)
+			{
+				// Found a matching property name.
+				return true;
+			}
+		}
+
+		// Iterate over all reserved feature properties.
+		GPlatesQtWidgets::CreateFeaturePropertiesPage::property_name_seq_type::const_iterator
+				reserved_feature_properties_iter = reserved_feature_properties.begin();
+		GPlatesQtWidgets::CreateFeaturePropertiesPage::property_name_seq_type::const_iterator
+				reserved_feature_properties_end = reserved_feature_properties.end();
+		for ( ; reserved_feature_properties_iter != reserved_feature_properties_end; ++reserved_feature_properties_iter)
+		{
+			const GPlatesModel::PropertyName &reserved_feature_property_name = *reserved_feature_properties_iter;
+
+			if (property_name == reserved_feature_property_name)
 			{
 				// Found a matching property name.
 				return true;
@@ -205,22 +220,30 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::CreateFeaturePropertiesPage(
 	QObject::connect(
 			available_properties_table_widget, SIGNAL(itemSelectionChanged()),
 			this, SLOT(handle_available_properties_selection_changed()));
+	QObject::connect(
+			available_properties_table_widget, SIGNAL(itemActivated(QTableWidgetItem *)),
+			this,
+			SLOT(handle_add_property_button_clicked()));
 
 	// Connect existing properties table widget signals.
 	QObject::connect(
 			existing_properties_table_widget, SIGNAL(itemSelectionChanged()),
 			this, SLOT(handle_existing_properties_selection_changed()));
+	QObject::connect(
+			existing_properties_table_widget, SIGNAL(itemActivated(QTableWidgetItem *)),
+			this,
+			SLOT(handle_edit_property_button_clicked()));
 }
 
 
 void
 GPlatesQtWidgets::CreateFeaturePropertiesPage::initialise(
 		const GPlatesModel::FeatureType &feature_type,
-		const GPlatesModel::PropertyName &geometry_property_name,
-		const property_seq_type &feature_properties)
+		const property_seq_type &feature_properties,
+		const property_name_seq_type &reserved_feature_properties)
 {
 	d_feature_type = feature_type;
-	d_geometry_property_name = geometry_property_name;
+	d_reserved_feature_properties = reserved_feature_properties;
 
 	//
 	// Set the text labels for each table widget.
@@ -348,21 +371,13 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::update_available_properties_table
 		if (gpgim_feature_property->get_multiplicity() == GPlatesModel::GpgimProperty::ZERO_OR_ONE ||
 			gpgim_feature_property->get_multiplicity() == GPlatesModel::GpgimProperty::ONE)
 		{
-			// Should only get here from 'initialise()' which also sets the geometry property name.
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					d_geometry_property_name,
-					GPLATES_ASSERTION_SOURCE);
-
-			// Note that we also include the digitised geometry property name in the list of
-			// feature properties because it's not yet present as a property in the list.
-			// This is in case only one geometry property with that name is allowed by the GPGIM -
-			// however if multiple properties are allowed then it's possible for the user to add
-			// a second geometry via the Edit Geometry widget (the first geometry was created via a
-			// Digitisation tool).
+			// Note that we also include the list of reserved feature property names in the list of
+			// feature properties because they are not yet present as properties in the list
+			// the client will add them later themself).
 			if (feature_has_property_name(
 				gpgim_feature_property->get_property_name(),
-				d_geometry_property_name.get(),
-				feature_properties))
+				feature_properties,
+				d_reserved_feature_properties))
 			{
 				continue;
 			}
@@ -516,12 +531,6 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::get_existing_property(
 bool
 GPlatesQtWidgets::CreateFeaturePropertiesPage::is_finished() const
 {
-	// If 'initialise()' has not yet been called then we're not finished (haven't started).
-	if (!d_geometry_property_name)
-	{
-		return false;
-	}
-
 	// Get the existing feature properties (from the 'existing properties' table widget).
 	property_seq_type existing_properties;
 	get_feature_properties(existing_properties);
@@ -529,6 +538,13 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::is_finished() const
 	// Get the remaining allowed feature properties (from the 'available properties' table widget).
 	gpgim_property_seq_type available_properties;
 	get_available_properties(available_properties);
+
+	// If 'initialise()' has not yet been called then we're not finished (haven't started).
+	if (existing_properties.empty() &&
+		available_properties.empty())
+	{
+		return false;
+	}
 
 	// Iterate over the available properties.
 	BOOST_FOREACH(
@@ -542,8 +558,8 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::is_finished() const
 		{
 			if (!feature_has_property_name(
 				available_property->get_property_name(),
-				d_geometry_property_name.get(),
-				existing_properties))
+				existing_properties,
+				d_reserved_feature_properties))
 			{
 				return false;
 			}
