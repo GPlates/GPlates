@@ -203,18 +203,28 @@ namespace GPlatesQtWidgets
 		set_up_geometric_property_list();
 
 		void
-		set_up_feature_properties();
+		select_default_geometry_property_name();
 
 		void
-		add_common_feature_property_to_list(
-				CreateFeaturePropertiesPage::property_seq_type &common_feature_properties,
+		set_up_common_properties();
+
+		void
+		set_up_all_properties_list();
+
+		void
+		copy_common_properties_into_all_properties();
+
+		void
+		copy_common_property_into_all_properties(
 				const GPlatesModel::PropertyName &property_name,
-				const GPlatesModel::PropertyValue::non_null_ptr_type &property_value,
-				const GPlatesModel::FeatureType &feature_type);
+				const GPlatesModel::PropertyValue::non_null_ptr_type &property_value);
+
+		void
+		remove_common_property_from_all_properties(
+				const GPlatesModel::PropertyName &property_name);
 
 		bool
-		display(
-				bool geometry_property_type_has_changed);
+		display();
 
 		boost::optional<GPlatesModel::FeatureHandle::iterator>
 		add_geometry_property(
@@ -286,6 +296,14 @@ namespace GPlatesQtWidgets
 		 * This may be boost::none if the create dialog has not been fed any geometry yet.
 		 */
 		boost::optional<GPlatesPropertyValues::StructuralType> d_geometry_property_type;
+
+		/**
+		 * The feature type (if any selected).
+		 *
+		 * A feature type will always be selected unless, for some reason, there are no feature
+		 * types populated in the list (should only be possible if GPGIM is incorrect).
+		 */
+		boost::optional<GPlatesModel::FeatureType> d_feature_type;
 
 		/**
 		 * The custom edit widget for reconstruction. Memory managed by Qt.
@@ -390,6 +408,14 @@ namespace GPlatesQtWidgets
 		 * This is used, along with "currentIndex()", to determine page transitions.
 		 */
 		StackedWidgetPage d_current_page;
+
+		/**
+		 * The feature properties (excluding geometry property) to create feature with.
+		 *
+		 * These are also kept around from the previous dialog invocation if the geometry
+		 * and feature types are the same (then user has option to re-use same properties).
+		 */
+		CreateFeaturePropertiesPage::property_seq_type d_feature_properties;
 
 		/**
 		 * The last canvas tool explicitly chosen by the user (i.e. not the
