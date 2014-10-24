@@ -126,6 +126,31 @@ namespace
 			const boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::classifications_type> &allowed_collection_types,
 			const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry)
 	{
+		// Remember the current selection so we can re-select if it exists after re-populating.
+		boost::optional<int> selected_collection_row;
+		boost::optional<GPlatesModel::FeatureCollectionHandle::weak_ref> previously_selected_collection;
+		if (list_widget.currentRow() >= 0)
+		{
+			FeatureCollectionItem *collection_item =
+					dynamic_cast<FeatureCollectionItem *>(list_widget.currentItem());
+			if (collection_item)
+			{
+				if (!collection_item->is_create_new_collection_item())
+				{
+					// Referencing an actual feature collection (even if it hasn't been saved to file yet).
+					previously_selected_collection =
+							collection_item->get_file_reference().get_file().get_feature_collection();
+				}
+				else
+				{
+					// The selected row was the " < Create a new feature collection > " row which
+					// is the last row and will probably result in a new feature collection at
+					// the same row.
+					selected_collection_row = list_widget.count() - 1;
+				}
+			}
+		}
+
 		list_widget.clear();
 
 		const std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference> loaded_files =
@@ -155,8 +180,18 @@ namespace
 			
 			// We are only interested in loaded files which have valid FeatureCollections.
 			if (collection_opt.is_valid() && 
-				collection_is_of_allowed_type(collection_opt,reconstruct_method_registry,allowed_collection_types)) {
+				collection_is_of_allowed_type(collection_opt,reconstruct_method_registry,allowed_collection_types))
+			{
 				list_widget.addItem(new FeatureCollectionItem(file_ref, label));
+
+				// Set the newly selected file if it matches previous selection (if there was any) and
+				// the previous selection exists in the new list.
+				if (!selected_collection_row &&
+					previously_selected_collection &&
+					previously_selected_collection.get() == collection_opt)
+				{
+					selected_collection_row = list_widget.count() - 1;
+				}
 			}
 		}
 
@@ -165,8 +200,15 @@ namespace
 				new FeatureCollectionItem(
 					GPlatesQtWidgets::ChooseFeatureCollectionWidget::tr(" < Create a new feature collection > ")));
 
-		// Default to first entry.
-		list_widget.setCurrentRow(0);
+		if (selected_collection_row)
+		{
+			list_widget.setCurrentRow(selected_collection_row.get());
+		}
+		else
+		{
+			// Default to first entry.
+			list_widget.setCurrentRow(0);
+		}
 	}
 }
 

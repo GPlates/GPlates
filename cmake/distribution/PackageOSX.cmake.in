@@ -33,7 +33,7 @@ IF (NOT "@GPLATES_SOURCE_CODE_CONTROL_VERSION_STRING@")
 		MESSAGE(STATUS "Unable to determine svn version number for non-public release - ignoring.")
 	ELSE (SVN_VERSION_RESULT)
 		# The 'svnversion' command can output a range of revisions with a colon separator - but this causes problems
-		# with filenames so we'll remove the colon and the end revision after it.
+		# with filenames so we'll remove the start revision and the colon after it (leaving the end revision).
 		STRING(REGEX REPLACE "^.*:" "" SVN_VERSION ${SVN_VERSION_OUTPUT})
 		# Set the updated package version.
 		SET(GPLATES_PACKAGE_VERSION_WITH_SVN_REVISION "@GPLATES_PACKAGE_VERSION@_r${SVN_VERSION}")
