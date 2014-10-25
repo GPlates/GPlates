@@ -638,7 +638,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_list()
 
 	// Note that we don't set the feature type selection.
 	// If the previously selected feature type is in the new list of feature types then
-	// the selection will be retained (ie, we'll remember the last selection).
+	// the selection will be retained (ie, it'll remember the last selection).
 }
 
 
@@ -962,6 +962,44 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_all_properties_list()
 
 
 void
+GPlatesQtWidgets::CreateFeatureDialog::clear_properties_not_allowed_for_current_feature_type()
+{
+	if (!d_feature_type)
+	{
+		QMessageBox::critical(this, tr("No feature type selected"),
+				tr("Please select a feature type to create."));
+		return;
+	}
+
+	// Get the GPGIM feature class for the feature type.
+	boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
+			d_gpgim.get_feature_class(d_feature_type.get());
+	// Our list of features was obtained from the GPGIM so we should be able to find it.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			gpgim_feature_class,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Iterate over the current properties and remove any not allowed by GPGIM for current feature type.
+	GPlatesQtWidgets::CreateFeaturePropertiesPage::property_seq_type::iterator
+			feature_properties_iter = d_feature_properties.begin();
+	while (feature_properties_iter != d_feature_properties.end())
+	{
+		const GPlatesModel::PropertyName &feature_property_name =
+				(*feature_properties_iter)->property_name();
+
+		if (gpgim_feature_class.get()->get_feature_property(feature_property_name))
+		{
+			++feature_properties_iter;
+		}
+		else
+		{
+			feature_properties_iter = d_feature_properties.erase(feature_properties_iter);
+		}
+	}
+}
+
+
+void
 GPlatesQtWidgets::CreateFeatureDialog::copy_common_properties_into_all_properties()
 {
 	if (!d_feature_type)
@@ -1245,7 +1283,10 @@ GPlatesQtWidgets::CreateFeatureDialog::display()
 
 	// Select the default feature type based on the geometry property type.
 	// We only do this once for each time this dialog is invoked.
-	// And only if the feature type has changed because we want to keep the previously selected
+	// And only if the feature type has changed - meaning the above 'set_up_feature_list()' could not
+	// find the same feature type compatible with the new geometry property type and so selected a
+	// random one - in this case we want to set the default feature type (based on the new geometry
+	// property type) instead of the random one. Otherwise we want to keep the previously selected
 	// feature type (from the last Create Feature dialog invocation) so user can quickly digitise
 	// the same feature type repeatedly.
 	if (d_feature_type != d_choose_feature_type_widget->get_feature_type())
@@ -1264,7 +1305,7 @@ GPlatesQtWidgets::CreateFeatureDialog::display()
 	//
 	// If the user aborted then we also keep the feature properties for next time, but the user
 	// could have aborted while on any page, so we might need to update the feature properties
-	// from the page widgets.
+	// from the corresonding page widgets.
 	if (dialog_result != QDialog::Accepted)
 	{
 		if (stack->currentIndex() == COMMON_PROPERTIES_PAGE)
@@ -1378,58 +1419,68 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 
 	case COMMON_PROPERTIES_PAGE:
 
-		// Disable buttons appropriately.
-		d_button_create->setEnabled(false);
-		button_create_and_save->setEnabled(false);
-
-		if (d_current_page < COMMON_PROPERTIES_PAGE)
 		{
-			//
-			// We're transitioning from the previous (feature type) page so
-			// set the selected feature type and see if it has actually changed.
-			//
+			// Disable buttons appropriately.
+			d_button_create->setEnabled(false);
+			button_create_and_save->setEnabled(false);
 
-			// The previous feature type.
-			boost::optional<GPlatesModel::FeatureType> prev_feature_type = d_feature_type;
-
-			// Set the current feature type.
-			d_feature_type = d_choose_feature_type_widget->get_feature_type();
-
-			// If the feature type has changed then clear out the existing feature properties.
-			// These are properties from the currently or previously digitised feature that are no longer
-			// applicable due to changing the feature type (repeatedly digitising the same feature/geometry
-			// type is meant to be a fast path for the user - where they can re-use previous properties).
-			if (d_feature_type != prev_feature_type)
+			bool feature_type_changed = false;
+			if (d_current_page < COMMON_PROPERTIES_PAGE)
 			{
-				d_feature_properties.clear();
+				//
+				// We're transitioning from the previous (feature type) page so
+				// set the selected feature type and see if it has actually changed.
+				//
+
+				// The previous feature type.
+				boost::optional<GPlatesModel::FeatureType> prev_feature_type = d_feature_type;
+
+				// Set the current feature type.
+				d_feature_type = d_choose_feature_type_widget->get_feature_type();
+
+				// If the feature type has changed then clear out those existing feature properties that
+				// are not allowed (by the GPGIM) for the new feature type.
+				// These are properties from the currently or previously digitised feature that are no longer
+				// applicable due to changing the feature type (repeatedly digitising the same feature/geometry
+				// type is meant to be a fast path for the user - where they can re-use previous properties).
+				if (d_feature_type != prev_feature_type)
+				{
+					clear_properties_not_allowed_for_current_feature_type();
+					feature_type_changed = true;
+				}
 			}
+			else if (d_current_page > COMMON_PROPERTIES_PAGE)
+			{
+				// We're transitioning from the next (all properties) page.
+				// So extract all the feature properties now that the user has finished adding/editing them.
+				// They don't need to be complete - we just need them so we can copy their values
+				// into the common properties widgets.
+				d_feature_properties.clear();
+				d_create_feature_properties_page->get_feature_properties(d_feature_properties);
+			}
+			// ...else if we're transitioning from the previous (feature type) page then just use the
+			// existing feature properties (if any) - there might be some from the previously digitised feature.
+
+			// Populate the listwidget_geometry_destinations based on what is legal right now.
+			set_up_geometric_property_list();
+
+			// If we're starting from scratch (eg, first time digitised or changed feature type)
+			// then select the default geometry property name based on the feature type.
+			//
+			// Note that we really want to encourage users to use the 'default' geometry property
+			// for a feature type as this makes retrieving geometries (eg, in python pygplates API)
+			// much easier for users (since they don't have to specify the geometry property name -
+			// when not specified pygplates will extract the 'default' geometry property).
+			if (feature_type_changed)
+			{
+				select_default_geometry_property_name();
+			}
+
+			// Set up the common properties widgets based on the current feature properties (if any).
+			set_up_common_properties();
+
+			d_listwidget_geometry_destinations->setFocus();
 		}
-		else if (d_current_page > COMMON_PROPERTIES_PAGE)
-		{
-			// We're transitioning from the next (all properties) page.
-			// So extract all the feature properties now that the user has finished adding/editing them.
-			// They don't need to be complete - we just need them so we can copy their values
-			// into the common properties widgets.
-			d_feature_properties.clear();
-			d_create_feature_properties_page->get_feature_properties(d_feature_properties);
-		}
-		// ...else if we're transitioning from the previous (feature type) page then just use the
-		// existing feature properties (if any) - there might be some from the previously digitised feature.
-
-		// Populate the listwidget_geometry_destinations based on what is legal right now.
-		set_up_geometric_property_list();
-
-		// If we're starting from scratch (eg, first time digitised or changed feature/geometry type)
-		// then select the default geometry property name based on the feature type.
-		if (d_feature_properties.empty())
-		{
-			select_default_geometry_property_name();
-		}
-
-		// Set up the common properties widgets based on the current feature properties (if any).
-		set_up_common_properties();
-
-		d_listwidget_geometry_destinations->setFocus();
 
 		break;
 

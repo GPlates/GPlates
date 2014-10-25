@@ -298,12 +298,13 @@ GPlatesQtWidgets::ChooseFeatureCollectionWidget::get_file_reference() const
 			listwidget_feature_collections->currentItem());
 	if (collection_item)
 	{
-		if (collection_item->is_create_new_collection_item())
+		const bool newly_created = collection_item->is_create_new_collection_item();
+		if (newly_created)
 		{
 			collection_item->set_file_reference(d_file_io.create_empty_file());
 		}
 
-		return std::make_pair(collection_item->get_file_reference(), false);
+		return std::make_pair(collection_item->get_file_reference(), newly_created);
 	}
 	else
 	{

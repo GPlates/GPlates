@@ -212,6 +212,9 @@ namespace GPlatesQtWidgets
 		set_up_all_properties_list();
 
 		void
+		clear_properties_not_allowed_for_current_feature_type();
+
+		void
 		copy_common_properties_into_all_properties();
 
 		void
