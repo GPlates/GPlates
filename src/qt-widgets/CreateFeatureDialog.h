@@ -163,7 +163,7 @@ namespace GPlatesQtWidgets
 				int index);		
 
 		void
-		handle_conjugate_value_changed();
+		handle_conjugate_plate_id_changed();
 
 		void
 		handle_feature_type_changed();
@@ -240,16 +240,16 @@ namespace GPlatesQtWidgets
 				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator);
 
 		/**
-		 * Creates an isochron feature using the provided geometry and properties,
+		 * Creates a conjugate feature using the provided geometry and properties,
 		 * but reversing the plate-id and conjugate-plate-id properties. 
 		 *
 		 * The geometry will be reconstructed to present day given its new plate-id,
 		 * i.e. the conjugate-plate-id passed to this function.
 		 */
 		void
-		create_conjugate_isochron(
+		create_conjugate_feature(
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-				const GPlatesModel::FeatureHandle::weak_ref &isochron_feature,
+				const GPlatesModel::FeatureHandle::weak_ref &feature,
 				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator);
 
 
@@ -401,9 +401,9 @@ namespace GPlatesQtWidgets
 		GPlatesAppLogic::ReconstructMethod::Type d_recon_method;
 
 		/**
-		 *  Checkbox for creating conjugate isochron.                                                                    
+		 *  Checkbox for creating a conjugate feature.                                                                    
 		 */
-		QCheckBox *d_create_conjugate_isochron_checkbox;
+		QCheckBox *d_create_conjugate_feature_checkbox;
 
 		/**
 		 * The index of the current stacked widget page.

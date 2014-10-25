@@ -245,19 +245,17 @@ namespace
 	}
 
 	/**
-	 *  Returns whether or not we offer an additional checkbox for creating a conjugate isochron. 
+	 *  Returns whether or not we offer an additional checkbox for creating a conjugate feature.
 	 *
-	 *  Returns true if the selected feature type is "Isochron".  
+	 *  Returns true if the selected feature type supports a conjugate plate id according
+	 *  to the GPGIM (such as an "Isochron" feature).
 	 */
 	bool
-	should_offer_create_conjugate_isochron_checkbox(
-			const boost::optional<GPlatesModel::FeatureType> &feature_type)
+	should_offer_create_conjugate_feature_checkbox(
+			const boost::optional<GPlatesModel::FeatureType> &feature_type,
+			const GPlatesModel::Gpgim &gpgim)
 	{
-		static const GPlatesModel::FeatureType isochron_type = GPlatesModel::FeatureType::create_gpml("Isochron");
-
-		return feature_type
-				? (feature_type.get() == isochron_type)
-				: false;
+		return should_offer_conjugate_plate_id_prop(feature_type, gpgim);
 	}	
 
 	/**
@@ -416,7 +414,7 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 				SelectionWidget::Q_LIST_WIDGET,
 				this)),
 	d_recon_method(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID),
-	d_create_conjugate_isochron_checkbox(new QCheckBox(this)),
+	d_create_conjugate_feature_checkbox(new QCheckBox(this)),
 	d_current_page(FEATURE_TYPE_PAGE)
 {
 	setupUi(this);
@@ -535,7 +533,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 	QObject::connect(d_recon_method_combobox, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(recon_method_changed(int)));
 	QObject::connect(d_conjugate_plate_id_widget, SIGNAL(value_changed()),
-			this, SLOT(handle_conjugate_value_changed()));
+			this, SLOT(handle_conjugate_plate_id_changed()));
 	
 	// Reconfigure some accelerator keys that conflict.
 	d_plate_id_widget->label()->setText(tr("Plate &ID:"));
@@ -548,13 +546,13 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 	d_name_widget->label()->setText(tr("&Name:"));
 	d_name_widget->label()->setHidden(false);
 	
-	// Set up checkbox for creating conjugate isochron. 
-	d_create_conjugate_isochron_checkbox->setChecked(false);
-	d_create_conjugate_isochron_checkbox->setText("Create con&jugate isochron");
-	QString tool_tip_string("Create an additional isochron feature using the same geometry, \
+	// Set up checkbox for creating conjugate feature. 
+	d_create_conjugate_feature_checkbox->setChecked(false);
+	d_create_conjugate_feature_checkbox->setText("Create con&jugate feature");
+	QString tool_tip_string("Create an additional feature using the same geometry, \
 							and with plate id and conjugate plate id reversed.");
-	d_create_conjugate_isochron_checkbox->setToolTip(tool_tip_string);
-	d_create_conjugate_isochron_checkbox->setEnabled(false);
+	d_create_conjugate_feature_checkbox->setToolTip(tool_tip_string);
+	d_create_conjugate_feature_checkbox->setEnabled(false);
 
 	//Add reconstruction method combobox
 	QHBoxLayout *recon_method_layout;
@@ -602,7 +600,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 	edit_layout->addItem(right_and_left_plate_id_layout);
 	edit_layout->addWidget(d_time_period_widget);
 	edit_layout->addWidget(d_name_widget);
-	edit_layout->addWidget(d_create_conjugate_isochron_checkbox);
+	edit_layout->addWidget(d_create_conjugate_feature_checkbox);
 	edit_layout->insertStretch(-1);
 	groupbox_common_properties->setLayout(edit_layout);
 	
@@ -921,13 +919,13 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties()
 	}
 
 
-	// Note that we leave the 'create isochron' checkbox state to what it was previously
+	// Note that we leave the 'create conjugate feature' checkbox state to what it was previously
 	// but we hide it if it's not applicable for the current feature/geometry type.
-	d_create_conjugate_isochron_checkbox->setVisible(
+	d_create_conjugate_feature_checkbox->setVisible(
 		// Currently only allow user to select if there's a non-topological geometry because creating
 		// conjugate requires reverse reconstructing using non-topological reconstruction...
 		is_non_topological_geometry(d_geometry_property_type.get()) &&
-			should_offer_create_conjugate_isochron_checkbox(d_feature_type));
+			should_offer_create_conjugate_feature_checkbox(d_feature_type, d_gpgim));
 }
 
 
@@ -1599,13 +1597,29 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		// Add the feature to the feature collection.
 		feature_collection->add(feature);
 
-		// If the feature is an isochron and the user wants to create the conjugate...
-		if (d_create_conjugate_isochron_checkbox->isChecked() &&
-			d_create_conjugate_isochron_checkbox->isEnabled() &&
-			should_offer_create_conjugate_isochron_checkbox(d_feature_type))
+		//
+		// NOTE: We must create the conjugate feature (if any) *after* fully creating the
+		// regular feature above (ie, all properties must have been added) because the regular
+		// feature is reverse-constructed to get present day geometry (and this requires all its
+		// properties to be there).
+		//
+
+		// If the feature has a conjugate plate id, has a non-topological geometry and
+		// the user wants to create the conjugate feature...
+		if (d_create_conjugate_feature_checkbox->isChecked() &&
+			// Does feature have reconstruction plate id property...
+			find_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+					d_feature_properties) &&
+			// Does feature have conjugate plate id property...
+			find_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
+					d_feature_properties) &&
+			// Creating conjugate requires reverse reconstructing using 'non-topological' reconstruction...
+			is_non_topological_geometry(d_geometry_property_type.get()))
 		{
 			// Should only get here for non-topological geometries (which can be reverse-reconstructed).
-			create_conjugate_isochron(
+			create_conjugate_feature(
 					feature_collection,
 					feature->reference(),
 					geometry_property_iterator.get());
@@ -1683,12 +1697,18 @@ GPlatesQtWidgets::CreateFeatureDialog::recon_method_changed(int index)
 			d_recon_method = GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID;
 			break;
 	}
+
+	d_create_conjugate_feature_checkbox->setEnabled(
+			!d_conjugate_plate_id_widget->is_null() &&
+			d_recon_method == GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 }
 
 void
-GPlatesQtWidgets::CreateFeatureDialog::handle_conjugate_value_changed()
+GPlatesQtWidgets::CreateFeatureDialog::handle_conjugate_plate_id_changed()
 {
-	d_create_conjugate_isochron_checkbox->setEnabled(!d_conjugate_plate_id_widget->is_null());
+	d_create_conjugate_feature_checkbox->setEnabled(
+			!d_conjugate_plate_id_widget->is_null() &&
+			d_recon_method == GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 }
 
 void
@@ -1956,11 +1976,18 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 }
 
 void
-GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
+GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_feature(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-		const GPlatesModel::FeatureHandle::weak_ref &isochron_feature,
+		const GPlatesModel::FeatureHandle::weak_ref &feature,
 		const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator)
 {
+	if (!d_feature_type)
+	{
+		QMessageBox::critical(this, tr("No feature type selected"),
+				tr("Please select a feature type to create."));
+		return;
+	}
+
 	if (!geometry_property_iterator.is_still_valid())
 	{
 		return;
@@ -1973,56 +2000,55 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 	static const GPlatesModel::PropertyName NAME =
 			GPlatesModel::PropertyName::create_gml("name");
 
-	// Get the reconstruction plate id from the isochron feature.
+	// Get the reconstruction plate id from the feature.
 	const GPlatesPropertyValues::GpmlPlateId *reconstruction_plate_id = NULL;
 	if (!GPlatesFeatureVisitors::get_property_value(
-		isochron_feature,
+		feature,
 		RECONSTRUCTION_PLATE_ID,
 		reconstruction_plate_id))
 	{
 		QMessageBox::critical(this,
-				tr("Failed to access isochron property."),
-				tr("Unable to access 'gpml:reconstructionPlateId' property in isochron feature."),
+				tr("Failed to access conjugate property."),
+				tr("Unable to access 'gpml:reconstructionPlateId' property in conjugate feature."),
 				QMessageBox::Ok);
 		return;
 	}
 
-	// Get the conjugate plate id from the isochron feature.
+	// Get the conjugate plate id from the feature.
 	const GPlatesPropertyValues::GpmlPlateId *conjugate_plate_id = NULL;
 	if (!GPlatesFeatureVisitors::get_property_value(
-		isochron_feature,
+		feature,
 		CONJUGATE_PLATE_ID,
 		conjugate_plate_id))
 	{
 		QMessageBox::critical(this,
-				tr("Failed to access isochron property."),
-				tr("Unable to access 'gpml:conjugatePlateId' property in isochron feature."),
+				tr("Failed to access conjugate property."),
+				tr("Unable to access 'gpml:conjugatePlateId' property in conjugate feature."),
 				QMessageBox::Ok);
 		return;
 	}
 
-	// Get the name from the isochron feature.
+	// Get the name from the feature.
 	const GPlatesPropertyValues::XsString *name = NULL;
 	if (!GPlatesFeatureVisitors::get_property_value(
-		isochron_feature,
+		feature,
 		NAME,
 		name))
 	{
 		QMessageBox::critical(this,
-				tr("Failed to access isochron property."),
-				tr("Unable to access 'gml:name' property in isochron feature."),
+				tr("Failed to access conjugate property."),
+				tr("Unable to access 'gml:name' property in conjugate feature."),
 				QMessageBox::Ok);
 		return;
 	}
 
-	// Create the conjugate isochron feature.
-	GPlatesModel::FeatureHandle::non_null_ptr_type conjugate_isochron_feature =
-			GPlatesModel::FeatureHandle::create(
-					GPlatesModel::FeatureType::create_gpml("Isochron"));
+	// Create the conjugate feature.
+	GPlatesModel::FeatureHandle::non_null_ptr_type conjugate_feature =
+			GPlatesModel::FeatureHandle::create(d_feature_type.get());
 
-	// Iterate over the isochron properties and create the conjugate isochron properties.
-	GPlatesModel::FeatureHandle::iterator isochron_properties_iter = isochron_feature->begin();
-	GPlatesModel::FeatureHandle::iterator isochron_properties_end = isochron_feature->end();
+	// Iterate over the properties and create the conjugate properties.
+	GPlatesModel::FeatureHandle::iterator isochron_properties_iter = feature->begin();
+	GPlatesModel::FeatureHandle::iterator isochron_properties_end = feature->end();
 	for ( ; isochron_properties_iter != isochron_properties_end; ++isochron_properties_iter)
 	{
 		// Ignore the geometry property - we're going to add the conjugate geometry later.
@@ -2038,7 +2064,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			// Swap the reconstruction and conjugate plate ids.
 			GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
 			if (!GPlatesModel::ModelUtils::add_property(
-					conjugate_isochron_feature->reference(),
+					conjugate_feature->reference(),
 					property_name,
 					conjugate_plate_id->deep_clone_as_prop_val(),
 					d_gpgim,
@@ -2047,7 +2073,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			{
 				// Not successful in adding geometry; show error message.
 				QMessageBox::warning(this,
-						QObject::tr("Failed to add property to the conjugate isochron."),
+						QObject::tr("Failed to add property to the conjugate feature."),
 						QObject::tr(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)),
 						QMessageBox::Ok);
 				return;
@@ -2061,7 +2087,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			// Swap the reconstruction and conjugate plate ids.
 			GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
 			if (!GPlatesModel::ModelUtils::add_property(
-					conjugate_isochron_feature->reference(),
+					conjugate_feature->reference(),
 					property_name,
 					reconstruction_plate_id->deep_clone_as_prop_val(),
 					d_gpgim,
@@ -2070,7 +2096,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			{
 				// Not successful in adding geometry; show error message.
 				QMessageBox::warning(this,
-						QObject::tr("Failed to add property to the conjugate isochron."),
+						QObject::tr("Failed to add property to the conjugate feature."),
 						QObject::tr(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)),
 						QMessageBox::Ok);
 				return;
@@ -2092,7 +2118,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 
 			GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
 			if (!GPlatesModel::ModelUtils::add_property(
-					conjugate_isochron_feature->reference(),
+					conjugate_feature->reference(),
 					property_name,
 					conjugate_name_property_value,
 					d_gpgim,
@@ -2101,7 +2127,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			{
 				// Not successful in adding geometry; show error message.
 				QMessageBox::warning(this,
-						QObject::tr("Failed to add property to the conjugate isochron."),
+						QObject::tr("Failed to add property to the conjugate feature."),
 						QObject::tr(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)),
 						QMessageBox::Ok);
 				return;
@@ -2110,14 +2136,14 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			continue;
 		}
 
-		// Clone and add the current property to the conjugate isochron feature.
+		// Clone and add the current property to the conjugate feature.
 		GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone =
 				(*isochron_properties_iter)->deep_clone();
-		conjugate_isochron_feature->add(property_clone);
+		conjugate_feature->add(property_clone);
 	}
 
 	//
-	// Create the conjugate isochron's geometry property.
+	// Create the conjugate feature's geometry property.
 	//
 
 	// Get the geometry property value from the geometry property iterator.
@@ -2129,7 +2155,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 	if (!geometry_property_value)
 	{
 		QMessageBox::critical(this,
-				tr("Failed to access isochron geometry property."),
+				tr("Failed to access conjugate geometry property."),
 				tr(GPlatesModel::ModelUtils::get_error_message(get_property_value_error_code)),
 				QMessageBox::Ok);
 		return;
@@ -2153,27 +2179,32 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			d_application_state_ptr->get_current_reconstruction()
 					.get_default_reconstruction_layer_output()->get_reconstruction_tree();
 
-	// Use the isochron feature properties (which should all be added by now) to reconstruct the
-	// isochron's present-day geometry to the current reconstruction time.
+	// Use the feature properties (which should all be added by now) to reconstruct the
+	// feature's present-day geometry to the current reconstruction time.
 	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_geometry =
 			GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 					present_day_geometry.get(),
-					isochron_feature,
+					feature,
 					*default_reconstruction_tree,
 					// FIXME: Using default reconstruct parameters, but will probably need to
 					// get this from the layer that the created feature is being assigned to...
 					GPlatesAppLogic::ReconstructParams());
 
-	// Reverse reconstruct, using the *conjugate* plate id, back to present-day.
-	// Note that we're reversing the plate-id and conjugate-plate-ids, so we use the conjugate here.
+	// Use the conjugate feature properties (which should all be added by now except geometry) to
+	// reverse reconstruct the reconstructed geometry to present-day geometry.
+	// Note that we're using the *conjugate* feature's properties which means that we're reversing
+	// the plate-id and conjugate-plate-ids when reverse reconstructing.
 	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type conjugate_present_day_geometry =
-			GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
+			GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 					reconstructed_geometry,
-					conjugate_plate_id->value(),
+					conjugate_feature->reference(),
 					*default_reconstruction_tree,
-					true /*reverse_reconstruct*/);
+					// FIXME: Using default reconstruct parameters, but will probably need to
+					// get this from the layer that the created feature is being assigned to...
+					GPlatesAppLogic::ReconstructParams(),
+					true/*reverse_reconstruct*/);
 
-	// Create a property value using the present-day geometry for the conjugate isochron.
+	// Create a property value using the present-day geometry for the conjugate feature.
 	const boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> conjugate_geometry_property_value =
 			GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 					conjugate_present_day_geometry);
@@ -2182,10 +2213,10 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 		return;
 	}
 
-	// Add the geometry property to the conjugate isochron feature.
+	// Add the geometry property to the conjugate feature.
 	GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
 	if (!GPlatesModel::ModelUtils::add_property(
-			conjugate_isochron_feature->reference(),
+			conjugate_feature->reference(),
 			(*geometry_property_iterator)->property_name(),
 			conjugate_geometry_property_value.get(),
 			d_gpgim,
@@ -2194,14 +2225,14 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 	{
 		// Not successful in adding geometry; show error message.
 		QMessageBox::warning(this,
-				QObject::tr("Failed to add geometry property to the conjugate isochron."),
+				QObject::tr("Failed to add geometry property to the conjugate feature."),
 				QObject::tr(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)),
 				QMessageBox::Ok);
 		return;
 	}
 
-	// Add the conjugate isochron feature to the feature collection.
-	feature_collection->add(conjugate_isochron_feature);
+	// Add the conjugate feature to the feature collection.
+	feature_collection->add(conjugate_feature);
 }
 
 
