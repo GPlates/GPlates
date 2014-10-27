@@ -521,11 +521,10 @@ void
 GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 {
 	// Pushing Enter or double-clicking a geometric property should cause focus to advance.
+	// Advance to something we know will always be visible.
 	QObject::connect(d_listwidget_geometry_destinations, SIGNAL(item_activated()),
-			d_plate_id_widget, SLOT(setFocus()));
-	// The various Edit widgets need pass focus along the chain if Enter is pressed.
-	QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
 			d_time_period_widget, SLOT(setFocus()));
+	// The various Edit widgets need pass focus along the chain if Enter is pressed.
 	QObject::connect(d_time_period_widget, SIGNAL(enter_pressed()),
 			d_name_widget, SLOT(setFocus()));
 	QObject::connect(d_name_widget, SIGNAL(enter_pressed()),
@@ -926,6 +925,86 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties()
 		// conjugate requires reverse reconstructing using non-topological reconstruction...
 		is_non_topological_geometry(d_geometry_property_type.get()) &&
 			should_offer_create_conjugate_feature_checkbox(d_feature_type, d_gpgim));
+
+	//
+	// Enable user to hit 'enter' to quickly move through the visible options.
+	//
+	// These are here instead of 'set_up_common_properties_page()' because these options
+	// depend on the widget visibility which can change.
+	//
+
+	// Disconnect signals first so we don't end up with duplicate connections.
+	QObject::disconnect(
+			d_left_plate_id, SIGNAL(enter_pressed()),
+			d_right_plate_id, SLOT(setFocus()));
+	QObject::disconnect(
+			d_right_plate_id, SIGNAL(enter_pressed()),
+			d_time_period_widget, SLOT(setFocus()));
+	QObject::disconnect(
+			d_plate_id_widget, SIGNAL(enter_pressed()),
+			d_conjugate_plate_id_widget, SLOT(setFocus()));
+	QObject::disconnect(
+			d_plate_id_widget, SIGNAL(enter_pressed()),
+			d_relative_plate_id_widget, SLOT(setFocus()));
+	QObject::disconnect(
+			d_plate_id_widget, SIGNAL(enter_pressed()),
+			d_time_period_widget, SLOT(setFocus()));
+	QObject::disconnect(
+			d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
+			d_relative_plate_id_widget, SLOT(setFocus()));
+	QObject::disconnect(
+			d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
+			d_time_period_widget, SLOT(setFocus()));
+	QObject::disconnect(
+			d_relative_plate_id_widget, SIGNAL(enter_pressed()),
+			d_time_period_widget, SLOT(setFocus()));
+
+	// Connect the signals.
+	if (d_recon_method == GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION)
+	{
+		d_left_plate_id->setFocus();
+
+		// The various Edit widgets need pass focus along the chain if Enter is pressed.
+		QObject::connect(d_left_plate_id, SIGNAL(enter_pressed()),
+				d_right_plate_id, SLOT(setFocus()));
+		QObject::connect(d_right_plate_id, SIGNAL(enter_pressed()),
+				d_time_period_widget, SLOT(setFocus()));
+	}
+	else // GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID...
+	{
+		d_plate_id_widget->setFocus();
+
+		// The various Edit widgets need pass focus along the chain if Enter is pressed.
+		if (should_offer_conjugate_plate_id_prop(d_feature_type, d_gpgim))
+		{
+			QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
+					d_conjugate_plate_id_widget, SLOT(setFocus()));
+			if (should_offer_relative_plate_id_prop(d_feature_type, d_gpgim))
+			{
+				QObject::connect(d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
+						d_relative_plate_id_widget, SLOT(setFocus()));
+				QObject::connect(d_relative_plate_id_widget, SIGNAL(enter_pressed()),
+						d_time_period_widget, SLOT(setFocus()));
+			}
+			else
+			{
+				QObject::connect(d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
+						d_time_period_widget, SLOT(setFocus()));
+			}
+		}
+		else if (should_offer_relative_plate_id_prop(d_feature_type, d_gpgim))
+		{
+			QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
+					d_relative_plate_id_widget, SLOT(setFocus()));
+			QObject::connect(d_relative_plate_id_widget, SIGNAL(enter_pressed()),
+					d_time_period_widget, SLOT(setFocus()));
+		}
+		else
+		{
+			QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
+					d_time_period_widget, SLOT(setFocus()));
+		}
+	}
 }
 
 
@@ -1476,8 +1555,6 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 
 			// Set up the common properties widgets based on the current feature properties (if any).
 			set_up_common_properties();
-
-			d_listwidget_geometry_destinations->setFocus();
 		}
 
 		break;
