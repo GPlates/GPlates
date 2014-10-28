@@ -373,10 +373,10 @@ def synchronise_crossovers(
         if crossover_adjustment.represents_identity_rotation():
             crossover_passed = True
         elif crossover_threshold_degrees is not None:
-            (previous_old_crossover_lat, previous_old_crossover_lon, previous_old_crossover_angle =
+            previous_old_crossover_lat, previous_old_crossover_lon, previous_old_crossover_angle = (
                     previous_old_crossover_moving_fixed_relative_rotation.get_lat_lon_euler_pole_and_angle_degrees())
             
-            (current_old_crossover_pole, current_old_crossover_angle_radians =
+            current_old_crossover_pole, current_old_crossover_angle_radians = (
                     current_old_crossover_moving_fixed_relative_rotation.get_euler_pole_and_angle())
             current_old_crossover_lat, current_old_crossover_lon = current_old_crossover_pole.to_lat_lon()
             current_old_crossover_angle = math.degrees(current_old_crossover_angle_radians)
@@ -389,11 +389,11 @@ def synchronise_crossovers(
             else:
                 # The antipodal rotation pole with a negated angle represents the exact same rotation.
                 # So we compare that for closeness also.
-                (current_old_crossover_pole_x, current_old_crossover_pole_y, current_old_crossover_pole_z =
+                current_old_crossover_pole_x, current_old_crossover_pole_y, current_old_crossover_pole_z = (
                         current_old_crossover_pole.to_xyz())
                 current_old_crossover_pole_antipodal = PointOnSphere((
                         -current_old_crossover_pole_x, -current_old_crossover_pole_y, -current_old_crossover_pole_z))
-                (current_old_crossover_lat_antipodal, current_old_crossover_lon_antipodal =
+                current_old_crossover_lat_antipodal, current_old_crossover_lon_antipodal = (
                         current_old_crossover_pole_antipodal.to_lat_lon())
                 current_old_crossover_angle_antipodal = -current_old_crossover_angle
                 if (abs(current_old_crossover_lat_antipodal - previous_old_crossover_lat) <= crossover_threshold_degrees and
