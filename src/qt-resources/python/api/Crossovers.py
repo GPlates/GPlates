@@ -23,8 +23,10 @@ import math
 Crossover = namedtuple("Crossover",
         "time "
         "moving_plate_id "
-        "pre_crossover_fixed_plate_id post_crossover_fixed_plate_id "
-        "pre_crossover_rotation_sequence post_crossover_rotation_sequence")
+        "young_crossover_fixed_plate_id "
+        "old_crossover_fixed_plate_id "
+        "young_crossover_rotation_sequence "
+        "old_crossover_rotation_sequence")
 
 
 def find_crossovers(rotation_features, crossover_filter=None):
@@ -38,32 +40,31 @@ def find_crossovers(rotation_features, crossover_filter=None):
     or sequence of :class:`Feature`, or sequence of any combination of those four types
     :param crossover_filter: a predicate function to determine which crossovers to return
     :type crossover_filter: a callable accepting a single named-tuple 'Crossover' argument
-    :returns: a time-sorted list (from most recent to least recent) of crossover named-tuple 'Crossover' with named elements \
-    (time, moving_plate_id, pre_crossover_fixed_plate_id, post_crossover_fixed_plate_id, \
-    pre_crossover_rotation_sequence, post_crossover_rotation_sequence)
+    :returns: a time-sorted list, from most recent (youngest) to least recent (oldest), of crossover \
+    named-tuple 'Crossover' with named elements (time, moving_plate_id, young_crossover_fixed_plate_id, \
+    old_crossover_fixed_plate_id, young_crossover_rotation_sequence, old_crossover_rotation_sequence)
     :rtype: list of named-tuple 'Crossover' (float, int, int, int, :class:`GpmlIrregularSampling`, :class:`GpmlIrregularSampling`)
     
     A crossover is a named-tuple 'Crossover' with named elements (time, moving_plate_id,
-    pre_crossover_fixed_plate_id, post_crossover_fixed_plate_id,
-    pre_crossover_rotation_sequence, post_crossover_rotation_sequence) and with type
+    young_crossover_fixed_plate_id, old_crossover_fixed_plate_id,
+    young_crossover_rotation_sequence, old_crossover_rotation_sequence) and with type
     (float, int, int, int, :class:`GpmlIrregularSampling`, :class:`GpmlIrregularSampling`).
     
     A crossover occurs when the motion of a (moving) plate crosses over from one (fixed) plate to move relative
     to another (fixed) plate at a particular geological time. The named-tuple 'Crossover' stores the crossover time,
-    moving plate id, the fixed plate id before and after the crossover and the time sequence of
-    :class:`finite rotations<GpmlFiniteRotation>` before and after the crossover. Before (pre) means younger (or more recent)
-    and after (post) means older (or less recent).
+    moving plate id, the fixed plate id after (younger) and before (older) the crossover and the time sequence of
+    :class:`finite rotations<GpmlFiniteRotation>` after (younger) and before (older) the crossover.
+    Younger means more recent (smaller time values) and older means less recent (larger time values).
     
-    Note that the returned list of crossovers is sorted by time from most recent to least recent.
-    This is useful when synchronising crossovers since more recent crossovers can only affect crossovers further in the past.
+    Note that the returned list of crossovers is sorted by time from most recent (younger) to least recent (older).
     The returned list is also optionally filtered if *crossover_filter* is specified.
     
     A rotation feature has a :class:`feature type<FeatureType>` of `total reconstruction sequence
     <http://www.earthbyte.org/Resources/GPGIM/public/#TotalReconstructionSequence>`_ and contains a time sequence
     of :class:`finite rotations<GpmlFiniteRotation>` (see :meth:`total reconstruction pole<Feature.get_total_reconstruction_pole>`)
     for a specific fixed/moving plate pair. Each crossover essentially returns information of the
-    :meth:`total reconstruction pole<Feature.get_total_reconstruction_pole>` for the rotation feature before the crossover and
-    for the rotation feature after the crossover as well as the time of the crossover - note that both rotation features will have the same
+    :meth:`total reconstruction pole<Feature.get_total_reconstruction_pole>` for the rotation feature after the crossover and
+    for the rotation feature before the crossover as well as the time of the crossover - note that both rotation features will have the same
     moving plate id but differing fixed plate ids.
     
     Note that modifying the rotation sequences in the returned crossovers will modify the rotation features.
@@ -80,13 +81,13 @@ def find_crossovers(rotation_features, crossover_filter=None):
       for crossover in crossovers:
           print 'Crossover time: %f' % crossover.time
           print 'Crossover moving plate id: %d' % crossover.moving_plate_id
-          print 'Crossover younger fixed plate id: %d' % crossover.pre_crossover_fixed_plate_id
-          print 'Crossover older fixed id: %d' % crossover.post_crossover_fixed_plate_id
+          print 'Crossover younger fixed plate id: %d' % crossover.young_crossover_fixed_plate_id
+          print 'Crossover older fixed id: %d' % crossover.old_crossover_fixed_plate_id
           print 'Crossover younger finite rotation: %d' % \\
-              crossover.pre_crossover_rotation_sequence.get_value(crossover.time) \\
+              crossover.young_crossover_rotation_sequence.get_value(crossover.time) \\
               .get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
           print 'Crossover older finite rotation: %d' % \\
-              crossover.post_crossover_rotation_sequence.get_value(crossover.time) \\
+              crossover.old_crossover_rotation_sequence.get_value(crossover.time) \\
               .get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
     
     Find crossovers affecting moving plate 801:
@@ -121,53 +122,51 @@ def find_crossovers(rotation_features, crossover_filter=None):
         # Only one fixed plate means no crossovers for the current moving plate.
         if len(total_reconstruction_poles) > 1:
             # Iterate over all possible pairs of fixed plates (of the current moving plate) - two 'for' loops.
-            for pre_index, pre_crossover_total_reconstruction_pole in enumerate(total_reconstruction_poles):
+            for young_index, young_crossover_total_reconstruction_pole in enumerate(total_reconstruction_poles):
                 # fixed_plate_id, moving_plate_id, rotation_sequence = total_reconstruction_pole
-                pre_crossover_fixed_plate_id = pre_crossover_total_reconstruction_pole[0]
-                pre_crossover_rotation_sequence = pre_crossover_total_reconstruction_pole[2]
+                young_crossover_fixed_plate_id = young_crossover_total_reconstruction_pole[0]
+                young_crossover_rotation_sequence = young_crossover_total_reconstruction_pole[2]
                 # Find the last enabled time sample using 'next()' builtin function.
-                pre_crossover_last_enabled_time_sample = next(
-                    (ts for ts in reversed(pre_crossover_rotation_sequence.get_time_samples()) if ts.is_enabled()),
+                young_crossover_last_enabled_time_sample = next(
+                    (ts for ts in reversed(young_crossover_rotation_sequence.get_time_samples()) if ts.is_enabled()),
                     None)
                 # If no time samples are enabled for some reason then skip.
-                if not pre_crossover_last_enabled_time_sample:
+                if not young_crossover_last_enabled_time_sample:
                     continue
                 
-                for post_index, post_crossover_total_reconstruction_pole in enumerate(total_reconstruction_poles):
-                    if pre_index == post_index:
+                for old_index, old_crossover_total_reconstruction_pole in enumerate(total_reconstruction_poles):
+                    if young_index == old_index:
                         continue
                     # fixed_plate_id, moving_plate_id, rotation_sequence = total_reconstruction_pole
-                    post_crossover_fixed_plate_id = post_crossover_total_reconstruction_pole[0]
-                    post_crossover_rotation_sequence = post_crossover_total_reconstruction_pole[2]
+                    old_crossover_fixed_plate_id = old_crossover_total_reconstruction_pole[0]
+                    old_crossover_rotation_sequence = old_crossover_total_reconstruction_pole[2]
                     # Find the first enabled time sample using 'next()' builtin function.
-                    post_crossover_first_enabled_time_sample = next(
-                        (ts for ts in post_crossover_rotation_sequence.get_time_samples() if ts.is_enabled()),
+                    old_crossover_first_enabled_time_sample = next(
+                        (ts for ts in old_crossover_rotation_sequence.get_time_samples() if ts.is_enabled()),
                         None)
                     # If no time samples are enabled for some reason then skip.
-                    if not post_crossover_first_enabled_time_sample:
+                    if not old_crossover_first_enabled_time_sample:
                         continue
                     
-                    # If the time of the last sample of pre crossover sequence matches the time of
-                    # the first sample of the post crossover sequence then we've found a crossover.
+                    # If the time of the last sample of young crossover sequence matches the time of
+                    # the first sample of the old crossover sequence then we've found a crossover.
                     #
                     # We use the tolerance built into GeoTimeInstant for equality comparison.
                     # Avoids precision issues of directly comparing floating-point numbers for equality.
-                    if GeoTimeInstant(pre_crossover_last_enabled_time_sample.get_time()) == \
-                            post_crossover_first_enabled_time_sample.get_time():
+                    if GeoTimeInstant(young_crossover_last_enabled_time_sample.get_time()) == \
+                            old_crossover_first_enabled_time_sample.get_time():
                         crossover = Crossover(
-                            post_crossover_first_enabled_time_sample.get_time(),
+                            old_crossover_first_enabled_time_sample.get_time(),
                             moving_plate_id,
-                            pre_crossover_fixed_plate_id,
-                            post_crossover_fixed_plate_id,
-                            pre_crossover_rotation_sequence,
-                            post_crossover_rotation_sequence)
+                            young_crossover_fixed_plate_id,
+                            old_crossover_fixed_plate_id,
+                            young_crossover_rotation_sequence,
+                            old_crossover_rotation_sequence)
                         # If caller is filtering crossovers then append crossover conditionally.
                         if not crossover_filter or crossover_filter(crossover):
                             crossovers.append(crossover)
     
-    # Sort the list of crossovers by time since more recent crossovers can only affect
-    # crossovers further in the past.
-    # This enables the caller to process crossovers from most recent to least recent.
+    # Sort the list of crossovers by time.
     crossovers.sort(key = lambda crossover: crossover.time)
     
     return crossovers
@@ -190,12 +189,12 @@ def synchronise_crossovers(
     which crossovers (in *rotation_features*) to synchronise, or an optional sequence of crossovers (in any order) to \
     synchronise - if nothing is specified then all crossovers (in *rotation_features*) are synchronised - \
     a crossover is a named-tuple 'Crossover' with named elements (time, moving_plate_id, \
-    pre_crossover_fixed_plate_id, post_crossover_fixed_plate_id, \
-    pre_crossover_rotation_sequence, post_crossover_rotation_sequence)
+    young_crossover_fixed_plate_id, old_crossover_fixed_plate_id, \
+    young_crossover_rotation_sequence, old_crossover_rotation_sequence)
     :type crossover_filter: a callable accepting a single named-tuple 'Crossover' argument, or \
     a sequence of named-tuple 'Crossover' (float, int, int, int, :class:`GpmlIrregularSampling`, :class:`GpmlIrregularSampling`)
     :param crossover_threshold_degrees: If specified then crossovers are synchronised (fixed) only if the \
-    post-crossover rotation latitude, longitude or angle differ from those in pre-crossover rotation by \
+    old-crossover rotation latitude, longitude or angle differ from those in young-crossover rotation by \
     more than this amount
     :type crossover_threshold_degrees: float or None
     :param crossover_results: if specified then a tuple of (Crossover, bool) is appended for each filtered \
@@ -205,18 +204,17 @@ def synchronise_crossovers(
     :type crossover_results: list or None
     
     A crossover is a named-tuple 'Crossover' with named elements (time, moving_plate_id,
-    pre_crossover_fixed_plate_id, post_crossover_fixed_plate_id,
-    pre_crossover_rotation_sequence, post_crossover_rotation_sequence) and with type
+    young_crossover_fixed_plate_id, old_crossover_fixed_plate_id,
+    young_crossover_rotation_sequence, old_crossover_rotation_sequence) and with type
     (float, int, int, int, :class:`GpmlIrregularSampling`, :class:`GpmlIrregularSampling`).
     
     A crossover occurs when the motion of a (moving) plate crosses over from one (fixed) plate to move relative
     to another (fixed) plate at a particular geological time. Synchronising a crossover involves adjusting the finite rotations
-    after the crossover to match the finite rotation before the crossover. Before (pre) means younger (more recent)
-    and after (post) means older (less recent). Crossovers are synchronised in time order from most recent to least recent
-    (since more recent crossovers can only affect crossovers further in the past).
+    before (older) the crossover to match the finite rotation after (younger) the crossover.
+    Younger means more recent (smaller time values) and older means less recent (larger time values).
     
     Note that *rotation_features* should contain all features that directly or indirectly affect the crossovers to be
-    synchronised (typically *rotation_features* is an entire rotation file), otherwise crossovers may not be correctly synchronised.
+    synchronised (typically *rotation_features* is one or more rotation files), otherwise crossovers may not be correctly synchronised.
     
     Synchronising crossovers results in modifications to *rotation_features*.
     The modified rotation features can then be used to create a new :class:`RotationModel` with updated rotations.
@@ -232,7 +230,7 @@ def synchronise_crossovers(
     synchronised.
     
     *crossover_threshold_degrees* can optionally be used to synchronise (fix) only those crossovers whose
-    difference in pre and post crossover rotation latitudes, longitudes or angles exceeds this amount. This is
+    difference in young and old crossover rotation latitudes, longitudes or angles exceeds this amount. This is
     useful since some PLATES rotation files are typically only accurate to 2 decimal places (or threshold of 0.01).
     
     *crossover_results* can optionally be used to obtain a list of the synchronisation results of all
@@ -291,8 +289,8 @@ def synchronise_crossovers(
         #print 'Fixing crossover at time(%f), mpid(%d), pre_fpid(%d), post_fpid(%d)' % (
         #        crossover.time,
         #        crossover.moving_plate_id,
-        #        crossover.pre_crossover_fixed_plate_id,
-        #        crossover.post_crossover_fixed_plate_id)
+        #        crossover.young_crossover_fixed_plate_id,
+        #        crossover.old_crossover_fixed_plate_id)
         
         # Note that the rotation model will include the crossover modifications made so far because
         # the modifications were made to the properties of the rotation features that we're passing
@@ -300,23 +298,23 @@ def synchronise_crossovers(
         # So it is important that this RotationModel is created *inside* the loop over crossovers.
         rotation_model = RotationModel(rotation_feature_sequence)
         
-        # Get the post-crossover rotation time samples - ignore disabled samples.
-        post_crossover_time_samples = crossover.post_crossover_rotation_sequence.get_enabled_time_samples()
+        # Get the old-crossover rotation time samples - ignore disabled samples.
+        post_crossover_time_samples = crossover.old_crossover_rotation_sequence.get_enabled_time_samples()
         
-        # The first post-crossover time sample.
+        # The first old-crossover time sample.
         old_post_crossover_moving_fixed_relative_rotation = \
             post_crossover_time_samples[0].get_value().get_finite_rotation()
 
-        # We assume the first half of the crossover (pre-crossover) is correct and we want to adjust
-        # the second half (post-crossover) to match. So we get the rotation relative to the
-        # *post*-crossover fixed plate but at a *pre*-crossover time.
+        # We assume the first half of the crossover (young-crossover) is correct and we want to adjust
+        # the second half (old-crossover) to match. So we get the rotation relative to the
+        # old-crossover fixed plate but at a young-crossover time.
         #
         # Use a small delta time decrement from the crossover time to ensure we get the
-        # rotation just prior to the crossover (ie, we don't want to take the plate circuit path
-        # through the *post*-crossover fixed plate).
+        # rotation just after (younger) to the crossover (ie, we don't want to take the plate
+        # circuit path through the old-crossover fixed plate).
         #
         # The delta is a bit arbitrary. We make it small enough to avoid deviating from the true
-        # rotation too much, but not too small that pygplates includes both pre and post crossover
+        # rotation too much, but not too small that pygplates includes both young and old crossover
         # paths in its reconstruction tree thus making the plate circuit path (used for the rotation)
         # a bit arbitrary - pygplates tolerance for this is currently about 1e-9.
         new_post_crossover_moving_fixed_relative_rotation = rotation_model.get_rotation(
@@ -324,23 +322,23 @@ def synchronise_crossovers(
             crossover.moving_plate_id,
             # Note: Setting anchor plate instead of fixed plate in case there's no plate circuit path
             # from plate zero (default anchor plate) to moving or fixed plates (see pygplates API docs)...
-            anchor_plate_id=crossover.post_crossover_fixed_plate_id)
+            anchor_plate_id=crossover.old_crossover_fixed_plate_id)
             
-        # Determine the crossover adjustment to apply to all post-crossover time samples.
+        # Determine the crossover adjustment to apply to all old-crossover time samples.
         #
-        # The pre-crossover total rotation at time t2 (assuming t2 is a crossover time):
+        # The young-crossover total rotation at time t2 (assuming t2 is a crossover time):
         #   R(0->t2, Fa->M)
-        # The old post-crossover total rotation at time t2:
+        # The old old-crossover total rotation at time t2:
         #   R(0->t2, Fb->M)
-        # The new (fixed) post-crossover total rotation at time t2:
+        # The new (fixed) old-crossover total rotation at time t2:
         #   R'(0->t2, Fb->M)
         #
-        # The old post-crossover total rotation at an older time t4 is composed of stage poles:
+        # The old old-crossover total rotation at an older time t4 is composed of stage poles:
         #   R(0->t4) = R(t3->t4) * R(t2->t3) * R(0->t2, Fb->M)
         #            = R(t2->t4) * R(0->t2, Fb->M)
         # The stage pole from t2->t4:
         #   R(t2->t4) = R(0->t4) * inverse[R(0->t2, Fb->M)]
-        # The new post-crossover total rotation at an older time t4 is composed of stage poles:
+        # The new old-crossover total rotation at an older time t4 is composed of stage poles:
         #   R'(0->t4) = R(t3->t4) * R(t2->t3) * R'(0->t2, Fb->M)
         #             = R(t2->t4) * R'(0->t2, Fb->M)
         # Which, using the stage pole above to replace 'R(t2->t4)', is:
@@ -396,7 +394,7 @@ def synchronise_crossovers(
         if crossover_passed:
             continue
         
-        # Change the first time sample.
+        # Change the first rotation time sample.
         post_crossover_time_samples[0].get_value().set_finite_rotation(
             new_post_crossover_moving_fixed_relative_rotation)
         # Change the remaining rotation time samples.

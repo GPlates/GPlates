@@ -27,7 +27,9 @@ set(GPLATES_PACKAGE_VERSION_PATCH "0")
 #
 # This revision number should ideally be incremented whenever a change is made to the pygplates API.
 # For example a new function or class - so users can then test whether a pygplates build has
-# this function or not. This is also useful for internal (non-public) releases.
+# this function or not - this is also useful for internal (non-public) releases.
+# However typically the revision number is only incremented for internal releases since currently
+# the (internal release) users (eg, various python scripts) are the only ones that query the version.
 # We don't use the SVN revision (commit) number because an API change might occur on a branch
 # and a subsequent non-API change on trunk would cause trunk to have a higher pygplates version.
 # Also the SVN revision number (and hence pygplates version) would increase for each non-API commit.
@@ -39,7 +41,7 @@ set(GPLATES_PACKAGE_VERSION_PATCH "0")
 # Also it does not need to be incremented at each public release - for example the revision number
 # just prior to the GPlates 1.5.0 release and just after might be the same (if API did not change
 # during that time).
-set(PYGPLATES_REVISION 2)
+set(PYGPLATES_REVISION 3)
 
 # The GPlates package version.
 set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION_MAJOR}.${GPLATES_PACKAGE_VERSION_MINOR}.${GPLATES_PACKAGE_VERSION_PATCH}")
