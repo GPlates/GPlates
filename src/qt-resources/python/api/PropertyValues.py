@@ -418,6 +418,10 @@ def gpml_irregular_sampling_get_enabled_time_samples(gpml_irregular_sampling):
     ::
     
       return filter(lambda ts: ts.is_enabled(), get_time_samples())
+    
+    **NOTE:** Unlike :meth:`get_time_samples`, modifying the sequence returned by :meth:`get_enabled_time_samples`
+    will **not** modify the internal state of the :class:`GpmlIrregularSampling` instance (it only
+    modifies the returned ``list``).
     """
 
     # Filter out the disabled time samples.

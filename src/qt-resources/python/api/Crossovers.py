@@ -128,7 +128,7 @@ def find_crossovers(rotation_features, crossover_filter=None):
                 young_crossover_rotation_sequence = young_crossover_total_reconstruction_pole[2]
                 # Find the last enabled time sample using 'next()' builtin function.
                 young_crossover_last_enabled_time_sample = next(
-                    (ts for ts in reversed(young_crossover_rotation_sequence.get_time_samples()) if ts.is_enabled()),
+                    (ts for ts in reversed(young_crossover_rotation_sequence) if ts.is_enabled()),
                     None)
                 # If no time samples are enabled for some reason then skip.
                 if not young_crossover_last_enabled_time_sample:
@@ -142,7 +142,7 @@ def find_crossovers(rotation_features, crossover_filter=None):
                     old_crossover_rotation_sequence = old_crossover_total_reconstruction_pole[2]
                     # Find the first enabled time sample using 'next()' builtin function.
                     old_crossover_first_enabled_time_sample = next(
-                        (ts for ts in old_crossover_rotation_sequence.get_time_samples() if ts.is_enabled()),
+                        (ts for ts in old_crossover_rotation_sequence if ts.is_enabled()),
                         None)
                     # If no time samples are enabled for some reason then skip.
                     if not old_crossover_first_enabled_time_sample:
@@ -153,8 +153,8 @@ def find_crossovers(rotation_features, crossover_filter=None):
                     #
                     # We use the tolerance built into GeoTimeInstant for equality comparison.
                     # Avoids precision issues of directly comparing floating-point numbers for equality.
-                    if GeoTimeInstant(young_crossover_last_enabled_time_sample.get_time()) == \
-                            old_crossover_first_enabled_time_sample.get_time():
+                    if (GeoTimeInstant(young_crossover_last_enabled_time_sample.get_time()) ==
+                            old_crossover_first_enabled_time_sample.get_time()):
                         crossover = Crossover(
                             old_crossover_first_enabled_time_sample.get_time(),
                             moving_plate_id,
@@ -286,44 +286,58 @@ def synchronise_crossovers(
         crossovers = find_crossovers(rotation_feature_sequence, crossover_filter)
     
     for crossover in crossovers:
-        #print 'Fixing crossover at time(%f), mpid(%d), pre_fpid(%d), post_fpid(%d)' % (
+        #print 'Processing crossover at time(%f), mpid(%d), young_fpid(%d), old_fpid(%d)' % (
         #        crossover.time,
         #        crossover.moving_plate_id,
         #        crossover.young_crossover_fixed_plate_id,
         #        crossover.old_crossover_fixed_plate_id)
+
+        # Get the old-crossover rotation time samples - ignore disabled samples.
+        # Note: there must be at least one enabled time sample otherwise we wouldn't have found this crossover.
+        old_crossover_time_samples = crossover.old_crossover_rotation_sequence.get_enabled_time_samples()
+        
+        # Temporarily disable the old-crossover time sample.
+        # Note that this disables it directly in the rotation sequence/feature.
+        # This is done so we can calculate the correct (fixed) old-crossover rotation (to match
+        # the young-crossover rotation) without the old-crossover rotation interfering.
+        # In other words, we don't want to take the plate circuit path through the old-crossover
+        # fixed plate - instead we want to take the path through the young-crossover fixed plate.
+        old_crossover_time_samples[0].set_disabled()
         
         # Note that the rotation model will include the crossover modifications made so far because
         # the modifications were made to the properties of the rotation features that we're passing
         # into the rotation model here.
         # So it is important that this RotationModel is created *inside* the loop over crossovers.
+        #
+        # Also rotation modifications up to this point include the disabled old-crossover time sample.
+        # This ensures the rotation model does not take the old-crossover rotation into account.
         rotation_model = RotationModel(rotation_feature_sequence)
         
-        # Get the old-crossover rotation time samples - ignore disabled samples.
-        post_crossover_time_samples = crossover.old_crossover_rotation_sequence.get_enabled_time_samples()
-        
-        # The first old-crossover time sample.
-        old_post_crossover_moving_fixed_relative_rotation = \
-            post_crossover_time_samples[0].get_value().get_finite_rotation()
-
         # We assume the first half of the crossover (young-crossover) is correct and we want to adjust
-        # the second half (old-crossover) to match. So we get the rotation relative to the
-        # old-crossover fixed plate but at a young-crossover time.
-        #
-        # Use a small delta time decrement from the crossover time to ensure we get the
-        # rotation just after (younger) to the crossover (ie, we don't want to take the plate
-        # circuit path through the old-crossover fixed plate).
-        #
-        # The delta is a bit arbitrary. We make it small enough to avoid deviating from the true
-        # rotation too much, but not too small that pygplates includes both young and old crossover
-        # paths in its reconstruction tree thus making the plate circuit path (used for the rotation)
-        # a bit arbitrary - pygplates tolerance for this is currently about 1e-9.
-        new_post_crossover_moving_fixed_relative_rotation = rotation_model.get_rotation(
-            crossover.time - 1e-4,
+        # the second half (old-crossover) to match. So we get the rotation relative to the old-crossover
+        # fixed plate at the crossover time (but with the old-crossover time sample disabled above).
+        current_old_crossover_moving_fixed_relative_rotation = rotation_model.get_rotation(
+            crossover.time,
             crossover.moving_plate_id,
             # Note: Setting anchor plate instead of fixed plate in case there's no plate circuit path
             # from plate zero (default anchor plate) to moving or fixed plates (see pygplates API docs)...
             anchor_plate_id=crossover.old_crossover_fixed_plate_id)
-            
+        
+        # Now that we've obtained the current old-crossover rotation we can re-enable the
+        # old-crossover time sample (that we disabled above).
+        #
+        # NOTE: We could do this immediately after constructing a RotationModel (and hence before
+        # calculating the current crossover rotation), but currently RotationModel can see changes
+        # to the rotation features *after* it is constructed.
+        # This will be fixed in pygplates soon by having RotationModel clone its input rotation
+        # features such that it won't see subsequent modifications to those features.
+        # For now we just place it after the rotation has been calculated.
+        old_crossover_time_samples[0].set_enabled()
+        
+        # The previous old-crossover rotation.
+        previous_old_crossover_moving_fixed_relative_rotation = (
+                old_crossover_time_samples[0].get_value().get_finite_rotation())
+        
         # Determine the crossover adjustment to apply to all old-crossover time samples.
         #
         # The young-crossover total rotation at time t2 (assuming t2 is a crossover time):
@@ -347,8 +361,8 @@ def synchronise_crossovers(
         # So each total pole gets post-multiplied by a constant crossover adjustment of:
         #   crossover_adjustment = inverse[R(0->t2, Fb->M)] * R'(0->t2, Fb->M)
         #
-        crossover_adjustment = (old_post_crossover_moving_fixed_relative_rotation.get_inverse() *
-                new_post_crossover_moving_fixed_relative_rotation)
+        crossover_adjustment = (previous_old_crossover_moving_fixed_relative_rotation.get_inverse() *
+                current_old_crossover_moving_fixed_relative_rotation)
         
         # Skip fixing crossover if no adjustment is needed.
         crossover_passed = False
@@ -359,32 +373,32 @@ def synchronise_crossovers(
         if crossover_adjustment.represents_identity_rotation():
             crossover_passed = True
         elif crossover_threshold_degrees is not None:
-            old_post_crossover_lat, old_post_crossover_lon, old_post_crossover_angle = \
-                    old_post_crossover_moving_fixed_relative_rotation.get_lat_lon_euler_pole_and_angle_degrees()
+            (previous_old_crossover_lat, previous_old_crossover_lon, previous_old_crossover_angle =
+                    previous_old_crossover_moving_fixed_relative_rotation.get_lat_lon_euler_pole_and_angle_degrees())
             
-            new_post_crossover_pole, new_post_crossover_angle_radians = \
-                    new_post_crossover_moving_fixed_relative_rotation.get_euler_pole_and_angle()
-            new_post_crossover_lat, new_post_crossover_lon = new_post_crossover_pole.to_lat_lon()
-            new_post_crossover_angle = math.degrees(new_post_crossover_angle_radians)
+            (current_old_crossover_pole, current_old_crossover_angle_radians =
+                    current_old_crossover_moving_fixed_relative_rotation.get_euler_pole_and_angle())
+            current_old_crossover_lat, current_old_crossover_lon = current_old_crossover_pole.to_lat_lon()
+            current_old_crossover_angle = math.degrees(current_old_crossover_angle_radians)
             
             # See if both rotations are close enough that we don't require crossover adjustments.
-            if (abs(new_post_crossover_lat - old_post_crossover_lat) <= crossover_threshold_degrees and
-                abs(new_post_crossover_lon - old_post_crossover_lon) <= crossover_threshold_degrees and
-                abs(new_post_crossover_angle - old_post_crossover_angle) <= crossover_threshold_degrees):
+            if (abs(current_old_crossover_lat - previous_old_crossover_lat) <= crossover_threshold_degrees and
+                abs(current_old_crossover_lon - previous_old_crossover_lon) <= crossover_threshold_degrees and
+                abs(current_old_crossover_angle - previous_old_crossover_angle) <= crossover_threshold_degrees):
                 crossover_passed = True
             else:
                 # The antipodal rotation pole with a negated angle represents the exact same rotation.
                 # So we compare that for closeness also.
-                new_post_crossover_pole_x, new_post_crossover_pole_y, new_post_crossover_pole_z = \
-                        new_post_crossover_pole.to_xyz()
-                new_post_crossover_pole_antipodal = PointOnSphere((
-                        -new_post_crossover_pole_x, -new_post_crossover_pole_y, -new_post_crossover_pole_z))
-                new_post_crossover_lat_antipodal, new_post_crossover_lon_antipodal = \
-                        new_post_crossover_pole_antipodal.to_lat_lon()
-                new_post_crossover_angle_antipodal = -new_post_crossover_angle
-                if (abs(new_post_crossover_lat_antipodal - old_post_crossover_lat) <= crossover_threshold_degrees and
-                    abs(new_post_crossover_lon_antipodal - old_post_crossover_lon) <= crossover_threshold_degrees and
-                    abs(new_post_crossover_angle_antipodal - old_post_crossover_angle) <= crossover_threshold_degrees):
+                (current_old_crossover_pole_x, current_old_crossover_pole_y, current_old_crossover_pole_z =
+                        current_old_crossover_pole.to_xyz())
+                current_old_crossover_pole_antipodal = PointOnSphere((
+                        -current_old_crossover_pole_x, -current_old_crossover_pole_y, -current_old_crossover_pole_z))
+                (current_old_crossover_lat_antipodal, current_old_crossover_lon_antipodal =
+                        current_old_crossover_pole_antipodal.to_lat_lon())
+                current_old_crossover_angle_antipodal = -current_old_crossover_angle
+                if (abs(current_old_crossover_lat_antipodal - previous_old_crossover_lat) <= crossover_threshold_degrees and
+                    abs(current_old_crossover_lon_antipodal - previous_old_crossover_lon) <= crossover_threshold_degrees and
+                    abs(current_old_crossover_angle_antipodal - previous_old_crossover_angle) <= crossover_threshold_degrees):
                     crossover_passed = True
         
         # Add to the list of crossover results if requested.
@@ -395,14 +409,14 @@ def synchronise_crossovers(
             continue
         
         # Change the first rotation time sample.
-        post_crossover_time_samples[0].get_value().set_finite_rotation(
-            new_post_crossover_moving_fixed_relative_rotation)
+        old_crossover_time_samples[0].get_value().set_finite_rotation(
+            current_old_crossover_moving_fixed_relative_rotation)
         # Change the remaining rotation time samples.
-        for post_crossover_time_sample in post_crossover_time_samples[1:]:
+        for old_crossover_time_sample in old_crossover_time_samples[1:]:
             # Get, adjust and set.
-            post_crossover_rotation = post_crossover_time_sample.get_value().get_finite_rotation()
-            post_crossover_rotation = post_crossover_rotation * crossover_adjustment
-            post_crossover_time_sample.get_value().set_finite_rotation(post_crossover_rotation)
+            old_crossover_rotation = old_crossover_time_sample.get_value().get_finite_rotation()
+            old_crossover_rotation = old_crossover_rotation * crossover_adjustment
+            old_crossover_time_sample.get_value().set_finite_rotation(old_crossover_rotation)
 
     # If any rotation features came from files then write those feature collections back out to the same files.
     #
