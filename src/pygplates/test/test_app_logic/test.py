@@ -30,6 +30,7 @@ class CrossoverTestCase(unittest.TestCase):
                 rotation_feature_collection,
                 lambda crossover: crossover.time < 600,
                 0.01, # 2 decimal places
+                pygplates.CrossoverType.synch_old_crossover_and_stages,
                 crossover_results)
         # Due to filtering of crossover times less than 600Ma we have 124 instead of 134 crossovers.
         self.assertTrue(len(crossover_results) == 124)

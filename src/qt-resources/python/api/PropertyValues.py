@@ -405,34 +405,6 @@ GpmlIrregularSampling.set_value = gpml_irregular_sampling_set_value
 del gpml_irregular_sampling_set_value
 
 
-def gpml_irregular_sampling_get_enabled_time_samples(gpml_irregular_sampling):
-    """get_enabled_time_samples() -> list
-    Filter out the disabled :class:`time samples<GpmlTimeSample>` and return a list of enabled time samples.
-    
-    :rtype: list
-    :return: the list of enabled :class:`time samples<GpmlTimeSample>` (if any)
-    
-    Returns an empty list if all time samples are disabled.
-    
-    This method essentially does the following:
-    ::
-    
-      return filter(lambda ts: ts.is_enabled(), get_time_samples())
-    
-    **NOTE:** Unlike :meth:`get_time_samples`, modifying the sequence returned by :meth:`get_enabled_time_samples`
-    will **not** modify the internal state of the :class:`GpmlIrregularSampling` instance (it only
-    modifies the returned ``list``).
-    """
-
-    # Filter out the disabled time samples.
-    return filter(lambda ts: ts.is_enabled(), gpml_irregular_sampling.get_time_samples())
-
-# Add the module function as a class method.
-GpmlIrregularSampling.get_enabled_time_samples = gpml_irregular_sampling_get_enabled_time_samples
-# Delete the module reference to the function - we only keep the class method.
-del gpml_irregular_sampling_get_enabled_time_samples
-
-
 def gpml_irregular_sampling_get_time_samples_bounding_time(gpml_irregular_sampling, time, include_disabled_samples=False):
     """get_time_samples_bounding_time(time[, include_disabled_samples=False]) -> tuple
     Return the two adjacent :class:`time samples<GpmlTimeSample>` that surround *time*.

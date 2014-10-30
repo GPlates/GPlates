@@ -1472,6 +1472,27 @@ namespace GPlatesApi
 		return &gpml_irregular_sampling.time_samples();
 	}
 
+	bp::list
+	gpml_irregular_sampling_get_enabled_time_samples(
+			GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
+	{
+		bp::list enabled_time_samples;
+
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample> &time_samples =
+				gpml_irregular_sampling.time_samples();
+		BOOST_FOREACH(GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type time_sample, time_samples)
+		{
+			if (time_sample->is_disabled())
+			{
+				continue;
+			}
+
+			enabled_time_samples.append(time_sample);
+		}
+
+		return enabled_time_samples;
+	}
+
 	GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type
 	gpml_irregular_sampling_create_from_revisioned_vector(
 			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>::non_null_ptr_type revisioned_vector,
@@ -1608,6 +1629,25 @@ export_gpml_irregular_sampling()
 				"\n"
 				"    # Sort samples by time.\n"
 				"    irregular_sampling.sort(key = lambda ts: ts.get_time())\n")
+		.def("get_enabled_time_samples",
+				&GPlatesApi::gpml_irregular_sampling_get_enabled_time_samples,
+				"get_enabled_time_samples() -> list\n"
+				"  Filter out the disabled :class:`time samples<GpmlTimeSample>` and return a list of enabled time samples.\n"
+				"\n"
+				"  :rtype: list\n"
+				"  :return: the list of enabled :class:`time samples<GpmlTimeSample>` (if any)\n"
+				"\n"
+				"  Returns an empty list if all time samples are disabled.\n"
+				"\n"
+				"  This method essentially does the following:\n"
+				"  ::\n"
+				"\n"
+				"    return filter(lambda ts: ts.is_enabled(), get_time_samples())\n"
+				"\n"
+				"  **NOTE:** Unlike :meth:`get_time_samples`, the returned sequence is a new ``list`` object and\n"
+				"  hence modifications to the ``list`` such as ``list.sort`` (as opposed to modifications to the list\n"
+				"  *elements*) will **not** modify the internal state of the :class:`GpmlIrregularSampling` instance\n"
+				"  (it only modifies the returned ``list``).\n")
 		// Not including interpolation function since it is not really used (yet) in GPlates and hence
 		// is just extra baggage for the python API user (we can add it later though)...
 #if 0
