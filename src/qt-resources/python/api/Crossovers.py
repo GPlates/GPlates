@@ -646,9 +646,11 @@ def synchronise_crossovers(
             
             crossover_passed = False
             
-            # Always test for identity rotation first because an identity rotation has zero angle but
-            # can have an arbitrary pole and doing a threshold test against an arbitrary pole will almost
-            # always fail (so we do that test second if not an identity rotation).
+            # Due to a bug in pygplates revision 3 (specifically
+            # pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees() returning a latitude
+            # of zero instead of 90) we test for identity rotation before testing threshold (if any).
+            #
+            # FIXME: Once we force requirement of pygplates revision 4 (or above) we won't need this anymore.
             if crossover_adjustment.represents_identity_rotation():
                 crossover_passed = True
             elif crossover_threshold_degrees is not None:

@@ -129,6 +129,8 @@ class FiniteRotationCase(unittest.TestCase):
         self.assertTrue(identity_finite_rotation2.represents_identity_rotation())
         self.assertRaises(pygplates.IndeterminateResultError, identity_finite_rotation.get_euler_pole_and_angle, False)
         self.assertRaises(pygplates.IndeterminateResultError, identity_finite_rotation.get_lat_lon_euler_pole_and_angle_degrees, False)
+        self.assertTrue(identity_finite_rotation.get_euler_pole_and_angle() == (pygplates.PointOnSphere(90,0), 0))
+        self.assertTrue(identity_finite_rotation.get_lat_lon_euler_pole_and_angle_degrees() == (90,0,0))
         # Create identity rotation using zero angle.
         identity_finite_rotation = pygplates.FiniteRotation(self.pole, 0)
         self.assertTrue(identity_finite_rotation.represents_identity_rotation())

@@ -179,7 +179,7 @@ namespace GPlatesApi
 			if (GPlatesMaths::represents_identity_rotation(finite_rotation.unit_quat()))
 			{
 				return bp::make_tuple(
-						GPlatesMaths::real_t(0),
+						GPlatesMaths::real_t(90),
 						GPlatesMaths::real_t(0),
 						GPlatesMaths::real_t(0));
 			}
