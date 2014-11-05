@@ -143,6 +143,18 @@ class FiniteRotationCase(unittest.TestCase):
         reverse_angle = -self.angle
         finite_rotation = pygplates.FiniteRotation(reverse_pole, reverse_angle)
         self.assertTrue(self.finite_rotation == finite_rotation)
+        self.assertTrue(pygplates.FiniteRotation.are_equal(self.finite_rotation, finite_rotation))
+        self.assertTrue(pygplates.FiniteRotation.are_equal(
+                pygplates.FiniteRotation((10,20), math.radians(30)),
+                pygplates.FiniteRotation((10.5,20.4), math.radians(29.6)),
+                0.6))
+        self.assertFalse(pygplates.FiniteRotation.are_equal(
+                pygplates.FiniteRotation((10,20), math.radians(30)),
+                pygplates.FiniteRotation((10.5,20.4), math.radians(29.6)),
+                0.45))
+        self.assertFalse(pygplates.FiniteRotation.are_equal(
+                pygplates.FiniteRotation((10,20), math.radians(30)),
+                pygplates.FiniteRotation((10.5,20.4), math.radians(29.6))))
     
     def test_equivalent(self):
         pole = pygplates.PointOnSphere(-self.pole.get_x(), -self.pole.get_y(), -self.pole.get_z())

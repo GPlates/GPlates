@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -132,16 +133,6 @@ namespace GPlatesApi
 		return GPlatesMaths::represents_identity_rotation(finite_rotation.unit_quat());
 	}
 
-	bool
-	finite_rotation_represent_equivalent_rotations(
-			const GPlatesMaths::FiniteRotation &finite_rotation1,
-			const GPlatesMaths::FiniteRotation &finite_rotation2)
-	{
-		return GPlatesMaths::represent_equiv_rotations(
-				finite_rotation1.unit_quat(),
-				finite_rotation2.unit_quat());
-	}
-
 	// Return the Euler (pole, angle_radians) tuple.
 	bp::tuple
 	finite_rotation_get_euler_pole_and_angle(
@@ -218,6 +209,82 @@ namespace GPlatesApi
 				cross(rotation_params.axis, from_point.position_vector()).magnitude();
 
 		return small_circle_radius * rotation_params.angle;
+	}
+
+	bool
+	finite_rotation_represent_equivalent_rotations(
+			const GPlatesMaths::FiniteRotation &finite_rotation1,
+			const GPlatesMaths::FiniteRotation &finite_rotation2)
+	{
+		return GPlatesMaths::represent_equiv_rotations(
+				finite_rotation1.unit_quat(),
+				finite_rotation2.unit_quat());
+	}
+
+	bool
+	finite_rotation_are_equal(
+			const GPlatesMaths::FiniteRotation &finite_rotation1,
+			const GPlatesMaths::FiniteRotation &finite_rotation2,
+			boost::optional<double> threshold_degrees)
+	{
+		if (threshold_degrees)
+		{
+			// Lat/lon/angle for 'finite_rotation1'.
+			double rotation1_lat, rotation1_lon, rotation1_angle;
+			if (GPlatesMaths::represents_identity_rotation(finite_rotation1.unit_quat()))
+			{
+				rotation1_lat = 90;
+				rotation1_lon = 0;
+				rotation1_angle = 0;
+			}
+			else
+			{
+				// Throws IndeterminateResultException if represents identity rotation.
+				const GPlatesMaths::UnitQuaternion3D::RotationParams rotation1_params =
+						finite_rotation1.unit_quat().get_rotation_params(boost::none);
+
+				const GPlatesMaths::LatLonPoint finite_rotation1_lat_lon_pole =
+						make_lat_lon_point(GPlatesMaths::PointOnSphere(rotation1_params.axis));
+
+				rotation1_lat = finite_rotation1_lat_lon_pole.latitude();
+				rotation1_lon = finite_rotation1_lat_lon_pole.longitude();
+				rotation1_angle = GPlatesMaths::convert_rad_to_deg(rotation1_params.angle.dval());
+			}
+
+			// Lat/lon/angle for 'finite_rotation2'.
+			double rotation2_lat, rotation2_lon, rotation2_angle;
+			if (GPlatesMaths::represents_identity_rotation(finite_rotation2.unit_quat()))
+			{
+				rotation2_lat = 90;
+				rotation2_lon = 0;
+				rotation2_angle = 0;
+			}
+			else
+			{
+				// Throws IndeterminateResultException if represents identity rotation.
+				const GPlatesMaths::UnitQuaternion3D::RotationParams rotation2_params =
+						finite_rotation2.unit_quat().get_rotation_params(boost::none);
+
+				const GPlatesMaths::LatLonPoint finite_rotation2_lat_lon_pole =
+						make_lat_lon_point(GPlatesMaths::PointOnSphere(rotation2_params.axis));
+
+				rotation2_lat = finite_rotation2_lat_lon_pole.latitude();
+				rotation2_lon = finite_rotation2_lat_lon_pole.longitude();
+				rotation2_angle = GPlatesMaths::convert_rad_to_deg(rotation2_params.angle.dval());
+			}
+
+			// See if both rotations are close enough.
+			//
+			// Note that we don't need to consider negating the axis and angle of any of these
+			// rotations because doing that results in the exact same rotation (quaternion).
+			// Also note that we return the original UnitQuaternion3D::get_rotation_params() above
+			// by not specifying an axis hint (and hence avoids returning flipped angle/axis version.
+			return std::fabs(rotation2_lat - rotation1_lat) <= threshold_degrees.get() &&
+					std::fabs(rotation2_lon - rotation1_lon) <= threshold_degrees.get() &&
+					std::fabs(rotation2_angle - rotation1_angle) <= threshold_degrees.get();
+		}
+
+		return finite_rotation1.unit_quat() == finite_rotation2.unit_quat();
 	}
 
 	bp::object
@@ -593,6 +660,45 @@ export_finite_rotation()
 				"    if pygplates.FiniteRotation.are_equivalent(finite_rotation1, finite_rotation2):\n"
 				"        ....\n")
 		.staticmethod("are_equivalent")
+		.def("are_equal",
+				&GPlatesApi::finite_rotation_are_equal,
+				(bp::arg("finite_rotation1"),
+						bp::arg("finite_rotation2"),
+						bp::arg("threshold_degrees") = boost::optional<double>()),
+				"are_equal(finite_rotation1, finite_rotation2, [threshold_degrees]) -> bool\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Return whether two finite rotations have equal pole "
+				"latitude, longitude and angle to within a threshold in degrees.\n"
+				"\n"
+				"  :param finite_rotation1: the first finite rotation\n"
+				"  :type finite_rotation1: :class:`FiniteRotation`\n"
+				"  :param finite_rotation2: the second finite rotation\n"
+				"  :type finite_rotation2: :class:`FiniteRotation`\n"
+				"  :param threshold_degrees: optional closeness threshold in degrees\n"
+				"  :type threshold_degrees: float\n"
+				"  :rtype: bool\n"
+				"\n"
+				"  If *threshold_degrees* is *not* specified then this function is the same as equality "
+				"comparison (``==``).\n"
+				"\n"
+				"  If *threshold_degrees* is specified then *finite_rotation1* and *finite_rotation2* "
+				"compare equal if both pole latitudes and both pole longitudes and both angles are within "
+				"*threshold_degrees* degrees of each other.\n"
+				"\n"
+				"  Using a threshold in latitude/longitude coordinates is subject to longitude compression "
+				"at the North and South poles. However these coordinates are useful when comparing finite "
+				"rotations loaded from a text file that stores rotations using these coordinates (such as "
+				"PLATES rotation format) and that typically stores values with limited precision.\n"
+				"  ::\n"
+				"\n"
+				"    # Are two finite rotations equal to within 0.01 degrees.\n"
+				"    # This is useful when the rotations were loaded from a PLATES rotation file\n"
+				"    # that stored rotation lat/lon/angle to 2 decimal places accuracy.\n"
+				"    if pygplates.FiniteRotation.are_equal(finite_rotation1, finite_rotation2, 0.01):\n"
+				"        ....\n")
+		.staticmethod("are_equal")
 		.def("compose",
 				compose,
 				(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
