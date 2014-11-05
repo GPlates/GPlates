@@ -302,6 +302,9 @@ def find_crossovers(
                         continue
                     # fixed_plate_id, moving_plate_id, rotation_sequence = total_reconstruction_pole
                     old_crossover_fixed_plate_id = old_crossover_total_reconstruction_pole[0]
+                    # If the fixed plates are the same then it's not a crossover.
+                    if old_crossover_fixed_plate_id == young_crossover_fixed_plate_id:
+                        continue
                     old_crossover_rotation_sequence = old_crossover_total_reconstruction_pole[2]
                     # Find the first enabled time sample using 'next()' builtin function.
                     old_crossover_first_enabled_time_sample = next(
