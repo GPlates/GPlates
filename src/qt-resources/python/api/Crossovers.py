@@ -617,76 +617,14 @@ def synchronise_crossovers(
             previous_synchronised_crossover_moving_fixed_relative_rotation = (
                     synchronised_crossover_time_samples[0].get_value().get_finite_rotation())
             
-            # Determine the crossover adjustment to apply to all young or old crossover time samples.
-            # Whether it's applied to the younger or older crossover is determined by the crossover type.
-            #
-            # The preserved-crossover total rotation at time t2 (assuming t2 is a crossover time):
-            #   R(0->t2, Fp->M)
-            # The previous synchronised-crossover total rotation at time t2:
-            #   R(0->t2, Fn->M)
-            # The current synchronised-crossover total rotation at time t2:
-            #   R'(0->t2, Fn->M)
-            #
-            # The previous synchronised-crossover (Fn->M) total rotation at a younger or older time t is composed as:
-            #   R(0->t) = R(t2->t) * R(0->t2)
-            # The stage pole from t2->t:
-            #   R(t2->t) = R(0->t) * inverse[R(0->t2)]
-            # The current synchronised-crossover total rotation at a younger or older time t is composed as:
-            #   R'(0->t) = R(t2->t) * R'(0->t2)
-            # Which, using the stage pole above to replace 'R(t2->t)', is:
-            #   R'(0->t) = R(0->t) * inverse[R(0->t2)] * R'(0->t2)
-            #            = R(0->t) * crossover_adjustment
-            # So each synchronised total pole gets post-multiplied by a constant crossover adjustment of:
-            #   crossover_adjustment = inverse[R(0->t2)] * R'(0->t2)
-            #
-            # Note that this is the same regardless of whether the synchronised crossover is younger or older.
-            #
-            crossover_adjustment = (previous_synchronised_crossover_moving_fixed_relative_rotation.get_inverse() *
-                    current_synchronised_crossover_moving_fixed_relative_rotation)
-            
-            crossover_passed = False
-            
-            # Due to a bug in pygplates revision 3 (specifically
-            # pygplates.FiniteRotation.get_lat_lon_euler_pole_and_angle_degrees() returning a latitude
-            # of zero instead of 90) we test for identity rotation before testing threshold (if any).
-            #
-            # FIXME: Once we force requirement of pygplates revision 4 (or above) we won't need this anymore.
-            if crossover_adjustment.represents_identity_rotation():
-                crossover_passed = True
-            elif crossover_threshold_degrees is not None:
-                previous_sync_crossover_lat, previous_sync_crossover_lon, previous_sync_crossover_angle = (
-                        previous_synchronised_crossover_moving_fixed_relative_rotation.get_lat_lon_euler_pole_and_angle_degrees())
-                
-                current_sync_crossover_pole, current_sync_crossover_angle_radians = (
-                        current_synchronised_crossover_moving_fixed_relative_rotation.get_euler_pole_and_angle())
-                current_sync_crossover_lat, current_sync_crossover_lon = current_sync_crossover_pole.to_lat_lon()
-                current_sync_crossover_angle = math.degrees(current_sync_crossover_angle_radians)
-                
-                # See if both rotations are close enough that we don't require crossover adjustments.
-                if (abs(current_sync_crossover_lat - previous_sync_crossover_lat) <= crossover_threshold_degrees and
-                    abs(current_sync_crossover_lon - previous_sync_crossover_lon) <= crossover_threshold_degrees and
-                    abs(current_sync_crossover_angle - previous_sync_crossover_angle) <= crossover_threshold_degrees):
-                    crossover_passed = True
-                else:
-                    # The antipodal rotation pole with a negated angle represents the exact same rotation.
-                    # So we compare that for closeness also.
-                    current_sync_crossover_pole_x, current_sync_crossover_pole_y, current_sync_crossover_pole_z = (
-                            current_sync_crossover_pole.to_xyz())
-                    current_sync_crossover_pole_antipodal = PointOnSphere((
-                            -current_sync_crossover_pole_x, -current_sync_crossover_pole_y, -current_sync_crossover_pole_z))
-                    current_sync_crossover_lat_antipodal, current_sync_crossover_lon_antipodal = (
-                            current_sync_crossover_pole_antipodal.to_lat_lon())
-                    current_sync_crossover_angle_antipodal = -current_sync_crossover_angle
-                    if (abs(current_sync_crossover_lat_antipodal - previous_sync_crossover_lat) <= crossover_threshold_degrees and
-                        abs(current_sync_crossover_lon_antipodal - previous_sync_crossover_lon) <= crossover_threshold_degrees and
-                        abs(current_sync_crossover_angle_antipodal - previous_sync_crossover_angle) <= crossover_threshold_degrees):
-                        crossover_passed = True
-            
             # Skip synchronising crossover if no adjustment is needed.
             #
             # Note that we don't record the crossover result state (if any) as 'not_synchronised' because the same
             # crossover may have been synchronised on a previous iteration and we want to keep that result.
-            if crossover_passed:
+            if FiniteRotation.are_equal(
+                    previous_synchronised_crossover_moving_fixed_relative_rotation,
+                    current_synchronised_crossover_moving_fixed_relative_rotation,
+                    crossover_threshold_degrees):
                 continue
             
             # Record that the crossover was synchronised.
@@ -701,6 +639,33 @@ def synchronise_crossovers(
             
             # If the crossover type requires synchronising of the stage rotations then apply crossover adjustment.
             if CrossoverType._synch_stages(crossover.type):
+                # Determine the crossover adjustment to apply to all young or old crossover time samples.
+                # Whether it's applied to the younger or older crossover is determined by the crossover type.
+                #
+                # The preserved-crossover total rotation at time t2 (assuming t2 is a crossover time):
+                #   R(0->t2, Fp->M)
+                # The previous synchronised-crossover total rotation at time t2:
+                #   R(0->t2, Fn->M)
+                # The current synchronised-crossover total rotation at time t2:
+                #   R'(0->t2, Fn->M)
+                #
+                # The previous synchronised-crossover (Fn->M) total rotation at a younger or older time t is composed as:
+                #   R(0->t) = R(t2->t) * R(0->t2)
+                # The stage pole from t2->t:
+                #   R(t2->t) = R(0->t) * inverse[R(0->t2)]
+                # The current synchronised-crossover total rotation at a younger or older time t is composed as:
+                #   R'(0->t) = R(t2->t) * R'(0->t2)
+                # Which, using the stage pole above to replace 'R(t2->t)', is:
+                #   R'(0->t) = R(0->t) * inverse[R(0->t2)] * R'(0->t2)
+                #            = R(0->t) * crossover_adjustment
+                # So each synchronised total pole gets post-multiplied by a constant crossover adjustment of:
+                #   crossover_adjustment = inverse[R(0->t2)] * R'(0->t2)
+                #
+                # Note that this is the same regardless of whether the synchronised crossover is younger or older.
+                #
+                crossover_adjustment = (previous_synchronised_crossover_moving_fixed_relative_rotation.get_inverse() *
+                        current_synchronised_crossover_moving_fixed_relative_rotation)
+                
                 # Change the remaining rotation time samples such that their stage rotations are preserved.
                 #
                 # Note that if the stage poles of the young crossover sequence are being preserved then
