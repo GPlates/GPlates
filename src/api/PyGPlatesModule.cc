@@ -228,18 +228,10 @@ BOOST_PYTHON_MODULE(pygplates)
 
 	// Set the 'pygplates' module docstring.
 	pygplates_module.attr("__doc__") =
-			"GPlates python Application Programming Interface (API)\n"
-			"------------------------------------------------------\n"
+			"GPlates Python Application Programming Interface (API)\n"
 			"\n"
-			"  This document lists the python classes and functions that make up the 'pygplates' "
-			"module that provides the API into GPlates functionality. Within each class is a list "
-			" of class methods and a description of their usage and parameters.\n"
-			"\n"
-			"  Before GPlates functionality can be used, the 'pygplates' module "
-			"should be imported. For example:"
-			"  ::\n"
-			"\n"
-			"    import pygplates\n";
+			"  A Python module consisting of Python classes and functions providing access to "
+			"GPlates functionality.\n";
 
 	// Set the array type (and module) to numpy array (so we can use bp::numeric::array in C++ code).
 	bp::numeric::array::set_module_and_type("numpy", "ndarray");
