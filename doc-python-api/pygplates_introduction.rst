@@ -1,7 +1,9 @@
+.. _pygplates_introduction:
+
 Introduction
 ============
 
-This document introduces pygplates, its relationship to GPlates and the contexts in which it is used.
+This document introduces pygplates, its relationship to GPlates and the ways in which it can be used.
 
 GPlates versus pygplates
 ------------------------
@@ -23,22 +25,25 @@ There are two ways to interact with GPlates functionality:
    
    For example loading geological data, reconstructing data to a past geological time and
    retrieving the reconstructed data is achieved by using *Python functions (and classes)* known as
-   the :ref:`GPlates Python Application Programming Interface (API)<pygplates_reference>`.
+   the :ref:`GPlates Python Application Programming Interface (API) <pygplates_reference>`.
 
-In the first case you are running the GPlates desktop application (executable).
+In the first case you are running the
+`GPlates desktop application (executable) <http://www.gplates.org/download.html>`_.
 
 In the second case you are running Python source code in either:
 
 * an *external* Python interpreter, or
 * a Python interpreter *embedded* within the GPlates desktop application.
 
-The Python interpreter executes source code written in the Python programming language.
+A Python interpreter executes source code written in the Python programming language.
+
+.. _pygplates_introduction_external:
 
 Using pygplates with an *external* Python interpreter
 -----------------------------------------------------
 
 In this scenario you are running a Python script using an *external* Python interpreter. For example you
-might have a file called ``my_python_script.py`` that you execute on the terminal or shell command-line:
+might have a file called ``my_python_script.py`` that you execute on the terminal or shell command-line as:
 ::
 
   python my_python_script.py
@@ -62,10 +67,15 @@ For example a script that just prints the pygplates version would look like:
 ...where ``4`` is the pygplates revision and ``GPlates 1.4.0`` (in parentheses) indicates that
 revision ``4`` is associated with GPlates 1.4.0.
 
+Note that you will need to :ref:`install <pygplates_installation_external>` pygplates so that the
+Python interpreter can find it when you execute ``python my_python_script.py``.
+
+.. _pygplates_introduction_embedded:
+
 Using pygplates with the GPlates *embedded* Python interpreter
 --------------------------------------------------------------
 
-**Note:** this option is not yet available.
+**NOTE:** This option is not yet available.
 
 In this scenario you are running Python source code using a Python interpreter that is embedded inside
 the GPlates desktop application.

@@ -230,7 +230,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	pygplates_module.attr("__doc__") =
 			"GPlates Python Application Programming Interface (API)\n"
 			"\n"
-			"  A Python module consisting of Python classes and functions providing access to "
+			"  A Python module consisting of classes and functions providing access to "
 			"GPlates functionality.\n";
 
 	// Set the array type (and module) to numpy array (so we can use bp::numeric::array in C++ code).
