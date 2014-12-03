@@ -1542,6 +1542,28 @@
 			<Comment>Present day coastline, but can still be reconstructed with the rest of them as a visual aid.</Comment>
 		</FeatureClass>
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
+			<Name>gpml:ContinentalCrust</Name>
+			<Description>Continental Crust</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:position</Property>
+			<Property>gpml:multiPosition</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
+			<Name>gpml:OceanicCrust</Name>
+			<Description>Oceanic Crust</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:position</Property>
+			<Property>gpml:multiPosition</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<Name>gpml:ContinentalFragment</Name>
 			<Description>A fragment of continental crust that has become detached.</Description>
 			<ClassType>concrete</ClassType>
