@@ -68,7 +68,7 @@ const double DEFAULT_LINE_THICKNESS = 2;
 const double ENLARGED_POINT_SIZE = 6;
 
 
-// The following are related to the Hellinger tool in general, and not necessarily to this class.
+// The following are related to the Hellinger tool in general, and not necessarily to this class/file.
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger workflow - this seems to be going
 // all over the place at the moment.
@@ -92,7 +92,17 @@ const double ENLARGED_POINT_SIZE = 6;
 // TODO: (new segment tool) "Remove" should not be active on startup if there is no selected line.
 // TODO: Consider changing button text from "Cancel" to "Done" in the new pick dialog. This dialog can remain open for
 // several picks to be added, (and is also non-modal so that canvas interaction is possible).
-
+// TODO: check "Edit segment" button enabled state - after closing the new segment dialog it should remain active.
+// TODO: when editing a segment, the segment picks are shown yellow, but they lose the yellow colour in some circumstances
+// (have not reproduced in a precise manner yet...)
+// TODO:guard against possible zero-division in math_hellinger.py line 108. Probably arising from a zero-uncertainty value.
+// If that's the case, guard against zero uncertainties too.
+// TODO: check if the grid search is actually using the UI eps value, or if there's something still hard-coded in there.
+// TODO: consider removing the grid search option. The amoeba seems to perform very well even with poor initial guesses.
+// Consider more control over the various grid/amoeba options, for example separate "Grid search" / "Amoeba search" actions,
+// not always performing an amoeba after a grid search etc.
+// TODO: check to what extent amoeba uses/needs the eps value - consider moving it in the UI nearer the "grid search" options.
+// TODO: add degree symbol to the search radiu spinbox.
 
 namespace{
 
