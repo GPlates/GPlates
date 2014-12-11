@@ -74,14 +74,24 @@ const double ENLARGED_POINT_SIZE = 6;
 // all over the place at the moment.
 // TODO: clean up the system of filenames which are passed to python.
 // TODO: Allow clicking and dragging of newly placed picks - this has broken recently somehow.
-//  - actually we can probably do without this behaviour; it has no corresponding behvaviour in the
+//  - actually we can probably do without this behaviour; it has no corresponding behaviour in the
 // digitisation tool.
 // TODO: remove H shortcut
+// TODO: make a half-decent icon
 // TODO: update status bar messages according to which mode of the tool we are in. For example, when in "new pick" mode
 // we might say something like: "Click to update location of new pick; shift-click on a highlighted geometry to create pick
 // at that geometry". That's very long unfortunately, so I need to find a briefer way to say that.
 // TODO: Find better way of highlighting geometries so that it respects the geometry's original render type (e.g. symbols...)
 // TODO: Farm out rendering functionality  to the canvas tool classes.
+// TODO: Check expansion/collapse of segments when a new pick is added - it should expand the relevant segment, but respect
+// the previous state of segments
+// TODO: consider providing control for fit-related arguments which are currently hard-coded (and which were hard-coded in
+// the FORTRAN code) such as tolerance limit for amoeba search, grid search details etc.
+// TODO: consider adding some sort of "scroll to selected" feature in the picks table.
+// TODO: consider interpreting other forms of chron embedded in the hellinger file name - see the GSFML site for examples
+// TODO: (new segment tool) "Remove" should not be active on startup if there is no selected line.
+// TODO: Consider changing button text from "Cancel" to "Done" in the new pick dialog. This dialog can remain open for
+// several picks to be added, (and is also non-modal so that canvas interaction is possible).
 
 
 namespace{
@@ -553,10 +563,14 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	// Look in system-specific locations for supplied sample scripts, site-specific scripts, etc.
 	// The default location will be platform-dependent and is currently set up in UserPreferences.cc.
 	d_python_path = d_view_state.get_application_state().get_user_preferences().get_value("paths/python_system_script_dir").toString();
+
 	// d_python_path = "scripts";
 
 	// Temporary path during development
+	qDebug() << "Default python path is " << d_python_path;
 	d_python_path = "/home/robin/Desktop/Hellinger/scripts";
+	qDebug() << "Setting d_python_path to " << d_python_path;
+
 
 	qDebug() << "python path: " << d_python_path;
 
