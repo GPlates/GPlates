@@ -103,6 +103,11 @@ const double ENLARGED_POINT_SIZE = 6;
 // not always performing an amoeba after a grid search etc.
 // TODO: check to what extent amoeba uses/needs the eps value - consider moving it in the UI nearer the "grid search" options.
 // TODO: add degree symbol to the search radiu spinbox.
+// TODO: cannot re-calculate statistics in some circumstances.
+// TODO: prevent stupid input values for the significance level, and check that value is being used appropriately.
+// TODO: remove old error ellipse from layer when updating.
+// TODO: investigate crash with certain calculations of statistics.
+
 
 namespace{
 
