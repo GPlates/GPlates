@@ -42,6 +42,9 @@
 
 #include "feature-visitors/GeometryFinder.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "gui/FileIOFeedback.h"
 #include "gui/FeatureFocus.h"
 
@@ -256,20 +259,20 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::gen_mesh()
 
 	std::vector<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> geometries;
 	ProgressDialog *progress_dlg = new ProgressDialog(this);
-	progress_dlg->setRange(0,12);
+	progress_dlg->setRange(0,24);
 	progress_dlg->setValue(0);
 	progress_dlg->show();
 	
-	for(int i=0; i<12; i++)//for global mesh, there are 12 diamonds. Hard coded here.
+	for (int i=0; i<12; i++) //for global mesh, there are 12 diamonds. Hard coded here.
 	{
-		std::stringstream stream;
-		stream<<tr("generating diamond # ").toStdString()<<i<<" ...";
-		progress_dlg->update_progress(i, stream.str().c_str());
+		std::stringstream diamond_stream;
+		diamond_stream << tr("Generating diamond # ").toStdString() << i << " ...";
+		progress_dlg->update_progress(i, diamond_stream.str().c_str());
 		
 		geometries.push_back(
 				GPlatesAppLogic::GenerateVelocityDomainCitcoms::generate_velocity_domain(d_node_x, i));
 		
-		if(progress_dlg->canceled())
+		if (progress_dlg->canceled())
 		{
 			progress_dlg->close();
 			main_buttonbox->setDisabled(false);
@@ -277,15 +280,13 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::gen_mesh()
 			return;
 		}
 	}
-	progress_dlg->disable_cancel_button(true);
-	progress_dlg->update_progress(12, tr("Saving feature files..."));
 
 	static const GPlatesModel::FeatureType mesh_node_feature_type = 
-		GPlatesModel::FeatureType::create_gpml("MeshNode");
+			GPlatesModel::FeatureType::create_gpml("MeshNode");
 
-	std::stringstream resolution;
-	resolution<<d_node_x+1;
-	std::string res_str = resolution.str();
+	std::stringstream resolution_stream;
+	resolution_stream << d_node_x+1;
+	std::string res_str = resolution_stream.str();
 
 	GPlatesModel::ModelInterface model =
 			d_main_window.get_application_state().get_model_interface();
@@ -305,7 +306,11 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::gen_mesh()
 			d_main_window.get_application_state().get_reconstruct_graph());
 	add_layers_group.begin_add_or_remove_layers();
 
-	for(int i=geometries.size()-1; i>=0; i--)
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			geometries.size() == 12,
+			GPLATES_ASSERTION_SOURCE);
+
+	for (int i = 0; i < 12; ++i) //for global mesh, there are 12 diamonds. Hard coded here.
 	{
 		// Create a feature collection that is not added to the model.
 		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection = 
@@ -355,6 +360,11 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::gen_mesh()
 		file_name.append(".gpml");
 		file_name.replace(file_name.find(DENSITY_PLACE_HOLDER), 2, res_str);
 		file_name.replace(file_name.find(CAP_NUM_PLACE_HOLDER), 2, cap_num);
+
+		std::stringstream saving_file_stream;
+		saving_file_stream << tr("Saving feature file: '").toStdString() << file_name << "' ...";
+		progress_dlg->update_progress(12 + i, saving_file_stream.str().c_str());
+
 		file_name=d_path.toStdString()+file_name;
 
 		GPlatesFileIO::FileInfo new_fileinfo(file_name.c_str());
@@ -365,6 +375,14 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::gen_mesh()
 		// FeatureCollectionFileState (maintains list of all loaded files).
 		// This will pop up an error dialog if there's an error.
 		if (!d_main_window.file_io_feedback().create_file(new_file))
+		{
+			progress_dlg->close();
+			main_buttonbox->setDisabled(false);
+			close();
+			return;
+		}
+		
+		if (progress_dlg->canceled())
 		{
 			progress_dlg->close();
 			main_buttonbox->setDisabled(false);

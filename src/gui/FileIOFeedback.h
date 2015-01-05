@@ -232,7 +232,7 @@ namespace GPlatesGui
 		 * NOTE: This should not be used for a file with an empty filename since it cannot be saved
 		 * to the file system - use 'FeatureCollectionFileIO::create_empty_file()' for that instead.
 		 */
-		bool
+		boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 		create_file(
 				const GPlatesFileIO::File::non_null_ptr_type &file);
 
