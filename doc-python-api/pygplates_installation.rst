@@ -109,8 +109,14 @@ your python scripts before they ``import pygplates``. The following example demo
   sys.path.insert(1, '/path/to/pygplates')
   import pygplates
 
-However a better solution is to set the *PYTHONPATH* environment variable so that you don't have to modify all your Python
-scripts:
+However a better solution is to set the *PYTHONPATH* environment variable so that you don't have
+to modify all your Python scripts.
+
+**Note**: If pygplates is found in the same directory as the python script you are running, it will
+be imported and any pygplates in *PYTHONPATH* will be ignored. This is because ``sys.path`` is
+initialised with the directory containing the python script and then *PYTHONPATH*.
+
+Setting the *PYTHONPATH* environment variable:
 
 * *MacOS X*:
 
@@ -216,3 +222,55 @@ or *Command* window:
 ::
 
   python --version
+
+However, on Windows, this will only tell you the python version that will be used to run your
+script if you run your script like this:
+::
+
+  python my_script.py
+
+But if you run it without prefixing ``python`` as in:
+::
+
+  my_script.py
+
+...then it might use the Windows registry and find a different version of python (different than
+the version returned by ``python --version``). This can happen if you have, for example, an ArcGIS
+installation. If this happens then you might get an error message similar to the following:
+::
+
+  'import site' failed; use -v for traceback
+
+...or a more verbose version...
+::
+
+  'import site' failed; use -v for traceback
+  Traceback (most recent call last):
+    File "D:\Users\john\Development\gplates\my_script.py", line 20, in <module>
+      import argparse
+    File "C:\SDK\python\Python-2.7.6\lib\argparse.py", line 86, in <module>
+      import copy as _copy
+    File "C:\SDK\python\Python-2.7.6\lib\copy.py", line 52, in <module>
+      import weakref
+    File "C:\SDK\python\Python-2.7.6\lib\weakref.py", line 12, in <module>
+      import UserDict
+    File "C:\SDK\python\Python-2.7.6\lib\UserDict.py", line 84, in <module>
+      _abcoll.MutableMapping.register(IterableUserDict)
+    File "C:\SDK\python\Python-2.7.6\lib\abc.py", line 109, in register
+      if issubclass(subclass, cls):
+    File "C:\SDK\python\Python-2.7.6\lib\abc.py", line 184, in __subclasscheck__
+      cls._abc_negative_cache.add(subclass)
+    File "C:\SDK\python\Python-2.7.6\lib\_weakrefset.py", line 84, in add
+      self.data.add(ref(item, self._remove))
+  TypeError: cannot create weak reference to 'classobj' object
+
+...where, in the above example, a Python **2.6.x** interpreter was used (found in "C:\Python26\ArcGIS10.0"
+presumably via the Windows registry) but it loaded the Python **2.7.6** standard libraries
+(the ``PYTHONHOME`` environment variable was set to "C:\SDK\python\Python-2.7.6").
+Note that the above error had nothing to do with pygplates (it could happen with any python script
+regardless of whether it imported pygplates or not).
+
+So, on Windows, it is usually best to run your python script as:
+::
+
+  python my_script.py
