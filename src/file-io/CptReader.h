@@ -36,6 +36,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/type_traits/is_same.hpp>
 #include <QString>
 #include <QStringList>
 #include <QTextStream>
@@ -668,9 +669,9 @@ namespace GPlatesFileIO
 			typedef typename colour_specification_type::components_type components_type;
 			static const int NUM_COMPONENTS = boost::tuples::length<components_type>::value;
 
-			// Check that the tokens list has an appropriate length: it must have
-			// the compulsory elements, with 2 optional tokens at the end (note that we don't
-			// have a maximum limit here since the label can contain any number of words).
+			// Check that the tokens list has an appropriate length: it must have the compulsory
+			// elements, with 2 optional tokens at the end (note that we don't have a maximum limit
+			// here since the optional label can contain any number of words).
 			static const int MIN_TOKENS_COUNT = (1 + NUM_COMPONENTS) * 2;
 			if (tokens.count() < MIN_TOKENS_COUNT)
 			{
@@ -851,8 +852,9 @@ namespace GPlatesFileIO
 		{
 			static const bool is_label_optional = GPlatesGui::ColourEntry<T>::is_label_optional;
 
-			// Must have two or three tokens.
-			if (!(tokens.count() == 3 ||
+			// Must have two or more tokens (note that we don't have a maximum limit here since the
+			// optional label can contain any number of words).
+			if (!(tokens.count() > 2 ||
 						(is_label_optional && tokens.count() == 2)))
 			{
 				return false;
@@ -871,8 +873,44 @@ namespace GPlatesFileIO
 				}
 
 				// Get the label, if it exists.
-				boost::optional<QString> label = tokens.count() == 3 ?
-					boost::optional<QString>(tokens.at(2)) : boost::none;
+				boost::optional<QString> label;
+				if (tokens.count() > 2)
+				{
+					QString label_token = tokens.at(2);
+
+					// GMT 5 introduced a ';' before the label.
+					// However we'll make it optional to support GMT 4.
+					if (label_token.startsWith(';')) // GMT 5
+					{
+						// If semi-colon is it's own token (ie, a space between it and label).
+						if (label_token == ";")
+						{
+							label_token = "";
+							for (int token_index = 3; token_index < tokens.count(); ++token_index)
+							{
+								label_token += ' ' + tokens.at(token_index);
+							}
+						}
+						else
+						{
+							// Remove semi-colon from label.
+							label_token = label_token.right(label_token.length() - 1);
+							for (int token_index = 3; token_index < tokens.count(); ++token_index)
+							{
+								label_token += ' ' + tokens.at(token_index);
+							}
+						}
+					}
+					else // GMT 4
+					{
+						for (int token_index = 3; token_index < tokens.count(); ++token_index)
+						{
+							label_token += ' ' + tokens.at(token_index);
+						}
+					}
+
+					label = label_token;
+				}
 
 				// Send everything off to be created.
 				parser_state.palette.add_entry(
@@ -981,7 +1019,9 @@ namespace GPlatesFileIO
 							make_read_error_occurrence(
 								parser_state.data_source,
 								parser_state.current_line_number,
-								ReadErrors::InvalidRegularCptLine,
+								boost::is_same<CptFileFormat, RegularCptFileFormat>::value
+										? ReadErrors::InvalidRegularCptLine
+										: ReadErrors::InvalidCategoricalCptLine,
 								ReadErrors::CptLineIgnored));
 				}
 				parser_state.error_reported_for_current_line = false;
