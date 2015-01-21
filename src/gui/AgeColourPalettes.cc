@@ -56,7 +56,7 @@ boost::optional<GPlatesGui::Colour>
 GPlatesGui::DefaultAgeColourPalette::get_colour(
 		const GPlatesMaths::Real &age) const
 {
-	double dval;
+	GPlatesMaths::Real dval;
 	if (age.is_positive_infinity())
 	{
 		// Distant past.
@@ -69,11 +69,11 @@ GPlatesGui::DefaultAgeColourPalette::get_colour(
 	}
 	else
 	{
-		dval = age.dval();
+		dval = age;
 	}
 
-	double position = (dval - d_lower_bound) / (d_upper_bound - d_lower_bound);
-	return ColourSpectrum().get_colour_at(position);
+	GPlatesMaths::Real position = (dval - d_lower_bound) / (d_upper_bound - d_lower_bound);
+	return ColourSpectrum().get_colour_at(position.dval());
 }
 
 
@@ -134,11 +134,11 @@ GPlatesGui::MonochromeAgeColourPalette::get_colour(
 	}
 	else
 	{
-		double position = (age.dval() - d_lower_bound) / (d_upper_bound - d_lower_bound);
+		GPlatesMaths::Real position = (age - d_lower_bound) / (d_upper_bound - d_lower_bound);
 		return Colour::linearly_interpolate(
 				LOWER_COLOUR,
 				UPPER_COLOUR,
-				position);
+				position.dval());
 	}
 }
 

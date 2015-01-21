@@ -3540,9 +3540,17 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::load_colour_palette(
 	}
 
 	// Copy the input value range to the caller.
+	boost::optional< std::pair<GPlatesMaths::Real, GPlatesMaths::Real> > regular_colour_palette_range =
+			regular_colour_palette_opt->get_range();
+	if (!regular_colour_palette_range)
+	{
+		// Shouldn't get here if the colour palette size is non-zero.
+		return boost::none;
+	}
+
 	colour_palette_range = std::make_pair(
-			regular_colour_palette_opt->get_lower_bound().dval(),
-			regular_colour_palette_opt->get_upper_bound().dval());
+			regular_colour_palette_range->first.dval(),
+			regular_colour_palette_range->second.dval());
 
 	GPlatesGui::ColourPalette<double>::non_null_ptr_type colour_palette =
 		GPlatesGui::convert_colour_palette<
