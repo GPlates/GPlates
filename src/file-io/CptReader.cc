@@ -314,21 +314,6 @@ GPlatesFileIO::CptReaderInternals::is_pattern_fill_specification(
 }
 
 
-boost::optional<QString>
-GPlatesFileIO::CptReaderInternals::parse_regular_cpt_label(
-		const QString &token)
-{
-	if (token.startsWith(';'))
-	{
-		return token.right(token.length() - 1);
-	}
-	else
-	{
-		throw BadTokenException();
-	}
-}
-
-
 /************************************************
 * New implementation of cpt reader.
 *************************************************/

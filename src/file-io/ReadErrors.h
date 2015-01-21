@@ -201,6 +201,7 @@ namespace GPlatesFileIO
 			CptFileTypeNotDeduced,
 			UnrecognisedLabel,
 			PatternFillInLine,
+			MissingLabelSemiColon,
 
 			// The following are generic to all local files
 			ErrorOpeningFileForReading,

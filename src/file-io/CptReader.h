@@ -92,6 +92,7 @@ namespace GPlatesFileIO
 
 		struct BadTokenException {  };
 		struct BadComponentsException {  };
+		struct MissingLabelSemiColonException {  };
 		struct PatternFillEncounteredException {  };
 
 
@@ -559,9 +560,9 @@ namespace GPlatesFileIO
 		 *		F	R	G	B
 		 *		N	R	G	B
 		 * 
-		 * if the ColourSpecification parameter is CptReaderInternals::RGBColourSpecification.
+		 * if the ColourSpecification parameter is RGBColourSpecification.
 		 * The only other valid ColourSpecification for a BFN line is
-		 * CptReaderInternals::HSVColourSpecification; in that case, the R, G and B
+		 * HSVColourSpecification; in that case, the R, G and B
 		 * components are replaced by H, S and V components respectively.
 		 *
 		 * If the line was successfully parsed, the function returns true and changes
@@ -635,22 +636,13 @@ namespace GPlatesFileIO
 		{
 			if (parser_state.rgb)
 			{
-				return try_process_bfn<CptFileFormat, CptReaderInternals::RGBColourSpecification>(tokens, parser_state);
+				return try_process_bfn<CptFileFormat, RGBColourSpecification>(tokens, parser_state);
 			}
 			else
 			{
-				return try_process_bfn<CptFileFormat, CptReaderInternals::HSVColourSpecification>(tokens, parser_state);
+				return try_process_bfn<CptFileFormat, HSVColourSpecification>(tokens, parser_state);
 			}
 		}
-
-
-		/**
-		 * Parses the optional label at the end of a regular CPT file line. The label
-		 * starts with a semi-colon.
-		 */
-		boost::optional<QString>
-		parse_regular_cpt_label(
-				const QString &token);
 
 
 		/**
@@ -660,7 +652,7 @@ namespace GPlatesFileIO
 		 *
 		 *		lower_value R G B upper_value R G B [a] [;label]
 		 *
-		 * if the ColourSpecification parameter is CptReaderInternals::RGBColourSpecification.
+		 * if the ColourSpecification parameter is RGBColourSpecification.
 		 * For other choices of ColourSpecification, R, G and B are replaced as appropriate.
 		 *
 		 * If the line was successfully parsed, the function returns true and inserts a
@@ -677,10 +669,10 @@ namespace GPlatesFileIO
 			static const int NUM_COMPONENTS = boost::tuples::length<components_type>::value;
 
 			// Check that the tokens list has an appropriate length: it must have
-			// the compulsory elements, with 2 optional tokens at the end.
+			// the compulsory elements, with 2 optional tokens at the end (note that we don't
+			// have a maximum limit here since the label can contain any number of words).
 			static const int MIN_TOKENS_COUNT = (1 + NUM_COMPONENTS) * 2;
-			static const int MAX_TOKENS_COUNT = MIN_TOKENS_COUNT + 2;
-			if (tokens.count() < MIN_TOKENS_COUNT || tokens.count() > MAX_TOKENS_COUNT)
+			if (tokens.count() < MIN_TOKENS_COUNT)
 			{
 				return false;
 			}
@@ -688,24 +680,70 @@ namespace GPlatesFileIO
 			try
 			{
 				// Lower value of z-slice.
-				double lower_value = CptReaderInternals::parse_token<double>(tokens.at(0));
+				double lower_value = parse_token<double>(tokens.at(0));
 
 				// First lot of colour components.
 				boost::optional<GPlatesGui::Colour> lower_colour = convert_tokens<ColourSpecification>(tokens, 1);
 
 				// Upper value of z-slice.
-				double upper_value = CptReaderInternals::parse_token<double>(tokens.at(1 + NUM_COMPONENTS));
+				double upper_value = parse_token<double>(tokens.at(1 + NUM_COMPONENTS));
 
 				// Second lot of colour components.
-				boost::optional<GPlatesGui::Colour> upper_colour = convert_tokens<ColourSpecification>(tokens, 1 + NUM_COMPONENTS + 1);
+				boost::optional<GPlatesGui::Colour> upper_colour =
+						convert_tokens<ColourSpecification>(tokens, 1 + NUM_COMPONENTS + 1);
 
 				// Parse the last 2 tokens, if any.
-				GPlatesGui::ColourScaleAnnotation::Type annotation = (tokens.count() == MIN_TOKENS_COUNT) ?
-					GPlatesGui::ColourScaleAnnotation::NONE :
-					CptReaderInternals::parse_token<GPlatesGui::ColourScaleAnnotation::Type>(tokens.at(MIN_TOKENS_COUNT));
-				boost::optional<QString> label = (tokens.count() == MAX_TOKENS_COUNT) ?
-					parse_regular_cpt_label(tokens.at(MAX_TOKENS_COUNT - 1)) :
-					boost::none;
+				GPlatesGui::ColourScaleAnnotation::Type annotation = GPlatesGui::ColourScaleAnnotation::NONE;
+				boost::optional<QString> label;
+				if (tokens.count() > MIN_TOKENS_COUNT)
+				{
+					int current_token_index = MIN_TOKENS_COUNT;
+
+					try
+					{
+						// Parse annotation, if one.
+						annotation = parse_token<GPlatesGui::ColourScaleAnnotation::Type>(
+								tokens.at(current_token_index));
+						++current_token_index;
+					}
+					catch (const BadTokenException &)
+					{
+						// It's not an annotation (but annotation is optional).
+						// Don't increment current token index - try again to see if a label.
+					}
+
+					// Parse label, if one.
+					if (current_token_index < tokens.count())
+					{
+						QString label_token = tokens.at(current_token_index);
+						++current_token_index;
+						if (!label_token.startsWith(';'))
+						{
+							throw MissingLabelSemiColonException();
+						}
+
+						// If semi-colon is it's own token (ie, a space between it and label).
+						if (label_token == ";")
+						{
+							label_token = "";
+							for ( ; current_token_index < tokens.count(); ++current_token_index)
+							{
+								label_token += ' ' + tokens.at(current_token_index);
+							}
+						}
+						else
+						{
+							// Remove semi-colon from label.
+							label_token = label_token.right(label_token.length() - 1);
+							for ( ; current_token_index < tokens.count(); ++current_token_index)
+							{
+								label_token += ' ' + tokens.at(current_token_index);
+							}
+						}
+
+						label = label_token;
+					}
+				}
 				
 				// Issue a warning if this slice does not start after the end of the previous slice.
 				if (GPlatesMaths::Real(lower_value) < GPlatesMaths::Real(parser_state.previous_upper_value))
@@ -731,13 +769,37 @@ namespace GPlatesFileIO
 
 				return true;
 			}
-			catch (const CptReaderInternals::PatternFillEncounteredException &)
+			catch (const PatternFillEncounteredException &)
 			{
 				parser_state.errors.d_recoverable_errors.push_back(
 						make_read_error_occurrence(
 							parser_state.data_source,
 							parser_state.current_line_number,
 							ReadErrors::PatternFillInLine,
+							ReadErrors::CptLineIgnored));
+				parser_state.error_reported_for_current_line = true;
+
+				return false;
+			}
+			catch (const MissingLabelSemiColonException &)
+			{
+				parser_state.errors.d_recoverable_errors.push_back(
+						make_read_error_occurrence(
+							parser_state.data_source,
+							parser_state.current_line_number,
+							ReadErrors::MissingLabelSemiColon,
+							ReadErrors::CptLineIgnored));
+				parser_state.error_reported_for_current_line = true;
+
+				return false;
+			}
+			catch (const GPlatesUtils::ParseError &)
+			{
+				parser_state.errors.d_recoverable_errors.push_back(
+						make_read_error_occurrence(
+							parser_state.data_source,
+							parser_state.current_line_number,
+							ReadErrors::UnrecognisedLabel,
 							ReadErrors::CptLineIgnored));
 				parser_state.error_reported_for_current_line = true;
 

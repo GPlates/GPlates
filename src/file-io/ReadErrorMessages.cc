@@ -473,6 +473,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::PatternFillInLine,
 				QT_TR_NOOP("Pattern fill in line."),
 				QT_TR_NOOP("Pattern fills are not supported.") },
+		{ GPlatesFileIO::ReadErrors::MissingLabelSemiColon,
+				QT_TR_NOOP("No semi-colon before label."),
+				QT_TR_NOOP("A label in a CPT file must start with a semi-colon.") },
 
 		// Generic file-related error descriptions:
 		{ GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,

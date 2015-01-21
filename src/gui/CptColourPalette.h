@@ -92,6 +92,10 @@ namespace GPlatesUtils
 			{
 				return ColourScaleAnnotation::UPPER;
 			}
+			else if (s == "B")
+			{
+				return ColourScaleAnnotation::BOTH;
+			}
 			else
 			{
 				throw ParseError();
