@@ -69,13 +69,12 @@ const double ENLARGED_POINT_SIZE = 6;
 
 
 // The following are related to the Hellinger tool in general, and not necessarily to this class/file.
+// TODO: white spot at (0,0) appears on startup - check.
+
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger workflow - this seems to be going
 // all over the place at the moment.
 // TODO: clean up the system of filenames which are passed to python.
-// TODO: Allow clicking and dragging of newly placed picks - this has broken recently somehow.
-//  - actually we can probably do without this behaviour; it has no corresponding behaviour in the
-// digitisation tool.
 // TODO: remove H shortcut
 // TODO: make a half-decent icon
 // TODO: update status bar messages according to which mode of the tool we are in. For example, when in "new pick" mode
@@ -107,6 +106,7 @@ const double ENLARGED_POINT_SIZE = 6;
 // TODO: prevent stupid input values for the significance level, and check that value is being used appropriately.
 // TODO: remove old error ellipse from layer when updating.
 // TODO: investigate crash with certain calculations of statistics.
+// TODO: command-line activation of tool.
 
 
 namespace{
@@ -1809,16 +1809,16 @@ void GPlatesQtWidgets::HellingerDialog::draw_pole_estimate()
 	GPlatesMaths::PointOnSphere pole = GPlatesMaths::make_point_on_sphere(
 				d_current_pole_estimate_llp);
 
-	GPlatesViewOperations::RenderedGeometry pole_geometry =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				pole.get_non_null_pointer(),
-				GPlatesGui::Colour::get_white(),
-				2, /* point thickness */
-				2, /* line thickness */
-				false, /* fill polygon */
-				false, /* fill polyline */
-				GPlatesGui::Colour::get_white(), // dummy colour argument
-				d_pole_estimate_symbol);
+	const GPlatesViewOperations::RenderedGeometry pole_geometry =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
+					pole,
+					0.3f/*arrow_projected_length*/,
+					0.12f/*arrowhead_projected_size*/,
+					0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
+					GPlatesGui::Colour(1, 1, 1, 0.5f)/*arrow_colour*/,
+					GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
+					10.0f/*symbol_size*/,
+					GPlatesGui::Colour::get_white()/*symbol_colour*/);
 
 	d_pole_estimate_layer_ptr->add_rendered_geometry(pole_geometry);
 
@@ -2357,6 +2357,13 @@ GPlatesQtWidgets::HellingerDialog::hide()
 {
 	hide_child_dialogs();
 	GPlatesDialog::hide();
+}
+
+void
+GPlatesQtWidgets::HellingerDialog::keyPressEvent(
+		QKeyEvent *event_)
+{
+// Do nothing, i.e. don't propagate event.This prevents the Escape key from closing the dialog.
 }
 
 void

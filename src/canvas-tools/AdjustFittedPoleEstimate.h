@@ -43,6 +43,7 @@
 #include "view-operations/RenderedMultiPointOnSphere.h"
 #include "view-operations/RenderedPointOnSphere.h"
 #include "view-operations/RenderedPolylineOnSphere.h"
+#include "view-operations/RenderedRadialArrow.h"
 #include "view-operations/RenderedSquareSymbol.h"
 #include "view-operations/RenderedStrainMarkerSymbol.h"
 #include "view-operations/RenderedTriangleSymbol.h"
@@ -113,7 +114,6 @@ namespace GPlatesCanvasTools
 			visit_rendered_multi_point_on_sphere(
 				const GPlatesViewOperations::RenderedMultiPointOnSphere &rendered_multi_point_on_sphere)
 			{
-				qDebug() << "Visiting multipoint";
 				if (d_vertex_index)
 				{
 					if (*d_vertex_index >= rendered_multi_point_on_sphere.get_multi_point_on_sphere()->number_of_points())
@@ -171,6 +171,15 @@ namespace GPlatesCanvasTools
 			{
 				d_geometry.reset(
 							rendered_polyline.get_polyline_on_sphere());
+			}
+
+			virtual
+			void
+			visit_rendered_radial_arrow(
+					const GPlatesViewOperations::RenderedRadialArrow &rendered_radial_arrow)
+			{
+				d_geometry.reset
+						(rendered_radial_arrow.get_position().get_non_null_pointer());
 			}
 
 			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
@@ -289,10 +298,6 @@ namespace GPlatesCanvasTools
 
 		void
 		update_pole_estimate_layer();
-
-		void
-		update_pole_estimate_highlight(
-				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point);
 
 		void
 		update_pole_estimate_and_arc_highlight(

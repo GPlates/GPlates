@@ -262,7 +262,6 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_press(
 				proximity_criteria,
 				*d_highlight_layer_ptr))
 	{
-
 		d_pole_is_being_dragged = d_mouse_is_over_pole_estimate;
 		d_reference_arc_is_being_draggged = d_mouse_is_over_reference_arc;
 		d_relative_arc_is_being_dragged = d_mouse_is_over_relative_arc;
@@ -421,8 +420,20 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 				GPlatesGui::Colour::get_white(), /* dummy colour */
 				POLE_SYMBOL);
 
+	GPlatesViewOperations::RenderedGeometry pole_geometry_arrow =
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
+					d_current_pole,
+					0.3f/*arrow_projected_length*/,
+					0.12f/*arrowhead_projected_size*/,
+					0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
+					GPlatesGui::Colour(1, 1, 1, 0.5f)/*arrow_colour*/,
+					GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
+					10.0f/*symbol_size*/,
+					GPlatesGui::Colour::get_white()/*symbol_colour*/);
+
 
 	d_pole_estimate_layer_ptr->add_rendered_geometry(pole_geometry);
+	d_pole_estimate_layer_ptr->add_rendered_geometry(pole_geometry_arrow);
 
 	GPlatesViewOperations::RenderedGeometry reference_end_point_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
@@ -479,26 +490,6 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_layer()
 }
 
 
-void
-GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_highlight(
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point)
-{
-	d_highlight_layer_ptr->clear_rendered_geometries();
-
-	GPlatesViewOperations::RenderedGeometry pole_geometry =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				point,
-				VERTEX_HIGHLIGHT_COLOUR,
-				2, /* point size */
-				2, /* line thickness */
-				false, /* fill polygon */
-				false, /* fill polyline */
-				GPlatesGui::Colour::get_white(), /* dummy colour */
-				POLE_HIGHLIGHT_SYMBOL);
-
-
-	d_highlight_layer_ptr->add_rendered_geometry(pole_geometry);
-}
 
 void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_and_arc_highlight(
@@ -506,16 +497,28 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_and_arc_highl
 {
 	d_highlight_layer_ptr->clear_rendered_geometries();
 
+//	GPlatesViewOperations::RenderedGeometry pole_geometry =
+//			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
+//				point,
+//				VERTEX_HIGHLIGHT_COLOUR,
+//				2, /* point size */
+//				2, /* line thickness */
+//				false, /* fill polygon */
+//				false, /* fill polyline */
+//				GPlatesGui::Colour::get_white(), /* dummy colour */
+//				POLE_HIGHLIGHT_SYMBOL);
+
 	GPlatesViewOperations::RenderedGeometry pole_geometry =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				point,
-				VERTEX_HIGHLIGHT_COLOUR,
-				2, /* point size */
-				2, /* line thickness */
-				false, /* fill polygon */
-				false, /* fill polyline */
-				GPlatesGui::Colour::get_white(), /* dummy colour */
-				POLE_HIGHLIGHT_SYMBOL);
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
+					*point,
+					0.3f/*arrow_projected_length*/,
+					0.12f/*arrowhead_projected_size*/,
+					0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
+					GPlatesGui::Colour::get_blue()/*arrow_colour*/,
+					GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
+					10.0f/*symbol_size*/,
+					GPlatesGui::Colour::get_white()/*symbol_colour*/);
+
 
 	GPlatesMaths::GreatCircleArc gca_reference = GPlatesMaths::GreatCircleArc::create(*point,d_end_point_of_reference_arc);
 	std::vector<GPlatesMaths::PointOnSphere> points;

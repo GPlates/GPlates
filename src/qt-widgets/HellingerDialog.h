@@ -245,6 +245,9 @@ namespace GPlatesQtWidgets
 		void
 		hide();
 
+		void
+		keyPressEvent(QKeyEvent *event);
+
 	Q_SIGNALS:
 
 		void
