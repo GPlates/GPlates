@@ -39,7 +39,9 @@ namespace GPlatesUtils
 			DATA_MINING = 0,
 			PYTHON,
 			SYMBOLOGY,
-			COMP_NUM
+                        HELLINGER,
+
+                        NUM_COMPONENTS
 		};
 
 	public:
@@ -66,6 +68,13 @@ namespace GPlatesUtils
 			{
 				return Component(ComponentManager::SYMBOLOGY);
 			}
+
+                        static
+                        Component
+                        hellinger()
+                        {
+                            return Component(ComponentManager::HELLINGER);
+                        }
 
 			operator 
 			ComponentManager::ComponentTypes()
@@ -121,7 +130,7 @@ namespace GPlatesUtils
 		ComponentManager(const ComponentManager&);
 		ComponentManager& operator=(const ComponentManager&);
 		
-		std::bitset<COMP_NUM> d_switchs;
+                std::bitset<NUM_COMPONENTS> d_switchs;
 	};
 
 	
