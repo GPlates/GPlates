@@ -1802,7 +1802,7 @@ void GPlatesQtWidgets::HellingerDialog::draw_picks()
 
 void GPlatesQtWidgets::HellingerDialog::draw_pole_estimate()
 {
-	qDebug() << "draw_pole_estimate";
+	qDebug() << "HD: draw_pole_estimate";
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 	d_pole_estimate_layer_ptr->clear_rendered_geometries();
 

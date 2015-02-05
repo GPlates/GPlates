@@ -509,7 +509,6 @@ void
 GPlatesGui::Dialogs::pop_up_hellinger_dialog()
 {
 	hellinger_dialog().pop_up();
-	hellinger_dialog().restore();
 }
 
 void GPlatesGui::Dialogs::pop_up_and_reposition_hellinger_dialog()
@@ -523,8 +522,6 @@ void GPlatesGui::Dialogs::pop_up_and_reposition_hellinger_dialog()
 		pop_up_hellinger_dialog();
 		GPlatesQtWidgets::QtWidgetUtils::reposition_to_side_of_parent(&hellinger_dialog());
 	}
-
-
 }
 
 GPlatesQtWidgets::LicenseDialog &
