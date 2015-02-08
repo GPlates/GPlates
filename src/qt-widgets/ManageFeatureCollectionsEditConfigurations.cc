@@ -45,9 +45,21 @@ GPlatesQtWidgets::ManageFeatureCollections::register_default_edit_configurations
 			GPlatesFileIO::FeatureCollectionFileFormat::WRITE_ONLY_XY_GMT,
 			GMTEditConfiguration::shared_ptr_type(new GMTEditConfiguration()));
 
+	// TODO: Other OGR-supported formats have attributes and are mapped to the model in the same way
+	// as shapefile attributes. So:
+	// * variable/class names should be changed to reflect this (e.g. OgrEditConfiguration)
+	// * the mapping/re-mapping UI's labels, titles etc (for attribute-mapping) should reflect this (currently it says "Shapefile blah" everywhere).
 	manage_feature_collections_dialog.register_edit_configuration(
 			GPlatesFileIO::FeatureCollectionFileFormat::SHAPEFILE,
 			ShapefileEditConfiguration::shared_ptr_type(new ShapefileEditConfiguration(model)));
+
+	manage_feature_collections_dialog.register_edit_configuration(
+				GPlatesFileIO::FeatureCollectionFileFormat::OGRGMT,
+				ShapefileEditConfiguration::shared_ptr_type(new ShapefileEditConfiguration(model)));
+
+	manage_feature_collections_dialog.register_edit_configuration(
+				GPlatesFileIO::FeatureCollectionFileFormat::GEOJSON,
+				ShapefileEditConfiguration::shared_ptr_type(new ShapefileEditConfiguration(model)));
 }
 
 

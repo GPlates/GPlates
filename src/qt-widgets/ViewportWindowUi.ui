@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>780</width>
-     <height>21</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -784,7 +784,7 @@
   </action>
   <action name="action_View_Shapefile_Attributes">
    <property name="text">
-    <string>View Shapefile &amp;Attributes</string>
+    <string>View &amp;Attribute Table</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>

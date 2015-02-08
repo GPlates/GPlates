@@ -43,6 +43,8 @@ namespace GPlatesFileIO
 			PLATES4_ROTATION,  //!< '.rot' extension.
 			SHAPEFILE,         //!< '.shp' extension.
 			OGRGMT,			   //!< '.gmt' extension.
+                        GEOJSON,           // '.geojson' or '.json' extension.
+                        KML,               // '.kml' extension.
 			WRITE_ONLY_XY_GMT, //!< '.xy' extension.
 			GMAP,              //!< '.vgp' extension.
 			GSML,              //!< '.gsml' extension.

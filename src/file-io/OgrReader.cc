@@ -9,7 +9,7 @@
  * 
  * Copyright (C) 2007, 2008, 2009 Geological Survey of Norway (under the name "ShapefileReader.h")
  * Copyright (C) 2010 The University of Sydney, Australia (under the name "ShapefileReader.h")
- * Copyright (C) 2012, 2013, 2014 Geological Survey of Norway
+ * Copyright (C) 2012, 2013, 2014, 2015 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *

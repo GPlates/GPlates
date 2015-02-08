@@ -72,6 +72,10 @@ namespace{
 		gmt_driver << "GMT" << "GMT";
 		map["gmt"] = gmt_driver;
 
+		QStringList geojson_driver;
+		geojson_driver << "GeoJSON" << "GeoJSON";
+		map["geojson"] = geojson_driver;
+
 		return map;
 	}
 
@@ -189,7 +193,9 @@ namespace{
 				iter = key_value_dictionary->elements().begin(),
 				end = key_value_dictionary->elements().end();
 
-			for (int count = 0; (count < num_attributes_in_layer) && (iter != end) ; count++, ++iter)
+			int initial_count = 0;
+
+			for (int count = initial_count; (count < num_attributes_in_layer) && (iter != end) ; count++, ++iter)
 			{
 				QString model_string = GPlatesUtils::make_qstring_from_icu_string(iter->key()->value().get());
 				QString layer_string = QString::fromStdString(
