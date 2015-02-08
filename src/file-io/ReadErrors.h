@@ -121,6 +121,7 @@ namespace GPlatesFileIO
 			InvalidShapefileReconstructionMethod,
 			InvalidShapefileSpreadingAsymmetry,
 			UnableToMatchOgrGeometryWithFeature,
+                        NoGeometriesFoundInMultiGeometry,
 			
 			// The following relate to raster files in general.
 			InsufficientMemoryToLoadRaster,
