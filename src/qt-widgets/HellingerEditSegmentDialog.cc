@@ -141,8 +141,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 
 	table_new_segment->horizontalHeader()->setStretchLastSection(true);
 
-	button_enable->setEnabled(false);
-	button_disable->setEnabled(false);
+	update_buttons();
 
 	// The spinbox delegate lets us customise spinbox behaviour for the different cells.
 	table_new_segment->setItemDelegate(&d_spin_box_delegate);
@@ -211,7 +210,7 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_selection_changed(
 		const QItemSelection &,
 		const QItemSelection &)
 {
-	qDebug() << "Selectionchanged.";
+	qDebug() << "HESD:handle_selection_changed";
 	update_buttons();
 }
 
@@ -353,6 +352,8 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::change_pick_type_of_whole_table()
 void
 GPlatesQtWidgets::HellingerEditSegmentDialog::update_buttons()
 {
+	button_enable->setEnabled(false);
+	button_disable->setEnabled(false);
 	QModelIndexList indices = table_new_segment->selectionModel()->selection().indexes();
 	button_remove_line->setEnabled(!indices.isEmpty());
 
@@ -386,7 +387,10 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_enable()
 	QModelIndex index_of_enabled_column_in_row_of_selected_cell =
 			index.model()->index(index.row(),GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_ENABLED);
 	d_table_model->setData(index_of_enabled_column_in_row_of_selected_cell,true);
+
 	update_entire_row(table_new_segment,index);
+	table_new_segment->selectionModel()->setCurrentIndex(index,QItemSelectionModel::Select);
+	update_buttons();
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_disable()
@@ -402,6 +406,8 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_disable()
 			index.model()->index(index.row(),GPlatesQtWidgets::HellingerEditSegmentDialog::COLUMN_ENABLED);
 	d_table_model->setData(index_of_enabled_column_in_row_of_selected_cell,false);
 	update_entire_row(table_new_segment,index);
+	table_new_segment->selectionModel()->setCurrentIndex(index,QItemSelectionModel::Select);
+	update_buttons();
 }
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::close()
