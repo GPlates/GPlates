@@ -156,6 +156,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 		setWindowTitle(QObject::tr("Edit Segment"));
 	}
 
+	// Wait until table is initialised before we setup this connection.
 	QObject::connect(table_new_segment->selectionModel(),
 					 SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
 					 this,

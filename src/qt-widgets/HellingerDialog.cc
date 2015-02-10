@@ -86,7 +86,6 @@ const double INITIAL_SIGNIFICANCE_LEVEL = 0.95;
 // the FORTRAN code) such as tolerance limit for amoeba search, grid search details etc.
 // TODO: consider adding some sort of "scroll to selected" feature in the picks table.
 // TODO: consider interpreting other forms of chron embedded in the hellinger file name - see the GSFML site for examples
-// TODO: (new segment tool) "Remove" should not be active on startup if there is no selected line.
 // TODO: Consider changing button text from "Cancel" to "Done" in the new pick dialog. This dialog can remain open for
 // several picks to be added, (and is also non-modal so that canvas interaction is possible).
 // TODO: check "Edit segment" button enabled state - after closing the new segment dialog it should remain active.
@@ -1396,11 +1395,12 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 	button_export_com_file->setEnabled(false);
 	button_calculate_fit->setEnabled(false);
 	button_show_details->setEnabled(false);
-	button_remove_segment->setEnabled(false);
-	button_remove_pick->setEnabled(false);
+	button_remove_segment->setEnabled(d_selected_segment);
+	button_remove_pick->setEnabled(d_selected_pick);
 	button_stats->setEnabled(false);
 	button_clear->setEnabled(false);
-	button_edit_pick->setEnabled(false);
+	button_edit_pick->setEnabled(d_selected_pick);
+	button_edit_segment->setEnabled(d_selected_segment);
 
 	button_new_pick->setEnabled(true);
 	button_new_segment->setEnabled(true);
