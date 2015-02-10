@@ -22,7 +22,6 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <iterator> // std::advance
 #include <vector>
 
 #include <boost/foreach.hpp>
@@ -604,7 +603,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	initialise_widgets();
 	set_default_widget_values();
 	update_from_model();
-	update_buttons();
+    update_pick_and_segment_buttons();
 	update_canvas();
 
 }
@@ -614,6 +613,7 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 		const QItemSelection & new_selection,
 		const QItemSelection & old_selection)
 {
+    qDebug() << "HSCh";
 	// if we have selected a pick:
 	//		get its state and update the enable/disable buttons
 	//		enable the edit/remove-pick buttons
@@ -637,36 +637,14 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 
 	if (new_selection.empty())
 	{
-		// Nothing selected:
-		set_buttons_for_no_selection();
-		d_selected_segment.reset();
-		d_selected_pick.reset();
 		if (d_hellinger_edit_point_dialog->isVisible())
 		{
 			d_hellinger_edit_point_dialog->set_active(false);
 		}
 	}
-	boost::optional<unsigned int> selected_segment_number = selected_segment(tree_widget);
-	boost::optional<unsigned int> selected_row_number = selected_row(tree_widget);
 
-	if (tree_item_is_segment_item(tree_widget->currentItem())) // Segment selected
-	{
-		set_buttons_for_segment_selected();
-		d_selected_segment.reset(selected_segment_number.get());
-		d_selected_pick.reset();
-
-		if (d_hellinger_edit_point_dialog->isVisible())
-		{
-			d_hellinger_edit_point_dialog->set_active(false);
-		}
-	}
-	else // pick selected
-	{
-
-		d_selected_pick.reset(d_hellinger_model->get_pick(selected_segment_number.get(),selected_row_number.get()));
-
-		update_pick_buttons();
-	}
+    determine_selected_picks_and_segments();
+    update_pick_and_segment_buttons();
 	update_canvas();
 }
 
@@ -681,7 +659,7 @@ GPlatesQtWidgets::HellingerDialog::handle_finished_editing()
 {
 	this->setEnabled(true);
 	d_canvas_operation_type = SELECT_OPERATION;
-	update_buttons();
+    update_pick_and_segment_buttons();
 	d_editing_layer_ptr->clear_rendered_geometries();
 	d_editing_layer_ptr->set_active(false);
 	d_feature_highlight_layer_ptr->set_active(false);
@@ -808,11 +786,11 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 		return;
 	}
 
-	bool new_enabled_state = !d_hellinger_model->get_pick_state(*segment, *row);
+    bool new_enabled_state = !d_hellinger_model->pick_is_enabled(*segment, *row);
 
 	d_hellinger_model->set_pick_state(*segment,*row,new_enabled_state);
 
-	set_buttons_for_pick_selected(new_enabled_state);
+    set_buttons_for_pick_selected(new_enabled_state);
 
 	set_text_colour_according_to_enabled_state(tree_widget->currentItem(),new_enabled_state);
 }
@@ -911,7 +889,7 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_pick()
 		d_hellinger_model->remove_pick(*segment, *row);
 		update_tree_from_model();
 		update_canvas();
-		update_buttons();
+        update_pick_and_segment_buttons();
 		restore_expanded_status();
 	}
 }
@@ -948,13 +926,11 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_segment()
 		}
 
 		d_hellinger_model->remove_segment(segment_int);
-		button_renumber->setEnabled(true);
+
 		update_tree_from_model();
 		restore_expanded_status();
-		if (!d_hellinger_model->segments_are_ordered())
-		{
-			button_renumber->setEnabled(true);
-		}
+
+        update_pick_and_segment_buttons();
 	}
 }
 
@@ -1026,7 +1002,7 @@ GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 
 
 	update_chron_time();
-	update_buttons();
+    update_pick_and_segment_buttons();
 	update_from_model();
 	handle_expand_all();
 	update_canvas();
@@ -1288,7 +1264,7 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 		GPlatesFileIO::HellingerWriter::write_pick_file(path,*d_hellinger_model,false);
 		QString import_file_line = line_import_file->text();
 		// TODO: check if we actually need to update the buttons here.
-		update_buttons();
+        update_pick_and_segment_buttons();
 
 		// TODO: is there a cleaner way of sending input data to python?
 		// Can we use a bitset or a vector of bools instead of std::vector<int> for example?
@@ -1394,39 +1370,34 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::update_buttons()
+GPlatesQtWidgets::HellingerDialog::update_pick_and_segment_buttons()
 {
-	button_expand_all->setEnabled(false);
-	button_collapse_all->setEnabled(false);
-	button_export_pick_file->setEnabled(false);
-	button_export_com_file->setEnabled(false);
-	button_calculate_fit->setEnabled(false);
+    bool picks_loaded_ = picks_loaded();
+    button_expand_all->setEnabled(picks_loaded_);
+    button_collapse_all->setEnabled(picks_loaded_);
+    button_export_pick_file->setEnabled(picks_loaded_);
+    button_export_com_file->setEnabled(picks_loaded_);
+
+    button_calculate_fit->setEnabled(picks_loaded_ && spinbox_radius->value() > 0.0);
 	button_show_details->setEnabled(false);
+    button_stats->setEnabled(false);
+    button_clear->setEnabled(false);
+
 	button_remove_segment->setEnabled(d_selected_segment);
 	button_remove_pick->setEnabled(d_selected_pick);
-	button_stats->setEnabled(false);
-	button_clear->setEnabled(false);
+
 	button_edit_pick->setEnabled(d_selected_pick);
 	button_edit_segment->setEnabled(d_selected_segment);
 
 	button_new_pick->setEnabled(true);
 	button_new_segment->setEnabled(true);
 
+    button_renumber->setEnabled(!d_hellinger_model->segments_are_ordered());
 
-	// Update based on if we have some picks loaded or not.
-	if (picks_loaded())
-	{
-		button_expand_all->setEnabled(true);
-		button_collapse_all->setEnabled(true);
-		button_export_pick_file->setEnabled(true);
-		button_export_com_file->setEnabled(true);
-		button_calculate_fit->setEnabled(spinbox_radius->value() > 0.0);
-		button_clear->setEnabled(true);
-	}
 
 	//Update enable/disable depending on state of selected pick, if we have
 	// a selected pick.
-	update_pick_buttons();
+    update_pick_enable_disable_buttons();
 }
 
 void
@@ -1617,11 +1588,12 @@ GPlatesQtWidgets::HellingerDialog::update_after_new_pick(
 		const hellinger_model_type::const_iterator &it,
 		const int segment_number)
 {
-	set_selected_pick(it);
 	update_tree_from_model();
 	restore_expanded_status();
 	expand_segment(segment_number);
-	update_buttons();
+//    set_selected_pick(it);s
+    determine_selected_picks_and_segments();
+    update_pick_and_segment_buttons();
 	update_canvas();
 }
 
@@ -1629,11 +1601,12 @@ void
 GPlatesQtWidgets::HellingerDialog::update_after_new_segment(
 		const int segment_number)
 {
-	set_selected_segment(segment_number);
-	update_tree_from_model();
+	update_tree_from_model();    
 	restore_expanded_status();
 	expand_segment(segment_number);
-	update_buttons();
+//    set_selected_segment(segment_number);
+    determine_selected_picks_and_segments();
+    update_pick_and_segment_buttons();
 	update_canvas();
 }
 
@@ -1944,66 +1917,78 @@ GPlatesQtWidgets::HellingerDialog::reconstruct_picks()
 
 }
 
-bool GPlatesQtWidgets::HellingerDialog::picks_loaded()
+void
+GPlatesQtWidgets::HellingerDialog::determine_selected_picks_and_segments()
+{
+    d_selected_pick.reset();
+    d_selected_segment.reset();
+
+    if (!tree_widget->currentItem())
+    {
+        return;
+    }
+    boost::optional<unsigned int> selected_segment_number = selected_segment(tree_widget);
+    boost::optional<unsigned int> selected_row_number = selected_row(tree_widget);
+
+    if (tree_item_is_segment_item(tree_widget->currentItem())) // Segment selected
+    {
+        d_selected_segment.reset(selected_segment_number.get());
+
+        if (d_hellinger_edit_point_dialog->isVisible())
+        {
+            d_hellinger_edit_point_dialog->set_active(false);
+        }
+    }
+    else // pick selected
+    {
+
+        d_selected_pick.reset(d_hellinger_model->get_pick(selected_segment_number.get(),selected_row_number.get()));
+
+    }
+
+    qDebug()<< "Seg selected: " << d_selected_segment;
+    qDebug() << "Pick selected: " << d_selected_pick;
+}
+
+bool
+GPlatesQtWidgets::HellingerDialog::picks_loaded()
 {
 	return (tree_widget->topLevelItemCount() != 0);
 }
 
-void GPlatesQtWidgets::HellingerDialog::set_buttons_for_no_selection()
+
+void
+GPlatesQtWidgets::HellingerDialog::update_pick_enable_disable_buttons()
 {
-	button_activate_pick->setEnabled(false);
-	button_deactivate_pick->setEnabled(false);
-	button_edit_pick->setEnabled(false);
-	button_edit_segment->setEnabled(false);
-	button_remove_pick->setEnabled(false);
-	button_remove_segment->setEnabled(false);
-}
+    boost::optional<unsigned int> segment = selected_segment(tree_widget);
+    boost::optional<unsigned int> row = selected_row(tree_widget);
 
-void GPlatesQtWidgets::HellingerDialog::set_buttons_for_segment_selected()
-{
-	button_activate_pick->setEnabled(false);
-	button_deactivate_pick->setEnabled(false);
-	button_edit_pick->setEnabled(false);
-	button_edit_segment->setEnabled(true);
-	button_remove_pick->setEnabled(false);
-	button_remove_segment->setEnabled(true);
-}
+    button_activate_pick->setEnabled(false);
+    button_deactivate_pick->setEnabled(false);
+    if (!(segment && row))
+    {
+        qDebug() << "update_pick_buttons: no valid segment or row";
+        return;
+    }
 
-void GPlatesQtWidgets::HellingerDialog::set_buttons_for_pick_selected(
-		bool state_is_active)
-{
-	button_activate_pick->setEnabled(!state_is_active);
-	button_deactivate_pick->setEnabled(state_is_active);
-	button_edit_pick->setEnabled(true);
-	button_edit_segment->setEnabled(false);
-	button_remove_pick->setEnabled(true);
-	button_remove_segment->setEnabled(false);
+    bool enabled = d_hellinger_model->pick_is_enabled(*segment, *row);
 
-}
-
-void GPlatesQtWidgets::HellingerDialog::update_pick_buttons()
-{
-	boost::optional<unsigned int> segment = selected_segment(tree_widget);
-	boost::optional<unsigned int> row = selected_row(tree_widget);
-
-	button_activate_pick->setEnabled(false);
-	button_deactivate_pick->setEnabled(false);
-	if (!(segment && row))
-	{
-		qDebug() << "update_pick_buttons: no valid segment or row";
-		return;
-	}
-
-	bool state = d_hellinger_model->get_pick_state(*segment, *row);
-
-	set_buttons_for_pick_selected(state);
-	d_selected_pick.reset(d_hellinger_model->get_pick(*segment,*row));
-	d_selected_segment.reset();
+    set_buttons_for_pick_selected(enabled);
+#if 0
 	if (d_hellinger_edit_point_dialog->isVisible())
 	{
 		d_hellinger_edit_point_dialog->set_active(true);
 		d_hellinger_edit_point_dialog->update_pick_from_model(*segment,*row);
 	}
+#endif
+}
+
+void
+GPlatesQtWidgets::HellingerDialog::set_buttons_for_pick_selected(
+        bool enabled)
+{
+    button_activate_pick->setEnabled(!enabled);
+    button_deactivate_pick->setEnabled(enabled);
 }
 
 void

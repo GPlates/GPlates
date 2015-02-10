@@ -289,7 +289,7 @@ namespace GPlatesQtWidgets
 				const QStringList &add_list);
 
 		void
-		update_buttons();
+        update_pick_and_segment_buttons();
 
 
 		void
@@ -488,22 +488,18 @@ namespace GPlatesQtWidgets
 		void
 		reconstruct_picks();
 
+        void
+        determine_selected_picks_and_segments();
+
 		bool
 		picks_loaded();
 
 		void
-		set_buttons_for_no_selection();
+        update_pick_enable_disable_buttons();
 
-		void
-		set_buttons_for_segment_selected();
-
-		void
-		set_buttons_for_pick_selected(
-				bool state_is_active);
-
-		void
-		update_pick_buttons();
-
+        void
+        set_buttons_for_pick_selected(
+                bool state);
 
 		void
 		update_hovered_item(

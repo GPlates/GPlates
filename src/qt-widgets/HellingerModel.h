@@ -215,7 +215,7 @@ namespace GPlatesQtWidgets
 			const unsigned int &row) const;
 
         bool
-		get_pick_state(
+		pick_is_enabled(
 			const unsigned int &segment,
 			const unsigned int &row) const ;
 

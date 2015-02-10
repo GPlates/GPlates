@@ -125,7 +125,7 @@ GPlatesQtWidgets::HellingerModel::set_pick_state(
 }
 
 bool
-GPlatesQtWidgets::HellingerModel::get_pick_state(
+GPlatesQtWidgets::HellingerModel::pick_is_enabled(
 		const unsigned int &segment, const unsigned int &row) const
 {
 	hellinger_model_const_range_type pair =

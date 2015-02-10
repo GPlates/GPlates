@@ -292,9 +292,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::add_segment_to_model()
 		GPlatesQtWidgets::HellingerPick pick(type,lat,lon,uncertainty,enabled);
 		d_hellinger_model_ptr->add_pick(pick,segment);
 	}
-	d_hellinger_dialog_ptr->update_tree_from_model();
-	d_hellinger_dialog_ptr->restore_expanded_status();
-	d_hellinger_dialog_ptr->expand_segment(segment);
+    d_hellinger_dialog_ptr->update_after_new_segment(segment);
 }
 
 void
@@ -413,7 +411,6 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_disable()
 
 void GPlatesQtWidgets::HellingerEditSegmentDialog::close()
 {
-	qDebug() << "Closing edit segment dialog";
 	Q_EMIT finished_editing();
 	reject();
 }
@@ -524,7 +521,6 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_new_segment()
 		// Everything was cool.
 		add_segment_to_model();
 	}
-	d_hellinger_dialog_ptr->update_after_new_segment(segment_number);
 	close();
 }
 
