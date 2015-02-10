@@ -497,10 +497,6 @@ namespace GPlatesQtWidgets
 		void
         update_pick_enable_disable_buttons();
 
-        void
-        set_buttons_for_pick_selected(
-                bool state);
-
 		void
 		update_hovered_item(
 				boost::optional<QTreeWidgetItem*> item = boost::none,

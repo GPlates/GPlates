@@ -790,7 +790,8 @@ GPlatesQtWidgets::HellingerDialog::handle_pick_state_changed()
 
 	d_hellinger_model->set_pick_state(*segment,*row,new_enabled_state);
 
-    set_buttons_for_pick_selected(new_enabled_state);
+    button_activate_pick->setEnabled(!new_enabled_state);
+    button_deactivate_pick->setEnabled(new_enabled_state);
 
 	set_text_colour_according_to_enabled_state(tree_widget->currentItem(),new_enabled_state);
 }
@@ -1960,35 +1961,33 @@ GPlatesQtWidgets::HellingerDialog::picks_loaded()
 void
 GPlatesQtWidgets::HellingerDialog::update_pick_enable_disable_buttons()
 {
-    boost::optional<unsigned int> segment = selected_segment(tree_widget);
-    boost::optional<unsigned int> row = selected_row(tree_widget);
+
 
     button_activate_pick->setEnabled(false);
     button_deactivate_pick->setEnabled(false);
-    if (!(segment && row))
+
+    if (!d_selected_pick)
     {
-        qDebug() << "update_pick_buttons: no valid segment or row";
         return;
     }
 
-    bool enabled = d_hellinger_model->pick_is_enabled(*segment, *row);
+    boost::optional<unsigned int> segment = selected_segment(tree_widget);
+    boost::optional<unsigned int> row = selected_row(tree_widget);
 
-    set_buttons_for_pick_selected(enabled);
+    if (segment && row)
+    {
+        bool enabled = d_hellinger_model->pick_is_enabled(*segment, *row);
+
+        button_activate_pick->setEnabled(!enabled);
+        button_deactivate_pick->setEnabled(enabled);
 #if 0
-	if (d_hellinger_edit_point_dialog->isVisible())
-	{
-		d_hellinger_edit_point_dialog->set_active(true);
-		d_hellinger_edit_point_dialog->update_pick_from_model(*segment,*row);
-	}
+        if (d_hellinger_edit_point_dialog->isVisible())
+        {
+            d_hellinger_edit_point_dialog->set_active(true);
+            d_hellinger_edit_point_dialog->update_pick_from_model(*segment,*row);
+        }
 #endif
-}
-
-void
-GPlatesQtWidgets::HellingerDialog::set_buttons_for_pick_selected(
-        bool enabled)
-{
-    button_activate_pick->setEnabled(!enabled);
-    button_deactivate_pick->setEnabled(enabled);
+    }
 }
 
 void

@@ -211,7 +211,6 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_selection_changed(
 		const QItemSelection &,
 		const QItemSelection &)
 {
-	qDebug() << "HESD:handle_selection_changed";
 	update_buttons();
 }
 
