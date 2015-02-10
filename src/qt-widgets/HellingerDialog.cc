@@ -72,16 +72,13 @@ const double INITIAL_SIGNIFICANCE_LEVEL = 0.95;
 
 // The following are related to the Hellinger tool in general, and not necessarily to this class/file.
 
-// TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger workflow - this seems to be going
 // all over the place at the moment.
 // TODO: clean up the system of filenames which are passed to python.
-// TODO: remove H shortcut
 // TODO: make a half-decent icon
 // TODO: update status bar messages according to which mode of the tool we are in. For example, when in "new pick" mode
 // we might say something like: "Click to update location of new pick; shift-click on a highlighted geometry to create pick
 // at that geometry". That's very long unfortunately, so I need to find a briefer way to say that.
-// TODO: Find better way of highlighting geometries so that it respects the geometry's original render type (e.g. symbols...)
 // TODO: Farm out rendering functionality  to the canvas tool classes.
 // TODO: Check expansion/collapse of segments when a new pick is added - it should expand the relevant segment, but respect
 // the previous state of segments
@@ -102,7 +99,6 @@ const double INITIAL_SIGNIFICANCE_LEVEL = 0.95;
 // Consider more control over the various grid/amoeba options, for example separate "Grid search" / "Amoeba search" actions,
 // not always performing an amoeba after a grid search etc.
 // TODO: check to what extent amoeba uses/needs the eps value - consider moving it in the UI nearer the "grid search" options.
-// TODO: add degree symbol to the search radiu spinbox.
 // TODO: cannot re-calculate statistics in some circumstances.
 // TODO: prevent stupid input values for the significance level, and check that value is being used appropriately.
 // TODO: remove old error ellipse from layer when updating.

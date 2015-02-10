@@ -57,6 +57,9 @@
      </item>
      <item>
       <widget class="QRadioButton" name="radio_moving">
+       <property name="toolTip">
+        <string>Set all picks as &quot;moving&quot; type</string>
+       </property>
        <property name="text">
         <string>All Moving (1)</string>
        </property>
@@ -67,6 +70,9 @@
      </item>
      <item>
       <widget class="QRadioButton" name="radio_fixed">
+       <property name="toolTip">
+        <string>Set all picks as &quot;fixed&quot; type</string>
+       </property>
        <property name="text">
         <string>All Fixed (2)</string>
        </property>
