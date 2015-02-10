@@ -595,7 +595,6 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	set_up_connections();
 
 	set_up_child_layers();
-
 	activate_layers(true);
 
 	d_python_path.append(QDir::separator());
@@ -877,6 +876,10 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 void
 GPlatesQtWidgets::HellingerDialog::handle_remove_pick()
 {	
+	if (!d_selected_pick)
+	{
+		return;
+	}
 	QMessageBox message_box;
 	message_box.setIcon(QMessageBox::Warning);
 	message_box.setWindowTitle(tr("Remove pick"));
@@ -916,6 +919,10 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_pick()
 void
 GPlatesQtWidgets::HellingerDialog::handle_remove_segment()
 {
+	if (!d_selected_segment)
+	{
+		return;
+	}
 	QMessageBox message_box;
 	message_box.setIcon(QMessageBox::Warning);
 	message_box.setWindowTitle(tr("Remove segment"));
