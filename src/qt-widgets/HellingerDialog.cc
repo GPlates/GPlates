@@ -66,10 +66,11 @@ const QString TEMP_RES_FILENAME("temp_pick_res");
 const double DEFAULT_POINT_SIZE = 2;
 const double DEFAULT_LINE_THICKNESS = 2;
 const double ENLARGED_POINT_SIZE = 6;
+const double INITIAL_SEARCH_RADIUS = 0.2;
+const double INITIAL_SIGNIFICANCE_LEVEL = 0.95;
 
 
 // The following are related to the Hellinger tool in general, and not necessarily to this class/file.
-// TODO: white spot at (0,0) appears on startup - check.
 
 // TODO: check tooltips throughout the whole Hellinger workflow.
 // TODO: check button/widget focus throughout Hellinger workflow - this seems to be going
@@ -606,10 +607,11 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_python_file = d_python_path + "py_hellinger.py";
 	d_temporary_path = d_python_path;
 
-
+	initialise_widgets();
+	set_default_widget_values();
 	update_from_model();
 
-	initialise_widgets();
+
 }
 
 void
@@ -959,6 +961,13 @@ GPlatesQtWidgets::HellingerDialog::restore()
 	activate_layers();
 	restore_expanded_status();
 	draw_pole_estimate();
+}
+
+void
+GPlatesQtWidgets::HellingerDialog::set_default_widget_values()
+{
+	spinbox_radius->setValue(INITIAL_SEARCH_RADIUS);
+	spinbox_sig_level->setValue(INITIAL_SIGNIFICANCE_LEVEL);
 }
 
 void

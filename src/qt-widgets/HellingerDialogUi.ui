@@ -139,6 +139,9 @@
         </item>
         <item>
          <widget class="QPushButton" name="button_export_pick_file">
+          <property name="toolTip">
+           <string>Export pick data to pick file</string>
+          </property>
           <property name="text">
            <string>Export &amp;picks...</string>
           </property>
@@ -146,6 +149,9 @@
         </item>
         <item>
          <widget class="QPushButton" name="button_export_com_file">
+          <property name="toolTip">
+           <string>Export data to com file</string>
+          </property>
           <property name="text">
            <string>Export co&amp;m..</string>
           </property>
@@ -346,7 +352,7 @@
              </size>
             </property>
             <property name="toolTip">
-             <string>Edit the current pick</string>
+             <string>Edit the selected pick</string>
             </property>
             <property name="text">
              <string>Edit...</string>
@@ -365,7 +371,7 @@
              </size>
             </property>
             <property name="toolTip">
-             <string>Enable the current pick</string>
+             <string>Enable the selected pick</string>
             </property>
             <property name="text">
              <string>&amp;Enable</string>
@@ -384,7 +390,7 @@
              </size>
             </property>
             <property name="toolTip">
-             <string>Disable the current pick</string>
+             <string>Disable the selected pick</string>
             </property>
             <property name="text">
              <string>&amp;Disable </string>
@@ -503,8 +509,11 @@
               <height>16777215</height>
              </size>
             </property>
+            <property name="toolTip">
+             <string>Confidence level</string>
+            </property>
             <property name="text">
-             <string>Sig. level</string>
+             <string>Conf. level</string>
             </property>
            </widget>
           </item>
@@ -522,6 +531,12 @@
               <height>16777215</height>
              </size>
             </property>
+            <property name="maximum">
+             <double>1.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.100000000000000</double>
+            </property>
             <property name="value">
              <double>0.950000000000000</double>
             </property>
@@ -533,6 +548,9 @@
          <layout class="QHBoxLayout" name="horizontalLayout_11">
           <item>
            <widget class="QCheckBox" name="checkbox_grid_search">
+            <property name="toolTip">
+             <string>Whether or not to perform a grid search first</string>
+            </property>
             <property name="layoutDirection">
              <enum>Qt::RightToLeft</enum>
             </property>
@@ -589,6 +607,9 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string>Calculate the best-fitting pole</string>
+          </property>
           <property name="text">
            <string>Calculate &amp;Fit</string>
           </property>
@@ -601,6 +622,9 @@
             <width>135</width>
             <height>0</height>
            </size>
+          </property>
+          <property name="toolTip">
+           <string>Calculate uncertainties associated with the best-fitting pole</string>
           </property>
           <property name="text">
            <string>Calculate &amp;Statistics</string>
@@ -638,6 +662,9 @@
               <height>0</height>
              </size>
             </property>
+            <property name="toolTip">
+             <string>Latitude of initial pole estimate</string>
+            </property>
             <property name="minimum">
              <double>-90.000000000000000</double>
             </property>
@@ -667,6 +694,9 @@
               <width>100</width>
               <height>0</height>
              </size>
+            </property>
+            <property name="toolTip">
+             <string>Longitude of initial pole estimate</string>
             </property>
             <property name="minimum">
              <double>-360.000000000000000</double>
@@ -698,6 +728,9 @@
               <height>0</height>
              </size>
             </property>
+            <property name="toolTip">
+             <string>Rotation angle estimate</string>
+            </property>
             <property name="suffix">
              <string>°</string>
             </property>
@@ -727,6 +760,12 @@
               <width>100</width>
               <height>0</height>
              </size>
+            </property>
+            <property name="toolTip">
+             <string>Search radius (degrees) for fitting algorithm</string>
+            </property>
+            <property name="suffix">
+             <string>°</string>
             </property>
            </widget>
           </item>
@@ -886,6 +925,9 @@
             <height>0</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string>Show details of the fit and uncertainties</string>
+          </property>
           <property name="text">
            <string>&amp;Show Details...</string>
           </property>
@@ -939,6 +981,9 @@
             <width>76</width>
             <height>0</height>
            </size>
+          </property>
+          <property name="toolTip">
+           <string>The chron time of the anomaly</string>
           </property>
           <property name="suffix">
            <string/>

@@ -91,6 +91,9 @@ namespace GPlatesQtWidgets
 		void
 		restore();
 
+		void
+		set_default_widget_values();
+
 		/**
 		 * Update whole dialog from model, and then update the canvas
 		 */
