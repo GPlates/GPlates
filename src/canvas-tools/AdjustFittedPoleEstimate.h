@@ -287,7 +287,6 @@ namespace GPlatesCanvasTools
 		enum GeometryTypeIndex
 		{
 			POLE_GEOMETRY_INDEX,
-			POLE_ARROW_GEOMETRY_INDEX,
 			REFERENCE_ARC_ENDPOINT_GEOMETRY_INDEX,
 			RELATIVE_ARC_ENDPOINT_GEOMETRY_INDEX,
 			REFERENCE_ARC_GEOMETRY_INDEX,
@@ -298,7 +297,10 @@ namespace GPlatesCanvasTools
 		update_local_values_from_hellinger_dialog();
 
 		void
-		update_pole_estimate_layer();
+		update_current_pole_arrow_layer();
+
+		void
+		update_current_pole_and_angle_layer();
 
 		void
 		update_pole_estimate_and_arc_highlight(
@@ -340,11 +342,23 @@ namespace GPlatesCanvasTools
 		bool d_mouse_is_over_relative_arc_end_point;
 		bool d_relative_arc_end_point_is_being_dragged;
 
-		// For drawing the pole
-		child_layer_ptr_type d_pole_estimate_layer_ptr;
+		/**
+		 * @brief d_pole_arrow_layer_ptr
+		 * layer for drawing the current pole arrow
+		 */
+		child_layer_ptr_type d_current_pole_arrow_layer_ptr;
 
-		// For highlighting whichever geometry (pole, reference-arc,or relative-arc) is
-		// hovered over and hence draggable / adjustable.
+		/**
+		 * @brief d_current_pole_and_angle_layer_ptr
+		 * layer for drawing the vertices arcs of the current pole and angle
+		 */
+		child_layer_ptr_type d_current_pole_and_angle_layer_ptr;
+
+		/**
+		 * @brief d_highlight_layer_ptr
+		 * layer for highlighting whichever geometry (pole, reference-arc,or relative-arc) is
+		 * hovered over and hence draggable / adjustable.
+		 */
 		child_layer_ptr_type d_highlight_layer_ptr;
 
 		GPlatesMaths::PointOnSphere d_current_pole;
