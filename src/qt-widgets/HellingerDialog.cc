@@ -606,7 +606,8 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	initialise_widgets();
 	set_default_widget_values();
 	update_from_model();
-
+	update_buttons();
+	update_canvas();
 
 }
 
@@ -1054,7 +1055,6 @@ GPlatesQtWidgets::HellingerDialog::update_pole_estimate_from_model()
 
 	if (com_file_data)
 	{
-		qDebug() << "com file exisits";
 		spinbox_lat_estimate->setValue(com_file_data.get().d_lat);
 		spinbox_lon_estimate->setValue(com_file_data.get().d_lon);
 		spinbox_rho_estimate->setValue(com_file_data.get().d_rho);
@@ -1425,7 +1425,6 @@ GPlatesQtWidgets::HellingerDialog::update_buttons()
 void
 GPlatesQtWidgets::HellingerDialog::update_from_model()
 {
-	qDebug() << "update from model";
 	d_pick_layer_ptr->set_active(true);
 	update_tree_from_model();
 	update_pole_estimate_from_model();
