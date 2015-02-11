@@ -1003,9 +1003,10 @@ GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 
 
 	update_chron_time();
-    update_pick_and_segment_buttons();
-	update_from_model();
+
+	update_from_model();	
 	handle_expand_all();
+	update_pick_and_segment_buttons();
 	update_canvas();
 }
 

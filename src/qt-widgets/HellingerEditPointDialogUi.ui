@@ -6,22 +6,109 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>408</width>
-    <height>223</height>
+    <width>411</width>
+    <height>221</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="1" column="0" colspan="4">
+   <item row="1" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="label_segment">
+       <property name="text">
+        <string>&amp;Segment</string>
+       </property>
+       <property name="buddy">
+        <cstring>spinbox_segment</cstring>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="spinbox_segment">
+       <property name="minimumSize">
+        <size>
+         <width>70</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="minimum">
+        <number>1</number>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="4" column="2">
+    <widget class="QPushButton" name="button_cancel">
+     <property name="text">
+      <string>&amp;Cancel</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="3">
+    <widget class="QPushButton" name="button_apply">
+     <property name="text">
+      <string>&amp;Apply</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <spacer name="horizontalSpacer_2">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>40</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="1" column="2" colspan="2">
+    <layout class="QHBoxLayout" name="layout_radio_buttons">
+     <item>
+      <widget class="QRadioButton" name="radio_moving">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>&amp;Moving</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">buttonGroup</string>
+       </attribute>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radio_fixed">
+       <property name="text">
+        <string>&amp;Fixed</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">buttonGroup</string>
+       </attribute>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="2" column="0" colspan="4">
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
         <widget class="QLabel" name="label_3">
          <property name="text">
-          <string>Latitude:</string>
+          <string>&amp;Latitude:</string>
+         </property>
+         <property name="buddy">
+          <cstring>spinbox_lat</cstring>
          </property>
         </widget>
        </item>
@@ -45,7 +132,10 @@
        <item>
         <widget class="QLabel" name="label_4">
          <property name="text">
-          <string>Longitude:</string>
+          <string>L&amp;ongitude:</string>
+         </property>
+         <property name="buddy">
+          <cstring>spinbox_lon</cstring>
          </property>
         </widget>
        </item>
@@ -69,7 +159,10 @@
        <item>
         <widget class="QLabel" name="label_5">
          <property name="text">
-          <string>Uncertainty (km):</string>
+          <string>&amp;Uncertainty (km):</string>
+         </property>
+         <property name="buddy">
+          <cstring>spinbox_uncert</cstring>
          </property>
         </widget>
        </item>
@@ -90,39 +183,7 @@
      </item>
     </layout>
    </item>
-   <item row="3" column="2">
-    <widget class="QPushButton" name="button_cancel">
-     <property name="text">
-      <string>&amp;Cancel</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="3">
-    <widget class="QPushButton" name="button_apply">
-     <property name="text">
-      <string>&amp;Apply</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0">
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="QLabel" name="label_segment">
-       <property name="text">
-        <string>Segment</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QSpinBox" name="spinbox_segment">
-       <property name="minimum">
-        <number>1</number>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item row="2" column="0" colspan="3">
+   <item row="3" column="0" colspan="4">
     <spacer name="verticalSpacer_2">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -135,7 +196,7 @@
      </property>
     </spacer>
    </item>
-   <item row="3" column="0">
+   <item row="4" column="0" colspan="2">
     <spacer name="horizontalSpacer">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -148,48 +209,12 @@
      </property>
     </spacer>
    </item>
-   <item row="0" column="2" colspan="2">
-    <layout class="QHBoxLayout" name="layout_radio_buttons">
-     <item>
-      <widget class="QRadioButton" name="radio_moving">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>Moving</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">buttonGroup</string>
-       </attribute>
-      </widget>
-     </item>
-     <item>
-      <widget class="QRadioButton" name="radio_fixed">
-       <property name="text">
-        <string>Fixed</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">buttonGroup</string>
-       </attribute>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item row="0" column="1">
-    <spacer name="horizontalSpacer_2">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+   <item row="0" column="0" colspan="4">
+    <widget class="QLabel" name="label_description">
+     <property name="text">
+      <string>TextLabel</string>
      </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>40</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
+    </widget>
    </item>
   </layout>
  </widget>

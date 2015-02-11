@@ -156,6 +156,10 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 	QModelIndex index = d_table_model->index(0,COLUMN_MOVING_FIXED);
 	table_new_segment->selectionModel()->setCurrentIndex(index,QItemSelectionModel::NoUpdate);
 
+	if (create_new_segment)
+	{
+		setWindowTitle(QObject::tr("Create New Segment"));
+	}
 	if (!create_new_segment)
 	{
 		button_add_segment->setText(QObject::tr("Apply"));

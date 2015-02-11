@@ -61,16 +61,22 @@ GPlatesQtWidgets::HellingerEditPointDialog::HellingerEditPointDialog(HellingerDi
 	QObject::connect(spinbox_lon,SIGNAL(valueChanged(double)),this,SLOT(handle_pick_changed()));
 	QObject::connect(radio_moving,SIGNAL(toggled(bool)),this,SLOT(handle_pick_changed()));
 
+
+	QString description;
 	if (d_create_new_pick)
 	{
 		button_apply->setText(QObject::tr("&Add pick"));
-		setWindowTitle(QObject::tr("New Pick"));
+		setWindowTitle(QObject::tr("Create New Pick"));
+		description.append("Click on the canvas to select coordinates of a new pick.\n");
+		description.append("Shift-click to use coordinates of an existing point feature.\n");
 	}
-	if (!d_create_new_pick)
-	{
+	else {
 		button_apply->setText(QObject::tr("&Apply"));
 		setWindowTitle(QObject::tr("Edit Pick"));
+		description.append("Click and drag the highlighted pick on the canvas.\n");
 	}
+
+	label_description->setText(description);
 }
 
 

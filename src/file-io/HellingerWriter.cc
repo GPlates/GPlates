@@ -114,12 +114,13 @@ GPlatesFileIO::HellingerWriter::write_com_file(
 	boost::optional<GPlatesQtWidgets::HellingerComFileStructure> com_struct = hellinger_model.get_com_file();
 	if (com_struct)
 	{
-		static const QString extension("com");
+		static const QString com_extension("com");
+		static const QString pick_extension("pick");
 
 		QFileInfo file_info(filename);
-		if (QString::compare(file_info.suffix(),extension,Qt::CaseInsensitive) != 0)
+		if (QString::compare(file_info.suffix(),com_extension,Qt::CaseInsensitive) != 0)
 		{
-			filename = file_info.absolutePath() + QDir::separator() + file_info.baseName() + "." + extension;
+			filename = file_info.absolutePath() + QDir::separator() + file_info.baseName() + "." + com_extension;
 		}
 		qDebug() << filename;
 		QFile file(filename);
@@ -137,6 +138,11 @@ GPlatesFileIO::HellingerWriter::write_com_file(
 		QFile pick_file(com_struct->d_pick_file);
 		QFileInfo pick_fileinfo(pick_file);
 		QString pick_filename = pick_fileinfo.fileName();
+
+		if (pick_filename.isEmpty())
+		{
+			pick_filename = file_info.baseName() + "." + pick_extension;
+		}
 
 		if (file.open(QIODevice::WriteOnly))
 		{
