@@ -46,7 +46,7 @@ public:
     static
     void
     write_pick_file(
-			const QString &filename,
+			QString &filename,
 			GPlatesQtWidgets::HellingerModel& hellinger_model,
 			bool export_disabled_picks = true);
 
@@ -54,7 +54,7 @@ public:
 	static
 	void
 	write_com_file(
-			const QString &filename,
+			QString &filename,
 			GPlatesQtWidgets::HellingerModel& hellinger_model);
 
 };

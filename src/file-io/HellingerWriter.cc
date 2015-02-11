@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QStringList>
@@ -34,13 +35,22 @@
 
 void
 GPlatesFileIO::HellingerWriter::write_pick_file(
-		const QString &filename,
+		QString &filename,
 		GPlatesQtWidgets::HellingerModel &hellinger_model,
 		bool export_disabled_picks)
 {
+
+
+	static const QString extension("pick");
+
+	QFileInfo file_info(filename);
+	if (QString::compare(file_info.suffix(),extension,Qt::CaseInsensitive) != 0)
+	{
+		filename = file_info.absolutePath() + QDir::separator() + file_info.baseName() + "." + extension;
+	}
+	qDebug() << filename;
 	QFile file(filename);
 	QTextStream out(&file);
-
 
 	// TODO: Refactor this. Probably cleaner to grab the raw data from the model and convert to string as we go.
 	if (file.open(QIODevice::WriteOnly))
@@ -84,10 +94,15 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 			}
 		}
 	}
+	else
+	{
+		qWarning() << "HellingerWriter: Failed to open file " << filename << "for writing.";
+	}
 }
 
-void GPlatesFileIO::HellingerWriter::write_com_file(
-		const QString &filename,
+void
+GPlatesFileIO::HellingerWriter::write_com_file(
+		QString &filename,
 		GPlatesQtWidgets::HellingerModel &hellinger_model)
 {
 	// NOTE: We may want to set up a more informative .com file structure, but as this would mess up use of these files in users'
@@ -99,7 +114,14 @@ void GPlatesFileIO::HellingerWriter::write_com_file(
 	boost::optional<GPlatesQtWidgets::HellingerComFileStructure> com_struct = hellinger_model.get_com_file();
 	if (com_struct)
 	{
-		//TODO: check for .com extension, add if missing.
+		static const QString extension("com");
+
+		QFileInfo file_info(filename);
+		if (QString::compare(file_info.suffix(),extension,Qt::CaseInsensitive) != 0)
+		{
+			filename = file_info.absolutePath() + QDir::separator() + file_info.baseName() + "." + extension;
+		}
+		qDebug() << filename;
 		QFile file(filename);
 		QTextStream out(&file);
 
@@ -159,6 +181,10 @@ void GPlatesFileIO::HellingerWriter::write_com_file(
 			out << com_struct->d_up_filename << '\n';
 			out << com_struct->d_down_filename << '\n';
 
+		}
+		else
+		{
+			qWarning() << "HellingerWriter: Failed to open file " << filename << "for writing.";
 		}
 	}
 }
