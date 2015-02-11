@@ -1648,7 +1648,8 @@ GPlatesQtWidgets::ViewportWindow::pop_up_python_console()
 void
 GPlatesQtWidgets::ViewportWindow::open_dataset_webpage()
 {
-	QDesktopServices::openUrl(QUrl("http://www.earthbyte.org/Resources/earthbyte_gplates_data_sources.html"));
+	QDesktopServices::openUrl(
+			QUrl("http://www.earthbyte.org/Resources/earthbyte_gplates_1.5_data_sources.html"));
 }
 
 
