@@ -1151,7 +1151,10 @@ GPlatesQtWidgets::HellingerDialog::handle_export_pick_file()
 	
 	if (!file_name.isEmpty())
 	{
-		GPlatesFileIO::HellingerWriter::write_pick_file(file_name,*d_hellinger_model,true /*export disabled poles */);
+		GPlatesFileIO::HellingerWriter::write_pick_file(
+					file_name,*d_hellinger_model,
+					true /*export disabled poles */,
+					true /*add missing pick extension*/);
 	}
 }
 
@@ -1366,6 +1369,8 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 	else if(d_thread_type == STATS_THREAD_TYPE)
 	{
 		d_hellinger_model->read_error_ellipse_points();
+		d_result_layer_ptr->clear_rendered_geometries();
+		update_result();
 		draw_error_ellipse();
 		button_show_details->setEnabled(true);
 	}
@@ -1464,7 +1469,6 @@ GPlatesQtWidgets::HellingerDialog::draw_error_ellipse()
 			GPlatesMaths::LatLonPoint llp = *iter;
 			double lat = llp.latitude();
 			double lon = llp.longitude();
-			qDebug() << "Drawing error ellipse with point: " << lat << ", " << lon;
 			GPlatesGui::Symbol results_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, DEFAULT_SYMBOL_SIZE, true);
 			GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
 						GPlatesMaths::LatLonPoint(lat,lon));

@@ -37,18 +37,21 @@ void
 GPlatesFileIO::HellingerWriter::write_pick_file(
 		QString &filename,
 		GPlatesQtWidgets::HellingerModel &hellinger_model,
-		bool export_disabled_picks)
+		bool export_disabled_picks,
+		bool add_missing_pick_extension)
 {
-
-
 	static const QString extension("pick");
 
-	QFileInfo file_info(filename);
-	if (QString::compare(file_info.suffix(),extension,Qt::CaseInsensitive) != 0)
+	if (add_missing_pick_extension)
 	{
-		filename = file_info.absolutePath() + QDir::separator() + file_info.baseName() + "." + extension;
+		QFileInfo file_info(filename);
+		if (QString::compare(file_info.suffix(),extension,Qt::CaseInsensitive) != 0)
+		{
+			filename = file_info.absolutePath() + QDir::separator() + file_info.baseName() + "." + extension;
+		}
 	}
-	qDebug() << filename;
+
+
 	QFile file(filename);
 	QTextStream out(&file);
 

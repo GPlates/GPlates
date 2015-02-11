@@ -574,6 +574,8 @@ namespace GPlatesQtWidgets
 
 		GPlatesMaths::LatLonPoint d_current_pole_estimate_llp;
 		double d_current_pole_estimate_angle;
+
+
 	};
 }
 
