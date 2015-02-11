@@ -85,8 +85,6 @@ const double INITIAL_SIGNIFICANCE_LEVEL = 0.95;
 // the FORTRAN code) such as tolerance limit for amoeba search, grid search details etc.
 // TODO: consider adding some sort of "scroll to selected" feature in the picks table.
 // TODO: consider interpreting other forms of chron embedded in the hellinger file name - see the GSFML site for examples
-// TODO: Consider changing button text from "Cancel" to "Done" in the new pick dialog. This dialog can remain open for
-// several picks to be added, (and is also non-modal so that canvas interaction is possible).
 // TODO: check "Edit segment" button enabled state - after closing the new segment dialog it should remain active.
 // TODO: when editing a segment, the segment picks are shown yellow, but they lose the yellow colour in some circumstances
 // (have not reproduced in a precise manner yet...)
@@ -98,8 +96,6 @@ const double INITIAL_SIGNIFICANCE_LEVEL = 0.95;
 // not always performing an amoeba after a grid search etc.
 // TODO: check to what extent amoeba uses/needs the eps value - consider moving it in the UI nearer the "grid search" options.
 // TODO: cannot re-calculate statistics in some circumstances.
-// TODO: prevent stupid input values for the significance level, and check that value is being used appropriately.
-// TODO: remove old error ellipse from layer when updating.
 // TODO: investigate crash with certain calculations of statistics.
 // TODO: command-line activation of tool.
 
@@ -602,10 +598,10 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_temporary_path = d_python_path;
 
 	initialise_widgets();
-	set_default_widget_values();
 	update_from_model();
     update_pick_and_segment_buttons();
 	update_canvas();
+	set_default_widget_values();
 
 }
 

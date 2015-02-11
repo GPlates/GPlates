@@ -521,7 +521,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QDoubleSpinBox" name="spinbox_sig_level">
+           <widget class="QDoubleSpinBox" name="spinbox_conf_limit">
             <property name="minimumSize">
              <size>
               <width>76</width>
@@ -1223,7 +1223,7 @@
   <tabstop>spinbox_lon_estimate</tabstop>
   <tabstop>spinbox_rho_estimate</tabstop>
   <tabstop>spinbox_radius</tabstop>
-  <tabstop>spinbox_sig_level</tabstop>
+  <tabstop>spinbox_conf_limit</tabstop>
   <tabstop>checkbox_grid_search</tabstop>
   <tabstop>spinbox_iteration</tabstop>
   <tabstop>button_calculate_fit</tabstop>

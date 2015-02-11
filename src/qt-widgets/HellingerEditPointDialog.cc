@@ -66,6 +66,7 @@ GPlatesQtWidgets::HellingerEditPointDialog::HellingerEditPointDialog(HellingerDi
 	if (d_create_new_pick)
 	{
 		button_apply->setText(QObject::tr("&Add pick"));
+		button_cancel->setText(QObject::tr("&Done"));
 		setWindowTitle(QObject::tr("Create New Pick"));
 		description.append("Click on the canvas to select coordinates of a new pick.\n");
 		description.append("Shift-click to use coordinates of an existing point feature.\n");
