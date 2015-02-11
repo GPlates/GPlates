@@ -13,8 +13,14 @@ include_directories(${internal_INCLUDE_DIRS})
 set(srcs
     Application.cc
     Application.h
+    DeprecatedSessionRestore.cc
+    DeprecatedSessionRestore.h
+    InternalSession.cc
+    InternalSession.h
     LayerOutputRenderer.cc
     LayerOutputRenderer.h
+    ProjectSession.cc
+    ProjectSession.h
     RasterVisualLayerParams.cc
     RasterVisualLayerParams.h
     ReconstructionGeometryRenderer.cc
@@ -23,15 +29,23 @@ set(srcs
     ReconstructVisualLayerParams.h
     ScalarField3DVisualLayerParams.cc
     ScalarField3DVisualLayerParams.h
+    Session.cc
+    Session.h
+    SessionManagement.cc
+    SessionManagement.h
     TopologyBoundaryVisualLayerParams.h
     TopologyNetworkVisualLayerParams.cc
     TopologyNetworkVisualLayerParams.h
+    TranscribeSession.cc
+    TranscribeSession.h
     VelocityFieldCalculatorVisualLayerParams.h
     ViewState.cc
     ViewState.h
     VisualLayer.cc
     VisualLayer.h
     VisualLayerGroup.h
+    VisualLayerInputChannelName.cc
+    VisualLayerInputChannelName.h
     VisualLayerParams.h
     VisualLayerParamsVisitor.h
     VisualLayerRegistry.cc

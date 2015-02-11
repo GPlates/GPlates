@@ -248,6 +248,8 @@ set(srcs
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
     FileDialogFilter.h
+    FilesNotLoadedWarningDialog.h
+    FilesNotLoadedWarningDialogUi.ui
     FiniteRotationCalculatorDialog.cc
     FiniteRotationCalculatorDialog.h
     FiniteRotationCalculatorDialogUi.ui

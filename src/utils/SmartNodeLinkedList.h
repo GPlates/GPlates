@@ -319,6 +319,18 @@ namespace GPlatesUtils
 			d_sentinel(other.d_sentinel)
 		{  }
 
+		/**
+		 * Clears the list.
+		 *
+		 * After this operation the nodes (that were in this list) are no longer in this list
+		 * but they are still connected to each other (but this list has no link to them).
+		 */
+		void
+		clear()
+		{
+			d_sentinel.splice_self_out();
+		}
+
 		bool
 		empty() const
 		{

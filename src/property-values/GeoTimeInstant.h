@@ -31,6 +31,9 @@
 #include <iosfwd>
 #include <boost/operators.hpp>
 
+#include "scribe/Transcribe.h"
+#include "scribe/TranscribeEnumProtocol.h"
+
 #include "utils/QtStreamable.h"
 
 
@@ -102,6 +105,31 @@ namespace GPlatesPropertyValues
 				DistantPast,
 				DistantFuture
 			};
+
+
+			// Use friend function (injection) so can access private 'TimePositionTypes'.
+			friend
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					TimePositionType &type_,
+					bool transcribed_construct_data)
+			{
+				// WARNING: Changing the string ids will break backward/forward compatibility.
+				static const GPlatesScribe::EnumValue enum_values[] =
+				{
+					GPlatesScribe::EnumValue("Real", Real),
+					GPlatesScribe::EnumValue("DistantPast", DistantPast),
+					GPlatesScribe::EnumValue("DistantFuture", DistantFuture)
+				};
+
+				return GPlatesScribe::transcribe_enum_protocol(
+						TRANSCRIBE_SOURCE,
+						scribe,
+						type_,
+						enum_values,
+						enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
+			}
 		};
 
 	public:
@@ -287,6 +315,22 @@ namespace GPlatesPropertyValues
 			d_type(type_),
 			d_value(0.0)
 		{  }
+
+	private: // Transcribing...
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GeoTimeInstant> &geo_time_instant);
+
+		// Only the scribe system should be able to transcribe.
+		friend class GPlatesScribe::Access;
 
 	};
 

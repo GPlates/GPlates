@@ -36,6 +36,8 @@
 #include "WeakObserverVisitor.h"
 #include "WeakReferenceCallback.h"
 
+#include "scribe/Transcribe.h"
+
 #include "utils/SafeBool.h"
 
 
@@ -444,6 +446,29 @@ namespace GPlatesModel
 
 	};
 
+
+	class FeatureCollectionHandle;
+
+	// We specifically only transcribe weak references to FeatureCollectionHandle.
+	// This is because features and feature collections are not actually transcribed.
+	// Instead they are saved/loaded to files that contain feature collections such as GPML files.
+	// We only transcribe a feature collection weak reference to make it easier to link
+	// feature collections to various transcribed objects that reference them.
+	// The feature collection still needs to be explicitly loaded from a file though.
+
+	//! Overload to transcribe WeakReference<FeatureCollectionHandle>.
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			WeakReference<FeatureCollectionHandle> &weak_ref,
+			bool transcribed_construct_data);
+
+	//! Overload to transcribe WeakReference<const FeatureCollectionHandle>.
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			WeakReference<const FeatureCollectionHandle> &weak_ref,
+			bool transcribed_construct_data);
 }
 
 #endif  // GPLATES_MODEL_WEAKREFERENCE_H

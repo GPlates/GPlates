@@ -47,6 +47,7 @@ set(srcs
     FeatureCollectionFileFormatClassify.cc
     FeatureCollectionFileFormatClassify.h
     FeatureCollectionFileFormatConfiguration.h
+    FeatureCollectionFileFormatConfigurations.cc
     FeatureCollectionFileFormatConfigurations.h
     FeatureCollectionFileFormatRegistry.cc
     FeatureCollectionFileFormatRegistry.h
@@ -205,6 +206,7 @@ set(srcs
     ScalarField3DFileFormat.h
     ScalarField3DFileFormatReader.cc
     ScalarField3DFileFormatReader.h
+    ScribeExportFileIO.h
     ShapefileXmlReader.cc
     ShapefileXmlReader.h
     ShapefileXmlWriter.cc

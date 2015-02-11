@@ -52,7 +52,8 @@ GPlatesQtWidgets::PreferencesDialog::PreferencesDialog(
 	// All the Preference Panes except the Advanced pane are set up here, in order:-
 	int index = 0;
 	add_pane(index++, tr("View"), new PreferencesPaneView(app_state, this), false);
-	add_pane(index++, tr("Files"), new PreferencesPaneFiles(app_state, this), true);	// might get large enough to need scrolling.
+	// Might get large enough to need scrolling.
+	add_pane(index++, tr("Files/Sessions/Projects"), new PreferencesPaneFiles(app_state, this), true);
 	add_pane(index++, tr("Network"), new PreferencesPaneNetwork(app_state, this), false);
 	add_pane(index++, tr("Python"), new PreferencesPanePython(app_state, this), true);
 	add_pane(index++, tr("Kinematic Graphs"), new PreferencesPaneKinematicGraphs(app_state,this),false);

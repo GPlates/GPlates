@@ -105,7 +105,10 @@ namespace GPlatesUtils
 		private:
 			friend class IntrusiveSinglyLinkedList<ElementNodeType,NodeTag>;
 
-			ElementNodeType *d_next_node;
+			// It's 'mutable' to allow intrusively modifying a 'const' element node when it is added
+			// to the list.
+			// This enables a list of 'const' elements as in 'IntrusiveSinglyLinkedList<const Element>'.
+			mutable ElementNodeType *d_next_node;
 		};
 
 

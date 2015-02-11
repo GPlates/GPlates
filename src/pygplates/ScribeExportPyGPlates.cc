@@ -1,11 +1,11 @@
 /* $Id$ */
- 
+
 /**
  * \file 
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2010 The University of Sydney, Australia
+ * Copyright (C) 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,14 +23,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "LayerTask.h"
+#include "app-logic/ScribeExportAppLogic.h"
 
-#include "ReconstructUtils.h"
+#include "file-io/ScribeExportFileIO.h"
+
+#include "scribe/ScribeExportExternal.h"
+#include "scribe/ScribeExportRegistration.h"
 
 
-QString
-GPlatesAppLogic::LayerTask::get_reconstruction_tree_channel_name()
-{
-	static const QString RECONSTRUCTION_TREE_CHANNEL_NAME = "Reconstruction tree";
-	return RECONSTRUCTION_TREE_CHANNEL_NAME;
-}
+/**
+ * Group all classes/types to be scribe export registered for the 'pygplates' dynamic/shared library.
+ *
+ * See "ScribeExportRegistration.h" for more details.
+ */
+#define SCRIBE_EXPORT_PYGPLATES \
+		SCRIBE_EXPORT_APP_LOGIC \
+		SCRIBE_EXPORT_FILE_IO \
+		SCRIBE_EXPORT_EXTERNAL
+
+
+/**
+ * Scribe export register all the above classes/types.
+ *
+ * See "ScribeExportRegistration.h" for more details.
+ */
+SCRIBE_EXPORT_REGISTRATION(SCRIBE_EXPORT_PYGPLATES)

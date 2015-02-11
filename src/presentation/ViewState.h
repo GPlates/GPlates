@@ -97,6 +97,7 @@ namespace GPlatesViewOperations
 
 namespace GPlatesPresentation
 {
+	class SessionManagement;
 	class VisualLayerRegistry;
 	class VisualLayers;
 
@@ -154,6 +155,12 @@ namespace GPlatesPresentation
 
 		GPlatesGui::AnimationController &
 		get_animation_controller();
+
+		/**
+		 * Stores/Loads loaded file information to and from persistent storage.
+		 */
+		SessionManagement &
+		get_session_management();
 
 
 		GPlatesViewOperations::RenderedGeometryCollection &
@@ -348,6 +355,9 @@ namespace GPlatesPresentation
 
 		//! Handles logic for animating the reconstruction time (for time slider and export).
 		boost::scoped_ptr<GPlatesGui::AnimationController> d_animation_controller;
+
+		//! Manages saving and restoring sessions.
+		boost::scoped_ptr<SessionManagement> d_session_management_ptr;
 
 		//! Contains all rendered geometries for this view state.
 		boost::scoped_ptr<GPlatesViewOperations::RenderedGeometryCollection> d_rendered_geometry_collection;

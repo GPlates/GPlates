@@ -36,9 +36,15 @@
 
 #include "BasicHandle.h"
 #include "FeatureCollectionRevision.h"
+#include "ModelInterface.h"
 
 #include "global/PointerTraits.h"
+
+#include "scribe/Transcribe.h"
+#include "scribe/TranscribeContext.h"
+
 #include "utils/ReferenceCount.h"
+
 
 namespace GPlatesModel
 {
@@ -156,7 +162,33 @@ namespace GPlatesModel
 		 */
 		tags_type d_tags;
 
+	private: // Transcribing...
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data)
+		{
+			// Do nothing.
+			//
+			// NOTE: We don't actually transcribe the feature collection (and its contents).
+			// We only transcribe to track the address and hence make it easier to link
+			// feature collections to various transcribed objects that reference them.
+			// The feature collection still needs to be explicitly loaded from a file though.
+			return GPlatesScribe::TRANSCRIBE_SUCCESS;
+		}
+
+		// Only the scribe system should be able to transcribe.
+		friend class GPlatesScribe::Access;
+
 	};
+
+
+	//! Overload to save/load construct data for GPlatesModel::FeatureCollectionHandle.
+	GPlatesScribe::TranscribeResult
+	transcribe_construct_data(
+			GPlatesScribe::Scribe &scribe,
+			GPlatesScribe::ConstructObject<GPlatesModel::FeatureCollectionHandle> &construct_feature_collection_handle);
 
 }
 
@@ -166,5 +198,22 @@ namespace GPlatesModel
 // following header. It isn't placed above with the other includes because of
 // cyclic dependencies.
 #include "RevisionAwareIterator.h"
+
+
+namespace GPlatesScribe
+{
+	template <>
+	class TranscribeContext<GPlatesModel::FeatureCollectionHandle>
+	{
+	public:
+		explicit
+		TranscribeContext(
+				const GPlatesModel::ModelInterface &model_interface_) :
+			model_interface(model_interface_)
+		{  }
+
+		GPlatesModel::ModelInterface model_interface;
+	};
+}
 
 #endif  // GPLATES_MODEL_FEATURECOLLECTIONHANDLE_H

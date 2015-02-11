@@ -40,10 +40,6 @@
 
 #include "utils/UnicodeStringUtils.h"
 
-const QString GPlatesAppLogic::ScalarField3DLayerTask::SCALAR_FIELD_FEATURE_CHANNEL_NAME = "Scalar field feature";
-const QString GPlatesAppLogic::ScalarField3DLayerTask::CROSS_SECTIONS_CHANNEL_NAME = "Cross sections";
-const QString GPlatesAppLogic::ScalarField3DLayerTask::SURFACE_POLYGONS_MASK_CHANNEL_NAME = "Surface polygons mask";
-
 
 bool
 GPlatesAppLogic::ScalarField3DLayerTask::can_process_feature_collection(
@@ -77,7 +73,7 @@ GPlatesAppLogic::ScalarField3DLayerTask::get_input_channel_types() const
 	// Channel definition for the raster feature.
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					SCALAR_FIELD_FEATURE_CHANNEL_NAME,
+					LayerInputChannelName::SCALAR_FIELD_FEATURE,
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL));
 
 	// Channel definition for the cross sections:
@@ -90,7 +86,7 @@ GPlatesAppLogic::ScalarField3DLayerTask::get_input_channel_types() const
 	cross_sections_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					CROSS_SECTIONS_CHANNEL_NAME,
+					LayerInputChannelName::CROSS_SECTIONS,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
 					cross_sections_input_channel_types));
 
@@ -104,7 +100,7 @@ GPlatesAppLogic::ScalarField3DLayerTask::get_input_channel_types() const
 	surface_polygons_mask_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					SURFACE_POLYGONS_MASK_CHANNEL_NAME,
+					LayerInputChannelName::SURFACE_POLYGONS_MASK,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
 					surface_polygons_mask_input_channel_types));
 
@@ -112,19 +108,19 @@ GPlatesAppLogic::ScalarField3DLayerTask::get_input_channel_types() const
 }
 
 
-QString
+GPlatesAppLogic::LayerInputChannelName::Type
 GPlatesAppLogic::ScalarField3DLayerTask::get_main_input_feature_collection_channel() const
 {
-	return SCALAR_FIELD_FEATURE_CHANNEL_NAME;
+	return LayerInputChannelName::SCALAR_FIELD_FEATURE;
 }
 
 
 void
 GPlatesAppLogic::ScalarField3DLayerTask::add_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == SCALAR_FIELD_FEATURE_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::SCALAR_FIELD_FEATURE)
 	{
 		// A raster feature collection should have only one feature.
 		GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection->begin();
@@ -156,10 +152,10 @@ GPlatesAppLogic::ScalarField3DLayerTask::add_input_file_connection(
 
 void
 GPlatesAppLogic::ScalarField3DLayerTask::remove_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == SCALAR_FIELD_FEATURE_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::SCALAR_FIELD_FEATURE)
 	{
 		// A scalar field feature collection should have only one feature.
 		GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection->begin();
@@ -188,10 +184,10 @@ GPlatesAppLogic::ScalarField3DLayerTask::remove_input_file_connection(
 
 void
 GPlatesAppLogic::ScalarField3DLayerTask::modified_input_file(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == SCALAR_FIELD_FEATURE_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::SCALAR_FIELD_FEATURE)
 	{
 		// The feature collection has been modified which means it may have a new feature such as when
 		// a file is reloaded (same feature collection but all features are removed and reloaded).
@@ -229,10 +225,10 @@ GPlatesAppLogic::ScalarField3DLayerTask::modified_input_file(
 
 void
 GPlatesAppLogic::ScalarField3DLayerTask::add_input_layer_proxy_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == CROSS_SECTIONS_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::CROSS_SECTIONS)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,
@@ -263,7 +259,7 @@ GPlatesAppLogic::ScalarField3DLayerTask::add_input_layer_proxy_connection(
 					GPlatesUtils::get_non_null_pointer(topological_network_resolver_layer_proxy.get()));
 		}
 	}
-	else if (input_channel_name == SURFACE_POLYGONS_MASK_CHANNEL_NAME)
+	else if (input_channel_name == LayerInputChannelName::SURFACE_POLYGONS_MASK)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,
@@ -299,10 +295,10 @@ GPlatesAppLogic::ScalarField3DLayerTask::add_input_layer_proxy_connection(
 
 void
 GPlatesAppLogic::ScalarField3DLayerTask::remove_input_layer_proxy_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 				const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == CROSS_SECTIONS_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::CROSS_SECTIONS)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,
@@ -333,7 +329,7 @@ GPlatesAppLogic::ScalarField3DLayerTask::remove_input_layer_proxy_connection(
 					GPlatesUtils::get_non_null_pointer(topological_network_resolver_layer_proxy.get()));
 		}
 	}
-	else if (input_channel_name == SURFACE_POLYGONS_MASK_CHANNEL_NAME)
+	else if (input_channel_name == LayerInputChannelName::SURFACE_POLYGONS_MASK)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,

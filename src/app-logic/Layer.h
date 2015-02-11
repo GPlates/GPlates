@@ -38,9 +38,9 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/variant.hpp>
-#include <QString>
 
 #include "FeatureCollectionFileState.h"
+#include "LayerInputChannelName.h"
 #include "LayerInputChannelType.h"
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
@@ -52,6 +52,8 @@
 #include "global/PreconditionViolationError.h"
 
 #include "model/FeatureCollectionHandle.h"
+
+#include "scribe/Transcribe.h"
 
 
 namespace GPlatesAppLogic
@@ -141,6 +143,16 @@ namespace GPlatesAppLogic
 
 		private:
 			boost::weak_ptr<ReconstructGraphImpl::Data> d_impl;
+
+		private: // Transcribing...
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			// Only the scribe system should be able to transcribe.
+			friend class GPlatesScribe::Access;
 		};
 
 
@@ -200,7 +212,7 @@ namespace GPlatesAppLogic
 			 *
 			 * @throws PreconditionViolationError if @a is_valid is false.
 			 */
-			const QString &
+			LayerInputChannelName::Type
 			get_input_channel_name() const;
 
 			/**
@@ -251,6 +263,16 @@ namespace GPlatesAppLogic
 
 		private:
 			boost::weak_ptr<ReconstructGraphImpl::LayerInputConnection> d_impl;
+
+		private: // Transcribing...
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			// Only the scribe system should be able to transcribe.
+			friend class GPlatesScribe::Access;
 		};
 
 
@@ -362,12 +384,9 @@ namespace GPlatesAppLogic
 		 *
 		 * This can be used by the GUI to list available layer tasks to the user.
 		 *
-		 * NOTE: The data type of this input channel, as returned by @a get_input_channel_types,
-		 * must be INPUT_FEATURE_COLLECTION_DATA.
-		 *
 		 * @throws PreconditionViolationError if @a is_valid is false.
 		 */
-		QString
+		LayerInputChannelName::Type
 		get_main_input_feature_collection_channel() const;
 
 
@@ -412,7 +431,7 @@ namespace GPlatesAppLogic
 		InputConnection
 		connect_input_to_file(
 				const InputFile &input_file,
-				const QString &input_data_channel);
+				LayerInputChannelName::Type input_data_channel);
 
 
 		/**
@@ -439,7 +458,7 @@ namespace GPlatesAppLogic
 		InputConnection
 		connect_input_to_layer_output(
 				const Layer &layer_outputting_data,
-				const QString &input_data_channel);
+				LayerInputChannelName::Type input_data_channel);
 
 
 		/**
@@ -457,7 +476,7 @@ namespace GPlatesAppLogic
 		void
 		disconnect_input_from_file(
 				const InputFile &input_file,
-				const QString &input_data_channel);
+				LayerInputChannelName::Type input_data_channel);
 
 
 		/**
@@ -475,7 +494,7 @@ namespace GPlatesAppLogic
 		void
 		disconnect_input_from_layer_output(
 				const Layer &layer_outputting_data,
-				const QString &input_data_channel);
+				LayerInputChannelName::Type input_data_channel);
 
 
 		/**
@@ -491,7 +510,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		disconnect_channel_inputs(
-				const QString &input_data_channel);
+				LayerInputChannelName::Type input_data_channel);
 
 
 		/**
@@ -503,7 +522,7 @@ namespace GPlatesAppLogic
 		 */
 		std::vector<InputConnection>
 		get_channel_inputs(
-				const QString &input_data_channel) const;
+				LayerInputChannelName::Type input_data_channel) const;
 
 
 		/**
@@ -615,6 +634,16 @@ namespace GPlatesAppLogic
 		void
 		set_auto_created(
 				bool auto_created = true);
+
+	private: // Transcribing...
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		// Only the scribe system should be able to transcribe.
+		friend class GPlatesScribe::Access;
 	};
 }
 

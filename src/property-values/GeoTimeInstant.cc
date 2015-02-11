@@ -32,6 +32,8 @@
 
 #include "maths/MathsUtils.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesPropertyValues::GeoTimeInstant
 GPlatesPropertyValues::GeoTimeInstant::create_distant_past()
@@ -177,6 +179,68 @@ GPlatesPropertyValues::GeoTimeInstant::operator<(
 		const double diff = d_value - other.d_value;
 		return diff > GPlatesMaths::GEO_TIMES_EPSILON;
 	}
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GeoTimeInstant::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_type, "d_type") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_value, "d_value"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GeoTimeInstant::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GeoTimeInstant> &geo_time_instant)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, geo_time_instant->d_type, "d_type");
+		scribe.save(TRANSCRIBE_SOURCE, geo_time_instant->d_value, "d_value");
+	}
+	else // loading...
+	{
+		GPlatesScribe::LoadRef<TimePositionTypes::TimePositionType> type =
+				scribe.load<TimePositionTypes::TimePositionType>(TRANSCRIBE_SOURCE, "d_type");
+		if (!type.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<double> value = scribe.load<double>(TRANSCRIBE_SOURCE, "d_value");
+		if (!value.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		if (type == TimePositionTypes::Real)
+		{
+			geo_time_instant.construct_object(value);
+			geo_time_instant->d_type = type;
+		}
+		else
+		{
+			geo_time_instant.construct_object(type);
+			geo_time_instant->d_value = value;
+		}
+
+		scribe.relocated(TRANSCRIBE_SOURCE, geo_time_instant->d_type, type);
+		scribe.relocated(TRANSCRIBE_SOURCE, geo_time_instant->d_value, value);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

@@ -38,14 +38,19 @@
 #include "FeatureCollectionFileFormatRegistry.h"
 #include "File.h"
 #include "GMTFormatHeader.h"
-#include "model/FeatureVisitor.h"
-#include "model/PropertyName.h"
-#include "property-values/GmlTimeInstant.h"
-#include "property-values/GpmlOldPlatesHeader.h"
+
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/PointOnSphere.h"
+
+#include "model/FeatureVisitor.h"
+#include "model/PropertyName.h"
+
+#include "property-values/GmlTimeInstant.h"
+#include "property-values/GpmlOldPlatesHeader.h"
+
+#include "scribe/Transcribe.h"
 
 
 namespace GPlatesModel
@@ -78,7 +83,10 @@ namespace GPlatesFileIO
 
 			// If feature has an old plates header then use that
 			// otherwise print verbose header.
-			PREFER_PLATES4_STYLE_HEADER
+			PREFER_PLATES4_STYLE_HEADER,
+
+			// This must be last...
+			NUM_FORMATS
 		};
 
 		/**
@@ -190,6 +198,14 @@ namespace GPlatesFileIO
 		FeatureAccumulator d_feature_accumulator;
 		GMTHeaderPrinter d_header_printer;
 	};
+
+
+	//! Transcribe header format enum.
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			GMTFormatWriter::HeaderFormat &header_format,
+			bool transcribed_construct_data);
 }
 
 #endif // GPLATES_FILEIO_GMTFORMATWRITER_H

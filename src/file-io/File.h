@@ -34,6 +34,8 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 
+#include "scribe/Transcribe.h"
+
 #include "utils/ReferenceCount.h"
 
 
@@ -143,6 +145,20 @@ namespace GPlatesFileIO
 					boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> file_configuration);
 
 			friend class File;
+
+		private: // Transcribing...
+
+			Reference()
+			{  }
+
+			//! Transcribe to/from serialization archives.
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			// Only the scribe system should be able to transcribe.
+			friend class GPlatesScribe::Access;
 		};
 
 

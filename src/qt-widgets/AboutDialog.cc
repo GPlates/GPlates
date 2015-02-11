@@ -86,7 +86,7 @@ GPlatesQtWidgets::AboutDialog::AboutDialog(
 
 	// Set the GPGIM version label.
 	const QString gpgim_version_string = gpgim.get_version().version_string();
-	label_GPGIM->setText(QString("GPlates Geological Information Model: %1").arg(gpgim_version_string));
+	label_GPGIM_version->setText(QString("GPlates Geological Information Model: %1").arg(gpgim_version_string));
 
 	// Set contents of copyright box.
 	QString copyright(QObject::tr(GPlatesGlobal::HtmlCopyrightString));
