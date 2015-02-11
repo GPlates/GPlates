@@ -176,11 +176,9 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::HellingerEditSegmentDialog(
 
 void
 GPlatesQtWidgets::HellingerEditSegmentDialog::initialise_with_segment(
-		const hellinger_model_const_range_type &picks,
 		const int &segment_number)
 {
 	d_original_segment_number.reset(segment_number);
-	d_original_segment_picks.reset(picks);
 
 	fill_widgets();
 }
@@ -229,13 +227,18 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::handle_selection_changed(
 void
 GPlatesQtWidgets::HellingerEditSegmentDialog::fill_widgets()
 {
-	spinbox_segment->setValue(*d_original_segment_number);
-	d_table_model->removeRows(0,d_table_model->rowCount());
-	if (d_original_segment_picks)
+	if (d_original_segment_number)
 	{
-		hellinger_model_type::const_iterator
-				iter = d_original_segment_picks->first,
-				iter_end = d_original_segment_picks->second;
+		spinbox_segment->setValue(*d_original_segment_number);
+
+		d_table_model->removeRows(0,d_table_model->rowCount());
+
+
+		hellinger_model_const_range_type range =
+				d_hellinger_model_ptr->get_segment_as_range(*d_original_segment_number);
+
+		hellinger_model_type::const_iterator iter = range.first,
+				iter_end = range.second;
 		for (; iter != iter_end ; ++iter)
 		{
 			d_table_model->insertRow(d_table_model->rowCount());
@@ -243,6 +246,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::fill_widgets()
 		}
 	}
 }
+
 
 void
 GPlatesQtWidgets::HellingerEditSegmentDialog::handle_add_segment()
@@ -387,7 +391,14 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::update_buttons()
 void
 GPlatesQtWidgets::HellingerEditSegmentDialog::handle_reset()
 {
-	initialise();
+	if (d_creating_new_segment)
+	{
+		initialise();
+	}
+	else
+	{
+		fill_widgets();
+	}
 }
 
 void

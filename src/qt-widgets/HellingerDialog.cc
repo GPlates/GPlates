@@ -826,8 +826,7 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 
 	int segment = selected_segment(tree_widget).get();
 
-	d_hellinger_edit_segment_dialog->initialise_with_segment(
-				d_hellinger_model->get_segment_as_range(segment),segment);
+	d_hellinger_edit_segment_dialog->initialise_with_segment(segment);
 
 	this->setEnabled(false);
 	d_hellinger_edit_segment_dialog->show();
@@ -839,13 +838,7 @@ GPlatesQtWidgets::HellingerDialog::handle_edit_segment()
 				d_hellinger_model->get_segment_as_range(segment),
 				d_editing_layer_ptr,
 				GPlatesGui::Colour::get_yellow());
-#if 0
-	if (!d_hellinger_model->segments_are_ordered())
-	{
-		button_renumber->setEnabled(true);
-	}
-	update_canvas();
-#endif
+
 }
 
 void
@@ -1698,6 +1691,7 @@ void GPlatesQtWidgets::HellingerDialog::handle_clear()
 		d_hellinger_model->clear_all_picks();
 		update_tree_from_model();
 	}
+	determine_selected_picks_and_segments();
 	update_pick_and_segment_buttons();
 }
 
