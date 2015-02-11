@@ -35,37 +35,22 @@
 #include "HellingerNewSegmentWarningUi.h"
 #include "QtWidgetUtils.h"
 
-GPlatesQtWidgets::HellingerNewSegmentWarning::HellingerNewSegmentWarning(
-                HellingerDialog *hellinger_dialog,
-				const int &segment_number,
-                QWidget *parent_):
+GPlatesQtWidgets::HellingerNewSegmentWarning::HellingerNewSegmentWarning(QWidget *parent_):
     QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-    d_hellinger_dialog_ptr(hellinger_dialog),
-	d_type_error_new_segment(0),
-	d_segment_number(segment_number)
+	d_type_error_new_segment(0)
 {
 	setupUi(this);
 
-	QString warning_text = QObject::tr("There already exists a segment with number %1.").arg(d_segment_number);
-	label_warning_text->setText(warning_text);
 
-	d_button_group.addButton(radio_add);
-	d_button_group.addButton(radio_replace);
-	d_button_group.addButton(radio_insert);
+	d_radio_button_group.addButton(radio_add);
+	d_radio_button_group.addButton(radio_replace);
+	d_radio_button_group.addButton(radio_insert);
 
-	QString add_string = QObject::tr("Add picks to segment %1").arg(segment_number);
-	QString replace_string = QObject::tr("Replace segment %1").arg(segment_number);
-	QString insert_string =
-			QObject::tr("Insert segment as segment %1, renumbering the \nfollowing segments from %2").
-			arg(segment_number).
-			arg(segment_number+1);
-	radio_add->setText(add_string);
-	radio_replace->setText(replace_string);
-	radio_insert->setText(insert_string);
+	initialise(0);
 
 	QObject::connect(button_ok, SIGNAL(clicked()), this, SLOT(handle_ok()));
 	QObject::connect(button_cancel, SIGNAL(clicked()), this, SLOT(handle_cancel()));
-	QObject::connect(&d_button_group, SIGNAL(buttonClicked(QAbstractButton*)),this,SLOT(handle_button_clicked()));
+	QObject::connect(&d_radio_button_group, SIGNAL(buttonClicked(QAbstractButton*)),this,SLOT(handle_radio_button_clicked()));
 
 	button_ok->setEnabled(false);
 }
@@ -76,11 +61,11 @@ GPlatesQtWidgets::HellingerNewSegmentWarning::handle_ok()
 {
 	if (radio_add->isChecked())
     {
-		d_type_error_new_segment = ACTION_ADD_NEW_SEGMENT;
+		d_type_error_new_segment = ACTION_ADD_TO_EXISTING_SEGMENT;
     }
 	else if (radio_replace->isChecked())
     {
-		d_type_error_new_segment = ACTION_REPLACE_NEW_SEGMENT;
+		d_type_error_new_segment = ACTION_REPLACE_SEGMENT;
     }
 	else if (radio_insert->isChecked())
     {
@@ -95,16 +80,33 @@ GPlatesQtWidgets::HellingerNewSegmentWarning::error_type_new_segment()
 	return d_type_error_new_segment;
 }
 
-void GPlatesQtWidgets::HellingerNewSegmentWarning::initialise_buttons()
+void
+GPlatesQtWidgets::HellingerNewSegmentWarning::initialise(
+		int segment_number)
 {
 	radio_add->setChecked(false);
 	radio_insert->setChecked(false);
 	radio_replace->setChecked(false);
 	button_ok->setEnabled(false);
+
+
+	QString warning_text = QObject::tr("There already exists a segment with number %1.").arg(segment_number);
+	label_warning_text->setText(warning_text);
+
+	QString add_string = QObject::tr("Add picks to segment %1").arg(segment_number);
+	QString replace_string = QObject::tr("Replace segment %1").arg(segment_number);
+	QString insert_string =
+			QObject::tr("Insert segment as segment %1, renumbering the \nfollowing segments from %2").
+			arg(segment_number).
+			arg(segment_number+1);
+	radio_add->setText(add_string);
+	radio_replace->setText(replace_string);
+	radio_insert->setText(insert_string);
+
 }
 
 void
-GPlatesQtWidgets::HellingerNewSegmentWarning::handle_button_clicked()
+GPlatesQtWidgets::HellingerNewSegmentWarning::handle_radio_button_clicked()
 {
 	button_ok->setEnabled(true);
 }

@@ -175,7 +175,8 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::initialise_with_segment(
 	fill_widgets();
 }
 
-void GPlatesQtWidgets::HellingerEditSegmentDialog::initialise()
+void
+GPlatesQtWidgets::HellingerEditSegmentDialog::initialise()
 {
 	d_table_model->setRowCount(1);
 	set_initial_row_values(0);
@@ -207,14 +208,16 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::update_pick_coords(
 
 }
 
-void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_selection_changed(
+void
+GPlatesQtWidgets::HellingerEditSegmentDialog::handle_selection_changed(
 		const QItemSelection &,
 		const QItemSelection &)
 {
 	update_buttons();
 }
 
-void GPlatesQtWidgets::HellingerEditSegmentDialog::fill_widgets()
+void
+GPlatesQtWidgets::HellingerEditSegmentDialog::fill_widgets()
 {
 	spinbox_segment->setValue(*d_original_segment_number);
 	d_table_model->removeRows(0,d_table_model->rowCount());
@@ -312,6 +315,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::handle_add_line()
 
 	d_table_model->insertRow(insertion_row);
 	set_initial_row_values(insertion_row);
+	update_buttons();
 }
 
 void
@@ -324,6 +328,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::handle_remove_line()
 	const QModelIndex index = table_new_segment->currentIndex();
 	int row = index.row();
 	d_table_model->removeRow(row);
+	update_buttons();
 }
 
 void
@@ -354,6 +359,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::update_buttons()
 	button_disable->setEnabled(false);
 	QModelIndexList indices = table_new_segment->selectionModel()->selection().indexes();
 	button_remove_line->setEnabled(!indices.isEmpty());
+	button_add_segment->setEnabled(d_table_model->rowCount()!=0);
 
 	if (indices.isEmpty())
 	{
@@ -368,12 +374,14 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::update_buttons()
 	button_disable->setEnabled(enabled);
 }
 
-void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_reset()
+void
+GPlatesQtWidgets::HellingerEditSegmentDialog::handle_reset()
 {
 	initialise();
 }
 
-void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_enable()
+void
+GPlatesQtWidgets::HellingerEditSegmentDialog::handle_enable()
 {
 	QModelIndexList indices = table_new_segment->selectionModel()->selection().indexes();
 	if (indices.isEmpty())
@@ -391,7 +399,8 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_enable()
 	update_buttons();
 }
 
-void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_disable()
+void
+GPlatesQtWidgets::HellingerEditSegmentDialog::handle_disable()
 {
 	QModelIndexList indices = table_new_segment->selectionModel()->selection().indexes();
 	if (indices.isEmpty())
@@ -408,18 +417,21 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_disable()
 	update_buttons();
 }
 
-void GPlatesQtWidgets::HellingerEditSegmentDialog::close()
+void
+GPlatesQtWidgets::HellingerEditSegmentDialog::close()
 {
 	Q_EMIT finished_editing();
 	reject();
 }
 
-void GPlatesQtWidgets::HellingerEditSegmentDialog::update_current_pick_from_widgets()
+void
+GPlatesQtWidgets::HellingerEditSegmentDialog::update_current_pick_from_widgets()
 {
 
 }
 
-void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_edited_segment()
+void
+GPlatesQtWidgets::HellingerEditSegmentDialog::handle_edited_segment()
 {
 	int segment_number = spinbox_segment->value();
 
@@ -430,30 +442,26 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_edited_segment()
 	}
 	else if(d_hellinger_model_ptr->segment_number_exists(segment_number))
 	{
+
 		if (!d_hellinger_new_segment_warning)
 		{
-			d_hellinger_new_segment_warning = new GPlatesQtWidgets::HellingerNewSegmentWarning(
-						d_hellinger_dialog_ptr,
-						segment_number);
-
+			d_hellinger_new_segment_warning = new GPlatesQtWidgets::HellingerNewSegmentWarning(this);
 		}
 
+		d_hellinger_new_segment_warning->initialise(segment_number);
 		d_hellinger_new_segment_warning->exec();
 		int value_error = d_hellinger_new_segment_warning->error_type_new_segment();
-		if (value_error == ACTION_ADD_NEW_SEGMENT)
+		if (value_error == ACTION_ADD_TO_EXISTING_SEGMENT)
 		{
-			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
 			add_segment_to_model();
 		}
-		else if (value_error == ACTION_REPLACE_NEW_SEGMENT)
+		else if (value_error == ACTION_REPLACE_SEGMENT)
 		{
-			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
 			d_hellinger_model_ptr->remove_segment(segment_number);
 			add_segment_to_model();
 		}
 		else if (value_error == ACTION_INSERT_NEW_SEGMENT)
 		{
-			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
 			d_hellinger_model_ptr->make_space_for_new_segment(segment_number);
 			add_segment_to_model();
 		}
@@ -474,7 +482,8 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_edited_segment()
 	close();
 }
 
-void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_new_segment()
+void
+GPlatesQtWidgets::HellingerEditSegmentDialog::handle_new_segment()
 {
 	int segment_number = spinbox_segment->value();
 
@@ -482,28 +491,24 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_new_segment()
 	{
 		if (!d_hellinger_new_segment_warning)
 		{
-			d_hellinger_new_segment_warning = new GPlatesQtWidgets::HellingerNewSegmentWarning(
-						d_hellinger_dialog_ptr,
-						segment_number);
+			d_hellinger_new_segment_warning = new GPlatesQtWidgets::HellingerNewSegmentWarning(this);
 
 		}
 
+		d_hellinger_new_segment_warning->initialise(segment_number);
 		d_hellinger_new_segment_warning->exec();
 		int value_error = d_hellinger_new_segment_warning->error_type_new_segment();
-		if (value_error == ACTION_ADD_NEW_SEGMENT)
+		if (value_error == ACTION_ADD_TO_EXISTING_SEGMENT)
 		{
-			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
 			add_segment_to_model();
 		}
-		else if (value_error == ACTION_REPLACE_NEW_SEGMENT)
+		else if (value_error == ACTION_REPLACE_SEGMENT)
 		{
-			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
 			d_hellinger_model_ptr->remove_segment(segment_number);
 			add_segment_to_model();
 		}
 		else if (value_error == ACTION_INSERT_NEW_SEGMENT)
 		{
-			d_hellinger_model_ptr->remove_segment(d_original_segment_number.get());
 			d_hellinger_model_ptr->make_space_for_new_segment(segment_number);
 			add_segment_to_model();
 		}
@@ -523,7 +528,9 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::handle_new_segment()
 	close();
 }
 
-void GPlatesQtWidgets::HellingerEditSegmentDialog::set_initial_row_values(const int &row)
+void
+GPlatesQtWidgets::HellingerEditSegmentDialog::set_initial_row_values(
+		const int &row)
 {
 	QModelIndex index_move_fix = d_table_model->index(row, COLUMN_MOVING_FIXED);
 	d_table_model->setData(index_move_fix, 1);
@@ -539,7 +546,8 @@ void GPlatesQtWidgets::HellingerEditSegmentDialog::set_initial_row_values(const 
 
 }
 
-void GPlatesQtWidgets::HellingerEditSegmentDialog::set_row_values(
+void
+GPlatesQtWidgets::HellingerEditSegmentDialog::set_row_values(
 		const int &row,
 		const GPlatesQtWidgets::HellingerPick &pick)
 {

@@ -35,8 +35,8 @@ namespace GPlatesQtWidgets
 {   
 	enum NewSegmentActionType
     {
-		ACTION_ADD_NEW_SEGMENT = 1,
-		ACTION_REPLACE_NEW_SEGMENT,
+		ACTION_ADD_TO_EXISTING_SEGMENT = 0,
+		ACTION_REPLACE_SEGMENT,
 		ACTION_INSERT_NEW_SEGMENT,
 		ACTION_CANCEL
     };
@@ -50,8 +50,6 @@ namespace GPlatesQtWidgets
 	public:
 
 		HellingerNewSegmentWarning(
-				HellingerDialog *hellinger_dialog,
-				const int &segment_number,
 				QWidget *parent_ = NULL);
 
         int
@@ -62,7 +60,8 @@ namespace GPlatesQtWidgets
 		 * Uncheck all the radio buttons so the user is forced to make a choice.
 		 */
 		void
-		initialise_buttons();
+		initialise(
+				int segment_number);
 
 
 
@@ -72,21 +71,16 @@ namespace GPlatesQtWidgets
 		handle_ok();
 
 		void
-		handle_button_clicked();
+		handle_radio_button_clicked();
 
 		void
 		handle_cancel();
 
 	private:
-	
-
-        HellingerDialog *d_hellinger_dialog_ptr;
 
         int d_type_error_new_segment;
 
-		QButtonGroup d_button_group;
-
-		int d_segment_number;
+		QButtonGroup d_radio_button_group;
 	};
 }
 
