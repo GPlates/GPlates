@@ -1378,11 +1378,12 @@ GPlatesQtWidgets::HellingerDialog::update_pick_and_segment_buttons()
     button_collapse_all->setEnabled(picks_loaded_);
     button_export_pick_file->setEnabled(picks_loaded_);
     button_export_com_file->setEnabled(picks_loaded_);
+	button_renumber->setEnabled(!d_hellinger_model->segments_are_ordered());
+	button_clear->setEnabled(picks_loaded_);
 
     button_calculate_fit->setEnabled(picks_loaded_ && spinbox_radius->value() > 0.0);
 	button_show_details->setEnabled(false);
     button_stats->setEnabled(false);
-    button_clear->setEnabled(false);
 
 	button_remove_segment->setEnabled(d_selected_segment);
 	button_remove_pick->setEnabled(d_selected_pick);
@@ -1393,7 +1394,7 @@ GPlatesQtWidgets::HellingerDialog::update_pick_and_segment_buttons()
 	button_new_pick->setEnabled(true);
 	button_new_segment->setEnabled(true);
 
-    button_renumber->setEnabled(!d_hellinger_model->segments_are_ordered());
+
 
 
 	//Update enable/disable depending on state of selected pick, if we have
@@ -1664,7 +1665,7 @@ void GPlatesQtWidgets::HellingerDialog::handle_clear()
 		d_hellinger_model->clear_all_picks();
 		update_tree_from_model();
 	}
-
+	update_pick_and_segment_buttons();
 }
 
 void
@@ -1787,7 +1788,6 @@ void GPlatesQtWidgets::HellingerDialog::draw_picks()
 
 void GPlatesQtWidgets::HellingerDialog::draw_pole_estimate()
 {
-	qDebug() << "HD: draw_pole_estimate";
 	GPlatesViewOperations::RenderedGeometryCollection::UpdateGuard update_guard;
 	d_pole_estimate_layer_ptr->clear_rendered_geometries();
 

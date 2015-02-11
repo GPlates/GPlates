@@ -37,6 +37,12 @@
 #include "HellingerNewSegmentWarning.h"
 #include "QtWidgetUtils.h"
 
+/**
+ * @brief DEFAULT_UNCERTAINTY - initial uncertainty (km) to use in new picks.
+ * Candidate for settings/preferences.
+ */
+const double DEFAULT_UNCERTAINTY = 5.;
+
 namespace
 {
 
@@ -538,12 +544,14 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::set_initial_row_values(
 	QModelIndex index_enabled = d_table_model->index(row, COLUMN_ENABLED);
 	d_table_model->setData(index_enabled, true);
 
-	for (int col = 1; col < NUM_COLUMNS-1; ++col)
-	{
-		QModelIndex index = d_table_model->index(row, col);
-		d_table_model->setData(index, 0.00);
-	}
+	QModelIndex index_lat = d_table_model->index(row, COLUMN_LAT);
+	d_table_model->setData(index_lat, 0.);
 
+	QModelIndex index_lon = d_table_model->index(row, COLUMN_LON);
+	d_table_model->setData(index_lon, 0.);
+
+	QModelIndex index_uncertainty = d_table_model->index(row, COLUMN_UNCERTAINTY);
+	d_table_model->setData(index_uncertainty, DEFAULT_UNCERTAINTY);
 }
 
 void
@@ -572,9 +580,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::set_row_values(
 
 GPlatesQtWidgets::SpinBoxDelegate::SpinBoxDelegate(QObject *parent_):
 	QItemDelegate(parent_)
-{
-	qDebug() << "SPinboxdelegate constructor";
-}
+{}
 
 QWidget*
 GPlatesQtWidgets::SpinBoxDelegate::createEditor(
