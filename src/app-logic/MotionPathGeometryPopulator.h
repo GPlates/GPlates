@@ -33,7 +33,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
-#include "MotionPathUtils.h"
+//#include "MotionPathUtils.h"
 #include "ReconstructedMotionPath.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionFeatureProperties.h"
@@ -50,6 +50,11 @@
 
 namespace GPlatesAppLogic
 {
+	namespace MotionPathUtils
+	{
+		class MotionPathPropertyFinder;
+	}
+
 	/**
 	 * Reconstructs motion path features
 	 */
@@ -112,7 +117,7 @@ namespace GPlatesAppLogic
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
 
-		MotionPathUtils::MotionPathPropertyFinder d_motion_track_property_finder;
+		boost::scoped_ptr<MotionPathUtils::MotionPathPropertyFinder> d_motion_track_property_finder;
 
 		std::vector<GPlatesMaths::FiniteRotation> d_rotations;
 

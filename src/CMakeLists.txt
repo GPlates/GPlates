@@ -1,5 +1,5 @@
 # Find our required libraries.
-set(required_libs "Qt4" "OpenGL" "GLEW" "GDAL" "GZIP" "PROJ4" "CGAL")
+set(required_libs "Qt4" "OpenGL" "GLEW" "GDAL" "GZIP" "PROJ4" "CGAL" "Qwt")
 foreach(lib ${required_libs})
 	find_package(${lib} REQUIRED)
 endforeach(lib)
@@ -223,7 +223,8 @@ set(external_INCLUDE_DIRS
 	${GDAL_PORT_INCLUDE_DIR}
 	${GDAL_FRMTS_INCLUDE_DIR}
 	${Boost_INCLUDE_DIR}
-	${PROJ4_INCLUDE_DIR})
+        ${PROJ4_INCLUDE_DIR}
+        ${QWT_INCLUDE_DIR})
 if(NOT GPLATES_NO_PYTHON)
 	set(external_INCLUDE_DIRS
 		${external_INCLUDE_DIRS}
@@ -405,7 +406,8 @@ set(dependency_LIBS
 	${QT_LIBRARIES}
 	${GLEW_LIBRARY}
 	${OPENGL_LIBRARIES}
-	${PROJ4_LIBRARY})
+        ${PROJ4_LIBRARY}
+        ${QWT_LIBRARY})
 	
 if(NOT GPLATES_NO_PYTHON)
 	set(dependency_LIBS

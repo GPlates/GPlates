@@ -198,6 +198,7 @@
     </property>
     <addaction name="action_Calculate_Reconstruction_Pole"/>
     <addaction name="action_Finite_Rotation_Calculator"/>
+    <addaction name="action_Open_Kinematics_Tool"/>
     <addaction name="separator"/>
     <addaction name="action_Open_Python_Console"/>
    </widget>
@@ -1127,6 +1128,14 @@
   <action name="action_Configure_Geometry_Rendering">
    <property name="text">
     <string>Configure Geometry Rendering...</string>
+   </property>
+  </action>
+  <action name="action_Open_Kinematics_Tool">
+   <property name="text">
+    <string>Open &amp;Kinematics Tool...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+K</string>
    </property>
   </action>
  </widget>

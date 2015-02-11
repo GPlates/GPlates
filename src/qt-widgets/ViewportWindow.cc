@@ -760,6 +760,9 @@ GPlatesQtWidgets::ViewportWindow::connect_utilities_menu_actions()
 
 	QObject::connect(action_Finite_Rotation_Calculator, SIGNAL(triggered()),
 		&dialogs(), SLOT(pop_up_finite_rotation_calculator_dialog()));
+
+	QObject::connect(action_Open_Kinematics_Tool, SIGNAL(triggered()),
+					 &dialogs(), SLOT(pop_up_kinematics_tool_dialog()));
 	
 	if(GPlatesUtils::ComponentManager::instance().is_enabled(
 			GPlatesUtils::ComponentManager::Component::python()))

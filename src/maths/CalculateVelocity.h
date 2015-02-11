@@ -93,6 +93,17 @@ namespace GPlatesMaths
 			const FiniteRotation &fr_t2);
 
 	/**
+	 * @brief calculate_velocity_vector_and_omega - as calculate_velocity_vector but
+	 * returns the angular velocity (radians per Ma) in addition to the velocity vector.
+	 */
+	std::pair<Vector3D,real_t /*omega (angular velocity) */>
+	calculate_velocity_vector_and_omega(
+			const PointOnSphere &point,
+			const FiniteRotation &fr_t1,
+			const FiniteRotation &fr_t2,
+			const boost::optional<UnitVector3D> &axis_hint);
+
+	/**
 	 * Convert a vector from X Y Z space to North East Down space and 
 	 * return Colatitudinal and Longitudinal components of the vector
 	 * ( Colat is -North , and Lon is East )
