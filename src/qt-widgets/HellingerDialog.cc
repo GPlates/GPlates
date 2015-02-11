@@ -564,7 +564,8 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_edit_point_is_enlarged(false),
 	d_canvas_operation_type(SELECT_OPERATION),
 	d_current_pole_estimate_llp(GPlatesMaths::LatLonPoint(0,0)),
-	d_current_pole_estimate_angle(0.)
+	d_current_pole_estimate_angle(0.),
+	d_input_values_ok(false)
 {
 	setupUi(this);
 
@@ -613,7 +614,6 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 		const QItemSelection & new_selection,
 		const QItemSelection & old_selection)
 {
-    qDebug() << "HSCh";
 	// if we have selected a pick:
 	//		get its state and update the enable/disable buttons
 	//		enable the edit/remove-pick buttons
@@ -947,7 +947,7 @@ void
 GPlatesQtWidgets::HellingerDialog::set_default_widget_values()
 {
 	spinbox_radius->setValue(INITIAL_SEARCH_RADIUS);
-	spinbox_sig_level->setValue(INITIAL_SIGNIFICANCE_LEVEL);
+	spinbox_conf_limit->setValue(INITIAL_SIGNIFICANCE_LEVEL);
 }
 
 void
@@ -1013,7 +1013,39 @@ GPlatesQtWidgets::HellingerDialog::import_hellinger_file()
 void
 GPlatesQtWidgets::HellingerDialog::handle_spinbox_radius_changed()
 {
-	button_calculate_fit->setEnabled(spinbox_radius->value() > 0.0);
+	static QPalette red_palette;
+	red_palette.setColor(QPalette::Active,QPalette::Base,Qt::red);
+	if (GPlatesMaths::are_almost_exactly_equal(spinbox_radius->value(),0.))
+	{
+		spinbox_radius->setPalette(red_palette);
+		d_input_values_ok = false;
+	}
+	else
+	{
+		spinbox_radius->setPalette(d_spin_box_palette);
+		d_input_values_ok = true;
+	}
+	update_fit_buttons();
+
+}
+
+void
+GPlatesQtWidgets::HellingerDialog::handle_spinbox_confidence_changed()
+{
+	static QPalette red_palette;
+	red_palette.setColor(QPalette::Active,QPalette::Base,Qt::red);
+	if ((GPlatesMaths::are_almost_exactly_equal(spinbox_conf_limit->value(),0.)) ||
+		 (GPlatesMaths::are_almost_exactly_equal(spinbox_conf_limit->value(),1.)))
+	{
+		spinbox_conf_limit->setPalette(red_palette);
+		d_input_values_ok = false;
+	}
+	else
+	{
+		spinbox_conf_limit->setPalette(d_spin_box_palette);
+		d_input_values_ok = true;
+	}
+	update_fit_buttons();
 }
 
 void
@@ -1044,7 +1076,7 @@ GPlatesQtWidgets::HellingerDialog::update_pole_estimate_from_model()
 		spinbox_rho_estimate->setValue(com_file_data.get().d_rho);
 		spinbox_radius->setValue(com_file_data.get().d_search_radius);
 		checkbox_grid_search->setChecked(com_file_data.get().d_perform_grid_search);
-		spinbox_sig_level->setValue(com_file_data.get().d_significance_level);
+		spinbox_conf_limit->setValue(com_file_data.get().d_significance_level);
 #if 0
 		checkbox_kappa->setChecked(com_file_data.get().d_estimate_kappa);
 		checkbox_graphics->setChecked(com_file_data.get().d_generate_output_files);
@@ -1279,7 +1311,7 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 		input_data.push_back(spinbox_lon_estimate->value());
 		input_data.push_back(spinbox_rho_estimate->value());
 		input_data.push_back(spinbox_radius->value());
-		input_data.push_back(spinbox_sig_level->value());
+		input_data.push_back(spinbox_conf_limit->value());
 		int iteration;
 
 		if (checkbox_grid_search->isChecked())
@@ -1996,6 +2028,12 @@ GPlatesQtWidgets::HellingerDialog::update_pick_enable_disable_buttons()
 }
 
 void
+GPlatesQtWidgets::HellingerDialog::update_fit_buttons()
+{
+	button_calculate_fit->setEnabled(d_input_values_ok);
+}
+
+void
 GPlatesQtWidgets::HellingerDialog::update_hovered_item(
 		boost::optional<QTreeWidgetItem *> item,
 		bool current_state)
@@ -2155,7 +2193,7 @@ void GPlatesQtWidgets::HellingerDialog::update_model_with_com_data()
 	com_file_struct.d_rho = spinbox_rho_estimate->value();
 	com_file_struct.d_search_radius = spinbox_radius->value();
 	com_file_struct.d_perform_grid_search = checkbox_grid_search->isChecked();
-	com_file_struct.d_significance_level = spinbox_sig_level->value();
+	com_file_struct.d_significance_level = spinbox_conf_limit->value();
 #if 0
 	com_file_struct.d_estimate_kappa = checkbox_kappa->isChecked();
 	com_file_struct.d_generate_output_files = checkbox_graphics->isChecked();
@@ -2206,6 +2244,7 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(spinbox_rho_estimate,SIGNAL(valueChanged(double)),
 					 this, SLOT(handle_pole_estimate_angle_changed()));
 	QObject::connect(spinbox_radius, SIGNAL(valueChanged(double)), this, SLOT(handle_spinbox_radius_changed()));
+	QObject::connect(spinbox_conf_limit, SIGNAL(valueChanged(double)), this, SLOT(handle_spinbox_confidence_changed()));
 	QObject::connect(checkbox_grid_search, SIGNAL(clicked()), this, SLOT(handle_checkbox_grid_search_changed()));
 
 

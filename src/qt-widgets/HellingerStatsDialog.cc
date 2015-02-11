@@ -68,7 +68,7 @@ void
 GPlatesQtWidgets::HellingerStatsDialog::handle_export()
 {
 	QString file_name = QFileDialog::getSaveFileName(this, tr("Export File"), "",
-                                                     tr("Text Files (*.txt);"));
+													 tr("Text Files (*.txt)"));
     QString path = file_name;
     QFile file_out(path);
 	QString filepath = d_python_path + QDir::separator() + d_parameter_file_name;

@@ -422,6 +422,9 @@ namespace GPlatesQtWidgets
 		handle_spinbox_radius_changed();
 
 		void
+		handle_spinbox_confidence_changed();
+
+		void
 		handle_pole_estimate_lat_lon_changed();
 
 		void
@@ -496,6 +499,9 @@ namespace GPlatesQtWidgets
 
 		void
         update_pick_enable_disable_buttons();
+
+		void
+		update_fit_buttons();
 
 		void
 		update_hovered_item(
@@ -575,7 +581,13 @@ namespace GPlatesQtWidgets
 		GPlatesMaths::LatLonPoint d_current_pole_estimate_llp;
 		double d_current_pole_estimate_angle;
 
+		/**
+		 * @brief d_spin_box_palette - the palette used in begin/end spinboxes. Stored so that we can
+		 * restore the original palette after changing to a warning palette.
+		 */
+		QPalette d_spin_box_palette;
 
+		bool d_input_values_ok;
 	};
 }
 
