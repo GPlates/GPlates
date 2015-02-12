@@ -1,5 +1,13 @@
 from math import *
 from numpy import *
+VERSION = "2011/09/15"
+
+"""
+This file (math_hellinger.py) and the accompanying py_hellinger.py file contain python
+implementations of the FORTRAN code in hellinger1.f and related files. The original
+FORTRAN programs are by Chang, Royer and co-workers. This python implementation is
+by J. Cirbus.
+"""
 
 class Statell():
     def __init__(self):

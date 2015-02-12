@@ -2,12 +2,19 @@ import sys
 import optparse
 from math import *
 from optparse import OptionParser
-sys.path.append("./scripts/")
 from math_hellinger import *
 from numpy import *
 VERSION = "2011/09/15"
 
+
+
 """
+This file (py_hellinger.py) and the accompanying math_hellinger.py file contain python
+implementations of the FORTRAN code in hellinger1.f and related files. The original
+FORTRAN programs are by Chang, Royer and co-workers. This python implementation is
+by J. Cirbus. The following comments from the original FORTRAN code.
+
+
 Program implementing section 1 of on reconstructing tectonic plate
 motion from ship track crossings.
 This program estimates the rotation to rotate side 1 into side 2.
