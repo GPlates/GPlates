@@ -82,9 +82,6 @@ GPlatesQtWidgets::HellingerThread::initialise_pole_calculation(
     d_temp_result = temp_result;
     d_temp_par = temp_par;
     d_temp_res = temp_res;
-
-	qDebug() << "d_temp_Result: " << d_temp_result;
-	qDebug() << "temporary folder: " << d_temporary_folder;
 }
 
 void

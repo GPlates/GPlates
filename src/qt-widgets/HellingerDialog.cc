@@ -597,7 +597,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_temporary_path.append(QDir::separator());
 	d_python_file = d_python_path + "py_hellinger.py";
 
-	qDebug() << "Path used for storing temporary files: " << d_temporary_path;
+	qDebug() << "Path used for storing temporary hellinger files: " << d_temporary_path;
 	qDebug() << "Path used for hellinger python file:  " << d_python_path;
 
 }
