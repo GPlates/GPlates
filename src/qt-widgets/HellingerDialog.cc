@@ -565,7 +565,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	// We need to pass the main hellinger python file to boost::python::exec_file, hence we need to get the location of the
 	// python scripts. This step (passing the python file) might not be necessary later.
-	d_python_path = d_view_state.get_application_state().get_user_preferences().get_value("paths/python_system_script_dir").toString();
+    d_python_path = d_view_state.get_application_state().get_user_preferences().get_default_value("paths/python_system_script_dir").toString();
 
 	// And we need a location to store some temporary files which are used in exchanging data between GPlates and the python scripts.
 	d_temporary_path = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
@@ -580,7 +580,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 		}
 	}
 
-	d_hellinger_model = new HellingerModel(d_python_path);
+    d_hellinger_model = new HellingerModel(d_temporary_path);
 	d_hellinger_thread = new HellingerThread(this, d_hellinger_model);
 	d_hellinger_edit_point_dialog = new HellingerEditPointDialog(this,d_hellinger_model,false,this);
 	d_hellinger_new_point_dialog = new HellingerEditPointDialog(this,d_hellinger_model,true /* create new point */,this);

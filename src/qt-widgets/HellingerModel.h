@@ -181,7 +181,7 @@ namespace GPlatesQtWidgets
 	public:
 
         HellingerModel(
-			const QString &python_path);
+            const QString &temporary_file_path);
 
 		hellinger_model_type::const_iterator
         add_pick(
@@ -373,7 +373,7 @@ namespace GPlatesQtWidgets
 
 		// TODO: check if this path is required.
 		// Required until we have shifted file-io to the reader class.
-		QString d_python_path;
+        QString d_temporary_file_path;
 	};
 }
 
