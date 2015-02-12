@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>779</width>
+    <width>782</width>
     <height>670</height>
    </rect>
   </property>
@@ -717,6 +717,59 @@
       <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_7">
+      <item row="0" column="2">
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QPushButton" name="button_calculate_fit">
+          <property name="toolTip">
+           <string>Calculate the best-fitting pole</string>
+          </property>
+          <property name="text">
+           <string>Calculate &amp;Pole</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_stats">
+          <property name="minimumSize">
+           <size>
+            <width>135</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Calculate uncertainties associated with the best-fitting pole</string>
+          </property>
+          <property name="text">
+           <string>Calculate &amp;Stats</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_show_details">
+          <property name="minimumSize">
+           <size>
+            <width>108</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Show details of the fit and uncertainties</string>
+          </property>
+          <property name="text">
+           <string>&amp;Show Details...</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="1" column="0" colspan="3">
+       <widget class="QProgressBar" name="progress_bar">
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="0">
        <layout class="QGridLayout" name="gridLayout_6">
         <item row="0" column="0">
@@ -1143,67 +1196,13 @@
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>1</width>
+          <width>40</width>
           <height>20</height>
          </size>
         </property>
        </spacer>
       </item>
-      <item row="0" column="2">
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <widget class="QPushButton" name="button_calculate_fit">
-          <property name="text">
-           <string>Calculate &amp;Pole</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="button_stats">
-          <property name="minimumSize">
-           <size>
-            <width>135</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="toolTip">
-           <string>Calculate uncertainties associated with the best-fitting pole</string>
-          </property>
-          <property name="text">
-           <string>Calculate &amp;Stats</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="button_show_details">
-          <property name="minimumSize">
-           <size>
-            <width>108</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="toolTip">
-           <string>Show details of the fit and uncertainties</string>
-          </property>
-          <property name="text">
-           <string>&amp;Show Details...</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="1" column="0" colspan="3">
-       <widget class="QProgressBar" name="progress_bar">
-        <property name="value">
-         <number>0</number>
-        </property>
-       </widget>
-      </item>
      </layout>
-     <zorder>progress_bar</zorder>
-     <zorder>checkbox_show_result</zorder>
-     <zorder>horizontalSpacer_3</zorder>
-     <zorder>horizontalSpacer_5</zorder>
     </widget>
    </item>
   </layout>

@@ -744,8 +744,8 @@ GPlatesQtWidgets::HellingerDialog::initialise_widgets()
 	tree_widget->setHeaderLabels(labels);
 
 
-	tree_widget->header()->resizeSection(SEGMENT_NUMBER,90);
-	tree_widget->header()->resizeSection(SEGMENT_TYPE,150);
+    tree_widget->header()->resizeSection(SEGMENT_NUMBER,80);
+    tree_widget->header()->resizeSection(SEGMENT_TYPE,140);
 	tree_widget->header()->resizeSection(LAT,90);
 	tree_widget->header()->resizeSection(LON,90);
 	tree_widget->header()->resizeSection(UNCERTAINTY,90);

@@ -157,7 +157,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_activation()
 	d_current_pole_and_angle_layer_ptr->set_active(true);
 	d_highlight_layer_ptr->set_active(true);
 
-	set_status_bar_message(QT_TR_NOOP("Click and drag to adjust the pole estimate location."));
+    set_status_bar_message(QT_TR_NOOP("Click and drag to adjust the pole estimate and angle."));
 	d_hellinger_dialog_ptr->enable_pole_estimate_widgets(true);
 
 	update_local_values_from_hellinger_dialog();
