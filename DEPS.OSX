@@ -153,7 +153,7 @@ Installing qwt
   • Define variables QWT_INCLUDE_DIR and QWT_LIBRARY with the locations of the qwt header files and library respectively. For example
 	export QWT_INCLUDE_DIR=/usr/local/qwt-6.0.1/lib/qwt.framework/Headers
 	export QWT_LIBRARY=/usr/local/qwt-6.0.1/lib/qwt.framework
-  • When building GPlates (see BUILD.osx) it may be necessary to provide the QWT_LIBRARY at the command-line, i.e.g
+  • When building GPlates (see BUILD.OSX) it may be necessary to provide the QWT_LIBRARY at the cmake command-line, i.e.
 	cmake -DQWT_LIBRARY=/usr/local/qwt-6.0.1/lib/qwt.framework
 
 
