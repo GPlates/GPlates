@@ -360,6 +360,14 @@ namespace GPlatesQtWidgets
 
 	private Q_SLOTS:
 
+        void
+        handle_estimate_checkbox_toggled(
+                bool);
+
+        void
+        handle_result_checkbox_toggled(
+                bool);
+
 		void
 		handle_clear();
 
@@ -601,6 +609,7 @@ namespace GPlatesQtWidgets
 		QPalette d_spin_box_palette;
 
 		bool d_input_values_ok;
+
 	};
 }
 

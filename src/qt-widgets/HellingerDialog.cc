@@ -32,6 +32,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QProgressBar>
+#include <QProgressDialog>
 #include <QTextStream>
 
 
@@ -570,6 +571,11 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	// And we need a location to store some temporary files which are used in exchanging data between GPlates and the python scripts.
 	d_temporary_path = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
 
+#if 0
+    // Temp path for testing
+    d_python_path = "/home/robin/Desktop/Hellinger/scripts";
+#endif
+
 	// The temporary location might not exist - if it doesn't, try to create it.
 	QDir dir(d_temporary_path);
 	if (!dir.exists())
@@ -724,9 +730,6 @@ GPlatesQtWidgets::HellingerDialog::initialise_widgets()
 	spinbox_result_lat->setReadOnly(true);
 	spinbox_result_lon->setReadOnly(true);
 	spinbox_result_angle->setReadOnly(true);
-
-	// For eventual interruption of the python thread.
-	button_cancel->hide();
 
 	// Make the pole estimate widgets disabled. They will be enabled when
 	// the AdjustPoleEstimate tool is selected
@@ -1158,10 +1161,10 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_stats()
 				TEMP_PAR_FILENAME,
 				TEMP_RES_FILENAME);
 	d_hellinger_thread->set_python_script_type(d_thread_type);
+
 	progress_bar->setEnabled(true);
 	progress_bar->setMaximum(0.);
 	d_hellinger_thread->start();
-	button_cancel->setEnabled(true);
 }
 
 void
@@ -1351,7 +1354,6 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 		progress_bar->setEnabled(true);
 		progress_bar->setMaximum(0.);
 		d_hellinger_thread->start();
-		button_cancel->setEnabled(true);
 	}
 	else
 	{
@@ -1440,6 +1442,10 @@ GPlatesQtWidgets::HellingerDialog::draw_pole_result(
 		const double &lat,
 		const double &lon)
 {
+    if (!checkbox_show_result->isChecked())
+    {
+        return;
+    }
 	GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
 				GPlatesMaths::LatLonPoint(lat,lon));
 
@@ -1863,7 +1869,21 @@ GPlatesQtWidgets::HellingerDialog::update_chron_time()
 
 	// If the chron time has changed, we'll want to update the oldest possible time on
 	// the reconstruction slider, and this may also require an update of the canvas.
-	handle_chron_time_changed(d_chron_time);
+    handle_chron_time_changed(d_chron_time);
+}
+
+void
+GPlatesQtWidgets::HellingerDialog::handle_estimate_checkbox_toggled(
+        bool toggled)
+{
+    d_pole_estimate_layer_ptr->set_active(toggled);
+}
+
+void
+GPlatesQtWidgets::HellingerDialog::handle_result_checkbox_toggled(
+        bool toggled)
+{
+    d_result_layer_ptr->set_active(toggled);
 }
 
 void
@@ -2224,6 +2244,10 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 	QObject::connect(tree_widget->selectionModel(), SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
 					 this, SLOT(handle_selection_changed(const QItemSelection &, const QItemSelection &)));
 
+    // Connections related to pole visibility checkboxes
+    QObject::connect(checkbox_show_estimate,SIGNAL(toggled(bool)),this,SLOT(handle_estimate_checkbox_toggled(bool)));
+    QObject::connect(checkbox_show_result,SIGNAL(toggled(bool)),this,SLOT(handle_result_checkbox_toggled(bool)));
+
 	// Connections related to the initial guess and other fit parameters.
 	QObject::connect(spinbox_lat_estimate,SIGNAL(valueChanged(double)),
 					 this, SLOT(handle_pole_estimate_lat_lon_changed()));
@@ -2247,7 +2271,6 @@ void GPlatesQtWidgets::HellingerDialog::set_up_connections()
 
 	// Connections related to the python threads.
 	QObject::connect(d_hellinger_thread, SIGNAL(finished()),this, SLOT(handle_thread_finished()));
-	QObject::connect(button_cancel,SIGNAL(clicked()),this,SLOT(handle_cancel()));
 
 	// Connections related to child dialogs.
 	QObject::connect(d_hellinger_edit_point_dialog,SIGNAL(finished_editing()),this,SLOT(handle_finished_editing()));
