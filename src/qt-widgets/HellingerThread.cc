@@ -172,14 +172,14 @@ GPlatesQtWidgets::HellingerThread::run()
     QString temp_file_par = d_temporary_folder + d_temp_par;
     QString temp_file_res = d_temporary_folder + d_temp_res;
 
+#if 0
 	qDebug() << "temp file: " << temp_file;
 	qDebug() << "temp_file_temp_result: " << temp_file_temp_result;
 	qDebug() << "temp file par: " << temp_file_par;
 	qDebug() << "temp_file_res: " << temp_file_res;
-    
 	qDebug() << "about to run thread. result file: " << temp_file_temp_result;
 	qDebug() << "python file: " << d_python_file;
-
+#endif
 	try{
 		if (d_thread_type == POLE_THREAD_TYPE)
 		{

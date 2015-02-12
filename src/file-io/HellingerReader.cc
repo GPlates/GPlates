@@ -337,12 +337,8 @@ namespace
 				// completeBaseName gives us the filename upto the last "." and without the path.
 				QString base_name = file_info.completeBaseName();
 
-				qDebug() << "base_name: " << base_name;
-
 				int dash_index = base_name.lastIndexOf("-");
 				int underscore_index = base_name.lastIndexOf("_");
-
-				qDebug() << "indices: " << dash_index << ", " << underscore_index;
 
 				if ((dash_index == -1) && (underscore_index == -1))
 				{
@@ -353,15 +349,19 @@ namespace
 				int l = base_name.length();
 
 				QString chron_string = base_name.right(l-index-1);
-				qDebug() << "Chron string: " << chron_string;
 
 				if (chron_string.startsWith('C'))
 				{
 					// Remove leading character
 					chron_string.remove(0,1);
 				}
-				qDebug() << "Stripped chron string: " << chron_string;
 
+#if 0
+				qDebug() << "base_name: " << base_name;
+				qDebug() << "indices: " << dash_index << ", " << underscore_index;
+				qDebug() << "Chron string: " << chron_string;
+				qDebug() << "Stripped chron string: " << chron_string;
+#endif
 				return chron_string;
 			}
 

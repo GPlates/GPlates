@@ -27,6 +27,7 @@
 #include <boost/foreach.hpp>
 
 #include <QDebug>
+#include <QDesktopServices>
 #include <QDir>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -195,13 +196,11 @@ namespace{
 			const QString &chron_string,
 			const GPlatesAppLogic::AgeModelCollection &age_model_collection)
 	{
-		qDebug() << "Trying to find chron time for string: " << chron_string;
 		boost::optional<const GPlatesAppLogic::AgeModel &> active_age_model =
 				age_model_collection.get_active_age_model();
 
 		if (active_age_model)
 		{
-			qDebug() << "Found active age model.";
 			const GPlatesAppLogic::age_model_map_type &age_model_map = active_age_model->d_model;
 			GPlatesAppLogic::age_model_map_type::const_iterator it = age_model_map.find(chron_string);
 #if 0
@@ -212,7 +211,6 @@ namespace{
 
 			if (it != age_model_map.end())
 			{
-				qDebug() << "Found age for chron. Chron: " << it->first << ", Age: " << it->second;
 				return boost::optional<double>(it->second);
 			}
 		}
@@ -565,21 +563,22 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 {
 	setupUi(this);
 
-	// Path copied from PythonUtils / PythonManager.
-
-	// Look in system-specific locations for supplied sample scripts, site-specific scripts, etc.
-	// The default location will be platform-dependent and is currently set up in UserPreferences.cc.
+	// We need to pass the main hellinger python file to boost::python::exec_file, hence we need to get the location of the
+	// python scripts. This step (passing the python file) might not be necessary later.
 	d_python_path = d_view_state.get_application_state().get_user_preferences().get_value("paths/python_system_script_dir").toString();
 
-	// d_python_path = "scripts";
+	// And we need a location to store some temporary files which are used in exchanging data between GPlates and the python scripts.
+	d_temporary_path = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
 
-	// Temporary path during development
-	qDebug() << "Default python path is " << d_python_path;
-	d_python_path = "/home/robin/Desktop/Hellinger/scripts";
-	qDebug() << "Setting d_python_path to " << d_python_path;
-
-
-	qDebug() << "python path: " << d_python_path;
+	// The temporary location might not exist - if it doesn't, try to create it.
+	QDir dir(d_temporary_path);
+	if (!dir.exists())
+	{
+		if (!dir.mkpath(d_temporary_path))
+		{
+			qWarning() << "Unable to create folder for temporary hellinger files.";
+		}
+	}
 
 	d_hellinger_model = new HellingerModel(d_python_path);
 	d_hellinger_thread = new HellingerThread(this, d_hellinger_model);
@@ -589,19 +588,17 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_hellinger_new_segment_dialog = new HellingerEditSegmentDialog(this,d_hellinger_model,true,this);
 
 	set_up_connections();
-
 	set_up_child_layers();
-	activate_layers(true);
-
-	d_python_path.append(QDir::separator());
-	d_python_file = d_python_path + "py_hellinger.py";
-	d_temporary_path = d_python_path;
-
 	initialise_widgets();
-	update_from_model();
     update_pick_and_segment_buttons();
 	update_canvas();
-	set_default_widget_values();
+
+	d_python_path.append(QDir::separator());
+	d_temporary_path.append(QDir::separator());
+	d_python_file = d_python_path + "py_hellinger.py";
+
+	qDebug() << "Path used for storing temporary files: " << d_temporary_path;
+	qDebug() << "Path used for hellinger python file:  " << d_python_path;
 
 }
 
@@ -749,6 +746,9 @@ GPlatesQtWidgets::HellingerDialog::initialise_widgets()
 	tree_widget->header()->resizeSection(LAT,90);
 	tree_widget->header()->resizeSection(LON,90);
 	tree_widget->header()->resizeSection(UNCERTAINTY,90);
+
+	spinbox_radius->setValue(INITIAL_SEARCH_RADIUS);
+	spinbox_conf_limit->setValue(INITIAL_SIGNIFICANCE_LEVEL);
 }
 
 void
@@ -1199,7 +1199,7 @@ GPlatesQtWidgets::HellingerDialog::handle_show_details()
 {
 	if (!d_hellinger_stats_dialog)
 	{
-		d_hellinger_stats_dialog = new GPlatesQtWidgets::HellingerStatsDialog(d_python_path,TEMP_PAR_FILENAME,this);
+		d_hellinger_stats_dialog = new GPlatesQtWidgets::HellingerStatsDialog(d_temporary_path,TEMP_PAR_FILENAME,this);
 	}
 	d_hellinger_stats_dialog->update();
 	d_hellinger_stats_dialog->show();
@@ -1286,11 +1286,9 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 	QFile python_code(d_python_file);
 	if (python_code.exists())
 	{
-		QString path = d_python_path + TEMP_PICK_FILENAME;
+		QString path = d_temporary_path + TEMP_PICK_FILENAME;
 		GPlatesFileIO::HellingerWriter::write_pick_file(path,*d_hellinger_model,false);
 		QString import_file_line = line_import_file->text();
-		// TODO: check if we actually need to update the buttons here.
-        update_pick_and_segment_buttons();
 
 		// TODO: is there a cleaner way of sending input data to python?
 		// Can we use a bitset or a vector of bools instead of std::vector<int> for example?
@@ -1372,7 +1370,7 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 	progress_bar->setMaximum(1.);
 	if (d_thread_type == POLE_THREAD_TYPE)
 	{
-		QString path = d_python_path + TEMP_RESULT_FILENAME;
+		QString path = d_temporary_path + TEMP_RESULT_FILENAME;
 		//qDebug() << "Result file path: " << path;
 		QFile data_file(path);
 		if (data_file.open(QFile::ReadOnly))
@@ -2315,6 +2313,8 @@ GPlatesQtWidgets::HellingerDialog::set_up_child_layers()
 	d_pole_estimate_layer_ptr =
 			d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
+
+	activate_layers(true);
 }
 
 void

@@ -560,8 +560,21 @@ namespace GPlatesQtWidgets
 		GPlatesGui::Symbol d_pole_estimate_symbol;
 
 		ThreadType d_thread_type;
+
+		/**
+		 * @brief d_python_path - At present we need to pass the hellinger python file to boost::python::exec_file. This
+		 * stores the path to the hellinger python file.
+		 */
 		QString d_python_path;
+
+		/**
+		 * @brief d_python_file - the full filename (including path) of the hellinger python file.
+		 */
 		QString d_python_file;
+
+		/**
+		 * @brief d_temporary_path - location for storing temporary files used for passing data between the python scripts and GPlates.
+		 */
 		QString d_temporary_path;
 
 		expanded_status_map_type d_segment_expanded_status;
