@@ -1440,21 +1440,21 @@ GPlatesQtWidgets::HellingerDialog::draw_pole_result(
 		const double &lat,
 		const double &lon)
 {
-	GPlatesGui::Symbol results_symbol = GPlatesGui::Symbol(GPlatesGui::Symbol::CIRCLE, DEFAULT_SYMBOL_SIZE, true);
 	GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
 				GPlatesMaths::LatLonPoint(lat,lon));
-	GPlatesViewOperations::RenderedGeometry pick_results =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
-				point.get_non_null_pointer(),
-				GPlatesGui::Colour::get_red(),
-				2, /* point thickness */
-				2, /* line thickness */
-				false, /* fill polygon */
-				false, /* fill polyline */
-				GPlatesGui::Colour::get_white(), // dummy colour argument
-				results_symbol);
 
-	d_result_layer_ptr->add_rendered_geometry(pick_results);
+    GPlatesViewOperations::RenderedGeometry pole_geometry_arrow =
+            GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
+                    point,
+                    0.3f/*arrow_projected_length*/,
+                    0.12f/*arrowhead_projected_size*/,
+                    0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
+                    GPlatesGui::Colour::get_red()/*arrow_colour*/,
+                    GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
+                    10.0f/*symbol_size*/,
+                    GPlatesGui::Colour::get_red()/*symbol_colour*/);
+
+    d_result_layer_ptr->add_rendered_geometry(pole_geometry_arrow);
 }
 
 
@@ -1825,7 +1825,7 @@ void GPlatesQtWidgets::HellingerDialog::draw_pole_estimate()
 					0.3f/*arrow_projected_length*/,
 					0.12f/*arrowhead_projected_size*/,
 					0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
-					GPlatesGui::Colour(1, 1, 1, 0.5f)/*arrow_colour*/,
+                    GPlatesGui::Colour(1, 1, 1, 0.4f)/*arrow_colour*/,
 					GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
 					10.0f/*symbol_size*/,
 					GPlatesGui::Colour::get_white()/*symbol_colour*/);
