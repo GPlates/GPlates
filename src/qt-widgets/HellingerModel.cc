@@ -349,7 +349,8 @@ GPlatesQtWidgets::HellingerModel::set_initial_guess(const QStringList &com_list_
 	d_active_com_file_struct.d_down_filename = com_list_fields.at(11);
 }
 
-void GPlatesQtWidgets::HellingerModel::set_initial_guess(
+void
+GPlatesQtWidgets::HellingerModel::set_initial_guess(
 		const double &lat,
 		const double &lon,
 		const double &rho,
@@ -420,7 +421,7 @@ void GPlatesQtWidgets::HellingerModel::clear_all_picks()
 }
 
 void
-GPlatesQtWidgets::HellingerModel:: reset_com_file_struct()
+GPlatesQtWidgets::HellingerModel::reset_com_file_struct()
 {
 	d_active_com_file_struct.d_pick_file = "";
 	d_active_com_file_struct.d_lat = 0;
