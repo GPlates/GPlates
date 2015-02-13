@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>806</width>
+    <width>777</width>
     <height>670</height>
    </rect>
   </property>
@@ -94,7 +94,72 @@
       <string>Magnetic picks</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="1" column="0" rowspan="2">
+      <item row="0" column="0" colspan="2">
+       <layout class="QHBoxLayout" name="horizontalLayout_6">
+        <property name="spacing">
+         <number>2</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>Pick/com file:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="line_import_file"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_import_file">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Import a .pick or .com file</string>
+          </property>
+          <property name="text">
+           <string>&amp;Import...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_export_pick_file">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Export pick data to pick file</string>
+          </property>
+          <property name="text">
+           <string>&amp;Export picks...</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_export_com_file">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Export data to com file</string>
+          </property>
+          <property name="text">
+           <string>Export co&amp;m..</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="1" column="0">
        <widget class="QTreeWidget" name="tree_widget">
         <property name="minimumSize">
          <size>
@@ -141,321 +206,250 @@
         </column>
        </widget>
       </item>
-      <item row="1" column="1" rowspan="2" colspan="2">
+      <item row="1" column="1">
        <layout class="QGridLayout" name="gridLayout">
+        <property name="verticalSpacing">
+         <number>1</number>
+        </property>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_7">
+          <property name="text">
+           <string>Segments:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="label_8">
+          <property name="text">
+           <string>Picks:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QPushButton" name="button_new_segment">
+          <property name="minimumSize">
+           <size>
+            <width>90</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Insert a new segment</string>
+          </property>
+          <property name="text">
+           <string>&amp;New...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QPushButton" name="button_new_pick">
+          <property name="minimumSize">
+           <size>
+            <width>90</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Insert a new pick</string>
+          </property>
+          <property name="text">
+           <string>New...</string>
+          </property>
+         </widget>
+        </item>
         <item row="2" column="0">
+         <widget class="QPushButton" name="button_remove_segment">
+          <property name="minimumSize">
+           <size>
+            <width>90</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Remove the selected segment</string>
+          </property>
+          <property name="text">
+           <string>&amp;Remove...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QPushButton" name="button_remove_pick">
+          <property name="minimumSize">
+           <size>
+            <width>90</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Remove the current pick</string>
+          </property>
+          <property name="text">
+           <string>Remove...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QPushButton" name="button_edit_segment">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>90</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Edit the selected segment</string>
+          </property>
+          <property name="text">
+           <string>&amp;Edit...</string>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>10</width>
+            <height>24</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QPushButton" name="button_edit_pick">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>90</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Edit the selected pick</string>
+          </property>
+          <property name="text">
+           <string>Edit...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QPushButton" name="button_expand_all">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Expand all segments</string>
+          </property>
+          <property name="text">
+           <string>E&amp;xpand </string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QPushButton" name="button_activate_pick">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>90</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Enable the selected pick</string>
+          </property>
+          <property name="text">
+           <string>&amp;Enable</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QPushButton" name="button_collapse_all">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Collapse all segments</string>
+          </property>
+          <property name="text">
+           <string>C&amp;ollapse</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QPushButton" name="button_deactivate_pick">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>90</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Disable the selected pick</string>
+          </property>
+          <property name="text">
+           <string>&amp;Disable </string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="0">
+         <widget class="QPushButton" name="button_renumber">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Re-number the segments</string>
+          </property>
+          <property name="text">
+           <string>Re-number</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="0">
+         <widget class="QPushButton" name="button_clear">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>27</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Clear all the segments</string>
+          </property>
+          <property name="text">
+           <string>Clear...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="0">
          <spacer name="verticalSpacer_3">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
-            <width>20</width>
-            <height>40</height>
+            <width>89</width>
+            <height>13</height>
            </size>
           </property>
          </spacer>
-        </item>
-        <item row="0" column="0" rowspan="2">
-         <layout class="QVBoxLayout" name="verticalLayout">
-          <property name="spacing">
-           <number>1</number>
-          </property>
-          <item>
-           <widget class="QLabel" name="label_7">
-            <property name="text">
-             <string>Segments:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="button_new_segment">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Insert a new segment</string>
-            </property>
-            <property name="text">
-             <string>&amp;New...</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="button_remove_segment">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Remove the selected segment</string>
-            </property>
-            <property name="text">
-             <string>&amp;Remove...</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="button_edit_segment">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Edit the selected segment</string>
-            </property>
-            <property name="text">
-             <string>&amp;Edit...</string>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>10</width>
-              <height>24</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="button_expand_all">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Expand all segments</string>
-            </property>
-            <property name="text">
-             <string>E&amp;xpand </string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="button_collapse_all">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Collapse all segments</string>
-            </property>
-            <property name="text">
-             <string>C&amp;ollapse</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="button_renumber">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Re-number the segments</string>
-            </property>
-            <property name="text">
-             <string>Re-number</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="button_clear">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Clear all the segments</string>
-            </property>
-            <property name="text">
-             <string>Clear...</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="1" column="1" rowspan="2">
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>102</width>
-            <height>98</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="0" column="1">
-         <layout class="QVBoxLayout" name="verticalLayout_2">
-          <property name="spacing">
-           <number>1</number>
-          </property>
-          <item>
-           <widget class="QLabel" name="label_8">
-            <property name="text">
-             <string>Picks:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="button_new_pick">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Insert a new pick</string>
-            </property>
-            <property name="text">
-             <string>New...</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="button_remove_pick">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Remove the current pick</string>
-            </property>
-            <property name="text">
-             <string>Remove...</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="button_edit_pick">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Edit the selected pick</string>
-            </property>
-            <property name="text">
-             <string>Edit...</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="button_activate_pick">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Enable the selected pick</string>
-            </property>
-            <property name="text">
-             <string>&amp;Enable</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="button_deactivate_pick">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>30</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>Disable the selected pick</string>
-            </property>
-            <property name="text">
-             <string>&amp;Disable </string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </item>
-      <item row="0" column="0" colspan="3">
-       <layout class="QHBoxLayout" name="horizontalLayout_6">
-        <property name="spacing">
-         <number>2</number>
-        </property>
-        <item>
-         <widget class="QLabel" name="label_10">
-          <property name="text">
-           <string>Pick/com file:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="line_import_file"/>
-        </item>
-        <item>
-         <widget class="QPushButton" name="button_import_file">
-          <property name="toolTip">
-           <string>Import a .pick or .com file</string>
-          </property>
-          <property name="text">
-           <string>&amp;Import...</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="button_export_pick_file">
-          <property name="toolTip">
-           <string>Export pick data to pick file</string>
-          </property>
-          <property name="text">
-           <string>&amp;Export picks...</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="button_export_com_file">
-          <property name="toolTip">
-           <string>Export data to com file</string>
-          </property>
-          <property name="text">
-           <string>Export co&amp;m..</string>
-          </property>
-         </widget>
         </item>
        </layout>
       </item>
@@ -1197,13 +1191,13 @@
            <string>Show details of the fit and uncertainties</string>
           </property>
           <property name="text">
-           <string>&amp;Show Details...</string>
+           <string>Show &amp;Details...</string>
           </property>
          </widget>
         </item>
        </layout>
       </item>
-      <item row="1" column="0">
+      <item row="1" column="0" colspan="3">
        <widget class="QProgressBar" name="progress_bar">
         <property name="value">
          <number>0</number>
