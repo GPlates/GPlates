@@ -1026,7 +1026,7 @@
                </size>
               </property>
               <property name="decimals">
-               <number>4</number>
+               <number>2</number>
               </property>
               <property name="minimum">
                <double>-90.000000000000000</double>
@@ -1066,7 +1066,7 @@
                </size>
               </property>
               <property name="decimals">
-               <number>4</number>
+               <number>2</number>
               </property>
               <property name="minimum">
                <double>-360.000000000000000</double>
@@ -1109,7 +1109,7 @@
                <string>°</string>
               </property>
               <property name="decimals">
-               <number>4</number>
+               <number>2</number>
               </property>
               <property name="minimum">
                <double>-360.000000000000000</double>

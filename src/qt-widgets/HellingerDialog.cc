@@ -69,6 +69,7 @@ const double DEFAULT_LINE_THICKNESS = 2;
 const double ENLARGED_POINT_SIZE = 6;
 const double INITIAL_SEARCH_RADIUS = 0.2;
 const double INITIAL_SIGNIFICANCE_LEVEL = 0.95;
+const double INITIAL_ROTATION_ANGLE = 5.;
 
 
 // The following are related to the Hellinger tool in general, and not necessarily to this class/file.
@@ -559,7 +560,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_edit_point_is_enlarged(false),
 	d_canvas_operation_type(SELECT_OPERATION),
 	d_current_pole_estimate_llp(GPlatesMaths::LatLonPoint(0,0)),
-	d_current_pole_estimate_angle(0.),
+	d_current_pole_estimate_angle(INITIAL_ROTATION_ANGLE),
 	d_input_values_ok(false)
 {
 	setupUi(this);
@@ -613,24 +614,11 @@ GPlatesQtWidgets::HellingerDialog::handle_selection_changed(
 		const QItemSelection & new_selection,
 		const QItemSelection & old_selection)
 {
-	// if we have selected a pick:
-	//		get its state and update the enable/disable buttons
-	//		enable the edit/remove-pick buttons
-	//		disable the edit/remove segment buttons
-
-	// If we have selected a segment
-	//		disable both enable/disable buttons
-	//		enable the edit/remove semgnet buttons
-	//		disable the edit/remove pick buttons
-
-	// If nothing is selected:
-	//	 disable everything (except the new pick / new segment buttons - which are always enabled anyway)
-
 	clear_selection_layer();
 
 	if (!tree_widget->currentItem())
 	{
-		qDebug() << "no current item; returning";
+		// Nothing selected.
 		return;
 	}
 
@@ -752,6 +740,7 @@ GPlatesQtWidgets::HellingerDialog::initialise_widgets()
 
 	spinbox_radius->setValue(INITIAL_SEARCH_RADIUS);
 	spinbox_conf_limit->setValue(INITIAL_SIGNIFICANCE_LEVEL);
+	spinbox_rho_estimate->setValue(INITIAL_ROTATION_ANGLE);
 }
 
 void
@@ -1052,8 +1041,20 @@ GPlatesQtWidgets::HellingerDialog::handle_pole_estimate_lat_lon_changed()
 
 void GPlatesQtWidgets::HellingerDialog::handle_pole_estimate_angle_changed()
 {
-	Q_EMIT pole_estimate_angle_changed(
-				spinbox_rho_estimate->value());
+	static QPalette red_palette;
+	red_palette.setColor(QPalette::Active,QPalette::Base,Qt::red);
+	if (GPlatesMaths::are_almost_exactly_equal(spinbox_rho_estimate->value(),0.))
+	{
+		spinbox_rho_estimate->setPalette(red_palette);
+		d_input_values_ok = false;
+	}
+	else{
+		spinbox_rho_estimate->setPalette(d_spin_box_palette);
+		d_input_values_ok = true;
+		Q_EMIT pole_estimate_angle_changed(
+					spinbox_rho_estimate->value());
+	}
+	update_fit_buttons();
 }
 
 void
@@ -1274,8 +1275,8 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 
 	if (!(spinbox_rho_estimate->value() > 0))
 	{
-		QMessageBox::critical(this,tr("Initial guess values"),
-							  tr("The value of rho in the initial guess is zero. Please enter a non-zero value"),
+		QMessageBox::critical(this,tr("Initial estimate values"),
+							  tr("The angle of the initial estimate is zero. Please enter a non-zero value"),
 							  QMessageBox::Ok,QMessageBox::Ok);
 		return;
 	}

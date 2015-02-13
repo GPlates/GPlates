@@ -43,6 +43,7 @@ const GPlatesGui::Symbol POLE_SYMBOL = GPlatesGui::Symbol(GPlatesGui::Symbol::CI
 const GPlatesGui::Symbol END_POINT_SYMBOL = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, 2, true);
 const GPlatesGui::Symbol POLE_HIGHLIGHT_SYMBOL = GPlatesGui::Symbol(GPlatesGui::Symbol::CIRCLE, 2, true);
 const GPlatesGui::Symbol END_POINT_HIGHLIGHT_SYMBOL = GPlatesGui::Symbol(GPlatesGui::Symbol::CROSS, 3, true);
+const double INITIAL_ANGLE = 5.;
 
 
 namespace
@@ -92,6 +93,10 @@ namespace
 	{
 		using namespace GPlatesMaths;
 
+		if (GPlatesMaths::are_almost_exactly_equal(angle,0.))
+		{
+			return;
+		}
 
 		// Project the relative_end_point onto the reference gca.
 		GreatCircleArc gca = GreatCircleArc::create(pole,reference_end_point);
@@ -124,7 +129,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::AdjustFittedPoleEstimate(
 	d_relative_arc_is_being_dragged(false),
 	d_mouse_is_over_relative_arc_end_point(false),
 	d_relative_arc_end_point_is_being_dragged(false),
-	d_current_angle(0.),
+	d_current_angle(INITIAL_ANGLE),
 	d_has_been_activated(false)
 {
 	d_current_pole_arrow_layer_ptr =
@@ -393,9 +398,9 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_local_values_from_hellinger
 
 	if (!d_has_been_activated)
 	{
-		// Set an (arbitrary) initial direction for the reference arc relative to the pole, with arc-angle 45 degrees.
+		// Set an (arbitrary) initial direction for the reference arc relative to the pole, with arc-angle 30 degrees.
 		GPlatesMaths::UnitVector3D perpendicular = GPlatesMaths::generate_perpendicular(d_current_pole.position_vector());
-		GPlatesMaths::Rotation rotation_1 = GPlatesMaths::Rotation::create(perpendicular,GPlatesMaths::convert_deg_to_rad(45.));
+		GPlatesMaths::Rotation rotation_1 = GPlatesMaths::Rotation::create(perpendicular,GPlatesMaths::convert_deg_to_rad(30.));
 		d_end_point_of_reference_arc = rotation_1*d_current_pole;
 
 
