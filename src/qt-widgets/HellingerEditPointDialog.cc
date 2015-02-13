@@ -38,9 +38,9 @@
 const double INITIAL_UNCERTAINTY = 5.;
 
 GPlatesQtWidgets::HellingerEditPointDialog::HellingerEditPointDialog(HellingerDialog *hellinger_dialog,
-		HellingerModel *hellinger_model,
-		bool create_new_pick,
-		QWidget *parent_):
+																	 HellingerModel *hellinger_model,
+																	 bool create_new_pick,
+																	 QWidget *parent_):
 	QDialog(parent_,Qt::CustomizeWindowHint |
 			Qt::WindowTitleHint |
 			Qt::WindowSystemMenuHint |
@@ -159,7 +159,7 @@ GPlatesQtWidgets::HellingerEditPointDialog::handle_apply()
 	}
 
 	hellinger_model_type::const_iterator it =
-		d_hellinger_model_ptr->add_pick(
+			d_hellinger_model_ptr->add_pick(
 				d_pick,
 				segment_number);
 

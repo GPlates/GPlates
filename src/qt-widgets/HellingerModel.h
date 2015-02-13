@@ -1,10 +1,10 @@
 /* $Id: HellingerModel.h 258 2012-03-19 11:52:08Z robin.watson@ngu.no $ */
 
 /**
- * \file 
+ * \file
  * $Revision: 258 $
- * $Date: 2012-03-19 12:52:08 +0100 (Mon, 19 Mar 2012) $ 
- * 
+ * $Date: 2012-03-19 12:52:08 +0100 (Mon, 19 Mar 2012) $
+ *
  * Copyright (C) 2011, 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -22,7 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
+
 #ifndef GPLATES_QTWIDGETS_HELLINGERMODEL_H
 #define GPLATES_QTWIDGETS_HELLINGERMODEL_H
 
@@ -135,7 +135,7 @@ namespace GPlatesQtWidgets
 			d_lat(0.),
 			d_lon(0.),
 			d_rho(5.)
-			{};
+		{};
 		QString d_pick_file;
 		double d_lat;	// initial estimate
 		double d_lon; // initial estimate
@@ -149,7 +149,7 @@ namespace GPlatesQtWidgets
 		QString d_up_filename;
 		QString d_down_filename;
 
-    };
+	};
 
 	// The result of the fit.
 	struct HellingerFitStructure{
@@ -164,7 +164,7 @@ namespace GPlatesQtWidgets
 		double d_lon;
 		double d_angle;
 		double d_eps;
-    };
+	};
 
 	/**
 	 * @brief The HellingerModel class
@@ -175,17 +175,17 @@ namespace GPlatesQtWidgets
 	 * FIXME: wait a minute, the stats don't seem to be even stored here. I think they should be.
 	 * Check where they are stored, and shift them in here.
 	 */
-    class HellingerModel
+	class HellingerModel
 	{
 
 	public:
 
-        HellingerModel(
-            const QString &temporary_file_path);
+		HellingerModel(
+				const QString &temporary_file_path);
 
 		hellinger_model_type::const_iterator
-        add_pick(
-			const QStringList &HellingerPick);
+		add_pick(
+				const QStringList &HellingerPick);
 
 		hellinger_model_type::const_iterator
 		add_pick(const HellingerPick &pick,
@@ -199,71 +199,71 @@ namespace GPlatesQtWidgets
 
 		void
 		add_segment(hellinger_segment_type &picks,
-				const unsigned int &segment_number);
+					const unsigned int &segment_number);
 
-        QStringList
+		QStringList
 		get_pick_as_string(
-			const unsigned int &segment,
-			const unsigned int &row) const;
+				const unsigned int &segment,
+				const unsigned int &row) const;
 
-//		boost::optional<const HellingerPick &> get_pick(
-//			const unsigned int &index) const;
+		//		boost::optional<const HellingerPick &> get_pick(
+		//			const unsigned int &index) const;
 
 		hellinger_model_type::const_iterator
 		get_pick(
-			const unsigned int &segment,
-			const unsigned int &row) const;
+				const unsigned int &segment,
+				const unsigned int &row) const;
 
-        bool
+		bool
 		pick_is_enabled(
-			const unsigned int &segment,
-			const unsigned int &row) const ;
+				const unsigned int &segment,
+				const unsigned int &row) const ;
 
-        void
+		void
 		set_pick_state(
-			const unsigned int &segment,
-			const unsigned int &row,
-			bool enabled);
+				const unsigned int &segment,
+				const unsigned int &row,
+				bool enabled);
 
 
-        QStringList
+		QStringList
 		get_segment_as_string(
-			const unsigned int &segment) const;
+				const unsigned int &segment) const;
 
 		hellinger_segment_type
 		get_segment(
-			const unsigned int &segment) const;
+				const unsigned int &segment) const;
 
 		hellinger_model_const_range_type
 		get_segment_as_range(
-			const unsigned int &segment) const;
+				const unsigned int &segment) const;
 
-        int
+		int
 		num_rows_in_segment(
-			const unsigned int &segment) const;
+				const unsigned int &segment) const;
 
-        void
+		void
 		remove_pick(
-			const unsigned int &segment,
-			const unsigned int &row);
+				const unsigned int &segment,
+				const unsigned int &row);
 
-        void
-        remove_segment(
-			const unsigned int &segment);
+		void
+		remove_segment(
+				const unsigned int &segment);
 
-        void
-        reset_model();
+		void
+		reset_model();
 
 		void
 		clear_all_picks();
 
-        void
+		void
 		set_fit(
-			const QStringList &fields);
+				const QStringList &fields);
 
 		void
 		set_fit(
-			const HellingerFitStructure &fields);
+				const HellingerFitStructure &fields);
 
 		void
 		set_com_file_structure(
@@ -281,16 +281,16 @@ namespace GPlatesQtWidgets
 		boost::optional<HellingerFitStructure>
 		get_fit();
 
-        void
+		void
 		read_error_ellipse_points();
 
 		const std::vector<GPlatesMaths::LatLonPoint> &
 		get_error_ellipse_points() const;
 
 		// TODO: this seems to be redundant now. Check this.
-        void
+		void
 		set_initial_guess(
-			const QStringList &com_list_fields);
+				const QStringList &com_list_fields);
 
 		void
 		set_initial_guess(
@@ -302,7 +302,7 @@ namespace GPlatesQtWidgets
 		boost::optional<HellingerComFileStructure>
 		get_com_file() const;
 
-        QStringList
+		QStringList
 		get_data_as_string() const;
 
 		QString
@@ -323,23 +323,23 @@ namespace GPlatesQtWidgets
 		hellinger_model_type::const_iterator end() const;
 
 		hellinger_model_type::const_iterator segment_begin(
-			const int &segment) const;
+				const int &segment) const;
 
 		hellinger_model_type::const_iterator segment_end(
-			const int &segment) const;
+				const int &segment) const;
 
-        bool
+		bool
 		segment_number_exists(
-			int segment_num) const;
+				int segment_num) const;
 
 		/**
 		 * @brief make_space_for_new_segment
 		 * Shifts the segments from @param segment down by one.
 		 * @param segment
 		 */
-        void
+		void
 		make_space_for_new_segment(
-			int segment);
+				int segment);
 
 		/**
 		 * @brief renumber_segments
@@ -352,7 +352,7 @@ namespace GPlatesQtWidgets
 		bool
 		segments_are_ordered() const;
 
-    private:
+	private:
 
 		void
 		reset_com_file_struct();
@@ -373,7 +373,7 @@ namespace GPlatesQtWidgets
 
 		// TODO: check if this path is required.
 		// Required until we have shifted file-io to the reader class.
-        QString d_temporary_file_path;
+		QString d_temporary_file_path;
 	};
 }
 

@@ -308,7 +308,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::add_segment_to_model()
 		GPlatesQtWidgets::HellingerPick pick(type,lat,lon,uncertainty,enabled);
 		d_hellinger_model_ptr->add_pick(pick,segment);
 	}
-    d_hellinger_dialog_ptr->update_after_new_segment(segment);
+	d_hellinger_dialog_ptr->update_after_new_segment(segment);
 }
 
 void
@@ -316,7 +316,7 @@ GPlatesQtWidgets::HellingerEditSegmentDialog::handle_add_line()
 {
 	int insertion_row;
 	if ((d_table_model->rowCount() == 0) ||
-		 table_new_segment->selectionModel()->selection().indexes().isEmpty())
+			table_new_segment->selectionModel()->selection().indexes().isEmpty())
 	{
 		insertion_row = 0;
 	}

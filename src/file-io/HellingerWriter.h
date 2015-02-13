@@ -35,29 +35,29 @@ namespace GPlatesQtWidgets
 namespace GPlatesFileIO
 {
 
-class HellingerWriter
-{
-public:
-    HellingerWriter();
+	class HellingerWriter
+	{
+	public:
+		HellingerWriter();
 
-    /**
+		/**
 	 *
-     */
-    static
-    void
-	write_pick_file(QString &filename,
-			GPlatesQtWidgets::HellingerModel& hellinger_model,
-			bool export_disabled_picks = true,
-			bool add_missing_pick_extension = false);
+	 */
+		static
+		void
+		write_pick_file(QString &filename,
+						GPlatesQtWidgets::HellingerModel& hellinger_model,
+						bool export_disabled_picks = true,
+						bool add_missing_pick_extension = false);
 
 
-	static
-	void
-	write_com_file(
-			QString &filename,
-			GPlatesQtWidgets::HellingerModel& hellinger_model);
+		static
+		void
+		write_com_file(
+				QString &filename,
+				GPlatesQtWidgets::HellingerModel& hellinger_model);
 
-};
+	};
 
 }
 #endif // GPLATES_FILEIO_PICKFILEWRITER_H

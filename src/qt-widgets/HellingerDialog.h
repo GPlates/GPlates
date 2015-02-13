@@ -289,7 +289,7 @@ namespace GPlatesQtWidgets
 				const QStringList &add_list);
 
 		void
-        update_pick_and_segment_buttons();
+		update_pick_and_segment_buttons();
 
 
 		void
@@ -360,13 +360,13 @@ namespace GPlatesQtWidgets
 
 	private Q_SLOTS:
 
-        void
-        handle_estimate_checkbox_toggled(
-                bool);
+		void
+		handle_estimate_checkbox_toggled(
+				bool);
 
-        void
-        handle_result_checkbox_toggled(
-                bool);
+		void
+		handle_result_checkbox_toggled(
+				bool);
 
 		void
 		handle_clear();
@@ -499,14 +499,14 @@ namespace GPlatesQtWidgets
 		void
 		reconstruct_picks();
 
-        void
-        determine_selected_picks_and_segments();
+		void
+		determine_selected_picks_and_segments();
 
 		bool
 		picks_loaded();
 
 		void
-        update_pick_enable_disable_buttons();
+		update_pick_enable_disable_buttons();
 
 		void
 		update_fit_buttons();

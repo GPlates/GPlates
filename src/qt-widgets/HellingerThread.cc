@@ -1,10 +1,10 @@
 /* $Id: CalculateReconstructionPoleDialog.cc 10957 2011-02-09 07:53:12Z elau $ */
 
 /**
- * \file 
+ * \file
  * $Revision: 10957 $
- * $Date: 2011-02-09 08:53:12 +0100 (St, 09 úno 2011) $ 
- * 
+ * $Date: 2011-02-09 08:53:12 +0100 (St, 09 úno 2011) $
+ *
  * Copyright (C) 2011, 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -48,12 +48,12 @@
 
 
 GPlatesQtWidgets::HellingerThread::HellingerThread(
-                HellingerDialog *hellinger_dialog,
-                HellingerModel *hellinger_model):
+		HellingerDialog *hellinger_dialog,
+		HellingerModel *hellinger_model):
 	QThread(0),
-    d_hellinger_dialog_ptr(hellinger_dialog),
-    d_hellinger_model_ptr(hellinger_model),
-    d_iteration(0),
+	d_hellinger_dialog_ptr(hellinger_dialog),
+	d_hellinger_model_ptr(hellinger_model),
+	d_iteration(0),
 	d_thread_type(POLE_THREAD_TYPE)
 {
 }
@@ -71,17 +71,17 @@ GPlatesQtWidgets::HellingerThread::initialise_pole_calculation(
 		const QString &temp_par,
 		const QString &temp_res)
 {
-    d_input_data = input_data;
-    d_import_file_path = import_file_path;
-    d_bool_data = bool_data;
-    d_iteration = iteration;
-    d_python_file = python_file;
-    d_temporary_folder = temporary_folder;
-    d_path = d_temporary_folder;
-    d_temp_pick_file = temp_pick_file;
-    d_temp_result = temp_result;
-    d_temp_par = temp_par;
-    d_temp_res = temp_res;
+	d_input_data = input_data;
+	d_import_file_path = import_file_path;
+	d_bool_data = bool_data;
+	d_iteration = iteration;
+	d_python_file = python_file;
+	d_temporary_folder = temporary_folder;
+	d_path = d_temporary_folder;
+	d_temp_pick_file = temp_pick_file;
+	d_temp_result = temp_result;
+	d_temp_par = temp_par;
+	d_temp_res = temp_res;
 }
 
 void
@@ -98,57 +98,57 @@ GPlatesQtWidgets::HellingerThread::initialise_stats_calculation(
 		const QString &temp_par,
 		const QString &temp_res)
 {
-    d_temporary_folder = temporary_folder;
-    d_temp_pick_file = temp_pick_file;
-    d_temp_result = temp_result;
-    d_temp_par = temp_par;
-    d_temp_res = temp_res;
-    if (!path_file.isEmpty())
-    {
-        d_path = path_file;
-    }
-    else
-    {
-        d_path = d_temporary_folder;
-    }
+	d_temporary_folder = temporary_folder;
+	d_temp_pick_file = temp_pick_file;
+	d_temp_result = temp_result;
+	d_temp_par = temp_par;
+	d_temp_res = temp_res;
+	if (!path_file.isEmpty())
+	{
+		d_path = path_file;
+	}
+	else
+	{
+		d_path = d_temporary_folder;
+	}
 
-    if (!file_name.isEmpty())
-    {
-        d_file_name = file_name;
-    }
-    else
-    {
-        d_file_name = d_temp_pick_file;
-    }
+	if (!file_name.isEmpty())
+	{
+		d_file_name = file_name;
+	}
+	else
+	{
+		d_file_name = d_temp_pick_file;
+	}
 
-    if (!filename_dat.isEmpty())
-    {
-        d_filename_dat = filename_dat;
-    }
-    else
-    {
-        d_filename_dat = "temp_dat";  // only temporary name (not used), NONE value is not accepted in python script
-    }
+	if (!filename_dat.isEmpty())
+	{
+		d_filename_dat = filename_dat;
+	}
+	else
+	{
+		d_filename_dat = "temp_dat";  // only temporary name (not used), NONE value is not accepted in python script
+	}
 
-    if (!filename_up.isEmpty())
-    {
-        d_filename_up = filename_up;
-    }
-    else
-    {
-        d_filename_up = "temp_up"; // only temporary name (not used), NONE value is not accepted in python script
-    }
+	if (!filename_up.isEmpty())
+	{
+		d_filename_up = filename_up;
+	}
+	else
+	{
+		d_filename_up = "temp_up"; // only temporary name (not used), NONE value is not accepted in python script
+	}
 
-    if (!filename_do.isEmpty())
-    {
-        d_filename_do = filename_do;
-    }
-    else
-    {
-        d_filename_do = "temp_do"; // only temporary name (not used), NONE value is not accepted in python script
-    }
+	if (!filename_do.isEmpty())
+	{
+		d_filename_do = filename_do;
+	}
+	else
+	{
+		d_filename_do = "temp_do"; // only temporary name (not used), NONE value is not accepted in python script
+	}
 
-    d_python_file = python_file;
+	d_python_file = python_file;
 
 }
 
@@ -164,10 +164,10 @@ GPlatesQtWidgets::HellingerThread::run()
 	// FIXME: the output file names are hard-coded in the python script, so changing these
 	// filenames here, or elsewhere in this class, will likely result in not being able to find/open
 	// the result files....
-    QString temp_file = d_temporary_folder + d_temp_pick_file;
-    QString temp_file_temp_result = d_temporary_folder + d_temp_result;
-    QString temp_file_par = d_temporary_folder + d_temp_par;
-    QString temp_file_res = d_temporary_folder + d_temp_res;
+	QString temp_file = d_temporary_folder + d_temp_pick_file;
+	QString temp_file_temp_result = d_temporary_folder + d_temp_result;
+	QString temp_file_par = d_temporary_folder + d_temp_par;
+	QString temp_file_res = d_temporary_folder + d_temp_res;
 
 #if 0
 	qDebug() << "temp file: " << temp_file;
@@ -185,7 +185,7 @@ GPlatesQtWidgets::HellingerThread::run()
 			// Retrieve the main module.
 			boost::python::object main = boost::python::import("__main__");
 
-			boost::python::object global(main.attr("__dict__"));		
+			boost::python::object global(main.attr("__dict__"));
 			boost::python::object ignored = boost::python::exec_file(d_python_file.toStdString().c_str(),global, global);
 			boost::python::object pythonCode = global["start"];
 			QFile::remove(temp_file_temp_result);
@@ -194,15 +194,15 @@ GPlatesQtWidgets::HellingerThread::run()
 
 
 			boost::python::extract<std::string>(pythonCode(temp_file.toStdString().c_str(),d_input_data[0],d_input_data[1],
-				d_input_data[2], d_input_data[3], d_input_data[4], d_iteration,
-				d_bool_data[0], d_bool_data[1],d_bool_data[2], d_path.toStdString(), d_filename_dat.toStdString(),
-				d_filename_up.toStdString(), d_filename_do.toStdString() ));
+					d_input_data[2], d_input_data[3], d_input_data[4], d_iteration,
+					d_bool_data[0], d_bool_data[1],d_bool_data[2], d_path.toStdString(), d_filename_dat.toStdString(),
+					d_filename_up.toStdString(), d_filename_do.toStdString() ));
 		}
 		else if (d_thread_type == STATS_THREAD_TYPE)
 		{
 			QFile::remove(temp_file_temp_result);
 			QFile::remove(temp_file_par);
-			QFile::remove(temp_file_res);     
+			QFile::remove(temp_file_res);
 
 			GPlatesApi::PythonInterpreterLocker interpreter_locker;
 
@@ -212,15 +212,15 @@ GPlatesQtWidgets::HellingerThread::run()
 			boost::python::object pythonCode = global["cont"];
 
 			boost::python::extract<std::string>(pythonCode(temp_file.toStdString().c_str(),d_input_data[0],d_input_data[1],
-				d_input_data[2], d_input_data[3], d_input_data[4], d_iteration,
-				d_bool_data[0], d_bool_data[1],d_bool_data[2], d_path.toStdString(), d_filename_dat.toStdString(),
-				d_filename_up.toStdString(), d_filename_do.toStdString() ));
+					d_input_data[2], d_input_data[3], d_input_data[4], d_iteration,
+					d_bool_data[0], d_bool_data[1],d_bool_data[2], d_path.toStdString(), d_filename_dat.toStdString(),
+					d_filename_up.toStdString(), d_filename_do.toStdString() ));
 
 		}
 	}
 	catch(const boost::python::error_already_set &)
 	{
-		qWarning() << "Python error: " << GPlatesApi::PythonUtils::get_error_message();		
+		qWarning() << "Python error: " << GPlatesApi::PythonUtils::get_error_message();
 	}
 
 
