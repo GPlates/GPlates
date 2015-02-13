@@ -910,9 +910,9 @@ GPlatesQtWidgets::HellingerDialog::handle_remove_segment()
 		d_hellinger_model->remove_segment(segment_int);
 
 		update_tree_from_model();
-		restore_expanded_status();
-
+		update_canvas();
 		update_pick_and_segment_buttons();
+		restore_expanded_status();
 	}
 }
 
