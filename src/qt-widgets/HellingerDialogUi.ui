@@ -717,59 +717,6 @@
       <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_7">
-      <item row="0" column="2">
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <widget class="QPushButton" name="button_calculate_fit">
-          <property name="toolTip">
-           <string>Calculate the best-fitting pole</string>
-          </property>
-          <property name="text">
-           <string>Calculate &amp;Pole</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="button_stats">
-          <property name="minimumSize">
-           <size>
-            <width>135</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="toolTip">
-           <string>Calculate uncertainties associated with the best-fitting pole</string>
-          </property>
-          <property name="text">
-           <string>Calculate &amp;Stats</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="button_show_details">
-          <property name="minimumSize">
-           <size>
-            <width>108</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="toolTip">
-           <string>Show details of the fit and uncertainties</string>
-          </property>
-          <property name="text">
-           <string>&amp;Show Details...</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="1" column="0" colspan="3">
-       <widget class="QProgressBar" name="progress_bar">
-        <property name="value">
-         <number>0</number>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="0">
        <layout class="QGridLayout" name="gridLayout_6">
         <item row="0" column="0">
@@ -1036,23 +983,23 @@
          </layout>
         </item>
         <item row="2" column="0">
-         <layout class="QHBoxLayout" name="horizontalLayout_13">
+         <layout class="QHBoxLayout" name="horizontalLayout_15">
+          <item>
+           <widget class="QLabel" name="label_11">
+            <property name="font">
+             <font>
+              <family>Sans Serif</family>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Result:</string>
+            </property>
+           </widget>
+          </item>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_5">
-            <item>
-             <widget class="QLabel" name="label_11">
-              <property name="font">
-               <font>
-                <family>Sans Serif</family>
-                <weight>75</weight>
-                <bold>true</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>Result:</string>
-              </property>
-             </widget>
-            </item>
             <item>
              <widget class="QLabel" name="label_12">
               <property name="font">
@@ -1074,7 +1021,7 @@
               </property>
               <property name="minimumSize">
                <size>
-                <width>76</width>
+                <width>100</width>
                 <height>0</height>
                </size>
               </property>
@@ -1089,6 +1036,10 @@
               </property>
              </widget>
             </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_13">
             <item>
              <widget class="QLabel" name="label_13">
               <property name="font">
@@ -1110,7 +1061,7 @@
               </property>
               <property name="minimumSize">
                <size>
-                <width>76</width>
+                <width>100</width>
                 <height>0</height>
                </size>
               </property>
@@ -1125,6 +1076,10 @@
               </property>
              </widget>
             </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_14">
             <item>
              <widget class="QLabel" name="label_14">
               <property name="font">
@@ -1146,7 +1101,7 @@
               </property>
               <property name="minimumSize">
                <size>
-                <width>76</width>
+                <width>100</width>
                 <height>0</height>
                </size>
               </property>
@@ -1201,6 +1156,59 @@
          </size>
         </property>
        </spacer>
+      </item>
+      <item row="0" column="2">
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QPushButton" name="button_calculate_fit">
+          <property name="toolTip">
+           <string>Calculate the best-fitting pole</string>
+          </property>
+          <property name="text">
+           <string>Calculate &amp;Pole</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_stats">
+          <property name="minimumSize">
+           <size>
+            <width>135</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Calculate uncertainties associated with the best-fitting pole</string>
+          </property>
+          <property name="text">
+           <string>Calculate &amp;Stats</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_show_details">
+          <property name="minimumSize">
+           <size>
+            <width>108</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Show details of the fit and uncertainties</string>
+          </property>
+          <property name="text">
+           <string>&amp;Show Details...</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="1" column="0">
+       <widget class="QProgressBar" name="progress_bar">
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

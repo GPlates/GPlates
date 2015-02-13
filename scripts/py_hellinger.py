@@ -12,7 +12,7 @@ VERSION = "2011/09/15"
 This file (py_hellinger.py) and the accompanying math_hellinger.py file contain python
 implementations of the FORTRAN code in hellinger1.f and related files. The original
 FORTRAN programs are by Chang, Royer and co-workers. This python implementation is
-by J. Cirbus. The following comments from the original FORTRAN code.
+by J. Cirbus. The following comments are from the original FORTRAN code.
 
 
 Program implementing section 1 of on reconstructing tectonic plate
