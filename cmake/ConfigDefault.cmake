@@ -112,7 +112,7 @@ set(GPLATES_PUBLIC_RELEASE false)
 # Set to 'true' to tell GPlates ignore environment variables, such as PYTHONHOME, PYTHONPATH, etc, 
 # when initializing embeded Python interpreter.
 # Put this close to GPLATES_PUBLIC_RELEASE because we usually want to set this to "true" when compiling public release.
-set(GPLATES_IGNORE_PYTHON_ENVIRONMENT true)
+set(GPLATES_IGNORE_PYTHON_ENVIRONMENT false)
 
 # Pre-compiled headers are turned off by default as they are not implicitly supported by CMake.
 # Developers of GPlates may want to turn them on in their 'ConfigUser.cmake' file to speed up build times.

@@ -46,9 +46,17 @@ if(MSVC)
     	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
     endif (GPLATES_MSVC80_PARALLEL_BUILD)
 
-    #set(CMAKE_EXE_LINKER_FLAGS )
+	# Enable 4Gb of virtual address space instead of 2Gb (default for Windows).
+	# This doubles addressable memory if GPlates is compiled as 32-bit but run on a 64-bit Windows OS.
+	# On a 32-bit Windows OS this won't help because only 2Gb (by default) is accessible
+	# (the 2-4Gb process address range is reserved for the system).
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
     #set(CMAKE_SHARED_LINKER_FLAGS )
     #set(CMAKE_MODULE_LINKER_FLAGS )
+	
+	# Increase pre-compiled header memory allocation limit to avoid compile error.
+	# Error happens on 12-core Windows 8.1 machine (in Visual Studio 2005).
+   	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zm1000")
 
     # Build configuration-specific flags.
     # The defaults look reasonable...
@@ -128,10 +136,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
         # FIXME: temporary solution is to turn off warnings for OSX.
         # All GPlates developers currently use Linux or Windows.
         set(warnings_flags_list )
-
-	string(REGEX REPLACE "-arch i386" " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-	string(REGEX REPLACE "-arch i386" " " CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
-
     else(APPLE)
         # Use a list instead of a string so we can have multiple lines (instead of one giant line).
         set(warnings_flags_list
@@ -140,7 +144,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
             -Woverloaded-virtual -Wno-long-long -Wold-style-cast)
  	
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem /usr/include/qt4")
-   endif(APPLE)
+    endif(APPLE)
     # Convert the semi-colon separated list 'warnings_flags_list' to the string 'warnings_flags' 
     # (otherwise semi-colons will appear on the compiler command-line).
     foreach(warning ${warnings_flags_list})
@@ -210,6 +214,12 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     # There are _DEBUG, _RELEASE, _RELWITHDEBINFO, _MINSIZEREL and _PROFILEGPROF suffixes for CMAKE_*_LINKER_FLAGS
     # where '*' is EXE, SHARED and MODULE.
 endif(CMAKE_COMPILER_IS_GNUCXX)
+
+# The 64-bit C99 macro UINT64_C macro fails to compile on Visual Studio 2005 using boost 1.36.
+# Boost 1.42 defines __STDC_CONSTANT_MACROS in <boost/cstdint.hpp> but prior to that the application
+# is required to define it and it needs to be defined before any header inclusion to ensure it is defined
+# before it is accessed (which means before pre-compiled headers). So we define it on the compiler command-line.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_CONSTANT_MACROS")
 
 # Create our own build type for profiling with GPlates inbuilt profiler.
 # Use '-DCMAKE_BUILD_TYPE:STRING=profilegplates' option to 'cmake' to generate a gplates profile
