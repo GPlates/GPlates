@@ -55,13 +55,11 @@ void
 GPlatesCanvasTools::SelectHellingerGeometries::handle_activation()
 {
 	set_status_bar_message(QT_TR_NOOP("Click to select a pick. Shift+click to edit a pick."));
-	d_hellinger_dialog_ptr->get_pole_estimate_layer()->set_active(true);
 }
 
 void
 GPlatesCanvasTools::SelectHellingerGeometries::handle_deactivation()
 {
-	d_hellinger_dialog_ptr->get_pole_estimate_layer()->set_active(false);
 }
 
 

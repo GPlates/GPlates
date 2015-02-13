@@ -164,6 +164,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_activation()
 
     set_status_bar_message(QT_TR_NOOP("Click and drag to adjust the pole estimate and angle."));
 	d_hellinger_dialog_ptr->enable_pole_estimate_widgets(true);
+	d_hellinger_dialog_ptr->set_estimate_checkbox_state_for_active_pole_tool(true);
 
 	update_local_values_from_hellinger_dialog();
 	update_current_pole_arrow_layer();
@@ -176,6 +177,7 @@ void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_deactivation()
 {
 	d_hellinger_dialog_ptr->enable_pole_estimate_widgets(false);
+	d_hellinger_dialog_ptr->set_estimate_checkbox_state_for_active_pole_tool(false);
 	d_hellinger_dialog_ptr->update_pole_estimate_spinboxes_and_layer(d_current_pole, d_current_angle);
 	d_current_pole_arrow_layer_ptr->set_active(false);
 	d_current_pole_and_angle_layer_ptr->set_active(false);

@@ -1096,10 +1096,10 @@ void GPlatesQtWidgets::HellingerDialog::update_pole_estimate_spinboxes_and_layer
 
 	d_current_pole_estimate_llp = llp;
 
-	//d_current_rho_estimate = rho;
-	//spinbox_rho_estimate->setValue(rho);
-
-	draw_pole_estimate();
+	if (checkbox_show_estimate->isChecked())
+	{
+		draw_pole_estimate();
+	}
 }
 
 void
@@ -1650,6 +1650,15 @@ GPlatesQtWidgets::HellingerDialog::enable_pole_estimate_widgets(
 	spinbox_lat_estimate->setEnabled(enable);
 	spinbox_lon_estimate->setEnabled(enable);
 	spinbox_rho_estimate->setEnabled(enable);
+}
+
+void
+GPlatesQtWidgets::HellingerDialog::set_estimate_checkbox_state_for_active_pole_tool(
+		bool pole_tool_is_active)
+{
+	// When we active the pole tool, we don't need (or want) to see the estimate
+	// - we see it in the pole tool anyway. So set the checkbox inactive.
+	checkbox_show_estimate->setEnabled(!pole_tool_is_active);
 }
 
 const GPlatesMaths::LatLonPoint &

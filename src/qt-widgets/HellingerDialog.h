@@ -206,6 +206,10 @@ namespace GPlatesQtWidgets
 		enable_pole_estimate_widgets(
 				bool enable);
 
+		void
+		set_estimate_checkbox_state_for_active_pole_tool(
+				bool pole_tool_is_active);
+
 		const GPlatesMaths::LatLonPoint &
 		get_pole_estimate_lat_lon();
 
