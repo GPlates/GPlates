@@ -201,26 +201,30 @@ GPlatesGui::UnsavedChangesTracker::close_event_hook()
 
 
 bool
-GPlatesGui::UnsavedChangesTracker::replace_session_event_hook()
+GPlatesGui::UnsavedChangesTracker::clear_session_event_hook()
 {
-	if (has_unsaved_changes()) {
+	if (has_unsaved_changes())
+	{
 		// Exec the dialog and find which QDialogButtonBox::StandardButton was clicked.
 		d_warning_dialog_ptr->set_filename_list(list_unsaved_filenames());
 		d_warning_dialog_ptr->set_action_requested(
-				GPlatesQtWidgets::UnsavedChangesWarningDialog::REPLACE_SESSION);
+				GPlatesQtWidgets::UnsavedChangesWarningDialog::CLEAR_SESSION);
 
-		switch (d_warning_dialog_ptr->exec()) {
-
+		switch (d_warning_dialog_ptr->exec())
+		{
 		case QDialogButtonBox::Discard:
+			// The unsaved changes will be discarded when the session is cleared.
 			return true;
 
 		default:
 		case QDialogButtonBox::Abort:
+			// Do not discard the unsaved changes and do not clear the session.
 			return false;
-
 		}
-	} else {
-		// All saved, all good. Unload the files already.
+	}
+	else
+	{
+		// There are no unsaved changes so the session can be cleared.
 		return true;
 	}
 }

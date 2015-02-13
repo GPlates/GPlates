@@ -44,7 +44,7 @@
    <item>
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
-      <string>Associate shapefile attributes with GPlates model properties.</string>
+      <string>Associate file attributes with GPlates model properties.</string>
      </property>
      <layout class="QGridLayout" name="gridLayout">
       <item row="0" column="0">
@@ -111,7 +111,7 @@
            </font>
           </property>
           <property name="text">
-           <string>Shapefile attribute</string>
+           <string>File attribute</string>
           </property>
          </widget>
         </item>

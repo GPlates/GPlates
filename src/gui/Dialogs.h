@@ -71,6 +71,7 @@ namespace GPlatesQtWidgets
 	class GenerateVelocityDomainCitcomsDialog;
 	class GenerateVelocityDomainLatLonDialog;
 	class GenerateVelocityDomainTerraDialog;
+	class KinematicGraphsDialog;
 	class LicenseDialog;
 	class LogDialog;
 	class ManageFeatureCollectionsDialog;
@@ -182,6 +183,9 @@ namespace GPlatesGui
 
 		GPlatesQtWidgets::HellingerDialog &
 		hellinger_dialog();
+
+		GPlatesQtWidgets::KinematicGraphsDialog &
+		kinematics_tool_dialog();
 
 		GPlatesQtWidgets::LicenseDialog &
 		license_dialog();
@@ -300,6 +304,9 @@ namespace GPlatesGui
 		pop_up_finite_rotation_calculator_dialog();
 
 		void
+		pop_up_kinematics_tool_dialog();
+
+		void
 		pop_up_hellinger_dialog();
 
 		void
@@ -390,6 +397,7 @@ namespace GPlatesGui
 			DIALOG_FEATURE_PROPERTIES,
 			DIALOG_FINITE_ROTATION_CALCULATOR_DIALOG,
 			DIALOG_HELLINGER,
+			DIALOG_KINEMATICS_TOOL,
 			DIALOG_LICENSE,
 			DIALOG_LOG,
 			DIALOG_MANAGE_FEATURE_COLLECTIONS,

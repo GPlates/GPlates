@@ -65,8 +65,10 @@ namespace GPlatesQtWidgets
 				const boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::classifications_type> &allowed_collection_types = boost::none);
 
 		/**
-		 * Initialises the ChooseFeatureCollectionWidget with the currently loaded
-		 * feature collections.
+		 * Initialises the ChooseFeatureCollectionWidget with the currently loaded feature collections.
+		 *
+		 * If the previously selected feature collection (if any) is in the new list of
+		 * feature collections then the selection is retained.
 		 */
 		void
 		initialise();

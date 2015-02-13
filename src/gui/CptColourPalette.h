@@ -28,6 +28,7 @@
 #ifndef GPLATES_GUI_CPTCOLOURPALETTE_H
 #define GPLATES_GUI_CPTCOLOURPALETTE_H
 
+#include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
@@ -90,6 +91,10 @@ namespace GPlatesUtils
 			else if (s == "U")
 			{
 				return ColourScaleAnnotation::UPPER;
+			}
+			else if (s == "B")
+			{
+				return ColourScaleAnnotation::BOTH;
 			}
 			else
 			{
@@ -780,16 +785,18 @@ namespace GPlatesGui
 			visitor.visit_regular_cpt_colour_palette(*this);
 		}
 
-		GPlatesMaths::Real
-		get_lower_bound() const
+		//! Returns none if there are no colour slices (@a size returns zero).
+		boost::optional< std::pair<GPlatesMaths::Real, GPlatesMaths::Real> >
+		get_range() const
 		{
-			return d_entries.front().lower_value();
-		}
+			if (d_entries.empty())
+			{
+				return boost::none;
+			}
 
-		GPlatesMaths::Real
-		get_upper_bound() const
-		{
-			return d_entries.back().upper_value();
+			return std::make_pair(
+					d_entries.front().lower_value(),
+					d_entries.back().upper_value());
 		}
 
 	protected:
@@ -800,7 +807,8 @@ namespace GPlatesGui
 				value_type value) const
 		{
 			// Background colour is used if value comes before first slice.
-			return value < d_entries.front();
+			return d_entries.empty() ||
+				value < d_entries.front();
 		}
 
 		virtual
@@ -809,7 +817,8 @@ namespace GPlatesGui
 				value_type value) const
 		{
 			// Foreground colour is used if value comes after last slice.
-			return value > d_entries.back();
+			return !d_entries.empty() &&
+				value > d_entries.back();
 		}
 
 	private:
@@ -996,23 +1005,22 @@ namespace GPlatesGui
 		}
 
 		/**
-		 * Returns the lower bound of the range covered by this colour palette.
+		 * Returns the range covered by this colour palette.
 		 * This function can only be called if @a T is integral.
+		 * 
+		 * Returns none if there are no colour entries (@a size returns zero).
 		 */
-		T
-		get_lower_bound() const
+		boost::optional< std::pair<T, T> >
+		get_range() const
 		{
-			return d_entries.front().key();
-		}
+			if (d_entries.empty())
+			{
+				return boost::none;
+			}
 
-		/**
-		 * Returns the upper bound of the range covered by this colour palette.
-		 * This function can only be called if @a T is integral.
-		 */
-		T
-		get_upper_bound() const
-		{
-			return d_entries.back().key();
+			return std::make_pair(
+					d_entries.front().key(),
+					d_entries.back().key());
 		}
 
 	protected:
@@ -1027,8 +1035,9 @@ namespace GPlatesGui
 		use_background_colour(
 				value_type value) const
 		{
-			return CategoricalCptColourPaletteInternals::UseForegroundBackgroundColour<T>::use_background_colour(
-					d_entries, value);
+			return d_entries.empty() ||
+					CategoricalCptColourPaletteInternals::UseForegroundBackgroundColour<T>
+						::use_background_colour(d_entries, value);
 		}
 
 		virtual
@@ -1036,8 +1045,9 @@ namespace GPlatesGui
 		use_foreground_colour(
 				value_type value) const
 		{
-			return CategoricalCptColourPaletteInternals::UseForegroundBackgroundColour<T>::use_foreground_colour(
-					d_entries, value);
+			return !d_entries.empty() &&
+					CategoricalCptColourPaletteInternals::UseForegroundBackgroundColour<T>
+						::use_foreground_colour(d_entries, value);
 		}
 
 	private:

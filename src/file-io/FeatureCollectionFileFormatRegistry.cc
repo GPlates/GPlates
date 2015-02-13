@@ -129,9 +129,12 @@ namespace GPlatesFileIO
 			const QString FILE_FORMAT_EXT_GPLATES_ROTATION = "grot";
 			const QString FILE_FORMAT_EXT_SHAPEFILE = "shp";
 			const QString FILE_FORMAT_EXT_OGRGMT = "gmt";
+			const QString FILE_FORMAT_EXT_GEOJSON = "geojson";
+			const QString FILE_FORMAT_EXT_GEOJSON_ALTERNATIVE = "json";
 			const QString FILE_FORMAT_EXT_WRITE_ONLY_XY_GMT = "xy";
 			const QString FILE_FORMAT_EXT_GMAP = "vgp";
 			const QString FILE_FORMAT_EXT_GSML = "gsml";
+
 
 
 			/**
@@ -203,12 +206,11 @@ namespace GPlatesFileIO
 			}
 
 
-			// This can become ogr_read_feature_collection in due course.
 			/**
-			 * Reads a SHAPEFILE feature collection.
+			 * Reads an OGR-supported feature collection.
 			 */
 			void
-			shapefile_read_feature_collection(
+			ogr_read_feature_collection(
 					File::Reference &file_ref,
 					const Registry &file_format_registry,
 					GPlatesModel::ModelInterface &model,
@@ -353,7 +355,7 @@ namespace GPlatesFileIO
 
 
 			/**
-			 * Creates a feature visitor writer for the SHAPEFILE and OGRGMT file formats.
+			 * Creates a feature visitor writer for OGR-supported file formats.
 			 */
 			boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>
 			create_ogr_feature_collection_writer(
@@ -797,7 +799,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			shapefile_classification,
 			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
-					boost::bind(&shapefile_read_feature_collection,
+					boost::bind(&ogr_read_feature_collection,
 							_1, boost::cref(registry), model, boost::cref(gpgim), _2, _3)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_feature_collection_writer,
@@ -816,12 +818,34 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 			ogr_gmt_classification,
 			&file_name_ends_with,
 			Registry::read_feature_collection_function_type(
-					boost::bind(&shapefile_read_feature_collection,
+					boost::bind(&ogr_read_feature_collection,
 							_1, boost::cref(registry), model, boost::cref(gpgim), _2, _3)),
 			Registry::create_feature_collection_writer_function_type(
 					boost::bind(&create_ogr_feature_collection_writer,
 							_1, boost::cref(registry), OGRGMT, boost::cref(gpgim))),
 			ogr_gmt_default_configuration);
+
+	classifications_type geojson_classification;
+	geojson_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
+	geojson_classification.set(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
+	std::vector<QString> geojson_filename_extensions;
+	geojson_filename_extensions.push_back(FILE_FORMAT_EXT_GEOJSON);
+	geojson_filename_extensions.push_back(FILE_FORMAT_EXT_GEOJSON_ALTERNATIVE);
+	// FIXME: Should load this up with the standard GPlates model-to-attribute mapping.
+	Configuration::shared_ptr_to_const_type geojson_default_configuration(new OGRConfiguration(GEOJSON));
+	registry.register_file_format(
+				GEOJSON,
+				"GeoJSON",
+				geojson_filename_extensions,
+				geojson_classification,
+				&file_name_ends_with,
+				Registry::read_feature_collection_function_type(
+					boost::bind(&ogr_read_feature_collection,
+								_1, boost::cref(registry), model, boost::cref(gpgim), _2, _3)),
+				Registry::create_feature_collection_writer_function_type(
+					boost::bind(&create_ogr_feature_collection_writer,
+								_1, boost::cref(registry), GEOJSON, boost::cref(gpgim))),
+				geojson_default_configuration);
 
 	classifications_type write_only_gmt_classification;
 	write_only_gmt_classification.set(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);

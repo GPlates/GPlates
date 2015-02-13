@@ -14,7 +14,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Re-map Shapefile Attributes</string>
+   <string>Re-map File Attributes</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../qt-resources/qt_widgets.qrc">

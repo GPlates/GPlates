@@ -70,6 +70,16 @@ namespace GPlatesUtils
 
 
 		/**
+		 * Swaps bytes in each data element in an array to effectively switch/toggle endian-ness.
+		 */
+		template <typename ForwardIteratorType>
+		void
+		swap(
+				ForwardIteratorType begin,
+				ForwardIteratorType end);
+
+
+		/**
 		 * Swaps bytes in the data element to effectively switch/toggle endian-ness.
 		 *
 		 * In order for this function to work with a specific type it must be specialised for that type.
@@ -100,16 +110,6 @@ namespace GPlatesUtils
 		void
 		swap(
 				T &object);
-
-
-		/**
-		 * Swaps bytes in each data element in an array to effectively switch/toggle endian-ness.
-		 */
-		template <typename ForwardIteratorType>
-		void
-		swap(
-				ForwardIteratorType begin,
-				ForwardIteratorType end);
 
 		//
 		// Specialisations for the basic types.

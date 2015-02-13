@@ -40,6 +40,8 @@
 
 #include "model/FeatureCollectionHandle.h"
 
+#include "scribe/Transcribe.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -91,6 +93,16 @@ namespace GPlatesAppLogic
 
 			// Make friend so can access constructor and @a d_non_const_get_reconstruct_params_called.
 			friend class ReconstructLayerTask;
+
+		private: // Transcribing...
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			// Only the scribe system should be able to transcribe.
+			friend class GPlatesScribe::Access;
 		};
 
 
@@ -121,7 +133,7 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		QString
+		LayerInputChannelName::Type
 		get_main_input_feature_collection_channel() const;
 
 
@@ -134,31 +146,31 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		add_input_file_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 		virtual
 		void
 		remove_input_file_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 		void
 		modified_input_file(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 
 		virtual
 		void
 		add_input_layer_proxy_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const LayerProxy::non_null_ptr_type &layer_proxy);
 
 		virtual
 		void
 		remove_input_layer_proxy_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const LayerProxy::non_null_ptr_type &layer_proxy);
 
 
@@ -184,11 +196,6 @@ namespace GPlatesAppLogic
 		}
 
 	private:
-
-		static const QString RECONSTRUCTABLE_FEATURES_CHANNEL_NAME;
-
-		//! This is a human-readable name for the reconstructed static/dynamic polygons/networks input channel.
-		static const QString DEFORMATION_SURFACES_CHANNEL_NAME;
 
 		/**
 		 * Parameters used when reconstructing.
@@ -221,6 +228,30 @@ namespace GPlatesAppLogic
 								reconstruct_method_registry,
 								d_layer_task_params.d_reconstruct_params))
 		{  }
+
+	private: // Transcribing...
+
+		ReconstructLayerTask(
+				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy,
+				const ReconstructLayerProxy::non_null_ptr_type &reconstruct_layer_proxy) :
+				d_default_reconstruction_layer_proxy(default_reconstruction_layer_proxy),
+				d_using_default_reconstruction_layer_proxy(true),
+				d_reconstruct_layer_proxy(reconstruct_layer_proxy)
+		{  }
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<ReconstructLayerTask> &reconstruct_layer_task);
+
+		// Only the scribe system should be able to transcribe.
+		friend class GPlatesScribe::Access;
 	};
 }
 

@@ -190,6 +190,9 @@ QVariant
 GPlatesAppLogic::UserPreferences::get_value(
 		const QString &key) const
 {
+	// Note that QSettings destructor calls 'sync()' to:
+	//  (1) Write unsaved changes to persistent storage, and
+	//  (2) Reload any settings that have been changed in the meantime by another application (GPlates).
 	QSettings settings;
 	if ( ! d_key_root.isNull()) {
 		settings.beginGroup(d_key_root);
@@ -206,6 +209,9 @@ bool
 GPlatesAppLogic::UserPreferences::has_been_set(
 		const QString &key) const
 {
+	// Note that QSettings destructor calls 'sync()' to:
+	//  (1) Write unsaved changes to persistent storage, and
+	//  (2) Reload any settings that have been changed in the meantime by another application (GPlates).
 	QSettings settings;
 	if ( ! d_key_root.isNull()) {
 		settings.beginGroup(d_key_root);
@@ -230,6 +236,9 @@ bool
 GPlatesAppLogic::UserPreferences::exists(
 		const QString &key) const
 {
+	// Note that QSettings destructor calls 'sync()' to:
+	//  (1) Write unsaved changes to persistent storage, and
+	//  (2) Reload any settings that have been changed in the meantime by another application (GPlates).
 	QSettings settings;
 	if ( ! d_key_root.isNull()) {
 		settings.beginGroup(d_key_root);
@@ -256,6 +265,9 @@ GPlatesAppLogic::UserPreferences::set_value(
 			key.startsWith('/') == false,
 			GPLATES_ASSERTION_SOURCE);
 
+	// Note that QSettings destructor calls 'sync()' to:
+	//  (1) Write unsaved changes to persistent storage, and
+	//  (2) Reload any settings that have been changed in the meantime by another application (GPlates).
 	QSettings settings;
 	if ( ! d_key_root.isNull()) {
 		settings.beginGroup(d_key_root);
@@ -273,6 +285,9 @@ void
 GPlatesAppLogic::UserPreferences::clear_value(
 		const QString &key)
 {
+	// Note that QSettings destructor calls 'sync()' to:
+	//  (1) Write unsaved changes to persistent storage, and
+	//  (2) Reload any settings that have been changed in the meantime by another application (GPlates).
 	QSettings settings;
 	if ( ! d_key_root.isNull()) {
 		settings.beginGroup(d_key_root);
@@ -299,6 +314,9 @@ void
 GPlatesAppLogic::UserPreferences::clear_prefix(
 		const QString &prefix)
 {
+	// Note that QSettings destructor calls 'sync()' to:
+	//  (1) Write unsaved changes to persistent storage, and
+	//  (2) Reload any settings that have been changed in the meantime by another application (GPlates).
 	QSettings settings;
 	if ( ! d_key_root.isNull()) {
 		settings.beginGroup(d_key_root);
@@ -313,6 +331,9 @@ QStringList
 GPlatesAppLogic::UserPreferences::subkeys(
 		const QString &prefix) const
 {
+	// Note that QSettings destructor calls 'sync()' to:
+	//  (1) Write unsaved changes to persistent storage, and
+	//  (2) Reload any settings that have been changed in the meantime by another application (GPlates).
 	QSettings settings;
 	if ( ! d_key_root.isNull()) {
 		settings.beginGroup(d_key_root);
@@ -453,6 +474,9 @@ GPlatesAppLogic::UserPreferences::debug_key_values()
 void
 GPlatesAppLogic::UserPreferences::initialise_versioning()
 {
+	// Note that QSettings destructor calls 'sync()' to:
+	//  (1) Write unsaved changes to persistent storage, and
+	//  (2) Reload any settings that have been changed in the meantime by another application (GPlates).
 	QSettings raw_settings;
 	
 	// Record the most recent version of GPlates that has been run on the user's machine.
@@ -465,6 +489,9 @@ GPlatesAppLogic::UserPreferences::initialise_versioning()
 void
 GPlatesAppLogic::UserPreferences::store_executable_path()
 {
+	// Note that QSettings destructor calls 'sync()' to:
+	//  (1) Write unsaved changes to persistent storage, and
+	//  (2) Reload any settings that have been changed in the meantime by another application (GPlates).
 	QSettings settings;
 
 	// Record the executable path to this application. 

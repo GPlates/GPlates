@@ -69,7 +69,8 @@ GPlatesGui::ExportResolvedTopologyAnimationStrategy::ExportResolvedTopologyAnima
 		{
 
 			// The 'reconstruct geometries' layer has input feature collections on its main input channel.
-			const QString main_input_channel = it->get_main_input_feature_collection_channel();
+			const GPlatesAppLogic::LayerInputChannelName::Type main_input_channel =
+					it->get_main_input_feature_collection_channel();
 			const std::vector<GPlatesAppLogic::Layer::InputConnection> main_inputs =
 					it->get_channel_inputs(main_input_channel);
 

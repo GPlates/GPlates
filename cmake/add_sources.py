@@ -31,6 +31,7 @@ GPLATES_SUB_DIRECTORIES = [
     'presentation',
     'qt-resources',
     'qt-widgets',
+    'scribe',
     'unit-test',
     'utils',
     'view-operations'

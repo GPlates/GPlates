@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GPGIM gpgim:version="1.6.0325" xmlns="http://www.gplates.org/gpgim" xmlns:gpgim="http://www.gplates.org/gpgim" xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance">
+<GPGIM gpgim:version="1.6.0327" xmlns="http://www.gplates.org/gpgim" xmlns:gpgim="http://www.gplates.org/gpgim" xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance">
 	<!--
 		==================================================
 		==================================================
@@ -13,9 +13,9 @@
 	
 	<!--
 		/**
-		* Copyright (C) 2013 California Institute of Technology
-		* Copyright (C) 2013 Geological Survey of Norway
-		* Copyright (C) 2013 The University of Sydney, Australia
+		* Copyright (C) 2014 California Institute of Technology
+		* Copyright (C) 2014 Geological Survey of Norway
+		* Copyright (C) 2014 The University of Sydney, Australia
 		*
 		* This file is part of GPlates.
 		*
@@ -611,6 +611,8 @@
 			Note that some text editors (like Notepad++) let you collapse a level - for example, collapsing
 			level 4 collapses all the <Content> definitions making it easier to scroll through the enumeration types.
 		-->
+		<!-- A -->
+
 		<Property>
 			<Name>gpml:absoluteReferenceFrame</Name>
 			<Description>Type of absolute reference frame.</Description>
@@ -651,6 +653,7 @@
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
 			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
 		</Property>
+		<!-- B -->
 		<Property>
 			<Name>gpml:bandNames</Name>
 			<Description>The names of the raster bands in a raster.</Description>
@@ -669,6 +672,9 @@
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
 			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
 		</Property>
+
+		<!-- C -->
+
 		<Property gpgim:defaultType="gml:LineString">
 			<Name>gpml:centerLineOf</Name>
 			<UserFriendlyName>Centre line</UserFriendlyName>
@@ -703,9 +709,41 @@
 			<Comment>The plate Id is a general-purpose plate Id or specific plate Id for motion of a cluster of Features.</Comment>
 		</Property>
 		<Property>
+			<Name>gpml:coreData</Name>
+			<Description>A URL for Core Data</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:coreRecovered</Name>
+			<Description>Length of Core Recovered in meters.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
 			<Name>gpml:crust</Name>
 			<Description>The type of the crust contained within a boundary.</Description>
 			<Type>gpml:ContinentalBoundaryCrustEnumeration</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<!-- D -->
+		<Property>
+			<Name>gpml:dataDictionary</Name>
+			<Description>A set of data, stored as KeyValueDictionary: 'key=value' pairs: key1=value1, key2=value2, key3=value3, etc.</Description>
+			<Type>gpml:KeyValueDictionary</Type>
+			<Multiplicity>0..*</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:dataSeries</Name>
+			<Description>A series of data, as 'datum=value' pairs in simple text string form: 'data1=value1, datum2=value2, dataum3=value3', etc.</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<Comment>This property is a qucik way to capture user data for depth or time series data.  For example, measured values (such as water density) at various depths for a single sample site: 'depth1=value1, depth2=value2, depth3=value3'.</Comment>
+		</Property>
+		<Property>
+			<Name>gpml:depthToBasement</Name>
+			<Description>Depth to basement rock at the sample site.</Description>
+			<Type>xsi:double</Type>
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
 		<Property>
@@ -745,6 +783,9 @@
 			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
 			<Comment>This is currently only used for rasters.</Comment>
 		</Property>
+
+		<!-- E -->
+
 		<Property>
 			<Name>gpml:edge</Name>
 			<Description>Enumerates whether a continental boundary is the inner or outer boundary in the broad area of change between continental and oceanic crust.</Description>
@@ -771,6 +812,16 @@
 			<Multiplicity>0..*</Multiplicity>
 			<Comment>As a convenience, you may also include references to other gpml:Features here, as the 'evidence' of the HotSpotTrail. These can be the physical features that indicate the path the HotSpot took- Volcanoes, Seamounts, maybe even AseismicRidges - we have to be pretty forgiving with what features the user wants to associate with the HotSpotTrail.</Comment>
 		</Property>
+
+		<Property>
+			<Name>gpml:expedition</Name>
+			<Description>The name or identifer of the Expedition related to this feature</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+
+		<!-- F -->
+
 		<Property>
 			<!-- FIXME: Either rename to something more specific of a scalar field - later this will include more than just a filename. -->
 			<Name>gpml:file</Name>
@@ -792,6 +843,27 @@
 			<Type>gpml:plateId</Type>
 			<Multiplicity>1</Multiplicity>
 		</Property>
+
+		<!-- G -->
+
+		<!-- H -->
+
+		<Property>
+			<Name>gpml:hole</Name>
+			<Description>The identifer for the drill hole</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+
+		<!-- I -->
+
+		<Property>
+			<Name>gpml:initialReportVolume</Name>
+			<Description>URL for the drill hole data</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+
 		<Property>
 			<Name>gpml:isActive</Name>
 			<Description>Time-dependent boolean indicates when the feature is active over time.</Description>
@@ -808,6 +880,11 @@
 			<Type>gpml:FeatureReference</Type>
 			<Multiplicity>0..*</Multiplicity>
 		</Property>
+
+		<!-- J -->
+		<!-- K -->
+		<!-- L -->
+
 		<Property>
 			<Name>gpml:leftPlate</Name>
 			<Description>Annotation property describing the plate on the "left" side of the feature.</Description>
@@ -834,6 +911,15 @@
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
 		<Property>
+			<Name>gpml:logData</Name>
+			<Description>A URL for Log Data</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+
+		<!-- M -->
+
+		<Property>
 			<Name>gpml:mark</Name>
 			<Description>Forms a table of hotspot position and age, using HotSpotTrailMark to represent each row.</Description>
 			<Type>gpml:HotSpotTrailMark</Type>
@@ -844,6 +930,12 @@
 			<Description>Global positions to calculate plate velocities at.</Description>
 			<Type>gml:MultiPoint</Type>
 			<Multiplicity>1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:metadata</Name>
+			<Description>The metadata for feature collection.</Description>
+			<Type>gpml:GpmlMetadata</Type>
+			<Multiplicity>0..1</Multiplicity>
 		</Property>
 		<Property>
 			<Name>gpml:motion</Name>
@@ -860,12 +952,21 @@
 			<Multiplicity>1</Multiplicity>
 		</Property>
 		<Property>
+			<Name>gpml:mprsAttributes</Name>
+			<Description>Moving Plate Rotation Sequence attributes.</Description>
+			<Type>gpml:KeyValueDictionary</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
 			<Name>gpml:multiPosition</Name>
 			<UserFriendlyName>Multiple positions</UserFriendlyName>
 			<Description>When a feature’s geometry is described as a multiple points, it is appropriate to use the MultiPoint geometry.</Description>
 			<Type>gml:MultiPoint</Type>
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
+
+		<!-- N -->
+
 		<Property>
 			<Name>gml:name</Name>
 			<Description>A descriptive name of the feature.</Description>
@@ -895,6 +996,9 @@
 			<Multiplicity>0..1</Multiplicity>
 			<Comment>This is a Computational Geometry Algorithms Library (CGAL) parameter.</Comment>
 		</Property>
+
+		<!-- O -->
+
 		<Property>
 			<Name>gpml:oldPlatesHeader</Name>
 			<Description>Metadata imported from a PLATES data file.</Description>
@@ -978,6 +1082,27 @@
 			<Type>gpml:SlipComponentEnumeration</Type>
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
+
+
+		<!-- P -->
+
+		<Property>
+			<Name>gpml:program</Name>
+			<Description>An identifer for the scientific Program related to this feature</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..*</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:publication</Name>
+			<Description>An identifer for publications related to this feature</Description>
+			<Type>xsi:string</Type>
+			<Multiplicity>0..*</Multiplicity>
+		</Property>
+
+		<!-- Q -->
+
+		<!-- R -->
+
 		<Property>
 			<Name>gpml:rangeSet</Name>
 			<Description>The coverage or raster values at the corresponding 'gpml:domainSet' region-of-interest.</Description>
@@ -1030,7 +1155,17 @@
 			<Multiplicity>0..1</Multiplicity>
 			<Comment>Assuming there is a suitable centerLineOf supplied, and understanding that the order of points in the line matters, we can establish a "Left" and "Right" side of the centerLine.</Comment>
 			<Comment>Particular implementations of AbstractRockUnit can include BasicRockUnit for simple free-text descriptions plus an extent, or more complex rock unit definitions.</Comment>
+		</Property>  
+
+		<!-- S -->
+
+		<Property>
+			<Name>gpml:sedimentThickness</Name>
+			<Description>Sediment Thickness at the sample site.</Description>
+			<Type>xsi:double</Type>
+			<Multiplicity>0..1</Multiplicity>
 		</Property>
+
 		<Property gpgim:defaultType="gml:MultiPoint">
 			<Name>gpml:seedPoints</Name>
 			<Description>The points from which the Flowline and MotionPath time-paths are generated.</Description>
@@ -1058,6 +1193,12 @@
 			<Name>gpml:side</Name>
 			<Description>Indicates which direction leads to the continental crust.</Description>
 			<Type>gpml:ContinentalBoundarySideEnumeration</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
+		<Property>
+			<Name>gpml:site</Name>
+			<Description>Site name for this feature</Description>
+			<Type>xsi:string</Type>
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
 		<Property>
@@ -1152,6 +1293,9 @@
 			<Comment>It will be purged on occasion to ensure files do not get bloated from many small changes. Newly superseded revisionId s get unshifted onto the front/head of the list, older ones are at the end/tail of the list.</Comment>
 			<Comment>A simple linear 'version number' would fail if a feature collection was concurrently modified by multiple users and then merged.</Comment>
 		</Property>
+
+		<!-- T -->
+
 		<Property>
 			<Name>gpml:times</Name>
 			<Description>An array of time instants.</Description>
@@ -1191,6 +1335,9 @@
 			<Comment>While GPlates will treat each individual gpml:Feature separately, it is intended as a reminder that this Feature is part of a larger whole.</Comment>
 			<Comment>A common problem in PLATES datasets is the lack of any deformable geometry. This is often hacked around by creating multiple 'features' for the same real-world thing, for example, an Isochron getting subducted might have have been 'cut up' into multiple PLATES 'IS' features, to simulate the Isochron slowly disappearing. One day, this property will be used by a magical algorithm to undo all the 'cutting up' of features done in data sets for the purpose of hacking deformable geometry into PLATES.</Comment>
 		</Property>
+
+		<!-- U -->
+
 		<Property gpgim:defaultType="gml:LineString">
 			<Name>gpml:unclassifiedGeometry</Name>
 			<UserFriendlyName>Unclassified / miscellaneous</UserFriendlyName>
@@ -1206,33 +1353,33 @@
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
 			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
 		</Property>
+
+		<!-- V -->
+
 		<Property>
 			<Name>gml:validTime</Name>
 			<Description>The period of time the feature is in existence.</Description>
 			<Type>gml:TimePeriod</Type>
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
+
+		<!-- W -->
+
 		<Property>
-			<Name>gpml:metadata</Name>
-			<Description>The metadata for feature collection.</Description>
-			<Type>gpml:GpmlMetadata</Type>
+			<Name>gpml:waterDepth</Name>
+			<Description>Water Depth in meters at the sample site.</Description>
+			<Type>xsi:double</Type>
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
-		<Property>
-			<Name>gpml:mprsAttributes</Name>
-			<Description>Moving Plate Rotation Sequence attributes.</Description>
-			<Type>gpml:KeyValueDictionary</Type>
-			<Multiplicity>0..1</Multiplicity>
-		</Property>
+
+		<!-- X -->
+		<!-- Y -->
+		<!-- Z -->
+
 	</PropertyList>
-	
-	
-	
-	
-	
 	<!--
 		==================================================
-		                 PropertyList
+		                 FeatureClassList
 		==================================================
 		List of feature classes supported by GPlates.
 	-->
@@ -1393,6 +1540,28 @@
 			<Property>gpml:centerLineOf</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
 			<Comment>Present day coastline, but can still be reconstructed with the rest of them as a visual aid.</Comment>
+		</FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
+			<Name>gpml:ContinentalCrust</Name>
+			<Description>Continental Crust</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:position</Property>
+			<Property>gpml:multiPosition</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+		</FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
+			<Name>gpml:OceanicCrust</Name>
+			<Description>Oceanic Crust</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:position</Property>
+			<Property>gpml:multiPosition</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
 		</FeatureClass>
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<Name>gpml:ContinentalFragment</Name>
@@ -1763,6 +1932,30 @@
 			<Description>A sample from the NAVDAT database with high felsic chemical composition.</Description>
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:NavdatSample</Inherits>
+		</FeatureClass>
+		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
+			<Name>gpml:OceanDrillSite</Name>
+			<Description>An feature to hold data related to a single dilling site.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:position</Property>
+			<Property>gpml:outlineOf</Property>
+			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:dataDictionary</Property>
+			<Property>gpml:dataSeries</Property>
+			<Property>gpml:expedition</Property>
+			<Property>gpml:hole</Property>
+			<Property>gpml:site</Property>
+			<Property>gpml:program</Property>
+			<Property>gpml:depthToBasement</Property>
+			<Property>gpml:sedimentThickness</Property>
+			<Property>gpml:waterDepth</Property>
+			<Property>gpml:coreRecovered</Property>
+			<Property>gpml:coreData</Property>
+			<Property>gpml:logData</Property>
+			<Property>gpml:publication</Property>
+			<Property>gpml:initialReportVolume</Property>
+			<Comment>A single Ocean Drilling Site, with single point geometry, and various measured properties at the site.</Comment>
 		</FeatureClass>
 		<FeatureClass>
 			<Name>gpml:OceanicAge</Name>

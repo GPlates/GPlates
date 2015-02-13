@@ -37,13 +37,28 @@
 
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/File.h"
+#include "file-io/ReadErrorAccumulation.h"
+
+#include "global/GPlatesAssert.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
 #include "model/WeakReferenceCallback.h"
 
+#include "scribe/ScribeExceptions.h"
+#include "scribe/Transcribe.h"
+#include "scribe/TranscribeContext.h"
+
 #include "utils/CopyConst.h"
 
+
+namespace GPlatesFileIO
+{
+	namespace FeatureCollectionFileFormat
+	{
+		class Registry;
+	}
+}
 
 namespace GPlatesAppLogic
 {
@@ -201,6 +216,22 @@ namespace GPlatesAppLogic
 
 			// For implicit non-const to const constructor.
 			friend class FileReference<typename boost::add_const<FeatureCollectionFileState>::type>;
+
+		private: // Transcribing...
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			static
+			GPlatesScribe::TranscribeResult
+			transcribe_construct_data(
+					GPlatesScribe::Scribe &scribe,
+					GPlatesScribe::ConstructObject< FileReference<FileStateQualifiedType> > &file_ref);
+
+			// Only the scribe system should be able to transcribe.
+			friend class GPlatesScribe::Access;
 		};
 
 
@@ -374,6 +405,7 @@ namespace GPlatesAppLogic
 		class FileSlotExtra
 		{
 		public:
+			explicit
 			FileSlotExtra(
 					const GPlatesFileIO::File::Reference::non_null_ptr_type &file_ref) :
 				d_file_ref(file_ref),
@@ -389,7 +421,25 @@ namespace GPlatesAppLogic
 			 * our model callback.
 			 */
 			GPlatesModel::FeatureCollectionHandle::const_weak_ref d_callback_feature_collection;
+
+		private: // Transcribing...
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			static
+			GPlatesScribe::TranscribeResult
+			transcribe_construct_data(
+					GPlatesScribe::Scribe &scribe,
+					GPlatesScribe::ConstructObject<FileSlotExtra> &file_slot_extra);
+
+			// Only the scribe system should be able to transcribe.
+			friend class GPlatesScribe::Access;
+
 		};
+
 
 		/**
 		 * A slot to store information about a file in a sequence of loaded files.
@@ -408,6 +458,23 @@ namespace GPlatesAppLogic
 			boost::shared_ptr<FileSlotExtra> d_file_slot_extra;
 			file_index_type d_index_into_file_index_array;
 			bool d_is_active_in_model;
+
+		private: // Transcribing...
+
+			//! Default constructor - used during session restore to populate potentially empty slots.
+			FileSlot() :
+				d_index_into_file_index_array(0),
+				d_is_active_in_model(false)
+			{  }
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			// Only the scribe system should be able to transcribe.
+			friend class GPlatesScribe::Access;
+
 		};
 
 		//! Typedef for a sequence of @a FileSlot objects.
@@ -487,6 +554,8 @@ namespace GPlatesAppLogic
 				file_handle_type file_handle);
 
 
+	private:
+
 		/**
 		 * Keeps track of feature collections as they are deactivated and reactivated in the *model*.
 		 */
@@ -529,14 +598,108 @@ namespace GPlatesAppLogic
 		private:
 			GPlatesAppLogic::FeatureCollectionFileState &d_file_state;
 			file_handle_type d_file_handle;
+
+		private: // Transcribing...
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
+
+			static
+			GPlatesScribe::TranscribeResult
+			transcribe_construct_data(
+					GPlatesScribe::Scribe &scribe,
+					GPlatesScribe::ConstructObject<FeatureCollectionUnloadCallback> &callback);
+
+			// Only the scribe system should be able to transcribe.
+			friend class GPlatesScribe::Access;
 		};
+
+	private: // Transcribing...
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<FeatureCollectionFileState> &file_state)
+		{
+			// Shouldn't construct object - always transcribe existing object.
+			GPlatesGlobal::Assert<GPlatesScribe::Exceptions::ConstructNotAllowed>(
+					false,
+					GPLATES_ASSERTION_SOURCE,
+					typeid(FeatureCollectionFileState));
+
+			// Shouldn't be able to get here - keep compiler happy.
+			return GPlatesScribe::TRANSCRIBE_INCOMPATIBLE;
+		}
+
+		// Only the scribe system should be able to transcribe.
+		friend class GPlatesScribe::Access;
 	};
+
 
 	boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 	get_file_reference_containing_feature(
 			GPlatesAppLogic::FeatureCollectionFileState &file_state_ref,
 			GPlatesModel::FeatureHandle::weak_ref feature_ref);
 
+}
+
+namespace GPlatesScribe
+{
+	//
+	// FeatureCollectionFileState ...
+	//
+
+	template <>
+	class TranscribeContext<GPlatesAppLogic::FeatureCollectionFileState>
+	{
+	public:
+		explicit
+		TranscribeContext(
+				GPlatesFileIO::FeatureCollectionFileFormat::Registry &feature_collection_file_format_registry_) :
+			feature_collection_file_format_registry(feature_collection_file_format_registry_)
+		{  }
+
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry &feature_collection_file_format_registry;
+		GPlatesFileIO::ReadErrorAccumulation read_errors;
+	};
+
+	template <class FileStateQualifiedType>
+	class TranscribeContext< GPlatesAppLogic::FeatureCollectionFileState::FileReference<FileStateQualifiedType> >
+	{
+	public:
+		explicit
+		TranscribeContext(
+				GPlatesAppLogic::FeatureCollectionFileState &feature_collection_file_state_) :
+			feature_collection_file_state(feature_collection_file_state_)
+		{  }
+
+		GPlatesAppLogic::FeatureCollectionFileState &feature_collection_file_state;
+	};
+
+	//
+	// FeatureCollectionFileState::FeatureCollectionUnloadCallback ...
+	//
+
+	template <>
+	class TranscribeContext<GPlatesAppLogic::FeatureCollectionFileState::FeatureCollectionUnloadCallback>
+	{
+	public:
+		explicit
+		TranscribeContext(
+				GPlatesAppLogic::FeatureCollectionFileState &file_state_) :
+			file_state(file_state_)
+		{  }
+
+		GPlatesAppLogic::FeatureCollectionFileState &file_state;
+	};
 }
 
 #endif // GPLATES_APP_LOGIC_FEATURECOLLECTIONFILESTATE_H

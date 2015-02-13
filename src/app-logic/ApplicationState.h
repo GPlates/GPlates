@@ -42,6 +42,7 @@
 #include "Reconstruction.h"
 #include "ReconstructionTree.h"
 
+#include "global/GPlatesAssert.h"
 #include "global/PointerTraits.h"
 
 #include "model/FeatureStoreRootHandle.h"
@@ -49,6 +50,9 @@
 #include "model/ModelInterface.h"
 #include "model/types.h"
 #include "model/WeakReferenceCallback.h"
+
+#include "scribe/ScribeExceptions.h"
+#include "scribe/Transcribe.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // NOTE: Please use forward declarations (and boost::scoped_ptr) instead of including headers
@@ -79,8 +83,6 @@ namespace GPlatesAppLogic
 	class LogModel;
 	class ReconstructGraph;
 	class ReconstructMethodRegistry;
-	class Serialization;
-	class SessionManagement;
 	class UserPreferences;
 
 
@@ -156,21 +158,9 @@ namespace GPlatesAppLogic
 		get_feature_collection_file_io();
 
 		/**
-		 * Helper for dealing with e.g. boost::serialize
-		 */
-		GPlatesAppLogic::Serialization &
-		get_serialization();
-
-		/**
-		 * Stores/Loads loaded file information to and from persistent storage.
-		 */
-		GPlatesAppLogic::SessionManagement &
-		get_session_management();
-
-		/**
 		 * Responsible for all persistent GPlates session storage including user preferences.
 		 */
-		GPlatesAppLogic::UserPreferences &
+		UserPreferences &
 		get_user_preferences();
 		
 
@@ -438,11 +428,6 @@ namespace GPlatesAppLogic
 		//
 
 		/**
-		 * Central access point and notification of loaded files.
-		 */
-		boost::scoped_ptr<FeatureCollectionFileState> d_feature_collection_file_state;
-
-		/**
 		 * A registry of the file formats for reading/writing feature collections.
 		 *
 		 * NOTE: This must be declared *before* @a d_feature_collection_file_io.
@@ -450,12 +435,14 @@ namespace GPlatesAppLogic
 		boost::scoped_ptr<GPlatesFileIO::FeatureCollectionFileFormat::Registry> d_feature_collection_file_format_registry;
 
 		/**
+		 * Central access point and notification of loaded files.
+		 */
+		boost::scoped_ptr<FeatureCollectionFileState> d_feature_collection_file_state;
+
+		/**
 		 * All file reading/writing goes through here.
 		 */
 		boost::scoped_ptr<FeatureCollectionFileIO> d_feature_collection_file_io;
-
-		boost::scoped_ptr<Serialization> d_serialization_ptr;
-		boost::scoped_ptr<SessionManagement> d_session_management_ptr;
 
 		boost::scoped_ptr<UserPreferences> d_user_preferences_ptr;
 
@@ -568,7 +555,34 @@ namespace GPlatesAppLogic
 		// Make friend so can call @a begin_reconstruct_on_scope_exit and @a end_reconstruct_on_scope_exit.
 		friend class ScopedReconstructGuard;
 
+	private: 
+
 		boost::scoped_ptr<AgeModelCollection> d_age_model_collection;
+
+		// Transcribing...
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<ApplicationState> &application_state)
+		{
+			// Shouldn't construct object - always transcribe existing object.
+			GPlatesGlobal::Assert<GPlatesScribe::Exceptions::ConstructNotAllowed>(
+					false,
+					GPLATES_ASSERTION_SOURCE,
+					typeid(ApplicationState));
+
+			// Shouldn't be able to get here - keep compiler happy.
+			return GPlatesScribe::TRANSCRIBE_INCOMPATIBLE;
+		}
+
+		// Only the scribe system should be able to transcribe.
+		friend class GPlatesScribe::Access;
 	};
 }
 

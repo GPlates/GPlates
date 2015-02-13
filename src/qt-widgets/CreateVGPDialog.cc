@@ -215,7 +215,7 @@ namespace
 			GPlatesModel::TopLevelPropertyInline::create(
 			GPlatesModel::PropertyName::create_gpml("poleDp"),
 			gpml_dp));	
-	}	
+	}
 }
 
 GPlatesQtWidgets::CreateVGPDialog::CreateVGPDialog(

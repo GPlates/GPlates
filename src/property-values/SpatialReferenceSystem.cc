@@ -47,14 +47,21 @@ GPlatesPropertyValues::SpatialReferenceSystem::get_WGS84()
 
 GPlatesPropertyValues::SpatialReferenceSystem::SpatialReferenceSystem(
 		const OGRSpatialReference &ogr_srs) :
-	d_ogr_srs(new OGRSpatialReference(ogr_srs)/*copy constructor clones SRS*/)
+	d_ogr_srs(
+			// Ensure allocation/deallocation happens in the OGR memory heap on Windows platforms
+			// since apparently Windows uses a separate heap per DLL...
+			//
+			// See http://lists.osgeo.org/pipermail/gdal-dev/2006-March/008204.html
+			//
+			static_cast<OGRSpatialReference *>(OSRNewSpatialReference(NULL)),
+			OGRSpatialReferenceDeleter())
 {
+	*d_ogr_srs = ogr_srs; // Assignment operator clones SRS.
 }
 
 
 GPlatesPropertyValues::SpatialReferenceSystem::~SpatialReferenceSystem()
 {
-	// boost::scoped_ptr destructor needs complete type.
 }
 
 
@@ -69,4 +76,12 @@ bool
 GPlatesPropertyValues::SpatialReferenceSystem::is_projected() const
 {
 	return d_ogr_srs->IsProjected();
+}
+
+
+void
+GPlatesPropertyValues::SpatialReferenceSystem::OGRSpatialReferenceDeleter::operator()(
+		OGRSpatialReference *ogr_srs)
+{
+	OSRDestroySpatialReference(ogr_srs);
 }

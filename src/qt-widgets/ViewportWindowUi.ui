@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>780</width>
-     <height>21</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -61,7 +61,10 @@
     </widget>
     <addaction name="separator"/>
     <addaction name="action_Open_Feature_Collection"/>
+    <addaction name="action_Open_Project"/>
+    <addaction name="action_Save_Project"/>
     <addaction name="menu_Open_Recent_Session"/>
+    <addaction name="action_Clear_Session"/>
     <addaction name="separator"/>
     <addaction name="menu_Import"/>
     <addaction name="separator"/>
@@ -198,6 +201,7 @@
     </property>
     <addaction name="action_Calculate_Reconstruction_Pole"/>
     <addaction name="action_Finite_Rotation_Calculator"/>
+    <addaction name="action_Open_Kinematics_Tool"/>
     <addaction name="action_Manage_Age_Models"/>
     <addaction name="separator"/>
     <addaction name="action_Open_Python_Console"/>
@@ -785,7 +789,7 @@
   </action>
   <action name="action_View_Shapefile_Attributes">
    <property name="text">
-    <string>View Shapefile &amp;Attributes</string>
+    <string>View &amp;Attribute Table</string>
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
@@ -1133,6 +1137,35 @@
   <action name="action_Configure_Geometry_Rendering">
    <property name="text">
     <string>Configure Geometry Rendering...</string>
+   </property>
+  </action>
+  <action name="action_Open_Project">
+   <property name="text">
+    <string>Open Project...</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="action_Save_Project">
+   <property name="text">
+    <string>Save Project...</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="action_Clear_Session">
+   <property name="text">
+    <string>Clear Session</string>
+   </property>
+  </action>
+  <action name="action_Open_Kinematics_Tool">
+   <property name="text">
+    <string>Open &amp;Kinematics Tool...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+K</string>
    </property>
   </action>
  </widget>
