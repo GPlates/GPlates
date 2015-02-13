@@ -177,8 +177,27 @@ GPlatesQtWidgets::HellingerThread::run()
 	qDebug() << "about to run thread. result file: " << temp_file_temp_result;
 	qDebug() << "python file: " << d_python_file;
 #endif
+
+#if 0
+	QString file = "C:\\Users\\watson_robin\\Documents\\GPlates\\1.5-dev\\hellinger\\installer\\scripts\\check_numpy.py";
+	QFile qfile(file);
+	qWarning() << "Test numpy file exists: " << qfile.exists();
+	bool found_numpy = false;
+
+	d_thread_type = TESTING;
+#endif
 	try{
-		if (d_thread_type == POLE_THREAD_TYPE)
+		if (d_thread_type == TESTING)
+		{
+			GPlatesApi::PythonInterpreterLocker locker;
+			boost::python::object main = boost::python::import("__main__");
+
+			boost::python::object global(main.attr("__dict__"));
+			boost::python::object ignored = boost::python::exec_file(file.toStdString().c_str(),global, global);
+			boost::python::object pythonCode = global["check_numpy"];
+			boost::python::extract<std::string>(pythonCode(1));
+		}
+		else if (d_thread_type == POLE_THREAD_TYPE)
 		{
 			GPlatesApi::PythonInterpreterLocker interpreter_locker;
 

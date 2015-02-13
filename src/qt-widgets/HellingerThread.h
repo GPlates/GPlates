@@ -36,6 +36,7 @@ namespace GPlatesQtWidgets
 	{
 		POLE_THREAD_TYPE = 0,
 		STATS_THREAD_TYPE,
+		TESTING,
 
 		NUM_THREAD_TYPES
 	};
