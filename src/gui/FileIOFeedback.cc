@@ -209,7 +209,7 @@ namespace
 
 
 	/**
-	 * Builds a list of filters for saving project files.
+	 * Builds a list of filters for loading/saving project files.
 	 */
 	GPlatesQtWidgets::OpenFileDialog::filter_list_type
 	get_load_save_project_filters()
@@ -221,6 +221,12 @@ namespace
 				FileDialogFilter(
 						QObject::tr("Project files"),
 						QString("gproj")));
+
+		// Also add an 'all files' filter.
+		//
+		// NOTE: If this isn't done then '.gproj' is not added on MacOS !
+		// Seems fine either way on Windows and Linux though.
+		filters.push_back(create_all_filter());
 
 		return filters;
 	}
