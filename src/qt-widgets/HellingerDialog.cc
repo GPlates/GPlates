@@ -437,7 +437,6 @@ namespace{
 			GPlatesQtWidgets::HellingerDialog::geometry_to_tree_item_map_type &geometry_to_tree_item_map,
 			bool set_as_selected)
 	{
-		//qDebug() << "Adding pick to segment: set_as_selected: " << set_as_selected;
 		QTreeWidgetItem *item = new QTreeWidgetItem();
 		item->setText(SEGMENT_NUMBER, QString::number(segment_number));
 		item->setText(SEGMENT_TYPE, translate_segment_type(pick.d_segment_type));
@@ -1096,10 +1095,9 @@ void GPlatesQtWidgets::HellingerDialog::update_pole_estimate_spinboxes_and_layer
 
 	d_current_pole_estimate_llp = llp;
 
-	if (checkbox_show_estimate->isChecked())
-	{
-		draw_pole_estimate();
-	}
+
+    draw_pole_estimate();
+
 }
 
 void
@@ -1468,12 +1466,10 @@ GPlatesQtWidgets::HellingerDialog::draw_pole_result(
 void
 GPlatesQtWidgets::HellingerDialog::update_result()
 {
-	// FIXME: sort out the sequence of calling update_canvas, update_result etc... this function (update_result) is getting
-	// called 5 times after a fit is completed. On the second call, the lon is always zero for some reason. Investigate.
+    // FIXME: this is getting called unnecessarily often sometimes...investigate.
 	boost::optional<GPlatesQtWidgets::HellingerFitStructure> data_fit_struct = d_hellinger_model->get_fit();
 	if (data_fit_struct)
 	{
-		//qDebug() << "Drawing pole at " << data_fit_struct.get().d_lat << ", " << data_fit_struct.get().d_lon;
 		spinbox_result_lat->setValue(data_fit_struct.get().d_lat);
 		spinbox_result_lon->setValue(data_fit_struct.get().d_lon);
 		spinbox_result_angle->setValue(data_fit_struct.get().d_angle);
@@ -1653,12 +1649,20 @@ GPlatesQtWidgets::HellingerDialog::enable_pole_estimate_widgets(
 }
 
 void
-GPlatesQtWidgets::HellingerDialog::set_estimate_checkbox_state_for_active_pole_tool(
+GPlatesQtWidgets::HellingerDialog::set_layer_and_checkbox_state_for_active_pole_tool(
 		bool pole_tool_is_active)
 {
 	// When we active the pole tool, we don't need (or want) to see the estimate
 	// - we see it in the pole tool anyway. So set the checkbox inactive.
 	checkbox_show_estimate->setEnabled(!pole_tool_is_active);
+    if (pole_tool_is_active)
+    {
+        d_pole_estimate_layer_ptr->set_active(false);
+    }
+    else
+    {
+        d_pole_estimate_layer_ptr->set_active(checkbox_show_estimate->isChecked());
+    }
 }
 
 const GPlatesMaths::LatLonPoint &
@@ -2001,9 +2005,6 @@ GPlatesQtWidgets::HellingerDialog::determine_selected_picks_and_segments()
 		d_selected_pick.reset(d_hellinger_model->get_pick(selected_segment_number.get(),selected_row_number.get()));
 
 	}
-
-	qDebug()<< "Seg selected: " << d_selected_segment;
-	qDebug() << "Pick selected: " << d_selected_pick;
 }
 
 bool
@@ -2408,7 +2409,6 @@ GPlatesQtWidgets::HellingerDialog::store_expanded_status()
 void
 GPlatesQtWidgets::HellingerDialog::close()
 {
-	qDebug() << "HellingerDialog::close()";
 	handle_close();
 	//GPlatesDialog::close();
 	GPlatesDialog::hide();
