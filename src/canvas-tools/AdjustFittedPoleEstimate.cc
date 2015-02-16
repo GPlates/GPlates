@@ -1,10 +1,10 @@
 /* $Id$ */
 
 /**
- * @file 
+ * @file
  * $Revision$
  * $Date$
- * 
+ *
  * Copyright (C) 2014 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -57,7 +57,7 @@ namespace
 			const GPlatesViewOperations::RenderedGeometryProximityHit &rhs)
 	{
 		return lhs.d_rendered_geom_index <
-			rhs.d_rendered_geom_index;
+				rhs.d_rendered_geom_index;
 	}
 
 	/**
@@ -67,8 +67,8 @@ namespace
 	sort_proximity_by_index(
 			GPlatesViewOperations::sorted_rendered_geometry_proximity_hits_type &sorted_proximity_seq)
 	{
-			// Sort results based on proximity closeness.
-			std::sort(
+		// Sort results based on proximity closeness.
+		std::sort(
 					sorted_proximity_seq.begin(),
 					sorted_proximity_seq.end(),
 					proximity_hit_index_compare);
@@ -133,7 +133,7 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::AdjustFittedPoleEstimate(
 	d_has_been_activated(false)
 {
 	d_current_pole_arrow_layer_ptr =
-		d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
+			d_rendered_geom_collection_ptr->create_child_rendered_layer_and_transfer_ownership(
 				GPlatesViewOperations::RenderedGeometryCollection::HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER);
 
 	d_current_pole_and_angle_layer_ptr =
@@ -162,9 +162,9 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_activation()
 	d_current_pole_and_angle_layer_ptr->set_active(true);
 	d_highlight_layer_ptr->set_active(true);
 
-    set_status_bar_message(QT_TR_NOOP("Click and drag to adjust the pole estimate and angle."));
+	set_status_bar_message(QT_TR_NOOP("Click and drag to adjust the pole estimate and angle."));
 	d_hellinger_dialog_ptr->enable_pole_estimate_widgets(true);
-    d_hellinger_dialog_ptr->set_layer_and_checkbox_state_for_active_pole_tool(true);
+	d_hellinger_dialog_ptr->set_layer_and_checkbox_state_for_active_pole_tool(true);
 
 	update_local_values_from_hellinger_dialog();
 	update_current_pole_arrow_layer();
@@ -177,7 +177,7 @@ void
 GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_deactivation()
 {
 	d_hellinger_dialog_ptr->enable_pole_estimate_widgets(false);
-    d_hellinger_dialog_ptr->set_layer_and_checkbox_state_for_active_pole_tool(false);
+	d_hellinger_dialog_ptr->set_layer_and_checkbox_state_for_active_pole_tool(false);
 	d_hellinger_dialog_ptr->update_pole_estimate_spinboxes_and_layer(d_current_pole, d_current_angle);
 
 
@@ -194,8 +194,8 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_move_without_drag(
 		double proximity_inclusion_threshold)
 {
 	GPlatesMaths::ProximityCriteria proximity_criteria(
-			point_on_sphere,
-			proximity_inclusion_threshold);
+				point_on_sphere,
+				proximity_inclusion_threshold);
 	std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
 
 	d_mouse_is_over_pole_estimate = false;
@@ -272,8 +272,8 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::handle_left_press(
 
 
 	GPlatesMaths::ProximityCriteria proximity_criteria(
-			point_on_sphere,
-			proximity_inclusion_threshold);
+				point_on_sphere,
+				proximity_inclusion_threshold);
 	std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
 
 
@@ -425,14 +425,14 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_current_pole_arrow_layer()
 
 	GPlatesViewOperations::RenderedGeometry pole_geometry_arrow =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
-					d_current_pole,
-					0.3f/*arrow_projected_length*/,
-					0.12f/*arrowhead_projected_size*/,
-					0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
-					GPlatesGui::Colour(0, 0, 1, 0.5f)/*arrow_colour*/,
-					GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
-					10.0f/*symbol_size*/,
-					GPlatesGui::Colour::get_blue()/*symbol_colour*/);
+				d_current_pole,
+				0.3f/*arrow_projected_length*/,
+				0.12f/*arrowhead_projected_size*/,
+				0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
+				GPlatesGui::Colour(0, 0, 1, 0.5f)/*arrow_colour*/,
+				GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
+				10.0f/*symbol_size*/,
+				GPlatesGui::Colour::get_blue()/*symbol_colour*/);
 	if (!d_mouse_is_over_pole_estimate)
 	{
 		d_current_pole_arrow_layer_ptr->add_rendered_geometry(pole_geometry_arrow);
@@ -548,14 +548,14 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_and_arc_highl
 
 	GPlatesViewOperations::RenderedGeometry pole_arrow_geometry =
 			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
-					*point,
-					0.3f/*arrow_projected_length*/,
-					0.12f/*arrowhead_projected_size*/,
-					0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
-					GPlatesGui::Colour::get_yellow()/*arrow_colour*/,
-					GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
-					10.0f/*symbol_size*/,
-					GPlatesGui::Colour::get_yellow()/*symbol_colour*/);
+				*point,
+				0.3f/*arrow_projected_length*/,
+				0.12f/*arrowhead_projected_size*/,
+				0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
+				GPlatesGui::Colour::get_yellow()/*arrow_colour*/,
+				GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
+				10.0f/*symbol_size*/,
+				GPlatesGui::Colour::get_yellow()/*symbol_colour*/);
 
 	GPlatesMaths::GreatCircleArc gca_reference = GPlatesMaths::GreatCircleArc::create(*point,d_end_point_of_reference_arc);
 	std::vector<GPlatesMaths::PointOnSphere> points;

@@ -1092,7 +1092,7 @@ void GPlatesQtWidgets::HellingerDialog::update_pole_estimate_spinboxes_and_layer
 	d_current_pole_estimate_llp = llp;
 
 
-    draw_pole_estimate();
+	draw_pole_estimate();
 
 }
 
@@ -1462,7 +1462,7 @@ GPlatesQtWidgets::HellingerDialog::draw_pole_result(
 void
 GPlatesQtWidgets::HellingerDialog::update_result()
 {
-    // FIXME: this is getting called unnecessarily often sometimes...investigate.
+	// FIXME: this is getting called unnecessarily often sometimes...investigate.
 	boost::optional<GPlatesQtWidgets::HellingerFitStructure> data_fit_struct = d_hellinger_model->get_fit();
 	if (data_fit_struct)
 	{
@@ -1651,14 +1651,14 @@ GPlatesQtWidgets::HellingerDialog::set_layer_and_checkbox_state_for_active_pole_
 	// When we active the pole tool, we don't need (or want) to see the estimate
 	// - we see it in the pole tool anyway. So set the checkbox inactive.
 	checkbox_show_estimate->setEnabled(!pole_tool_is_active);
-    if (pole_tool_is_active)
-    {
-        d_pole_estimate_layer_ptr->set_active(false);
-    }
-    else
-    {
-        d_pole_estimate_layer_ptr->set_active(checkbox_show_estimate->isChecked());
-    }
+	if (pole_tool_is_active)
+	{
+		d_pole_estimate_layer_ptr->set_active(false);
+	}
+	else
+	{
+		d_pole_estimate_layer_ptr->set_active(checkbox_show_estimate->isChecked());
+	}
 }
 
 const GPlatesMaths::LatLonPoint &

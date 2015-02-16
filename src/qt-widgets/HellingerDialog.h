@@ -207,7 +207,7 @@ namespace GPlatesQtWidgets
 				bool enable);
 
 		void
-        set_layer_and_checkbox_state_for_active_pole_tool(
+		set_layer_and_checkbox_state_for_active_pole_tool(
 				bool pole_tool_is_active);
 
 		const GPlatesMaths::LatLonPoint &
@@ -538,7 +538,7 @@ namespace GPlatesQtWidgets
 		//! For selected pick / segment
 		child_layer_ptr_type d_selection_layer_ptr;
 
-        //! For fitted pole, uncertainty
+		//! For fitted pole, uncertainty
 		child_layer_ptr_type d_result_layer_ptr;
 
 		//! For geometries being edited
@@ -547,7 +547,7 @@ namespace GPlatesQtWidgets
 		//! For highlighting feature geometries which can be selected
 		child_layer_ptr_type d_feature_highlight_layer_ptr;
 
-        //! For displaying the pole estimate
+		//! For displaying the pole estimate
 		child_layer_ptr_type d_pole_estimate_layer_ptr;
 
 		ReadErrorAccumulationDialog &d_read_error_accumulation_dialog;
