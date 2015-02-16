@@ -2,14 +2,14 @@ import sys
 import optparse
 from math import *
 from optparse import OptionParser
-from math_hellinger import *
+from hellinger_utils import *
 from numpy import *
 VERSION = "2011/09/15"
 
 
 
 """
-This file (py_hellinger.py) and the accompanying math_hellinger.py file contain python
+This file (hellinger.py) and the accompanying hellinger_utils.py file contain python
 implementations of the FORTRAN code in hellinger1.f and related files. The original
 FORTRAN programs are by Chang, Royer and co-workers. This python implementation is
 by J. Cirbus. The following comments are from the original FORTRAN code.

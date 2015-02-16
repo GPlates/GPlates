@@ -64,6 +64,7 @@ const QString TEMP_PICK_FILENAME("temp_pick");
 const QString TEMP_RESULT_FILENAME("temp_pick_temp_result");
 const QString TEMP_PAR_FILENAME("temp_pick_par");
 const QString TEMP_RES_FILENAME("temp_pick_res");
+const QString MAIN_PYTHON_FILENAME("hellinger.py");
 const double DEFAULT_POINT_SIZE = 2;
 const double DEFAULT_LINE_THICKNESS = 2;
 const double ENLARGED_POINT_SIZE = 6;
@@ -571,11 +572,6 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	// And we need a location to store some temporary files which are used in exchanging data between GPlates and the python scripts.
 	d_temporary_path = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
 
-#if 0
-	// Temp path for testing
-	d_python_path = "/home/robin/Desktop/Hellinger/scripts";
-#endif
-
 	// The temporary location might not exist - if it doesn't, try to create it.
 	QDir dir(d_temporary_path);
 	if (!dir.exists())
@@ -601,7 +597,7 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	d_python_path.append(QDir::separator());
 	d_temporary_path.append(QDir::separator());
-	d_python_file = d_python_path + "py_hellinger.py";
+	d_python_file = d_python_path + MAIN_PYTHON_FILENAME;
 
 	qDebug() << "Path used for storing temporary hellinger files: " << d_temporary_path;
 	qDebug() << "Path used for hellinger python file:  " << d_python_path;
