@@ -159,7 +159,7 @@
            <string>Export data to com file</string>
           </property>
           <property name="text">
-           <string>Export co&amp;m..</string>
+           <string>Export co&amp;m...</string>
           </property>
          </widget>
         </item>
