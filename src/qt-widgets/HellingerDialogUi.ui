@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>777</width>
+    <width>800</width>
     <height>670</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>750</width>
+    <width>800</width>
     <height>670</height>
    </size>
   </property>
@@ -113,7 +113,7 @@
          <widget class="QPushButton" name="button_import_file">
           <property name="minimumSize">
            <size>
-            <width>0</width>
+            <width>120</width>
             <height>27</height>
            </size>
           </property>
@@ -129,7 +129,7 @@
          <widget class="QPushButton" name="button_export_pick_file">
           <property name="minimumSize">
            <size>
-            <width>0</width>
+            <width>120</width>
             <height>27</height>
            </size>
           </property>
@@ -145,7 +145,7 @@
          <widget class="QPushButton" name="button_export_com_file">
           <property name="minimumSize">
            <size>
-            <width>0</width>
+            <width>120</width>
             <height>27</height>
            </size>
           </property>
@@ -245,7 +245,7 @@
          <widget class="QPushButton" name="button_new_pick">
           <property name="minimumSize">
            <size>
-            <width>90</width>
+            <width>114</width>
             <height>27</height>
            </size>
           </property>
