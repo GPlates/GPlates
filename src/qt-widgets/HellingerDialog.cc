@@ -704,7 +704,6 @@ GPlatesQtWidgets::HellingerDialog::initialise_widgets()
 	// For eventual insertion of generated pole into the model.
 	groupbox_rotation->hide();
 
-
 	// Set result boxes to read-only (but enabled). We may want
 	// to allow the user to adjust the pole result later.
 	// Disabling them is another option, but that greys them
