@@ -553,7 +553,6 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 	d_chron_time(0.),
 	d_moving_symbol(GPlatesGui::Symbol::CROSS, DEFAULT_SYMBOL_SIZE, true),
 	d_fixed_symbol(GPlatesGui::Symbol::SQUARE, DEFAULT_SYMBOL_SIZE, false),
-	d_pole_estimate_symbol(GPlatesGui::Symbol::CIRCLE,POLE_ESTIMATE_SYMBOL_SIZE, true),
 	d_thread_type(POLE_THREAD_TYPE),
 	d_hovered_item_original_state(true),
 	d_edit_point_is_enlarged(false),

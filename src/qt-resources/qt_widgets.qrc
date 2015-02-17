@@ -139,8 +139,9 @@
         <file>unsaved_changes_red_disk_question_22.png</file>
         <file>zoom_globe_35.png</file>
         <file>age.cpt</file>
-	<file>crappy-hellinger-icon_35.png</file>
+        <file>crappy-hellinger-icon_35.png</file>
         <file>gnome_zoom_fit_best_16.png</file>
         <file>gnome_zoom_fit_best_22.png</file>
+        <file>hellinger_35.png</file>
     </qresource>
 </RCC>
