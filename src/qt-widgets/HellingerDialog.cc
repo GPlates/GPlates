@@ -1715,6 +1715,8 @@ void GPlatesQtWidgets::HellingerDialog::handle_clear()
 	}
 	determine_selected_picks_and_segments();
 	update_pick_and_segment_buttons();
+	button_stats->setEnabled(false);
+	button_show_details->setEnabled(false);
 }
 
 void

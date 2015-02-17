@@ -140,13 +140,18 @@ GPlatesFileIO::HellingerWriter::write_com_file(
 		//		- but what do we do with the pick filepath in this situation??
 		QFile pick_file(com_struct->d_pick_file);
 		QFileInfo pick_fileinfo(pick_file);
+#if 0
+		// Use the existing pick filename if it exists, else use the .com filename as basis for pick filename.
 		QString pick_filename = pick_fileinfo.fileName();
 
 		if (pick_filename.isEmpty())
 		{
 			pick_filename = file_info.baseName() + "." + pick_extension;
 		}
-
+#else
+		// Use .com filename as basis for pick filename.
+		QString pick_filename = file_info.baseName() +"." + pick_extension;
+#endif
 		if (file.open(QIODevice::WriteOnly))
 		{
 			// Pick file name
