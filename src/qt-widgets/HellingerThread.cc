@@ -86,6 +86,7 @@ GPlatesQtWidgets::HellingerThread::initialise_pole_calculation(
 
 void
 GPlatesQtWidgets::HellingerThread::initialise_stats_calculation(
+		const std::vector<double> &input_data,
 		const QString &path_file,
 		const QString &file_name,
 		const QString &filename_dat,
@@ -98,6 +99,7 @@ GPlatesQtWidgets::HellingerThread::initialise_stats_calculation(
 		const QString &temp_par,
 		const QString &temp_res)
 {
+	d_input_data = input_data;
 	d_temporary_folder = temporary_folder;
 	d_temp_pick_file = temp_pick_file;
 	d_temp_result = temp_result;

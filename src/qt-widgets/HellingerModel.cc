@@ -376,6 +376,7 @@ GPlatesQtWidgets::HellingerModel::read_error_ellipse_points()
 	QString path = d_temporary_file_path + QDir::separator() + d_active_com_file_struct.d_data_filename;
 	QFile data_file(path);
 
+	d_error_ellipse_points.clear();
 	if (data_file.open(QFile::ReadOnly))
 	{
 		QTextStream in(&data_file);

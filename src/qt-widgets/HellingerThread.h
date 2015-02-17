@@ -73,6 +73,7 @@ namespace GPlatesQtWidgets
 
 		void
 		initialise_stats_calculation(
+				const std::vector<double> &input_data,
 				const QString &path_file,
 				const QString &file_name,
 				const QString &filename_dat,

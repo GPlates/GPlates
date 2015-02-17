@@ -1144,9 +1144,17 @@ GPlatesQtWidgets::HellingerDialog::update_pole_estimate_lat_lon_spinboxes(
 void
 GPlatesQtWidgets::HellingerDialog::handle_calculate_stats()
 {
+	std::vector<double> input_data;
+
+	input_data.push_back(spinbox_lat_estimate->value());
+	input_data.push_back(spinbox_lon_estimate->value());
+	input_data.push_back(spinbox_rho_estimate->value());
+	input_data.push_back(spinbox_radius->value());
+	input_data.push_back(spinbox_conf_limit->value());
+
 	d_thread_type = STATS_THREAD_TYPE;
-	button_stats->setEnabled(false);
 	d_hellinger_thread->initialise_stats_calculation(
+				input_data,
 				d_path,
 				d_file_name,
 				d_filename_dat,
@@ -1378,6 +1386,7 @@ GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 			QStringList fields = line.split(" ",QString::SkipEmptyParts);
 			d_hellinger_model->set_fit(fields);
 			data_file.close();
+			d_result_layer_ptr->clear_rendered_geometries();
 			update_result();
 			button_stats->setEnabled(true);
 			button_show_details->setEnabled(true);
@@ -1441,6 +1450,7 @@ GPlatesQtWidgets::HellingerDialog::draw_pole_result(
 	{
 		return;
 	}
+
 	GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
 				GPlatesMaths::LatLonPoint(lat,lon));
 
