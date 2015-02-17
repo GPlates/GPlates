@@ -558,19 +558,35 @@ namespace GPlatesQtWidgets
 		HellingerEditSegmentDialog *d_hellinger_edit_segment_dialog;
 		HellingerEditSegmentDialog *d_hellinger_new_segment_dialog;
 		HellingerThread *d_hellinger_thread;
+
+		/**
+		 * Various temporary filenames used to exchange data between GPlates and the python scripts.
+		 */
 		QString d_path;
 		QString d_file_name;
 		QString d_filename_dat;
 		QString d_filename_up;
 		QString d_filename_down;
+
+		/**
+		 * @brief For storing moving and fixed plate IDs for later insertion of rotation pole into model.
+		 * Not currently used.
+		 */
 		GPlatesModel::integer_plate_id_type d_moving_plate_id;
 		GPlatesModel::integer_plate_id_type d_fixed_plate_id;
+
 		double d_recon_time;
 		double d_chron_time;
+
+		/**
+		 * @brief  symbols for depicting moving and fixed picks.
+		 */
 		GPlatesGui::Symbol d_moving_symbol;
 		GPlatesGui::Symbol d_fixed_symbol;
-		GPlatesGui::Symbol d_pole_estimate_symbol;
 
+		/**
+		 * @brief d_thread_type - enum describing the thread type - i.e .pole calculation thread or stats calculation thread.
+		 */
 		ThreadType d_thread_type;
 
 		/**
@@ -589,6 +605,10 @@ namespace GPlatesQtWidgets
 		 */
 		QString d_temporary_path;
 
+		/**
+		 * @brief d_segment_expanded_status - map storing the status of expanded/collapsed parts of the tree widget, so
+		 * that this can be restored when necessary.
+		 */
 		expanded_status_map_type d_segment_expanded_status;
 		geometry_to_model_map_type d_geometry_to_model_map;
 		geometry_to_tree_item_map_type d_geometry_to_tree_item_map;

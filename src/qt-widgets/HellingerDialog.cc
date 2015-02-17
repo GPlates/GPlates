@@ -1547,8 +1547,6 @@ void
 GPlatesQtWidgets::HellingerDialog::handle_close()
 {
 	activate_layers(false);
-	d_hellinger_edit_point_dialog->close();
-	d_hellinger_new_point_dialog->close();
 	store_expanded_status();
 }
 
@@ -2407,7 +2405,6 @@ void
 GPlatesQtWidgets::HellingerDialog::close()
 {
 	handle_close();
-	//GPlatesDialog::close();
 	GPlatesDialog::hide();
 }
 
@@ -2426,7 +2423,7 @@ GPlatesQtWidgets::HellingerDialog::keyPressEvent(
 	// other behaviour of this dialog. This function was implemented as an empty function to prevent
 	// the Escape key from closing the dialog, as we wanted the dialog behaviour to be closer to
 	// the other workflow task panels. But right now we're allowing the dialog to close - either
-	// via the close button or by the Escape key - hence we propagate this event to the parent.
+	// via the close button or by the Escape key - hence we propagate this event -to the parent.
 	GPlatesDialog::keyPressEvent(event_);
 }
 
