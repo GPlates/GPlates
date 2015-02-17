@@ -32,7 +32,6 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QProgressBar>
-#include <QProgressDialog>
 #include <QTextStream>
 
 
@@ -697,10 +696,13 @@ GPlatesQtWidgets::HellingerDialog::initialise_widgets()
 	progress_bar->setMaximum(1.);
 	progress_bar->setValue(0.);
 
-	// As we are moving towards canvas tool behaviour, the dialog will be
-	// closed by switching tool/workflow. Hide the "close" button for now.
+// This tool is part of a workflow - all other workflows have widgets in the task panel pane, but this
+// isn't big enough for the Hellinger tool, so we need a dialog. That raises the question of how the dialog
+// should behave when switching workflows - should it disappear, should it have its own close button etc...
+// For the initial realease (1.5+) at least, I think we leave the close button visible and enabled.
+#if 0
 	button_close->hide();
-
+#endif
 	// For eventual insertion of generated pole into the model.
 	groupbox_rotation->hide();
 
@@ -2420,7 +2422,12 @@ void
 GPlatesQtWidgets::HellingerDialog::keyPressEvent(
 		QKeyEvent *event_)
 {
-	// Do nothing, i.e. don't propagate event.This prevents the Escape key from closing the dialog.
+	// See comments in initialise_widgets() regarding presence (or not) of close button and
+	// other behaviour of this dialog. This function was implemented as an empty function to prevent
+	// the Escape key from closing the dialog, as we wanted the dialog behaviour to be closer to
+	// the other workflow task panels. But right now we're allowing the dialog to close - either
+	// via the close button or by the Escape key - hence we propagate this event to the parent.
+	GPlatesDialog::keyPressEvent(event_);
 }
 
 void
