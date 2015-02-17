@@ -1,10 +1,10 @@
 /* $Id: HellingerStatsDialog.h 240 2012-02-27 16:30:31Z robin.watson@ngu.no $ */
 
 /**
- * \file 
+ * \file
  * $Revision: 240 $
- * $Date: 2012-02-27 17:30:31 +0100 (Mon, 27 Feb 2012) $ 
- * 
+ * $Date: 2012-02-27 17:30:31 +0100 (Mon, 27 Feb 2012) $
+ *
  * Copyright (C) 2011, 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -22,7 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
+
 #ifndef GPLATES_QTWIDGETS_HELLINGERSTATSDIALOG_H
 #define GPLATES_QTWIDGETS_HELLINGERSTATSDIALOG_H
 
@@ -32,7 +32,7 @@
 
 namespace GPlatesQtWidgets
 {
-    class HellingerDialog;
+	class HellingerDialog;
 
 	class HellingerStatsDialog:
 			public QDialog,
@@ -42,15 +42,15 @@ namespace GPlatesQtWidgets
 	public:
 
 		HellingerStatsDialog(
-			const QString &python_path,
-			const QString &parameter_file_name,
-			QWidget *parent_ = NULL);
-                
+				const QString &python_path,
+				const QString &parameter_file_name,
+				QWidget *parent_ = NULL);
+
 		void
 		update();
 
-	
-	private Q_SLOTS: 
+
+	private Q_SLOTS:
 
 		void
 		handle_export();
@@ -58,7 +58,7 @@ namespace GPlatesQtWidgets
 	private:
 		QString d_python_path;
 		QString d_parameter_file_name;
-	
+
 	};
 }
 

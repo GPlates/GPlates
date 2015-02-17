@@ -216,7 +216,7 @@ class Hellinger():
                 self.tempRmin = file(self.input+"_rmin", "w")
                 self.temp_file_ameoba = file(self.input+"_temp_result", "w")
                 self.temp_file_ameoba.write(str(self.alat)+" "+str(self.along)+" "+str(self.rho))
-                self.outputFilePar.write("Results from Hellinger1 using "+str(self.input)+" \n")
+                self.outputFilePar.write("Results from Hellinger1\n")
                 self.outputFilePar.write("Fitted rotation--alat,along,rho: \n")
                 self.outputFilePar.write(str(self.alat)+", "+str(self.along)+", "+str(self.rho)+" \n")
                 for i in range(len(self.qhati)):

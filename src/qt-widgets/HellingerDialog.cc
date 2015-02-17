@@ -77,10 +77,10 @@ const double INITIAL_ROTATION_ANGLE = 5.;
 // TODO: check button/widget focus throughout Hellinger workflow - this seems to be going
 // all over the place at the moment.
 // TODO: clean up the system of filenames which are passed to python.
-// TODO: make a half-decent icon
 // TODO: update status bar messages according to which mode of the tool we are in. For example, when in "new pick" mode
 // we might say something like: "Click to update location of new pick; shift-click on a highlighted geometry to create pick
 // at that geometry". That's very long unfortunately, so I need to find a briefer way to say that.
+// Update: this will have to wait until these modes (new pick etc) are implemented as proper CanvasTools.
 // TODO: Farm out rendering functionality  to the canvas tool classes.
 // TODO: Check expansion/collapse of segments when a new pick is added - it should expand the relevant segment, but respect
 // the previous state of segments
@@ -88,19 +88,18 @@ const double INITIAL_ROTATION_ANGLE = 5.;
 // the FORTRAN code) such as tolerance limit for amoeba search, grid search details etc.
 // TODO: consider adding some sort of "scroll to selected" feature in the picks table.
 // TODO: consider interpreting other forms of chron embedded in the hellinger file name - see the GSFML site for examples
-// TODO: check "Edit segment" button enabled state - after closing the new segment dialog it should remain active.
 // TODO: when editing a segment, the segment picks are shown yellow, but they lose the yellow colour in some circumstances
 // (have not reproduced in a precise manner yet...)
 // TODO:guard against possible zero-division in math_hellinger.py line 108. Probably arising from a zero-uncertainty value.
 // If that's the case, guard against zero uncertainties too.
-// TODO: check if the grid search is actually using the UI eps value, or if there's something still hard-coded in there.
 // TODO: consider removing the grid search option. The amoeba seems to perform very well even with poor initial guesses.
 // Consider more control over the various grid/amoeba options, for example separate "Grid search" / "Amoeba search" actions,
 // not always performing an amoeba after a grid search etc.
 // TODO: check to what extent amoeba uses/needs the eps value - consider moving it in the UI nearer the "grid search" options.
 // TODO: cannot re-calculate statistics in some circumstances.
 // TODO: investigate crash with certain calculations of statistics.
-// TODO: command-line activation of tool.
+// TODO: command-line activation of too. Update: this is tricky because of the workflow nature of the tool - and
+// in any case is less relevant as we move towards some kind of release.
 
 
 namespace{
@@ -736,6 +735,10 @@ GPlatesQtWidgets::HellingerDialog::initialise_widgets()
 	spinbox_radius->setValue(INITIAL_SEARCH_RADIUS);
 	spinbox_conf_limit->setValue(INITIAL_SIGNIFICANCE_LEVEL);
 	spinbox_rho_estimate->setValue(INITIAL_ROTATION_ANGLE);
+
+	// Set stats and details buttons to false initially.
+	button_show_details->setEnabled(false);
+	button_stats->setEnabled(false);
 }
 
 void
@@ -916,7 +919,7 @@ GPlatesQtWidgets::HellingerDialog::restore()
 {
 	activate_layers();
 	restore_expanded_status();
-	draw_pole_estimate();
+	update_canvas();
 }
 
 void
@@ -1362,13 +1365,11 @@ GPlatesQtWidgets::HellingerDialog::handle_calculate_fit()
 void
 GPlatesQtWidgets::HellingerDialog::handle_thread_finished()
 {
-	//qDebug() << "Thread finished" << "type" << d_thread_type;
 	progress_bar->setEnabled(false);
 	progress_bar->setMaximum(1.);
 	if (d_thread_type == POLE_THREAD_TYPE)
 	{
 		QString path = d_temporary_path + TEMP_RESULT_FILENAME;
-		//qDebug() << "Result file path: " << path;
 		QFile data_file(path);
 		if (data_file.open(QFile::ReadOnly))
 		{
@@ -1404,8 +1405,7 @@ GPlatesQtWidgets::HellingerDialog::update_pick_and_segment_buttons()
 	button_clear->setEnabled(picks_loaded_);
 
 	button_calculate_fit->setEnabled(picks_loaded_ && spinbox_radius->value() > 0.0);
-	button_show_details->setEnabled(false);
-	button_stats->setEnabled(false);
+
 
 	button_remove_segment->setEnabled(d_selected_segment);
 	button_remove_pick->setEnabled(d_selected_pick);
