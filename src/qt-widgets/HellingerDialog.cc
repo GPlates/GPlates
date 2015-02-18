@@ -1446,11 +1446,6 @@ GPlatesQtWidgets::HellingerDialog::draw_pole_result(
 		const double &lat,
 		const double &lon)
 {
-	if (!checkbox_show_result->isChecked())
-	{
-		return;
-	}
-
 	GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(
 				GPlatesMaths::LatLonPoint(lat,lon));
 
@@ -1467,7 +1462,6 @@ GPlatesQtWidgets::HellingerDialog::draw_pole_result(
 
 	d_result_layer_ptr->add_rendered_geometry(pole_geometry_arrow);
 }
-
 
 void
 GPlatesQtWidgets::HellingerDialog::update_result()
