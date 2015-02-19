@@ -520,10 +520,6 @@ namespace GPlatesQtWidgets
 				boost::optional<QTreeWidgetItem*> item = boost::none,
 				bool current_state = true);
 
-		void
-		set_up_test_age_model_collection();
-
-
 		GPlatesPresentation::ViewState &d_view_state;
 
 		/// For creating child layers

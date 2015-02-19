@@ -204,11 +204,6 @@ namespace{
 		{
 			const GPlatesAppLogic::age_model_map_type &age_model_map = active_age_model->d_model;
 			GPlatesAppLogic::age_model_map_type::const_iterator it = age_model_map.find(chron_string);
-#if 0
-			GPlatesAppLogic::age_model_map_type::const_iterator it =
-					std::find_if(age_model_map.begin(),age_model_map.end(),
-								 boost::bind(&GPlatesAppLogic::age_model_pair_type::first,_1) == chron_string);
-#endif
 
 			if (it != age_model_map.end())
 			{
@@ -2068,74 +2063,6 @@ GPlatesQtWidgets::HellingerDialog::update_hovered_item(
 		set_hovered_item(*d_hovered_item);
 		d_hovered_item_original_state = current_state;
 	}
-}
-
-void
-GPlatesQtWidgets::HellingerDialog::set_up_test_age_model_collection()
-{
-	// A few hard-coded age models for testing.
-	// (The values are "real" and are taken from:
-	// Cande and Kent 1995;
-	// Lourens et al 2004;
-	// Gee and Kent 2007; and
-	// Ogg 2012).
-
-
-	GPlatesAppLogic::AgeModelCollection &age_model_collection =
-			d_view_state.get_application_state().get_age_model_collection();
-
-	GPlatesAppLogic::AgeModel cande_and_kent_model;
-	GPlatesAppLogic::AgeModel lourens_model;
-	GPlatesAppLogic::AgeModel gee_and_kent_model;
-
-	cande_and_kent_model.d_identifier = QString("CandeKent1995");
-	cande_and_kent_model.d_model.insert(std::make_pair(QString("2An.3no"),3.58));
-	cande_and_kent_model.d_model.insert(std::make_pair(QString("4Any"),8.699));
-	cande_and_kent_model.d_model.insert(std::make_pair(QString("5r.2no"),11.531));
-	cande_and_kent_model.d_model.insert(std::make_pair(QString("5Cn.1no"),16.293));
-
-	lourens_model.d_identifier = QString("Lourens2004");
-	lourens_model.d_model.insert(std::make_pair(QString("1no"),0.781));
-	lourens_model.d_model.insert(std::make_pair(QString("2ny"),1.778));
-	lourens_model.d_model.insert(std::make_pair(QString("2An.1ny"),2.581));
-	lourens_model.d_model.insert(std::make_pair(QString("2An.3no"),3.596));
-	lourens_model.d_model.insert(std::make_pair(QString("3n.1ny"),4.187));
-	lourens_model.d_model.insert(std::make_pair(QString("3n.4no"),5.235));
-	lourens_model.d_model.insert(std::make_pair(QString("3An.1ny"),6.033));
-	lourens_model.d_model.insert(std::make_pair(QString("4n.1ny"),7.528));
-	lourens_model.d_model.insert(std::make_pair(QString("4n.2no"),8.108));
-	lourens_model.d_model.insert(std::make_pair(QString("4Any"),8.769));
-	lourens_model.d_model.insert(std::make_pair(QString("4Ao"),9.098));
-	lourens_model.d_model.insert(std::make_pair(QString("5n.1ny"),9.779));
-	lourens_model.d_model.insert(std::make_pair(QString("5n.2no"),11.040));
-	lourens_model.d_model.insert(std::make_pair(QString("5An.2o"),12.415));
-	lourens_model.d_model.insert(std::make_pair(QString("5ACy"),13.734));
-	lourens_model.d_model.insert(std::make_pair(QString("5ADo"),14.581));
-	lourens_model.d_model.insert(std::make_pair(QString("5Cn.1ny"),15.974));
-
-	gee_and_kent_model.d_identifier = QString("GeeKent2004");
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("1no"),0.780));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("2ny"),1.770));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("2An.1ny"),2.581));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("2An.3no"),3.580));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("3n.1ny"),4.290));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("3n.4no"),5.230));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("3An.1ny"),5.894));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("4n.1ny"),7.432));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("4n.2no"),8.072));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("4Ao"),9.025));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("5n.1ny"),9.740));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("5n.2no"),10.949));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("5An.2o"),12.401));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("5ACy"),13.703));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("5ADo"),14.612));
-	gee_and_kent_model.d_model.insert(std::make_pair(QString("5Cn.1ny"),16.014));
-
-	age_model_collection.add_age_model(cande_and_kent_model);
-	age_model_collection.add_age_model(lourens_model);
-	age_model_collection.add_age_model(gee_and_kent_model);
-	age_model_collection.set_filename("Dummy filename");
-	age_model_collection.set_active_age_model(1);
 }
 
 void
