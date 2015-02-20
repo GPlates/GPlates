@@ -784,9 +784,9 @@ namespace GPlatesScribe
 				static
 				QualifiedContainer &
 				get_adapter_container(
-						QualifiedAdapter &adapter)
+						QualifiedAdapter &adapter_2)
 				{
-					return adapter.*&ExtractContainerFromAdapter::c;
+					return adapter_2.*&ExtractContainerFromAdapter::c;
 				}
 			};
 
