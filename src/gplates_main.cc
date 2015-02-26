@@ -34,6 +34,7 @@
 #include <vector>
 #include <QDebug>
 #include <QDir>
+#include <QFileInfo>
 #include <QStringList>
 #include <QTextStream>
 
@@ -187,6 +188,9 @@ namespace
 				<< "---------------------------------------------------------"
 				<< std::endl
 				<< std::endl
+				<< "gplates [<options>] [<filename> ...]"
+				<< std::endl
+				<< std::endl
 				<< GPlatesUtils::CommandLineParser::get_visible_options(input_options)
 				<< std::endl;
 	}
@@ -261,10 +265,12 @@ namespace
 		// options go through here.
 		add_help_command_option(input_options);
 
-		// NOTE: There are no positional options since GPlates can now be used as a non-GUI
-		// command-line processor that accepts a (processor) command as the first positional argument.
+		// Filenames to load can be specified as positional arguments or as '-f' / '--file' options
+		// (due to above 'FEATURE_COLLECTION_FILENAMES_OPTION_NAME_WITH_SHORT_OPTION') or both.
 		//
-		//input_options.positional_options.add(FEATURE_COLLECTION_FILENAMES_OPTION_NAME, -1);
+		// NOTE: each positional option must have an associated normal option
+		// which is '--file' here. That's just how boost positional options work.
+		input_options.positional_options.add(FEATURE_COLLECTION_FILENAMES_OPTION_NAME, -1);
 
 		// Add secret developer options.
 		input_options.hidden_options.add_options()
@@ -473,6 +479,7 @@ namespace
 		FIRST_ARG_IS_COMMAND,
 		FIRST_ARG_IS_UNRECOGNISED_COMMAND,
 		FIRST_ARG_IS_OPTION,
+		FIRST_ARG_IS_FILENAME,
 		FIRST_ARG_IS_NONEXISTENT
 	};
 
@@ -500,11 +507,20 @@ namespace
 		// See if the first command-line argument is a recognised command.
 		if (!command_dispatcher.is_recognised_command(first_arg))
 		{
-			// See if the first argument looks like an option.
-			if (!first_arg.empty() && first_arg[0] == '-')
+			if (!first_arg.empty())
 			{
-				// It looks like an option since it starts with the '-' character.
-				return FIRST_ARG_IS_OPTION;
+				// See if the first argument looks like an option.
+				if (first_arg[0] == '-')
+				{
+					// It looks like an option since it starts with the '-' character.
+					return FIRST_ARG_IS_OPTION;
+				}
+
+				// See if the first argument is the filename of an existing file.
+				if (QFileInfo(QString(first_arg.c_str())).exists())
+				{
+					return FIRST_ARG_IS_FILENAME;
+				}
 			}
 
 			// It doesn't look like an option so it's an unrecognised command.
@@ -546,6 +562,7 @@ namespace
 		{
 		case FIRST_ARG_IS_NONEXISTENT:
 		case FIRST_ARG_IS_OPTION:
+		case FIRST_ARG_IS_FILENAME:
 			// First command-line argument was not a recognised command and it didn't
 			// look like a command so parse the command-line to see if any
 			// GUI options (or simple options such as help and version) were specified.
@@ -554,12 +571,12 @@ namespace
 			return parse_gui_command_line_options(argc, argv);
 
 		case FIRST_ARG_IS_UNRECOGNISED_COMMAND:
-			// The first command-line argument was not a recognised command but it did
-			// look like a command (rather than an option).
+			// The first command-line argument was not a recognised command or existing filename
+			// but it did not look like an option.
 			qWarning()
 					<< "First command-line argument '"
 					<< command.c_str()
-					<< "' looks like a command but is not a recognised command.";
+					<< "' does not look like an existing filename, an option or a command.";
 			exit(1);
 			break; // ...in case compiler complains.
 
