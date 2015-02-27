@@ -37,6 +37,8 @@
 #include "global/GPlatesException.h"
 #include "global/SubversionInfo.h"
 
+#include "gui/FileIOFeedback.h"
+
 #include "presentation/Application.h"
 
 #include "qt-widgets/ViewportWindow.h"
@@ -246,7 +248,7 @@ GPlatesGui::GPlatesQApplication::event(
 		// GPlates instance should only open a single project file.
 		// In any case we can add the ability to load feature collection files if it's requested.
 		const QString project_filename = static_cast<QFileOpenEvent *>(ev)->file();
-		if (project_filename.endsWith(QString(".gproj"), Qt::CaseInsensitive))
+		if (project_filename.endsWith(GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION, Qt::CaseInsensitive))
 		{
 			GPlatesPresentation::Application::instance().get_main_window().load_project(project_filename);
 			return true;

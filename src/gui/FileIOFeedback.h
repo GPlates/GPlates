@@ -30,10 +30,10 @@
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <QList>
 #include <QObject>
 #include <QPointer>
 #include <QString>
-#include <QList>
 #include <QUrl>
 
 #include "app-logic/FeatureCollectionFileState.h"
@@ -96,7 +96,13 @@ namespace GPlatesGui
 		Q_OBJECT
 		
 	public:
-	
+
+		/**
+		 * Filename extension for project files.
+		 */
+		static const QString PROJECT_FILENAME_EXTENSION;
+
+
 		explicit
 		FileIOFeedback(
 				GPlatesAppLogic::ApplicationState &app_state_,
