@@ -37,6 +37,10 @@
 #include "global/GPlatesException.h"
 #include "global/SubversionInfo.h"
 
+#include "presentation/Application.h"
+
+#include "qt-widgets/ViewportWindow.h"
+
 #include "utils/DeferredCallEvent.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
@@ -223,11 +227,32 @@ GPlatesGui::GPlatesQApplication::event(
 		GPlatesUtils::AbstractDeferredCallEvent *deferred_call_event =
 			static_cast<GPlatesUtils::AbstractDeferredCallEvent *>(ev);
 		deferred_call_event->execute();
+
 		return true;
 	}
-	else
+	else if (ev->type() == QEvent::FileOpen)
 	{
-		return QApplication::event(ev);
+		// If the filename looks like a project file then load it.
+		//
+		// NOTE: QFileOpenEvent is MacOS specific.
+		// See http://doc.qt.digia.com/qq/qq18-macfeatures.html#newevents
+		// This event is triggered when a file is double-clicked in Finder (and the user has
+		// associated the file type with GPlates).
+		//
+		// For now we only support project files (not feature collection files) since it makes
+		// more sense to open a single project file. Also there's the issue of whether to open
+		// multiple feature collection files in a single GPlates instance or one per GPlates instance.
+		// I think the latter happens by default. For project files this is fine since a single
+		// GPlates instance should only open a single project file.
+		// In any case we can add the ability to load feature collection files if it's requested.
+		const QString project_filename = static_cast<QFileOpenEvent *>(ev)->file();
+		if (project_filename.endsWith(QString(".gproj"), Qt::CaseInsensitive))
+		{
+			GPlatesPresentation::Application::instance().get_main_window().load_project(project_filename);
+			return true;
+		}
 	}
+
+	return QApplication::event(ev);
 }
 

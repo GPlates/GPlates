@@ -744,7 +744,8 @@ internal_main(int argc, char* argv[])
 	}
 
 	// Also load any feature collection files specified on the command-line.
-	application.get_main_window().load_files(gui_command_line_options->feature_collection_filenames);
+	application.get_main_window().load_feature_collections(
+			gui_command_line_options->feature_collection_filenames);
 
 	// Install an extra menu for developers to help debug GUI problems.
 	if (gui_command_line_options->debug_gui)

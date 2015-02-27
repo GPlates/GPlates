@@ -83,6 +83,12 @@ namespace
 {
 	using GPlatesQtWidgets::FileDialogFilter;
 
+	/**
+	 * Filename extension for project files.
+	 */
+	const QString PROJECT_FILENAME_EXTENSION = "gproj";
+
+
 	void
 	add_filename_extensions_to_file_dialog_filter(
 			FileDialogFilter &filter,
@@ -220,7 +226,7 @@ namespace
 		filters.push_back(
 				FileDialogFilter(
 						QObject::tr("Project files"),
-						QString("gproj")));
+						PROJECT_FILENAME_EXTENSION));
 
 		// Also add an 'all files' filter.
 		//

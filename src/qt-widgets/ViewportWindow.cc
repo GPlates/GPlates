@@ -434,7 +434,15 @@ GPlatesQtWidgets::ViewportWindow::~ViewportWindow()
 
 
 void
-GPlatesQtWidgets::ViewportWindow::load_files(
+GPlatesQtWidgets::ViewportWindow::load_project(
+		const QString &project_filename)
+{
+	d_file_io_feedback_ptr->open_project(project_filename);
+}
+
+
+void
+GPlatesQtWidgets::ViewportWindow::load_feature_collections(
 		const QStringList &filenames)
 {
 	d_file_io_feedback_ptr->open_files(filenames);
