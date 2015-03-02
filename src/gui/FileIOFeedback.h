@@ -40,6 +40,7 @@
 
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionFileFormatConfiguration.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -138,17 +139,6 @@ namespace GPlatesGui
 		void
 		open_files(
 				const QStringList &filenames);
-
-		/**
-		 * As @a open_files(QStringList), but for a list of QUrl. For drag-and-drop
-		 * functionality.
-		 *
-		 * The file is read using the default file configuration options for its file format
-		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
-		 */
-		void
-		open_urls(
-				const QList<QUrl> &urls);
 
 		/**
 		 * Reloads the file given by FileState file_reference @a file and handles any
@@ -265,6 +255,26 @@ namespace GPlatesGui
 		boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 		create_file(
 				const GPlatesFileIO::File::non_null_ptr_type &file);
+
+
+		/**
+		 * Returns those URLs that are project files.
+		 *
+		 * This is useful for drag'n'drop functionality.
+		 */
+		QStringList
+		extract_project_filenames_from_file_urls(
+				const QList<QUrl> &urls);
+
+
+		/**
+		 * Returns those URLs that are filenames with extensions registered as feature collection file formats.
+		 *
+		 * This is useful for drag'n'drop functionality.
+		 */
+		QStringList
+		extract_feature_collection_filenames_from_file_urls(
+				const QList<QUrl> &urls);
 
 	public Q_SLOTS:
 
@@ -418,6 +428,11 @@ namespace GPlatesGui
 		 * Handles loading/unloading of feature collections.
 		 */
 		GPlatesAppLogic::FeatureCollectionFileIO *d_feature_collection_file_io_ptr;
+
+		/**
+		 * The registry of file formats.
+		 */
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry *d_file_format_registry_ptr;
 
 		/**
 		 * Stores the notion of which feature has the focus.

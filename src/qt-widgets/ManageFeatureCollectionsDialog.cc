@@ -1013,23 +1013,38 @@ void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::dragEnterEvent(
 		QDragEnterEvent *ev)
 {
-	if (ev->mimeData()->hasUrls()) {
-		ev->acceptProposedAction();
-	} else {
-		ev->ignore();
+	if (ev->mimeData()->hasUrls())
+	{
+		const QStringList feature_collection_filenames =
+				d_gui_file_io_feedback_ptr->extract_feature_collection_filenames_from_file_urls(
+						ev->mimeData()->urls());
+		if (!feature_collection_filenames.isEmpty())
+		{
+			ev->acceptProposedAction();
+			return;
+		}
 	}
+
+	ev->ignore();
 }
+
 
 void
 GPlatesQtWidgets::ManageFeatureCollectionsDialog::dropEvent(
 		QDropEvent *ev)
 {
-	if (ev->mimeData()->hasUrls()) {
-		ev->acceptProposedAction();
-		d_gui_file_io_feedback_ptr->open_urls(ev->mimeData()->urls());
-	} else {
-		ev->ignore();
+	if (ev->mimeData()->hasUrls())
+	{
+		const QStringList feature_collection_filenames =
+				d_gui_file_io_feedback_ptr->extract_feature_collection_filenames_from_file_urls(
+						ev->mimeData()->urls());
+		if (!feature_collection_filenames.isEmpty())
+		{
+			ev->acceptProposedAction();
+			d_gui_file_io_feedback_ptr->open_files(feature_collection_filenames);
+			return;
+		}
 	}
+
+	ev->ignore();
 }
-
-

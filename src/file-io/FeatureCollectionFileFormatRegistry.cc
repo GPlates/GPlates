@@ -521,15 +521,40 @@ GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_primary_filename_exten
 		Format file_format) const
 {
 	// The first listed filename extension is the primary extension.
-	return get_all_filename_extensions(file_format).front();
+	return get_all_filename_extensions_for_format(file_format).front();
 }
 
 
 const std::vector<QString> &
-GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_all_filename_extensions(
+GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_all_filename_extensions_for_format(
 		Format file_format) const
 {
 	return get_file_format_info(file_format).filename_extensions;
+}
+
+
+void
+GPlatesFileIO::FeatureCollectionFileFormat::Registry::get_all_filename_extensions(
+		std::vector<QString> &filename_extensions) const
+{
+	for (int f = 0; f < FeatureCollectionFileFormat::NUM_FORMATS; ++f)
+	{
+		const FeatureCollectionFileFormat::Format file_format =
+				static_cast<FeatureCollectionFileFormat::Format>(f);
+
+		file_format_info_map_type::const_iterator iter = d_file_format_info_map.find(file_format);
+		if (iter == d_file_format_info_map.end())
+		{
+			// For some reason there is a gap in the file format enum values or
+			// a value has not been registered.
+			continue;
+		}
+
+		filename_extensions.insert(
+				filename_extensions.end(),
+				iter->second.filename_extensions.begin(),
+				iter->second.filename_extensions.end());
+	}
 }
 
 

@@ -32,6 +32,7 @@
 #include <QMessageBox>
 #include <QString>
 #include <QTextStream>
+#include <QtGlobal>
 
 #include "FileIOFeedback.h"
 
@@ -92,7 +93,7 @@ namespace
 	{
 		// Add the filename extensions for the specified file format.
 		const std::vector<QString> &filename_extensions =
-				file_format_registry.get_all_filename_extensions(file_format);
+				file_format_registry.get_all_filename_extensions_for_format(file_format);
 		BOOST_FOREACH(const QString& filename_extension, filename_extensions)
 		{
 			filter.add_extension(filename_extension);
@@ -524,6 +525,7 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 	d_viewport_window_ptr(&viewport_window_),
 	d_file_state_ptr(&app_state_.get_feature_collection_file_state()),
 	d_feature_collection_file_io_ptr(&app_state_.get_feature_collection_file_io()),
+	d_file_format_registry_ptr(&app_state_.get_feature_collection_file_format_registry()),
 	d_feature_focus(feature_focus_),
 	d_save_file_as_dialog(
 			d_viewport_window_ptr,
@@ -598,23 +600,6 @@ GPlatesGui::FileIOFeedback::open_files(
 			collect_loaded_files_scope.get_loaded_files(),
 			d_gpgim_version_warning_dialog_ptr,
 			d_app_state_ptr->get_gpgim());
-}
-
-
-void
-GPlatesGui::FileIOFeedback::open_urls(
-		const QList<QUrl> &urls)
-{
-	if (urls.isEmpty())
-	{
-		return;
-	}
-
-	try_catch_file_or_session_load_with_feedback(
-			boost::bind(
-					&GPlatesAppLogic::FeatureCollectionFileIO::load_urls,
-					d_feature_collection_file_io_ptr,
-					urls));
 }
 
 
@@ -1188,6 +1173,66 @@ GPlatesGui::FileIOFeedback::create_file(
 	// The reason we save above is to pop up an error dialog if saving fails -
 	// this won't happen if we save directly through 'FeatureCollectionFileIO'.
 	return d_feature_collection_file_io_ptr->create_file(file, false/*save*/);
+}
+
+
+QStringList
+GPlatesGui::FileIOFeedback::extract_project_filenames_from_file_urls(
+		const QList<QUrl> &urls)
+{
+	std::vector<QString> filename_extensions;
+	d_file_format_registry_ptr->get_all_filename_extensions(filename_extensions);
+
+	QStringList project_filenames;
+
+	// Add those URLs that are files with registered filename extensions.
+	Q_FOREACH(const QUrl &url, urls)
+	{
+		if (url.scheme() == "file")
+		{
+			const QString filename = url.toLocalFile();
+
+			// Add the file if it has the project file extension.
+			if (filename.endsWith(PROJECT_FILENAME_EXTENSION, Qt::CaseInsensitive))
+			{
+				project_filenames.push_back(filename);
+			}
+		}
+	}
+
+	return project_filenames;
+}
+
+
+QStringList
+GPlatesGui::FileIOFeedback::extract_feature_collection_filenames_from_file_urls(
+		const QList<QUrl> &urls)
+{
+	std::vector<QString> filename_extensions;
+	d_file_format_registry_ptr->get_all_filename_extensions(filename_extensions);
+
+	QStringList feature_collection_filenames;
+
+	// Add those URLs that are files with registered filename extensions.
+	Q_FOREACH(const QUrl &url, urls)
+	{
+		if (url.scheme() == "file")
+		{
+			const QString filename = url.toLocalFile();
+
+			// Add the file if it has one of the registered extensions.
+			for (unsigned int n = 0; n < filename_extensions.size(); ++n)
+			{
+				if (filename.endsWith(filename_extensions[n], Qt::CaseInsensitive))
+				{
+					feature_collection_filenames.push_back(filename);
+					break;
+				}
+			}
+		}
+	}
+
+	return feature_collection_filenames;
 }
 
 

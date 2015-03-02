@@ -177,8 +177,15 @@ namespace GPlatesFileIO
 			 * @throws FileFormatNotSupportedException if file format is not registered.
 			 */
 			const std::vector<QString> &
-			get_all_filename_extensions(
+			get_all_filename_extensions_for_format(
 					Format file_format) const;
+
+			/**
+			 * Returns the primary and alternative filename extensions associated with all registered file formats.
+			 */
+			void
+			get_all_filename_extensions(
+					std::vector<QString> &filename_extensions) const;
 
 
 			/**

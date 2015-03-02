@@ -1194,23 +1194,64 @@ void
 GPlatesQtWidgets::ViewportWindow::dragEnterEvent(
 		QDragEnterEvent *ev)
 {
-	if (ev->mimeData()->hasUrls()) {
-		ev->acceptProposedAction();
-	} else {
-		ev->ignore();
+	if (ev->mimeData()->hasUrls())
+	{
+		// If there's exactly one project filename then allow it.
+		// If there's more than one then ignore altogether.
+		const QStringList project_filenames =
+				d_file_io_feedback_ptr->extract_project_filenames_from_file_urls(
+						ev->mimeData()->urls());
+		if (project_filenames.size() == 1)
+		{
+			ev->acceptProposedAction();
+			return;
+		}
+
+		const QStringList feature_collection_filenames =
+				d_file_io_feedback_ptr->extract_feature_collection_filenames_from_file_urls(
+						ev->mimeData()->urls());
+		if (!feature_collection_filenames.isEmpty())
+		{
+			ev->acceptProposedAction();
+			return;
+		}
 	}
+
+	ev->ignore();
 }
+
 
 void
 GPlatesQtWidgets::ViewportWindow::dropEvent(
 		QDropEvent *ev)
 {
-	if (ev->mimeData()->hasUrls()) {
-		ev->acceptProposedAction();
-		d_file_io_feedback_ptr->open_urls(ev->mimeData()->urls());
-	} else {
-		ev->ignore();
+	if (ev->mimeData()->hasUrls())
+	{
+		// If there's exactly one project filename then open it.
+		// If there's more than one then ignore altogether.
+		const QStringList project_filenames =
+				d_file_io_feedback_ptr->extract_project_filenames_from_file_urls(
+						ev->mimeData()->urls());
+		if (project_filenames.size() == 1)
+		{
+			ev->acceptProposedAction();
+			d_file_io_feedback_ptr->open_project(project_filenames[0]);
+			return;
+		}
+
+		// Else if there are any feature collection filenames then open them.
+		const QStringList feature_collection_filenames =
+				d_file_io_feedback_ptr->extract_feature_collection_filenames_from_file_urls(
+						ev->mimeData()->urls());
+		if (!feature_collection_filenames.isEmpty())
+		{
+			ev->acceptProposedAction();
+			d_file_io_feedback_ptr->open_files(feature_collection_filenames);
+			return;
+		}
 	}
+
+	ev->ignore();
 }
 
 

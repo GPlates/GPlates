@@ -34,7 +34,6 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
-#include <QUrl>
 #include <QList>
 #include <QtGlobal>
 
@@ -118,18 +117,6 @@ namespace GPlatesAppLogic
 		FeatureCollectionFileState::file_reference
 		load_file(
 				const QString &filename);
-
-
-		/**
-		 * As @a load_files, but for QUrl instances of file:// urls.
-		 * Included for drag and drop support.
-		 *
-		 * The file is read using the default file configuration options for its file format
-		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
-		 */
-		std::vector<FeatureCollectionFileState::file_reference>
-		load_urls(
-				const QList<QUrl> &urls);
 
 
 		/**
