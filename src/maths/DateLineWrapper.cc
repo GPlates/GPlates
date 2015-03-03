@@ -118,6 +118,24 @@ namespace GPlatesMaths
 
 			return false;
 		}
+
+
+		/**
+		 * Convert a point on the dateline arc to lat/lon with longitude of -180.
+		 *
+		 * This is used for those polylines/polygons that are fully within the dateline arc and
+		 * hence outside the dateline wrapping polygon (covering entire globe except dateline arc).
+		 * In order for them not to generate horizontal lines in rectangular projections we ensure
+		 * all points have the same longitude.
+		 */
+		const LatLonPoint 
+		make_lat_lon_point_on_back_dateline(
+				const PointOnSphere &point_on_sphere)
+		{
+			return LatLonPoint(
+					make_lat_lon_point(point_on_sphere).latitude(),
+					-180);
+		}
 	}
 }
 
@@ -130,7 +148,7 @@ GPlatesMaths::DateLineWrapper::wrap_to_dateline(
 	if (!possibly_intersects_dateline(input_polyline))
 	{
 		// No intersection with the dateline so just convert entire input polyline to lat/lon coordinates.
-		output_input_polyline(input_polyline, output_polylines);
+		output_input_polyline(input_polyline, output_polylines, false/*on_dateline_arc*/);
 		return;
 	}
 
@@ -150,7 +168,10 @@ GPlatesMaths::DateLineWrapper::wrap_to_dateline(
 		//
 		// To avoid confusing the caller (by returning no output polylines) we will simply return
 		// the entire input polyline converted to lat/lon coordinates.
-		output_input_polyline(input_polyline, output_polylines);
+		//
+		// In order for them not to generate horizontal lines in rectangular projections we ensure
+		// all points have the same longitude (-180).
+		output_input_polyline(input_polyline, output_polylines, true/*on_dateline_arc*/);
 	}
 }
 
@@ -163,7 +184,7 @@ GPlatesMaths::DateLineWrapper::wrap_to_dateline(
 	if (!possibly_intersects_dateline(input_polygon))
 	{
 		// No intersection with the dateline so just convert entire input polygon to lat/lon coordinates.
-		output_input_polygon(input_polygon, output_polygons);
+		output_input_polygon(input_polygon, output_polygons, false/*on_dateline_arc*/);
 
 		return;
 	}
@@ -177,8 +198,17 @@ GPlatesMaths::DateLineWrapper::wrap_to_dateline(
 
 	if (!graph.generate_polygons(output_polygons, input_polygon))
 	{
-		// Output the entire input polygon converted to lat/lon coordinates.
-		output_input_polygon(input_polygon, output_polygons);
+		// Note that it is possible that all the original polygon line segments got swallowed by the dateline.
+		// This can happen if the original polygon is entirely *on* the dateline which is considered
+		// to be *outside* the dateline polygon (which covers the entire globe and 'effectively' excludes
+		// a very thin area of size epsilon around the dateline arc).
+		//
+		// To avoid confusing the caller (by returning no output polygons) we will simply return
+		// the entire input polygon converted to lat/lon coordinates.
+		//
+		// In order for them not to generate horizontal lines in rectangular projections we ensure
+		// all points have the same longitude (-180).
+		output_input_polygon(input_polygon, output_polygons, true/*on_dateline_arc*/);
 	}
 }
 
@@ -827,17 +857,29 @@ GPlatesMaths::DateLineWrapper::classify_vertex(
 void
 GPlatesMaths::DateLineWrapper::output_input_polyline(
 		const PolylineOnSphere::non_null_ptr_to_const_type &input_polyline,
-		std::vector<lat_lon_polyline_type> &output_polylines)
+		std::vector<lat_lon_polyline_type> &output_polylines,
+		bool on_dateline_arc)
 {
 	// No intersection with the dateline so just convert entire input polyline to lat/lon coordinates.
 	lat_lon_polygon_type lat_lon_polyline(new lat_lon_points_seq_type());
 	lat_lon_polyline->reserve(input_polyline->number_of_vertices());
 
-	std::transform(
-			input_polyline->vertex_begin(),
-			input_polyline->vertex_end(),
-			std::back_inserter(*lat_lon_polyline),
-			&make_lat_lon_point);
+	if (on_dateline_arc)
+	{
+		std::transform(
+				input_polyline->vertex_begin(),
+				input_polyline->vertex_end(),
+				std::back_inserter(*lat_lon_polyline),
+				&make_lat_lon_point_on_back_dateline);
+	}
+	else
+	{
+		std::transform(
+				input_polyline->vertex_begin(),
+				input_polyline->vertex_end(),
+				std::back_inserter(*lat_lon_polyline),
+				&make_lat_lon_point);
+	}
 
 	output_polylines.push_back(lat_lon_polyline);
 }
@@ -846,17 +888,30 @@ GPlatesMaths::DateLineWrapper::output_input_polyline(
 void
 GPlatesMaths::DateLineWrapper::output_input_polygon(
 		const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon,
-		std::vector<lat_lon_polygon_type> &output_polygons)
+		std::vector<lat_lon_polygon_type> &output_polygons,
+		bool on_dateline_arc)
 {
 	// No intersection with the dateline so just convert entire input polygon to lat/lon coordinates.
 	lat_lon_polygon_type lat_lon_polygon(new lat_lon_points_seq_type());
 	lat_lon_polygon->reserve(input_polygon->number_of_vertices());
 
-	std::transform(
-			input_polygon->vertex_begin(),
-			input_polygon->vertex_end(),
-			std::back_inserter(*lat_lon_polygon),
-			&make_lat_lon_point);
+	if (on_dateline_arc)
+	{
+		std::transform(
+				input_polygon->vertex_begin(),
+				input_polygon->vertex_end(),
+				std::back_inserter(*lat_lon_polygon),
+				&make_lat_lon_point_on_back_dateline);
+	}
+	else
+	{
+		std::transform(
+				input_polygon->vertex_begin(),
+				input_polygon->vertex_end(),
+				std::back_inserter(*lat_lon_polygon),
+				&make_lat_lon_point);
+	}
+
 
 	output_polygons.push_back(lat_lon_polygon);
 }

@@ -495,13 +495,15 @@ namespace GPlatesMaths
 		void
 		output_input_polyline(
 				const PolylineOnSphere::non_null_ptr_to_const_type &input_polyline,
-				std::vector<lat_lon_polyline_type> &output_polylines);
+				std::vector<lat_lon_polyline_type> &output_polylines,
+				bool on_dateline_arc);
 
 		//! Output the un-intersected input polygon.
 		void
 		output_input_polygon(
 				const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon,
-				std::vector<lat_lon_polygon_type> &output_polygons);
+				std::vector<lat_lon_polygon_type> &output_polygons,
+				bool on_dateline_arc);
 	};
 }
 
