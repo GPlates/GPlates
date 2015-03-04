@@ -123,11 +123,6 @@ GPlatesQtWidgets::ReconstructLayerOptionsWidget::ReconstructLayerOptionsWidget(
 		draw_style_link->setVisible(false);
 	}
 
-	// For the GPlates 1.5 *public* release we are disabling deformation unless a command-line switch is activated.
-	if (!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::deformation()))
-	{
-		set_deformation_parameters_link->setVisible(false);
-	}
 }
 
 

@@ -563,16 +563,11 @@ GPlatesQtWidgets::ViewportWindow::connect_file_menu_actions()
 			GPlatesGui::ImportMenu::RASTER,
 			"Import &Time-Dependent Raster...",
 			boost::bind(&ViewportWindow::pop_up_import_time_dependent_raster_dialog, boost::ref(*this)));
-	// If scalar fields have been enabled then allow them to be imported.
-	if (GPlatesUtils::ComponentManager::instance().is_enabled(
-		GPlatesUtils::ComponentManager::Component::scalar_field_import()))
-	{
-		// Import 3D scalar field...
-		d_import_menu_ptr->add_import(
-				GPlatesGui::ImportMenu::SCALAR_FIELD_3D,
-				"Import 3D &Scalar Field...",
-				boost::bind(&ViewportWindow::pop_up_import_scalar_field_3d_dialog, boost::ref(*this)));
-	}
+	// Import 3D scalar field...
+	d_import_menu_ptr->add_import(
+			GPlatesGui::ImportMenu::SCALAR_FIELD_3D,
+			"Import 3D &Scalar Field...",
+			boost::bind(&ViewportWindow::pop_up_import_scalar_field_3d_dialog, boost::ref(*this)));
 
 	// ----
 	QObject::connect(action_Manage_Feature_Collections, SIGNAL(triggered()),
