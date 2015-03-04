@@ -39,9 +39,10 @@ namespace GPlatesUtils
 			DATA_MINING = 0,
 			PYTHON,
 			SYMBOLOGY,
-                        HELLINGER,
-
-                        NUM_COMPONENTS
+			HELLINGER,
+			DEFORMATION,
+			SCALAR_FIELD_IMPORT,
+			NUM_COMPONENTS
 		};
 
 	public:
@@ -69,12 +70,28 @@ namespace GPlatesUtils
 				return Component(ComponentManager::SYMBOLOGY);
 			}
 
-                        static
-                        Component
-                        hellinger()
-                        {
-                            return Component(ComponentManager::HELLINGER);
-                        }
+
+			static
+			Component
+			hellinger()
+			{
+				return Component(ComponentManager::HELLINGER);
+			}
+
+			static
+			Component
+			deformation()
+			{
+				return Component(ComponentManager::DEFORMATION);
+			}
+
+			static
+			Component
+			scalar_field_import()
+			{
+				return Component(ComponentManager::SCALAR_FIELD_IMPORT);
+			}
+
 
 			operator 
 			ComponentManager::ComponentTypes()
