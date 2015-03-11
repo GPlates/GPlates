@@ -775,9 +775,11 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 				const double S33 = prev_deformation_info.S33 + deformation_info.SR33 * 3.15569e13;
 				const double S23 = prev_deformation_info.S23 + deformation_info.SR23 * 3.15569e13;
 
+#if 0 // Avoid writing out intermediate file on trunk for now until sorted out on a source code branch...
 				// DEF_TEST
 				const double dilitation = deformation_info.dilitation; 
 				const double sph_dilitation = deformation_info.sph_dilitation; 
+#endif
 
 				// Set the new strain at the current geometry sample.
 				deformation_info.S22 = S22;
@@ -809,13 +811,13 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 				deformation_info.S_DIR = S_DIR;
 
 			
+#if 0 // Avoid writing out intermediate file on trunk for now until sorted out on a source code branch...
 				// DEF_TEST
 				GPlatesMaths::PointOnSphere p = point_vector[point_index];
 				GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point( p );
 				double lat = llp.latitude();
 				double lon = llp.longitude();
 
-#if 0 // Avoid writing out intermediate file on trunk for now until sorted out on a source code branch...
 				def_test_file << ">point index: ";
 				def_test_file << point_index;
 				def_test_file << "\n";
