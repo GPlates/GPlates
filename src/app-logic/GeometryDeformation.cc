@@ -722,6 +722,7 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 		{
 			// DEF_TEST
 
+#if 0 // Avoid writing out intermediate file on trunk for now until sorted out on a source code branch...
 			// string to hold filename
 			std::string def_test_file_name = "DEF_TEST_t";
 			// FIXME: how to get the time of the current time window and geometry index ?? 
@@ -744,6 +745,7 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 			def_test_file << ">lon lat dilitation sph_dilitation\n";
 			def_test_file << ">\n";
 			// DEF_TEST
+#endif
 
 			GeometrySample &geometry_sample = time_window.get_geometry_sample(geometry_sample_index);
 
@@ -813,6 +815,7 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 				double lat = llp.latitude();
 				double lon = llp.longitude();
 
+#if 0 // Avoid writing out intermediate file on trunk for now until sorted out on a source code branch...
 				def_test_file << ">point index: ";
 				def_test_file << point_index;
 				def_test_file << "\n";
@@ -825,14 +828,16 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 				def_test_file << sph_dilitation;
 				def_test_file << " ";
 				def_test_file << "\n";
-
+#endif
 			}
 
 			prev_geometry_sample = geometry_sample;
 
+#if 0 // Avoid writing out intermediate file on trunk for now until sorted out on a source code branch...
 			// DEF_TEST
 			// close file for this recon time 
 			def_test_file.close();
+#endif
 		}
 
 	} // end of loop on time windows 
