@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>545</width>
+    <width>592</width>
     <height>651</height>
    </rect>
   </property>
@@ -35,12 +35,42 @@
        </item>
        <item>
         <property name="text">
-         <string>Shade Delaunay Triangles by Dilitiational Strain Rate</string>
+         <string>Dilitation Strain Rate - Cartesian</string>
         </property>
        </item>
        <item>
         <property name="text">
-         <string>Shade Delaunay Triangles by Second Invariant of the Strain Rate</string>
+         <string>Dilitation Strain Rate - Cartesian - Smoothed</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Dilitation Strain Rate - Spherical</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Dilitation Strain Rate - Spherical - Smoothed</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Second Invariant Strain Rate - Cartesian</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Second Invariant Strain Rate - Cartesian - Smoothed</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Second Invariant Strain Rate - Spherical</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Second Invariant Strain Rate - Spherical - Smoothed</string>
         </property>
        </item>
       </widget>

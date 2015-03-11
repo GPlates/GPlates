@@ -554,6 +554,12 @@ namespace GPlatesAppLogic
 			void
 			create_delaunay_2() const;
 
+            void
+			compute_spherical_delaunay_2() const;
+
+            void
+			smooth_delaunay_2() const;
+
 			void
 			create_constrained_delaunay_2() const;
 

@@ -25,8 +25,9 @@
  */
 
 
+// FIXME: does not work ; need to fix references to triangulation
 // NOTE: use with caution: this can cause the Log window to lag during resize events.
-//#define DEBUG_FILE
+// #define DEBUG_FILE
 
 
 #include <QDebug>
@@ -71,7 +72,7 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::get_feature_ref() const
 void
 GPlatesAppLogic::ResolvedTopologicalNetwork::report_deformation_to_file() const
 {
-#ifdef DEBUG_FILE
+#if 0
 	// Get the current reconstruction time 
 	const double t = get_reconstruction_time();
 
@@ -133,7 +134,7 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::report_deformation_to_file() const
 			<< "(cm/yr)\n";
 
 		const ResolvedTriangulation::Delaunay_2::Face::DeformationInfo &deformation_info =
-				finite_faces_2_iter->get_deformation_info();
+				finite_faces_2_iter->get_deformation_info();  // DEBUG_FILE
 
 		debug_qts << "# SR22 = " << deformation_info.SR22 << "(1/s)\n";
 		debug_qts << "# SR33 = " << deformation_info.SR33 << "(1/s)\n";

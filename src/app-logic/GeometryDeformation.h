@@ -199,6 +199,8 @@ namespace GPlatesAppLogic
 		struct DeformationInfo
 		{
 			DeformationInfo() :
+				dilitation(0), // DEF_TEST
+				sph_dilitation(0), // DEF_TEST
 				SR22(0),
 				SR33(0),
 				SR23(0),
@@ -217,6 +219,8 @@ namespace GPlatesAppLogic
 			//
 
 			// Instantaneous strain rates.
+			double dilitation; // DEF_TEST
+			double sph_dilitation; // DEF_TEST
 			double SR22; // 2 = x
 			double SR33; // 3 = y
 			double SR23;
@@ -400,6 +404,15 @@ namespace GPlatesAppLogic
 						const delaunay_face_opt_seq_type &delaunay_faces)
 				{
 					d_delaunay_faces = delaunay_faces;
+				}
+
+				/**
+				 * Get the point list
+				 */
+				std::vector<GPlatesMaths::PointOnSphere> &
+				get_points()
+				{
+					return points;
 				}
 
 			private:

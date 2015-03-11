@@ -1,0 +1,18 @@
+999  0.0   0.0    0.0    0.0  999 ! Test rotation file
+999  0.0   0.0    0.0    0.0  999 ! cw = clockwise, ccw is counter-clockwise
+001  0.0   0.0    0.0    0.0  000 ! 
+001 300.0   0.0    0.0    0.0  000 ! 
+101  0.0   0.0    0.0    0.0  000 ! 
+101 300.0   0.0    0.0 -180.0  000 ! rot about X ccw going fwd in time
+102  0.0   0.0    0.0    0.0  000 ! 
+102 300.0   0.0   90.0  180.0  000 ! rot about Y cw going fwd in time
+103  0.0   0.0    0.0    0.0  000 ! 
+103 300.0  90.0    0.0  180.0  000 ! rot about Z cw going fwd in time
+104  0.0   0.0    0.0    0.0  000 ! 
+104 300.0   0.0    0.0  180.0  000 ! rot about X cw going fwd in time
+105  0.0   0.0    0.0    0.0  000 ! 
+105 300.0   0.0   90.0 -180.0  000 ! rot about Y ccw going fwd in time
+106  0.0   0.0    0.0    0.0  000 ! 
+106 300.0  90.0    0.0 -180.0  000 ! rot about Z ccw going fwd in time
+201  0.0   0.0    0.0    0.0  000 ! 
+201 300.0   45.0    45.0 -180.0  000 ! rot about arbitrary pole 
