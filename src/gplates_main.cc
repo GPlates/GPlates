@@ -120,7 +120,7 @@ namespace
 	const char *POSITIONAL_FILENAMES_OPTION_NAME = "positional";
 	
 	//! Option name for loading a project file.
-	const char *PROFILE_FILENAME_OPTION_NAME = "project";
+	const char *PROJECT_FILENAME_OPTION_NAME = "project";
 	//! Option name for loading a project file with short version.
 	const char *PROJECT_FILENAME_OPTION_NAME_WITH_SHORT_OPTION = "project,p";
 	
@@ -437,32 +437,44 @@ namespace
 			}
 		}
 
-		if (vm.count(PROFILE_FILENAME_OPTION_NAME))
+		if (vm.count(PROJECT_FILENAME_OPTION_NAME))
 		{
-			if (!command_line_options.feature_collection_filenames.empty())
+			const QString project_filename = vm[PROJECT_FILENAME_OPTION_NAME].as<std::string>().c_str();
+
+			if (!project_filename.endsWith(
+					GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION,
+					Qt::CaseInsensitive))
+			{
+#if defined(__APPLE__)
+				// Mac OS X sometimes (when invoking from Finder or 'open' command) adds the
+				// '-psn...' command-line argument to the applications argument list
+				// (for example '-psn_0_548998').
+				// Note that we end up ignoring the '-psn...' option.
+				// Also note that it doesn't actually appear in 'argv[]' for some reason.
+				if (!project_filename.startsWith("sn_", Qt::CaseInsensitive))
+#endif
+				{
+					qWarning()
+							<< "Specified project file does not have a '."
+							<< GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION
+							<< "' filename extension.";
+					exit(1);
+				}
+			}
+			else if (!command_line_options.feature_collection_filenames.empty())
 			{
 				qWarning() << "Cannot specify a project file and feature collection files on command-line.";
 				exit(1);
 			}
-
-			const QString project_filename = vm[PROFILE_FILENAME_OPTION_NAME].as<std::string>().c_str();
-
-			if (!project_filename.endsWith(GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION, Qt::CaseInsensitive))
-			{
-				qWarning()
-						<< "Specified project file does not have a '."
-						<< GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION
-						<< "' filename extension.";
-				exit(1);
-			}
-
-			if (command_line_options.project_filename)
+			else if (command_line_options.project_filename)
 			{
 				qWarning() << "More than one project file specified on command-line.";
 				exit(1);
 			}
-
-			command_line_options.project_filename = project_filename;
+			else
+			{
+				command_line_options.project_filename = project_filename;
+			}
 		}
 
 		if (vm.count(DEBUG_GUI_OPTION_NAME))
