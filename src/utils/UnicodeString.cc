@@ -26,8 +26,6 @@
 #include <ostream>
 #include "UnicodeString.h"
 
-#include "scribe/Scribe.h"
-
 
 boost::int32_t
 GPlatesUtils::UnicodeString::length() const
@@ -102,20 +100,6 @@ GPlatesUtils::UnicodeString::indexOf(
 	// in terms of
 	// http://doc.qt.nokia.com/4.4/qstring.html#indexOf
 	return qstring().indexOf(text.qstring(), start);
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesUtils::UnicodeString::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_qstring, "d_qstring"))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

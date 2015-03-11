@@ -49,9 +49,6 @@
 #include "model/types.h"
 #include "model/WeakReferenceCallback.h"
 
-#include "scribe/ScribeExceptions.h"
-#include "scribe/Transcribe.h"
-
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // NOTE: Please use forward declarations (and boost::scoped_ptr) instead of including headers
 // where possible.
@@ -512,32 +509,6 @@ namespace GPlatesAppLogic
 
 		// Make friend so can call @a begin_reconstruct_on_scope_exit and @a end_reconstruct_on_scope_exit.
 		friend class ScopedReconstructGuard;
-
-	private: // Transcribing...
-
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
-
-		static
-		GPlatesScribe::TranscribeResult
-		transcribe_construct_data(
-				GPlatesScribe::Scribe &scribe,
-				GPlatesScribe::ConstructObject<ApplicationState> &application_state)
-		{
-			// Shouldn't construct object - always transcribe existing object.
-			GPlatesGlobal::Assert<GPlatesScribe::Exceptions::ConstructNotAllowed>(
-					false,
-					GPLATES_ASSERTION_SOURCE,
-					typeid(ApplicationState));
-
-			// Shouldn't be able to get here - keep compiler happy.
-			return GPlatesScribe::TRANSCRIBE_INCOMPATIBLE;
-		}
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
 	};
 }
 

@@ -34,8 +34,6 @@
 #include "FeatureCollectionFileFormatRegistry.h"
 #include "GMTFormatWriter.h"
 
-#include "scribe/Transcribe.h"
-
 
 namespace GPlatesFileIO
 {
@@ -76,15 +74,6 @@ namespace GPlatesFileIO
 
 		private:
 			GPlatesFileIO::GMTFormatWriter::HeaderFormat d_header_format;
-
-			//! Transcribe to/from serialization archives.
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
 		};
 
 
@@ -154,20 +143,6 @@ namespace GPlatesFileIO
 		private:
 			bool d_wrap_to_dateline;
 			model_to_attribute_map_type d_model_to_attribute_map;
-
-		private: // Transcribing...
-
-			OGRConfiguration()
-			{  }
-
-			//! Transcribe to/from serialization archives.
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
 		};
 	}
 }

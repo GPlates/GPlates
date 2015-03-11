@@ -31,8 +31,6 @@
 
 #include "global/GPlatesAssert.h"
 
-#include "scribe/Scribe.h"
-
 
 namespace GPlatesAppLogic
 {
@@ -251,26 +249,4 @@ GPlatesAppLogic::ReconstructionLayerProxy::invalidate()
 
 	// Polling observers need to update themselves.
 	d_subject_token.invalidate();
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::ReconstructionLayerProxy::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_current_reconstruction_feature_collections, "d_current_reconstruction_feature_collections") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_current_reconstruction_time, "d_current_reconstruction_time") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_current_anchor_plate_id, "d_current_anchor_plate_id") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_default_max_num_reconstruction_trees_in_cache, "d_default_max_num_reconstruction_trees_in_cache") ||
-		!scribe.transcribe_base<LayerProxy, ReconstructionLayerProxy>(TRANSCRIBE_SOURCE))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	d_current_max_num_reconstruction_trees_in_cache = d_default_max_num_reconstruction_trees_in_cache;
-	d_cached_reconstruction_trees = boost::none;
-	d_subject_token.invalidate();
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

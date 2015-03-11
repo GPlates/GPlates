@@ -295,16 +295,16 @@ set(srcs
     InsertVGPReconstructionPoleDialog.h
     InsertVGPReconstructionPoleDialogUi.ui
     InvalidPropertyValueException.h
-    KinematicGraphPicker.h
     KinematicGraphPicker.cc
-    KinematicGraphsConfigurationDialog.h
+    KinematicGraphPicker.h
     KinematicGraphsConfigurationDialog.cc
+    KinematicGraphsConfigurationDialog.h
     KinematicGraphsConfigurationDialogUi.ui
-    KinematicGraphsConfigurationWidget.h
     KinematicGraphsConfigurationWidget.cc
+    KinematicGraphsConfigurationWidget.h
     KinematicGraphsConfigurationWidgetUi.ui
-    KinematicGraphsDialog.h
     KinematicGraphsDialog.cc
+    KinematicGraphsDialog.h
     KinematicGraphsDialogUi.ui
     LatLonCoordinatesTable.cc
     LatLonCoordinatesTable.h

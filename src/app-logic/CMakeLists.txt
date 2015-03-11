@@ -183,7 +183,6 @@ set(srcs
     ScalarField3DLayerProxy.h
     ScalarField3DLayerTask.cc
     ScalarField3DLayerTask.h
-    ScribeExportAppLogic.h
     SmallCircleGeometryPopulator.cc
     SmallCircleGeometryPopulator.h
     TopologyGeometryResolver.cc

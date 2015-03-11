@@ -39,8 +39,6 @@
 
 #include "model/FeatureCollectionHandle.h"
 
-#include "scribe/Transcribe.h"
-
 
 namespace GPlatesAppLogic
 {
@@ -158,16 +156,6 @@ namespace GPlatesAppLogic
 		ReconstructionLayerTask() :
 				d_reconstruction_layer_proxy(ReconstructionLayerProxy::create())
 		{  }
-
-	private: // Transcribing...
-
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
 	};
 }
 

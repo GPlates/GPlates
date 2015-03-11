@@ -44,8 +44,6 @@
 
 #include "model/FeatureHandle.h"
 
-#include "scribe/Transcribe.h"
-
 #include "utils/CopyConst.h"
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/SafeBool.h"
@@ -244,26 +242,6 @@ namespace GPlatesAppLogic
 			layer_proxy_non_null_ptr_type d_input_layer_proxy;
 			subject_token_method_type d_subject_token_method;
 			GPlatesUtils::ObserverToken d_input_layer_proxy_observer_token;
-
-		private: // Transcribing...
-
-			public: // public so we can register the get-token-method mappings...
-			class TranscribeSubjectTokenMethod;
-			private:
-
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			static
-			GPlatesScribe::TranscribeResult
-			transcribe_construct_data(
-					GPlatesScribe::Scribe &scribe,
-					GPlatesScribe::ConstructObject< InputLayerProxy<LayerProxyType> > &input_layer_proxy);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
 		};
 
 
@@ -401,16 +379,6 @@ namespace GPlatesAppLogic
 			 * set to none and is out-of-date because the client has not yet called @a set_up_to_date.
 			 */
 			bool d_is_none_and_up_to_date;
-
-		private: // Transcribing...
-
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
 		};
 
 
@@ -545,16 +513,6 @@ namespace GPlatesAppLogic
 			
 		private:
 			seq_type d_seq;
-
-		private: // Transcribing...
-
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
 		};
 	}
 }

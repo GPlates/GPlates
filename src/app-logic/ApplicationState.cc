@@ -48,8 +48,6 @@
 
 #include "model/Gpgim.h"
 
-#include "scribe/Scribe.h"
-
 #include "utils/Profile.h"
 
 namespace
@@ -398,31 +396,4 @@ GPlatesAppLogic::ApplicationState::end_reconstruct_on_scope_exit(
 
 		reconstruct();
 	}
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::ApplicationState::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	if (
-		// Note that we transcribe the 'existing' FeatureCollectionFileState rather than load a new one.
-		// We do this by transcribing the 'dereferenced' pointer rather than the scoped pointer...
-		!scribe.transcribe(TRANSCRIBE_SOURCE, *d_feature_collection_file_state, "d_feature_collection_file_state") ||
-		// Note that we transcribe the 'existing' ReconstructGraph rather than load a new one.
-		// We do this by transcribing the 'dereferenced' pointer rather than the scoped pointer...
-		!scribe.transcribe(TRANSCRIBE_SOURCE, *d_reconstruct_graph, "d_reconstruct_graph") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_update_default_reconstruction_tree_layer, "d_update_default_reconstruction_tree_layer") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_reconstruction_time, "d_reconstruction_time") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_anchored_plate_id, "d_anchored_plate_id"))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	d_scoped_reconstruct_nesting_count = 0;
-	d_reconstruct_on_scope_exit = false;
-	d_suppress_auto_layer_creation = false;
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

@@ -40,8 +40,6 @@
 #include "maths/CubeQuadTreePartitionUtils.h"
 #include "maths/types.h"
 
-#include "scribe/Scribe.h"
-
 #include "utils/Profile.h"
 
 
@@ -1071,94 +1069,4 @@ GPlatesAppLogic::ReconstructLayerProxy::create_reconstruct_context_state(
 			d_reconstruct_context.create_context_state(reconstruct_method_context);
 
 	return context_state_ref;
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::ReconstructLayerProxy::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_current_reconstructable_feature_collections, "d_current_reconstructable_feature_collections") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_current_reconstruction_layer_proxy, "d_current_reconstruction_layer_proxy") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_current_topological_network_resolver_layer_proxies, "d_current_topological_network_resolver_layer_proxies") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_current_reconstruction_time, "d_current_reconstruction_time") ||
-		!scribe.transcribe_base<LayerProxy, ReconstructLayerProxy>(TRANSCRIBE_SOURCE))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	if (!transcribed_construct_data)
-	{
-		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_current_reconstruct_params, "d_current_reconstruct_params") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_cached_reconstructions_default_maximum_size, "d_cached_reconstructions_default_maximum_size"))
-		{
-			return scribe.get_transcribe_result();
-		}
-	}
-
-	d_reconstruct_context.set_features(d_current_reconstructable_feature_collections);
-	d_reconstruct_context_state_map.clear();
-	d_cached_reconstructions.clear();
-	d_cached_present_day_info.invalidate();
-	d_cached_reconstructed_polygon_meshes.invalidate();
-	d_subject_token.invalidate();
-	d_reconstructable_feature_collections_subject_token.invalidate();
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::ReconstructLayerProxy::transcribe_construct_data(
-		GPlatesScribe::Scribe &scribe,
-		GPlatesScribe::ConstructObject<ReconstructLayerProxy> &reconstruct_layer_proxy)
-{
-	if (scribe.is_saving())
-	{
-		scribe.save(
-				TRANSCRIBE_SOURCE,
-				reconstruct_layer_proxy->d_current_reconstruct_params,
-				"d_current_reconstruct_params");
-		scribe.save(
-				TRANSCRIBE_SOURCE,
-				reconstruct_layer_proxy->d_cached_reconstructions_default_maximum_size,
-				"d_cached_reconstructions_default_maximum_size");
-	}
-	else // loading...
-	{
-		GPlatesScribe::LoadRef<ReconstructParams> current_reconstruct_params =
-				scribe.load<ReconstructParams>(TRANSCRIBE_SOURCE, "d_current_reconstruct_params");
-		if (!current_reconstruct_params.is_valid())
-		{
-			return scribe.get_transcribe_result();
-		}
-
-		GPlatesScribe::LoadRef<unsigned int> cached_reconstructions_default_maximum_size =
-				scribe.load<unsigned int>(TRANSCRIBE_SOURCE, "d_cached_reconstructions_default_maximum_size");
-		if (!cached_reconstructions_default_maximum_size.is_valid())
-		{
-			return scribe.get_transcribe_result();
-		}
-
-		// Get information that is not transcribed into the archive.
-		GPlatesScribe::TranscribeContext<ReconstructLayerProxy> &transcribe_context =
-				scribe.get_transcribe_context<ReconstructLayerProxy>();
-
-		reconstruct_layer_proxy.construct_object(
-				transcribe_context.reconstruct_method_registry,
-				current_reconstruct_params,
-				cached_reconstructions_default_maximum_size);
-
-		scribe.relocated(
-				TRANSCRIBE_SOURCE,
-				reconstruct_layer_proxy->d_current_reconstruct_params,
-				current_reconstruct_params);
-		scribe.relocated(
-				TRANSCRIBE_SOURCE,
-				reconstruct_layer_proxy->d_cached_reconstructions_default_maximum_size,
-				cached_reconstructions_default_maximum_size);
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

@@ -77,7 +77,6 @@ set(srcs
     WeakObserver.h
     WeakObserverPublisher.h
     WeakObserverVisitor.h
-    WeakReference.cc
     WeakReference.h
     WeakReferenceCallback.h
     WeakReferenceVisitors.h

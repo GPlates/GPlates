@@ -48,8 +48,6 @@
 #include "maths/PolygonMesh.h"
 #include "maths/types.h"
 
-#include "scribe/Transcribe.h"
-
 #include "utils/KeyValueCache.h"
 #include "utils/SubjectObserverToken.h"
 
@@ -1114,42 +1112,6 @@ namespace GPlatesAppLogic
 		create_reconstruct_context_state(
 				const double &reconstruction_time,
 				const ReconstructParams &reconstruct_params);
-
-	private: // Transcribing...
-
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
-
-		static
-		GPlatesScribe::TranscribeResult
-		transcribe_construct_data(
-				GPlatesScribe::Scribe &scribe,
-				GPlatesScribe::ConstructObject<ReconstructLayerProxy> &reconstruct_layer_proxy);
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
-	};
-}
-
-namespace GPlatesScribe
-{
-	//
-	// ReconstructLayerProxy ...
-	//
-
-	template <>
-	class TranscribeContext<GPlatesAppLogic::ReconstructLayerProxy>
-	{
-	public:
-		explicit
-		TranscribeContext(
-				const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry_) :
-			reconstruct_method_registry(reconstruct_method_registry_)
-		{  }
-
-		const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry;
 	};
 }
 

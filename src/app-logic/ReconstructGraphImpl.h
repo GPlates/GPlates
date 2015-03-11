@@ -48,9 +48,6 @@
 #include "model/types.h"
 #include "model/WeakReferenceCallback.h"
 
-#include "scribe/Transcribe.h"
-#include "scribe/TranscribeContext.h"
-
 
 namespace GPlatesAppLogic
 {
@@ -175,30 +172,6 @@ namespace GPlatesAppLogic
 
 			// Only used if this data object is the output of a layer.
 			boost::optional< boost::weak_ptr<Layer> > d_outputting_layer;
-
-		private: // Transcribing...
-
-			//! Constructor data members that do not have a default constructor - the rest are transcribed.
-			explicit
-			Data(
-					const data_type &data) :
-				d_data(data)
-			{  }
-
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			static
-			GPlatesScribe::TranscribeResult
-			transcribe_construct_data(
-					GPlatesScribe::Scribe &scribe,
-					GPlatesScribe::ConstructObject<Data> &data);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
-
 		};
 
 
@@ -290,22 +263,6 @@ namespace GPlatesAppLogic
 
 			private:
 				LayerInputConnection *d_layer_input_connection;
-
-			private: // Transcribing...
-
-				GPlatesScribe::TranscribeResult
-				transcribe(
-						GPlatesScribe::Scribe &scribe,
-						bool transcribed_construct_data);
-
-				static
-				GPlatesScribe::TranscribeResult
-				transcribe_construct_data(
-						GPlatesScribe::Scribe &scribe,
-						GPlatesScribe::ConstructObject<FeatureCollectionModified> &callback);
-
-				// Only the scribe system should be able to transcribe.
-				friend class GPlatesScribe::Access;
 			};
 
 
@@ -327,21 +284,6 @@ namespace GPlatesAppLogic
 			 * copies of the callback thus allowing it to get called more than once per modification.
 			 */
 			GPlatesModel::FeatureCollectionHandle::const_weak_ref d_callback_input_feature_collection;
-
-		private: // Transcribing...
-
-			LayerInputConnection() :
-				d_is_input_layer_active(false)
-			{  }
-
-			//! Transcribe to/from serialization archives.
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
 		};
 
 
@@ -391,19 +333,7 @@ namespace GPlatesAppLogic
 			}
 
 		private:
-
 			input_connection_map_type d_connections;
-
-		private: // Transcribing...
-
-			//! Transcribe to/from serialization archives.
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
 		};
 
 
@@ -511,31 +441,6 @@ namespace GPlatesAppLogic
 			boost::shared_ptr<Data> d_output_data;
 			bool d_active;
 			bool d_auto_created;
-
-		private: // Transcribing...
-
-			//! Constructor data members that do not have a default constructor - the rest are transcribed.
-			explicit
-			Layer(
-					ReconstructGraph *reconstruct_graph) :
-				d_reconstruct_graph(reconstruct_graph),
-				d_active(false),
-				d_auto_created(false)
-			{  }
-
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			static
-			GPlatesScribe::TranscribeResult
-			transcribe_construct_data(
-					GPlatesScribe::Scribe &scribe,
-					GPlatesScribe::ConstructObject<Layer> &layer);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
 		};
 
 		/**
@@ -570,26 +475,6 @@ namespace GPlatesAppLogic
 				const Layer *originating_layer,
 				const Layer *input_layer);
 	}
-}
-
-namespace GPlatesScribe
-{
-	//
-	// ReconstructGraphImpl::Layer ...
-	//
-
-	template <>
-	class TranscribeContext<GPlatesAppLogic::ReconstructGraphImpl::Layer>
-	{
-	public:
-		explicit
-		TranscribeContext(
-				GPlatesAppLogic::ReconstructGraph &reconstruct_graph_) :
-			reconstruct_graph(&reconstruct_graph_)
-		{  }
-
-		GPlatesAppLogic::ReconstructGraph *reconstruct_graph;
-	};
 }
 
 #endif // GPLATES_APP_LOGIC_RECONSTRUCTGRAPHIMPL_H

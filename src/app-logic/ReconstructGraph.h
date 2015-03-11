@@ -54,10 +54,6 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/WeakReferenceCallback.h"
 
-#include "scribe/ScribeExceptions.h"
-#include "scribe/Transcribe.h"
-#include "scribe/TranscribeContext.h"
-
 
 namespace GPlatesAppLogic
 {
@@ -616,23 +612,6 @@ namespace GPlatesAppLogic
 			 * copies of the callback thus allowing it to get called more than once per modification.
 			 */
 			GPlatesModel::FeatureCollectionHandle::const_weak_ref d_callback_input_feature_collection;
-
-		private: // Transcribing...
-
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			static
-			GPlatesScribe::TranscribeResult
-			transcribe_construct_data(
-					GPlatesScribe::Scribe &scribe,
-					GPlatesScribe::ConstructObject<InputFileInfo> &input_file_info);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
-
 		};
 
 
@@ -744,52 +723,6 @@ namespace GPlatesAppLogic
 		void
 		handle_default_reconstruction_tree_layer_removal(
 				const Layer &layer_being_removed);
-
-	private: // Transcribing...
-
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
-
-		static
-		GPlatesScribe::TranscribeResult
-		transcribe_construct_data(
-				GPlatesScribe::Scribe &scribe,
-				GPlatesScribe::ConstructObject<ReconstructGraph> &input_file_info)
-		{
-			// Shouldn't construct object - always transcribe existing object.
-			GPlatesGlobal::Assert<GPlatesScribe::Exceptions::ConstructNotAllowed>(
-					false,
-					GPLATES_ASSERTION_SOURCE,
-					typeid(ReconstructGraph));
-
-			// Shouldn't be able to get here - keep compiler happy.
-			return GPlatesScribe::TRANSCRIBE_INCOMPATIBLE;
-		}
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
-	};
-}
-
-namespace GPlatesScribe
-{
-	//
-	// ReconstructGraph::InputFileInfo ...
-	//
-
-	template <>
-	class TranscribeContext<GPlatesAppLogic::ReconstructGraph::InputFileInfo>
-	{
-	public:
-		explicit
-		TranscribeContext(
-				GPlatesAppLogic::ReconstructGraph &reconstruct_graph_) :
-			reconstruct_graph(reconstruct_graph_)
-		{  }
-
-		GPlatesAppLogic::ReconstructGraph &reconstruct_graph;
 	};
 }
 

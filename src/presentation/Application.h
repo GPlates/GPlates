@@ -39,9 +39,6 @@
 
 #include "qt-widgets/ViewportWindow.h"
 
-#include "scribe/ScribeExceptions.h"
-#include "scribe/Transcribe.h"
-
 #include "utils/Singleton.h"
 
 namespace GPlatesGui
@@ -157,41 +154,6 @@ namespace GPlatesPresentation
 		 * Controller for external communication.
 		 */
 		boost::optional<GPlatesGui::ExternalSyncController> d_external_sync_controller;
-
-	private: // Transcribing...
-
-		/**
-		 * Saves or restores a session.
-		 *
-		 * Whether a session is to be restored or saved depends on the state of the specified Scribe.
-		 * The same code path handles both save and restore (to help ensure they don't get out-of-sync).
-		 *
-		 * This is the main entry point for saving and restoring sessions in GPlates because
-		 * this class (Application) encapsulates all GPlates state.
-		 */
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
-
-		static
-		GPlatesScribe::TranscribeResult
-		transcribe_construct_data(
-				GPlatesScribe::Scribe &scribe,
-				GPlatesScribe::ConstructObject<Application> &application)
-		{
-			// Shouldn't construct object - always transcribe existing object.
-			GPlatesGlobal::Assert<GPlatesScribe::Exceptions::ConstructNotAllowed>(
-					false,
-					GPLATES_ASSERTION_SOURCE,
-					typeid(Application));
-
-			// Shouldn't be able to get here - keep compiler happy.
-			return GPlatesScribe::TRANSCRIBE_INCOMPATIBLE;
-		}
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
 	};
 
 	inline

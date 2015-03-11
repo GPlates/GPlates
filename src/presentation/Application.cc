@@ -53,9 +53,6 @@
 #include "qt-widgets/SpecifyAnchoredPlateIdDialog.h"
 #include "qt-widgets/TaskPanel.h"
 
-#include "scribe/Scribe.h"
-#include "scribe/TranscribeContext.h"
-
 
 GPlatesPresentation::Application::Application() :
 	d_view_state(d_application_state),
@@ -148,72 +145,4 @@ GPlatesPresentation::Application::set_reconstruction_time(
 		const double &reconstruction_time)
 {
 	d_view_state.get_animation_controller().set_view_time(reconstruction_time);
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesPresentation::Application::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	//
-	// Set up some transcribe contexts to help construct/transcribe various objects throughout GPlates.
-	//
-
-	// Set up transcribe context for FeatureCollectionFileState.
-	// This also allows any read errors to be propagated back to us.
-	GPlatesScribe::TranscribeContext<GPlatesAppLogic::FeatureCollectionFileState>
-			feature_collection_file_state_transcribe_context(
-					get_application_state().get_feature_collection_file_format_registry());
-	GPlatesScribe::Scribe::ScopedTranscribeContextGuard<GPlatesAppLogic::FeatureCollectionFileState>
-			feature_collection_file_state_transcribe_context_guard(
-					scribe,
-					feature_collection_file_state_transcribe_context);
-
-	// Set up transcribe context so feature collection handle can add itself to the model.
-	GPlatesScribe::TranscribeContext<GPlatesModel::FeatureCollectionHandle>
-			feature_collection_handle_transcribe_context(d_application_state.get_model_interface());
-	GPlatesScribe::Scribe::ScopedTranscribeContextGuard<GPlatesModel::FeatureCollectionHandle>
-			feature_collection_handle_transcribe_context_guard(
-					scribe,
-					feature_collection_handle_transcribe_context);
-
-	// Set up transcribe context for FeatureCollectionFileState::FileReference.
-	// We do this in Application because these objects could be transcribed anywhere in GPlates.
-	typedef GPlatesAppLogic::FeatureCollectionFileState file_state_type;
-	// Non-const FileReference...
-	GPlatesScribe::TranscribeContext<file_state_type::file_reference>
-			feature_collection_file_state_file_reference_transcribe_context(
-					d_application_state.get_feature_collection_file_state());
-	GPlatesScribe::Scribe::ScopedTranscribeContextGuard<file_state_type::file_reference>
-			feature_collection_file_state_file_reference_transcribe_context_guard(
-					scribe,
-					feature_collection_file_state_file_reference_transcribe_context);
-	// Const FileReference...
-	GPlatesScribe::TranscribeContext<file_state_type::const_file_reference>
-			feature_collection_file_state_const_file_reference_transcribe_context(
-					d_application_state.get_feature_collection_file_state());
-	GPlatesScribe::Scribe::ScopedTranscribeContextGuard<file_state_type::const_file_reference>
-			feature_collection_file_state_const_file_reference_transcribe_context_guard(
-					scribe,
-					feature_collection_file_state_const_file_reference_transcribe_context);
-
-	//
-	// Save/restore starting with app-logic and moving up towards GUI.
-	//
-
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_application_state, "d_application_state"))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	// If there were any read errors while loading the feature collections then display them in the GUI.
-	if (!feature_collection_file_state_transcribe_context.read_errors.is_empty())
-	{
-		get_main_window().handle_read_errors(
-				get_application_state().get_feature_collection_file_io(),
-				feature_collection_file_state_transcribe_context.read_errors);
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

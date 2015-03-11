@@ -53,8 +53,6 @@
 
 #include "model/FeatureCollectionHandle.h"
 
-#include "scribe/Transcribe.h"
-
 
 namespace GPlatesAppLogic
 {
@@ -143,16 +141,6 @@ namespace GPlatesAppLogic
 
 		private:
 			boost::weak_ptr<ReconstructGraphImpl::Data> d_impl;
-
-		private: // Transcribing...
-
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
 		};
 
 
@@ -263,16 +251,6 @@ namespace GPlatesAppLogic
 
 		private:
 			boost::weak_ptr<ReconstructGraphImpl::LayerInputConnection> d_impl;
-
-		private: // Transcribing...
-
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
 		};
 
 
@@ -634,16 +612,6 @@ namespace GPlatesAppLogic
 		void
 		set_auto_created(
 				bool auto_created = true);
-
-	private: // Transcribing...
-
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
 	};
 }
 

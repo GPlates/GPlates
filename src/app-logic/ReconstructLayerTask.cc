@@ -32,8 +32,6 @@
 #include "ReconstructUtils.h"
 #include "TopologyNetworkResolverLayerProxy.h"
 
-#include "scribe/Scribe.h"
-
 
 bool
 GPlatesAppLogic::ReconstructLayerTask::can_process_feature_collection(
@@ -259,83 +257,6 @@ GPlatesAppLogic::ReconstructLayerTask::update(
 }
 
 
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::ReconstructLayerTask::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_layer_task_params, "d_layer_task_params") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_using_default_reconstruction_layer_proxy, "d_using_default_reconstruction_layer_proxy") ||
-		!scribe.transcribe_base<LayerTask, ReconstructLayerTask>(TRANSCRIBE_SOURCE))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	if (!transcribed_construct_data)
-	{
-		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_default_reconstruction_layer_proxy, "d_default_reconstruction_layer_proxy") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_reconstruct_layer_proxy, "d_reconstruct_layer_proxy"))
-		{
-			return scribe.get_transcribe_result();
-		}
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::ReconstructLayerTask::transcribe_construct_data(
-		GPlatesScribe::Scribe &scribe,
-		GPlatesScribe::ConstructObject<ReconstructLayerTask> &reconstruct_layer_task)
-{
-	if (scribe.is_saving())
-	{
-		scribe.save(
-				TRANSCRIBE_SOURCE,
-				reconstruct_layer_task->d_default_reconstruction_layer_proxy,
-				"d_default_reconstruction_layer_proxy");
-		scribe.save(
-				TRANSCRIBE_SOURCE,
-				reconstruct_layer_task->d_reconstruct_layer_proxy,
-				"d_reconstruct_layer_proxy");
-	}
-	else // loading...
-	{
-		GPlatesScribe::LoadRef<ReconstructionLayerProxy::non_null_ptr_type> default_reconstruction_layer_proxy =
-				scribe.load<ReconstructionLayerProxy::non_null_ptr_type>(
-						TRANSCRIBE_SOURCE, "d_default_reconstruction_layer_proxy");
-		if (!default_reconstruction_layer_proxy.is_valid())
-		{
-			return scribe.get_transcribe_result();
-		}
-
-		GPlatesScribe::LoadRef<ReconstructLayerProxy::non_null_ptr_type> reconstruct_layer_proxy =
-				scribe.load<ReconstructLayerProxy::non_null_ptr_type>(
-						TRANSCRIBE_SOURCE, "d_reconstruct_layer_proxy");
-		if (!reconstruct_layer_proxy.is_valid())
-		{
-			return scribe.get_transcribe_result();
-		}
-
-		reconstruct_layer_task.construct_object(
-				default_reconstruction_layer_proxy,
-				reconstruct_layer_proxy);
-
-		scribe.relocated(
-				TRANSCRIBE_SOURCE,
-				reconstruct_layer_task->d_default_reconstruction_layer_proxy,
-				default_reconstruction_layer_proxy);
-		scribe.relocated(
-				TRANSCRIBE_SOURCE,
-				reconstruct_layer_task->d_reconstruct_layer_proxy,
-				reconstruct_layer_proxy);
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
-}
-
-
 GPlatesAppLogic::ReconstructLayerTask::Params::Params() :
 	d_non_const_get_reconstruct_params_called(false)
 {
@@ -360,21 +281,4 @@ GPlatesAppLogic::ReconstructLayerTask::Params::get_reconstruct_params()
 	// explicitly does a reconstruction which ensures an update after all modifications are made.
 
 	return d_reconstruct_params;
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::ReconstructLayerTask::Params::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_reconstruct_params, "d_reconstruct_params") ||
-		!scribe.transcribe_base<LayerTaskParams, Params>(TRANSCRIBE_SOURCE))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	d_non_const_get_reconstruct_params_called = false;
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

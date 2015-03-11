@@ -58,7 +58,6 @@
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
-#include "utils/UnicodeString.h"
 
 
 namespace GPlatesUnitTest
@@ -191,7 +190,7 @@ namespace GPlatesUnitTest
 			int i;
 			int j;
 			std::vector<int> signed_ints;
-			GPlatesUtils::UnicodeString u;
+			QString u;
 			int *pi;
 			int *pj;
 			int *pk;

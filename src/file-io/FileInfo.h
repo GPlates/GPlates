@@ -30,8 +30,6 @@
 #include <QFileInfo>
 #include <QString>
 
-#include "scribe/Transcribe.h"
-
 
 namespace GPlatesFileIO
 {
@@ -151,15 +149,6 @@ namespace GPlatesFileIO
 
 	private:
 		QFileInfo d_file_info;
-
-		//! Transcribe to/from serialization archives.
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
 	};
 
 

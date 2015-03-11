@@ -33,8 +33,6 @@
 
 #include "property-values/GeoTimeInstant.h"
 
-#include "scribe/Transcribe.h"
-
 
 namespace GPlatesAppLogic
 {
@@ -234,27 +232,7 @@ namespace GPlatesAppLogic
 		GPlatesMaths::real_t d_deformation_end_time;
 		GPlatesMaths::real_t d_deformation_begin_time;
 		GPlatesMaths::real_t d_deformation_time_increment;
-
-	private: // Transcribing...
-
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
 	};
-
-
-	/**
-	 * Transcribe for sessions/projects.
-	 */
-	GPlatesScribe::TranscribeResult
-	transcribe(
-			GPlatesScribe::Scribe &scribe,
-			ReconstructParams::VGPVisibilitySetting &vgp_visibility_setting,
-			bool transcribed_construct_data);
 }
 
 #endif // GPLATES_APP_LOGIC_RECONSTRUCTPARAMS_H

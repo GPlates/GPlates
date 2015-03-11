@@ -407,7 +407,7 @@ GPlatesUnitTest::TranscribePrimitivesTest::Data::initialise()
 			signed_ints.push_back(count * 7000123);
 		}
 	}
-	u = GPlatesUtils::UnicodeString("Test String");
+	u = QString("Test String");
 	pi = &i;
 	pj = &j;
 	pk = NULL;
