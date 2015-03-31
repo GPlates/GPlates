@@ -477,7 +477,7 @@ namespace{
 				// Wrap (clip) the current polyline to the dateline.
 				// This could turn one polyline into multiple polylines.
 				// Note that lat/lon polylines just get appended to 'lat_lon_polylines'.
-				dateline_wrapper.get().wrap_to_dateline(polyline, lat_lon_polylines);
+				dateline_wrapper->wrap(polyline, lat_lon_polylines);
 			}
 			else
 			{
@@ -518,7 +518,7 @@ namespace{
 				// Wrap (clip) the current polygon to the dateline.
 				// This could turn one polygon into multiple polygons.
 				// Note that lat/lon polygons just get appended to 'lat_lon_polygons'.
-				dateline_wrapper.get().wrap_to_dateline(polygon, lat_lon_polygons);
+				dateline_wrapper->wrap(polygon, lat_lon_polygons);
 			}
 			else
 			{

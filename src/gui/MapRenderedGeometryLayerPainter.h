@@ -323,12 +323,6 @@ namespace GPlatesGui
 		GPlatesMaths::DateLineWrapper::non_null_ptr_type d_dateline_wrapper;
 
 		/**
-		 * Rotation for central meridian (of map projection) with non-zero longitude to place geometries
-		 * in a reference frame centred at longitude zero (where the dateline wrapper can be used).
-		 */
-		GPlatesMaths::Rotation d_central_meridian_reference_frame_rotation;
-
-		/**
 		 * Used to paint when the @a paint method is called.
 		 *
 		 * Is only valid during @a paint.
@@ -379,16 +373,6 @@ namespace GPlatesGui
 				const LatLonPointForwardIter &end_lat_lon_points);
 
 		/**
-		 * Project and tessellate great circle arcs of *unwrapped* polylines and polygons.
-		 */
-		template <typename GreatCircleArcForwardIter>
-		void
-		project_and_tessellate_unwrapped_line_geometry(
-				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
-				const GreatCircleArcForwardIter &begin_arcs,
-				const GreatCircleArcForwardIter &end_arcs);
-
-		/**
 		 * Paints a *filled* line geometry (polyline or polygon) as a filled polygon.
 		 */
 		template <typename LineGeometryType>
@@ -417,12 +401,11 @@ namespace GPlatesGui
 				rgba8_t rgba8_color);
 
 		/**
-		 * Returns the map projected screen coordinates of the specified point
-		 * (in the central meridian reference frame).
+		 * Returns the map projected screen coordinates of the specified point.
 		 */
 		QPointF
 		get_projected_wrapped_position(
-				const GPlatesMaths::LatLonPoint &central_meridian_reference_frame_point) const;
+				const GPlatesMaths::LatLonPoint &lat_lon_point) const;
 
 		/**
 		 * Returns the map projected screen coordinates of the specified point.
