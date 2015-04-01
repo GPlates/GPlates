@@ -155,6 +155,7 @@ namespace GPlatesOpenGL
 		 */
 		const QString SPHERE_FRAGMENT_SHADER = ":/opengl/scalar_field_3d/sphere_fragment_shader.glsl";
 
+
 		/**
 		 * Useful when debugging a fixed-point texture array by saving each layer to an image file.
 		 */

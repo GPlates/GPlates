@@ -37,15 +37,6 @@
 #include "property-values/Georeferencing.h"
 #include "property-values/TextContent.h"
 
-const QString GPlatesAppLogic::RasterLayerTask::RASTER_FEATURE_CHANNEL_NAME =
-		"Raster feature";
-const QString GPlatesAppLogic::RasterLayerTask::RECONSTRUCTED_POLYGONS_CHANNEL_NAME =
-		"Reconstructed polygons";
-const QString GPlatesAppLogic::RasterLayerTask::AGE_GRID_RASTER_CHANNEL_NAME =
-		"Age grid raster";
-const QString GPlatesAppLogic::RasterLayerTask::NORMAL_MAP_RASTER_CHANNEL_NAME =
-		"Surface relief raster";
-
 
 bool
 GPlatesAppLogic::RasterLayerTask::can_process_feature_collection(
@@ -79,27 +70,27 @@ GPlatesAppLogic::RasterLayerTask::get_input_channel_types() const
 	// Channel definition for the raster feature.
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					RASTER_FEATURE_CHANNEL_NAME,
+					LayerInputChannelName::RASTER_FEATURE,
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL));
 	
 	// Channel definition for the reconstructed polygons.
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					RECONSTRUCTED_POLYGONS_CHANNEL_NAME,
+					LayerInputChannelName::RECONSTRUCTED_POLYGONS,
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
 					LayerTaskType::RECONSTRUCT));
 	
 	// Channel definition for the age grid raster.
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					AGE_GRID_RASTER_CHANNEL_NAME,
+					LayerInputChannelName::AGE_GRID_RASTER,
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
 					LayerTaskType::RASTER));
 	
 	// Channel definition for the normal map raster.
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					NORMAL_MAP_RASTER_CHANNEL_NAME,
+					LayerInputChannelName::NORMAL_MAP_RASTER,
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
 					LayerTaskType::RASTER));
 
@@ -107,19 +98,19 @@ GPlatesAppLogic::RasterLayerTask::get_input_channel_types() const
 }
 
 
-QString
+GPlatesAppLogic::LayerInputChannelName::Type
 GPlatesAppLogic::RasterLayerTask::get_main_input_feature_collection_channel() const
 {
-	return RASTER_FEATURE_CHANNEL_NAME;
+	return LayerInputChannelName::RASTER_FEATURE;
 }
 
 
 void
 GPlatesAppLogic::RasterLayerTask::add_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == RASTER_FEATURE_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::RASTER_FEATURE)
 	{
 		// A raster feature collection should have only one feature.
 		GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection->begin();
@@ -151,10 +142,10 @@ GPlatesAppLogic::RasterLayerTask::add_input_file_connection(
 
 void
 GPlatesAppLogic::RasterLayerTask::remove_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == RASTER_FEATURE_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::RASTER_FEATURE)
 	{
 		// A raster feature collection should have only one feature.
 		GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection->begin();
@@ -185,10 +176,10 @@ GPlatesAppLogic::RasterLayerTask::remove_input_file_connection(
 
 void
 GPlatesAppLogic::RasterLayerTask::modified_input_file(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == RASTER_FEATURE_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::RASTER_FEATURE)
 	{
 		// The feature collection has been modified which means it may have a new feature such as when
 		// a file is reloaded (same feature collection but all features are removed and reloaded).
@@ -226,10 +217,10 @@ GPlatesAppLogic::RasterLayerTask::modified_input_file(
 
 void
 GPlatesAppLogic::RasterLayerTask::add_input_layer_proxy_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == RECONSTRUCTED_POLYGONS_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::RECONSTRUCTED_POLYGONS)
 	{
 		// Make sure the input layer proxy is a reconstruct layer proxy.
 		boost::optional<ReconstructLayerProxy *> reconstruct_layer_proxy =
@@ -242,7 +233,7 @@ GPlatesAppLogic::RasterLayerTask::add_input_layer_proxy_connection(
 					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
 		}
 	}
-	else if (input_channel_name == AGE_GRID_RASTER_CHANNEL_NAME)
+	else if (input_channel_name == LayerInputChannelName::AGE_GRID_RASTER)
 	{
 		// Make sure the input layer proxy is a raster layer proxy.
 		boost::optional<RasterLayerProxy *> raster_layer_proxy =
@@ -254,7 +245,7 @@ GPlatesAppLogic::RasterLayerTask::add_input_layer_proxy_connection(
 					GPlatesUtils::get_non_null_pointer(raster_layer_proxy.get()));
 		}
 	}
-	else if (input_channel_name == NORMAL_MAP_RASTER_CHANNEL_NAME)
+	else if (input_channel_name == LayerInputChannelName::NORMAL_MAP_RASTER)
 	{
 		// Make sure the input layer proxy is a raster layer proxy.
 		boost::optional<RasterLayerProxy *> raster_layer_proxy =
@@ -271,10 +262,10 @@ GPlatesAppLogic::RasterLayerTask::add_input_layer_proxy_connection(
 
 void
 GPlatesAppLogic::RasterLayerTask::remove_input_layer_proxy_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 				const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == RECONSTRUCTED_POLYGONS_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::RECONSTRUCTED_POLYGONS)
 	{
 		// Make sure the input layer proxy is a reconstruct layer proxy.
 		boost::optional<const ReconstructLayerProxy *> reconstruct_layer_proxy =
@@ -286,7 +277,7 @@ GPlatesAppLogic::RasterLayerTask::remove_input_layer_proxy_connection(
 			d_raster_layer_proxy->set_current_reconstructed_polygons_layer_proxy(boost::none);
 		}
 	}
-	else if (input_channel_name == AGE_GRID_RASTER_CHANNEL_NAME)
+	else if (input_channel_name == LayerInputChannelName::AGE_GRID_RASTER)
 	{
 		// Make sure the input layer proxy is a raster layer proxy.
 		boost::optional<const RasterLayerProxy *> raster_layer_proxy =
@@ -297,7 +288,7 @@ GPlatesAppLogic::RasterLayerTask::remove_input_layer_proxy_connection(
 			d_raster_layer_proxy->set_current_age_grid_raster_layer_proxy(boost::none);
 		}
 	}
-	else if (input_channel_name == NORMAL_MAP_RASTER_CHANNEL_NAME)
+	else if (input_channel_name == LayerInputChannelName::NORMAL_MAP_RASTER)
 	{
 		// Make sure the input layer proxy is a raster layer proxy.
 		boost::optional<RasterLayerProxy *> raster_layer_proxy =

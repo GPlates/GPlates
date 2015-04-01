@@ -59,7 +59,6 @@ GPlatesFileIO::FileInfo::get_file_name_without_extension() const
 }
 
 
-
 bool
 GPlatesFileIO::is_writable(
 		const QString &filename)

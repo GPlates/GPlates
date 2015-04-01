@@ -33,13 +33,6 @@
 #include "TopologyNetworkResolverLayerProxy.h"
 
 
-const QString GPlatesAppLogic::ReconstructLayerTask::RECONSTRUCTABLE_FEATURES_CHANNEL_NAME =
-		"Reconstructable features";
-
-const QString GPlatesAppLogic::ReconstructLayerTask::DEFORMATION_SURFACES_CHANNEL_NAME =
-		"Deformation surfaces (topological networks)";
-
-
 bool
 GPlatesAppLogic::ReconstructLayerTask::can_process_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection,
@@ -68,14 +61,14 @@ GPlatesAppLogic::ReconstructLayerTask::get_input_channel_types() const
 	// Channel definition for the reconstruction tree.
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					get_reconstruction_tree_channel_name(),
+					LayerInputChannelName::RECONSTRUCTION_TREE,
 					LayerInputChannelType::ONE_DATA_IN_CHANNEL,
 					LayerTaskType::RECONSTRUCTION)); // rotations
 
 	// Channel definition for the reconstructable features.
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					RECONSTRUCTABLE_FEATURES_CHANNEL_NAME,
+					LayerInputChannelName::RECONSTRUCTABLE_FEATURES,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL));
 
 
@@ -88,7 +81,7 @@ GPlatesAppLogic::ReconstructLayerTask::get_input_channel_types() const
 #endif
 	input_channel_types.push_back(
 		LayerInputChannelType(
-				DEFORMATION_SURFACES_CHANNEL_NAME,
+				LayerInputChannelName::DEFORMATION_SURFACES,
 				LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
 				deformation_surfaces_input_channel_types));
 
@@ -96,10 +89,10 @@ GPlatesAppLogic::ReconstructLayerTask::get_input_channel_types() const
 }
 
 
-QString
+GPlatesAppLogic::LayerInputChannelName::Type
 GPlatesAppLogic::ReconstructLayerTask::get_main_input_feature_collection_channel() const
 {
-	return RECONSTRUCTABLE_FEATURES_CHANNEL_NAME;
+	return LayerInputChannelName::RECONSTRUCTABLE_FEATURES;
 }
 
 
@@ -123,10 +116,10 @@ GPlatesAppLogic::ReconstructLayerTask::activate(
 
 void
 GPlatesAppLogic::ReconstructLayerTask::add_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == RECONSTRUCTABLE_FEATURES_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::RECONSTRUCTABLE_FEATURES)
 	{
 		d_reconstruct_layer_proxy->add_reconstructable_feature_collection(feature_collection);
 	}
@@ -135,10 +128,10 @@ GPlatesAppLogic::ReconstructLayerTask::add_input_file_connection(
 
 void
 GPlatesAppLogic::ReconstructLayerTask::remove_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == RECONSTRUCTABLE_FEATURES_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::RECONSTRUCTABLE_FEATURES)
 	{
 		d_reconstruct_layer_proxy->remove_reconstructable_feature_collection(feature_collection);
 	}
@@ -147,10 +140,10 @@ GPlatesAppLogic::ReconstructLayerTask::remove_input_file_connection(
 
 void
 GPlatesAppLogic::ReconstructLayerTask::modified_input_file(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == RECONSTRUCTABLE_FEATURES_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::RECONSTRUCTABLE_FEATURES)
 	{
 		// Let the reconstruct layer proxy know that one of the reconstructable feature collections has been modified.
 		d_reconstruct_layer_proxy->modified_reconstructable_feature_collection(feature_collection);
@@ -160,11 +153,11 @@ GPlatesAppLogic::ReconstructLayerTask::modified_input_file(
 
 void
 GPlatesAppLogic::ReconstructLayerTask::add_input_layer_proxy_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
 // qDebug() << "\n\nReconstructLayerTask::add_input_layer_proxy_connection()";
-	if (input_channel_name == get_reconstruction_tree_channel_name())
+	if (input_channel_name == LayerInputChannelName::RECONSTRUCTION_TREE)
 	{
 		// Make sure the input layer proxy is a reconstruction layer proxy.
 		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
@@ -179,7 +172,7 @@ GPlatesAppLogic::ReconstructLayerTask::add_input_layer_proxy_connection(
 					GPlatesUtils::get_non_null_pointer(reconstruction_layer_proxy.get()));
 		}
 	} 
-	else if ( input_channel_name == DEFORMATION_SURFACES_CHANNEL_NAME )
+	else if ( input_channel_name == LayerInputChannelName::DEFORMATION_SURFACES )
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - topological network resolver.
@@ -198,10 +191,10 @@ GPlatesAppLogic::ReconstructLayerTask::add_input_layer_proxy_connection(
 
 void
 GPlatesAppLogic::ReconstructLayerTask::remove_input_layer_proxy_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 				const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == get_reconstruction_tree_channel_name())
+	if (input_channel_name == LayerInputChannelName::RECONSTRUCTION_TREE)
 	{
 		// Make sure the input layer proxy is a reconstruction layer proxy.
 		boost::optional<ReconstructionLayerProxy *> reconstruction_layer_proxy =
@@ -216,7 +209,7 @@ GPlatesAppLogic::ReconstructLayerTask::remove_input_layer_proxy_connection(
 					d_default_reconstruction_layer_proxy);
 		}
 	}
-	else if ( input_channel_name == DEFORMATION_SURFACES_CHANNEL_NAME )
+	else if ( input_channel_name == LayerInputChannelName::DEFORMATION_SURFACES )
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - topological network resolver.

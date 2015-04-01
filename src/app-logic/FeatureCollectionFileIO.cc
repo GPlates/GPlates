@@ -42,31 +42,10 @@
 #include "model/Model.h"
 
 
-namespace
-{
-	/**
-	 * Transforms a list of file:// urls into a list of pathnames in string form.
-	 * Ignores any non-file url.
-	 */
-	QStringList
-	extract_pathnames_from_file_urls(
-			const QList<QUrl> &urls)
-	{
-		QStringList pathnames;
-		Q_FOREACH(const QUrl &url, urls) {
-			if (url.scheme() == "file") {
-				pathnames.push_back(url.toLocalFile());
-			}
-		}
-		return pathnames;	// QStringList implicitly shares data and uses pimpl idiom, return by value is fine.
-	}
-}
-
-
 GPlatesAppLogic::FeatureCollectionFileIO::FeatureCollectionFileIO(
 		GPlatesModel::ModelInterface &model,
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
-		GPlatesAppLogic::FeatureCollectionFileState &file_state) :
+		FeatureCollectionFileState &file_state) :
 	d_model(model),
 	d_file_format_registry(file_format_registry),
 	d_file_state(file_state)
@@ -74,7 +53,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::FeatureCollectionFileIO(
 }
 
 
-void
+std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 GPlatesAppLogic::FeatureCollectionFileIO::load_files(
 		const QStringList &filenames)
 {
@@ -92,11 +71,11 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_files(
 	// reuse load_file() for each file because the file state will then send
 	// only one notification (instead of multiple notifications) which is needed in
 	// some cases where the files in the group depend on each other.
-	d_file_state.add_files(loaded_files);
+	return d_file_state.add_files(loaded_files);
 }
 
 
-void
+GPlatesAppLogic::FeatureCollectionFileState::file_reference
 GPlatesAppLogic::FeatureCollectionFileIO::load_file(
 		const QString &filename)
 {
@@ -113,29 +92,13 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_file(
 	// Read new features from the file into the empty feature collection.
 	read_feature_collection(file->get_reference());
 
-	d_file_state.add_file(file);
-}
-
-
-void
-GPlatesAppLogic::FeatureCollectionFileIO::load_urls(
-		const QList<QUrl> &urls)
-{
-	// Transform file:// urls into pathnames; ignore any http:// etc urls.
-	// Read all the files before we add them to the application state.
-	QStringList filenames = extract_pathnames_from_file_urls(urls);
-	if (filenames.isEmpty()) {
-		return;
-	}
-	
-	// Then proceed exactly as though we had called load_files(QStringList).
-	load_files(filenames);
+	return d_file_state.add_file(file);
 }
 
 
 void
 GPlatesAppLogic::FeatureCollectionFileIO::reload_file(
-		GPlatesAppLogic::FeatureCollectionFileState::file_reference file)
+		FeatureCollectionFileState::file_reference file)
 {
 	// We want the removal of all features from the feature collection and
 	// subsequent addition of new features from the file loading code to
@@ -174,7 +137,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::reload_file(
 
 void
 GPlatesAppLogic::FeatureCollectionFileIO::unload_file(
-		GPlatesAppLogic::FeatureCollectionFileState::file_reference loaded_file)
+		FeatureCollectionFileState::file_reference loaded_file)
 {
 	// FIXME: Currently disabling the model notification guard because we are losing the
 	// publisher deactivated events in any model callbacks when the file is removed.
@@ -289,7 +252,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
 	const FileInfo file_info(filename);
 	File::non_null_ptr_type file = File::create_file(file_info);
 
-//qDebug() << "GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data()";
+//qDebug() << "FeatureCollectionFileIO::load_xml_data()";
 
 	ArbitraryXmlReader::instance()->read_xml_data(
 			file->get_reference(), 
@@ -300,7 +263,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
 
 	// Emit one signal for all loaded files.
 	emit_handle_read_errors_signal(read_errors);
-//qDebug() << "GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data() END =========";
+//qDebug() << "FeatureCollectionFileIO::load_xml_data() END =========";
 }
 
 
@@ -362,7 +325,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collection(
 	d_file_format_registry.read_feature_collection(file_ref, read_errors, contains_unsaved_changes);
 
 	// The file has been freshly loaded from disk.
-	// If no model changes were needed (eg, to make it compatible with GPGIM) then it's clean.
+	// If no model changes were needed during loading (eg, to make it compatible with GPGIM) then it's clean.
 	if (!contains_unsaved_changes)
 	{
 		GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =

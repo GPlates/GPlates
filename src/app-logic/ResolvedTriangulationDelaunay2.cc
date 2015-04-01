@@ -32,6 +32,30 @@
 
 // #define DEBUG
 
+// FIXME: why can't this be implemented in a .cc ?
+#if 0 
+template < typename GT, typename Fb >
+void
+GPlatesAppLogic::ResolvedTriangulation::DelaunayFace_2<GT, Fb>::calculate_centroid() const
+{
+	// Calculate the centroid of this face 
+	qDebug() << "calculate_centroid";
+	
+	// Get the vertices as PointOnSphere 's and add them to a vector
+	std::vector<GPlatesMaths::PointOnSphere> points;
+	points.push_back( *this->vertex(0)->get_point_on_sphere() );
+	points.push_back( *this->vertex(1)->get_point_on_sphere() );
+	points.push_back( *this->vertex(2)->get_point_on_sphere() );
+
+	// compute the centroid 
+	//boost::optional<GPlatesMaths::PointOnSphere> centroid;
+	d_centroid = GPlatesMaths::Centroid::calculate_points_centroid(
+		points.begin(),
+		points.end()
+	);
+}
+#endif
+
 
 bool
 GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::calc_natural_neighbor_coordinates(
@@ -128,7 +152,7 @@ GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::gradient_2(
 			Traits()
 		);
 
-// FIXME: this is just test code ; remove 
+// FIXME: test code ; remove when no longer needed
 #if 0
 // estimates the function gradients at all vertices of triangulation 
 // that lie inside the convex hull using the coordinates computed 

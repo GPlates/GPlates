@@ -122,11 +122,20 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * Loads the specified files as a convenient alternative to having to explicitly
-		 * load them by accessing the GUI.
+		 * Loads the specified project file as a convenient alternative to having to
+		 * explicitly load it by accessing the GUI.
 		 */
 		void
-		load_files(
+		load_project(
+				const QString &project_filename);
+
+
+		/**
+		 * Loads the specified feature collection files as a convenient alternative to having to
+		 * explicitly load them by accessing the GUI.
+		 */
+		void
+		load_feature_collections(
 				const QStringList &filenames);
 
 

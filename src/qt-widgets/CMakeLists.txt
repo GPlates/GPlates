@@ -248,6 +248,8 @@ set(srcs
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
     FileDialogFilter.h
+    FilesNotLoadedWarningDialog.h
+    FilesNotLoadedWarningDialogUi.ui
     FiniteRotationCalculatorDialog.cc
     FiniteRotationCalculatorDialog.h
     FiniteRotationCalculatorDialogUi.ui
@@ -293,6 +295,17 @@ set(srcs
     InsertVGPReconstructionPoleDialog.h
     InsertVGPReconstructionPoleDialogUi.ui
     InvalidPropertyValueException.h
+    KinematicGraphPicker.cc
+    KinematicGraphPicker.h
+    KinematicGraphsConfigurationDialog.cc
+    KinematicGraphsConfigurationDialog.h
+    KinematicGraphsConfigurationDialogUi.ui
+    KinematicGraphsConfigurationWidget.cc
+    KinematicGraphsConfigurationWidget.h
+    KinematicGraphsConfigurationWidgetUi.ui
+    KinematicGraphsDialog.cc
+    KinematicGraphsDialog.h
+    KinematicGraphsDialogUi.ui
     LatLonCoordinatesTable.cc
     LatLonCoordinatesTable.h
     LayerOptionsWidget.h
@@ -349,6 +362,9 @@ set(srcs
     PreferencesPaneFiles.cc
     PreferencesPaneFiles.h
     PreferencesPaneFilesUi.ui
+    PreferencesPaneKinematicGraphs.cc
+    PreferencesPaneKinematicGraphs.h
+    PreferencesPaneKinematicGraphsUi.ui
     PreferencesPaneNetwork.cc
     PreferencesPaneNetwork.h
     PreferencesPaneNetworkUi.ui

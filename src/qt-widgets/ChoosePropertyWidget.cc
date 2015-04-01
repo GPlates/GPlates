@@ -163,6 +163,10 @@ GPlatesQtWidgets::ChoosePropertyWidget::populate(
 		const GPlatesPropertyValues::StructuralType &target_property_type,
 		const GPlatesModel::FeatureHandle::weak_ref &source_feature_ref)
 {
+	// Remember the current selection so we can re-select if it exists after re-populating.
+	boost::optional<GPlatesModel::PropertyName> previously_selected_property_name = get_property_name();
+	boost::optional<GPlatesModel::PropertyName> selected_property_name;
+
 	d_selection_widget->clear();
 
 	//
@@ -186,11 +190,27 @@ GPlatesQtWidgets::ChoosePropertyWidget::populate(
 		d_selection_widget->add_item<DefaultConstructiblePropertyName>(
 				gpgim_feature_property->get_user_friendly_name(),
 				gpgim_feature_property->get_property_name());
+
+		// Set the newly selected property name if it matches previous selection (if there was any)
+		// and the previous selection exists in the new list (ie, if we get here).
+		if (!selected_property_name &&
+			previously_selected_property_name &&
+			previously_selected_property_name.get() == gpgim_feature_property->get_property_name())
+		{
+			selected_property_name = previously_selected_property_name.get();
+		}
 	}
 
 	if (d_selection_widget->get_count())
 	{
-		d_selection_widget->set_current_index(0);
+		if (selected_property_name)
+		{
+			set_property_name(selected_property_name.get());
+		}
+		else
+		{
+			d_selection_widget->set_current_index(0);
+		}
 	}
 }
 

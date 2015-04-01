@@ -92,6 +92,7 @@
 #include "property-values/GpmlTopologicalLine.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalNetwork.h"
+#include "property-values/StructuralType.h"
 #include "property-values/XsString.h"
 
 #include "utils/UnicodeStringUtils.h"
@@ -100,59 +101,82 @@ namespace
 {
 	bool
 	is_topological_line(
-			const GPlatesModel::PropertyValue &property_value)
+			const GPlatesPropertyValues::StructuralType &property_type)
 	{
 		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_LINE =
 				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalLine");
 
-		const GPlatesPropertyValues::StructuralType property_type =
-				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
-
 		return property_type == GPML_TOPOLOGICAL_LINE;
+	}
+
+	bool
+	is_topological_line(
+			const GPlatesModel::PropertyValue &property_value)
+	{
+		return is_topological_line(
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value));
 	}
 
 
 	bool
 	is_topological_polygon(
-			const GPlatesModel::PropertyValue &property_value)
+			const GPlatesPropertyValues::StructuralType &property_type)
 	{
 		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_POLYGON =
 				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalPolygon");
 
-		const GPlatesPropertyValues::StructuralType property_type =
-				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
-
 		return property_type == GPML_TOPOLOGICAL_POLYGON;
+	}
+
+	bool
+	is_topological_polygon(
+			const GPlatesModel::PropertyValue &property_value)
+	{
+		return is_topological_polygon(
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value));
 	}
 
 
 	bool
 	is_topological_network(
-			const GPlatesModel::PropertyValue &property_value)
+			const GPlatesPropertyValues::StructuralType &property_type)
 	{
 		static const GPlatesPropertyValues::StructuralType GPML_TOPOLOGICAL_NETWORK =
 				GPlatesPropertyValues::StructuralType::create_gpml("TopologicalNetwork");
 
-		const GPlatesPropertyValues::StructuralType property_type =
-				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
-
 		return property_type == GPML_TOPOLOGICAL_NETWORK;
+	}
+
+	bool
+	is_topological_network(
+			const GPlatesModel::PropertyValue &property_value)
+	{
+		return is_topological_network(
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value));
 	}
 
 
 	bool
 	is_topological_geometry(
+			const GPlatesPropertyValues::StructuralType &property_type)
+	{
+		return is_topological_line(property_type) ||
+				is_topological_polygon(property_type) ||
+				is_topological_network(property_type);
+	}
+
+	bool
+	is_topological_geometry(
 			const GPlatesModel::PropertyValue &property_value)
 	{
-		return is_topological_line(property_value) ||
-				is_topological_polygon(property_value) ||
-				is_topological_network(property_value);
+		return is_topological_geometry(
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value));
 	}
 
 
 	bool
 	is_non_topological_geometry(
-			const GPlatesModel::PropertyValue &property_value)
+			const GPlatesPropertyValues::StructuralType &property_type)
 	{
 		static const GPlatesPropertyValues::StructuralType GML_LINE_STRING =
 				GPlatesPropertyValues::StructuralType::create_gml("LineString");
@@ -165,9 +189,6 @@ namespace
 		static const GPlatesPropertyValues::StructuralType GML_POLYGON =
 				GPlatesPropertyValues::StructuralType::create_gml("Polygon");
 
-		const GPlatesPropertyValues::StructuralType property_type =
-				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value);
-
 		return property_type == GML_LINE_STRING ||
 			property_type == GML_ORIENTABLE_CURVE ||
 			property_type == GML_MULTI_POINT ||
@@ -176,11 +197,28 @@ namespace
 	}
 
 	bool
+	is_non_topological_geometry(
+			const GPlatesModel::PropertyValue &property_value)
+	{
+		return is_non_topological_geometry(
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value));
+	}
+
+
+	bool
+	is_geometry(
+			const GPlatesPropertyValues::StructuralType &property_type)
+	{
+		return is_non_topological_geometry(property_type) ||
+			is_topological_geometry(property_type);
+	}
+
+	bool
 	is_geometry(
 			const GPlatesModel::PropertyValue &property_value)
 	{
-		return is_non_topological_geometry(property_value) ||
-			is_topological_geometry(property_value);
+		return is_geometry(
+				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(property_value));
 	}
 
 
@@ -191,11 +229,8 @@ namespace
 	 */
 	bool
 	should_offer_conjugate_plate_id_prop(
-			const GPlatesQtWidgets::ChooseFeatureTypeWidget *choose_feature_type_widget)
+			const boost::optional<GPlatesModel::FeatureType> &feature_type)
 	{
-		// Get currently selected feature type.
-		boost::optional<GPlatesModel::FeatureType> feature_type =
-				choose_feature_type_widget->get_feature_type();
 		if (!feature_type)
 		{
 			return false;
@@ -211,24 +246,16 @@ namespace
 	}
 
 	/**
-	 *  Returns whether or not we offer an additional checkbox for creating a conjugate isochron. 
+	 *  Returns whether or not we offer an additional checkbox for creating a conjugate feature.
 	 *
-	 *  Returns true if the selected feature type is "Isochron".  
+	 *  Returns true if the selected feature type supports a conjugate plate id according
+	 *  to the GPGIM (such as an "Isochron" feature).
 	 */
 	bool
-	should_offer_create_conjugate_isochron_checkbox(
-		const GPlatesQtWidgets::ChooseFeatureTypeWidget *choose_feature_type_widget)
+	should_offer_create_conjugate_feature_checkbox(
+			const boost::optional<GPlatesModel::FeatureType> &feature_type)
 	{
-		static const GPlatesModel::FeatureType isochron_type = GPlatesModel::FeatureType::create_gpml("Isochron");
-
-		// Get currently selected feature type
-		boost::optional<GPlatesModel::FeatureType> feature_type_opt =
-			choose_feature_type_widget->get_feature_type();
-		if (feature_type_opt) {
-			return (*feature_type_opt == isochron_type);
-		} else {
-			return false;
-		}
+		return should_offer_conjugate_plate_id_prop(feature_type);
 	}	
 
 	/**
@@ -238,11 +265,9 @@ namespace
 	 */
 	bool
 	should_offer_relative_plate_id_prop(
-			const GPlatesQtWidgets::ChooseFeatureTypeWidget *choose_feature_type_widget)
+			const boost::optional<GPlatesModel::FeatureType> &feature_type)
 	{
 		// Get currently selected feature type.
-		boost::optional<GPlatesModel::FeatureType> feature_type =
-				choose_feature_type_widget->get_feature_type();
 		if (!feature_type)
 		{
 			return false;
@@ -268,77 +293,46 @@ namespace
 	}
 
 	/**
-	 * Set some default states and/or restrictions on the reconstruction method, depending on the selected feature type.
+	 * Finds a property value in the sequence of top-level properties that has the specified
+	 * property name and type, and returns a clone of it (so it can be modified).
 	 */
-	void
-	set_recon_method_state(
-			QWidget *recon_method_widget,
-			QComboBox *recon_method_combo_box,
-			const GPlatesQtWidgets::ChooseFeatureTypeWidget *choose_feature_type_widget)
+	template <class PropertyValueType>
+	boost::optional<typename PropertyValueType::non_null_ptr_type>
+	find_property_value(
+			const GPlatesModel::PropertyName &property_name,
+			const GPlatesQtWidgets::CreateFeaturePropertiesPage::property_seq_type &feature_properties)
 	{
-		// Get currently selected feature type.
-		boost::optional<GPlatesModel::FeatureType> feature_type =
-				choose_feature_type_widget->get_feature_type();
-		if (!feature_type)
+		GPlatesQtWidgets::CreateFeaturePropertiesPage::property_seq_type::const_iterator
+				feature_properties_iter = feature_properties.begin();
+		GPlatesQtWidgets::CreateFeaturePropertiesPage::property_seq_type::const_iterator
+				feature_properties_end = feature_properties.end();
+		for ( ; feature_properties_iter != feature_properties_end; ++feature_properties_iter)
 		{
-			recon_method_widget->setVisible(false); // Invisible reconstruction method widget.
-			recon_method_combo_box->setEnabled(false); // Disable combo box.
-			recon_method_combo_box->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
-			return;
+			const GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *feature_properties_iter;
+
+			if (feature_property->get_property_name() != property_name)
+			{
+				continue;
+			}
+
+			boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> property_value =
+					GPlatesModel::ModelUtils::get_property_value(*feature_property);
+			if (!property_value)
+			{
+				continue;
+			}
+
+			boost::optional<typename PropertyValueType::non_null_ptr_to_const_type> derived_property_value =
+					GPlatesFeatureVisitors::get_property_value<PropertyValueType>(*property_value.get());
+			if (!derived_property_value)
+			{
+				continue;
+			}
+
+			return derived_property_value.get()->clone();
 		}
 
-		static const GPlatesModel::PropertyName RECONSTRUCTION_METHOD_PROPERTY_NAME =
-				GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
-
-		// See if the feature type supports a reconstruction method property.
-		if (!GPlatesModel::Gpgim::instance().get_feature_property(
-				feature_type.get(),
-				RECONSTRUCTION_METHOD_PROPERTY_NAME))
-		{
-			recon_method_widget->setVisible(false); // Invisible reconstruction method widget.
-			recon_method_combo_box->setEnabled(false); // Disable combo box.
-			recon_method_combo_box->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
-			return;
-		}
-
-		// Reconstruction method widget is visible (ie, label and combobox are visible).
-		recon_method_widget->setVisible(true);
-
-		static const GPlatesModel::FeatureType FLOWLINE_TYPE = GPlatesModel::FeatureType::create_gpml("Flowline");
-		static const GPlatesModel::FeatureType MOTION_PATH_TYPE = GPlatesModel::FeatureType::create_gpml("MotionPath");
-
-		// Flowline feature types will be reconstructed as HALF_STAGE_ROTATION.
-		if (feature_type.get() == FLOWLINE_TYPE)
-		{
-			recon_method_combo_box->setEnabled(false); // Prevent user from changing option.
-			recon_method_combo_box->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
-			return;
-		}
-
-		// Motion track types will be set to BY_PLATE_ID.
-		// (Later we should allow changing to HALF_STAGE_ROTATION; the MotionPathGeometryPopulator
-		// won't currently handle this correctly, so disable this option until we do handle it).
-		if (feature_type.get() == MOTION_PATH_TYPE)
-		{
-			recon_method_combo_box->setEnabled(false); // Prevent user from changing option.
-			recon_method_combo_box->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
-			return;
-		}
-
-		static const GPlatesModel::FeatureType MID_OCEAN_RIDGE_TYPE =
-				GPlatesModel::FeatureType::create_gpml("MidOceanRidge");
-
-		// Mid-ocean ridge feature types will be reconstructed as HALF_STAGE_ROTATION.
-		if (feature_type.get() == MID_OCEAN_RIDGE_TYPE)
-		{
-			recon_method_combo_box->setEnabled(true); // Allow user to change option.
-			recon_method_combo_box->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
-			return;
-		}
-
-		// Else default to reconstruction by-plate-id.
-		recon_method_combo_box->setEnabled(true); // Allow user to change option.
-		recon_method_combo_box->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
+		return boost::none;
 	}
 
 
@@ -352,15 +346,11 @@ namespace
 	 */
 	boost::optional<GPlatesQtWidgets::AbstractCustomPropertiesWidget *>
 	get_custom_properties_widget(
-			const GPlatesQtWidgets::ChooseFeatureTypeWidget *choose_feature_type_widget,
+			const boost::optional<GPlatesModel::FeatureType> &feature_type,
 			const GPlatesAppLogic::ApplicationState &application_state,
 			GPlatesQtWidgets::CreateFeatureDialog *create_feature_dialog_ptr)
 	{
 		static const GPlatesModel::FeatureType flowline_type = GPlatesModel::FeatureType::create_gpml("Flowline");
-
-		// Get currently selected feature type
-		boost::optional<GPlatesModel::FeatureType> feature_type =
-			choose_feature_type_widget->get_feature_type();
 
 		if (feature_type)
 		{
@@ -422,7 +412,7 @@ GPlatesQtWidgets::CreateFeatureDialog::CreateFeatureDialog(
 				SelectionWidget::Q_LIST_WIDGET,
 				this)),
 	d_recon_method(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID),
-	d_create_conjugate_isochron_checkbox(new QCheckBox(this)),
+	d_create_conjugate_feature_checkbox(new QCheckBox(this)),
 	d_current_page(FEATURE_TYPE_PAGE)
 {
 	setupUi(this);
@@ -529,11 +519,10 @@ void
 GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 {
 	// Pushing Enter or double-clicking a geometric property should cause focus to advance.
+	// Advance to something we know will always be visible.
 	QObject::connect(d_listwidget_geometry_destinations, SIGNAL(item_activated()),
-			d_plate_id_widget, SLOT(setFocus()));
-	// The various Edit widgets need pass focus along the chain if Enter is pressed.
-	QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
 			d_time_period_widget, SLOT(setFocus()));
+	// The various Edit widgets need pass focus along the chain if Enter is pressed.
 	QObject::connect(d_time_period_widget, SIGNAL(enter_pressed()),
 			d_name_widget, SLOT(setFocus()));
 	QObject::connect(d_name_widget, SIGNAL(enter_pressed()),
@@ -541,7 +530,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 	QObject::connect(d_recon_method_combobox, SIGNAL(currentIndexChanged(int)),
 			this, SLOT(recon_method_changed(int)));
 	QObject::connect(d_conjugate_plate_id_widget, SIGNAL(value_changed()),
-			this, SLOT(handle_conjugate_value_changed()));
+			this, SLOT(handle_conjugate_plate_id_changed()));
 	
 	// Reconfigure some accelerator keys that conflict.
 	d_plate_id_widget->label()->setText(tr("Plate &ID:"));
@@ -554,13 +543,13 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 	d_name_widget->label()->setText(tr("&Name:"));
 	d_name_widget->label()->setHidden(false);
 	
-	// Set up checkbox for creating conjugate isochron. 
-	d_create_conjugate_isochron_checkbox->setChecked(false);
-	d_create_conjugate_isochron_checkbox->setText("Create con&jugate isochron");
-	QString tool_tip_string("Create an additional isochron feature using the same geometry, \
+	// Set up checkbox for creating conjugate feature. 
+	d_create_conjugate_feature_checkbox->setChecked(false);
+	d_create_conjugate_feature_checkbox->setText("Create con&jugate feature");
+	QString tool_tip_string("Create an additional feature using the same geometry, \
 							and with plate id and conjugate plate id reversed.");
-	d_create_conjugate_isochron_checkbox->setToolTip(tool_tip_string);
-	d_create_conjugate_isochron_checkbox->setEnabled(false);
+	d_create_conjugate_feature_checkbox->setToolTip(tool_tip_string);
+	d_create_conjugate_feature_checkbox->setEnabled(false);
 
 	//Add reconstruction method combobox
 	QHBoxLayout *recon_method_layout;
@@ -608,7 +597,7 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties_page()
 	edit_layout->addItem(right_and_left_plate_id_layout);
 	edit_layout->addWidget(d_time_period_widget);
 	edit_layout->addWidget(d_name_widget);
-	edit_layout->addWidget(d_create_conjugate_isochron_checkbox);
+	edit_layout->addWidget(d_create_conjugate_feature_checkbox);
 	edit_layout->insertStretch(-1);
 	groupbox_common_properties->setLayout(edit_layout);
 	
@@ -638,22 +627,13 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_collection_page()
 void
 GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_list()
 {
-	boost::optional<GPlatesPropertyValues::StructuralType> geometric_property_type;
-	// Get the structural type of the geometric property.
-	if (d_geometry_property_value)
-	{
-		geometric_property_type =
-				GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(
-						*d_geometry_property_value.get());
-	}
-
 	// Populate list of feature types that support the geometric property type.
 	// If no geometric property type (not selected by user yet) then select all feature types.
-	d_choose_feature_type_widget->populate(geometric_property_type);
+	d_choose_feature_type_widget->populate(d_geometry_property_type);
 
 	// Note that we don't set the feature type selection.
 	// If the previously selected feature type is in the new list of feature types then
-	// the selection will be retained (ie, we'll remember the last selection).
+	// the selection will be retained (ie, it'll remember the last selection).
 }
 
 
@@ -671,13 +651,13 @@ GPlatesQtWidgets::CreateFeatureDialog::select_default_feature_type()
 	// designated as a 'topological line'.
 	if (d_geometry_property_value)
 	{
-		if (is_topological_polygon(*d_geometry_property_value.get()))
+		if (is_topological_polygon(d_geometry_property_type.get()))
 		{
 			static const GPlatesModel::FeatureType TOPOLOGICAL_CLOSED_PLATE_BOUNDARY_FEATURE_TYPE =
 					GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary");
 			default_feature_type = TOPOLOGICAL_CLOSED_PLATE_BOUNDARY_FEATURE_TYPE;
 		}
-		else if (is_topological_network(*d_geometry_property_value.get()))
+		else if (is_topological_network(d_geometry_property_type.get()))
 		{
 			static const GPlatesModel::FeatureType TOPOLOGICAL_NETWORK_FEATURE_TYPE =
 					GPlatesModel::FeatureType::create_gpml("TopologicalNetwork");
@@ -692,38 +672,43 @@ GPlatesQtWidgets::CreateFeatureDialog::select_default_feature_type()
 void
 GPlatesQtWidgets::CreateFeatureDialog::set_up_geometric_property_list()
 {
-	// Get the FeatureType the user has selected.
-	boost::optional<GPlatesModel::FeatureType> feature_type_opt =
-		d_choose_feature_type_widget->get_feature_type();
-	if ( ! feature_type_opt) {
+	if (!d_feature_type)
+	{
 		QMessageBox::critical(this, tr("No feature type selected"),
 				tr("Please select a feature type to create."));
 		return;
 	}
 
-	// Get the structural type of the geometric property.
-	const GPlatesPropertyValues::StructuralType geometric_property_type =
-			GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(
-					*d_geometry_property_value.get());
-
 	// Populate the listwidget_geometry_destinations based on what is legal right now.
-	d_listwidget_geometry_destinations->populate(feature_type_opt.get(), geometric_property_type);
+	d_listwidget_geometry_destinations->populate(d_feature_type.get(), d_geometry_property_type.get());
+}
 
+
+void
+GPlatesQtWidgets::CreateFeatureDialog::select_default_geometry_property_name()
+{
 	//
 	// Set the default geometry property name (if there is one) for the feature type.
 	//
 
+	if (!d_feature_type)
+	{
+		QMessageBox::critical(this, tr("No feature type selected"),
+				tr("Please select a feature type to create."));
+		return;
+	}
+
 	// Get the GPGIM feature class for the feature type.
-	boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class_opt =
-			GPlatesModel::Gpgim::instance().get_feature_class(feature_type_opt.get());
+	boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
+			GPlatesModel::Gpgim::instance().get_feature_class(d_feature_type.get());
 	// Our list of features was obtained from the GPGIM so we should be able to find it.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			gpgim_feature_class_opt,
+			gpgim_feature_class,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Get the default geometry property for the feature type.
 	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_gpgim_geometry_property =
-			gpgim_feature_class_opt.get()->get_default_geometry_feature_property();
+			gpgim_feature_class.get()->get_default_geometry_feature_property();
 	if (default_gpgim_geometry_property)
 	{
 		const GPlatesModel::PropertyName &default_geometry_property_name =
@@ -733,8 +718,8 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_geometric_property_list()
 		std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_geometry_properties;
 		ChoosePropertyWidget::get_properties_to_populate(
 				gpgim_geometry_properties,
-				feature_type_opt.get(),
-				geometric_property_type);
+				d_feature_type.get(),
+				d_geometry_property_type.get());
 
 		// If the default geometry property name appears in the list then select it.
 		BOOST_FOREACH(
@@ -752,92 +737,452 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_geometric_property_list()
 
 
 void
-GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties()
+GPlatesQtWidgets::CreateFeatureDialog::set_up_common_properties()
 {
-	// Get the FeatureType the user has selected.
-	boost::optional<GPlatesModel::FeatureType> feature_type_opt =
-			d_choose_feature_type_widget->get_feature_type();
-	if (!feature_type_opt)
+	if (!d_feature_type)
 	{
 		QMessageBox::critical(this, tr("No feature type selected"),
 				tr("Please select a feature type to create."));
 		return;
 	}
-	const GPlatesModel::FeatureType feature_type = feature_type_opt.get();
+
+	// Copy gml:name property into widget.
+	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_type> name_property =
+			find_property_value<GPlatesPropertyValues::XsString>(
+					GPlatesModel::PropertyName::create_gml("name"),
+					d_feature_properties);
+	if (name_property)
+	{
+		d_name_widget->update_widget_from_string(*name_property.get());
+	}
+	else
+	{
+		d_name_widget->reset_widget_to_default_values();
+	}
+
+	// Copy gml:validTime property into widget.
+	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type> valid_time_property =
+			find_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					GPlatesModel::PropertyName::create_gml("validTime"),
+					d_feature_properties);
+	if (valid_time_property)
+	{
+		d_time_period_widget->update_widget_from_time_period(*valid_time_property.get());
+	}
+	else
+	{
+		d_time_period_widget->reset_widget_to_default_values();
+	}
+
+	// Force flowline feature type to be reconstructed as HALF_STAGE_ROTATION.
+	if (d_feature_type.get() == GPlatesModel::FeatureType::create_gpml("Flowline"))
+	{
+		d_recon_method_combobox->setEnabled(false); // Prevent user from changing option.
+		d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
+	}
+	// Force motion path feature type to be reconstructed as BY_PLATE_ID.
+	// (Later we should allow changing to HALF_STAGE_ROTATION; the MotionPathGeometryPopulator
+	// won't currently handle this correctly, so disable this option until we do handle it).
+	else if (d_feature_type.get() == GPlatesModel::FeatureType::create_gpml("MotionPath"))
+	{
+		d_recon_method_combobox->setEnabled(false); // Prevent user from changing option.
+		d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
+	}
+	else
+	{
+		// See if the feature type supports a reconstruction method property.
+		if (GPlatesModel::Gpgim::instance().get_feature_property(
+				d_feature_type.get(),
+				GPlatesModel::PropertyName::create_gpml("reconstructionMethod")))
+		{
+			d_recon_method_combobox->setEnabled(true);
+		}
+		else
+		{
+			d_recon_method_combobox->setEnabled(false);
+		}
+
+		// Copy gpml:reconstructionMethod property into widget.
+		boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_type> reconstruction_method_property =
+				find_property_value<GPlatesPropertyValues::Enumeration>(
+						GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
+						d_feature_properties);
+		if (reconstruction_method_property)
+		{
+			if (reconstruction_method_property.get()->get_value().get() == "ByPlateId")
+			{
+				d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
+			}
+			else
+			{
+				d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION);
+			}
+		}
+		else
+		{
+			d_recon_method_combobox->setCurrentIndex(GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
+		}
+	}
+
+	// Copy gpml:leftPlate property into widget.
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type> left_plate_property =
+			find_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					GPlatesModel::PropertyName::create_gpml("leftPlate"),
+					d_feature_properties);
+	if (left_plate_property)
+	{
+		d_left_plate_id->update_widget_from_plate_id(*left_plate_property.get());
+	}
+	else
+	{
+		d_left_plate_id->reset_widget_to_default_values();
+	}
+
+	// Copy gpml:rightPlate property into widget.
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type> right_plate_property =
+			find_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					GPlatesModel::PropertyName::create_gpml("rightPlate"),
+					d_feature_properties);
+	if (right_plate_property)
+	{
+		d_right_plate_id->update_widget_from_plate_id(*right_plate_property.get());
+	}
+	else
+	{
+		d_right_plate_id->reset_widget_to_default_values();
+	}
+
+	// Copy gpml:relativePlate property into widget.
+	if (should_offer_relative_plate_id_prop(d_feature_type))
+	{
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type> relative_plate_property =
+				find_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						GPlatesModel::PropertyName::create_gpml("relativePlate"),
+						d_feature_properties);
+		if (relative_plate_property)
+		{
+			d_relative_plate_id_widget->update_widget_from_plate_id(*relative_plate_property.get());
+		}
+		else
+		{
+			d_relative_plate_id_widget->reset_widget_to_default_values();
+		}
+
+		d_relative_plate_id_widget->setVisible(
+				d_recon_method == GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
+	}
+	else
+	{
+		d_relative_plate_id_widget->setVisible(false);
+	}
+
+	// Copy gpml:reconstructionPlateId property into widget.
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type> plate_id_property =
+			find_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+					d_feature_properties);
+	if (plate_id_property)
+	{
+		d_plate_id_widget->update_widget_from_plate_id(*plate_id_property.get());
+	}
+	else
+	{
+		d_plate_id_widget->reset_widget_to_default_values();
+	}
+
+	// Copy gpml:conjugatePlateId property into widget.
+	if (should_offer_conjugate_plate_id_prop(d_feature_type))
+	{
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type> conjugate_plate_id_property =
+				find_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
+						d_feature_properties);
+		if (conjugate_plate_id_property)
+		{
+			d_conjugate_plate_id_widget->update_widget_from_plate_id(*conjugate_plate_id_property.get());
+		}
+		else
+		{
+			d_conjugate_plate_id_widget->reset_widget_to_default_values();
+		}
+
+		d_conjugate_plate_id_widget->setVisible(
+				d_recon_method == GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
+	}
+	else
+	{
+		d_conjugate_plate_id_widget->setVisible(false);
+	}
+
+
+	// Note that we leave the 'create conjugate feature' checkbox state to what it was previously
+	// but we hide it if it's not applicable for the current feature/geometry type.
+	d_create_conjugate_feature_checkbox->setVisible(
+		// Currently only allow user to select if there's a non-topological geometry because creating
+		// conjugate requires reverse reconstructing using non-topological reconstruction...
+		is_non_topological_geometry(d_geometry_property_type.get()) &&
+			should_offer_create_conjugate_feature_checkbox(d_feature_type));
 
 	//
-	// Create a list of common feature properties from the data the user entered into the common properties page.
+	// Enable user to hit 'enter' to quickly move through the visible options.
+	//
+	// These are here instead of 'set_up_common_properties_page()' because these options
+	// depend on the widget visibility which can change.
 	//
 
-	CreateFeaturePropertiesPage::property_seq_type common_feature_properties;
+	// Disconnect signals first so we don't end up with duplicate connections.
+	QObject::disconnect(
+			d_left_plate_id, SIGNAL(enter_pressed()),
+			d_right_plate_id, SLOT(setFocus()));
+	QObject::disconnect(
+			d_right_plate_id, SIGNAL(enter_pressed()),
+			d_time_period_widget, SLOT(setFocus()));
+	QObject::disconnect(
+			d_plate_id_widget, SIGNAL(enter_pressed()),
+			d_conjugate_plate_id_widget, SLOT(setFocus()));
+	QObject::disconnect(
+			d_plate_id_widget, SIGNAL(enter_pressed()),
+			d_relative_plate_id_widget, SLOT(setFocus()));
+	QObject::disconnect(
+			d_plate_id_widget, SIGNAL(enter_pressed()),
+			d_time_period_widget, SLOT(setFocus()));
+	QObject::disconnect(
+			d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
+			d_relative_plate_id_widget, SLOT(setFocus()));
+	QObject::disconnect(
+			d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
+			d_time_period_widget, SLOT(setFocus()));
+	QObject::disconnect(
+			d_relative_plate_id_widget, SIGNAL(enter_pressed()),
+			d_time_period_widget, SLOT(setFocus()));
+
+	// Connect the signals.
+	if (d_recon_method == GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION)
+	{
+		d_left_plate_id->setFocus();
+
+		// The various Edit widgets need pass focus along the chain if Enter is pressed.
+		QObject::connect(d_left_plate_id, SIGNAL(enter_pressed()),
+				d_right_plate_id, SLOT(setFocus()));
+		QObject::connect(d_right_plate_id, SIGNAL(enter_pressed()),
+				d_time_period_widget, SLOT(setFocus()));
+	}
+	else // GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID...
+	{
+		d_plate_id_widget->setFocus();
+
+		// The various Edit widgets need pass focus along the chain if Enter is pressed.
+		if (should_offer_conjugate_plate_id_prop(d_feature_type))
+		{
+			QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
+					d_conjugate_plate_id_widget, SLOT(setFocus()));
+			if (should_offer_relative_plate_id_prop(d_feature_type))
+			{
+				QObject::connect(d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
+						d_relative_plate_id_widget, SLOT(setFocus()));
+				QObject::connect(d_relative_plate_id_widget, SIGNAL(enter_pressed()),
+						d_time_period_widget, SLOT(setFocus()));
+			}
+			else
+			{
+				QObject::connect(d_conjugate_plate_id_widget, SIGNAL(enter_pressed()),
+						d_time_period_widget, SLOT(setFocus()));
+			}
+		}
+		else if (should_offer_relative_plate_id_prop(d_feature_type))
+		{
+			QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
+					d_relative_plate_id_widget, SLOT(setFocus()));
+			QObject::connect(d_relative_plate_id_widget, SIGNAL(enter_pressed()),
+					d_time_period_widget, SLOT(setFocus()));
+		}
+		else
+		{
+			QObject::connect(d_plate_id_widget, SIGNAL(enter_pressed()),
+					d_time_period_widget, SLOT(setFocus()));
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::CreateFeatureDialog::set_up_all_properties_list()
+{
+	if (!d_feature_type)
+	{
+		QMessageBox::critical(this, tr("No feature type selected"),
+				tr("Please select a feature type to create."));
+		return;
+	}
+
+	// Get the PropertyName the user has selected for geometry to go into.
+	// This property will be unavailable for the user to add via the create-feature-properties page.
+	boost::optional<GPlatesModel::PropertyName> geometry_property_name =
+			d_listwidget_geometry_destinations->get_property_name();
+	if (!geometry_property_name)
+	{
+		QMessageBox::critical(this, tr("No geometry destination selected"),
+				tr("Please select a property name to use for your digitised geometry."));
+		return;
+	}
+
+	// Set the feature type and initial feature properties.
+	// The user can then add more properties supported by the feature type.
+	d_create_feature_properties_page->initialise(
+			d_feature_type.get(),
+			d_feature_properties,
+			CreateFeaturePropertiesPage::property_name_seq_type(1, geometry_property_name.get()));
+}
+
+
+void
+GPlatesQtWidgets::CreateFeatureDialog::clear_properties_not_allowed_for_current_feature_type()
+{
+	if (!d_feature_type)
+	{
+		QMessageBox::critical(this, tr("No feature type selected"),
+				tr("Please select a feature type to create."));
+		return;
+	}
+
+	// Get the GPGIM feature class for the feature type.
+	boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
+			GPlatesModel::Gpgim::instance().get_feature_class(d_feature_type.get());
+	// Our list of features was obtained from the GPGIM so we should be able to find it.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			gpgim_feature_class,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Iterate over the current properties and remove any not allowed by GPGIM for current feature type.
+	GPlatesQtWidgets::CreateFeaturePropertiesPage::property_seq_type::iterator
+			feature_properties_iter = d_feature_properties.begin();
+	while (feature_properties_iter != d_feature_properties.end())
+	{
+		const GPlatesModel::PropertyName &feature_property_name =
+				(*feature_properties_iter)->get_property_name();
+
+		if (gpgim_feature_class.get()->get_feature_property(feature_property_name))
+		{
+			++feature_properties_iter;
+		}
+		else
+		{
+			feature_properties_iter = d_feature_properties.erase(feature_properties_iter);
+		}
+	}
+}
+
+
+void
+GPlatesQtWidgets::CreateFeatureDialog::copy_common_properties_into_all_properties()
+{
+	if (!d_feature_type)
+	{
+		QMessageBox::critical(this, tr("No feature type selected"),
+				tr("Please select a feature type to create."));
+		return;
+	}
+
+	//
+	// Update the 'all' properties list with the common feature properties from the data the user
+	// entered into the common properties page.
+	//
+	// Note: Non-common properties can exist, even though we're transitioning away from the
+	// 'common properties' page, when we're keeping properties around from the last digitised feature
+	// (to make it quicker/easier for users to repeatedly digitise features of the same type that
+	// have some or all, excluding geometry, properties that are the same).
+	//
 
 	try
 	{
 		// Add a gml:name Property.
-		add_common_feature_property_to_list(
-				common_feature_properties,
+		copy_common_property_into_all_properties(
 				GPlatesModel::PropertyName::create_gml("name"),
-				d_name_widget->create_property_value_from_widget(),
-				feature_type);
+				d_name_widget->create_property_value_from_widget());
 
 		// Add a gml:validTime Property.
-		add_common_feature_property_to_list(
-				common_feature_properties,
+		copy_common_property_into_all_properties(
 				GPlatesModel::PropertyName::create_gml("validTime"),
-				d_time_period_widget->create_property_value_from_widget(),
-				feature_type);
+				d_time_period_widget->create_property_value_from_widget());
 
-		// If we are using half stage rotation, add right and left plate id.
+		// If we are using half stage rotation.
+		// Note that the 'if' and 'else' parts do the reverse of each other.
 		if (GPlatesAppLogic::ReconstructMethod::HALF_STAGE_ROTATION == d_recon_method)
 		{
-			add_common_feature_property_to_list(
-					common_feature_properties,
+			// Add a gpml:reconstructionMethod property.
+			copy_common_property_into_all_properties(
 					GPlatesModel::PropertyName::create_gpml("reconstructionMethod"),
 					GPlatesPropertyValues::Enumeration::create(
 							GPlatesPropertyValues::EnumerationType::create_gpml("ReconstructionMethodEnumeration"),
-							"HalfStageRotationVersion2"),
-					feature_type);
+							"HalfStageRotationVersion2"));
 
-			add_common_feature_property_to_list(
-					common_feature_properties,
+			// Add gpml:leftPlate and gpml:rightPlate properties.
+			copy_common_property_into_all_properties(
 					GPlatesModel::PropertyName::create_gpml("leftPlate"),
-					d_left_plate_id->create_property_value_from_widget(),
-					feature_type);
-			add_common_feature_property_to_list(
-					common_feature_properties,
+					d_left_plate_id->create_property_value_from_widget());
+			copy_common_property_into_all_properties(
 					GPlatesModel::PropertyName::create_gpml("rightPlate"),
-					d_right_plate_id->create_property_value_from_widget(),
-					feature_type);
+					d_right_plate_id->create_property_value_from_widget());
+
+			// Remove gpml:relativePlate Property.
+			if (should_offer_relative_plate_id_prop(d_feature_type))
+			{
+				remove_common_property_from_all_properties(
+						GPlatesModel::PropertyName::create_gpml("relativePlate"));
+			}
+
+			// Remove gpml:reconstructionPlateId Property.
+			remove_common_property_from_all_properties(
+					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"));
+
+			// Remove gpml:conjugatePlateId Property.
+			if (should_offer_conjugate_plate_id_prop(d_feature_type))
+			{
+				remove_common_property_from_all_properties(
+						GPlatesModel::PropertyName::create_gpml("conjugatePlateId"));
+			}
 		}
 		else // Not using a half-stage rotation...
 		{
-			// Add a gpml:reconstructionPlateId Property.
-			add_common_feature_property_to_list(
-					common_feature_properties,
-					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
-					d_plate_id_widget->create_property_value_from_widget(),
-					feature_type);
+			// Remove gpml:reconstructionMethod property.
+			remove_common_property_from_all_properties(
+					GPlatesModel::PropertyName::create_gpml("reconstructionMethod"));
+
+			// Remove gpml:leftPlate and gpml:rightPlate properties.
+			remove_common_property_from_all_properties(
+					GPlatesModel::PropertyName::create_gpml("leftPlate"));
+			remove_common_property_from_all_properties(
+					GPlatesModel::PropertyName::create_gpml("rightPlate"));
 
 			// Add a gpml:relativePlate Property.
-			if (should_offer_relative_plate_id_prop(d_choose_feature_type_widget))
+			if (should_offer_relative_plate_id_prop(d_feature_type))
 			{
-				add_common_feature_property_to_list(
-						common_feature_properties,
+				copy_common_property_into_all_properties(
 						GPlatesModel::PropertyName::create_gpml("relativePlate"),
-						d_relative_plate_id_widget->create_property_value_from_widget(),
-						feature_type);
+						d_relative_plate_id_widget->create_property_value_from_widget());
 			}
-		}
 
-		// Add a gpml:conjugatePlateId Property.
-		if (!d_conjugate_plate_id_widget->is_null() &&
-				should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget))
-		{
-			add_common_feature_property_to_list(
-					common_feature_properties,
-					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
-					d_conjugate_plate_id_widget->create_property_value_from_widget(),
-					feature_type);
+			// Add a gpml:reconstructionPlateId Property.
+			copy_common_property_into_all_properties(
+					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+					d_plate_id_widget->create_property_value_from_widget());
+
+			if (should_offer_conjugate_plate_id_prop(d_feature_type))
+			{
+				if (d_conjugate_plate_id_widget->is_null())
+				{
+					// Remove gpml:conjugatePlateId Property.
+					remove_common_property_from_all_properties(
+							GPlatesModel::PropertyName::create_gpml("conjugatePlateId"));
+				}
+				else
+				{
+					// Add a gpml:conjugatePlateId Property.
+					copy_common_property_into_all_properties(
+							GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
+							d_conjugate_plate_id_widget->create_property_value_from_widget());
+				}
+			}
 		}
 	}
 	catch (const InvalidPropertyValueException &exc)
@@ -848,40 +1193,64 @@ GPlatesQtWidgets::CreateFeatureDialog::set_up_feature_properties()
 		return;
 	}
 
+	//
+	// If the geometry property (we'll be adding later) only supports at most one property per feature
+	// (according to GPGIM) then delete any extra properties of same name that user might have
+	// added via the 'all properties' page.
+	//
+	// Alternatively we could have prevented the user from adding an extra geometry property
+	// (of same name) in the 'all properties' page (if at most one property is allowed), but this
+	// would have limited the user's choices for the geometry property name.
+	// So it comes down to a tradeoff and we've chosen to avoid limiting the choice of geometry
+	// property names. Besides it's very unlikely the user will explicitly create a geometry property
+	// in the 'all properties' page - after all it's the digitised geometry that they're interested in.
+	//
+
 	// Get the PropertyName the user has selected for geometry to go into.
-	boost::optional<GPlatesModel::PropertyName> geometry_property_name_opt =
+	// This property will be unavailable for the user to add via the create-feature-properties page.
+	boost::optional<GPlatesModel::PropertyName> geometry_property_name =
 			d_listwidget_geometry_destinations->get_property_name();
-	if (!geometry_property_name_opt)
+	if (!geometry_property_name)
 	{
 		QMessageBox::critical(this, tr("No geometry destination selected"),
 				tr("Please select a property name to use for your digitised geometry."));
 		return;
 	}
-	const GPlatesModel::PropertyName geometry_property_name = geometry_property_name_opt.get();
 
-	// Set the feature type and initial feature properties.
-	// The user can then add more properties supported by the feature type.
-	d_create_feature_properties_page->initialise(
-			feature_type,
-			geometry_property_name,
-			common_feature_properties);
+	boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> geometry_gpgim_property =
+			GPlatesModel::Gpgim::instance().get_feature_property(d_feature_type.get(), geometry_property_name.get());
+
+	// If the selected geometry property name is allowed to occur at most once per feature then
+	// remove any occurrences in the current feature properties so that there's room when we add
+	// the geometry property later.
+	if (geometry_gpgim_property.get()->get_multiplicity() == GPlatesModel::GpgimProperty::ZERO_OR_ONE ||
+		geometry_gpgim_property.get()->get_multiplicity() == GPlatesModel::GpgimProperty::ONE)
+	{
+		// Remove if exists.
+		remove_common_property_from_all_properties(geometry_property_name.get());
+	}
 }
 
 
 void
-GPlatesQtWidgets::CreateFeatureDialog::add_common_feature_property_to_list(
-		CreateFeaturePropertiesPage::property_seq_type &common_feature_properties,
+GPlatesQtWidgets::CreateFeatureDialog::copy_common_property_into_all_properties(
 		const GPlatesModel::PropertyName &property_name,
-		const GPlatesModel::PropertyValue::non_null_ptr_type &property_value,
-		const GPlatesModel::FeatureType &feature_type)
+		const GPlatesModel::PropertyValue::non_null_ptr_type &property_value)
 {
-	GPlatesModel::ModelUtils::TopLevelPropertyError::Type error_code;
+	if (!d_feature_type)
+	{
+		QMessageBox::critical(this, tr("No feature type selected"),
+				tr("Please select a feature type to create."));
+		return;
+	}
 
+	// Create a new top-level property for the common property.
+	GPlatesModel::ModelUtils::TopLevelPropertyError::Type error_code;
 	boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> top_level_property =
 			GPlatesModel::ModelUtils::create_top_level_property(
 					property_name,
 					property_value,
-					feature_type,
+					d_feature_type.get(),
 					true/*check_property_value_type*/,
 					&error_code);
 	if (!top_level_property)
@@ -897,7 +1266,47 @@ GPlatesQtWidgets::CreateFeatureDialog::add_common_feature_property_to_list(
 		return;
 	}
 
-	common_feature_properties.push_back(top_level_property.get());
+	// If the property already exists then just replace it with the new property.
+	// This will replace the first property found if multiple properties with same name exist.
+	CreateFeaturePropertiesPage::property_seq_type::iterator feature_properties_iter = d_feature_properties.begin();
+	CreateFeaturePropertiesPage::property_seq_type::iterator feature_properties_end = d_feature_properties.end();
+	for ( ; feature_properties_iter != feature_properties_end; ++feature_properties_iter)
+	{
+		if ((*feature_properties_iter)->get_property_name() == property_name)
+		{
+			*feature_properties_iter = top_level_property.get();
+			return;
+		}
+	}
+
+	// Property does not already exist so add it to the list.
+	d_feature_properties.push_back(top_level_property.get());
+}
+
+
+void
+GPlatesQtWidgets::CreateFeatureDialog::remove_common_property_from_all_properties(
+		const GPlatesModel::PropertyName &property_name)
+{
+	if (!d_feature_type)
+	{
+		QMessageBox::critical(this, tr("No feature type selected"),
+				tr("Please select a feature type to create."));
+		return;
+	}
+
+	// If the property already exists then just remove it (but we only remove the first occurrence
+	// in case user has added extra occurrences, if allowed by GPGIM, in the 'all properties' page).
+	CreateFeaturePropertiesPage::property_seq_type::iterator feature_properties_iter = d_feature_properties.begin();
+	CreateFeaturePropertiesPage::property_seq_type::iterator feature_properties_end = d_feature_properties.end();
+	for ( ; feature_properties_iter != feature_properties_end; ++feature_properties_iter)
+	{
+		if ((*feature_properties_iter)->get_property_name() == property_name)
+		{
+			d_feature_properties.erase(feature_properties_iter);
+			return;
+		}
+	}
 }
 
 
@@ -916,6 +1325,12 @@ GPlatesQtWidgets::CreateFeatureDialog::set_geometry_and_display(
 
 	d_geometry_property_value = geometry_property_value;
 
+	// Get the structural type of the geometric property.
+	d_geometry_property_type =
+			GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(
+					*geometry_property_value);
+
+	// Display dialog.
 	return display();
 }
 
@@ -923,6 +1338,11 @@ GPlatesQtWidgets::CreateFeatureDialog::set_geometry_and_display(
 bool
 GPlatesQtWidgets::CreateFeatureDialog::display()
 {
+	// Reset the current page to the start.
+	// This is needed so the page transitions are handled correctly (even if user previously
+	// aborted dialog and hence didn't necessarily get to the last page).
+	d_current_page = FEATURE_TYPE_PAGE;
+
 	// Populate the d_choose_feature_type_widget based on what features support
 	// the geometric property type.
 	//
@@ -937,21 +1357,59 @@ GPlatesQtWidgets::CreateFeatureDialog::display()
 
 	// Select the default feature type based on the geometry property type.
 	// We only do this once for each time this dialog is invoked.
-	select_default_feature_type();
+	// And only if the feature type has changed - meaning the above 'set_up_feature_list()' could not
+	// find the same feature type compatible with the new geometry property type and so selected a
+	// random one - in this case we want to set the default feature type (based on the new geometry
+	// property type) instead of the random one. Otherwise we want to keep the previously selected
+	// feature type (from the last Create Feature dialog invocation) so user can quickly digitise
+	// the same feature type repeatedly.
+	if (d_feature_type != d_choose_feature_type_widget->get_feature_type())
+	{
+		select_default_feature_type();
+	}
 
 	// The Feature Collections list needs to be repopulated each time.
 	d_choose_feature_collection_widget->initialise();
-	
+
 	// Show the dialog modally.
-	return exec() == QDialog::Accepted;
+	const int dialog_result = exec();
+
+	// If the user created a feature then we keep the feature properties for the next digitised
+	// feature in case it's the same geometry/feature type and user wants to re-use the properties.
+	//
+	// If the user aborted then we also keep the feature properties for next time, but the user
+	// could have aborted while on any page, so we might need to update the feature properties
+	// from the corresonding page widgets.
+	if (dialog_result != QDialog::Accepted)
+	{
+		if (stack->currentIndex() == COMMON_PROPERTIES_PAGE)
+		{
+			// Copy the common properties (from widgets) into the 'all' properties list.
+			copy_common_properties_into_all_properties();
+		}
+		else if (stack->currentIndex() == ALL_PROPERTIES_PAGE)
+		{
+			// Extract all the feature properties from the 'all properties' page widget.
+			// This will include the common properties (from the previous page).
+			d_feature_properties.clear();
+			d_create_feature_properties_page->get_feature_properties(d_feature_properties);
+		}
+	}
+
+	return dialog_result;
 }
 
 
 void
 GPlatesQtWidgets::CreateFeatureDialog::handle_prev()
 {
+	// Note: Any code here should only be to prevent transitioning to previous page.
+	// Otherwise page change code should go into 'handle_page_change()'.
+
+	// Transition to the previous page.
 	int prev_index = stack->currentIndex() - 1;
-	if (prev_index < stack->count()) {
+	if (prev_index < stack->count())
+	{
 		stack->setCurrentIndex(prev_index);
 	}
 }
@@ -960,6 +1418,9 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_prev()
 void
 GPlatesQtWidgets::CreateFeatureDialog::handle_next()
 {
+	// Note: Any code here should only be to prevent transitioning to next page.
+	// Otherwise page change code should go into 'handle_page_change()'.
+
 	if (stack->currentIndex() == COMMON_PROPERTIES_PAGE)
 	{
 		// If the start-end time are not valid, do not change page.
@@ -985,8 +1446,10 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_next()
 		}
 	}
 
+	// Transition to the next page.
 	int next_index = stack->currentIndex() + 1;
-	if (next_index < stack->count()) {
+	if (next_index < stack->count())
+	{
 		stack->setCurrentIndex(next_index);
 	}
 }
@@ -1007,60 +1470,127 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 	switch (page)
 	{
 	case FEATURE_TYPE_PAGE:
-		// Populate the d_choose_feature_type_widget based on what features support
-		// the geometric property type.
-		set_up_feature_list();
-		d_choose_feature_type_widget->setFocus();
+
+		// Disable buttons appropriately.
 		button_prev->setEnabled(false);
 		d_button_create->setEnabled(false);
 		button_create_and_save->setEnabled(false);
+
+		if (d_current_page > FEATURE_TYPE_PAGE)
+		{
+			// We're transitioning from the next (common properties) page so copy
+			// common properties into the 'all' properties list.
+			copy_common_properties_into_all_properties();
+		}
+
+		// Populate the d_choose_feature_type_widget based on what features support
+		// the geometric property type.
+		set_up_feature_list();
+
+		d_choose_feature_type_widget->setFocus();
+
 		break;
 
 	case COMMON_PROPERTIES_PAGE:
-		// Populate the listwidget_geometry_destinations based on what is legal right now.
-		set_up_geometric_property_list();
-		d_listwidget_geometry_destinations->setFocus();
-		d_button_create->setEnabled(false);
-		button_create_and_save->setEnabled(false);
-		// Make sure it's null (or "None") because it's accessed even when it's not visible.
-		d_conjugate_plate_id_widget->set_null(true);
-		d_conjugate_plate_id_widget->setVisible(
-			d_recon_method_combobox->currentIndex() == 0 /* plate id */ &&
-				should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget));
-		// Note that we don't set the relative plate id to zero - we remember the last set plate id.
-		d_relative_plate_id_widget->setVisible(
-			d_recon_method_combobox->currentIndex() == 0 /* plate id */ &&
-				should_offer_relative_plate_id_prop(d_choose_feature_type_widget));
-		// Make sure it's unchecked because it's accessed programmatically even when it's not visible.
-		d_create_conjugate_isochron_checkbox->setChecked(false);
-		d_create_conjugate_isochron_checkbox->setVisible(
-			// Currently only allow user to select if there's a non-topological geometry because creating
-			// conjugate requires reverse reconstructing using non-topological reconstruction...
-			is_non_topological_geometry(*d_geometry_property_value.get()) &&
-				should_offer_create_conjugate_isochron_checkbox(d_choose_feature_type_widget));
-		set_recon_method_state(
-			d_recon_method_widget,
-			d_recon_method_combobox,
-			d_choose_feature_type_widget);
+
+		{
+			// Disable buttons appropriately.
+			d_button_create->setEnabled(false);
+			button_create_and_save->setEnabled(false);
+
+			bool feature_type_changed = false;
+			if (d_current_page < COMMON_PROPERTIES_PAGE)
+			{
+				//
+				// We're transitioning from the previous (feature type) page so
+				// set the selected feature type and see if it has actually changed.
+				//
+
+				// The previous feature type.
+				boost::optional<GPlatesModel::FeatureType> prev_feature_type = d_feature_type;
+
+				// Set the current feature type.
+				d_feature_type = d_choose_feature_type_widget->get_feature_type();
+
+				// If the feature type has changed then clear out those existing feature properties that
+				// are not allowed (by the GPGIM) for the new feature type.
+				// These are properties from the currently or previously digitised feature that are no longer
+				// applicable due to changing the feature type (repeatedly digitising the same feature/geometry
+				// type is meant to be a fast path for the user - where they can re-use previous properties).
+				if (d_feature_type != prev_feature_type)
+				{
+					clear_properties_not_allowed_for_current_feature_type();
+					feature_type_changed = true;
+				}
+			}
+			else if (d_current_page > COMMON_PROPERTIES_PAGE)
+			{
+				// We're transitioning from the next (all properties) page.
+				// So extract all the feature properties now that the user has finished adding/editing them.
+				// They don't need to be complete - we just need them so we can copy their values
+				// into the common properties widgets.
+				d_feature_properties.clear();
+				d_create_feature_properties_page->get_feature_properties(d_feature_properties);
+			}
+			// ...else if we're transitioning from the previous (feature type) page then just use the
+			// existing feature properties (if any) - there might be some from the previously digitised feature.
+
+			// Populate the listwidget_geometry_destinations based on what is legal right now.
+			set_up_geometric_property_list();
+
+			// If we're starting from scratch (eg, first time digitised or changed feature type)
+			// then select the default geometry property name based on the feature type.
+			//
+			// Note that we really want to encourage users to use the 'default' geometry property
+			// for a feature type as this makes retrieving geometries (eg, in python pygplates API)
+			// much easier for users (since they don't have to specify the geometry property name -
+			// when not specified pygplates will extract the 'default' geometry property).
+			if (feature_type_changed)
+			{
+				select_default_geometry_property_name();
+			}
+
+			// Set up the common properties widgets based on the current feature properties (if any).
+			set_up_common_properties();
+		}
+
 		break;
 
 	case ALL_PROPERTIES_PAGE:
-		// Create the common properties and list them in the feature properties page.
-		// We only need to do this if the user is advancing from a prior page.
-		// If the user pressed the "previous" button (from the feature collection page) then we just
-		// keep the existing feature properties they have already set up so they don't lose them.
-		if (d_current_page <= ALL_PROPERTIES_PAGE)
-		{
-			set_up_feature_properties();
-		}
-		d_create_feature_properties_page->setFocus();
+
+		// Disable buttons appropriately.
 		d_button_create->setEnabled(false);
 		button_create_and_save->setEnabled(false);
+
+		if (d_current_page < ALL_PROPERTIES_PAGE)
+		{
+			// We're transitioning from the previous (common properties) page so copy
+			// common properties into the 'all' properties list.
+			copy_common_properties_into_all_properties();
+		}
+
+		set_up_all_properties_list();
+
+		d_create_feature_properties_page->setFocus();
+
 		break;
 
 	case FEATURE_COLLECTION_PAGE:
-		d_choose_feature_collection_widget->setFocus();
+
+		// Disable buttons appropriately.
 		button_next->setEnabled(false);
+
+		if (d_current_page < FEATURE_COLLECTION_PAGE)
+		{
+			// We've just come from the previous (all properties) page.
+			// Extract all the feature properties now that the user has finished adding/editing them.
+			// The feature properties are complete otherwise we wouldn't be able to get here.
+			d_feature_properties.clear();
+			d_create_feature_properties_page->get_feature_properties(d_feature_properties);
+		}
+
+		d_choose_feature_collection_widget->setFocus();
+
 		break;
 
 	default:
@@ -1077,6 +1607,13 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_page_change(
 void
 GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 {
+	if (!d_feature_type)
+	{
+		QMessageBox::critical(this, tr("No feature type selected"),
+				tr("Please select a feature type to create."));
+		return;
+	}
+
 	// Get the PropertyName the user has selected for geometry to go into.
 	boost::optional<GPlatesModel::PropertyName> geometry_property_name_item =
 		d_listwidget_geometry_destinations->get_property_name();
@@ -1088,31 +1625,19 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 	}
 	const GPlatesModel::PropertyName geometry_property_name = *geometry_property_name_item;
 	
-	// Get the FeatureType the user has selected.
-	boost::optional<GPlatesModel::FeatureType> feature_type_opt =
-			d_choose_feature_type_widget->get_feature_type();
-	if (!feature_type_opt)
-	{
-		QMessageBox::critical(this, tr("No feature type selected"),
-				tr("Please select a feature type to create."));
-		return;
-	}
-	const GPlatesModel::FeatureType feature_type = *feature_type_opt;
-
 	try
 	{
 		// Create a feature with no properties (yet).
 		GPlatesModel::FeatureHandle::non_null_ptr_type feature =
-				GPlatesModel::FeatureHandle::create(feature_type);
+				GPlatesModel::FeatureHandle::create(d_feature_type.get());
 
-		// Add all feature properties (including the common properties).
-		CreateFeaturePropertiesPage::property_seq_type feature_properties;
-		d_create_feature_properties_page->get_feature_properties(feature_properties);
+		// Add all feature properties (including the common properties) to the feature.
 		BOOST_FOREACH(
 				const GPlatesModel::TopLevelProperty::non_null_ptr_type &feature_property,
-				feature_properties)
+				d_feature_properties)
 		{
-			feature->add(feature_property);
+			// Add a clone of the property so we can re-use the properties for the next feature.
+			feature->add(feature_property->clone());
 		}
 
 		// Add the (reconstruction-time) geometry property to the feature.
@@ -1146,11 +1671,29 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_create()
 		// Add the feature to the feature collection.
 		feature_collection->add(feature);
 
-		// If the feature is an isochron and the user wants to create the conjugate...
-		if (d_create_conjugate_isochron_checkbox->isChecked())
+		//
+		// NOTE: We must create the conjugate feature (if any) *after* fully creating the
+		// regular feature above (ie, all properties must have been added) because the regular
+		// feature is reverse-constructed to get present day geometry (and this requires all its
+		// properties to be there).
+		//
+
+		// If the feature has a conjugate plate id, has a non-topological geometry and
+		// the user wants to create the conjugate feature...
+		if (d_create_conjugate_feature_checkbox->isChecked() &&
+			// Does feature have reconstruction plate id property...
+			find_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+					d_feature_properties) &&
+			// Does feature have conjugate plate id property...
+			find_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
+					d_feature_properties) &&
+			// Creating conjugate requires reverse reconstructing using 'non-topological' reconstruction...
+			is_non_topological_geometry(d_geometry_property_type.get()))
 		{
 			// Should only get here for non-topological geometries (which can be reverse-reconstructed).
-			create_conjugate_isochron(
+			create_conjugate_feature(
 					feature_collection,
 					feature->reference(),
 					geometry_property_iterator.get());
@@ -1222,23 +1765,36 @@ GPlatesQtWidgets::CreateFeatureDialog::recon_method_changed(int index)
 			d_left_plate_id->setVisible(false);
 			d_plate_id_widget->setVisible(true);
 			d_conjugate_plate_id_widget->setVisible(
-					should_offer_conjugate_plate_id_prop(d_choose_feature_type_widget));
+					should_offer_conjugate_plate_id_prop(d_feature_type));
 			d_relative_plate_id_widget->setVisible(
-					should_offer_relative_plate_id_prop(d_choose_feature_type_widget));
+					should_offer_relative_plate_id_prop(d_feature_type));
 			d_recon_method = GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID;
 			break;
 	}
+
+	d_create_conjugate_feature_checkbox->setEnabled(
+			!d_conjugate_plate_id_widget->is_null() &&
+			d_recon_method == GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 }
 
 void
-GPlatesQtWidgets::CreateFeatureDialog::handle_conjugate_value_changed()
+GPlatesQtWidgets::CreateFeatureDialog::handle_conjugate_plate_id_changed()
 {
-	d_create_conjugate_isochron_checkbox->setEnabled(!d_conjugate_plate_id_widget->is_null());
+	d_create_conjugate_feature_checkbox->setEnabled(
+			!d_conjugate_plate_id_widget->is_null() &&
+			d_recon_method == GPlatesAppLogic::ReconstructMethod::BY_PLATE_ID);
 }
 
 void
 GPlatesQtWidgets::CreateFeatureDialog::handle_feature_type_changed()
 {
+	//
+	// NOTE: In this function we use 'd_choose_feature_type_widget->get_feature_type()' instead of
+	// 'd_feature_type'. The latter is set only once we've moved on from the feature type page -
+	// this enables us to use 'd_feature_type' to detect changes in feature type without being
+	// affected by feature type resets (which can get signaled here).
+	//
+
 	//
 	// Set up a custom properties widget if necessary.
 	//
@@ -1252,7 +1808,7 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_feature_type_changed()
 	// See if the current feature type needs a custom properties widget.
 	boost::optional<GPlatesQtWidgets::AbstractCustomPropertiesWidget *> custom_properties_widget =
 			get_custom_properties_widget(
-					d_choose_feature_type_widget,
+					d_choose_feature_type_widget->get_feature_type(),
 					*d_application_state_ptr,
 					this);
 	if (custom_properties_widget)
@@ -1267,15 +1823,11 @@ GPlatesQtWidgets::CreateFeatureDialog::handle_feature_type_changed()
 
 	// Get the feature type description text.
 	QString feature_type_description_string;
-
-	// Get the FeatureType the user has currently selected.
-	boost::optional<GPlatesModel::FeatureType> feature_type =
-			d_choose_feature_type_widget->get_feature_type();
-	if (feature_type)
+	if (d_choose_feature_type_widget->get_feature_type())
 	{
 		// Get the GPGIM feature class.
 		boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
-				GPlatesModel::Gpgim::instance().get_feature_class(feature_type.get());
+				GPlatesModel::Gpgim::instance().get_feature_class(d_choose_feature_type_widget->get_feature_type().get());
 		if (gpgim_feature_class)
 		{
 			feature_type_description_string = gpgim_feature_class.get()->get_feature_description();
@@ -1498,11 +2050,18 @@ GPlatesQtWidgets::CreateFeatureDialog::reverse_reconstruct_geometry_property(
 }
 
 void
-GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
+GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_feature(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-		const GPlatesModel::FeatureHandle::weak_ref &isochron_feature,
+		const GPlatesModel::FeatureHandle::weak_ref &feature,
 		const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator)
 {
+	if (!d_feature_type)
+	{
+		QMessageBox::critical(this, tr("No feature type selected"),
+				tr("Please select a feature type to create."));
+		return;
+	}
+
 	if (!geometry_property_iterator.is_still_valid())
 	{
 		return;
@@ -1515,56 +2074,55 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 	static const GPlatesModel::PropertyName NAME =
 			GPlatesModel::PropertyName::create_gml("name");
 
-	// Get the reconstruction plate id from the isochron feature.
+	// Get the reconstruction plate id from the feature.
 	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> reconstruction_plate_id =
 			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
-					isochron_feature,
+					feature,
 					RECONSTRUCTION_PLATE_ID);
 	if (!reconstruction_plate_id)
 	{
 		QMessageBox::critical(this,
-				tr("Failed to access isochron property."),
-				tr("Unable to access 'gpml:reconstructionPlateId' property in isochron feature."),
+				tr("Failed to access conjugate property."),
+				tr("Unable to access 'gpml:reconstructionPlateId' property in conjugate feature."),
 				QMessageBox::Ok);
 		return;
 	}
 
-	// Get the conjugate plate id from the isochron feature.
+	// Get the conjugate plate id from the feature.
 	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> conjugate_plate_id =
 			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
-					isochron_feature,
+					feature,
 					CONJUGATE_PLATE_ID);
 	if (!conjugate_plate_id)
 	{
 		QMessageBox::critical(this,
-				tr("Failed to access isochron property."),
-				tr("Unable to access 'gpml:conjugatePlateId' property in isochron feature."),
+				tr("Failed to access conjugate property."),
+				tr("Unable to access 'gpml:conjugatePlateId' property in conjugate feature."),
 				QMessageBox::Ok);
 		return;
 	}
 
-	// Get the name from the isochron feature.
+	// Get the name from the feature.
 	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
 			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
-					isochron_feature,
+					feature,
 					NAME);
 	if (!name)
 	{
 		QMessageBox::critical(this,
-				tr("Failed to access isochron property."),
-				tr("Unable to access 'gml:name' property in isochron feature."),
+				tr("Failed to access conjugate property."),
+				tr("Unable to access 'gml:name' property in conjugate feature."),
 				QMessageBox::Ok);
 		return;
 	}
 
-	// Create the conjugate isochron feature.
-	GPlatesModel::FeatureHandle::non_null_ptr_type conjugate_isochron_feature =
-			GPlatesModel::FeatureHandle::create(
-					GPlatesModel::FeatureType::create_gpml("Isochron"));
+	// Create the conjugate feature.
+	GPlatesModel::FeatureHandle::non_null_ptr_type conjugate_feature =
+			GPlatesModel::FeatureHandle::create(d_feature_type.get());
 
-	// Iterate over the isochron properties and create the conjugate isochron properties.
-	GPlatesModel::FeatureHandle::iterator isochron_properties_iter = isochron_feature->begin();
-	GPlatesModel::FeatureHandle::iterator isochron_properties_end = isochron_feature->end();
+	// Iterate over the properties and create the conjugate properties.
+	GPlatesModel::FeatureHandle::iterator isochron_properties_iter = feature->begin();
+	GPlatesModel::FeatureHandle::iterator isochron_properties_end = feature->end();
 	for ( ; isochron_properties_iter != isochron_properties_end; ++isochron_properties_iter)
 	{
 		// Ignore the geometry property - we're going to add the conjugate geometry later.
@@ -1580,7 +2138,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			// Swap the reconstruction and conjugate plate ids.
 			GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
 			if (!GPlatesModel::ModelUtils::add_property(
-					conjugate_isochron_feature->reference(),
+					conjugate_feature->reference(),
 					property_name,
 					conjugate_plate_id.get()->clone(),
 					true/*check_property_name_allowed_for_feature_type*/,
@@ -1590,7 +2148,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			{
 				// Not successful in adding geometry; show error message.
 				QMessageBox::warning(this,
-						QObject::tr("Failed to add property to the conjugate isochron."),
+						QObject::tr("Failed to add property to the conjugate feature."),
 						QObject::tr(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)),
 						QMessageBox::Ok);
 				return;
@@ -1604,7 +2162,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			// Swap the reconstruction and conjugate plate ids.
 			GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
 			if (!GPlatesModel::ModelUtils::add_property(
-					conjugate_isochron_feature->reference(),
+					conjugate_feature->reference(),
 					property_name,
 					reconstruction_plate_id.get()->clone(),
 					true/*check_property_name_allowed_for_feature_type*/,
@@ -1614,7 +2172,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			{
 				// Not successful in adding geometry; show error message.
 				QMessageBox::warning(this,
-						QObject::tr("Failed to add property to the conjugate isochron."),
+						QObject::tr("Failed to add property to the conjugate feature."),
 						QObject::tr(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)),
 						QMessageBox::Ok);
 				return;
@@ -1636,7 +2194,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 
 			GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
 			if (!GPlatesModel::ModelUtils::add_property(
-					conjugate_isochron_feature->reference(),
+					conjugate_feature->reference(),
 					property_name,
 					conjugate_name_property_value,
 					true/*check_property_name_allowed_for_feature_type*/,
@@ -1646,7 +2204,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			{
 				// Not successful in adding geometry; show error message.
 				QMessageBox::warning(this,
-						QObject::tr("Failed to add property to the conjugate isochron."),
+						QObject::tr("Failed to add property to the conjugate feature."),
 						QObject::tr(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)),
 						QMessageBox::Ok);
 				return;
@@ -1655,14 +2213,14 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			continue;
 		}
 
-		// Clone and add the current property to the conjugate isochron feature.
+		// Clone and add the current property to the conjugate feature.
 		GPlatesModel::TopLevelProperty::non_null_ptr_type property_clone =
 				(*isochron_properties_iter)->clone();
-		conjugate_isochron_feature->add(property_clone);
+		conjugate_feature->add(property_clone);
 	}
 
 	//
-	// Create the conjugate isochron's geometry property.
+	// Create the conjugate feature's geometry property.
 	//
 
 	// Get the geometry property value from the geometry property iterator.
@@ -1674,7 +2232,7 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 	if (!geometry_property_value)
 	{
 		QMessageBox::critical(this,
-				tr("Failed to access isochron geometry property."),
+				tr("Failed to access conjugate geometry property."),
 				tr(GPlatesModel::ModelUtils::get_error_message(get_property_value_error_code)),
 				QMessageBox::Ok);
 		return;
@@ -1698,35 +2256,40 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 			d_application_state_ptr->get_current_reconstruction()
 					.get_default_reconstruction_layer_output()->get_reconstruction_tree();
 
-	// Use the isochron feature properties (which should all be added by now) to reconstruct the
-	// isochron's present-day geometry to the current reconstruction time.
+	// Use the feature properties (which should all be added by now) to reconstruct the
+	// feature's present-day geometry to the current reconstruction time.
 	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_geometry =
 			GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 					present_day_geometry.get(),
-					isochron_feature,
+					feature,
 					*default_reconstruction_tree,
 					// FIXME: Using default reconstruct parameters, but will probably need to
 					// get this from the layer that the created feature is being assigned to...
 					GPlatesAppLogic::ReconstructParams());
 
-	// Reverse reconstruct, using the *conjugate* plate id, back to present-day.
-	// Note that we're reversing the plate-id and conjugate-plate-ids, so we use the conjugate here.
+	// Use the conjugate feature properties (which should all be added by now except geometry) to
+	// reverse reconstruct the reconstructed geometry to present-day geometry.
+	// Note that we're using the *conjugate* feature's properties which means that we're reversing
+	// the plate-id and conjugate-plate-ids when reverse reconstructing.
 	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type conjugate_present_day_geometry =
-			GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
+			GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 					reconstructed_geometry,
-					conjugate_plate_id.get()->get_value(),
+					conjugate_feature->reference(),
 					*default_reconstruction_tree,
-					true /*reverse_reconstruct*/);
+					// FIXME: Using default reconstruct parameters, but will probably need to
+					// get this from the layer that the created feature is being assigned to...
+					GPlatesAppLogic::ReconstructParams(),
+					true/*reverse_reconstruct*/);
 
-	// Create a property value using the present-day geometry for the conjugate isochron.
+	// Create a property value using the present-day geometry for the conjugate feature.
 	GPlatesModel::PropertyValue::non_null_ptr_type conjugate_geometry_property_value =
 			GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 					conjugate_present_day_geometry);
 
-	// Add the geometry property to the conjugate isochron feature.
+	// Add the geometry property to the conjugate feature.
 	GPlatesModel::ModelUtils::TopLevelPropertyError::Type add_property_error_code;
 	if (!GPlatesModel::ModelUtils::add_property(
-			conjugate_isochron_feature->reference(),
+			conjugate_feature->reference(),
 			(*geometry_property_iterator)->get_property_name(),
 			conjugate_geometry_property_value,
 			true/*check_property_name_allowed_for_feature_type*/,
@@ -1736,14 +2299,14 @@ GPlatesQtWidgets::CreateFeatureDialog::create_conjugate_isochron(
 	{
 		// Not successful in adding geometry; show error message.
 		QMessageBox::warning(this,
-				QObject::tr("Failed to add geometry property to the conjugate isochron."),
+				QObject::tr("Failed to add geometry property to the conjugate feature."),
 				QObject::tr(GPlatesModel::ModelUtils::get_error_message(add_property_error_code)),
 				QMessageBox::Ok);
 		return;
 	}
 
-	// Add the conjugate isochron feature to the feature collection.
-	feature_collection->add(conjugate_isochron_feature);
+	// Add the conjugate feature to the feature collection.
+	feature_collection->add(conjugate_feature);
 }
 
 

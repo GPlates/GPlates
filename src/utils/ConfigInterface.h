@@ -251,10 +251,10 @@ namespace GPlatesUtils
 		 * "relative pathnames" from the given root. It is assumed that
 		 * the prefix itself does not have a value stored.
 		 *
-		 * For example, you could get the keyvalues for prefix "session/recent/1"
+		 * For example, you could get the keyvalues for prefix "session/recent/sessions/1"
 		 * and this method would return a map containing keys such as "loaded_files"
-		 * and "date" - corresponding to "session/recent/1/loaded_files" and
-		 * "session/recent/1/date".
+		 * and "date" - corresponding to "session/recent/sessions/1/loaded_files" and
+		 * "session/recent/sessions/1/date".
 		 *
 		 * While there is probably no real application for applying this method
 		 * to key/values with defaults and system fallbacks, the returned map

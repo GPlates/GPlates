@@ -40,6 +40,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/Layer.h"
+#include "app-logic/LayerInputChannelName.h"
 #include "app-logic/ReconstructGraph.h"
 
 #include "data-mining/CheckAttrTypeVisitor.h"
@@ -330,7 +331,7 @@ namespace GPlatesQtWidgets
 
 		std::vector<GPlatesAppLogic::Layer>
 		get_input_layers(
-				const QString &channel_name,
+				GPlatesAppLogic::LayerInputChannelName::Type channel_name,
 				bool target_layers) const;
 
 		void

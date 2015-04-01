@@ -90,7 +90,7 @@ namespace GPlatesQtWidgets
 		 * Gets a file name from the user.
 		 * @param selected_filter If not NULL, the full text of the selected filter is
 		 * returned in this variable. This is useful if there are multiple filters
-		 * that target the same file extension (e.g. difference ways to do CSV).
+		 * that target the same file extension (e.g. different ways to do CSV).
 		 * @returns boost::none if the user clicked cancel.
 		 */
 		boost::optional<QString>

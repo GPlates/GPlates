@@ -234,6 +234,24 @@ CGAL
   a few CGAL headers to get it to compile (because VS2005 no longer supported) - see the last post at
     http://cgal-discuss.949826.n4.nabble.com/Error-in-Delaunay-traingulation-2-h-td3063834.html
 
+qwt
+
+  1. Get the qwt source code zip package from http://sourceforge.net/projects/qwt/files/qwt/6.0.1/
+  2. Extract the files in the package to your preferred location (e.g. C:\SDK\qwt)
+  3. Open a Visual Studio command prompt and navigate to your qwt location
+	(e.g. C:\SDK\qwt\qwt-6.0.1 )
+  4. At the command prompt, do 
+	qmake
+	nmake
+     You should now have a "lib" folder containing .dll and .lib files.
+  5. (If you have a preferred installation location which is different from your build location, you can edit qwtconfig.pri to use your installation location, and then do "nmake install")
+  6. Define two new enviroment variables, QWT_INCLUDE_DIR and QWT_LIBRARY, with the paths of the qwt header files and the qwt library respectively - for example: 
+	QWT_INCLUDE_DIR could be  "C:\SDK\qwt\qwt-6.0.1\src" 
+	and 
+	QWT_LIBRARY could be "C:\SDK\qwt\qwt-6.0.1\lib\qwt.lib"
+  7. Add the QWT_LIBRARY location to your PATH environment variable.
+ 
+
 gzip
 
   1. Get and install gzip from http://gnuwin32.sourceforge.net/packages/gzip.htm 

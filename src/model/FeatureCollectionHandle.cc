@@ -69,4 +69,3 @@ GPlatesModel::FeatureCollectionHandle::FeatureCollectionHandle() :
 			this,
 			revision_type::create())
 {  }
-

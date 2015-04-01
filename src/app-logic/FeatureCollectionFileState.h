@@ -37,6 +37,9 @@
 
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/File.h"
+#include "file-io/ReadErrorAccumulation.h"
+
+#include "global/GPlatesAssert.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelInterface.h"
@@ -44,6 +47,14 @@
 
 #include "utils/CopyConst.h"
 
+
+namespace GPlatesFileIO
+{
+	namespace FeatureCollectionFileFormat
+	{
+		class Registry;
+	}
+}
 
 namespace GPlatesAppLogic
 {
@@ -374,6 +385,7 @@ namespace GPlatesAppLogic
 		class FileSlotExtra
 		{
 		public:
+			explicit
 			FileSlotExtra(
 					const GPlatesFileIO::File::Reference::non_null_ptr_type &file_ref) :
 				d_file_ref(file_ref),
@@ -390,6 +402,7 @@ namespace GPlatesAppLogic
 			 */
 			GPlatesModel::FeatureCollectionHandle::const_weak_ref d_callback_feature_collection;
 		};
+
 
 		/**
 		 * A slot to store information about a file in a sequence of loaded files.
@@ -487,6 +500,8 @@ namespace GPlatesAppLogic
 				file_handle_type file_handle);
 
 
+	private:
+
 		/**
 		 * Keeps track of feature collections as they are deactivated and reactivated in the *model*.
 		 */
@@ -534,6 +549,7 @@ namespace GPlatesAppLogic
 			file_handle_type d_file_handle;
 		};
 	};
+
 
 	boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 	get_file_reference_containing_feature(

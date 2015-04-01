@@ -31,7 +31,8 @@
 #include <iosfwd>
 #include <QString>
 
-#include "utils/QtStreamable.h"
+#include "QtStreamable.h"
+
 
 // This is a hold-over from using ICU's UnicodeString.
 #ifndef GPLATES_ICU_BOOL

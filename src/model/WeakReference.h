@@ -448,7 +448,6 @@ namespace GPlatesModel
 		mutable typename WeakReferenceCallback<H>::maybe_null_ptr_type d_callback;
 
 	};
-
 }
 
 #endif  // GPLATES_MODEL_WEAKREFERENCE_H

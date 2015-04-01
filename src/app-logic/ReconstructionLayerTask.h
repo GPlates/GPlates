@@ -78,7 +78,7 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		QString
+		LayerInputChannelName::Type
 		get_main_input_feature_collection_channel() const;
 
 
@@ -91,23 +91,23 @@ namespace GPlatesAppLogic
 
 		void
 		add_input_file_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 		void
 		remove_input_file_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 		void
 		modified_input_file(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 
 		void
 		add_input_layer_proxy_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const LayerProxy::non_null_ptr_type &layer_proxy)
 		{
 			// Ignore - we're only interested in input feature collections.
@@ -115,7 +115,7 @@ namespace GPlatesAppLogic
 
 		void
 		remove_input_layer_proxy_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const LayerProxy::non_null_ptr_type &layer_proxy)
 		{
 			// Ignore - we're only interested in input feature collections.
@@ -143,7 +143,6 @@ namespace GPlatesAppLogic
 		}
 
 	private:
-		static const QString RECONSTRUCTION_FEATURES_CHANNEL_NAME;
 
 		LayerTaskParams d_layer_task_params;
 

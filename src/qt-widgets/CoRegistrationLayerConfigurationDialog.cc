@@ -196,7 +196,7 @@ std::vector<GPlatesAppLogic::Layer>
 GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::get_input_seed_layers() const
 {
 	return get_input_layers(
-			GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_SEED_GEOMETRIES_CHANNEL_NAME,
+			GPlatesAppLogic::LayerInputChannelName::CO_REGISTRATION_SEED_GEOMETRIES,
 			false/*target_layers*/);
 }
 
@@ -205,7 +205,7 @@ std::vector<GPlatesAppLogic::Layer>
 GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::get_input_target_layers() const
 {
 	return get_input_layers(
-			GPlatesAppLogic::CoRegistrationLayerTask::CO_REGISTRATION_TARGET_GEOMETRIES_CHANNEL_NAME,
+			GPlatesAppLogic::LayerInputChannelName::CO_REGISTRATION_TARGET_GEOMETRIES,
 			true/*target_layers*/);
 }
 
@@ -217,7 +217,7 @@ DISABLE_GCC_WARNING("-Wshadow")
 
 std::vector<GPlatesAppLogic::Layer>
 GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::get_input_layers(
-		const QString& channel_name,
+		GPlatesAppLogic::LayerInputChannelName::Type channel_name,
 		bool target_layers) const
 {
 	std::vector<GPlatesAppLogic::Layer> input_layers;
@@ -553,7 +553,8 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::get_unique_attribute_n
 			GPLATES_ASSERTION_SOURCE);
 
 	// The 'reconstruct geometries' layer has input feature collections on its main input channel.
-	const QString main_input_channel = target_layer.get_main_input_feature_collection_channel();
+	const GPlatesAppLogic::LayerInputChannelName::Type main_input_channel =
+			target_layer.get_main_input_feature_collection_channel();
 	const std::vector<GPlatesAppLogic::Layer::InputConnection> main_inputs =
 			target_layer.get_channel_inputs(main_input_channel);
 

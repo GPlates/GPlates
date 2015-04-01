@@ -29,6 +29,7 @@
 
 #include "ViewState.h"
 
+#include "SessionManagement.h"
 #include "VisualLayerRegistry.h"
 #include "VisualLayers.h"
 
@@ -96,6 +97,8 @@ GPlatesPresentation::ViewState::ViewState(
 	d_other_view_state(NULL), // FIXME: remove this when refactored
 	d_animation_controller(
 			new GPlatesGui::AnimationController(application_state)),
+	d_session_management_ptr(
+			new SessionManagement(application_state)),
 	d_rendered_geometry_collection(
 			new GPlatesViewOperations::RenderedGeometryCollection()),
 	d_feature_focus(
@@ -238,6 +241,13 @@ GPlatesGui::AnimationController&
 GPlatesPresentation::ViewState::get_animation_controller()
 {
 	return *d_animation_controller;
+}
+
+
+GPlatesPresentation::SessionManagement &
+GPlatesPresentation::ViewState::get_session_management()
+{
+	return *d_session_management_ptr;
 }
 
 

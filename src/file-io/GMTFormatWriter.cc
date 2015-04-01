@@ -32,14 +32,14 @@
 
 #include "GMTFormatWriter.h"
 
+#include "ErrorOpeningFileForWritingException.h"
 #include "FeatureCollectionFileFormatConfigurations.h"
 #include "FileInfo.h"
 #include "GMTFormatGeometryExporter.h"
 #include "PlatesLineFormatHeaderVisitor.h"
-#include "ErrorOpeningFileForWritingException.h"
 
-#include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 #include "global/unicode.h"
 
 #include "model/FeatureHandle.h"

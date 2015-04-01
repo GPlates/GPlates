@@ -33,7 +33,6 @@
 #include <boost/bind.hpp>
 
 #include <QDebug>
-#include "Serialization.h"
 
 
 #include "ApplicationState.h"
@@ -44,8 +43,8 @@
 #include "ReconstructGraph.h"
 #include "ReconstructGraphImpl.h"
 #include "ReconstructionLayerProxy.h"
+#include "ReconstructLayerProxy.h"
 #include "ReconstructUtils.h"
-#include "Serialization.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -568,7 +567,7 @@ GPlatesAppLogic::ReconstructGraph::modified_input_file(
 
 		Layer layer(layer_receiving_file_input);
 
-		const QString main_input_channel = layer.get_main_input_feature_collection_channel();
+		const LayerInputChannelName::Type main_input_channel = layer.get_main_input_feature_collection_channel();
 
 		const std::vector<Layer::InputConnection> input_connections = layer.get_channel_inputs(main_input_channel);
 
@@ -700,7 +699,7 @@ GPlatesAppLogic::ReconstructGraph::auto_connect_layer(
 	//
 
 	// Get the main feature collection input channel for our layer.
-	const QString main_input_feature_collection_channel =
+	const LayerInputChannelName::Type main_input_feature_collection_channel =
 			layer.get_main_input_feature_collection_channel();
 
 	// Connect the input file to the main input channel of the new layer.
@@ -769,7 +768,7 @@ GPlatesAppLogic::ReconstructGraph::auto_destroy_layers_for_input_file_about_to_b
 			continue;
 		}
 
-		const QString main_input_channel = layer.get_main_input_feature_collection_channel();
+		const LayerInputChannelName::Type main_input_channel = layer.get_main_input_feature_collection_channel();
 
 		const std::vector<Layer::InputConnection> input_connections = layer.get_channel_inputs(main_input_channel);
 		// We only remove layers that currently have one input file on the main channel.

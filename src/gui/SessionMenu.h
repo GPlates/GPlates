@@ -36,17 +36,20 @@
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
-	class SessionManagement;
 }
 
+namespace GPlatesPresentation
+{
+	class SessionManagement;
+	class ViewState;
+}
 
 namespace GPlatesGui
 {
 	class FileIOFeedback;
 
 	/**
-	 * This class is responsible for providing the user interface to
-	 * GPlatesAppLogic::SessionManagement.
+	 * This class is responsible for providing the user interface to SessionManagement.
 	 */
 	class SessionMenu: 
 			public QObject
@@ -58,6 +61,7 @@ namespace GPlatesGui
 		explicit
 		SessionMenu(
 				GPlatesAppLogic::ApplicationState &app_state_,
+				GPlatesPresentation::ViewState &view_state_,
 				GPlatesGui::FileIOFeedback &file_io_feedback_,
 				QObject *parent_ = NULL);
 
@@ -102,7 +106,7 @@ namespace GPlatesGui
 		/**
 		 * Pointer to the session management, to get session info.
 		 */
-		GPlatesAppLogic::SessionManagement *d_session_management_ptr;
+		GPlatesPresentation::SessionManagement *d_session_management_ptr;
 
 		/**
 		 * Pointer to FileIOFeedback, to initiate change while trapping exceptions.

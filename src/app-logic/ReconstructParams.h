@@ -232,7 +232,6 @@ namespace GPlatesAppLogic
 		GPlatesMaths::real_t d_deformation_end_time;
 		GPlatesMaths::real_t d_deformation_begin_time;
 		GPlatesMaths::real_t d_deformation_time_increment;
-
 	};
 }
 

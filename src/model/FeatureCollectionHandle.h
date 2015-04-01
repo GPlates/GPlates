@@ -38,7 +38,9 @@
 #include "FeatureCollectionRevision.h"
 
 #include "global/PointerTraits.h"
+
 #include "utils/ReferenceCount.h"
+
 
 namespace GPlatesModel
 {
@@ -155,9 +157,7 @@ namespace GPlatesModel
 		 * if most feature collection handles have such a tag.
 		 */
 		tags_type d_tags;
-
 	};
-
 }
 
 // This include is not necessary for this header to function, but it would be

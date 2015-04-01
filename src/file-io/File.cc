@@ -73,19 +73,11 @@ GPlatesFileIO::File::add_feature_collection_to_model(
 	}
 
 	// Add the feature collection handle to the model.
-	GPlatesModel::FeatureStoreRootHandle::iterator iter =
-			model->root()->add(d_feature_collection_handle.get());
+	model->root()->add(d_feature_collection_handle.get());
 
 	// Now that we've added the feature collection handle to the model we should
 	// release our ownership of it.
 	d_feature_collection_handle = boost::none;
-
-	// Get a reference to feature collection handle in the model.
-	GPlatesModel::FeatureCollectionHandle::weak_ref feature_collection_ref =
-			(*iter)->reference();
-
-	// Modify the internal feature collection weak reference.
-	d_file->d_feature_collection = feature_collection_ref;
 
 	return d_file;
 }

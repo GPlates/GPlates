@@ -33,6 +33,7 @@
 #include <QString>
 
 #include "Layer.h"
+#include "LayerInputChannelName.h"
 #include "LayerInputChannelType.h"
 #include "LayerProxy.h"
 #include "LayerTaskType.h"
@@ -56,16 +57,6 @@ namespace GPlatesAppLogic
 		virtual
 		~LayerTask()
 		{ }
-
-
-		/**
-		 * Returns the channel name used by all layer tasks that require an input reconstruction tree.
-		 *
-		 * This is in the base layer task class so all layer tasks can access it.
-		 */
-		static
-		QString
-		get_reconstruction_tree_channel_name();
 
 
 		/**
@@ -95,12 +86,9 @@ namespace GPlatesAppLogic
 		 * layer tasks that are applicable to this layer.
 		 *
 		 * This can be used by the GUI to list available layer tasks to the user.
-		 *
-		 * NOTE: The data type of the input channel, as returned by @a get_input_channel_definitions,
-		 * must be Layer::INPUT_FEATURE_COLLECTION_DATA.
 		 */
 		virtual
-		QString
+		LayerInputChannelName::Type
 		get_main_input_feature_collection_channel() const = 0;
 
 
@@ -119,7 +107,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		add_input_file_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection) = 0;
 
 		/**
@@ -128,7 +116,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		remove_input_file_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection) = 0;
 
 
@@ -141,7 +129,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		modified_input_file(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection) = 0;
 
 
@@ -151,7 +139,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		add_input_layer_proxy_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const LayerProxy::non_null_ptr_type &layer_proxy) = 0;
 
 		/**
@@ -160,7 +148,7 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		remove_input_layer_proxy_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const LayerProxy::non_null_ptr_type &layer_proxy) = 0;
 
 

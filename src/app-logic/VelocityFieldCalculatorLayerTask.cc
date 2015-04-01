@@ -30,13 +30,6 @@
 #include "VelocityFieldCalculatorLayerProxy.h"
 
 
-const QString GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VELOCITY_DOMAIN_LAYERS_CHANNEL_NAME =
-		"Velocity domains (points/multi-points/polylines/polygons)";
-
-const QString GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VELOCITY_SURFACE_LAYERS_CHANNEL_NAME =
-		"Velocity surfaces (static/dynamic polygons/networks)";
-
-
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VelocityFieldCalculatorLayerTask() :
 	d_velocity_field_calculator_layer_proxy(
 			VelocityFieldCalculatorLayerProxy::create())
@@ -72,7 +65,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_input_channel_types() con
 	domain_input_channel_types.push_back(LayerTaskType::RECONSTRUCT);
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					VELOCITY_DOMAIN_LAYERS_CHANNEL_NAME,
+					LayerInputChannelName::VELOCITY_DOMAIN_LAYERS,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
 					domain_input_channel_types));
 
@@ -86,7 +79,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_input_channel_types() con
 	surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					VELOCITY_SURFACE_LAYERS_CHANNEL_NAME,
+					LayerInputChannelName::VELOCITY_SURFACE_LAYERS,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL,
 					surfaces_input_channel_types));
 	
@@ -94,18 +87,17 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_input_channel_types() con
 }
 
 
-QString
+GPlatesAppLogic::LayerInputChannelName::Type
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_main_input_feature_collection_channel() const
 {
-	// The main input feature collection channel is not used because we only accept
-	// input from other layers - so this string should never be seen by users.
-	return QString("Unused Input File Channel");
+	// The main input feature collection channel is not used because we only accept input from other layers.
+	return LayerInputChannelName::UNUSED;
 }
 
 
 void
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::add_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// This layer type does not connect to any input files so nothing to do.
@@ -114,7 +106,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::add_input_file_connection(
 
 void
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::remove_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// This layer type does not connect to any input files so nothing to do.
@@ -123,7 +115,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::remove_input_file_connection(
 
 void
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::modified_input_file(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// This layer type does not connect to any input files so nothing to do.
@@ -132,10 +124,10 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::modified_input_file(
 
 void
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::add_input_layer_proxy_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == VELOCITY_DOMAIN_LAYERS_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::VELOCITY_DOMAIN_LAYERS)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct.
@@ -148,7 +140,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::add_input_layer_proxy_connect
 					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
 		}
 	}
-	else if (input_channel_name == VELOCITY_SURFACE_LAYERS_CHANNEL_NAME)
+	else if (input_channel_name == LayerInputChannelName::VELOCITY_SURFACE_LAYERS)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,
@@ -184,10 +176,10 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::add_input_layer_proxy_connect
 
 void
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::remove_input_layer_proxy_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const LayerProxy::non_null_ptr_type &layer_proxy)
 {
-	if (input_channel_name == VELOCITY_DOMAIN_LAYERS_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::VELOCITY_DOMAIN_LAYERS)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct.
@@ -200,7 +192,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::remove_input_layer_proxy_conn
 					GPlatesUtils::get_non_null_pointer(reconstruct_layer_proxy.get()));
 		}
 	}
-	else if (input_channel_name == VELOCITY_SURFACE_LAYERS_CHANNEL_NAME)
+	else if (input_channel_name == LayerInputChannelName::VELOCITY_SURFACE_LAYERS)
 	{
 		// The input layer proxy is one of the following layer proxy types:
 		// - reconstruct,

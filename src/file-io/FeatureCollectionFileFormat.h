@@ -43,10 +43,13 @@ namespace GPlatesFileIO
 			PLATES4_ROTATION,  //!< '.rot' extension.
 			SHAPEFILE,         //!< '.shp' extension.
 			OGRGMT,			   //!< '.gmt' extension.
+			GEOJSON,           //!< '.geojson' or '.json' extension.
+			KML,               //!< '.kml' extension.
 			WRITE_ONLY_XY_GMT, //!< '.xy' extension.
 			GMAP,              //!< '.vgp' extension.
 			GSML,              //!< '.gsml' extension.
 
+			// NOTE: This must be last and must be the actual number of formats (ie, no gaps in enum values).
 			NUM_FORMATS
 		};
 	}

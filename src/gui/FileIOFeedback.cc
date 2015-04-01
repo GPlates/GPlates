@@ -32,6 +32,7 @@
 #include <QMessageBox>
 #include <QString>
 #include <QTextStream>
+#include <QtGlobal>
 
 #include "FileIOFeedback.h"
 
@@ -41,7 +42,6 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
-#include "app-logic/SessionManagement.h"
 
 #include "file-io/FileInfo.h"
 #include "file-io/FeatureCollectionFileFormat.h"
@@ -66,7 +66,16 @@
 #include "model/Gpgim.h"
 #include "model/GpgimVersion.h"
 
+#include "presentation/Session.h"
+#include "presentation/SessionManagement.h"
+#include "presentation/TranscribeSession.h"
+#include "presentation/ViewState.h"
+
+#include "qt-widgets/FilesNotLoadedWarningDialog.h"
 #include "qt-widgets/GpgimVersionWarningDialog.h"
+
+#include "scribe/ScribeExceptions.h"
+
 #include "qt-widgets/FileDialogFilter.h"
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
 #include "qt-widgets/ViewportWindow.h"
@@ -74,6 +83,7 @@
 namespace
 {
 	using GPlatesQtWidgets::FileDialogFilter;
+
 
 	void
 	add_filename_extensions_to_file_dialog_filter(
@@ -83,7 +93,7 @@ namespace
 	{
 		// Add the filename extensions for the specified file format.
 		const std::vector<QString> &filename_extensions =
-				file_format_registry.get_all_filename_extensions(file_format);
+				file_format_registry.get_all_filename_extensions_for_format(file_format);
 		BOOST_FOREACH(const QString& filename_extension, filename_extensions)
 		{
 			filter.add_extension(filename_extension);
@@ -114,7 +124,7 @@ namespace
 	 * Builds a list of input filters for opening all types of feature collections.
 	 */
 	GPlatesQtWidgets::OpenFileDialog::filter_list_type
-	get_input_filters(
+	get_load_file_filters(
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
 	{
 		GPlatesQtWidgets::OpenFileDialog::filter_list_type filters;
@@ -161,7 +171,7 @@ namespace
 	 * to be saved. The result can be fed into the Save As or Save a Copy dialogs.
 	 */
 	GPlatesQtWidgets::SaveFileDialog::filter_list_type
-	get_output_filters_for_file(
+	get_save_file_filters_for_file(
 			GPlatesAppLogic::FeatureCollectionFileState::file_reference file_ref,
 			const GPlatesAppLogic::ReconstructMethodRegistry &reconstruct_method_registry,
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry)
@@ -194,6 +204,30 @@ namespace
 		}
 
 		// Also add an 'all files' filter.
+		filters.push_back(create_all_filter());
+
+		return filters;
+	}
+
+
+	/**
+	 * Builds a list of filters for loading/saving project files.
+	 */
+	GPlatesQtWidgets::OpenFileDialog::filter_list_type
+	get_load_save_project_filters()
+	{
+		GPlatesQtWidgets::OpenFileDialog::filter_list_type filters;
+
+		// Add the project files filter with extension "gproj".
+		filters.push_back(
+				FileDialogFilter(
+						QObject::tr("Project files"),
+						GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION));
+
+		// Also add an 'all files' filter.
+		//
+		// NOTE: If this isn't done then '.gproj' is not added on MacOS !
+		// Seems fine either way on Windows and Linux though.
 		filters.push_back(create_all_filter());
 
 		return filters;
@@ -364,8 +398,114 @@ namespace
 		// Exec the dialog - it's just an informational dialog so we're not interested in the return code.
 		gpgim_version_warning_dialog->exec();
 	}
+
+
+	/**
+	 * Shows the unsaved changes message box, if necessary, to inform the user they need to first
+	 * either save or discard any unsaved changes before they can open a recent session or project.
+	 *
+	 * Returns true if there are unsaved changes.
+	 */
+	bool
+	show_open_session_unsaved_changes_message_box_if_necessary(
+			QWidget *parent_widget,
+			GPlatesGui::UnsavedChangesTracker &unsaved_changes_tracker)
+	{
+		if (!unsaved_changes_tracker.has_unsaved_changes())
+		{
+			return false;
+		}
+
+		QMessageBox::information(
+			// Pop-up dialogs need a parent so that they don't just blindly appear in the centre of the screen...
+			parent_widget,
+			parent_widget->tr("Unsaved Changes"),
+			parent_widget->tr("You have unsaved changes.\n" "Please save them or clear the session."));
+
+		return true;
+	}
+
+
+	/**
+	 * Shows the unsaved changes message box, if necessary, to inform the user they need to
+	 * first either save or discard any unsaved changes before they can save the current session
+	 * as a project file.
+	 *
+	 * Returns true if there are unsaved changes.
+	 */
+	bool
+	show_save_project_unsaved_changes_message_box_if_necessary(
+			QWidget *parent_widget,
+			GPlatesGui::UnsavedChangesTracker &unsaved_changes_tracker)
+	{
+		if (!unsaved_changes_tracker.has_unsaved_changes())
+		{
+			return false;
+		}
+
+		QMessageBox::information(
+			// Pop-up dialogs need a parent so that they don't just blindly appear in the centre of the screen...
+			parent_widget,
+			parent_widget->tr("Unsaved Changes"),
+			parent_widget->tr("Before a project can be saved, there must be no unsaved changes."));
+
+		return true;
+	}
+
+
+	/**
+	 * Helps convert SessionManagement::load_previous_session() to signature required by
+	 * 'try_catch_file_or_session_load_with_feedback()' by making return parameter an argument.
+	 */
+	void
+	load_previous_session(
+			GPlatesPresentation::SessionManagement &sm,
+			int session_slot_to_load,
+			QStringList &files_not_loaded)
+	{
+		files_not_loaded = sm.load_previous_session(session_slot_to_load);
+	}
+
+
+	/**
+	 * Helps convert SessionManagement::load_project_session() to signature required by
+	 * 'try_catch_file_or_session_load_with_feedback()' by making return parameter an argument.
+	 */
+	void
+	load_project_session(
+			GPlatesPresentation::SessionManagement &sm,
+			const QString &project_filename,
+			QStringList &files_not_loaded)
+	{
+		files_not_loaded = sm.load_project_session(project_filename);
+	}
+
+
+	/**
+	 * Shows the files-not-loaded warning dialog, if necessary.
+	 *
+	 * This can happen when some files are not loaded during session/project restore.
+	 */
+	void
+	show_files_not_loaded_dialog_if_necessary(
+			QStringList files_not_loaded,
+			GPlatesQtWidgets::FilesNotLoadedWarningDialog *files_not_loaded_warning_dialog)
+	{
+		// Only show warning if there were files not loaded.
+		if (files_not_loaded.isEmpty())
+		{
+			return;
+		}
+
+		files_not_loaded_warning_dialog->set_filename_list(files_not_loaded);
+
+		// Exec the dialog - it's just an informational dialog so we're not interested in the return code.
+		files_not_loaded_warning_dialog->exec();
+	}
 }
 
+
+const QString GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION("gproj");
 
 
 GPlatesGui::FileIOFeedback::FileIOFeedback(
@@ -376,9 +516,11 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 		QObject *parent_):
 	QObject(parent_),
 	d_app_state_ptr(&app_state_),
+	d_view_state_ptr(&view_state_),
 	d_viewport_window_ptr(&viewport_window_),
 	d_file_state_ptr(&app_state_.get_feature_collection_file_state()),
 	d_feature_collection_file_io_ptr(&app_state_.get_feature_collection_file_io()),
+	d_file_format_registry_ptr(&app_state_.get_feature_collection_file_format_registry()),
 	d_feature_focus(feature_focus_),
 	d_save_file_as_dialog(
 			d_viewport_window_ptr,
@@ -390,11 +532,24 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 			tr("Save a copy of the file with a different name"),
 			GPlatesQtWidgets::SaveFileDialog::filter_list_type(),
 			view_state_),
+	d_save_project_dialog(
+			d_viewport_window_ptr,
+			tr("Save Project"),
+			get_load_save_project_filters(),
+			view_state_),
 	d_open_files_dialog(
 			d_viewport_window_ptr,
 			tr("Open Files"),
-			get_input_filters(app_state_.get_feature_collection_file_format_registry()),
+			get_load_file_filters(app_state_.get_feature_collection_file_format_registry()),
 			view_state_),
+	d_open_project_dialog(
+			d_viewport_window_ptr,
+			tr("Open Project"),
+			get_load_save_project_filters(),
+			view_state_),
+	d_files_not_loaded_warning_dialog_ptr(
+			new GPlatesQtWidgets::FilesNotLoadedWarningDialog(
+					d_viewport_window_ptr)),
 	d_gpgim_version_warning_dialog_ptr(
 			new GPlatesQtWidgets::GpgimVersionWarningDialog(
 					// We no longer show the dialog when *loading* files since it's too annoying.
@@ -404,7 +559,6 @@ GPlatesGui::FileIOFeedback::FileIOFeedback(
 {
 	setObjectName("FileIOFeedback");
 }
-
 
 
 void
@@ -443,58 +597,111 @@ GPlatesGui::FileIOFeedback::open_files(
 
 
 void
-GPlatesGui::FileIOFeedback::open_urls(
-		const QList<QUrl> &urls)
+GPlatesGui::FileIOFeedback::open_previous_session(
+		int session_slot_to_load)
 {
-	if (urls.isEmpty())
+	// If there are unsaved changes then the user must deal with them first before they can
+	// open a previous session (which effectively discards the current session).
+	if (show_open_session_unsaved_changes_message_box_if_necessary(
+		&viewport_window(),
+		unsaved_changes_tracker()))
 	{
 		return;
 	}
+	GPlatesPresentation::SessionManagement &sm = view_state().get_session_management();
+	
+	// Unload all empty-filename feature collections, triggering the removal of their layer info,
+	// so that the Session we record as being the user's previous session is self-consistent.
+	sm.unload_all_unnamed_files();
 
+	// Collect the files loaded over the current scope.
+	//
+	// TODO: Once the Scribe session save/restore functionality is merged we won't be able
+	// to rely on file added signals so we'll then need to query all loaded files (since the
+	// session restore replaces all loaded files).
+	CollectLoadedFilesScope collect_loaded_files_scope(d_file_state_ptr);
+
+	QStringList files_not_loaded;
+
+	// Load the new session.
 	try_catch_file_or_session_load_with_feedback(
 			boost::bind(
-					&GPlatesAppLogic::FeatureCollectionFileIO::load_urls,
-					d_feature_collection_file_io_ptr,
-					urls));
+					&load_previous_session,
+					boost::ref(sm),
+					session_slot_to_load,
+					boost::ref(files_not_loaded)));
+
+	// If there were any files not loaded then notify user.
+	show_files_not_loaded_dialog_if_necessary(
+			files_not_loaded,
+			d_files_not_loaded_warning_dialog_ptr);
+
+	// Warn the user if they have loaded files with different GPGIM versions than the files
+	// were originally created with. The user might then decide not to modify files since they
+	// could then only be saved using the current GPGIM version potentially causing problems for
+	// other (older) versions of GPlates.
+	show_open_files_gpgim_version_dialog_if_necessary(
+			collect_loaded_files_scope.get_loaded_files(),
+			d_gpgim_version_warning_dialog_ptr);
 }
 
 
 void
-GPlatesGui::FileIOFeedback::open_previous_session(
-		int session_slot_to_load)
+GPlatesGui::FileIOFeedback::open_project()
 {
-	// If loading a new session would scrap some existing changes, warn the user about it first.
-	// This is much the same situation as quitting GPlates without having saved.
-	bool load_ok = unsaved_changes_tracker().replace_session_event_hook();
-	if (load_ok) {
-		GPlatesAppLogic::SessionManagement &sm = app_state().get_session_management();
-		
-		// Unload all empty-filename feature collections, triggering the removal of their layer info,
-		// so that the Session we record as being the user's previous session is self-consistent.
-		sm.unload_all_unnamed_files();
-		
-		// Collect the files loaded over the current scope.
-		//
-		// TODO: Once the Scribe session save/restore functionality is merged we won't be able
-		// to rely on file added signals so we'll then need to query all loaded files (since the
-		// session restore replaces all loaded files).
-		CollectLoadedFilesScope collect_loaded_files_scope(d_file_state_ptr);
-
-		// Load the new session.
-		try_catch_file_or_session_load_with_feedback(
-				boost::bind(
-						&GPlatesAppLogic::SessionManagement::load_previous_session,
-						&sm,
-						session_slot_to_load));
-
-		// Warn the user if they have loaded files with different GPGIM versions than the files
-		// were originally created with. The user might then decide not to modify files since they
-		// could then only be saved using the current GPGIM version potentially causing problems for
-		// other (older) versions of GPlates.
-		show_open_files_gpgim_version_dialog_if_necessary(
-				collect_loaded_files_scope.get_loaded_files(),
-				d_gpgim_version_warning_dialog_ptr);
+	// If there are unsaved changes then the user must deal with them first before they can
+	// open a project (which effectively discards the current session).
+	if (show_open_session_unsaved_changes_message_box_if_necessary(
+		&viewport_window(),
+		unsaved_changes_tracker()))
+	{
+		return;
 	}
+
+	const QString project_filename = d_open_project_dialog.get_open_file_name();
+	if (project_filename.isEmpty())
+	{
+		return;
+	}
+
+	open_project(project_filename);
+}
+
+
+void
+GPlatesGui::FileIOFeedback::open_project(
+		const QString &project_filename)
+{
+	// If there are unsaved changes then the user must deal with them first before they can
+	// open a project (which effectively discards the current session).
+	if (show_open_session_unsaved_changes_message_box_if_necessary(
+		&viewport_window(),
+		unsaved_changes_tracker()))
+	{
+		return;
+	}
+
+	GPlatesPresentation::SessionManagement &sm = view_state().get_session_management();
+	
+	// Unload all empty-filename feature collections, triggering the removal of their layer info,
+	// so that the Session we record as being the user's previous session is self-consistent.
+	sm.unload_all_unnamed_files();
+
+	QStringList files_not_loaded;
+
+	// Load the new session from the project file.
+	try_catch_file_or_session_load_with_feedback(
+			boost::bind(
+					&load_project_session,
+					boost::ref(sm),
+					project_filename,
+					boost::ref(files_not_loaded)),
+			GPlatesFileIO::FileInfo(project_filename).get_display_name(false/*use_absolute_path_name*/));
+
+	// If there were any files not loaded then notify user.
+	show_files_not_loaded_dialog_if_necessary(
+			files_not_loaded,
+			d_files_not_loaded_warning_dialog_ptr);
 }
 
 
@@ -602,7 +809,7 @@ GPlatesGui::FileIOFeedback::save_file_as(
 {
 	// Configure and open the Save As dialog.
 	d_save_file_as_dialog.set_filters(
-			get_output_filters_for_file(
+			get_save_file_filters_for_file(
 				file,
 				d_app_state_ptr->get_reconstruct_method_registry(),
 				d_app_state_ptr->get_feature_collection_file_format_registry()));
@@ -661,7 +868,7 @@ GPlatesGui::FileIOFeedback::save_file_copy(
 {
 	// Configure and pop up the Save a Copy dialog.
 	d_save_file_copy_dialog.set_filters(
-			get_output_filters_for_file(
+			get_save_file_filters_for_file(
 				file,
 				d_app_state_ptr->get_reconstruct_method_registry(),
 				d_app_state_ptr->get_feature_collection_file_format_registry()));
@@ -940,28 +1147,211 @@ GPlatesGui::FileIOFeedback::save_all(
 }
 
 
-bool
+boost::optional<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
 GPlatesGui::FileIOFeedback::create_file(
 		const GPlatesFileIO::File::non_null_ptr_type &file)
 {
 	const bool saved = save_file(file->get_reference());
 
+	if (!saved)
+	{
+		return boost::none;
+	}
+
 	// Add the new file to the feature collection file state.
 	// We don't save it because we've already saved it above.
 	// The reason we save above is to pop up an error dialog if saving fails -
 	// this won't happen if we save directly through 'FeatureCollectionFileIO'.
-	if (saved)
+	return d_feature_collection_file_io_ptr->create_file(file, false/*save*/);
+}
+
+
+QStringList
+GPlatesGui::FileIOFeedback::extract_project_filenames_from_file_urls(
+		const QList<QUrl> &urls)
+{
+	std::vector<QString> filename_extensions;
+	d_file_format_registry_ptr->get_all_filename_extensions(filename_extensions);
+
+	QStringList project_filenames;
+
+	// Add those URLs that are files with registered filename extensions.
+	Q_FOREACH(const QUrl &url, urls)
 	{
-		d_feature_collection_file_io_ptr->create_file(file, false/*save*/);
+		if (url.scheme() == "file")
+		{
+			const QString filename = url.toLocalFile();
+
+			// Add the file if it has the project file extension.
+			if (filename.endsWith(PROJECT_FILENAME_EXTENSION, Qt::CaseInsensitive))
+			{
+				project_filenames.push_back(filename);
+			}
+		}
 	}
 
-	return saved;
+	return project_filenames;
+}
+
+
+QStringList
+GPlatesGui::FileIOFeedback::extract_feature_collection_filenames_from_file_urls(
+		const QList<QUrl> &urls)
+{
+	std::vector<QString> filename_extensions;
+	d_file_format_registry_ptr->get_all_filename_extensions(filename_extensions);
+
+	QStringList feature_collection_filenames;
+
+	// Add those URLs that are files with registered filename extensions.
+	Q_FOREACH(const QUrl &url, urls)
+	{
+		if (url.scheme() == "file")
+		{
+			const QString filename = url.toLocalFile();
+
+			// Add the file if it has one of the registered extensions.
+			for (unsigned int n = 0; n < filename_extensions.size(); ++n)
+			{
+				if (filename.endsWith(filename_extensions[n], Qt::CaseInsensitive))
+				{
+					feature_collection_filenames.push_back(filename);
+					break;
+				}
+			}
+		}
+	}
+
+	return feature_collection_filenames;
+}
+
+
+bool
+GPlatesGui::FileIOFeedback::clear_session()
+{
+	// Check for unsaved changes and potentially give the user a chance to discard the changes
+	// before clearing the session or abort the session clear altogether.
+	if (!unsaved_changes_tracker().clear_session_event_hook())
+	{
+		// User is Not OK with clearing the session at this point.
+		return false;
+	}
+
+	// Pop-up error dialogs need a parent so that they don't just blindly appear in the centre of
+	// the screen.
+	QWidget *parent_widget = &(viewport_window());
+
+	try
+	{
+		view_state().get_session_management().clear_session();
+	}
+	catch (GPlatesGlobal::Exception &exc)
+	{
+		QString message;
+		QTextStream(&message)
+				<< tr("Error: GPlates was unable to clear the session: \n")
+				<< exc;
+
+		QMessageBox::critical(parent_widget, tr("Error Clearing Session"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+
+		qWarning() << message; // Also log the detailed error message.
+		return false;
+	}
+
+	return true;
+}
+
+
+bool
+GPlatesGui::FileIOFeedback::save_project()
+{
+	// If there are unsaved changes then the user must deal with them first before they can save a project.
+	if (show_save_project_unsaved_changes_message_box_if_necessary(
+		&viewport_window(),
+		unsaved_changes_tracker()))
+	{
+		return false;
+	}
+
+	boost::optional<QString> project_filename = d_save_project_dialog.get_file_name();
+	if (!project_filename)
+	{
+		// User cancelled save.
+		return false;
+	}
+
+	return save_project(project_filename.get());
+}
+
+
+bool
+GPlatesGui::FileIOFeedback::save_project(
+		const QString &project_filename)
+{
+	// Pop-up error dialogs need a parent so that they don't just blindly appear in the centre of
+	// the screen.
+	QWidget *parent_widget = &(viewport_window());
+
+	// If there are unsaved changes then the user must deal with them first before they can save a project.
+	if (show_save_project_unsaved_changes_message_box_if_necessary(
+		parent_widget,
+		unsaved_changes_tracker()))
+	{
+		return false;
+	}
+
+	try
+	{
+		view_state().get_session_management().save_session_to_project(project_filename);
+	}
+	catch (GPlatesFileIO::ErrorOpeningFileForWritingException &exc)
+	{
+		QString message;
+		QTextStream(&message)
+				<< tr("An error occurred while saving the project file '%1': \n").arg(project_filename)
+				<< exc;
+
+		QMessageBox::critical(parent_widget, tr("Error Saving Project"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+
+		qWarning() << message; // Also log the detailed error message.
+		return false;
+	}
+	catch (GPlatesScribe::Exceptions::BaseException &exc)
+	{
+		QString message;
+		QTextStream(&message)
+				<< tr("An error occurred while saving the project file '%1': \n").arg(project_filename)
+				<< exc;
+
+		QMessageBox::critical(parent_widget, tr("Error Saving Project"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+
+		qWarning() << message; // Also log the detailed error message.
+		return false;
+	}
+	catch (GPlatesGlobal::Exception &exc)
+	{
+		QString message;
+		QTextStream message_stream(&message);
+		message_stream << tr("Error: Unexpected error saving project '%1': \n").arg(project_filename);
+		message_stream << exc;
+
+		QMessageBox::critical(parent_widget, tr("Error Saving Project"), message,
+				QMessageBox::Ok, QMessageBox::Ok);
+
+		qWarning() << message; // Also log the detailed error message.
+		return false;
+	}
+
+	return true;
 }
 
 
 void
 GPlatesGui::FileIOFeedback::try_catch_file_or_session_load_with_feedback(
-		boost::function<void ()> file_load_func,
+		boost::function<void ()> file_or_session_load_func,
 		boost::optional<QString> filename)
 {
 	// Pop-up error dialogs need a parent so that they don't just blindly appear in the centre of
@@ -971,7 +1361,7 @@ GPlatesGui::FileIOFeedback::try_catch_file_or_session_load_with_feedback(
 	// FIXME: Try to ensure the filename is in these error dialogs.
 	try
 	{
-		file_load_func();
+		file_or_session_load_func();
 	}
 	catch (GPlatesFileIO::ErrorOpeningPipeFromGzipException &exc)
 	{
@@ -1029,6 +1419,57 @@ GPlatesGui::FileIOFeedback::try_catch_file_or_session_load_with_feedback(
 		// but that's the easiest way of getting out of the file-load procedure at the moment.
 		qWarning() << message; // Log the detailed error message.
 	}
+
+	catch (GPlatesPresentation::TranscribeSession::UnsupportedVersion &exc)
+	{
+		QString title;
+		QString message;
+		QTextStream message_stream(&message);
+		if (filename)
+		{
+			title = tr("Error Loading Project");
+			message_stream << tr("Error: GPlates was unable to load the project file '%1': \n").arg(filename.get());
+		}
+		else
+		{
+			title = tr("Error Loading Session");
+			message_stream << tr("Error: GPlates was unable to load the session: \n");
+		}
+		message_stream
+			<< tr("Attempted to load a ")
+			<< (filename ? tr("project") : tr("session"))
+			<< tr(" created from a version of GPlates that is either too old or too new.");
+
+		QMessageBox::critical(parent_widget, title, message, QMessageBox::Ok, QMessageBox::Ok);
+
+		// Note: Add the exception message to the log only (not the message box).
+		// The exception message also prints out a transcribe-incompatible call stack trace at the
+		// point of transcribe incompatibility, if there was an incompatibility.
+		message_stream << exc;
+
+		qWarning() << message; // Also log the detailed error message.
+	}
+	catch (GPlatesScribe::Exceptions::BaseException &exc)
+	{
+		QString title;
+		QString message;
+		QTextStream message_stream(&message);
+		if (filename)
+		{
+			title = tr("Error Loading Project");
+			message_stream << tr("Error: GPlates was unable to load the project file '%1': \n").arg(filename.get());
+		}
+		else
+		{
+			title = tr("Error Loading Session");
+			message_stream << tr("Error: GPlates was unable to load the session: \n");
+		}
+		message_stream << exc;
+
+		QMessageBox::critical(parent_widget, title, message, QMessageBox::Ok, QMessageBox::Ok);
+
+		qWarning() << message; // Also log the detailed error message.
+	}
 	catch (GPlatesGlobal::Exception &exc)
 	{
 		QString message;
@@ -1050,11 +1491,17 @@ GPlatesGui::FileIOFeedback::try_catch_file_or_session_load_with_feedback(
 }
 
 
-
 GPlatesAppLogic::ApplicationState &
 GPlatesGui::FileIOFeedback::app_state()
 {
 	return *d_app_state_ptr;
+}
+
+
+GPlatesPresentation::ViewState &
+GPlatesGui::FileIOFeedback::view_state()
+{
+	return *d_view_state_ptr;
 }
 
 

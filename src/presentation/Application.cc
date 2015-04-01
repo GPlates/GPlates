@@ -31,12 +31,18 @@
 
 #include "Application.h"
 
+#include "app-logic/FeatureCollectionFileState.h"
+
 #include "file-io/OgrReader.h"
 
 #include "gui/AnimationController.h"
 #include "gui/CommandServer.h"
 #include "gui/Dialogs.h"
 #include "gui/FeatureFocus.h"
+
+#include "model/FeatureCollectionHandle.h"
+
+#include "presentation/SessionManagement.h"
 
 #include "qt-widgets/CreateFeatureDialog.h"
 #include "qt-widgets/DigitisationWidget.h"
@@ -46,6 +52,7 @@
 #include "qt-widgets/ShapefilePropertyMapper.h"
 #include "qt-widgets/SpecifyAnchoredPlateIdDialog.h"
 #include "qt-widgets/TaskPanel.h"
+
 
 GPlatesPresentation::Application::Application() :
 	d_view_state(d_application_state),
@@ -108,6 +115,10 @@ GPlatesPresentation::Application::initialise()
 	// Initialise the default range of the animation slider based on UserPreferences.
 	// FIXME: For some reason this comes *after* reconstructing - not sure if that should be the case.
 	d_view_state.get_animation_controller().init_default_time_range();
+
+	// Now that the application has started up we can initialise the session management.
+	// This should be done after ViewportWindow, ViewState and ApplicationState have initialised.
+	d_view_state.get_session_management().initialise();
 }
 
 

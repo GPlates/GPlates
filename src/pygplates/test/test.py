@@ -19,7 +19,7 @@ import unittest
 #PYGPLATES_PATH = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'python-api-2013-jul-25-build', 'bin')
 
 # An example path used for Windows CMake builds...
-PYGPLATES_PATH = "C:\\Users\\John\\Subversion\\GPlates\\build\\python-api-2013-jul-25-merge\\bin\\release"
+PYGPLATES_PATH = "C:\\Users\\John\\Subversion\\GPlates\\build\\python-api-2013-jul-25-update\\bin\\profilegplates"
 
 sys.path.insert(1, PYGPLATES_PATH)
 import pygplates

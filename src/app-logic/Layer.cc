@@ -34,6 +34,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+
 GPlatesAppLogic::Layer::Layer(
 		const boost::weak_ptr<ReconstructGraphImpl::Layer> &layer_impl) :
 	d_impl(layer_impl)
@@ -103,7 +104,7 @@ GPlatesAppLogic::Layer::get_input_channel_types() const
 }
 
 
-QString
+GPlatesAppLogic::LayerInputChannelName::Type
 GPlatesAppLogic::Layer::get_main_input_feature_collection_channel() const
 {
 	// Throw our own exception to track location of throw.
@@ -133,7 +134,7 @@ GPlatesAppLogic::Layer::set_layer_task(
 GPlatesAppLogic::Layer::InputConnection
 GPlatesAppLogic::Layer::connect_input_to_file(
 		const InputFile &input_file,
-		const QString &input_data_channel)
+		LayerInputChannelName::Type input_data_channel)
 {
 	// Throw our own exception to track location of throw.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -165,7 +166,7 @@ GPlatesAppLogic::Layer::connect_input_to_file(
 GPlatesAppLogic::Layer::InputConnection
 GPlatesAppLogic::Layer::connect_input_to_layer_output(
 		const Layer &layer_outputting_data,
-		const QString &input_data_channel)
+		LayerInputChannelName::Type input_data_channel)
 {
 	// Throw our own exception to track location of throw.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -212,7 +213,7 @@ GPlatesAppLogic::Layer::connect_input_to_layer_output(
 void
 GPlatesAppLogic::Layer::disconnect_input_from_file(
 		const InputFile &input_file,
-		const QString &input_data_channel)
+		LayerInputChannelName::Type input_data_channel)
 {
 	// Get the channel input connections.
 	std::vector<InputConnection> channel_inputs = get_channel_inputs(input_data_channel);
@@ -233,7 +234,7 @@ GPlatesAppLogic::Layer::disconnect_input_from_file(
 void
 GPlatesAppLogic::Layer::disconnect_input_from_layer_output(
 		const Layer &layer_outputting_data,
-		const QString &input_data_channel)
+		LayerInputChannelName::Type input_data_channel)
 {
 	// Get the channel input connections.
 	std::vector<InputConnection> channel_inputs = get_channel_inputs(input_data_channel);
@@ -253,7 +254,7 @@ GPlatesAppLogic::Layer::disconnect_input_from_layer_output(
 
 void
 GPlatesAppLogic::Layer::disconnect_channel_inputs(
-		const QString &input_data_channel)
+		LayerInputChannelName::Type input_data_channel)
 {
 	// Get the channel input connections.
 	std::vector<InputConnection> channel_inputs = get_channel_inputs(input_data_channel);
@@ -268,7 +269,7 @@ GPlatesAppLogic::Layer::disconnect_channel_inputs(
 
 std::vector<GPlatesAppLogic::Layer::InputConnection>
 GPlatesAppLogic::Layer::get_channel_inputs(
-		const QString &input_data_channel) const
+		LayerInputChannelName::Type input_data_channel) const
 {
 	// Throw our own exception to track location of throw.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -444,7 +445,7 @@ GPlatesAppLogic::Layer::InputFile::get_file() const
 }
 
 
-const QString &
+GPlatesAppLogic::LayerInputChannelName::Type
 GPlatesAppLogic::Layer::InputConnection::get_input_channel_name() const
 {
 	// Throw our own exception to track location of throw.

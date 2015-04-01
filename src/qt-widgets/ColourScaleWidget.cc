@@ -24,6 +24,7 @@
  */
 
 #include <cmath>
+#include <utility>
 #include <boost/optional.hpp>
 #include <boost/numeric/conversion/converter.hpp>
 #include <boost/foreach.hpp>
@@ -404,14 +405,23 @@ namespace
 			do_visit(
 					ColourPaletteType &colour_palette)
 			{
-				d_successful = true;
-				d_minimum_value = get_double_value(colour_palette.get_lower_bound());
-				d_maximum_value = get_double_value(colour_palette.get_upper_bound());
-				typename ColourPaletteType::non_null_ptr_type colour_palette_ptr(&colour_palette);
 				typedef typename ColourPaletteType::key_type key_type;
 				typedef typename ::ColourPaletteConverter<key_type>::type converter_type;
+
+				boost::optional< std::pair<key_type, key_type> > range = colour_palette.get_range();
+				if (!range)
+				{
+					return;
+				}
+
+				d_minimum_value = get_double_value(range->first);
+				d_maximum_value = get_double_value(range->second);
+
+				typename ColourPaletteType::non_null_ptr_type colour_palette_ptr(&colour_palette);
 				d_adapted_colour_palette = GPlatesGui::convert_colour_palette<
 						key_type, double, converter_type>(colour_palette_ptr, converter_type());
+
+				d_successful = true;
 			}
 
 			bool d_successful;

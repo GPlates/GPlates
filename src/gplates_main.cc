@@ -26,14 +26,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <string>
 #include <utility>
-#include <algorithm>
 #include <vector>
+#include <boost/optional.hpp>
 #include <QDebug>
 #include <QDir>
+#include <QFileInfo>
 #include <QStringList>
 #include <QTextStream>
 
@@ -51,6 +53,7 @@
 #include "global/SubversionInfo.h"
 
 #include "gui/DrawStyleManager.h"
+#include "gui/FileIOFeedback.h"
 #include "gui/GPlatesQApplication.h"
 #include "gui/PythonManager.h"
 
@@ -104,6 +107,7 @@ namespace
 #endif
 		}
 
+		boost::optional<QString> project_filename;
 		QStringList feature_collection_filenames;
 		bool debug_gui;
 		bool enable_python;
@@ -111,6 +115,14 @@ namespace
 		bool enable_data_mining;
 		bool enable_symbol_table;
 	};
+	
+	//! Option name associated with positional arguments (project files or feature collection files).
+	const char *POSITIONAL_FILENAMES_OPTION_NAME = "positional";
+	
+	//! Option name for loading a project file.
+	const char *PROJECT_FILENAME_OPTION_NAME = "project";
+	//! Option name for loading a project file with short version.
+	const char *PROJECT_FILENAME_OPTION_NAME_WITH_SHORT_OPTION = "project,p";
 	
 	//! Option name for loading feature collection file(s).
 	const char *FEATURE_COLLECTION_FILENAMES_OPTION_NAME = "file";
@@ -187,6 +199,10 @@ namespace
 				<< "---------------------------------------------------------"
 				<< std::endl
 				<< std::endl
+				<< "gplates [<options>] "
+					"[<project-filename> | <feature-collection-filename> [<feature-collection-filename> ...]]"
+				<< std::endl
+				<< std::endl
 				<< GPlatesUtils::CommandLineParser::get_visible_options(input_options)
 				<< std::endl;
 	}
@@ -249,9 +265,19 @@ namespace
 
 		// Add generic, visible options more specific to GPlates use.
 		input_options.generic_options.add_options()
+			(POSITIONAL_FILENAMES_OPTION_NAME,
+			boost::program_options::value< std::vector<std::string> >(),
+			"specify a single project file to load or one or more feature collections to load")
+			;
+		input_options.generic_options.add_options()
+			(PROJECT_FILENAME_OPTION_NAME_WITH_SHORT_OPTION,
+			boost::program_options::value<std::string>(),
+			"specify a single project file to load")
+			;
+		input_options.generic_options.add_options()
 			(FEATURE_COLLECTION_FILENAMES_OPTION_NAME_WITH_SHORT_OPTION,
 			boost::program_options::value< std::vector<std::string> >(),
-			"specify files to load (rotation/geometry/topology/etc)")
+			"specify feature collections to load (rotation/geometry/topology/etc)")
 			;
 
 		// Add simple help, version, etc.
@@ -261,10 +287,12 @@ namespace
 		// options go through here.
 		add_help_command_option(input_options);
 
-		// NOTE: There are no positional options since GPlates can now be used as a non-GUI
-		// command-line processor that accepts a (processor) command as the first positional argument.
+		// Filenames to load can be specified as positional arguments, or as '-f' / '--file' options
+		// for feature collections and '-p' / '--project' options for projects, or a combination.
 		//
-		//input_options.positional_options.add(FEATURE_COLLECTION_FILENAMES_OPTION_NAME, -1);
+		// NOTE: Each positional option must have an associated normal option.
+		// That's just how boost positional options work.
+		input_options.positional_options.add(POSITIONAL_FILENAMES_OPTION_NAME, -1);
 
 		// Add secret developer options.
 		input_options.hidden_options.add_options()
@@ -354,39 +382,125 @@ namespace
 		// Create our return structure.
 		GuiCommandLineOptions command_line_options;
 
-		if(vm.count(FEATURE_COLLECTION_FILENAMES_OPTION_NAME))
+		if (vm.count(POSITIONAL_FILENAMES_OPTION_NAME))
 		{
-			std::vector<std::string> files =
-					vm[FEATURE_COLLECTION_FILENAMES_OPTION_NAME].as<std::vector<std::string> >();
-			for (unsigned int i=0; i<files.size(); i++)
+			std::vector<std::string> filenames =
+					vm[POSITIONAL_FILENAMES_OPTION_NAME].as<std::vector<std::string> >();
+			for (unsigned int i=0; i<filenames.size(); i++)
 			{
-				command_line_options.feature_collection_filenames.push_back(files[i].c_str());
+				const QString filename = QString(filenames[i].c_str());
+
+				// If the filename does not belong to a project file then consider it a feature collection.
+				if (filename.endsWith(GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION, Qt::CaseInsensitive))
+				{
+					if (command_line_options.project_filename)
+					{
+						qWarning() << "More than one project file specified on command-line.";
+						exit(1);
+					}
+
+					if (!command_line_options.feature_collection_filenames.empty())
+					{
+						qWarning() << "Cannot specify a project file and feature collection files on command-line.";
+						exit(1);
+					}
+
+					command_line_options.project_filename = filename;
+				}
+				else
+				{
+					if (command_line_options.project_filename)
+					{
+						qWarning() << "Cannot specify a project file and feature collection files on command-line.";
+						exit(1);
+					}
+
+					command_line_options.feature_collection_filenames.push_back(filename);
+				}
 			}
 		}
-		if(vm.count(DEBUG_GUI_OPTION_NAME))
+
+		if (vm.count(FEATURE_COLLECTION_FILENAMES_OPTION_NAME))
+		{
+			if (command_line_options.project_filename)
+			{
+				qWarning() << "Cannot specify a project file and feature collection files on command-line.";
+				exit(1);
+			}
+
+			std::vector<std::string> feature_collection_filenames =
+					vm[FEATURE_COLLECTION_FILENAMES_OPTION_NAME].as<std::vector<std::string> >();
+			for (unsigned int i=0; i<feature_collection_filenames.size(); i++)
+			{
+				command_line_options.feature_collection_filenames.push_back(
+						feature_collection_filenames[i].c_str());
+			}
+		}
+
+		if (vm.count(PROJECT_FILENAME_OPTION_NAME))
+		{
+			const QString project_filename = vm[PROJECT_FILENAME_OPTION_NAME].as<std::string>().c_str();
+
+			if (!project_filename.endsWith(
+					GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION,
+					Qt::CaseInsensitive))
+			{
+#if defined(__APPLE__)
+				// Mac OS X sometimes (when invoking from Finder or 'open' command) adds the
+				// '-psn...' command-line argument to the applications argument list
+				// (for example '-psn_0_548998').
+				// Note that we end up ignoring the '-psn...' option.
+				// Also note that it doesn't actually appear in 'argv[]' for some reason.
+				if (!project_filename.startsWith("sn_", Qt::CaseInsensitive))
+#endif
+				{
+					qWarning()
+							<< "Specified project file does not have a '."
+							<< GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION
+							<< "' filename extension.";
+					exit(1);
+				}
+			}
+			else if (!command_line_options.feature_collection_filenames.empty())
+			{
+				qWarning() << "Cannot specify a project file and feature collection files on command-line.";
+				exit(1);
+			}
+			else if (command_line_options.project_filename)
+			{
+				qWarning() << "More than one project file specified on command-line.";
+				exit(1);
+			}
+			else
+			{
+				command_line_options.project_filename = project_filename;
+			}
+		}
+
+		if (vm.count(DEBUG_GUI_OPTION_NAME))
 		{
 			command_line_options.debug_gui = true;
 		}
 
-		if(vm.count(DATA_MINING_OPTION_NAME))
+		if (vm.count(DATA_MINING_OPTION_NAME))
 		{
 			command_line_options.enable_data_mining = true;
 		}
 
 		//enable symbol-table feature by command line option.
-		if(vm.count(SYMBOL_TABLE_OPTION_NAME))
+		if (vm.count(SYMBOL_TABLE_OPTION_NAME))
 		{
 			command_line_options.enable_symbol_table = true;
 		}
 
-		if(vm.count(ENABLE_EXTERNAL_SYNCING_OPTION_NAME))
+		if (vm.count(ENABLE_EXTERNAL_SYNCING_OPTION_NAME))
 		{
 			command_line_options.enable_external_syncing = true;
 		}
 
 		// Disable python if command line option specified.
 #if !defined(GPLATES_NO_PYTHON)
-		if(vm.count(NO_PYTHON_OPTION_NAME))
+		if (vm.count(NO_PYTHON_OPTION_NAME))
 		{
 			command_line_options.enable_python = false;
 		}
@@ -473,6 +587,7 @@ namespace
 		FIRST_ARG_IS_COMMAND,
 		FIRST_ARG_IS_UNRECOGNISED_COMMAND,
 		FIRST_ARG_IS_OPTION,
+		FIRST_ARG_IS_FILENAME,
 		FIRST_ARG_IS_NONEXISTENT
 	};
 
@@ -500,11 +615,20 @@ namespace
 		// See if the first command-line argument is a recognised command.
 		if (!command_dispatcher.is_recognised_command(first_arg))
 		{
-			// See if the first argument looks like an option.
-			if (!first_arg.empty() && first_arg[0] == '-')
+			if (!first_arg.empty())
 			{
-				// It looks like an option since it starts with the '-' character.
-				return FIRST_ARG_IS_OPTION;
+				// See if the first argument looks like an option.
+				if (first_arg[0] == '-')
+				{
+					// It looks like an option since it starts with the '-' character.
+					return FIRST_ARG_IS_OPTION;
+				}
+
+				// See if the first argument is the filename of an existing file.
+				if (QFileInfo(QString(first_arg.c_str())).exists())
+				{
+					return FIRST_ARG_IS_FILENAME;
+				}
 			}
 
 			// It doesn't look like an option so it's an unrecognised command.
@@ -546,6 +670,7 @@ namespace
 		{
 		case FIRST_ARG_IS_NONEXISTENT:
 		case FIRST_ARG_IS_OPTION:
+		case FIRST_ARG_IS_FILENAME:
 			// First command-line argument was not a recognised command and it didn't
 			// look like a command so parse the command-line to see if any
 			// GUI options (or simple options such as help and version) were specified.
@@ -554,12 +679,12 @@ namespace
 			return parse_gui_command_line_options(argc, argv);
 
 		case FIRST_ARG_IS_UNRECOGNISED_COMMAND:
-			// The first command-line argument was not a recognised command but it did
-			// look like a command (rather than an option).
+			// The first command-line argument was not a recognised command or existing filename
+			// but it did not look like an option.
 			qWarning()
 					<< "First command-line argument '"
 					<< command.c_str()
-					<< "' looks like a command but is not a recognised command.";
+					<< "' does not look like an existing filename, an option or a command.";
 			exit(1);
 			break; // ...in case compiler complains.
 
@@ -736,8 +861,16 @@ internal_main(int argc, char* argv[])
 		initialise_python(&application,argv);
 	}
 
-	// Also load any feature collection files specified on the command-line.
-	application.get_main_window().load_files(gui_command_line_options->feature_collection_filenames);
+	// Also load a project file or any feature collection files specified on the command-line.
+	if (gui_command_line_options->project_filename)
+	{
+		application.get_main_window().load_project(gui_command_line_options->project_filename.get());
+	}
+	else if (!gui_command_line_options->feature_collection_filenames.empty())
+	{
+		application.get_main_window().load_feature_collections(
+				gui_command_line_options->feature_collection_filenames);
+	}
 
 	// Install an extra menu for developers to help debug GUI problems.
 	if (gui_command_line_options->debug_gui)

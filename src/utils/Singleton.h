@@ -167,26 +167,27 @@ namespace GPlatesUtils
 #if defined( GPLATES_SINGLETON_THREADSAFE )
 			QMutexLocker locker;
 #endif
-			if (!s_instance_ptr)
+
+			if (!static_instance_ptr())
 			{
-				if (s_singleton_destroyed)
+				if (static_singleton_destroyed())
 				{
-					s_singleton_destroyed = false;
+					static_singleton_destroyed() = false;
 
 					// Singleton has already been destroyed so either throw an exception or
 					// allow a new singleton instance to be created (by doing nothing).
 					LifetimePolicy<T>::on_dead_reference();
 				}
 
-				s_instance_ptr = CreationPolicy<T>::create_instance();
+				static_instance_ptr() = CreationPolicy<T>::create_instance();
 
 				// Note that even though the singleton instance is scheduled for destruction
 				// (presumably at exit) it is still possible for derived singleton class 'T'
 				// to allow instantiation on the C runtime stack (see constructor for more details).
-				LifetimePolicy<T>::schedule_for_destruction(s_instance_ptr, &destroy);
+				LifetimePolicy<T>::schedule_for_destruction(static_instance_ptr(), &destroy);
 			}
 
-			return *s_instance_ptr;
+			return *static_instance_ptr();
 		}
 
 	protected:
@@ -195,11 +196,11 @@ namespace GPlatesUtils
 		void
 		destroy()
 		{
-			if (s_instance_ptr)
+			if (static_instance_ptr())
 			{
-				CreationPolicy<T>::destroy_instance(s_instance_ptr);
-				s_instance_ptr = NULL;
-				s_singleton_destroyed = true;
+				CreationPolicy<T>::destroy_instance(static_instance_ptr());
+				static_instance_ptr() = NULL;
+				static_singleton_destroyed() = true;
 			}
 		}
 
@@ -218,28 +219,71 @@ namespace GPlatesUtils
 		 */
 		Singleton()
 		{
-			// If this constructor is being called by @a instance then @a s_instance_ptr will be NULL.
+			// If this constructor is being called by @a instance then @a static_instance_ptr will be NULL.
 			// If this constructor is being called directly by the derived class 'T' constructor
 			// then make sure @a instance has not already been called.
 			// In the second case clients are allowed to create 'T' on the C runtime stack.
+			//
+			// Thread-safe access:
+			// (1) In the first case (called by @a instance) we don't need a thread-safe mutex
+			//     because we're already inside one (due to being called by @a instance).
+			// (2) In the second case (constructed on C runtime stack) we don't need a thread-safe mutex
+			//     because that use case means the client should ensure that threads do not attempt to
+			//     access the singleton until that one instance (on the C runtime stack) has been created.
+			//     For example, creating an instance and then spawning threads.
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					!s_instance_ptr && !s_singleton_destroyed,
+					!static_instance_ptr() && !static_singleton_destroyed(),
 					GPLATES_EXCEPTION_SOURCE);
 
-			s_instance_ptr = static_cast<T *>(this);
-			s_singleton_destroyed = false;
+			// Up-cast to the derived class type which is 'T'.
+			static_instance_ptr() = static_cast<T *>(this);
+			static_singleton_destroyed() = false;
 		}
 
 		~Singleton()
 		{
-			s_instance_ptr = NULL;
-			s_singleton_destroyed = true;
+			static_instance_ptr() = NULL;
+			static_singleton_destroyed() = true;
+
+			// Note that if 'this' was constructed on the C runtime stack then the destructor of
+			// the derived class 'T' will get called automatically.
 		}
 
 	private:
 
-		static T *s_instance_ptr;
-		static bool s_singleton_destroyed;
+		/**
+		 * The equivalent of having the following singleton data member...
+		 *
+		 *   static T *s_instance_ptr = NULL;
+		 *
+		 * ...but wrapped in a local function to avoid issues with "order of intialization of
+		 * non-local static objects defined in different translation units". In other words a
+		 * global variable calling our singleton before its static data members have been initialised.
+		 */
+		static
+		T *&
+		static_instance_ptr()
+		{
+			static T *s_instance_ptr = NULL;
+			return s_instance_ptr;
+		}
+
+		/**
+		 * The equivalent of having the following singleton data member...
+		 *
+		 *   static bool s_singleton_destroyed = false;
+		 *
+		 * ...but wrapped in a local function to avoid issues with "order of intialization of
+		 * non-local static objects defined in different translation units". In other words a
+		 * global variable calling our singleton before its static data members have been initialised.
+		 */
+		static
+		bool &
+		static_singleton_destroyed()
+		{
+			static bool s_singleton_destroyed = false;
+			return s_singleton_destroyed;
+		}
 
 	};
 }
@@ -293,26 +337,5 @@ namespace GPlatesUtils
 #define GPLATES_SINGLETON_PUBLIC_CONSTRUCTOR_DEF(T) \
 	public: \
 		T() { }
-
-
-//
-// Implementation
-//
-
-template <
-		typename T,
-		template <typename> class CreationPolicy,
-		template <typename> class LifetimePolicy,
-		class InstanceTag >
-T *
-GPlatesUtils::Singleton<T, CreationPolicy, LifetimePolicy, InstanceTag>::s_instance_ptr = NULL;
-
-template <
-		typename T,
-		template <typename> class CreationPolicy,
-		template <typename> class LifetimePolicy,
-		class InstanceTag >
-bool
-GPlatesUtils::Singleton<T, CreationPolicy, LifetimePolicy, InstanceTag>::s_singleton_destroyed = false;
 
 #endif  // GPLATES_UTILS_SINGLETON_H

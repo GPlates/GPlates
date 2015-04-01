@@ -226,7 +226,8 @@ GPlatesPresentation::VisualLayer::get_generated_name() const
 {
 	// Get the (feature collection) inputs on the main channel.
 	typedef GPlatesAppLogic::Layer::InputConnection InputConnection;
-	QString main_channel = d_layer.get_main_input_feature_collection_channel();
+	GPlatesAppLogic::LayerInputChannelName::Type main_channel =
+			d_layer.get_main_input_feature_collection_channel();
 	std::vector<InputConnection> inputs = d_layer.get_channel_inputs(main_channel);
 
 	// Use the first input that has an InputFile.

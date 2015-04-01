@@ -37,6 +37,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+
 GPlatesAppLogic::ReconstructGraphImpl::Data::Data(
 		const FeatureCollectionFileState::file_reference &file) :
 	d_data(file)
@@ -171,7 +172,7 @@ GPlatesAppLogic::ReconstructGraphImpl::Data::remove_output_connection(
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::LayerInputConnection(
 		const boost::shared_ptr<Data> &input_data,
 		const boost::weak_ptr<Layer> &layer_receiving_input,
-		const QString &layer_input_channel_name,
+		LayerInputChannelName::Type layer_input_channel_name,
 		bool is_input_layer_active) :
 	d_input_data(input_data),
 	d_layer_receiving_input(layer_receiving_input),
@@ -394,7 +395,7 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnection::modified_input_feat
 
 void
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::add_input_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const boost::shared_ptr<LayerInputConnection> &input_connection)
 {
 	d_connections.insert(
@@ -404,7 +405,7 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::add_input_connecti
 
 void
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::remove_input_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		LayerInputConnection *input_connection)
 {
 	// Get range of connections assigned to 'input_channel_name'.
@@ -445,7 +446,7 @@ GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::get_input_connecti
 
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::connection_seq_type
 GPlatesAppLogic::ReconstructGraphImpl::LayerInputConnections::get_input_connections(
-		const QString &input_channel_name) const
+		LayerInputChannelName::Type input_channel_name) const
 {
 	connection_seq_type connections;
 
@@ -489,7 +490,10 @@ GPlatesAppLogic::ReconstructGraphImpl::Layer::~Layer()
 	// We need to do this because the output data object ownership is shared with input connections
 	// to other layers - if we don't disconnect it then those other layers will still reference
 	// the output of 'this' layer.
-	d_output_data->disconnect_output_connections();
+	if (d_output_data) // In case transcribe failed.
+	{
+		d_output_data->disconnect_output_connections();
+	}
 }
 
 

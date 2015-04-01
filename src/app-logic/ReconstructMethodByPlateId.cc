@@ -391,6 +391,8 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_geometries(
 			return;
 		}
 
+		//DEF-CHECK - This function launches the deformation workflow 
+
 		// Output an RFG for each geometry property in the feature.
 		BOOST_FOREACH(
 				const DeformedGeometryPropertyTimeSpan &deformed_geometry_property_time_span,

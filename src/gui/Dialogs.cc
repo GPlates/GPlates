@@ -69,6 +69,7 @@
 #include "qt-widgets/GenerateVelocityDomainLatLonDialog.h"
 #include "qt-widgets/GenerateVelocityDomainTerraDialog.h"
 #include "qt-widgets/FeaturePropertiesDialog.h"
+#include "qt-widgets/KinematicGraphsDialog.h"
 #include "qt-widgets/LicenseDialog.h"
 #include "qt-widgets/LogDialog.h"
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
@@ -438,7 +439,6 @@ GPlatesGui::Dialogs::pop_up_feature_properties_dialog()
 	feature_properties_dialog().pop_up();
 }
 
-
 GPlatesQtWidgets::FiniteRotationCalculatorDialog &
 GPlatesGui::Dialogs::finite_rotation_calculator_dialog()
 {
@@ -460,6 +460,26 @@ GPlatesGui::Dialogs::pop_up_finite_rotation_calculator_dialog()
 	finite_rotation_calculator_dialog().pop_up();
 }
 
+GPlatesQtWidgets::KinematicGraphsDialog &
+GPlatesGui::Dialogs::kinematics_tool_dialog()
+{
+	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
+	const DialogType dialog_type = DIALOG_KINEMATICS_TOOL;
+	typedef GPlatesQtWidgets::KinematicGraphsDialog dialog_typename;
+
+	if (d_dialogs[dialog_type].isNull())
+	{
+		d_dialogs[dialog_type] = new dialog_typename(view_state(),&viewport_window());
+	}
+
+	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
+}
+
+void
+GPlatesGui::Dialogs::pop_up_kinematics_tool_dialog()
+{
+	kinematics_tool_dialog().pop_up();
+}
 
 GPlatesQtWidgets::LicenseDialog &
 GPlatesGui::Dialogs::license_dialog()

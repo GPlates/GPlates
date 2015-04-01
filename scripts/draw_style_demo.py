@@ -92,9 +92,7 @@ class PlateId:
 		pass
 			
 	def get_style(self, feature, style):
-		id = feature.plate_id()
-		id = int(id)
-		style.colour = self.cfg['Palette'].get_color(pygplates.PaletteKey(id))
+		style.colour = self.cfg['Palette'].get_color(pygplates.PaletteKey(str(feature.plate_id())))
 		
 	def get_config(self):
 		self.cfg_dict = {}

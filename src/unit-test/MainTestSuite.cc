@@ -26,43 +26,45 @@
 
 #include <QDebug>
 
-#include "unit-test/MainTestSuite.h"
 #include "unit-test/AppLogicTestSuite.h"
-#include "unit-test/UnitTestTestSuite.h"
-#include "unit-test/TestSuiteFilter.h"
-#include "unit-test/ModelTestSuite.h"
 #include "unit-test/CanvasToolsTestSuite.h"
-#include "unit-test/PresentationTestSuite.h"
+#include "unit-test/DataMiningTestSuite.h"
 #include "unit-test/FeatureVisitorsTestSuite.h"
-#include "unit-test/PropertyValuesTestSuite.h"
 #include "unit-test/FileIoTestSuite.h"
 #include "unit-test/GeometryVisitorsTestSuite.h"
-#include "unit-test/UtilsTestSuite.h"
 #include "unit-test/GlobalTestSuite.h"
-#include "unit-test/ViewOperationsTestSuite.h"
 #include "unit-test/GuiTestSuite.h"
+#include "unit-test/MainTestSuite.h"
 #include "unit-test/MathsTestSuite.h"
-#include "unit-test/DataMiningTestSuite.h"
+#include "unit-test/ModelTestSuite.h"
+#include "unit-test/PresentationTestSuite.h"
+#include "unit-test/PropertyValuesTestSuite.h"
+#include "unit-test/ScribeTestSuite.h"
+#include "unit-test/TestSuiteFilter.h"
+#include "unit-test/UtilsTestSuite.h"
+#include "unit-test/UnitTestTestSuite.h"
+#include "unit-test/ViewOperationsTestSuite.h"
 
 
 
 void GPlatesUnitTest::MainTestSuite::construct_maps()
 {
 	ADD_TESTSUITE(AppLogic);
-	ADD_TESTSUITE(UnitTest);
-	ADD_TESTSUITE(Model);
 	ADD_TESTSUITE(CanvasTools);
-	ADD_TESTSUITE(Presentation);
+	ADD_TESTSUITE(DataMining);
 	ADD_TESTSUITE(FeatureVisitors);
-	ADD_TESTSUITE(PropertyValues);
 	ADD_TESTSUITE(FileIo);
 	ADD_TESTSUITE(GeometryVisitors);
-	ADD_TESTSUITE(Utils);
 	ADD_TESTSUITE(Global);
-	ADD_TESTSUITE(ViewOperations);
 	ADD_TESTSUITE(Gui);
 	ADD_TESTSUITE(Maths);
-	ADD_TESTSUITE(DataMining);
+	ADD_TESTSUITE(Model);
+	ADD_TESTSUITE(Presentation);
+	ADD_TESTSUITE(PropertyValues);
+	ADD_TESTSUITE(Scribe);
+	ADD_TESTSUITE(Utils);
+	ADD_TESTSUITE(ViewOperations);
+	ADD_TESTSUITE(UnitTest);
 }
 
 void GPlatesUnitTest::MainTestSuite::add_test_suites()

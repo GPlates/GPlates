@@ -39,6 +39,7 @@
 
 
 #include "FeatureCollectionFileState.h"
+#include "LayerInputChannelName.h"
 #include "LayerProxy.h"
 #include "Reconstruction.h"
 #include "ReconstructionTree.h"
@@ -165,6 +166,7 @@ namespace GPlatesAppLogic
 					LayerProxy::non_null_ptr_type>
 							data_type;
 
+
 			data_type d_data;
 			connection_seq_type d_output_connections;
 
@@ -186,7 +188,7 @@ namespace GPlatesAppLogic
 			LayerInputConnection(
 					const boost::shared_ptr<Data> &input_data,
 					const boost::weak_ptr<Layer> &layer_receiving_input,
-					const QString &layer_input_channel_name,
+					LayerInputChannelName::Type layer_input_channel_name,
 					bool is_input_layer_active = true);
 
 			~LayerInputConnection();
@@ -203,7 +205,7 @@ namespace GPlatesAppLogic
 				return d_layer_receiving_input;
 			}
 
-			const QString &
+			LayerInputChannelName::Type
 			get_input_channel_name() const
 			{
 				return d_layer_input_channel_name;
@@ -237,6 +239,7 @@ namespace GPlatesAppLogic
 					bool active);
 			
 		private:
+
 			/**
 			 * Receives notifications when input file, if connected to one, is modified.
 			 */
@@ -263,13 +266,14 @@ namespace GPlatesAppLogic
 				LayerInputConnection *d_layer_input_connection;
 			};
 
+
 			void
 			modified_input_feature_collection();
 
 
 			boost::shared_ptr<Data> d_input_data;
 			boost::weak_ptr<Layer> d_layer_receiving_input;
-			QString d_layer_input_channel_name;
+			LayerInputChannelName::Type d_layer_input_channel_name;
 			bool d_is_input_layer_active;
 
 			/**
@@ -291,19 +295,19 @@ namespace GPlatesAppLogic
 			typedef std::vector< boost::shared_ptr<LayerInputConnection> > connection_seq_type;
 
 			typedef std::multimap<
-					QString,
+					LayerInputChannelName::Type,
 					boost::shared_ptr<LayerInputConnection> > input_connection_map_type;
 
 			//! NOTE: should only be called by class LayerInputConnection.
 			void
 			add_input_connection(
-					const QString &input_channel_name,
+					LayerInputChannelName::Type input_channel_name,
 					const boost::shared_ptr<LayerInputConnection> &input_connection);
 
 			//! NOTE: should only be called by class LayerInputConnection.
 			void
 			remove_input_connection(
-					const QString &input_channel_name,
+					LayerInputChannelName::Type input_channel_name,
 					LayerInputConnection *input_connection);
 
 			/**
@@ -318,7 +322,7 @@ namespace GPlatesAppLogic
 			 */
 			connection_seq_type
 			get_input_connections(
-					const QString &input_channel_name) const;
+					LayerInputChannelName::Type input_channel_name) const;
 
 			/**
 			 * Returns all input connections as a sequence of @a LayerInputConnection pointers.
@@ -330,7 +334,6 @@ namespace GPlatesAppLogic
 			}
 
 		private:
-
 			input_connection_map_type d_connections;
 		};
 
@@ -474,6 +477,5 @@ namespace GPlatesAppLogic
 				const Layer *input_layer);
 	}
 }
-
 
 #endif // GPLATES_APP_LOGIC_RECONSTRUCTGRAPHIMPL_H

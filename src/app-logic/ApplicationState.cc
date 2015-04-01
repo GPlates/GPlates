@@ -37,8 +37,6 @@
 #include "ReconstructGraph.h"
 #include "ReconstructMethodRegistry.h"
 #include "ReconstructUtils.h"
-#include "Serialization.h"
-#include "SessionManagement.h"
 #include "UserPreferences.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
@@ -74,17 +72,15 @@ namespace
 
 
 GPlatesAppLogic::ApplicationState::ApplicationState() :
-	d_feature_collection_file_state(
-			new FeatureCollectionFileState(d_model)),
 	d_feature_collection_file_format_registry(
 			new GPlatesFileIO::FeatureCollectionFileFormat::Registry()),
+	d_feature_collection_file_state(
+			new FeatureCollectionFileState(d_model)),
 	d_feature_collection_file_io(
 			new FeatureCollectionFileIO(
 					d_model,
 					*d_feature_collection_file_format_registry,
 					*d_feature_collection_file_state)),
-	d_serialization_ptr(new Serialization(*this)),
-	d_session_management_ptr(new SessionManagement(*this)),
 	d_user_preferences_ptr(new UserPreferences(NULL)),
 	d_reconstruct_method_registry(new ReconstructMethodRegistry()),
 	d_layer_task_registry(new LayerTaskRegistry()),
@@ -262,20 +258,6 @@ GPlatesAppLogic::FeatureCollectionFileIO &
 GPlatesAppLogic::ApplicationState::get_feature_collection_file_io()
 {
 	return *d_feature_collection_file_io;
-}
-
-
-GPlatesAppLogic::Serialization &
-GPlatesAppLogic::ApplicationState::get_serialization()
-{
-	return *d_serialization_ptr;
-}
-
-
-GPlatesAppLogic::SessionManagement &
-GPlatesAppLogic::ApplicationState::get_session_management()
-{
-	return *d_session_management_ptr;
 }
 
 

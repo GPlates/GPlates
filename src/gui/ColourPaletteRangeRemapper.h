@@ -187,12 +187,19 @@ namespace GPlatesGui
 			visit_regular_cpt_colour_palette(
 					const RegularCptColourPalette &colour_palette)
 			{
+				boost::optional< std::pair<GPlatesMaths::Real, GPlatesMaths::Real> > range =
+						colour_palette.get_range();
+				if (!range)
+				{
+					return;
+				}
+
 				generate_remapped_colour_palette(
 						colour_palette.get_background_colour(),
 						colour_palette.get_foreground_colour(),
 						colour_palette.get_nan_colour(),
-						get_double_value(colour_palette.get_lower_bound()),
-						get_double_value(colour_palette.get_upper_bound()),
+						get_double_value(range->first),
+						get_double_value(range->second),
 						colour_palette.get_entries());
 			}
 

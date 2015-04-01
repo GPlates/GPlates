@@ -36,5 +36,54 @@
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
 	<string>True</string>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>gproj</string>
+            </array>
+            <key>CFBundleTypeIconFile</key>
+            <string>${MACOSX_BUNDLE_ICON_FILE}</string>
+            <key>CFBundleTypeName</key>
+            <string>GPlates project</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>LSHandlerRank</key>
+            <string>Owner</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>org.gplates.gproj</string>
+            </array>
+            <key>NSExportableTypes</key>
+            <array>
+                <string>org.gplates.gproj</string>
+            </array>
+        </dict>
+    </array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeIdentifier</key>
+			<string>org.gplates.gproj</string>
+			<key>UTTypeDescription</key>
+			<string>GPlates project</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>com.apple.ostype</key>
+				<string>GPROJ</string>
+				<key>public.filename-extension</key>
+				<array>
+					<string>gproj</string>
+				</array>
+				<key>public.mime-type</key>
+				<string>application/gproj</string>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

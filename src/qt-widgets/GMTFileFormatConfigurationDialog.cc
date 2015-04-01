@@ -26,6 +26,8 @@
 
 #include "GMTFileFormatConfigurationDialog.h"
 
+#include "global/GPlatesAssert.h"
+
 
 GPlatesQtWidgets::GMTFileFormatConfigurationDialog::GMTFileFormatConfigurationDialog(
 		const GPlatesFileIO::FeatureCollectionFileFormat::GMTConfiguration::shared_ptr_to_const_type &configuration,
@@ -45,6 +47,10 @@ GPlatesQtWidgets::GMTFileFormatConfigurationDialog::GMTFileFormatConfigurationDi
 		break;
 	case GPlatesFileIO::GMTFormatWriter::PREFER_PLATES4_STYLE_HEADER:
 		radio_button_prefer_plate4_style->setChecked(true);
+		break;
+	default:
+		// Shouldn't get here.
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 		break;
 	}
 

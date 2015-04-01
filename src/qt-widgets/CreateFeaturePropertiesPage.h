@@ -58,6 +58,9 @@ namespace GPlatesQtWidgets
 		
 	public:
 
+		//! Typedef for a sequence of property names.
+		typedef std::vector<GPlatesModel::PropertyName> property_name_seq_type;
+
 		//! Typedef for a sequence of top-level feature properties.
 		typedef std::vector<GPlatesModel::TopLevelProperty::non_null_ptr_type> property_seq_type;
 
@@ -73,13 +76,16 @@ namespace GPlatesQtWidgets
 		 *
 		 * The user can use this page to add more properties supported by the specified feature type.
 		 *
-		 * Note that @a geometry_property_name is specified so that 
+		 * @a reserved_feature_properties contains the names (if any) of any feature properties that
+		 * will later be added (and hence are equivalent to existing properties in that they are not
+		 * available for the user to add). These are typically properties that the caller wishes to
+		 * add themselves rather than have us add them.
 		 */
 		void
 		initialise(
 				const GPlatesModel::FeatureType &feature_type,
-				const GPlatesModel::PropertyName &geometry_property_name,
-				const property_seq_type &feature_properties);
+				const property_seq_type &feature_properties,
+				const property_name_seq_type &reserved_feature_properties = property_name_seq_type());
 
 
 		/**
@@ -162,8 +168,11 @@ namespace GPlatesQtWidgets
 		//! The type of feature that the properties will be added to.
 		GPlatesModel::FeatureType d_feature_type;
 
-		//! The name of the geometry property that the feature will be created with.
-		boost::optional<GPlatesModel::PropertyName> d_geometry_property_name;
+		/**
+		 * The names of any feature properties that will later be added (and hence are equivalent
+		 * to existing properties in that they are not available for the user to add).
+		 */
+		property_name_seq_type d_reserved_feature_properties;
 
 		//! A property description QTextEdit that resizes to its contents.
 		ResizeToContentsTextEdit *d_property_description_widget;

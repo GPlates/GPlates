@@ -29,13 +29,20 @@
 #include <functional>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <QDebug>
 
 #include "FeatureCollectionFileState.h"
 
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
+#include "file-io/ReadErrorAccumulation.h"
+
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/GPlatesException.h"
 
 #include "model/Model.h"
+#include "model/NotificationGuard.h"
+
 
 namespace
 {
@@ -105,7 +112,7 @@ GPlatesAppLogic::FeatureCollectionFileState::get_loaded_files() const
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 					!file_index_used[file_index],
 					GPLATES_ASSERTION_SOURCE);
-			// For asssertion checking.
+			// For assertion checking.
 			file_index_used[file_index] = true;
 
 			// Store file reference in the correct location in the caller's array.
@@ -536,4 +543,3 @@ GPlatesAppLogic::get_file_reference_containing_feature(
 
 	return boost::none;
 }
-

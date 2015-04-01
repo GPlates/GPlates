@@ -54,6 +54,7 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/WeakReferenceCallback.h"
 
+
 namespace GPlatesAppLogic
 {
 	class ApplicationState;

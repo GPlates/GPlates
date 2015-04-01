@@ -401,6 +401,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::UnableToMatchOgrGeometryWithFeature,
 				QT_TR_NOOP("Unable to match OGR geometry with feature."),
 				QT_TR_NOOP("The OGR geometry type is not compatible with the feature type.") },
+		{ GPlatesFileIO::ReadErrors::NoGeometriesFoundInMultiGeometry,
+				QT_TR_NOOP("No geometries were found in the multi-geometry."),
+				QT_TR_NOOP("No geometries were found in the multi-geometry.") },
 
 		// Errors relating to raster files in general
 		{ GPlatesFileIO::ReadErrors::InsufficientMemoryToLoadRaster,
@@ -476,6 +479,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::PatternFillInLine,
 				QT_TR_NOOP("Pattern fill in line."),
 				QT_TR_NOOP("Pattern fills are not supported.") },
+		{ GPlatesFileIO::ReadErrors::MissingLabelSemiColon,
+				QT_TR_NOOP("No semi-colon before label."),
+				QT_TR_NOOP("A label in a CPT file must start with a semi-colon.") },
 
 		// Generic file-related error descriptions:
 		{ GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,

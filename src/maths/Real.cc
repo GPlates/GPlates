@@ -36,6 +36,7 @@
 
 #include "global/GPlatesAssert.h"
 
+
 // uncomment to turn on warnings
 #if 0
 #def WARNINGS 

@@ -51,7 +51,6 @@
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineIntersections.h"
 #include "maths/PolylineOnSphere.h"
-#include "maths/Rotation.h"
 
 #include "opengl/GLRenderer.h"
 
@@ -220,12 +219,10 @@ GPlatesGui::MapRenderedGeometryLayerPainter::MapRenderedGeometryLayerPainter(
 	d_render_settings(render_settings),
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f),
-	d_dateline_wrapper(GPlatesMaths::DateLineWrapper::create()),
-	// Rotates, about north pole, to move central meridian longitude to zero longitude...
-	d_central_meridian_reference_frame_rotation(
-			GPlatesMaths::Rotation::create(
-					GPlatesMaths::UnitVector3D::zBasis()/*north pole*/,
-					GPlatesMaths::convert_deg_to_rad(-map_projection->central_llp().longitude())))
+	d_dateline_wrapper(
+			GPlatesMaths::DateLineWrapper::create(
+					// Move the dateline wrapping to be [-180 + central_meridian, central_meridian + 180]...
+					map_projection->central_llp().longitude()))
 {
 }
 
@@ -1308,52 +1305,42 @@ GPlatesGui::MapRenderedGeometryLayerPainter::dateline_wrap_and_project_line_geom
 		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
 		const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry)
 {
-	// If the bounding small circle of the line geometry (in the central meridian reference frame)
-	// intersects the dateline then it's possible the line geometry does to (and hence needs wrapping).
-	//
-	// First we need to shift the geometry into the reference frame where the central meridian
-	// has longitude zero (because this is where we can do dateline wrapping [-180,180]).
-	// Instead of rotating the geometry (expensive) we rotate the centre of its bounding small circle.
-	// Then we only need to rotate the geometry if the rotated bounding small circle intersects the dateline.
-	const GPlatesMaths::BoundingSmallCircle central_meridian_reference_frame_bounding_small_circle =
-			d_central_meridian_reference_frame_rotation * line_geometry->get_bounding_small_circle();
-
-	if (d_dateline_wrapper->intersects_dateline(central_meridian_reference_frame_bounding_small_circle))
+	if (!d_dateline_wrapper->possibly_wraps(line_geometry))
 	{
-		// We now also need to rotate the geometry into the central meridian reference frame.
-		typename LineGeometryType::non_null_ptr_to_const_type rotated_line_geometry =
-				d_central_meridian_reference_frame_rotation * line_geometry;
-
-		// Wrap the rotated geometry to the longitude range [-180,180].
-		std::vector<lat_lon_line_geometry_type> wrapped_line_geometries;
-		d_dateline_wrapper->wrap_to_dateline(rotated_line_geometry, wrapped_line_geometries);
-
-		// Paint each wrapped piece of the original geometry.
-		BOOST_FOREACH(const lat_lon_line_geometry_type &wrapped_line_geometry, wrapped_line_geometries)
-		{
-			// If it's a wrapped polygon (not a polyline) then add the start point to the end
-			// in order to close the loop - we need to do this because we're iterating over
-			// vertices not arcs like the 'project_and_tessellate_unwrapped_line_geometry()' method is.
-			if (boost::is_same<LineGeometryType, GPlatesMaths::PolygonOnSphere>::value)
-			{
-				wrapped_line_geometry->push_back(wrapped_line_geometry->front());
-			}
-
-			project_and_tessellate_wrapped_line_geometry(
-					dateline_wrapped_projected_line_geometry,
-					wrapped_line_geometry->begin(),
-					wrapped_line_geometry->end());
-		}
+		// The line geometry does not need any wrapping so we can just project it without wrapping.
+		//
+		// This avoids converting to lat/lon (in dateline wrapper) then converting to x/y/z
+		// (to tessellate polyline segments) and then converting back to lat/lon prior to projection.
+		// Instead, unwrapped polylines can just be tessellated and then converted to lat/lon,
+		// saving expensive x/y/z <-> lat/lon conversions.
+		project_and_tessellate_unwrapped_line_geometry(
+				dateline_wrapped_projected_line_geometry,
+				line_geometry->begin(),
+				line_geometry->end());
 
 		return;
 	}
 
-	// The line geometry does not need any wrapping so we can just project it without wrapping
-	// and its associated rotation adjustments.
-	project_and_tessellate_unwrapped_line_geometry(
-			dateline_wrapped_projected_line_geometry,
-			line_geometry->begin(),
-			line_geometry->end());
+	// Wrap the rotated geometry to the longitude range...
+	//   [-180 + central_meridian, central_meridian + 180]
+	std::vector<lat_lon_line_geometry_type> wrapped_line_geometries;
+	d_dateline_wrapper->wrap(line_geometry, wrapped_line_geometries);
+
+	// Paint each wrapped piece of the original geometry.
+	BOOST_FOREACH(const lat_lon_line_geometry_type &wrapped_line_geometry, wrapped_line_geometries)
+	{
+		// If it's a wrapped polygon (not a polyline) then add the start point to the end in order
+		// to close the loop - we need to do this because we're iterating over vertices not arcs.
+		if (boost::is_same<LineGeometryType, GPlatesMaths::PolygonOnSphere>::value)
+		{
+			wrapped_line_geometry->push_back(wrapped_line_geometry->front());
+		}
+
+		project_and_tessellate_wrapped_line_geometry(
+				dateline_wrapped_projected_line_geometry,
+				wrapped_line_geometry->begin(),
+				wrapped_line_geometry->end());
+	}
 }
 
 
@@ -1368,6 +1355,8 @@ GPlatesGui::MapRenderedGeometryLayerPainter::project_and_tessellate_wrapped_line
 	{
 		return;
 	}
+
+	const double &central_longitude = d_map_projection->central_llp().longitude();
 
 	// Initialise for arc iteration.
 	GPlatesMaths::LatLonPoint arc_start_lat_lon_point = *begin_lat_lon_points;
@@ -1406,7 +1395,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::project_and_tessellate_wrapped_line
 			// We don't need to worry about these because they are zero length and won't contribute
 			// any tessellated vertices.
 			if (arc_start_point_longitude == arc_end_point_longitude &&
-				abs(arc_start_point_longitude) == 180.0)
+				abs(arc_start_point_longitude - central_longitude) == 180.0)
 			{
 				// Add the tessellated points skipping the *first* since it was added by the previous arc and
 				// skipping the *last* since it will be added by this arc.
@@ -1437,7 +1426,23 @@ GPlatesGui::MapRenderedGeometryLayerPainter::project_and_tessellate_wrapped_line
 				{
 					// These tessellated points have not been wrapped but they are also not *on* the
 					// dateline and hence are relatively safe from wrapping problems.
-					const GPlatesMaths::LatLonPoint tess_lat_lon = make_lat_lon_point(tess_points[n]);
+					// Just make sure we keep the longitude in the range...
+					//   [-180 + central_meridian, central_meridian + 180]
+					// ...since we're converting from PointOnSphere to LatLonPoint (ie, [-180, 180] range).
+					// Note; 'central_longitude' should be in the range [-180, 180] itself.
+					GPlatesMaths::LatLonPoint tess_lat_lon = make_lat_lon_point(tess_points[n]);
+					if (tess_lat_lon.longitude() < -180 + central_longitude)
+					{
+						tess_lat_lon = GPlatesMaths::LatLonPoint(
+								tess_lat_lon.latitude(),
+								tess_lat_lon.longitude() + 360);
+					}
+					else if (tess_lat_lon.longitude() > central_longitude + 180)
+					{
+						tess_lat_lon = GPlatesMaths::LatLonPoint(
+								tess_lat_lon.latitude(),
+								tess_lat_lon.longitude() - 360);
+					}
 
 					dateline_wrapped_projected_line_geometry.add_vertex(
 							get_projected_wrapped_position(tess_lat_lon));
@@ -1696,12 +1701,12 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_arrow_head(
 
 QPointF
 GPlatesGui::MapRenderedGeometryLayerPainter::get_projected_wrapped_position(
-		const GPlatesMaths::LatLonPoint &central_meridian_reference_frame_point) const
+		const GPlatesMaths::LatLonPoint &lat_lon_point) const
 {
 	const double &central_longitude = d_map_projection->central_llp().longitude();
 
-	double x = central_meridian_reference_frame_point.longitude();
-	double y = central_meridian_reference_frame_point.latitude();
+	double x = lat_lon_point.longitude();
+	double y = lat_lon_point.latitude();
 
 	// Make sure the longitude is within [-180+EPSILON, 180-EPSILON] around the central meridian longitude.
 	// 
@@ -1710,18 +1715,14 @@ GPlatesGui::MapRenderedGeometryLayerPainter::get_projected_wrapped_position(
 	// projection code itself having numerical precision issues.
 	//
 	// We need this for *wrapped* vertices since they can lie *on* the dateline
-	if (x < LONGITUDE_RANGE_LOWER_LIMIT)
+	if (x < central_longitude + LONGITUDE_RANGE_LOWER_LIMIT)
 	{
-		x = LONGITUDE_RANGE_LOWER_LIMIT;
+		x = central_longitude + LONGITUDE_RANGE_LOWER_LIMIT;
 	}
-	else if (x > LONGITUDE_RANGE_UPPER_LIMIT)
+	else if (x > central_longitude + LONGITUDE_RANGE_UPPER_LIMIT)
 	{
-		x = LONGITUDE_RANGE_UPPER_LIMIT;
+		x = central_longitude + LONGITUDE_RANGE_UPPER_LIMIT;
 	}
-
-	// Convert from the central meridian reference frame (centred at longitude zero) to the
-	// original latitude/longitude coordinate frame.
-	x += central_longitude;
 
 	// Project onto the map.
 	d_map_projection->forward_transform(x, y);

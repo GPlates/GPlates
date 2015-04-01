@@ -29,6 +29,8 @@
 #define GPLATES_UTILS_SAFEBOOL_H
 
 #include <stdlib.h>
+#include <boost/static_assert.hpp>
+
 
 namespace GPlatesUtils
 {
@@ -93,7 +95,11 @@ namespace GPlatesUtils
 			const SafeBool<T> &lhs,
 			const SafeBool<U> &rhs)
 	{
-		lhs.this_type_does_not_support_comparisons();
+		// Make sure compiler does not instantiate this function.
+		//
+		// Evaluates to false - but is dependent on template parameter - compiler workaround...
+		BOOST_STATIC_ASSERT(sizeof(T) == 0);
+
 		return false;
 	}
 
@@ -104,7 +110,11 @@ namespace GPlatesUtils
 			const SafeBool<T> &lhs,
 			const SafeBool<U> &rhs)
 	{
-		lhs.this_type_does_not_support_comparisons();
+		// Make sure compiler does not instantiate this function.
+		//
+		// Evaluates to false - but is dependent on template parameter - compiler workaround...
+		BOOST_STATIC_ASSERT(sizeof(T) == 0);
+
 		return false;
 	}
 }

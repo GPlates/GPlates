@@ -40,6 +40,7 @@
 #include "Reconstruction.h"
 #include "ReconstructionTree.h"
 
+#include "global/GPlatesAssert.h"
 #include "global/PointerTraits.h"
 
 #include "model/FeatureStoreRootHandle.h"
@@ -71,8 +72,6 @@ namespace GPlatesAppLogic
 	class LogModel;
 	class ReconstructGraph;
 	class ReconstructMethodRegistry;
-	class Serialization;
-	class SessionManagement;
 	class UserPreferences;
 
 
@@ -134,21 +133,9 @@ namespace GPlatesAppLogic
 		get_feature_collection_file_io();
 
 		/**
-		 * Helper for dealing with e.g. boost::serialize
-		 */
-		GPlatesAppLogic::Serialization &
-		get_serialization();
-
-		/**
-		 * Stores/Loads loaded file information to and from persistent storage.
-		 */
-		GPlatesAppLogic::SessionManagement &
-		get_session_management();
-
-		/**
 		 * Responsible for all persistent GPlates session storage including user preferences.
 		 */
-		GPlatesAppLogic::UserPreferences &
+		UserPreferences &
 		get_user_preferences();
 		
 
@@ -388,11 +375,6 @@ namespace GPlatesAppLogic
 		//
 
 		/**
-		 * Central access point and notification of loaded files.
-		 */
-		boost::scoped_ptr<FeatureCollectionFileState> d_feature_collection_file_state;
-
-		/**
 		 * A registry of the file formats for reading/writing feature collections.
 		 *
 		 * NOTE: This must be declared *before* @a d_feature_collection_file_io.
@@ -400,12 +382,14 @@ namespace GPlatesAppLogic
 		boost::scoped_ptr<GPlatesFileIO::FeatureCollectionFileFormat::Registry> d_feature_collection_file_format_registry;
 
 		/**
+		 * Central access point and notification of loaded files.
+		 */
+		boost::scoped_ptr<FeatureCollectionFileState> d_feature_collection_file_state;
+
+		/**
 		 * All file reading/writing goes through here.
 		 */
 		boost::scoped_ptr<FeatureCollectionFileIO> d_feature_collection_file_io;
-
-		boost::scoped_ptr<Serialization> d_serialization_ptr;
-		boost::scoped_ptr<SessionManagement> d_session_management_ptr;
 
 		boost::scoped_ptr<UserPreferences> d_user_preferences_ptr;
 

@@ -1197,18 +1197,36 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 			const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face::DeformationInfo &
 					deformation_info = finite_faces_2_iter->get_deformation_info();
 
-			if (d_render_params.topological_network_color_index == 1)
-			{
-				const double dilitation = deformation_info.dilitation;
-				const double sign = (dilitation < 0) ? -1 : 1;
-				render_value = sign * std::fabs( std::log10( std::fabs( dilitation ) ) );
+			double value = 0.0;
+
+			// Shade by Dilitation Strain Rate
+			if (d_render_params.topological_network_color_index == 1) {
+				value = deformation_info.dilitation;
 			}
-			else if (d_render_params.topological_network_color_index == 2)
-			{
-				const double second_invariant = deformation_info.second_invariant;
-				const double sign = (second_invariant < 0) ? -1 : 1;
-				render_value = sign * std::fabs( std::log10( std::fabs( second_invariant ) ) );
+			else if (d_render_params.topological_network_color_index == 2) {
+				value = deformation_info.smooth_dilitation;
 			}
+			else if (d_render_params.topological_network_color_index == 3) {
+				value = deformation_info.sph_dilitation;
+			}
+			else if (d_render_params.topological_network_color_index == 4) {
+				value = deformation_info.sph_smooth_dilitation;
+			}
+			else if (d_render_params.topological_network_color_index == 5) {
+				value = deformation_info.second_invariant;
+			}
+			else if (d_render_params.topological_network_color_index == 6) {
+				value = deformation_info.smooth_second_invariant;
+			}
+			else if (d_render_params.topological_network_color_index == 7) {
+				value = deformation_info.sph_second_invariant;
+			}
+			else if (d_render_params.topological_network_color_index == 8) {
+				value = deformation_info.sph_smooth_second_invariant;
+			}
+
+			const double sign = (value < 0) ? -1 : 1;
+			render_value = sign * std::fabs( std::log10( std::fabs( value ) ) );
 		}
 
 		// The colour to use for this triangle panel.

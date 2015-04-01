@@ -21,14 +21,17 @@ set(target_name pygplates)
 # - groups files in Visual Studio IDE according to type.
 if(NOT GPLATES_NO_PYTHON)
 
-	set(all_subdirs qt-widgets qt-resources view-operations presentation gui canvas-tools app-logic file-io feature-visitors opengl property-values model data-mining api maths utils global)
+	set(all_subdirs qt-widgets qt-resources view-operations presentation gui canvas-tools app-logic file-io feature-visitors opengl property-values model data-mining api maths utils global scribe)
 	
 	#get all GPlates files
 	foreach(dir ${all_subdirs})
 		FILE(GLOB files ${GPlates_SOURCE_DIR}/src/${dir}/*)
 		set(all_files ${all_files} ${files})
 	endforeach(dir)
-		
+	
+	# Add the scribe export registrations.
+	set(all_files ${all_files} ScribeExportPyGPlates.cc)
+	
 	#generate moc,ui,pch,rc files...
 	GPLATES_GENERATE_TARGET_SOURCES(pygplates gplates_lib_all_src ${all_files})
 	

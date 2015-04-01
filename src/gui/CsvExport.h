@@ -54,14 +54,24 @@ namespace GPlatesGui {
 		};
 			
 		/**
-		 * Export the contents of the QTableWidget table to the file filename in csv form. 
+		 * Export the contents of the QTableWidget table to the file filename in csv form.
 		 */
 		static
 		void
-		export_table(
+		export_table_widget(
 				const QString &filename,
 				const ExportOptions &options,
 				const QTableWidget &table);
+
+		/**
+		 * Export the contents of the QTableView table to the file filename in csv form.
+		 */
+		static
+		void
+		export_table_view(
+				const QString &filename,
+				const ExportOptions &options,
+				const QTableView &table);
 
 		
 		static

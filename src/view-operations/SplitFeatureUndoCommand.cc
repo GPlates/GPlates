@@ -180,7 +180,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 
 #if 0
 	GPlatesModel::TopLevelProperty::non_null_ptr_type clone 
-		= (*property_iter)->deep_clone();
+		= (*property_iter)->clone();
 	GPlatesModel::TopLevelPropertyInline::non_null_ptr_type geom_prop_clone
 		= dynamic_cast<GPlatesModel::TopLevelPropertyInline *>(clone.get());
 	GPlatesPropertyValues::GmlLineString *val;

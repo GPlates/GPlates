@@ -542,7 +542,6 @@ namespace
 		}
 	}
 
-
 	/**
 	 * Goes through the points in the table and tests if they make a valid
 	 * PolylineOnSphere. Updates the table cells' foreground colours
@@ -574,7 +573,6 @@ namespace
 		// skipped over some points.
 		return (problems.invalid_rows.empty() && problems.polyline_validity == polyline_type::VALID);
 	}
-
 
 	/**
 	 * Work around a graphical glitch, where the EditTableActionWidgets around the

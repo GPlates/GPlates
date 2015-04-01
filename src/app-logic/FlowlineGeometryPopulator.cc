@@ -60,6 +60,7 @@
 
 namespace
 {
+
 	void
 	fill_times_vector(
 		std::vector<double> &times,
@@ -96,7 +97,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::FlowlineGeometryPopulator(
 	d_reconstructed_feature_geometries(reconstructed_feature_geometries),
 	d_reconstruction_tree_creator(reconstruction_tree_creator),
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(reconstruction_time)),
-	d_flowline_property_finder(reconstruction_time)
+	d_flowline_property_finder(
+		new GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder(reconstruction_time))
 {  }
 
 bool
@@ -116,15 +118,15 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 		return false;
     }
 
-    d_flowline_property_finder.visit_feature(feature_handle.reference());
+	d_flowline_property_finder->visit_feature(feature_handle.reference());
 
 
-    if (!d_flowline_property_finder.can_process_seed_point())
+	if (!d_flowline_property_finder->can_process_seed_point())
     {
 		return false;
     }
 
-    if (d_flowline_property_finder.can_process_flowline())
+	if (d_flowline_property_finder->can_process_flowline())
     {
 		// The reconstruction tree for the current reconstruction time.
 		ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
@@ -132,7 +134,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 
 		//GPlatesModel::integer_plate_id_type anchor = reconstruction_tree->get_anchor_plate_id();
 		double current_time = reconstruction_tree->get_reconstruction_time();
-		std::vector<double> times = d_flowline_property_finder.get_times();
+		std::vector<double> times = d_flowline_property_finder->get_times();
 
 		std::vector<double>::const_iterator
 			t_iter = times.begin();
@@ -149,16 +151,16 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 		FlowlineUtils::fill_seed_point_rotations(
 			current_time,
 			times,
-			*d_flowline_property_finder.get_left_plate(),
-			*d_flowline_property_finder.get_right_plate(),
+			*d_flowline_property_finder->get_left_plate(),
+			*d_flowline_property_finder->get_right_plate(),
 			d_reconstruction_tree_creator,
 			d_left_seed_point_rotations);
 
 		FlowlineUtils::fill_seed_point_rotations(
 			current_time,
 			times,
-			*d_flowline_property_finder.get_right_plate(),
-			*d_flowline_property_finder.get_left_plate(),
+			*d_flowline_property_finder->get_right_plate(),
+			*d_flowline_property_finder->get_left_plate(),
 			d_reconstruction_tree_creator,
 			d_right_seed_point_rotations);
 
@@ -169,7 +171,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 		FlowlineUtils::fill_times_vector(
 			times,
 			current_time,
-			d_flowline_property_finder.get_times());
+			d_flowline_property_finder->get_times());
 
 		// We'll work from the current time, backwards in time.
 		std::vector<double>::const_iterator
@@ -195,16 +197,16 @@ GPlatesAppLogic::FlowlineGeometryPopulator::initialise_pre_feature_properties(
 				GPlatesAppLogic::RotationUtils::get_stage_pole(
 				*tree_at_prev_time_ptr,
 				*tree_at_time_t_ptr,
-				*d_flowline_property_finder.get_right_plate(),
-				*d_flowline_property_finder.get_left_plate());
+				*d_flowline_property_finder->get_right_plate(),
+				*d_flowline_property_finder->get_left_plate());
 
 
 			GPlatesMaths::FiniteRotation stage_pole_right =
 				GPlatesAppLogic::RotationUtils::get_stage_pole(
 				*tree_at_prev_time_ptr,
 				*tree_at_time_t_ptr,
-				*d_flowline_property_finder.get_left_plate(),
-				*d_flowline_property_finder.get_right_plate());
+				*d_flowline_property_finder->get_left_plate(),
+				*d_flowline_property_finder->get_right_plate());
 
 			// Halve the stage poles, and store them.
 			FlowlineUtils::get_half_angle_rotation(stage_pole_left);
@@ -239,7 +241,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_multi_point(
 		}
 	}	
 
-	if (d_flowline_property_finder.can_process_flowline())
+	if (d_flowline_property_finder->can_process_flowline())
 	{
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
 			FlowlineUtils::reconstruct_flowline_seed_points(gml_multi_point.get_multipoint(),
@@ -298,7 +300,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::visit_gml_point(
 		}
 	}	
 
-	if (d_flowline_property_finder.can_process_flowline())
+	if (d_flowline_property_finder->can_process_flowline())
 	{
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
 			FlowlineUtils::reconstruct_flowline_seed_points(gml_point.get_point(),
@@ -349,10 +351,10 @@ GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon
 	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			d_reconstruction_tree_creator.get_reconstruction_tree(d_recon_time.value());
 
-	if (d_flowline_property_finder.get_reconstruction_plate_id())
+	if (d_flowline_property_finder->get_reconstruction_plate_id())
 	{
 		geom = reconstruction_tree->get_composed_absolute_rotation(
-			    d_flowline_property_finder.get_reconstruction_plate_id().get()).first *
+				d_flowline_property_finder->get_reconstruction_plate_id().get()).first *
 			    geom;
 	}
 
@@ -368,7 +370,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon
 				*(current_top_level_propiter()),
 				geom,
 				ReconstructMethod::FLOWLINE,
-				d_flowline_property_finder.get_reconstruction_plate_id());
+				d_flowline_property_finder->get_reconstruction_plate_id());
 
 	    d_reconstructed_feature_geometries.push_back(seed_point_rfg);
 
@@ -410,7 +412,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 
 		FlowlineUtils::calculate_flowline(
 			reconstructed_left_seed_point,
-			d_flowline_property_finder,
+			*d_flowline_property_finder,
 			left_flowline,
 			d_reconstruction_tree_creator,
 			d_left_rotations);
@@ -419,7 +421,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 
 		FlowlineUtils::calculate_flowline(
 			reconstructed_right_seed_point,
-			d_flowline_property_finder,
+			*d_flowline_property_finder,
 			right_flowline,
 			d_reconstruction_tree_creator,
 			d_right_rotations);
@@ -433,11 +435,11 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 		// current time. 
 		GPlatesMaths::FiniteRotation left_correction =
 			reconstruction_tree->get_composed_absolute_rotation(
-			d_flowline_property_finder.get_left_plate().get()).first;
+			d_flowline_property_finder->get_left_plate().get()).first;
 
 		GPlatesMaths::FiniteRotation right_correction =
 			reconstruction_tree->get_composed_absolute_rotation(
-			d_flowline_property_finder.get_right_plate().get()).first;
+			d_flowline_property_finder->get_right_plate().get()).first;
 
 
 		try{
@@ -460,8 +462,8 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 				reconstructed_seed_point_geometry,
 				left_flowline_points,
 				right_flowline_points,
-				*d_flowline_property_finder.get_left_plate(),
-				*d_flowline_property_finder.get_right_plate(),
+				*d_flowline_property_finder->get_left_plate(),
+				*d_flowline_property_finder->get_right_plate(),
 				*(current_top_level_propiter()->handle_weak_ref()),
 				*(current_top_level_propiter()));
 

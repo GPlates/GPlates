@@ -64,6 +64,7 @@
 
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayer.h"
+#include "presentation/VisualLayerInputChannelName.h"
 #include "presentation/VisualLayerType.h"
 #include "presentation/VisualLayerRegistry.h"
 
@@ -551,7 +552,7 @@ namespace
 	void
 	move_main_input_channel_to_front(
 			InputChannelContainerType &input_channels,
-			const QString &main_input_channel)
+			GPlatesAppLogic::LayerInputChannelName::Type main_input_channel)
 	{
 		typedef typename InputChannelContainerType::iterator channel_iterator_type;
 		channel_iterator_type channel_iter = input_channels.begin();
@@ -599,7 +600,8 @@ GPlatesQtWidgets::VisualLayerWidget::set_input_channel_data(
 	}
 
 	// List the main input channel first.
-	QString main_input_channel = layer.get_main_input_feature_collection_channel();
+	const GPlatesAppLogic::LayerInputChannelName::Type main_input_channel =
+			layer.get_main_input_feature_collection_channel();
 	move_main_input_channel_to_front(input_channels, main_input_channel);
 
 	// Display one input channel in one widget.
@@ -1090,7 +1092,10 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 	d_add_new_connection_widget->set_highlight_colour(background_colour);
 
 	// Update the channel name.
-	d_input_channel_name_label->setText(layer_input_channel_type.get_input_channel_name() + ":");
+	d_input_channel_name_label->setText(
+			GPlatesPresentation::VisualLayerInputChannelName::get_input_channel_name(
+					layer_input_channel_type.get_input_channel_name())
+			+ ":");
 
 	// Disable the add new connection button if the channel only takes one
 	// connection and we already have that.
@@ -1169,7 +1174,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 void
 GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_feature_collections(
 		const GPlatesAppLogic::Layer &layer,
-		const QString &input_data_channel)
+		const GPlatesAppLogic::LayerInputChannelName::Type input_data_channel)
 {
 	d_add_new_connection_menu->clear();
 
@@ -1214,7 +1219,7 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 void
 GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_layers(
 		const GPlatesAppLogic::Layer &layer,
-		const QString &input_data_channel,
+		const GPlatesAppLogic::LayerInputChannelName::Type input_data_channel,
 		const std::vector<GPlatesAppLogic::LayerTaskType::Type> &input_data_types)
 {
 	d_add_new_connection_menu->clear();

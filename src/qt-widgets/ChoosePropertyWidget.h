@@ -80,6 +80,9 @@ namespace GPlatesQtWidgets
 		 *
 		 * If the optional source feature is specified then properties that can occur at most once
 		 * will not be shown if they already exist in the feature.
+		 *
+		 * If the previously selected property name (if any) is in the new list of property names
+		 * then the selection is retained.
 		 */
 		void
 		populate(

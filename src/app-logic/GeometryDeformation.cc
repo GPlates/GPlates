@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <functional>
 #include <iterator>
@@ -32,6 +33,14 @@
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
+
+// DEF TEST
+#include <iostream>
+#include <sstream>
+#include <iostream>
+#include <fstream>
+#include <string>
+
 
 #include "GeometryDeformation.h"
 
@@ -52,6 +61,13 @@
 
 #include "utils/GeometryCreationUtils.h"
 #include "utils/Profile.h"
+
+
+#ifdef _MSC_VER
+#ifndef copysign
+#define copysign _copysign
+#endif
+#endif
 
 
 namespace GPlatesAppLogic
@@ -700,10 +716,42 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 			geometry_sample_index = 0;
 		}
 
+
 		// Iterate over the geometry samples in the current time window (forward in time).
 		for ( ; geometry_sample_index < num_geometry_samples; ++geometry_sample_index)
 		{
+			// DEF_TEST
+
+#if 0 // Avoid writing out intermediate file on trunk for now until sorted out on a source code branch...
+			// string to hold filename
+			std::string def_test_file_name = "DEF_TEST_t";
+			// FIXME: how to get the time of the current time window and geometry index ?? 
+            // Compute a recon time value from begin and geom sample index 
+            double t = time_window.get_begin_time() - geometry_sample_index;
+			std::ostringstream t_oss;
+			t_oss << t;
+			def_test_file_name += t_oss.str();
+
+            // Complete the file name
+	 		def_test_file_name += "Ma.xy";
+
+			// Open the file 
+			std::ofstream def_test_file;
+			def_test_file.open( def_test_file_name.c_str() );
+
+            // Write header data 
+			def_test_file << ">HEADER LINES:\n";
+			def_test_file << ">point index number \n";
+			def_test_file << ">lon lat dilitation sph_dilitation\n";
+			def_test_file << ">\n";
+			// DEF_TEST
+#endif
+
 			GeometrySample &geometry_sample = time_window.get_geometry_sample(geometry_sample_index);
+
+            // DEF_TEST
+			// Get all the points into a vector ; will use the point index in the loop below to get coordinates
+			std::vector<GPlatesMaths::PointOnSphere> point_vector = geometry_sample.get_points();
 
 			// The number of points in each geometry sample should be the same.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -727,6 +775,12 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 				const double S33 = prev_deformation_info.S33 + deformation_info.SR33 * 3.15569e13;
 				const double S23 = prev_deformation_info.S23 + deformation_info.SR23 * 3.15569e13;
 
+#if 0 // Avoid writing out intermediate file on trunk for now until sorted out on a source code branch...
+				// DEF_TEST
+				const double dilitation = deformation_info.dilitation; 
+				const double sph_dilitation = deformation_info.sph_dilitation; 
+#endif
+
 				// Set the new strain at the current geometry sample.
 				deformation_info.S22 = S22;
 				deformation_info.S33 = S33;
@@ -734,7 +788,14 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 
 	  			// Compute the Dilitational and Second invariant strain for the current geometry sample.
 				const double dilitation_strain = S22 + S33;
-				const double second_invariant_strain = std::sqrt(S22 * S22 + S33 * S33 + 2.0 * S23 * S23);
+
+				// incompressable
+				//const double second_invariant_strain = std::sqrt(S22 * S22 + S33 * S33 + 2.0 * S23 * S23);
+
+				// compressable
+				// const double second_invariant = std::sqrt( (SR22 * SR33) - (SR23 * SR23) );
+				const double tmp1=( S22 * S33) - (S23 * S23);
+				const double second_invariant_strain = copysign( std::sqrt( std::abs(tmp1) ),tmp1) ;
 
 				// Principle strains.
 				const double S_DIR = 0.5 * std::atan2(2.0 * S23, S33 - S22);
@@ -748,11 +809,40 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::initialise_forward_time_
 				deformation_info.S1 = S1;
 				deformation_info.S2 = S2;
 				deformation_info.S_DIR = S_DIR;
+
+			
+#if 0 // Avoid writing out intermediate file on trunk for now until sorted out on a source code branch...
+				// DEF_TEST
+				GPlatesMaths::PointOnSphere p = point_vector[point_index];
+				GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point( p );
+				double lat = llp.latitude();
+				double lon = llp.longitude();
+
+				def_test_file << ">point index: ";
+				def_test_file << point_index;
+				def_test_file << "\n";
+				def_test_file << lon;
+				def_test_file << " ";
+				def_test_file << lat;
+				def_test_file << " ";
+				def_test_file << dilitation;
+				def_test_file << " ";
+				def_test_file << sph_dilitation;
+				def_test_file << " ";
+				def_test_file << "\n";
+#endif
 			}
 
 			prev_geometry_sample = geometry_sample;
+
+#if 0 // Avoid writing out intermediate file on trunk for now until sorted out on a source code branch...
+			// DEF_TEST
+			// close file for this recon time 
+			def_test_file.close();
+#endif
 		}
-	}
+
+	} // end of loop on time windows 
 }
 
 
@@ -1108,8 +1198,10 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::GeometrySample::calc_ins
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_deformation_infos.size() == d_delaunay_faces->size(),
 			GPLATES_ASSERTION_SOURCE);
+
 	const unsigned int num_points = d_deformation_infos.size();
 	const delaunay_face_opt_seq_type &delaunay_faces = d_delaunay_faces.get();
+
 	for (unsigned int point_index = 0; point_index < num_points; ++point_index)
 	{
 		DeformationInfo &point_deformation_info = d_deformation_infos[point_index];
@@ -1121,6 +1213,8 @@ GPlatesAppLogic::GeometryDeformation::GeometryTimeSpan::GeometrySample::calc_ins
 			const ResolvedTriangulation::Delaunay_2::Face::DeformationInfo &face_deformation_info =
 					delaunay_faces[point_index].get()->get_deformation_info();
 					
+			point_deformation_info.dilitation = face_deformation_info.dilitation;
+			point_deformation_info.sph_dilitation = face_deformation_info.sph_dilitation;
 			point_deformation_info.SR22 = face_deformation_info.SR22;
 			point_deformation_info.SR33 = face_deformation_info.SR33;
 			point_deformation_info.SR23 = face_deformation_info.SR23;

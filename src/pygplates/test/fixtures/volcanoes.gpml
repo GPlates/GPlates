@@ -27,7 +27,7 @@
             </gpml:reconstructionPlateId>
             <gpml:position>
                 <gml:Point>
-                    <gml:pos>70.863376287171306 94.509279889688727</gml:pos>
+                    <gml:pos>78.000371350220547 73.38769185824512</gml:pos>
                 </gml:Point>
             </gpml:position>
         </gpml:Volcano>
@@ -59,7 +59,7 @@
             </gpml:reconstructionPlateId>
             <gpml:position>
                 <gml:Point>
-                    <gml:pos>-66.490975053887624 107.22963514852258</gml:pos>
+                    <gml:pos>-68.358415821633443 110.30401593155861</gml:pos>
                 </gml:Point>
             </gpml:position>
         </gpml:Volcano>
@@ -91,7 +91,7 @@
             </gpml:reconstructionPlateId>
             <gpml:position>
                 <gml:Point>
-                    <gml:pos>-24.609913950639044 -176.82647221961545</gml:pos>
+                    <gml:pos>-27.265545841821112 -173.99967312467396</gml:pos>
                 </gml:Point>
             </gpml:position>
         </gpml:Volcano>
@@ -123,7 +123,7 @@
             </gpml:reconstructionPlateId>
             <gpml:position>
                 <gml:Point>
-                    <gml:pos>40.953657377882678 164.58907535028209</gml:pos>
+                    <gml:pos>39.663940939935614 159.84331683915602</gml:pos>
                 </gml:Point>
             </gpml:position>
         </gpml:Volcano>

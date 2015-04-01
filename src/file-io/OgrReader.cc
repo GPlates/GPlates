@@ -9,7 +9,7 @@
  * 
  * Copyright (C) 2007, 2008, 2009 Geological Survey of Norway (under the name "ShapefileReader.h")
  * Copyright (C) 2010 The University of Sydney, Australia (under the name "ShapefileReader.h")
- * Copyright (C) 2012, 2013, 2014 Geological Survey of Norway
+ * Copyright (C) 2012, 2013, 2014, 2015 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -1725,6 +1725,18 @@ GPlatesFileIO::OgrReader::handle_multi_point(
 {
 		OGRMultiPoint *multi = static_cast<OGRMultiPoint*>(d_geometry_ptr);
 		int num_geometries = multi->getNumGeometries();
+
+		if (num_geometries == 0)
+		{
+			read_errors.d_recoverable_errors.push_back(
+				GPlatesFileIO::ReadErrorOccurrence(
+					source,
+					location,
+					GPlatesFileIO::ReadErrors::NoGeometriesFoundInMultiGeometry,
+					GPlatesFileIO::ReadErrors::FeatureIgnored));
+			return;
+		}
+
 		d_total_geometries += num_geometries;
 
 		std::list<GPlatesMaths::PointOnSphere> list_of_points;
@@ -1854,6 +1866,16 @@ GPlatesFileIO::OgrReader::handle_multi_linestring(
 
 	OGRMultiLineString *multi = static_cast<OGRMultiLineString*>(d_geometry_ptr);
 	int num_geometries = multi->getNumGeometries();
+	if (num_geometries == 0)
+	{
+		read_errors.d_recoverable_errors.push_back(
+			GPlatesFileIO::ReadErrorOccurrence(
+				source,
+				location,
+				GPlatesFileIO::ReadErrors::NoGeometriesFoundInMultiGeometry,
+				GPlatesFileIO::ReadErrors::FeatureIgnored));
+		return;
+	}
 	d_total_geometries += num_geometries;
 
 #if 0
@@ -2039,6 +2061,16 @@ GPlatesFileIO::OgrReader::handle_multi_polygon(
 	//std::cerr << "Multi-polygon" << std::endl;
 	OGRMultiPolygon *multi = static_cast<OGRMultiPolygon*>(d_geometry_ptr);
 	int num_geometries = multi->getNumGeometries();
+	if (num_geometries == 0)
+	{
+		read_errors.d_recoverable_errors.push_back(
+			GPlatesFileIO::ReadErrorOccurrence(
+				source,
+				location,
+				GPlatesFileIO::ReadErrors::NoGeometriesFoundInMultiGeometry,
+				GPlatesFileIO::ReadErrors::FeatureIgnored));
+		return;
+	}
 
 	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,collection,d_feature_type_string,d_feature_id);
 	add_attributes_to_feature(feature,read_errors,source,location);	

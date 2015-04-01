@@ -27,6 +27,8 @@
 #ifndef GPLATES_APP_LOGIC_RESOLVEDTRIANGULATIONDELAUNAY2_H
 #define GPLATES_APP_LOGIC_RESOLVEDTRIANGULATIONDELAUNAY2_H
 
+#include <cfloat>
+#include <cmath>
 #include <map>
 #include <utility>
 #include <vector>
@@ -77,8 +79,16 @@ POP_MSVC_WARNINGS
 #include "maths/CalculateVelocity.h"
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
+#include "maths/Centroid.h"
 
 #include "utils/Profile.h"
+
+
+#ifdef _MSC_VER
+#ifndef copysign
+#define copysign _copysign
+#endif
+#endif
 
 
 namespace GPlatesAppLogic
@@ -267,6 +277,46 @@ namespace GPlatesAppLogic
 				return d_velocity_colat_lon.get();
 			}
 
+			const double &
+			get_dilitation(double d) const
+			{
+				if (!d_dilitation)
+				{
+					calculate_dilitation( d );
+				}
+				return d_dilitation.get();
+			}
+
+			const double &
+			get_second_invariant(double d) const
+			{
+				if (!d_dilitation)
+				{
+					calculate_second_invariant( d );
+				}
+				return d_dilitation.get();
+			}
+
+			const double &
+			get_sph_dilitation(double d) const
+			{
+				if (!d_sph_dilitation)
+				{
+					calculate_sph_dilitation( d );
+				}
+				return d_sph_dilitation.get();
+			}
+
+			const double &
+			get_sph_second_invariant(double d) const
+			{
+				if (!d_sph_second_invariant)
+				{
+					calculate_sph_second_invariant( d );
+				}
+				return d_sph_dilitation.get();
+			}
+
 		private:
 
 			/**
@@ -301,9 +351,26 @@ namespace GPlatesAppLogic
 			mutable boost::optional<GPlatesMaths::Vector3D> d_velocity_vector;
 			mutable boost::optional<GPlatesMaths::VectorColatitudeLongitude> d_velocity_colat_lon;
 
+			mutable boost::optional<double> d_dilitation;
+			mutable boost::optional<double> d_second_invariant;
+			mutable boost::optional<double> d_sph_dilitation;
+			mutable boost::optional<double> d_sph_second_invariant;
 
 			void
 			calculate_velocity_vector() const;
+
+			void
+			calculate_dilitation(double d) const;
+
+			void
+			calculate_second_invariant(double d) const;
+
+			void
+			calculate_sph_dilitation(double d) const;
+
+			void
+			calculate_sph_second_invariant(double d) const;
+
 		};
 
 
@@ -381,6 +448,18 @@ namespace GPlatesAppLogic
 				return d_face_info->face_index;
 			}
 
+			//! Returns the centroid as a POS of this face (calculates if first time called).
+			const GPlatesMaths::PointOnSphere &
+			get_centroid() const
+			{
+				if (!d_centroid)
+				{
+					calculate_centroid();
+				}
+				return d_centroid.get();
+			}
+
+
 			/**
 			 * Deformation information for this face of the triangulation.
 			 */
@@ -394,7 +473,14 @@ namespace GPlatesAppLogic
 						const double &SR1_,
 						const double &SR2_,
 						const double &dilitation_,
-						const double &second_invariant_) :
+						const double &second_invariant_,
+						const double &smooth_dilitation_,
+						const double &smooth_second_invariant_,
+						const double &sph_dilitation_,
+						const double &sph_second_invariant_,
+						const double &sph_smooth_dilitation_,
+						const double &sph_smooth_second_invariant_
+				) :
 					SR22(SR22_),
 					SR33(SR33_),
 					SR23(SR23_),
@@ -402,10 +488,17 @@ namespace GPlatesAppLogic
 					SR1(SR1_),
 					SR2(SR2_),
 					dilitation(dilitation_),
-					second_invariant(second_invariant_)
+					second_invariant(second_invariant_),
+					smooth_dilitation(smooth_dilitation_),
+					smooth_second_invariant(smooth_second_invariant_),
+					sph_dilitation(sph_dilitation_),
+					sph_second_invariant(sph_second_invariant_),
+					sph_smooth_dilitation(sph_smooth_dilitation_),
+					sph_smooth_second_invariant(sph_smooth_second_invariant_)
 				{  }
 
 				// instantaneous strain rates
+                //double SR_sph; // spherical strain rate
 				double SR22; // 2 = x
 				double SR33; // 3 = y
 				double SR23;
@@ -421,6 +514,12 @@ namespace GPlatesAppLogic
 				double SR2; 	// principle strain 2 = tension ? FIXME: verify this ?
 				double dilitation;
 				double second_invariant;
+				double smooth_dilitation;
+				double smooth_second_invariant;
+				double sph_dilitation;
+				double sph_second_invariant;
+				double sph_smooth_dilitation;
+				double sph_smooth_second_invariant;
 			};
 
 			//! Returns the deformation information of this face (calculates if first time called).
@@ -433,6 +532,20 @@ namespace GPlatesAppLogic
 				}
 
 				return d_deformation_info.get();
+			}
+
+			//! Returns the non const deformation information of this face 
+			DeformationInfo &
+			get_deformation_info_non_const()
+			{
+				return d_deformation_info.get();
+			}
+
+			//! Set the deformation information of this face 
+			void
+			set_deformation_info( DeformationInfo &d )
+			{
+				d_deformation_info = d;
 			}
 
 		private:
@@ -451,17 +564,22 @@ namespace GPlatesAppLogic
 				int face_index;
 			};
 
+			// The centroid of the face
+			mutable boost::optional<GPlatesMaths::PointOnSphere> d_centroid;
+
+			// The extra info for the face
 			boost::optional<FaceInfo> d_face_info;
 
-			//
 			// Derived values - these are mutable since they are calculated on first call.
-			//
-
 			mutable boost::optional<DeformationInfo> d_deformation_info;
 
-
+			// Compute the deformation info for this face
 			void
 			calculate_deformation_info() const;
+
+			// Compute the centroid for this face
+			void 
+			calculate_centroid() const;
 		};
 
 
@@ -545,6 +663,40 @@ namespace GPlatesAppLogic
 
 	namespace ResolvedTriangulation
 	{
+		//
+		// Vertx Implementation
+		//
+
+		template < typename GT, typename Vb >
+		void
+		DelaunayVertex_2<GT, Vb>::calculate_dilitation(double d) const
+		{
+			d_dilitation = d;
+		}
+
+		template < typename GT, typename Vb >
+		void
+		DelaunayVertex_2<GT, Vb>::calculate_second_invariant(double d) const
+		{
+			d_second_invariant = d;
+		}
+
+
+		template < typename GT, typename Vb >
+		void
+		DelaunayVertex_2<GT, Vb>::calculate_sph_dilitation(double d) const
+		{
+			d_sph_dilitation = d;
+		}
+
+		template < typename GT, typename Vb >
+		void
+		DelaunayVertex_2<GT, Vb>::calculate_sph_second_invariant(double d) const
+		{
+			d_sph_second_invariant = d;
+		}
+
+
 		template < typename GT, typename Vb >
 		void
 		DelaunayVertex_2<GT, Vb>::calculate_velocity_vector() const
@@ -583,11 +735,35 @@ namespace GPlatesAppLogic
 		}
 
 
+		//
+		// Face Implementation
+		//
+		template < typename GT, typename Fb >
+		void
+		DelaunayFace_2<GT, Fb>::calculate_centroid() const
+		{
+			// Calculate the centroid of this face 
+	
+			// Get the vertices as PointOnSphere 's and add them to a vector
+			std::vector<GPlatesMaths::PointOnSphere> points;
+			points.push_back( this->vertex(0)->get_point_on_sphere() );
+			points.push_back( this->vertex(1)->get_point_on_sphere() );
+			points.push_back( this->vertex(2)->get_point_on_sphere() );
+
+			// compute the centroid 
+			GPlatesMaths::UnitVector3D centroid_uv3d = GPlatesMaths::Centroid::calculate_points_centroid(
+			points.begin(),
+				points.end() );
+
+			const GPlatesMaths::PointOnSphere centroid = GPlatesMaths::PointOnSphere(centroid_uv3d);
+			d_centroid = centroid;
+		}
+
+
 		template < typename GT, typename Fb >
 		void
 		DelaunayFace_2<GT, Fb>::calculate_deformation_info() const
 		{
-			//qDebug() << "DelaunayFace_2::calculate_deformation_info: START";
 			// NOTE: array indices 0,1,2 in CGAL code coorespond to triangle vertex numbers 1,2,3 
 
 			// Using 'this->' to make 'vertex()' a dependent name and hence delay name lookup
@@ -598,40 +774,30 @@ namespace GPlatesAppLogic
 
 			// Get vertex coordinates data as projected x,y coords and
 			// get velocity data, u, for each vertex.
+   
+            // NOTE: y velocities are colat, down from the pole, 
+            //       and have to have sign change for North South uses 
 
 			// vertex 1
 			const double x1 = v1->point().x();
 			const double y1 = v1->point().y();
 			double ux1 = v1->get_velocity_colat_lon().get_vector_longitude().dval();
-			double uy1 = v1->get_velocity_colat_lon().get_vector_colatitude().dval();
+			double uy1 = -( v1->get_velocity_colat_lon().get_vector_colatitude().dval() );
 
 			// vertex 2
 			const double x2 = v2->point().x();
 			const double y2 = v2->point().y();
 			double ux2 = v2->get_velocity_colat_lon().get_vector_longitude().dval();
-			double uy2 = v2->get_velocity_colat_lon().get_vector_colatitude().dval();
+			double uy2 = -( v2->get_velocity_colat_lon().get_vector_colatitude().dval() );
 
 			// vertex 3
 			const double x3 = v3->point().x();
 			const double y3 = v3->point().y();
 			double ux3 = v3->get_velocity_colat_lon().get_vector_longitude().dval();
-			double uy3 = v3->get_velocity_colat_lon().get_vector_colatitude().dval();
-
-#if 0
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: face_index =" << get_face_index();
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: v1: x1=" << x1 << "; y1 =" << y1;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: ux1 = " << ux1 << " in longitude in cm/y";
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: uy1 = " << uy1 << " in colatitude in cm/y";
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: v2: x2=" << x2 << "; y2 =" << y2;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: ux2 = " << ux2 << " in longitude in cm/y";
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: uy2 = " << uy2 << " in colatitude in cm/y";
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: v3: x3=" << x3 << "; y3 =" << y3;
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: ux3 = " << ux3 << " in longitude in cm/y";
-			qDebug() << "DelaunayFace_2::calculate_deformation_info: uy3 = " << uy3 << " in colatitude in cm/y";
-#endif
+			double uy3 = -( v3->get_velocity_colat_lon().get_vector_colatitude().dval() );
 
 			// Establish coeficients for linear interpolation over the element
-			// x,y data is in meters from projections;
+			// x,y data is in meters from projection;
 			//
 			//a1 = x2*y3 - x3*y2;
 			//a2 = x3*y1 - x1*y3;
@@ -656,51 +822,91 @@ namespace GPlatesAppLogic
 			ux3 = ux3 * inv_velocity_scale;
 			uy3 = uy3 * inv_velocity_scale;
 
+#if 0
+			// report 
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: face_index =" << get_face_index();
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: v1: x1 = " << x1 << "; y1 =" << y1;
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: ux1    = " << ux1 << " in longitude in m/s ";
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: uy1    = " << uy1 << " in colatitude in m/s ";
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: v2: x2 = " << x2 << "; y2 =" << y2;
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: ux2    = " << ux2 << " in longitude in m/s ";
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: uy2    = " << uy2 << " in colatitude in m/s ";
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: v3: x3 = " << x3 << "; y3 =" << y3;
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: ux3    = " << ux3 << " in longitude in m/s ";
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: uy3    = " << uy3 << " in colatitude in m/s ";
+#endif
+
 			// compute derivatives ; NOTE: duydy = duy/dy ; units = 1/s
 			const double duxdx = (b1*ux1 + b2*ux2 + b3*ux3) * inv_det;
 			const double duydy = (c1*uy1 + c2*uy2 + c3*uy3) * inv_det;
 
+			const double duxdy = (c1*ux1 + c2*ux2 + c3*ux3) * inv_det;
+			const double duydx = (b1*uy1 + b2*uy2 + b3*uy3) * inv_det;
+
+#if 0
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: duxdx = " << duxdx;
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: duydy = " << duydy;
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: duxdy = " << duxdy;
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: duydx = " << duydx;
+#endif
+
 			// Compute Strain Rates
 			const double SR22 = duxdx;
 			const double SR33 = duydy;
-			const double SR23 = 0.5 * (duxdx + duydy);
+			const double SR23 = 0.5 * (duxdy + duydx);
 
 #if 0
-		// keep for now, but not yet needed
+// keep for now, but not yet needed
 			// Compute Rotations
-			const double duxdy = (c1*ux1 + c2*ux2 + c3*ux3) * inv_det;
-			const double duydx = (b1*uy1 + b2*uy2 + b3*uy3) * inv_det;
 			const double ROT23 = 0.5 * (duydx - duxdy);
 			const double ROT32 = 0.5 * (duxdy - duydx);
 #endif
 
 			// Principle strain rates.
-			const double SR_DIR = 0.5 * std::atan(2.0 * SR23/(SR33-SR22) );
-			const double SR_variation = std::sqrt(SR23*SR23 + 0.25*(SR33-SR22)*(SR33-SR22));
+			const double SR_DIR = 0.5 * std::atan( 2.0 * SR23/(SR33-SR22) );
+			const double SR_variation = std::sqrt( SR23*SR23 + 0.25 * ((SR33-SR22)*(SR33-SR22)) );
 			const double SR1 = 0.5*(SR22+SR33) + SR_variation;
 			const double SR2 = 0.5*(SR22+SR33) - SR_variation;
 
 			// Dilitational strain rate
 			const double dilitation = SR22 + SR33;
 
+			// These will be updated by function calls from ResolvedTriangulationNetwork.cc
+			const double smooth_dilitation = 0.0;
+			const double smooth_second_invariant = 0.0;
+			const double sph_dilitation = 0.0;
+			const double sph_second_invariant = 0.0;
+			const double sph_smooth_dilitation = 0.0;
+			const double sph_smooth_second_invariant = 0.0;
+
 			// Second invariant of the strain rate
-			const double second_invariant = std::sqrt(SR22 * SR22 + SR33 * SR33 + 2.0 * SR23 * SR23);
+
+            // incompressable
+			// const double second_invariant = std::sqrt(SR22 * SR22 + SR33 * SR33 + 2.0 * SR23 * SR23); 
+
+            // compressable
+			// const double second_invariant = std::sqrt( (SR22 * SR33) - (SR23 * SR23) );
+            const double tmp1=( SR22 * SR33) - (SR23 * SR23);
+			const double second_invariant = copysign( std::sqrt( std::abs(tmp1) ),tmp1) ;
 
 #if 0
 			qDebug() << "DelaunayFace_2::calculate_deformation_info: SR22 = " << SR22;
 			qDebug() << "DelaunayFace_2::calculate_deformation_info: SR33 = " << SR33;
 			qDebug() << "DelaunayFace_2::calculate_deformation_info: SR23 = " << SR23;
-			// keep for now, but not yet needed
-			//qDebug() << "DelaunayFace_2::calculate_deformation_info: ROT23 = " << ROT23;
-			//qDebug() << "DelaunayFace_2::calculate_deformation_info: ROT32 = " << ROT32;
+#if 0
+// keep for now, but not yet needed
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: ROT23 = " << ROT23;
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: ROT32 = " << ROT32;
+#endif
 			qDebug() << "DelaunayFace_2::calculate_deformation_info: SR_DIR = " << SR_DIR;
 			qDebug() << "DelaunayFace_2::calculate_deformation_info: SR1 = " << SR1;
 			qDebug() << "DelaunayFace_2::calculate_deformation_info: SR2 = " << SR2;
 			qDebug() << "DelaunayFace_2::calculate_deformation_info: dilitation = " << dilitation;
 			qDebug() << "DelaunayFace_2::calculate_deformation_info: second_invariant = " << second_invariant;
+			qDebug() << "DelaunayFace_2::calculate_deformation_info: smooth_dilitation = " << smooth_dilitation;
 #endif
 
-			d_deformation_info = boost::in_place(
+			d_deformation_info = DeformationInfo(
 					SR22,
 					SR33,
 					SR23,
@@ -708,9 +914,17 @@ namespace GPlatesAppLogic
 					SR1,
 					SR2,
 					dilitation,
-					second_invariant);
+					second_invariant,
+					smooth_dilitation,
+					smooth_second_invariant,
+					sph_dilitation,
+					sph_second_invariant,
+					sph_smooth_dilitation,
+					sph_smooth_second_invariant
+			);
 		}
 	}
 }
+
 
 #endif // GPLATES_APP_LOGIC_RESOLVEDTRIANGULATIONDELAUNAY2_H

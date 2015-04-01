@@ -30,6 +30,8 @@
 
 #include "app-logic/ApplicationState.h"
 
+#include "global/GPlatesAssert.h"
+
 #include "gui/CommandServer.h"
 #include "gui/ExternalSyncController.h"
 
@@ -151,7 +153,7 @@ namespace GPlatesPresentation
 		/**
 		 * Controller for external communication.
 		 */
-		boost::optional<GPlatesGui::ExternalSyncController> d_external_sync_controller;	
+		boost::optional<GPlatesGui::ExternalSyncController> d_external_sync_controller;
 	};
 
 	inline

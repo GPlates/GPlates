@@ -28,10 +28,6 @@
 #include "ReconstructUtils.h"
 
 
-const QString GPlatesAppLogic::ReconstructionLayerTask::RECONSTRUCTION_FEATURES_CHANNEL_NAME =
-		"Reconstruction features";
-
-
 bool
 GPlatesAppLogic::ReconstructionLayerTask::can_process_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
@@ -48,26 +44,26 @@ GPlatesAppLogic::ReconstructionLayerTask::get_input_channel_types() const
 	// Channel definition for the reconstruction features.
 	input_channel_types.push_back(
 			LayerInputChannelType(
-					RECONSTRUCTION_FEATURES_CHANNEL_NAME,
+					LayerInputChannelName::RECONSTRUCTION_FEATURES,
 					LayerInputChannelType::MULTIPLE_DATAS_IN_CHANNEL));
 
 	return input_channel_types;
 }
 
 
-QString
+GPlatesAppLogic::LayerInputChannelName::Type
 GPlatesAppLogic::ReconstructionLayerTask::get_main_input_feature_collection_channel() const
 {
-	return RECONSTRUCTION_FEATURES_CHANNEL_NAME;
+	return LayerInputChannelName::RECONSTRUCTION_FEATURES;
 }
 
 
 void
 GPlatesAppLogic::ReconstructionLayerTask::add_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == RECONSTRUCTION_FEATURES_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::RECONSTRUCTION_FEATURES)
 	{
 		d_reconstruction_layer_proxy->add_reconstruction_feature_collection(feature_collection);
 	}
@@ -76,11 +72,11 @@ GPlatesAppLogic::ReconstructionLayerTask::add_input_file_connection(
 
 void
 GPlatesAppLogic::ReconstructionLayerTask::remove_input_file_connection(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 		
 {
-	if (input_channel_name == RECONSTRUCTION_FEATURES_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::RECONSTRUCTION_FEATURES)
 	{
 		d_reconstruction_layer_proxy->remove_reconstruction_feature_collection(feature_collection);
 	}
@@ -89,10 +85,10 @@ GPlatesAppLogic::ReconstructionLayerTask::remove_input_file_connection(
 
 void
 GPlatesAppLogic::ReconstructionLayerTask::modified_input_file(
-		const QString &input_channel_name,
+		LayerInputChannelName::Type input_channel_name,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	if (input_channel_name == RECONSTRUCTION_FEATURES_CHANNEL_NAME)
+	if (input_channel_name == LayerInputChannelName::RECONSTRUCTION_FEATURES)
 	{
 		// Let the reconstruction layer proxy know that one of the rotation feature collections has been modified.
 		d_reconstruction_layer_proxy->modified_reconstruction_feature_collection(feature_collection);

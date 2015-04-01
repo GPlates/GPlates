@@ -121,7 +121,7 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		QString
+		LayerInputChannelName::Type
 		get_main_input_feature_collection_channel() const;
 
 
@@ -134,31 +134,31 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		add_input_file_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 		virtual
 		void
 		remove_input_file_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 		void
 		modified_input_file(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection);
 
 
 		virtual
 		void
 		add_input_layer_proxy_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const LayerProxy::non_null_ptr_type &layer_proxy);
 
 		virtual
 		void
 		remove_input_layer_proxy_connection(
-				const QString &input_channel_name,
+				LayerInputChannelName::Type input_channel_name,
 				const LayerProxy::non_null_ptr_type &layer_proxy);
 
 
@@ -184,11 +184,6 @@ namespace GPlatesAppLogic
 		}
 
 	private:
-
-		static const QString RECONSTRUCTABLE_FEATURES_CHANNEL_NAME;
-
-		//! This is a human-readable name for the reconstructed static/dynamic polygons/networks input channel.
-		static const QString DEFORMATION_SURFACES_CHANNEL_NAME;
 
 		/**
 		 * Parameters used when reconstructing.

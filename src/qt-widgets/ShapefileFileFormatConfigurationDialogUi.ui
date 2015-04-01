@@ -14,7 +14,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Edit Shapefile Configuration</string>
+   <string>Edit OGR File Configuration</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../qt-resources/qt_widgets.qrc">

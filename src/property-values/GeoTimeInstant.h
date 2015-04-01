@@ -281,7 +281,6 @@ namespace GPlatesPropertyValues
 			d_type(type_),
 			d_value(0.0)
 		{  }
-
 	};
 
 
