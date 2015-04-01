@@ -176,6 +176,38 @@ namespace GPlatesMaths
 				const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon,
 				std::vector<lat_lon_polygon_type> &output_polygons);
 
+
+		//
+		// The following early reject methods are not needed and only provided to support optimisations...
+		//
+
+
+		/**
+		 * Returns true if the specified polyline can possibly intersect the (central meridian shifted) dateline arc.
+		 *
+		 * This can be used to avoid wrapping polylines that cannot possibly intersect the dateline.
+		 *
+		 * For example, this is used by the 2D map renderer to avoid converting to lat/lon (in dateline wrapper)
+		 * then converting to x/y/z (to tessellate polyline segments) and then converting back to
+		 * lat/lon prior to projection - instead unwrapped polylines can just be tessellated and then
+		 * converted to lat/lon, saving expensive x/y/z <-> lat/lon conversions.
+		 *
+		 * NOTE: A return value of true does *not* necessarily mean the polyline intersects the dateline.
+		 * However false always means the polyline does *not* intersect the dateline.
+		 */
+		bool
+		possibly_wraps(
+				const PolylineOnSphere::non_null_ptr_to_const_type &input_polyline) const;
+
+		/**
+		 * Returns true if the specified polygon can possibly intersect the (central meridian shifted) dateline arc.
+		 *
+		 * See the other overload of @a possibly_wraps for more details.
+		 */
+		bool
+		possibly_wraps(
+				const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon) const;
+
 	private:
 
 		//! Typedef for a polyline or polygon containing lat/lon points.
@@ -495,24 +527,15 @@ namespace GPlatesMaths
 		 * This is used as a quick test to see if a geometry (bounded by the small circle)
 		 * can *possibly* intersect the dateline.
 		 *
+		 * The bounding small circle is converted to dateline reference frame if necessary.
+		 *
 		 * NOTE: A return value of true does *not* necessarily mean a geometry bounded by the
 		 * small circle intersects the dateline.
 		 * However a return value of false does mean a bounded geometry does *not* intersect the dateline.
 		 */
 		bool
 		intersects_dateline(
-				const BoundingSmallCircle &geometry_bounding_small_circle) const;
-
-		/**
-		 * Determines if a polyline or polygon possibly intersects the dateline.
-		 *
-		 * Takes into account the central meridian (ie, converts to dateline reference frame
-		 * if central meridian is non-zero).
-		 */
-		template <class LineGeometryType>
-		bool
-		possibly_intersects_dateline(
-				const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry) const;
+				BoundingSmallCircle geometry_bounding_small_circle) const;
 
 		/**
 		 * Generates a graph from the geometry and the dateline and any intersections.

@@ -373,6 +373,16 @@ namespace GPlatesGui
 				const LatLonPointForwardIter &end_lat_lon_points);
 
 		/**
+		 * Project and tessellate great circle arcs of *unwrapped* polylines and polygons.
+		 */
+		template <typename GreatCircleArcForwardIter>
+		void
+		project_and_tessellate_unwrapped_line_geometry(
+				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+				const GreatCircleArcForwardIter &begin_arcs,
+				const GreatCircleArcForwardIter &end_arcs);
+
+		/**
 		 * Paints a *filled* line geometry (polyline or polygon) as a filled polygon.
 		 */
 		template <typename LineGeometryType>

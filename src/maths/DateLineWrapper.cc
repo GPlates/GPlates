@@ -214,7 +214,7 @@ GPlatesMaths::DateLineWrapper::wrap(
 		const PolylineOnSphere::non_null_ptr_to_const_type &input_polyline,
 		std::vector<lat_lon_polyline_type> &output_polylines)
 {
-	if (!possibly_intersects_dateline<PolylineOnSphere>(input_polyline))
+	if (!possibly_wraps(input_polyline))
 	{
 		// No intersection with the dateline so just convert entire input polyline to lat/lon coordinates.
 		output_input_vertices<PolylineOnSphere>(input_polyline, output_polylines, false/*on_dateline_arc*/);
@@ -270,7 +270,7 @@ GPlatesMaths::DateLineWrapper::wrap(
 		const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon,
 		std::vector<lat_lon_polygon_type> &output_polygons)
 {
-	if (!possibly_intersects_dateline<PolygonOnSphere>(input_polygon))
+	if (!possibly_wraps(input_polygon))
 	{
 		// No intersection with the dateline so just convert entire input polygon to lat/lon coordinates.
 		output_input_vertices<PolygonOnSphere>(input_polygon, output_polygons, false/*on_dateline_arc*/);
@@ -330,9 +330,39 @@ GPlatesMaths::DateLineWrapper::wrap(
 
 
 bool
-GPlatesMaths::DateLineWrapper::intersects_dateline(
-		const BoundingSmallCircle &geometry_bounding_small_circle) const
+GPlatesMaths::DateLineWrapper::possibly_wraps(
+		const PolylineOnSphere::non_null_ptr_to_const_type &input_polyline) const
 {
+	return intersects_dateline(input_polyline->get_bounding_small_circle());
+}
+
+
+bool
+GPlatesMaths::DateLineWrapper::possibly_wraps(
+		const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon) const
+{
+	return intersects_dateline(input_polygon->get_bounding_small_circle());
+}
+
+
+bool
+GPlatesMaths::DateLineWrapper::intersects_dateline(
+		BoundingSmallCircle geometry_bounding_small_circle) const
+{
+	if (d_central_meridian)
+	{
+		// If the bounding small circle of the geometry (in the central meridian reference frame)
+		// intersects the dateline then it's possible the line geometry does to (and hence needs wrapping).
+		//
+		// First we need to shift the geometry into the reference frame where the central meridian
+		// has longitude zero (because this is where we can do dateline wrapping [-180,180]).
+		// Instead of rotating the geometry (expensive) we rotate the centre of its bounding small circle.
+		// Then we only need to rotate the geometry if the rotated bounding small circle intersects the dateline.
+		geometry_bounding_small_circle =
+				d_central_meridian->rotate_to_dateline_frame * geometry_bounding_small_circle;
+
+	}
+
 	const UnitVector3D &geometry_centroid = geometry_bounding_small_circle.get_centre();
 
 	// NOTE: 'dval' means not using epsilon test here...
@@ -381,33 +411,6 @@ GPlatesMaths::DateLineWrapper::intersects_dateline(
 		return geometry_bounding_small_circle.test(NORTH_POLE) != BoundingSmallCircle::OUTSIDE_BOUNDS ||
 			geometry_bounding_small_circle.test(SOUTH_POLE) != BoundingSmallCircle::OUTSIDE_BOUNDS;
 	}
-}
-
-
-template <class LineGeometryType>
-bool
-GPlatesMaths::DateLineWrapper::possibly_intersects_dateline(
-		const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry) const
-{
-	const GPlatesMaths::BoundingSmallCircle &bounding_small_circle =
-			line_geometry->get_bounding_small_circle();
-
-	if (d_central_meridian)
-	{
-		// If the bounding small circle of the geometry (in the central meridian reference frame)
-		// intersects the dateline then it's possible the line geometry does to (and hence needs wrapping).
-		//
-		// First we need to shift the geometry into the reference frame where the central meridian
-		// has longitude zero (because this is where we can do dateline wrapping [-180,180]).
-		// Instead of rotating the geometry (expensive) we rotate the centre of its bounding small circle.
-		// Then we only need to rotate the geometry if the rotated bounding small circle intersects the dateline.
-		const GPlatesMaths::BoundingSmallCircle dateline_frame_bounding_small_circle =
-				d_central_meridian->rotate_to_dateline_frame * bounding_small_circle;
-
-		return intersects_dateline(dateline_frame_bounding_small_circle);
-	}
-
-	return intersects_dateline(bounding_small_circle);
 }
 
 

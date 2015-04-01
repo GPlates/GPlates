@@ -1305,6 +1305,22 @@ GPlatesGui::MapRenderedGeometryLayerPainter::dateline_wrap_and_project_line_geom
 		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
 		const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry)
 {
+	if (!d_dateline_wrapper->possibly_wraps(line_geometry))
+	{
+		// The line geometry does not need any wrapping so we can just project it without wrapping.
+		//
+		// This avoids converting to lat/lon (in dateline wrapper) then converting to x/y/z
+		// (to tessellate polyline segments) and then converting back to lat/lon prior to projection.
+		// Instead, unwrapped polylines can just be tessellated and then converted to lat/lon,
+		// saving expensive x/y/z <-> lat/lon conversions.
+		project_and_tessellate_unwrapped_line_geometry(
+				dateline_wrapped_projected_line_geometry,
+				line_geometry->begin(),
+				line_geometry->end());
+
+		return;
+	}
+
 	// Wrap the rotated geometry to the longitude range...
 	//   [-180 + central_meridian, central_meridian + 180]
 	std::vector<lat_lon_line_geometry_type> wrapped_line_geometries;
@@ -1443,6 +1459,56 @@ GPlatesGui::MapRenderedGeometryLayerPainter::project_and_tessellate_wrapped_line
 
 		arc_start_lat_lon_point = arc_end_lat_lon_point;
 		arc_start_point_on_sphere = arc_end_point_on_sphere;
+	}
+
+	dateline_wrapped_projected_line_geometry.add_geometry();
+}
+
+
+template <typename GreatCircleArcForwardIter>
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::project_and_tessellate_unwrapped_line_geometry(
+		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+		const GreatCircleArcForwardIter &begin_arcs,
+		const GreatCircleArcForwardIter &end_arcs)
+{
+	if (begin_arcs == end_arcs)
+	{
+		return;
+	}
+
+	// Add the first vertex of the sequence of great circle arcs.
+	// Keep track of the last projected point to calculate arrow head tangent direction.
+	dateline_wrapped_projected_line_geometry.add_vertex(
+			get_projected_unwrapped_position(begin_arcs->start_point()));
+
+	// Iterate over the great circle arcs.
+	for (GreatCircleArcForwardIter gca_iter = begin_arcs ; gca_iter != end_arcs; ++gca_iter)
+	{
+		const GPlatesMaths::GreatCircleArc &gca = *gca_iter;
+
+		// Tessellate the current arc if its two endpoints are far enough apart.
+		if (gca.dot_of_endpoints() < COSINE_GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD)
+		{
+			// Tessellate the current great circle arc.
+			std::vector<GPlatesMaths::PointOnSphere> tess_points;
+			tessellate(tess_points, gca, GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD);
+
+			// Add the tessellated points skipping the first since it was added by the previous GCA.
+			// We also skip the last since it gets added by the current GCA.
+			for (unsigned int n = 1; n < tess_points.size() - 1; ++n)
+			{
+				// Keep track of the last projected point to calculate arrow head tangent direction.
+				dateline_wrapped_projected_line_geometry.add_vertex(
+						get_projected_unwrapped_position(tess_points[n]));
+			}
+		}
+
+		// Vertex representing the end point's position and colour.
+		dateline_wrapped_projected_line_geometry.add_vertex(
+				get_projected_unwrapped_position(gca.end_point()));
+
+		dateline_wrapped_projected_line_geometry.add_great_circle_arc();
 	}
 
 	dateline_wrapped_projected_line_geometry.add_geometry();
