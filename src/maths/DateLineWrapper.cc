@@ -209,16 +209,16 @@ GPlatesMaths::DateLineWrapper::DateLineWrapper(
 }
 
 
-bool
-GPlatesMaths::DateLineWrapper::wrap(
+void
+GPlatesMaths::DateLineWrapper::wrap_polyline(
 		const PolylineOnSphere::non_null_ptr_to_const_type &input_polyline,
-		std::vector<lat_lon_polyline_type> &output_polylines)
+		std::vector<LatLonPolyline> &wrapped_polylines) const
 {
 	if (!possibly_wraps(input_polyline))
 	{
 		// No intersection with the dateline so just convert entire input polyline to lat/lon coordinates.
-		output_input_vertices<PolylineOnSphere>(input_polyline, output_polylines, false/*on_dateline_arc*/);
-		return false;
+		output_input_polyline(input_polyline, wrapped_polylines, false/*on_dateline_arc*/);
+		return;
 	}
 
 	// The input geometry in the dateline reference frame.
@@ -243,7 +243,7 @@ GPlatesMaths::DateLineWrapper::wrap(
 
 	const IntersectionGraph::IntersectionResult intersection_result =
 			graph.generate_polylines(
-					output_polylines,
+					wrapped_polylines,
 					d_central_meridian ? d_central_meridian->longitude : 0.0);
 	if (intersection_result == IntersectionGraph::ENTIRELY_ON_DATELINE)
 	{
@@ -257,24 +257,22 @@ GPlatesMaths::DateLineWrapper::wrap(
 		//
 		// In order for them not to generate horizontal lines in rectangular projections we ensure
 		// all points have the same longitude (-180).
-		output_input_vertices<PolylineOnSphere>(input_polyline, output_polylines, true/*on_dateline_arc*/);
-		return true;
+		output_input_polyline(input_polyline, wrapped_polylines, true/*on_dateline_arc*/);
+		return;
 	}
-
-	return intersection_result == IntersectionGraph::INTERSECTS_DATELINE;
 }
 
 
-bool
-GPlatesMaths::DateLineWrapper::wrap(
+void
+GPlatesMaths::DateLineWrapper::wrap_polygon(
 		const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon,
-		std::vector<lat_lon_polygon_type> &output_polygons)
+		std::vector<LatLonPolygon> &wrapped_polygons) const
 {
 	if (!possibly_wraps(input_polygon))
 	{
 		// No intersection with the dateline so just convert entire input polygon to lat/lon coordinates.
-		output_input_vertices<PolygonOnSphere>(input_polygon, output_polygons, false/*on_dateline_arc*/);
-		return false;
+		output_input_polygon(input_polygon, wrapped_polygons, false/*on_dateline_arc*/);
+		return;
 	}
 
 	// The input geometry in the dateline reference frame.
@@ -299,7 +297,7 @@ GPlatesMaths::DateLineWrapper::wrap(
 
 	const IntersectionGraph::IntersectionResult intersection_result =
 			graph.generate_polygons(
-					output_polygons,
+					wrapped_polygons,
 					input_polygon,
 					d_central_meridian ? d_central_meridian->longitude : 0.0);
 	if (intersection_result == IntersectionGraph::ENTIRELY_ON_DATELINE)
@@ -314,18 +312,49 @@ GPlatesMaths::DateLineWrapper::wrap(
 		//
 		// In order for them not to generate horizontal lines in rectangular projections we ensure
 		// all points have the same longitude (-180).
-		output_input_vertices<PolygonOnSphere>(input_polygon, output_polygons, true/*on_dateline_arc*/);
-		return true;
+		output_input_polygon(input_polygon, wrapped_polygons, true/*on_dateline_arc*/);
+		return;
 	}
 	if (intersection_result == IntersectionGraph::DOES_NOT_INTERSECT_DATELINE)
 	{
 		// The polygon generation code cannot generate polygon(s) if there's no intersection.
 		// So we need to output the original polygon.
-		output_input_vertices<PolygonOnSphere>(input_polygon, output_polygons, false/*on_dateline_arc*/);
-		return false; // Does not intersect dateline.
+		output_input_polygon(input_polygon, wrapped_polygons, false/*on_dateline_arc*/);
+		return;
+	}
+}
+
+
+GPlatesMaths::DateLineWrapper::LatLonMultiPoint
+GPlatesMaths::DateLineWrapper::wrap_multi_point(
+		const MultiPointOnSphere::non_null_ptr_to_const_type &input_multipoint) const
+{
+	LatLonMultiPoint lat_lon_multipoint;
+	lat_lon_multipoint.get_points().reserve(input_multipoint->number_of_points());
+
+	const double central_meridian_longitude = d_central_meridian ? d_central_meridian->longitude : 0.0;
+
+	MultiPointOnSphere::const_iterator point_iter = input_multipoint->begin();
+	MultiPointOnSphere::const_iterator point_end = input_multipoint->end();
+	for ( ; point_iter != point_end; ++point_iter)
+	{
+		lat_lon_multipoint.get_points().push_back(
+				make_lat_lon_point_in_central_meridian_range(
+						*point_iter,
+						central_meridian_longitude));
 	}
 
-	return true; // Due to 'INTERSECTS_DATELINE' result.
+	return lat_lon_multipoint;
+}
+
+
+GPlatesMaths::LatLonPoint
+GPlatesMaths::DateLineWrapper::wrap_point(
+		const PointOnSphere &input_point) const
+{
+	return make_lat_lon_point_in_central_meridian_range(
+			input_point,
+			d_central_meridian ? d_central_meridian->longitude : 0.0);
 }
 
 
@@ -342,6 +371,69 @@ GPlatesMaths::DateLineWrapper::possibly_wraps(
 		const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon) const
 {
 	return intersects_dateline(input_polygon->get_bounding_small_circle());
+}
+
+
+void
+GPlatesMaths::DateLineWrapper::output_input_polyline(
+		const PolylineOnSphere::non_null_ptr_to_const_type &input_polyline,
+		std::vector<LatLonPolyline> &wrapped_polylines,
+		bool on_dateline_arc) const
+{
+	LatLonPolyline lat_lon_polyline;
+	output_input_vertices<PolylineOnSphere>(input_polyline, lat_lon_polyline.get_points(), on_dateline_arc);
+	wrapped_polylines.push_back(lat_lon_polyline);
+}
+
+
+void
+GPlatesMaths::DateLineWrapper::output_input_polygon(
+		const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon,
+		std::vector<LatLonPolygon> &wrapped_polygons,
+		bool on_dateline_arc) const
+{
+	LatLonPolygon lat_lon_polygon;
+	output_input_vertices<PolygonOnSphere>(input_polygon, lat_lon_polygon.get_exterior_points(), on_dateline_arc);
+	wrapped_polygons.push_back(lat_lon_polygon);
+}
+
+
+template <class LineGeometryType>
+void
+GPlatesMaths::DateLineWrapper::output_input_vertices(
+		const typename LineGeometryType::non_null_ptr_to_const_type &input_line_geometry,
+		lat_lon_points_seq_type &output_line_geometry,
+		bool on_dateline_arc) const
+{
+	// No intersection with the dateline so just convert entire input polyline to lat/lon coordinates.
+	output_line_geometry.reserve(input_line_geometry->number_of_vertices());
+
+	typedef typename LineGeometryType::vertex_const_iterator vertex_const_iterator;
+	vertex_const_iterator vertex_iter = input_line_geometry->vertex_begin();
+	vertex_const_iterator vertex_end = input_line_geometry->vertex_end();
+
+	const double central_meridian_longitude = d_central_meridian ? d_central_meridian->longitude : 0.0;
+
+	if (on_dateline_arc)
+	{
+		for ( ; vertex_iter != vertex_end; ++vertex_iter)
+		{
+			output_line_geometry.push_back(
+					make_lat_lon_point_on_back_dateline_of_central_meridian(
+							*vertex_iter,
+							central_meridian_longitude));
+		}
+	}
+	else
+	{
+		for ( ; vertex_iter != vertex_end; ++vertex_iter)
+		{
+			output_line_geometry.push_back(
+					make_lat_lon_point_in_central_meridian_range(
+							*vertex_iter,
+							central_meridian_longitude));
+		}
+	}
 }
 
 
@@ -427,7 +519,7 @@ GPlatesMaths::DateLineWrapper::generate_intersection_graph(
 		IntersectionGraph &graph,
 		LineSegmentForwardIter const dateline_frame_line_segments_begin,
 		LineSegmentForwardIter const dateline_frame_line_segments_end,
-		bool is_polygon)
+		bool is_polygon) const
 {
 	// PolylineOnSphere and PolygonOnSphere ensure at least 1 (and 2) line segments.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -492,7 +584,7 @@ GPlatesMaths::DateLineWrapper::add_line_segment_to_intersection_graph(
 		IntersectionGraph &graph,
 		const GreatCircleArc &line_segment,
 		VertexClassification line_segment_start_vertex_classification,
-		VertexClassification line_segment_end_vertex_classification)
+		VertexClassification line_segment_end_vertex_classification) const
 {
 	switch (line_segment_start_vertex_classification)
 	{
@@ -991,48 +1083,6 @@ GPlatesMaths::DateLineWrapper::classify_vertex(
 }
 
 
-template <class LineGeometryType>
-void
-GPlatesMaths::DateLineWrapper::output_input_vertices(
-		const typename LineGeometryType::non_null_ptr_to_const_type &input_line_geometry,
-		std::vector<lat_lon_line_geometry_type> &output_line_geometries,
-		bool on_dateline_arc)
-{
-	// No intersection with the dateline so just convert entire input polyline to lat/lon coordinates.
-	lat_lon_line_geometry_type lat_lon_line_geometry(new lat_lon_points_seq_type());
-	lat_lon_line_geometry->reserve(input_line_geometry->number_of_vertices());
-
-	typedef typename LineGeometryType::vertex_const_iterator vertex_const_iterator;
-	vertex_const_iterator vertex_iter = input_line_geometry->vertex_begin();
-	vertex_const_iterator vertex_end = input_line_geometry->vertex_end();
-
-	const double central_meridian_longitude = d_central_meridian ? d_central_meridian->longitude : 0.0;
-
-	if (on_dateline_arc)
-	{
-		for ( ; vertex_iter != vertex_end; ++vertex_iter)
-		{
-			lat_lon_line_geometry->push_back(
-					make_lat_lon_point_on_back_dateline_of_central_meridian(
-							*vertex_iter,
-							central_meridian_longitude));
-		}
-	}
-	else
-	{
-		for ( ; vertex_iter != vertex_end; ++vertex_iter)
-		{
-			lat_lon_line_geometry->push_back(
-					make_lat_lon_point_in_central_meridian_range(
-							*vertex_iter,
-							central_meridian_longitude));
-		}
-	}
-
-	output_line_geometries.push_back(lat_lon_line_geometry);
-}
-
-
 // Note that the value doesn't matter - it's just used when constructing list sentinel nodes.
 const GPlatesMaths::DateLineWrapper::Vertex
 GPlatesMaths::DateLineWrapper::IntersectionGraph::LISTS_SENTINEL(LatLonPoint(0, 0));
@@ -1070,7 +1120,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::IntersectionGraph(
 
 GPlatesMaths::DateLineWrapper::IntersectionGraph::IntersectionResult
 GPlatesMaths::DateLineWrapper::IntersectionGraph::generate_polylines(
-		std::vector<lat_lon_polyline_type> &lat_lon_polylines,
+		std::vector<LatLonPolyline> &lat_lon_polylines,
 		const double &central_meridian)
 {
 	// Note that it is possible that all the original polyline line segments got swallowed by the dateline.
@@ -1089,7 +1139,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::generate_polylines(
 	while (geometry_vertices_iter != d_geometry_vertices.end())
 	{
 		// Start a new polyline.
-		lat_lon_polyline_type current_polyline(new lat_lon_points_seq_type());
+		LatLonPolyline current_polyline;
 		lat_lon_polylines.push_back(current_polyline);
 
 		const Vertex &start_polyline_vertex = *geometry_vertices_iter;
@@ -1101,7 +1151,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::generate_polylines(
 				GPLATES_ASSERTION_SOURCE);
 
 		// Add the polyline start point.
-		current_polyline->push_back(
+		current_polyline.get_points().push_back(
 				shift_dateline_frame_lat_lon_point_to_central_meridian_range(
 						start_polyline_vertex.point,
 						central_meridian));
@@ -1114,7 +1164,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::generate_polylines(
 		{
 			const Vertex &geometry_vertex = *geometry_vertices_iter;
 
-			current_polyline->push_back(
+			current_polyline.get_points().push_back(
 					shift_dateline_frame_lat_lon_point_to_central_meridian_range(
 							geometry_vertex.point,
 							central_meridian));
@@ -1133,7 +1183,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::generate_polylines(
 	// All prior polylines are guaranteed to have at least two points by the way vertices
 	// are added to them in the above loop.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			lat_lon_polylines.back()->size() >= 2,
+			lat_lon_polylines.back().get_points().size() >= 2,
 			GPLATES_ASSERTION_SOURCE);
 
 	return geometry_result;
@@ -1142,7 +1192,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::generate_polylines(
 
 GPlatesMaths::DateLineWrapper::IntersectionGraph::IntersectionResult
 GPlatesMaths::DateLineWrapper::IntersectionGraph::generate_polygons(
-		std::vector<lat_lon_polygon_type> &lat_lon_polygons,
+		std::vector<LatLonPolygon> &lat_lon_polygons,
 		const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon,
 		const double &central_meridian)
 {
@@ -1284,7 +1334,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::generate_entry_exit_flags_for_
 
 void
 GPlatesMaths::DateLineWrapper::IntersectionGraph::output_intersecting_polygons(
-		std::vector<lat_lon_polygon_type> &lat_lon_polygons,
+		std::vector<LatLonPolygon> &lat_lon_polygons,
 		const double &central_meridian)
 {
 	//
@@ -1318,7 +1368,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::output_intersecting_polygons(
 		}
 
 		// Start a new polygon.
-		lat_lon_polygon_type current_output_polygon(new lat_lon_points_seq_type());
+		LatLonPolygon current_output_polygon;
 		lat_lon_polygons.push_back(current_output_polygon);
 
 		// Used to keep track of which vertex list we are traversing as we alternate between
@@ -1341,7 +1391,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::output_intersecting_polygons(
 			Vertex &output_polygon_vertex = *output_polygon_vertices_iter;
 
 			// Add the current vertex to the current output polygon.
-			current_output_polygon->push_back(
+			current_output_polygon.get_exterior_points().push_back(
 					shift_dateline_frame_lat_lon_point_to_central_meridian_range(
 							output_polygon_vertex.point,
 							central_meridian));
