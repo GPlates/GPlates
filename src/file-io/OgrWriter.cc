@@ -416,10 +416,10 @@ namespace{
 
 
 	//! Typedef for a sequence of lat/lon points.
-	typedef std::vector<GPlatesMaths::LatLonPoint> lat_lon_points_seq_type;
+	typedef GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type lat_lon_points_seq_type;
 
 	//! Typedef for a polyline containing lat/lon points.
-	typedef boost::shared_ptr<lat_lon_points_seq_type> lat_lon_polyline_type;
+	typedef GPlatesMaths::DateLineWrapper::LatLonPolyline lat_lon_polyline_type;
 
 	/**
 	 * Typedef for a polygon containing lat/lon points.
@@ -427,7 +427,7 @@ namespace{
 	 * NOTE: This mirrors @a PolygonOnSphere in that the start and end points are *not* the same.
 	 * So you may need to explicitly close the polygon by appending the start point (eg, OGR library).
 	 */
-	typedef boost::shared_ptr<lat_lon_points_seq_type> lat_lon_polygon_type;
+	typedef GPlatesMaths::DateLineWrapper::LatLonPolygon lat_lon_polygon_type;
 
 	/**
 	 * Converts the specified polyline-on-sphere to a lat/lon geometry.
@@ -478,14 +478,14 @@ namespace{
 				// Wrap (clip) the current polyline to the dateline.
 				// This could turn one polyline into multiple polylines.
 				// Note that lat/lon polylines just get appended to 'lat_lon_polylines'.
-				dateline_wrapper->wrap(polyline, lat_lon_polylines);
+				dateline_wrapper->wrap_polyline(polyline, lat_lon_polylines);
 			}
 			else
 			{
 				// No dateline wrapping so just straight conversion to lat/lon.
-				const lat_lon_polyline_type lat_lon_polyline(new lat_lon_points_seq_type());
+				lat_lon_polyline_type lat_lon_polyline;
 				convert_points_to_lat_lon(
-						*lat_lon_polyline,
+						lat_lon_polyline.get_points(),
 						polyline->vertex_begin(),
 						polyline->vertex_end(),
 						polyline->number_of_vertices());
@@ -519,14 +519,14 @@ namespace{
 				// Wrap (clip) the current polygon to the dateline.
 				// This could turn one polygon into multiple polygons.
 				// Note that lat/lon polygons just get appended to 'lat_lon_polygons'.
-				dateline_wrapper->wrap(polygon, lat_lon_polygons);
+				dateline_wrapper->wrap_polygon(polygon, lat_lon_polygons);
 			}
 			else
 			{
 				// No dateline wrapping so just straight conversion to lat/lon.
-				const lat_lon_polygon_type lat_lon_polygon(new lat_lon_points_seq_type());
+				lat_lon_polygon_type lat_lon_polygon;
 				convert_points_to_lat_lon(
-						*lat_lon_polygon,
+						lat_lon_polygon.get_exterior_points(),
 						polygon->vertex_begin(),
 						polygon->vertex_end(),
 						polygon->number_of_vertices());
@@ -541,8 +541,8 @@ namespace{
 			const lat_lon_polyline_type &lat_lon_polyline)
 	{
 		lat_lon_points_seq_type::const_iterator 
-			line_iter = lat_lon_polyline->begin(),
-			line_end = lat_lon_polyline->end();
+			line_iter = lat_lon_polyline.get_points().begin(),
+			line_end = lat_lon_polyline.get_points().end();
 
 		for (; line_iter != line_end ; ++line_iter)
 		{
@@ -599,8 +599,8 @@ namespace{
 		OGRLinearRing ogr_linear_ring;
 
 		lat_lon_points_seq_type::const_iterator 
-			line_iter = lat_lon_polygon->begin(),
-			line_end = lat_lon_polygon->end();
+			line_iter = lat_lon_polygon.get_exterior_points().begin(),
+			line_end = lat_lon_polygon.get_exterior_points().end();
 
 		for (; line_iter != line_end ; ++line_iter)
 		{

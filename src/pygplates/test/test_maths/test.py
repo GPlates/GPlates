@@ -19,6 +19,55 @@ import test_geometries_on_sphere
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 
 
+class DateLineWrapperCase(unittest.TestCase):
+    def test_wrap(self):
+        date_line_wrapper = pygplates.DateLineWrapper()
+        date_line_wrapper_90 = pygplates.DateLineWrapper(90)
+        
+        # Wrap point.
+        point = pygplates.PointOnSphere(0, -120)
+        wrapped_point = date_line_wrapper.wrap(point)
+        self.assertAlmostEqual(wrapped_point.get_latitude(), 0)
+        self.assertAlmostEqual(wrapped_point.get_longitude(), -120)
+        # Longitude should now be in range [-90, 270].
+        wrapped_point = date_line_wrapper_90.wrap(point)
+        self.assertAlmostEqual(wrapped_point.get_longitude(), -120 + 360)
+        
+        # Wrap mult-point.
+        multi_point = pygplates.MultiPointOnSphere([(10, 170), (0, -170), (-10, 170)])
+        wrapped_multi_point = date_line_wrapper.wrap(multi_point)
+        self.assertEquals(len(wrapped_multi_point.get_points()), 3)
+        self.assertAlmostEqual(wrapped_multi_point.get_points()[0].get_latitude(), 10)
+        self.assertAlmostEqual(wrapped_multi_point.get_points()[0].get_longitude(), 170)
+        self.assertAlmostEqual(wrapped_multi_point.get_points()[1].get_latitude(), 0)
+        self.assertAlmostEqual(wrapped_multi_point.get_points()[1].get_longitude(), -170)
+        self.assertAlmostEqual(wrapped_multi_point.get_points()[2].get_latitude(), -10)
+        self.assertAlmostEqual(wrapped_multi_point.get_points()[2].get_longitude(), 170)
+        # Longitude should now be in range [-90, 270].
+        wrapped_multi_point = date_line_wrapper_90.wrap(multi_point)
+        self.assertTrue(isinstance(wrapped_multi_point, pygplates.DateLineWrapper.LatLonMultiPoint))
+        self.assertAlmostEqual(wrapped_multi_point.get_points()[0].get_longitude(), 170)
+        self.assertAlmostEqual(wrapped_multi_point.get_points()[1].get_longitude(), -170 + 360)
+        self.assertAlmostEqual(wrapped_multi_point.get_points()[2].get_longitude(), 170)
+
+        # Polygon should get split into two across dateline (but not when central meridian is 90).
+        polygon = pygplates.PolygonOnSphere([(10, 170), (0, -170), (-10, 170)])
+        wrapped_polygon = date_line_wrapper.wrap(polygon)
+        self.assertEquals(len(wrapped_polygon), 2)
+        self.assertTrue(isinstance(wrapped_polygon[0].get_exterior_points()[0], pygplates.LatLonPoint))
+        wrapped_polygon = date_line_wrapper_90.wrap(polygon)
+        self.assertEquals(len(wrapped_polygon), 1)
+        self.assertTrue(isinstance(wrapped_polygon[0], pygplates.DateLineWrapper.LatLonPolygon))
+
+        # Polyline should get split into three across dateline (but not when central meridian is 90).
+        polyline = pygplates.PolylineOnSphere([(10, 170), (0, -170), (-10, 170)])
+        wrapped_polyline = date_line_wrapper.wrap(polyline)
+        self.assertEquals(len(wrapped_polyline), 3)
+        self.assertTrue(isinstance(wrapped_polyline[0].get_points()[0], pygplates.LatLonPoint))
+        wrapped_polyline = date_line_wrapper_90.wrap(polyline)
+        self.assertEquals(len(wrapped_polyline), 1)
+        self.assertTrue(isinstance(wrapped_polyline[0], pygplates.DateLineWrapper.LatLonPolyline))
+
 class FiniteRotationCase(unittest.TestCase):
     def setUp(self):
         self.pole = pygplates.PointOnSphere(0, 0, 1)
@@ -297,6 +346,7 @@ def suite():
     
     # Add test cases from this module.
     test_cases = [
+            DateLineWrapperCase,
             FiniteRotationCase,
             GreatCircleArcCase,
             LatLonPointCase

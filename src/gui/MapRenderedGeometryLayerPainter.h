@@ -292,9 +292,6 @@ namespace GPlatesGui
 		//! Typedef for a primitives stream containing coloured vertices.
 		typedef LayerPainter::stream_primitives_type stream_primitives_type;
 
-		//! Typedef for a wrapped line geometry (polyline or polygon) containing lat/lon points.
-		typedef boost::shared_ptr<GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type> lat_lon_line_geometry_type;
-
 
 		//! Used to project vertices of rendered geometries to the map.
 		MapProjection::non_null_ptr_to_const_type d_map_projection;
@@ -354,13 +351,20 @@ namespace GPlatesGui
 				const T &geom);
 
 		/**
-		 * Dateline wraps and map projects line geometries (polylines and polygons).
+		 * Dateline wraps and map projects polylines.
 		 */
-		template <typename LineGeometryType>
 		void
 		dateline_wrap_and_project_line_geometry(
 				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
-				const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry);
+				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline_on_sphere);
+
+		/**
+		 * Dateline wraps and map projects polygons.
+		 */
+		void
+		dateline_wrap_and_project_line_geometry(
+				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon_on_sphere);
 
 		/**
 		 * Project and tessellate *wrapped* line geometries (polylines and polygons).

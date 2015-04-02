@@ -30,7 +30,6 @@
 #include <stack>
 #include <iostream>
 #include <boost/foreach.hpp>
-#include <boost/type_traits/is_same.hpp>
 
 #include <QDebug>
 #include <QTransform>
@@ -559,7 +558,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_su
 						triangle_points + 3);
 
 		DatelineWrappedProjectedLineGeometry dateline_wrapped_projected_triangle;
-		dateline_wrap_and_project_line_geometry<GPlatesMaths::PolygonOnSphere>(
+		dateline_wrap_and_project_line_geometry(
 				dateline_wrapped_projected_triangle,
 				triangle_polygon);
 
@@ -1299,47 +1298,84 @@ GPlatesGui::MapRenderedGeometryLayerPainter::get_colour_of_rendered_geometry(
 }
 
 
-template <typename LineGeometryType>
 void
 GPlatesGui::MapRenderedGeometryLayerPainter::dateline_wrap_and_project_line_geometry(
 		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
-		const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry)
+		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline_on_sphere)
 {
-	if (!d_dateline_wrapper->possibly_wraps(line_geometry))
+	if (!d_dateline_wrapper->possibly_wraps(polyline_on_sphere))
 	{
-		// The line geometry does not need any wrapping so we can just project it without wrapping.
+		// The polyline does not need any wrapping so we can just project it without wrapping.
 		//
 		// This avoids converting to lat/lon (in dateline wrapper) then converting to x/y/z
-		// (to tessellate polyline segments) and then converting back to lat/lon prior to projection.
+		// (to tessellate line segments) and then converting back to lat/lon prior to projection.
 		// Instead, unwrapped polylines can just be tessellated and then converted to lat/lon,
 		// saving expensive x/y/z <-> lat/lon conversions.
 		project_and_tessellate_unwrapped_line_geometry(
 				dateline_wrapped_projected_line_geometry,
-				line_geometry->begin(),
-				line_geometry->end());
+				polyline_on_sphere->begin(),
+				polyline_on_sphere->end());
 
 		return;
 	}
 
 	// Wrap the rotated geometry to the longitude range...
 	//   [-180 + central_meridian, central_meridian + 180]
-	std::vector<lat_lon_line_geometry_type> wrapped_line_geometries;
-	d_dateline_wrapper->wrap(line_geometry, wrapped_line_geometries);
+	std::vector<GPlatesMaths::DateLineWrapper::LatLonPolyline> wrapped_polylines;
+	d_dateline_wrapper->wrap_polyline(polyline_on_sphere, wrapped_polylines);
 
 	// Paint each wrapped piece of the original geometry.
-	BOOST_FOREACH(const lat_lon_line_geometry_type &wrapped_line_geometry, wrapped_line_geometries)
+	BOOST_FOREACH(
+			const GPlatesMaths::DateLineWrapper::LatLonPolyline &wrapped_polyline,
+			wrapped_polylines)
 	{
-		// If it's a wrapped polygon (not a polyline) then add the start point to the end in order
+		project_and_tessellate_wrapped_line_geometry(
+				dateline_wrapped_projected_line_geometry,
+				wrapped_polyline.get_points().begin(),
+				wrapped_polyline.get_points().end());
+	}
+}
+
+
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::dateline_wrap_and_project_line_geometry(
+		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon_on_sphere)
+{
+	if (!d_dateline_wrapper->possibly_wraps(polygon_on_sphere))
+	{
+		// The polygon does not need any wrapping so we can just project it without wrapping.
+		//
+		// This avoids converting to lat/lon (in dateline wrapper) then converting to x/y/z
+		// (to tessellate line segments) and then converting back to lat/lon prior to projection.
+		// Instead, unwrapped polygons can just be tessellated and then converted to lat/lon,
+		// saving expensive x/y/z <-> lat/lon conversions.
+		project_and_tessellate_unwrapped_line_geometry(
+				dateline_wrapped_projected_line_geometry,
+				polygon_on_sphere->begin(),
+				polygon_on_sphere->end());
+
+		return;
+	}
+
+	// Wrap the rotated geometry to the longitude range...
+	//   [-180 + central_meridian, central_meridian + 180]
+	std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon> wrapped_polygons;
+	d_dateline_wrapper->wrap_polygon(polygon_on_sphere, wrapped_polygons);
+
+	// Paint each wrapped piece of the original geometry.
+	BOOST_FOREACH(
+			GPlatesMaths::DateLineWrapper::LatLonPolygon &wrapped_polygon,
+			wrapped_polygons)
+	{
+		// It's a wrapped polygon (not a polyline) so add the start point to the end in order
 		// to close the loop - we need to do this because we're iterating over vertices not arcs.
-		if (boost::is_same<LineGeometryType, GPlatesMaths::PolygonOnSphere>::value)
-		{
-			wrapped_line_geometry->push_back(wrapped_line_geometry->front());
-		}
+		wrapped_polygon.get_exterior_points().push_back(wrapped_polygon.get_exterior_points().front());
 
 		project_and_tessellate_wrapped_line_geometry(
 				dateline_wrapped_projected_line_geometry,
-				wrapped_line_geometry->begin(),
-				wrapped_line_geometry->end());
+				wrapped_polygon.get_exterior_points().begin(),
+				wrapped_polygon.get_exterior_points().end());
 	}
 }
 
@@ -1523,7 +1559,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_fill_geometry(
 		const Colour &colour)
 {
 	DatelineWrappedProjectedLineGeometry dateline_wrapped_projected_line_geometry;
-	dateline_wrap_and_project_line_geometry<LineGeometryType>(
+	dateline_wrap_and_project_line_geometry(
 			dateline_wrapped_projected_line_geometry,
 			line_geometry);
 
@@ -1576,7 +1612,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_line_geometry(
 		boost::optional<double> arrow_head_size)
 {
 	DatelineWrappedProjectedLineGeometry dateline_wrapped_projected_line_geometry;
-	dateline_wrap_and_project_line_geometry<LineGeometryType>(
+	dateline_wrap_and_project_line_geometry(
 			dateline_wrapped_projected_line_geometry,
 			line_geometry);
 
