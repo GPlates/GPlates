@@ -11,6 +11,7 @@ class methods and a description of their usage and parameters.
 	:nosignatures:
 
 	pygplates
+	pygplates.DateLineWrapper
 	pygplates.Enumeration
 	pygplates.EnumerationType
 	pygplates.Feature

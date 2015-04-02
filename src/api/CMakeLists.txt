@@ -26,6 +26,7 @@ set(srcs
     PyColour.cc
     PyCoregistrationLayerProxy.cc
     PyCoregistrationLayerProxy.h
+    PyDateLineWrapper.cc
     PyExceptions.cc
     PyExceptions.h
     PyFeature.cc

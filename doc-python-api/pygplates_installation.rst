@@ -173,7 +173,7 @@ previous pygplates).
 Installing Python
 -----------------
 
-In other to execute Python source code in an :ref:`external <pygplates_introduction_external>` Python
+In order to execute Python source code in an :ref:`external <pygplates_introduction_external>` Python
 interpreter you will need a Python installation. MacOS X typically comes with a Python installation.
 However for Windows you will need to install Python.
 
@@ -196,7 +196,7 @@ So if you attempt to import pygplates into a Python interpreter with a different
 will get an error.
 
 For example, on Windows if you attempt to import a pre-built pygplates library compiled for
-32-bit Python **2.7.x** into a 32-bit Python **2.6.x** interpreter then we will get an error similar to:
+32-bit Python **2.7.x** into a 32-bit Python **2.6.x** interpreter then you will get an error similar to:
 ::
 
   ImportError: Module use of python27.dll conflicts with this version of Python.
@@ -211,14 +211,14 @@ And on MacOS X the error message (in a similar situation) is more cryptic:
 It is also important to use matching architectures (32-bit versus 64-bit).
 
 For example, on Windows if you attempt to import a pre-built pygplates library compiled for
-**32-bit** Python 2.7.x into a **64-bit** Python 2.7.x interpreter then we will get the following
-misleading error:
+**32-bit** Python 2.7.x into a **64-bit** Python 2.7.x interpreter then you will get the following
+error:
 ::
 
   ImportError: DLL load failed: %1 is not a valid Win32 application.
 
-To find out which Python version you are currently using you can type the following in the *Terminal*
-or *Command* window:
+To find out which Python interpreter version you are currently using you can type the following
+in the *Terminal* or *Command* window:
 ::
 
   python --version

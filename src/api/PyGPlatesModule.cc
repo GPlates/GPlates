@@ -37,12 +37,13 @@ void export_exceptions();
 void export_strings();
 
 // maths namespace
+void export_date_line_wrapper();
 void export_finite_rotation();
-void export_great_circle_arc();
+void export_float();
 void export_geometries_on_sphere();
+void export_great_circle_arc();
 void export_integer();
 void export_lat_lon_point();
-void export_float();
 void export_real();
 
 // file-io namespace
@@ -145,6 +146,7 @@ export_cpp_python_api()
 	export_geometries_on_sphere();
 	export_integer();
 	export_lat_lon_point();
+	export_date_line_wrapper();
 
 	// file-io namespace
 	export_feature_collection_file_format_registry();
