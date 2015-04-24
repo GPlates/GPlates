@@ -52,6 +52,20 @@ namespace{
 	typedef std::map<QString, QStringList> file_to_driver_map_type;
 
 	bool
+	file_type_does_not_support_mixing_single_and_multi_line_strings_in_layer(
+			const QString &extension)
+	{
+		return ((extension == "GMT") || (extension == "gmt"));
+	}
+
+	bool
+	file_type_does_not_support_mixing_single_and_multi_polygons_in_layer(
+			const QString &extension)
+	{
+		return ((extension == "GMT") || (extension == "gmt"));
+	}
+
+	bool
 	file_type_does_not_support_layer_deletion(
 			const QString &extension)
 	{
@@ -950,7 +964,17 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polyline_feature(
 			d_ogr_line_data_source_ptr,
 			d_ogr_polyline_layer,
 			// Multiple polylines or a single polyline...
-			is_multi_line_string ? wkbMultiLineString : wkbLineString,
+			// Shapefiles support mixing single/multi line strings per layer but other formats,
+			// like GMT, do not (specifying single line string as layer geom type will result in
+			// OGR reader loading only the first line string per feature). Also we don't yet know
+			// what the next line string type (single/multi) will be since dateline wrapping can
+			// turn a single into a multi. So we just treat them all as multi line strings.
+			//
+			// FIXME: There's probably a better solution that this such as determining if any
+			// multi line strings up front.
+			file_type_does_not_support_mixing_single_and_multi_line_strings_in_layer(d_extension)
+					? wkbMultiLineString
+					: (is_multi_line_string ? wkbMultiLineString : wkbLineString),
 			QString(d_layer_basename + "_polyline"),
 			key_value_dictionary);
 
@@ -1044,7 +1068,17 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polygon_feature(
 			d_ogr_polygon_data_source_ptr,
 			d_ogr_polygon_layer,
 			// Multiple polygons or a single polygon...
-			is_multi_polygon ? wkbMultiPolygon : wkbPolygon,
+			// Shapefiles support mixing single/multi polygons per layer but other formats,
+			// like GMT, do not (specifying single polygon as layer geom type will result in
+			// OGR reader loading only the first polygon per feature). Also we don't yet know
+			// what the next polygon type (single/multi) will be since dateline wrapping can
+			// turn a single into a multi. So we just treat them all as multi polygons.
+			//
+			// FIXME: There's probably a better solution that this such as determining if any
+			// multi polygons up front.
+			file_type_does_not_support_mixing_single_and_multi_polygons_in_layer(d_extension)
+					? wkbMultiPolygon
+					: (is_multi_polygon ? wkbMultiPolygon : wkbPolygon),
 			QString(d_layer_basename + "_polygon"),
 			key_value_dictionary);
 
