@@ -70,8 +70,7 @@ GPlatesAppLogic::TopologyGeometryResolver::TopologyGeometryResolver(
 	d_reconstruct_handle(reconstruct_handle),
 	d_reconstruction_tree_creator(reconstruction_tree_creator),
 	d_reconstruction_tree(reconstruction_tree),
-	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles),
-	d_reconstruction_params(reconstruction_tree->get_reconstruction_time())
+	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles)
 {  
 }
 
@@ -96,7 +95,8 @@ GPlatesAppLogic::TopologyGeometryResolver::initialise_pre_feature_properties(
 	d_reconstruction_params.visit_feature(d_currently_visited_feature);
 
 	// If the feature is not defined at the reconstruction time then don't visit the properties.
-	if ( ! d_reconstruction_params.is_feature_defined_at_recon_time())
+	if (!d_reconstruction_params.is_feature_defined_at_recon_time(
+		d_reconstruction_tree->get_reconstruction_time()))
 	{
 		return false;
 	}

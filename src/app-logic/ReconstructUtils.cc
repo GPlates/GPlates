@@ -401,7 +401,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 			reconstruct_context.create_context_state(reconstruct_method_context);
 
 	// Reconstruct the reconstructable features.
-	return reconstruct_context.reconstruct_feature_geometries(
+	return reconstruct_context.get_reconstructed_features(
 			reconstructed_features,
 			context_state,
 			reconstruction_time);

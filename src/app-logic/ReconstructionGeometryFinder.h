@@ -163,31 +163,11 @@ namespace GPlatesAppLogic
 		}
 
 	protected:
+
 		virtual
 		void
 		visit_reconstructed_feature_geometry(
 				ReconstructedFeatureGeometry &rfg);
-
-
-		virtual
-		void
-		visit_reconstructed_flowline(
-				ReconstructedFlowline &rf);
-
-		virtual
-		void
-		visit_reconstructed_motion_path(
-				ReconstructedMotionPath &rmp);
-
-		virtual
-		void
-		visit_reconstructed_small_circle(
-				GPlatesAppLogic::ReconstructedSmallCircle &rsc);
-
-		virtual
-		void
-		visit_reconstructed_virtual_geomagnetic_pole(
-				GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp);
 
 		virtual
 		void

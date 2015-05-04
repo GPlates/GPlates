@@ -37,6 +37,7 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructedFlowline.h"
 #include "ReconstructedMotionPath.h"
+#include "ReconstructedScalarCoverage.h"
 #include "ReconstructedSmallCircle.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
 #include "ReconstructHandle.h"
@@ -507,6 +508,14 @@ namespace GPlatesAppLogic
 				d_feature_ref = rtn->get_feature_ref();
 			}
 
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
+			{
+				d_feature_ref = rsc->get_feature_ref();
+			}
+
 		private:
 			boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_feature_ref;
 		};
@@ -655,6 +664,16 @@ namespace GPlatesAppLogic
 				d_plate_id = rtn->plate_id();
 			}
 
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
+			{
+				visit(
+						GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
+								rsc->get_reconstructed_domain_geometry()));
+			}
+
 		private:
 			boost::optional<GPlatesModel::integer_plate_id_type> d_plate_id;
 		};
@@ -717,6 +736,16 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 			{
 				d_time_of_formation = rtn->time_of_formation();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
+			{
+				visit(
+						GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
+								rsc->get_reconstructed_domain_geometry()));
 			}
 
 		private:
@@ -794,6 +823,16 @@ namespace GPlatesAppLogic
 				// resolved_topological_network_type does not need/support reconstruction trees.
 			}
 
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
+			{
+				visit(
+						GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
+								rsc->get_reconstructed_domain_geometry()));
+			}
+
 		private:
 			boost::optional<double> d_reconstruction_time;
 			boost::optional<ReconstructionTree::non_null_ptr_to_const_type> d_reconstruction_tree;
@@ -847,6 +886,16 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 			{
 				// resolved_topological_network_type does not need/support reconstruction trees.
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
+			{
+				visit(
+						GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
+								rsc->get_reconstructed_domain_geometry()));
 			}
 
 		private:
@@ -1016,6 +1065,16 @@ namespace GPlatesAppLogic
 					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 			{
 				d_boundary_polygon = rtn->boundary_polygon();
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
+			{
+				visit(
+						GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
+								rsc->get_reconstructed_domain_geometry()));
 			}
 
 		private:

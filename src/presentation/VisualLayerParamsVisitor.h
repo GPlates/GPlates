@@ -33,6 +33,7 @@ namespace GPlatesPresentation
 {
 	// Forward declarations of supported VisualLayerParams derivations.
 	class RasterVisualLayerParams;
+	class ReconstructScalarCoverageVisualLayerParams;
 	class ReconstructVisualLayerParams;
 	class ScalarField3DVisualLayerParams;
 	class TopologyBoundaryVisualLayerParams;
@@ -52,6 +53,7 @@ namespace GPlatesPresentation
 		typedef typename GPlatesUtils::SetConst<TopologyNetworkVisualLayerParams, Const>::type 
 			topology_network_visual_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<RasterVisualLayerParams, Const>::type raster_visual_layer_params_type;
+		typedef typename GPlatesUtils::SetConst<ReconstructScalarCoverageVisualLayerParams, Const>::type reconstruct_scalar_coverage_visual_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<ReconstructVisualLayerParams, Const>::type reconstruct_visual_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<ScalarField3DVisualLayerParams, Const>::type scalar_field_3d_visual_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<TopologyBoundaryVisualLayerParams, Const>::type topology_boundary_visual_layer_params_type;
@@ -68,6 +70,12 @@ namespace GPlatesPresentation
 		void
 		visit_raster_visual_layer_params(
 				raster_visual_layer_params_type &params)
+		{  }
+
+		virtual
+		void
+		visit_reconstruct_scalar_coverage_visual_layer_params(
+				reconstruct_scalar_coverage_visual_layer_params_type &params)
 		{  }
 
 		virtual

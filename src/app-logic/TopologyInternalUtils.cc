@@ -525,7 +525,7 @@ namespace
 			{
 				GPlatesAppLogic::ReconstructionFeatureProperties visitor;
 				visitor.visit_feature(feature_ref);
-				if (visitor.is_feature_defined_at_recon_time())
+				if (visitor.is_feature_defined_at_recon_time(reconstruction_time))
 				{
 					qWarning() << "No topological sections were found at " << reconstruction_time << "Ma for:";
 					qWarning() << "  feature id =" 

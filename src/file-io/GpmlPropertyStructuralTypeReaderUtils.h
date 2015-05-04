@@ -34,6 +34,7 @@
 
 // Please keep these ordered alphabetically...
 #include "property-values/Enumeration.h"
+#include "property-values/GmlDataBlock.h"
 #include "property-values/GmlFile.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
@@ -140,6 +141,13 @@ namespace GPlatesFileIO
 		// Any additions here also need to be added to GpmlPropertyStructuralTypeReader.
 		//
 		// Please keep these ordered alphabetically...
+
+
+		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type
+		create_gml_data_block(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+				const GPlatesModel::GpgimVersion &gpml_version,
+				ReadErrorAccumulation &read_errors);
 
 
 		GPlatesPropertyValues::GmlFile::non_null_ptr_type

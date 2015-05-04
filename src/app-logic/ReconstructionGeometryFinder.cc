@@ -109,33 +109,6 @@ GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstructed_feature_geome
 	visit_reconstruction_geometry_derived_type(rfg);
 }
 
-void
-GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstructed_flowline(
-	ReconstructedFlowline &rf)
-{
-	visit_reconstruction_geometry_derived_type(rf);
-}
-
-void
-GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstructed_motion_path(
-	ReconstructedMotionPath &rmp)
-{
-	visit_reconstruction_geometry_derived_type(rmp);
-}
-
-void
-GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstructed_small_circle(
-		GPlatesAppLogic::ReconstructedSmallCircle &rsc)
-{
-	visit_reconstruction_geometry_derived_type(rsc);
-}
-
-void
-GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstructed_virtual_geomagnetic_pole(
-				GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp)
-{
-	visit_reconstruction_geometry_derived_type(rvgp);
-}
 
 void
 GPlatesAppLogic::ReconstructionGeometryFinder::visit_resolved_topological_geometry(

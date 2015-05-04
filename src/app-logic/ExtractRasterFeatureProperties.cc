@@ -220,8 +220,13 @@ GPlatesAppLogic::contains_raster_feature(
 			iter != feature_collection->end(); ++iter)
 	{
 		visitor.visit_feature(iter);
+		if (visitor.has_raster_feature())
+		{
+			return true;
+		}
 	}
-	return visitor.has_raster_feature();
+
+	return false;
 }
 
 

@@ -41,7 +41,6 @@ GPlatesAppLogic::ResolvedRaster::ResolvedRaster(
 		const boost::optional<raster_layer_proxy_non_null_ptr_type> &normal_map_raster_layer_proxy) :
 	ReconstructionGeometry(reconstruction_time),
 	WeakObserverType(feature_handle),
-	d_reconstruction_time(reconstruction_time),
 	d_raster_layer_proxy(raster_layer_proxy),
 	d_reconstructed_polygons_layer_proxy(reconstructed_polygons_layer_proxy),
 	d_age_grid_raster_layer_proxy(age_grid_raster_layer_proxy),

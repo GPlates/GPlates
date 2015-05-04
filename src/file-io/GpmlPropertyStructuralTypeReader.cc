@@ -179,6 +179,10 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReader::add_native_structural_types()
 	//
 	// Please keep these ordered alphabetically (by structural type name)...
 
+	d_structural_type_reader_map[StructuralType::create_gml("DataBlock")] =
+			boost::bind<GPlatesModel::PropertyValue::non_null_ptr_type>(
+					&GpmlPropertyStructuralTypeReaderUtils::create_gml_data_block, _1, _2, _3);
+
 	d_structural_type_reader_map[StructuralType::create_gml("File")] =
 			boost::bind<GPlatesModel::PropertyValue::non_null_ptr_type>(
 					&GpmlPropertyStructuralTypeReaderUtils::create_gml_file, _1, _2, _3);

@@ -45,6 +45,7 @@ namespace GPlatesAppLogic
 	class LayerInputChannelType
 	{
 	public:
+
 		/**
 		 * Represents the number of data inputs allowed by a specific input channel of a layer.
 		 *
@@ -65,6 +66,35 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Represents whether, and how, to auto connect to an input layer.
+		 */
+		enum AutoConnect
+		{
+			DONT_AUTO_CONNECT,
+			// The layer can only auto connect to another layer associated with the same main input file...
+			LOCAL_AUTO_CONNECT,
+			// The layer can auto connect to layers associated with any input file...
+			GLOBAL_AUTO_CONNECT
+		};
+
+		/**
+		 * Associates a layer input type with its auto-connect capability.
+		 */
+		struct InputLayerType
+		{
+			InputLayerType(
+					LayerTaskType::Type layer_type_,
+					AutoConnect auto_connect_ = DONT_AUTO_CONNECT) :
+				layer_type(layer_type_),
+				auto_connect(auto_connect_)
+			{  }
+
+			LayerTaskType::Type layer_type;
+			AutoConnect auto_connect;
+		};
+
+
+		/**
 		 * Constructor for an input channel to be connected to an input file.
 		 */
 		LayerInputChannelType(
@@ -74,6 +104,40 @@ namespace GPlatesAppLogic
 			d_channel_data_arity(channel_data_arity)
 		{  }
 
+
+		/**
+		 * Constructor for an input channel to be connected to the output of another layer.
+		 *
+		 * The types of layers is specified in @a layer_input_types.
+		 *
+		 * Note: The layer input types don't auto connect.
+		 */
+		LayerInputChannelType(
+				LayerInputChannelName::Type input_channel_name,
+				ChannelDataArity channel_data_arity,
+				const std::vector<LayerTaskType::Type> &layer_input_types) :
+			d_input_channel_name(input_channel_name),
+			d_channel_data_arity(channel_data_arity),
+			d_input_layer_types(
+					std::vector<InputLayerType>(layer_input_types.begin(), layer_input_types.end()))
+		{  }
+
+		/**
+		 * Convenience constructor for an input channel to be connected to the output
+		 * of *one* type of layer only.
+		 *
+		 * Note: The layer input type does not auto connect.
+		 */
+		LayerInputChannelType(
+				LayerInputChannelName::Type input_channel_name,
+				ChannelDataArity channel_data_arity,
+				LayerTaskType::Type layer_input_type) :
+			d_input_channel_name(input_channel_name),
+			d_channel_data_arity(channel_data_arity),
+			d_input_layer_types(std::vector<InputLayerType>(1, layer_input_type))
+		{  }
+
+
 		/**
 		 * Constructor for an input channel to be connected to the output of another layer.
 		 *
@@ -82,10 +146,10 @@ namespace GPlatesAppLogic
 		LayerInputChannelType(
 				LayerInputChannelName::Type input_channel_name,
 				ChannelDataArity channel_data_arity,
-				const std::vector<LayerTaskType::Type> &layer_input_types) :
+				const std::vector<InputLayerType> &layer_input_types) :
 			d_input_channel_name(input_channel_name),
 			d_channel_data_arity(channel_data_arity),
-			d_layer_input_types(layer_input_types)
+			d_input_layer_types(layer_input_types)
 		{  }
 
 		/**
@@ -95,10 +159,10 @@ namespace GPlatesAppLogic
 		LayerInputChannelType(
 				LayerInputChannelName::Type input_channel_name,
 				ChannelDataArity channel_data_arity,
-				LayerTaskType::Type layer_input_type) :
+				const InputLayerType &layer_input_type) :
 			d_input_channel_name(input_channel_name),
 			d_channel_data_arity(channel_data_arity),
-			d_layer_input_types(std::vector<LayerTaskType::Type>(1, layer_input_type))
+			d_input_layer_types(std::vector<InputLayerType>(1, layer_input_type))
 		{  }
 
 
@@ -131,10 +195,10 @@ namespace GPlatesAppLogic
 		 * If boost::none is returned then only input feature collections can be connected
 		 * on this input channel.
 		 */
-		const boost::optional< std::vector<LayerTaskType::Type> > &
-		get_layer_input_data_types() const
+		const boost::optional< std::vector<InputLayerType> > &
+		get_input_layer_types() const
 		{
-			return d_layer_input_types;
+			return d_input_layer_types;
 		}
 
 
@@ -145,7 +209,7 @@ namespace GPlatesAppLogic
 		bool
 		can_connect_to_input_feature_collections() const
 		{
-			return !d_layer_input_types;
+			return !d_input_layer_types;
 		}
 
 	private:
@@ -156,7 +220,7 @@ namespace GPlatesAppLogic
 		 * If this is boost::none then it means the layer input is from
 		 * a feature collection (file) and not from the output of another layer.
 		 */
-		boost::optional< std::vector<LayerTaskType::Type> > d_layer_input_types;
+		boost::optional< std::vector<InputLayerType> > d_input_layer_types;
 	};
 }
 

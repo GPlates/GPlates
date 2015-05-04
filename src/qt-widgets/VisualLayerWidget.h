@@ -252,7 +252,7 @@ namespace GPlatesQtWidgets
 			populate_with_layers(
 					const GPlatesAppLogic::Layer &layer,
 					const GPlatesAppLogic::LayerInputChannelName::Type input_data_channel,
-					const std::vector<GPlatesAppLogic::LayerTaskType::Type> &input_data_types);
+					const std::vector<GPlatesAppLogic::LayerInputChannelType::InputLayerType> &input_layer_types);
 
 			GPlatesGui::VisualLayersProxy &d_visual_layers;
 			GPlatesAppLogic::ApplicationState &d_application_state;

@@ -42,3 +42,11 @@ GPlatesAppLogic::DeformedFeatureGeometry::accept_visitor(
 {
 	visitor.visit(GPlatesUtils::get_non_null_pointer(this));
 }
+
+
+void
+GPlatesAppLogic::DeformedFeatureGeometry::accept_weak_observer_visitor(
+		GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor)
+{
+	visitor.visit_deformed_feature_geometry(*this);
+}

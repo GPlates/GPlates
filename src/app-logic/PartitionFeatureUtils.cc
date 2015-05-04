@@ -701,11 +701,11 @@ GPlatesAppLogic::PartitionFeatureUtils::does_feature_exist_at_reconstruction_tim
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
 		const double &reconstruction_time)
 {
-	GPlatesAppLogic::ReconstructionFeatureProperties reconstruction_params(reconstruction_time);
+	GPlatesAppLogic::ReconstructionFeatureProperties reconstruction_params;
 
 	reconstruction_params.visit_feature(feature_ref);
 
-	return reconstruction_params.is_feature_defined_at_recon_time();
+	return reconstruction_params.is_feature_defined_at_recon_time(reconstruction_time);
 }
 
 

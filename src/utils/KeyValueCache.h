@@ -106,6 +106,16 @@ namespace GPlatesUtils
 
 
 		/**
+		 * Returns true if @a key currently exists in the cache.
+		 *
+		 * Note: It is not necessary to call this before calling @a get_value.
+		 */
+		bool
+		has_key(
+				const key_type &key) const;
+
+
+		/**
 		 * Returns the 'non-const' value object corresponding to the specified key.
 		 *
 		 * Creates a new value object from the specified key if the object is not cached
@@ -221,6 +231,15 @@ namespace GPlatesUtils
 		{
 			remove_least_recently_used_value();
 		}
+	}
+
+
+	template <typename KeyType, typename ValueType>
+	bool
+	KeyValueCache<KeyType,ValueType>::has_key(
+			const key_type &key) const
+	{
+		return d_key_value_map.find(key) != d_key_value_map.end();
 	}
 
 	

@@ -49,6 +49,7 @@
 #include "GpmlPropertyStructuralTypeReaderUtils.h"
 #include "ReadErrorAccumulation.h"
 
+#include "global/GPlatesAssert.h"
 #include "global/GPlatesException.h"
 
 #include "maths/LatLonPoint.h"
@@ -153,14 +154,14 @@ namespace
 		visit_element_node(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem)
 		{
-			GPlatesPropertyValues::GmlFile::xml_attributes_type xml_attributes(
+			GPlatesFileIO::GpmlStructuralTypeReaderUtils::xml_attributes_type xml_attributes(
 					elem->attributes_begin(), elem->attributes_end());
-			d_result = GPlatesPropertyValues::GmlFile::value_component_type(
+			d_result = GPlatesFileIO::GpmlStructuralTypeReaderUtils::value_component_type(
 					GPlatesPropertyValues::ValueObjectType(elem->get_name()),
 					xml_attributes);
 		}
 
-		const boost::optional<GPlatesPropertyValues::GmlFile::value_component_type> &
+		const boost::optional<GPlatesFileIO::GpmlStructuralTypeReaderUtils::value_component_type> &
 		get_result() const
 		{
 			return d_result;
@@ -168,7 +169,7 @@ namespace
 
 	private:
 
-		boost::optional<GPlatesPropertyValues::GmlFile::value_component_type> d_result;
+		boost::optional<GPlatesFileIO::GpmlStructuralTypeReaderUtils::value_component_type> d_result;
 	};
 
 
@@ -260,6 +261,30 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_revision_id(
 }
 
 
+GPlatesFileIO::GpmlStructuralTypeReaderUtils::composite_value_type
+GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gml_composite_value(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		const GPlatesModel::GpgimVersion &gpml_version,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
+{
+	using namespace GPlatesPropertyValues;
+
+	static const GPlatesModel::XmlElementName
+		STRUCTURAL_TYPE = GPlatesModel::XmlElementName::create_gml("CompositeValue"),
+		VALUE_COMPONENT = GPlatesModel::XmlElementName::create_gml("valueComponent");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type elem =
+		get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	composite_value_type result;
+	find_and_create_zero_or_more(
+			elem, &create_gml_value_component,
+					VALUE_COMPONENT, result, gpml_version, read_errors);
+
+	return result;
+}
+
+
 GPlatesPropertyValues::GmlGridEnvelope::non_null_ptr_type
 GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gml_grid_envelope(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
@@ -278,6 +303,46 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gml_grid_envelope(
 	std::vector<int> high = find_and_create_one(elem, &create_int_list, HIGH, gpml_version, read_errors);
 
 	return GPlatesPropertyValues::GmlGridEnvelope::create(low, high);
+}
+
+
+GPlatesFileIO::GpmlStructuralTypeReaderUtils::value_component_type
+GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gml_value_component(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		const GPlatesModel::GpgimVersion &gpml_version,
+		GPlatesFileIO::ReadErrorAccumulation &read_errors)
+{
+	if (parent->number_of_children() > 1)
+	{
+		// Properties with multiple inline structural elements are not (yet) handled!
+		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+				parent, GPlatesFileIO::ReadErrors::NonUniqueStructuralElement,
+				EXCEPTION_SOURCE);
+	}
+	else if (parent->number_of_children() == 0)
+	{
+		// Could not locate structural element template!
+		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+				parent, GPlatesFileIO::ReadErrors::StructuralElementNotFound,
+				EXCEPTION_SOURCE);
+	}
+
+	// Pull the answer out of the child if it is an XmlElementNode.
+	GPlatesModel::XmlNode::non_null_ptr_type elem = *parent->children_begin();
+	ValueObjectTemplateVisitor visitor;
+	elem->accept_visitor(visitor);
+
+	if (visitor.get_result())
+	{
+		return *visitor.get_result();
+	}
+	else
+	{
+		// It must have been a text element inside the <gml:valueComponent>.
+		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+				parent, GPlatesFileIO::ReadErrors::StructuralElementNotFound,
+				EXCEPTION_SOURCE);
+	}
 }
 
 
@@ -681,7 +746,7 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::get_structural_type_element(
 }
 
 
-std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
+GPlatesFileIO::GpmlStructuralTypeReaderUtils::xml_attributes_type
 GPlatesFileIO::GpmlStructuralTypeReaderUtils::get_xml_attributes_from_child(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 		const GPlatesModel::XmlElementName &xml_element_name)
@@ -692,13 +757,11 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::get_xml_attributes_from_child(
 	if (iter.first == elem->children_end())
 	{
 		// We didn't find the property, return empty map.
-		return std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>();
+		return xml_attributes_type();
 	}
 
 	GPlatesModel::XmlElementNode::non_null_ptr_type target = *iter.second;
-	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> result(
-			target->attributes_begin(), target->attributes_end());
-	return result;
+	return xml_attributes_type(target->attributes_begin(), target->attributes_end());
 }
 
 
@@ -1583,65 +1646,124 @@ GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_topological_sections(
 }
 
 
-GPlatesPropertyValues::GmlFile::value_component_type
-GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gml_file_value_component(
+std::vector<GPlatesFileIO::GpmlStructuralTypeReaderUtils::coordinate_list_type>
+GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_tuple_list(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
 		const GPlatesModel::GpgimVersion &gpml_version,
 		GPlatesFileIO::ReadErrorAccumulation &read_errors)
 {
-	if (parent->number_of_children() > 1)
+	const QStringList comma_separated_tokens = create_string(parent, gpml_version, read_errors).split(",");
+
+	// If there are no commas then there is only one list in the tuple.
+	const unsigned int num_comma_separated_tokens = comma_separated_tokens.size();
+	if (num_comma_separated_tokens == 1)
 	{
-		// Properties with multiple inline structural elements are not (yet) handled!
+		const std::vector<double> double_list = create_double_list(parent, gpml_version, read_errors);
+		return std::vector<coordinate_list_type>(1, double_list);
+	}
+
+	// Determine the number of lists in the tuple.
+	unsigned int num_lists = 1;
+	for ( ; num_lists < num_comma_separated_tokens; ++num_lists)
+	{
+		QStringList current_token_numbers =
+				comma_separated_tokens[num_lists].trimmed().split(" ", QString::SkipEmptyParts);
+		if (current_token_numbers.size() != 1)
+		{
+			++num_lists;
+			break;
+		}
+	}
+
+	// The number of elements in each list - all lists (should) have same number of elements.
+	// Division-by-zero is not possible since 'num_lists' will always be greater than one.
+	const unsigned int list_size = (num_comma_separated_tokens - 1) / (num_lists - 1);
+
+	// The total number of comma-separated tokens must be appropriate for the number of lists.
+	if (list_size * (num_lists - 1) + 1 != num_comma_separated_tokens)
+	{
 		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
-				parent, GPlatesFileIO::ReadErrors::NonUniqueStructuralElement,
+				parent, GPlatesFileIO::ReadErrors::InvalidTupleList,
 				EXCEPTION_SOURCE);
 	}
-	else if (parent->number_of_children() == 0)
+
+	// Reserve space in the lists.
+	std::vector<coordinate_list_type> tuple_list(num_lists);
+	for (unsigned int list_index = 0; list_index < num_lists; ++list_index)
 	{
-		// Could not locate structural element template!
-		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
-				parent, GPlatesFileIO::ReadErrors::StructuralElementNotFound,
-				EXCEPTION_SOURCE);
+		tuple_list.reserve(list_size);
 	}
 
-	// Pull the answer out of the child if it is an XmlElementNode.
-	GPlatesModel::XmlNode::non_null_ptr_type elem = *parent->children_begin();
-	ValueObjectTemplateVisitor visitor;
-	elem->accept_visitor(visitor);
-
-	if (visitor.get_result())
+	// Parse the lists.
+	GPlatesUtils::Parse<double> parse;
+	unsigned int comma_separated_token_index = 0;
+	boost::optional<QString> next_element_in_first_list;
+	for (unsigned int list_element_index = 0; list_element_index < list_size; ++list_element_index)
 	{
-		return *visitor.get_result();
+		for (unsigned int list_index = 0; list_index < num_lists; ++list_index)
+		{
+			if (list_index == 0 &&
+				next_element_in_first_list)
+			{
+				// Second, or third, etc, element in first list (not first element).
+				// This was parsed as part of the previous element in the last list.
+				const QString &list_element = next_element_in_first_list.get();
+				try
+				{
+					tuple_list[0].push_back(parse(list_element));
+				}
+				catch (const GPlatesUtils::ParseError &)
+				{
+					throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+							parent, GPlatesFileIO::ReadErrors::InvalidTupleList,
+							EXCEPTION_SOURCE);
+				}
+
+				// We're not parsing the current comma-separated token.
+				continue;
+			}
+
+			QStringList current_token_numbers =
+					comma_separated_tokens[comma_separated_token_index].trimmed().split(" ", QString::SkipEmptyParts);
+			++comma_separated_token_index;
+
+			const QString list_element = current_token_numbers[0];
+
+			// The comma-separated tokens associated with elements of the last list
+			// always have two tokens (separated by whitespace) except for the last element.
+			if (list_index == num_lists - 1 &&
+				list_element_index < list_size - 1)
+			{
+				if (current_token_numbers.size() != 2)
+				{
+					throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+							parent, GPlatesFileIO::ReadErrors::InvalidTupleList,
+							EXCEPTION_SOURCE);
+				}
+				next_element_in_first_list = current_token_numbers[1];
+			}
+			else
+			{
+				if (current_token_numbers.size() != 1)
+				{
+					throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+							parent, GPlatesFileIO::ReadErrors::InvalidTupleList,
+							EXCEPTION_SOURCE);
+				}
+			}
+
+			try
+			{
+				tuple_list[list_index].push_back(parse(list_element));
+			}
+			catch (const GPlatesUtils::ParseError &)
+			{
+				throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+						parent, GPlatesFileIO::ReadErrors::InvalidTupleList,
+						EXCEPTION_SOURCE);
+			}
+		}
 	}
-	else
-	{
-		// It must have been a text element inside the <gml:valueComponent>.
-		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
-				parent, GPlatesFileIO::ReadErrors::StructuralElementNotFound,
-				EXCEPTION_SOURCE);
-	}
-}
 
-
-GPlatesPropertyValues::GmlFile::composite_value_type
-GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gml_file_composite_value(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
-		const GPlatesModel::GpgimVersion &gpml_version,
-		GPlatesFileIO::ReadErrorAccumulation &read_errors)
-{
-	using namespace GPlatesPropertyValues;
-
-	static const GPlatesModel::XmlElementName
-		STRUCTURAL_TYPE = GPlatesModel::XmlElementName::create_gml("CompositeValue"),
-		VALUE_COMPONENT = GPlatesModel::XmlElementName::create_gml("valueComponent");
-
-	GPlatesModel::XmlElementNode::non_null_ptr_type elem =
-		get_structural_type_element(parent, STRUCTURAL_TYPE);
-
-	GmlFile::composite_value_type result;
-	find_and_create_zero_or_more(
-			elem, &create_gml_file_value_component,
-					VALUE_COMPONENT, result, gpml_version, read_errors);
-
-	return result;
+	return tuple_list;
 }

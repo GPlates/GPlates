@@ -31,6 +31,7 @@
 #include "VisualLayerRegistry.h"
 
 #include "RasterVisualLayerParams.h"
+#include "ReconstructScalarCoverageVisualLayerParams.h"
 #include "ReconstructVisualLayerParams.h"
 #include "ScalarField3DVisualLayerParams.h"
 #include "TopologyBoundaryVisualLayerParams.h"
@@ -47,6 +48,7 @@
 #include "qt-widgets/CoRegistrationOptionsWidget.h"
 #include "qt-widgets/RasterLayerOptionsWidget.h"
 #include "qt-widgets/ReconstructLayerOptionsWidget.h"
+#include "qt-widgets/ReconstructScalarCoverageLayerOptionsWidget.h"
 #include "qt-widgets/ReconstructionLayerOptionsWidget.h"
 #include "qt-widgets/ScalarField3DLayerOptionsWidget.h"
 #include "qt-widgets/TopologyBoundaryResolverLayerOptionsWidget.h"
@@ -547,6 +549,22 @@ GPlatesPresentation::register_default_visual_layers(
 				&default_visual_layer_params,
 				true);
 	}
+
+	registry.register_visual_layer_type(
+			VisualLayerType::Type(RECONSTRUCT_SCALAR_COVERAGE),
+			VisualLayerGroup::DERIVED_DATA,
+			"Reconstructed Scalar Coverages",
+			"Geometries containing a scalar value at each point.",
+			*html_colours.get_colour("peachpuff"),
+			CreateAppLogicLayer(
+				reconstruct_graph,
+				layer_task_registry,
+				RECONSTRUCT_SCALAR_COVERAGE),
+			&GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::create,
+			boost::bind(
+					&ReconstructScalarCoverageVisualLayerParams::create,
+					_1, boost::cref(view_state.get_rendered_geometry_parameters())),
+			true);
 
 	//
 	// The following visual layer types do not have corresponding app-logic layers

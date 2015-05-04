@@ -84,6 +84,14 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns the number of points in the specified geometry.
+		 */
+		unsigned int
+		get_num_geometry_points(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
+
+		/**
 		 * Copies the @a PointOnSphere points from @a geometry_on_sphere to the @a points array.
 		 *
 		 * Does not clear @a points - just appends whatever points it

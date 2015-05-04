@@ -93,8 +93,7 @@ GPlatesAppLogic::TopologyNetworkResolver::TopologyNetworkResolver(
 	d_resolved_topological_networks(resolved_topological_networks),
 	d_reconstruction_time(reconstruction_time),
 	d_reconstruct_handle(reconstruct_handle),
-	d_topological_geometry_reconstruct_handles(topological_geometry_reconstruct_handles),
-	d_reconstruction_params(reconstruction_time)
+	d_topological_geometry_reconstruct_handles(topological_geometry_reconstruct_handles)
 {  
 }
 
@@ -117,7 +116,7 @@ GPlatesAppLogic::TopologyNetworkResolver::initialise_pre_feature_properties(
 	d_reconstruction_params.visit_feature(d_currently_visited_feature);
 
 	// If the feature is not defined at the reconstruction time then don't visit the properties.
-	if ( ! d_reconstruction_params.is_feature_defined_at_recon_time())
+	if ( ! d_reconstruction_params.is_feature_defined_at_recon_time(d_reconstruction_time))
 	{
 		return false;
 	}

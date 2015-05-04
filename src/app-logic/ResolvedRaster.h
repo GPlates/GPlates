@@ -89,16 +89,6 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the reconstruction time at which raster is resolved/reconstructed.
-		 */
-		const double &
-		get_reconstruction_time() const
-		{
-			return d_reconstruction_time;
-		}
-
-
-		/**
 		 * Returns the raster layer proxy.
 		 */
 		const raster_layer_proxy_non_null_ptr_type &
@@ -176,10 +166,6 @@ namespace GPlatesAppLogic
 				const boost::optional<raster_layer_proxy_non_null_ptr_type> &normal_map_raster_layer_proxy);
 
 	private:
-		/**
-		 * The reconstruction time at which raster is resolved/reconstructed.
-		 */
-		double d_reconstruction_time;
 
 		/**
 		 * The raster layer proxy.

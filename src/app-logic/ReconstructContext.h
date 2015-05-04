@@ -41,6 +41,7 @@
 #include "ReconstructParams.h"
 #include "ReconstructMethodInterface.h"
 #include "ReconstructMethodType.h"
+#include "TimeSpanUtils.h"
 
 #include "maths/GeometryOnSphere.h"
 
@@ -78,7 +79,7 @@ namespace GPlatesAppLogic
 		 * It's referred to as 'resolved' instead of present day because it could be a
 		 * time-dependent property. In either case it is *not* the reconstructed geometry.
 		 *
-		 * This property handle, along with methods @a get_present_day and @a reconstruct_feature_geometries,
+		 * This property handle, along with methods @a get_present_day ,@a get_reconstructed_feature_geometries, etc,
 		 * can be used by clients to efficiently map any reconstructed feature geometry, across
 		 * all features, to its present day, or even resolved, geometry. This is useful when
 		 * the client needs to associate an object with each present day geometry such as
@@ -95,18 +96,11 @@ namespace GPlatesAppLogic
 		{
 		public:
 			Reconstruction(
-					const ReconstructedFeatureGeometry::non_null_ptr_type &reconstructed_feature_geometry,
-					geometry_property_handle_type geometry_property_handle) :
-				d_reconstructed_feature_geometry(reconstructed_feature_geometry),
-				d_geometry_property_handle(geometry_property_handle)
+					geometry_property_handle_type geometry_property_handle,
+					const ReconstructedFeatureGeometry::non_null_ptr_type &reconstructed_feature_geometry) :
+				d_geometry_property_handle(geometry_property_handle),
+				d_reconstructed_feature_geometry(reconstructed_feature_geometry)
 			{  }
-
-			//! Returns the reconstructed feature geometry.
-			const ReconstructedFeatureGeometry::non_null_ptr_type &
-			get_reconstructed_feature_geometry() const
-			{
-				return d_reconstructed_feature_geometry;
-			}
 
 			//! Returns the geometry property handle.
 			geometry_property_handle_type
@@ -115,9 +109,16 @@ namespace GPlatesAppLogic
 				return d_geometry_property_handle;
 			}
 
+			//! Returns the reconstructed feature geometry.
+			const ReconstructedFeatureGeometry::non_null_ptr_type &
+			get_reconstructed_feature_geometry() const
+			{
+				return d_reconstructed_feature_geometry;
+			}
+
 		private:
-			ReconstructedFeatureGeometry::non_null_ptr_type d_reconstructed_feature_geometry;
 			geometry_property_handle_type d_geometry_property_handle;
+			ReconstructedFeatureGeometry::non_null_ptr_type d_reconstructed_feature_geometry;
 		};
 
 
@@ -169,6 +170,142 @@ namespace GPlatesAppLogic
 			GPlatesModel::FeatureHandle::weak_ref d_feature;
 
 			reconstruction_seq_type d_reconstructions;
+
+			friend class ReconstructContext;
+		};
+
+
+		/**
+		 * Similar to @a Reconstruction but for a span of times rather than a single time.
+		 */
+		class ReconstructionTimeSpan
+		{
+		public:
+
+			/**
+			 * A time span of RFGs over the range [begin_time, end_time] (passed into constructor).
+			 */
+			typedef TimeSpanUtils::TimeSampleSpan<ReconstructedFeatureGeometry::non_null_ptr_type>
+					rfg_time_sample_span_type;
+
+
+			ReconstructionTimeSpan(
+					geometry_property_handle_type geometry_property_handle,
+					GPlatesModel::FeatureHandle::iterator geometry_property_iterator,
+					const TimeSpanUtils::TimeRange &time_range) :
+				d_geometry_property_handle(geometry_property_handle),
+				d_geometry_property_iterator(geometry_property_iterator),
+				d_rfg_time_sample_span(rfg_time_sample_span_type::create(time_range))
+			{  }
+
+			ReconstructionTimeSpan(
+					geometry_property_handle_type geometry_property_handle,
+					GPlatesModel::FeatureHandle::iterator geometry_property_iterator,
+					const rfg_time_sample_span_type::non_null_ptr_type &rfg_time_sample_span) :
+				d_geometry_property_handle(geometry_property_handle),
+				d_geometry_property_iterator(geometry_property_iterator),
+				d_rfg_time_sample_span(rfg_time_sample_span)
+			{  }
+
+
+			//! Returns the geometry property handle.
+			geometry_property_handle_type
+			get_geometry_property_handle() const
+			{
+				return d_geometry_property_handle;
+			}
+
+			/**
+			 * Returns the geometry property iterator.
+			 *
+			 * Note: This is also available from each RFG in the time span.
+			 */
+			const GPlatesModel::FeatureHandle::iterator
+			get_geometry_property_iterator() const
+			{
+				return d_geometry_property_iterator;
+			}
+
+			//! Returns the time range that the RFGs span.
+			TimeSpanUtils::TimeRange
+			get_time_range() const
+			{
+				return d_rfg_time_sample_span->get_time_range();
+			}
+
+			/**
+			 * Alternatively can directly use TimeSpanUtils::TimeSampleSpan interface to extract RFGs.
+			 */
+			rfg_time_sample_span_type::non_null_ptr_to_const_type
+			get_reconstructed_feature_geometry_time_span() const
+			{
+				return d_rfg_time_sample_span;
+			}
+
+		private:
+			geometry_property_handle_type d_geometry_property_handle;
+			GPlatesModel::FeatureHandle::iterator d_geometry_property_iterator;
+			rfg_time_sample_span_type::non_null_ptr_type d_rfg_time_sample_span;
+
+			friend class ReconstructContext;
+		};
+
+
+		/**
+		 * Similar to @a ReconstructedFeature but for a span of times rather than a single time.
+		 */
+		class ReconstructedFeatureTimeSpan
+		{
+		public:
+			//! Typedef for a sequence of @a ReconstructionTimeSpan objects.
+			typedef std::vector<ReconstructionTimeSpan> reconstruction_time_span_seq_type;
+
+
+			ReconstructedFeatureTimeSpan(
+					const GPlatesModel::FeatureHandle::weak_ref &feature,
+					const TimeSpanUtils::TimeRange &time_range) :
+				d_feature(feature),
+				d_time_range(time_range)
+			{  }
+
+			ReconstructedFeatureTimeSpan(
+					const GPlatesModel::FeatureHandle::weak_ref &feature,
+					const TimeSpanUtils::TimeRange &time_range,
+					const reconstruction_time_span_seq_type &reconstruction_time_spans) :
+				d_feature(feature),
+				d_time_range(time_range),
+				d_reconstruction_time_spans(reconstruction_time_spans)
+			{  }
+
+			/**
+			 * Returns the feature.
+			 */
+			const GPlatesModel::FeatureHandle::weak_ref &
+			get_feature() const
+			{
+				return d_feature;
+			}
+
+			//! Returns the time range that the reconstructions span.
+			const TimeSpanUtils::TimeRange &
+			get_time_range() const
+			{
+				return d_time_range;
+			}
+
+			/**
+			 * Returns the time spans of reconstructed feature geometries of 'this' feature.
+			 */
+			const reconstruction_time_span_seq_type &
+			get_reconstruction_time_spans() const
+			{
+				return d_reconstruction_time_spans;
+			}
+
+		private:
+			GPlatesModel::FeatureHandle::weak_ref d_feature;
+			TimeSpanUtils::TimeRange d_time_range;
+			reconstruction_time_span_seq_type d_reconstruction_time_spans;
 
 			friend class ReconstructContext;
 		};
@@ -242,7 +379,7 @@ namespace GPlatesAppLogic
 		 * @a set_features and for each feature in each feature collection determines which
 		 * reconstruct method to use.
 		 *
-		 * Calls to @a reconstruct_feature_geometries will then use that mapping of features to
+		 * Calls to @a get_reconstructed_feature_geometries, etc, will then use that mapping of features to
 		 * reconstruct methods (and the context state passed in) when carrying out reconstructions.
 		 *
 		 * Note: If the features change you should call @a set_features again.
@@ -264,8 +401,8 @@ namespace GPlatesAppLogic
 		/**
 		 * Creates a context state associated with the specified reconstruct context state.
 		 *
-		 * The returned shared reference can be passed to @a reconstruct_feature_geometries in order
-		 * to reconstruct the features with a particular reconstruct context state.
+		 * The returned shared reference can be passed to @a get_reconstructed_feature_geometries, etc,
+		 * in order to reconstruct the features with a particular reconstruct context state.
 		 */
 		context_state_reference_type
 		create_context_state(
@@ -315,7 +452,7 @@ namespace GPlatesAppLogic
 		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
 		 */
 		ReconstructHandle::type
-		reconstruct_feature_geometries(
+		get_reconstructed_feature_geometries(
 				std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				const context_state_reference_type &context_state_ref,
 				const double &reconstruction_time);
@@ -329,12 +466,12 @@ namespace GPlatesAppLogic
 		 * This method will get the next (incremented) global reconstruct handle and store it
 		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
 		 *
-		 * This differs from the other overloads of @a reconstruct_feature_geometries in that this method also
+		 * This differs @a get_reconstructed_feature_geometries in that this method also
 		 * associates each reconstructed feature geometry with the feature geometry property
 		 * it was reconstructed from.
 		 */
 		ReconstructHandle::type
-		reconstruct_feature_geometries(
+		get_reconstructions(
 				std::vector<Reconstruction> &reconstructed_feature_geometries,
 				const context_state_reference_type &context_state_ref,
 				const double &reconstruction_time);
@@ -348,17 +485,39 @@ namespace GPlatesAppLogic
 		 * This method will get the next (incremented) global reconstruct handle and store it
 		 * in each @a ReconstructedFeatureGeometry instance created (and return the handle).
 		 *
-		 * This differs from the other overloads of @a reconstruct_feature_geometries in that this method returns
+		 * This differs @a get_reconstructed_feature_geometries in that this method returns
 		 * reconstructions grouped by *feature*.
 		 * Note that even if a feature is not active (or generates no reconstructions for some reason)
 		 * it will still be returned (it just won't have any reconstructions in it) - this is useful
 		 * for co-registration, for example, which correlates by feature over several frames (times).
 		 */
 		ReconstructHandle::type
-		reconstruct_feature_geometries(
+		get_reconstructed_features(
 				std::vector<ReconstructedFeature> &reconstructed_features,
 				const context_state_reference_type &context_state_ref,
 				const double &reconstruction_time);
+
+
+		/**
+		 * This is similar to @a get_reconstructions but reconstructs over a time range of
+		 * reconstruction times instead of a single reconstruction time.
+		 */
+		ReconstructHandle::type
+		get_reconstruction_time_spans(
+				std::vector<ReconstructionTimeSpan> &reconstruction_time_spans,
+				const context_state_reference_type &context_state_ref,
+				const TimeSpanUtils::TimeRange &time_range);
+
+
+		/**
+		 * This is similar to @a get_reconstructed_features but reconstructs over a time range of
+		 * reconstruction times instead of a single reconstruction time.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_feature_time_spans(
+				std::vector<ReconstructedFeatureTimeSpan> &reconstructed_feature_time_spans,
+				const context_state_reference_type &context_state_ref,
+				const TimeSpanUtils::TimeRange &time_range);
 
 
 		/**
@@ -450,6 +609,17 @@ namespace GPlatesAppLogic
 				std::vector<Reconstruction> &reconstructions,
 				const ReconstructMethodFeature::geometry_property_to_handle_seq_type &feature_geometry_property_handles,
 				const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries);
+
+		/**
+		 * Add the reconstructed feature geometries, of the specified feature, to reconstruction time spans.
+		 */
+		void
+		build_feature_reconstruction_time_spans(
+				std::vector<ReconstructionTimeSpan> &reconstruction_time_spans,
+				const ReconstructMethodFeature::geometry_property_to_handle_seq_type &feature_geometry_property_handles,
+				const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+				const TimeSpanUtils::TimeRange &time_range,
+				unsigned int time_slot);
 
 		/**
 		 * Returns true if the geometry property handles have been assigned and are up-to-date

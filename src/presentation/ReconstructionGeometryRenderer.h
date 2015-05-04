@@ -188,6 +188,11 @@ namespace GPlatesPresentation
 
 			virtual
 			void
+			visit_reconstruct_scalar_coverage_visual_layer_params(
+					const ReconstructScalarCoverageVisualLayerParams &params);
+
+			virtual
+			void
 			visit_reconstruct_visual_layer_params(
 					const ReconstructVisualLayerParams &params);
 
@@ -198,7 +203,7 @@ namespace GPlatesPresentation
 
 			void
 			visit_topology_boundary_visual_layer_params(
-					topology_boundary_visual_layer_params_type &params);
+					const TopologyBoundaryVisualLayerParams &params);
 
 			virtual
 			void
@@ -331,6 +336,10 @@ namespace GPlatesPresentation
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp);
 
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsf);
 
         virtual
         void

@@ -698,14 +698,10 @@ namespace GPlatesAppLogic
 				const AutoCreateLayerParams &auto_create_layer_params);
 
 		/**
-		 * Connects the input file to the main input channel of the layer.
-		 *
-		 * Also makes other auto-connections such as between velocity and topology layers.
+		 * Ensures auto-connections such as between velocity and topology layers.
 		 */
 		void
-		auto_connect_layer(
-				Layer layer,
-				const Layer::InputFile &main_input_channel_input_file);
+		auto_connect_layers();
 
 		/**
 		 * Auto-destroyes layers that were auto-created from the specified input file.

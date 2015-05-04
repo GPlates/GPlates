@@ -50,5 +50,3 @@ GPlatesAppLogic::ReconstructedFlowline::accept_weak_observer_visitor(
 {
 	visitor.visit_reconstructed_flowline(*this);
 }
-
-

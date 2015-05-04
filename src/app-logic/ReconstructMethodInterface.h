@@ -101,7 +101,7 @@ namespace GPlatesAppLogic
 			Context(
 					const ReconstructParams &reconstruct_params_,
 					const ReconstructionTreeCreator &reconstruction_tree_creator_,
-					boost::optional<const GeometryDeformation::ResolvedNetworkTimeSpan &>
+					boost::optional<GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type>
 							geometry_deformation_ = boost::none) :
 				reconstruct_params(reconstruct_params_),
 				reconstruction_tree_creator(reconstruction_tree_creator_)
@@ -114,7 +114,8 @@ namespace GPlatesAppLogic
 
 			ReconstructParams reconstruct_params;
 			ReconstructionTreeCreator reconstruction_tree_creator;
-			boost::optional<GeometryDeformation::ResolvedNetworkTimeSpan> geometry_deformation;
+			boost::optional<GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type>
+					geometry_deformation;
 		};
 
 

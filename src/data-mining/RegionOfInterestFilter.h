@@ -181,8 +181,8 @@ namespace GPlatesDataMining
 					{
 						filtered_reconstructed_target_geometries.push_back(
 								GPlatesAppLogic::ReconstructContext::Reconstruction(
-										reconstructed_target_geom.get_reconstructed_feature_geometry(),
-										reconstructed_target_geom.get_geometry_property_handle()));
+										reconstructed_target_geom.get_geometry_property_handle(),
+										reconstructed_target_geom.get_reconstructed_feature_geometry()));
 
 						// Only add the current reconstructed target geometry once.
 						break;

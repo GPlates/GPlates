@@ -50,6 +50,7 @@ namespace GPlatesAppLogic
 			TOPOLOGY_NETWORK_RESOLVER,
 			VELOCITY_FIELD_CALCULATOR,
 			CO_REGISTRATION,
+			RECONSTRUCT_SCALAR_COVERAGE,
 
 			NUM_BUILT_IN_TYPES, // This must be after all built-in types and before MIN_USER.
 
@@ -84,7 +85,8 @@ namespace GPlatesAppLogic
 				GPlatesScribe::EnumValue("TOPOLOGY_GEOMETRY_RESOLVER", TOPOLOGY_GEOMETRY_RESOLVER),
 				GPlatesScribe::EnumValue("TOPOLOGY_NETWORK_RESOLVER", TOPOLOGY_NETWORK_RESOLVER),
 				GPlatesScribe::EnumValue("VELOCITY_FIELD_CALCULATOR", VELOCITY_FIELD_CALCULATOR),
-				GPlatesScribe::EnumValue("CO_REGISTRATION", CO_REGISTRATION)
+				GPlatesScribe::EnumValue("CO_REGISTRATION", CO_REGISTRATION),
+				GPlatesScribe::EnumValue("RECONSTRUCT_SCALAR_COVERAGE", RECONSTRUCT_SCALAR_COVERAGE)
 			};
 
 			return GPlatesScribe::transcribe_enum_protocol(

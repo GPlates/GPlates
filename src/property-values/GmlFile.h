@@ -28,6 +28,7 @@
 #ifndef GPLATES_PROPERTYVALUES_GMLFILE_H
 #define GPLATES_PROPERTYVALUES_GMLFILE_H
 
+#include <utility>
 #include <vector>
 #include <boost/optional.hpp>
 
@@ -80,32 +81,9 @@ namespace GPlatesPropertyValues
 		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
 			xml_attributes_type;
 
-	private:
-
-		/**
-		 * This version of a pair class is here because if we use std::pair,
-		 * some compilers are complaining that T or U doesn't have a default
-		 * constructor even though we don't ever call the default constructor
-		 * for std::pair. This version of pair gets around this problem by not
-		 * having a default constructor.
-		 */
-		template<typename T, typename U>
-		struct pair
-		{
-			pair(
-					const T &t,
-					const U &u) :
-				first(t),
-				second(u)
-			{  }
-
-			T first;
-			U second;
-		};
-
 	public:
 
-		typedef pair<ValueObjectType, xml_attributes_type> value_component_type;
+		typedef std::pair<ValueObjectType, xml_attributes_type> value_component_type;
 		typedef std::vector<value_component_type> composite_value_type;
 
 		virtual

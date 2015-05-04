@@ -91,11 +91,9 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_topological_net
 }
 
 
-const GPlatesAppLogic::GeometryDeformation::ResolvedNetworkTimeSpan &
+GPlatesAppLogic::GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_network_time_span(
-		const double &begin_time,
-		const double &end_time,
-		const double &time_increment)
+		const TimeSpanUtils::TimeRange &time_range)
 {
 	// See if any input layer proxies have changed.
 	check_input_layer_proxies();
@@ -104,22 +102,25 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_network_time_sp
 	// then see if the time range has changed.
 	if (d_cached_resolved_network_time_span)
 	{
+		const TimeSpanUtils::TimeRange &cached_time_range =
+				d_cached_resolved_network_time_span.get()->get_time_range();
+
 		if (!GPlatesMaths::are_geo_times_approximately_equal(
-				begin_time,
-				d_cached_resolved_network_time_span->get_begin_time()) ||
+				time_range.get_begin_time(),
+				cached_time_range.get_begin_time()) ||
 			!GPlatesMaths::are_geo_times_approximately_equal(
-				end_time,
-				d_cached_resolved_network_time_span->get_end_time()) ||
+				time_range.get_end_time(),
+				cached_time_range.get_end_time()) ||
 			!GPlatesMaths::are_geo_times_approximately_equal(
-				time_increment,
-				d_cached_resolved_network_time_span->get_time_increment()))
+				time_range.get_time_increment(),
+				cached_time_range.get_time_increment()))
 		{
 			// The resolved network time span has a different time range.
 			// Instead of invalidating the current resolved network time span we will attempt
 			// to build a new one from the existing one since they may have time slots in common.
 			// Note that we've already checked our input proxies so we know that the current
 			// resolved network time span still contains valid resolved networks.
-			cache_resolved_network_time_span(begin_time, end_time, time_increment);
+			cache_resolved_network_time_span(time_range);
 
 			return d_cached_resolved_network_time_span.get();
 		}
@@ -127,7 +128,7 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_network_time_sp
 
 	if (!d_cached_resolved_network_time_span)
 	{
-		cache_resolved_network_time_span(begin_time, end_time, time_increment);
+		cache_resolved_network_time_span(time_range);
 	}
 
 	return d_cached_resolved_network_time_span.get();
@@ -311,38 +312,42 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::cache_resolved_topological_n
 		// If there's a time slot in the time span that matches the reconstruction time
 		// then we can re-use the resolved networks in that time slot.
 		const boost::optional<unsigned int> time_slot =
-				d_cached_resolved_network_time_span->get_time_slot(reconstruction_time);
+				d_cached_resolved_network_time_span.get()->get_time_range().get_time_slot(reconstruction_time);
 		if (time_slot)
 		{
 			// Extract the resolved topological networks for the reconstruction time.
-			d_cached_resolved_networks.cached_resolved_topological_networks =
-					d_cached_resolved_network_time_span->get_resolved_networks_time_slot(time_slot.get());
-
-			// Get the reconstruct handle from one of the resolved networks (if any).
-			if (!d_cached_resolved_networks.cached_resolved_topological_networks->empty())
+			boost::optional<GeometryDeformation::rtn_seq_type &> resolved_topological_networks =
+					d_cached_resolved_network_time_span.get()->get_sample_in_time_slot(time_slot.get());
+			if (resolved_topological_networks)
 			{
-				boost::optional<ReconstructHandle::type> reconstruct_handle =
-						d_cached_resolved_networks.cached_resolved_topological_networks->front()
-								->get_reconstruct_handle();
-				if (reconstruct_handle)
+				d_cached_resolved_networks.cached_resolved_topological_networks = resolved_topological_networks.get();
+
+				// Get the reconstruct handle from one of the resolved networks (if any).
+				if (!d_cached_resolved_networks.cached_resolved_topological_networks->empty())
 				{
-					d_cached_resolved_networks.cached_reconstruct_handle = reconstruct_handle.get();
+					boost::optional<ReconstructHandle::type> reconstruct_handle =
+							d_cached_resolved_networks.cached_resolved_topological_networks->front()
+									->get_reconstruct_handle();
+					if (reconstruct_handle)
+					{
+						d_cached_resolved_networks.cached_reconstruct_handle = reconstruct_handle.get();
+					}
+					else
+					{
+						// RTN doesn't have a reconstruct handle - this shouldn't happen.
+						d_cached_resolved_networks.cached_reconstruct_handle =
+								ReconstructHandle::get_next_reconstruct_handle();
+					}
 				}
 				else
 				{
-					// RTN doesn't have a reconstruct handle - this shouldn't happen.
+					// There will be no reconstructed/resolved networks for this handle.
 					d_cached_resolved_networks.cached_reconstruct_handle =
 							ReconstructHandle::get_next_reconstruct_handle();
 				}
-			}
-			else
-			{
-				// There will be no reconstructed/resolved networks for this handle.
-				d_cached_resolved_networks.cached_reconstruct_handle =
-						ReconstructHandle::get_next_reconstruct_handle();
-			}
 
-			return d_cached_resolved_networks.cached_resolved_topological_networks.get();
+				return d_cached_resolved_networks.cached_resolved_topological_networks.get();
+			}
 		}
 	}
 
@@ -356,22 +361,23 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::cache_resolved_topological_n
 }
 
 
-GPlatesAppLogic::GeometryDeformation::ResolvedNetworkTimeSpan &
+GPlatesAppLogic::GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::cache_resolved_network_time_span(
-		const double &begin_time,
-		const double &end_time,
-		const double &time_increment)
+		const TimeSpanUtils::TimeRange &time_range)
 {
 	//PROFILE_FUNC();
 
 	// If one is already cached then attempt to re-use any time slots in common with the
 	// new time range. If one is already cached then it contains valid resolved networks
 	// - it's just that the time range has changed.
-	boost::optional<GeometryDeformation::ResolvedNetworkTimeSpan> prev_resolved_network_time_span =
-			d_cached_resolved_network_time_span;
+	boost::optional<GeometryDeformation::resolved_network_time_span_type::non_null_ptr_type>
+			prev_resolved_network_time_span = d_cached_resolved_network_time_span;
 
 	// Create an empty resolved network time span.
-	d_cached_resolved_network_time_span = boost::in_place(begin_time, end_time, time_increment);
+	d_cached_resolved_network_time_span =
+			GeometryDeformation::resolved_network_time_span_type::create(time_range);
+
+	const unsigned int num_time_slots = time_range.get_num_time_slots();
 
 	// As a performance optimisation, for all our topological sections input layers we request a
 	// reconstruction tree creator with a cache size the same as the resolved network time span
@@ -385,44 +391,41 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::cache_resolved_network_time_
 			d_current_reconstructed_geometry_topological_sections_layer_proxies.get_input_layer_proxies())
 	{
 		reconstructed_geometry_topological_sections_layer_proxy.get_input_layer_proxy()
-				->get_reconstruction_layer_proxy()->get_reconstruction_tree_creator(
-						d_cached_resolved_network_time_span->get_num_time_slots() + 1);
+				->get_current_reconstruction_layer_proxy()->get_reconstruction_tree_creator(num_time_slots + 1);
 	}
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &resolved_line_topological_sections_layer_proxy,
 			d_current_resolved_line_topological_sections_layer_proxies.get_input_layer_proxies())
 	{
 		resolved_line_topological_sections_layer_proxy.get_input_layer_proxy()
-				->get_reconstruction_layer_proxy()->get_reconstruction_tree_creator(
-						d_cached_resolved_network_time_span->get_num_time_slots() + 1);
+				->get_reconstruction_layer_proxy()->get_reconstruction_tree_creator(num_time_slots + 1);
 	}
 
 	// Iterate over the time slots of the time span and fill in the resolved topological networks.
-	const unsigned int num_time_slots = d_cached_resolved_network_time_span->get_num_time_slots();
 	for (unsigned int time_slot = 0; time_slot < num_time_slots; ++time_slot)
 	{
-		const double time = d_cached_resolved_network_time_span->get_time(time_slot);
+		const double time = time_range.get_time(time_slot);
 
 		// Attempt to re-use a time slot of the previous resolved network time span (if any).
 		if (prev_resolved_network_time_span)
 		{
 			// See if the time matches a time slot of the previous resolved network time span.
-			boost::optional<unsigned int> prev_time_slot =
-					prev_resolved_network_time_span->get_time_slot(time);
+			const TimeSpanUtils::TimeRange prev_time_range = prev_resolved_network_time_span.get()->get_time_range();
+			boost::optional<unsigned int> prev_time_slot = prev_time_range.get_time_slot(time);
 			if (prev_time_slot)
 			{
 				// Get the resolved topological networks from the previous resolved network time span.
-				const GeometryDeformation::ResolvedNetworkTimeSpan::rtn_seq_type &
-						resolved_topological_networks = prev_resolved_network_time_span
-								->get_resolved_networks_time_slot(prev_time_slot.get());
+				boost::optional<GeometryDeformation::rtn_seq_type &> prev_resolved_topological_networks =
+						prev_resolved_network_time_span.get()->get_sample_in_time_slot(prev_time_slot.get());
+				if (prev_resolved_topological_networks)
+				{
+					d_cached_resolved_network_time_span.get()->set_sample_in_time_slot(
+							prev_resolved_topological_networks.get(),
+							time_slot);
 
-				d_cached_resolved_network_time_span->add_resolved_networks(
-						resolved_topological_networks.begin(),
-						resolved_topological_networks.end(),
-						time_slot);
-
-				// Continue to the next time slot.
-				continue;
+					// Continue to the next time slot.
+					continue;
+				}
 			}
 		}
 
@@ -430,9 +433,8 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::cache_resolved_network_time_
 		std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> resolved_topological_networks;
 		create_resolved_topological_networks(resolved_topological_networks, time);
 
-		d_cached_resolved_network_time_span->add_resolved_networks(
-				resolved_topological_networks.begin(),
-				resolved_topological_networks.end(),
+		d_cached_resolved_network_time_span.get()->set_sample_in_time_slot(
+				resolved_topological_networks,
 				time_slot);
 	}
 

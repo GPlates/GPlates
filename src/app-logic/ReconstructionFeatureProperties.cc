@@ -34,25 +34,27 @@
 #include "property-values/XsDouble.h"
 
 
-GPlatesAppLogic::ReconstructionFeatureProperties::ReconstructionFeatureProperties(
-		const double &recon_time) :
-	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
-	d_feature_is_defined_at_recon_time(true)
-{  }
+bool
+GPlatesAppLogic::ReconstructionFeatureProperties::is_feature_defined_at_recon_time(
+		const double &reconstruction_time) const
+{
+	if (d_time_of_appearance &&
+		d_time_of_dissappearance)
+	{
+		const GPlatesPropertyValues::GeoTimeInstant reconstruction_geo_time(reconstruction_time);
 
+		return d_time_of_appearance->is_earlier_than_or_coincident_with(reconstruction_geo_time) &&
+				reconstruction_geo_time.is_earlier_than_or_coincident_with(d_time_of_dissappearance.get());
+	}
 
-GPlatesAppLogic::ReconstructionFeatureProperties::ReconstructionFeatureProperties() :
-	d_recon_time(boost::none),
-	d_feature_is_defined_at_recon_time(true)
-{  }
+	return true;
+}
 
 
 bool
 GPlatesAppLogic::ReconstructionFeatureProperties::initialise_pre_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
-	d_feature_is_defined_at_recon_time = true;
-
 	d_recon_plate_id = boost::none;
 	d_time_of_appearance = boost::none;
 	d_time_of_dissappearance = boost::none;
@@ -76,13 +78,7 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_gml_time_period(
 	// Note that we're going to assume that we're in a property...
 	if (current_top_level_propname() == valid_time_property_name)
 	{
-		// This time period is the "valid time" time period.
-		if (d_recon_time && !gml_time_period.contains(*d_recon_time))
-		{
-			// Oh no!  This feature instance is not defined at the recon time!
-			d_feature_is_defined_at_recon_time = false;
-		}
-		// Also, cache the time of appearance/dissappearance.
+		// Cache the time of appearance/dissappearance.
 		d_time_of_appearance = gml_time_period.begin()->time_position();
 		d_time_of_dissappearance = gml_time_period.end()->time_position();
 	}

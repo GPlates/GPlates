@@ -34,6 +34,7 @@
 #include "ReconstructionGeometryRenderer.h"
 
 #include "RasterVisualLayerParams.h"
+#include "ReconstructScalarCoverageVisualLayerParams.h"
 #include "ReconstructVisualLayerParams.h"
 #include "ScalarField3DVisualLayerParams.h"
 #include "TopologyBoundaryVisualLayerParams.h"
@@ -247,6 +248,13 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 
 
 void
+GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_reconstruct_scalar_coverage_visual_layer_params(
+		const ReconstructScalarCoverageVisualLayerParams &params)
+{
+}
+
+
+void
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_reconstruct_visual_layer_params(
 		const ReconstructVisualLayerParams &params)
 {
@@ -270,7 +278,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_topology_boundary_visual_layer_params(
-		topology_boundary_visual_layer_params_type &params)
+		const TopologyBoundaryVisualLayerParams &params)
 {
 	d_render_params.fill_polygons = params.get_fill_polygons();
 }
@@ -898,6 +906,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 	// Render the rendered geometry.
 	render(rendered_geometry);
 
+}
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsf)
+{
 }
 
 void
