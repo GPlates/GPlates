@@ -54,6 +54,7 @@ namespace GPlatesAppLogic
 	class CoRegistrationLayerProxy;
 	class RasterLayerProxy;
 	class ReconstructLayerProxy;
+	class ReconstructScalarCoverageLayerProxy;
 	class ReconstructionLayerProxy;
 	class ScalarField3DLayerProxy;
 	class TopologyGeometryResolverLayerProxy;
@@ -91,6 +92,11 @@ namespace GPlatesAppLogic
 		typedef typename GPlatesUtils::CopyConst<
 				LayerProxyType, ReconstructLayerProxy>::type
 						reconstruct_layer_proxy_type;
+
+		//! Typedef for @a ReconstructScalarCoverageLayerProxy of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				LayerProxyType, ReconstructScalarCoverageLayerProxy>::type
+						reconstruct_scalar_coverage_layer_proxy_type;
 
 		//! Typedef for @a ReconstructionLayerProxy of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
@@ -151,6 +157,16 @@ namespace GPlatesAppLogic
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstruct_layer_proxy_type> &layer_proxy)
+		{  }
+
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstruct_scalar_coverage_layer_proxy_type> &layer_proxy)
 		{  }
 
 		/**

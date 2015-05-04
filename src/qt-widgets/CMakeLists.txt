@@ -428,6 +428,9 @@ set(srcs
     ReconstructLayerOptionsWidget.cc
     ReconstructLayerOptionsWidget.h
     ReconstructLayerOptionsWidgetUi.ui
+    ReconstructScalarCoverageLayerOptionsWidget.cc
+    ReconstructScalarCoverageLayerOptionsWidget.h
+    ReconstructScalarCoverageLayerOptionsWidgetUi.ui
     ResizeToContentsTextEdit.cc
     ResizeToContentsTextEdit.h
     SaveFileDialog.cc

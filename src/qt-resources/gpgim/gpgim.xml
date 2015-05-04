@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GPGIM gpgim:version="1.6.0327" xmlns="http://www.gplates.org/gpgim" xmlns:gpgim="http://www.gplates.org/gpgim" xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance">
+<GPGIM gpgim:version="1.6.0329" xmlns="http://www.gplates.org/gpgim" xmlns:gpgim="http://www.gplates.org/gpgim" xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance">
 	<!--
 		==================================================
 		==================================================
@@ -482,6 +482,10 @@
 		
 		<!-- NOTE: Please keep the 'gml' <NativeProperty> elements ordered alphabetically by their '<Type>'. -->
 		<NativeProperty>
+			<Type>gml:DataBlock</Type>
+			<Description>A sequence of scalar tuples.</Description>
+		</NativeProperty>
+		<NativeProperty>
 			<Type>gml:File</Type>
 			<Description>A reference to a file in the file system.</Description>
 		</NativeProperty>
@@ -691,6 +695,14 @@
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
 			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
 		</Property>
+		<Property>
+			<Name>gpml:boundaryCoverage</Name>
+			<Description>Coverage (per-point scalar values) corresponding to a 'gpml:boundary' geometry.</Description>
+			<Type>gml:DataBlock</Type>
+			<Multiplicity>0..1</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
+		</Property>
 
 		<!-- C -->
 
@@ -704,6 +716,13 @@
 			<Type>gml:MultiPoint</Type>
 			<Type>gml:Polygon</Type>
 			<Type>gpml:TopologicalLine</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+		</Property>
+		<Property>
+			<Name>gpml:centerLineOfCoverage</Name>
+			<Description>Coverage (per-point scalar values) corresponding to a 'gpml:centerLineOf' geometry.</Description>
+			<Type>gml:DataBlock</Type>
 			<Multiplicity>0..*</Multiplicity>
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
 		</Property>
@@ -793,9 +812,14 @@
 			<Type>gpml:DipSlipEnumeration</Type>
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
-		<Property>
+		<Property gpgim:defaultType="gml:MultiPoint">
 			<Name>gpml:domainSet</Name>
 			<Description>The region-of-interest of a coverage or raster on which the corresponding 'gpml:rangeSet' is based.</Description>
+			<Type>gml:Point</Type>
+			<Type>gml:OrientableCurve</Type>
+			<Type>gml:LineString</Type>
+			<Type>gml:MultiPoint</Type>
+			<Type>gml:Polygon</Type>
 			<Type>gml:RectifiedGrid</Type>
 			<Multiplicity>1</Multiplicity>
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
@@ -984,6 +1008,12 @@
 			<Type>gml:MultiPoint</Type>
 			<Multiplicity>0..1</Multiplicity>
 		</Property>
+		<Property>
+			<Name>gpml:multiPositionCoverage</Name>
+			<Description>Coverage (per-point scalar values) corresponding to a 'gpml:multiPosition' geometry.</Description>
+			<Type>gml:DataBlock</Type>
+			<Multiplicity>0..1</Multiplicity>
+		</Property>
 
 		<!-- N -->
 
@@ -1036,6 +1066,13 @@
 			<Type>gml:MultiPoint</Type>
 			<Type>gml:Polygon</Type>
 			<Type>gpml:TopologicalPolygon</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+		</Property>
+		<Property>
+			<Name>gpml:outlineOfCoverage</Name>
+			<Description>Coverage (per-point scalar values) corresponding to a 'gpml:outlineOf' geometry.</Description>
+			<Type>gml:DataBlock</Type>
 			<Multiplicity>0..*</Multiplicity>
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
 		</Property>
@@ -1123,9 +1160,10 @@
 
 		<!-- R -->
 
-		<Property>
+		<Property gpgim:defaultType="gml:DataBlock">>
 			<Name>gpml:rangeSet</Name>
 			<Description>The coverage or raster values at the corresponding 'gpml:domainSet' region-of-interest.</Description>
+			<Type>gml:DataBlock</Type>
 			<Type>gml:File</Type>
 			<Multiplicity>1</Multiplicity>
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
@@ -1366,6 +1404,14 @@
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
 			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
 		</Property>
+		<Property>
+			<Name>gpml:unclassifiedGeometryCoverage</Name>
+			<Description>Coverage (per-point scalar values) corresponding to a 'gpml:unclassifiedGeometry' geometry.</Description>
+			<Type>gml:DataBlock</Type>
+			<Multiplicity>0..*</Multiplicity>
+			<TimeDependent>gpml:ConstantValue</TimeDependent>
+			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
+		</Property>
 
 		<!-- V -->
 
@@ -1442,6 +1488,7 @@
 			<ClassType>abstract</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Comment>Assorted contour-like data and (in future releases) gridded data share AbstractField as a parent class.</Comment>
 			<Comment>Types of contour (and later, gridded) data include: Bathymetry, Topography, Gravimetry, Magnetics, GlobalElevation, OceanicAge, CrustalThickness, DynamicTopography, MantleDensity, HeatFlow, SedimentThickness, Roughness, SpreadingRate, SpreadingAsymmetry, Stress.</Comment>
 			<Comment>This is because all contoured data is picked from a gridded source, and similarly with most stand-alone outline data. In addition, there are many, many types of gridded data that we may wish to use in the future. With most of these types, it still makes sense to be able to pick outlines and contours from the grid - they are useful in many cases.</Comment>
@@ -1463,7 +1510,9 @@
 			<Property>gpml:dipSide</Property>
 			<Property>gpml:dipAngle</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
 			<Comment>An AbstractGeologicalPlane by itself will not be instantiated; You want a subcategory of GeologicalPlane(BeddingPlane, CleavagePlane), or perhaps a FoldPlane, or one of the various specialisations of GeologicalContact.</Comment>
 		</FeatureClass>
 		<FeatureClass>
@@ -1487,8 +1536,11 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>The term "Aseismic Ridge" is a very general term used by geoscientists that can apply to almost any nonspecific ridge, with the only defining quality being the inactivity of the feature.</Comment>
 			<Comment>For example, sections of a HotSpotTrail might be a chain of Seamounts which are contiguous enough to form a ridge. As well as being Seamounts, the structure can also be termed an "Asesimic Ridge". However, the term can also be easily applied to an Extinct Ridge, or now-inactive remnant spreading ridge (see MidOceanRidge).</Comment>
 			<Comment>As far as the GPGIM is concerned, this might make AseismicRidge into an abstract parent of some sort- however, that would imply that all features inheriting from AseismicRidge would be inactive, throughout their entire lifespan. This is unacceptable, especially considering planned improvements to MidOceanRidge to allow for partial segments of a MOR to become inactive, and also considering that a HotSpot's trail is formed of Volcanoes as well as Seamounts that may be active for some time and later become inactive.</Comment>
@@ -1502,7 +1554,9 @@
 			<!-- FIXME: 'gpml:position' was not originally in the GPGIM - is this 'gml:Point' property necessary? -->
 			<Property>gpml:position</Property>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>This is the simplest way to define a basic rock unit type while allowing for future extension.</Comment>
 			<Comment>BasicRockUnit allows you to describe one side of a GeologicalContact using the standard free-form text properties, plus a polygon extent.</Comment>
 			<Comment>gml:name and gml:description can be used for this specific rock unit.</Comment>
@@ -1514,7 +1568,9 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>Basins can be categorised into many types, and some of these types overlap or are subjective. Rather than attempting to define a fixed subset of these types, it is recommended to use the .subcategory property defined in AbstractFeature.</Comment>
 			<Comment>Suggested subcategories are "Extensional", "Convergent", "IntraCratonic", "Compressional", "Sag", "Thermal", "Erosional", "Unknown".</Comment>
 		</FeatureClass>
@@ -1534,6 +1590,7 @@
 			<Property>gpml:crust</Property>
 			<Property>gpml:edge</Property>
 			<Property>gpml:boundary</Property>
+			<Property>gpml:boundaryCoverage</Property>
 			<Comment>Similar (but not identical) to ClosedPlateBoundary, but for crust type differences (oceanic-continental). It can be rotated via the usual reconstruction mechanisms, and the geometry of this boundary is represented in present-day-coordinates.</Comment>
 		</FeatureClass>
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:boundary">
@@ -1542,6 +1599,7 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:ArtificialFeature</Inherits>
 			<Property>gpml:boundary</Property>
+			<Property>gpml:boundaryCoverage</Property>
 			<Comment>A simple geometric view of a PlateSlab's closed boundary, possibly derived from a TopologicalClosedPlateBoundary. It is reconstructable, and so the polygon is encoded using present-day coordinates. This type of plate boundary might be most useful as a "Grid Mask" for gridded data relating to the plate.</Comment>
 			<Comment>Some standard properties are very useful for a ClosedPlateBoundary. The .reconstructionPlateId property inherited from ReconstructableFeature will allow us to associate one (or more, potentially) gpml:plateId s with the plate boundary, gml:name can be used to name the plate, and validTime indicates the lifetime of this plate polygon.</Comment>
 		</FeatureClass>
@@ -1551,7 +1609,9 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>Present day coastline, but can still be reconstructed with the rest of them as a visual aid.</Comment>
 		</FeatureClass>
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
@@ -1560,10 +1620,14 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
 			<Property>gpml:position</Property>
 			<Property>gpml:multiPosition</Property>
+			<Property>gpml:multiPositionCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 		</FeatureClass>
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<Name>gpml:OceanicCrust</Name>
@@ -1571,10 +1635,14 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
 			<Property>gpml:position</Property>
 			<Property>gpml:multiPosition</Property>
+			<Property>gpml:multiPositionCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 		</FeatureClass>
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<Name>gpml:ContinentalFragment</Name>
@@ -1582,7 +1650,9 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 		</FeatureClass>
 		<FeatureClass>
 			<Name>gpml:ContinentalRift</Name>
@@ -1597,7 +1667,9 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>See Dictionary of Earth Science p132. Includes Shield regions.</Comment>
 		</FeatureClass>
 		<FeatureClass>
@@ -1618,7 +1690,9 @@
 			<Inherits>gpml:ReconstructableFeature</Inherits>
 			<Property>gpml:position</Property>
 			<Property>gpml:multiPosition</Property>
+			<Property>gpml:multiPositionCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 		</FeatureClass>
 		<FeatureClass>
 			<Name>gpml:DynamicTopography</Name>
@@ -1634,7 +1708,9 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>For instance, near a Continental-Oceanic boundary, there will be a region of TransitionalCrust which is not clearly defined as either oceanic or continental, but there will also be some continental crust which has been pulled apart by the extension, not enough to define new oceanic crust but enough to break the continental crust.</Comment>
 		</FeatureClass>
 		<FeatureClass>
@@ -1735,7 +1811,9 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 		</FeatureClass>
 		<FeatureClass>
 			<Name>gpml:GeologicalPlane</Name>
@@ -1776,8 +1854,10 @@
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:position</Property>
 			<Property>gpml:multiPosition</Property>
+			<Property>gpml:multiPositionCoverage</Property>
 			<Property>gpml:trail</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>In the Rotation hierarchy, these features will depend on a Hotspot AbsoluteReferenceFrame.</Comment>
 			<Comment>HotSpots are a little unique as they don't move with the plates, but under them (if they move at all).</Comment>
 		</FeatureClass>
@@ -1790,6 +1870,7 @@
 			<Property>gpml:evidence</Property>
 			<Property>gpml:errorBounds</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>HotSpotTrails are used to track the paleo-movement of HotSpots. They are gpml:Features in their own right, because for the case of a HotSpot with multiple HotSpotTrail s (one disjoint trail), they can be rotated independently of each other.</Comment>
 			<Comment>Being reconstructable and also describing an inferred sequence of paleo-positions looks like it will get confusing. But presumably, geoscientists are OK with that.</Comment>
 		</FeatureClass>
@@ -1799,8 +1880,10 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:ArtificialFeature</Inherits>
 			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
 			<Property>gpml:errorBounds</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>For example, the InferredPaleoBoundary between India and Asia that has since been subducted under the Himalaya.</Comment>
 		</FeatureClass>
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
@@ -1810,7 +1893,9 @@
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:isActive</Property>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 		</FeatureClass>
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:centerLineOf">
 			<Name>gpml:Isochron</Name>
@@ -1821,7 +1906,9 @@
 			<Property>gpml:conjugatePlateId</Property>
 			<Property>gpml:polarityChronId</Property>
 			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>For the GPGIM1.5, we just want a simple, rigid Isochron replacement for the PLATES model. It includes Paleo-Ridge and Paleo-Transform sections.</Comment>
 			<Comment>A common property associated with an Isochron is its "age". It defines the point in time that this Isochron is believed to originate at, in Ma. However, we already have a .validTime property inherited from TimeVariantFeature, so to work out the 'age' of the Isochron, one can look at .validTime(a TimePeriod).begin(a TimeInstant).</Comment>
 		</FeatureClass>
@@ -1831,7 +1918,9 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 		</FeatureClass>
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
 			<Name>gpml:MagneticAnomalyIdentification</Name>
@@ -1857,7 +1946,9 @@
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:pick</Property>
 			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>For now, this allows us to define the map-view path taken by a particular ship for magnetic anomaly data. You can give it a 'ship track Id' if you want, via gml:name. The MagneticAnomalyIdentification s or 'picks' have a reference to this Feature to indicate the particular ship track that the pick originated from.</Comment>
 			<Comment>In future releases, this Feature may also be used to contain the magnetic "wiggle" recorded along the ship track.</Comment>
 		</FeatureClass>
@@ -1913,6 +2004,7 @@
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:position</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 		</FeatureClass>
 		<FeatureClass>
 			<!-- FIXME: Add a chemical composition enumeration to 'gpml:NavdatSample' instead of inheriting from it. -->
@@ -1953,7 +2045,9 @@
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:position</Property>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Property>gpml:dataDictionary</Property>
 			<Property>gpml:dataSeries</Property>
 			<Property>gpml:expedition</Property>
@@ -1993,7 +2087,9 @@
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:position</Property>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 		</FeatureClass>
 		<FeatureClass>
 			<Name>gpml:OrogenicBelt</Name>
@@ -2021,7 +2117,9 @@
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:position</Property>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 		</FeatureClass>
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:outlineOf">
 			<!-- A political boundary in a geological information model ? -->
@@ -2031,8 +2129,11 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:ArtificialFeature</Inherits>
 			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 		</FeatureClass>
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:position">
 			<!-- FIXME: This should really be part of the 'gpml:TopologicalNetwork' property type (not a feature type). -->
@@ -2050,7 +2151,9 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>Due to ridge jump / propagation, and various plate-tec forces in the region, a midoceanridge-transformfault-midoceanridge area may start ignoring the extra midoceanridge and transform, and instead start 'propagating' one ridge to take over the job of the other.</Comment>
 			<Comment>The PsuedoFault is the result of the MidOceanRidge that is 'propagating' into the area previously handled by the Extinct Ridge. The contrast between the newly generated young crust and the old crust made by the Extinct Ridge causes a fault-like appearance- although it is not a true Fault.</Comment>
 		</FeatureClass>
@@ -2063,6 +2166,7 @@
 			<Property>gpml:domainSet</Property>
 			<Property>gpml:rangeSet</Property>
 			<Property>gpml:bandNames</Property>
+			<Comment>'gpml:domainSet' and 'gpml:rangeSet' support non-raster domains/ranges so the feature type should probably be something other than 'gpml:Raster'. Note that there's also 'gpml:ScalarCoverage' which can represent a geometry domain or a raster.</Comment>
 		</FeatureClass>
 		<FeatureClass>
 			<Name>gpml:ReconstructableFeature</Name>
@@ -2178,6 +2282,16 @@
 			<Comment>This feature is an example of one which would use gridded data almost exclusively, with little need for Contours and outlines. However, in any case of gridded data, there is the possibility that such contours may be desirable, and should be available as an option.</Comment>
 		</FeatureClass>
 		<FeatureClass>
+			<Name>gpml:ScalarCoverage</Name>
+			<Description>Arbitrary surface scalar data represented by a scalar value at each point in a geometry.</Description>
+			<ClassType>concrete</ClassType>
+			<Inherits>gpml:TangibleFeature</Inherits>
+			<Property>gpml:domainSet</Property>
+			<Property>gpml:rangeSet</Property>
+			<Comment>Contrary to a raster, a scalar coverage can have a reconstruction plate ID and a valid time period (since inherits from 'gpml:TangibleFeature'). Though this could change in future to support regional rasters that are small enough to be contained by a single plate ID (ie, that don't need a static polygon dataset for plate-id-assignment/reconstruction).</Comment>
+			<Comment>Since/if 'gpml:rangeset' is a 'gml:DataBlock' it should contain a list of 1-tuples (ie, a list of scalars, not vectors). And there should be one scalar for each point in the geometry domain (the geometry specified by the 'gpml:domainSet' property).</Comment>
+		</FeatureClass>
+		<FeatureClass>
 			<!-- FIXME: Has same issue as 'gpml:Raster' versus 'gpml:AbstractField'. -->
 			<Name>gpml:ScalarField3D</Name>
 			<Description>Generic 3D field of scalar values representing arbitrary sub-surface data.</Description>
@@ -2192,7 +2306,9 @@
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:position</Property>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>Includes all variations of Seamounts, such as Guyots; set the .subcategory property (defined in AbstractFeature) to "Guyot" if you're interested in the distinction.</Comment>
 			<Comment>Suggested subcategories are: "Guyot" : A special sub-category of Seamount with a flat top.</Comment>
 		</FeatureClass>
@@ -2220,7 +2336,9 @@
 			<Property>gpml:subductionZoneSystem</Property>
 			<Property>gpml:subductionZoneSystemOrder</Property>
 			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 		</FeatureClass>
 		<FeatureClass gpgim:defaultGeometryProperty="gpml:centre">
 			<!--
@@ -2269,8 +2387,10 @@
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:position</Property>
 			<Property>gpml:multiPosition</Property>
+			<Property>gpml:multiPositionCoverage</Property>
 			<Property>gpml:trail</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>StrainMarker features are usually shown with a cross symobol, where the magnitude of each axis shows the value for a principle strain.</Comment>
 		</FeatureClass>
 		<FeatureClass>
@@ -2305,8 +2425,11 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 		</FeatureClass>
 		<FeatureClass>
 			<Name>gpml:TangibleFeature</Name>
@@ -2324,8 +2447,11 @@
 			<Property>gpml:rightPlate</Property>
 			<Property>gpml:conjugatePlateId</Property>
 			<Property>gpml:centerLineOf</Property>
+			<Property>gpml:centerLineOfCoverage</Property>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>Plate-tectonic features that can form boundaries between plates fall under this class.</Comment>
 		</FeatureClass>
 		<FeatureClass>
@@ -2433,7 +2559,9 @@
 			<ClassType>concrete</ClassType>
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>As the transition between continental crust and oceanic crust is such a large-scale transition, there will always be a "grey area" where crust cannot be clearly identified as either oceanic or continental.</Comment>
 		</FeatureClass>
 		<FeatureClass>
@@ -2475,7 +2603,9 @@
 			<Inherits>gpml:TangibleFeature</Inherits>
 			<Property>gpml:position</Property>
 			<Property>gpml:outlineOf</Property>
+			<Property>gpml:outlineOfCoverage</Property>
 			<Property>gpml:unclassifiedGeometry</Property>
+			<Property>gpml:unclassifiedGeometryCoverage</Property>
 			<Comment>Single Active Volcano with point geometry. Might be referenced from other igneous Features, e.g. HotSpotTrail or IslandArc.</Comment>
 		</FeatureClass>
 		<FeatureClass>

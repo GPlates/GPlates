@@ -60,6 +60,7 @@ namespace GPlatesAppLogic
 	class ReconstructedFeatureGeometry;
 	class ReconstructedFlowline;
 	class ReconstructedMotionPath;
+	class ReconstructedScalarCoverage;
 	class ReconstructedSmallCircle;
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
@@ -68,7 +69,6 @@ namespace GPlatesAppLogic
 	class ResolvedTopologicalGeometry;
 	class ResolvedTopologicalLine;
 	class ResolvedTopologicalNetwork;
-	class CoRegistrationData;
 
 
 	/**
@@ -88,11 +88,6 @@ namespace GPlatesAppLogic
 	class ReconstructionGeometryVisitorBase
 	{
 	public:
-
-		//! Typedef for @a CoRegistrationData of appropriate const-ness.
-		typedef typename GPlatesUtils::CopyConst<
-				ReconstructionGeometryType, CoRegistrationData>::type
-						co_registration_data_type;
 
 		//! Typedef for @a DeformedFeatureGeometry of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
@@ -118,6 +113,11 @@ namespace GPlatesAppLogic
 		typedef typename GPlatesUtils::CopyConst<
 				ReconstructionGeometryType, ReconstructedMotionPath>::type
 						reconstructed_motion_path_type;
+
+		//! Typedef for @a ReconstructedScalarCoverage of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, ReconstructedScalarCoverage>::type
+						reconstructed_scalar_coverage_type;
 
 		//! Typedef for @a ReconstructedSmallCircle of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
@@ -165,16 +165,8 @@ namespace GPlatesAppLogic
 		virtual
 		~ReconstructionGeometryVisitorBase() = 0;
 
-		// Please keep these reconstruction geometry derivations ordered alphabetically.
 
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crd)
-		{  }
+		// Please keep these reconstruction geometry derivations ordered alphabetically.
 
 		/**
 		 * Override this function in your own derived class.
@@ -224,6 +216,15 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
+		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_small_circle_type> &rsc);
 
 		/**
@@ -234,7 +235,6 @@ namespace GPlatesAppLogic
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_virtual_geomagnetic_pole_type> &rvgp);
 
-
 		/**
 		 * Override this function in your own derived class.
 		 */
@@ -244,7 +244,6 @@ namespace GPlatesAppLogic
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_raster_type> &rr)
 		{  }
 
-
 		/**
 		 * Override this function in your own derived class.
 		 */
@@ -253,7 +252,6 @@ namespace GPlatesAppLogic
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_scalar_field_3d_type> &rsf)
 		{  }
-
 
 		/**
 		 * Override this function in your own derived class.

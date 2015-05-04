@@ -131,6 +131,65 @@ namespace
 
 
 	/**
+	 * Gets the number of points in a derived @a GeometryOnSphere.
+	 */
+	class GetNumGeometryOnSpherePoints :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		GetNumGeometryOnSpherePoints() :
+			d_num_geometry_points(0)
+		{  }
+
+
+		unsigned int
+		get_num_geometry_points() const
+		{
+			return d_num_geometry_points;
+		}
+
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			d_num_geometry_points = 1;
+		}
+
+
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			d_num_geometry_points = multi_point_on_sphere->number_of_points();
+		}
+
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			d_num_geometry_points = polygon_on_sphere->number_of_vertices();
+		}
+
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			d_num_geometry_points = polyline_on_sphere->number_of_vertices();
+		}
+
+	private:
+		unsigned int d_num_geometry_points;
+	};
+
+
+	/**
 	 * Retrieves points in a derived @a GeometryOnSphere.
 	 *
 	 * When a @a GeometryOnSphere is visited its points are appended to the
@@ -872,6 +931,18 @@ GPlatesAppLogic::GeometryUtils::get_polygon_on_sphere(
 	}
 
 	return polygon_on_sphere;
+}
+
+
+unsigned int
+GPlatesAppLogic::GeometryUtils::get_num_geometry_points(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	GetNumGeometryOnSpherePoints get_num_geometry_on_sphere_points;
+
+	geometry_on_sphere.accept_visitor(get_num_geometry_on_sphere_points);
+
+	return get_num_geometry_on_sphere_points.get_num_geometry_points();
 }
 
 

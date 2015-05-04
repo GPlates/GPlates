@@ -1173,7 +1173,7 @@ namespace GPlatesScribe
 
 
 		/**
-		 * Returns the call stack trace at the last point of the transcribe was incompatible.
+		 * Returns the call stack trace at the last point the transcribe was incompatible.
 		 *
 		 * This is useful when and TranscribeResult code other than TRANSCRIBE_SUCCESS
 		 * is propagated back to a root transcribe call (which usually means the session/project

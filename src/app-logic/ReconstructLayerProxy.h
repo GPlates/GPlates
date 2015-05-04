@@ -39,6 +39,7 @@
 #include "ReconstructContext.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionLayerProxy.h"
+#include "TimeSpanUtils.h"
 #include "TopologyNetworkResolverLayerProxy.h"
 
 #include "opengl/GLReconstructedStaticPolygonMeshes.h"
@@ -437,6 +438,32 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns reconstructed feature time spans for the current reconstruct params.
+		 *
+		 * This is useful for associating a time sequence of reconstructed feature geometries with each feature.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_feature_time_spans(
+				std::vector<ReconstructContext::ReconstructedFeatureTimeSpan> &reconstructed_feature_time_spans,
+				const TimeSpanUtils::TimeRange &time_range)
+		{
+			return get_reconstructed_feature_time_spans(
+					reconstructed_feature_time_spans, time_range, d_current_reconstruct_params);
+		}
+
+		/**
+		 * Returns reconstructed feature time spans for the specified reconstruct params.
+		 *
+		 * This is useful for associating a time sequence of reconstructed feature geometries with each feature.
+		 */
+		ReconstructHandle::type
+		get_reconstructed_feature_time_spans(
+				std::vector<ReconstructContext::ReconstructedFeatureTimeSpan> &reconstructed_feature_time_spans,
+				const TimeSpanUtils::TimeRange &time_range,
+				const ReconstructParams &reconstruct_params);
+
+
+		/**
 		 * The (reconstructed) present day polygon meshes in OpenGL form at the specified reconstruction time.
 		 *
 		 * If @a reconstructing_with_age_grid is true then the polygon meshes are expected to be
@@ -534,30 +561,7 @@ namespace GPlatesAppLogic
 
 
 		//
-		// Getting current reconstruct params and reconstruction time as set by the layer system.
-		//
-
-		/**
-		 * Gets the current reconstruction time as set by the layer system.
-		 */
-		const double &
-		get_current_reconstruction_time() const
-		{
-			return d_current_reconstruction_time;
-		}
-
-		/**
-		 * Gets the parameters used for reconstructing.
-		 */
-		const ReconstructParams &
-		get_current_reconstruct_params() const
-		{
-			return d_current_reconstruct_params;
-		}
-
-
-		//
-		// Getting a present day objects.
+		// Getting present day objects.
 		//
 
 		/**
@@ -625,11 +629,41 @@ namespace GPlatesAppLogic
 		get_present_day_geometries_spatial_partition_locations();
 
 
+		//
+		// Getting current reconstruct params and reconstruction time as set by the layer system.
+		//
+
+		/**
+		 * Gets the current reconstruction time as set by the layer system.
+		 */
+		const double &
+		get_current_reconstruction_time() const
+		{
+			return d_current_reconstruction_time;
+		}
+
+		/**
+		 * Gets the current parameters used for reconstructing.
+		 */
+		const ReconstructParams &
+		get_current_reconstruct_params() const
+		{
+			return d_current_reconstruct_params;
+		}
+
+		/**
+		 * Gets the current features used for reconstructing.
+		 */
+		void
+		get_current_reconstructable_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &reconstructable_features) const;
+
+
 		/**
 		 * Returns the current reconstruction layer proxy used for reconstructions.
 		 */
 		ReconstructionLayerProxy::non_null_ptr_type
-		get_reconstruction_layer_proxy();
+		get_current_reconstruction_layer_proxy();
 
 
 		/**
@@ -1110,7 +1144,6 @@ namespace GPlatesAppLogic
 
 		ReconstructContext::context_state_reference_type
 		create_reconstruct_context_state(
-				const double &reconstruction_time,
 				const ReconstructParams &reconstruct_params);
 	};
 }

@@ -26,6 +26,7 @@
 #include "VelocityFieldCalculatorLayerTask.h"
 
 #include "AppLogicUtils.h"
+#include "LayerProxyUtils.h"
 #include "PlateVelocityUtils.h"
 #include "VelocityFieldCalculatorLayerProxy.h"
 
@@ -61,8 +62,12 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_input_channel_types() con
 	// Channel definition for velocity domain geometries.
 	// NOTE: Previously only accepted "MeshNode" features but now accept anything containing
 	// non-topological geometries (points, multi-points, polylines and polygons).
-	std::vector<LayerTaskType::Type> domain_input_channel_types;
-	domain_input_channel_types.push_back(LayerTaskType::RECONSTRUCT);
+	std::vector<LayerInputChannelType::InputLayerType> domain_input_channel_types;
+	domain_input_channel_types.push_back(
+			LayerInputChannelType::InputLayerType(
+					LayerTaskType::RECONSTRUCT,
+					// Auto-connect to the domain (local means associated with same input file)...
+					LayerInputChannelType::LOCAL_AUTO_CONNECT));
 	input_channel_types.push_back(
 			LayerInputChannelType(
 					LayerInputChannelName::VELOCITY_DOMAIN_LAYERS,
@@ -73,10 +78,18 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_input_channel_types() con
 	// - reconstructed static polygons, or
 	// - resolved topological dynamic polygons, or
 	// - resolved topological networks.
-	std::vector<LayerTaskType::Type> surfaces_input_channel_types;
+	std::vector<LayerInputChannelType::InputLayerType> surfaces_input_channel_types;
 	surfaces_input_channel_types.push_back(LayerTaskType::RECONSTRUCT);
-	surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
-	surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
+	surfaces_input_channel_types.push_back(
+			LayerInputChannelType::InputLayerType(
+					LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER,
+					// Auto connect to all TOPOLOGY_GEOMETRY_RESOLVER layers...
+					LayerInputChannelType::GLOBAL_AUTO_CONNECT));
+	surfaces_input_channel_types.push_back(
+			LayerInputChannelType::InputLayerType(
+					LayerTaskType::TOPOLOGY_NETWORK_RESOLVER,
+					// Auto connect to all TOPOLOGY_NETWORK_RESOLVER layers...
+					LayerInputChannelType::GLOBAL_AUTO_CONNECT));
 	input_channel_types.push_back(
 			LayerInputChannelType(
 					LayerInputChannelName::VELOCITY_SURFACE_LAYERS,

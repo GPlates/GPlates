@@ -256,6 +256,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::InvalidUnsignedLong,
 				QT_TR_NOOP("Invalid unsigned long integer"),
 				QT_TR_NOOP("An unsigned (positive) long integer value was expected, but the supplied value could not be interpreted as an unsigned long integer.") },
+		{ GPlatesFileIO::ReadErrors::InvalidTupleList,
+				QT_TR_NOOP("Invalid tuple list"),
+				QT_TR_NOOP("A tuple of lists of floating-point numbers was expected.") },
 		{ GPlatesFileIO::ReadErrors::MissingNamespaceAlias,
 				QT_TR_NOOP("Missing XML namespace alias"),
 				QT_TR_NOOP("An XML namespace alias was referred to which has not been defined at the start of the FeatureCollection element.") },
@@ -324,6 +327,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::DuplicateRasterBandName,
 				QT_TR_NOOP("Duplicate raster band name found"),
 				QT_TR_NOOP("The list of band names in a raster Feature element contained duplicates.") },
+		{ GPlatesFileIO::ReadErrors::MismatchingRangeParametersSizeAndTupleSize,
+				QT_TR_NOOP("Mismatching range parameters size and tuple size"),
+				QT_TR_NOOP("The number of value components in range parameters does not match the number of lists in tuple.") },
 
 		// The following descriptions are related to ESRI shapefiles and other OGR-supported vector formats:
 		{ GPlatesFileIO::ReadErrors::NoLayersFoundInFile,

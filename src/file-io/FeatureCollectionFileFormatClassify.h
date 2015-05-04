@@ -73,6 +73,11 @@ namespace GPlatesFileIO
 			RASTER = static_cast<unsigned int>(GPlatesAppLogic::ReconstructMethod::NUM_TYPES), // See note above.
 
 			/**
+			 * Scalar coverage features contain a geometry and a scalar value per point in geometry.
+			 */
+			SCALAR_COVERAGE,
+
+			/**
 			 * Scalar field features contain scalar volume data.
 			 */
 			SCALAR_FIELD_3D,

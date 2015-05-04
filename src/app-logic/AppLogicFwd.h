@@ -74,6 +74,10 @@ namespace GPlatesAppLogic
 	typedef GPlatesGlobal::PointerTraits<ReconstructedFeatureGeometry>::non_null_ptr_type reconstructed_feature_geometry_non_null_ptr_type;
 	typedef GPlatesGlobal::PointerTraits<const ReconstructedFeatureGeometry>::non_null_ptr_type reconstructed_feature_geometry_non_null_ptr_to_const_type;
 
+	class ReconstructedScalarCoverage;
+	typedef GPlatesGlobal::PointerTraits<ReconstructedScalarCoverage>::non_null_ptr_type reconstructed_scalar_coverage_non_null_ptr_type;
+	typedef GPlatesGlobal::PointerTraits<const ReconstructedScalarCoverage>::non_null_ptr_type reconstructed_scalar_coverage_non_null_ptr_to_const_type;
+
 	class ReconstructionGeometry;
 	typedef GPlatesGlobal::PointerTraits<ReconstructionGeometry>::non_null_ptr_type reconstruction_geometry_non_null_ptr_type;
 	typedef GPlatesGlobal::PointerTraits<const ReconstructionGeometry>::non_null_ptr_type reconstruction_geometry_non_null_ptr_to_const_type;
@@ -89,6 +93,10 @@ namespace GPlatesAppLogic
 	class ReconstructLayerProxy;
 	typedef GPlatesGlobal::PointerTraits<ReconstructLayerProxy>::non_null_ptr_type reconstruct_layer_proxy_non_null_ptr_type;
 	typedef GPlatesGlobal::PointerTraits<const ReconstructLayerProxy>::non_null_ptr_type reconstruct_layer_proxy_non_null_ptr_to_const_type;
+
+	class ReconstructScalarCoverageLayerProxy;
+	typedef GPlatesGlobal::PointerTraits<ReconstructScalarCoverageLayerProxy>::non_null_ptr_type reconstruct_scalar_coverage_layer_proxy_non_null_ptr_type;
+	typedef GPlatesGlobal::PointerTraits<const ReconstructScalarCoverageLayerProxy>::non_null_ptr_type reconstruct_scalar_coverage_layer_proxy_non_null_ptr_to_const_type;
 
 	class ResolvedRaster;
 	typedef GPlatesGlobal::PointerTraits<ResolvedRaster>::non_null_ptr_type resolved_raster_non_null_ptr_type;

@@ -318,6 +318,39 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_features(
 }
 
 
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_feature_time_spans(
+		std::vector<ReconstructContext::ReconstructedFeatureTimeSpan> &reconstructed_feature_time_spans,
+		const TimeSpanUtils::TimeRange &time_range,
+		const ReconstructParams &reconstruct_params)
+{
+	// We're not going to cache the results so we don't need to check the input proxies.
+
+	// Find an existing context state or create a new one.
+	ReconstructContext::context_state_reference_type context_state_ref;
+
+	// See if we've already got a reconstruct context state for the current reconstruct params.
+	reconstruct_context_state_map_type::iterator context_state_weak_ref_iter =
+			d_reconstruct_context_state_map.find(reconstruct_params);
+	if (context_state_weak_ref_iter != d_reconstruct_context_state_map.end() &&
+		!context_state_weak_ref_iter->second.expired())
+	{
+		// Use existing reconstruct context state...
+		context_state_ref = context_state_weak_ref_iter->second.lock();
+	}
+	else
+	{
+		// Create a new reconstruct context state...
+		context_state_ref = create_reconstruct_context_state(reconstruct_params);
+	}
+
+	return d_reconstruct_context.get_reconstructed_feature_time_spans(
+			reconstructed_feature_time_spans,
+			context_state_ref,
+			time_range);
+}
+
+
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
 GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_static_polygon_meshes(
 		GPlatesOpenGL::GLRenderer &renderer,
@@ -548,9 +581,34 @@ GPlatesAppLogic::ReconstructLayerProxy::get_present_day_geometries_spatial_parti
 
 
 GPlatesAppLogic::ReconstructionLayerProxy::non_null_ptr_type
-GPlatesAppLogic::ReconstructLayerProxy::get_reconstruction_layer_proxy()
+GPlatesAppLogic::ReconstructLayerProxy::get_current_reconstruction_layer_proxy()
 {
 	return d_current_reconstruction_layer_proxy.get_input_layer_proxy();
+}
+
+
+void
+GPlatesAppLogic::ReconstructLayerProxy::get_current_reconstructable_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &reconstructable_features) const
+{
+	// Iterate over the current feature collections.
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_iter =
+			d_current_reconstructable_feature_collections.begin();
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_end =
+			d_current_reconstructable_feature_collections.end();
+	for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
+	{
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection = *feature_collections_iter;
+
+		GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection->begin();
+		GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection->end();
+		for ( ; features_iter != features_end; ++features_iter)
+		{
+			const GPlatesModel::FeatureHandle::weak_ref feature = (*features_iter)->reference();
+
+			reconstructable_features.push_back(feature);
+		}
+	}
 }
 
 
@@ -613,7 +671,7 @@ GPlatesAppLogic::ReconstructLayerProxy::set_current_reconstruct_params(
 
 	// Note that we don't invalidate our reconstruction cache because if a reconstruction is
 	// not cached for a requested reconstruct params then a new reconstruction is created.
-	// Observers need to be aware that the default reconstruct params have changed.
+	// Observers need to be aware that the default reconstruct params have changed though.
 	d_subject_token.invalidate();
 }
 
@@ -831,10 +889,11 @@ GPlatesAppLogic::ReconstructLayerProxy::cache_reconstructed_features(
 	reconstruction_info.cached_reconstructed_features = std::vector<ReconstructContext::ReconstructedFeature>();
 
 	// Reconstruct our features into our cache.
-	reconstruction_info.cached_reconstructed_feature_geometries_handle = d_reconstruct_context.reconstruct_feature_geometries( 
-			reconstruction_info.cached_reconstructed_features.get(),
-			reconstruction_info.context_state,
-			reconstruction_time);
+	reconstruction_info.cached_reconstructed_feature_geometries_handle =
+			d_reconstruct_context.get_reconstructed_features( 
+					reconstruction_info.cached_reconstructed_features.get(),
+					reconstruction_info.context_state,
+					reconstruction_time);
 
 	return reconstruction_info.cached_reconstructed_features.get();
 }
@@ -970,10 +1029,8 @@ GPlatesAppLogic::ReconstructLayerProxy::create_reconstruction_info(
 	ReconstructContext::context_state_reference_type context_state_ref;
 	if (context_state_weak_ref.expired())
 	{
-		const double reconstruction_time = reconstruction_cache_key.first.dval();
-
 		// Create a new reconstruct context state...
-		context_state_ref = create_reconstruct_context_state(reconstruction_time, reconstruct_params);
+		context_state_ref = create_reconstruct_context_state(reconstruct_params);
 
 		// Associate the new context state with the ReconstructParams so we can find it again.
 		context_state_weak_ref = context_state_ref;
@@ -990,7 +1047,6 @@ GPlatesAppLogic::ReconstructLayerProxy::create_reconstruction_info(
 
 GPlatesAppLogic::ReconstructContext::context_state_reference_type
 GPlatesAppLogic::ReconstructLayerProxy::create_reconstruct_context_state(
-		const double &reconstruction_time,
 		const ReconstructParams &reconstruct_params)
 {
 	ReconstructMethodInterface::Context reconstruct_method_context(
@@ -1003,17 +1059,20 @@ GPlatesAppLogic::ReconstructLayerProxy::create_reconstruct_context_state(
 	{
 		//PROFILE_BLOCK("ReconstructLayerProxy::create_reconstruct_context_state: create time span");
 
-		const double begin_time = reconstruct_params.get_deformation_begin_time();
-		const double end_time = reconstruct_params.get_deformation_end_time();
-		const double time_increment = reconstruct_params.get_deformation_time_increment();
+		const TimeSpanUtils::TimeRange time_range(
+				reconstruct_params.get_deformation_begin_time(),
+				reconstruct_params.get_deformation_end_time(),
+				reconstruct_params.get_deformation_time_increment(),
+				TimeSpanUtils::TimeRange::ADJUST_BEGIN_TIME);
 
 		// Create our resolved network time span that combines resolved networks from
 		// *all* topological network layers.
-		reconstruct_method_context.geometry_deformation =
-				boost::in_place(begin_time, end_time, time_increment);
+		GeometryDeformation::resolved_network_time_span_type::non_null_ptr_type geometry_deformation =
+				GeometryDeformation::resolved_network_time_span_type::create(time_range);
 
 		// Get a resolved network time span from each topological network layer.
-		std::vector<GeometryDeformation::ResolvedNetworkTimeSpan> resolved_network_time_spans;
+		std::vector<GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type>
+				resolved_network_time_spans;
 		resolved_network_time_spans.reserve(
 				d_current_topological_network_resolver_layer_proxies.get_input_layer_proxies().size());
 		BOOST_FOREACH(
@@ -1021,36 +1080,42 @@ GPlatesAppLogic::ReconstructLayerProxy::create_reconstruct_context_state(
 						topological_network_resolver_layer_proxy,
 				d_current_topological_network_resolver_layer_proxies.get_input_layer_proxies())
 		{
-			const GeometryDeformation::ResolvedNetworkTimeSpan &resolved_network_time_span =
-					topological_network_resolver_layer_proxy.get_input_layer_proxy()
-							->get_resolved_network_time_span(begin_time, end_time, time_increment);
+			GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type
+					resolved_network_time_span =
+							topological_network_resolver_layer_proxy.get_input_layer_proxy()
+									->get_resolved_network_time_span(time_range);
 
 			resolved_network_time_spans.push_back(resolved_network_time_span);
 		}
 
 		// Iterate over the time slots of the time span and fill in the resolved topological networks.
-		const unsigned int num_time_slots = reconstruct_method_context.geometry_deformation->get_num_time_slots();
+		const unsigned int num_time_slots = time_range.get_num_time_slots();
 		for (unsigned int time_slot = 0; time_slot < num_time_slots; ++time_slot)
 		{
 			// Get the resolved topological networks for the current time slot.
-			std::vector<GeometryDeformation::ResolvedNetworkTimeSpan>::const_iterator
+			std::vector<GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type>::const_iterator
 					resolved_network_time_spans_iter = resolved_network_time_spans.begin();
-			std::vector<GeometryDeformation::ResolvedNetworkTimeSpan>::const_iterator
+			std::vector<GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type>::const_iterator
 					resolved_network_time_spans_end = resolved_network_time_spans.end();
 			for ( ;
 				resolved_network_time_spans_iter != resolved_network_time_spans_end;
 				++resolved_network_time_spans_iter)
 			{
-				const GeometryDeformation::ResolvedNetworkTimeSpan &resolved_network_time_span =
-						*resolved_network_time_spans_iter;
+				GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type
+						resolved_network_time_span = *resolved_network_time_spans_iter;
 
-				const GeometryDeformation::ResolvedNetworkTimeSpan::rtn_seq_type &rtns =
-						resolved_network_time_span.get_resolved_networks_time_slot(time_slot);
-
-				reconstruct_method_context.geometry_deformation
-						->add_resolved_networks(rtns.begin(), rtns.end(), time_slot);
+				boost::optional<const GeometryDeformation::rtn_seq_type &> rtns =
+						resolved_network_time_span->get_sample_in_time_slot(time_slot);
+				if (rtns)
+				{
+					geometry_deformation->set_sample_in_time_slot(rtns.get(), time_slot);
+				}
 			}
 		}
+
+		reconstruct_method_context.geometry_deformation =
+				GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type(
+						geometry_deformation);
 
 		// As a performance optimisation, request a reconstruction tree creator with a cache size
 		// the same as the resolved network time span.
@@ -1059,7 +1124,7 @@ GPlatesAppLogic::ReconstructLayerProxy::create_reconstruct_context_state(
 		reconstruct_method_context.reconstruction_tree_creator =
 				d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(
 						// +1 accounts for the extra time step used to generate deformed geometries...
-						reconstruct_method_context.geometry_deformation->get_num_time_slots() + 1);
+						time_range.get_num_time_slots() + 1);
 	}
 
 	// The context state has either been released from the least-recently used reconstruction

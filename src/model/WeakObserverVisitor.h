@@ -31,12 +31,12 @@
 
 namespace GPlatesAppLogic
 {
-	class CoRegistrationData;
 	class DeformedFeatureGeometry;
 	class MultiPointVectorField;
 	class ReconstructedFeatureGeometry;
 	class ReconstructedFlowline;
 	class ReconstructedMotionPath;
+	class ReconstructedScalarCoverage;
 	class ReconstructedSmallCircle;
 	class ReconstructedVirtualGeomagneticPole;
 	class ResolvedRaster;
@@ -134,15 +134,6 @@ namespace GPlatesModel
 		 */
 		virtual
 		void
-		visit_co_registration_data(
-				GPlatesAppLogic::CoRegistrationData &crd)
-		{  }
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
 		visit_deformed_feature_geometry(
 				GPlatesAppLogic::DeformedFeatureGeometry &dfg);
 
@@ -179,6 +170,15 @@ namespace GPlatesModel
 		void
 		visit_reconstructed_motion_path(
 				GPlatesAppLogic::ReconstructedMotionPath &rmp);
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_reconstructed_scalar_coverage(
+				GPlatesAppLogic::ReconstructedScalarCoverage &rsc)
+		{  }
 
 		/**
 		 * Override this function in your own derived class.

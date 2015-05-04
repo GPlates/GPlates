@@ -28,11 +28,9 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructedFeatureGeometryFinder.h"
 #include "Reconstruction.h"
-#include "ReconstructionLayerProxy.h"
 #include "ReconstructLayerProxy.h"
 #include "ResolvedTopologicalLine.h"
 #include "TopologyGeometryResolverLayerProxy.h"
-#include "TopologyNetworkResolverLayerProxy.h"
 
 
 void

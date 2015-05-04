@@ -49,42 +49,17 @@ namespace GPlatesAppLogic
 	public:
 
 		/**
-		 * Constructs a visitor that retrieves reconstruction parameters from a
-		 * feature's property values at the given @a reconstruction_time.
-		 */
-		ReconstructionFeatureProperties(
-				const double &reconstruction_time);
-
-		/**
-		 * Constructs a visitor that retrieves reconstruction parameters from a
-		 * feature's property values that are independent of reconstruction time.
-		 */
-		ReconstructionFeatureProperties();
-
-
-		/**
-		 * Returns the reconstruction time passed into constructor, or boost::none if none passed in.
-		 */
-		const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
-		get_reconstruction_time() const
-		{
-			return d_recon_time;
-		}
-
-
-		/**
 		 * Returns true unless a "gml:validTime" property in the feature has
-		 * a time period that does not include the time passed into constructor
-		 * taking a reconstruction time.
+		 * a time period that does not include the specified time.
 		 *
-		 * If this visitor was constructed without a reconstruction time, this
-		 * function always returns true.
+		 * The return value defaults to true; it's only set to false if
+		 * both: (i) a "gml:validTime" property is encountered which contains a
+		 * "gml:TimePeriod" structural type; and (ii) the reconstruction time lies
+		 * outside the range of the valid time.
 		 */
 		bool
-		is_feature_defined_at_recon_time() const
-		{
-			return d_feature_is_defined_at_recon_time;
-		}
+		is_feature_defined_at_recon_time(
+				const double &reconstruction_time) const;
 
 
 		/**
@@ -188,19 +163,6 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureHandle &feature_handle);
 
 	private:
-
-		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_recon_time;
-
-		/**
-		 * Whether or not the current feature is defined at this reconstruction
-		 * time.
-		 *
-		 * The value of this member defaults to true; it's only set to false if
-		 * both: (i) a "gml:validTime" property is encountered which contains a
-		 * "gml:TimePeriod" structural type; and (ii) the reconstruction time lies
-		 * outside the range of the valid time.
-		 */
-		bool d_feature_is_defined_at_recon_time;
 
 		boost::optional<GPlatesModel::integer_plate_id_type> d_recon_plate_id;
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_appearance;

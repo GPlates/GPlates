@@ -180,7 +180,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_birth_attribute_data(
 	}
 	ReconstructionTreeCreator reconstruction_tree_creator = 
 		d_current_seed_layer_proxies.get_input_layer_proxies().front().get_input_layer_proxy()->
-		get_reconstruction_layer_proxy()->get_reconstruction_tree_creator();
+		get_current_reconstruction_layer_proxy()->get_reconstruction_tree_creator();
 	std::vector<FeatureCollectionHandle::weak_ref> reconstructable_features_collections;
 	FeatureCollectionHandle::non_null_ptr_type fc = FeatureCollectionHandle::create();
 	fc->add(FeatureHandle::non_null_ptr_type(feature.handle_ptr()));

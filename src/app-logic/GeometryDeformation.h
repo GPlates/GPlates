@@ -26,16 +26,12 @@
 #ifndef GPLATES_APP_LOGIC_GEOMETRYDEFORMATION_H
 #define GPLATES_APP_LOGIC_GEOMETRYDEFORMATION_H
 
-#include <deque>
-#include <list>
 #include <vector>
 #include <boost/optional.hpp>
 
 #include "ReconstructionTreeCreator.h"
 #include "ResolvedTopologicalNetwork.h"
-
-#include "global/GPlatesAssert.h"
-#include "global/PreconditionViolationError.h"
+#include "TimeSpanUtils.h"
 
 #include "maths/GeometryOnSphere.h"
 #include "maths/GeometryType.h"
@@ -56,141 +52,15 @@ namespace GPlatesAppLogic
 
 	namespace GeometryDeformation
 	{
+		//! Typedef for a sequence of resolved topological networks.
+		typedef std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> rtn_seq_type;
+
 		/**
 		 * A look up table of resolved topological networks over a time span.
+		 *
+		 * Each time sample is a @a rtn_seq_type (sequence of RTNs).
 		 */
-		class ResolvedNetworkTimeSpan
-		{
-		public:
-
-			//! Typedef for a sequence of resolved topological networks.
-			typedef std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> rtn_seq_type;
-
-
-			/**
-			 * @throws exception if the following is not satisfied:
-			 *   begin_time > end_time && time_increment > 0
-			 */
-			ResolvedNetworkTimeSpan(
-					const double &begin_time,
-					const double &end_time,
-					const double &time_increment);
-
-
-			/**
-			 * Returns the begin time passed into constructor.
-			 *
-			 * NOTE: This is rounded up to the nearest time slot and hence can be earlier in the past
-			 * than the begin time passed into the constructor.
-			 *
-			 * Essentially: begin_time = end_time + num_time_slots * time_increment
-			 */
-			const double &
-			get_begin_time() const
-			{
-				return d_begin_time;
-			}
-
-
-			//! Returns the end time passed into constructor.
-			const double &
-			get_end_time() const
-			{
-				return d_end_time;
-			}
-
-
-			//! Returns the time increment passed into constructor.
-			const double &
-			get_time_increment() const
-			{
-				return d_time_increment;
-			}
-
-
-			//! The number of time slots across the time span.
-			unsigned int
-			get_num_time_slots() const
-			{
-				return d_resolved_networks_time_sequence.size();
-			}
-
-
-			/**
-			 * Returns the time associated with the specified time slot.
-			 *
-			 * Time slots begin at the begin time and end at the end time.
-			 */
-			double
-			get_time(
-					unsigned int time_slot) const
-			{
-				return d_begin_time - time_slot * d_time_increment;
-			}
-
-
-			//! Returns the matching time slot if the specified time matches (within epsilon) the time of a time slot.
-			boost::optional<unsigned int>
-			get_time_slot(
-					const double &time) const;
-
-
-			//! Get the resolved topological networks for the specified time slot.
-			const rtn_seq_type &
-			get_resolved_networks_time_slot(
-					unsigned int time_slot) const;
-
-
-			/**
-			 * Get the nearest resolved topological networks time slot for the specified time.
-			 *
-			 * Returns boost::none if @a time is outside the range [@a begin_time, @a end_time].
-			 */
-			boost::optional<const rtn_seq_type &>
-			get_nearest_resolved_networks_time_slot(
-					const double &time) const;
-
-
-			//! Add resolved topological networks for the specified time slot.
-			template <typename ResolvedTopologicalNetworkIter>
-			void
-			add_resolved_networks(
-					ResolvedTopologicalNetworkIter resolved_topological_networks_begin,
-					ResolvedTopologicalNetworkIter resolved_topological_networks_end,
-					unsigned int time_slot)
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						time_slot < d_resolved_networks_time_sequence.size(),
-						GPLATES_ASSERTION_SOURCE);
-
-				rtn_seq_type &rtn_time_slot = d_resolved_networks_time_sequence[time_slot];
-
-				rtn_time_slot.insert(
-						rtn_time_slot.end(),
-						resolved_topological_networks_begin,
-						resolved_topological_networks_end);
-			}
-
-		private:
-
-			//! Typedef for a time sequence of resolved topological networks.
-			typedef std::vector<rtn_seq_type> rtn_time_seq_type;
-
-
-			double d_begin_time;
-			double d_end_time;
-			double d_time_increment;
-
-			rtn_time_seq_type d_resolved_networks_time_sequence;
-
-
-			/**
-			 * Returns the number of time slots ending at @a end_time and beginning at, or up to
-			 * one time increment before, @a begin_time.
-			 */
-			unsigned int
-			calc_num_time_slots() const;
-		};
+		typedef TimeSpanUtils::TimeSampleSpan<rtn_seq_type> resolved_network_time_span_type;
 
 
 		/**
@@ -213,6 +83,28 @@ namespace GPlatesAppLogic
 				dilitation_strain(0),
 				second_invariant_strain(0)
 			{  }
+
+			/**
+			 * Copies the accumulated values across from another DeformationInfo.
+			 *
+			 * This is useful between deformation periods where the instantaneous values are zero
+			 * but the accumulated values are propagated across gaps between deformation periods.
+			 */
+			void
+			set_accumulated_values(
+					const DeformationInfo &deformation_info)
+			{
+				S22 = deformation_info.S22;
+				S33 = deformation_info.S33;
+				S23 = deformation_info.S23;
+
+				S_DIR = deformation_info.S_DIR;
+				S1 = deformation_info.S1;
+				S2 = deformation_info.S2;
+				dilitation_strain = deformation_info.dilitation_strain;
+				second_invariant_strain = deformation_info.second_invariant_strain;
+			}
+
 
 			//
 			// Instantaneous values (not accumulated over time).
@@ -279,7 +171,7 @@ namespace GPlatesAppLogic
 			static
 			non_null_ptr_type
 			create(
-					const ResolvedNetworkTimeSpan &resolved_network_time_span,
+					const resolved_network_time_span_type::non_null_ptr_to_const_type &resolved_network_time_span,
 					const ReconstructionTreeCreator &reconstruction_tree_creator,
 					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &feature_present_day_geometry,
 					GPlatesModel::integer_plate_id_type feature_reconstruction_plate_id)
@@ -344,12 +236,9 @@ namespace GPlatesAppLogic
 					std::vector< boost::optional<const ReconstructionGeometry *> > &surfaces,
 					const double &reconstruction_time,
 					const ReconstructionTreeCreator &reconstruction_tree_creator,
-					const ResolvedNetworkTimeSpan &resolved_network_time_span);
+					const resolved_network_time_span_type::non_null_ptr_to_const_type &resolved_network_time_span);
 
 		private:
-
-			// Forward declaration.
-			class TimeWindow;
 
 			/**
 			 * A geometry snapshot consisting of geometry points and associated per-point info.
@@ -365,12 +254,39 @@ namespace GPlatesAppLogic
 				typedef std::vector<delaunay_face_opt_type> delaunay_face_opt_seq_type;
 
 
-				GeometrySample() :
+				template <typename PointsForwardIter>
+				GeometrySample(
+						PointsForwardIter points_begin,
+						PointsForwardIter points_end) :
+					d_points(points_begin, points_end),
 					d_have_initialised_instantaneous_deformation_information(false)
-				{  }
+				{
+					// Allocate deformation information - it'll get initialised later.
+					d_deformation_infos.resize(d_points.size());
+				}
+
+				explicit
+				GeometrySample(
+					const std::vector<GPlatesMaths::PointOnSphere> &points) :
+					d_points(points),
+					d_have_initialised_instantaneous_deformation_information(false)
+				{
+					// Allocate deformation information - it'll get initialised later.
+					d_deformation_infos.resize(d_points.size());
+				}
 
 
-				std::vector<GPlatesMaths::PointOnSphere> points;
+				const std::vector<GPlatesMaths::PointOnSphere> &
+				get_points() const
+				{
+					return d_points;
+				}
+
+				std::vector<GPlatesMaths::PointOnSphere> &
+				get_points()
+				{
+					return d_points;
+				}
 
 
 				const std::vector<DeformationInfo> &
@@ -406,16 +322,8 @@ namespace GPlatesAppLogic
 					d_delaunay_faces = delaunay_faces;
 				}
 
-				/**
-				 * Get the point list
-				 */
-				std::vector<GPlatesMaths::PointOnSphere> &
-				get_points()
-				{
-					return points;
-				}
-
 			private:
+				std::vector<GPlatesMaths::PointOnSphere> d_points;
 				mutable std::vector<DeformationInfo> d_deformation_infos;
 				mutable bool d_have_initialised_instantaneous_deformation_information;
 
@@ -425,157 +333,20 @@ namespace GPlatesAppLogic
 				//! Calculate instantaneous deformation values but not forward-time-accumulated values.
 				void
 				calc_instantaneous_deformation_information() const;
-
-				friend class TimeWindow;
 			};
 
-			/**
-			 * A time window containing a contiguous time span of geometry samples
-			 * (typically deformed geometries).
-			 *
-			 * Time windows can be separated by time periods where only rigid rotations occur.
-			 * In other words time windows do not have to abut (or touch) each other.
-			 *
-			 * Each time window has only an end time (and not a start time).
-			 * This is because the end time of the earlier (less recent) time window implicitly
-			 * forms the begin time of the next time window.
-			 */
-			class TimeWindow
-			{
-			public:
-
-				TimeWindow(
-						const double &end_time,
-						const double &time_increment) :
-					d_end_time(end_time),
-					d_time_increment(time_increment)
-				{  }
-
-				//
-				// Set methods...
-				//
-
-				/**
-				 * Adds a geometry sample to the front (least recent time) of the stored geometry samples.
-				 *
-				 * Note that the first geometry sample added is associated with this time window's end time.
-				 * And hence at least one geometry sample should be added.
-				 */
-				GeometrySample &
-				add_geometry_sample(
-						const std::vector<GPlatesMaths::PointOnSphere> &geometry_points);
-
-				//
-				// Get methods...
-				//
-
-				/**
-				 * The begin time of this time window.
-				 *
-				 * Note that if the time window has only one sample (the minimum allowed) then
-				 * the begin and end times of this time window will be equal.
-				 */
-				double
-				get_begin_time() const;
-
-				/**
-				 * The end time of this time window.
-				 */
-				const double &
-				get_end_time() const
-				{
-					return d_end_time;
-				}
-
-				/**
-				 * Returns the number of geometry samples (which is one more than the number of intervals).
-				 */
-				unsigned int
-				get_num_geometry_samples() const
-				{
-					return d_geometry_sample_time_span.size();
-				}
-
-				/**
-				 * Returns the geometry sample at the specified index.
-				 *
-				 * Increasing indices move forward in time (from earlier to recent times).
-				 *
-				 * Throws exception if @a geometry_sample_index is not less than @a get_num_geometry_samples.
-				 */
-				GeometrySample &
-				get_geometry_sample(
-						unsigned int geometry_sample_index);
-
-				/**
-				 * Returns the geometry sample at the specified reconstruction time.
-				 *
-				 * Throws exception if @a reconstruction_time is outside the time window's begin/end range.
-				 */
-				const GeometrySample &
-				get_geometry_sample(
-						const double &reconstruction_time) const
-				{
-					return d_geometry_sample_time_span[get_geometry_sample_index(reconstruction_time)];
-				}
-
-				/**
-				 * Returns the geometry sample at the beginning of this time window.
-				 */
-				const GeometrySample &
-				get_geometry_sample_at_begin_time() const;
-
-				//! Non-const overload.
-				GeometrySample &
-				get_geometry_sample_at_begin_time();
-
-			private:
-
-				/**
-				 * Typedef for a sequence of geometry samples over a contiguous sequence of time slots.
-				 *
-				 * This is a deque so that we can efficiently add to the front since doing so does not
-				 * move geometry samples in memory. And we can still access using indices.
-				 */
-				typedef std::deque<GeometrySample> geometry_sample_time_span_type;
-
-
-				//! End time of this time window.
-				double d_end_time;
-
-				//! The size of a time interval.
-				double d_time_increment;
-
-				/**
-				 * The geometry samples ordered least recent to most recent with the last sample
-				 * associated with the end time.
-				 */
-				geometry_sample_time_span_type d_geometry_sample_time_span;
-
-				/**
-				 * Returns the nearest geometry sample index for the specified reconstruction time.
-				 *
-				 * Throws exception if @a reconstruction_time is outside the time window's begin/end range.
-				 */
-				unsigned int
-				get_geometry_sample_index(
-						const double &reconstruction_time) const;
-			};
 
 			/**
-			 * Typedef for a sequence of time windows.
-			 *
-			 * This is a list so that we can efficiently add to the front because doing so
-			 * doesn't move existing windows in memory.
+			 * Typedef for a span of time windows.
 			 */
-			typedef std::list<TimeWindow> time_window_seq_type;
+			typedef TimeSpanUtils::TimeWindowSpan<GeometrySample> time_window_span_type;
 
 
 			GPlatesModel::integer_plate_id_type d_reconstruction_plate_id;
 
 			GPlatesMaths::GeometryType::Value d_geometry_type;
 
-			time_window_seq_type d_time_windows;
+			time_window_span_type::non_null_ptr_type d_time_window_span;
 
 			/**
 			 * Is true if we've generated the deformation information that is accumulated
@@ -585,7 +356,7 @@ namespace GPlatesAppLogic
 
 
 			GeometryTimeSpan(
-					const ResolvedNetworkTimeSpan &resolved_network_time_span,
+					const resolved_network_time_span_type::non_null_ptr_to_const_type &resolved_network_time_span,
 					const ReconstructionTreeCreator &reconstruction_tree_creator,
 					const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &feature_present_day_geometry,
 					GPlatesModel::integer_plate_id_type feature_reconstruction_plate_id);
@@ -595,9 +366,8 @@ namespace GPlatesAppLogic
 			 */
 			void
 			initialise_time_windows(
-					const ResolvedNetworkTimeSpan &resolved_network_time_span,
-					const ReconstructionTreeCreator &reconstruction_tree_creator,
-					const std::vector<GPlatesMaths::PointOnSphere> &present_day_geometry_points);
+					const resolved_network_time_span_type::non_null_ptr_to_const_type &resolved_network_time_span,
+					const ReconstructionTreeCreator &reconstruction_tree_creator);
 
 			/**
 			 * Generate the deformation information that is accumulated going forward in time.
@@ -614,6 +384,16 @@ namespace GPlatesAppLogic
 					const ReconstructionTreeCreator &reconstruction_tree_creator,
 					std::vector<GPlatesMaths::PointOnSphere> &geometry_points,
 					boost::optional<std::vector<DeformationInfo> &> deformation_info_points = boost::none);
+
+			/**
+			 * Create a new GeometrySample from the closest younger sample by rigid rotation.
+			 */
+			GeometrySample
+			create_rigid_geometry_sample(
+					const double &reconstruction_time,
+					const double &closest_younger_sample_time,
+					const GeometrySample &closest_younger_sample,
+					const ReconstructionTreeCreator &reconstruction_tree_creator);
 
 			/**
 			 * Rigidly rotates the geometry points from present day to @a reconstruction_time.

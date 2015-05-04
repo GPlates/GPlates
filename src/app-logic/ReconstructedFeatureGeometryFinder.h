@@ -187,7 +187,6 @@ namespace GPlatesAppLogic
 				ReconstructedFeatureGeometry &rfg);
 
 	private:
-
 		boost::optional<GPlatesModel::PropertyName> d_property_name_to_match;
 		boost::optional<GPlatesModel::FeatureHandle::iterator> d_properties_iterator_to_match;
 		boost::optional<ReconstructionTree::non_null_ptr_to_const_type> d_reconstruction_tree_to_match;

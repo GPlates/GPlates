@@ -118,18 +118,10 @@ namespace GPlatesAppLogic
 		 * @a get_resolved_topological_networks over a sequence of reconstruction times because
 		 * a separate resolved network would unnecessarily be created for each client - whereas,
 		 * with this method, a single time range of resolved networks would be shared by all clients.
-		 *
-		 * NOTE: The returned @a ResolvedNetworkTimeSpan reference can be invalidated by a subsequent
-		 * request so it should be copied by the caller (it's cheap to copy since just intrusive pointers).
-		 *
-		 * @throws exception if the following is not satisfied:
-		 *   begin_time > end_time && time_increment > 0
 		 */
-		const GeometryDeformation::ResolvedNetworkTimeSpan &
+		GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type
 		get_resolved_network_time_span(
-				const double &begin_time,
-				const double &end_time,
-				const double &time_increment);
+				const TimeSpanUtils::TimeRange &time_range);
 
 
 		/**
@@ -278,7 +270,8 @@ namespace GPlatesAppLogic
 		 *
 		 * This is cached as a performance optimisation for clients that deform geometries.
 		 */
-		boost::optional<GeometryDeformation::ResolvedNetworkTimeSpan> d_cached_resolved_network_time_span;
+		boost::optional<GeometryDeformation::resolved_network_time_span_type::non_null_ptr_type>
+				d_cached_resolved_network_time_span;
 
 		/**
 		 * Used to notify polling observers that we've been updated.
@@ -329,11 +322,9 @@ namespace GPlatesAppLogic
 		/**
 		 * Generates a resolved network time span for the specified time range if one is not already cached.
 		 */
-		GeometryDeformation::ResolvedNetworkTimeSpan &
+		GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type
 		cache_resolved_network_time_span(
-				const double &begin_time,
-				const double &end_time,
-				const double &time_increment);
+				const TimeSpanUtils::TimeRange &time_range);
 
 
 		/**

@@ -370,7 +370,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_topological_network_r
 void
 GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::reset_cache()
 {
-	// Clear any cached resolved topological boundaries.
+	// Clear any cached multi-point vector fields.
 	d_cached_multi_point_velocity_fields = boost::none;
 	d_cached_reconstruction_time = boost::none;
 	d_cached_velocity_params = boost::none;

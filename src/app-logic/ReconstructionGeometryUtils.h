@@ -488,6 +488,11 @@ namespace GPlatesAppLogic
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
 
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc);
+
 		private:
 			boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_feature_ref;
 		};
@@ -606,6 +611,11 @@ namespace GPlatesAppLogic
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
 
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc);
+
 		private:
 			boost::optional<GPlatesModel::integer_plate_id_type> d_plate_id;
 		};
@@ -656,6 +666,11 @@ namespace GPlatesAppLogic
 			void
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc);
 
 		private:
 			boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_formation;
@@ -716,6 +731,11 @@ namespace GPlatesAppLogic
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
 
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc);
+
 		private:
 			boost::optional<double> d_reconstruction_time;
 			boost::optional<ReconstructionTree::non_null_ptr_to_const_type> d_reconstruction_tree;
@@ -758,6 +778,11 @@ namespace GPlatesAppLogic
 			void
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc);
 
 		private:
 			boost::optional<ReconstructionTreeCreator> d_reconstruction_tree_creator;
@@ -896,6 +921,11 @@ namespace GPlatesAppLogic
 			void
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc);
 
 		private:
 			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_boundary_polygon;

@@ -630,7 +630,6 @@ namespace GPlatesAppLogic
 				d_reconstruct_handle(reconstruct_handle),
 				d_reconstruction_tree(reconstruction_tree),
 				d_reconstruction_tree_creator(reconstruction_tree_creator),
-				d_reconstruction_params(reconstruction_tree->get_reconstruction_time()),
 				d_reconstructed_feature_geometries(reconstructed_feature_geometries)
 			{  }
 
@@ -645,7 +644,8 @@ namespace GPlatesAppLogic
 				d_reconstruction_params.visit_feature(feature_ref);
 
 				// Secondly the feature must be defined at the reconstruction time.
-				if (!d_reconstruction_params.is_feature_defined_at_recon_time())
+				if (!d_reconstruction_params.is_feature_defined_at_recon_time(
+					d_reconstruction_tree->get_reconstruction_time()))
 				{
 					// Don't reconstruct.
 					return false;
@@ -863,11 +863,11 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_feature_velocit
 		const double &reconstruction_time)
 {
 	// Get the feature's reconstruction left/right plate ids.
-	ReconstructionFeatureProperties reconstruction_feature_properties(reconstruction_time);
+	ReconstructionFeatureProperties reconstruction_feature_properties;
 	reconstruction_feature_properties.visit_feature(get_feature_ref());
 
 	// The feature must be defined at the reconstruction time.
-	if (!reconstruction_feature_properties.is_feature_defined_at_recon_time())
+	if (!reconstruction_feature_properties.is_feature_defined_at_recon_time(reconstruction_time))
 	{
 		return;
 	}
@@ -966,7 +966,7 @@ GPlatesAppLogic::ReconstructMethodHalfStageRotation::reconstruct_geometry(
 		bool reverse_reconstruct)
 {
 	// Get the values of the properties at present day.
-	ReconstructionFeatureProperties reconstruction_feature_properties(0/*reconstruction_time*/);
+	ReconstructionFeatureProperties reconstruction_feature_properties;
 
 	reconstruction_feature_properties.visit_feature(get_feature_ref());
 

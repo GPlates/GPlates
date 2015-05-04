@@ -164,6 +164,7 @@ namespace GPlatesFileIO
 			InvalidString,
 			InvalidUnsignedInt,
 			InvalidUnsignedLong,
+			InvalidTupleList,
 			MissingNamespaceAlias,
 			NonUniqueStructuralElement,
 			StructuralElementNotFound,
@@ -187,6 +188,7 @@ namespace GPlatesFileIO
 			ParseError,
 			UnexpectedNonEmptyAttributeList,
 			DuplicateRasterBandName,
+			MismatchingRangeParametersSizeAndTupleSize,
 
 			// The following are specific to GMAP vgp files
 			// FIXME: This is a generic GmapError, we should add more field-specific errors.

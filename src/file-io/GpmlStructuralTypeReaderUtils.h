@@ -60,6 +60,7 @@
 #include "property-values/GpmlTopologicalNetwork.h"
 #include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/GpmlTopologicalSection.h"
+#include "property-values/ValueObjectType.h"
 
 
 namespace GPlatesModel
@@ -89,6 +90,12 @@ namespace GPlatesFileIO
 		//
 
 
+		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes_type;
+		typedef std::pair<GPlatesPropertyValues::ValueObjectType, xml_attributes_type> value_component_type;
+		typedef std::vector<value_component_type> composite_value_type;
+		typedef std::vector<double> coordinate_list_type;
+
+
 		//
 		// Feature-id and revision-id.
 		//
@@ -114,11 +121,32 @@ namespace GPlatesFileIO
 		// Please keep these ordered alphabetically...
 
 
+		/**
+		 * Create a gml:CompositeValue structural type consisting of a sequence of 'gml:valueComponent's.
+		 */
+		composite_value_type
+		create_gml_composite_value(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+				const GPlatesModel::GpgimVersion &gpml_version,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors);
+
+
 		GPlatesPropertyValues::GmlGridEnvelope::non_null_ptr_type
 		create_gml_grid_envelope(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 				const GPlatesModel::GpgimVersion &gpml_version,
 				ReadErrorAccumulation &read_errors);
+
+
+		/**
+		 * Extracts out the value object template, i.e. the app:Temperature part of the
+		 * example on p.253 of the GML book.
+		 */
+		value_component_type
+		create_gml_value_component(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+				const GPlatesModel::GpgimVersion &gpml_version,
+				GPlatesFileIO::ReadErrorAccumulation &read_errors);
 
 
 		//
@@ -233,7 +261,7 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors);
 
 
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
+		xml_attributes_type
 		get_xml_attributes_from_child(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 				const GPlatesModel::XmlElementName &xml_element_name);
@@ -698,22 +726,12 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Extracts out the value object template, i.e. the app:Temperature part of the
-		 * example on p.253 of the GML book.
+		 * Extracts a sequence of coordinate lists of doubles (one list per tuple element).
+		 *
+		 * The coordinate lists format is that of 'gml:tupleList'.
 		 */
-		GPlatesPropertyValues::GmlFile::value_component_type
-		create_gml_file_value_component(
-				const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
-				const GPlatesModel::GpgimVersion &gpml_version,
-				GPlatesFileIO::ReadErrorAccumulation &read_errors);
-
-
-		/**
-		 * Used by create_gml_file to create the gml:CompositeValue structural type inside
-		 * a gml:File.
-		 */
-		GPlatesPropertyValues::GmlFile::composite_value_type
-		create_gml_file_composite_value(
+		std::vector<coordinate_list_type>
+		create_tuple_list(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
 				const GPlatesModel::GpgimVersion &gpml_version,
 				GPlatesFileIO::ReadErrorAccumulation &read_errors);

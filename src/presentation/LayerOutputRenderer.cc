@@ -247,6 +247,13 @@ GPlatesPresentation::LayerOutputRenderer::visit(
 
 void
 GPlatesPresentation::LayerOutputRenderer::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstruct_scalar_coverage_layer_proxy_type> &reconstruct_scalar_coverage_layer_proxy)
+{
+}
+
+
+void
+GPlatesPresentation::LayerOutputRenderer::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<reconstruction_layer_proxy_type> &reconstruction_layer_proxy)
 {
 	// Nothing to visualise for this layer type.

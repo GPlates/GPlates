@@ -170,7 +170,6 @@ namespace GPlatesAppLogic
 		visit_reconstructed_feature_geometry(
 				ReconstructedFeatureGeometry &rfg);
 
-		// Handles @a ResolvedTopologicalGeometry and its derived classes.
 		virtual
 		void
 		visit_resolved_topological_geometry(

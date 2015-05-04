@@ -76,6 +76,8 @@ CGAL            libcgal-dev
 PROJ.4          proj
 Qwt		libqwt-dev
 
+On Ubuntu 14.04 Trusty Tahr and	14.10 Utopic Unicorn, the following libraries are required libxrender-dev, libice-dev, libsm-dev, libfreetype6-dev and libfontconfig1-dev.
+
 How to install via a GUI (recommended)
 
 It is recommended that you start the Synaptic Package Manager graphical

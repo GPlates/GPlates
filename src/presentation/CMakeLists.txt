@@ -25,6 +25,7 @@ set(srcs
     RasterVisualLayerParams.h
     ReconstructionGeometryRenderer.cc
     ReconstructionGeometryRenderer.h
+    ReconstructScalarCoverageVisualLayerParams.h
     ReconstructVisualLayerParams.cc
     ReconstructVisualLayerParams.h
     ScalarField3DVisualLayerParams.cc

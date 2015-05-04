@@ -378,7 +378,7 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_geometries(
 	//PROFILE_FUNC();
 
 	// Get the feature's reconstruction plate id and begin/end time.
-	ReconstructionFeatureProperties reconstruction_feature_properties(reconstruction_time);
+	ReconstructionFeatureProperties reconstruction_feature_properties;
 	reconstruction_feature_properties.visit_feature(get_feature_ref());
 
 	if (d_deformed_geometry_property_time_spans)
@@ -386,7 +386,7 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_geometries(
 		// We have deformed geometries.
 
 		// The feature must be defined at the reconstruction time.
-		if (!reconstruction_feature_properties.is_feature_defined_at_recon_time())
+		if (!reconstruction_feature_properties.is_feature_defined_at_recon_time(reconstruction_time))
 		{
 			return;
 		}
@@ -432,7 +432,7 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_geometries(
 	// reconstruct for all times (even times when the feature is not defined - but we only do
 	// this for rigid rotations since it affects geometry positioning when deformation is present).
 	if (!context.reconstruct_params.get_reconstruct_by_plate_id_outside_active_time_period() &&
-		!reconstruction_feature_properties.is_feature_defined_at_recon_time())
+		!reconstruction_feature_properties.is_feature_defined_at_recon_time(reconstruction_time))
 	{
 		return;
 	}
@@ -507,11 +507,11 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_velocities(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Get the feature's reconstruction plate id and begin/end time.
-	ReconstructionFeatureProperties reconstruction_feature_properties(reconstruction_time);
+	ReconstructionFeatureProperties reconstruction_feature_properties;
 	reconstruction_feature_properties.visit_feature(get_feature_ref());
 
 	// The feature must be defined at the reconstruction time.
-	if (!reconstruction_feature_properties.is_feature_defined_at_recon_time())
+	if (!reconstruction_feature_properties.is_feature_defined_at_recon_time(reconstruction_time))
 	{
 		return;
 	}
@@ -612,7 +612,7 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_geometry(
 		bool reverse_reconstruct)
 {
 	// Get the values of the properties at present day.
-	ReconstructionFeatureProperties reconstruction_feature_properties(0/*reconstruction_time*/);
+	ReconstructionFeatureProperties reconstruction_feature_properties;
 
 	reconstruction_feature_properties.visit_feature(get_feature_ref());
 
@@ -649,7 +649,7 @@ GPlatesAppLogic::ReconstructMethodByPlateId::initialise_deformation(
 	d_deformed_geometry_property_time_spans = deformed_geometry_time_span_sequence_type();
 
 	// Get the feature's reconstruction plate id and begin/end time.
-	ReconstructionFeatureProperties reconstruction_feature_properties(0/*reconstruction_time*/);
+	ReconstructionFeatureProperties reconstruction_feature_properties;
 	reconstruction_feature_properties.visit_feature(get_feature_ref());
 
 	GPlatesModel::integer_plate_id_type feature_reconstruction_plate_id =

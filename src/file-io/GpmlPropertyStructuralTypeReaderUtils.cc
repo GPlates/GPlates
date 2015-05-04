@@ -65,11 +65,13 @@
 #include "model/XmlNodeUtils.h"
 
 #include "property-values/Enumeration.h"
+#include "property-values/GmlDataBlockCoordinateList.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPolygon.h"
 #include "property-values/GpmlTotalReconstructionPole.h"
 #include "property-values/StructuralType.h"
+#include "property-values/ValueObjectType.h"
 
 #include "utils/Parse.h"
 #include "utils/UnicodeStringUtils.h"
@@ -126,6 +128,59 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_xs_string(
 }
 
 
+GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type
+GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_data_block(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		const GPlatesModel::GpgimVersion &gpml_version,
+		ReadErrorAccumulation &read_errors)
+{
+	using namespace GPlatesPropertyValues;
+
+	static const GPlatesModel::XmlElementName
+		STRUCTURAL_TYPE = GPlatesModel::XmlElementName::create_gml("DataBlock"),
+		RANGE_PARAMETERS = GPlatesModel::XmlElementName::create_gml("rangeParameters"),
+		TUPLE_LIST = GPlatesModel::XmlElementName::create_gml("tupleList");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type elem =
+		get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	// <gml:rangeParameters>
+	composite_value_type range_parameters =
+		find_and_create_one(elem, &create_gml_composite_value,
+				RANGE_PARAMETERS, gpml_version, read_errors);
+
+	// <gml:tupleList>
+	std::vector<coordinate_list_type> tuple_lists =
+			find_and_create_one(
+					elem, &create_tuple_list, TUPLE_LIST, gpml_version, read_errors);
+
+	if (range_parameters.size() != tuple_lists.size())
+	{
+		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+				parent, GPlatesFileIO::ReadErrors::MismatchingRangeParametersSizeAndTupleSize,
+				EXCEPTION_SOURCE);
+	}
+
+	GmlDataBlock::non_null_ptr_type gml_data_block = GmlDataBlock::create();
+
+	for (unsigned int tuple_list_index = 0; tuple_list_index < tuple_lists.size(); ++tuple_list_index)
+	{
+		coordinate_list_type &tuple_list = tuple_lists[tuple_list_index];
+		const value_component_type &value_component = range_parameters[tuple_list_index];
+
+		GmlDataBlockCoordinateList::non_null_ptr_type gml_data_block_coordinate_list =
+				GmlDataBlockCoordinateList::create_swap(
+						value_component.first,
+						value_component.second,
+						tuple_list);
+
+		gml_data_block->tuple_list_push_back(gml_data_block_coordinate_list);
+	}
+
+	return gml_data_block;
+}
+
+
 GPlatesPropertyValues::GmlFile::non_null_ptr_type
 GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_file(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
@@ -146,8 +201,8 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_file(
 		get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	// <gml:rangeParameters>
-	GmlFile::composite_value_type range_parameters =
-		find_and_create_one(elem, &create_gml_file_composite_value,
+	composite_value_type range_parameters =
+		find_and_create_one(elem, &create_gml_composite_value,
 				RANGE_PARAMETERS, gpml_version, read_errors);
 	
 	// <gml:fileName>

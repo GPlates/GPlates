@@ -527,6 +527,20 @@ qDebug() << "compute_spherical_delaunay_2(): face_index = " << face_index;
 		boost::optional< std::pair<
 			boost::optional< const GPlatesAppLogic::ResolvedTriangulation::Network::RigidBlock&>, 
 			GPlatesMaths::Vector3D> > results = calculate_velocity(centroid);
+		//
+		// FIXME: What to do if no velocity ?
+		//
+		if (!results)
+		{
+			// Seems there are cases where the triangle face centroid happens to be outside
+			// the network boundary which is a bit surprising since all triangles should be
+			// inside the network boundary (and hence so should their centroids).
+			// It might be a very thin triangle on the network boundary that actually goes
+			// outside the boundary due to the triangulation being done in lat/lon coordinates
+			// (or azimuthal projection coordinates) and hence getting slightly outside the boundary
+			// which consists of great circle arcs (of a polygon boundary).
+			continue;
+		}
 
 		// Get the vector components 
 		const GPlatesMaths::Vector3D &vector_xyz= results->second;

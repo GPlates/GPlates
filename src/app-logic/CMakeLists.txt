@@ -100,6 +100,8 @@ set(srcs
     ReconstructedFlowline.h
     ReconstructedMotionPath.cc
     ReconstructedMotionPath.h
+    ReconstructedScalarCoverage.cc
+    ReconstructedScalarCoverage.h
     ReconstructedSmallCircle.cc
     ReconstructedSmallCircle.h
     ReconstructedVirtualGeomagneticPole.cc
@@ -158,6 +160,12 @@ set(srcs
     ReconstructMethodVirtualGeomagneticPole.h
     ReconstructParams.cc
     ReconstructParams.h
+    ReconstructScalarCoverageLayerProxy.cc
+    ReconstructScalarCoverageLayerProxy.h
+    ReconstructScalarCoverageLayerTask.cc
+    ReconstructScalarCoverageLayerTask.h
+    ReconstructScalarCoverageParams.cc
+    ReconstructScalarCoverageParams.h
     ReconstructUtils.cc
     ReconstructUtils.h
     ResolvedRaster.cc
@@ -182,12 +190,20 @@ set(srcs
     ResolvedTriangulationUtils.h
     RotationUtils.cc
     RotationUtils.h
+    ScalarCoverageDeformation.cc
+    ScalarCoverageDeformation.h
+    ScalarCoverageEvolution.cc
+    ScalarCoverageEvolution.h
+    ScalarCoverageFeatureProperties.cc
+    ScalarCoverageFeatureProperties.h
     ScalarField3DLayerProxy.cc
     ScalarField3DLayerProxy.h
     ScalarField3DLayerTask.cc
     ScalarField3DLayerTask.h
     SmallCircleGeometryPopulator.cc
     SmallCircleGeometryPopulator.h
+    TimeSpanUtils.cc
+    TimeSpanUtils.h
     TopologyGeometryResolver.cc
     TopologyGeometryResolver.h
     TopologyGeometryResolverLayerProxy.cc

@@ -211,12 +211,12 @@ GPlatesAppLogic::ReconstructContext::get_present_day_feature_geometries()
 
 
 GPlatesAppLogic::ReconstructHandle::type
-GPlatesAppLogic::ReconstructContext::reconstruct_feature_geometries(
+GPlatesAppLogic::ReconstructContext::get_reconstructed_feature_geometries(
 		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		const context_state_reference_type &context_state_ref,
 		const double &reconstruction_time)
 {
-	//PROFILE_BLOCK("ReconstructContext::reconstruct_feature_geometries: ReconstructedFeatureGeometry's");
+	//PROFILE_FUNC();
 
 	// Get the next global reconstruct handle - it'll be stored in each RFG.
 	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
@@ -239,12 +239,12 @@ GPlatesAppLogic::ReconstructContext::reconstruct_feature_geometries(
 
 
 GPlatesAppLogic::ReconstructHandle::type
-GPlatesAppLogic::ReconstructContext::reconstruct_feature_geometries(
+GPlatesAppLogic::ReconstructContext::get_reconstructions(
 		std::vector<Reconstruction> &reconstructions,
 		const context_state_reference_type &context_state_ref,
 		const double &reconstruction_time)
 {
-	//PROFILE_BLOCK("ReconstructContext::reconstruct_feature_geometries: Reconstruction's");
+	//PROFILE_FUNC();
 
 	// Since we're mapping RFGs to geometry property handles we need to ensure
 	// that the handles have been assigned.
@@ -290,12 +290,12 @@ GPlatesAppLogic::ReconstructContext::reconstruct_feature_geometries(
 
 
 GPlatesAppLogic::ReconstructHandle::type
-GPlatesAppLogic::ReconstructContext::reconstruct_feature_geometries(
+GPlatesAppLogic::ReconstructContext::get_reconstructed_features(
 		std::vector<ReconstructedFeature> &reconstructed_features,
 		const context_state_reference_type &context_state_ref,
 		const double &reconstruction_time)
 {
-	//PROFILE_BLOCK("ReconstructContext::reconstruct_feature_geometries: ReconstructedFeature's");
+	//PROFILE_FUNC();
 
 	// Since we're mapping RFGs to geometry property handles we need to ensure
 	// that the handles have been assigned.
@@ -354,6 +354,147 @@ GPlatesAppLogic::ReconstructContext::reconstruct_feature_geometries(
 
 
 GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::ReconstructContext::get_reconstruction_time_spans(
+		std::vector<ReconstructionTimeSpan> &reconstruction_time_spans,
+		const context_state_reference_type &context_state_ref,
+		const TimeSpanUtils::TimeRange &time_range)
+{
+	//PROFILE_FUNC();
+
+	// Since we're mapping RFGs to geometry property handles we need to ensure
+	// that the handles have been assigned.
+	if (!have_assigned_geometry_property_handles())
+	{
+		assign_geometry_property_handles();
+	}
+
+	// Get the next global reconstruct handle - it'll be stored in each RFG.
+	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
+
+	// The context state should have the same number of features (reconstruct methods).
+	const unsigned int num_features = d_reconstruct_method_feature_seq.size();
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			context_state_ref->d_reconstruct_methods.size() == num_features,
+			GPLATES_ASSERTION_SOURCE);
+
+	const unsigned int num_time_slots = time_range.get_num_time_slots();
+
+	// Iterate over the reconstruct methods of the current context state and reconstruct.
+	for (unsigned int feature_index = 0; feature_index < num_features; ++feature_index)
+	{
+		const ReconstructMethodFeature &reconstruct_method_feature =
+				d_reconstruct_method_feature_seq[feature_index];
+		const ReconstructMethodInterface::non_null_ptr_type context_state_reconstruct_method =
+				context_state_ref->d_reconstruct_methods[feature_index];
+
+		std::vector<ReconstructionTimeSpan> feature_reconstruction_time_spans;
+
+		// Iterate over the time slots of the time span.
+		for (unsigned int time_slot = 0; time_slot < num_time_slots; ++time_slot)
+		{
+			const double reconstruction_time = time_range.get_time(time_slot);
+
+			// Reconstruct the current feature.
+			std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
+			context_state_reconstruct_method->reconstruct_feature_geometries(
+					reconstructed_feature_geometries,
+					reconstruct_handle,
+					context_state_ref->d_reconstruct_method_context,
+					reconstruction_time);
+
+			// Add the reconstructed feature geometries to reconstruction time spans for the current feature.
+			build_feature_reconstruction_time_spans(
+					feature_reconstruction_time_spans,
+					reconstruct_method_feature.geometry_property_to_handle_seq,
+					reconstructed_feature_geometries,
+					time_range,
+					time_slot);
+		}
+
+		// Add to the caller's list.
+		reconstruction_time_spans.insert(
+				reconstruction_time_spans.end(),
+				feature_reconstruction_time_spans.begin(),
+				feature_reconstruction_time_spans.end());
+	}
+
+	return reconstruct_handle;
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::ReconstructContext::get_reconstructed_feature_time_spans(
+		std::vector<ReconstructedFeatureTimeSpan> &reconstructed_feature_time_spans,
+		const context_state_reference_type &context_state_ref,
+		const TimeSpanUtils::TimeRange &time_range)
+{
+	//PROFILE_FUNC();
+
+	// Since we're mapping RFGs to geometry property handles we need to ensure
+	// that the handles have been assigned.
+	if (!have_assigned_geometry_property_handles())
+	{
+		assign_geometry_property_handles();
+	}
+
+	// Get the next global reconstruct handle - it'll be stored in each RFG.
+	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
+
+	// Optimisation: Count the number of features so we can size the caller's array to avoid
+	// unnecessary copying/re-allocation as we add features to it.
+	const unsigned int num_features = d_reconstruct_method_feature_seq.size();
+	reconstructed_feature_time_spans.reserve(reconstructed_feature_time_spans.size() + num_features);
+
+	// The context state should have the same number of features (reconstruct methods).
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			context_state_ref->d_reconstruct_methods.size() == num_features,
+			GPLATES_ASSERTION_SOURCE);
+
+	const unsigned int num_time_slots = time_range.get_num_time_slots();
+
+	// Iterate over the reconstruct methods of the current context state and reconstruct.
+	for (unsigned int feature_index = 0; feature_index < num_features; ++feature_index)
+	{
+		const ReconstructMethodFeature &reconstruct_method_feature =
+				d_reconstruct_method_feature_seq[feature_index];
+		const ReconstructMethodInterface::non_null_ptr_type context_state_reconstruct_method =
+				context_state_ref->d_reconstruct_methods[feature_index];
+
+		// Add a reconstructed feature objects to the caller's sequence.
+		reconstructed_feature_time_spans.push_back(
+				ReconstructedFeatureTimeSpan(
+						context_state_reconstruct_method->get_feature_ref(),
+						time_range));
+		ReconstructedFeatureTimeSpan &reconstructed_feature_time_span = reconstructed_feature_time_spans.back();
+
+		// Iterate over the time slots of the time span.
+		for (unsigned int time_slot = 0; time_slot < num_time_slots; ++time_slot)
+		{
+			const double reconstruction_time = time_range.get_time(time_slot);
+
+			// Reconstruct the current feature to the current time.
+			std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_feature_geometries;
+			context_state_reconstruct_method->reconstruct_feature_geometries(
+					reconstructed_feature_geometries,
+					reconstruct_handle,
+					context_state_ref->d_reconstruct_method_context,
+					reconstruction_time);
+
+			// Add the reconstructed feature geometries to reconstruction time spans for the current feature.
+			build_feature_reconstruction_time_spans(
+					reconstructed_feature_time_span.d_reconstruction_time_spans,
+					reconstruct_method_feature.geometry_property_to_handle_seq,
+					reconstructed_feature_geometries,
+					time_range,
+					time_slot);
+		}
+	}
+
+	return reconstruct_handle;
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructContext::reconstruct_feature_velocities(
 		std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 		const context_state_reference_type &context_state_ref,
@@ -405,7 +546,7 @@ GPlatesAppLogic::ReconstructContext::get_feature_reconstructions(
 	for ( ; rfg_iter != rfg_end; ++rfg_iter)
 	{
 		const ReconstructedFeatureGeometry::non_null_ptr_type &rfg = *rfg_iter;
-		const GPlatesModel::FeatureHandle::iterator rfg_geometry_property = rfg->property();
+		const GPlatesModel::FeatureHandle::iterator rfg_geometry_property_iterator = rfg->property();
 
 		// Iterate over the geometry properties we've previously obtained for the
 		// current feature and find which one corresponds to the current RFG.
@@ -415,13 +556,93 @@ GPlatesAppLogic::ReconstructContext::get_feature_reconstructions(
 				geometry_property_handle_end = feature_geometry_property_handles.end();
 		for ( ; geometry_property_handle_iter != geometry_property_handle_end; ++geometry_property_handle_iter)
 		{
-			if (geometry_property_handle_iter->property_iterator == rfg_geometry_property)
+			if (geometry_property_handle_iter->property_iterator == rfg_geometry_property_iterator)
 			{
 				// Add the RFG and its associated geometry property handle to the caller's sequence.
 				reconstructions.push_back(
 						Reconstruction(
-								rfg,
-								geometry_property_handle_iter->geometry_property_handle));
+								geometry_property_handle_iter->geometry_property_handle,
+								rfg));
+
+				// Continue to the next RFG.
+				break;
+			}
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::ReconstructContext::build_feature_reconstruction_time_spans(
+		std::vector<ReconstructionTimeSpan> &reconstruction_time_spans,
+		const ReconstructMethodFeature::geometry_property_to_handle_seq_type &feature_geometry_property_handles,
+		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
+		const TimeSpanUtils::TimeRange &time_range,
+		unsigned int time_slot)
+{
+	// Nothing to do if there are no reconstructed feature geometries.
+	if (reconstructed_feature_geometries.empty())
+	{
+		return;
+	}
+
+	// Iterate over the reconstructed feature geometries.
+	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>::const_iterator rfg_iter =
+			reconstructed_feature_geometries.begin();
+	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>::const_iterator rfg_end =
+			reconstructed_feature_geometries.end();
+	for ( ; rfg_iter != rfg_end; ++rfg_iter)
+	{
+		const ReconstructedFeatureGeometry::non_null_ptr_type &rfg = *rfg_iter;
+		const GPlatesModel::FeatureHandle::iterator rfg_geometry_property_iterator = rfg->property();
+
+		// See if we already have a reconstruction time span associated with the geometry property iterator.
+		std::vector<ReconstructionTimeSpan>::iterator reconstruction_time_span_iter =
+				reconstruction_time_spans.begin();
+		std::vector<ReconstructionTimeSpan>::iterator reconstruction_time_span_end =
+				reconstruction_time_spans.end();
+		for ( ; reconstruction_time_span_iter != reconstruction_time_span_end; ++reconstruction_time_span_iter)
+		{
+			ReconstructionTimeSpan &reconstruction_time_span = *reconstruction_time_span_iter;
+
+			if (reconstruction_time_span.d_geometry_property_iterator == rfg_geometry_property_iterator)
+			{
+				// Add the RFG to the time slot in the time span.
+				reconstruction_time_span.d_rfg_time_sample_span->set_sample_in_time_slot(rfg, time_slot);
+				break;
+			}
+		}
+
+		// If we added the RFG (in above code loop) then continue onto the next RFG.
+		if (reconstruction_time_span_iter != reconstruction_time_span_end)
+		{
+			continue;
+		}
+
+		// We didn't find a matching ReconstructionTimeSpan so create a new one.
+		// But first we need to find the geometry property *handle*.
+
+		// Iterate over the geometry properties we've previously obtained for the
+		// current feature and find which one corresponds to the current RFG.
+		ReconstructMethodFeature::geometry_property_to_handle_seq_type::const_iterator
+				geometry_property_handle_iter = feature_geometry_property_handles.begin();
+		const ReconstructMethodFeature::geometry_property_to_handle_seq_type::const_iterator
+				geometry_property_handle_end = feature_geometry_property_handles.end();
+		for ( ; geometry_property_handle_iter != geometry_property_handle_end; ++geometry_property_handle_iter)
+		{
+			if (geometry_property_handle_iter->property_iterator == rfg_geometry_property_iterator)
+			{
+				// Add the ReconstructionTimeSpan and its associated geometry property handle/iterator
+				// to the caller's sequence.
+				reconstruction_time_spans.push_back(
+								ReconstructionTimeSpan(
+										geometry_property_handle_iter->geometry_property_handle,
+										rfg_geometry_property_iterator,
+										time_range));
+
+				// Add the RFG to the time slot in the time span just created.
+				ReconstructionTimeSpan &reconstruction_time_span = reconstruction_time_spans.back();
+				reconstruction_time_span.d_rfg_time_sample_span->set_sample_in_time_slot(rfg, time_slot);
 
 				// Continue to the next RFG.
 				break;
