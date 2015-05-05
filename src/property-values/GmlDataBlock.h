@@ -202,11 +202,9 @@ namespace GPlatesPropertyValues
 		equality(
 				const Revisionable &other) const
 		{
-			const GmlDataBlock &other_pv = dynamic_cast<const GmlDataBlock &>(other);
+			//const GmlDataBlock &other_pv = dynamic_cast<const GmlDataBlock &>(other);
 
-			return
-					// The revisioned data comparisons are handled here...
-					Revisionable::equality(other);
+			return Revisionable::equality(other);
 		}
 
 	private:
