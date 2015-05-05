@@ -30,10 +30,15 @@
 #include <vector>
 
 #include "ValueObjectType.h"
+
+#include "model/ModelTransaction.h"
+#include "model/Revisionable.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/ReferenceCount.h"
+
+#include "utils/QtStreamable.h"
 
 
 namespace GPlatesPropertyValues
@@ -58,15 +63,12 @@ namespace GPlatesPropertyValues
 	 *
 	 * When the GmlDataBlock is output in GPML, it will be necessary to "re-interleave" the
 	 * coordinate tuples.
-	 *
-	 * There are three 'create' functions which may be used to instantiate a
-	 * GmlDataBlockCoordinateList:
-	 *  -# @a create_empty
-	 *  -# @a create_copy
-	 *  -# @a create_swap
 	 */
-	class GmlDataBlockCoordinateList:
-			public GPlatesUtils::ReferenceCount<GmlDataBlockCoordinateList>
+	class GmlDataBlockCoordinateList :
+			public GPlatesModel::Revisionable,
+			public GPlatesModel::RevisionContext,
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<GmlDataBlockCoordinateList>
 	{
 	public:
 		/**
@@ -86,210 +88,237 @@ namespace GPlatesPropertyValues
 		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes_type;
 
 		/**
-		 * The type of the sequence of coordinates.
+		 * The type containing the coordinates.
 		 */
-		typedef std::vector<double> coordinate_list_type;
+		typedef std::vector<double> coordinates_type;
 
 
 		~GmlDataBlockCoordinateList()
 		{  }
 
-		/**
-		 * Create a new GmlDataBlockCoordinateList instance, leaving its coordinates empty
-		 * (but pre-allocated to the capacity @a list_len).  You can append coordinates
-		 * using the member functions @a coordinates_push_back or @a coordinates_assign.
-		 */
+
 		static
 		const non_null_ptr_type
-		create_empty(
+		create(
 				const ValueObjectType &value_object_type_,
 				const xml_attributes_type &value_object_xml_attributes_,
-				coordinate_list_type::size_type list_len)
+				const coordinates_type &coordinates_)
 		{
-			return non_null_ptr_type(
-					new GmlDataBlockCoordinateList(
-							value_object_type_, value_object_xml_attributes_, list_len));
+			return create(value_object_type_, value_object_xml_attributes_, coordinates_.begin(), coordinates_.end());
 		}
 
-		/**
-		 * Create a new GmlDataBlockCoordinateList instance, then copy the values from the
-		 * iterator range from @a coordinates_begin_ to @a coordinates_end_ into the
-		 * GmlDataBlockCoordinateList.
-		 */
-		template<typename CoordinateIter>
+		template <typename CoordinatesIter>
 		static
 		const non_null_ptr_type
-		create_copy(
+		create(
 				const ValueObjectType &value_object_type_,
 				const xml_attributes_type &value_object_xml_attributes_,
-				CoordinateIter coordinates_begin_,
-				CoordinateIter coordinates_end_)
+				CoordinatesIter coordinates_begin,
+				CoordinatesIter coordinates_end)
 		{
-			return non_null_ptr_type(
-					new GmlDataBlockCoordinateList(
-							value_object_type_,
-							value_object_xml_attributes_,
-							coordinates_begin_,
-							coordinates_end_));
-		}
-
-		/**
-		 * Create a new GmlDataBlockCoordinateList instance, then swap the contents of the
-		 * supplied container @a coordinates_to_swap into the GmlDataBlockCoordinateList,
-		 * leaving @a coordinates_to_swap empty.
-		 */
-		static
-		const non_null_ptr_type
-		create_swap(
-				const ValueObjectType &value_object_type_,
-				const xml_attributes_type &value_object_xml_attributes_,
-				coordinate_list_type &coordinates_to_swap)
-		{
+			GPlatesModel::ModelTransaction transaction;
 			non_null_ptr_type ptr(
 					new GmlDataBlockCoordinateList(
+							transaction,
 							value_object_type_,
-							value_object_xml_attributes_));
-			ptr->d_coordinates.swap(coordinates_to_swap);
+							value_object_xml_attributes_,
+							coordinates_begin,
+							coordinates_end));
+			transaction.commit();
 			return ptr;
 		}
 
 		const non_null_ptr_type
 		clone() const
 		{
-			return non_null_ptr_type(new GmlDataBlockCoordinateList(*this));
+			return GPlatesUtils::dynamic_pointer_cast<GmlDataBlockCoordinateList>(clone_impl());
 		}
 
+		// Note that no "setter" is provided:  The value object type is not changeable.
 		const ValueObjectType &
-		value_object_type() const
+		get_value_object_type() const
 		{
 			return d_value_object_type;
 		}
 
+		/**
+		 * Return the map of XML attributes contained by this instance.
+		 */
 		const xml_attributes_type &
-		value_object_xml_attributes() const
+		get_value_object_xml_attributes() const
 		{
-			return d_value_object_xml_attributes;
+			return get_current_revision<Revision>().value_object_xml_attributes;
 		}
 
-		xml_attributes_type &
-		value_object_xml_attributes()
-		{
-			return d_value_object_xml_attributes;
-		}
-
-		coordinate_list_type::size_type
-		coordinates_len() const
-		{
-			return d_coordinates.size();
-		}
-
-		coordinate_list_type::const_iterator
-		coordinates_begin() const
-		{
-			return d_coordinates.begin();
-		}
-
-		coordinate_list_type::const_iterator
-		coordinates_end() const
-		{
-			return d_coordinates.end();
-		}
-
-		// NOTE:  No non-const iterators provided yet -- When we need them, we should
-		// define an iterator wrapper which creates new revisions of this class when
-		// appropriate.  (And also ensures that client code never tries to assign through
-		// an iterator when it should push_back.)  For now, though, this isn't necessary.
-
+		/**
+		 * Set the map of XML attributes contained by this instance.
+		 */
 		void
-		coordinates_push_back(
-				const double &coord)
+		set_value_object_xml_attributes(
+				const xml_attributes_type &value_object_xml_attributes);
+
+		/**
+		 * Return the coordinates contained by this instance.
+		 */
+		const coordinates_type &
+		get_coordinates() const
 		{
-			d_coordinates.push_back(coord);
+			return get_current_revision<Revision>().coordinates;
 		}
 
-		template<typename CoordinateIter>
+		/**
+		 * Set the coordinates contained by this instance.
+		 */
 		void
-		coordinates_assign(
-				CoordinateIter begin,
-				CoordinateIter end)
-		{
-			d_coordinates.assign(begin, end);
-		}
-
-		bool
-		operator==(
-				const GmlDataBlockCoordinateList &other) const;
+		set_coordinates(
+				const coordinates_type &coordinates);
 
 	protected:
 
+
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		/**
-		 * Reserve the capacity of the data member @a d_coordinates to @a list_len, but
-		 * leave @a d_coordinates empty.
-		 */
+		template <typename CoordinatesIter>
 		GmlDataBlockCoordinateList(
+				GPlatesModel::ModelTransaction &transaction_,
 				const ValueObjectType &value_object_type_,
 				const xml_attributes_type &value_object_xml_attributes_,
-				coordinate_list_type::size_type list_len):
-			d_value_object_type(value_object_type_),
-			d_value_object_xml_attributes(value_object_xml_attributes_)
+				CoordinatesIter coordinates_begin,
+				CoordinatesIter coordinates_end) :
+			Revisionable(
+					Revision::non_null_ptr_type(
+							new Revision(
+									transaction_,
+									*this,
+									value_object_xml_attributes_,
+									coordinates_begin,
+									coordinates_end))),
+			d_value_object_type(value_object_type_)
+		{  }
+
+		//! Constructor used when cloning.
+		GmlDataBlockCoordinateList(
+				const GmlDataBlockCoordinateList &other_,
+				boost::optional<RevisionContext &> context_) :
+			Revisionable(
+					Revision::non_null_ptr_type(
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this))),
+			d_value_object_type(other_.d_value_object_type)
+		{  }
+
+		virtual
+		const Revisionable::non_null_ptr_type
+		clone_impl(
+				boost::optional<RevisionContext &> context = boost::none) const
 		{
-			// Avoid re-allocating the vector buffer as we append coordinates.
-			d_coordinates.reserve(list_len);
+			return non_null_ptr_type(new GmlDataBlockCoordinateList(*this, context));
 		}
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		/**
-		 * Initialise the data member @a d_coordinates by copying the values from the
-		 * iterator range from @a coordinates_begin_ to @a coordinates_end_.
-		 */
-		template<typename CoordinateIter>
-		GmlDataBlockCoordinateList(
-				const ValueObjectType &value_object_type_,
-				const xml_attributes_type &value_object_xml_attributes_,
-				CoordinateIter coordinates_begin_,
-				CoordinateIter coordinates_end_):
-			d_value_object_type(value_object_type_),
-			d_value_object_xml_attributes(value_object_xml_attributes_),
-			d_coordinates(coordinates_begin_, coordinates_end_)
-		{  }
+		virtual
+		bool
+		equality(
+				const Revisionable &other) const
+		{
+			const GmlDataBlockCoordinateList &other_pv = dynamic_cast<const GmlDataBlockCoordinateList &>(other);
 
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		/**
-		 * Leave the data member @a d_coordinates as an empty vector of default capacity.
-		 */
-		GmlDataBlockCoordinateList(
-				const ValueObjectType &value_object_type_,
-				const xml_attributes_type &value_object_xml_attributes_):
-			d_value_object_type(value_object_type_),
-			d_value_object_xml_attributes(value_object_xml_attributes_)
-		{  }
-
-		// This constructor should not be public, because we don't want to allow
-		// instantiation of this type on the stack.
-		//
-		// Note that this should act exactly the same as the default (auto-generated)
-		// copy-constructor, except that it should initialise the ref-count to zero.
-		GmlDataBlockCoordinateList(
-				const GmlDataBlockCoordinateList &other):
-			GPlatesUtils::ReferenceCount<GmlDataBlockCoordinateList>(),
-			d_value_object_type(other.d_value_object_type),
-			d_value_object_xml_attributes(other.d_value_object_xml_attributes),
-			d_coordinates(other.d_coordinates)
-		{  }
+			return d_value_object_type == other_pv.d_value_object_type &&
+					// The revisioned data comparisons are handled here...
+					Revisionable::equality(other);
+		}
 
 	private:
 
+		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		GPlatesModel::Revision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const GPlatesModel::Revisionable::non_null_ptr_to_const_type &child_revisionable);
+
+
+		/**
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return GPlatesModel::Revisionable::get_model();
+		}
+
+
+		/**
+		 * Property value data that is mutable/revisionable.
+		 */
+		struct Revision :
+				public GPlatesModel::Revision
+		{
+			template <typename CoordinatesIter>
+			Revision(
+					GPlatesModel::ModelTransaction &transaction_,
+					RevisionContext &child_context_,
+					const xml_attributes_type &value_object_xml_attributes_,
+					CoordinatesIter coordinates_begin,
+					CoordinatesIter coordinates_end) :
+				value_object_xml_attributes(value_object_xml_attributes_),
+				coordinates(coordinates_begin, coordinates_end)
+			{  }
+
+			//! Deep-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				GPlatesModel::Revision(context_),
+				value_object_xml_attributes(other_.value_object_xml_attributes),
+				coordinates(other_.coordinates)
+			{
+				// Clone data members that were not deep copied.
+			}
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_) :
+				GPlatesModel::Revision(context_),
+				value_object_xml_attributes(other_.value_object_xml_attributes),
+				coordinates(other_.coordinates)
+			{  }
+
+			virtual
+			GPlatesModel::Revision::non_null_ptr_type
+			clone_revision(
+					boost::optional<RevisionContext &> context) const
+			{
+				// Use shallow-clone constructor.
+				return non_null_ptr_type(new Revision(*this, context));
+			}
+
+			virtual
+			bool
+			equality(
+					const GPlatesModel::Revision &other) const;
+
+
+			xml_attributes_type value_object_xml_attributes;
+			coordinates_type coordinates;
+		};
+
+
 		ValueObjectType d_value_object_type;
 
-		xml_attributes_type d_value_object_xml_attributes;
-
-		coordinate_list_type d_coordinates;
-
 	};
+
+
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const GmlDataBlockCoordinateList &gml_data_block_coordinate_list);
 
 }
 
