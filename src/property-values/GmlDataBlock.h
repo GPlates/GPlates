@@ -31,17 +31,30 @@
 #include <vector>
 
 #include "GmlDataBlockCoordinateList.h"
-#include "model/FeatureVisitor.h"
-#include "model/PropertyValue.h"
+#include "StructuralType.h"
 
+#include "feature-visitors/PropertyValueFinder.h"
+
+#include "model/ModelTransaction.h"
+#include "model/PropertyValue.h"
+#include "model/RevisionContext.h"
+#include "model/RevisionedReference.h"
+#include "model/RevisionedVector.h"
+
+
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
+// First parameter is the namespace qualified property value class.
+// Second parameter is the name of the feature visitor method that visits the property value.
+DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlDataBlock, visit_gml_data_block)
 
 namespace GPlatesPropertyValues
 {
 	/**
 	 * This class implements the PropertyValue which corresponds to "gml:DataBlock".
 	 */
-	class GmlDataBlock:
-			public GPlatesModel::PropertyValue
+	class GmlDataBlock :
+			public GPlatesModel::PropertyValue,
+			public GPlatesModel::RevisionContext
 	{
 	public:
 
@@ -56,89 +69,35 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlock> non_null_ptr_to_const_type;
 
 
-		/**
-		 * A list of coordinates for a specific coordinate in the tuple list.
-		 */
-		class CoordinateList :
-				public boost::equality_comparable<CoordinateList>
-		{
-		public:
-
-			/**
-			 * CoordinateList has value semantics where each @a CoordinateList instance has its own state.
-			 * So if you create a copy and modify the copy's state then it will not modify the state
-			 * of the original object.
-			 *
-			 * The constructor first clones the property value and then copy-on-write is used to allow
-			 * multiple @a CoordinateList objects to share the same state (until the state is modified).
-			 */
-			CoordinateList(
-					GmlDataBlockCoordinateList::non_null_ptr_type coordinate_list) :
-				d_coordinate_list(coordinate_list)
-			{  }
-
-			/**
-			 * Returns the 'const' coordinate list.
-			 */
-			const GmlDataBlockCoordinateList::non_null_ptr_to_const_type
-			get_coordinate_list() const
-			{
-				return d_coordinate_list;
-			}
-
-			/**
-			 * Returns the 'non-const' coordinate list.
-			 */
-			const GmlDataBlockCoordinateList::non_null_ptr_type
-			get_coordinate_list()
-			{
-				return d_coordinate_list;
-			}
-
-			void
-			set_coordinate_list(
-					GmlDataBlockCoordinateList::non_null_ptr_type coordinate_list)
-			{
-				d_coordinate_list = coordinate_list;
-			}
-
-			/**
-			 * Value equality comparison operator.
-			 *
-			 * Inequality provided by boost equality_comparable.
-			 */
-			bool
-			operator==(
-					const CoordinateList &other) const
-			{
-				return *d_coordinate_list == *other.d_coordinate_list;
-			}
-
-		private:
-			GmlDataBlockCoordinateList::non_null_ptr_type d_coordinate_list;
-		};
-
-		//! Typedef for a sequence of coordinate lists.
-		typedef std::vector<CoordinateList> tuple_list_type;
-
-
 		virtual
 		~GmlDataBlock()
 		{  }
 
-		static
-		const non_null_ptr_type
-		create()
-		{
-			return non_null_ptr_type(new GmlDataBlock(tuple_list_type()));
-		}
 
 		static
 		const non_null_ptr_type
 		create(
-				const tuple_list_type &tuple_list)
+				const std::vector<GmlDataBlockCoordinateList::non_null_ptr_type> &tuple_list_)
 		{
-			return non_null_ptr_type(new GmlDataBlock(tuple_list));
+			return create(tuple_list_.begin(), tuple_list_.end());
+		}
+
+		template <typename GmlDataBlockCoordinateListIter>
+		static
+		const non_null_ptr_type
+		create(
+				GmlDataBlockCoordinateListIter tuple_list_begin,
+				GmlDataBlockCoordinateListIter tuple_list_end)
+		{
+			GPlatesModel::ModelTransaction transaction;
+			non_null_ptr_type ptr(
+					new GmlDataBlock(
+							transaction,
+							GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::create(
+									tuple_list_begin,
+									tuple_list_end)));
+			transaction.commit();
+			return ptr;
 		}
 
 		const non_null_ptr_type
@@ -148,22 +107,22 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * Returns the tuple list.
-		 *
-		 * To modify any tuples:
-		 * (1) make a copy of the returned vector,
-		 * (2) make additions/removals/modifications to the returned vector, and
-		 * (3) use @a set_tuple_list to set them.
+		 * Returns the 'const' vector of members.
 		 */
-		const tuple_list_type &
-		get_tuple_list() const
+		const GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList> &
+		tuple_list() const
 		{
-			return get_current_revision<Revision>().tuple_list;
+			return *get_current_revision<Revision>().tuple_list.get_revisionable();
 		}
 
-		void
-		set_tuple_list(
-				const tuple_list_type &tuple_list);
+		/**
+		 * Returns the 'non-const' vector of members.
+		 */
+		GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList> &
+		tuple_list()
+		{
+			return *get_current_revision<Revision>().tuple_list.get_revisionable();
+		}
 
 		/**
 		 * Returns the structural type associated with this property value class.
@@ -211,32 +170,67 @@ namespace GPlatesPropertyValues
 
 	protected:
 
+
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
-		explicit
 		GmlDataBlock(
-				const tuple_list_type &tuple_list) :
-			PropertyValue(Revision::non_null_ptr_type(new Revision(tuple_list)))
+				GPlatesModel::ModelTransaction &transaction_,
+				GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::non_null_ptr_type tuple_list_) :
+			PropertyValue(Revision::non_null_ptr_type(new Revision(transaction_, *this, tuple_list_)))
 		{  }
 
 		//! Constructor used when cloning.
 		GmlDataBlock(
 				const GmlDataBlock &other_,
-				boost::optional<GPlatesModel::RevisionContext &> context_) :
+				boost::optional<RevisionContext &> context_) :
 			PropertyValue(
 					Revision::non_null_ptr_type(
-							new Revision(other_.get_current_revision<Revision>(), context_)))
+							// Use deep-clone constructor...
+							new Revision(other_.get_current_revision<Revision>(), context_, *this)))
 		{  }
 
 		virtual
 		const Revisionable::non_null_ptr_type
 		clone_impl(
-				boost::optional<GPlatesModel::RevisionContext &> context = boost::none) const
+				boost::optional<RevisionContext &> context = boost::none) const
 		{
 			return non_null_ptr_type(new GmlDataBlock(*this, context));
 		}
 
+		virtual
+		bool
+		equality(
+				const Revisionable &other) const
+		{
+			const GmlDataBlock &other_pv = dynamic_cast<const GmlDataBlock &>(other);
+
+			return
+					// The revisioned data comparisons are handled here...
+					Revisionable::equality(other);
+		}
+
 	private:
+
+		/**
+		 * Used when modifications bubble up to us.
+		 *
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		GPlatesModel::Revision::non_null_ptr_type
+		bubble_up(
+				GPlatesModel::ModelTransaction &transaction,
+				const Revisionable::non_null_ptr_to_const_type &child_revisionable);
+
+		/**
+		 * Inherited from @a RevisionContext.
+		 */
+		virtual
+		boost::optional<GPlatesModel::Model &>
+		get_model()
+		{
+			return PropertyValue::get_model();
+		}
 
 		/**
 		 * Property value data that is mutable/revisionable.
@@ -244,16 +238,32 @@ namespace GPlatesPropertyValues
 		struct Revision :
 				public PropertyValue::Revision
 		{
-			explicit
 			Revision(
-					const tuple_list_type &tuple_list_) :
-				tuple_list(tuple_list_)
+					GPlatesModel::ModelTransaction &transaction_,
+					RevisionContext &child_context_,
+					GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::non_null_ptr_type tuple_list_) :
+				tuple_list(
+						GPlatesModel::RevisionedReference<
+								GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList> >::attach(
+										transaction_, child_context_, tuple_list_))
 			{  }
 
-			//! Clone constructor.
+			//! Deep-clone constructor.
 			Revision(
 					const Revision &other_,
-					boost::optional<GPlatesModel::RevisionContext &> context_) :
+					boost::optional<RevisionContext &> context_,
+					RevisionContext &child_context_) :
+				PropertyValue::Revision(context_),
+				tuple_list(other_.tuple_list)
+			{
+				// Clone data members that were not deep copied.
+				tuple_list.clone(child_context_);
+			}
+
+			//! Shallow-clone constructor.
+			Revision(
+					const Revision &other_,
+					boost::optional<RevisionContext &> context_) :
 				PropertyValue::Revision(context_),
 				tuple_list(other_.tuple_list)
 			{  }
@@ -261,8 +271,9 @@ namespace GPlatesPropertyValues
 			virtual
 			GPlatesModel::Revision::non_null_ptr_type
 			clone_revision(
-					boost::optional<GPlatesModel::RevisionContext &> context) const
+					boost::optional<RevisionContext &> context) const
 			{
+				// Use shallow-clone constructor.
 				return non_null_ptr_type(new Revision(*this, context));
 			}
 
@@ -273,11 +284,11 @@ namespace GPlatesPropertyValues
 			{
 				const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-				return tuple_list == other_revision.tuple_list &&
+				return *tuple_list.get_revisionable() == *other_revision.tuple_list.get_revisionable() &&
 						PropertyValue::Revision::equality(other);
 			}
 
-			tuple_list_type tuple_list;
+			GPlatesModel::RevisionedReference<GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList> > tuple_list;
 		};
 
 	};

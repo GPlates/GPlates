@@ -29,24 +29,48 @@
 
 #include "GmlDataBlock.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "model/BubbleUpRevisionHandler.h"
-
-
-void
-GPlatesPropertyValues::GmlDataBlock::set_tuple_list(
-		const tuple_list_type &tuple_list)
-{
-	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
-	revision_handler.get_revision<Revision>().tuple_list = tuple_list;
-	revision_handler.commit();
-}
 
 
 std::ostream &
 GPlatesPropertyValues::GmlDataBlock::print_to(
 		std::ostream &os) const
 {
-	// FIXME: Implement properly when actually needed for debugging.
-	return os << "{ GmlDataBlock }";
+	const GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList> &tuple_list_ = tuple_list();
+
+	os << "[ ";
+
+	GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::const_iterator tuple_list_iter = tuple_list_.begin();
+	GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::const_iterator tuple_list_end = tuple_list_.end();
+	for ( ; tuple_list_iter != tuple_list_end; ++tuple_list_iter)
+	{
+		os << *tuple_list_iter->get();
+	}
+
+	return os << " ]";
 }
 
+
+GPlatesModel::Revision::non_null_ptr_type
+GPlatesPropertyValues::GmlDataBlock::bubble_up(
+		GPlatesModel::ModelTransaction &transaction,
+		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
+{
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
+
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+	if (child_revisionable == revision.tuple_list.get_revisionable())
+	{
+		return revision.tuple_list.clone_revision(transaction);
+	}
+
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+
+	// To keep compiler happy - won't be able to get past 'Abort()'.
+	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
