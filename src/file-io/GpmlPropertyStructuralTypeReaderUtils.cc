@@ -161,23 +161,23 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_data_block(
 				EXCEPTION_SOURCE);
 	}
 
-	GmlDataBlock::non_null_ptr_type gml_data_block = GmlDataBlock::create();
+	std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> gml_data_block_tuple_list;
 
 	for (unsigned int tuple_list_index = 0; tuple_list_index < tuple_lists.size(); ++tuple_list_index)
 	{
-		coordinate_list_type &tuple_list = tuple_lists[tuple_list_index];
 		const value_component_type &value_component = range_parameters[tuple_list_index];
+		const coordinate_list_type &tuple_list = tuple_lists[tuple_list_index];
 
 		GmlDataBlockCoordinateList::non_null_ptr_type gml_data_block_coordinate_list =
-				GmlDataBlockCoordinateList::create_swap(
+				GmlDataBlockCoordinateList::create(
 						value_component.first,
 						value_component.second,
 						tuple_list);
 
-		gml_data_block->tuple_list_push_back(gml_data_block_coordinate_list);
+		gml_data_block_tuple_list.push_back(gml_data_block_coordinate_list);
 	}
 
-	return gml_data_block;
+	return GmlDataBlock::create(gml_data_block_tuple_list);
 }
 
 

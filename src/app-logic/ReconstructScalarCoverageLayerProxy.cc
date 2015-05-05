@@ -85,7 +85,7 @@ namespace GPlatesAppLogic
 				const unsigned int num_scalar_types = coverage.range.size();
 				for (unsigned int scalar_type_index = 0; scalar_type_index < num_scalar_types; ++scalar_type_index)
 				{
-					if (coverage.range[scalar_type_index]->value_object_type() == scalar_type)
+					if (coverage.range[scalar_type_index]->get_value_object_type() == scalar_type)
 					{
 						scalar_coverages.push_back(
 								scalar_coverage_type(coverage, scalar_type_index));
@@ -381,7 +381,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_types()
 		for (unsigned int scalar_type_index = 0; scalar_type_index < num_scalar_types; ++scalar_type_index)
 		{
 			unique_scalar_types.insert(
-					coverage.range[scalar_type_index]->value_object_type());
+					coverage.range[scalar_type_index]->get_value_object_type());
 		}
 	}
 
@@ -451,8 +451,8 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_coverage_time
 
 					// Extract the present day scalar values from the current scalar coverage.
 					const std::vector<double> present_day_scalar_values(
-							scalar_data->coordinates_begin(),
-							scalar_data->coordinates_end());
+							scalar_data->get_coordinates().begin(),
+							scalar_data->get_coordinates().end());
 
 					// Create a time span of only present day scalars
 					// (will return present day scalars for all reconstruction times).
@@ -528,8 +528,8 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_coverage_time
 
 				// Extract the present day scalar values from the current scalar coverage.
 				const std::vector<double> present_day_scalar_values(
-						scalar_data->coordinates_begin(),
-						scalar_data->coordinates_end());
+						scalar_data->get_coordinates().begin(),
+						scalar_data->get_coordinates().end());
 
 				// Find the reconstruction associated with the geometry property of the current coverage (if any).
 				//

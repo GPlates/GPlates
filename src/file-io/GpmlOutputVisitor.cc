@@ -331,7 +331,7 @@ namespace
 		// parameter type 'SingletonType', which is the 'SingletonType' template type
 		// parameter of QualifiedXmlName.  Thus, the template function overloads for
 		// different template instantiations of QualifiedXmlName.
-		xml_output.writeStartElement(coordinate_list->value_object_type());
+		xml_output.writeStartElement(coordinate_list->get_value_object_type());
 
 		// Now follow up with the attributes for the element.  Note that to write XML
 		// element attributes using QXmlStreamWriter, you follow an invocation of
@@ -339,8 +339,8 @@ namespace
 		// 'QXmlStreamWriter::writeAttribute' before any content is written.
 		// ( http://doc.trolltech.com/4.3/qxmlstreamwriter.html#writeAttribute )
 		xml_output.writeAttributes(
-				coordinate_list->value_object_xml_attributes().begin(),
-				coordinate_list->value_object_xml_attributes().end());
+				coordinate_list->get_value_object_xml_attributes().begin(),
+				coordinate_list->get_value_object_xml_attributes().end());
 
 		static const QString t("template");
 		xml_output.writeText(t);
@@ -372,10 +372,11 @@ namespace
 		coordinates_iterator_ranges.reserve(std::distance(tuple_list_begin, tuple_list_end));
 
 		TupleListIter tuple_list_iter = tuple_list_begin;
-		for ( ; tuple_list_iter != tuple_list_end; ++tuple_list_iter) {
+		for ( ; tuple_list_iter != tuple_list_end; ++tuple_list_iter)
+		{
 			coordinates_iterator_ranges.push_back(std::make_pair(
-						tuple_list_iter->get_coordinate_list()->coordinates_begin(),
-						tuple_list_iter->get_coordinate_list()->coordinates_end()));
+						tuple_list_iter->get()->get_coordinates().begin(),
+						tuple_list_iter->get()->get_coordinates().end()));
 		}
 	}
 
@@ -457,15 +458,16 @@ namespace
 	void
 	write_gml_data_block_tuple_list(
 			GPlatesFileIO::XmlWriter &xml_output,
-			GPlatesPropertyValues::GmlDataBlock::tuple_list_type::const_iterator tuple_list_begin,
-			GPlatesPropertyValues::GmlDataBlock::tuple_list_type::const_iterator tuple_list_end)
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>::const_iterator tuple_list_begin,
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>::const_iterator tuple_list_end)
 	{
-		typedef GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinate_list_type::const_iterator
+		typedef GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type::const_iterator
 				coordinates_iterator;
 		typedef std::pair<coordinates_iterator, coordinates_iterator> coordinates_iterator_range;
 
 		// Handle the situation when the tuple-list is empty.
-		if (tuple_list_begin == tuple_list_end) {
+		if (tuple_list_begin == tuple_list_end)
+		{
 			// Nothing to output.
 			return;
 		}
@@ -755,7 +757,8 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_data_block(
 {
 	using namespace GPlatesPropertyValues;
 
-	const GmlDataBlock::tuple_list_type &tuple_list = gml_data_block.get_tuple_list();
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &
+			tuple_list = gml_data_block.tuple_list();
 
 	d_output.writeStartGmlElement("DataBlock");
 
@@ -767,10 +770,13 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_data_block(
 			// Output each value-component in the composite-value.
 			// If the tuple-list is empty, the body of the for-loop will never be entered, so the
 			// <gml:CompositeValue> will be empty.
-			GmlDataBlock::tuple_list_type::const_iterator iter = tuple_list.begin();
-			GmlDataBlock::tuple_list_type::const_iterator end = tuple_list.end();
-			for ( ; iter != end; ++iter) {
-				write_gml_data_block_value_component_value_object_template(d_output, iter->get_coordinate_list());
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>::const_iterator
+					iter = tuple_list.begin();
+			GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>::const_iterator
+					end = tuple_list.end();
+			for ( ; iter != end; ++iter)
+			{
+				write_gml_data_block_value_component_value_object_template(d_output, iter->get());
 			}
 
 			d_output.writeEndElement(); // </gml:CompositeValue>

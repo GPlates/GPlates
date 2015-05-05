@@ -32,6 +32,8 @@
 #include <cstddef>
 #include <vector>
 
+#include "GpmlKeyValueDictionaryElement.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
 
 #include "model/ModelTransaction.h"
@@ -39,8 +41,6 @@
 #include "model/RevisionContext.h"
 #include "model/RevisionedReference.h"
 #include "model/RevisionedVector.h"
-
-#include "property-values/GpmlKeyValueDictionaryElement.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
