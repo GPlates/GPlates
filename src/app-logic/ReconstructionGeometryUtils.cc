@@ -29,6 +29,7 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructedFlowline.h"
 #include "ReconstructedMotionPath.h"
+#include "ReconstructedScalarCoverage.h"
 #include "ReconstructedSmallCircle.h"
 #include "ReconstructedVirtualGeomagneticPole.h"
 #include "Reconstruction.h"
@@ -211,6 +212,14 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetFeatureRef::visit(
 
 
 void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetFeatureRef::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
+{
+	d_feature_ref = rsc->get_feature_ref();
+}
+
+
+void
 GPlatesAppLogic::ReconstructionGeometryUtils::GetGeometryProperty::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
 {
@@ -281,6 +290,16 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetPlateId::visit(
 
 
 void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetPlateId::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
+{
+	visit(
+			GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
+					rsc->get_reconstructed_domain_geometry()));
+}
+
+
+void
 GPlatesAppLogic::ReconstructionGeometryUtils::GetTimeOfFormation::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
 {
@@ -310,6 +329,16 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetTimeOfFormation::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 {
 	d_time_of_formation = rtn->time_of_formation();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetTimeOfFormation::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
+{
+	visit(
+			GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
+					rsc->get_reconstructed_domain_geometry()));
 }
 
 
@@ -350,6 +379,16 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTree::visit(
 
 
 void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTree::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
+{
+	visit(
+			GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
+					rsc->get_reconstructed_domain_geometry()));
+}
+
+
+void
 GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTreeCreator::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
 {
@@ -378,6 +417,16 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTreeCreator::visi
 		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 {
 	// resolved_topological_network_type does not need/support reconstruction trees.
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTreeCreator::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
+{
+	visit(
+			GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
+					rsc->get_reconstructed_domain_geometry()));
 }
 
 
@@ -436,4 +485,14 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetBoundaryPolygon::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 {
 	d_boundary_polygon = rtn->boundary_polygon();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetBoundaryPolygon::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
+{
+	visit(
+			GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
+					rsc->get_reconstructed_domain_geometry()));
 }

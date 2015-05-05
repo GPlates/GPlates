@@ -55,6 +55,7 @@ namespace GPlatesAppLogic
 
 
 	// Forward declarations of ReconstructionGeometry derived types.
+	class CoRegistrationData;
 	class DeformedFeatureGeometry;
 	class MultiPointVectorField;
 	class ReconstructedFeatureGeometry;
@@ -88,6 +89,11 @@ namespace GPlatesAppLogic
 	class ReconstructionGeometryVisitorBase
 	{
 	public:
+
+		//! Typedef for @a DeformedFeatureGeometry of appropriate const-ness.
+		typedef typename GPlatesUtils::CopyConst<
+				ReconstructionGeometryType, CoRegistrationData>::type
+						co_registration_data_type;
 
 		//! Typedef for @a DeformedFeatureGeometry of appropriate const-ness.
 		typedef typename GPlatesUtils::CopyConst<
@@ -167,6 +173,15 @@ namespace GPlatesAppLogic
 
 
 		// Please keep these reconstruction geometry derivations ordered alphabetically.
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<co_registration_data_type> &crd)
+		{  }
 
 		/**
 		 * Override this function in your own derived class.

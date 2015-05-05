@@ -44,11 +44,3 @@ GPlatesAppLogic::CoRegistrationData::accept_visitor(
 {
 	visitor.visit(this->get_non_null_pointer());
 }
-
-
-void
-GPlatesAppLogic::CoRegistrationData::accept_weak_observer_visitor(
-		GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor)
-{
-	visitor.visit_co_registration_data(*this);
-}

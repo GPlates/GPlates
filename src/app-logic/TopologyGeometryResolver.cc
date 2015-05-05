@@ -83,8 +83,7 @@ GPlatesAppLogic::TopologyGeometryResolver::TopologyGeometryResolver(
 	d_reconstruct_handle(reconstruct_handle),
 	d_reconstruction_tree_creator(reconstruction_tree_creator),
 	d_reconstruction_tree(reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)),
-	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles),
-	d_reconstruction_params(reconstruction_time)
+	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles)
 {  
 }
 
@@ -101,8 +100,7 @@ GPlatesAppLogic::TopologyGeometryResolver::TopologyGeometryResolver(
 	d_reconstruct_handle(reconstruct_handle),
 	d_reconstruction_tree_creator(reconstruction_tree_creator),
 	d_reconstruction_tree(reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)),
-	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles),
-	d_reconstruction_params(reconstruction_time)
+	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles)
 {  
 }
 

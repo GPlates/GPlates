@@ -179,7 +179,8 @@ namespace GPlatesAppLogic
 				{
 					const Domain &domain = *domains_iter;
 
-					const GPlatesModel::PropertyName &domain_property_name = (*domain.property)->property_name();
+					const GPlatesModel::PropertyName &domain_property_name =
+							(*domain.property)->get_property_name();
 
 					// Look for a range name associated with the current domain name.
 					boost::optional<GPlatesModel::PropertyName> range_property_name_opt =
@@ -203,7 +204,7 @@ namespace GPlatesAppLogic
 					{
 						const Range &range = *ranges_iter;
 
-						if ((*range.property)->property_name() == range_property_name)
+						if ((*range.property)->get_property_name() == range_property_name)
 						{
 							// See if the number of scalars matches the number of points in the domain geometry.
 							if (!range.scalar_data.empty() &&
@@ -241,7 +242,7 @@ namespace GPlatesAppLogic
 							{
 								const Domain &remaining_domain = *remaining_domains_iter;
 
-								if ((*remaining_domain.property)->property_name() == domain_property_name)
+								if ((*remaining_domain.property)->get_property_name() == domain_property_name)
 								{
 									// See if the number of geometry points matches.
 									if (num_domain_geometry_points == GeometryUtils::get_num_geometry_points(*remaining_domain.geometry))
@@ -294,12 +295,13 @@ namespace GPlatesAppLogic
 			visit_gpml_piecewise_aggregation(
 					typename feature_visitor_type::gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
 			{
-				BOOST_FOREACH(
-						GPlatesPropertyValues::GpmlTimeWindow time_window,
-						gpml_piecewise_aggregation.time_windows())
+				// Note: We're avoiding declaring iterators over time windows since they can be const or
+				// non-const depending on whether this class is instantiated with const or non-const FeatureHandle.
+				const std::size_t num_time_windows = gpml_piecewise_aggregation.time_windows().size();
+				for (std::size_t time_window_index = 0; time_window_index < num_time_windows; ++time_window_index)
 				{
 					const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
-							time_window.valid_time();
+							gpml_piecewise_aggregation.time_windows()[time_window_index].get()->valid_time();
 
 					// If the time window period contains the current reconstruction time then visit.
 					// The time periods should be mutually exclusive - if we happen to be it
@@ -307,7 +309,8 @@ namespace GPlatesAppLogic
 					// and then it doesn't really matter which one we choose.
 					if (time_period->contains(d_reconstruction_time))
 					{
-						time_window.time_dependent_value()->accept_visitor(*this);
+						gpml_piecewise_aggregation.time_windows()[time_window_index].get()->time_dependent_value()
+								->accept_visitor(*this);
 					}
 				}
 			}
