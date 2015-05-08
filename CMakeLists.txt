@@ -22,32 +22,3 @@ add_subdirectory(src)
 # Recurse into documentation directory.
 #
 add_subdirectory(doc)
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/draw_style_demo.py")
-    install(FILES "${CMAKE_SOURCE_DIR}/scripts/draw_style_demo.py"
-        DESTINATION share/gplates/scripts/)
-endif()
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/ColorByProperty.py")
-    install(FILES  "${CMAKE_SOURCE_DIR}/scripts/ColorByProperty.py"
-        DESTINATION share/gplates/scripts/)
-endif()
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/hellinger.py")
-    install(FILES  "${CMAKE_SOURCE_DIR}/scripts/hellinger.py"
-        DESTINATION share/gplates/scripts/)
-endif()
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/hellinger_utils.py")
-    install(FILES  "${CMAKE_SOURCE_DIR}/scripts/hellinger_utils.py"
-        DESTINATION share/gplates/scripts/)
-endif()
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/SampleData/")
-    install(DIRECTORY SampleData/ DESTINATION share/gplates/SampleData/)
-endif()
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/doc/gplates.1.gz")
-    install(FILES  "${CMAKE_SOURCE_DIR}/doc/gplates.1.gz"
-        DESTINATION share/man/man1/)
-endif()

@@ -253,7 +253,7 @@ include (Config_h)
 # Recurse into subdirectories - CMake continues processing this file when it returns.
 # NOTE: any variables set after 'add_subdirectory' will not be visible in the subdirectory 'CMakeList.txt' files.
 foreach(dir ${ALL_GPlates_src_subdirs})
-	#add_subdirectory(${dir})
+	add_subdirectory(${dir})
 endforeach(dir)
 
 #
@@ -293,15 +293,15 @@ file(WRITE ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH} "")
 # NOTE: there's a bug in CMake 2.4.6 in 'add_dependencies'. 
 #   It seems that subdirs are built in the order they are listed provided you don't run a parallel build (eg, 'make -j').
 if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
-    #add_dependencies(canvas-tools qt-widgets)
-    #add_dependencies(view-operations qt-widgets)
-    #add_dependencies(presentation qt-widgets)
-    #add_dependencies(gui qt-widgets)
-	#add_dependencies(utils qt-widgets) #Need more investigation
+    add_dependencies(canvas-tools qt-widgets)
+    add_dependencies(view-operations qt-widgets)
+    add_dependencies(presentation qt-widgets)
+    add_dependencies(gui qt-widgets)
+	add_dependencies(utils qt-widgets) #Need more investigation
 if(NOT GPLATES_NO_PYTHON)
-	#add_dependencies(api gui)
+	add_dependencies(api gui)
 endif(NOT GPLATES_NO_PYTHON)
-    #add_dependencies(global run-gplates-extract-svn-info)
+    add_dependencies(global run-gplates-extract-svn-info)
 	# because gplates-extract-svn-info executable generates global/SubversionInfo.cc
     #add_dependencies(qt-widgets qt-resources)
 endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
@@ -341,7 +341,7 @@ endif (APPLE)
 # that looks at a built executable target and does these fixups.
 #
 message(STATUS "Adding executable for GPlates application.")
-add_executable(gplates EXCLUDE_FROM_ALL
+add_executable(gplates
 	${target_GPlates_SRCS}
 	${GPlates_ICON}
 	${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH})
@@ -492,12 +492,9 @@ if (APPLE)
 else (APPLE)
     # CMake 2.4 doesn't know about "BUNDLE DESTINATION" so don't force Windows/Linux users
     # to require CMake 2.6.
-    #install(TARGETS gplates
-    #	RUNTIME DESTINATION bin
-   # 	CONFIGURATIONS release)
-    install(TARGETS gplates-extract-svn-info
-           RUNTIME DESTINATION bin
-           CONFIGURATIONS release)
+    install(TARGETS gplates
+    	RUNTIME DESTINATION bin
+    	CONFIGURATIONS release)
 endif (APPLE)
 
 # Include the package module which adds a 'package' target that packages up
