@@ -62,6 +62,7 @@ class methods and a description of their usage and parameters.
 	pygplates.ReconstructionTreeBuilder
 	pygplates.ReconstructionTreeEdge
 	pygplates.RotationModel
+	pygplates.Vector3D
 	pygplates.Version
 	pygplates.XsBoolean
 	pygplates.XsDouble

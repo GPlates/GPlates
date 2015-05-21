@@ -422,7 +422,7 @@ namespace GPlatesApi
 
 
 	/**
-	 * Enables a sequence, such as tuple or list, of (x,y,z) or (latitude,longitude)to be passed
+	 * Enables a sequence, such as tuple or list, of (x,y,z) or (latitude,longitude) to be passed
 	 * from python (to a PointOnSphere).
 	 *
 	 * For more information on boost python to/from conversions, see:
@@ -582,7 +582,7 @@ namespace GPlatesApi
 		}
 
 		PyErr_SetString(PyExc_TypeError, "Expected PointOnSphere or LatLonPoint or "
-				"tuple (latitude,longitude) or tuple (x,y,z)");
+				"sequence (latitude,longitude) or sequence (x,y,z)");
 		bp::throw_error_already_set();
 
 		// Shouldn't be able to get here.
@@ -789,11 +789,11 @@ export_point_on_sphere()
 				"\n"
 				"    x, y, z = point.to_xyz()\n"
 				"\n"
-				"  This is also useful for performing vector dot and cross products using numpy:\n"
+				"  This is also useful for performing vector dot and cross products:\n"
 				"  ::\n"
 				"\n"
-				"    dot_product = numpy.dot(point1.to_xyz(), point2.to_xyz())\n"
-				"    cross_product = numpy.cross(point1.to_xyz(), point2.to_xyz())\n")
+				"    dot_product = pygplates.Vector3D.dot(point1.to_xyz(), point2.to_xyz())\n"
+				"    cross_product = pygplates.Vector3D.cross(point1.to_xyz(), point2.to_xyz())\n")
 		.def("to_lat_lon_point",
 				&GPlatesMaths::make_lat_lon_point,
 				"to_lat_lon_point() -> LatLonPoint\n"

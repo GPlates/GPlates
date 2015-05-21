@@ -341,6 +341,25 @@ class LatLonPointCase(unittest.TestCase):
         self.assertAlmostEqual(y, 1)
         self.assertAlmostEqual(z, 0)
 
+
+class Vector3DCase(unittest.TestCase):
+    def setUp(self):
+        self.xyz = (1.03, -2.232, 34.232)
+        self.vector = pygplates.Vector3D(self.xyz)
+    
+    def test_compare(self):
+        self.assertTrue(self.vector == pygplates.Vector3D(self.xyz))
+        x, y, z = self.xyz
+        self.assertTrue(self.vector == pygplates.Vector3D(x, y, z))
+
+    def test_get(self):
+        self.assertTrue(self.vector.get_x() == self.xyz[0])
+        self.assertTrue(self.vector.get_y() == self.xyz[1])
+        self.assertTrue(self.vector.get_z() == self.xyz[2])
+    
+    def test_to_xyz(self):
+        self.assertTrue(self.vector.to_xyz() == self.xyz)
+
 def suite():
     suite = unittest.TestSuite()
     
@@ -349,7 +368,8 @@ def suite():
             DateLineWrapperCase,
             FiniteRotationCase,
             GreatCircleArcCase,
-            LatLonPointCase
+            LatLonPointCase,
+            Vector3DCase
         ]
 
     for test_case in test_cases:

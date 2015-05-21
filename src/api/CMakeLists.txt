@@ -84,6 +84,7 @@ set(srcs
     PythonVariableFunctionArguments.cc
     PythonVariableFunctionArguments.h
     PyTopologyTools.cc
+    PyVector3D.cc
     PyViewportWindow.cc
     Sleeper.cc
     Sleeper.h

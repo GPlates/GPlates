@@ -45,6 +45,7 @@ void export_great_circle_arc();
 void export_integer();
 void export_lat_lon_point();
 void export_real();
+void export_vector_3d();
 
 // file-io namespace
 void export_feature_collection_file_format_registry();
@@ -147,6 +148,7 @@ export_cpp_python_api()
 	export_integer();
 	export_lat_lon_point();
 	export_date_line_wrapper();
+	export_vector_3d();
 
 	// file-io namespace
 	export_feature_collection_file_format_registry();
