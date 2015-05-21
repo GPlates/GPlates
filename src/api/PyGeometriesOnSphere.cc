@@ -743,7 +743,7 @@ export_point_on_sphere()
 				"  :raises: ViolatedUnitVectorInvariantError if *normalise* is ``False`` and "
 				"the resulting vector does not have unit magnitude\n"
 				"  :raises: UnableToNormaliseZeroVectorError if *normalise* is ``True`` and "
-				"the resulting vector is (0,0,0) (has zero magnitude)\n"
+				"the resulting vector is (0,0,0) (ie, has zero magnitude)\n"
 				"\n"
 				"  **NOTE:** If the length of the 3D vector (x,y,z) is not 1.0 then you should set "
 				"*normalise* to ``True`` (to normalise the vector components such that the 3D vector "

@@ -43,6 +43,7 @@
 #include <boost/python/slice.hpp>
 #include <boost/python/stl_iterator.hpp>
 
+#include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
 
@@ -143,23 +144,52 @@ namespace GPlatesApi
 		}
 	};
 
+	namespace Implementation
+	{
+		GPlatesMaths::Vector3D
+		vector_extract_vector(
+				bp::object vector_object)
+		{
+			// There is a from-python converter from the sequence(x,y,z) that will get matched by this...
+			bp::extract<GPlatesMaths::Vector3D> extract_vector(vector_object);
+			if (extract_vector.check())
+			{
+				return extract_vector();
+			}
+
+			PyErr_SetString(PyExc_TypeError, "Expected sequence (x,y,z) or Vector3D");
+			bp::throw_error_already_set();
+
+			// Shouldn't be able to get here.
+			return GPlatesMaths::Vector3D();
+		}
+	}
+
 	boost::shared_ptr<GPlatesMaths::Vector3D>
 	vector_create(
 			bp::object vector_object)
 	{
-		// There is a from-python converter from the sequence(x,y,z) that will get matched by this...
-		bp::extract<GPlatesMaths::Vector3D> extract_vector(vector_object);
-		if (extract_vector.check())
-		{
-			return boost::shared_ptr<GPlatesMaths::Vector3D>(
-					new GPlatesMaths::Vector3D(extract_vector()));
-		}
+		return boost::shared_ptr<GPlatesMaths::Vector3D>(
+				new GPlatesMaths::Vector3D(
+						Implementation::vector_extract_vector(vector_object)));
+	}
 
-		PyErr_SetString(PyExc_TypeError, "Expected sequence (x,y,z) or Vector3D");
-		bp::throw_error_already_set();
+	GPlatesMaths::Vector3D
+	vector_get_normalised(
+			bp::object vector_object)
+	{
+		return GPlatesMaths::Vector3D(
+				Implementation::vector_extract_vector(vector_object).get_normalisation());
+	}
 
-		// Shouldn't be able to get here.
-		return boost::shared_ptr<GPlatesMaths::Vector3D>();
+	GPlatesMaths::Vector3D
+	vector_get_normalised_from_xyz(
+			const GPlatesMaths::Real &x,
+			const GPlatesMaths::Real &y,
+			const GPlatesMaths::Real &z)
+	{
+		return GPlatesMaths::Vector3D(
+				GPlatesMaths::Vector3D(x, y, z).get_normalisation());
 	}
 
 	GPlatesMaths::Real
@@ -167,20 +197,9 @@ namespace GPlatesApi
 			bp::object vector1_object,
 			bp::object vector2_object)
 	{
-		// There is a from-python converter from the sequence(x,y,z) that will get matched by this...
-		bp::extract<GPlatesMaths::Vector3D> extract1_vector(vector1_object);
-		bp::extract<GPlatesMaths::Vector3D> extract2_vector(vector2_object);
-		if (extract1_vector.check() &&
-			extract2_vector.check())
-		{
-			return dot(extract1_vector(), extract2_vector());
-		}
-
-		PyErr_SetString(PyExc_TypeError, "Expected 'vector1' and 'vector2' to each be a sequence (x,y,z) or Vector3D");
-		bp::throw_error_already_set();
-
-		// Shouldn't be able to get here.
-		return GPlatesMaths::Real();
+		return dot(
+				Implementation::vector_extract_vector(vector1_object),
+				Implementation::vector_extract_vector(vector2_object));
 	}
 
 	GPlatesMaths::Vector3D
@@ -188,20 +207,9 @@ namespace GPlatesApi
 			bp::object vector1_object,
 			bp::object vector2_object)
 	{
-		// There is a from-python converter from the sequence(x,y,z) that will get matched by this...
-		bp::extract<GPlatesMaths::Vector3D> extract1_vector(vector1_object);
-		bp::extract<GPlatesMaths::Vector3D> extract2_vector(vector2_object);
-		if (extract1_vector.check() &&
-			extract2_vector.check())
-		{
-			return cross(extract1_vector(), extract2_vector());
-		}
-
-		PyErr_SetString(PyExc_TypeError, "Expected 'vector1' and 'vector2' to each be a sequence (x,y,z) or Vector3D");
-		bp::throw_error_already_set();
-
-		// Shouldn't be able to get here.
-		return GPlatesMaths::Vector3D();
+		return cross(
+				Implementation::vector_extract_vector(vector1_object),
+				Implementation::vector_extract_vector(vector2_object));
 	}
 
 	bp::tuple
@@ -231,7 +239,26 @@ export_vector_3d()
 #endif
 			>(
 					"Vector3D",
-					"Represents a vector in 3D catesian coordinates. Vectors are equality (``==``, ``!=``) comparable.\n",
+					"Represents a vector in 3D catesian coordinates. Vectors are equality (``==``, ``!=``) comparable.\n"
+					"\n"
+					"The following operations can be used:\n"
+					"\n"
+					"=========================== =======================================================================\n"
+					"Operation                    Result\n"
+					"=========================== =======================================================================\n"
+					"``-vector``                  Creates a new *Vector3D* that points in the opposite direction to *vector*\n"
+					"``scalar * vector``          Creates a new *Vector3D* from *vector* with each component of (x,y,z) multiplied by *scalar*\n"
+					"``vector * scalar``          Creates a new *Vector3D* from *vector* with each component of (x,y,z) multiplied by *scalar*\n"
+					"``vector1 + vector2``        Creates a new *Vector3D* that is the sum of *vector1* and *vector2*\n"
+					"``vector1 - vector2``        Creates a new *Vector3D* that is *vector2* subtracted from *vector1*\n"
+					"=========================== =======================================================================\n"
+					"\n"
+					"For example, to interpolate between two vectors:\n"
+					"::\n"
+					"\n"
+					"  vector1 = pygplates.Vector3D(...)\n"
+					"  vector2 = pygplates.Vector3D(...)\n"
+					"  vector_interp = t * vector1 + (1-t) * vector2\n",
 					bp::init<GPlatesMaths::Real, GPlatesMaths::Real, GPlatesMaths::Real>(
 							(bp::arg("x"), bp::arg("y"), bp::arg("z")),
 							"__init__(x, y, z)\n"
@@ -281,14 +308,6 @@ export_vector_3d()
 				"  :type vector2: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
 				"  :rtype: float\n"
 				"\n"
-				"  The dot product is the equivalent of:\n"
-				"  ::\n"
-				"\n"
-				"    dot_product =\n"
-				"        vector1.get_x() * vector2.get_x() +\n"
-				"        vector1.get_y() * vector2.get_y() +\n"
-				"        vector1.get_z() * vector2.get_z()\n"
-				"\n"
 				"  The following example shows a few different ways to use this function:\n"
 				"  ::\n"
 				"\n"
@@ -300,7 +319,15 @@ export_vector_3d()
 				"    \n"
 				"    dot_product = pygplates.Vector3D.dot(vec1, (-1.1, -2.2, -3.3))\n"
 				"    \n"
-				"    dot_product = pygplates.Vector3D.dot((1.1, 2.2, 3.3), vec2)\n")
+				"    dot_product = pygplates.Vector3D.dot((1.1, 2.2, 3.3), vec2)\n"
+				"\n"
+				"  The dot product is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    dot_product =\n"
+				"        vector1.get_x() * vector2.get_x() +\n"
+				"        vector1.get_y() * vector2.get_y() +\n"
+				"        vector1.get_z() * vector2.get_z()\n")
 		.staticmethod("dot")
 		.def("cross",
 				&GPlatesApi::vector_cross,
@@ -317,14 +344,6 @@ export_vector_3d()
 				"  :type vector2: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
 				"  :rtype: :class:`Vector3D`\n"
 				"\n"
-				"  The cross product is the equivalent of:\n"
-				"  ::\n"
-				"\n"
-				"    cross_product = pygplates.Vector3D(\n"
-				"        vector1.get_y() * vector2.get_z() - vector1.get_z() * vector2.get_y(),\n"
-				"        vector1.get_z() * vector2.get_x() - vector1.get_x() * vector2.get_z(),\n"
-				"        vector1.get_x() * vector2.get_y() - vector1.get_y() * vector2.get_x())\n"
-				"\n"
 				"  The following example shows a few different ways to use this function:\n"
 				"  ::\n"
 				"\n"
@@ -336,8 +355,101 @@ export_vector_3d()
 				"    \n"
 				"    cross_product = pygplates.Vector3D.cross(vec1, (-1.1, -2.2, -3.3))\n"
 				"    \n"
-				"    cross_product = pygplates.Vector3D.cross((1.1, 2.2, 3.3), vec2)\n")
+				"    cross_product = pygplates.Vector3D.cross((1.1, 2.2, 3.3), vec2)\n"
+				"\n"
+				"  The cross product is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    cross_product = pygplates.Vector3D(\n"
+				"        vector1.get_y() * vector2.get_z() - vector1.get_z() * vector2.get_y(),\n"
+				"        vector1.get_z() * vector2.get_x() - vector1.get_x() * vector2.get_z(),\n"
+				"        vector1.get_x() * vector2.get_y() - vector1.get_y() * vector2.get_x())\n")
 		.staticmethod("cross")
+
+		.def("create_normalised",
+				&GPlatesApi::vector_get_normalised,
+				(bp::arg("xyz")),
+				"create_normalised(xyz) -> Vector3D\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Returns a new vector that is a normalised (unit length) version of *vector*.\n"
+				"\n"
+				"  :param xyz: the vector (x,y,z) components\n"
+				"  :type xyz: sequence (such as list or tuple) of (float,float,float), or :class:`Vector3D`\n"
+				"  :rtype: :class:`Vector3D`\n"
+				"  :raises: UnableToNormaliseZeroVectorError if *xyz* is (0,0,0) (ie, has zero magnitude)\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    normalised_vector = pygplates.Vector3D.create_normalised((2, 1, 0))\n"
+				"\n"
+				"  This function is similar to :meth:`to_normalised` but is typically used when you don't "
+				"have a :class:`Vector3D` object to call :meth:`to_normalised` on. Such as "
+				"``pygplates.Vector3D.create_normalised((2, 1, 0))``.\n")
+		.def("create_normalised",
+				&GPlatesApi::vector_get_normalised_from_xyz,
+				(bp::arg("x"), bp::arg("y"), bp::arg("z")),
+				"create_normalised(x, y, z) -> Vector3D\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Returns a new vector that is a normalised (unit length) version of vector (x, y, z).\n"
+				"\n"
+				"  :param x: the *x* component of the 3D vector\n"
+				"  :type x: float\n"
+				"  :param y: the *y* component of the 3D vector\n"
+				"  :type y: float\n"
+				"  :param z: the *z* component of the 3D vector\n"
+				"  :type z: float\n"
+				"  :raises: UnableToNormaliseZeroVectorError if (x,y,z) is (0,0,0) (ie, has zero magnitude)\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    normalised_vector = pygplates.Vector3D.create_normalised(2, 1, 0)\n"
+				"\n"
+				"  This function is similar to the *create_normalised* function above but takes three "
+				"arguments *x*, *y* and *z* instead of a single argument (such as a tuple or list).\n")
+		.staticmethod("create_normalised")
+		// Allow for American spelling (but we don't document it)...
+		.def("create_normalized",
+				&GPlatesApi::vector_get_normalised,
+				(bp::arg("vector")))
+		.def("create_normalized",
+				&GPlatesApi::vector_get_normalised_from_xyz,
+				(bp::arg("x"), bp::arg("y"), bp::arg("z")))
+		.staticmethod("create_normalized")
+
+		.def("to_normalised",
+				&GPlatesApi::vector_get_normalised,
+				"to_normalised() -> Vector3D\n"
+				"  Returns a new vector that is a normalised (unit length) version of this vector.\n"
+				"\n"
+				"  :raises: UnableToNormaliseZeroVectorError if this vector is (0,0,0) (ie, has zero magnitude)\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    vector = pygplates.Vector3D(...)\n"
+				"    normalised_vector = vector.to_normalised()\n"
+				"\n"
+				"  **NOTE:** This does not normalise this vector. Instead it returns a new vector object "
+				"that is the equivalent of this vector but has a magnitude of 1.0.\n"
+				"\n"
+				"  This function is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if vector.get_magnitude():\n"
+				"        scale = 1.0 / vector.get_magnitude()\n"
+				"        normalised_vector = pygplates.Vector3D(\n"
+				"            scale * vector.get_x(),\n"
+				"            scale * vector.get_y(),\n"
+				"            scale * vector.get_z())\n"
+				"    else:\n"
+				"        raise pygplates.UnableToNormaliseZeroVectorError\n")
+		// Allow for American spelling (but we don't document it)...
+		.def("get_normalized",
+				&GPlatesApi::vector_get_normalised)
+
 		.def("get_x",
 				&GPlatesMaths::Vector3D::x,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -369,11 +481,33 @@ export_vector_3d()
 				"  ::\n"
 				"\n"
 				"    x, y, z = vector.to_xyz()\n")
-		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
-		// This is because the default '__hash__' is based on 'id()' which is not compatible and
-		// would cause errors when used as key in a dictionary.
-		// In python 3 fixes this by automatically making unhashable if define '__eq__' only.
-		.setattr("__hash__", bp::object()/*None*/) // make unhashable
+		.def("get_magnitude",
+				&GPlatesMaths::Vector3D::magnitude,
+				"get_magnitude() -> float\n"
+				"  Returns the magnitude, or length, of the vector.\n"
+				"\n"
+				"  :rtype: float\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    magnitude = vector.get_magnitude()\n"
+				"\n"
+				"  The magnitude is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    magnitude = math.sqrt(\n"
+				"        vector.get_x() * vector.get_x() +\n"
+				"        vector.get_y() * vector.get_y() +\n"
+				"        vector.get_z() * vector.get_z())\n")
+		.def(-bp::self) // Negation
+		.def(bp::self - bp::self) // Vector subtraction
+		.def(bp::self + bp::self) // Vector addition
+		.def(bp::other<GPlatesMaths::Real>() * bp::self) // Scalar multiplication
+		.def(bp::self * bp::other<GPlatesMaths::Real>()) // Scalar multiplication
+		// Comparisons...
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 		// Generate '__str__' from 'operator<<'...

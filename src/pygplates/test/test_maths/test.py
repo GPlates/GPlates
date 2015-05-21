@@ -360,15 +360,41 @@ class Vector3DCase(unittest.TestCase):
     def test_to_xyz(self):
         self.assertTrue(self.vector.to_xyz() == self.xyz)
     
+    def test_operators(self):
+        scale = 3.1
+        scaled_xyz = (scale * self.xyz[0], scale * self.xyz[1], scale * self.xyz[2])
+        self.assertTrue(scale * self.vector == pygplates.Vector3D(scaled_xyz))
+        self.assertTrue(self.vector * scale == pygplates.Vector3D(scaled_xyz))
+        
+        self.assertTrue(self.vector - self.vector == pygplates.Vector3D(0,0,0))
+        self.assertTrue(self.vector + self.vector == 2 * self.vector)
+        self.assertTrue(-self.vector == -1 * self.vector)
+    
     def test_dot_product(self):
         self.assertAlmostEqual(pygplates.Vector3D.dot((1,1,1), (2,2,2)), 6)
         self.assertAlmostEqual(pygplates.Vector3D.dot(pygplates.Vector3D(1,0,0), (0,1,0)), 0)
-        self.assertAlmostEqual(pygplates.Vector3D.dot([1,-1,0.5], pygplates.Vector3D(0,1,-2)), -2)
+        self.assertAlmostEqual(pygplates.Vector3D.dot([1,-1,0.5], pygplates.Vector3D(0,1,-2).to_xyz()), -2)
     
     def test_cross_product(self):
         self.assertTrue(pygplates.Vector3D.cross(pygplates.Vector3D(2,0,0), (1,0,0)) == pygplates.Vector3D(0,0,0))
         self.assertTrue(pygplates.Vector3D.cross(pygplates.Vector3D(2,0,0), (0,1,0)) == pygplates.Vector3D(0,0,2))
         self.assertTrue(pygplates.Vector3D.cross(pygplates.Vector3D(0,1,0), (2,0,0)) == pygplates.Vector3D(0,0,-2))
+    
+    def test_magnitude(self):
+        self.assertAlmostEqual(pygplates.Vector3D(2,0,0).get_magnitude(), 2)
+        self.assertAlmostEqual(self.vector.get_magnitude(), math.sqrt(pygplates.Vector3D.dot(self.vector, self.vector)))
+    
+    def test_normalise(self):
+        self.assertTrue(pygplates.Vector3D(2,0,0).to_normalised() == pygplates.Vector3D(1,0,0))
+        self.assertTrue(pygplates.Vector3D.create_normalised((2,0,0)) == pygplates.Vector3D(1,0,0))
+        self.assertTrue(pygplates.Vector3D.create_normalised(2,0,0) == pygplates.Vector3D(1,0,0))
+        self.assertTrue(pygplates.Vector3D(2,0,0).to_normalised() == pygplates.Vector3D(1,0,0)) # American spelling.
+        self.assertTrue(pygplates.Vector3D.create_normalised((2,0,0)) == pygplates.Vector3D(1,0,0)) # American spelling.
+        self.assertTrue(pygplates.Vector3D.create_normalised(2,0,0) == pygplates.Vector3D(1,0,0)) # American spelling.
+        vec = pygplates.Vector3D(1,-1,1)
+        self.assertTrue(vec.to_normalised() == (1.0 / vec.get_magnitude()) * vec)
+        self.assertTrue(pygplates.Vector3D.create_normalised(vec.to_xyz()) == (1.0 / vec.get_magnitude()) * vec) # American spelling.
+        self.assertTrue(pygplates.Vector3D.create_normalised(vec.get_x(), vec.get_y(), vec.get_z()) == (1.0 / vec.get_magnitude()) * vec) # American spelling.
 
 def suite():
     suite = unittest.TestSuite()
