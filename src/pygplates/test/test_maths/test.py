@@ -359,6 +359,16 @@ class Vector3DCase(unittest.TestCase):
     
     def test_to_xyz(self):
         self.assertTrue(self.vector.to_xyz() == self.xyz)
+    
+    def test_dot_product(self):
+        self.assertAlmostEqual(pygplates.Vector3D.dot((1,1,1), (2,2,2)), 6)
+        self.assertAlmostEqual(pygplates.Vector3D.dot(pygplates.Vector3D(1,0,0), (0,1,0)), 0)
+        self.assertAlmostEqual(pygplates.Vector3D.dot([1,-1,0.5], pygplates.Vector3D(0,1,-2)), -2)
+    
+    def test_cross_product(self):
+        self.assertTrue(pygplates.Vector3D.cross(pygplates.Vector3D(2,0,0), (1,0,0)) == pygplates.Vector3D(0,0,0))
+        self.assertTrue(pygplates.Vector3D.cross(pygplates.Vector3D(2,0,0), (0,1,0)) == pygplates.Vector3D(0,0,2))
+        self.assertTrue(pygplates.Vector3D.cross(pygplates.Vector3D(0,1,0), (2,0,0)) == pygplates.Vector3D(0,0,-2))
 
 def suite():
     suite = unittest.TestSuite()

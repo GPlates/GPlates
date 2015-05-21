@@ -162,6 +162,48 @@ namespace GPlatesApi
 		return boost::shared_ptr<GPlatesMaths::Vector3D>();
 	}
 
+	GPlatesMaths::Real
+	vector_dot(
+			bp::object vector1_object,
+			bp::object vector2_object)
+	{
+		// There is a from-python converter from the sequence(x,y,z) that will get matched by this...
+		bp::extract<GPlatesMaths::Vector3D> extract1_vector(vector1_object);
+		bp::extract<GPlatesMaths::Vector3D> extract2_vector(vector2_object);
+		if (extract1_vector.check() &&
+			extract2_vector.check())
+		{
+			return dot(extract1_vector(), extract2_vector());
+		}
+
+		PyErr_SetString(PyExc_TypeError, "Expected 'vector1' and 'vector2' to each be a sequence (x,y,z) or Vector3D");
+		bp::throw_error_already_set();
+
+		// Shouldn't be able to get here.
+		return GPlatesMaths::Real();
+	}
+
+	GPlatesMaths::Vector3D
+	vector_cross(
+			bp::object vector1_object,
+			bp::object vector2_object)
+	{
+		// There is a from-python converter from the sequence(x,y,z) that will get matched by this...
+		bp::extract<GPlatesMaths::Vector3D> extract1_vector(vector1_object);
+		bp::extract<GPlatesMaths::Vector3D> extract2_vector(vector2_object);
+		if (extract1_vector.check() &&
+			extract2_vector.check())
+		{
+			return cross(extract1_vector(), extract2_vector());
+		}
+
+		PyErr_SetString(PyExc_TypeError, "Expected 'vector1' and 'vector2' to each be a sequence (x,y,z) or Vector3D");
+		bp::throw_error_already_set();
+
+		// Shouldn't be able to get here.
+		return GPlatesMaths::Vector3D();
+	}
+
 	bp::tuple
 	vector_to_xyz(
 			const GPlatesMaths::Vector3D &vec)
@@ -224,6 +266,78 @@ export_vector_3d()
 				"    vector = pygplates.Vector3D([x,y,z])\n"
 				"    vector = pygplates.Vector3D(numpy.array([x,y,z]))\n"
 				"    vector = pygplates.Vector3D(pygplates.Vector3D(x,y,z))\n")
+		.def("dot",
+				&GPlatesApi::vector_dot,
+				(bp::arg("vector1"), bp::arg("vector2")),
+				"dot(vector1, vector2) -> float\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Returns the dot product of two vectors.\n"
+				"\n"
+				"  :param vector1: the first vector\n"
+				"  :type vector1: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
+				"  :param vector2: the second vector\n"
+				"  :type vector2: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
+				"  :rtype: float\n"
+				"\n"
+				"  The dot product is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    dot_product =\n"
+				"        vector1.get_x() * vector2.get_x() +\n"
+				"        vector1.get_y() * vector2.get_y() +\n"
+				"        vector1.get_z() * vector2.get_z()\n"
+				"\n"
+				"  The following example shows a few different ways to use this function:\n"
+				"  ::\n"
+				"\n"
+				"    vec1 = pygplates.Vector3D(1.1, 2.2, 3.3)\n"
+				"    vec2 = pygplates.Vector3D(-1.1, -2.2, -3.3)\n"
+				"    dot_product = pygplates.Vector3D.dot(vec1, vec2)\n"
+				"    \n"
+				"    dot_product = pygplates.Vector3D.dot((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))\n"
+				"    \n"
+				"    dot_product = pygplates.Vector3D.dot(vec1, (-1.1, -2.2, -3.3))\n"
+				"    \n"
+				"    dot_product = pygplates.Vector3D.dot((1.1, 2.2, 3.3), vec2)\n")
+		.staticmethod("dot")
+		.def("cross",
+				&GPlatesApi::vector_cross,
+				(bp::arg("vector1"), bp::arg("vector2")),
+				"cross(vector1, vector2) -> Vector3D\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Returns the cross product of two vectors.\n"
+				"\n"
+				"  :param vector1: the first vector\n"
+				"  :type vector1: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
+				"  :param vector2: the second vector\n"
+				"  :type vector2: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
+				"  :rtype: :class:`Vector3D`\n"
+				"\n"
+				"  The cross product is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    cross_product = pygplates.Vector3D(\n"
+				"        vector1.get_y() * vector2.get_z() - vector1.get_z() * vector2.get_y(),\n"
+				"        vector1.get_z() * vector2.get_x() - vector1.get_x() * vector2.get_z(),\n"
+				"        vector1.get_x() * vector2.get_y() - vector1.get_y() * vector2.get_x())\n"
+				"\n"
+				"  The following example shows a few different ways to use this function:\n"
+				"  ::\n"
+				"\n"
+				"    vec1 = pygplates.Vector3D(1.1, 2.2, 3.3)\n"
+				"    vec2 = pygplates.Vector3D(-1.1, -2.2, -3.3)\n"
+				"    cross_product = pygplates.Vector3D.cross(vec1, vec2)\n"
+				"    \n"
+				"    cross_product = pygplates.Vector3D.cross((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))\n"
+				"    \n"
+				"    cross_product = pygplates.Vector3D.cross(vec1, (-1.1, -2.2, -3.3))\n"
+				"    \n"
+				"    cross_product = pygplates.Vector3D.cross((1.1, 2.2, 3.3), vec2)\n")
+		.staticmethod("cross")
 		.def("get_x",
 				&GPlatesMaths::Vector3D::x,
 				bp::return_value_policy<bp::copy_const_reference>(),
