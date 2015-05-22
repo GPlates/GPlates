@@ -144,6 +144,16 @@ namespace GPlatesApi
 		}
 	};
 
+
+	// Zero vector.
+	const GPlatesMaths::Vector3D vector_zero(0, 0, 0);
+
+	// Axis vectors (x, y, z).
+	const GPlatesMaths::Vector3D vector_x_axis(1, 0, 0);
+	const GPlatesMaths::Vector3D vector_y_axis(0, 1, 0);
+	const GPlatesMaths::Vector3D vector_z_axis(0, 0, 1);
+
+
 	namespace Implementation
 	{
 		GPlatesMaths::Vector3D
@@ -258,7 +268,23 @@ export_vector_3d()
 					"\n"
 					"  vector1 = pygplates.Vector3D(...)\n"
 					"  vector2 = pygplates.Vector3D(...)\n"
-					"  vector_interp = t * vector1 + (1-t) * vector2\n",
+					"  vector_interp = t * vector1 + (1-t) * vector2\n"
+					"\n"
+					"Convenience class static data are available for the zero vector (all zero components) and "
+					"the x, y and z axes (unit vectors in the respective directions):\n"
+					"\n"
+					"* ``pygplates.Vector3D.zero``\n"
+					"* ``pygplates.Vector3D.x_axis``\n"
+					"* ``pygplates.Vector3D.y_axis``\n"
+					"* ``pygplates.Vector3D.z_axis``\n"
+					"\n"
+					"For example, to create a vector from a triplet of axis basis weights (triplet of scalars):\n"
+					"::\n"
+					"\n"
+					"  vector = (\n"
+					"      x_weight * pygplates.Vector3D.x_axis +\n"
+					"      y_weight * pygplates.Vector3D.y_axis +\n"
+					"      z_weight * pygplates.Vector3D.z_axis)\n",
 					bp::init<GPlatesMaths::Real, GPlatesMaths::Real, GPlatesMaths::Real>(
 							(bp::arg("x"), bp::arg("y"), bp::arg("z")),
 							"__init__(x, y, z)\n"
@@ -293,6 +319,14 @@ export_vector_3d()
 				"    vector = pygplates.Vector3D([x,y,z])\n"
 				"    vector = pygplates.Vector3D(numpy.array([x,y,z]))\n"
 				"    vector = pygplates.Vector3D(pygplates.Vector3D(x,y,z))\n")
+		// Static property 'pygplates.Vector3D.zero'...
+		.def_readonly("zero", GPlatesApi::vector_zero)
+		// Static property 'pygplates.Vector3D.x_axis'...
+		.def_readonly("x_axis", GPlatesApi::vector_x_axis)
+		// Static property 'pygplates.Vector3D.y_axis'...
+		.def_readonly("y_axis", GPlatesApi::vector_y_axis)
+		// Static property 'pygplates.Vector3D.z_axis'...
+		.def_readonly("z_axis", GPlatesApi::vector_z_axis)
 		.def("dot",
 				&GPlatesApi::vector_dot,
 				(bp::arg("vector1"), bp::arg("vector2")),
@@ -324,10 +358,10 @@ export_vector_3d()
 				"  The dot product is the equivalent of:\n"
 				"  ::\n"
 				"\n"
-				"    dot_product =\n"
+				"    dot_product = (\n"
 				"        vector1.get_x() * vector2.get_x() +\n"
 				"        vector1.get_y() * vector2.get_y() +\n"
-				"        vector1.get_z() * vector2.get_z()\n")
+				"        vector1.get_z() * vector2.get_z())\n")
 		.staticmethod("dot")
 		.def("cross",
 				&GPlatesApi::vector_cross,
