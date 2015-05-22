@@ -70,8 +70,10 @@ namespace GPlatesApi
 	extern boost::python::object GmlTimePeriodBeginTimeLaterThanEndTimeError;
 	extern boost::python::object GPlatesError;
 	extern boost::python::object IndeterminateArcRotationAxisError;
-	extern boost::python::object InformationModelError;
+	extern boost::python::object IndeterminateGreatCircleArcDirectionError;
+	extern boost::python::object IndeterminateGreatCircleArcNormalError;
 	extern boost::python::object IndeterminateResultError;
+	extern boost::python::object InformationModelError;
 	extern boost::python::object InsufficientPointsForMultiPointConstructionError;
 	extern boost::python::object InterpolationError;
 	extern boost::python::object InvalidLatLonError;

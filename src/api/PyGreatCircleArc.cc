@@ -26,9 +26,12 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "PyGreatCircleArc.h"
+
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 
+#include "global/GPlatesAssert.h"
 #include "global/python.h"
 
 #include "maths/GreatCircleArc.h"
@@ -69,6 +72,10 @@ namespace GPlatesApi
 	great_circle_arc_get_great_circle_normal(
 			const GPlatesMaths::GreatCircleArc &great_circle_arc)
 	{
+		GPlatesGlobal::Assert<IndeterminateGreatCircleArcNormalException>(
+				!great_circle_arc.is_zero_length(),
+				GPLATES_ASSERTION_SOURCE);
+
 		return GPlatesMaths::Vector3D(great_circle_arc.rotation_axis());
 	}
 
@@ -131,6 +138,24 @@ namespace GPlatesApi
 				normalised_distance_from_start_point * angle_from_start_to_end);
 
 		return rotation * great_circle_arc.start_point();
+	}
+
+	GPlatesMaths::Vector3D
+	great_circle_arc_get_arc_direction(
+			const GPlatesMaths::GreatCircleArc &great_circle_arc,
+			const GPlatesMaths::Real &normalised_distance_from_start_point)
+	{
+		GPlatesGlobal::Assert<IndeterminateGreatCircleArcDirectionException>(
+				!great_circle_arc.is_zero_length(),
+				GPLATES_ASSERTION_SOURCE);
+
+		const GPlatesMaths::PointOnSphere arc_point =
+				great_circle_arc_get_arc_point(great_circle_arc, normalised_distance_from_start_point);
+
+		// Get unit-magnitude direction at the arc point towards the end point (from start point).
+		return GPlatesMaths::Vector3D(
+				cross(arc_point.position_vector(), great_circle_arc.rotation_axis())
+						.get_normalisation());
 	}
 }
 
@@ -224,7 +249,12 @@ export_great_circle_arc()
 				"\n"
 				"  :returns: the unit-length 3D vector\n"
 				"  :rtype: :class:`Vector3D`\n"
-				"  :raises: IndeterminateArcRotationAxisError if arc is zero length\n"
+				"  :raises: IndeterminateGreatCircleArcNormalError if arc is zero length\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    if not arc.is_zero_length():\n"
+				"        normal = arc.get_great_circle_normal()\n"
 				"\n"
 				"  Note that this returns the same (x, y, z) result as :meth:`get_rotation_axis`, "
 				"but in the form of a :class:`Vector3D` instead of an (x, y, z) tuple.\n"
@@ -232,14 +262,14 @@ export_great_circle_arc()
 				"  Note that the normal to the great circle can be considered to be the tangential "
 				"direction (to the Earth's surface) at any point along the great circle arc that is most "
 				"pointing away from (perpendicular to) the direction of the arc (from start point "
-				"to end point).\n"
+				"to end point - see :meth:`get_arc_direction`).\n"
 				"\n"
 				"  The normal vector is the same direction as the :meth:`cross product<Vector3D.cross>` "
 				"of the start point and the end point. In fact it is equivalent to "
 				"``pygplates.Vector3D.cross(arc.start_point().to_xyz(), arc.end_point().to_xyz()).to_normalised()``.\n"
 				"\n"
 				"  If the arc start and end points are the same (if :meth:`is_zero_length` is ``True``) "
-				"then *IndeterminateArcRotationAxisError* is raised.\n")
+				"then *IndeterminateGreatCircleArcNormalError* is raised.\n")
 		.def("get_rotation_axis",
 				&GPlatesApi::great_circle_arc_get_rotation_axis,
 				"get_rotation_axis() -> x, y, z\n"
@@ -248,6 +278,11 @@ export_great_circle_arc()
 				"  :returns: the unit-length 3D vector (x,y,z)\n"
 				"  :rtype: the tuple (float, float, float)\n"
 				"  :raises: IndeterminateArcRotationAxisError if arc is zero length\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    if not arc.is_zero_length():\n"
+				"        rotation_axis = arc.get_rotation_axis()\n"
 				"\n"
 				"  The rotation axis is the unit-length 3D vector (x,y,z) returned in the tuple.\n"
 				"\n"
@@ -264,6 +299,11 @@ export_great_circle_arc()
 				"  :returns: the axis as (latitude, longitude)\n"
 				"  :rtype: the tuple (float, float)\n"
 				"  :raises: IndeterminateArcRotationAxisError if arc is zero length\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    if not arc.is_zero_length():\n"
+				"        axis_lat, axis_lon = arc.get_rotation_axis_lat_lon()\n"
 				"\n"
 				"  The rotation axis is the (latitude, longitude) returned in the tuple.\n"
 				"\n"
@@ -285,9 +325,44 @@ export_great_circle_arc()
 				"  :raises: ValueError if arc *normalised_distance_from_start_point* is not in the "
 				"range [0,1]\n"
 				"\n"
+				"  The midpoint of an arc:\n"
+				"  ::\n"
+				"\n"
+				"    arc_midpoint = arc.get_arc_point(0.5)\n"
+				"\n"
 				"  If *normalised_distance_from_start_point* is zero then the start point is returned. "
 				"If *normalised_distance_from_start_point* is one then the end point is returned. "
 				"Values of *normalised_distance_from_start_point* between zero and one return points on the arc. "
+				"If *normalised_distance_from_start_point* is outside the range from zero to one then "
+				"then *ValueError* is raised.\n")
+		.def("get_arc_direction",
+				&GPlatesApi::great_circle_arc_get_arc_direction,
+				"get_arc_direction(normalised_distance_from_start_point) -> Vector3D\n"
+				"  Return the direction along the arc at a point on the arc.\n"
+				"\n"
+				"  :param normalised_distance_from_start_point: distance from start point where "
+				"zero is the start point, one is the end point and between zero and one are points "
+				"along the arc\n"
+				"  :type normalised_distance_from_start_point: float\n"
+				"  :rtype: :class:`Vector3D`\n"
+				"  :raises: ValueError if arc *normalised_distance_from_start_point* is not in the "
+				"range [0,1]\n"
+				"  :raises: IndeterminateGreatCircleArcDirectionError if arc is zero length\n"
+				"\n"
+				"  The returned direction is tangential to the Earth's surface and is aligned with "
+				"the direction of the great circle arc (in the direction going from the start point "
+				"towards the end point). This direction is perpendicular to the great circle normal "
+				"direction (see :meth:`get_great_circle_normal`).\n"
+				"\n"
+				"  The direction at the midpoint of an arc:\n"
+				"  ::\n"
+				"\n"
+				"    if not arc.is_zero_length():\n"
+				"        arc_midpoint_direction = arc.get_arc_direction(0.5)\n"
+				"\n"
+				"  If *normalised_distance_from_start_point* is zero then the direction at start point is returned. "
+				"If *normalised_distance_from_start_point* is one then the direction at end point is returned. "
+				"Values of *normalised_distance_from_start_point* between zero and one return directions at points on the arc. "
 				"If *normalised_distance_from_start_point* is outside the range from zero to one then "
 				"then *ValueError* is raised.\n")
 		// Due to the numerical tolerance in comparisons we cannot make hashable.

@@ -283,8 +283,20 @@ class GreatCircleArcCase(unittest.TestCase):
         
         self.assertTrue(self.gca.get_arc_point(0) == self.gca.get_start_point())
         self.assertTrue(self.gca.get_arc_point(1) == self.gca.get_end_point())
-        self.assertTrue(self.gca.get_arc_point(0.5) ==
-                pygplates.PointOnSphere((pygplates.Vector3D(self.start_point.to_xyz()) + pygplates.Vector3D(self.end_point.to_xyz())).to_normalised().to_xyz()))
+        self.assertTrue(self.gca.get_arc_direction(0) ==
+                pygplates.Vector3D.cross(self.gca.get_start_point().to_xyz(), self.gca.get_great_circle_normal()))
+        self.assertTrue(self.gca.get_arc_direction(1) ==
+                pygplates.Vector3D.cross(self.gca.get_end_point().to_xyz(), self.gca.get_great_circle_normal()))
+        arc_midpoint = (pygplates.Vector3D(self.start_point.to_xyz()) + pygplates.Vector3D(self.end_point.to_xyz())).to_normalised()
+        self.assertTrue(self.gca.get_arc_point(0.5) == pygplates.PointOnSphere(arc_midpoint.to_xyz()))
+        self.assertTrue(self.gca.get_arc_direction(0.5) == pygplates.Vector3D.cross(arc_midpoint, self.gca.get_great_circle_normal()))
+        arc_quarter_point = (pygplates.Vector3D(self.start_point.to_xyz()) + arc_midpoint).to_normalised()
+        self.assertTrue(self.gca.get_arc_point(0.25) == pygplates.PointOnSphere(arc_quarter_point.to_xyz()))
+        self.assertTrue(self.gca.get_arc_direction(0.25) == pygplates.Vector3D.cross(arc_quarter_point, self.gca.get_great_circle_normal()))
+        self.assertRaises(ValueError, self.gca.get_arc_point, -0.01)
+        self.assertRaises(ValueError, self.gca.get_arc_point, 1.01)
+        self.assertRaises(ValueError, self.gca.get_arc_direction, -0.01)
+        self.assertRaises(ValueError, self.gca.get_arc_direction, 1.01)
     
     def test_zero_length(self):
         self.assertFalse(self.gca.is_zero_length())
@@ -292,6 +304,8 @@ class GreatCircleArcCase(unittest.TestCase):
         self.assertTrue(zero_length_gca.is_zero_length())
         self.assertRaises(pygplates.IndeterminateArcRotationAxisError, zero_length_gca.get_rotation_axis)
         self.assertRaises(pygplates.IndeterminateArcRotationAxisError, zero_length_gca.get_rotation_axis_lat_lon)
+        self.assertRaises(pygplates.IndeterminateGreatCircleArcNormalError, zero_length_gca.get_great_circle_normal)
+        self.assertRaises(pygplates.IndeterminateGreatCircleArcDirectionError, zero_length_gca.get_arc_direction, 0.5)
 
 
 class LatLonPointCase(unittest.TestCase):
@@ -385,6 +399,13 @@ class Vector3DCase(unittest.TestCase):
         self.assertTrue(self.vector + self.vector == 2 * self.vector)
         self.assertTrue(-self.vector == -1 * self.vector)
     
+    def test_angle_between(self):
+        self.assertAlmostEqual(pygplates.Vector3D.angle_between((1,0,1), (2,0,0)), math.pi / 4)
+        self.assertAlmostEqual(pygplates.Vector3D.angle_between(pygplates.Vector3D(-1,0,1), (2,0,0)), 3 * math.pi / 4)
+        self.assertAlmostEqual(pygplates.Vector3D.angle_between(pygplates.Vector3D(-1,0,1), (-1,0,1)), 0)
+        self.assertAlmostEqual(pygplates.Vector3D.angle_between(pygplates.Vector3D(-1,0,1), (1,0,-1)), math.pi)
+        self.assertRaises(pygplates.UnableToNormaliseZeroVectorError, pygplates.Vector3D.angle_between, self.vector, pygplates.Vector3D(0,0,0))
+    
     def test_dot_product(self):
         self.assertAlmostEqual(pygplates.Vector3D.dot((1,1,1), (2,2,2)), 6)
         self.assertAlmostEqual(pygplates.Vector3D.dot(pygplates.Vector3D(1,0,0), (0,1,0)), 0)
@@ -396,6 +417,8 @@ class Vector3DCase(unittest.TestCase):
         self.assertTrue(pygplates.Vector3D.cross(pygplates.Vector3D(0,1,0), (2,0,0)) == pygplates.Vector3D(0,0,-2))
     
     def test_magnitude(self):
+        self.assertTrue(pygplates.Vector3D(0,0,0).is_zero_magnitude())
+        self.assertTrue(not pygplates.Vector3D(2,0,0).is_zero_magnitude())
         self.assertAlmostEqual(pygplates.Vector3D(2,0,0).get_magnitude(), 2)
         self.assertAlmostEqual(self.vector.get_magnitude(), math.sqrt(pygplates.Vector3D.dot(self.vector, self.vector)))
     
@@ -410,6 +433,9 @@ class Vector3DCase(unittest.TestCase):
         self.assertTrue(vec.to_normalised() == (1.0 / vec.get_magnitude()) * vec)
         self.assertTrue(pygplates.Vector3D.create_normalised(vec.to_xyz()) == (1.0 / vec.get_magnitude()) * vec) # American spelling.
         self.assertTrue(pygplates.Vector3D.create_normalised(vec.get_x(), vec.get_y(), vec.get_z()) == (1.0 / vec.get_magnitude()) * vec) # American spelling.
+        
+        self.assertRaises(pygplates.UnableToNormaliseZeroVectorError, pygplates.Vector3D(0,0,0).to_normalised)
+        self.assertRaises(pygplates.UnableToNormaliseZeroVectorError, pygplates.Vector3D.create_normalised, 0, 0, 0)
 
 def suite():
     suite = unittest.TestSuite()

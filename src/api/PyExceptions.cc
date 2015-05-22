@@ -29,6 +29,7 @@
 #include "PyExceptions.h"
 
 #include "PyGeometriesOnSphere.h"
+#include "PyGreatCircleArc.h"
 #include "PyInformationModel.h"
 #include "PyInterpolationException.h"
 #include "PyReconstructionTree.h"
@@ -205,6 +206,8 @@ namespace GPlatesApi
 	bp::object GmlTimePeriodBeginTimeLaterThanEndTimeError;
 	bp::object GPlatesError;
 	bp::object IndeterminateArcRotationAxisError;
+	bp::object IndeterminateGreatCircleArcDirectionError;
+	bp::object IndeterminateGreatCircleArcNormalError;
 	bp::object IndeterminateResultError;
 	bp::object InformationModelError;
 	bp::object InsufficientPointsForMultiPointConstructionError;
@@ -280,6 +283,14 @@ export_exceptions()
 	GPlatesApi::IndeterminateArcRotationAxisError =
 			export_exception<GPlatesMaths::IndeterminateArcRotationAxisException>(
 					"IndeterminateArcRotationAxisError",
+					GPlatesApi::PreconditionViolationError);
+	GPlatesApi::IndeterminateGreatCircleArcDirectionError =
+			export_exception<GPlatesApi::IndeterminateGreatCircleArcDirectionException>(
+					"IndeterminateGreatCircleArcDirectionError",
+					GPlatesApi::PreconditionViolationError);
+	GPlatesApi::IndeterminateGreatCircleArcNormalError =
+			export_exception<GPlatesApi::IndeterminateGreatCircleArcNormalException>(
+					"IndeterminateGreatCircleArcNormalError",
 					GPlatesApi::PreconditionViolationError);
 	GPlatesApi::InformationModelError =
 			export_exception<GPlatesApi::InformationModelException>(
