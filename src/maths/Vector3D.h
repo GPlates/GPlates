@@ -126,10 +126,18 @@ namespace GPlatesMaths {
 		}
 
 		/**
+		 * Returns true if the magnitude is zero, or close enough to zero that
+		 * @a get_normalisation would throw @a UnableToNormaliseZeroVectorException.
+		 */
+		bool
+		is_zero_magnitude() const;
+
+		/**
 		 * Generate a vector having the same direction as @a this,
 		 * but which has unit magnitude.
 		 *
 		 * @throws UnableToNormaliseZeroVectorException if @a this has zero magnitude.
+		 * If @a is_zero_magnitude returns true then this exception will get thrown.
 		 */
 		UnitVector3D
 		get_normalisation() const;

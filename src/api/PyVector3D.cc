@@ -203,6 +203,18 @@ namespace GPlatesApi
 	}
 
 	GPlatesMaths::Real
+	vector_angle_between(
+			bp::object vector1_object,
+			bp::object vector2_object)
+	{
+		// Get normalised versions of both vectors.
+		const GPlatesMaths::Vector3D vector1 = vector_get_normalised(vector1_object);
+		const GPlatesMaths::Vector3D vector2 = vector_get_normalised(vector2_object);
+
+		return acos(dot(vector1, vector2));
+	}
+
+	GPlatesMaths::Real
 	vector_dot(
 			bp::object vector1_object,
 			bp::object vector2_object)
@@ -327,6 +339,51 @@ export_vector_3d()
 		.def_readonly("y_axis", GPlatesApi::vector_y_axis)
 		// Static property 'pygplates.Vector3D.z_axis'...
 		.def_readonly("z_axis", GPlatesApi::vector_z_axis)
+
+		.def("angle_between",
+				&GPlatesApi::vector_angle_between,
+				(bp::arg("vector1"), bp::arg("vector2")),
+				"angle_between(vector1, vector2) -> float\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Returns the angle between two vectors (in radians).\n"
+				"\n"
+				"  :param vector1: the first vector\n"
+				"  :type vector1: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
+				"  :param vector2: the second vector\n"
+				"  :type vector2: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
+				"  :rtype: float\n"
+				"  :raises: UnableToNormaliseZeroVectorError if either *vector1* or *vector2* is (0,0,0) "
+				"(ie, :meth:`has zero magnitude<is_zero_magnitude>`)\n"
+				"\n"
+				"  Note that the angle between a vector (``vec``) and its opposite (``-vec``) is ``math.pi`` "
+				"(and not zero) even though both vectors are parallel. This is because they point in "
+				"opposite directions.\n"
+				"\n"
+				"  The following example shows a few different ways to use this function:\n"
+				"  ::\n"
+				"\n"
+				"    vec1 = pygplates.Vector3D(1.1, 2.2, 3.3)\n"
+				"    vec2 = pygplates.Vector3D(-1.1, -2.2, -3.3)\n"
+				"    angle = pygplates.Vector3D.angle_between(vec1, vec2)\n"
+				"    \n"
+				"    angle = pygplates.Vector3D.angle_between((1.1, 2.2, 3.3), (-1.1, -2.2, -3.3))\n"
+				"    \n"
+				"    angle = pygplates.Vector3D.angle_between(vec1, (-1.1, -2.2, -3.3))\n"
+				"    \n"
+				"    angle = pygplates.Vector3D.angle_between((1.1, 2.2, 3.3), vec2)\n"
+				"\n"
+				"  This function is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if not vector1.is_zero_magnitude() and not vector2.is_zero_magnitude():\n"
+				"        angle_between = math.acos(\n"
+				"            pygplates.Vector3D.dot(vector1.to_normalised(), vector2.to_normalised()))\n"
+				"    else:\n"
+				"        raise pygplates.UnableToNormaliseZeroVectorError\n")
+		.staticmethod("angle_between")
+
 		.def("dot",
 				&GPlatesApi::vector_dot,
 				(bp::arg("vector1"), bp::arg("vector2")),
@@ -363,6 +420,7 @@ export_vector_3d()
 				"        vector1.get_y() * vector2.get_y() +\n"
 				"        vector1.get_z() * vector2.get_z())\n")
 		.staticmethod("dot")
+
 		.def("cross",
 				&GPlatesApi::vector_cross,
 				(bp::arg("vector1"), bp::arg("vector2")),
@@ -412,7 +470,8 @@ export_vector_3d()
 				"  :param xyz: the vector (x,y,z) components\n"
 				"  :type xyz: sequence (such as list or tuple) of (float,float,float), or :class:`Vector3D`\n"
 				"  :rtype: :class:`Vector3D`\n"
-				"  :raises: UnableToNormaliseZeroVectorError if *xyz* is (0,0,0) (ie, has zero magnitude)\n"
+				"  :raises: UnableToNormaliseZeroVectorError if *xyz* is (0,0,0) "
+				"(ie, :meth:`has zero magnitude<is_zero_magnitude>`)\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -436,7 +495,8 @@ export_vector_3d()
 				"  :type y: float\n"
 				"  :param z: the *z* component of the 3D vector\n"
 				"  :type z: float\n"
-				"  :raises: UnableToNormaliseZeroVectorError if (x,y,z) is (0,0,0) (ie, has zero magnitude)\n"
+				"  :raises: UnableToNormaliseZeroVectorError if (x,y,z) is (0,0,0) "
+				"(ie, :meth:`has zero magnitude<is_zero_magnitude>`)\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -459,12 +519,15 @@ export_vector_3d()
 				"to_normalised() -> Vector3D\n"
 				"  Returns a new vector that is a normalised (unit length) version of this vector.\n"
 				"\n"
-				"  :raises: UnableToNormaliseZeroVectorError if this vector is (0,0,0) (ie, has zero magnitude)\n"
+				"  :raises: UnableToNormaliseZeroVectorError if this vector is (0,0,0) "
+				"(ie, :meth:`has zero magnitude<is_zero_magnitude>`)\n"
 				"\n"
+				"  If a vector is not :meth:`zero magnitude<is_zero_magnitude>` then it can return "
+				"a normalised version of itself:\n"
 				"  ::\n"
 				"\n"
-				"    vector = pygplates.Vector3D(...)\n"
-				"    normalised_vector = vector.to_normalised()\n"
+				"    if not vector.is_zero_magnitude():\n"
+				"        normalised_vector = vector.to_normalised()\n"
 				"\n"
 				"  **NOTE:** This does not normalise this vector. Instead it returns a new vector object "
 				"that is the equivalent of this vector but has a magnitude of 1.0.\n"
@@ -472,7 +535,7 @@ export_vector_3d()
 				"  This function is the equivalent of:\n"
 				"  ::\n"
 				"\n"
-				"    if vector.get_magnitude():\n"
+				"    if not vector.is_zero_magnitude():\n"
 				"        scale = 1.0 / vector.get_magnitude()\n"
 				"        normalised_vector = pygplates.Vector3D(\n"
 				"            scale * vector.get_x(),\n"
@@ -481,7 +544,7 @@ export_vector_3d()
 				"    else:\n"
 				"        raise pygplates.UnableToNormaliseZeroVectorError\n")
 		// Allow for American spelling (but we don't document it)...
-		.def("get_normalized",
+		.def("to_normalized",
 				&GPlatesApi::vector_get_normalised)
 
 		.def("get_x",
@@ -515,6 +578,15 @@ export_vector_3d()
 				"  ::\n"
 				"\n"
 				"    x, y, z = vector.to_xyz()\n")
+		.def("is_zero_magnitude",
+				&GPlatesMaths::Vector3D::is_zero_magnitude,
+				"is_zero_magnitude() -> bool\n"
+				"  Returns ``True`` if the magnitude of this vector is zero.\n"
+				"\n"
+				"  :rtype: bool\n"
+				"\n"
+				"  This method will also return ``True`` for tiny, non-zero magnitudes that "
+				"would cause :meth:`to_normalised` to raise *UnableToNormaliseZeroVectorError*.\n")
 		.def("get_magnitude",
 				&GPlatesMaths::Vector3D::magnitude,
 				"get_magnitude() -> float\n"

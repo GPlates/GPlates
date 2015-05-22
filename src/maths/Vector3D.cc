@@ -43,6 +43,16 @@ GPlatesMaths::Vector3D::Vector3D(
 {  }
 
 
+bool
+GPlatesMaths::Vector3D::is_zero_magnitude() const
+{
+	real_t mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
+
+	// Mirror the code in 'get_normalisation()'.
+	return (mag_sqrd > 0.0) ? false : true;
+}
+
+
 GPlatesMaths::UnitVector3D
 GPlatesMaths::Vector3D::get_normalisation() const
 {
