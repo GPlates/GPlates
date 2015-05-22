@@ -33,6 +33,10 @@
 
 #include "maths/GreatCircleArc.h"
 #include "maths/LatLonPoint.h"
+#include "maths/PointOnSphere.h"
+#include "maths/Real.h"
+#include "maths/Rotation.h"
+#include "maths/Vector3D.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -61,6 +65,13 @@ namespace GPlatesApi
 		return acos(great_circle_arc.dot_of_endpoints());
 	}
 
+	GPlatesMaths::Vector3D
+	great_circle_arc_get_great_circle_normal(
+			const GPlatesMaths::GreatCircleArc &great_circle_arc)
+	{
+		return GPlatesMaths::Vector3D(great_circle_arc.rotation_axis());
+	}
+
 	bp::tuple
 	great_circle_arc_get_rotation_axis(
 			const GPlatesMaths::GreatCircleArc &great_circle_arc)
@@ -80,6 +91,46 @@ namespace GPlatesApi
 				GPlatesMaths::make_lat_lon_point(GPlatesMaths::PointOnSphere(axis));
 
 		return bp::make_tuple(axis_lat_lon.latitude(), axis_lat_lon.longitude());
+	}
+
+	GPlatesMaths::PointOnSphere
+	great_circle_arc_get_arc_point(
+			const GPlatesMaths::GreatCircleArc &great_circle_arc,
+			const GPlatesMaths::Real &normalised_distance_from_start_point)
+	{
+		// If arc is zero length then all arc points are the same.
+		if (great_circle_arc.is_zero_length())
+		{
+			// Start and end points are the same.
+			return great_circle_arc.start_point();
+		}
+
+		if (normalised_distance_from_start_point < 0 ||
+			normalised_distance_from_start_point > 1)
+		{
+			// Raise the 'ValueError' python exception if outside range.
+			PyErr_SetString(PyExc_ValueError, "Normalised distance should be in the range [0,1]");
+			bp::throw_error_already_set();
+		}
+
+		// Return exactly the start or end point if requested.
+		// This avoids numerical precision differences due to rotating at 0 or 1.
+		if (normalised_distance_from_start_point == 0)
+		{
+			return great_circle_arc.start_point();
+		}
+		if (normalised_distance_from_start_point == 1)
+		{
+			return great_circle_arc.end_point();
+		}
+
+		// Rotation from start point to requested arc point.
+		const GPlatesMaths::Real angle_from_start_to_end = acos(great_circle_arc.dot_of_endpoints());
+		const GPlatesMaths::Rotation rotation = GPlatesMaths::Rotation::create(
+				great_circle_arc.rotation_axis(),
+				normalised_distance_from_start_point * angle_from_start_to_end);
+
+		return rotation * great_circle_arc.start_point();
 	}
 }
 
@@ -166,6 +217,29 @@ export_great_circle_arc()
 				"  :rtype: float\n"
 				"\n"
 				"  To convert to distance, multiply the result by the Earth radius.\n")
+		.def("get_great_circle_normal",
+				&GPlatesApi::great_circle_arc_get_great_circle_normal,
+				"get_great_circle_normal() -> Vector3D\n"
+				"  Return the unit vector normal direction of the great circle this arc lies on.\n"
+				"\n"
+				"  :returns: the unit-length 3D vector\n"
+				"  :rtype: :class:`Vector3D`\n"
+				"  :raises: IndeterminateArcRotationAxisError if arc is zero length\n"
+				"\n"
+				"  Note that this returns the same (x, y, z) result as :meth:`get_rotation_axis`, "
+				"but in the form of a :class:`Vector3D` instead of an (x, y, z) tuple.\n"
+				"\n"
+				"  Note that the normal to the great circle can be considered to be the tangential "
+				"direction (to the Earth's surface) at any point along the great circle arc that is most "
+				"pointing away from (perpendicular to) the direction of the arc (from start point "
+				"to end point).\n"
+				"\n"
+				"  The normal vector is the same direction as the :meth:`cross product<Vector3D.cross>` "
+				"of the start point and the end point. In fact it is equivalent to "
+				"``pygplates.Vector3D.cross(arc.start_point().to_xyz(), arc.end_point().to_xyz()).to_normalised()``.\n"
+				"\n"
+				"  If the arc start and end points are the same (if :meth:`is_zero_length` is ``True``) "
+				"then *IndeterminateArcRotationAxisError* is raised.\n")
 		.def("get_rotation_axis",
 				&GPlatesApi::great_circle_arc_get_rotation_axis,
 				"get_rotation_axis() -> x, y, z\n"
@@ -176,6 +250,9 @@ export_great_circle_arc()
 				"  :raises: IndeterminateArcRotationAxisError if arc is zero length\n"
 				"\n"
 				"  The rotation axis is the unit-length 3D vector (x,y,z) returned in the tuple.\n"
+				"\n"
+				"  The rotation axis direction is such that it rotates the start point towards the "
+				"end point along the arc (assuming a right-handed coordinate system).\n"
 				"\n"
 				"  If the arc start and end points are the same (if :meth:`is_zero_length` is ``True``) "
 				"then *IndeterminateArcRotationAxisError* is raised.\n")
@@ -190,8 +267,29 @@ export_great_circle_arc()
 				"\n"
 				"  The rotation axis is the (latitude, longitude) returned in the tuple.\n"
 				"\n"
+				"  The rotation axis direction is such that it rotates the start point towards the "
+				"end point along the arc (assuming a right-handed coordinate system).\n"
+				"\n"
 				"  If the arc start and end points are the same (if :meth:`is_zero_length` is ``True``) "
 				"then *IndeterminateArcRotationAxisError* is raised.\n")
+		.def("get_arc_point",
+				&GPlatesApi::great_circle_arc_get_arc_point,
+				"get_arc_point(normalised_distance_from_start_point) -> PointOnSphere\n"
+				"  Return a point on this arc.\n"
+				"\n"
+				"  :param normalised_distance_from_start_point: distance from start point where "
+				"zero is the start point, one is the end point and between zero and one are points "
+				"along the arc\n"
+				"  :type normalised_distance_from_start_point: float\n"
+				"  :rtype: :class:`PointOnSphere`\n"
+				"  :raises: ValueError if arc *normalised_distance_from_start_point* is not in the "
+				"range [0,1]\n"
+				"\n"
+				"  If *normalised_distance_from_start_point* is zero then the start point is returned. "
+				"If *normalised_distance_from_start_point* is one then the end point is returned. "
+				"Values of *normalised_distance_from_start_point* between zero and one return points on the arc. "
+				"If *normalised_distance_from_start_point* is outside the range from zero to one then "
+				"then *ValueError* is raised.\n")
 		// Due to the numerical tolerance in comparisons we cannot make hashable.
 		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 		.def(GPlatesApi::NoHashDefVisitor(false, true))

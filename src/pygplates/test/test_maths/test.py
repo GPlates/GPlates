@@ -278,7 +278,13 @@ class GreatCircleArcCase(unittest.TestCase):
         arc_length = self.gca.get_arc_length()
         self.assertTrue(arc_length > 0.5 * math.pi - 1e-6 and arc_length < 0.5 * math.pi + 1e-6)
         self.assertTrue(self.gca.get_rotation_axis() == (1, 0, 0))
+        self.assertTrue(self.gca.get_great_circle_normal() == (1, 0, 0))
         self.assertTrue(self.gca.get_rotation_axis_lat_lon() == (0, 0))
+        
+        self.assertTrue(self.gca.get_arc_point(0) == self.gca.get_start_point())
+        self.assertTrue(self.gca.get_arc_point(1) == self.gca.get_end_point())
+        self.assertTrue(self.gca.get_arc_point(0.5) ==
+                pygplates.PointOnSphere((pygplates.Vector3D(self.start_point.to_xyz()) + pygplates.Vector3D(self.end_point.to_xyz())).to_normalised().to_xyz()))
     
     def test_zero_length(self):
         self.assertFalse(self.gca.is_zero_length())
@@ -351,6 +357,15 @@ class Vector3DCase(unittest.TestCase):
         self.assertTrue(self.vector == pygplates.Vector3D(self.xyz))
         x, y, z = self.xyz
         self.assertTrue(self.vector == pygplates.Vector3D(x, y, z))
+    
+    def test_constants(self):
+        self.assertTrue(pygplates.Vector3D.zero == pygplates.Vector3D(0,0,0))
+        self.assertTrue(pygplates.Vector3D.x_axis == pygplates.Vector3D(1,0,0))
+        self.assertTrue(pygplates.Vector3D.y_axis == pygplates.Vector3D(0,1,0))
+        self.assertTrue(pygplates.Vector3D.z_axis == pygplates.Vector3D(0,0,1))
+        self.assertTrue(
+                2 * pygplates.Vector3D.x_axis + 3 * pygplates.Vector3D.y_axis + 4 * pygplates.Vector3D.z_axis ==
+                pygplates.Vector3D(2,3,4))
 
     def test_get(self):
         self.assertTrue(self.vector.get_x() == self.xyz[0])
