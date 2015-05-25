@@ -30,21 +30,22 @@
 #include <boost/optional.hpp>
 
 #include "FiniteRotation.h"
+
+#include "ConstGeometryOnSphereVisitor.h"
+#include "GreatCircleArc.h"
+#include "GreatCircle.h"
 #include "HighPrecision.h"
-#include "UnitVector3D.h"
-#include "Vector3D.h"
+#include "IndeterminateResultException.h"
+#include "InvalidOperationException.h"
+#include "LatLonPoint.h"
 #include "MathsUtils.h"
 #include "MultiPointOnSphere.h"
 #include "PointOnSphere.h"
-#include "PolylineOnSphere.h"
 #include "PolygonOnSphere.h"
-#include "GreatCircleArc.h"
-#include "GreatCircle.h"
+#include "PolylineOnSphere.h"
 #include "SmallCircle.h"
-#include "LatLonPoint.h"
-#include "InvalidOperationException.h"
-#include "IndeterminateResultException.h"
-#include "ConstGeometryOnSphereVisitor.h"
+#include "UnitVector3D.h"
+#include "Vector3D.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -216,13 +217,8 @@ const GPlatesMaths::UnitVector3D
 GPlatesMaths::FiniteRotation::operator*(
 		const UnitVector3D &unit_vect) const
 {
-	Vector3D v(unit_vect);
-	const Vector3D &uq_v = d_unit_quat.vector_part();
-
-	Vector3D v_rot =
-	 d_d * v +
-	 (2.0 * dot(uq_v, v)) * uq_v +
-	 cross(d_e, v);
+	// Re-use the operator associated with 'Vector3D'.
+	Vector3D v_rot = operator*(Vector3D(unit_vect));
 
 	// FIXME: This both sucks *and* blows.  All this stuff needs a cleanup.
 	real_t mag_sqrd = v_rot.magSqrd();
@@ -250,6 +246,16 @@ GPlatesMaths::FiniteRotation::operator*(
 	// Now the CPU time is spent mostly in the quaternion-vector multiply above instead of being
 	// dwarfed by the validity check.
 	return UnitVector3D(v_rot.x(), v_rot.y(), v_rot.z(), false/*check_validity*/);
+}
+
+
+const GPlatesMaths::Vector3D
+GPlatesMaths::FiniteRotation::operator*(
+		const Vector3D &vect) const
+{
+	const Vector3D &uq_v = d_unit_quat.vector_part();
+
+	return d_d * vect + (2.0 * dot(uq_v, vect)) * uq_v + cross(d_e, vect);
 }
 
 

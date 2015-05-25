@@ -118,6 +118,10 @@ class FiniteRotationCase(unittest.TestCase):
     
     # Attempt to rotate each supported geometry type - an error will be raised if not supported...
     
+    def test_rotate_vector(self):
+        rotated_vector = self.finite_rotation * pygplates.Vector3D(1, 0, 0)
+        self.assertTrue(rotated_vector == pygplates.Vector3D(0, 1, 0))
+    
     def test_rotate_great_circle_arc(self):
         rotated_great_circle_arc = self.finite_rotation * pygplates.GreatCircleArc(
                 pygplates.PointOnSphere(1, 0, 0),

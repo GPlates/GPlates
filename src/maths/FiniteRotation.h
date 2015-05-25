@@ -44,6 +44,7 @@ namespace GPlatesMaths
 {
 	// Forward declaration for the member function 'FiniteRotation::operator*'.
 	class UnitVector3D;
+	class Vector3D;
 
 	// Forward declarations for the non-member function 'operator*'.
 	class MultiPointOnSphere;
@@ -146,6 +147,15 @@ namespace GPlatesMaths
 		const UnitVector3D
 		operator*(
 				const UnitVector3D &unit_vect) const;
+
+		/**
+		 * Apply this rotation to a vector @a vect.
+		 *
+		 * This operation is not supposed to be symmetrical.
+		 */
+		const Vector3D
+		operator*(
+				const Vector3D &vect) const;
 
 		bool
 		operator==(

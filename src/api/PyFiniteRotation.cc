@@ -43,6 +43,7 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/UnitQuaternion3D.h"
 #include "maths/UnitVector3D.h"
+#include "maths/Vector3D.h"
 
 #include "property-values/GeoTimeInstant.h"
 
@@ -383,6 +384,7 @@ export_finite_rotation()
 					"=========================== =======================================================================\n"
 					"Operation                    Result\n"
 					"=========================== =======================================================================\n"
+					"``fr * vector``              Rotates :class:`Vector3D` *vector* using finite rotation *fr*\n"
 					"``fr * point``               Rotates :class:`PointOnSphere` *point* using finite rotation *fr*\n"
 					"``fr * multi_point``         Rotates :class:`MultiPointOnSphere` *multi_point* using finite rotation *fr*\n"
 					"``fr * polyline``            Rotates :class:`PolylineOnSphere` *polyline* using finite rotation *fr*\n"
@@ -879,6 +881,7 @@ export_finite_rotation()
 		// Multiply two finite rotations...
 		.def("__mul__", compose)
 		// Rotations...
+		.def(bp::self * bp::other<GPlatesMaths::Vector3D>())
 		.def(bp::self * bp::other<GPlatesMaths::GreatCircleArc>())
 		.def(bp::self * bp::other<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>())
 		.def(bp::self * bp::other<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>())
