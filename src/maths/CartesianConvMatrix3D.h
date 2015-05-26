@@ -34,6 +34,8 @@
 #define _GPLATES_MATHS_CARTESIANCONVMATRIX3D_H_
 
 #include <ostream>
+#include <boost/tuple/tuple.hpp>
+
 #include "types.h"  /* real_t */
 #include "PointOnSphere.h"
 #include "Vector3D.h"
@@ -41,14 +43,88 @@
 
 namespace GPlatesMaths
 {
+	class CartesianConvMatrix3D;
+
+
+	/**
+	 * Converts a 3D vector in the global geocentric coordinate system to a 3D vector
+	 * in a local North/East/Down coordinate frame (determined by @a ccm).
+	 */
+	Vector3D
+	convert_from_geocentric_to_north_east_down(
+			const CartesianConvMatrix3D &ccm,
+			const Vector3D &geocentric_vec);
+
+	/**
+	 * Converts a 3D vector in a local North/East/Down coordinate frame (determined by @a ccm)
+	 * to a 3D vector in the global geocentric coordinate system.
+	 */
+	Vector3D
+	convert_from_north_east_down_to_geocentric(
+			const CartesianConvMatrix3D &ccm,
+			const Vector3D &north_east_down_vec);
+
+	//
+	// The following applies to subsequent functions...
+	//
+	// Magnitude, azimuth and inclination are related to the North/East/Down coordinate frame
+	// in the following way.
+	// For a 3D vector in the North/East/Down coordinate frame:
+	//  - magnitude is the length of the 3D vector,
+	//  - azimuth is the angle (in radians) clockwise (East-wise) from North (from 0 to 2*PI),
+	//  - inclination is the angle (in radians) in the downward direction (eg, PI/2 if vector aligned
+	//    with Down axis, -PI/2 if aligned with up direction and 0 if vector in tangent plane).
+	//
+
+
+	/**
+	 * Converts a 3D vector in the global geocentric coordinate system to a tuple of
+	 * (magnitude, azimuth, inclination) coordinates (in a local North/East/Down coordinate frame
+	 * determined by @a ccm).
+	 */
+	boost::tuple<real_t/*magnitude*/, real_t/*azimuth*/, real_t/*inclination*/>
+	convert_from_geocentric_to_magnitude_azimuth_inclination(
+			const CartesianConvMatrix3D &ccm,
+			const Vector3D &geocentric_vec);
+
+	/**
+	 * Converts a tuple of (magnitude, azimuth, inclination) coordinates (in a local North/East/Down
+	 * coordinate frame determined by @a ccm) to a 3D vector in the global geocentric coordinate system.
+	 */
+	Vector3D
+	convert_from_magnitude_azimuth_inclination_to_geocentric(
+			const CartesianConvMatrix3D &ccm,
+			const boost::tuple<real_t/*magnitude*/, real_t/*azimuth*/, real_t/*inclination*/> &
+					magnitude_azimuth_inclination);
+
+
+	/**
+	 * Converts a 3D vector in a local North/East/Down coordinate frame to a tuple of
+	 * (magnitude, azimuth, inclination) coordinates in the same coordinate frame.
+	 */
+	boost::tuple<real_t/*magnitude*/, real_t/*azimuth*/, real_t/*inclination*/>
+	convert_from_north_east_down_to_magnitude_azimuth_inclination(
+			const Vector3D &north_east_down_vec);
+
+	/**
+	 * Converts a tuple of (magnitude, azimuth, inclination) coordinates in a local North/East/Down
+	 * coordinate frame to a 3D vector in the coordinate frame.
+	 */
+	Vector3D
+	convert_from_magnitude_azimuth_inclination_to_north_east_down(
+			const boost::tuple<real_t/*magnitude*/, real_t/*azimuth*/, real_t/*inclination*/> &
+					magnitude_azimuth_inclination);
+
+
 	/** 
-	 * A 3x3 matrix used to convert the components of a global Cartesian
+	 * A 3x3 matrix used to convert the components of a global geocentric Cartesian
 	 * Vector3D (x, y, z) into the components of a local Cartesian Vector3D
-	 * (n, e, d) at a given PointOnSphere.
+	 * (north, east, down) at a given PointOnSphere.
 	 */
 	class CartesianConvMatrix3D
 	{
 		public:
+
 			/**
 			 * Create a cartesian conversion matrix to operate at
 			 * the PointOnSphere @a pos.
@@ -57,76 +133,32 @@ namespace GPlatesMaths
 			CartesianConvMatrix3D(
 					const PointOnSphere &pos);
 
-			real_t
-			nx() const
+
+			const Vector3D &
+			north() const
 			{
-				return _nx;
+				return d_north;
 			}
 
-			real_t
-			ny() const
+
+			const Vector3D &
+			east() const
 			{
-				return _ny;
+				return d_east;
 			}
 
-			real_t
-			nz() const
-			{
-				return _nz;
-			}
 
-			real_t
-			ex() const
+			const Vector3D &
+			down() const
 			{
-				return _ex;
-			}
-
-			real_t
-			ey() const
-			{
-				return _ey;
-			}
-
-			real_t
-			ez() const
-			{
-				return _ez;
-			}
-
-			real_t
-			dx() const
-			{
-				return _dx;
-			}
-
-			real_t
-			dy() const
-			{
-				return _dy;
-			}
-
-			real_t
-			dz() const
-			{
-				return _dz;
+				return d_down;
 			}
 
 		private:
-			real_t _nx, _ny, _nz;
-			real_t _ex, _ey, _ez;
-			real_t _dx, _dy, _dz;
+			Vector3D d_north;
+			Vector3D d_east;
+			Vector3D d_down;
 	};
-
-
-	Vector3D
-	operator*(
-			const CartesianConvMatrix3D &ccm,
-			const Vector3D &v);
-
-	Vector3D
-	inverse_multiply(
-			const CartesianConvMatrix3D &ccm,
-			const Vector3D &v);
 }
 
 #endif  // _GPLATES_MATHS_CARTESIANCONVMATRIX3D_H_

@@ -116,7 +116,7 @@ GPlatesMaths::convert_vector_from_xyz_to_colat_lon(
 	CartesianConvMatrix3D ccm(point);
 
 	// Cartesian (n, e, d) 
-	Vector3D vector_ned = ccm * vector_xyz;
+	Vector3D vector_ned = convert_from_geocentric_to_north_east_down(ccm, vector_xyz);
 
 	real_t colat = -vector_ned.x();
 	real_t lon =    vector_ned.y();
@@ -136,7 +136,7 @@ GPlatesMaths::convert_vector_from_colat_lon_to_xyz(
 			-vector_colat_lon.get_vector_colatitude(),
 			vector_colat_lon.get_vector_longitude(),
 			0);
-	return inverse_multiply( ccm , vector_ned );
+	return convert_from_north_east_down_to_geocentric(ccm , vector_ned);
 }
 
 
@@ -149,12 +149,13 @@ GPlatesMaths::calculate_vector_components_magnitude_angle(
 	CartesianConvMatrix3D ccm(point);
 
 	// Cartesian (n, e, d) 
-	Vector3D vector_ned = ccm * vector_xyz;
+	Vector3D vector_ned = convert_from_geocentric_to_north_east_down(ccm, vector_xyz);
 
-	// real_t colat = -vector_ned.x();
 	real_t lat   =  vector_ned.x();
 	real_t lon   =  vector_ned.y();
 
+	// Note that this goes in the opposite direction from 'azimuth' and is -180/180 at West and is
+	// counter-clockwise (South-wise), whereas 'azimuth' is 0/360 at North and is clockwise (East-wise).
 	real_t angle = atan2( lat , lon );
 
 	real_t magnitude = vector_ned.magnitude();
@@ -168,58 +169,14 @@ GPlatesMaths::calculate_vector_components_magnitude_and_azimuth(
 		const GPlatesMaths::PointOnSphere &point, 
 		const Vector3D &vector_xyz)
 {
-	// Matrix to convert between different Cartesian representations.
-	CartesianConvMatrix3D ccm(point);
+	const boost::tuple<real_t, real_t, real_t> magnitude_azimuth_inclination =
+			convert_from_geocentric_to_magnitude_azimuth_inclination(
+					CartesianConvMatrix3D(point),
+					vector_xyz);
 
-	// Cartesian (n, e, d) 
-	Vector3D vector_ned = ccm * vector_xyz;
-
-	double vx = -vector_ned.x().dval();
-	double vy = vector_ned.y().dval();
-
-	// compute the velocity magnitude
-
-	double magnitude = std::sqrt( ( vx * vx ) + ( vy * vy ) );
-
-	// compute the azimuth
-
-	double azimuth = 0;
-
-	if ( vy <= 0 )
-	{
-		if ( vx < 0 )
-		{
-			azimuth = std::atan( vy / vx );
-			azimuth = 2 * PI - azimuth;
-		}
-		else if ( vx > 0 )
-		{
-			azimuth = std::atan( -vy / vx );
-			azimuth = PI + azimuth;
-		}
-		else
-		{
-			azimuth = 3 * HALF_PI;
-		}
-	}
-	else
-	{
-		if ( vx < 0)
-		{
-			azimuth = std::atan( -vy / vx );
-		}
-		else if ( vx > 0 )
-		{
-			azimuth = std::atan( vy / vx );
-			azimuth = PI - azimuth;
-		}
-		else
-		{
-			azimuth = HALF_PI;
-		}
-	}
-
-	return std::make_pair(real_t(magnitude), real_t(azimuth));
+	return std::make_pair(
+			boost::get<0>(magnitude_azimuth_inclination)/*magnitude*/,
+			boost::get<1>(magnitude_azimuth_inclination)/*azimuth*/);
 }
 
 
