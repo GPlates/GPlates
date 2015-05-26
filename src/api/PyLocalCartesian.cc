@@ -23,6 +23,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <iterator>
+#include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -35,10 +38,10 @@
 #include "global/python.h"
 // This is not included by <boost/python.hpp>.
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
-#include <boost/python/slice.hpp>
 #include <boost/python/stl_iterator.hpp>
 
 #include "maths/CartesianConvMatrix3D.h"
+#include "maths/PointOnSphere.h"
 #include "maths/Vector3D.h"
 
 
@@ -49,42 +52,81 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
-	bp::object
-	local_cartesian_eq(
-			const GPlatesMaths::CartesianConvMatrix3D &local_cartesian,
-			bp::object other)
+	GPlatesMaths::Vector3D
+	local_cartesian_xyz_from_geocentric_to_north_east_down(
+			const GPlatesMaths::CartesianConvMatrix3D &ccm,
+			const GPlatesMaths::Real &x,
+			const GPlatesMaths::Real &y,
+			const GPlatesMaths::Real &z)
 	{
-		bp::extract<const GPlatesMaths::CartesianConvMatrix3D &> extract_other_lc_instance(other);
-		// Prevent equality comparisons between CartesianConvMatrix3D.
-		if (extract_other_lc_instance.check())
+		return GPlatesMaths::convert_from_geocentric_to_north_east_down(
+				ccm,
+				GPlatesMaths::Vector3D(x, y, z));
+	}
+
+	GPlatesMaths::Vector3D
+	local_cartesian_convert_xyz_from_geocentric_to_north_east_down(
+			const GPlatesMaths::PointOnSphere &local_origin,
+			const GPlatesMaths::Real &x,
+			const GPlatesMaths::Real &y,
+			const GPlatesMaths::Real &z)
+	{
+		return GPlatesMaths::convert_from_geocentric_to_north_east_down(
+				GPlatesMaths::CartesianConvMatrix3D(local_origin),
+				GPlatesMaths::Vector3D(x, y, z));
+	}
+
+	GPlatesMaths::Vector3D
+	local_cartesian_convert_from_geocentric_to_north_east_down(
+			const GPlatesMaths::PointOnSphere &local_origin,
+			const GPlatesMaths::Vector3D &vector)
+	{
+		return GPlatesMaths::convert_from_geocentric_to_north_east_down(
+				GPlatesMaths::CartesianConvMatrix3D(local_origin),
+				vector);
+	}
+
+	bp::list
+	local_cartesian_convert_sequence_from_geocentric_to_north_east_down(
+			bp::object local_origins_object, // Any python sequence (eg, list, tuple).
+			bp::object vectors_object) // Any python sequence (eg, list, tuple).
+	{
+		// Begin/end iterators over the python points sequence.
+		bp::stl_input_iterator<GPlatesMaths::PointOnSphere>
+				local_origins_begin(local_origins_object),
+				local_origins_end;
+		// Copy into a vector.
+ 		std::vector<GPlatesMaths::PointOnSphere> local_origins;
+		std::copy(local_origins_begin, local_origins_end, std::back_inserter(local_origins));
+
+		// Begin/end iterators over the python vectors sequence.
+		bp::stl_input_iterator<GPlatesMaths::Vector3D>
+				vectors_begin(vectors_object),
+				vectors_end;
+		// Copy into a vector.
+ 		std::vector<GPlatesMaths::Vector3D> vectors;
+		std::copy(vectors_begin, vectors_end, std::back_inserter(vectors));
+
+		if (local_origins.size() != vectors.size())
 		{
-			PyErr_SetString(PyExc_TypeError,
-					"Cannot equality compare (==, !=) LocalCartesian");
+			PyErr_SetString(PyExc_ValueError, "'local_origins' and 'vectors' should be the same size");
 			bp::throw_error_already_set();
 		}
 
-		// Return NotImplemented so python can continue looking for a match
-		// (eg, in case 'other' is a class that implements relational operators with CartesianConvMatrix3D).
-		//
-		// NOTE: This will most likely fall back to python's default handling which uses 'id()'
-		// and hence will compare based on *python* object address rather than *C++* object address.
-		return bp::object(bp::handle<>(bp::borrowed(Py_NotImplemented)));
-	}
+		bp::list ned_vectors;
 
-	bp::object
-	local_cartesian_ne(
-			const GPlatesMaths::CartesianConvMatrix3D &local_cartesian,
-			bp::object other)
-	{
-		bp::object ne_result = local_cartesian_eq(local_cartesian, other);
-		if (ne_result.ptr() == Py_NotImplemented)
+		const unsigned int num_vectors = vectors.size();
+		for (unsigned int n = 0; n < num_vectors; ++n)
 		{
-			// Return NotImplemented.
-			return ne_result;
+			const GPlatesMaths::Vector3D ned_vector =
+					GPlatesMaths::convert_from_geocentric_to_north_east_down(
+							GPlatesMaths::CartesianConvMatrix3D(local_origins[n]),
+							vectors[n]);
+
+			ned_vectors.append(ned_vector);
 		}
 
-		// Invert the result.
-		return bp::object(!bp::extract<bool>(ne_result));
+		return ned_vectors;
 	}
 }
 
@@ -109,23 +151,147 @@ export_local_cartesian()
 					"LocalCartesian",
 					"A local cartesian coordinate system at a point on the sphere.\n"
 					"\n"
-					"LocalCartesian is *not* equality (``==``, ``!=``) comparable (will raise ``TypeError`` "
-					"when compared) and is not hashable (cannot be used as a key in a ``dict``).\n",
+					"Local cartesians are equality (``==``, ``!=``) comparable (but not hashable - "
+					"cannot be used as a key in a ``dict``).\n",
 					bp::init<
 						// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
 						// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
 						const GPlatesMaths::PointOnSphere &>(
-							(bp::arg("point")),
-							"__init__(point)\n"
+							(bp::arg("local_origin")),
+							"__init__(local_origin)\n"
 							"  Create a local cartesian coordinate system at a point on the sphere.\n"
 							"\n"
-							"  :param point: the origin of the local coordinate system\n"
-							"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple "
+							"  :param local_origin: the origin of the local coordinate system\n"
+							"  :type local_origin: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple "
 							"(latitude,longitude), in degrees, or tuple (x,y,z)\n"
 							"\n"
 							"  ::\n"
 							"\n"
-							"    local_cartesian = pygplates.LocalCartesian(point)\n"))
+							"    local_cartesian = pygplates.LocalCartesian(local_origin)\n"))
+
+		// NOTE: This should be defined *before* the following (more restrictive overload) since this
+		// overload matches generic bp::object. This is because boost-python attempts to resolve
+		// overloaded functions in the reverse order in which they're declared...
+		.def("convert_from_geocentric_to_north_east_down",
+				&GPlatesApi::local_cartesian_convert_sequence_from_geocentric_to_north_east_down,
+				(bp::arg("local_origins"), bp::arg("vectors")),
+				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
+				"convert_from_geocentric_to_north_east_down(...) -> Vector3D\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"[*staticmethod*] This function can be called in more than one way...\n"
+				"\n"
+				// Specific overload signature...
+				"convert_from_geocentric_to_north_east_down(local_origins, vectors) -> list\n"
+				"  Converts a geocentric *vector* to a cartesian vector in the local "
+				"North/East/Down coordinate system located at *local_origin*.\n"
+				"\n"
+				"  :param local_origins: sequence of origins of local cartesian systems.\n"
+				"  :type local_origins: Any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
+				"tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :param vectors: the geocentric vectors\n"
+				"  :type vector: Any sequence of :class:`Vector3D` or tuple (x,y,z)\n"
+				"  :rtype: list of :class:`Vector3D`\n"
+				"\n"
+				"  Convert each geocentric vector in a list to the corresponding local North/East/Down "
+				"coordinate system (specified as a local origin) in another list:\n"
+				"  ::\n"
+				"\n"
+				"    local_origins = [...]\n"
+				"    geocentric_vectors = [...]\n"
+				"    north_east_down_vectors = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(\n"
+				"        local_origins, geocentric_vectors)\n")
+		.def("convert_from_geocentric_to_north_east_down",
+				&GPlatesApi::local_cartesian_convert_from_geocentric_to_north_east_down,
+				(bp::arg("local_origin"), bp::arg("vector")),
+				// Specific overload signature...
+				"convert_from_geocentric_to_north_east_down(local_origin, vector) -> Vector3D\n"
+				"  Converts a geocentric *vector* to a cartesian vector in the local "
+				"North/East/Down coordinate system located at *local_origin*.\n"
+				"\n"
+				"  :param local_origin: origin of local cartesian system.\n"
+				"  :type local_origin: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
+				"  :param vector: the geocentric vector\n"
+				"  :type vector: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
+				"  :rtype: :class:`Vector3D`\n"
+				"\n"
+				"  Convert a geocentric vector to the local North/East/Down coordinate system "
+				"located at latitude/longitude (0, 0) on the globe:\n"
+				"  ::\n"
+				"\n"
+				"    north_east_down_vector = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(\n"
+				"        (0, 0), geocentric_vector)\n")
+		.def("convert_from_geocentric_to_north_east_down",
+				&GPlatesApi::local_cartesian_convert_xyz_from_geocentric_to_north_east_down,
+				(bp::arg("local_origin"), bp::arg("x"), bp::arg("y"), bp::arg("z")),
+				// Specific overload signature...
+				"convert_from_geocentric_to_north_east_down(local_origin, x, y, z) -> Vector3D\n"
+				"  Converts the geocentric vector (x, y, z) to a cartesian vector in the local "
+				"North/East/Down coordinate system located at *local_origin*.\n"
+				"\n"
+				"  :param local_origin: origin of local cartesian system.\n"
+				"  :type local_origin: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
+				", in degrees, or tuple (x,y,z)\n"
+				"  :param x: the *x* component of the geocentric vector\n"
+				"  :type x: float\n"
+				"  :param y: the *y* component of the geocentric vector\n"
+				"  :type y: float\n"
+				"  :param z: the *z* component of the geocentric vector\n"
+				"  :type z: float\n"
+				"  :rtype: :class:`Vector3D`\n"
+				"\n"
+				"  Convert the geocentric vector (2, 1, 0) to the local North/East/Down coordinate system "
+				"located at latitude/longitude (0, 0) on the globe:\n"
+				"  ::\n"
+				"\n"
+				"    north_east_down_vector = pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(\n"
+				"        (0,0), 2, 1, 0)\n")
+		.staticmethod("convert_from_geocentric_to_north_east_down")
+		.def("from_geocentric_to_north_east_down",
+				&GPlatesMaths::convert_from_geocentric_to_north_east_down,
+				(bp::arg("vector")),
+				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
+				"from_geocentric_to_north_east_down(...) -> Vector3D\n"
+				"This method can be called in more than one way...\n"
+				"\n"
+				// Specific overload signature...
+				"from_geocentric_to_north_east_down(vector) -> Vector3D\n"
+				"  Converts the geocentric *vector* to a local North/East/Down cartesian vector.\n"
+				"\n"
+				"  :param vector: the geocentric vector\n"
+				"  :type vector: :class:`Vector3D`, or sequence (such as list or tuple) of (float,float,float)\n"
+				"  :rtype: :class:`Vector3D`\n"
+				"\n"
+				"  Convert a geocentric vector to the local North/East/Down coordinate system "
+				"located at latitude/longitude (0, 0) on the globe:\n"
+				"  ::\n"
+				"\n"
+				"    north_east_down = pygplates.LocalCartesian((0,0))\n"
+				"    north_east_down_vector = north_east_down.from_geocentric_to_north_east_down(geocentric_vector)\n")
+		.def("from_geocentric_to_north_east_down",
+				&GPlatesApi::local_cartesian_xyz_from_geocentric_to_north_east_down,
+				(bp::arg("x"), bp::arg("y"), bp::arg("z")),
+				// Specific overload signature...
+				"from_geocentric_to_north_east_down(x, y, z) -> Vector3D\n"
+				"  Converts the geocentric vector (x, y, z) to a local North/East/Down cartesian vector.\n"
+				"\n"
+				"  :param x: the *x* component of the geocentric vector\n"
+				"  :type x: float\n"
+				"  :param y: the *y* component of the geocentric vector\n"
+				"  :type y: float\n"
+				"  :param z: the *z* component of the geocentric vector\n"
+				"  :type z: float\n"
+				"  :rtype: :class:`Vector3D`\n"
+				"\n"
+				"  Convert the geocentric vector (2, 1, 0) to the local North/East/Down coordinate system "
+				"located at latitude/longitude (0, 0) on the globe:\n"
+				"  ::\n"
+				"\n"
+				"    north_east_down = pygplates.LocalCartesian((0,0))\n"
+				"    north_east_down_vector = north_east_down.from_geocentric_to_north_east_down(2, 1, 0)\n")
+
 		.def("get_north",
 				&GPlatesMaths::CartesianConvMatrix3D::north,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -135,7 +301,13 @@ export_local_cartesian()
 				"  :rtype: :class:`Vector3D`\n"
 				"\n"
 				"  The North axis is the tangential vector (to the unit globe) that is most "
-				"Northward pointing. It has unit magnitude.\n")
+				"Northward pointing. It has unit magnitude.\n"
+				"\n"
+				"  Get the North axis of the local cartesian system located at latitude/longitude (0, 0) on the globe:\n"
+				"  ::\n"
+				"\n"
+				"    north_east_down = pygplates.LocalCartesian((0,0))\n"
+				"    north = north_east_down.get_north()\n")
 		.def("get_east",
 				&GPlatesMaths::CartesianConvMatrix3D::east,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -145,7 +317,13 @@ export_local_cartesian()
 				"  :rtype: :class:`Vector3D`\n"
 				"\n"
 				"  The East axis is the tangential vector (to the unit globe) that is most "
-				"Eastward pointing. It has unit magnitude.\n")
+				"Eastward pointing. It has unit magnitude.\n"
+				"\n"
+				"  Get the East axis of the local cartesian system located at latitude/longitude (0, 0) on the globe:\n"
+				"  ::\n"
+				"\n"
+				"    north_east_down = pygplates.LocalCartesian((0,0))\n"
+				"    east = north_east_down.get_east()\n")
 		.def("get_down",
 				&GPlatesMaths::CartesianConvMatrix3D::down,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -154,13 +332,19 @@ export_local_cartesian()
 				"\n"
 				"  :rtype: :class:`Vector3D`\n"
 				"\n"
-				"  The Down axis points at the centre of the globe. It has unit magnitude.\n")
-		// We prevent equality comparisons since we don't have C++ equality comparison and users
-		// might expect a LocalCartesian equality operator to compare by value instead of object identity.
-		// Also make unhashable since user will also expect hashing to be based on object value (not identity).
+				"  The Down axis points at the centre of the globe. It has unit magnitude.\n"
+				"\n"
+				"  Get the Down axis of the local cartesian system located at latitude/longitude (0, 0) on the globe:\n"
+				"  ::\n"
+				"\n"
+				"    north_east_down = pygplates.LocalCartesian((0,0))\n"
+				"    down = north_east_down.get_down()\n")
+		// Comparisons...
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
-		.def("__eq__", &GPlatesApi::local_cartesian_eq)
-		.def("__ne__", &GPlatesApi::local_cartesian_ne)
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
 	;
 
 	// Enable boost::optional<CartesianConvMatrix3D> to be passed to and from python.

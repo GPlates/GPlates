@@ -159,6 +159,29 @@ namespace GPlatesMaths
 			Vector3D d_east;
 			Vector3D d_down;
 	};
+
+
+	inline
+	bool
+	operator==(
+			const CartesianConvMatrix3D &ccm1,
+			const CartesianConvMatrix3D &ccm2)
+	{
+		return
+			ccm1.north() == ccm2.north() &&
+			ccm1.east() == ccm2.east() &&
+			ccm1.down() == ccm2.down();
+	}
+
+
+	inline
+	bool
+	operator!=(
+			const CartesianConvMatrix3D &ccm1,
+			const CartesianConvMatrix3D &ccm2)
+	{
+		return !operator==(ccm1, ccm2);
+	}
 }
 
 #endif  // _GPLATES_MATHS_CARTESIANCONVMATRIX3D_H_

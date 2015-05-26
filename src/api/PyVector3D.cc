@@ -152,42 +152,30 @@ namespace GPlatesApi
 	const GPlatesMaths::Vector3D vector_z_axis(0, 0, 1);
 
 
-	namespace Implementation
-	{
-		GPlatesMaths::Vector3D
-		vector_extract_vector(
-				bp::object vector_object)
-		{
-			// There is a from-python converter from the sequence(x,y,z) that will get matched by this...
-			bp::extract<GPlatesMaths::Vector3D> extract_vector(vector_object);
-			if (extract_vector.check())
-			{
-				return extract_vector();
-			}
-
-			PyErr_SetString(PyExc_TypeError, "Expected sequence (x,y,z) or Vector3D");
-			bp::throw_error_already_set();
-
-			// Shouldn't be able to get here.
-			return GPlatesMaths::Vector3D();
-		}
-	}
-
 	boost::shared_ptr<GPlatesMaths::Vector3D>
 	vector_create(
 			bp::object vector_object)
 	{
-		return boost::shared_ptr<GPlatesMaths::Vector3D>(
-				new GPlatesMaths::Vector3D(
-						Implementation::vector_extract_vector(vector_object)));
+		// There is a from-python converter from the sequence(x,y,z) that will get matched by this...
+		bp::extract<GPlatesMaths::Vector3D> extract_vector(vector_object);
+		if (extract_vector.check())
+		{
+			return boost::shared_ptr<GPlatesMaths::Vector3D>(
+					new GPlatesMaths::Vector3D(extract_vector()));
+		}
+
+		PyErr_SetString(PyExc_TypeError, "Expected sequence (x,y,z) or Vector3D");
+		bp::throw_error_already_set();
+
+		// Shouldn't be able to get here.
+		return boost::shared_ptr<GPlatesMaths::Vector3D>();
 	}
 
 	GPlatesMaths::Vector3D
 	vector_get_normalised(
-			bp::object vector_object)
+			const GPlatesMaths::Vector3D &vector)
 	{
-		return GPlatesMaths::Vector3D(
-				Implementation::vector_extract_vector(vector_object).get_normalisation());
+		return GPlatesMaths::Vector3D(vector.get_normalisation());
 	}
 
 	GPlatesMaths::Vector3D
@@ -202,34 +190,30 @@ namespace GPlatesApi
 
 	GPlatesMaths::Real
 	vector_angle_between(
-			bp::object vector1_object,
-			bp::object vector2_object)
+			const GPlatesMaths::Vector3D &vector1,
+			const GPlatesMaths::Vector3D &vector2)
 	{
 		// Get normalised versions of both vectors.
-		const GPlatesMaths::Vector3D vector1 = vector_get_normalised(vector1_object);
-		const GPlatesMaths::Vector3D vector2 = vector_get_normalised(vector2_object);
+		const GPlatesMaths::Vector3D vector1_normalised = vector_get_normalised(vector1);
+		const GPlatesMaths::Vector3D vector2_normalised = vector_get_normalised(vector2);
 
-		return acos(dot(vector1, vector2));
+		return acos(dot(vector1_normalised, vector2_normalised));
 	}
 
 	GPlatesMaths::Real
 	vector_dot(
-			bp::object vector1_object,
-			bp::object vector2_object)
+			const GPlatesMaths::Vector3D &vector1,
+			const GPlatesMaths::Vector3D &vector2)
 	{
-		return dot(
-				Implementation::vector_extract_vector(vector1_object),
-				Implementation::vector_extract_vector(vector2_object));
+		return dot(vector1, vector2);
 	}
 
 	GPlatesMaths::Vector3D
 	vector_cross(
-			bp::object vector1_object,
-			bp::object vector2_object)
+			const GPlatesMaths::Vector3D &vector1,
+			const GPlatesMaths::Vector3D &vector2)
 	{
-		return cross(
-				Implementation::vector_extract_vector(vector1_object),
-				Implementation::vector_extract_vector(vector2_object));
+		return cross(vector1, vector2);
 	}
 
 	bp::tuple
@@ -259,7 +243,8 @@ export_vector_3d()
 #endif
 			>(
 					"Vector3D",
-					"Represents a vector in 3D cartesian coordinates. Vectors are equality (``==``, ``!=``) comparable.\n"
+					"Represents a vector in 3D cartesian coordinates. Vectors are equality (``==``, ``!=``) comparable "
+					"(but not hashable - cannot be used as a key in a ``dict``).\n"
 					"\n"
 					"The following operations can be used:\n"
 					"\n"

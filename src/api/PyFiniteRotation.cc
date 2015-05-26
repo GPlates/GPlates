@@ -420,7 +420,7 @@ export_finite_rotation()
 					"finite_rotation1, finite_rotation2, time1, time2, target_time)\n"
 					"\n"
 					"Finite rotations are equality (``==``, ``!=``) comparable (but not hashable "
-					"- cannot be used as a key in a dict).\n"
+					"- cannot be used as a key in a ``dict``).\n"
 					"\n"
 					"Finite rotations can also be compared using :meth:`are_equivalent` to detect "
 					"equivalent rotations (that rotate a geometry to the same final position but might rotate "
