@@ -47,6 +47,7 @@ class methods and a description of their usage and parameters.
 	pygplates.GpmlTimeWindow
 	pygplates.GreatCircleArc
 	pygplates.LatLonPoint
+	pygplates.LocalCartesian
 	pygplates.MultiPointOnSphere
 	pygplates.PointOnSphere
 	pygplates.PolygonOnSphere

@@ -366,6 +366,17 @@ class LatLonPointCase(unittest.TestCase):
         self.assertAlmostEqual(z, 0)
 
 
+class LocalCartesianCase(unittest.TestCase):
+    def setUp(self):
+        self.point = pygplates.PointOnSphere(1, 1, 1, True)
+        self.local_cartesian = pygplates.LocalCartesian(self.point)
+    
+    def test_get_ned(self):
+        self.assertTrue(self.local_cartesian.get_north(), pygplates.Vector3D.create_normalised(1, -1, 1))
+        self.assertTrue(self.local_cartesian.get_east(), pygplates.Vector3D.create_normalised(-1, 1, 1))
+        self.assertTrue(self.local_cartesian.get_down(), pygplates.Vector3D.create_normalised(-1, -1, -1))
+
+
 class Vector3DCase(unittest.TestCase):
     def setUp(self):
         self.xyz = (1.03, -2.232, 34.232)
@@ -450,6 +461,7 @@ def suite():
             FiniteRotationCase,
             GreatCircleArcCase,
             LatLonPointCase,
+            LocalCartesianCase,
             Vector3DCase
         ]
 

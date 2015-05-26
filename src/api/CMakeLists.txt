@@ -41,12 +41,14 @@ set(srcs
     PyGPlatesModule.cc
     PyGPlatesModule.h
     PyGreatCircleArc.cc
+    PyGreatCircleArc.h
     PyIds.cc
     PyInformationModel.cc
     PyInformationModel.h
     PyInteger.cc
     PyInterpolationException.h
     PyLatLonPoint.cc
+    PyLocalCartesian.cc
     PyOldFeature.cc
     PyOldFeature.h
     PyOldFeatureCollection.cc

@@ -44,6 +44,7 @@ void export_geometries_on_sphere();
 void export_great_circle_arc();
 void export_integer();
 void export_lat_lon_point();
+void export_local_cartesian();
 void export_real();
 void export_vector_3d();
 
@@ -149,6 +150,7 @@ export_cpp_python_api()
 	export_lat_lon_point();
 	export_date_line_wrapper();
 	export_vector_3d();
+	export_local_cartesian();
 
 	// file-io namespace
 	export_feature_collection_file_format_registry();
