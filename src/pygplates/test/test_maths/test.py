@@ -395,6 +395,26 @@ class LocalCartesianCase(unittest.TestCase):
         vectors = ((1,0,0), (0,0,1))
         ned_vectors = [pygplates.Vector3D(0,0,-1), pygplates.Vector3D(0,0,-1)]
         self.assertTrue(pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(local_origins, vectors) == ned_vectors)
+    
+    def test_convert_from_ned_to_geocentric(self):
+        self.assertTrue(self.local_cartesian.from_north_east_down_to_geocentric(pygplates.Vector3D(1, 0, 0)) == self.local_cartesian.get_north())
+        self.assertTrue(pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(self.point, pygplates.Vector3D(1, 0, 0)) == self.local_cartesian.get_north())
+        self.assertTrue(self.local_cartesian.from_north_east_down_to_geocentric(pygplates.Vector3D(0, 1, 0)) == self.local_cartesian.get_east())
+        self.assertTrue(pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(self.point, pygplates.Vector3D(0, 1, 0)) == self.local_cartesian.get_east())
+        self.assertTrue(self.local_cartesian.from_north_east_down_to_geocentric(pygplates.Vector3D(0, 0, 1)) == self.local_cartesian.get_down())
+        self.assertTrue(pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(self.point, pygplates.Vector3D(0, 0, 1)) == self.local_cartesian.get_down())
+        
+        self.assertTrue(self.local_cartesian.from_north_east_down_to_geocentric(0, 0, -math.sqrt(2)) == pygplates.Vector3D(1,0,1))
+        self.assertTrue(self.local_cartesian.from_north_east_down_to_geocentric((0, 0, -math.sqrt(2))) == pygplates.Vector3D(1,0,1))
+        self.assertTrue(self.local_cartesian.from_north_east_down_to_geocentric(pygplates.Vector3D(0, 0, -math.sqrt(2))) == pygplates.Vector3D(1,0,1))
+        self.assertTrue(pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(self.point, 0, 0, -math.sqrt(2)) == pygplates.Vector3D(1,0,1))
+        self.assertTrue(pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(self.point, (0, 0, -math.sqrt(2))) == pygplates.Vector3D(1,0,1))
+        self.assertTrue(pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(self.point, pygplates.Vector3D(0, 0, -math.sqrt(2))) == pygplates.Vector3D(1,0,1))
+        
+        local_origins = ((0,0), (0,0,1))
+        vectors = ((0,0,-1), (0,0,-1))
+        geocentric_vectors = [pygplates.Vector3D(1,0,0), pygplates.Vector3D(0,0,1)]
+        self.assertTrue(pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(local_origins, vectors) == geocentric_vectors)
 
 
 class Vector3DCase(unittest.TestCase):
