@@ -31,8 +31,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "PythonConverterUtils.h"
-
-#include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 
 #include "global/AssertionFailureException.h"
@@ -261,7 +259,7 @@ export_vector_3d()
 #endif
 			>(
 					"Vector3D",
-					"Represents a vector in 3D catesian coordinates. Vectors are equality (``==``, ``!=``) comparable.\n"
+					"Represents a vector in 3D cartesian coordinates. Vectors are equality (``==``, ``!=``) comparable.\n"
 					"\n"
 					"The following operations can be used:\n"
 					"\n"
@@ -299,6 +297,11 @@ export_vector_3d()
 					"      z_weight * pygplates.Vector3D.z_axis)\n",
 					bp::init<GPlatesMaths::Real, GPlatesMaths::Real, GPlatesMaths::Real>(
 							(bp::arg("x"), bp::arg("y"), bp::arg("z")),
+							// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
+							// Specific overload signature...
+							"__init__(...)\n"
+							"A *Vector3D* object can be constructed in more than one way...\n"
+							"\n"
 							"__init__(x, y, z)\n"
 							"  Construct a *Vector3D* instance from 3D cartesian coordinates consisting of the "
 							"floating-point numbers *x*, *y* and *z*.\n"
@@ -318,6 +321,7 @@ export_vector_3d()
 						&GPlatesApi::vector_create,
 						bp::default_call_policies(),
 						(bp::arg("vector"))),
+				// Specific overload signature...
 				"__init__(vector)\n"
 				"  Create a *Vector3D* instance from an (x,y,z) sequence (or *Vector3D*).\n"
 				"\n"
@@ -461,11 +465,16 @@ export_vector_3d()
 		.def("create_normalised",
 				&GPlatesApi::vector_get_normalised,
 				(bp::arg("xyz")),
-				"create_normalised(xyz) -> Vector3D\n"
+				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
+				"create_normalised(...) -> Vector3D\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Returns a new vector that is a normalised (unit length) version of *vector*.\n"
+				"[*staticmethod*] This function can be called in more than one way...\n"
+				"\n"
+				// Specific overload signature...
+				"create_normalised(xyz) -> Vector3D\n"
+				"  Returns a new vector that is a normalised (unit length) version of *vector*.\n"
 				"\n"
 				"  :param xyz: the vector (x,y,z) components\n"
 				"  :type xyz: sequence (such as list or tuple) of (float,float,float), or :class:`Vector3D`\n"
@@ -483,11 +492,12 @@ export_vector_3d()
 		.def("create_normalised",
 				&GPlatesApi::vector_get_normalised_from_xyz,
 				(bp::arg("x"), bp::arg("y"), bp::arg("z")),
+				// Specific overload signature...
 				"create_normalised(x, y, z) -> Vector3D\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Returns a new vector that is a normalised (unit length) version of vector (x, y, z).\n"
+				"  Returns a new vector that is a normalised (unit length) version of vector (x, y, z).\n"
 				"\n"
 				"  :param x: the *x* component of the 3D vector\n"
 				"  :type x: float\n"

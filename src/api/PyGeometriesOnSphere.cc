@@ -751,10 +751,10 @@ export_point_on_sphere()
 				"*ViolatedUnitVectorInvariantError* is raised.\n"
 				"  ::\n"
 				"\n"
-				"    # If you know that (x,y,z) has unit magnitude (is on the unit sphere).\n"
+				"    # If you know that (x,y,z) has unit magnitude (is on the unit globe).\n"
 				"    point = pygplates.PointOnSphere(x, y, z)\n"
 				"\n"
-				"    # If (x,y,z) might not be on the unit sphere.\n"
+				"    # If (x,y,z) might not be on the unit globe.\n"
 				"    point = pygplates.PointOnSphere(x, y, z, normalise=True)\n")
 		// Static property 'pygplates.PointOnSphere.north_pole'...
 		.def_readonly("north_pole", GPlatesApi::point_on_sphere_north_pole)

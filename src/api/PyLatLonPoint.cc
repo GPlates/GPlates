@@ -78,7 +78,9 @@ namespace GPlatesApi
 		// Prevent equality comparisons between LatLonPoints.
 		if (extract_other_llp_instance.check())
 		{
-			PyErr_SetString(PyExc_TypeError, "Cannot equality compare (==, !=) LatLonPoints");
+			PyErr_SetString(PyExc_TypeError,
+					"Cannot equality compare (==, !=) LatLonPoints due to non-uniqueness of "
+					"allowed longitude range [-360, 360]");
 			bp::throw_error_already_set();
 		}
 

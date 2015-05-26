@@ -107,7 +107,7 @@ namespace GPlatesApi
 	 * (address) of the wrapped C++ object instead of the python object (via python's 'id()').
 	 *
 	 * NOTE: If the HeldType of bp::class_ of the wrapped C++ class is boost::shared_ptr then
-	 * this is not needed (see special magic comment below).
+	 * this might not be needed (see special magic comment below).
 	 *
 	 * This visitor adds a '__hash__' method and associated comparison methods (such as '__eq__')
 	 * to the wrapped class (see http://docs.python.org/2/reference/datamodel.html#object.__hash__).
@@ -136,12 +136,16 @@ namespace GPlatesApi
 	 *   f_cpp_ref = pygplates.FeatureCollection([f]).get(f.get_feature_id())
 	 *
 	 * ...where we know that both 'f' and 'f_cpp_ref' refer to the same 'Feature' (C++) object
-	 * but they are different python objects (and hence have different addresses or ids)
-	 * because boost-python creates a new python object when returning a C++ object to python
-	 * (note however that it does return the same *python* object when using boost::shared_ptr -
-	 * due to special magic it places in the shared pointer deleter). However GPlates uses boost
-	 * intrusive_ptr extensively and boost python creates a new python object when returning this.
-	 * And the default hash and equality behaviour is based on the python object address.
+	 * but they are different Python objects (and hence have different addresses or ids)
+	 * because boost-python creates a new Python object when returning a C++ object to Python
+	 * (note however that it does return the same *Python* object when using boost::shared_ptr -
+	 * due to special magic it places in the shared pointer deleter to track the Python object
+	 * it came from - although this would not work in cases where the C++ object, wrapped in a
+	 * Python object, is created from C++ and not Python, eg, loading a feature collection from
+	 * a file, in which case conversion of the same C++ feature to Python will always create a new
+	 * Python object) . However GPlates uses boost intrusive_ptr extensively and boost python creates
+	 * a new python object when returning this. And the default hash and equality behaviour is based
+	 * on the python object address.
 	 * So the following conditions hold...
 	 *
 	 *   assert(id(f) == id(f_ref))

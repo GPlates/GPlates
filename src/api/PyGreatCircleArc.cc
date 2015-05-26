@@ -181,7 +181,7 @@ export_great_circle_arc()
 #endif
 			>(
 					"GreatCircleArc",
-					"A great-circle arc on the surface of the unit sphere.\n"
+					"A great-circle arc on the surface of the unit globe.\n"
 					"\n"
 					"Great circle arcs are equality (``==``, ``!=``) comparable (but not hashable "
 					"- cannot be used as a key in a ``dict``).\n",
