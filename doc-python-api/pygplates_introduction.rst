@@ -3,13 +3,21 @@
 Introduction
 ============
 
-This document introduces pygplates, its relationship to GPlates and the ways in which it can be used.
+This document introduces *pygplates* and covers some advantages over GPlates.
+It also gives an overview of embedded versus external *pygplates*.
+
+.. contents::
+   :local:
+   :depth: 2
+
+.. _pygplates_introduction_using_gplates_versus_pygplates:
 
 GPlates versus pygplates
 ------------------------
 
-`GPlates <http://www.gplates.org>`_ is desktop software for the interactive visualisation of
-plate-tectonics.
+`GPlates <http://www.gplates.org>`_ is desktop software for the interactive visualisation of plate-tectonics.
+
+It can be used to load geological data, reconstruct it to past geological times and visualise/export the results.
 
 There are two ways to interact with GPlates functionality:
 
@@ -17,33 +25,97 @@ There are two ways to interact with GPlates functionality:
    
    Here you control GPlates by interacting with a user interface.
    
-   For example loading geological data, reconstructing data to a past geological time and
-   visualising the result is achieved using *menus and dialogs*.
+   For example, using *menus and dialogs* to visualise geological reconstructions.
+   
+   To do this you can download the `GPlates desktop application (executable) <http://www.gplates.org/download.html>`_.
+   
 #. *Using Python*:
    
    Here you access GPlates functionality using the `Python <http://www.python.org>`_ programming language.
    
-   For example loading geological data, reconstructing data to a past geological time and
-   retrieving the reconstructed data is achieved by using *Python functions (and classes)* known as
-   the :ref:`GPlates Python Application Programming Interface (API) <pygplates_reference>`.
+   For example, you can reconstruct geological data using *Python functions (and classes)* known as
+   :ref:`pygplates<pygplates_reference>`:
+   ::
 
-In the first case you are running the
-`GPlates desktop application (executable) <http://www.gplates.org/download.html>`_.
+     pygplates.reconstruct('coastlines.gpml', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
+   
+   Here we're using the :func:`pygplates.reconstruct` function to reconstruct coastlines to 10
+   million years ago (Ma) using the plate rotations in the 'rotations.rot' file and save the results
+   to a shapefile ('.shp').
 
-In the second case you are running Python source code in either:
+.. _pygplates_introduction_why_use_pygplates:
+
+Why use pygplates ?
+-------------------
+
+Since GPlates is a desktop application its functionality is accessed through a graphical user interface.
+For example, to export reconstructed data you:
+
+* open up the Export dialog,
+* select a range of geological times,
+* select the type of export (eg, reconstructed geometries or velocities),
+* select some export options, and
+* export the reconstructed results to files.
+
+...this is fine if you want a sequence of exported files over a geological time range.
+
+However you might only want to export geological data within a specific region of the globe.
+If GPlates does not support this in its export options then you can write some Python source code
+to do this using *pygplates*.
+
+.. note:: This particular *pygplates* example is covered in the
+   :ref:`Getting Started Tutorial<pygplates_getting_started_tutorial>`.
+
+In general, using a Python script affords a much greater level of flexibility provided you are
+comfortable using Python as a programming language.
+This is because the granularity level of *pygplates* (in its functions and classes) enables both
+high-level and low-level access to GPlates functionality.
+
+High-level access enables common high-level tasks such as reconstructing entire files of geological data.
+These *pygplates* functions are typically easier to use but more restrictive in what they can do.
+For example, :func:`pygplates.reconstruct` is a high-level function that can reconstruct geological data
+to a past geological time:
+::
+
+  pygplates.reconstruct('coastlines.gpml', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
+
+...but it cannot restrict reconstructed data to a specific region on the globe. To achieve that,
+lower-level access is necessary along with having to write a bit more Python code as shown in the
+:ref:`Getting Started Tutorial<pygplates_getting_started_tutorial>`.
+
+Low-level access is beneficial for advanced scenarios where the low-level details need to be exposed
+in order to achieve the desired outcome (such as restricting reconstructed data to a specific region
+on the globe). Ideally this should also provide enough flexibility to cover the variety of advanced
+use cases that researchers might come up with.
+
+Even if something can be done using the GPlates desktop application, it's still a manual process
+that requires interacting with a graphical user interface via the mouse and keyboard.
+If GPlates is just one node of a research pipeline then it can be easier to process all nodes
+together in a single script (or collection of scripts) reducing the need for manual intervention.
+
+.. _pygplates_introduction_external_vs_embedded:
+
+External versus embedded pygplates
+----------------------------------
+
+There are two ways to run Python source code that uses *pygplates*.
+You can run it in either:
 
 * an *external* Python interpreter, or
 * a Python interpreter *embedded* within the GPlates desktop application.
 
-A Python interpreter executes source code written in the Python programming language.
+.. note:: A Python **interpreter** executes source code written in the Python programming language.
 
-.. _pygplates_introduction_external:
+.. _pygplates_introduction_using_pygplates_external:
 
 Using pygplates with an *external* Python interpreter
------------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this scenario you are running a Python script using an *external* Python interpreter. For example you
-might have a file called ``my_python_script.py`` that you execute on the terminal or shell command-line as:
+In this scenario you are running a Python script using an *external* Python interpreter.
+
+.. note:: This does **not** require the `GPlates desktop application (executable) <http://www.gplates.org/download.html>`_.
+
+For example you might have a file called ``my_python_script.py`` that you execute on the terminal or shell command-line as:
 ::
 
   python my_python_script.py
@@ -51,8 +123,8 @@ might have a file called ``my_python_script.py`` that you execute on the termina
 ...this starts up the Python interpreter and instructs it to execute Python source code found in
 the ``my_python_script.py`` script.
 
-In your Python script you will need to import pygplates before you can access pygplates functionality.
-For example a script that just prints the pygplates version would look like:
+In your Python script you will need to import *pygplates* before you can access *pygplates* functionality.
+For example a script that just prints the *pygplates* version would look like:
 ::
 
   import pygplates
@@ -64,25 +136,25 @@ For example a script that just prints the pygplates version would look like:
 
   4 (GPlates 1.4.0)
 
-...where ``4`` is the pygplates revision and ``GPlates 1.4.0`` (in parentheses) indicates that
+...where ``4`` is the *pygplates* revision and ``GPlates 1.4.0`` (in parentheses) indicates that
 revision ``4`` is associated with GPlates 1.4.0.
 
-Note that you will need to :ref:`install <pygplates_installation_external>` pygplates so that the
-Python interpreter can find it when you execute ``python my_python_script.py``.
+.. note:: You will need to :ref:`install <pygplates_getting_started_installation_external>` *pygplates* so that the
+   Python interpreter can find it when you execute ``python my_python_script.py``.
 
-.. _pygplates_introduction_embedded:
+.. _pygplates_introduction_using_pygplates_embedded:
 
 Using pygplates with the GPlates *embedded* Python interpreter
---------------------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**NOTE:** This option is not yet available.
+.. note:: This option is **not** yet available.
 
 In this scenario you are running Python source code using a Python interpreter that is embedded inside
 the GPlates desktop application.
 
-Here you will be running the GPlates desktop application and loading a python script in the
+In this case you have started the GPlates desktop application and are loading a python script in the
 GPlates Python console (accessed via the :guilabel:`Open Python Console` menu item) or interactively
 entering Python source code in that console.
 
-Note that you do not need to ``import pygplates`` here since it has already been imported/embedded
-into GPlates (when GPlates started up).
+.. note:: You do not need to ``import pygplates`` here since it has already been imported/embedded
+   into GPlates (when GPlates started up).
