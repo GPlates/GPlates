@@ -15,10 +15,10 @@ Contents
 ========
 
 .. toctree::
-	:maxdepth: 2
+	:maxdepth: 3
 
 	pygplates_introduction
-	pygplates_installation
+	pygplates_getting_started
 	pygplates_reference
 
 Indices and tables
