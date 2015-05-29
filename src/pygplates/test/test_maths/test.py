@@ -365,18 +365,22 @@ class LatLonPointCase(unittest.TestCase):
         self.assertAlmostEqual(y, 1)
         self.assertAlmostEqual(z, 0)
 
+def assert_almost_equal_tuple(unit_test_case, tuple1, tuple2):
+    unit_test_case.assertTrue(len(tuple1) == len(tuple2))
+    for index in range(len(tuple1)):
+        unit_test_case.assertAlmostEqual(tuple1[index], tuple2[index])
 
 class LocalCartesianCase(unittest.TestCase):
     def setUp(self):
         self.point = pygplates.PointOnSphere(1, 0, 1, True)
         self.local_cartesian = pygplates.LocalCartesian(self.point)
     
-    def test_get_ned(self):
+    def test_get_north_east_down(self):
         self.assertTrue(self.local_cartesian.get_north() == pygplates.Vector3D.create_normalised(-1, 0, 1))
         self.assertTrue(self.local_cartesian.get_east() == pygplates.Vector3D.create_normalised(0, 1, 0))
         self.assertTrue(self.local_cartesian.get_down() == pygplates.Vector3D.create_normalised(-1, 0, -1))
     
-    def test_convert_from_geocentric_to_ned(self):
+    def test_convert_from_geocentric_to_north_east_down(self):
         self.assertTrue(self.local_cartesian.from_geocentric_to_north_east_down(self.local_cartesian.get_north()) == pygplates.Vector3D(1, 0, 0))
         self.assertTrue(pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(self.point, self.local_cartesian.get_north()) == pygplates.Vector3D(1, 0, 0))
         self.assertTrue(self.local_cartesian.from_geocentric_to_north_east_down(self.local_cartesian.get_east()) == pygplates.Vector3D(0, 1, 0))
@@ -396,7 +400,7 @@ class LocalCartesianCase(unittest.TestCase):
         ned_vectors = [pygplates.Vector3D(0,0,-1), pygplates.Vector3D(0,0,-1)]
         self.assertTrue(pygplates.LocalCartesian.convert_from_geocentric_to_north_east_down(local_origins, vectors) == ned_vectors)
     
-    def test_convert_from_ned_to_geocentric(self):
+    def test_convert_from_north_east_down_to_geocentric(self):
         self.assertTrue(self.local_cartesian.from_north_east_down_to_geocentric(pygplates.Vector3D(1, 0, 0)) == self.local_cartesian.get_north())
         self.assertTrue(pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(self.point, pygplates.Vector3D(1, 0, 0)) == self.local_cartesian.get_north())
         self.assertTrue(self.local_cartesian.from_north_east_down_to_geocentric(pygplates.Vector3D(0, 1, 0)) == self.local_cartesian.get_east())
@@ -415,6 +419,29 @@ class LocalCartesianCase(unittest.TestCase):
         vectors = ((0,0,-1), (0,0,-1))
         geocentric_vectors = [pygplates.Vector3D(1,0,0), pygplates.Vector3D(0,0,1)]
         self.assertTrue(pygplates.LocalCartesian.convert_from_north_east_down_to_geocentric(local_origins, vectors) == geocentric_vectors)
+    
+    def test_convert_from_geocentric_to_magnitude_azimuth_inclination(self):
+        assert_almost_equal_tuple(self, self.local_cartesian.from_geocentric_to_magnitude_azimuth_inclination(self.local_cartesian.get_north()), (1, 0, 0))
+        assert_almost_equal_tuple(self, pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(self.point, self.local_cartesian.get_north()), (1, 0, 0))
+        assert_almost_equal_tuple(self, self.local_cartesian.from_geocentric_to_magnitude_azimuth_inclination(self.local_cartesian.get_east()), (1, math.pi / 2, 0))
+        assert_almost_equal_tuple(self, pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(self.point, self.local_cartesian.get_east()), (1, math.pi / 2, 0))
+        assert_almost_equal_tuple(self, self.local_cartesian.from_geocentric_to_magnitude_azimuth_inclination(self.local_cartesian.get_down()), (1, 0, math.pi / 2))
+        assert_almost_equal_tuple(self, pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(self.point, self.local_cartesian.get_down()), (1, 0, math.pi / 2))
+        
+        assert_almost_equal_tuple(self, self.local_cartesian.from_geocentric_to_magnitude_azimuth_inclination(1,0,1), (math.sqrt(2), 0, -math.pi / 2))
+        assert_almost_equal_tuple(self, self.local_cartesian.from_geocentric_to_magnitude_azimuth_inclination((1,0,1)), (math.sqrt(2), 0, -math.pi / 2))
+        assert_almost_equal_tuple(self, self.local_cartesian.from_geocentric_to_magnitude_azimuth_inclination(pygplates.Vector3D(1,0,1)), (math.sqrt(2), 0, -math.pi / 2))
+        assert_almost_equal_tuple(self, pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(self.point, 1,0,1), (math.sqrt(2), 0, -math.pi / 2))
+        assert_almost_equal_tuple(self, pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(self.point, (1,0,1)), (math.sqrt(2), 0, -math.pi / 2))
+        assert_almost_equal_tuple(self, pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(self.point, pygplates.Vector3D(1,0,1)), (math.sqrt(2), 0, -math.pi / 2))
+        
+        local_origins = ((0,0), (0,0,1))
+        vectors = ((1,0,0), (0,0,1))
+        mai_tuples = [(1,0,-math.pi / 2), (1,0,-math.pi / 2)]
+        converted_mai_tuples = pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(local_origins, vectors)
+        self.assertTrue(len(converted_mai_tuples) == len(mai_tuples))
+        for index in range(len(mai_tuples)):
+            assert_almost_equal_tuple(self, converted_mai_tuples[index], mai_tuples[index])
 
 
 class Vector3DCase(unittest.TestCase):
