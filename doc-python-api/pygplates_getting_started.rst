@@ -277,9 +277,9 @@ installation. If this happens then you might get an error message similar to the
       self.data.add(ref(item, self._remove))
   TypeError: cannot create weak reference to 'classobj' object
 
-...where, in the above example, a Python **2.6.x** interpreter was used (found in "C:\Python26\ArcGIS10.0"
+...where, in the above example, a Python **2.6.x** interpreter was used (found in "C:\\Python26\\ArcGIS10.0"
 presumably via the Windows registry) but it loaded the Python **2.7.6** standard libraries
-(the ``PYTHONHOME`` environment variable was set to "C:\SDK\python\Python-2.7.6").
+(the ``PYTHONHOME`` environment variable was set to "C:\\SDK\\python\\Python-2.7.6").
 
 .. note:: The above error had nothing to do with pygplates (it could happen with any python script
    regardless of whether it imported pygplates or not).

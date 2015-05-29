@@ -215,7 +215,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	// uses the first docstring line as the function signature (if it looks like a signature).
 	//
 	// The following limitations apply to using ReStructuredText in Sphinx's autodoc extension
-	// (autodoc imports modules and looks up there docstrings):
+	// (autodoc imports modules and looks up their docstrings):
 	//  - '::' to indicate end-of-paragraph must be on a separate line,
 	//  - the docstrings on special methods such as '__init__', '__str__', '__lt__' are ignored
 	//    by Sphinx (by default). However we use the :special-members: Sphinx directive which includes
@@ -234,7 +234,7 @@ BOOST_PYTHON_MODULE(pygplates)
 
 	// Set the 'pygplates' module docstring.
 	pygplates_module.attr("__doc__") =
-			"GPlates Python Application Programming Interface (API)\n"
+			"**GPlates Python Application Programming Interface (API)**\n"
 			"\n"
 			"  A Python module consisting of classes and functions providing access to "
 			"GPlates functionality.\n";
@@ -257,7 +257,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	// 'pygplates' API (whether that is, in turn, pure python or C++ bindings doesn't matter).
 	pygplates_module.attr("__dict__")["__builtins__"] = bp::import("__builtin__");
 
-	// Export the part of the python API that consists of C++ python bindinds (ie, not pure python).
+	// Export the part of the python API that consists of C++ python bindings (ie, not pure python).
 	export_cpp_python_api();
 
 	// Export any *pure* python code that contributes to the python API.
