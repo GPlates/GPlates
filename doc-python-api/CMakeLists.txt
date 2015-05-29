@@ -62,17 +62,26 @@ if (SPHINX_FOUND)
 		"${BINARY_BUILD_DIR}/conf.py"
 		@ONLY)
 	
+	# Copy the ".rst" files from our source directory to our binary/output directory.
+	# This is because the sphinx 'autosummary' command (when used with ':toctree:') with generate a
+	# bunch of stub ".rst" files and we don't want them in our source code.
+	FILE(GLOB RST_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/*.rst")
+	FOREACH(RST_FILE ${RST_FILES})
+		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${RST_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${RST_FILE} COPYONLY)
+	ENDFOREACH(RST_FILE ${RST_FILES})
+	
 	# It seems that 'sphinx-build' generates the following warning unless we create the specific directory in question...
 	# "WARNING: html_static_path entry '...doc-python-api/_build/_static' does not exist".
 	file(MAKE_DIRECTORY "${BINARY_BUILD_DIR}/_static")
 
 	# Add a dependency to the 'pygplates' library to ensure it gets built before Sphinx uses it to generate documentation.
+	# Note that the source directory for sphinx is our current binary/output directory (we've copied our source ".rst" files there).
 	add_custom_target(doc-python-api
 		${SPHINX_EXECUTABLE}
 		-q -b html
 		-c "${BINARY_BUILD_DIR}"
 		-d "${SPHINX_CACHE_DIR}"
-		"${CMAKE_CURRENT_SOURCE_DIR}"
+		"${CMAKE_CURRENT_BINARY_DIR}"
 		"${SPHINX_HTML_DIR}"
 		DEPENDS pygplates
 		COMMENT "Building HTML documentation with Sphinx")
