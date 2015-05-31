@@ -29,6 +29,8 @@
 
 #include "model/FeatureVisitor.h"
 
+#include "property-values/Enumeration.h"
+#include "property-values/GmlDataBlock.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
@@ -36,13 +38,16 @@
 #include "property-values/GmlPolygon.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlArray.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlKeyValueDictionary.h"
+#include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
+#include "property-values/GpmlPolarityChronId.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
 #include "property-values/XsInteger.h"
@@ -76,6 +81,50 @@ namespace GPlatesApi
 			public GPlatesModel::FeatureVisitor,
 			public bp::wrapper<GPlatesModel::FeatureVisitor>
 	{
+
+		virtual
+		void
+		visit_enumeration(
+				enumeration_type &enumeration)
+		{
+			if (bp::override visit = this->get_override("visit_enumeration"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(enumeration_type::non_null_ptr_type(&enumeration));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_enumeration(enumeration);
+		}
+
+		void
+		default_visit_enumeration(
+				enumeration_type &enumeration)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_enumeration(enumeration);
+		}
+
+		virtual
+		void
+		visit_gml_data_block(
+				gml_data_block_type &gml_data_block)
+		{
+			if (bp::override visit = this->get_override("visit_gml_data_block"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gml_data_block_type::non_null_ptr_type(&gml_data_block));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gml_data_block(gml_data_block);
+		}
+
+		void
+		default_visit_gml_data_block(
+				gml_data_block_type &gml_data_block)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gml_data_block(gml_data_block);
+		}
 
 		virtual
 		void
@@ -240,6 +289,29 @@ namespace GPlatesApi
 
 		virtual
 		void
+		visit_gpml_array(
+				gpml_array_type &gpml_array)
+		{
+			if (bp::override visit = this->get_override("visit_gpml_array"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gpml_array_type::non_null_ptr_type(&gpml_array));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gpml_array(gpml_array);
+		}
+
+		void
+		default_visit_gpml_array(
+				gpml_array_type &gpml_array)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gpml_array(gpml_array);
+		}
+
+
+		virtual
+		void
 		visit_gpml_constant_value(
 				gpml_constant_value_type &gpml_constant_value)
 		{
@@ -355,6 +427,29 @@ namespace GPlatesApi
 
 		virtual
 		void
+		visit_gpml_old_plates_header(
+				gpml_old_plates_header_type &gpml_old_plates_header)
+		{
+			if (bp::override visit = this->get_override("visit_gpml_old_plates_header"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gpml_old_plates_header_type::non_null_ptr_type(&gpml_old_plates_header));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gpml_old_plates_header(gpml_old_plates_header);
+		}
+
+		void
+		default_visit_gpml_old_plates_header(
+				gpml_old_plates_header_type &gpml_old_plates_header)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gpml_old_plates_header(gpml_old_plates_header);
+		}
+
+
+		virtual
+		void
 		visit_gpml_piecewise_aggregation(
 				gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
 		{
@@ -396,6 +491,29 @@ namespace GPlatesApi
 				gpml_plate_id_type &gpml_plate_id)
 		{
 			this->GPlatesModel::FeatureVisitor::visit_gpml_plate_id(gpml_plate_id);
+		}
+
+
+		virtual
+		void
+		visit_gpml_polarity_chron_id(
+				gpml_polarity_chron_id_type &gpml_polarity_chron_id)
+		{
+			if (bp::override visit = this->get_override("visit_gpml_polarity_chron_id"))
+			{
+				// Pass 'non_null_ptr_type' to python since that's the boost python held type of
+				// property values and also we want the python object to have an 'owning' reference.
+				visit(gpml_polarity_chron_id_type::non_null_ptr_type(&gpml_polarity_chron_id));
+				return;
+			}
+			GPlatesModel::FeatureVisitor::visit_gpml_polarity_chron_id(gpml_polarity_chron_id);
+		}
+
+		void
+		default_visit_gpml_polarity_chron_id(
+				gpml_polarity_chron_id_type &gpml_polarity_chron_id)
+		{
+			this->GPlatesModel::FeatureVisitor::visit_gpml_polarity_chron_id(gpml_polarity_chron_id);
 		}
 
 
@@ -553,10 +671,27 @@ export_property_value_visitor()
 			"        print 'plate id: %d' % plate_id\n"
 			"\n"
 			"NOTE: You must call the base class *__init__* otherwise you will "
-			"get a *Boost.Python.ArgumentError* exception.\n"
+			"get a *Boost.Python.ArgumentError* exception.\n",
 			// NOTE: Must not define 'bp::no_init' because this base class is meant to be inherited
 			// by a python class (see http://www.boostpro.com/writing/bpl.html#inheritance).
-			)
+			bp::init<>(
+					"__init__()\n"
+					"  Default constructor - must be explicitly called by derived class.\n"))
+		.def("visit_enumeration",
+				&GPlatesModel::FeatureVisitor::visit_enumeration,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_enumeration,
+				"visit_enumeration(enumeration)\n"
+				"  Visits a :class:`Enumeration` property value.\n")
+		.def("visit_gml_data_block",
+				&GPlatesModel::FeatureVisitor::visit_gml_data_block,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_data_block,
+				"visit_gml_data_block(gml_data_block)\n"
+				"  Visits a :class:`GmlDataBlock` property value.\n")
+		.def("visit_gml_line_string",
+				&GPlatesModel::FeatureVisitor::visit_gml_line_string,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_line_string,
+				"visit_gml_line_string(gml_line_string)\n"
+				"  Visits a :class:`GmlLineString` property value.\n")
 		.def("visit_gml_line_string",
 				&GPlatesModel::FeatureVisitor::visit_gml_line_string,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_line_string,
@@ -592,6 +727,11 @@ export_property_value_visitor()
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gml_time_period,
 				"visit_gml_time_period(gml_time_period)\n"
 				"  Visits a :class:`GmlTimePeriod` property value.\n")
+		.def("visit_gpml_array",
+				&GPlatesModel::FeatureVisitor::visit_gpml_array,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_array,
+				"visit_gpml_array(gpml_array)\n"
+				"  Visits a :class:`GpmlArray` property value.\n")
 		.def("visit_gpml_constant_value",
 				&GPlatesModel::FeatureVisitor::visit_gpml_constant_value,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_constant_value,
@@ -602,11 +742,13 @@ export_property_value_visitor()
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_finite_rotation,
 				"visit_gpml_finite_rotation(ppml_finite_rotation)\n"
 				"  Visits a :class:`GpmlFiniteRotation` property value.\n")
+#if 0
 		.def("visit_gpml_finite_rotation_slerp",
 				&GPlatesModel::FeatureVisitor::visit_gpml_finite_rotation_slerp,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_finite_rotation_slerp,
 				"visit_gpml_finite_rotation_slerp(gpml_finite_rotation_slerp)\n"
 				"  Visits a :class:`GpmlFiniteRotationSlerp` property value.\n")
+#endif
 		.def("visit_gpml_irregular_sampling",
 				&GPlatesModel::FeatureVisitor::visit_gpml_irregular_sampling,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_irregular_sampling,
@@ -617,6 +759,11 @@ export_property_value_visitor()
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_key_value_dictionary,
 				"visit_gpml_key_value_dictionary(gpml_key_value_dictionary)\n"
 				"  Visits a :class:`GpmlKeyValueDictionary` property value.\n")
+		.def("visit_gpml_old_plates_header",
+				&GPlatesModel::FeatureVisitor::visit_gpml_old_plates_header,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_old_plates_header,
+				"visit_gpml_old_plates_header(gpml_old_plates_header)\n"
+				"  Visits a :class:`GpmlOldPlatesHeader` property value.\n")
 		.def("visit_gpml_piecewise_aggregation",
 				&GPlatesModel::FeatureVisitor::visit_gpml_piecewise_aggregation,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_piecewise_aggregation,
@@ -627,6 +774,11 @@ export_property_value_visitor()
 				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_plate_id,
 				"visit_gpml_plate_id(gpml_plate_id)\n"
 				"  Visits a :class:`GpmlPlateId` property value.\n")
+		.def("visit_gpml_polarity_chron_id",
+				&GPlatesModel::FeatureVisitor::visit_gpml_polarity_chron_id,
+				&GPlatesApi::FeatureVisitorWrap::default_visit_gpml_polarity_chron_id,
+				"visit_gpml_polarity_chron_id(gpml_polarity_chron_id)\n"
+				"  Visits a :class:`GpmlPolarityChronId` property value.\n")
 		.def("visit_xs_boolean",
 				&GPlatesModel::FeatureVisitor::visit_xs_boolean,
 				&GPlatesApi::FeatureVisitorWrap::default_visit_xs_boolean,

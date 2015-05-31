@@ -192,6 +192,7 @@ All these property values inherit :class:`pygplates.PropertyValue`.
    #pygplates.GpmlInterpolationFunction
 
    pygplates.GpmlKeyValueDictionary
+   pygplates.GpmlOldPlatesHeader
    pygplates.GpmlPlateId
    pygplates.GpmlPolarityChronId
    pygplates.XsBoolean

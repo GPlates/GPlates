@@ -152,6 +152,7 @@ export_property_value()
 					//"* :class:`GpmlHotSpotTrailMark`\n"
 					"* :class:`GpmlIrregularSampling`\n"
 					"* :class:`GpmlKeyValueDictionary`\n"
+					"* :class:`GpmlOldPlatesHeader`\n"
 					"* :class:`GpmlPiecewiseAggregation`\n"
 					"* :class:`GpmlPlateId`\n"
 					"* :class:`GpmlPolarityChronId`\n"
