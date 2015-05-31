@@ -1434,7 +1434,9 @@ export_reconstruction_tree()
 					"  reconstruction_tree = builder.build_reconstruction_tree(anchor_plate_id, reconstruction_time)\n"
 					"\n"
 					"The :meth:`ReconstructionTree.__init__` method of class :class:`ReconstructionTree` "
-					"uses *ReconstructionTreeBuilder* to create itself from rotation :class:`features<Feature>`.\n")
+					"uses *ReconstructionTreeBuilder* to create itself from rotation :class:`features<Feature>`.\n",
+			bp::init<>(
+					"__init__()\n"))
 		.def("insert_total_reconstruction_pole",
 				&GPlatesApi::reconstruction_tree_builder_insert_total_reconstruction_pole,
 				(bp::arg("fixed_plate_id"), bp::arg("moving_plate_id"), bp::arg("total_reconstruction_pole")),

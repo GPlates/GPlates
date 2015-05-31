@@ -144,6 +144,33 @@ This is because Sphinx does not appear to update the 'autosummary' generated (vi
 stub '.rst' files.
 
 
+Provide docstrings (with function signature( for all regular methods and "__init__()" of documented classes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Now that we're using autosummary (instead of automodule) we will get warnings such as the following...
+
+  WARNING: error while formatting arguments for pygplates.ReconstructionTreeBuilder.__init__: <Boost.Python.function object at 0x04E7AA28> is not a Python function
+
+...if we don't provide a docstring (in the above example for "pygplates.ReconstructionTreeBuilder.__init__()")
+containing a function signature. In the above example this can be fixed by specifying the first line of the docstring as:
+
+__init__()
+
+...note there are no arguments in this example since we're using the default constructor.
+It has to be a function signature which means it needs the "()" containing any arguments.
+
+'automodule' didn't have this problem - it just ignored (didn't document) functions/methods
+with no docstrings.
+
+
+Set autodoc_docstring_signature to True
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Setting 'autodoc_docstring_signature' to 'True' just gets autodoc to extract the function signature from the
+first line of the docstring in C modules (because it can't introspect C functions - only pure Python functions).
+The default value is True anyway so we don't really need to set this.
+
+
 Using templates with autosummary is problematic
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -180,11 +207,3 @@ each stub '.rst' file - although you won't actually see ':members:' in there - b
 documentation as if it was there).
 
 So we're not currently using autosummary *templates*.
-
-
-Set autodoc_docstring_signature to True
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Setting 'autodoc_docstring_signature' to 'True' just gets autodoc to extract the function signature from the
-first line of the docstring in C modules (because it can't introspect C functions - only pure Python functions).
-The default value is True anyway so we don't really need to set this.

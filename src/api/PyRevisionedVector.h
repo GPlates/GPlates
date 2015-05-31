@@ -138,18 +138,61 @@ namespace GPlatesApi
 				// to a GpmlArray for example, but the addition 'list2 + list3' does not...
 				.def("__add__", &WrapperClassType::add)
 				.def("__radd__", &WrapperClassType::radd)
-				.def("append", &WrapperClassType::append, (bp::arg("x")))
-				.def("extend", &WrapperClassType::extend, (bp::arg("t")))
-				.def("insert", &WrapperClassType::insert, (bp::arg("i"), bp::arg("x")))
-				.def("remove", &WrapperClassType::remove, (bp::arg("x")))
-				.def("pop", &WrapperClassType::pop, (bp::arg("i")))
-				.def("pop", &WrapperClassType::pop1)
-				.def("index", &WrapperClassType::index, (bp::arg("x"), bp::arg("i"), bp::arg("j")))
-				.def("index", &WrapperClassType::index2, (bp::arg("x")))
-				.def("index", &WrapperClassType::index3, (bp::arg("x"), bp::arg("i")))
-				.def("count", &WrapperClassType::count, (bp::arg("x")))
-				.def("reverse", &WrapperClassType::reverse)
-				.def("sort", &WrapperClassType::sort, (bp::arg("key"), bp::arg("reverse")=false))
+				.def("append",
+						&WrapperClassType::append,
+						(bp::arg("x")),
+						"append(x)\n"
+						"  Add element *x* to the end.\n")
+				.def("extend",
+						&WrapperClassType::extend,
+						(bp::arg("t")),
+						"extend(t)\n"
+						"  Add the elements in sequence *t* to the end.\n")
+				.def("insert",
+						&WrapperClassType::insert,
+						(bp::arg("i"), bp::arg("x")),
+						"insert(i,x)\n"
+						"  Insert element *x* at index *i*.\n")
+				.def("remove",
+						&WrapperClassType::remove,
+						(bp::arg("x")),
+						"remove(x)\n"
+						"  Removes the first element that equals *x* (raises ``ValueError`` if not found).\n")
+				.def("pop",
+						&WrapperClassType::pop,
+						(bp::arg("i")),
+						"pop([i])\n"
+						"  Removes the element at index *i* and returns it (defaults to last element).\n")
+				.def("pop",
+						&WrapperClassType::pop1,
+						"\n") // A non-empty string otherwise boost-python will double docstring of other overload.
+				.def("index",
+						&WrapperClassType::index,
+						(bp::arg("x"), bp::arg("i"), bp::arg("j")),
+						"index(x[,i[,j]])\n"
+						"  Smallest *k* such that the *k* th element equals ``x`` and ``i <= k < j`` (raises ``ValueError`` if not found).\n")
+				.def("index",
+						&WrapperClassType::index2,
+						(bp::arg("x")),
+						"\n") // A non-empty string otherwise boost-python will double docstring of other overload.
+				.def("index",
+						&WrapperClassType::index3,
+						(bp::arg("x"), bp::arg("i")),
+						"\n") // A non-empty string otherwise boost-python will double docstring of other overload.
+				.def("count",
+						&WrapperClassType::count,
+						(bp::arg("x")),
+						"count(x)\n"
+						"  Number of occurrences of *x*.\n")
+				.def("reverse",
+						&WrapperClassType::reverse,
+						"reverse()\n"
+						"  Reverses the items in place.\n")
+				.def("sort",
+						&WrapperClassType::sort,
+						(bp::arg("key"), bp::arg("reverse")=false),
+						"sort(key[,reverse])\n"
+						"  Sort the items in place (note that *key* is **not** optional and, like python 3.0, we removed *cmp*).\n")
 			;
 		}
 
