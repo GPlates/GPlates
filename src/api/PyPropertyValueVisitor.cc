@@ -652,7 +652,7 @@ export_property_value_visitor()
 			"\n"
 			"        def visit_gpml_constant_value(self, gpml_constant_value):\n"
 			"            # Visit the GpmlConstantValue's nested property value.\n"
-			"            property_value = gpml_constant_value.get_value().accept_visitor(self)\n"
+			"            gpml_constant_value.get_value().accept_visitor(self)\n"
 			"\n"
 			"        def visit_gpml_plate_id(self, gpml_plate_id):\n"
 			"            self.plate_id = gpml_plate_id.get_plate_id()\n"

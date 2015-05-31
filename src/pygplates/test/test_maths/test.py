@@ -442,6 +442,24 @@ class LocalCartesianCase(unittest.TestCase):
         self.assertTrue(len(converted_mai_tuples) == len(mai_tuples))
         for index in range(len(mai_tuples)):
             assert_almost_equal_tuple(self, converted_mai_tuples[index], mai_tuples[index])
+    
+    def test_convert_from_magnitude_azimuth_inclination_to_geocentric(self):
+        self.assertTrue(self.local_cartesian.from_magnitude_azimuth_inclination_to_geocentric((1, 0, 0)) == self.local_cartesian.get_north())
+        self.assertTrue(pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(self.point, (1, 0, 0)) == self.local_cartesian.get_north())
+        self.assertTrue(self.local_cartesian.from_magnitude_azimuth_inclination_to_geocentric((1, math.pi / 2, 0)) == self.local_cartesian.get_east())
+        self.assertTrue(pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(self.point, (1, math.pi / 2, 0)) == self.local_cartesian.get_east())
+        self.assertTrue(self.local_cartesian.from_magnitude_azimuth_inclination_to_geocentric((1, 0, math.pi / 2)) == self.local_cartesian.get_down())
+        self.assertTrue(pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(self.point, (1, 0, math.pi / 2)) == self.local_cartesian.get_down())
+        
+        self.assertTrue(self.local_cartesian.from_magnitude_azimuth_inclination_to_geocentric(math.sqrt(2), 0, -math.pi / 2) == pygplates.Vector3D(1,0,1))
+        self.assertTrue(self.local_cartesian.from_magnitude_azimuth_inclination_to_geocentric((math.sqrt(2), 0, -math.pi / 2)) == pygplates.Vector3D(1,0,1))
+        self.assertTrue(pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(self.point, math.sqrt(2), 0, -math.pi / 2) == pygplates.Vector3D(1,0,1))
+        self.assertTrue(pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(self.point, (math.sqrt(2), 0, -math.pi / 2)) == pygplates.Vector3D(1,0,1))
+        
+        local_origins = ((0,0), (0,0,1))
+        mai_tuples = ((1,0,-math.pi / 2), (1,0,-math.pi / 2))
+        geocentric_vectors = [pygplates.Vector3D(1,0,0), pygplates.Vector3D(0,0,1)]
+        self.assertTrue(pygplates.LocalCartesian.convert_from_magnitude_azimuth_inclination_to_geocentric(local_origins, mai_tuples) == geocentric_vectors)
 
 
 class Vector3DCase(unittest.TestCase):

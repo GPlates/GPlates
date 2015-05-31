@@ -332,7 +332,7 @@ export_vector_3d()
 		.def("angle_between",
 				&GPlatesApi::vector_angle_between,
 				(bp::arg("vector1"), bp::arg("vector2")),
-				"angle_between(vector1, vector2) -> float\n"
+				"angle_between(vector1, vector2)\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -376,7 +376,7 @@ export_vector_3d()
 		.def("dot",
 				&GPlatesApi::vector_dot,
 				(bp::arg("vector1"), bp::arg("vector2")),
-				"dot(vector1, vector2) -> float\n"
+				"dot(vector1, vector2)\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -413,7 +413,7 @@ export_vector_3d()
 		.def("cross",
 				&GPlatesApi::vector_cross,
 				(bp::arg("vector1"), bp::arg("vector2")),
-				"cross(vector1, vector2) -> Vector3D\n"
+				"cross(vector1, vector2)\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -451,14 +451,16 @@ export_vector_3d()
 				&GPlatesApi::vector_get_normalised,
 				(bp::arg("xyz")),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				"create_normalised(...) -> Vector3D\n"
+				"create_normalised(...)\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
-				"[*staticmethod*] This function can be called in more than one way...\n"
+				"[*staticmethod*] Returns a new vector that is a normalised (unit length) version of another.\n"
+				"\n"
+				"This function can be called in more than one way...\n"
 				"\n"
 				// Specific overload signature...
-				"create_normalised(xyz) -> Vector3D\n"
+				"create_normalised(xyz)\n"
 				"  Returns a new vector that is a normalised (unit length) version of *vector*.\n"
 				"\n"
 				"  :param xyz: the vector (x,y,z) components\n"
@@ -478,7 +480,7 @@ export_vector_3d()
 				&GPlatesApi::vector_get_normalised_from_xyz,
 				(bp::arg("x"), bp::arg("y"), bp::arg("z")),
 				// Specific overload signature...
-				"create_normalised(x, y, z) -> Vector3D\n"
+				"create_normalised(x, y, z)\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -503,15 +505,21 @@ export_vector_3d()
 		// Allow for American spelling (but we don't document it)...
 		.def("create_normalized",
 				&GPlatesApi::vector_get_normalised,
-				(bp::arg("vector")))
+				(bp::arg("vector")),
+				"create_normalized(...)\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"[*staticmethod*] See :meth:`create_normalised`.\n")
 		.def("create_normalized",
 				&GPlatesApi::vector_get_normalised_from_xyz,
-				(bp::arg("x"), bp::arg("y"), bp::arg("z")))
+				(bp::arg("x"), bp::arg("y"), bp::arg("z")),
+				"\n") // A non-empty string otherwise boost-python will double docstring of other overload.
 		.staticmethod("create_normalized")
 
 		.def("to_normalised",
 				&GPlatesApi::vector_get_normalised,
-				"to_normalised() -> Vector3D\n"
+				"to_normalised()\n"
 				"  Returns a new vector that is a normalised (unit length) version of this vector.\n"
 				"\n"
 				"  :raises: UnableToNormaliseZeroVectorError if this vector is (0,0,0) "
@@ -540,32 +548,34 @@ export_vector_3d()
 				"        raise pygplates.UnableToNormaliseZeroVectorError\n")
 		// Allow for American spelling (but we don't document it)...
 		.def("to_normalized",
-				&GPlatesApi::vector_get_normalised)
+				&GPlatesApi::vector_get_normalised,
+				"to_normalized()\n"
+				"  See :meth:`to_normalised`.\n")
 
 		.def("get_x",
 				&GPlatesMaths::Vector3D::x,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_x() -> float\n"
+				"get_x()\n"
 				"  Returns the *x* coordinate.\n"
 				"\n"
 				"  :rtype: float\n")
 		.def("get_y",
 				&GPlatesMaths::Vector3D::y,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_y() -> float\n"
+				"get_y()\n"
 				"  Returns the *y* coordinate.\n"
 				"\n"
 				"  :rtype: float\n")
 		.def("get_z",
 				&GPlatesMaths::Vector3D::z,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_z() -> float\n"
+				"get_z()\n"
 				"  Returns the *z* coordinate.\n"
 				"\n"
 				"  :rtype: float\n")
 		.def("to_xyz",
 				&GPlatesApi::vector_to_xyz,
-				"to_xyz() -> x, y, z\n"
+				"to_xyz()\n"
 				"  Returns the cartesian coordinates as the tuple (x,y,z).\n"
 				"\n"
 				"  :rtype: the tuple (float,float,float)\n"
@@ -575,7 +585,7 @@ export_vector_3d()
 				"    x, y, z = vector.to_xyz()\n")
 		.def("is_zero_magnitude",
 				&GPlatesMaths::Vector3D::is_zero_magnitude,
-				"is_zero_magnitude() -> bool\n"
+				"is_zero_magnitude()\n"
 				"  Returns ``True`` if the magnitude of this vector is zero.\n"
 				"\n"
 				"  :rtype: bool\n"
@@ -584,7 +594,7 @@ export_vector_3d()
 				"would cause :meth:`to_normalised` to raise *UnableToNormaliseZeroVectorError*.\n")
 		.def("get_magnitude",
 				&GPlatesMaths::Vector3D::magnitude,
-				"get_magnitude() -> float\n"
+				"get_magnitude()\n"
 				"  Returns the magnitude, or length, of the vector.\n"
 				"\n"
 				"  :rtype: float\n"
