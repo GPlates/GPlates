@@ -64,7 +64,7 @@ If GPlates does not support this in its export options then you can write some P
 to do this using *pygplates*.
 
 .. note:: This particular *pygplates* example is covered in the
-   :ref:`Getting Started Tutorial<pygplates_getting_started_tutorial>`.
+   :ref:`Getting Started tutorial<pygplates_getting_started_tutorial>`.
 
 In general, using a Python script affords a much greater level of flexibility provided you are
 comfortable using Python as a programming language.
@@ -81,7 +81,7 @@ to a past geological time:
 
 ...but it cannot restrict reconstructed data to a specific region on the globe. To achieve that,
 lower-level access is necessary along with having to write a bit more Python code as shown in the
-:ref:`Getting Started Tutorial<pygplates_getting_started_tutorial>`.
+:ref:`Getting Started tutorial<pygplates_getting_started_tutorial>`.
 
 Low-level access is beneficial for advanced scenarios where the low-level details need to be exposed
 in order to achieve the desired outcome (such as restricting reconstructed data to a specific region

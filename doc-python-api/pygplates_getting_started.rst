@@ -111,6 +111,8 @@ code for Linux:
   
 In the next section we will tell Python how to find our pre-built (or compiled) *pygplates* installation.
 
+.. _pygplates_getting_started_installation_telling_python_how_to_find_pygplates:
+
 Telling Python how to find pygplates
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -298,3 +300,89 @@ Tutorial
 This introductory tutorial is designed to help get you started using *pygplates*.
 
 .. note:: Before starting this tutorial please make sure you have :ref:`installed<pygplates_getting_started_installation>` *pygplates*.
+
+
+.. _pygplates_getting_started_tutorial_first_script:
+
+Introductory *pygplates* script
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Our introductory *pygplates* Python script will contain the following lines of source code:
+::
+
+  import pygplates
+  
+  pygplates.reconstruct('coastlines.gpmlz', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
+
+The first statement...
+::
+
+  import pygplates
+
+| ...tells Python to load *pygplates*.
+| This needs to be done before *pygplates* can be used in subsequent statements.
+
+.. note:: There are other ways to import *pygplates* but this is the simplest and most common way.
+
+The second statement...
+::
+  
+  pygplates.reconstruct('coastlines.gpmlz', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
+
+...will reconstruct coastlines (loaded from the ``coastlines.gpmlz`` file) to their location
+10 million years ago (Ma) using the plate rotations in the ``rotations.rot`` file, and then save those
+reconstructed locations to the Shapefile ``reconstructed_coastlines_10Ma.shp``.
+
+| First of all we need to create the Python script. This is essentially just a text file with the ``.py`` filename extension.
+| To do this copy the above lines of source code into a new file called ``tutorial.py`` (eg, using a text editor).
+
+.. note:: You may want to create a sub-directory in your home directory (such as ``pygplates_tutorial``) to place
+   the Python script and data files in.
+
+| Next we need the data files containing the coastlines and rotations.
+| This data is available in the `GPlates sample data <http://www.gplates.org/download.html#download_data>`_.
+| For example, in the GPlates 1.5 sample data, the coastlines file is called ``Seton_etal_ESR2012_Coastlines_2012.1_Polygon.gpmlz``
+  and the rotations file is called ``Seton_etal_ESR2012_2012.1.rot``.
+| Copy those files to the ``pygplates_tutorial`` directory and rename them as ``coastlines.gpmlz`` and ``rotations.rot``.
+  Alternatively the filenames (and paths) could be changed in the ``tutorials.py`` script to match the sample data.
+
+Next open up a terminal or command window (on MacOS and Ubuntu this is a *Terminal* window, and on Windows this is a *Command* window).
+
+| We may need to let Python know where to find *pygplates* by setting an environment variable
+  as covered in :ref:`pygplates_getting_started_installation_telling_python_how_to_find_pygplates`.
+| For example on MacOS this can be done by typing:
+
+::
+
+  export PYTHONPATH=$PYTHONPATH:/path/to/pygplates
+
+...where ``/path/to/pygplates`` is replaced with the directory where you extracted *pygplates*.
+
+| Next change the current working directory to the directory containing the ``tutorial.py`` file.
+| For example, on MacOS or Linux:
+
+::
+
+  cd ~/pygplates_tutorial
+
+Next run the Python script by typing:
+::
+
+  python tutorial.py
+
+If any errors were generated they might be due to a version incompatibility between the Python you are using and the
+*pygplates* you have installed - please see :ref:`pygplates_using_the_correct_python_version` for more details.
+
+.. note:: We are running our Python script through an *external* Python interpreter - see
+   :ref:`pygplates_introduction_external_vs_embedded`.
+
+| There should now be a ``reconstructed_coastlines_10Ma.shp`` file containing the reconstructed coastline
+  locations at ten millions year ago (10Ma).
+| This Shapefile can be loaded into the `GPlates desktop application <http://www.gplates.org/download.html>`_
+  to see these locations on the globe.
+
+In the next section we will enhance our Python script.
+
+.. _pygplates_getting_started_tutorial_second_script:
+
+**TODO** add enhanced script section
