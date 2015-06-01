@@ -106,6 +106,47 @@ namespace GPlatesApi
 		return feature_collection_function_argument.get_feature_collection();
 	}
 
+	/**
+	 * Clone an existing feature collection.
+	 *
+	 * NOTE: We don't use FeatureHandle::clone() because it currently does a shallow copy
+	 * instead of a deep copy.
+	 * FIXME: Once FeatureHandle has been updated to use the same revisioning system as
+	 * TopLevelProperty and PropertyValue then just delegate directly to FeatureCollectionHandle::clone().
+	 */
+	const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
+	feature_collection_handle_clone(
+			GPlatesModel::FeatureCollectionHandle &feature_collection_handle)
+	{
+		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type cloned_feature_collection =
+				GPlatesModel::FeatureCollectionHandle::create();
+
+		// Iterate over the feature of the feature collection and clone them.
+		GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection_handle.begin();
+		GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_handle.end();
+		for ( ; features_iter != features_end; ++features_iter)
+		{
+			GPlatesModel::FeatureHandle::non_null_ptr_type feature = *features_iter;
+
+			GPlatesModel::FeatureHandle::non_null_ptr_type cloned_feature =
+					GPlatesModel::FeatureHandle::create(feature->feature_type());
+
+			// Iterate over the properties of the feature and clone them.
+			GPlatesModel::FeatureHandle::iterator properties_iter = feature->begin();
+			GPlatesModel::FeatureHandle::iterator properties_end = feature->end();
+			for ( ; properties_iter != properties_end; ++properties_iter)
+			{
+				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+				cloned_feature->add(feature_property->clone());
+			}
+
+			cloned_feature_collection->add(cloned_feature);
+		}
+
+		return cloned_feature_collection;
+	}
+
 	void
 	feature_collection_handle_add(
 			GPlatesModel::FeatureCollectionHandle &feature_collection_handle,
@@ -1202,6 +1243,16 @@ export_feature_collection()
 				"    feature_collection = pygplates.FeatureCollection()\n"
 				"    feature_collection.add(feature1)\n"
 				"    feature_collection.add(feature2)\n")
+		.def("clone",
+				&GPlatesApi::feature_collection_handle_clone,
+				"clone()\n"
+				"  Create a duplicate of this feature collection instance.\n"
+				"\n"
+				"  :rtype: :class:`FeatureCollection`\n"
+				"\n"
+				"  This creates a new :class:`FeatureCollection` instance with cloned versions of this "
+				"collection's features. And the cloned features (in the cloned collection) are each "
+				"created with a unique :class:`FeatureId`.\n")
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureCollectionHandle>())
 		.def("__len__", &GPlatesModel::FeatureCollectionHandle::size)
 		.def("add",
@@ -1275,8 +1326,7 @@ export_feature_collection()
 				&GPlatesApi::feature_collection_handle_get_feature,
 				(bp::arg("feature_query"),
 						bp::arg("feature_query") = GPlatesApi::FeatureReturn::EXACTLY_ONE),
-				"get(feature_query, [feature_return=FeatureReturn.exactly_one]) "
-				"-> Feature or list or None\n"
+				"get(feature_query, [feature_return=FeatureReturn.exactly_one])\n"
 				"  Returns one or more features matching a feature type, feature id or predicate.\n"
 				"\n"
 				"  :param feature_query: the feature type, feature id or predicate function that matches the feature "
@@ -1422,7 +1472,7 @@ export_feature_collection()
 		.def("contains_features",
 				&GPlatesApi::FeaturesFunctionArgument::contains_features,
 				(bp::arg("function_argument")),
-				"contains_features(function_argument) -> bool\n"
+				"contains_features(function_argument)\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...

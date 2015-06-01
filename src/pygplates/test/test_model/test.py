@@ -491,8 +491,15 @@ class FeatureCollectionCase(unittest.TestCase):
         new_feature_collection = pygplates.FeatureCollection([feature for feature in self.feature_collection])
         self.assertEquals(len(new_feature_collection), len(self.feature_collection))
 
-        feature_collection_from_file = pygplates.FeatureCollection(os.path.join(FIXTURES, 'volcanoes.gpml'))
-        self.assertTrue(len(feature_collection_from_file) > 0)
+        feature_collection_from_file = pygplates.FeatureCollection(self.volcanoes_filename)
+        self.assertTrue(len(feature_collection_from_file) == self.feature_count)
+
+    def test_clone(self):
+        # Modify original and make sure clone is not affected.
+        feature_collection_clone = self.feature_collection.clone()
+        self.assertTrue(len(feature_collection_clone) == len(self.feature_collection))
+        feature_collection_clone.remove(pygplates.FeatureType.create_gpml('Volcano'))
+        self.assertTrue(len(feature_collection_clone) != len(self.feature_collection))
 
     def test_len(self):
         self.assertEquals(len(self.feature_collection), self.feature_count)
