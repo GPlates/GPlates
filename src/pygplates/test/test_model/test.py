@@ -491,6 +491,9 @@ class FeatureCollectionCase(unittest.TestCase):
         new_feature_collection = pygplates.FeatureCollection([feature for feature in self.feature_collection])
         self.assertEquals(len(new_feature_collection), len(self.feature_collection))
 
+        feature_collection_from_file = pygplates.FeatureCollection(os.path.join(FIXTURES, 'volcanoes.gpml'))
+        self.assertTrue(len(feature_collection_from_file) > 0)
+
     def test_len(self):
         self.assertEquals(len(self.feature_collection), self.feature_count)
 

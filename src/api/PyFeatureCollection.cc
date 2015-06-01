@@ -75,26 +75,35 @@ namespace GPlatesApi
 	feature_collection_handle_create(
 			bp::object features_object)
 	{
-		// Create empty feature collection.
-		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection_handle =
-				GPlatesModel::FeatureCollectionHandle::create();
-
-		// Add any specified features (if 'features_object' is not Py_None).
-		if (features_object != bp::object())
+		if (features_object == bp::object()/*Py_None*/)
 		{
-			// Begin/end iterators over the python feature sequence.
-			bp::stl_input_iterator<GPlatesModel::FeatureHandle::non_null_ptr_type>
-					features_iter(features_object),
-					features_end;
-
-			// Add the features to the collection.
-			for ( ; features_iter != features_end; ++features_iter)
-			{
-				feature_collection_handle->add(*features_iter);
-			}
+			// Return an empty feature collection.
+			return GPlatesModel::FeatureCollectionHandle::create();
 		}
 
-		return feature_collection_handle;
+		// Before we use 'FeatureCollectionFunctionArgument' to extract the feature collection
+		// we check that 'features_object' is not already a feature collection.
+		// If it is then we need to reject it since 'FeatureCollectionFunctionArgument' will accept it.
+		// We reject because it's not clear whether we should be doing a shallow copy or deep copy.
+		// So we'll make things clear to the user and just not allow it.
+		if (bp::extract<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(features_object).check())
+		{
+			PyErr_SetString(PyExc_TypeError,
+					"Expected an optional filename, or sequence of features, or a single feature");
+			bp::throw_error_already_set();
+		}
+
+		bp::extract<FeatureCollectionFunctionArgument> extract_feature_collection(features_object);
+		if (!extract_feature_collection.check())
+		{
+			PyErr_SetString(PyExc_TypeError,
+					"Expected an optional filename, or sequence of features, or a single feature");
+			bp::throw_error_already_set();
+		}
+
+		FeatureCollectionFunctionArgument feature_collection_function_argument = extract_feature_collection();
+
+		return feature_collection_function_argument.get_feature_collection();
 	}
 
 	void
@@ -1168,16 +1177,31 @@ export_feature_collection()
 				"__init__([features])\n"
 				"  Create a new feature collection instance.\n"
 				"\n"
-				"  :param features: an optional sequence of features to add\n"
-				"  :type features: a sequence (eg, ``list`` or ``tuple``) of :class:`Feature`\n"
+				"  :param features: an optional filename, or sequence of features, or a single feature\n"
+				"  :type features: string, or a sequence (eg, ``list`` or ``tuple``) of :class:`Feature`, "
+				"or a single :class:`Feature`\n"
+				"  :raises: OpenFileForReadingError if file is not readable (if filename specified)\n"
+				"  :raises: FileFormatNotSupportedError if file format (identified by the filename "
+				"extension) does not support reading (when filename specified)\n"
 				"\n"
+				"  To create a new feature collection from a file: \n"
 				"  ::\n"
 				"\n"
+				"    coastline_features = pygplates.FeatureCollection('coastlines.gpml')\n"
+				"\n"
+				"  .. note:: If a filename is specified then :class:`FeatureCollectionFileFormatRegistry` is used "
+				"internally to read the file.\n"
+				"\n"
+				"  To create a new feature collection from a sequence of :class:`features<Feature>`:\n"
+				"  ::\n"
+				"\n"
+				"    feature_collection = pygplates.FeatureCollection([feature1, feature2])\n"
+				"    \n"
+				"    # ...is the equivalent of...\n"
+				"    \n"
 				"    feature_collection = pygplates.FeatureCollection()\n"
 				"    feature_collection.add(feature1)\n"
-				"    feature_collection.add(feature2)\n"
-				"    # ...or...\n"
-				"    feature_collection = pygplates.FeatureCollection([feature1, feature2])\n")
+				"    feature_collection.add(feature2)\n")
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureCollectionHandle>())
 		.def("__len__", &GPlatesModel::FeatureCollectionHandle::size)
 		.def("add",
