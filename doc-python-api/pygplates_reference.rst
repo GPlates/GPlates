@@ -110,16 +110,15 @@ Classes that load/save data from/to files:
 Rotation classes
 ^^^^^^^^^^^^^^^^
 
-:class:`pygplates.RotationModel` is the main class for getting finite and stage rotations from rotation models/files.
-
-:class:`pygplates.FiniteRotation` is a useful maths class for rotating geometries (and vectors).
+| :class:`pygplates.RotationModel` is the main class for getting finite and stage rotations from rotation models/files.
+| :class:`pygplates.FiniteRotation` is a useful maths class for rotating geometries (and vectors).
 
 .. autosummary::
    :nosignatures:
    :toctree: generated
 
-   pygplates.FiniteRotation
    pygplates.RotationModel
+   pygplates.FiniteRotation
 
 .. note:: :class:`pygplates.ReconstructionTreeBuilder` and :class:`pygplates.ReconstructionTreeEdge`
    are only needed for very advanced scenarios.
@@ -164,10 +163,9 @@ where each property has a :class:`name<pygplates.PropertyName>` and a :class:`va
 Feature property value classes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-These classes represent the various types of property values that a :class:`feature<pygplates.Feature>` can contain.
-
-Property values contain things such as plate IDs, geometries, finite rotations, strings, numbers, etc.
-All these property values inherit :class:`pygplates.PropertyValue`.
+| These classes represent the various types of property values that a :class:`feature<pygplates.Feature>` can contain.
+| Property values contain things such as plate IDs, geometries, finite rotations, strings, numbers, etc.
+  All these property values inherit :class:`pygplates.PropertyValue`.
 
 .. note:: Some of these property values can be obtained more easily using :class:`pygplates.Feature` directly.
 
@@ -246,10 +244,10 @@ There are four types of geometry:
    :nosignatures:
    :toctree: generated
    
-   pygplates.MultiPointOnSphere
    pygplates.PointOnSphere
-   pygplates.PolygonOnSphere
+   pygplates.MultiPointOnSphere
    pygplates.PolylineOnSphere
+   pygplates.PolygonOnSphere
 
 All four above geometry types inherit from :class:`pygplates.GeometryOnSphere`:
 
