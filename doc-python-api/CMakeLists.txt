@@ -65,7 +65,8 @@ if (SPHINX_FOUND)
 	# Copy the ".rst" files from our source directory to our binary/output directory.
 	# This is because the sphinx 'autosummary' command (when used with ':toctree:') with generate a
 	# bunch of stub ".rst" files and we don't want them in our source code.
-	FILE(GLOB RST_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/*.rst")
+	FILE(GLOB RST_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/*.rst" "${CMAKE_CURRENT_SOURCE_DIR}/sample-code/*.rst")
+	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/sample-code") # Ensure 'sample-code' sub-directory exists in binary build directory.
 	FOREACH(RST_FILE ${RST_FILES})
 		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${RST_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${RST_FILE} COPYONLY)
 	ENDFOREACH(RST_FILE ${RST_FILES})
