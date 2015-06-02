@@ -53,6 +53,16 @@ Functions to reconstruct backward and forward in time:
    pygplates.reconstruct
    pygplates.reverse_reconstruct
 
+Velocity functions
+^^^^^^^^^^^^^^^^^^
+
+Functions to calculate velocities:
+
+.. autosummary::
+   :toctree: generated
+
+   pygplates.calculate_velocities
+
 Crossover functions
 ^^^^^^^^^^^^^^^^^^^
 

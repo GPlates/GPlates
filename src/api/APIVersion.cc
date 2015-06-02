@@ -24,6 +24,7 @@
  */
 
 #include <ostream>
+#include <sstream>
 #include <boost/optional.hpp>
 #include <QDebug>
 #include <QString>
@@ -155,24 +156,26 @@ GPlatesApi::operator<<(
 void
 export_version()
 {
-	//
-	// Version - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
-	//
-	bp::class_<GPlatesApi::Version>(
-			"Version",
+	std::stringstream version_class_docstring_stream;
+	version_class_docstring_stream <<
 			"A version of pygplates (GPlates Python API).\n"
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported and Version is "
 			"hashable (can be used as a key in a ``dict``).\n"
 			"\n"
-			"During the lifespan of pygplates, the :meth:`imported pygplates version<get_imported_version>` "
+			"| During the lifespan of pygplates, the :meth:`imported pygplates version<get_imported_version>` "
 			"has been incremented for each API change. So it can be used to ensure new API additions are "
-			"present in the imported pygplates library. For example, if we are using a new API function that "
-			"was added in revision 10 then we can ensure we are using a sufficient API version by checking "
+			"present in the imported pygplates library.\n"
+			"| For example, if we are using a new API function that was added in this revision (which is "
+			<< GPlatesGlobal::PygplatesRevision <<
+			") then we can ensure we are using a sufficient API version by checking "
 			"this at the beginning of our script:\n"
+			"\n"
 			"::\n"
 			"\n"
-			"  if pygplates.Version.get_imported_version() < pygplates.Version(10):\n"
+			"  if pygplates.Version.get_imported_version() < pygplates.Version("
+			<< GPlatesGlobal::PygplatesRevision <<
+			"):\n"
 			"      print 'pygplates version %s is not supported' % "
 			"pygplates.Version.get_imported_version()\n"
 			"\n"
@@ -181,57 +184,93 @@ export_version()
 			"\n"
 			"  print 'imported pygplates version: %s' % pygplates.Version.get_imported_version()\n"
 			"\n"
-			"...which for pygplates revision 10 (associated with GPlates version 1.4.0) will print "
-			"``10 (GPlates 1.4.0)``. However, note that the associated GPlates version is only printed "
+			"...which for pygplates revision "
+			<< GPlatesGlobal::PygplatesRevision <<
+			" (associated with GPlates version "
+			<< GPlatesGlobal::GPlatesVersion <<
+			") will print ``"
+			<< GPlatesGlobal::PygplatesRevision << " (GPlates " << GPlatesGlobal::GPlatesVersion <<
+			")``. However, note that the associated GPlates version is only printed "
 			"when using :meth:`get_imported_version`. So the following example only prints the "
-			"revision number ``10``:\n"
+			"revision number ``"
+			<< GPlatesGlobal::PygplatesRevision <<
+			"``:\n"
 			"::\n"
 			"\n"
-			"  print 'pygplates version: %s' % pygplates.Version(10)\n"
+			"  print 'pygplates version: %s' % pygplates.Version("
+			<< GPlatesGlobal::PygplatesRevision <<
+			")\n"
 			"\n"
 			"There is also a ``pygplates.__version__`` string equal to the concatenation of the GPlates "
 			"version and the pygplates revision of the imported pygplates library. For pygplates revision "
-			"10 (associated with GPlates version 1.4.0) this would be ``'1.4.0.10'``.\n",
+			<< GPlatesGlobal::PygplatesRevision <<
+			" (associated with GPlates version "
+			<< GPlatesGlobal::GPlatesVersion <<
+			") this would be ``'"
+			<< GPlatesGlobal::GPlatesVersion << "." << GPlatesGlobal::PygplatesRevision <<
+			"'``.\n";
+
+	std::stringstream version_init_docstring_stream;
+	version_init_docstring_stream <<
+			"__init__(revision)\n"
+			"  Create a *Version* instance from a *revision* number.\n"
+			"\n"
+			"  :param revision: the revision number\n"
+			"  :type revision: int\n"
+			"\n"
+			"  To check if the imported pygplates library is revision "
+			<< GPlatesGlobal::PygplatesRevision <<
+			" or greater:\n"
+			"  ::\n"
+			"\n"
+			"    if pygplates.Version.get_imported_version() < pygplates.Version("
+			<< GPlatesGlobal::PygplatesRevision <<
+			"):\n"
+			"        print 'pygplates version %s is not supported' % "
+			"pygplates.Version.get_imported_version()\n";
+
+	std::stringstream version_get_imported_version_docstring_stream;
+	version_get_imported_version_docstring_stream <<
+			"get_imported_version()\n"
+			// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+			// (like it can a pure python function) and we cannot document it in first (signature) line
+			// because it messes up Sphinx's signature recognition...
+			"  [*staticmethod*] Return the version of the imported pygplates library.\n"
+			"\n"
+			"  :returns: a Version instance representing the :meth:`revision number<get_revision>` "
+			"of the imported pygplates library\n"
+			"  :rtype: :class:`Version`\n"
+			"\n"
+			"  To check if the imported pygplates library is revision "
+			<< GPlatesGlobal::PygplatesRevision <<
+			" or greater:\n"
+			"  ::\n"
+			"\n"
+			"    if pygplates.Version.get_imported_version() < pygplates.Version("
+			<< GPlatesGlobal::PygplatesRevision <<
+			"):\n"
+			"        print 'pygplates version %s is not supported' % "
+			"pygplates.Version.get_imported_version()\n";
+
+	//
+	// Version - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<GPlatesApi::Version>(
+			"Version",
+			version_class_docstring_stream.str().c_str(),
 			bp::init<unsigned int>(
 					(bp::arg("revision")),
-					"__init__(revision)\n"
-					"  Create a *Version* instance from a *revision* number.\n"
-					"\n"
-					"  :param revision: the revision number\n"
-					"  :type revision: int\n"
-					"\n"
-					"  To check if the imported pygplates library is revision 10 or greater:\n"
-					"  ::\n"
-					"\n"
-					"    if pygplates.Version.get_imported_version() < pygplates.Version(10):\n"
-					"        print 'pygplates version %s is not supported' % "
-					"pygplates.Version.get_imported_version()\n"))
+					version_init_docstring_stream.str().c_str()))
 		.def("get_imported_version",
 				&GPlatesApi::Version::get_imported_version,
-				"get_imported_version() -> Version\n"
-				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
-				// (like it can a pure python function) and we cannot document it in first (signature) line
-				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Return the version of the imported pygplates library.\n"
-				"\n"
-				"  :returns: a Version instance representing the :meth:`revision number<get_revision>` "
-				"of the imported pygplates library\n"
-				"  :rtype: :class:`Version`\n"
-				"\n"
-				"  To check if the imported pygplates library is revision 10 or greater:\n"
-				"  ::\n"
-				"\n"
-				"    if pygplates.Version.get_imported_version() < pygplates.Version(10):\n"
-				"        print 'pygplates version %s is not supported' % "
-				"pygplates.Version.get_imported_version()\n")
+				version_get_imported_version_docstring_stream.str().c_str())
 		.staticmethod("get_imported_version")
 		.def("get_revision",
 				&GPlatesApi::Version::get_revision,
-				"get_revision() -> int\n"
+				"get_revision()\n"
+				"  Returns the integer revision number.\n"
 				"\n"
-				"  :rtype: int\n"
-				"\n"
-				"  Returns the integer revision number.\n")
+				"  :rtype: int\n")
 		// Since we're defining '__eq__' we need to define a compatible '__hash__' or make it unhashable.
 		// This is because the default '__hash__' is based on 'id()' which is not compatible and
 		// would cause errors when used as key in a dictionary.

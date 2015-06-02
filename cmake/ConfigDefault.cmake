@@ -85,6 +85,13 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates s
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}environment, the Inkscape vector graphics editor and the Tango icon library.\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html>\\n")
 
+# The pyGPlates copyright - string version to be used in Python API documentation.
+# We don't include 'Copyright' since we're using Sphinx for documentation and it prepends it to our copyright string.
+set(PYGPLATES_DOCS_COPYRIGHT_STRING "")
+set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2003-2015 The University of Sydney, Australia\\n")
+set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2004-2015 California Institute of Technology\\n")
+set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2007-2015 The Geological Survey of Norway\\n")
+
 # The subversion revision of the GPlates source code.
 # This is manually set when making GPlates *public* releases.
 # However, when making internal releases or just an ordinary developer build, leave it

@@ -8,7 +8,7 @@ It also gives an overview of embedded versus external *pygplates*.
 
 .. contents::
    :local:
-   :depth: 2
+   :depth: 3
 
 .. _pygplates_introduction_using_gplates_versus_pygplates:
 
@@ -123,21 +123,22 @@ For example you might have a file called ``my_python_script.py`` that you execut
 ...this starts up the Python interpreter and instructs it to execute Python source code found in
 the ``my_python_script.py`` script.
 
-In your Python script you will need to import *pygplates* before you can access *pygplates* functionality.
-For example a script that just prints the *pygplates* version would look like:
+| In your Python script you will need to import *pygplates* before you can access *pygplates* functionality.
+| For example a script that just prints the *pygplates* version would look like:
+
 ::
 
   import pygplates
   
   print 'Imported pygplates version: %s' % pygplates.Version.get_imported_version()
 
-...which would print out something like...
+...which would print out...
 ::
 
-  4 (GPlates 1.4.0)
+  @PYGPLATES_REVISION@ (GPlates @GPLATES_PACKAGE_VERSION@)
 
-...where ``4`` is the *pygplates* revision and ``GPlates 1.4.0`` (in parentheses) indicates that
-revision ``4`` is associated with GPlates 1.4.0.
+...where ``@PYGPLATES_REVISION@`` is the *pygplates* revision and ``GPlates @GPLATES_PACKAGE_VERSION@`` (in parentheses) indicates that
+revision ``@PYGPLATES_REVISION@`` is associated with GPlates @GPLATES_PACKAGE_VERSION@.
 
 .. note:: You will need to :ref:`install <pygplates_getting_started_installation_external>` *pygplates* so that the
    Python interpreter can find it when you execute ``python my_python_script.py``.

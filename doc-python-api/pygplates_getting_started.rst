@@ -7,7 +7,7 @@ This document covers installation of *pygplates* and a tutorial to get you start
 
 .. contents::
    :local:
-   :depth: 2
+   :depth: 3
 
 .. _pygplates_getting_started_installation:
 
@@ -16,6 +16,10 @@ Installation
 
 This section covers how and when to install *pygplates*.
 It also covers installing Python and telling Python how to find *pygplates*.
+
+.. contents::
+   :local:
+   :depth: 2
 
 When to install pygplates
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -42,46 +46,48 @@ The following sections cover the installation of *pygplates* in the *external* c
 Installing pygplates
 ^^^^^^^^^^^^^^^^^^^^
 
-*pygplates* is currently only available as *internal* releases (it has not yet been *publicly* released).
+.. note:: *pygplates* is currently only available as *internal* releases (it has not yet been *publicly* released).
 
-Each internal release comes in a single zip file such as ``pygplates_rev4.zip`` (for pygplates
-*revision* 4) which contains the following files:
+| Each internal release comes in a single zip file.
+| For the current *pygplates* revision @PYGPLATES_REVISION@ this is ``pygplates_rev@PYGPLATES_REVISION@.zip``.
+| It contains the following files:
+
 ::
 
-  pygplates_docs_rev4.zip
-  pygplates_rev4_python27_MacOS64.zip
-  pygplates_rev4_python27_win32.zip
-  pygplates_rev4_src.zip
+  pygplates_rev@PYGPLATES_REVISION@_docs.zip
+  pygplates_rev@PYGPLATES_REVISION@_python27_MacOS64.zip
+  pygplates_rev@PYGPLATES_REVISION@_python27_win32.zip
+  pygplates_rev@PYGPLATES_REVISION@_src.zip
   README.txt
 
-The *pygplates* documentation is in ``pygplates_docs_rev4.zip``. If you extract this zip file to your
-hard drive and then open ``pygplates_docs_rev4/index.html`` in a web browser you will see the
-:ref:`front page <pygplates_index>` of this documentation.
+| The *pygplates* documentation is in ``pygplates_rev@PYGPLATES_REVISION@_docs.zip``.
+| If you extract this zip file to your hard drive and then open ``pygplates_rev@PYGPLATES_REVISION@_docs/index.html``
+  in a web browser you will see the :ref:`front page <pygplates_index>` of this documentation.
 
 The remaining zip files contain a pre-built *pygplates* library for MacOS X and Windows, and source
 code for Linux:
   
-* ``pygplates_rev4_python27_MacOS64.zip`` - *pygplates* for MacOS X (compiled for 64-bit Python 2.7).
+* ``pygplates_rev@PYGPLATES_REVISION@_python27_MacOS64.zip`` - *pygplates* for MacOS X (compiled for 64-bit Python 2.7).
 
-  Extracting this zip file creates a directory ``pygplates_rev4_python27_MacOS64`` containing the
+  Extracting this zip file creates a directory ``pygplates_rev@PYGPLATES_REVISION@_python27_MacOS64`` containing the
   ``pygplates.so`` *pygplates* library and its dependency libraries.
   
   .. note:: This pre-built *pygplates* library will only work with a Python interpreter that is
      version 2.7.x and is 64-bit. The operating system can be Snow Leopard or above.
   
-* ``pygplates_rev4_python27_win32.zip`` - *pygplates* for Windows (compiled for 32-bit Python 2.7).
+* ``pygplates_rev@PYGPLATES_REVISION@_python27_win32.zip`` - *pygplates* for Windows (compiled for 32-bit Python 2.7).
 
-  Extracting this zip file creates a directory ``pygplates_rev4_python27_win32`` containing the
+  Extracting this zip file creates a directory ``pygplates_rev@PYGPLATES_REVISION@_python27_win32`` containing the
   ``pygplates.pyd`` *pygplates* library and its dependency libraries.
   
   .. note:: This pre-built *pygplates* library will only work with a Python interpreter that is
      version 2.7.x and is 32-bit. It will work on a 32-bit or 64-bit operating system (Windows 7 or above),
      **but the installed Python must be 32-bit**. A 64-bit Python installation will not work.
   
-* ``pygplates_rev4_src.zip`` - *pygplates* source code (typically used to compile *pygplates* on Linux).
+* ``pygplates_rev@PYGPLATES_REVISION@_src.zip`` - *pygplates* source code (typically used to compile *pygplates* on Linux).
 
-  Extracting this zip file creates a directory ``pygplates_rev4_src`` containing the *pygplates*
-  source code.
+  Extracting this zip file creates a directory ``pygplates_rev@PYGPLATES_REVISION@_src``
+  containing the *pygplates* source code.
   
   Unlike the pre-built *pygplates* libraries for MacOS X and Windows, here we have source code that
   needs to be compiled into a *pygplates* library. This is typically used to compile *pygplates* on
@@ -89,16 +95,16 @@ code for Linux:
   libraries (of *pygplates* and GPlates) a lot easier than with MacOS X and Windows.
   
   To compile *pygplates* follow the instructions for building GPlates in the files ``BUILD.Linux`` and
-  ``DEPS.Linux`` in the root directory ``pygplates_rev4_src`` of the source code. Once the dependency
-  libraries have been installed this process essentially boils down to executing the following
-  commands in a *Terminal* in the root source code directory:
+  ``DEPS.Linux`` in the root directory ``pygplates_rev@PYGPLATES_REVISION@_src`` of the source code.
+  Once the dependency libraries have been installed this process essentially boils down to executing
+  the following commands in a *Terminal* in the root source code directory:
   ::
   
     cmake .
     make pygplates
 
   ...which, on successful completion, should result in a ``pygplates.so`` library in the ``bin``
-  sub-directory of the root source code directory ``pygplates_rev4_src``.
+  sub-directory of the root source code directory ``pygplates_rev@PYGPLATES_REVISION@_src``.
   
   Also if you have a dual-core or quad-core system then you can speed up compilation
   using ``make -j 2 pygplates`` or ``make -j 4 pygplates``.
@@ -141,7 +147,7 @@ Setting the *PYTHONPATH* environment variable:
     export PYTHONPATH=$PYTHONPATH:/path/to/pygplates
 
   ...replacing ``/path/to/pygplates`` with the actual path to your extracted
-  ``pygplates_rev4_python27_MacOS64`` directory, for example.
+  ``pygplates_rev@PYGPLATES_REVISION@_python27_MacOS64`` directory, for example.
 
 * *Linux*:
 
@@ -151,7 +157,7 @@ Setting the *PYTHONPATH* environment variable:
     export PYTHONPATH=$PYTHONPATH:/path/to/pygplates/bin
 
   ...replacing ``/path/to/pygplates`` with the actual path to your extracted
-  ``pygplates_rev4_src`` source code directory, for example.
+  ``pygplates_rev@PYGPLATES_REVISION@_src`` source code directory, for example.
   
   .. note:: The extra ``/bin`` suffix is because ``pygplates.so`` is in the local ``bin`` directory
      (once it has been compiled from source code).
@@ -166,7 +172,7 @@ Setting the *PYTHONPATH* environment variable:
     set path=%path%;"c:\path\to\pygplates"
 
   ...replacing ``c:\path\to\pygplates`` with the actual path to your extracted
-  ``pygplates_rev4_python27_win32`` directory, for example.
+  ``pygplates_rev@PYGPLATES_REVISION@_python27_win32`` directory, for example.
 
   Or you can change *PYTHONPATH* and *PATH* in the system environment variables:
   
@@ -301,11 +307,17 @@ This introductory tutorial is designed to help get you started using *pygplates*
 
 .. note:: Before starting this tutorial please make sure you have :ref:`installed<pygplates_getting_started_installation>` *pygplates*.
 
+.. contents::
+   :local:
+   :depth: 2
 
 .. _pygplates_getting_started_tutorial_first_script:
 
 Introductory *pygplates* script
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Source code
+"""""""""""
 
 Our introductory *pygplates* Python script will contain the following lines of source code:
 ::
@@ -332,6 +344,9 @@ The second statement...
 ...will reconstruct coastlines (loaded from the ``coastlines.gpmlz`` file) to their location
 10 million years ago (Ma) using the plate rotations in the ``rotations.rot`` file, and then save those
 reconstructed locations to the Shapefile ``reconstructed_coastlines_10Ma.shp``.
+
+Setting up the script
+"""""""""""""""""""""
 
 | First of all we need to create the Python script. This is essentially just a text file with the ``.py`` filename extension.
 | To do this copy the above lines of source code into a new file called ``tutorial.py`` (eg, using a text editor).
@@ -365,6 +380,9 @@ Next open up a terminal or command window (on MacOS and Ubuntu this is a *Termin
 
   cd ~/pygplates_tutorial
 
+Running the script
+""""""""""""""""""
+
 Next run the Python script by typing:
 ::
 
@@ -375,6 +393,9 @@ If any errors were generated they might be due to a version incompatibility betw
 
 .. note:: We are running our Python script through an *external* Python interpreter - see
    :ref:`pygplates_introduction_external_vs_embedded`.
+
+Output of the script
+""""""""""""""""""""
 
 | There should now be a ``reconstructed_coastlines_10Ma.shp`` file containing the reconstructed coastline
   locations at ten millions year ago (10Ma).
