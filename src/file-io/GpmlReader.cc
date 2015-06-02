@@ -334,7 +334,7 @@ namespace
 		boost::optional<Model::GpgimVersion> gpml_version;
 
 		const QStringRef file_version_string = reader.attributes().value(
-				XmlUtils::GPML_NAMESPACE_QSTRING, "version");
+				XmlUtils::get_gpml_namespace_qstring(), "version");
 		if (file_version_string == "")
 		{
 			append_warning(params,
@@ -461,7 +461,7 @@ GPlatesFileIO::GpmlReader::read_file(
 			{
 				append_warning_if( 
 					! qualified_names_are_equal(
-							reader, XmlUtils::GML_NAMESPACE_QSTRING, "featureMember"), 
+							reader, XmlUtils::get_gml_namespace_qstring(), "featureMember"), 
 					// FIXME: What do I use for the XmlNode here?  Maybe append the error
 					// manually instead?
 					params, 

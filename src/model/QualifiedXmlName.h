@@ -80,7 +80,7 @@ namespace GPlatesModel
 		create_gpgim(
 				const QString &name) {
 			return QualifiedXmlName(
-					GPlatesUtils::XmlNamespaces::GPGIM_NAMESPACE,
+					GPlatesUtils::XmlNamespaces::get_gpgim_namespace(),
 					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
 
@@ -93,7 +93,7 @@ namespace GPlatesModel
 				const QString &namespace_alias,
 				const QString &name) {
 			return QualifiedXmlName(
-					GPlatesUtils::XmlNamespaces::GPGIM_NAMESPACE, 
+					GPlatesUtils::XmlNamespaces::get_gpgim_namespace(), 
 					GPlatesUtils::make_icu_string_from_qstring(namespace_alias),
 					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
@@ -104,7 +104,7 @@ namespace GPlatesModel
 		create_gpml(
 				const QString &name) {
 			return QualifiedXmlName(
-					GPlatesUtils::XmlNamespaces::GPML_NAMESPACE,
+					GPlatesUtils::XmlNamespaces::get_gpml_namespace(),
 					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
 
@@ -115,7 +115,7 @@ namespace GPlatesModel
 				const QString &namespace_alias,
 				const QString &name) {
 			return QualifiedXmlName(
-					GPlatesUtils::XmlNamespaces::GPML_NAMESPACE, 
+					GPlatesUtils::XmlNamespaces::get_gpml_namespace(), 
 					GPlatesUtils::make_icu_string_from_qstring(namespace_alias),
 					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
@@ -126,7 +126,7 @@ namespace GPlatesModel
 		create_gml(
 				const QString &name) {
 			return QualifiedXmlName(
-					GPlatesUtils::XmlNamespaces::GML_NAMESPACE,
+					GPlatesUtils::XmlNamespaces::get_gml_namespace(),
 					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
 
@@ -137,7 +137,7 @@ namespace GPlatesModel
 				const QString &namespace_alias,
 				const QString &name) {
 			return QualifiedXmlName(
-					GPlatesUtils::XmlNamespaces::GML_NAMESPACE, 
+					GPlatesUtils::XmlNamespaces::get_gml_namespace(), 
 					GPlatesUtils::make_icu_string_from_qstring(namespace_alias),
 					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
@@ -148,7 +148,7 @@ namespace GPlatesModel
 		create_xsi(
 				const QString &name) {
 			return QualifiedXmlName(
-					GPlatesUtils::XmlNamespaces::XSI_NAMESPACE,
+					GPlatesUtils::XmlNamespaces::get_xsi_namespace(),
 					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
 
@@ -403,7 +403,7 @@ namespace GPlatesModel
 		if (tokens.count() == 1)
 		{
 			return QualifiedXmlNameType(
-					GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING,
+					GPlatesUtils::XmlNamespaces::get_gpml_namespace_qstring(),
 					tokens.at(0));
 		}
 

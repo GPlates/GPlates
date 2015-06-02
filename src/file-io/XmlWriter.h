@@ -129,14 +129,14 @@ namespace GPlatesFileIO
 		void
 		writeEmptyGpmlElement(
 				const QString &name) {
-			d_writer.writeEmptyElement(GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING, name);
+			d_writer.writeEmptyElement(GPlatesUtils::XmlNamespaces::get_gpml_namespace_qstring(), name);
 		}
 
 
 		void
 		writeEmptyGmlElement(
 				const QString &name) {
-			d_writer.writeEmptyElement(GPlatesUtils::XmlNamespaces::GML_NAMESPACE_QSTRING, name);
+			d_writer.writeEmptyElement(GPlatesUtils::XmlNamespaces::get_gml_namespace_qstring(), name);
 		}
 
 
@@ -157,14 +157,14 @@ namespace GPlatesFileIO
 		void
 		writeStartGpmlElement(
 				const QString &elem_name) {
-			d_writer.writeStartElement(GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING, elem_name);
+			d_writer.writeStartElement(GPlatesUtils::XmlNamespaces::get_gpml_namespace_qstring(), elem_name);
 		}
 
 
 		void
 		writeStartGmlElement(
 				const QString &elem_name) {
-			d_writer.writeStartElement(GPlatesUtils::XmlNamespaces::GML_NAMESPACE_QSTRING, elem_name);
+			d_writer.writeStartElement(GPlatesUtils::XmlNamespaces::get_gml_namespace_qstring(), elem_name);
 		}
 
 
@@ -280,7 +280,7 @@ namespace GPlatesFileIO
 		writeGpmlAttribute(
 				const QString &name,
 				const QString &value) {
-			writeAttribute(GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING, name, value);
+			writeAttribute(GPlatesUtils::XmlNamespaces::get_gpml_namespace_qstring(), name, value);
 		}
 
 
@@ -288,7 +288,7 @@ namespace GPlatesFileIO
 		writeGmlAttribute(
 				const QString &name,
 				const QString &value) {
-			writeAttribute(GPlatesUtils::XmlNamespaces::GML_NAMESPACE_QSTRING, name, value);
+			writeAttribute(GPlatesUtils::XmlNamespaces::get_gml_namespace_qstring(), name, value);
 		}
 
 

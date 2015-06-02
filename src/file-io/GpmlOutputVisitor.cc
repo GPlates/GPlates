@@ -602,14 +602,14 @@ GPlatesFileIO::GpmlOutputVisitor::start_writing_document(
 	writer.writeStartDocument();
 
 	writer.writeNamespace(
-			GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING,
-			GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS_QSTRING);
+			GPlatesUtils::XmlNamespaces::get_gpml_namespace_qstring(),
+			GPlatesUtils::XmlNamespaces::get_gpml_standard_alias_qstring());
 	writer.writeNamespace(
-			GPlatesUtils::XmlNamespaces::GML_NAMESPACE_QSTRING,
-			GPlatesUtils::XmlNamespaces::GML_STANDARD_ALIAS_QSTRING);
+			GPlatesUtils::XmlNamespaces::get_gml_namespace_qstring(),
+			GPlatesUtils::XmlNamespaces::get_gml_standard_alias_qstring());
 	writer.writeNamespace(
-			GPlatesUtils::XmlNamespaces::XSI_NAMESPACE_QSTRING,
-			GPlatesUtils::XmlNamespaces::XSI_STANDARD_ALIAS_QSTRING);
+			GPlatesUtils::XmlNamespaces::get_xsi_namespace_qstring(),
+			GPlatesUtils::XmlNamespaces::get_xsi_standard_alias_qstring());
 
 	writer.writeStartGpmlElement("FeatureCollection");
 
@@ -618,7 +618,7 @@ GPlatesFileIO::GpmlOutputVisitor::start_writing_document(
 
 	writer.writeGpmlAttribute("version", gpgim_version.version_string());
 	writer.writeAttribute(
-			GPlatesUtils::XmlNamespaces::XSI_NAMESPACE_QSTRING,
+			GPlatesUtils::XmlNamespaces::get_xsi_namespace_qstring(),
 			"schemaLocation",
 			"http://www.gplates.org/gplates ../xsd/gpml.xsd "\
 			"http://www.opengis.net/gml ../../../gml/current/base");

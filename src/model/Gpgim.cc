@@ -530,7 +530,7 @@ GPlatesModel::Gpgim::read_gpgim_element(
 	//
 
 	const QStringRef gpgim_version_string = xml_reader.attributes().value(
-			GPlatesUtils::XmlNamespaces::GPGIM_NAMESPACE_QSTRING, "version");
+			GPlatesUtils::XmlNamespaces::get_gpgim_namespace_qstring(), "version");
 
 	boost::optional<GpgimVersion> gpgim_version = GpgimVersion::create(gpgim_version_string.toString());
 	if (!gpgim_version)
@@ -573,7 +573,7 @@ GPlatesModel::Gpgim::read_gpgim_element(
 
 	if (!qualified_names_are_equal(
 		xml_reader,
-		GPlatesUtils::XmlNamespaces::GPGIM_NAMESPACE_QSTRING,
+		GPlatesUtils::XmlNamespaces::get_gpgim_namespace_qstring(),
 		GPlatesUtils::make_qstring_from_icu_string(PROPERTY_TYPE_LIST_ELEMENT_NAME.get_name())))
 	{
 		throw GpgimInitialisationException(
@@ -620,7 +620,7 @@ GPlatesModel::Gpgim::read_gpgim_element(
 
 	if (!qualified_names_are_equal(
 		xml_reader,
-		GPlatesUtils::XmlNamespaces::GPGIM_NAMESPACE_QSTRING,
+		GPlatesUtils::XmlNamespaces::get_gpgim_namespace_qstring(),
 		GPlatesUtils::make_qstring_from_icu_string(PROPERTY_LIST_ELEMENT_NAME.get_name())))
 	{
 		throw GpgimInitialisationException(
@@ -667,7 +667,7 @@ GPlatesModel::Gpgim::read_gpgim_element(
 
 	if (!qualified_names_are_equal(
 		xml_reader,
-		GPlatesUtils::XmlNamespaces::GPGIM_NAMESPACE_QSTRING,
+		GPlatesUtils::XmlNamespaces::get_gpgim_namespace_qstring(),
 		GPlatesUtils::make_qstring_from_icu_string(FEATURE_CLASS_LIST_ELEMENT_NAME.get_name())))
 	{
 		throw GpgimInitialisationException(
