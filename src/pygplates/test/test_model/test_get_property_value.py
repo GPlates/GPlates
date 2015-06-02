@@ -59,32 +59,39 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 # 'gpml:plateId' is not a (GPGIM) recognised property name...
                 pygplates.VerifyInformationModel.no)
         self.feature.add(
-                pygplates.PropertyName.create_gpml('unclassifiedGeometry'),
+                pygplates.PropertyName.gpml_unclassified_geometry,
                 pygplates.GpmlConstantValue(pygplates.GmlPoint(pygplates.PointOnSphere(0,1,0))))
+        self.feature.add(
+                pygplates.PropertyName.gpml_center_line_of,
+                pygplates.GpmlConstantValue(pygplates.GmlPoint(pygplates.PointOnSphere(1,0,0))))
     
     def test_get_and_set_geometry(self):
         # The default geometry property name for an unclassified feature type is 'gpml:unclassifiedGeometry'.
         geometry_properties = self.feature.get_geometry(property_return=pygplates.PropertyReturn.all)
+        self.assertTrue(geometry_properties == self.feature.get_geometries())
         self.assertTrue(len(geometry_properties) == 1)
         self.assertTrue(isinstance(geometry_properties[0], pygplates.PointOnSphere))
         self.assertTrue(isinstance(self.feature.get_geometry(), pygplates.PointOnSphere))
         self.assertTrue(isinstance(self.feature.get_geometry(property_return=pygplates.PropertyReturn.first), pygplates.PointOnSphere))
-        self.assertTrue(self.feature.get_geometry(lambda property: True)) # Succeeds since only one geometry.
+        self.assertTrue(len(self.feature.get_geometry(lambda property: True, pygplates.PropertyReturn.all)) == 2) # There are two geometries in total.
+        self.assertTrue(self.feature.get_geometry(lambda property: True, pygplates.PropertyReturn.all) == self.feature.get_all_geometries())
         self.feature.add(
-                pygplates.PropertyName.create_gpml('position'),
+                pygplates.PropertyName.gpml_position,
                 pygplates.GpmlConstantValue(pygplates.GmlPoint(pygplates.PointOnSphere(0,0,1))))
-        # There should now be two geometry properties.
-        self.assertTrue(len(self.feature.get_geometry(lambda property: True, pygplates.PropertyReturn.all)) == 2)
+        self.assertTrue(self.feature.get_geometry(pygplates.PropertyName.gpml_position) == pygplates.PointOnSphere(0,0,1))
+        # There should now be three geometry properties.
+        self.assertTrue(len(self.feature.get_all_geometries()) == 3)
+        self.feature.remove(pygplates.PropertyName.gpml_position)
+        # There should now be two geometry properties again.
+        self.assertTrue(len(self.feature.get_all_geometries()) == 2)
         self.assertFalse(self.feature.get_geometry(lambda property: True)) # Only succeeds if one geometry.
         # Remove the default geometry property.
-        self.feature.remove(pygplates.PropertyName.create_gpml('unclassifiedGeometry'))
+        self.feature.remove(pygplates.PropertyName.gpml_unclassified_geometry)
         self.assertFalse(self.feature.get_geometry())
-        self.assertTrue(isinstance(
-                self.feature.get_geometry(pygplates.PropertyName.create_gpml('position')), pygplates.PointOnSphere))
         gml_orientable_curve = pygplates.GmlOrientableCurve(pygplates.GmlLineString(
             pygplates.PolylineOnSphere([pygplates.PointOnSphere(1,0,0), pygplates.PointOnSphere(0,1,0)])))
         self.feature.add(
-                pygplates.PropertyName.create_gpml('unclassifiedGeometry'),
+                pygplates.PropertyName.gpml_unclassified_geometry,
                 pygplates.GpmlConstantValue(gml_orientable_curve))
         self.assertTrue(isinstance(self.feature.get_geometry(), pygplates.PolylineOnSphere))
         
@@ -125,29 +132,29 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         geometries = self.feature.set_geometry([point, multi_point, polyline, polygon])
         self.assertTrue(len(geometries) == 4)
         self.assertTrue(len(self.feature.get_geometry(property_return=pygplates.PropertyReturn.all)) == 4)
-        self.feature.set_geometry(point, pygplates.PropertyName.create_gpml('position'))
-        self.assertTrue(self.feature.get_geometry(pygplates.PropertyName.create_gpml('position')) == point)
+        self.feature.set_geometry(point, pygplates.PropertyName.gpml_position)
+        self.assertTrue(self.feature.get_geometry(pygplates.PropertyName.gpml_position) == point)
         hot_spot_feature = pygplates.Feature(pygplates.FeatureType.create_gpml('HotSpot'))
         self.assertTrue(hot_spot_feature.set_geometry(
-                point, pygplates.PropertyName.create_gpml('position')).get_value().get_geometry() == point)
+                point, pygplates.PropertyName.gpml_position).get_value().get_geometry() == point)
         # Cannot set multiple points on 'gpml:position' property on a 'gpml:HotSpot' feature (or any feature but 'gpml:UnclassifiedFeature').
         self.assertRaises(pygplates.InformationModelError,
-                hot_spot_feature.set_geometry, (point, point), pygplates.PropertyName.create_gpml('position'))
+                hot_spot_feature.set_geometry, (point, point), pygplates.PropertyName.gpml_position)
         # ...unless we don't check the information model.
         self.assertTrue(
-                len(hot_spot_feature.set_geometry((point, point), pygplates.PropertyName.create_gpml('position'),
+                len(hot_spot_feature.set_geometry((point, point), pygplates.PropertyName.gpml_position,
                         verify_information_model=pygplates.VerifyInformationModel.no)) == 2)
         # Setting multiple points on 'gpml:position' property on a 'gpml:UnclassifiedFeature' feature is fine though.
-        points = self.feature.set_geometry((point, point), pygplates.PropertyName.create_gpml('position'))
+        points = self.feature.set_geometry((point, point), pygplates.PropertyName.gpml_position)
         self.assertTrue(len(points) == 2)
         self.assertTrue(points[0].get_value().get_geometry() == point)
         self.assertTrue(points[1].get_value().get_geometry() == point)
         # Cannot set a multipoint on 'gpml:position'.
         self.assertRaises(pygplates.InformationModelError,
-                self.feature.set_geometry, multi_point, pygplates.PropertyName.create_gpml('position'))
+                self.feature.set_geometry, multi_point, pygplates.PropertyName.gpml_position)
         # ...unless we don't check the information model.
         self.assertTrue(self.feature.set_geometry(
-                multi_point, pygplates.PropertyName.create_gpml('position'), verify_information_model=pygplates.VerifyInformationModel.no))
+                multi_point, pygplates.PropertyName.gpml_position, verify_information_model=pygplates.VerifyInformationModel.no))
         
         # Remove all *default* geometries.
         self.feature.set_geometry([])
@@ -155,8 +162,10 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(len(self.feature.get_geometry(property_return=pygplates.PropertyReturn.all)) == 0)
         self.assertFalse(self.feature.get_geometry(property_return=pygplates.PropertyReturn.first))
         self.assertFalse(self.feature.get_geometry())
-        # However there is still a non-default geometry 'gpml:position'.
-        self.assertTrue(self.feature.get_geometry(lambda property: True) == multi_point)
+        # However there is still a non-default geometry 'gpml:position' and the original 'gpml:centerLineOf'.
+        self.assertTrue(self.feature.get_geometry(pygplates.PropertyName.gpml_position) == multi_point)
+        # We don't equality test with the original 'gpml:centerLineOf' since it got reverse reconstructed.
+        self.assertTrue(len(self.feature.get_geometries(pygplates.PropertyName.gpml_center_line_of)) == 1)
     
     def test_get_and_set_description(self):
         description = self.feature.get_description()

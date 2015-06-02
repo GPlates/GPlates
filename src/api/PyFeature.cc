@@ -1391,7 +1391,9 @@ namespace GPlatesApi
 					get_default_geometry_property_name(feature_handle.feature_type());
 			if (!default_geometry_property_name)
 			{
-				return bp::object()/*Py_None*/;
+				return (property_return == PropertyReturn::ALL)
+						? bp::list() /*empty list*/
+						: bp::object()/*Py_None*/;
 			}
 
 			property_query_object = bp::object(default_geometry_property_name.get());
@@ -1411,7 +1413,9 @@ namespace GPlatesApi
 						PropertyReturn::ALL);
 		if (property_value_object == bp::object()/*Py_None*/)
 		{
-			return bp::object()/*Py_None*/;
+			return (property_return == PropertyReturn::ALL)
+					? bp::list() /*empty list*/
+					: bp::object()/*Py_None*/;
 		}
 
 		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries;
@@ -1467,6 +1471,41 @@ namespace GPlatesApi
 
 		// ...else PropertyReturn::FIRST
 		return !geometries.empty() ? bp::object(geometries.front()) : bp::object()/*Py_None*/;
+	}
+
+	bp::object
+	feature_handle_get_geometries(
+			GPlatesModel::FeatureHandle &feature_handle,
+			bp::object property_query_object)
+	{
+		// The returned object will be a list.
+		return feature_handle_get_geometry(feature_handle, property_query_object, PropertyReturn::ALL);
+	}
+
+	bp::list
+	feature_handle_get_all_geometries(
+			GPlatesModel::FeatureHandle &feature_handle)
+	{
+		bp::list geometry_properties;
+
+		// Search for the geometry properties.
+		GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
+		GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
+		for ( ; properties_iter != properties_end; ++properties_iter)
+		{
+			GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+			// Extract the geometry from the property value.
+			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry =
+					GPlatesAppLogic::GeometryUtils::get_geometry_from_property(feature_property);
+			if (geometry)
+			{
+				geometry_properties.append(geometry.get());
+			}
+		}
+
+		// Returned list could be empty if there were no geometry properties for some reason.
+		return geometry_properties;
 	}
 
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
@@ -1906,6 +1945,8 @@ export_feature()
 					"\n"
 					"* :meth:`set_geometry`\n"
 					"* :meth:`get_geometry`\n"
+					"* :meth:`get_geometries`\n"
+					"* :meth:`get_all_geometries`\n"
 					"\n"
 					"The following methods provide a convenient way to set and get attributes imported from a Shapefile:\n"
 					"\n"
@@ -1986,7 +2027,7 @@ export_feature()
 				"        pygplates.FeatureType.create_gpml('UnclassifiedFeature'))\n")
 		.def("clone",
 				&GPlatesApi::feature_handle_clone,
-				"clone() -> Feature\n"
+				"clone()\n"
 				"  Create a duplicate of this feature instance.\n"
 				"\n"
 				"  :rtype: :class:`Feature`\n"
@@ -2009,7 +2050,7 @@ export_feature()
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"create_total_reconstruction_sequence(fixed_plate_id, moving_plate_id, total_reconstruction_pole, "
 				"[name], [description], [other_properties], [feature_id], "
-				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
+				"[verify_information_model=VerifyInformationModel.yes])\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -2033,6 +2074,7 @@ export_feature()
 				"  :type feature_id: :class:`FeatureId`\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :rtype: :class:`Feature`\n"
 				"\n"
 				"  This function creates a rotation feature containing a "
 				":meth:`total reconstruction pole<get_total_reconstruction_pole>` (a time sequence of "
@@ -2074,7 +2116,7 @@ export_feature()
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"create_reconstructable_feature(feature_type, geometry, [name], [description], [valid_time], "
 				"[reconstruction_plate_id], [conjugate_plate_id], [other_properties], [feature_id], [reverse_reconstruct], "
-				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
+				"[verify_information_model=VerifyInformationModel.yes])\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -2118,6 +2160,7 @@ export_feature()
 				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :rtype: :class:`Feature`\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *feature_type* is not a `reconstructable feature "
 				"<http://www.earthbyte.org/Resources/GPGIM/public/#ReconstructableFeature>`_.\n"
@@ -2220,7 +2263,7 @@ export_feature()
 				"create_tectonic_section(feature_type, geometry, [name], [description], [valid_time], "
 				"[reconstruction_plate_id], [conjugate_plate_id], [left_plate], [right_plate], [reconstruction_method], "
 				"[other_properties], [feature_id], [reverse_reconstruct], "
-				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
+				"[verify_information_model=VerifyInformationModel.yes])\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -2270,6 +2313,7 @@ export_feature()
 				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :rtype: :class:`Feature`\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *feature_type* is not a `tectonic section "
 				"<http://www.earthbyte.org/Resources/GPGIM/public/#TectonicSection>`_.\n"
@@ -2353,7 +2397,7 @@ export_feature()
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"create_flowline(seed_geometry, times, [name], [description], [valid_time], "
 				"[left_plate], [right_plate], [other_properties], [feature_id], [reverse_reconstruct], "
-				"[verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
+				"[verify_information_model=VerifyInformationModel.yes])\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -2391,6 +2435,7 @@ export_feature()
 				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :rtype: :class:`Feature`\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *seed_geometry* is not a :class:`PointOnSphere` or a :class:`MultiPointOnSphere`.\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time\n"
@@ -2467,7 +2512,7 @@ export_feature()
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"create_motion_path(seed_geometry, times, [name], [description], [valid_time], "
 				"[relative_plate], [reconstruction_plate_id], [other_properties], [feature_id], "
-				"[reverse_reconstruct], [verify_information_model=VerifyInformationModel.yes]) -> Feature\n"
+				"[reverse_reconstruct], [verify_information_model=VerifyInformationModel.yes])\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -2506,6 +2551,7 @@ export_feature()
 				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
+				"  :rtype: :class:`Feature`\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *seed_geometry* is not a :class:`PointOnSphere` or a :class:`MultiPointOnSphere`.\n"
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if *valid_time* has begin time later than end time\n"
@@ -2572,8 +2618,7 @@ export_feature()
 				(bp::arg("property_name"),
 						bp::arg("property_value"),
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
-				"add(property_name, property_value, [verify_information_model=VerifyInformationModel.yes]) "
-				"-> Property\n"
+				"add(property_name, property_value, [verify_information_model=VerifyInformationModel.yes])\n"
 				"  Adds a property (or properties) to this feature.\n"
 				"\n"
 				"  :param property_name: the name of the property (or properties) to add\n"
@@ -2606,8 +2651,7 @@ export_feature()
 				&GPlatesApi::feature_handle_add_properties,
 				(bp::arg("properties"),
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
-				"add(properties, [verify_information_model=VerifyInformationModel.yes]) "
-				"-> list\n"
+				"add(properties, [verify_information_model=VerifyInformationModel.yes])\n"
 				"  Adds properties to this feature.\n"
 				"\n"
 				"  :param properties: the property name/value pairs to add\n"
@@ -2695,8 +2739,7 @@ export_feature()
 				(bp::arg("property_name"),
 						bp::arg("property_value"),
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
-				"set(property_name, property_value, [verify_information_model=VerifyInformationModel.yes]) "
-				"-> Property\n"
+				"set(property_name, property_value, [verify_information_model=VerifyInformationModel.yes])\n"
 				"  Sets a property (or properties) to this feature.\n"
 				"\n"
 				"  :param property_name: the name of the property (or properties) to set\n"
@@ -2733,8 +2776,7 @@ export_feature()
 				&GPlatesApi::feature_handle_get_property,
 				(bp::arg("property_query"),
 						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE),
-				"get(property_query, [property_return=PropertyReturn.exactly_one]) "
-				"-> Property or list or None\n"
+				"get(property_query, [property_return=PropertyReturn.exactly_one])\n"
 				"  Returns one or more properties matching a property name or predicate.\n"
 				"\n"
 				"  :param property_query: the property name (or predicate function) that matches the property "
@@ -2782,8 +2824,7 @@ export_feature()
 				(bp::arg("property_query"),
 						bp::arg("time") = GPlatesPropertyValues::GeoTimeInstant(0),
 						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE),
-				"get_value(property_query, [time=0], [property_return=PropertyReturn.exactly_one]) "
-				"-> PropertyValue or list or None\n"
+				"get_value(property_query, [time=0], [property_return=PropertyReturn.exactly_one])\n"
 				"  Returns one or more values of properties matching a property name or predicate.\n"
 				"\n"
 				"  :param property_query: the property name (or predicate function) that matches the property "
@@ -2838,7 +2879,7 @@ export_feature()
 						bp::arg("reverse_reconstruct") = bp::object()/*Py_None*/,
 						bp::arg("verify_information_model") = GPlatesApi::VerifyInformationModel::YES),
 				"set_geometry(geometry, [property_name], [reverse_reconstruct], "
-				"[verify_information_model=VerifyInformationModel.yes]) -> Property or list\n"
+				"[verify_information_model=VerifyInformationModel.yes])\n"
 				"  Set the geometry (or geometries) of this feature.\n"
 				"\n"
 				"  :param geometry: the geometry (or geometries) of the property (or properties) to set "
@@ -2947,7 +2988,7 @@ export_feature()
 				&GPlatesApi::feature_handle_get_geometry,
 				(bp::arg("property_query") = bp::object()/*Py_None*/,
 						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE),
-				"get_geometry([property_query], [property_return=PropertyReturn.exactly_one]) -> GeometryOnSphere or list or None\n"
+				"get_geometry([property_query], [property_return=PropertyReturn.exactly_one])\n"
 				"  Return the *present day* geometry (or geometries) of this feature.\n"
 				"\n"
 				"  :param property_query: the optional property name or predicate function used to find "
@@ -3003,6 +3044,10 @@ export_feature()
 				"\n"
 				"    default_geometries = feature.get_geometry(property_return=pygplates.PropertyReturn.all)\n"
 				"\n"
+				"    # ...or more conveniently...\n"
+				"\n"
+				"    default_geometries = feature.get_geometries()\n"
+				"\n"
 				"  Return the geometry associated with the property named 'gpml:averageSampleSitePosition':\n"
 				"  ::\n"
 				"\n"
@@ -3016,6 +3061,10 @@ export_feature()
 				"        lambda property: True,\n"
 				"        pygplates.PropertyReturn.all)\n"
 				"\n"
+				"    # ...or more conveniently...\n"
+				"\n"
+				"    all_geometries = feature.get_all_geometries()\n"
+				"\n"
 				"  Return the geometry (regardless of which property it came from) - returns ``None`` "
 				"if not exactly one geometry property found:\n"
 				"  ::\n"
@@ -3023,17 +3072,57 @@ export_feature()
 				"    geometry = feature.get_geometry(lambda property: True)\n"
 				"    if geometry:\n"
 				"        ...\n")
+		.def("get_geometries",
+				&GPlatesApi::feature_handle_get_geometries,
+				(bp::arg("property_query") = bp::object()/*Py_None*/),
+				"get_geometries([property_query])\n"
+				"  Return a list of the *present day* geometries of this feature.\n"
+				"\n"
+				"  :param property_query: the optional property name or predicate function used to find "
+				"the geometry properties, if not specified then the default geometry property "
+				"name associated with this feature's :class:`type<FeatureType>` is used instead\n"
+				"  :type property_query: :class:`PropertyName`, or callable (accepting single :class:`Property` argument)\n"
+				"  :rtype: list of :class:`GeometryOnSphere`\n"
+				"\n"
+				"  | This is a convenient alternative to :meth:`get_geometry` that returns a ``list`` "
+				"of matching geometries without having to specify ``pygplates.PropertyReturn.all``.\n"
+				"  | This method is essentially equivalent to:\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    def get_geometries(feature, property_query):\n"
+				"        return feature.get_geometry(property_query, property_return=pygplates.PropertyReturn.all)\n"
+				"\n"
+				"  See :meth:`get_geometry` for more details.\n")
+		.def("get_all_geometries",
+				&GPlatesApi::feature_handle_get_all_geometries,
+				"get_all_geometries()\n"
+				"  Return a list of all *present day* geometries of this feature (regardless of their property names).\n"
+				"\n"
+				"  :rtype: list of :class:`GeometryOnSphere`\n"
+				"\n"
+				"  | This is a convenient alternative to :meth:`get_geometry` that returns a ``list`` "
+				"of all geometries regardless of their :class:`property names<PropertyName>`.\n"
+				"  | This method is equivalent to:\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    all_geometries = feature.get_geometry(\n"
+				"        lambda property: True,\n"
+				"        pygplates.PropertyReturn.all)\n"
+				"\n"
+				"  See :meth:`get_geometry` for more details.\n")
 		.def("get_feature_type",
 				&GPlatesModel::FeatureHandle::feature_type,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_feature_type() -> FeatureType\n"
+				"get_feature_type()\n"
 				"  Returns the feature type.\n"
 				"\n"
 				"  :rtype: :class:`FeatureType`\n")
 		.def("get_feature_id",
 				&GPlatesModel::FeatureHandle::feature_id,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_feature_id() -> FeatureId\n"
+				"get_feature_id()\n"
 				"  Returns the feature identifier.\n"
 				"\n"
 				"  :rtype: :class:`FeatureId`\n")

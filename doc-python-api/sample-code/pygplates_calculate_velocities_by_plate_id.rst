@@ -43,7 +43,7 @@ Sample code
                 reconstruction_time, domain_plate_id, reconstruction_time + delta_time)
         
         # A feature usually has a single geometry but it could have more - iterate over them all.
-        for geometry in domain_feature.get_geometry(property_return = pygplates.PropertyReturn.all):
+        for geometry in domain_feature.get_geometries():
         
             # Reconstruct the geometry to 'reconstruction_time'.
             reconstructed_geometry = equivalent_total_rotation * geometry
@@ -64,7 +64,7 @@ Sample code
 Details
 """""""
 
-The rotations are loaded from a file into a :class:`pygplates.RotationModel`.
+The rotations are loaded from a rotation file into a :class:`pygplates.RotationModel`.
 ::
 
     rotation_model = pygplates.RotationModel('rotations.rot')
@@ -72,7 +72,7 @@ The rotations are loaded from a file into a :class:`pygplates.RotationModel`.
 The features to calculate velocities at are loaded into a :class:`pygplates.FeatureCollection`.
 They can be any :class:`type<pygplates.FeatureType>` of feature as long as they have a
 :meth:`reconstruction plate ID<pygplates.Feature.get_reconstruction_plate_id>`
-(and of course a :meth:`geometry<pygplates.Feature.get_geometry>`).
+(and of course some :meth:`geometry<pygplates.Feature.get_geometries>`).
 ::
 
     domain_features = pygplates.FeatureCollection('features.gpml')
@@ -98,11 +98,13 @@ of a particular tectonic plate relative to the anchor plate (defaults to zero):
             reconstruction_time, domain_plate_id, reconstruction_time + delta_time)
 
 | A :class:`pygplates.Feature` usually contains a single geometry property but sometimes it contains more.
-| This is why we need to specify ``pygplates.PropertyReturn.all`` in :meth:`pygplates.Feature.get_geometry`.
+| This is why we use :meth:`pygplates.Feature.get_geometries` instead of :meth:`pygplates.Feature.get_geometry`.
+| Actually ``domain_feature.get_geometries()`` is just a convenient alternative to
+  ``domain_feature.get_geometry(property_return=PropertyReturn.all)``.
 
 ::
 
-    for geometry in domain_feature.get_geometry(property_return = pygplates.PropertyReturn.all):
+    for geometry in domain_feature.get_geometries():
 
 The :class:`geometries<pygplates.GeometryOnSphere>` extracted from :class:`features<pygplates.Feature>`
 are in present day coordinates and need to be reconstructed to their 10Ma positions.

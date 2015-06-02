@@ -36,7 +36,7 @@ _gpml_total_reconstruction_pole_property_name = PropertyName.create_gpml('totalR
 
 
 def get_description(feature, default=''):
-    """get_description([default='']) -> string
+    """get_description([default=''])
     Return the description of this feature.
     
     :param default: the default description (defaults to an empty string)
@@ -85,7 +85,7 @@ del get_description
 
 
 def set_description(feature, description, verify_information_model=VerifyInformationModel.yes):
-    """set_description(description, [verify_information_model=VerifyInformationModel.yes]) -> Property
+    """set_description(description, [verify_information_model=VerifyInformationModel.yes])
     Sets the description of this feature.
     
     :param description: the description
@@ -114,7 +114,7 @@ del set_description
 
 
 def get_name(feature, default='', property_return=PropertyReturn.exactly_one):
-    """get_name([default=''], [property_return=PropertyReturn.exactly_one]) -> string or list
+    """get_name([default=''], [property_return=PropertyReturn.exactly_one])
     Return the name (or names) of this feature.
     
     :param default: the default name (defaults to an empty string), or default names
@@ -206,7 +206,7 @@ del get_name
 
 
 def set_name(feature, name, verify_information_model=VerifyInformationModel.yes):
-    """set_name(name, [verify_information_model=VerifyInformationModel.yes]) -> Property or list
+    """set_name(name, [verify_information_model=VerifyInformationModel.yes])
     Set the name (or names) of this feature.
     
     :param name: the name or names
@@ -246,7 +246,7 @@ del set_name
 
 
 def get_valid_time(feature, default=(float('inf'), float('-inf'))):
-    """get_valid_time([default=(float('inf'), float('-inf'))]) -> begin_time, end_time
+    """get_valid_time([default=(float('inf'), float('-inf'))])
     Returns the valid time range of this feature.
     
     :param default: the default time range (defaults to all time)
@@ -293,7 +293,7 @@ del get_valid_time
 
 
 def set_valid_time(feature, begin_time, end_time, verify_information_model=VerifyInformationModel.yes):
-    """set_valid_time(begin_time, end_time, [verify_information_model=VerifyInformationModel.yes]) -> Property
+    """set_valid_time(begin_time, end_time, [verify_information_model=VerifyInformationModel.yes])
     Sets the valid time range of this feature.
     
     :param begin_time: the begin time (time of appearance)
@@ -325,7 +325,7 @@ del set_valid_time
 
 
 def get_left_plate(feature, default=0):
-    """get_left_plate([default=0]) -> int
+    """get_left_plate([default=0])
     Returns the left plate ID of this feature.
     
     :param default: the default left plate id (defaults zero)
@@ -367,7 +367,7 @@ del get_left_plate
 
 
 def set_left_plate(feature, left_plate, verify_information_model=VerifyInformationModel.yes):
-    """set_left_plate(left_plate, [verify_information_model=VerifyInformationModel.yes]) -> Property
+    """set_left_plate(left_plate, [verify_information_model=VerifyInformationModel.yes])
     Sets the left plate ID of this feature.
     
     :param left_plate: the left plate id
@@ -396,7 +396,7 @@ del set_left_plate
 
 
 def get_right_plate(feature, default=0):
-    """get_right_plate([default=0]) -> int
+    """get_right_plate([default=0])
     Returns the right plate ID of this feature.
     
     :param default: the default right plate id (defaults zero)
@@ -438,7 +438,7 @@ del get_right_plate
 
 
 def set_right_plate(feature, right_plate, verify_information_model=VerifyInformationModel.yes):
-    """set_right_plate(right_plate, [verify_information_model=VerifyInformationModel.yes]) -> Property
+    """set_right_plate(right_plate, [verify_information_model=VerifyInformationModel.yes])
     Sets the right plate ID of this feature.
     
     :param right_plate: the right plate id
@@ -467,7 +467,7 @@ del set_right_plate
 
 
 def get_reconstruction_method(feature, default='ByPlateId'):
-    """get_reconstruction_method([default='ByPlateId']) -> string
+    """get_reconstruction_method([default='ByPlateId'])
     Returns the reconstruction method of this feature.
     
     :param default: the default reconstruction method (defaults to 'ByPlateId')
@@ -513,7 +513,7 @@ del get_reconstruction_method
 
 
 def set_reconstruction_method(feature, reconstruction_method, verify_information_model=VerifyInformationModel.yes):
-    """set_reconstruction_method(reconstruction_method, [verify_information_model=VerifyInformationModel.yes]) -> Property
+    """set_reconstruction_method(reconstruction_method, [verify_information_model=VerifyInformationModel.yes])
     Sets the reconstruction method of this feature.
     
     :param reconstruction_method: the reconstruction method ('ByPlateId', 'HalfStageRotation' or 'HalfStageRotationVersion2')
@@ -545,7 +545,7 @@ del set_reconstruction_method
 
 
 def get_reconstruction_plate_id(feature, default=0):
-    """get_reconstruction_plate_id([default=0]) -> int
+    """get_reconstruction_plate_id([default=0])
     Returns the reconstruction plate ID of this feature.
     
     :param default: the default reconstruction plate id (defaults zero)
@@ -587,7 +587,7 @@ del get_reconstruction_plate_id
 
 
 def set_reconstruction_plate_id(feature, reconstruction_plate_id, verify_information_model=VerifyInformationModel.yes):
-    """set_reconstruction_plate_id(reconstruction_plate_id, [verify_information_model=VerifyInformationModel.yes]) -> Property
+    """set_reconstruction_plate_id(reconstruction_plate_id, [verify_information_model=VerifyInformationModel.yes])
     Sets the reconstruction plate ID of this feature.
     
     :param reconstruction_plate_id: the reconstruction plate id
@@ -616,7 +616,7 @@ del set_reconstruction_plate_id
 
 
 def get_conjugate_plate_id(feature, default=0, property_return=PropertyReturn.exactly_one):
-    """get_conjugate_plate_id([default=0], [property_return=PropertyReturn.exactly_one]) -> int or list
+    """get_conjugate_plate_id([default=0], [property_return=PropertyReturn.exactly_one])
     Return the conjugate plate ID (or IDs) of this feature.
     
     :param default: the default plate ID (defaults to zero), or default plate IDs
@@ -708,7 +708,7 @@ del get_conjugate_plate_id
 
 
 def set_conjugate_plate_id(feature, conjugate_plate_id, verify_information_model=VerifyInformationModel.yes):
-    """set_conjugate_plate_id(conjugate_plate_id, [verify_information_model=VerifyInformationModel.yes]) -> Property or list
+    """set_conjugate_plate_id(conjugate_plate_id, [verify_information_model=VerifyInformationModel.yes])
     Set the conjugate plate ID (or IDs) of this feature.
     
     :param conjugate_plate_id: the conjugate plate ID or plate IDs
@@ -748,7 +748,7 @@ del set_conjugate_plate_id
 
 
 def get_relative_plate(feature, default=0):
-    """get_relative_plate([default=0]) -> int
+    """get_relative_plate([default=0])
     Returns the relative plate ID of this feature.
     
     :param default: the default relative plate id (defaults zero)
@@ -790,7 +790,7 @@ del get_relative_plate
 
 
 def set_relative_plate(feature, relative_plate, verify_information_model=VerifyInformationModel.yes):
-    """set_relative_plate(relative_plate, [verify_information_model=VerifyInformationModel.yes]) -> Property
+    """set_relative_plate(relative_plate, [verify_information_model=VerifyInformationModel.yes])
     Sets the relative plate ID of this feature.
     
     :param relative_plate: the relative plate id
@@ -819,7 +819,7 @@ del set_relative_plate
 
 
 def get_times(feature):
-    """get_times() -> list or None
+    """get_times()
     Returns the list of times of this flowline or motion path feature.
     
     :returns: the list of times (if exactly one 'gpml:times' property found), otherwise None is returned
@@ -868,7 +868,7 @@ del get_times
 
 
 def set_times(feature, times, verify_information_model=VerifyInformationModel.yes):
-    """set_times(times, [verify_information_model=VerifyInformationModel.yes]) -> Property
+    """set_times(times, [verify_information_model=VerifyInformationModel.yes])
     Sets the list of times of this flowline or motion path feature.
     
     :param times: the list of times (if exactly one 'gpml:times' property found), otherwise None is returned
@@ -921,7 +921,7 @@ del set_times
 
 
 def get_shapefile_attribute(feature, key, default_value=None):
-    """get_shapefile_attribute(key, [default_value]) -> int or float or string or None
+    """get_shapefile_attribute(key, [default_value])
     Returns the value of a shapefile attribute associated with a key.
     
     :param key: the key of the shapefile attribute
@@ -972,7 +972,7 @@ del get_shapefile_attribute
 
 
 def set_shapefile_attribute(feature, key, value, verify_information_model=VerifyInformationModel.yes):
-    """set_shapefile_attribute(key, value, [verify_information_model=VerifyInformationModel.yes]) -> Property
+    """set_shapefile_attribute(key, value, [verify_information_model=VerifyInformationModel.yes])
     Sets the value of a shapefile attribute associated with a key.
     
     :param key: the key of the shapefile attribute
@@ -1026,7 +1026,7 @@ del set_shapefile_attribute
 
 
 def get_total_reconstruction_pole(feature):
-    """get_total_reconstruction_pole() -> (int, int, GpmlIrregularSampling) or None
+    """get_total_reconstruction_pole()
     Returns the *time-dependent* total reconstruction pole of this feature.
     
     :rtype: tuple(int, int, :class:`GpmlIrregularSampling`) or None
@@ -1087,7 +1087,7 @@ del get_total_reconstruction_pole
 
 def set_total_reconstruction_pole(feature, fixed_plate_id, moving_plate_id, total_reconstruction_pole, verify_information_model=VerifyInformationModel.yes):
     """set_total_reconstruction_pole(fixed_plate_id, moving_plate_id, total_reconstruction_pole, \
-    [verify_information_model=VerifyInformationModel.yes]) -> Property, Property, Property
+    [verify_information_model=VerifyInformationModel.yes])
     Sets the *time-dependent* total reconstruction pole of this feature.
     
     :param fixed_plate_id: the fixed plate id

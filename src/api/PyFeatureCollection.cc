@@ -1206,7 +1206,9 @@ export_feature_collection()
 					"\n"
 					"* :meth:`add`\n"
 					"* :meth:`remove`\n"
-					"* :meth:`get`\n",
+					"* :meth:`get`\n"
+					"\n"
+					"A feature collection can be deep copied using :meth:`clone`.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
