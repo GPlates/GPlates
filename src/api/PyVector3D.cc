@@ -287,6 +287,7 @@ export_vector_3d()
 							"__init__(...)\n"
 							"A *Vector3D* object can be constructed in more than one way...\n"
 							"\n"
+							// Specific overload signature...
 							"__init__(x, y, z)\n"
 							"  Construct a *Vector3D* instance from 3D cartesian coordinates consisting of the "
 							"floating-point numbers *x*, *y* and *z*.\n"

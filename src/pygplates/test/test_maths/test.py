@@ -146,7 +146,7 @@ class FiniteRotationCase(unittest.TestCase):
                 pygplates.PointOnSphere(0, 0, 1)])
         rotated_polyline = self.finite_rotation * polyline
         self.assertTrue(isinstance(rotated_polyline, pygplates.PolylineOnSphere))
-        self.assertTrue(len(rotated_polyline.get_points_view()) == len(polyline.get_points_view()))
+        self.assertTrue(len(rotated_polyline.get_points()) == len(polyline.get_points()))
     
     def test_rotate_polygon_on_sphere(self):
         polygon = pygplates.PolygonOnSphere(
@@ -155,7 +155,7 @@ class FiniteRotationCase(unittest.TestCase):
                 pygplates.PointOnSphere(0, 0, 1)])
         rotated_polygon = self.finite_rotation * polygon
         self.assertTrue(isinstance(rotated_polygon, pygplates.PolygonOnSphere))
-        self.assertTrue(len(rotated_polygon.get_points_view()) == len(polygon.get_points_view()))
+        self.assertTrue(len(rotated_polygon.get_points()) == len(polygon.get_points()))
     
     def test_get_pole_and_angle(self):
         pole, angle = self.finite_rotation.get_euler_pole_and_angle()

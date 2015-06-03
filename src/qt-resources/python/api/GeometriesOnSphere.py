@@ -25,10 +25,12 @@ except ImportError:
 
 
 def geometry_on_sphere_get_points(geometry):
-    """get_points() -> sequence
-    Returns the sequence of :class:`points<PointOnSphere>` in this geometry.
+    """get_points()
+    Returns a **read-only** sequence of :class:`points<PointOnSphere>` in this geometry.
     
-    The following operations for accessing the points in the returned sequence are supported:
+    :rtype: a read-only sequence of :class:`PointOnSphere`
+    
+    The following operations for accessing the points in the returned read-only sequence are supported:
     
     ============================ ==========================================================
     Operation                    Result
@@ -41,6 +43,12 @@ def geometry_on_sphere_get_points(geometry):
     ``seq[i:j]``                 slice of *seq* from *i* to *j*
     ``seq[i:j:k]``               slice of *seq* from *i* to *j* with step *k*
     ============================ ==========================================================
+    
+    .. note:: The returned sequence is **read-only** and cannot be modified.
+    
+    .. note:: If you want a modifiable sequence consider wrapping the returned sequence in a ``list``
+       using something like ``points = list(geometry.get_points())`` **but** note that modifying
+       the ``list`` (eg, inserting a new point) will **not** modify the original geometry.
     
     If this geometry is a :class:`PointOnSphere` then the returned sequence has length one.
     For other geometry types (:class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and
@@ -56,10 +64,22 @@ def geometry_on_sphere_get_points(geometry):
       first_point = points[0]
       last_point = points[-1]
     
-    Note that since a *GeometryOnSphere* is immutable it contains no operations or
-    methods that modify its state (such as adding or removing points).
-    """
+    | However if you know you have a :class:`MultiPointOnSphere`, :class:`PolylineOnSphere` or :class:`PolygonOnSphere`
+      (ie, not a :class:`PointOnSphere`) it's actually easier to iterate directly over the geometry itself.
+    | For example with a :class:`PolylineOnSphere`:
     
+    ::
+    
+      for point in polyline:
+          print point
+      first_point = polyline[0]
+      last_point = polyline[-1]
+    
+    .. note:: There are also methods that return the sequence of points as (latitude,longitude)
+       values and (x,y,z) values contained in lists and numpy arrays
+       (:meth:`to_lat_lon_list`, :meth:`to_lat_lon_array`, :meth:`to_xyz_list` and :meth:`to_xyz_array`).
+    """
+
     # Use private method in derived classes.
     return geometry._get_points()
 
@@ -70,11 +90,11 @@ del geometry_on_sphere_get_points
 
 
 def geometry_on_sphere_to_lat_lon_list(geometry):
-    """to_lat_lon_list() -> list
+    """to_lat_lon_list()
     Returns the sequence of points, in this geometry, as (latitude,longitude) tuples (in degrees).
     
-    :rtype: list of (float,float) tuples
     :returns: a list of (latitude,longitude) tuples (in degrees)
+    :rtype: list of (float,float) tuples
     
     If this geometry is a :class:`PointOnSphere` then the returned sequence has length one.
     For other geometry types (:class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and
@@ -97,11 +117,11 @@ del geometry_on_sphere_to_lat_lon_list
 
 
 def geometry_on_sphere_to_lat_lon_array(geometry):
-    """to_lat_lon_array() -> array
+    """to_lat_lon_array()
     Returns the sequence of points, in this geometry, as a numpy array of (latitude,longitude) pairs (in degrees).
     
-    :rtype: 2D numpy array with number of points as outer dimension and an inner dimension of two
     :returns: an array of (latitude,longitude) pairs (in degrees)
+    :rtype: 2D numpy array with number of points as outer dimension and an inner dimension of two
     
     **NOTE** this method should only be called if the ``numpy`` module is available.
     
@@ -131,7 +151,7 @@ del geometry_on_sphere_to_lat_lon_array
 
 
 def geometry_on_sphere_to_lat_lon_point_list(geometry):
-    """to_lat_lon_point_list() -> list
+    """to_lat_lon_point_list()
     Returns the sequence of points, in this geometry, as :class:`lat lon points<LatLonPoint>`.
     
     :rtype: list of :class:`LatLonPoint`
@@ -151,11 +171,11 @@ del geometry_on_sphere_to_lat_lon_point_list
 
 
 def geometry_on_sphere_to_xyz_list(geometry):
-    """to_xyz_list() -> list
+    """to_xyz_list()
     Returns the sequence of points, in this geometry, as (x,y,z) cartesian coordinate tuples.
     
-    :rtype: list of (float,float,float) tuples
     :returns: a list of (x,y,z) tuples
+    :rtype: list of (float,float,float) tuples
     
     If this geometry is a :class:`PointOnSphere` then the returned sequence has length one.
     For other geometry types (:class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and
@@ -172,11 +192,11 @@ del geometry_on_sphere_to_xyz_list
 
 
 def geometry_on_sphere_to_xyz_array(geometry):
-    """to_xyz_array() -> array
+    """to_xyz_array()
     Returns the sequence of points, in this geometry, as a numpy array of (x,y,z) triplets.
     
-    :rtype: 2D numpy array with number of points as outer dimension and an inner dimension of three
     :returns: an array of (x,y,z) triplets
+    :rtype: 2D numpy array with number of points as outer dimension and an inner dimension of three
     
     **NOTE** this method should only be called if the ``numpy`` module is available.
     
@@ -238,7 +258,7 @@ del polygon_on_sphere_get_points
 
 
 def polyline_on_sphere_join(geometries, distance_threshold_radians, polyline_conversion=PolylineConversion.ignore_non_polyline):
-    """join(geometries, distance_threshold_radians, polyline_conversion=PolylineConversion.ignore_non_polyline) -> list
+    """join(geometries, distance_threshold_radians, polyline_conversion=PolylineConversion.ignore_non_polyline)
     Joins geometries that have end points closer than a distance threshold.
     
     :param geometries: the geometries to join

@@ -214,20 +214,20 @@ export_great_circle_arc()
 		.def("get_start_point",
 				&GPlatesMaths::GreatCircleArc::start_point,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_start_point() -> PointOnSphere\n"
+				"get_start_point()\n"
 				"  Return the arc's start point geometry.\n"
 				"\n"
 				"  :rtype: :class:`PointOnSphere`\n")
 		.def("get_end_point",
 				&GPlatesMaths::GreatCircleArc::end_point,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_end_point() -> PointOnSphere\n"
+				"get_end_point()\n"
 				"  Return the arc's end point geometry.\n"
 				"\n"
 				"  :rtype: :class:`PointOnSphere`\n")
 		.def("is_zero_length",
 				&GPlatesMaths::GreatCircleArc::is_zero_length,
-				"is_zero_length() -> bool\n"
+				"is_zero_length()\n"
 				"  Return whether this great circle arc is of zero length.\n"
 				"\n"
 				"  :rtype: bool\n"
@@ -236,7 +236,7 @@ export_great_circle_arc()
 				"and a call to :meth:`get_rotation_axis` will raise an error.\n")
 		.def("get_arc_length",
 				&GPlatesApi::great_circle_arc_get_arc_length,
-				"get_arc_length() -> float\n"
+				"get_arc_length()\n"
 				"  Returns the arc length of this great circle arc (in radians).\n"
 				"\n"
 				"  :rtype: float\n"
@@ -244,7 +244,7 @@ export_great_circle_arc()
 				"  To convert to distance, multiply the result by the Earth radius.\n")
 		.def("get_great_circle_normal",
 				&GPlatesApi::great_circle_arc_get_great_circle_normal,
-				"get_great_circle_normal() -> Vector3D\n"
+				"get_great_circle_normal()\n"
 				"  Return the unit vector normal direction of the great circle this arc lies on.\n"
 				"\n"
 				"  :returns: the unit-length 3D vector\n"
@@ -272,7 +272,7 @@ export_great_circle_arc()
 				"then *IndeterminateGreatCircleArcNormalError* is raised.\n")
 		.def("get_rotation_axis",
 				&GPlatesApi::great_circle_arc_get_rotation_axis,
-				"get_rotation_axis() -> x, y, z\n"
+				"get_rotation_axis()\n"
 				"  Return the rotation axis of the arc as a 3D vector.\n"
 				"\n"
 				"  :returns: the unit-length 3D vector (x,y,z)\n"
@@ -282,7 +282,7 @@ export_great_circle_arc()
 				"  ::\n"
 				"\n"
 				"    if not arc.is_zero_length():\n"
-				"        rotation_axis = arc.get_rotation_axis()\n"
+				"        axis_x, axis_y, axis_z = arc.get_rotation_axis()\n"
 				"\n"
 				"  The rotation axis is the unit-length 3D vector (x,y,z) returned in the tuple.\n"
 				"\n"
@@ -293,7 +293,7 @@ export_great_circle_arc()
 				"then *IndeterminateArcRotationAxisError* is raised.\n")
 		.def("get_rotation_axis_lat_lon",
 				&GPlatesApi::great_circle_arc_get_rotation_axis_lat_lon,
-				"get_rotation_axis_lat_lon() -> latitude, longitude\n"
+				"get_rotation_axis_lat_lon()\n"
 				"  Return the (latitude, longitude) equivalent of :meth:`get_rotation_axis`.\n"
 				"\n"
 				"  :returns: the axis as (latitude, longitude)\n"
@@ -314,7 +314,7 @@ export_great_circle_arc()
 				"then *IndeterminateArcRotationAxisError* is raised.\n")
 		.def("get_arc_point",
 				&GPlatesApi::great_circle_arc_get_arc_point,
-				"get_arc_point(normalised_distance_from_start_point) -> PointOnSphere\n"
+				"get_arc_point(normalised_distance_from_start_point)\n"
 				"  Return a point on this arc.\n"
 				"\n"
 				"  :param normalised_distance_from_start_point: distance from start point where "
@@ -337,7 +337,7 @@ export_great_circle_arc()
 				"then *ValueError* is raised.\n")
 		.def("get_arc_direction",
 				&GPlatesApi::great_circle_arc_get_arc_direction,
-				"get_arc_direction(normalised_distance_from_start_point) -> Vector3D\n"
+				"get_arc_direction(normalised_distance_from_start_point)\n"
 				"  Return the direction along the arc at a point on the arc.\n"
 				"\n"
 				"  :param normalised_distance_from_start_point: distance from start point where "
