@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "PyGeometriesOnSphere.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 
@@ -56,19 +57,6 @@ namespace GPlatesApi
 	namespace Implementation
 	{
 		void
-		extract_local_origins(
-				std::vector<GPlatesMaths::PointOnSphere> &local_origins,
-				bp::object local_origins_object)
-		{
-			// Begin/end iterators over the python points sequence.
-			bp::stl_input_iterator<GPlatesMaths::PointOnSphere>
-					local_origins_begin(local_origins_object),
-					local_origins_end;
-			// Copy into a vector.
-			std::copy(local_origins_begin, local_origins_end, std::back_inserter(local_origins));
-		}
-
-		void
 		extract_vectors(
 				std::vector<GPlatesMaths::Vector3D> &vectors,
 				bp::object vectors_object)
@@ -82,15 +70,10 @@ namespace GPlatesApi
 		}
 
 		void
-		extract_local_origins_and_vectors(
-				std::vector<GPlatesMaths::PointOnSphere> &local_origins,
-				std::vector<GPlatesMaths::Vector3D> &vectors,
-				bp::object local_origins_object,
-				bp::object vectors_object)
+		assert_local_origins_and_vectors_are_same_size(
+				const std::vector<GPlatesMaths::PointOnSphere> &local_origins,
+				const std::vector<GPlatesMaths::Vector3D> &vectors)
 		{
-			extract_local_origins(local_origins, local_origins_object);
-			extract_vectors(vectors, vectors_object);
-
 			if (local_origins.size() != vectors.size())
 			{
 				PyErr_SetString(PyExc_ValueError, "'local_origins' and 'vectors' should be the same size");
@@ -192,12 +175,15 @@ namespace GPlatesApi
 
 	bp::list
 	local_cartesian_convert_sequence_from_geocentric_to_north_east_down(
-			bp::object local_origins_object, // Any python sequence (eg, list, tuple).
+			PointSequenceFunctionArgument local_origins_function_argument,
 			bp::object vectors_object) // Any python sequence (eg, list, tuple).
 	{
- 		std::vector<GPlatesMaths::PointOnSphere> local_origins;
+ 		const std::vector<GPlatesMaths::PointOnSphere> &local_origins =
+				local_origins_function_argument.get_points();
+
  		std::vector<GPlatesMaths::Vector3D> vectors;
-		Implementation::extract_local_origins_and_vectors(local_origins, vectors, local_origins_object, vectors_object);
+		Implementation::extract_vectors(vectors, vectors_object);
+		Implementation::assert_local_origins_and_vectors_are_same_size(local_origins, vectors);
 
 		bp::list ned_vectors;
 
@@ -255,12 +241,15 @@ namespace GPlatesApi
 
 	bp::list
 	local_cartesian_convert_sequence_from_north_east_down_to_geocentric(
-			bp::object local_origins_object, // Any python sequence (eg, list, tuple).
+			PointSequenceFunctionArgument local_origins_function_argument,
 			bp::object vectors_object) // Any python sequence (eg, list, tuple).
 	{
- 		std::vector<GPlatesMaths::PointOnSphere> local_origins;
+ 		const std::vector<GPlatesMaths::PointOnSphere> &local_origins =
+				local_origins_function_argument.get_points();
+
  		std::vector<GPlatesMaths::Vector3D> vectors;
-		Implementation::extract_local_origins_and_vectors(local_origins, vectors, local_origins_object, vectors_object);
+		Implementation::extract_vectors(vectors, vectors_object);
+		Implementation::assert_local_origins_and_vectors_are_same_size(local_origins, vectors);
 
 		bp::list geocentric_vectors;
 
@@ -340,12 +329,15 @@ namespace GPlatesApi
 
 	bp::list
 	local_cartesian_convert_sequence_from_geocentric_to_magnitude_azimuth_inclination(
-			bp::object local_origins_object, // Any python sequence (eg, list, tuple).
+			PointSequenceFunctionArgument local_origins_function_argument,
 			bp::object vectors_object) // Any python sequence (eg, list, tuple).
 	{
- 		std::vector<GPlatesMaths::PointOnSphere> local_origins;
+ 		const std::vector<GPlatesMaths::PointOnSphere> &local_origins =
+				local_origins_function_argument.get_points();
+
  		std::vector<GPlatesMaths::Vector3D> vectors;
-		Implementation::extract_local_origins_and_vectors(local_origins, vectors, local_origins_object, vectors_object);
+		Implementation::extract_vectors(vectors, vectors_object);
+		Implementation::assert_local_origins_and_vectors_are_same_size(local_origins, vectors);
 
 		bp::list mai_tuples;
 
@@ -414,11 +406,11 @@ namespace GPlatesApi
 
 	bp::list
 	local_cartesian_convert_sequence_from_magnitude_azimuth_inclination_to_geocentric(
-			bp::object local_origins_object, // Any python sequence (eg, list, tuple).
+			PointSequenceFunctionArgument local_origins_function_argument,
 			bp::object local_coordinates_object) // Any python sequence (eg, list, tuple).
 	{
- 		std::vector<GPlatesMaths::PointOnSphere> local_origins;
-		Implementation::extract_local_origins(local_origins, local_origins_object);
+ 		const std::vector<GPlatesMaths::PointOnSphere> &local_origins =
+				local_origins_function_argument.get_points();
 
 		std::vector<
 				boost::tuple<
@@ -530,9 +522,9 @@ export_local_cartesian()
 				"  Converts a sequence of geocentric *vectors* to a sequence of cartesian vectors in local "
 				"North/East/Down coordinate systems located at *local_origins*.\n"
 				"\n"
-				"  :param local_origins: sequence of origins of local cartesian systems.\n"
-				"  :type local_origins: Any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
-				"tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
+				"  :param local_origins: sequence of origins (points) of local cartesian systems.\n"
+				"  :type local_origins: Any sequence of :class:`PointOnSphere` "
+				"or :class:`LatLonPoint` or tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 				"  :param vectors: the geocentric vectors\n"
 				"  :type vectors: Any sequence of :class:`Vector3D` or tuple (x,y,z)\n"
 				"  :returns: list of local cartesian North/East/Down vectors\n"
@@ -667,7 +659,7 @@ export_local_cartesian()
 				"  Converts a cartesian *vector* in the local North/East/Down coordinate system "
 				"located at *local_origin* to a geocentric vector.\n"
 				"\n"
-				"  :param local_origins: sequence of origins of local cartesian systems.\n"
+				"  :param local_origins: sequence of origins (points) of local cartesian systems.\n"
 				"  :type local_origins: Any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
 				"tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 				"  :param vectors: the local cartesian vectors\n"
@@ -804,7 +796,7 @@ export_local_cartesian()
 				"  Converts geocentric *vectors* to spherical coordinates in local "
 				"North/East/Down coordinate systems located at *local_origins*.\n"
 				"\n"
-				"  :param local_origins: sequence of origins of local cartesian systems.\n"
+				"  :param local_origins: sequence of origins (points) of local cartesian systems.\n"
 				"  :type local_origins: Any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
 				"tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 				"  :param vectors: the geocentric vectors\n"
@@ -942,7 +934,7 @@ export_local_cartesian()
 				"  Converts a sequence of local North/East/Down tuples of spherical coordinates located at "
 				"*local_origins* to a sequence of geocentric vectors.\n"
 				"\n"
-				"  :param local_origins: sequence of origins of local cartesian systems.\n"
+				"  :param local_origins: sequence of origins (points) of local cartesian systems.\n"
 				"  :type local_origins: Any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
 				"tuple (latitude,longitude), in degrees, or tuple (x,y,z)\n"
 				"  :param local_coordinates: sequence of local spherical coordinates (magnitude, azimuth, inclination)\n"

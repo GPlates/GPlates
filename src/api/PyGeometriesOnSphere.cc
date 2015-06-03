@@ -73,6 +73,189 @@ namespace bp = boost::python;
 namespace GPlatesApi
 {
 	/**
+	 * A from-python converter from a sequence of points or a GeometryOnSphere to a
+	 * @a PointSequenceFunctionArgument.
+	 */
+	struct python_PointSequenceFunctionArgument :
+			private boost::noncopyable
+	{
+		static
+		void *
+		convertible(
+				PyObject *obj)
+		{
+			namespace bp = boost::python;
+
+			if (PointSequenceFunctionArgument::is_convertible(
+				bp::object(bp::handle<>(bp::borrowed(obj)))))
+			{
+				return obj;
+			}
+
+			return NULL;
+		}
+
+		static
+		void
+		construct(
+				PyObject *obj,
+				boost::python::converter::rvalue_from_python_stage1_data *data)
+		{
+			namespace bp = boost::python;
+
+			void *const storage = reinterpret_cast<
+					bp::converter::rvalue_from_python_storage<
+							PointSequenceFunctionArgument> *>(
+									data)->storage.bytes;
+
+			new (storage) PointSequenceFunctionArgument(
+					bp::object(bp::handle<>(bp::borrowed(obj))));
+
+			data->convertible = storage;
+		}
+	};
+
+
+	/**
+	 * Registers converter from a sequence of points or a GeometryOnSphere to a @a PointSequenceFunctionArgument.
+	 */
+	void
+	register_point_sequence_function_argument_conversion()
+	{
+		// Register function argument types variant.
+		PythonConverterUtils::register_variant_conversion<
+				PointSequenceFunctionArgument::function_argument_type>();
+
+		// NOTE: We don't define a to-python conversion.
+
+		// From python conversion.
+		bp::converter::registry::push_back(
+				&python_PointSequenceFunctionArgument::convertible,
+				&python_PointSequenceFunctionArgument::construct,
+				bp::type_id<PointSequenceFunctionArgument>());
+	}
+}
+
+
+bool
+GPlatesApi::PointSequenceFunctionArgument::is_convertible(
+		bp::object python_function_argument)
+{
+	// If we fail to extract or iterate over the supported types then catch exception and return NULL.
+	try
+	{
+		// Test all supported types (in function_argument_type) except the bp::object (since that's a sequence).
+		if (bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> >(python_function_argument).check() ||
+			bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere> >(python_function_argument).check() ||
+			bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> >(python_function_argument).check() ||
+			bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere> >(python_function_argument).check())
+		{
+			return true;
+		}
+
+		// Else it's a boost::python::object so we're expecting it to be a sequence of
+		// points which requires further checking.
+
+		const bp::object sequence = python_function_argument;
+
+		// Iterate over the sequence of points.
+		//
+		// NOTE: We avoid iterating using 'bp::stl_input_iterator<GPlatesMaths::PointOnSphere>'
+		// because we want to avoid actually extracting the points.
+		// We're just checking if there's a sequence of points here.
+		bp::object iter = sequence.attr("__iter__")();
+		while (bp::handle<> item = bp::handle<>(bp::allow_null(PyIter_Next(iter.ptr()))))
+		{
+			if (!bp::extract<GPlatesMaths::PointOnSphere>(bp::object(item)).check())
+			{
+				return false;
+			}
+		}
+
+		if (PyErr_Occurred())
+		{
+			PyErr_Clear();
+			return false;
+		}
+
+		return true;
+	}
+	catch (const bp::error_already_set &)
+	{
+		PyErr_Clear();
+	}
+
+	return false;
+}
+
+
+GPlatesApi::PointSequenceFunctionArgument::PointSequenceFunctionArgument(
+		bp::object python_function_argument) :
+	d_points(
+			initialise_points(
+					bp::extract<function_argument_type>(python_function_argument)))
+{
+}
+
+
+GPlatesApi::PointSequenceFunctionArgument::PointSequenceFunctionArgument(
+		const function_argument_type &function_argument) :
+	d_points(initialise_points(function_argument))
+{
+}
+
+
+boost::shared_ptr<GPlatesApi::PointSequenceFunctionArgument::point_seq_type>
+GPlatesApi::PointSequenceFunctionArgument::initialise_points(
+		const function_argument_type &function_argument)
+{
+	if (const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> *point_function_argument =
+		boost::get< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> >(&function_argument))
+	{
+		return boost::shared_ptr<point_seq_type>(new point_seq_type(1, **point_function_argument));
+	}
+	else if (const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere> *multi_point_function_argument =
+		boost::get< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere> >(&function_argument))
+	{
+		boost::shared_ptr<point_seq_type> points(new point_seq_type());
+		GPlatesAppLogic::GeometryUtils::get_geometry_points(**multi_point_function_argument, *points);
+		return points;
+	}
+	else if (const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> *polyline_function_argument =
+		boost::get< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> >(&function_argument))
+	{
+		boost::shared_ptr<point_seq_type> points(new point_seq_type());
+		GPlatesAppLogic::GeometryUtils::get_geometry_points(**polyline_function_argument, *points);
+		return points;
+	}
+	else if (const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere> *polygon_function_argument =
+		boost::get< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere> >(&function_argument))
+	{
+		boost::shared_ptr<point_seq_type> points(new point_seq_type());
+		GPlatesAppLogic::GeometryUtils::get_geometry_points(**polygon_function_argument, *points);
+		return points;
+	}
+	else
+	{
+		boost::shared_ptr<point_seq_type> points(new point_seq_type());
+
+		const bp::object sequence = boost::get<bp::object>(function_argument);
+
+		bp::stl_input_iterator<GPlatesMaths::PointOnSphere> points_iter(sequence);
+		bp::stl_input_iterator<GPlatesMaths::PointOnSphere> points_end;
+		for ( ; points_iter != points_end; ++points_iter)
+		{
+			points->push_back(*points_iter);
+		}
+
+		return points;
+	}
+}
+
+
+namespace GPlatesApi
+{
+	/**
 	 * Calculate the (minimum) distance between two geometries.
 	 */
 	bp::object
@@ -364,6 +547,9 @@ export_geometry_on_sphere()
 
 	// Enable boost::optional<GeometryOnSphere::non_null_ptr_to_const_type> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>();
+
+	// Register converter from a sequence of points or a GeometryOnSphere to a @a PointSequenceFunctionArgument.
+	GPlatesApi::register_point_sequence_function_argument_conversion();
 }
 
 
@@ -1051,6 +1237,12 @@ export_multi_point_on_sphere()
 						&GPlatesApi::multi_point_on_sphere_create_from_points,
 						bp::default_call_policies(),
 						(bp::arg("points"))),
+				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
+				// Specific overload signature...
+				"__init__(...)\n"
+				"A *MultiPointOnSphere* object can be constructed in more than one way...\n"
+				"\n"
+				// Specific overload signature...
 				"__init__(points)\n"
 				"  Create a multi-point from a sequence of (x,y,z) or (latitude,longitude) points.\n"
 				"\n"
@@ -1111,6 +1303,7 @@ export_multi_point_on_sphere()
 						&GPlatesApi::multi_point_on_sphere_create_from_geometry,
 						bp::default_call_policies(),
 						(bp::arg("geometry"))),
+				// Specific overload signature...
 				"__init__(geometry)\n"
 				"  Create a multipoint from a :class:`GeometryOnSphere`.\n"
 				"\n"
