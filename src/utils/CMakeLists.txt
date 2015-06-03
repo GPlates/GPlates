@@ -30,6 +30,8 @@ set(srcs
     Counter64.h
     DeferredCallEvent.cc
     DeferredCallEvent.h
+    Earth.cc
+    Earth.h
     Endian.h
     Environment.cc
     Environment.h

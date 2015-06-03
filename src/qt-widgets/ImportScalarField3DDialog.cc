@@ -80,6 +80,7 @@
 #include "property-values/GpmlTimeWindow.h"
 #include "property-values/XsString.h"
 
+#include "utils/Earth.h"
 #include "utils/Parse.h"
 #include "utils/UnicodeStringUtils.h"
 
@@ -89,7 +90,8 @@ GPlatesQtWidgets::ImportScalarField3DDialog::GPML_EXT = ".gpml";
 const QString
 GPlatesQtWidgets::ImportScalarField3DDialog::GPSF_EXT = ".gpsf";
 
-const double GPlatesQtWidgets::ScalarField3DDepthLayersSequence::DEFAULT_RADIUS_OF_EARTH = 6378.1;
+const double GPlatesQtWidgets::ScalarField3DDepthLayersSequence::DEFAULT_RADIUS_OF_EARTH =
+		GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS;
 
 
 bool

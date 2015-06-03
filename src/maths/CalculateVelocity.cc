@@ -42,6 +42,8 @@
 #include "maths/MathsUtils.h"
 #include "maths/UnitQuaternion3D.h"
 
+#include "utils/Earth.h"
+
 
 using namespace GPlatesGlobal;
 
@@ -51,9 +53,6 @@ GPlatesMaths::calculate_velocity_vector(
 		const FiniteRotation &fr_t1,
 		const FiniteRotation &fr_t2)
 {
-
-	static const real_t radius_of_earth = 6.378e8;  // in centimetres.
-
 	const UnitQuaternion3D &q1 = fr_t1.unit_quat();
 	const UnitQuaternion3D &q2 = fr_t2.unit_quat();
 
@@ -100,8 +99,10 @@ GPlatesMaths::calculate_velocity_vector(
 	UnitVector3D rotation_axis = params.axis;
 
 	// Cartesian (x, y, z) velocity (cm/yr).
-	Vector3D velocity_xyz = omega * (radius_of_earth * 1.0e-6) *
-		cross(rotation_axis, point.position_vector() );
+	const Vector3D velocity_xyz =
+			omega *
+				(GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS * 1e-1/* kms/my -> cm/yr */) *
+					cross(rotation_axis, point.position_vector() );
 
 	return velocity_xyz;
 }
@@ -187,8 +188,6 @@ GPlatesMaths::calculate_velocity_vector_and_omega(
 		const GPlatesMaths::FiniteRotation &fr_t2,
 		const boost::optional<GPlatesMaths::UnitVector3D> &axis_hint)
 {
-	static const real_t radius_of_earth = 6.378e8;  // in centimetres.
-
 	const UnitQuaternion3D &q1 = fr_t1.unit_quat();
 	const UnitQuaternion3D &q2 = fr_t2.unit_quat();
 
@@ -235,8 +234,10 @@ GPlatesMaths::calculate_velocity_vector_and_omega(
 	UnitVector3D rotation_axis = params.axis;
 
 	// Cartesian (x, y, z) velocity (cm/yr).
-	Vector3D velocity_xyz = omega * (radius_of_earth * 1.0e-6) *
-		cross(rotation_axis, point.position_vector() );
+	const Vector3D velocity_xyz =
+			omega *
+				(GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS * 1e-1/* kms/my -> cm/yr */) *
+					cross(rotation_axis, point.position_vector());
 
 	return std::make_pair(velocity_xyz,omega);
 }

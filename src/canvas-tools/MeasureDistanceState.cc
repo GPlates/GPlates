@@ -37,6 +37,8 @@
 #include "view-operations/GeometryBuilder.h"
 #include "view-operations/RenderedGeometryLayer.h"
 
+#include "utils/Earth.h"
+
 
 namespace
 {
@@ -117,8 +119,8 @@ namespace
 
 
 const double
-GPlatesCanvasTools::MeasureDistanceState::DEFAULT_RADIUS_OF_EARTH = 6378.1;
-	// from Google Calculator
+GPlatesCanvasTools::MeasureDistanceState::DEFAULT_RADIUS_OF_EARTH =
+		GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS;
 
 
 GPlatesCanvasTools::MeasureDistanceState::MeasureDistanceState(
