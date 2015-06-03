@@ -3,8 +3,8 @@
 Calculate velocities by plate ID
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example calculates velocities at all points in geometries of a collection of :class:`features<pygplates.Feature>`
-using the plate IDs of those features and a :class:`rotation model<pygplates.RotationModel>`.
+This example calculates velocities at all points in geometries of a collection of features
+using the plate IDs of those features and a rotation model.
 
 Sample code
 """""""""""

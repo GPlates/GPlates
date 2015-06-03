@@ -171,7 +171,12 @@ export_calculate_velocities()
 			"        reconstructed_points,\n"
 			"        equivalent_stage_rotation,\n"
 			"        1,\n"
-			"        pygplates.VelocityUnits.cms_per_yr)\n");
+			"        pygplates.VelocityUnits.cms_per_yr)\n"
+			"\n"
+			"  .. note:: | Velocities can be converted from global cartesian vectors to local "
+			"``(magnitude, azimuth, inclination)`` coordinates using "
+			":meth:`pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination`.\n"
+			"            | See the :ref:`pygplates_calculate_velocities_by_plate_id` sample code.\n");
 }
 
 #endif // GPLATES_NO_PYTHON
