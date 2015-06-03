@@ -68,7 +68,7 @@ if (SPHINX_FOUND)
 	FILE(GLOB RST_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/*.rst" "${CMAKE_CURRENT_SOURCE_DIR}/sample-code/*.rst")
 	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/sample-code") # Ensure 'sample-code' sub-directory exists in binary build directory.
 	FOREACH(RST_FILE ${RST_FILES})
-		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${RST_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${RST_FILE} COPYONLY)
+		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${RST_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${RST_FILE} @ONLY)
 	ENDFOREACH(RST_FILE ${RST_FILES})
 	
 	# It seems that 'sphinx-build' generates the following warning unless we create the specific directory in question...
