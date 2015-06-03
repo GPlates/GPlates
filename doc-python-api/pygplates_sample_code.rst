@@ -7,7 +7,7 @@ This document contains sample code that shows *pygplates* solving common plate t
 
 .. note:: The :ref:`pygplates_getting_started` section has a
    :ref:`Getting Started tutorial<pygplates_getting_started_tutorial>` as well as an
-   :ref:`installion guide<pygplates_getting_started_installation>` to help get started.
+   :ref:`installation guide<pygplates_getting_started_installation>` to help get started.
 
 Velocities
 ----------

@@ -542,6 +542,12 @@ export_finite_rotation()
 						&GPlatesApi::finite_rotation_create_from_euler_pole_and_angle,
 						bp::default_call_policies(),
 						(bp::arg("pole"), bp::arg("angle_radians"))),
+				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
+				// Specific overload signature...
+				"__init__(...)\n"
+				"A *FiniteRotation* object can be constructed in more than one way...\n"
+				"\n"
+				// Specific overload signature...
 				"__init__(pole, angle_radians)\n"
 				"  Create a finite rotation from an Euler pole and a rotation angle (in *radians*).\n"
 				"\n"
@@ -569,6 +575,7 @@ export_finite_rotation()
 						&GPlatesApi::finite_rotation_create_between_two_points,
 						bp::default_call_policies(),
 						(bp::arg("from_point"), bp::arg("to_point"))),
+				// Specific overload signature...
 				"__init__(from_point, to_point)\n"
 				"  Create a finite rotation that rotates one point to another along the "
 				"great circle arc connecting them.\n"
@@ -593,6 +600,7 @@ export_finite_rotation()
 				bp::make_constructor(
 						&GPlatesApi::finite_rotation_create_identity_rotation,
 						bp::default_call_policies()),
+				// Specific overload signature...
 				"__init__()\n"
 				"  Creates a finite rotation that does not rotate (it maps a vector onto the same vector).\n"
 				"\n"
@@ -603,7 +611,7 @@ export_finite_rotation()
 				"    identity_finite_rotation = pygplates.FiniteRotation()\n")
 		.def("create_identity_rotation",
 				&GPlatesApi::finite_rotation_create_identity_rotation,
-				"create_identity_rotation() -> FiniteRotation\n"
+				"create_identity_rotation()\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -628,7 +636,7 @@ export_finite_rotation()
 		.def("are_equivalent",
 				&GPlatesApi::finite_rotation_represent_equivalent_rotations,
 				(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
-				"are_equivalent(finite_rotation1, finite_rotation2) -> bool\n"
+				"are_equivalent(finite_rotation1, finite_rotation2)\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -667,7 +675,7 @@ export_finite_rotation()
 				(bp::arg("finite_rotation1"),
 						bp::arg("finite_rotation2"),
 						bp::arg("threshold_degrees") = boost::optional<double>()),
-				"are_equal(finite_rotation1, finite_rotation2, [threshold_degrees]) -> bool\n"
+				"are_equal(finite_rotation1, finite_rotation2, [threshold_degrees])\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -704,7 +712,7 @@ export_finite_rotation()
 		.def("compose",
 				compose,
 				(bp::arg("finite_rotation1"), bp::arg("finite_rotation2")),
-				"compose(finite_rotation1, finite_rotation2) -> FiniteRotation\n"
+				"compose(finite_rotation1, finite_rotation2)\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -733,7 +741,7 @@ export_finite_rotation()
 					bp::arg("time1"),
 					bp::arg("time2"),
 					bp::arg("target_time")),
-				"interpolate(finite_rotation1, finite_rotation2, time1, time2, target_time) -> FiniteRotation\n"
+				"interpolate(finite_rotation1, finite_rotation2, time1, time2, target_time)\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -770,7 +778,7 @@ export_finite_rotation()
 		.staticmethod("interpolate")
 		.def("represents_identity_rotation",
 				&GPlatesApi::finite_rotation_represents_identity_rotation,
-				"represents_identity_rotation() -> bool\n"
+				"represents_identity_rotation()\n"
 				"  Return whether this finite rotation represents an identity rotation (a rotation "
 				"which maps a vector onto the same vector).\n"
 				"\n"
@@ -783,7 +791,7 @@ export_finite_rotation()
 				"    assert(identity_finite_rotation.represents_identity_rotation())\n")
 		.def("get_inverse",
 				&GPlatesMaths::get_reverse,
-				"get_inverse() -> FiniteRotation\n"
+				"get_inverse()\n"
 				"  Return the inverse of this finite rotation.\n"
 				"\n"
 				"  :rtype: :class:`FiniteRotation`\n"
@@ -796,7 +804,7 @@ export_finite_rotation()
 		.def("get_euler_pole_and_angle",
 				&GPlatesApi::finite_rotation_get_euler_pole_and_angle,
 				(bp::arg("use_north_pole_for_identity")=true),
-				"get_euler_pole_and_angle([use_north_pole_for_identity=True]) -> pole, angle_radians\n"
+				"get_euler_pole_and_angle([use_north_pole_for_identity=True])\n"
 				"  Return the (pole, angle) representing finite rotation.\n"
 				"\n"
 				"  *NOTE:* the returned angle is in *radians*.\n"
@@ -805,8 +813,8 @@ export_finite_rotation()
 				"for an :meth:`identity rotation<represents_identity_rotation>` or raise "
 				"IndeterminateResultError (default is to return north pole axis)\n"
 				"  :type use_north_pole_for_identity: bool\n"
-				"  :rtype: tuple (:class:`PointOnSphere`, float)\n"
 				"  :returns: the tuple of (pole, angle_radians)\n"
+				"  :rtype: tuple (:class:`PointOnSphere`, float)\n"
 				"  :raises: IndeterminateResultError if *use_north_pole_for_identity* is ``False`` "
 				"and this finite rotation represents the identity rotation\n"
 				"\n"
@@ -829,8 +837,7 @@ export_finite_rotation()
 		.def("get_lat_lon_euler_pole_and_angle_degrees",
 				&GPlatesApi::finite_rotation_get_lat_lon_euler_pole_and_angle_degrees,
 				(bp::arg("use_north_pole_for_identity")=true),
-				"get_lat_lon_euler_pole_and_angle_degrees([use_north_pole_for_identity=True]) -> "
-				"pole_latitude, pole_longitude, angle_degrees\n"
+				"get_lat_lon_euler_pole_and_angle_degrees([use_north_pole_for_identity=True])\n"
 				"  Return the finite rotation as a tuple of pole latitude, pole longitude and "
 				" angle (all in degrees).\n"
 				"\n"
@@ -840,8 +847,8 @@ export_finite_rotation()
 				"for an :meth:`identity rotation<represents_identity_rotation>` or raise "
 				"IndeterminateResultError (default is to return north pole axis)\n"
 				"  :type use_north_pole_for_identity: bool\n"
-				"  :rtype: tuple (float, float, float)\n"
 				"  :returns: the tuple of (pole_latitude, pole_longitude, angle_degrees) all in *degrees*\n"
+				"  :rtype: tuple (float, float, float)\n"
 				"  :raises: IndeterminateResultError if *use_north_pole_for_identity* is ``False`` "
 				"and this finite rotation represents the identity rotation\n"
 				"\n"
@@ -862,7 +869,7 @@ export_finite_rotation()
 		.def("get_rotation_distance",
 				&GPlatesApi::finite_rotation_get_rotation_distance,
 				(bp::arg("point")),
-				"get_rotation_distance(point) -> float\n"
+				"get_rotation_distance(point)\n"
 				"  Return the distance that a point rotates along its small circle rotation arc (in radians).\n"
 				"\n"
 				"  :param point: the point being rotated (the start point of the rotation arc)\n"
@@ -873,7 +880,8 @@ export_finite_rotation()
 				"  Returns the distance along the (small circle) rotation arc from the start point "
 				"*point* to the end point ``finite_rotation * point``. Note that the returned distance "
 				"is not the angle of rotation - it is the actual distance on the unit radius sphere "
-				"(hence radians). To convert to distance on the Earth's surface multiply by the Earth radius.\n"
+				"(hence radians). To convert to distance on the Earth's surface multiply by the "
+				"Earth radius (see :class:`Earth`).\n"
 				"\n"
 				"  ::\n"
 				"\n"

@@ -320,6 +320,7 @@ General utility classes:
    :toctree: generated
    
    pygplates.DateLineWrapper
+   pygplates.Earth
    pygplates.FeaturesFunctionArgument
    pygplates.GeoTimeInstant
    pygplates.Version

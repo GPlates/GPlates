@@ -398,7 +398,7 @@ Output of the script
 """"""""""""""""""""
 
 | There should now be a ``reconstructed_coastlines_10Ma.shp`` file containing the reconstructed coastline
-  locations at ten millions year ago (10Ma).
+  locations at ten million years ago (10Ma).
 | This Shapefile can be loaded into the `GPlates desktop application <http://www.gplates.org/download.html>`_
   to see these locations on the globe.
 

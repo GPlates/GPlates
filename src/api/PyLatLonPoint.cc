@@ -122,7 +122,7 @@ export_lat_lon_point()
 					"LatLonPoints are *not* equality (``==``, ``!=``) comparable (will raise ``TypeError`` "
 					"when compared) and are not hashable (cannot be used as a key in a ``dict``).\n"
 					"\n"
-					"Convenience class static data are available for the North and South poles:\n"
+					"As a convenience the North and South poles are available as class attributes:\n"
 					"\n"
 					"* ``pygplates.LatLonPoint.north_pole``\n"
 					"* ``pygplates.LatLonPoint.south_pole``\n",

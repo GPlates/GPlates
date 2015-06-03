@@ -48,15 +48,15 @@ Sample code
             # Reconstruct the geometry to 'reconstruction_time'.
             reconstructed_geometry = equivalent_total_rotation * geometry
             reconstructed_points = reconstructed_geometry.get_points()
-            
-            # Calculate velocities at the geometry points.
+
+            # Calculate velocities at the reconstructed geometry points.
             # This is from 'reconstruction_time + delta_time' to 'reconstruction_time' on plate 'domain_plate_id'.
             velocity_vectors = pygplates.calculate_velocities(reconstructed_points, equivalent_stage_rotation, delta_time)
-            
+
             # Convert global 3D velocity vectors to local (magnitude, azimuth, inclination) tuples (one tuple per point).
             velocities = pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(
                     reconstructed_points, velocity_vectors)
-            
+
             # Append results for the current geometry to the final results.
             all_reconstructed_points.extend(reconstructed_points)
             all_velocities.extend(velocities)
@@ -114,7 +114,7 @@ are in present day coordinates and need to be reconstructed to their 10Ma positi
 
 | The (reconstructed) geometry could be a :class:`pygplates.PointOnSphere`, :class:`pygplates.MultiPointOnSphere`,
   :class:`pygplates.PolylineOnSphere` or :class:`pygplates.PolygonOnSphere`.
-| We convert it into a list of :class:`points<pygplates.PointOnSphere>` to calculate velocities at using
+| We convert it into a list of :class:`pygplates.PointOnSphere` to calculate velocities at using
   :meth:`pygplates.GeometryOnSphere.get_points`.
 
 ::
@@ -130,10 +130,17 @@ are in present day coordinates and need to be reconstructed to their 10Ma positi
 
 | If the velocities need to be in local (magnitude, azimuth, inclination) coordinates then the global
   cartesian vectors can be converted using :meth:`pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination`.
-| Note that each point in ``reconstructed_points`` determines its own local coordinate system.
+| Note that each point in ``reconstructed_points`` determines a separate local coordinate system.
   For example, the velocity *azimuth* is relative to North as viewed from a particular point position.
   
 ::
 
     velocities = pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination(
             reconstructed_points, velocity_vectors)
+
+| Finally we add the reconstructed points and velocities to two large lists for *all* features.
+
+::
+
+    all_reconstructed_points.extend(reconstructed_points)
+    all_velocities.extend(velocities)

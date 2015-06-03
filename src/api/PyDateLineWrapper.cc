@@ -206,9 +206,10 @@ export_date_line_wrapper()
 					"\n"
 					"The motivation for this class is to remove horizontal lines when polylines and "
 					"polygons are displayed in 2D map projections. The horizontal lines occur when "
-					"the longitude of two adjacent points change from approximately -180 degrees to "
-					"180 degrees (or vice versa) causing the line segment between the adjacent points "
-					"to take the long path right across the map display instead of the short path. "
+					"the longitude of two adjacent points change from approximately ``-180`` degrees to "
+					"``180`` degrees (or vice versa) causing the line segment between the adjacent points "
+					"to take the long path right across the map display instead of the short path.\n"
+					"\n"
 					"Date line wrapping avoids this by splitting a polyline/polygon into multiple "
 					"polylines/polygons at the dateline.\n",
 					// We need this (even though "__init__" is defined) since
