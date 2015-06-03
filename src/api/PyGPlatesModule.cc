@@ -34,6 +34,7 @@
 void export_exceptions();
 
 // utils namespace
+void export_earth();
 void export_strings();
 
 // maths namespace
@@ -66,6 +67,7 @@ void export_revisioned_vector();
 void export_top_level_property();
 
 // app-logic namespace
+void export_calculate_velocities();
 void export_reconstruct();
 void export_reconstruction_geometries();
 void export_reconstruction_tree();
@@ -135,6 +137,7 @@ export_cpp_python_api()
 	export_coregistration_layer_proxy();
 #endif	
 	// utils namespace
+	export_earth();
 	export_strings();
 
 	// api directory
@@ -170,6 +173,7 @@ export_cpp_python_api()
 	export_top_level_property();
 
 	// app-logic namespace
+	export_calculate_velocities();
 	export_reconstruct();
 	export_reconstruction_geometries();
 	export_reconstruction_tree();

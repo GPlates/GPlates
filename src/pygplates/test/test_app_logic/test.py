@@ -11,6 +11,34 @@ import pygplates
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
 
 
+class CalculateVelocitiesTestCase(unittest.TestCase):
+    def test_calculate_velocities(self):
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        reconstruction_time = 10
+        reconstructed_feature_geometries = []
+        pygplates.reconstruct(
+                os.path.join(FIXTURES, 'volcanoes.gpml'),
+                rotation_model,
+                reconstructed_feature_geometries,
+                reconstruction_time)
+        for reconstructed_feature_geometry in reconstructed_feature_geometries:
+            equivalent_stage_rotation = rotation_model.get_rotation(
+                reconstruction_time,
+                reconstructed_feature_geometry.get_feature().get_reconstruction_plate_id(),
+                reconstruction_time + 1)
+            reconstructed_points = reconstructed_feature_geometry.get_reconstructed_geometry().get_points()
+            velocities = pygplates.calculate_velocities(
+                reconstructed_points,
+                equivalent_stage_rotation,
+                1,
+                pygplates.VelocityUnits.cms_per_yr)
+            self.assertTrue(len(velocities) == len(reconstructed_points))
+            for index in range(len(velocities)):
+                # The velocity direction should be orthogonal to the point direction (from globe origin).
+                self.assertAlmostEqual(
+                    pygplates.Vector3D.dot(velocities[index], reconstructed_points[index].to_xyz()), 0)
+
+
 class CrossoverTestCase(unittest.TestCase):
     def test_find_crossovers(self):
         crossovers = pygplates.find_crossovers(os.path.join(FIXTURES, 'rotations.rot'))
@@ -685,6 +713,7 @@ def suite():
     
     # Add test cases from this module.
     test_cases = [
+            CalculateVelocitiesTestCase,
             CrossoverTestCase,
             InterpolateTotalReconstructionSequenceTestCase,
             ReconstructTestCase,

@@ -23,10 +23,12 @@ set(srcs
     DeferredApiCall.h
     DeferredApiCallImpl.h
     PyApplication.cc
+    PyCalculateVelocities.cc
     PyColour.cc
     PyCoregistrationLayerProxy.cc
     PyCoregistrationLayerProxy.h
     PyDateLineWrapper.cc
+    PyEarth.cc
     PyExceptions.cc
     PyExceptions.h
     PyFeature.cc
