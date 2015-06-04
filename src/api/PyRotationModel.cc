@@ -125,6 +125,22 @@ namespace GPlatesApi
 					&python_RotationModelFunctionArgument::construct,
 					bp::type_id<RotationModelFunctionArgument>());
 		}
+
+
+		/**
+		 * This is called directly from Python via 'RotationModel.__init__()'.
+		 */
+		RotationModel::non_null_ptr_type
+		rotation_model_create(
+				const FeatureCollectionSequenceFunctionArgument &rotation_features,
+				unsigned int reconstruction_tree_cache_size,
+				bool clone_rotation_features)
+		{
+			return RotationModel::create(
+					rotation_features,
+					reconstruction_tree_cache_size,
+					clone_rotation_features);
+		}
 	}
 }
 
@@ -135,20 +151,49 @@ const unsigned int GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_
 GPlatesApi::RotationModel::non_null_ptr_type
 GPlatesApi::RotationModel::create(
 		const FeatureCollectionSequenceFunctionArgument &rotation_features,
-		unsigned int reconstruction_tree_cache_size)
+		unsigned int reconstruction_tree_cache_size,
+		bool clone_rotation_features)
 {
 	// Copy feature collection files into a vector.
 	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
 	rotation_features.get_files(feature_collection_files);
 
-	return create(feature_collection_files, reconstruction_tree_cache_size);
+	// If the caller requested to clone reconstruction features then we don't actually need
+	// to do this if all feature collections were loaded from files. This is because feature
+	// collections loaded from files are not exposed to the Python user and therefore cannot be
+	// modified and so we don't need to clone them to ensure this.
+	if (clone_rotation_features)
+	{
+		// See if all feature collections were loaded from files.
+		bool all_loaded_from_files = true;
+
+		BOOST_FOREACH(
+				GPlatesFileIO::File::non_null_ptr_type feature_collection_file,
+				feature_collection_files)
+		{
+			// If filename is empty then feature collection was *not* loaded from a file.
+			if (feature_collection_file->get_reference().get_file_info().get_qfileinfo().fileName().isEmpty())
+			{
+				all_loaded_from_files = false;
+				break;
+			}
+		}
+
+		if (all_loaded_from_files)
+		{
+			clone_rotation_features = false;
+		}
+	}
+
+	return create(feature_collection_files, reconstruction_tree_cache_size, clone_rotation_features);
 }
 
 
 GPlatesApi::RotationModel::non_null_ptr_type
 GPlatesApi::RotationModel::create(
 		const std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
-		unsigned int reconstruction_tree_cache_size)
+		unsigned int reconstruction_tree_cache_size,
+		bool clone_rotation_features)
 {
 	// Convert the feature collections (in the files) to weak refs (for ReconstructionTreeCreator).
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
@@ -168,7 +213,8 @@ GPlatesApi::RotationModel::create(
 			GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 					feature_collection_refs,
 					0/*default_anchor_plate_id*/,
-					reconstruction_tree_cache_size);
+					reconstruction_tree_cache_size,
+					clone_rotation_features);
 
 	return non_null_ptr_type(new RotationModel(feature_collection_files, reconstruction_tree_creator));
 }
@@ -177,7 +223,8 @@ GPlatesApi::RotationModel::create(
 GPlatesApi::RotationModel::non_null_ptr_type
 GPlatesApi::RotationModel::create(
 		const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
-		unsigned int reconstruction_tree_cache_size)
+		unsigned int reconstruction_tree_cache_size,
+		bool clone_rotation_features)
 {
 	// Create feature collection files with empty filenames.
 	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
@@ -193,7 +240,7 @@ GPlatesApi::RotationModel::create(
 		feature_collection_files.push_back(feature_collection_file);
 	}
 
-	return create(feature_collection_files, reconstruction_tree_cache_size);
+	return create(feature_collection_files, reconstruction_tree_cache_size, clone_rotation_features);
 }
 
 
@@ -338,11 +385,7 @@ GPlatesApi::RotationModelFunctionArgument::initialise_rotation_model(
 	const FeatureCollectionSequenceFunctionArgument feature_collections_function_argument =
 			boost::get<FeatureCollectionSequenceFunctionArgument>(function_argument);
 
-	// Copy feature collections into a vector.
-	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
-	feature_collections_function_argument.get_files(feature_collection_files);
-
-	return RotationModel::create(feature_collection_files);
+	return RotationModel::create(feature_collections_function_argument);
 }
 
 
@@ -356,17 +399,11 @@ GPlatesApi::RotationModelFunctionArgument::get_rotation_model() const
 void
 export_rotation_model()
 {
-	// Select the desired overload...
-	GPlatesApi::RotationModel::non_null_ptr_type (*rotation_model_create)(
-			const GPlatesApi::FeatureCollectionSequenceFunctionArgument &,
-			unsigned int) =
-					&GPlatesApi::RotationModel::create;
-
 	std::stringstream rotation_model_constructor_docstring_stream;
 	rotation_model_constructor_docstring_stream <<
 			"__init__(rotation_features, [reconstruction_tree_cache_size="
 			<< GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE
-			<< "])\n"
+			<< "], [clone_rotation_features=True])\n"
 			"  Create from rotation feature collection(s) and/or rotation filename(s), and "
 			"an optional reconstruction tree cache size.\n"
 			"\n"
@@ -377,6 +414,10 @@ export_rotation_model()
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param reconstruction_tree_cache_size: number of reconstruction trees to cache internally\n"
 			"  :type reconstruction_tree_cache_size: int\n"
+			"  :param clone_rotation_features: cloning rotation features prevents subsequent rotation feature "
+			"modifications adversely affecting cached rotations (defaults to ``True``) - "
+			"see *ADVANCED* note below for more details, otherwise just use default\n"
+			"  :type clone_rotation_features: bool\n"
 			"  :raises: OpenFileForReadingError if any file is not readable (when filenames specified)\n"
 			"  :raises: FileFormatNotSupportedError if any file format (identified by the filename "
 			"extensions) does not support reading (when filenames specified)\n"
@@ -388,11 +429,46 @@ export_rotation_model()
 			"  If any rotation filenames are specified then this method uses "
 			":class:`FeatureCollectionFileFormatRegistry` internally to read the rotation files.\n"
 			"\n"
+			"  Load a rotation file and some rotation adjustments (as a collection of rotation features) "
+			"into a rotation model:\n"
 			"  ::\n"
 			"\n"
 			"    rotation_adjustments = pygplates.FeatureCollection()\n"
 			"    ...\n"
-			"    rotation_model = pygplates.RotationModel(['rotations.rot', rotation_adjustments])\n";
+			"    rotation_model = pygplates.RotationModel(['rotations.rot', rotation_adjustments])\n"
+			"\n"
+			"  .. note:: *ADVANCED*\n"
+			"\n"
+			"     | *clone_rotation_features* should be left to its default of ``True`` unless "
+			"you know the rotation features will never be modified while the ``RotationModel`` is being used.\n"
+			"     | This is purely an **optimisation** opportunity since cloning feature collections in "
+			"high repetition inner loops can potentially slow things down noticeably.\n"
+			"     | For example if you create a ``RotationModel`` inside a loop:\n"
+			"\n"
+			"     ::\n"
+			"\n"
+			"       rotation_features = pygplates.FeatureCollection('rotations.rot')\n"
+			"\n"
+			"       while iteration < MAX_ITERATIONS:\n"
+			"           # We won't be modifying 'rotation_features' until finished using 'rotation_model'.\n"
+			"           # So we can turn off 'clone_rotation_features'.\n"
+			"           rotation_model = RotationModel(rotation_features, clone_rotation_features=False)\n"
+			"\n"
+			"           # The last time we use 'rotation_model' in this loop.\n"
+			"           rotation = rotation_model.get_rotation(...)\n"
+			"\n"
+			"           # Modify 'rotation_features' (eg, adjust rotations stored in features)\n"
+			"           # in preparation for the next iteration.\n"
+			"           # But we're not going to use 'rotation_model' again until the next iteration where\n"
+			"           # we'll create a new RotationModel instance with the updated rotation features.\n"
+			"           ...\n"
+			"\n"
+			"     Using this approach (avoiding cloning rotation features) in the implementation of "
+			":func:`synchronise_crossovers` *dramatically* improves its performance.\n"
+			"\n"
+			"  .. note:: *clone_rotation_features* is ignored if all rotation features specified in the "
+			"*rotation_features* argument are loaded from files (ie, if only filenames are specified).\n"
+			;
 
 	//
 	// RotationModel - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
@@ -423,11 +499,12 @@ export_rotation_model()
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
-						rotation_model_create,
+						&GPlatesApi::rotation_model_create,
 						bp::default_call_policies(),
 						(bp::arg("rotation_features"),
 							bp::arg("reconstruction_tree_cache_size") =
-								GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE)),
+								GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
+							bp::arg("clone_rotation_features") = true)),
 				rotation_model_constructor_docstring_stream.str().c_str())
 		.def("get_rotation",
 				&GPlatesApi::RotationModel::get_rotation,

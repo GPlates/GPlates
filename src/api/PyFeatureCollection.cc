@@ -144,6 +144,9 @@ namespace GPlatesApi
 			cloned_feature_collection->add(cloned_feature);
 		}
 
+		// Copy the tags also.
+		cloned_feature_collection->tags() = feature_collection_handle.tags();
+
 		return cloned_feature_collection;
 	}
 

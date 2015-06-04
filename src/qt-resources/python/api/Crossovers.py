@@ -593,7 +593,11 @@ def synchronise_crossovers(
             #
             # Also rotation modifications up to this point include the disabled synchronised-crossover time sample.
             # This ensures the rotation model does not take the synchronised-crossover rotation into account.
-            rotation_model = RotationModel(rotation_feature_sequence)
+            #
+            # NOTE: We won't be modifying the rotation features until we're finished using 'rotation_model'.
+            # So we can turn off 'clone_rotation_features'.
+            # This makes a *big* difference to the running time (since we're not cloning all the rotation features).
+            rotation_model = RotationModel(rotation_feature_sequence, clone_rotation_features=False)
             
             # The preserved-crossover is correct and we want to adjust the synchronised-crossover to match.
             # So we get the rotation relative to the synchronised-crossover fixed plate at the crossover time

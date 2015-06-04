@@ -36,7 +36,6 @@ Sample code
         stage_pole, stage_angle_radians = stage_rotation.get_euler_pole_and_angle()
         
         # A feature usually has a single geometry but it could have more - iterate over them all.
-        # Note that we're assuming the geometry is a polyline (or polygon) - otherwise this will raise an error.
         for isochron_geometry in isochron_feature.get_geometries():
             
             # Group the current isochron geometry into ridge and transform segments.
@@ -44,6 +43,7 @@ Sample code
             transform_segments = []
             
             # Iterate over the segments of the current geometry.
+            # Note that we're assuming the geometry is a polyline (or polygon) - otherwise this will raise an error.
             for segment in isochron_geometry.get_great_circle_arcs():
                 
                 # Ignore zero length segments - they don't have a direction.

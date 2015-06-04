@@ -634,19 +634,20 @@ class RotationModelCase(unittest.TestCase):
                 pygplates.RotationModel,
                 [ 'non_existent_file.rot' ])
         # Create using feature collections instead of filenames.
-        rotation_model = pygplates.RotationModel([self.rotations])
+        rotation_model = pygplates.RotationModel([self.rotations], clone_rotation_features=False)
         # Create using a single feature collection.
-        rotation_model = pygplates.RotationModel(self.rotations)
+        rotation_model = pygplates.RotationModel(self.rotations, clone_rotation_features=False)
         # Create using a list of features.
-        rotation_model = pygplates.RotationModel([rotation for rotation in self.rotations])
+        rotation_model = pygplates.RotationModel([rotation for rotation in self.rotations], clone_rotation_features=False)
         # Create using a single feature.
-        rotation_model = pygplates.RotationModel(next(iter(self.rotations)))
+        rotation_model = pygplates.RotationModel(next(iter(self.rotations)), clone_rotation_features=False)
         # Create using a mixture of the above.
-        rotation_model = pygplates.RotationModel([
-                os.path.join(FIXTURES, 'rotations.rot'),
-                self.rotations,
-                [rotation for rotation in self.rotations],
-                next(iter(self.rotations))])
+        rotation_model = pygplates.RotationModel(
+                [os.path.join(FIXTURES, 'rotations.rot'),
+                    self.rotations,
+                    [rotation for rotation in self.rotations],
+                    next(iter(self.rotations))],
+                clone_rotation_features=False)
     
     def test_get_reconstruction_tree(self):
         to_reconstruction_tree = self.rotation_model.get_reconstruction_tree(self.to_time)

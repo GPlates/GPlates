@@ -77,12 +77,18 @@ namespace GPlatesApi
 		 *
 		 * Alternatively you can just use boost::python::extract<RotationModel::non_null_ptr_type>()
 		 * on any python object satisfying FeatureCollectionSequenceFunctionArgument::is_convertible().
+		 *
+		 * If @a clone_rotation_features is true then the rotation features are first cloned
+		 * internally. This ensures any subsequent modifications to the original features will not affect
+		 * any subsequently generated reconstruction trees. This is not necessary if you know the original
+		 * feature collections will not be modified during the scope of the returned RotationModel.
 		 */
 		static
 		non_null_ptr_type
 		create(
 				const FeatureCollectionSequenceFunctionArgument &rotation_features,
-				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE);
+				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
+				bool clone_rotation_features = true);
 
 
 		/**
@@ -93,7 +99,8 @@ namespace GPlatesApi
 		non_null_ptr_type
 		create(
 				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &rotation_features,
-				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE);
+				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
+				bool clone_rotation_features = true);
 
 
 		/**
@@ -104,7 +111,8 @@ namespace GPlatesApi
 		non_null_ptr_type
 		create(
 				const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &rotation_features,
-				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE);
+				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
+				bool clone_rotation_features = true);
 	
 
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type
