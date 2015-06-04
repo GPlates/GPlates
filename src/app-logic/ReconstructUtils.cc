@@ -497,7 +497,9 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 			create_cached_reconstruction_tree_creator(
 					reconstruction_features_collection,
 					anchor_plate_id,
-					reconstruction_tree_cache_size);
+					reconstruction_tree_cache_size,
+					// We're not going to modify the reconstruction features so no need to clone...
+					false/*clone_reconstruction_features*/);
 
 	return reconstruct(
 			reconstructed_features,
@@ -553,7 +555,9 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 			create_cached_reconstruction_tree_creator(
 					reconstruction_features_collection,
 					anchor_plate_id,
-					reconstruction_tree_cache_size);
+					reconstruction_tree_cache_size,
+					// We're not going to modify the reconstruction features so no need to clone...
+					false/*clone_reconstruction_features*/);
 
 	ReconstructMethodRegistry reconstruct_method_registry;
 

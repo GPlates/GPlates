@@ -74,7 +74,9 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 			create_cached_reconstruction_tree_creator(
 					reconstruction_feature_collections,
 					anchor_plate_id,
-					10/*max_num_reconstruction_trees_in_cache*/);
+					10/*max_num_reconstruction_trees_in_cache*/,
+					// We're not going to modify the reconstruction features so no need to clone...
+					false/*clone_reconstruction_features*/);
 
 	ReconstructMethodRegistry reconstruct_method_registry;
 

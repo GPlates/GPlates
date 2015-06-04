@@ -641,8 +641,9 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 			GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 				default_reconstruction_tree->get_reconstruction_features(),
 				d_anchor_id,
-				100 /* try this cache size for starters */
-				);
+				100, /* try this cache size for starters */
+				// We're not going to modify the reconstruction features so no need to clone...
+				false/*clone_reconstruction_features*/);
 
 	LatLonPoint llp(d_lat,d_lon);
 	PointOnSphere pos_ = make_point_on_sphere(llp);
