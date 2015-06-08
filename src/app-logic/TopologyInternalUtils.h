@@ -292,7 +292,7 @@ namespace GPlatesAppLogic
 		 * (see @a get_polylines_for_intersection) and returns the two intersected
 		 * head and tail segments for each section.
 		 *
-		 * If the geometries are not intersectable (eg, point/polygon) then false is returned.
+		 * If the geometries are not intersectable (eg, point/multi-point) then false is returned.
 		 * If the geometries are intersectable but do not intersect then false is returned.
 		 *
 		 * The returned @a PointOnSphere is the intersection point if the sections
@@ -372,7 +372,7 @@ namespace GPlatesAppLogic
 		 * (see @a get_polylines_for_intersection) allowing up to two intersections
 		 * and returns optional head, tail and middle segments for each section.
 		 *
-		 * If the geometries are not intersectable (eg, point/polygon) then false is returned.
+		 * If the geometries are not intersectable (eg, point/multi-point) then false is returned.
 		 * If the geometries are intersectable but do not intersect then false is returned.
 		 *
 		 * The first @a PointOnSphere returned is if there's one intersection.
