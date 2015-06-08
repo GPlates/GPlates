@@ -258,6 +258,18 @@ namespace GPlatesAppLogic
 		get_boundary_polygon(
 				ReconstructionGeometryPointer reconstruction_geom_ptr);
 
+		/**
+		 * Returns the geometry of a topological section (used by a topological boundary/network).
+		 *
+		 * @a reconstruction_geom_ptr can be either a @a ReconstructedFeatureGeometry or @a ResolvedTopologicalLine.
+		 *
+		 * Returns boost::none if the specified reconstruction geometry is not one of the above types.
+		 */
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		get_resolved_topological_boundary_section_geometry(
+				ReconstructionGeometryPointer reconstruction_geom_ptr);
+
 
 		//! Typedef for sequence of @a ReconstructionGeometry objects.
 		typedef std::vector<ReconstructionGeometry::non_null_ptr_to_const_type> reconstruction_geom_seq_type;
@@ -941,6 +953,46 @@ namespace GPlatesAppLogic
 			reconstruction_geom_ptr->accept_visitor(visitor);
 
 			return visitor.get_boundary_polygon();
+		}
+
+
+		class GetResolvedTopologicalBoundarySectionGeometry :
+				public ConstReconstructionGeometryVisitor
+		{
+		public:
+			// Bring base class visit methods into scope of current class.
+			using ConstReconstructionGeometryVisitor::visit;
+
+			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+			get_boundary_section_geometry() const
+			{
+				return d_boundary_section_geometry;
+			}
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg);
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_line_type> &rtl);
+
+		private:
+			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_boundary_section_geometry;
+		};
+
+
+		template <typename ReconstructionGeometryPointer>
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		get_resolved_topological_boundary_section_geometry(
+				ReconstructionGeometryPointer reconstruction_geom_ptr)
+		{
+			GetResolvedTopologicalBoundarySectionGeometry visitor;
+			reconstruction_geom_ptr->accept_visitor(visitor);
+
+			return visitor.get_boundary_section_geometry();
 		}
 	}
 }

@@ -496,3 +496,19 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetBoundaryPolygon::visit(
 			GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
 					rsc->get_reconstructed_domain_geometry()));
 }
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundarySectionGeometry::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+{
+	d_boundary_section_geometry = rfg->reconstructed_geometry();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundarySectionGeometry::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_line_type> &rtl)
+{
+	d_boundary_section_geometry = rtl->resolved_topology_geometry();
+}
