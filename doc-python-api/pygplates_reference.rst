@@ -244,8 +244,8 @@ Strictly speaking they are not actually :class:`property values<pygplates.Proper
 Reconstructed feature classes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-These classes result from reconstructing a :class:`feature<pygplates.Feature>` using a
-:class:`rotation model<pygplates.RotationModel>`.
+These classes result from :func:`reconstructing<pygplates.reconstruct>` regular
+:class:`features<pygplates.Feature>` at a particular reconstruction time.
 
 .. autosummary::
    :nosignatures:
@@ -254,6 +254,20 @@ These classes result from reconstructing a :class:`feature<pygplates.Feature>` u
    pygplates.ReconstructedFeatureGeometry
    pygplates.ReconstructedFlowline
    pygplates.ReconstructedMotionPath
+
+Resolved topology  classes
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These classes result from :func:`resolving<pygplates.resolve_topologies>` topological
+:class:`features<pygplates.Feature>` at a particular reconstruction time.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.ResolvedTopologicalLine
+   pygplates.ResolvedTopologicalBoundary
+   pygplates.ResolvedTopologicalNetwork
 
 Geometry classes
 ^^^^^^^^^^^^^^^^
