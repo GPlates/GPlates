@@ -37,7 +37,6 @@
 #include <QString>
 
 #include "PyFeatureCollection.h"
-#include "PyInterpolationException.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
 #include "PythonUtils.h"
@@ -61,7 +60,6 @@
 #include "file-io/ReconstructedMotionPathExport.h"
 #include "file-io/ReconstructionGeometryExportImpl.h"
 
-#include "global/GPlatesAssert.h"
 #include "global/python.h"
 // This is not included by <boost/python.hpp>.
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
@@ -557,7 +555,8 @@ namespace GPlatesApi
 
 
 	/**
-	 * Reconstruct feature collections, optionally loaded from files, to a specific geological time and export to file(s).
+	 * Reconstruct feature collections, optionally loaded from files, to a specific geological time and
+	 * optionally export to file(s).
 	 *
 	 * The function signature enables us to use bp::raw_function to get variable keyword arguments and
 	 * also more flexibility in function overloading.
@@ -593,25 +592,19 @@ namespace GPlatesApi
 				export_wrap_to_dateline);
 
 		// Time must not be distant past/future.
-		GPlatesGlobal::Assert<InterpolationException>(
-				reconstruction_time.is_real(),
-				GPLATES_ASSERTION_SOURCE,
-				"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+		if (!reconstruction_time.is_real())
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+			bp::throw_error_already_set();
+		}
 
 		//
 		// Reconstruct the features in the feature collection files.
 		//
 
-		// Extract reconstructable feature collection weak refs from their files.
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstructable_feature_collections;
-		BOOST_FOREACH(GPlatesFileIO::File::non_null_ptr_type reconstruct_file, reconstructable_files)
-		{
-			reconstructable_feature_collections.push_back(
-					reconstruct_file->get_reference().get_feature_collection());
-		}
-
 		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
-		// This ensures 'ReconstructUtils::reconstruct()' will reconstruct using the correct anchor plate.
+		// This ensures 'ReconstructMethodInterface' will reconstruct using the correct anchor plate.
 		GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 				GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
 						rotation_model.get()->get_reconstruction_tree_creator(),
@@ -836,10 +829,12 @@ namespace GPlatesApi
 			GPlatesModel::integer_plate_id_type anchor_plate_id)
 	{
 		// Time must not be distant past/future.
-		GPlatesGlobal::Assert<InterpolationException>(
-				reconstruction_time.is_real(),
-				GPLATES_ASSERTION_SOURCE,
-				"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+		if (!reconstruction_time.is_real())
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+			bp::throw_error_already_set();
+		}
 
 		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
 		// This ensures we will reverse reconstruct using the correct anchor plate.
@@ -949,7 +944,7 @@ export_reconstruct()
 			"reconstruction_time, [anchor_plate_id=0], [\\*\\*output_parameters])\n"
 			"  Reconstruct regular geological features, motion paths or flowlines to a specific geological time.\n"
 			"\n"
-			"  :param reconstructable_features: A reconstructable feature collection, or filename, or "
+			"  :param reconstructable_features: the features to reconstruct as a feature collection, or filename, or "
 			"feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any "
 			"combination of those four types\n"
 			"  :type reconstructable_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
@@ -973,10 +968,11 @@ export_reconstruct()
 			"  :param output_parameters: variable number of keyword arguments specifying output "
 			"parameters (see table below)\n"
 			"  :raises: OpenFileForReadingError if any input file is not readable (when filenames specified)\n"
+			"  :raises: OpenFileForWritingError if *reconstructed_geometries* is a filename and it is not writeable\n"
 			"  :raises: FileFormatNotSupportedError if any input file format (identified by any "
 			"reconstructable and rotation filename extensions) does not support reading "
 			"(when filenames specified)\n"
-			"  :raises: InterpolationError if *reconstruction_time* is "
+			"  :raises: ValueError if *reconstruction_time* is "
 			":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 			":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 			"\n"
@@ -1052,14 +1048,15 @@ export_reconstruct()
 			"  Reconstructing a file containing regular reconstructable features to a shapefile at 10Ma:\n"
 			"  ::\n"
 			"\n"
-            "    pygplates.reconstruct('volcanoes.gpml', rotation_model, 'reconstructed_volcanoes_10Ma.shp', 10)\n"
+            "    pygplates.reconstruct('volcanoes.gpml', 'rotations.rot', 'reconstructed_volcanoes_10Ma.shp', 10)\n"
 			"\n"
-			"  Reconstructing a file containing regular reconstructable features to a list of reconstructed "
+			"  Reconstructing multiple files containing regular reconstructable features to a list of reconstructed "
 			"feature geometries at 10Ma:\n"
 			"  ::\n"
 			"\n"
 			"    reconstructed_feature_geometries = []\n"
-            "    pygplates.reconstruct('volcanoes.gpml', rotation_model, reconstructed_feature_geometries, 10)\n"
+			"    pygplates.reconstruct(['continent_ocean_boundaries.gpml', 'isochrons.gpml'], "
+			"rotation_model, reconstructed_feature_geometries, 10)\n"
 			"\n"
 			"  Reconstructing a file containing flowline features to a shapefile at 10Ma:\n"
 			"  ::\n"
@@ -1120,10 +1117,12 @@ export_reconstruct()
 			"  :param anchor_plate_id: the anchored plate id used during reverse reconstruction\n"
 			"  :type anchor_plate_id: int\n"
 			"  :raises: OpenFileForReadingError if any input file is not readable (when filenames specified)\n"
+			"  :raises: OpenFileForWritingError if *reconstructable_features* specifies any filename that "
+			"is not writeable (if any filenames are specified)\n"
 			"  :raises: FileFormatNotSupportedError if any input file format (identified by any "
 			"reconstructable and rotation filename extensions) does not support reading "
 			"(when filenames specified)\n"
-			"  :raises: InterpolationError if *reconstruction_time* is "
+			"  :raises: ValueError if *reconstruction_time* is "
 			":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 			":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 			"\n"

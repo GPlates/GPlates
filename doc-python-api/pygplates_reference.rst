@@ -42,8 +42,8 @@ An example function call is reconstructing coastlines to 10Ma:
 
 Each function documents how to use the function and lists its function arguments and return value.
 
-Reconstruction functions
-^^^^^^^^^^^^^^^^^^^^^^^^
+Reconstruct functions
+^^^^^^^^^^^^^^^^^^^^^
 
 Functions to reconstruct backward and forward in time:
 
@@ -52,6 +52,16 @@ Functions to reconstruct backward and forward in time:
 
    pygplates.reconstruct
    pygplates.reverse_reconstruct
+
+Topology functions
+^^^^^^^^^^^^^^^^^^
+
+Functions to resolve topologies:
+
+.. autosummary::
+   :toctree: generated
+
+   pygplates.resolve_topologies
 
 Velocity functions
 ^^^^^^^^^^^^^^^^^^
