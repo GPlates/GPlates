@@ -594,6 +594,7 @@ GPlatesGui::register_default_export_animation_types(
 			/*export_to_multiple_files_*/true);
 	const bool default_resolved_topology_export_lines = true;
 	const bool default_resolved_topology_export_polygons = true;
+	const bool default_resolved_topology_export_networks = true;
 	const boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
 			default_resolved_topology_export_force_polygon_orientation = boost::none;
 	const bool default_resolved_topology_wrap_to_dateline = true;
@@ -609,6 +610,7 @@ GPlatesGui::register_default_export_animation_types(
 							default_resolved_topology_file_export_options,
 							default_resolved_topology_export_lines,
 							default_resolved_topology_export_polygons,
+							default_resolved_topology_export_networks,
 							default_resolved_topology_export_force_polygon_orientation,
 							default_resolved_topology_wrap_to_dateline)),
 			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
@@ -632,6 +634,7 @@ GPlatesGui::register_default_export_animation_types(
 							default_resolved_topology_file_export_options,
 							default_resolved_topology_export_lines,
 							default_resolved_topology_export_polygons,
+							default_resolved_topology_export_networks,
 							default_resolved_topology_export_force_polygon_orientation,
 							default_resolved_topology_wrap_to_dateline)),
 			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
@@ -655,6 +658,7 @@ GPlatesGui::register_default_export_animation_types(
 							default_resolved_topology_file_export_options,
 							default_resolved_topology_export_lines,
 							default_resolved_topology_export_polygons,
+							default_resolved_topology_export_networks,
 							default_resolved_topology_export_force_polygon_orientation,
 							default_resolved_topology_wrap_to_dateline)),
 			&create_animation_strategy<ExportResolvedTopologyAnimationStrategy>,
