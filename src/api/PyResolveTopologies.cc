@@ -63,6 +63,8 @@
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
 #include <boost/python/raw_function.hpp>
 
+#include "maths/PolygonOrientation.h"
+
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
 
@@ -122,7 +124,8 @@ namespace GPlatesApi
 				GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 				GPlatesModel::integer_plate_id_type &anchor_plate_id,
 				unsigned int &resolve_topology_types,
-				bool &export_wrap_to_dateline)
+				bool &export_wrap_to_dateline,
+				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> &export_force_boundary_orientation)
 		{
 			//
 			// Get arguments for 'resolve_topologies().
@@ -186,6 +189,13 @@ namespace GPlatesApi
 							"export_wrap_to_dateline",
 							true);
 
+			export_force_boundary_orientation =
+					VariableArguments::extract_and_remove_or_default<
+									boost::optional<GPlatesMaths::PolygonOrientation::Orientation> >(
+							unused_keyword_args,
+							"export_force_boundary_orientation",
+							boost::none);
+
 			// Raise a python error if there are any unused keyword arguments remaining.
 			// These will be keywords that we didn't recognise.
 			VariableArguments::raise_python_error_if_unused(unused_keyword_args);
@@ -200,7 +210,8 @@ namespace GPlatesApi
 				const std::vector<const GPlatesFileIO::File::Reference *> &reconstruction_file_ptrs,
 				const GPlatesModel::integer_plate_id_type &anchor_plate_id,
 				const double &reconstruction_time,
-				bool export_wrap_to_dateline)
+				bool export_wrap_to_dateline,
+				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> export_force_boundary_orientation)
 		{
 			// Converts to raw pointers.
 			std::vector<const GPlatesAppLogic::ReconstructionGeometry *> resolved_topology_ptrs;
@@ -234,7 +245,7 @@ namespace GPlatesApi
 						true/*export_single_output_file*/,
 						false/*export_per_input_file*/, // We only generate a single output file.
 						false/*export_output_directory_per_input_file*/, // We only generate a single output file.
-						boost::none/*force_polygon_orientation*/,
+						export_force_boundary_orientation,
 						export_wrap_to_dateline);
 		}
 
@@ -306,11 +317,31 @@ namespace GPlatesApi
 					++rg_iter)
 				{
 					// FIXME: Currently using 'const_cast' since we pass non-const to python.
-					const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type rg(
+					GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type rg(
 							const_cast<GPlatesAppLogic::ReconstructionGeometry *>(*rg_iter));
 
 					// Add the reconstruction geometry to the caller's python list.
-					output_resolved_topologies_list.append(rg);
+					// Since we're not using 'boost::python::bases<>' in our derived ReconstructionGeometry
+					// Python wrappers we need to convert to the appropriate derived type before
+					// passing to boost-python.
+					if (GPlatesAppLogic::ResolvedTopologicalLine *rtl =
+						dynamic_cast<GPlatesAppLogic::ResolvedTopologicalLine *>(rg.get()))
+					{
+						output_resolved_topologies_list.append(
+								GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type(rtl));
+					}
+					else if (GPlatesAppLogic::ResolvedTopologicalBoundary *rtb =
+						dynamic_cast<GPlatesAppLogic::ResolvedTopologicalBoundary *>(rg.get()))
+					{
+						output_resolved_topologies_list.append(
+								GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type(rtb));
+					}
+					else if (GPlatesAppLogic::ResolvedTopologicalNetwork *rtn =
+						dynamic_cast<GPlatesAppLogic::ResolvedTopologicalNetwork *>(rg.get()))
+					{
+						output_resolved_topologies_list.append(
+								GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type(rtn));
+					}
 				}
 			}
 		}
@@ -342,6 +373,7 @@ namespace GPlatesApi
 		GPlatesModel::integer_plate_id_type anchor_plate_id;
 		unsigned int resolve_topology_types;
 		bool export_wrap_to_dateline;
+		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> export_force_boundary_orientation;
 
 		get_resolve_topologies_args(
 				positional_args,
@@ -352,7 +384,8 @@ namespace GPlatesApi
 				reconstruction_time,
 				anchor_plate_id,
 				resolve_topology_types,
-				export_wrap_to_dateline);
+				export_wrap_to_dateline,
+				export_force_boundary_orientation);
 
 		// Time must not be distant past/future.
 		if (!reconstruction_time.is_real())
@@ -504,7 +537,8 @@ namespace GPlatesApi
 					reconstruction_file_ptrs,
 					anchor_plate_id,
 					reconstruction_time.value(),
-					export_wrap_to_dateline);
+					export_wrap_to_dateline,
+					export_force_boundary_orientation);
 		}
 		else // list of resolved topologies...
 		{
@@ -591,37 +625,61 @@ export_resolve_topologies()
 			"\n"
 			"  The following optional keyword arguments are supported by *output_parameters*:\n"
 			"\n"
-			"  +-------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
-			"  | Name                    | Type | Default                                                         | Description                                                                      |\n"
-			"  +=========================+======+=================================================================+==================================================================================+\n"
-			"  | resolve_topology_types  | int  | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | A bitwise combination of any of the following:                                   |\n"
-			"  |                         |      |                                                                 |                                                                                  |\n"
-			"  |                         |      |                                                                 | - ``ResolveTopologyType.line``:                                                  |\n"
-			"  |                         |      |                                                                 |   generate :class:`resolved topological lines<ResolvedTopologicalLine>`          |\n"
-			"  |                         |      |                                                                 | - ``ResolveTopologyType.boundary``:                                              |\n"
-			"  |                         |      |                                                                 |   generate :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` |\n"
-			"  |                         |      |                                                                 | - ``ResolveTopologyType.network``:                                               |\n"
-			"  |                         |      |                                                                 |   generate :class:`resolved topological networks<ResolvedTopologicalNetworks>`   |\n"
-			"  +-------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
-			"  | export_wrap_to_dateline | bool | True                                                            | Wrap/clip resolved topologies to the dateline (currently                         |\n"
-			"  |                         |      |                                                                 | ignored unless exporting to an ESRI Shapefile format *file*).                    |\n"
-			"  +-------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
+			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
+			"  | Name                              | Type | Default                                                         | Description                                                                      |\n"
+			"  +===================================+======+=================================================================+==================================================================================+\n"
+			"  | resolve_topology_types            | int  | ``ResolveTopologyType.boundary | ResolveTopologyType.network``  | A bitwise combination of any of the following:                                   |\n"
+			"  |                                   |      |                                                                 |                                                                                  |\n"
+			"  |                                   |      |                                                                 | - ``ResolveTopologyType.line``:                                                  |\n"
+			"  |                                   |      |                                                                 |   generate :class:`resolved topological lines<ResolvedTopologicalLine>`          |\n"
+			"  |                                   |      |                                                                 | - ``ResolveTopologyType.boundary``:                                              |\n"
+			"  |                                   |      |                                                                 |   generate :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` |\n"
+			"  |                                   |      |                                                                 | - ``ResolveTopologyType.network``:                                               |\n"
+			"  |                                   |      |                                                                 |   generate :class:`resolved topological networks<ResolvedTopologicalNetworks>`   |\n"
+			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
+			"  | export_wrap_to_dateline           | bool | True                                                            | | Wrap/clip resolved topologies to the dateline (currently                       |\n"
+			"  |                                   |      |                                                                 |   ignored unless exporting to an ESRI Shapefile format *file*).                  |\n"
+			"  |                                   |      |                                                                 | | Only applies when exporting to a file (ESRI Shapefile).                        |\n"
+			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
+			"  | export_force_boundary_orientation | bool | ``None`` (don't force)                                          | Optionally force boundary orientation (clockwise or counter-clockwise):          |\n"
+			"  |                                   |      |                                                                 |                                                                                  |\n"
+			"  |                                   |      |                                                                 | - ``PolygonOnSphere.Orientation.clockwise``                                      |\n"
+			"  |                                   |      |                                                                 | - ``PolygonOnSphere.Orientation.counter_clockwise``                              |\n"
+			"  |                                   |      |                                                                 |                                                                                  |\n"
+			"  |                                   |      |                                                                 | | Only applies to resolved topological *boundaries* and *networks* (boundaries). |\n"
+			"  |                                   |      |                                                                 | | And only applies when exporting to a *file* (except ESRI Shapefile).           |\n"
+			"  |                                   |      |                                                                 | | ESRI Shapefiles always use *clockwise* orientation.                            |\n"
+			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
 			"\n"
-			"  Only the :class:`features<Feature>`, in *reconstructable_features*, that match the "
-			"optional keyword argument *reconstruct_type* (see *output_parameters* table) are reconstructed. "
-			"This also determines the type of reconstructed geometries output in *reconstructed_geometries* "
-			"which are either :class:`reconstructed feature geometries<ReconstructedFeatureGeometry>` (default) or "
-			":class:`reconstructed motion paths<ReconstructedMotionPath>` or "
-			":class:`reconstructed flowlines<ReconstructedFlowline>`.\n"
+			"  | The argument *topological_features* consists of the *topological* :class:`features<Feature>` "
+			"as well as the topological sections (also :class:`features<Feature>`) that are referenced by the "
+			"*topological* features.\n"
+			"  | They can all be mixed in a single :class:`feature collection<FeatureCollection>` or file, "
+			"or they can be distributed across multiple :class:`feature collections<FeatureCollection>` or files.\n"
 			"\n"
-			"  Note that *reconstructed_geometries* can be either an export filename or a python ``list``. "
-			"In the latter case the reconstructed geometries generated by the reconstruction are appended "
+			"  .. note: Topological *sections* can be regular features or topological *line* features. "
+			"The latter are typically used for sections of a plate polygon (or network) boundary that are deforming.\n"
+			"\n"
+			"  | The optional keyword argument *resolve_topology_types* (see *output_parameters* table) determines "
+			"the type of resolved topologies output to *resolved_topologies*.\n"
+			"  | This can consist of "
+			":class:`resolved topological lines<ResolvedTopologicalLine>`, "
+			":class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
+			":class:`resolved topological networks<ResolvedTopologicalNetwork>` (and any combination of them).\n"
+			"  | By default only "
+			":class:`resolved topological boundaries<ResolvedTopologicalBoundary>` and "
+			":class:`resolved topological networks<ResolvedTopologicalNetwork>` are output since "
+			":class:`resolved topological lines<ResolvedTopologicalLine>` are typically only used as "
+			"topological sections for resolved topological boundaries and networks.\n"
+			"\n"
+			"  .. note:: *resolved_topologies* can be either an export filename or a python ``list``. "
+			"In the latter case the resolved topologies generated by the reconstruction are appended "
 			"to the python ``list`` (instead of exported to a file).\n"
 			"\n"
-			"  The *reconstructed_geometries* are output in the same order as that of their "
-			"respective features in *reconstructable_features* (the order across feature collections "
-			"is also retained). This happens regardless of whether *reconstructable_features* "
-			"and *reconstructed_geometries* include files or not.\n"
+			"  The *resolved_topologies* are output in the same order as that of their "
+			"respective features in *topological_features* (the order across feature collections "
+			"is also retained). This happens regardless of whether *topological_features* "
+			"and *resolved_topologies* include files or not.\n"
 			"\n"
 			"  The following *export* file formats are currently supported by GPlates:\n"
 			"\n"
@@ -633,20 +691,14 @@ export_resolve_topologies()
 			"  GMT xy                          '.xy'                  \n"
 			"  =============================== =======================\n"
 			"\n"
-			"  Note that, when exporting to a file, the filename extension of "
-			"*reconstructed_geometries* determines the export file format. "
-			"If the export format is ESRI Shapefile then the shapefile attributes from "
-			"*reconstructable_features* will only be retained in the exported shapefile if there "
-			"is a single reconstructable feature collection (where *reconstructable_features* is a "
-			"single feature collection or file, or sequence containing a single feature collection "
-			"or file). This is because shapefile attributes from multiple input feature collections are "
-			"not easily combined into a single output shapefile (due to different attribute field names).\n"
+			"  .. note:: When exporting to a file, the filename extension of *resolved_topologies* "
+			"determines the export file format.\n"
 			"\n"
-			"  Note that *reconstructable_features* can be a :class:`FeatureCollection` or a filename "
+			"  .. note:: *topological_features* can be a :class:`FeatureCollection` or a filename "
 			"or a :class:`Feature` or a sequence of :class:`features<Feature>`, or a sequence (eg, ``list`` "
 			"or ``tuple``) of any combination of those four types.\n"
 			"\n"
-			"  Note that *rotation_model* can be either a :class:`RotationModel` or a "
+			"  .. note:: *rotation_model* can be either a :class:`RotationModel` or a "
 			"rotation :class:`FeatureCollection` or a rotation filename or a sequence "
 			"(eg, ``list`` or ``tuple``) containing rotation :class:`FeatureCollection` instances "
 			"or filenames (or a mixture of both). When a :class:`RotationModel` is not specified "
@@ -656,10 +708,10 @@ export_resolve_topologies()
 			"  If any filenames are specified then :class:`FeatureCollectionFileFormatRegistry` is "
 			"used internally to read feature collections from those files.\n"
 			"\n"
-			"  Reconstructing a file containing regular reconstructable features to a shapefile at 10Ma:\n"
+			"  Resolving a file containing dynamic plate polygons to a shapefile at 10Ma:\n"
 			"  ::\n"
 			"\n"
-            "    pygplates.reconstruct('volcanoes.gpml', 'rotations.rot', 'reconstructed_volcanoes_10Ma.shp', 10)\n"
+            "    pygplates.resolve_topologies('dynamic_plate_polygons.gpml', 'rotations.rot', 'resolved_plate_polygons_10Ma.shp', 10)\n"
 			"\n"
 			"  Reconstructing a file containing regular reconstructable features to a list of reconstructed "
 			"feature geometries at 10Ma:\n"

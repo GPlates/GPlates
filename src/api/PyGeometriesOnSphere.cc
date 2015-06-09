@@ -2933,6 +2933,10 @@ export_polygon_on_sphere()
 			.value("clockwise", GPlatesMaths::PolygonOrientation::CLOCKWISE)
 			.value("counter_clockwise", GPlatesMaths::PolygonOrientation::COUNTERCLOCKWISE);
 
+	// Enable boost::optional<GPlatesMaths::PolygonOrientation::Orientation> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PolygonOrientation::Orientation>();
+
+
 	// Register to-python conversion for PolygonOnSphere::non_null_ptr_to_const_type.
 	GPlatesApi::PythonConverterUtils::register_to_python_const_to_non_const_non_null_intrusive_ptr_conversion<
 			GPlatesMaths::PolygonOnSphere>();
