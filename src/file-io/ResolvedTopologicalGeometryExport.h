@@ -40,7 +40,7 @@
 
 namespace GPlatesAppLogic
 {
-	class ReconstructedFeatureGeometry;
+	class ReconstructionGeometry;
 }
 
 namespace GPlatesFileIO
@@ -77,20 +77,20 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Exports @a ResolvedTopologicalGeometry objects.
+		 * Exports resolved topology objects (includes @a ResolvedTopologicalLine,
+		 * @a ResolvedTopologicalBoundary and @a ResolvedTopologicalNetwork).
 		 *
 		 * @param export_format specifies which format to write.
-		 * @param export_single_output_file specifies whether to write all reconstruction geometries
-		 *        to a single file.
+		 * @param export_single_output_file specifies whether to write all resolved topologies to a single file.
 		 * @param export_per_input_file specifies whether to group
-		 *        reconstruction geometries according to the input files their features came from
+		 *        resolved topologies according to the input files their features came from
 		 *        and write to corresponding output files.
 		 * @param export_separate_output_directory_per_input_file
 		 *        Save each exported file to a different directory based on the file basename.
 		 *        Only applies if @a export_per_input_file is 'true'.
 		 * @param force_polygon_orientation
 		 *        Optionally force polygon orientation (clockwise or counter-clockwise).
-		 *        Only applies to resolved topological *polygons*.
+		 *        Only applies to resolved topological boundaries and networks (their polygon boundaries).
 		 * @param wrap_to_dateline if true then exported geometries are wrapped/clipped to
 		 *        the dateline (currently only applies to @a SHAPEFILE format).
 		 *
@@ -104,7 +104,7 @@ namespace GPlatesFileIO
 		export_resolved_topological_geometries(
 				const QString &filename,
 				Format export_format,
-				const std::vector<const GPlatesAppLogic::ResolvedTopologicalGeometry *> &resolved_topological_geom_seq,
+				const std::vector<const GPlatesAppLogic::ReconstructionGeometry *> &resolved_topologies,
 				const std::vector<const File::Reference *> &active_files,
 				const std::vector<const File::Reference *> &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,

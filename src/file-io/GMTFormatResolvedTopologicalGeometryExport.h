@@ -38,7 +38,7 @@
 
 namespace GPlatesAppLogic
 {
-	class ResolvedTopologicalGeometry;
+	class ReconstructionGeometry;
 }
 
 namespace GPlatesFileIO
@@ -46,9 +46,9 @@ namespace GPlatesFileIO
 	namespace GMTFormatResolvedTopologicalGeometryExport
 	{
 		/**
-		 * Typedef for a feature geometry group of @a ResolvedTopologicalGeometry objects.
+		 * Typedef for a feature geometry group of resolved topologies.
 		 */
-		typedef ReconstructionGeometryExportImpl::FeatureGeometryGroup<GPlatesAppLogic::ResolvedTopologicalGeometry>
+		typedef ReconstructionGeometryExportImpl::FeatureGeometryGroup<GPlatesAppLogic::ReconstructionGeometry>
 				feature_geometry_group_type;
 
 		/**
@@ -59,7 +59,9 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Exports @a ResolvedTopologicalGeometry objects to GMT format.
+		 * Exports resolved topology objects to GMT format.
+		 *
+		 * This includes @a ResolvedTopologicalLine, @a ResolvedTopologicalBoundary and @a ResolvedTopologicalNetwork.
 		 *
 		 * @param force_polygon_orientation optionally force polygon orientation (clockwise or counter-clockwise).
 		 */

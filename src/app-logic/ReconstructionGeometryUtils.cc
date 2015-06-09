@@ -447,6 +447,22 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundarySubS
 
 
 void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundaryOrLineGeometry::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_geometry_type> &rtg)
+{
+	d_geometry = rtg->resolved_topology_geometry();
+}
+
+
+void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundaryOrLineGeometry::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+{
+	d_geometry = rtn->boundary_polygon();
+}
+
+
+void
 GPlatesAppLogic::ReconstructionGeometryUtils::GetResolvedTopologicalBoundaryPolygon::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
 {

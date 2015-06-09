@@ -26,7 +26,8 @@
 #include "ResolvedTopologicalGeometryExport.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
-#include "app-logic/ResolvedTopologicalGeometry.h"
+#include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/ResolvedTopologicalLine.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
 
 #include "GMTFormatResolvedTopologicalGeometryExport.h"
@@ -46,11 +47,11 @@ namespace GPlatesFileIO
 		namespace
 		{
 			//! Typedef for a sequence of @a FeatureGeometryGroup objects.
-			typedef std::list< FeatureGeometryGroup<GPlatesAppLogic::ResolvedTopologicalGeometry> >
+			typedef std::list< FeatureGeometryGroup<GPlatesAppLogic::ReconstructionGeometry> >
 					feature_geometry_group_seq_type;
 
 			//! Typedef for a sequence of @a FeatureCollectionFeatureGroup objects.
-			typedef std::list< FeatureCollectionFeatureGroup<GPlatesAppLogic::ResolvedTopologicalGeometry> >
+			typedef std::list< FeatureCollectionFeatureGroup<GPlatesAppLogic::ReconstructionGeometry> >
 					grouped_features_seq_type;
 
 
@@ -199,7 +200,7 @@ void
 GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_geometries(
 		const QString &filename,
 		Format export_format,
-		const std::vector<const GPlatesAppLogic::ResolvedTopologicalGeometry *> &resolved_topological_geom_seq,
+		const std::vector<const GPlatesAppLogic::ReconstructionGeometry *> &resolved_topologies,
 		const std::vector<const File::Reference *> &active_files,
 		const std::vector<const File::Reference *> &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -215,13 +216,13 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_ge
 	feature_handle_to_collection_map_type feature_to_collection_map;
 	std::vector<const File::Reference *> referenced_files;
 	get_files_referenced_by_geometries(
-			referenced_files, resolved_topological_geom_seq, active_files,
+			referenced_files, resolved_topologies, active_files,
 			feature_to_collection_map);
 
 	// Group the ReconstructionGeometry objects by their feature.
 	feature_geometry_group_seq_type grouped_recon_geom_seq;
 	group_reconstruction_geometries_with_their_feature(
-			grouped_recon_geom_seq, resolved_topological_geom_seq, feature_to_collection_map);
+			grouped_recon_geom_seq, resolved_topologies, feature_to_collection_map);
 
 	// Group the feature-groups with their collections. 
 	grouped_features_seq_type grouped_features_seq;

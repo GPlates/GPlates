@@ -34,8 +34,8 @@
 
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
-#include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/ResolvedTopologicalLine.h"
+#include "app-logic/ResolvedTopologicalNetwork.h"
 
 #include "file-io/ReconstructedFeatureGeometryExport.h"
 #include "file-io/ReconstructedFlowlineExport.h"
@@ -57,9 +57,9 @@ namespace
 	typedef std::vector<const GPlatesAppLogic::ReconstructedMotionPath *>
 			reconstructed_motion_path_seq_type;
 
-	//! Convenience typedef for sequence of resolved topological geometries.
-	typedef std::vector<const GPlatesAppLogic::ResolvedTopologicalGeometry *>
-			resolved_topological_geom_seq_type;
+	//! Convenience typedef for sequence of resolved topologies.
+	typedef std::vector<const GPlatesAppLogic::ReconstructionGeometry *>
+			resolved_topologies_seq_type;
 }
 
 
@@ -213,6 +213,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 		bool export_separate_output_directory_per_input_file,
 		bool export_topological_lines,
 		bool export_topological_polygons,
+		bool export_topological_networks,
 		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 		bool wrap_to_dateline)
 {
@@ -225,7 +226,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 			// Don't want to export a duplicate reconstructed geometry if one is currently in focus...
 			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
-	resolved_topological_geom_seq_type resolved_topological_geom_seq;
+	resolved_topologies_seq_type resolved_topologies_seq;
 
 	// Get the ResolvedTopologicalLine objects (if requested)...
 	if (export_topological_lines)
@@ -238,7 +239,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 		std::copy(
 				resolved_topological_lines.begin(),
 				resolved_topological_lines.end(),
-				std::back_inserter(resolved_topological_geom_seq));
+				std::back_inserter(resolved_topologies_seq));
 	}
 
 	// Get the ResolvedTopologicalBoundary objects (if requested)...
@@ -252,14 +253,28 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 		std::copy(
 				resolved_topological_boundaries.begin(),
 				resolved_topological_boundaries.end(),
-				std::back_inserter(resolved_topological_geom_seq));
+				std::back_inserter(resolved_topologies_seq));
+	}
+
+	// Get the ResolvedTopologicalNetwork objects (if requested)...
+	if (export_topological_networks)
+	{
+		std::vector<const GPlatesAppLogic::ResolvedTopologicalNetwork *> resolved_topological_networks;
+		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
+				reconstruction_geom_seq.begin(),
+				reconstruction_geom_seq.end(),
+				resolved_topological_networks);
+		std::copy(
+				resolved_topological_networks.begin(),
+				resolved_topological_networks.end(),
+				std::back_inserter(resolved_topologies_seq));
 	}
 
 	// Export the RTGs to a file format based on the filename extension.
 	GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_geometries(
 			filename,
 			GPlatesFileIO::ResolvedTopologicalGeometryExport::get_export_file_format(filename, file_format_registry),
-			resolved_topological_geom_seq,
+			resolved_topologies_seq,
 			active_files,
 			active_reconstruction_files,
 			reconstruction_anchor_plate_id,

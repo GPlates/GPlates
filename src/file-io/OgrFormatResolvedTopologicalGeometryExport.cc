@@ -39,7 +39,6 @@
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
-#include "app-logic/ResolvedTopologicalGeometry.h"
 
 #include "feature-visitors/GeometryTypeFinder.h"
 #include "feature-visitors/KeyValueDictionaryFinder.h"
@@ -56,9 +55,8 @@ namespace
 	typedef GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::referenced_files_collection_type
 			referenced_files_collection_type;
 
-	//! Convenience typedef for a sequence of RTGs.
-	typedef std::vector<const GPlatesAppLogic::ResolvedTopologicalGeometry *>
-			resolved_topological_geom_seq_type;
+	//! Convenience typedef for a sequence of resolved topologies.
+	typedef std::vector<const GPlatesAppLogic::ReconstructionGeometry *> resolved_topologies_seq_type;
 
 
 	void
@@ -111,13 +109,21 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries(
 		}
 
 		// Iterate through the resolved geometries of the current feature.
-		resolved_topological_geom_seq_type::const_iterator rtg_iter;
-		for (rtg_iter = feature_geom_group.recon_geoms.begin();
-			rtg_iter != feature_geom_group.recon_geoms.end();
-			++rtg_iter)
+		resolved_topologies_seq_type::const_iterator rt_iter;
+		for (rt_iter = feature_geom_group.recon_geoms.begin();
+			rt_iter != feature_geom_group.recon_geoms.end();
+			++rt_iter)
 		{
-			const GPlatesAppLogic::ResolvedTopologicalGeometry *rtg = *rtg_iter;
-			rtg->resolved_topology_geometry()->accept_visitor(finder);
+			const GPlatesAppLogic::ReconstructionGeometry *rt = *rt_iter;
+
+			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> resolved_topology_geometry =
+					GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_or_line_geometry(rt);
+			if (!resolved_topology_geometry)
+			{
+				continue;
+			}
+
+			resolved_topology_geometry.get()->accept_visitor(finder);
 		}
 	}
 
@@ -165,12 +171,19 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries(
 		// Iterate through the resolved geometries of the current feature and write to output.
 		// Note that this will export each geometry as a separate entry in the shapefile, even if they
 		// come from the same feature. 
-		resolved_topological_geom_seq_type::const_iterator rtg_iter;
-		for (rtg_iter = feature_geom_group.recon_geoms.begin();
-			rtg_iter != feature_geom_group.recon_geoms.end();
-			++rtg_iter)
+		resolved_topologies_seq_type::const_iterator rt_iter;
+		for (rt_iter = feature_geom_group.recon_geoms.begin();
+			rt_iter != feature_geom_group.recon_geoms.end();
+			++rt_iter)
 		{
-			const GPlatesAppLogic::ResolvedTopologicalGeometry *rtg = *rtg_iter;
+			const GPlatesAppLogic::ReconstructionGeometry *rt = *rt_iter;
+
+			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> resolved_topology_geometry =
+					GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_or_line_geometry(rt);
+			if (!resolved_topology_geometry)
+			{
+				continue;
+			}
 
 			// Orient polygon if forcing orientation and geometry is a polygon.
 			//
@@ -180,9 +193,9 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries(
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geometry =
 					force_polygon_orientation
 					? GPlatesAppLogic::GeometryUtils::convert_geometry_to_oriented_geometry(
-							rtg->resolved_topology_geometry(),
+							resolved_topology_geometry.get(),
 							force_polygon_orientation.get())
-					: rtg->resolved_topology_geometry();
+					: resolved_topology_geometry.get();
 
 			// Write the resolved geometry.
 			geom_exporter.export_geometry(resolved_geometry, kvd_for_export); 
@@ -222,13 +235,21 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries_per
 		}
 
 		// Iterate through the resolved geometries of the current feature.
-		resolved_topological_geom_seq_type::const_iterator rtg_iter;
-		for (rtg_iter = feature_geom_group.recon_geoms.begin();
-			rtg_iter != feature_geom_group.recon_geoms.end();
-			++rtg_iter)
+		resolved_topologies_seq_type::const_iterator rt_iter;
+		for (rt_iter = feature_geom_group.recon_geoms.begin();
+			rt_iter != feature_geom_group.recon_geoms.end();
+			++rt_iter)
 		{
-			const GPlatesAppLogic::ResolvedTopologicalGeometry *rtg = *rtg_iter;
-			rtg->resolved_topology_geometry()->accept_visitor(finder);
+			const GPlatesAppLogic::ReconstructionGeometry *rt = *rt_iter;
+
+			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> resolved_topology_geometry =
+					GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_or_line_geometry(rt);
+			if (!resolved_topology_geometry)
+			{
+				continue;
+			}
+
+			resolved_topology_geometry.get()->accept_visitor(finder);
 		}
 	}
 
@@ -297,12 +318,19 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries_per
 		// Iterate through the resolved geometries of the current feature and write to output.
 		// Note that this will export each geometry as a separate entry in the shapefile, even if they
 		// come from the same feature. 
-		resolved_topological_geom_seq_type::const_iterator rtg_iter;
-		for (rtg_iter = feature_geom_group.recon_geoms.begin();
-			rtg_iter != feature_geom_group.recon_geoms.end();
-			++rtg_iter)
+		resolved_topologies_seq_type::const_iterator rt_iter;
+		for (rt_iter = feature_geom_group.recon_geoms.begin();
+			rt_iter != feature_geom_group.recon_geoms.end();
+			++rt_iter)
 		{
-			const GPlatesAppLogic::ResolvedTopologicalGeometry *rtg = *rtg_iter;
+			const GPlatesAppLogic::ReconstructionGeometry *rt = *rt_iter;
+
+			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> resolved_topology_geometry =
+					GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_or_line_geometry(rt);
+			if (!resolved_topology_geometry)
+			{
+				continue;
+			}
 
 			// Orient polygon if forcing orientation and geometry is a polygon.
 			//
@@ -312,9 +340,9 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries_per
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geometry =
 					force_polygon_orientation
 					? GPlatesAppLogic::GeometryUtils::convert_geometry_to_oriented_geometry(
-							rtg->resolved_topology_geometry(),
+							resolved_topology_geometry.get(),
 							force_polygon_orientation.get())
-					: rtg->resolved_topology_geometry();
+					: resolved_topology_geometry.get();
 
 			// Write the resolved geometry.
 			geom_exporter.export_geometry(resolved_geometry, kvd_for_export); 

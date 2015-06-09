@@ -39,7 +39,7 @@
 
 namespace GPlatesAppLogic
 {
-	class ResolvedTopologicalGeometry;
+	class ReconstructionGeometry;
 }
 
 namespace GPlatesFileIO
@@ -47,9 +47,9 @@ namespace GPlatesFileIO
 	namespace OgrFormatResolvedTopologicalGeometryExport
 	{
 		/**
-		 * Typedef for a feature geometry group of @a ResolvedTopologicalGeometry objects.
+		 * Typedef for a feature geometry group of resolved topologies.
 		 */
-		typedef ReconstructionGeometryExportImpl::FeatureGeometryGroup<GPlatesAppLogic::ResolvedTopologicalGeometry>
+		typedef ReconstructionGeometryExportImpl::FeatureGeometryGroup<GPlatesAppLogic::ReconstructionGeometry>
 				feature_geometry_group_type;
 
 		/**
@@ -60,7 +60,9 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Exports @a ResolvedTopologicalGeometry objects to OGR format.
+		 * Exports resolved topology objects to OGR format.
+		 *
+		 * This includes @a ResolvedTopologicalLine, @a ResolvedTopologicalBoundary and @a ResolvedTopologicalNetwork.
 		 *
 		 * If @a force_polygon_orientation is not none then polygon are exported to the specified
 		 * orientation (clockwise or counter-clockwise).
@@ -83,7 +85,9 @@ namespace GPlatesFileIO
 				bool wrap_to_dateline = true);
 
 		/**
-		 * Exports @a ResolvedTopologicalGeometry objects to OGR format.
+		 * Exports resolved topology objects to OGR format.
+		 *
+		 * This includes @a ResolvedTopologicalLine, @a ResolvedTopologicalBoundary and @a ResolvedTopologicalNetwork.
 		 *
 		 * If @a force_polygon_orientation is not none then polygon are exported to the specified
 		 * orientation (clockwise or counter-clockwise).
