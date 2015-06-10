@@ -285,6 +285,14 @@ All three above resolved topology types inherit from :class:`pygplates.Reconstru
    
    pygplates.ReconstructionGeometry
 
+The following classes represent sub-segments that make up a resolved topological line or boundary.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+   
+   pygplates.ResolvedTopologicalSubSegment
+
 Geometry classes
 ^^^^^^^^^^^^^^^^
 

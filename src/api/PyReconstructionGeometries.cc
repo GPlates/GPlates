@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "PyReconstructionGeometries.h"
@@ -778,6 +779,260 @@ export_reconstructed_flowline()
 namespace GPlatesApi
 {
 	/**
+	 * Returns the referenced feature.
+	 *
+	 * The feature reference could be invalid.
+	 * It should normally be valid though so we don't document that Py_None could be returned
+	 * to the caller.
+	 */
+	boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
+	resolved_topological_geometry_sub_segment_get_feature(
+			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &resolved_topological_geometry_sub_segment)
+	{
+		return reconstruction_geometry_get_feature(
+				*resolved_topological_geometry_sub_segment.get_reconstruction_geometry());
+	}
+
+
+	/**
+	 * A Python wrapper around a derived @a ResolvedTopologicalGeometrySubSegment that contains
+	 * a reconstruction geometry (which must be wrapped in order to keep its feature/property alive).
+	 */
+	class ResolvedTopologicalGeometrySubSegmentWrapper
+	{
+	public:
+
+		/**
+		 * The default boost-python 'pointee<HeldType>::type' is defined as 'HeldType::element_type'.
+		 *
+		 * This is needed for wrapped types ('HeldType') that are not already smart pointers.
+		 */
+		typedef GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment element_type;
+
+		explicit
+		ResolvedTopologicalGeometrySubSegmentWrapper(
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &resolved_topological_geometry_sub_segment) :
+			d_resolved_topological_geometry_sub_segment(resolved_topological_geometry_sub_segment),
+			d_reconstruction_geometry(
+					GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ReconstructionGeometry>(
+							resolved_topological_geometry_sub_segment.get_reconstruction_geometry()))
+		{  }
+
+		/**
+		 * Get the sub-segment.
+		 */
+		GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &
+		get_resolved_topological_geometry_sub_segment() const
+		{
+			// Boost-python wants a non-const return value (see 'get_pointer()') but wants a const wrapper...
+			return const_cast<GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &>(
+					d_resolved_topological_geometry_sub_segment);
+		}
+
+		/**
+		 * Get the reconstruction geometry of the sub-segment (for passing to Python).
+		 */
+		const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &
+		get_reconstruction_geometry() const
+		{
+			return d_reconstruction_geometry;
+		}
+
+	private:
+
+		//! The wrapped sub-segment itself.
+		GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment d_resolved_topological_geometry_sub_segment;
+
+		/**
+		 * The reconstruction geometry that the sub-segment was obtained from.
+		 *
+		 * We need to store a Python-wrapped version of it to keep its feature/property alive.
+		 */
+		ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> d_reconstruction_geometry;
+	};
+
+
+	/**
+	 * Boost-python requires 'get_pointer(HeldType)' for wrapped types ('HeldType') that
+	 * are not already smart pointers.
+	 *
+	 * Boost-python wants a non-const return pointer but wants a const wrapper.
+	 */
+	GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *
+	get_pointer(
+			const ResolvedTopologicalGeometrySubSegmentWrapper &wrapper)
+	{
+		return &wrapper.get_resolved_topological_geometry_sub_segment();
+	}
+
+
+	/**
+	 * Python converter from a 'ResolvedTopologicalGeometrySubSegment' to a
+	 * 'ResolvedTopologicalGeometrySubSegmentWrapper' (and vice versa).
+	 */
+	struct python_ResolvedTopologicalGeometrySubSegment :
+			private boost::noncopyable
+	{
+		struct Conversion
+		{
+			static
+			PyObject *
+			convert(
+					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment)
+			{
+				namespace bp = boost::python;
+
+				// Convert to ResolvedTopologicalGeometrySubSegmentWrapper first.
+				// Then it'll get converted to python.
+				return bp::incref(bp::object(
+						ResolvedTopologicalGeometrySubSegmentWrapper(sub_segment)).ptr());
+			}
+		};
+
+		static
+		void *
+		convertible(
+				PyObject *obj)
+		{
+			namespace bp = boost::python;
+
+			// 'ResolvedTopologicalGeometrySubSegment' is obtained from a
+			// ResolvedTopologicalGeometrySubSegmentWrapper (which in turn is already convertible).
+			return bp::extract<const ResolvedTopologicalGeometrySubSegmentWrapper &>(obj).check() ? obj : NULL;
+		}
+
+		static
+		void
+		construct(
+				PyObject *obj,
+				boost::python::converter::rvalue_from_python_stage1_data *data)
+		{
+			namespace bp = boost::python;
+
+			void *const storage = reinterpret_cast<
+					bp::converter::rvalue_from_python_storage<
+							GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment> *>(
+									data)->storage.bytes;
+
+			new (storage) GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment(
+					bp::extract<const ResolvedTopologicalGeometrySubSegmentWrapper &>(obj)()
+							.get_resolved_topological_geometry_sub_segment());
+
+			data->convertible = storage;
+		}
+	};
+
+
+	/**
+	 * Registers converter from a 'ResolvedTopologicalGeometrySubSegment' to a
+	 * 'ResolvedTopologicalGeometrySubSegmentWrapper' (and vice versa).
+	 */
+	void
+	register_resolved_topological_geometry_sub_segment_conversion()
+	{
+		// To python conversion.
+		bp::to_python_converter<
+				GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment,
+				python_ResolvedTopologicalGeometrySubSegment::Conversion>();
+
+		// From python conversion.
+		bp::converter::registry::push_back(
+				&python_ResolvedTopologicalGeometrySubSegment::convertible,
+				&python_ResolvedTopologicalGeometrySubSegment::construct,
+				bp::type_id<GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment>());
+	}
+}
+
+
+void
+export_resolved_topological_sub_segment()
+{
+	//
+	// ResolvedTopologicalSubSegment - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment,
+			GPlatesApi::ResolvedTopologicalGeometrySubSegmentWrapper,
+			// NOTE: We must specify 'boost::noncopyable' otherwise boost-python will expect our wrapper
+			// to have a constructor accepting a 'pointer to non-const' and our wrapper will be
+			// responsible for deleting the pointer when it's done...
+			boost::noncopyable>(
+					"ResolvedTopologicalSubSegment",
+					"The subset of vertices of a reconstructed topological section that contribute to the "
+					"geometry of a resolved topology.\n"
+					"\n"
+					"The :func:`resolve_topologies` function can be used to generate resolved topologies "
+					"(such as :class:`ResolvedTopologicalLine`, :class:`ResolvedTopologicalBoundary` and "
+					":class:`ResolvedTopologicalNetwork`) which, in turn, reference these "
+					"*ResolvedTopologicalSubSegment* instances.\n",
+					// Don't allow creation from python side...
+					bp::no_init)
+		.def("get_feature",
+				&GPlatesApi::resolved_topological_geometry_sub_segment_get_feature,
+				"get_feature()\n"
+				"  Returns the feature referenced by the topological section.\n"
+				"\n"
+				"  :rtype: :class:`Feature`\n")
+		.def("get_geometry",
+				&GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::get_geometry,
+				"get_geometry()\n"
+				"  Returns the geometry containing the sub-segment vertices.\n"
+				"\n"
+				"  :rtype: :class:`GeometryOnSphere`\n"
+				"\n"
+				"  .. note:: These are the *unreversed* vertices. They are in the same order as the "
+				"geometry of :meth:`get_reconstruction_geometry`.\n"
+				"\n"
+				"  .. seealso:: :meth:`was_geometry_reversed_in_topology`.\n")
+		.def("get_reconstruction_geometry",
+				&GPlatesApi::ResolvedTopologicalGeometrySubSegmentWrapper::get_reconstruction_geometry,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_reconstruction_geometry()\n"
+				"  Returns the reconstruction geometry that the sub-segment was obtained from.\n"
+				"\n"
+				"  :rtype: :class:`ReconstructionGeometry`\n"
+				"\n"
+				"  .. note:: | If the resolved topology (that this sub-segment is a part of) is a "
+				":class:`ResolvedTopologicalLine` then the reconstruction geometry will be a "
+				":class:`ReconstructedFeatureGeometry`.\n"
+				"            | If the resolved topology (that this sub-segment is a part of) is a "
+				":class:`ResolvedTopologicalBoundary` or a :class:`ResolvedTopologicalNetwork` then "
+				"the reconstruction geometry can be either a :class:`ReconstructedFeatureGeometry` or "
+				"a :class:`ResolvedTopologicalLine`.\n")
+		.def("was_geometry_reversed_in_topology",
+				&GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::get_use_reverse,
+				"was_geometry_reversed_in_topology()\n"
+				"  Whether a copy of the points in :meth:`get_geometry` were reversed in order to "
+				"contribute to the resolved topology that this sub-segment is a part of.\n"
+				"\n"
+				"  :rtype: bool\n"
+				"\n"
+				"  .. note:: A reversed version of the points of :meth:`get_geometry` is equivalent "
+				"``sub_segment.get_geometry().get_points()[::-1]``.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_geometry`.\n")
+		// Make hash and comparisons based on C++ object identity (not python object identity)...
+		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
+	;
+
+	// Enable python-wrapped ResolvedTopologicalGeometrySubSegmentWrapper to be converted to
+	// a GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment (and vice versa).
+	GPlatesApi::register_resolved_topological_geometry_sub_segment_conversion();
+
+	//
+	// Now for the conversions that only involve GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment
+	// (not ResolvedTopologicalGeometrySubSegmentWrapper).
+	//
+
+	// Enable boost::optional<ResolvedTopologicalGeometrySubSegment> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<
+			GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment>();
+}
+
+
+namespace GPlatesApi
+{
+	/**
 	 * Returns the resolved line geometry.
 	 */
 	GPlatesAppLogic::ResolvedTopologicalLine::resolved_topology_line_ptr_type
@@ -785,6 +1040,22 @@ namespace GPlatesApi
 			const GPlatesAppLogic::ResolvedTopologicalLine &resolved_topological_line)
 	{
 		return resolved_topological_line.resolved_topology_line();
+	}
+
+	bp::list
+	resolved_topological_line_get_line_sub_segments(
+			const GPlatesAppLogic::ResolvedTopologicalLine &resolved_topological_line)
+	{
+		bp::list line_sub_segments_list;
+
+		const GPlatesAppLogic::sub_segment_seq_type &sub_segments =
+				resolved_topological_line.get_sub_segment_sequence();
+		BOOST_FOREACH(const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment, sub_segments)
+		{
+			line_sub_segments_list.append(sub_segment);
+		}
+
+		return line_sub_segments_list;
 	}
 }
 
@@ -803,12 +1074,7 @@ export_resolved_topological_line()
 					"ResolvedTopologicalLine",
 					"The geometry of a topological *line* feature resolved to a geological time.\n"
 					"\n"
-					"The :func:`resolve_topologies` function can be used to generate *ResolvedTopologicalLine* instances.\n"
-					"\n"
-					".. note:: | Although uncommon, a single feature can have *multiple* topological geometry properties, "
-					"and hence multiple resolved topological geometries, associated with it.\n"
-					"          | Therefore each :class:`ResolvedTopologicalLine` references a different property of "
-					"the feature via :meth:`get_property`.\n",
+					"The :func:`resolve_topologies` function can be used to generate *ResolvedTopologicalLine* instances.\n",
 					// Don't allow creation from python side...
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
@@ -817,11 +1083,7 @@ export_resolved_topological_line()
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ResolvedTopologicalLine`.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
-				"\n"
-				"  .. note:: Multiple resolved topological geometries(:class:`ResolvedTopologicalLine` or "
-				":class:`ResolvedTopologicalBoundary`) can be associated with the same :class:`feature<Feature>` "
-				"if that feature has multiple topological geometry properties.\n")
+				"  :rtype: :class:`Feature`\n")
 		.def("get_property",
 				&GPlatesApi::reconstruction_geometry_get_property,
 				"get_property()\n"
@@ -842,6 +1104,24 @@ export_resolved_topological_line()
 				&GPlatesApi::resolved_topological_line_get_resolved_line,
 				"get_resolved_geometry()\n"
 				"  Same as :meth:`get_resolved_line`.\n")
+		.def("get_line_sub_segments",
+				&GPlatesApi::resolved_topological_line_get_line_sub_segments,
+				"get_line_sub_segments()\n"
+				"  Returns the :class:`sub-segments<ResolvedTopologicalSubSegment>` that make up the "
+				"line of this resolved topological line.\n"
+				"\n"
+				"  :rtype: list of :class:`ResolvedTopologicalSubSegment`\n"
+				"\n"
+				"  To get a list of the *unreversed* sub-segment geometries:\n"
+				"  ::\n"
+				"\n"
+				"    sub_segment_geometries = []\n"
+				"    for sub_segment in resolved_topological_line.get_line_sub_segments():\n"
+				"        sub_segment_geometries.append(sub_segment.get_geometry())\n")
+		.def("get_geometry_sub_segments",
+				&GPlatesApi::resolved_topological_line_get_line_sub_segments,
+				"get_geometry_sub_segments()\n"
+				"  Same as :meth:`get_line_sub_segments`.\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
@@ -874,6 +1154,22 @@ namespace GPlatesApi
 	{
 		return resolved_topological_boundary.resolved_topology_boundary();
 	}
+
+	bp::list
+	resolved_topological_boundary_get_boundary_sub_segments(
+			const GPlatesAppLogic::ResolvedTopologicalBoundary &resolved_topological_boundary)
+	{
+		bp::list boundary_sub_segments_list;
+
+		const GPlatesAppLogic::sub_segment_seq_type &sub_segments =
+				resolved_topological_boundary.get_sub_segment_sequence();
+		BOOST_FOREACH(const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment, sub_segments)
+		{
+			boundary_sub_segments_list.append(sub_segment);
+		}
+
+		return boundary_sub_segments_list;
+	}
 }
 
 
@@ -891,12 +1187,7 @@ export_resolved_topological_boundary()
 					"ResolvedTopologicalBoundary",
 					"The geometry of a topological *boundary* feature resolved to a geological time.\n"
 					"\n"
-					"The :func:`resolve_topologies` function can be used to generate *ResolvedTopologicalBoundary* instances.\n"
-					"\n"
-					".. note:: | Although uncommon, a single feature can have *multiple* topological geometry properties, "
-					"and hence multiple resolved topological geometries, associated with it.\n"
-					"          | Therefore each :class:`ResolvedTopologicalBoundary` references a different property of "
-					"the feature via :meth:`get_property`.\n",
+					"The :func:`resolve_topologies` function can be used to generate *ResolvedTopologicalBoundary* instances.\n",
 					// Don't allow creation from python side...
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
@@ -905,11 +1196,7 @@ export_resolved_topological_boundary()
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ResolvedTopologicalBoundary`.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
-				"\n"
-				"  .. note:: Multiple resolved topological geometries(:class:`ResolvedTopologicalLine` or "
-				":class:`ResolvedTopologicalBoundary`) can be associated with the same :class:`feature<Feature>` "
-				"if that feature has multiple topological geometry properties.\n")
+				"  :rtype: :class:`Feature`\n")
 		.def("get_property",
 				&GPlatesApi::reconstruction_geometry_get_property,
 				"get_property()\n"
@@ -930,6 +1217,24 @@ export_resolved_topological_boundary()
 				&GPlatesApi::resolved_topological_boundary_get_resolved_boundary,
 				"get_resolved_geometry()\n"
 				"  Same as :meth:`get_resolved_boundary`.\n")
+		.def("get_boundary_sub_segments",
+				&GPlatesApi::resolved_topological_boundary_get_boundary_sub_segments,
+				"get_boundary_sub_segments()\n"
+				"  Returns the :class:`sub-segments<ResolvedTopologicalSubSegment>` that make up the "
+				"boundary of this resolved topological boundary.\n"
+				"\n"
+				"  :rtype: list of :class:`ResolvedTopologicalSubSegment`\n"
+				"\n"
+				"  To get a list of the *unreversed* boundary sub-segment geometries:\n"
+				"  ::\n"
+				"\n"
+				"    sub_segment_geometries = []\n"
+				"    for sub_segment in resolved_topological_boundary.get_boundary_sub_segments():\n"
+				"        sub_segment_geometries.append(sub_segment.get_geometry())\n")
+		.def("get_geometry_sub_segments",
+				&GPlatesApi::resolved_topological_boundary_get_boundary_sub_segments,
+				"get_geometry_sub_segments()\n"
+				"  Same as :meth:`get_boundary_sub_segments`.\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
@@ -962,6 +1267,22 @@ namespace GPlatesApi
 	{
 		return resolved_topological_network.boundary_polygon();
 	}
+
+	bp::list
+	resolved_topological_network_get_boundary_sub_segments(
+			const GPlatesAppLogic::ResolvedTopologicalNetwork &resolved_topological_network)
+	{
+		bp::list boundary_sub_segments_list;
+
+		const GPlatesAppLogic::sub_segment_seq_type &sub_segments =
+				resolved_topological_network.get_boundary_sub_segment_sequence();
+		BOOST_FOREACH(const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment, sub_segments)
+		{
+			boundary_sub_segments_list.append(sub_segment);
+		}
+
+		return boundary_sub_segments_list;
+	}
 }
 
 
@@ -979,12 +1300,7 @@ export_resolved_topological_network()
 					"ResolvedTopologicalNetwork",
 					"The geometry of a topological *network* feature resolved to a geological time.\n"
 					"\n"
-					"The :func:`resolve_topologies` function can be used to generate *ResolvedTopologicalNetwork* instances.\n"
-					"\n"
-					".. note:: | Although *very* uncommon, a single feature can have *multiple* topological network properties, "
-					"and hence multiple resolved topological networks, associated with it.\n"
-					"          | Therefore each :class:`ResolvedTopologicalNetwork` references a different property of "
-					"the feature via :meth:`get_property`.\n",
+					"The :func:`resolve_topologies` function can be used to generate *ResolvedTopologicalNetwork* instances.\n",
 					// Don't allow creation from python side...
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
@@ -993,10 +1309,7 @@ export_resolved_topological_network()
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ResolvedTopologicalNetwork`.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n"
-				"\n"
-				"  .. note:: Although *very* uncommon, multiple resolved topological networks can be associated with "
-				"the same :class:`feature<Feature>` if that feature has multiple topological network properties.\n")
+				"  :rtype: :class:`Feature`\n")
 		.def("get_property",
 				&GPlatesApi::reconstruction_geometry_get_property,
 				"get_property()\n"
@@ -1012,6 +1325,20 @@ export_resolved_topological_network()
 				"  Returns the resolved boundary of this network.\n"
 				"\n"
 				"  :rtype: :class:`PolygonOnSphere`\n")
+		.def("get_boundary_sub_segments",
+				&GPlatesApi::resolved_topological_network_get_boundary_sub_segments,
+				"get_boundary_sub_segments()\n"
+				"  Returns the :class:`sub-segments<ResolvedTopologicalSubSegment>` that make up the "
+				"boundary of this resolved topological network.\n"
+				"\n"
+				"  :rtype: list of :class:`ResolvedTopologicalSubSegment`\n"
+				"\n"
+				"  To get a list of the *unreversed* boundary sub-segment geometries:\n"
+				"  ::\n"
+				"\n"
+				"    sub_segment_geometries = []\n"
+				"    for sub_segment in resolved_topological_network.get_boundary_sub_segments():\n"
+				"        sub_segment_geometries.append(sub_segment.get_geometry())\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
@@ -1041,6 +1368,8 @@ export_reconstruction_geometries()
 	export_reconstructed_feature_geometry();
 	export_reconstructed_motion_path();
 	export_reconstructed_flowline();
+
+	export_resolved_topological_sub_segment();
 
 	export_resolved_topological_line();
 	export_resolved_topological_boundary();

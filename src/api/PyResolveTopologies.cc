@@ -614,7 +614,7 @@ export_resolve_topologies()
 			"  |                                   |      |                                                                 | - ``ResolveTopologyType.boundary``:                                              |\n"
 			"  |                                   |      |                                                                 |   generate :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` |\n"
 			"  |                                   |      |                                                                 | - ``ResolveTopologyType.network``:                                               |\n"
-			"  |                                   |      |                                                                 |   generate :class:`resolved topological networks<ResolvedTopologicalNetworks>`   |\n"
+			"  |                                   |      |                                                                 |   generate :class:`resolved topological networks<ResolvedTopologicalNetwork>`    |\n"
 			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
 			"  | export_wrap_to_dateline           | bool | True                                                            | | Wrap/clip resolved topologies to the dateline (currently                       |\n"
 			"  |                                   |      |                                                                 |   ignored unless exporting to an ESRI Shapefile format *file*).                  |\n"
