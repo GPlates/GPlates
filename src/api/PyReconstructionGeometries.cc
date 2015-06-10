@@ -23,8 +23,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/any.hpp>
 #include <boost/optional.hpp>
+
+#include "PyReconstructionGeometries.h"
 
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
@@ -103,78 +104,90 @@ namespace GPlatesApi
 	}
 
 	/**
-	 * A wrapper around a derived 'ReconstructionGeometryType' that keeps the referenced feature
-	 * (and property) alive.
-	 *
-	 * Keeping the referenced feature alive (and the referenced property alive in case subsequently removed
-	 * from feature) is important because most unwrapped 'ReconstructionGeometryType' types
-	 * store only weak references which will be invalid if the referenced features are no longer
-	 * used (kept alive) in the user's python code.
-	 *
-	 * This is the wrapper type that gets stored in the python object.
-	 *
-	 * NOTE: If this wrapper does not suit all derived reconstruction geometry types then it can be
-	 * specialised for those types that need it.
+	 * ReconstructionGeometry visitor to create a derived reconstruction geometry type wrapper.
 	 */
-	template <class ReconstructionGeometryType>
-	class ReconstructionGeometryTypeWrapper
+	class WrapReconstructionGeometryTypeVisitor :
+			public GPlatesAppLogic::ReconstructionGeometryVisitor
 	{
 	public:
+		// Bring base class visit methods into scope of current class.
+		using GPlatesAppLogic::ReconstructionGeometryVisitor::visit;
 
-		/**
-		 * The default boost-python 'pointee<HeldType>::type' is defined as 'HeldType::element_type'.
-		 *
-		 * This is needed for wrapped types ('HeldType') that are not already smart pointers.
-		 */
-	    typedef ReconstructionGeometryType element_type;
 
-		explicit
-		ReconstructionGeometryTypeWrapper(
-				typename ReconstructionGeometryType::non_null_ptr_type reconstruction_geometry_type) :
-			d_reconstruction_geometry_type(reconstruction_geometry_type),
-			d_feature(reconstruction_geometry_get_feature(*reconstruction_geometry_type)),
-			d_property(reconstruction_geometry_get_property(*reconstruction_geometry_type))
-		{  }
-
-		/**
-		 * Get the wrapped reconstruction geometry type.
-		 */
-		typename ReconstructionGeometryType::non_null_ptr_type
-		get_reconstruction_geometry_type() const
+		const boost::any &
+		get_reconstruction_geometry_type_wrapper() const
 		{
-			return d_reconstruction_geometry_type;
+			return d_reconstruction_geometry_type_wrapper;
+		}
+
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+		{
+			d_reconstruction_geometry_type_wrapper = boost::any(
+					ReconstructionGeometryTypeWrapper<reconstructed_feature_geometry_type>(rfg));
+		}
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
+		{
+			d_reconstruction_geometry_type_wrapper = boost::any(
+					ReconstructionGeometryTypeWrapper<reconstructed_motion_path_type>(rmp));
+		}
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+		{
+			d_reconstruction_geometry_type_wrapper = boost::any(
+					ReconstructionGeometryTypeWrapper<reconstructed_flowline_type>(rf));
+		}
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_line_type> &rtl)
+		{
+			d_reconstruction_geometry_type_wrapper = boost::any(
+					ReconstructionGeometryTypeWrapper<resolved_topological_line_type>(rtl));
+		}
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+		{
+			d_reconstruction_geometry_type_wrapper = boost::any(
+					ReconstructionGeometryTypeWrapper<resolved_topological_boundary_type>(rtb));
+		}
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+		{
+			d_reconstruction_geometry_type_wrapper = boost::any(
+					ReconstructionGeometryTypeWrapper<resolved_topological_network_type>(rtn));
 		}
 
 	private:
-
-		//! The wrapped reconstruction geometry type itself.
-		typename ReconstructionGeometryType::non_null_ptr_type d_reconstruction_geometry_type;
-
-		/**
-		 * Keep the feature alive (by using intrusive pointer instead of weak ref)
-		 * since derived reconstruction geometry types usually only store a weak reference.
-		 */
-		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type> d_feature;
-
-		/**
-		 * Keep the geometry feature property alive (by using intrusive pointer instead of weak ref)
-		 * since derived reconstruction geometry types usually only store an iterator and
-		 * someone could remove the feature property in the meantime.
-		 */
-		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> d_property;
-
+		// We just need to store the wrapper - we don't need to access it.
+		boost::any d_reconstruction_geometry_type_wrapper;
 	};
 
-	/**
-	 * Boost-python requires 'get_pointer(HeldType)' for wrapped types ('HeldType') that
-	 * are not already smart pointers.
-	 */
-	template <class ReconstructionGeometryType>
-	ReconstructionGeometryType *
-	get_pointer(
-			const ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> &wrapper)
+
+	boost::any
+	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>::create_reconstruction_geometry_type_wrapper(
+			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type &reconstruction_geometry)
 	{
-		return wrapper.get_reconstruction_geometry_type().get();
+		WrapReconstructionGeometryTypeVisitor visitor;
+		reconstruction_geometry->accept_visitor(visitor);
+		return visitor.get_reconstruction_geometry_type_wrapper();
 	}
 
 
@@ -257,6 +270,62 @@ namespace GPlatesApi
 				&python_ReconstructionGeometryType<ReconstructionGeometryType>::construct,
 				bp::type_id<typename ReconstructionGeometryType::non_null_ptr_type>());
 	}
+}
+
+
+void
+export_reconstruction_geometry()
+{
+	//
+	// ReconstructionGeometry - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesAppLogic::ReconstructionGeometry,
+			GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>,
+			boost::noncopyable>(
+					"ReconstructionGeometry",
+					"The base class inherited by all derived reconstruction geometry classes..\n"
+					"\n"
+					"The list of derived classes is:\n"
+					"\n"
+					"* :class:`ReconstructedFeatureGeometry`\n"
+					"* :class:`ReconstructedMotionPath`\n"
+					"* :class:`ReconstructedFlowline`\n"
+					"* :class:`ResolvedTopologicalLine`\n"
+					"* :class:`ResolvedTopologicalBoundary`\n"
+					"* :class:`ResolvedTopologicalNetwork`\n",
+					bp::no_init)
+		.def("get_reconstruction_time",
+				&GPlatesAppLogic::ReconstructionGeometry::get_reconstruction_time,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_reconstruction_time()\n"
+				"  Returns the reconstruction time that this instance was created at.\n"
+				"\n"
+				"  :rtype: float\n")
+		// Make hash and comparisons based on C++ object identity (not python object identity)...
+		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
+	;
+
+	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
+	// a GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type (and vice versa).
+	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ReconstructionGeometry>();
+
+	//
+	// Now for the conversions that only involve GPlatesAppLogic::ReconstructionGeometry
+	// (not ReconstructionGeometryTypeWrapper<>).
+	//
+
+	// Enable boost::optional<ReconstructionGeometry::non_null_ptr_type> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>();
+
+	// Registers 'non-const' to 'const' conversions.
+	boost::python::implicitly_convertible<
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type,
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>();
+	boost::python::implicitly_convertible<
+			boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>,
+			boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> >();
 }
 
 
@@ -961,205 +1030,6 @@ export_resolved_topological_network()
 	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			GPlatesAppLogic::ResolvedTopologicalNetwork,
 			GPlatesAppLogic::ReconstructionGeometry>();
-}
-
-
-namespace GPlatesApi
-{
-	/**
-	 * ReconstructionGeometry visitor to create a derived reconstruction geometry type wrapper.
-	 */
-	class WrapReconstructionGeometryType :
-			public GPlatesAppLogic::ReconstructionGeometryVisitor
-	{
-	public:
-		// Bring base class visit methods into scope of current class.
-		using GPlatesAppLogic::ReconstructionGeometryVisitor::visit;
-
-
-		const boost::any &
-		get_reconstruction_geometry_type_wrapper() const
-		{
-			return d_reconstruction_geometry_type_wrapper;
-		}
-
-
-		virtual
-		void
-		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
-		{
-			d_reconstruction_geometry_type_wrapper = boost::any(
-					ReconstructionGeometryTypeWrapper<reconstructed_feature_geometry_type>(rfg));
-		}
-
-		virtual
-		void
-		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
-		{
-			d_reconstruction_geometry_type_wrapper = boost::any(
-					ReconstructionGeometryTypeWrapper<reconstructed_motion_path_type>(rmp));
-		}
-
-		virtual
-		void
-		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
-		{
-			d_reconstruction_geometry_type_wrapper = boost::any(
-					ReconstructionGeometryTypeWrapper<reconstructed_flowline_type>(rf));
-		}
-
-		virtual
-		void
-		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_line_type> &rtl)
-		{
-			d_reconstruction_geometry_type_wrapper = boost::any(
-					ReconstructionGeometryTypeWrapper<resolved_topological_line_type>(rtl));
-		}
-
-		virtual
-		void
-		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
-		{
-			d_reconstruction_geometry_type_wrapper = boost::any(
-					ReconstructionGeometryTypeWrapper<resolved_topological_boundary_type>(rtb));
-		}
-
-		virtual
-		void
-		visit(
-				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
-		{
-			d_reconstruction_geometry_type_wrapper = boost::any(
-					ReconstructionGeometryTypeWrapper<resolved_topological_network_type>(rtn));
-		}
-
-	private:
-		// We just need to store the wrapper - we don't need to access it.
-		boost::any d_reconstruction_geometry_type_wrapper;
-	};
-
-
-	/**
-	 * Specialise class 'ReconstructionGeometryTypeWrapper' for the base ReconstructionGeometry class.
-	 *
-	 * This is for those cases where a 'ReconstructionGeometry::non_null_ptr_type' is wrapped into
-	 * a Python object (rather than the derived class 'non_null_ptr_type').
-	 *
-	 * In this case we have no feature (or property) to keep alive (like in the derived
-	 * ReconstructionGeometry classes) but we still need to ensure that it is wrapped as if was the
-	 * actual derived ReconstructionGeometry object. This is necessary because these derived objects
-	 * need to keep their referenced feature (and property) alive.
-	 */
-	template <>
-	class ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
-	{
-	public:
-
-		/**
-		 * The default boost-python 'pointee<HeldType>::type' is defined as 'HeldType::element_type'.
-		 *
-		 * This is needed for wrapped types ('HeldType') that are not already smart pointers.
-		 */
-	    typedef GPlatesAppLogic::ReconstructionGeometry element_type;
-
-		explicit
-		ReconstructionGeometryTypeWrapper(
-				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type reconstruction_geometry) :
-			d_reconstruction_geometry(reconstruction_geometry),
-			d_reconstruction_geometry_type_wrapper(
-					create_reconstruction_geometry_type_wrapper(reconstruction_geometry))
-		{  }
-
-		/**
-		 * Get the wrapped reconstruction geometry type.
-		 */
-		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type
-		get_reconstruction_geometry_type() const
-		{
-			return d_reconstruction_geometry;
-		}
-
-	private:
-
-		static
-		boost::any
-		create_reconstruction_geometry_type_wrapper(
-				const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type &reconstruction_geometry)
-		{
-			WrapReconstructionGeometryType visitor;
-			reconstruction_geometry->accept_visitor(visitor);
-			return visitor.get_reconstruction_geometry_type_wrapper();
-		}
-
-
-		//! The wrapped reconstruction geometry itself.
-		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type d_reconstruction_geometry;
-
-		//! The derived reconstruction geometry wrapper (keeps feature/property alive).
-		boost::any d_reconstruction_geometry_type_wrapper;
-
-	};
-}
-
-
-void
-export_reconstruction_geometry()
-{
-	//
-	// ReconstructionGeometry - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
-	//
-	bp::class_<
-			GPlatesAppLogic::ReconstructionGeometry,
-			GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>,
-			boost::noncopyable>(
-					"ReconstructionGeometry",
-					"The base class inherited by all derived reconstruction geometry classes..\n"
-					"\n"
-					"The list of derived classes is:\n"
-					"\n"
-					"* :class:`ReconstructedFeatureGeometry`\n"
-					"* :class:`ReconstructedMotionPath`\n"
-					"* :class:`ReconstructedFlowline`\n"
-					"* :class:`ResolvedTopologicalLine`\n"
-					"* :class:`ResolvedTopologicalBoundary`\n"
-					"* :class:`ResolvedTopologicalNetwork`\n",
-					bp::no_init)
-		.def("get_reconstruction_time",
-				&GPlatesAppLogic::ReconstructionGeometry::get_reconstruction_time,
-				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_reconstruction_time()\n"
-				"  Returns the reconstruction time that this instance was created at.\n"
-				"\n"
-				"  :rtype: float\n")
-		// Make hash and comparisons based on C++ object identity (not python object identity)...
-		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
-	;
-
-	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
-	// a GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type (and vice versa).
-	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ReconstructionGeometry>();
-
-	//
-	// Now for the conversions that only involve GPlatesAppLogic::ReconstructionGeometry
-	// (not ReconstructionGeometryTypeWrapper<>).
-	//
-
-	// Enable boost::optional<ReconstructionGeometry::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<
-			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
-			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type,
-			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
-			boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>,
-			boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> >();
 }
 
 

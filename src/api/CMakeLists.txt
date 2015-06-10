@@ -63,6 +63,7 @@ set(srcs
     PyReal.cc
     PyReconstruct.cc
     PyReconstructionGeometries.cc
+    PyReconstructionGeometries.h
     PyReconstructionTree.cc
     PyReconstructionTree.h
     PyResolveTopologies.cc
