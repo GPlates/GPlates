@@ -255,6 +255,14 @@ These classes result from :func:`reconstructing<pygplates.reconstruct>` regular
    pygplates.ReconstructedFlowline
    pygplates.ReconstructedMotionPath
 
+All three above reconstructed feature types inherit from :class:`pygplates.ReconstructionGeometry`:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+   
+   pygplates.ReconstructionGeometry
+
 Resolved topology  classes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -268,6 +276,14 @@ These classes result from :func:`resolving<pygplates.resolve_topologies>` topolo
    pygplates.ResolvedTopologicalLine
    pygplates.ResolvedTopologicalBoundary
    pygplates.ResolvedTopologicalNetwork
+
+All three above resolved topology types inherit from :class:`pygplates.ReconstructionGeometry`:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+   
+   pygplates.ReconstructionGeometry
 
 Geometry classes
 ^^^^^^^^^^^^^^^^

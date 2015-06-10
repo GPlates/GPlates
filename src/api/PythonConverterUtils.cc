@@ -139,7 +139,7 @@ namespace GPlatesApi
 					GetGeometryOnSphereAsDerivedTypeVisitor visitor;
 					geometry_on_sphere->accept_visitor(visitor);
 
-					// Note that his returns a 'DerivedGeometryOnSphere::non_null_ptr_to_const_type'
+					// Note that this returns a 'DerivedGeometryOnSphere::non_null_ptr_to_const_type'
 					// and not a 'GPlatesUtils::non_null_intrusive_ptr<DerivedGeometryOnSphere>'
 					// (which is the HeldType of the 'bp::class_' wrapper of the DerivedGeometryOnSphere type)
 					// so a conversion from the former to the latter via the to-python converter registered by

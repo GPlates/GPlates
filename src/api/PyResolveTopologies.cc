@@ -320,28 +320,7 @@ namespace GPlatesApi
 					GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type rg(
 							const_cast<GPlatesAppLogic::ReconstructionGeometry *>(*rg_iter));
 
-					// Add the reconstruction geometry to the caller's python list.
-					// Since we're not using 'boost::python::bases<>' in our derived ReconstructionGeometry
-					// Python wrappers we need to convert to the appropriate derived type before
-					// passing to boost-python.
-					if (GPlatesAppLogic::ResolvedTopologicalLine *rtl =
-						dynamic_cast<GPlatesAppLogic::ResolvedTopologicalLine *>(rg.get()))
-					{
-						output_resolved_topologies_list.append(
-								GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type(rtl));
-					}
-					else if (GPlatesAppLogic::ResolvedTopologicalBoundary *rtb =
-						dynamic_cast<GPlatesAppLogic::ResolvedTopologicalBoundary *>(rg.get()))
-					{
-						output_resolved_topologies_list.append(
-								GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type(rtb));
-					}
-					else if (GPlatesAppLogic::ResolvedTopologicalNetwork *rtn =
-						dynamic_cast<GPlatesAppLogic::ResolvedTopologicalNetwork *>(rg.get()))
-					{
-						output_resolved_topologies_list.append(
-								GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type(rtn));
-					}
+					output_resolved_topologies_list.append(rg);
 				}
 			}
 		}
@@ -647,8 +626,9 @@ export_resolve_topologies()
 			"  |                                   |      |                                                                 | - ``PolygonOnSphere.Orientation.counter_clockwise``                              |\n"
 			"  |                                   |      |                                                                 |                                                                                  |\n"
 			"  |                                   |      |                                                                 | | Only applies to resolved topological *boundaries* and *networks* (boundaries). |\n"
-			"  |                                   |      |                                                                 | | And only applies when exporting to a *file* (except ESRI Shapefile).           |\n"
 			"  |                                   |      |                                                                 | | ESRI Shapefiles always use *clockwise* orientation.                            |\n"
+			"  |                                   |      |                                                                 |                                                                                  |\n"
+			"  |                                   |      |                                                                 | .. warning:: Only applies when exporting to a **file** (except ESRI Shapefile).  |\n"
 			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
 			"\n"
 			"  | The argument *topological_features* consists of the *topological* :class:`features<Feature>` "
@@ -690,6 +670,11 @@ export_resolve_topologies()
 			"  OGR GMT                         '.gmt'                 \n"
 			"  GMT xy                          '.xy'                  \n"
 			"  =============================== =======================\n"
+			"\n"
+			"  .. warning:: | Currently, resolved topological **networks** exported to *OGR GMT* or "
+			"*ESRI Shapefile* will not be loaded if the exported file is subsequently loaded into "
+			"`GPlates <http://www.gplates.org>`_.\n"
+			"               | The resolved topological networks will still be in the exported file though.\n"
 			"\n"
 			"  .. note:: When exporting to a file, the filename extension of *resolved_topologies* "
 			"determines the export file format.\n"

@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/any.hpp>
 #include <boost/optional.hpp>
 
 #include "PythonConverterUtils.h"
@@ -32,9 +33,14 @@
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedFlowline.h"
 #include "app-logic/ReconstructedMotionPath.h"
+#include "app-logic/ReconstructionGeometry.h"
+#include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ReconstructionGeometryVisitor.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/ResolvedTopologicalGeometrySubSegment.h"
 #include "app-logic/ResolvedTopologicalLine.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
+#include "app-logic/ResolvedTopologicalSharedSubSegment.h"
 
 #include "global/python.h"
 
@@ -50,139 +56,134 @@ namespace bp = boost::python;
 namespace GPlatesApi
 {
 	/**
-	 * A wrapper around GPlatesAppLogic::ReconstructedFeatureGeometry that keeps the referenced feature alive.
+	 * Returns the referenced feature.
+	 *
+	 * The feature reference could be invalid.
+	 * It should normally be valid though so we don't document that Py_None could be returned
+	 * to the caller.
+	 */
+	boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
+	reconstruction_geometry_get_feature(
+			const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry)
+	{
+		// The feature reference could be invalid. It should normally be valid though.
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(&reconstruction_geometry);
+		if (!feature_ref ||
+			!feature_ref->is_valid())
+		{
+			return boost::none;
+		}
+
+		return GPlatesModel::FeatureHandle::non_null_ptr_type(feature_ref->handle_ptr());
+	}
+
+	/**
+	 * Returns the referenced feature property.
+	 *
+	 * The feature property reference could be invalid.
+	 * It should normally be valid though so we don't document that Py_None could be returned
+	 * to the caller.
+	 */
+	boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
+	reconstruction_geometry_get_property(
+			const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry)
+	{
+		// The property iterator could be invalid. It should normally be valid though.
+		boost::optional<GPlatesModel::FeatureHandle::iterator> property_iter =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_geometry_property_iterator(
+						&reconstruction_geometry);
+		if (!property_iter ||
+			!property_iter->is_still_valid())
+		{
+			return boost::none;
+		}
+
+		return *property_iter.get();
+	}
+
+	/**
+	 * A wrapper around a derived 'ReconstructionGeometryType' that keeps the referenced feature
+	 * (and property) alive.
 	 *
 	 * Keeping the referenced feature alive (and the referenced property alive in case subsequently removed
-	 * from feature) is important because the unwrapped GPlatesAppLogic::ReconstructedFeatureGeometry
-	 * stores only weak references which will be invalid if the referenced features are no longer
+	 * from feature) is important because most unwrapped 'ReconstructionGeometryType' types
+	 * store only weak references which will be invalid if the referenced features are no longer
 	 * used (kept alive) in the user's python code.
 	 *
-	 * This is the type that gets stored in the python object.
+	 * This is the wrapper type that gets stored in the python object.
+	 *
+	 * NOTE: If this wrapper does not suit all derived reconstruction geometry types then it can be
+	 * specialised for those types that need it.
 	 */
-	class ReconstructedFeatureGeometryWrapper
+	template <class ReconstructionGeometryType>
+	class ReconstructionGeometryTypeWrapper
 	{
 	public:
 
+		/**
+		 * The default boost-python 'pointee<HeldType>::type' is defined as 'HeldType::element_type'.
+		 *
+		 * This is needed for wrapped types ('HeldType') that are not already smart pointers.
+		 */
+	    typedef ReconstructionGeometryType element_type;
+
 		explicit
-		ReconstructedFeatureGeometryWrapper(
-				const GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type &reconstructed_feature_geometry) :
-			d_reconstructed_feature_geometry(reconstructed_feature_geometry)
-		{
-			// The feature reference could be invalid. It should normally be valid though.
-			GPlatesModel::FeatureHandle::weak_ref feature_ref = reconstructed_feature_geometry->get_feature_ref();
-			if (feature_ref.is_valid())
-			{
-				d_feature = GPlatesModel::FeatureHandle::non_null_ptr_type(feature_ref.handle_ptr());
-			}
-
-			// The property iterator could be invalid. It should normally be valid though.
-			GPlatesModel::FeatureHandle::iterator property_iter = reconstructed_feature_geometry->property();
-			if (property_iter.is_still_valid())
-			{
-				d_property = *property_iter;
-			}
-		}
+		ReconstructionGeometryTypeWrapper(
+				typename ReconstructionGeometryType::non_null_ptr_type reconstruction_geometry_type) :
+			d_reconstruction_geometry_type(reconstruction_geometry_type),
+			d_feature(reconstruction_geometry_get_feature(*reconstruction_geometry_type)),
+			d_property(reconstruction_geometry_get_property(*reconstruction_geometry_type))
+		{  }
 
 		/**
-		 * Returns the wrapped GPlatesAppLogic::ReconstructedFeatureGeometry.
+		 * Get the wrapped reconstruction geometry type.
 		 */
-		GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type
-		get_reconstructed_feature_geometry() const
+		typename ReconstructionGeometryType::non_null_ptr_type
+		get_reconstruction_geometry_type() const
 		{
-			return d_reconstructed_feature_geometry;
-		}
-
-		/**
-		 * Returns the reconstructed geometry.
-		 */
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		get_reconstructed_geometry() const
-		{
-			return d_reconstructed_feature_geometry->reconstructed_geometry();
-		}
-
-		/**
-		 * Returns the present day geometry.
-		 *
-		 * boost::none could be returned but it normally shouldn't so we don't document that Py_None
-		 * could be returned to the caller.
-		 */
-		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-		get_present_day_geometry() const
-		{
-			if (!d_property)
-			{
-				return boost::none;
-			}
-
-			// Call python since Property.get_value is implemented in python code...
-			bp::object property_value_object = bp::object(d_property.get()).attr("get_value")();
-			if (property_value_object == bp::object()/*Py_None*/)
-			{
-				return boost::none;
-			}
-
-			// Get the property value.
-			GPlatesModel::PropertyValue::non_null_ptr_type property_value =
-					bp::extract<GPlatesModel::PropertyValue::non_null_ptr_type>(
-							property_value_object);
-
-			// Extract the geometry from the property value.
-			return GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(*property_value);
-		}
-
-		/**
-		 * Returns the referenced feature.
-		 *
-		 * The feature reference could be invalid.
-		 * It should normally be valid though so we don't document that Py_None could be returned
-		 * to the caller.
-		 */
-		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
-		get_feature() const
-		{
-			return d_feature;
-		}
-
-		/**
-		 * Returns the referenced feature property.
-		 *
-		 * The feature property reference could be invalid.
-		 * It should normally be valid though so we don't document that Py_None could be returned
-		 * to the caller.
-		 */
-		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
-		get_property() const
-		{
-			return d_property;
+			return d_reconstruction_geometry_type;
 		}
 
 	private:
 
-		//! The wrapped RFG itself.
-		GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type d_reconstructed_feature_geometry;
+		//! The wrapped reconstruction geometry type itself.
+		typename ReconstructionGeometryType::non_null_ptr_type d_reconstruction_geometry_type;
 
 		/**
 		 * Keep the feature alive (by using intrusive pointer instead of weak ref)
-		 * since GPlatesAppLogic::ReconstructedFeatureGeometry only stores weak reference.
+		 * since derived reconstruction geometry types usually only store a weak reference.
 		 */
 		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type> d_feature;
 
 		/**
 		 * Keep the geometry feature property alive (by using intrusive pointer instead of weak ref)
-		 * since GPlatesAppLogic::ReconstructedFeatureGeometry only stores an iterator and
+		 * since derived reconstruction geometry types usually only store an iterator and
 		 * someone could remove the feature property in the meantime.
 		 */
 		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> d_property;
 
 	};
 
+	/**
+	 * Boost-python requires 'get_pointer(HeldType)' for wrapped types ('HeldType') that
+	 * are not already smart pointers.
+	 */
+	template <class ReconstructionGeometryType>
+	ReconstructionGeometryType *
+	get_pointer(
+			const ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> &wrapper)
+	{
+		return wrapper.get_reconstruction_geometry_type().get();
+	}
+
 
 	/**
-	 * Python converter from a GPlatesAppLogic::ReconstructedFeatureGeometry to a
-	 * ReconstructedFeatureGeometryWrapper (and vice versa).
+	 * Python converter from a derived 'ReconstructionGeometryType' to a
+	 * 'ReconstructionGeometryTypeWrapper<ReconstructionGeometryType>' (and vice versa).
 	 */
-	struct python_ReconstructedFeatureGeometry :
+	template <class ReconstructionGeometryType>
+	struct python_ReconstructionGeometryType :
 			private boost::noncopyable
 	{
 		struct Conversion
@@ -190,13 +191,14 @@ namespace GPlatesApi
 			static
 			PyObject *
 			convert(
-					const GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type &rfg)
+					const typename ReconstructionGeometryType::non_null_ptr_type &rtb)
 			{
 				namespace bp = boost::python;
 
-				// Convert to ReconstructedFeatureGeometryWrapper first.
+				// Convert to ReconstructionGeometryTypeWrapper<> first.
 				// Then it'll get converted to python.
-				return bp::incref(bp::object(ReconstructedFeatureGeometryWrapper(rfg)).ptr());
+				return bp::incref(bp::object(
+						ReconstructionGeometryTypeWrapper<ReconstructionGeometryType>(rtb)).ptr());
 			}
 		};
 
@@ -207,9 +209,11 @@ namespace GPlatesApi
 		{
 			namespace bp = boost::python;
 
-			// GPlatesAppLogic::ReconstructedFeatureGeometry is obtained from a
-			// ReconstructedFeatureGeometryWrapper (which in turn is already convertible).
-			return bp::extract<ReconstructedFeatureGeometryWrapper>(obj).check() ? obj : NULL;
+			// 'ReconstructionGeometryType' is obtained from a
+			// ReconstructionGeometryTypeWrapper<> (which in turn is already convertible).
+			return bp::extract< ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> >(obj).check()
+					? obj
+					: NULL;
 		}
 
 		static
@@ -222,12 +226,12 @@ namespace GPlatesApi
 
 			void *const storage = reinterpret_cast<
 					bp::converter::rvalue_from_python_storage<
-							GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> *>(
+							typename ReconstructionGeometryType::non_null_ptr_type> *>(
 									data)->storage.bytes;
 
-			new (storage) GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type(
-					bp::extract<ReconstructedFeatureGeometryWrapper>(obj)()
-							.get_reconstructed_feature_geometry());
+			new (storage) typename ReconstructionGeometryType::non_null_ptr_type(
+					bp::extract< ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> >(obj)()
+							.get_reconstruction_geometry_type());
 
 			data->convertible = storage;
 		}
@@ -235,22 +239,69 @@ namespace GPlatesApi
 
 
 	/**
-	 * Registers converter from a GPlatesAppLogic::ReconstructedFeatureGeometry to a
-	 * ReconstructedFeatureGeometryWrapper (and vice versa).
+	 * Registers converter from a derived 'ReconstructionGeometryType' to a
+	 * 'ReconstructionGeometryTypeWrapper<ReconstructionGeometryType>' (and vice versa).
 	 */
+	template <class ReconstructionGeometryType>
 	void
-	register_reconstructed_feature_geometry_conversion()
+	register_reconstruction_geometry_type_conversion()
 	{
 		// To python conversion.
 		bp::to_python_converter<
-				GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type,
-				python_ReconstructedFeatureGeometry::Conversion>();
+				typename ReconstructionGeometryType::non_null_ptr_type,
+				python_ReconstructionGeometryType<ReconstructionGeometryType>::Conversion>();
 
 		// From python conversion.
 		bp::converter::registry::push_back(
-				&python_ReconstructedFeatureGeometry::convertible,
-				&python_ReconstructedFeatureGeometry::construct,
-				bp::type_id<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>());
+				&python_ReconstructionGeometryType<ReconstructionGeometryType>::convertible,
+				&python_ReconstructionGeometryType<ReconstructionGeometryType>::construct,
+				bp::type_id<typename ReconstructionGeometryType::non_null_ptr_type>());
+	}
+}
+
+
+namespace GPlatesApi
+{
+	/**
+	 * Returns the present day geometry.
+	 *
+	 * boost::none could be returned but it normally shouldn't so we don't document that Py_None
+	 * could be returned to the caller.
+	 */
+	boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+	reconstructed_feature_geometry_get_present_day_geometry(
+			const GPlatesAppLogic::ReconstructedFeatureGeometry &reconstructed_feature_geometry)
+	{
+		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> property =
+				reconstruction_geometry_get_property(reconstructed_feature_geometry);
+		if (!property)
+		{
+			return boost::none;
+		}
+
+		// Call python since Property.get_value is implemented in python code...
+		bp::object property_value_object = bp::object(property.get()).attr("get_value")();
+		if (property_value_object == bp::object()/*Py_None*/)
+		{
+			return boost::none;
+		}
+
+		// Get the property value.
+		GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+				bp::extract<GPlatesModel::PropertyValue::non_null_ptr_type>(property_value_object);
+
+		// Extract the geometry from the property value.
+		return GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(*property_value);
+	}
+
+	/**
+	 * Returns the reconstructed geometry.
+	 */
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+	reconstructed_feature_geometry_get_reconstructed_geometry(
+			const GPlatesAppLogic::ReconstructedFeatureGeometry &reconstructed_feature_geometry)
+	{
+		return reconstructed_feature_geometry.reconstructed_geometry();
 	}
 }
 
@@ -262,7 +313,10 @@ export_reconstructed_feature_geometry()
 	// ReconstructedFeatureGeometry - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
-			GPlatesApi::ReconstructedFeatureGeometryWrapper>(
+			GPlatesAppLogic::ReconstructedFeatureGeometry,
+			GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructedFeatureGeometry>,
+			bp::bases<GPlatesAppLogic::ReconstructionGeometry>,
+			boost::noncopyable>(
 					"ReconstructedFeatureGeometry",
 					"The geometry of a feature reconstructed to a geological time.\n"
 					"\n"
@@ -276,7 +330,7 @@ export_reconstructed_feature_geometry()
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
 		.def("get_feature",
-				&GPlatesApi::ReconstructedFeatureGeometryWrapper::get_feature,
+				&GPlatesApi::reconstruction_geometry_get_feature,
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ReconstructedFeatureGeometry`.\n"
 				"\n"
@@ -285,7 +339,7 @@ export_reconstructed_feature_geometry()
 				"  .. note:: Multiple :class:`reconstructed feature geometries<ReconstructedFeatureGeometry>` can "
 				"be associated with the same :class:`feature<Feature>` if that feature has multiple geometry properties.\n")
 		.def("get_property",
-				&GPlatesApi::ReconstructedFeatureGeometryWrapper::get_property,
+				&GPlatesApi::reconstruction_geometry_get_property,
 				"get_property()\n"
 				"  Returns the feature property containing the present day (unreconstructed) geometry "
 				"associated with this :class:`ReconstructedFeatureGeometry`.\n"
@@ -295,13 +349,13 @@ export_reconstructed_feature_geometry()
 				"  This is the :class:`Property` that the :meth:`present day geometry<get_present_day_geometry>` "
 				"and the :meth:`reconstructed geometry<get_reconstructed_geometry>` are obtained from.\n")
 		.def("get_present_day_geometry",
-				&GPlatesApi::ReconstructedFeatureGeometryWrapper::get_present_day_geometry,
+				&GPlatesApi::reconstructed_feature_geometry_get_present_day_geometry,
 				"get_present_day_geometry()\n"
 				"  Returns the present day geometry.\n"
 				"\n"
 				"  :rtype: :class:`GeometryOnSphere`\n")
 		.def("get_reconstructed_geometry",
-				&GPlatesApi::ReconstructedFeatureGeometryWrapper::get_reconstructed_geometry,
+				&GPlatesApi::reconstructed_feature_geometry_get_reconstructed_geometry,
 				"get_reconstructed_geometry()\n"
 				"  Returns the reconstructed geometry.\n"
 				"\n"
@@ -310,221 +364,53 @@ export_reconstructed_feature_geometry()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ReconstructedFeatureGeometryWrapper to be converted to
+	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
 	// a GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type (and vice versa).
-	GPlatesApi::register_reconstructed_feature_geometry_conversion();
+	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ReconstructedFeatureGeometry>();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ReconstructedFeatureGeometry
-	// (not ReconstructedFeatureGeometryWrapper).
+	// (not ReconstructionGeometryTypeWrapper<>).
 	//
 
-	// Enable boost::optional<ReconstructedFeatureGeometry::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<
-			GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
-			GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type,
-			GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
-			boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>,
-			boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type> >();
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class ReconstructionGeometry.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesAppLogic::ReconstructedFeatureGeometry,
+			GPlatesAppLogic::ReconstructionGeometry>();
 }
 
 
 namespace GPlatesApi
 {
 	/**
-	 * A wrapper around GPlatesAppLogic::ReconstructedMotionPath that keeps the referenced feature alive.
-	 *
-	 * Keeping the referenced feature alive (and the referenced property alive in case subsequently removed
-	 * from feature) is important because the unwrapped GPlatesAppLogic::ReconstructedMotionPath
-	 * stores only weak references which will be invalid if the referenced features are no longer
-	 * used (kept alive) in the user's python code.
-	 *
-	 * This is the type that gets stored in the python object.
+	 * Returns the motion path points.
 	 */
-	class ReconstructedMotionPathWrapper
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+	reconstructed_motion_path_get_motion_path(
+			const GPlatesAppLogic::ReconstructedMotionPath &reconstructed_motion_path)
 	{
-	public:
-
-		explicit
-		ReconstructedMotionPathWrapper(
-				const GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type &reconstructed_motion_path) :
-			d_reconstructed_motion_path(reconstructed_motion_path)
-		{
-			// The feature reference could be invalid. It should normally be valid though.
-			GPlatesModel::FeatureHandle::weak_ref feature_ref = reconstructed_motion_path->get_feature_ref();
-			if (feature_ref.is_valid())
-			{
-				d_feature = GPlatesModel::FeatureHandle::non_null_ptr_type(feature_ref.handle_ptr());
-			}
-
-			// The property iterator could be invalid. It should normally be valid though.
-			GPlatesModel::FeatureHandle::iterator property_iter = reconstructed_motion_path->property();
-			if (property_iter.is_still_valid())
-			{
-				d_property = *property_iter;
-			}
-		}
-
-		/**
-		 * Returns the wrapped GPlatesAppLogic::ReconstructedMotionPath.
-		 */
-		GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type
-		get_reconstructed_motion_path() const
-		{
-			return d_reconstructed_motion_path;
-		}
-
-		/**
-		 * Returns the motion path points.
-		 */
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
-		get_motion_path() const
-		{
-			return d_reconstructed_motion_path->motion_path_points();
-		}
-
-		/**
-		 * Returns the reconstructed seed point.
-		 */
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
-		get_reconstructed_seed_point() const
-		{
-			return d_reconstructed_motion_path->reconstructed_seed_point();
-		}
-
-		/**
-		 * Returns the present day seed point.
-		 */
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
-		get_present_day_seed_point() const
-		{
-			return d_reconstructed_motion_path->present_day_seed_point();
-		}
-
-		/**
-		 * Returns the referenced feature.
-		 *
-		 * The feature reference could be invalid.
-		 * It should normally be valid though so we don't document that Py_None could be returned
-		 * to the caller.
-		 */
-		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
-		get_feature() const
-		{
-			return d_feature;
-		}
-
-		/**
-		 * Returns the referenced feature property.
-		 *
-		 * The feature property reference could be invalid.
-		 * It should normally be valid though so we don't document that Py_None could be returned
-		 * to the caller.
-		 */
-		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
-		get_property() const
-		{
-			return d_property;
-		}
-
-	private:
-
-		//! The wrapped reconstructed motion path itself.
-		GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type d_reconstructed_motion_path;
-
-		/**
-		 * Keep the feature alive (by using intrusive pointer instead of weak ref)
-		 * since GPlatesAppLogic::ReconstructedMotionPath only stores weak reference.
-		 */
-		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type> d_feature;
-
-		/**
-		 * Keep the geometry feature property alive (by using intrusive pointer instead of weak ref)
-		 * since GPlatesAppLogic::ReconstructedMotionPath only stores an iterator and
-		 * someone could remove the feature property in the meantime.
-		 */
-		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> d_property;
-
-	};
-
+		return reconstructed_motion_path.motion_path_points();
+	}
 
 	/**
-	 * Python converter from a GPlatesAppLogic::ReconstructedMotionPath to a
-	 * ReconstructedMotionPathWrapper (and vice versa).
+	 * Returns the reconstructed seed point.
 	 */
-	struct python_ReconstructedMotionPath :
-			private boost::noncopyable
+	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+	reconstructed_motion_path_get_reconstructed_seed_point(
+			const GPlatesAppLogic::ReconstructedMotionPath &reconstructed_motion_path)
 	{
-		struct Conversion
-		{
-			static
-			PyObject *
-			convert(
-					const GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type &rfg)
-			{
-				namespace bp = boost::python;
-
-				// Convert to ReconstructedMotionPathWrapper first.
-				// Then it'll get converted to python.
-				return bp::incref(bp::object(ReconstructedMotionPathWrapper(rfg)).ptr());
-			}
-		};
-
-		static
-		void *
-		convertible(
-				PyObject *obj)
-		{
-			namespace bp = boost::python;
-
-			// GPlatesAppLogic::ReconstructedMotionPath is obtained from a
-			// ReconstructedMotionPathWrapper (which in turn is already convertible).
-			return bp::extract<ReconstructedMotionPathWrapper>(obj).check() ? obj : NULL;
-		}
-
-		static
-		void
-		construct(
-				PyObject *obj,
-				boost::python::converter::rvalue_from_python_stage1_data *data)
-		{
-			namespace bp = boost::python;
-
-			void *const storage = reinterpret_cast<
-					bp::converter::rvalue_from_python_storage<
-							GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type> *>(
-									data)->storage.bytes;
-
-			new (storage) GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type(
-					bp::extract<ReconstructedMotionPathWrapper>(obj)()
-							.get_reconstructed_motion_path());
-
-			data->convertible = storage;
-		}
-	};
-
+		return reconstructed_motion_path.reconstructed_seed_point();
+	}
 
 	/**
-	 * Registers converter from a GPlatesAppLogic::ReconstructedMotionPath to a
-	 * ReconstructedMotionPathWrapper (and vice versa).
+	 * Returns the present day seed point.
 	 */
-	void
-	register_reconstructed_motion_path()
+	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+	reconstructed_motion_path_get_present_day_seed_point(
+			const GPlatesAppLogic::ReconstructedMotionPath &reconstructed_motion_path)
 	{
-		// To python conversion.
-		bp::to_python_converter<
-				GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type,
-				python_ReconstructedMotionPath::Conversion>();
-
-		// From python conversion.
-		bp::converter::registry::push_back(
-				&python_ReconstructedMotionPath::convertible,
-				&python_ReconstructedMotionPath::construct,
-				bp::type_id<GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type>());
+		return reconstructed_motion_path.present_day_seed_point();
 	}
 }
 
@@ -536,7 +422,10 @@ export_reconstructed_motion_path()
 	// ReconstructedMotionPath - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
-			GPlatesApi::ReconstructedMotionPathWrapper>(
+			GPlatesAppLogic::ReconstructedMotionPath,
+			GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructedMotionPath>,
+			bp::bases<GPlatesAppLogic::ReconstructionGeometry>,
+			boost::noncopyable>(
 					"ReconstructedMotionPath",
 					"The reconstructed history of a plate's motion in the form of a path of points "
 					"over geological time.\n"
@@ -554,7 +443,7 @@ export_reconstructed_motion_path()
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
 		.def("get_feature",
-				&GPlatesApi::ReconstructedMotionPathWrapper::get_feature,
+				&GPlatesApi::reconstruction_geometry_get_feature,
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ReconstructedMotionPath`.\n"
 				"\n"
@@ -564,7 +453,7 @@ export_reconstructed_motion_path()
 				"can be associated with the same motion path :class:`feature<Feature>` if its seed geometry "
 				"is a :class:`MultiPointOnSphere`.\n")
 		.def("get_property",
-				&GPlatesApi::ReconstructedMotionPathWrapper::get_property,
+				&GPlatesApi::reconstruction_geometry_get_property,
 				"get_property()\n"
 				"  Returns the feature property containing the seed point associated with this "
 				":class:`ReconstructedMotionPath`.\n"
@@ -574,7 +463,7 @@ export_reconstructed_motion_path()
 				"  This is the :class:`Property` that the :meth:`present day seed point<get_present_day_seed_point>` "
 				"and the :meth:`reconstructed seed point<get_reconstructed_seed_point>` are obtained from.\n")
 		.def("get_present_day_seed_point",
-				&GPlatesApi::ReconstructedMotionPathWrapper::get_present_day_seed_point,
+				&GPlatesApi::reconstructed_motion_path_get_present_day_seed_point,
 				"get_present_day_seed_point()\n"
 				"  Returns the present day seed point.\n"
 				"\n"
@@ -584,7 +473,7 @@ export_reconstructed_motion_path()
 				"seed geometry if that seed geometry is a :class:`MultiPointOnSphere`. The remaining "
 				"seed points are associated with other :class:`ReconstructedMotionPath` instances.\n")
 		.def("get_reconstructed_seed_point",
-				&GPlatesApi::ReconstructedMotionPathWrapper::get_reconstructed_seed_point,
+				&GPlatesApi::reconstructed_motion_path_get_reconstructed_seed_point,
 				"get_reconstructed_seed_point()\n"
 				"  Returns the reconstructed seed point.\n"
 				"\n"
@@ -594,7 +483,7 @@ export_reconstructed_motion_path()
 				"seed geometry if that seed geometry is a :class:`MultiPointOnSphere`. The remaining "
 				"seed points are associated with other :class:`ReconstructedMotionPath` instances.\n")
 		.def("get_motion_path",
-				&GPlatesApi::ReconstructedMotionPathWrapper::get_motion_path,
+				&GPlatesApi::reconstructed_motion_path_get_motion_path,
 				"get_motion_path()\n"
 				"  Returns the motion path.\n"
 				"\n"
@@ -622,230 +511,63 @@ export_reconstructed_motion_path()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ReconstructedMotionPathWrapper to be converted to
+	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
 	// a GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type (and vice versa).
-	GPlatesApi::register_reconstructed_motion_path();
+	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ReconstructedMotionPath>();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ReconstructedMotionPath
-	// (not ReconstructedMotionPathWrapper).
+	// (not ReconstructionGeometryTypeWrapper<>).
 	//
 
-	// Enable boost::optional<ReconstructedMotionPath::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<
-			GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
-			GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type,
-			GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
-			boost::optional<GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type>,
-			boost::optional<GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_to_const_type> >();
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class ReconstructionGeometry.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesAppLogic::ReconstructedMotionPath,
+			GPlatesAppLogic::ReconstructionGeometry>();
 }
 
 
 namespace GPlatesApi
 {
 	/**
-	 * A wrapper around GPlatesAppLogic::ReconstructedFlowline that keeps the referenced feature alive.
-	 *
-	 * Keeping the referenced feature alive (and the referenced property alive in case subsequently removed
-	 * from feature) is important because the unwrapped GPlatesAppLogic::ReconstructedFlowline
-	 * stores only weak references which will be invalid if the referenced features are no longer
-	 * used (kept alive) in the user's python code.
-	 *
-	 * This is the type that gets stored in the python object.
+	 * Returns the left flowline points.
 	 */
-	class ReconstructedFlowlineWrapper
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+	reconstructed_flowline_get_left_flowline(
+			const GPlatesAppLogic::ReconstructedFlowline &reconstructed_flowline)
 	{
-	public:
-
-		explicit
-		ReconstructedFlowlineWrapper(
-				const GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type &reconstructed_flowline) :
-			d_reconstructed_flowline(reconstructed_flowline)
-		{
-			// The feature reference could be invalid. It should normally be valid though.
-			GPlatesModel::FeatureHandle::weak_ref feature_ref = reconstructed_flowline->get_feature_ref();
-			if (feature_ref.is_valid())
-			{
-				d_feature = GPlatesModel::FeatureHandle::non_null_ptr_type(feature_ref.handle_ptr());
-			}
-
-			// The property iterator could be invalid. It should normally be valid though.
-			GPlatesModel::FeatureHandle::iterator property_iter = reconstructed_flowline->property();
-			if (property_iter.is_still_valid())
-			{
-				d_property = *property_iter;
-			}
-		}
-
-		/**
-		 * Returns the wrapped GPlatesAppLogic::ReconstructedFlowline.
-		 */
-		GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type
-		get_reconstructed_flowline() const
-		{
-			return d_reconstructed_flowline;
-		}
-
-		/**
-		 * Returns the left flowline points.
-		 */
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
-		get_left_flowline() const
-		{
-			return d_reconstructed_flowline->left_flowline_points();
-		}
-
-		/**
-		 * Returns the right flowline points.
-		 */
-		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
-		get_right_flowline() const
-		{
-			return d_reconstructed_flowline->right_flowline_points();
-		}
-
-		/**
-		 * Returns the reconstructed seed point.
-		 */
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
-		get_reconstructed_seed_point() const
-		{
-			return d_reconstructed_flowline->reconstructed_seed_point();
-		}
-
-		/**
-		 * Returns the present day seed point.
-		 */
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
-		get_present_day_seed_point() const
-		{
-			return d_reconstructed_flowline->present_day_seed_point();
-		}
-
-		/**
-		 * Returns the referenced feature.
-		 *
-		 * The feature reference could be invalid.
-		 * It should normally be valid though so we don't document that Py_None could be returned
-		 * to the caller.
-		 */
-		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
-		get_feature() const
-		{
-			return d_feature;
-		}
-
-		/**
-		 * Returns the referenced feature property.
-		 *
-		 * The feature property reference could be invalid.
-		 * It should normally be valid though so we don't document that Py_None could be returned
-		 * to the caller.
-		 */
-		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
-		get_property() const
-		{
-			return d_property;
-		}
-
-	private:
-
-		//! The wrapped reconstructed flowline itself.
-		GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type d_reconstructed_flowline;
-
-		/**
-		 * Keep the feature alive (by using intrusive pointer instead of weak ref)
-		 * since GPlatesAppLogic::ReconstructedFlowline only stores weak reference.
-		 */
-		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type> d_feature;
-
-		/**
-		 * Keep the geometry feature property alive (by using intrusive pointer instead of weak ref)
-		 * since GPlatesAppLogic::ReconstructedFlowline only stores an iterator and
-		 * someone could remove the feature property in the meantime.
-		 */
-		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> d_property;
-
-	};
-
+		return reconstructed_flowline.left_flowline_points();
+	}
 
 	/**
-	 * Python converter from a GPlatesAppLogic::ReconstructedFlowline to a
-	 * ReconstructedFlowlineWrapper (and vice versa).
+	 * Returns the right flowline points.
 	 */
-	struct python_ReconstructedFlowline :
-			private boost::noncopyable
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+	reconstructed_flowline_get_right_flowline(
+			const GPlatesAppLogic::ReconstructedFlowline &reconstructed_flowline)
 	{
-		struct Conversion
-		{
-			static
-			PyObject *
-			convert(
-					const GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type &rfg)
-			{
-				namespace bp = boost::python;
-
-				// Convert to ReconstructedFlowlineWrapper first.
-				// Then it'll get converted to python.
-				return bp::incref(bp::object(ReconstructedFlowlineWrapper(rfg)).ptr());
-			}
-		};
-
-		static
-		void *
-		convertible(
-				PyObject *obj)
-		{
-			namespace bp = boost::python;
-
-			// GPlatesAppLogic::ReconstructedFlowline is obtained from a
-			// ReconstructedFlowlineWrapper (which in turn is already convertible).
-			return bp::extract<ReconstructedFlowlineWrapper>(obj).check() ? obj : NULL;
-		}
-
-		static
-		void
-		construct(
-				PyObject *obj,
-				boost::python::converter::rvalue_from_python_stage1_data *data)
-		{
-			namespace bp = boost::python;
-
-			void *const storage = reinterpret_cast<
-					bp::converter::rvalue_from_python_storage<
-							GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type> *>(
-									data)->storage.bytes;
-
-			new (storage) GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type(
-					bp::extract<ReconstructedFlowlineWrapper>(obj)()
-							.get_reconstructed_flowline());
-
-			data->convertible = storage;
-		}
-	};
-
+		return reconstructed_flowline.right_flowline_points();
+	}
 
 	/**
-	 * Registers converter from a GPlatesAppLogic::ReconstructedFlowline to a
-	 * ReconstructedFlowlineWrapper (and vice versa).
+	 * Returns the reconstructed seed point.
 	 */
-	void
-	register_reconstructed_flowline_conversion()
+	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+	reconstructed_flowline_get_reconstructed_seed_point(
+			const GPlatesAppLogic::ReconstructedFlowline &reconstructed_flowline)
 	{
-		// To python conversion.
-		bp::to_python_converter<
-				GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type,
-				python_ReconstructedFlowline::Conversion>();
+		return reconstructed_flowline.reconstructed_seed_point();
+	}
 
-		// From python conversion.
-		bp::converter::registry::push_back(
-				&python_ReconstructedFlowline::convertible,
-				&python_ReconstructedFlowline::construct,
-				bp::type_id<GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type>());
+	/**
+	 * Returns the present day seed point.
+	 */
+	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+	reconstructed_flowline_get_present_day_seed_point(
+			const GPlatesAppLogic::ReconstructedFlowline &reconstructed_flowline)
+	{
+		return reconstructed_flowline.present_day_seed_point();
 	}
 }
 
@@ -857,7 +579,10 @@ export_reconstructed_flowline()
 	// ReconstructedFlowline - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
-			GPlatesApi::ReconstructedFlowlineWrapper>(
+			GPlatesAppLogic::ReconstructedFlowline,
+			GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructedFlowline>,
+			bp::bases<GPlatesAppLogic::ReconstructionGeometry>,
+			boost::noncopyable>(
 					"ReconstructedFlowline",
 					"The reconstructed history of plate motion away from a spreading ridge in the form of "
 					"a path of points over geological time.\n"
@@ -875,7 +600,7 @@ export_reconstructed_flowline()
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
 		.def("get_feature",
-				&GPlatesApi::ReconstructedFlowlineWrapper::get_feature,
+				&GPlatesApi::reconstruction_geometry_get_feature,
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ReconstructedFlowline`.\n"
 				"\n"
@@ -885,7 +610,7 @@ export_reconstructed_flowline()
 				"can be associated with the same flowline :class:`feature<Feature>` if its seed geometry "
 				"is a :class:`MultiPointOnSphere`.\n")
 		.def("get_property",
-				&GPlatesApi::ReconstructedFlowlineWrapper::get_property,
+				&GPlatesApi::reconstruction_geometry_get_property,
 				"get_property()\n"
 				"  Returns the feature property containing the seed point associated with this "
 				":class:`ReconstructedFlowline`.\n"
@@ -895,7 +620,7 @@ export_reconstructed_flowline()
 				"  This is the :class:`Property` that the :meth:`present day seed point<get_present_day_seed_point>` "
 				"and the :meth:`reconstructed seed point<get_reconstructed_seed_point>` are obtained from.\n")
 		.def("get_present_day_seed_point",
-				&GPlatesApi::ReconstructedFlowlineWrapper::get_present_day_seed_point,
+				&GPlatesApi::reconstructed_flowline_get_present_day_seed_point,
 				"get_present_day_seed_point()\n"
 				"  Returns the present day seed point.\n"
 				"\n"
@@ -905,7 +630,7 @@ export_reconstructed_flowline()
 				"seed geometry if that seed geometry is a :class:`MultiPointOnSphere`. The remaining "
 				"seed points are associated with other :class:`ReconstructedFlowline` instances.\n")
 		.def("get_reconstructed_seed_point",
-				&GPlatesApi::ReconstructedFlowlineWrapper::get_reconstructed_seed_point,
+				&GPlatesApi::reconstructed_flowline_get_reconstructed_seed_point,
 				"get_reconstructed_seed_point()\n"
 				"  Returns the reconstructed seed point.\n"
 				"\n"
@@ -915,7 +640,7 @@ export_reconstructed_flowline()
 				"seed geometry if that seed geometry is a :class:`MultiPointOnSphere`. The remaining "
 				"seed points are associated with other :class:`ReconstructedFlowline` instances.\n")
 		.def("get_left_flowline",
-				&GPlatesApi::ReconstructedFlowlineWrapper::get_left_flowline,
+				&GPlatesApi::reconstructed_flowline_get_left_flowline,
 				"get_left_flowline()\n"
 				"  Returns the flowline spread along the *left* plate from the reconstructed seed point.\n"
 				"\n"
@@ -938,7 +663,7 @@ export_reconstructed_flowline()
 				"    for left_point in reconstructed_flowline.get_left_flowline():\n"
 				"      ...\n")
 		.def("get_right_flowline",
-				&GPlatesApi::ReconstructedFlowlineWrapper::get_right_flowline,
+				&GPlatesApi::reconstructed_flowline_get_right_flowline,
 				"get_right_flowline()\n"
 				"  Returns the flowline spread along the *right* plate from the reconstructed seed point.\n"
 				"\n"
@@ -964,203 +689,33 @@ export_reconstructed_flowline()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ReconstructedFlowlineWrapper to be converted to
+	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
 	// a GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type (and vice versa).
-	GPlatesApi::register_reconstructed_flowline_conversion();
+	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ReconstructedFlowline>();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ReconstructedFlowline
-	// (not ReconstructedFlowlineWrapper).
+	// (not ReconstructionGeometryTypeWrapper<>).
 	//
 
-	// Enable boost::optional<ReconstructedFlowline::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<
-			GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
-			GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type,
-			GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
-			boost::optional<GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type>,
-			boost::optional<GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_to_const_type> >();
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class ReconstructionGeometry.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesAppLogic::ReconstructedFlowline,
+			GPlatesAppLogic::ReconstructionGeometry>();
 }
 
 
 namespace GPlatesApi
 {
 	/**
-	 * A wrapper around GPlatesAppLogic::ResolvedTopologicalLine that keeps the referenced feature alive.
-	 *
-	 * Keeping the referenced feature alive (and the referenced property alive in case subsequently removed
-	 * from feature) is important because the unwrapped GPlatesAppLogic::ResolvedTopologicalLine
-	 * stores only weak references which will be invalid if the referenced features are no longer
-	 * used (kept alive) in the user's python code.
-	 *
-	 * This is the type that gets stored in the python object.
+	 * Returns the resolved line geometry.
 	 */
-	class ResolvedTopologicalLineWrapper
+	GPlatesAppLogic::ResolvedTopologicalLine::resolved_topology_line_ptr_type
+	resolved_topological_line_get_resolved_line(
+			const GPlatesAppLogic::ResolvedTopologicalLine &resolved_topological_line)
 	{
-	public:
-
-		explicit
-		ResolvedTopologicalLineWrapper(
-				const GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type &resolved_topological_line) :
-			d_resolved_topological_line(resolved_topological_line)
-		{
-			// The feature reference could be invalid. It should normally be valid though.
-			GPlatesModel::FeatureHandle::weak_ref feature_ref = resolved_topological_line->get_feature_ref();
-			if (feature_ref.is_valid())
-			{
-				d_feature = GPlatesModel::FeatureHandle::non_null_ptr_type(feature_ref.handle_ptr());
-			}
-
-			// The property iterator could be invalid. It should normally be valid though.
-			GPlatesModel::FeatureHandle::iterator property_iter = resolved_topological_line->property();
-			if (property_iter.is_still_valid())
-			{
-				d_property = *property_iter;
-			}
-		}
-
-		/**
-		 * Returns the wrapped GPlatesAppLogic::ResolvedTopologicalLine.
-		 */
-		GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type
-		get_resolved_topological_line() const
-		{
-			return d_resolved_topological_line;
-		}
-
-		/**
-		 * Returns the resolved line geometry.
-		 */
-		GPlatesAppLogic::ResolvedTopologicalLine::resolved_topology_line_ptr_type
-		get_resolved_line() const
-		{
-			return d_resolved_topological_line->resolved_topology_line();
-		}
-
-		/**
-		 * Returns the referenced feature.
-		 *
-		 * The feature reference could be invalid.
-		 * It should normally be valid though so we don't document that Py_None could be returned
-		 * to the caller.
-		 */
-		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
-		get_feature() const
-		{
-			return d_feature;
-		}
-
-		/**
-		 * Returns the referenced feature property.
-		 *
-		 * The feature property reference could be invalid.
-		 * It should normally be valid though so we don't document that Py_None could be returned
-		 * to the caller.
-		 */
-		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
-		get_property() const
-		{
-			return d_property;
-		}
-
-	private:
-
-		//! The wrapped resolved topological line itself.
-		GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type d_resolved_topological_line;
-
-		/**
-		 * Keep the feature alive (by using intrusive pointer instead of weak ref)
-		 * since GPlatesAppLogic::ResolvedTopologicalLine only stores weak reference.
-		 */
-		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type> d_feature;
-
-		/**
-		 * Keep the geometry feature property alive (by using intrusive pointer instead of weak ref)
-		 * since GPlatesAppLogic::ResolvedTopologicalLine only stores an iterator and
-		 * someone could remove the feature property in the meantime.
-		 */
-		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> d_property;
-
-	};
-
-
-	/**
-	 * Python converter from a GPlatesAppLogic::ResolvedTopologicalLine to a
-	 * ResolvedTopologicalLineWrapper (and vice versa).
-	 */
-	struct python_ResolvedTopologicalLine :
-			private boost::noncopyable
-	{
-		struct Conversion
-		{
-			static
-			PyObject *
-			convert(
-					const GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type &rtl)
-			{
-				namespace bp = boost::python;
-
-				// Convert to ResolvedTopologicalLineWrapper first.
-				// Then it'll get converted to python.
-				return bp::incref(bp::object(ResolvedTopologicalLineWrapper(rtl)).ptr());
-			}
-		};
-
-		static
-		void *
-		convertible(
-				PyObject *obj)
-		{
-			namespace bp = boost::python;
-
-			// GPlatesAppLogic::ResolvedTopologicalLine is obtained from a
-			// ResolvedTopologicalLineWrapper (which in turn is already convertible).
-			return bp::extract<ResolvedTopologicalLineWrapper>(obj).check() ? obj : NULL;
-		}
-
-		static
-		void
-		construct(
-				PyObject *obj,
-				boost::python::converter::rvalue_from_python_stage1_data *data)
-		{
-			namespace bp = boost::python;
-
-			void *const storage = reinterpret_cast<
-					bp::converter::rvalue_from_python_storage<
-							GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type> *>(
-									data)->storage.bytes;
-
-			new (storage) GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type(
-					bp::extract<ResolvedTopologicalLineWrapper>(obj)()
-							.get_resolved_topological_line());
-
-			data->convertible = storage;
-		}
-	};
-
-
-	/**
-	 * Registers converter from a GPlatesAppLogic::ResolvedTopologicalLine to a
-	 * ResolvedTopologicalLineWrapper (and vice versa).
-	 */
-	void
-	register_resolved_topological_line_conversion()
-	{
-		// To python conversion.
-		bp::to_python_converter<
-				GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type,
-				python_ResolvedTopologicalLine::Conversion>();
-
-		// From python conversion.
-		bp::converter::registry::push_back(
-				&python_ResolvedTopologicalLine::convertible,
-				&python_ResolvedTopologicalLine::construct,
-				bp::type_id<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type>());
+		return resolved_topological_line.resolved_topology_line();
 	}
 }
 
@@ -1172,7 +727,10 @@ export_resolved_topological_line()
 	// ResolvedTopologicalLine - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
-			GPlatesApi::ResolvedTopologicalLineWrapper>(
+			GPlatesAppLogic::ResolvedTopologicalLine,
+			GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>,
+			bp::bases<GPlatesAppLogic::ReconstructionGeometry>,
+			boost::noncopyable>(
 					"ResolvedTopologicalLine",
 					"The geometry of a topological *line* feature resolved to a geological time.\n"
 					"\n"
@@ -1186,7 +744,7 @@ export_resolved_topological_line()
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
 		.def("get_feature",
-				&GPlatesApi::ResolvedTopologicalLineWrapper::get_feature,
+				&GPlatesApi::reconstruction_geometry_get_feature,
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ResolvedTopologicalLine`.\n"
 				"\n"
@@ -1196,7 +754,7 @@ export_resolved_topological_line()
 				":class:`ResolvedTopologicalBoundary`) can be associated with the same :class:`feature<Feature>` "
 				"if that feature has multiple topological geometry properties.\n")
 		.def("get_property",
-				&GPlatesApi::ResolvedTopologicalLineWrapper::get_property,
+				&GPlatesApi::reconstruction_geometry_get_property,
 				"get_property()\n"
 				"  Returns the feature property containing the topological line property associated with "
 				"this :class:`ResolvedTopologicalLine`.\n"
@@ -1206,216 +764,46 @@ export_resolved_topological_line()
 				"  This is the :class:`Property` that the :meth:`get_resolved_line` and "
 				":meth:`get_resolved_geometry` are obtained from.\n")
 		.def("get_resolved_line",
-				&GPlatesApi::ResolvedTopologicalLineWrapper::get_resolved_line,
+				&GPlatesApi::resolved_topological_line_get_resolved_line,
 				"get_resolved_line()\n"
 				"  Returns the resolved line geometry.\n"
 				"\n"
 				"  :rtype: :class:`PolylineOnSphere`\n")
 		.def("get_resolved_geometry",
-				&GPlatesApi::ResolvedTopologicalLineWrapper::get_resolved_line,
+				&GPlatesApi::resolved_topological_line_get_resolved_line,
 				"get_resolved_geometry()\n"
 				"  Same as :meth:`get_resolved_line`.\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ResolvedTopologicalLineWrapper to be converted to
+	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
 	// a GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type (and vice versa).
-	GPlatesApi::register_resolved_topological_line_conversion();
+	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ResolvedTopologicalLine>();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ResolvedTopologicalLine
-	// (not ResolvedTopologicalLineWrapper).
+	// (not ReconstructionGeometryTypeWrapper<>).
 	//
 
-	// Enable boost::optional<ResolvedTopologicalLine::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<
-			GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
-			GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type,
-			GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
-			boost::optional<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type>,
-			boost::optional<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_to_const_type> >();
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class ReconstructionGeometry.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesAppLogic::ResolvedTopologicalLine,
+			GPlatesAppLogic::ReconstructionGeometry>();
 }
 
 
 namespace GPlatesApi
 {
 	/**
-	 * A wrapper around GPlatesAppLogic::ResolvedTopologicalBoundary that keeps the referenced feature alive.
-	 *
-	 * Keeping the referenced feature alive (and the referenced property alive in case subsequently removed
-	 * from feature) is important because the unwrapped GPlatesAppLogic::ResolvedTopologicalBoundary
-	 * stores only weak references which will be invalid if the referenced features are no longer
-	 * used (kept alive) in the user's python code.
-	 *
-	 * This is the type that gets stored in the python object.
+	 * Returns the resolved boundary geometry.
 	 */
-	class ResolvedTopologicalBoundaryWrapper
+	GPlatesAppLogic::ResolvedTopologicalBoundary::resolved_topology_boundary_ptr_type
+	resolved_topological_boundary_get_resolved_boundary(
+			const GPlatesAppLogic::ResolvedTopologicalBoundary &resolved_topological_boundary)
 	{
-	public:
-
-		explicit
-		ResolvedTopologicalBoundaryWrapper(
-				const GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type &resolved_topological_boundary) :
-			d_resolved_topological_boundary(resolved_topological_boundary)
-		{
-			// The feature reference could be invalid. It should normally be valid though.
-			GPlatesModel::FeatureHandle::weak_ref feature_ref = resolved_topological_boundary->get_feature_ref();
-			if (feature_ref.is_valid())
-			{
-				d_feature = GPlatesModel::FeatureHandle::non_null_ptr_type(feature_ref.handle_ptr());
-			}
-
-			// The property iterator could be invalid. It should normally be valid though.
-			GPlatesModel::FeatureHandle::iterator property_iter = resolved_topological_boundary->property();
-			if (property_iter.is_still_valid())
-			{
-				d_property = *property_iter;
-			}
-		}
-
-		/**
-		 * Returns the wrapped GPlatesAppLogic::ResolvedTopologicalBoundary.
-		 */
-		GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type
-		get_resolved_topological_boundary() const
-		{
-			return d_resolved_topological_boundary;
-		}
-
-		/**
-		 * Returns the resolved boundary geometry.
-		 */
-		GPlatesAppLogic::ResolvedTopologicalBoundary::resolved_topology_boundary_ptr_type
-		get_resolved_boundary() const
-		{
-			return d_resolved_topological_boundary->resolved_topology_boundary();
-		}
-
-		/**
-		 * Returns the referenced feature.
-		 *
-		 * The feature reference could be invalid.
-		 * It should normally be valid though so we don't document that Py_None could be returned
-		 * to the caller.
-		 */
-		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
-		get_feature() const
-		{
-			return d_feature;
-		}
-
-		/**
-		 * Returns the referenced feature property.
-		 *
-		 * The feature property reference could be invalid.
-		 * It should normally be valid though so we don't document that Py_None could be returned
-		 * to the caller.
-		 */
-		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
-		get_property() const
-		{
-			return d_property;
-		}
-
-	private:
-
-		//! The wrapped resolved topological boundary itself.
-		GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type d_resolved_topological_boundary;
-
-		/**
-		 * Keep the feature alive (by using intrusive pointer instead of weak ref)
-		 * since GPlatesAppLogic::ResolvedTopologicalBoundary only stores weak reference.
-		 */
-		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type> d_feature;
-
-		/**
-		 * Keep the geometry feature property alive (by using intrusive pointer instead of weak ref)
-		 * since GPlatesAppLogic::ResolvedTopologicalBoundary only stores an iterator and
-		 * someone could remove the feature property in the meantime.
-		 */
-		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> d_property;
-
-	};
-
-
-	/**
-	 * Python converter from a GPlatesAppLogic::ResolvedTopologicalBoundary to a
-	 * ResolvedTopologicalBoundaryWrapper (and vice versa).
-	 */
-	struct python_ResolvedTopologicalBoundary :
-			private boost::noncopyable
-	{
-		struct Conversion
-		{
-			static
-			PyObject *
-			convert(
-					const GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type &rtb)
-			{
-				namespace bp = boost::python;
-
-				// Convert to ResolvedTopologicalBoundaryWrapper first.
-				// Then it'll get converted to python.
-				return bp::incref(bp::object(ResolvedTopologicalBoundaryWrapper(rtb)).ptr());
-			}
-		};
-
-		static
-		void *
-		convertible(
-				PyObject *obj)
-		{
-			namespace bp = boost::python;
-
-			// GPlatesAppLogic::ResolvedTopologicalBoundary is obtained from a
-			// ResolvedTopologicalBoundaryWrapper (which in turn is already convertible).
-			return bp::extract<ResolvedTopologicalBoundaryWrapper>(obj).check() ? obj : NULL;
-		}
-
-		static
-		void
-		construct(
-				PyObject *obj,
-				boost::python::converter::rvalue_from_python_stage1_data *data)
-		{
-			namespace bp = boost::python;
-
-			void *const storage = reinterpret_cast<
-					bp::converter::rvalue_from_python_storage<
-							GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> *>(
-									data)->storage.bytes;
-
-			new (storage) GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type(
-					bp::extract<ResolvedTopologicalBoundaryWrapper>(obj)()
-							.get_resolved_topological_boundary());
-
-			data->convertible = storage;
-		}
-	};
-
-
-	/**
-	 * Registers converter from a GPlatesAppLogic::ResolvedTopologicalBoundary to a
-	 * ResolvedTopologicalBoundaryWrapper (and vice versa).
-	 */
-	void
-	register_resolved_topological_boundary_conversion()
-	{
-		// To python conversion.
-		bp::to_python_converter<
-				GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type,
-				python_ResolvedTopologicalBoundary::Conversion>();
-
-		// From python conversion.
-		bp::converter::registry::push_back(
-				&python_ResolvedTopologicalBoundary::convertible,
-				&python_ResolvedTopologicalBoundary::construct,
-				bp::type_id<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>());
+		return resolved_topological_boundary.resolved_topology_boundary();
 	}
 }
 
@@ -1427,7 +815,10 @@ export_resolved_topological_boundary()
 	// ResolvedTopologicalBoundary - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
-			GPlatesApi::ResolvedTopologicalBoundaryWrapper>(
+			GPlatesAppLogic::ResolvedTopologicalBoundary,
+			GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>,
+			bp::bases<GPlatesAppLogic::ReconstructionGeometry>,
+			boost::noncopyable>(
 					"ResolvedTopologicalBoundary",
 					"The geometry of a topological *boundary* feature resolved to a geological time.\n"
 					"\n"
@@ -1441,7 +832,7 @@ export_resolved_topological_boundary()
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
 		.def("get_feature",
-				&GPlatesApi::ResolvedTopologicalBoundaryWrapper::get_feature,
+				&GPlatesApi::reconstruction_geometry_get_feature,
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ResolvedTopologicalBoundary`.\n"
 				"\n"
@@ -1451,7 +842,7 @@ export_resolved_topological_boundary()
 				":class:`ResolvedTopologicalBoundary`) can be associated with the same :class:`feature<Feature>` "
 				"if that feature has multiple topological geometry properties.\n")
 		.def("get_property",
-				&GPlatesApi::ResolvedTopologicalBoundaryWrapper::get_property,
+				&GPlatesApi::reconstruction_geometry_get_property,
 				"get_property()\n"
 				"  Returns the feature property containing the topological boundary property associated with "
 				"this :class:`ResolvedTopologicalBoundary`.\n"
@@ -1461,218 +852,46 @@ export_resolved_topological_boundary()
 				"  This is the :class:`Property` that the :meth:`get_resolved_boundary` and "
 				":meth:`get_resolved_geometry` are obtained from.\n")
 		.def("get_resolved_boundary",
-				&GPlatesApi::ResolvedTopologicalBoundaryWrapper::get_resolved_boundary,
+				&GPlatesApi::resolved_topological_boundary_get_resolved_boundary,
 				"get_resolved_boundary()\n"
 				"  Returns the resolved boundary geometry.\n"
 				"\n"
 				"  :rtype: :class:`PolygonOnSphere`\n")
 		.def("get_resolved_geometry",
-				&GPlatesApi::ResolvedTopologicalBoundaryWrapper::get_resolved_boundary,
+				&GPlatesApi::resolved_topological_boundary_get_resolved_boundary,
 				"get_resolved_geometry()\n"
 				"  Same as :meth:`get_resolved_boundary`.\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ResolvedTopologicalBoundaryWrapper to be converted to
+	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
 	// a GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type (and vice versa).
-	GPlatesApi::register_resolved_topological_boundary_conversion();
+	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ResolvedTopologicalBoundary>();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ResolvedTopologicalBoundary
-	// (not ResolvedTopologicalBoundaryWrapper).
+	// (not ReconstructionGeometryTypeWrapper<>).
 	//
 
-	// Enable boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<
-			GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>();
-
-	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
-			GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type,
-			GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
-			boost::optional<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>,
-			boost::optional<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_to_const_type> >();
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class ReconstructionGeometry.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesAppLogic::ResolvedTopologicalBoundary,
+			GPlatesAppLogic::ReconstructionGeometry>();
 }
-
-
 
 
 namespace GPlatesApi
 {
 	/**
-	 * A wrapper around GPlatesAppLogic::ResolvedTopologicalNetwork that keeps the referenced feature alive.
-	 *
-	 * Keeping the referenced feature alive (and the referenced property alive in case subsequently removed
-	 * from feature) is important because the unwrapped GPlatesAppLogic::ResolvedTopologicalNetwork
-	 * stores only weak references which will be invalid if the referenced features are no longer
-	 * used (kept alive) in the user's python code.
-	 *
-	 * This is the type that gets stored in the python object.
+	 * Returns the resolved boundary of this network.
 	 */
-	class ResolvedTopologicalNetworkWrapper
+	GPlatesAppLogic::ResolvedTopologicalNetwork::boundary_polygon_ptr_type
+	resolved_topological_network_get_resolved_boundary(
+			const GPlatesAppLogic::ResolvedTopologicalNetwork &resolved_topological_network)
 	{
-	public:
-
-		explicit
-		ResolvedTopologicalNetworkWrapper(
-				const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type &resolved_topological_network) :
-			d_resolved_topological_network(resolved_topological_network)
-		{
-			// The feature reference could be invalid. It should normally be valid though.
-			GPlatesModel::FeatureHandle::weak_ref feature_ref = resolved_topological_network->get_feature_ref();
-			if (feature_ref.is_valid())
-			{
-				d_feature = GPlatesModel::FeatureHandle::non_null_ptr_type(feature_ref.handle_ptr());
-			}
-
-			// The property iterator could be invalid. It should normally be valid though.
-			GPlatesModel::FeatureHandle::iterator property_iter = resolved_topological_network->property();
-			if (property_iter.is_still_valid())
-			{
-				d_property = *property_iter;
-			}
-		}
-
-		/**
-		 * Returns the wrapped GPlatesAppLogic::ResolvedTopologicalNetwork.
-		 */
-		GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type
-		get_resolved_topological_network() const
-		{
-			return d_resolved_topological_network;
-		}
-
-		/**
-		 * Returns the resolved boundary of this network.
-		 */
-		GPlatesAppLogic::ResolvedTopologicalNetwork::boundary_polygon_ptr_type
-		get_resolved_boundary() const
-		{
-			return d_resolved_topological_network->boundary_polygon();
-		}
-
-		/**
-		 * Returns the referenced feature.
-		 *
-		 * The feature reference could be invalid.
-		 * It should normally be valid though so we don't document that Py_None could be returned
-		 * to the caller.
-		 */
-		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
-		get_feature() const
-		{
-			return d_feature;
-		}
-
-		/**
-		 * Returns the referenced feature property.
-		 *
-		 * The feature property reference could be invalid.
-		 * It should normally be valid though so we don't document that Py_None could be returned
-		 * to the caller.
-		 */
-		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
-		get_property() const
-		{
-			return d_property;
-		}
-
-	private:
-
-		//! The wrapped resolved topological network itself.
-		GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type d_resolved_topological_network;
-
-		/**
-		 * Keep the feature alive (by using intrusive pointer instead of weak ref)
-		 * since GPlatesAppLogic::ResolvedTopologicalNetwork only stores weak reference.
-		 */
-		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type> d_feature;
-
-		/**
-		 * Keep the geometry feature property alive (by using intrusive pointer instead of weak ref)
-		 * since GPlatesAppLogic::ResolvedTopologicalNetwork only stores an iterator and
-		 * someone could remove the feature property in the meantime.
-		 */
-		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> d_property;
-
-	};
-
-
-	/**
-	 * Python converter from a GPlatesAppLogic::ResolvedTopologicalNetwork to a
-	 * ResolvedTopologicalNetworkWrapper (and vice versa).
-	 */
-	struct python_ResolvedTopologicalNetwork :
-			private boost::noncopyable
-	{
-		struct Conversion
-		{
-			static
-			PyObject *
-			convert(
-					const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type &rtn)
-			{
-				namespace bp = boost::python;
-
-				// Convert to ResolvedTopologicalNetworkWrapper first.
-				// Then it'll get converted to python.
-				return bp::incref(bp::object(ResolvedTopologicalNetworkWrapper(rtn)).ptr());
-			}
-		};
-
-		static
-		void *
-		convertible(
-				PyObject *obj)
-		{
-			namespace bp = boost::python;
-
-			// GPlatesAppLogic::ResolvedTopologicalNetwork is obtained from a
-			// ResolvedTopologicalNetworkWrapper (which in turn is already convertible).
-			return bp::extract<ResolvedTopologicalNetworkWrapper>(obj).check() ? obj : NULL;
-		}
-
-		static
-		void
-		construct(
-				PyObject *obj,
-				boost::python::converter::rvalue_from_python_stage1_data *data)
-		{
-			namespace bp = boost::python;
-
-			void *const storage = reinterpret_cast<
-					bp::converter::rvalue_from_python_storage<
-							GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> *>(
-									data)->storage.bytes;
-
-			new (storage) GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type(
-					bp::extract<ResolvedTopologicalNetworkWrapper>(obj)()
-							.get_resolved_topological_network());
-
-			data->convertible = storage;
-		}
-	};
-
-
-	/**
-	 * Registers converter from a GPlatesAppLogic::ResolvedTopologicalNetwork to a
-	 * ResolvedTopologicalNetworkWrapper (and vice versa).
-	 */
-	void
-	register_resolved_topological_network_conversion()
-	{
-		// To python conversion.
-		bp::to_python_converter<
-				GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type,
-				python_ResolvedTopologicalNetwork::Conversion>();
-
-		// From python conversion.
-		bp::converter::registry::push_back(
-				&python_ResolvedTopologicalNetwork::convertible,
-				&python_ResolvedTopologicalNetwork::construct,
-				bp::type_id<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>());
+		return resolved_topological_network.boundary_polygon();
 	}
 }
 
@@ -1684,7 +903,10 @@ export_resolved_topological_network()
 	// ResolvedTopologicalNetwork - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
-			GPlatesApi::ResolvedTopologicalNetworkWrapper>(
+			GPlatesAppLogic::ResolvedTopologicalNetwork,
+			GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>,
+			bp::bases<GPlatesAppLogic::ReconstructionGeometry>,
+			boost::noncopyable>(
 					"ResolvedTopologicalNetwork",
 					"The geometry of a topological *network* feature resolved to a geological time.\n"
 					"\n"
@@ -1698,7 +920,7 @@ export_resolved_topological_network()
 					// (Also there is no publicly-accessible default constructor).
 					bp::no_init)
 		.def("get_feature",
-				&GPlatesApi::ResolvedTopologicalNetworkWrapper::get_feature,
+				&GPlatesApi::reconstruction_geometry_get_feature,
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ResolvedTopologicalNetwork`.\n"
 				"\n"
@@ -1707,7 +929,7 @@ export_resolved_topological_network()
 				"  .. note:: Although *very* uncommon, multiple resolved topological networks can be associated with "
 				"the same :class:`feature<Feature>` if that feature has multiple topological network properties.\n")
 		.def("get_property",
-				&GPlatesApi::ResolvedTopologicalNetworkWrapper::get_property,
+				&GPlatesApi::reconstruction_geometry_get_property,
 				"get_property()\n"
 				"  Returns the feature property containing the topological network property associated with "
 				"this :class:`ResolvedTopologicalNetwork`.\n"
@@ -1716,7 +938,7 @@ export_resolved_topological_network()
 				"\n"
 				"  This is the :class:`Property` that the :meth:`get_resolved_boundary` is obtained from.\n")
 		.def("get_resolved_boundary",
-				&GPlatesApi::ResolvedTopologicalNetworkWrapper::get_resolved_boundary,
+				&GPlatesApi::resolved_topological_network_get_resolved_boundary,
 				"get_resolved_boundary()\n"
 				"  Returns the resolved boundary of this network.\n"
 				"\n"
@@ -1725,32 +947,227 @@ export_resolved_topological_network()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 
-	// Enable python-wrapped ResolvedTopologicalNetworkWrapper to be converted to
+	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
 	// a GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type (and vice versa).
-	GPlatesApi::register_resolved_topological_network_conversion();
+	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ResolvedTopologicalNetwork>();
 
 	//
 	// Now for the conversions that only involve GPlatesAppLogic::ResolvedTopologicalNetwork
-	// (not ResolvedTopologicalNetworkWrapper).
+	// (not ReconstructionGeometryTypeWrapper<>).
 	//
 
-	// Enable boost::optional<ResolvedTopologicalNetwork::non_null_ptr_type> to be passed to and from python.
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class ReconstructionGeometry.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesAppLogic::ResolvedTopologicalNetwork,
+			GPlatesAppLogic::ReconstructionGeometry>();
+}
+
+
+namespace GPlatesApi
+{
+	/**
+	 * ReconstructionGeometry visitor to create a derived reconstruction geometry type wrapper.
+	 */
+	class WrapReconstructionGeometryType :
+			public GPlatesAppLogic::ReconstructionGeometryVisitor
+	{
+	public:
+		// Bring base class visit methods into scope of current class.
+		using GPlatesAppLogic::ReconstructionGeometryVisitor::visit;
+
+
+		const boost::any &
+		get_reconstruction_geometry_type_wrapper() const
+		{
+			return d_reconstruction_geometry_type_wrapper;
+		}
+
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
+		{
+			d_reconstruction_geometry_type_wrapper = boost::any(
+					ReconstructionGeometryTypeWrapper<reconstructed_feature_geometry_type>(rfg));
+		}
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_motion_path_type> &rmp)
+		{
+			d_reconstruction_geometry_type_wrapper = boost::any(
+					ReconstructionGeometryTypeWrapper<reconstructed_motion_path_type>(rmp));
+		}
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_flowline_type> &rf)
+		{
+			d_reconstruction_geometry_type_wrapper = boost::any(
+					ReconstructionGeometryTypeWrapper<reconstructed_flowline_type>(rf));
+		}
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_line_type> &rtl)
+		{
+			d_reconstruction_geometry_type_wrapper = boost::any(
+					ReconstructionGeometryTypeWrapper<resolved_topological_line_type>(rtl));
+		}
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_boundary_type> &rtb)
+		{
+			d_reconstruction_geometry_type_wrapper = boost::any(
+					ReconstructionGeometryTypeWrapper<resolved_topological_boundary_type>(rtb));
+		}
+
+		virtual
+		void
+		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
+		{
+			d_reconstruction_geometry_type_wrapper = boost::any(
+					ReconstructionGeometryTypeWrapper<resolved_topological_network_type>(rtn));
+		}
+
+	private:
+		// We just need to store the wrapper - we don't need to access it.
+		boost::any d_reconstruction_geometry_type_wrapper;
+	};
+
+
+	/**
+	 * Specialise class 'ReconstructionGeometryTypeWrapper' for the base ReconstructionGeometry class.
+	 *
+	 * This is for those cases where a 'ReconstructionGeometry::non_null_ptr_type' is wrapped into
+	 * a Python object (rather than the derived class 'non_null_ptr_type').
+	 *
+	 * In this case we have no feature (or property) to keep alive (like in the derived
+	 * ReconstructionGeometry classes) but we still need to ensure that it is wrapped as if was the
+	 * actual derived ReconstructionGeometry object. This is necessary because these derived objects
+	 * need to keep their referenced feature (and property) alive.
+	 */
+	template <>
+	class ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>
+	{
+	public:
+
+		/**
+		 * The default boost-python 'pointee<HeldType>::type' is defined as 'HeldType::element_type'.
+		 *
+		 * This is needed for wrapped types ('HeldType') that are not already smart pointers.
+		 */
+	    typedef GPlatesAppLogic::ReconstructionGeometry element_type;
+
+		explicit
+		ReconstructionGeometryTypeWrapper(
+				GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type reconstruction_geometry) :
+			d_reconstruction_geometry(reconstruction_geometry),
+			d_reconstruction_geometry_type_wrapper(
+					create_reconstruction_geometry_type_wrapper(reconstruction_geometry))
+		{  }
+
+		/**
+		 * Get the wrapped reconstruction geometry type.
+		 */
+		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type
+		get_reconstruction_geometry_type() const
+		{
+			return d_reconstruction_geometry;
+		}
+
+	private:
+
+		static
+		boost::any
+		create_reconstruction_geometry_type_wrapper(
+				const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type &reconstruction_geometry)
+		{
+			WrapReconstructionGeometryType visitor;
+			reconstruction_geometry->accept_visitor(visitor);
+			return visitor.get_reconstruction_geometry_type_wrapper();
+		}
+
+
+		//! The wrapped reconstruction geometry itself.
+		GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type d_reconstruction_geometry;
+
+		//! The derived reconstruction geometry wrapper (keeps feature/property alive).
+		boost::any d_reconstruction_geometry_type_wrapper;
+
+	};
+}
+
+
+void
+export_reconstruction_geometry()
+{
+	//
+	// ReconstructionGeometry - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesAppLogic::ReconstructionGeometry,
+			GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>,
+			boost::noncopyable>(
+					"ReconstructionGeometry",
+					"The base class inherited by all derived reconstruction geometry classes..\n"
+					"\n"
+					"The list of derived classes is:\n"
+					"\n"
+					"* :class:`ReconstructedFeatureGeometry`\n"
+					"* :class:`ReconstructedMotionPath`\n"
+					"* :class:`ReconstructedFlowline`\n"
+					"* :class:`ResolvedTopologicalLine`\n"
+					"* :class:`ResolvedTopologicalBoundary`\n"
+					"* :class:`ResolvedTopologicalNetwork`\n",
+					bp::no_init)
+		.def("get_reconstruction_time",
+				&GPlatesAppLogic::ReconstructionGeometry::get_reconstruction_time,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_reconstruction_time()\n"
+				"  Returns the reconstruction time that this instance was created at.\n"
+				"\n"
+				"  :rtype: float\n")
+		// Make hash and comparisons based on C++ object identity (not python object identity)...
+		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
+	;
+
+	// Enable python-wrapped ReconstructionGeometryTypeWrapper<> to be converted to
+	// a GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type (and vice versa).
+	GPlatesApi::register_reconstruction_geometry_type_conversion<GPlatesAppLogic::ReconstructionGeometry>();
+
+	//
+	// Now for the conversions that only involve GPlatesAppLogic::ReconstructionGeometry
+	// (not ReconstructionGeometryTypeWrapper<>).
+	//
+
+	// Enable boost::optional<ReconstructionGeometry::non_null_ptr_type> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<
-			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>();
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
 	boost::python::implicitly_convertible<
-			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type,
-			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type>();
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type,
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>();
 	boost::python::implicitly_convertible<
-			boost::optional<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>,
-			boost::optional<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type> >();
+			boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>,
+			boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> >();
 }
 
 
 void
 export_reconstruction_geometries()
 {
+	export_reconstruction_geometry();
+
 	export_reconstructed_feature_geometry();
 	export_reconstructed_motion_path();
 	export_reconstructed_flowline();
