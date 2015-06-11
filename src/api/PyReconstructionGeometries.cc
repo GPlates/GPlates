@@ -263,7 +263,7 @@ namespace GPlatesApi
 		// To python conversion.
 		bp::to_python_converter<
 				typename ReconstructionGeometryType::non_null_ptr_type,
-				python_ReconstructionGeometryType<ReconstructionGeometryType>::Conversion>();
+				typename python_ReconstructionGeometryType<ReconstructionGeometryType>::Conversion>();
 
 		// From python conversion.
 		bp::converter::registry::push_back(
