@@ -482,9 +482,7 @@ namespace GPlatesApi
 		output_reconstruction_geometries(
 				bp::list output_reconstruction_geometries_list,
 				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &rfgs,
-				const std::vector<const GPlatesFileIO::File::Reference *> &reconstructable_file_ptrs,
-				const GPlatesModel::integer_plate_id_type &anchor_plate_id,
-				const double &reconstruction_time)
+				const std::vector<const GPlatesFileIO::File::Reference *> &reconstructable_file_ptrs)
 		{
 			// Get any ReconstructedFeatureGeometry objects that are of type ReconstructionGeometryType.
 			//
@@ -504,7 +502,6 @@ namespace GPlatesApi
 			// Get the list of active reconstructable feature collection files that contain
 			// the features referenced by the ReconstructionGeometry objects.
 			GPlatesFileIO::ReconstructionGeometryExportImpl::feature_handle_to_collection_map_type feature_to_collection_map;
-			std::vector<const GPlatesFileIO::File::Reference *> referenced_files;
 			GPlatesFileIO::ReconstructionGeometryExportImpl::populate_feature_handle_to_collection_map(
 					feature_to_collection_map,
 					reconstructable_file_ptrs);
@@ -774,27 +771,21 @@ namespace GPlatesApi
 				output_reconstruction_geometries<GPlatesAppLogic::ReconstructedFeatureGeometry>(
 						output_reconstruction_geometries_list,
 						rfgs,
-						reconstructable_file_ptrs,
-						anchor_plate_id,
-						reconstruction_time.value());
+						reconstructable_file_ptrs);
 				break;
 
 			case ReconstructType::MOTION_PATH:
 				output_reconstruction_geometries<GPlatesAppLogic::ReconstructedMotionPath>(
 						output_reconstruction_geometries_list,
 						rfgs,
-						reconstructable_file_ptrs,
-						anchor_plate_id,
-						reconstruction_time.value());
+						reconstructable_file_ptrs);
 				break;
 
 			case ReconstructType::FLOWLINE:
 				output_reconstruction_geometries<GPlatesAppLogic::ReconstructedFlowline>(
 						output_reconstruction_geometries_list,
 						rfgs,
-						reconstructable_file_ptrs,
-						anchor_plate_id,
-						reconstruction_time.value());
+						reconstructable_file_ptrs);
 				break;
 
 			default:
