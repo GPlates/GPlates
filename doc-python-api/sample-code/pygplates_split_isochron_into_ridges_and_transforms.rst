@@ -44,7 +44,7 @@ Sample code
             
             # Iterate over the segments of the current geometry.
             # Note that we're assuming the geometry is a polyline (or polygon) - otherwise this will raise an error.
-            for segment in isochron_geometry.get_great_circle_arcs():
+            for segment in isochron_geometry.get_segments():
                 
                 # Ignore zero length segments - they don't have a direction.
                 if segment.is_zero_length():

@@ -439,7 +439,7 @@ export_geometry_on_sphere()
 				"  The returned distance is the shortest path between *geometry1* and *geometry2* along the "
 				"surface of the sphere (great circle arc path). To convert the distance from radians "
 				"(distance on a unit radius sphere) to real distance you will need to multiply it by "
-				"the Earth's radius.\n"
+				"the Earth's radius (see :class:`Earth`).\n"
 				"\n"
 				"  Each geometry (*geometry1* and *geometry2*) can be any of the four geometry types "
 				"(:class:`PointOnSphere`, :class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and "
@@ -516,15 +516,15 @@ export_geometry_on_sphere()
 				"(for polylines and polygons) is returned (unless the threshold is exceeded, if specified). "
 				"Note that for :class:`point<PointOnSphere>` geometries the index will always be zero. "
 				"The point indices can be used to index directly into :class:`MultiPointOnSphere` and the segment "
-				"indices can be used with :meth:`PolylineOnSphere.get_great_circle_arcs` or "
-				":meth:`PolygonOnSphere.get_great_circle_arcs` as shown in the following example:\n"
+				"indices can be used with :meth:`PolylineOnSphere.get_segments` or "
+				":meth:`PolygonOnSphere.get_segments` as shown in the following example:\n"
 				"  ::\n"
 				"\n"
 				"    distance_radians, closest_point_index_on_multipoint, closest_segment_index_on_polyline = \\\n"
 				"        pygplates.GeometryOnSphere.distance(multipoint, polyline, return_closest_indices=True)\n"
 				"\n"
 				"    closest_point_on_multipoint = multipoint[closest_point_index_on_multipoint]\n"
-				"    closest_segment_on_polyline = polyline.get_great_circle_arcs()[closest_segment_index_on_polyline]\n"
+				"    closest_segment_on_polyline = polyline.get_segments()[closest_segment_index_on_polyline]\n"
 				"    closest_segment_normal_vector = closest_segment_on_polyline.get_rotation_axis()\n"
 				"\n"
 				"  If both *return_closest_positions* and *return_closest_indices* are ``True``:\n"
@@ -1930,8 +1930,8 @@ export_polyline_on_sphere()
 					"A polyline instance is both:\n"
 					"\n"
 					"* a sequence of :class:`points<PointOnSphere>` - see :meth:`get_points`, and\n"
-					"* a sequence of :class:`great circle arcs<GreatCircleArc>` (between adjacent points) "
-					"- see :meth:`get_great_circle_arcs`.\n"
+					"* a sequence of :class:`segments<GreatCircleArc>` (between adjacent points) "
+					"- see :meth:`get_segments`.\n"
 					"\n"
 					"In addition a polyline instance is *directly* iterable over its points (without "
 					"having to use :meth:`get_points`):\n"
@@ -2002,7 +2002,7 @@ export_polyline_on_sphere()
 				"polyline, otherwise *InvalidPointsForPolylineConstructionError* will be raised.\n"
 				"\n"
 				"  During creation, a :class:`GreatCircleArc` is created between each adjacent pair of "
-				"points in *points* - see :meth:`get_great_circle_arcs`.\n"
+				"points in *points* - see :meth:`get_segments`.\n"
 				"\n"
 				"  It is *not* an error for adjacent points in the sequence to be coincident. In this "
 				"case each :class:`GreatCircleArc` between two such adjacent points will have zero length "
@@ -2083,7 +2083,7 @@ export_polyline_on_sphere()
 				"two points to avoid raising *InvalidPointsForPolylineConstructionError*.\n"
 				"\n"
 				"  During creation, a :class:`GreatCircleArc` is created between each adjacent pair of "
-				"geometry points - see :meth:`get_great_circle_arcs`.\n"
+				"geometry points - see :meth:`get_segments`.\n"
 				"\n"
 				"  It is *not* an error for adjacent points in a geometry sequence to be coincident. In this "
 				"case each :class:`GreatCircleArc` between two such adjacent points will have zero length "
@@ -2345,10 +2345,10 @@ export_polyline_on_sphere()
 				&GPlatesApi::poly_geometry_on_sphere_get_points_view<GPlatesMaths::PolylineOnSphere>,
 				"get_points_view()\n"
 				"  To be **deprecated** - use :meth:`get_points` instead.\n")
-		.def("get_great_circle_arcs",
+		.def("get_segments",
 				&GPlatesApi::poly_geometry_on_sphere_get_arcs_view<GPlatesMaths::PolylineOnSphere>,
-				"get_great_circle_arcs()\n"
-				"  Returns a **read-only** sequence of :class:`great circle arcs<GreatCircleArc>` in this polyline.\n"
+				"get_segments()\n"
+				"  Returns a **read-only** sequence of :class:`segments<GreatCircleArc>` in this polyline.\n"
 				"\n"
 				"  :rtype: a read-only sequence of :class:`GreatCircleArc`\n"
 				"\n"
@@ -2358,41 +2358,41 @@ export_polyline_on_sphere()
 				"  =========================== ==========================================================\n"
 				"  Operation                   Result\n"
 				"  =========================== ==========================================================\n"
-				"  ``len(seq)``                number of arcs of the polyline\n"
-				"  ``for a in seq``            iterates over the arcs *a* of the polyline\n"
-				"  ``a in seq``                ``True`` if *a* is an arc of the polyline\n"
-				"  ``a not in seq``            ``False`` if *a* is an arc of the polyline\n"
-				"  ``seq[i]``                  the arc of the polyline at index *i*\n"
-				"  ``seq[i:j]``                slice of arcs of the polyline from *i* to *j*\n"
-				"  ``seq[i:j:k]``              slice of arcs of the polyline from *i* to *j* with step *k*\n"
+				"  ``len(seq)``                number of segments of the polyline\n"
+				"  ``for s in seq``            iterates over the segments *s* of the polyline\n"
+				"  ``s in seq``                ``True`` if *s* is an segment of the polyline\n"
+				"  ``s not in seq``            ``False`` if *s* is an segment of the polyline\n"
+				"  ``seq[i]``                  the segment of the polyline at index *i*\n"
+				"  ``seq[i:j]``                slice of segments of the polyline from *i* to *j*\n"
+				"  ``seq[i:j:k]``              slice of segments of the polyline from *i* to *j* with step *k*\n"
 				"  =========================== ==========================================================\n"
 				"\n"
 				"  .. note:: Between each adjacent pair of :class:`points<PointOnSphere>` there "
-				"is an :class:`arc<GreatCircleArc>` such that the number of points exceeds the number of "
-				"arcs by one.\n"
+				"is an :class:`segment<GreatCircleArc>` such that the number of points exceeds the number of "
+				"segments by one.\n"
 				"\n"
 				"  The following example demonstrates some uses of the above operations:\n"
 				"  ::\n"
 				"\n"
 				"    polyline = pygplates.PolylineOnSphere(points)\n"
 				"    ...\n"
-				"    arcs = polyline.get_great_circle_arcs()\n"
-				"    for arc in arcs:\n"
-				"        if not arc.is_zero_length():\n"
-				"            arc_midpoint_direction = arc.get_arc_direction(0.5)\n"
-				"    first_arc = arcs[0]\n"
-				"    last_arc = arcs[-1]\n"
+				"    segments = polyline.get_segments()\n"
+				"    for segment in segments:\n"
+				"        if not segment.is_zero_length():\n"
+				"            segment_midpoint_direction = segment.get_arc_direction(0.5)\n"
+				"    first_segment = segments[0]\n"
+				"    last_segment = segments[-1]\n"
 				"\n"
 				"  .. note:: The returned sequence is **read-only** and cannot be modified.\n"
 				"\n"
 				"  .. note:: If you want a modifiable sequence consider wrapping the returned sequence in a ``list`` "
-				"using something like ``arcs = list(polyline.get_great_circle_arcs())`` **but** note that modifying "
-				"the ``list`` (eg, appending a new arc) will **not** modify the original polyline.\n")
-		// To be deprecated in favour of 'get_great_circle_arcs()'...
+				"using something like ``segments = list(polyline.get_segments())`` **but** note that modifying "
+				"the ``list`` (eg, appending a new segment) will **not** modify the original polyline.\n")
+		// To be deprecated in favour of 'get_segments()'...
 		.def("get_great_circle_arcs_view",
 				&GPlatesApi::poly_geometry_on_sphere_get_arcs_view<GPlatesMaths::PolylineOnSphere>,
 				"get_great_circle_arcs_view()\n"
-				"  To be **deprecated** - use :meth:`get_great_circle_arcs` instead.\n")
+				"  To be **deprecated** - use :meth:`get_segments` instead.\n")
 		.def("get_arc_length",
 				&GPlatesMaths::PolylineOnSphere::get_arc_length,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -2401,9 +2401,8 @@ export_polyline_on_sphere()
 				"\n"
 				"  :rtype: float\n"
 				"\n"
-				"  This is the sum of the arc lengths of each individual "
-				":class:`great circle arc<GreatCircleArc>` of this polyline. "
-				"To convert to distance, multiply the result by the Earth radius (see :class:`Earth`).\n")
+				"  | This is the sum of the arc lengths of the :meth:`segments<get_segments>` of this polyline.\n"
+				"  | To convert to distance, multiply the result by the Earth radius (see :class:`Earth`).\n")
 		.def("get_centroid",
 				&GPlatesApi::polyline_on_sphere_get_centroid,
 				"get_centroid()\n"
@@ -2573,8 +2572,8 @@ export_polygon_on_sphere()
 					"A polygon instance is both:\n"
 					"\n"
 					"* a sequence of :class:`points<PointOnSphere>` - see :meth:`get_points`, and\n"
-					"* a sequence of :class:`great circle arcs<GreatCircleArc>` (between adjacent points) "
-					"- see :meth:`get_great_circle_arcs`.\n"
+					"* a sequence of :class:`segments<GreatCircleArc>` (between adjacent points) "
+					"- see :meth:`get_segments`.\n"
 					"\n"
 					"In addition a polygon instance is *directly* iterable over its points (without "
 					"having to use :meth:`get_points`):\n"
@@ -2657,7 +2656,7 @@ export_polygon_on_sphere()
 				"polygon, otherwise *InvalidPointsForPolygonConstructionError* will be raised.\n"
 				"\n"
 				"  During creation, a :class:`GreatCircleArc` is created between each adjacent pair of "
-				"of points in *points* - see :meth:`get_great_circle_arcs`. The last arc is "
+				"of points in *points* - see :meth:`get_segments`. The last arc is "
 				"created between the last and first points to close the loop of the polygon. "
 				"For this reason you do *not* need to ensure that the first and last points have the "
 				"same position (although it's not an error if this is the case because the final arc "
@@ -2739,7 +2738,7 @@ export_polygon_on_sphere()
 				"three points to avoid raising *InvalidPointsForPolygonConstructionError*.\n"
 				"\n"
 				"  During creation, a :class:`GreatCircleArc` is created between each adjacent pair of "
-				"geometry points - see :meth:`get_great_circle_arcs`.\n"
+				"geometry points - see :meth:`get_segments`.\n"
 				"\n"
 				"  It is *not* an error for adjacent points in a geometry sequence to be coincident. In this "
 				"case each :class:`GreatCircleArc` between two such adjacent points will have zero length "
@@ -2765,10 +2764,10 @@ export_polygon_on_sphere()
 				&GPlatesApi::poly_geometry_on_sphere_get_points_view<GPlatesMaths::PolygonOnSphere>,
 				"get_points_view()\n"
 				"  To be **deprecated** - use :meth:`get_points` instead.\n")
-		.def("get_great_circle_arcs",
+		.def("get_segments",
 				&GPlatesApi::poly_geometry_on_sphere_get_arcs_view<GPlatesMaths::PolygonOnSphere>,
-				"get_great_circle_arcs()\n"
-				"  Returns a **read-only** sequence of :class:`great circle arcs<GreatCircleArc>` in this polyline.\n"
+				"get_segments()\n"
+				"  Returns a **read-only** sequence of :class:`segments<GreatCircleArc>` in this polyline.\n"
 				"\n"
 				"  :rtype: a read-only sequence of :class:`GreatCircleArc`\n"
 				"\n"
@@ -2778,43 +2777,43 @@ export_polygon_on_sphere()
 				"  =========================== ==========================================================\n"
 				"  Operation                   Result\n"
 				"  =========================== ==========================================================\n"
-				"  ``len(seq)``                number of arcs of the polygon\n"
-				"  ``for a in seq``            iterates over the arcs *a* of the polygon\n"
-				"  ``a in seq``                ``True`` if *a* is an arc of the polygon\n"
-				"  ``a not in seq``            ``False`` if *a* is an arc of the polygon\n"
-				"  ``seq[i]``                  the arc of the polygon at index *i*\n"
-				"  ``seq[i:j]``                slice of arcs of the polygon from *i* to *j*\n"
-				"  ``seq[i:j:k]``              slice of arcs of the polygon from *i* to *j* with step *k*\n"
+				"  ``len(seq)``                number of segments of the polygon\n"
+				"  ``for s in seq``            iterates over the segments *s* of the polygon\n"
+				"  ``s in seq``                ``True`` if *s* is an segment of the polygon\n"
+				"  ``s not in seq``            ``False`` if *s* is an segment of the polygon\n"
+				"  ``seq[i]``                  the segment of the polygon at index *i*\n"
+				"  ``seq[i:j]``                slice of segments of the polygon from *i* to *j*\n"
+				"  ``seq[i:j:k]``              slice of segments of the polygon from *i* to *j* with step *k*\n"
 				"  =========================== ==========================================================\n"
 				"\n"
 				"  .. note:: Between each adjacent pair of :class:`points<PointOnSphere>` there "
-				"is an :class:`arc<GreatCircleArc>` such that the number of points equals the number of arcs.\n"
+				"is an :class:`segment<GreatCircleArc>` such that the number of points equals the number of segments.\n"
 				"\n"
 				"  The following example demonstrates some uses of the above operations:\n"
 				"  ::\n"
 				"\n"
 				"    polygon = pygplates.PolygonOnSphere(points)\n"
 				"    ...\n"
-				"    arcs = polygon.get_great_circle_arcs()\n"
-				"    for arc in arcs:\n"
-				"        if not arc.is_zero_length():\n"
-				"            arc_midpoint_direction = arc.get_arc_direction(0.5)\n"
-				"    first_arc = arcs[0]\n"
-				"    last_arc = arcs[-1]\n"
+				"    segments = polygon.get_segments()\n"
+				"    for segment in segments:\n"
+				"        if not segment.is_zero_length():\n"
+				"            segment_midpoint_direction = segment.get_arc_direction(0.5)\n"
+				"    first_segment = segments[0]\n"
+				"    last_segment = segments[-1]\n"
 				"\n"
-				"  .. note:: The :meth:`end point<GreatCircleArc.get_end_point>` of the last arc is "
-				"equal to the :meth:`start point<GreatCircleArc.get_start_point>` of the first arc.\n"
+				"  .. note:: The :meth:`end point<GreatCircleArc.get_end_point>` of the last segment is "
+				"equal to the :meth:`start point<GreatCircleArc.get_start_point>` of the first segment.\n"
 				"\n"
 				"  .. note:: The returned sequence is **read-only** and cannot be modified.\n"
 				"\n"
 				"  .. note:: If you want a modifiable sequence consider wrapping the returned sequence in a ``list`` "
-				"using something like ``arcs = list(polygon.get_great_circle_arcs())`` **but** note that modifying "
-				"the ``list`` (eg, appending a new arc) will **not** modify the original polygon.\n")
-		// To be deprecated in favour of 'get_great_circle_arcs()'...
+				"using something like ``segments = list(polygon.get_segments())`` **but** note that modifying "
+				"the ``list`` (eg, appending a new segment) will **not** modify the original polygon.\n")
+		// To be deprecated in favour of 'get_segments()'...
 		.def("get_great_circle_arcs_view",
 				&GPlatesApi::poly_geometry_on_sphere_get_arcs_view<GPlatesMaths::PolygonOnSphere>,
 				"get_great_circle_arcs_view()\n"
-				"  To be **deprecated** - use :meth:`get_great_circle_arcs` instead.\n")
+				"  To be **deprecated** - use :meth:`get_segments` instead.\n")
 		.def("get_arc_length",
 				&GPlatesMaths::PolygonOnSphere::get_arc_length,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -2823,9 +2822,8 @@ export_polygon_on_sphere()
 				"\n"
 				"  :rtype: float\n"
 				"\n"
-				"  This is the sum of the arc lengths of each individual "
-				":class:`great circle arc<GreatCircleArc>` of this polygon. "
-				"To convert to distance, multiply the result by the Earth radius (see :class:`Earth`).\n")
+				"  | This is the sum of the arc lengths of the :meth:`segments<get_segments>` of this polygon.\n"
+				"  | To convert to distance, multiply the result by the Earth radius (see :class:`Earth`).\n")
 		.def("get_area",
 				&GPlatesMaths::PolygonOnSphere::get_area,
 				"get_area()\n"

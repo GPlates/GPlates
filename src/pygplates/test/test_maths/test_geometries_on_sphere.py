@@ -544,9 +544,9 @@ class PolylineOnSphereCase(unittest.TestCase):
         self.assertEquals(self.points, list(self.polyline.get_points()))
     
     def test_arcs_iter(self):
-        iter(self.polyline.get_great_circle_arcs())
-        arcs = [arc for arc in self.polyline.get_great_circle_arcs()]
-        self.assertEquals(len(self.polyline.get_great_circle_arcs()) + 1, len(self.polyline.get_points()))
+        iter(self.polyline.get_segments())
+        arcs = [arc for arc in self.polyline.get_segments()]
+        self.assertEquals(len(self.polyline.get_segments()) + 1, len(self.polyline.get_points()))
      
     def test_convert_polyline_to_polygon(self):
         polygon = pygplates.PolygonOnSphere(self.polyline.get_points())
@@ -559,9 +559,9 @@ class PolylineOnSphereCase(unittest.TestCase):
     
     def test_contains_arc(self):
         first_arc = pygplates.GreatCircleArc(self.points[0], self.points[1])
-        self.assertTrue(first_arc in self.polyline.get_great_circle_arcs())
+        self.assertTrue(first_arc in self.polyline.get_segments())
         last_arc = pygplates.GreatCircleArc(self.points[-2], self.points[-1])
-        self.assertTrue(last_arc in self.polyline.get_great_circle_arcs())
+        self.assertTrue(last_arc in self.polyline.get_segments())
 
     def test_get_item_point(self):
         for i in range(0, len(self.points)):
@@ -576,11 +576,11 @@ class PolylineOnSphereCase(unittest.TestCase):
     def test_get_item_arc(self):
         for i in range(0, len(self.points)-1):
             arc = pygplates.GreatCircleArc(self.points[i], self.points[i+1])
-            self.assertTrue(self.polyline.get_great_circle_arcs()[i] == arc)
+            self.assertTrue(self.polyline.get_segments()[i] == arc)
         last_arc = pygplates.GreatCircleArc(self.points[-2], self.points[-1])
-        self.assertTrue(self.polyline.get_great_circle_arcs()[-1] == last_arc)
+        self.assertTrue(self.polyline.get_segments()[-1] == last_arc)
         def get_arc1():
-            self.polyline.get_great_circle_arcs()[len(self.polyline.get_great_circle_arcs())]
+            self.polyline.get_segments()[len(self.polyline.get_segments())]
         self.assertRaises(IndexError, get_arc1)
 
     def test_get_slice_point(self):
@@ -590,7 +590,7 @@ class PolylineOnSphereCase(unittest.TestCase):
             self.assertTrue(slice[i] == self.points[i+1])
 
     def test_get_slice_arc(self):
-        slice = self.polyline.get_great_circle_arcs()[0:2]
+        slice = self.polyline.get_segments()[0:2]
         self.assertTrue(len(slice) == 2)
         for i in range(0, len(slice)):
             arc = pygplates.GreatCircleArc(self.points[i], self.points[i+1])
@@ -603,7 +603,7 @@ class PolylineOnSphereCase(unittest.TestCase):
         self.assertTrue(slice[1] == self.points[3])
 
     def test_get_extended_slice_arc(self):
-        slice = self.polyline.get_great_circle_arcs()[::2]
+        slice = self.polyline.get_segments()[::2]
         self.assertTrue(len(slice) == 2)
         self.assertTrue(slice[0] == pygplates.GreatCircleArc(self.points[0], self.points[1]))
         self.assertTrue(slice[1] == pygplates.GreatCircleArc(self.points[2], self.points[3]))
@@ -736,9 +736,9 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertEquals(list(polyline.get_points()), list(self.polygon.get_points()))
     
     def test_arcs_iter(self):
-        iter(self.polygon.get_great_circle_arcs())
-        arcs = [arc for arc in self.polygon.get_great_circle_arcs()]
-        self.assertEquals(len(self.polygon.get_great_circle_arcs()), len(self.polygon.get_points()))
+        iter(self.polygon.get_segments())
+        arcs = [arc for arc in self.polygon.get_segments()]
+        self.assertEquals(len(self.polygon.get_segments()), len(self.polygon.get_points()))
    
     def test_contains_point(self):
         self.assertTrue(self.points[0] in self.polygon.get_points())
@@ -747,10 +747,10 @@ class PolygonOnSphereCase(unittest.TestCase):
     
     def test_contains_arc(self):
         first_arc = pygplates.GreatCircleArc(self.points[0], self.points[1])
-        self.assertTrue(first_arc in self.polygon.get_great_circle_arcs())
+        self.assertTrue(first_arc in self.polygon.get_segments())
         # Last arc wraps around for a polygon.
         last_arc = pygplates.GreatCircleArc(self.points[-1], self.points[0])
-        self.assertTrue(last_arc in self.polygon.get_great_circle_arcs())
+        self.assertTrue(last_arc in self.polygon.get_segments())
 
     def test_get_item_point(self):
         for i in range(0, len(self.points)):
@@ -765,11 +765,11 @@ class PolygonOnSphereCase(unittest.TestCase):
     def test_get_item_arc(self):
         for i in range(0, len(self.points)-1):
             arc = pygplates.GreatCircleArc(self.points[i], self.points[i+1])
-            self.assertTrue(self.polygon.get_great_circle_arcs()[i] == arc)
+            self.assertTrue(self.polygon.get_segments()[i] == arc)
         last_arc = pygplates.GreatCircleArc(self.points[-1], self.points[0])
-        self.assertTrue(self.polygon.get_great_circle_arcs()[-1] == last_arc)
+        self.assertTrue(self.polygon.get_segments()[-1] == last_arc)
         def get_arc1():
-            self.polygon.get_great_circle_arcs()[len(self.polygon.get_great_circle_arcs())]
+            self.polygon.get_segments()[len(self.polygon.get_segments())]
         self.assertRaises(IndexError, get_arc1)
 
     def test_get_slice_point(self):
@@ -779,7 +779,7 @@ class PolygonOnSphereCase(unittest.TestCase):
             self.assertTrue(slice[i] == self.points[i+1])
 
     def test_get_slice_arc(self):
-        slice = self.polygon.get_great_circle_arcs()[2:]
+        slice = self.polygon.get_segments()[2:]
         self.assertTrue(len(slice) == 2)
         self.assertTrue(slice[0] == pygplates.GreatCircleArc(self.points[2], self.points[3]))
         # Wrap around arc.
@@ -792,7 +792,7 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertTrue(slice[1] == self.points[3])
 
     def test_get_extended_slice_arc(self):
-        slice = self.polygon.get_great_circle_arcs()[1::2]
+        slice = self.polygon.get_segments()[1::2]
         self.assertTrue(len(slice) == 2)
         self.assertTrue(slice[0] == pygplates.GreatCircleArc(self.points[1], self.points[2]))
         # Wrap around arc.
