@@ -241,7 +241,7 @@ export_great_circle_arc()
 				"\n"
 				"  :rtype: float\n"
 				"\n"
-				"  To convert to distance, multiply the result by the Earth radius.\n")
+				"  To convert to distance, multiply the result by the Earth radius (see :class:`Earth`).\n")
 		.def("get_great_circle_normal",
 				&GPlatesApi::great_circle_arc_get_great_circle_normal,
 				"get_great_circle_normal()\n"

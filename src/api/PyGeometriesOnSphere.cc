@@ -2403,7 +2403,7 @@ export_polyline_on_sphere()
 				"\n"
 				"  This is the sum of the arc lengths of each individual "
 				":class:`great circle arc<GreatCircleArc>` of this polyline. "
-				"To convert to distance, multiply the result by the Earth radius.\n")
+				"To convert to distance, multiply the result by the Earth radius (see :class:`Earth`).\n")
 		.def("get_centroid",
 				&GPlatesApi::polyline_on_sphere_get_centroid,
 				"get_centroid()\n"
@@ -2825,7 +2825,7 @@ export_polygon_on_sphere()
 				"\n"
 				"  This is the sum of the arc lengths of each individual "
 				":class:`great circle arc<GreatCircleArc>` of this polygon. "
-				"To convert to distance, multiply the result by the Earth radius.\n")
+				"To convert to distance, multiply the result by the Earth radius (see :class:`Earth`).\n")
 		.def("get_area",
 				&GPlatesMaths::PolygonOnSphere::get_area,
 				"get_area()\n"
@@ -2835,7 +2835,8 @@ export_polygon_on_sphere()
 				"\n"
 				"  The area is essentially the absolute value of the :meth:`signed area<get_signed_area>`.\n"
 				"\n"
-				"  To convert to area on the Earth's surface, multiply the result by the Earth radius squared.\n")
+				"  To convert to area on the Earth's surface, multiply the result by the Earth radius squared "
+				"(see :class:`Earth`).\n")
 		.def("get_signed_area",
 				&GPlatesMaths::PolygonOnSphere::get_signed_area,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -2850,7 +2851,7 @@ export_polygon_on_sphere()
 				":meth:`get_orientation` is more efficient than comparing the sign of the area.\n"
 				"\n"
 				"  To convert to *signed* area on the Earth's surface, multiply the result by the "
-				"Earth radius squared.\n")
+				"Earth radius squared (see :class:`Earth`).\n")
 		.def("get_orientation",
 				&GPlatesMaths::PolygonOnSphere::get_orientation,
 				"get_orientation()\n"
