@@ -91,7 +91,7 @@ namespace GPlatesFileIO
 		struct FeatureCollectionFeatureGroup
 		{
 			FeatureCollectionFeatureGroup(
-				const GPlatesFileIO::File::Reference *file_ptr_):
+					const GPlatesFileIO::File::Reference *file_ptr_) :
 				file_ptr(file_ptr_)
 			{}
 

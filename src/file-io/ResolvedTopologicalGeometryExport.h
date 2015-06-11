@@ -41,6 +41,7 @@
 namespace GPlatesAppLogic
 {
 	class ReconstructionGeometry;
+	class ResolvedTopologicalSection;
 }
 
 namespace GPlatesFileIO
@@ -114,6 +115,41 @@ namespace GPlatesFileIO
 				bool export_separate_output_directory_per_input_file,
 				boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
 						force_polygon_orientation = boost::none,
+				bool wrap_to_dateline = true);
+
+
+		/**
+		 * Exports resolved topological sections (@a ResolvedTopologicalSection and its
+		 * @a ResolvedTopologicalSharedSubSegment instances).
+		 *
+		 * @param export_format specifies which format to write.
+		 * @param export_single_output_file specifies whether to write all resolved sections to a single file.
+		 * @param export_per_input_file specifies whether to group resolved sections according to the
+		 *        input files their features came from and write to corresponding output files.
+		 * @param export_separate_output_directory_per_input_file
+		 *        Save each exported file to a different directory based on the file basename.
+		 *        Only applies if @a export_per_input_file is 'true'.
+		 * @param wrap_to_dateline if true then exported geometries are wrapped/clipped to
+		 *        the dateline (currently only applies to @a SHAPEFILE format).
+		 *
+		 * Note that both @a export_single_output_file and @a export_per_input_file can be true
+		 * in which case both a single output file is exported as well as grouped output files.
+		 *
+		 * @throws ErrorOpeningFileForWritingException if file is not writable.
+		 * @throws FileFormatNotSupportedException if file format not supported.
+		 */
+		void
+		export_resolved_topological_sections(
+				const QString &filename,
+				Format export_format,
+				const std::vector<const GPlatesAppLogic::ResolvedTopologicalSection *> &resolved_topological_sections,
+				const std::vector<const File::Reference *> &active_files,
+				const std::vector<const File::Reference *> &active_reconstruction_files,
+				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+				const double &reconstruction_time,
+				bool export_single_output_file,
+				bool export_per_input_file,
+				bool export_separate_output_directory_per_input_file,
 				bool wrap_to_dateline = true);
 	}
 }
