@@ -38,7 +38,7 @@
 namespace GPlatesAppLogic
 {
 	/**
-	 * Associates a sub-segment (@a ResolvedTopologicalGeometrySubSegment) with those resolved topologies
+	 * Associates a sub-segment (of a resolved topological section) with those resolved topologies
 	 * (@a ResolvedTopologicalBoundary and @a ResolvedTopologicalNetwork) that share it as part of their boundary.
 	 *
 	 * This is kept as a separate class from @a ResolvedTopologicalGeometrySubSegment partly in order
