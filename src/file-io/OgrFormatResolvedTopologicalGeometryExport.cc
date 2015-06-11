@@ -81,6 +81,7 @@ namespace
 
 void
 GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries(
+		bool export_per_collection,
 		const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
@@ -163,134 +164,13 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries(
 		OgrUtils::add_filename_sequence_to_kvd(QString("FILE"),referenced_files,kvd_for_export);
 		OgrUtils::add_filename_sequence_to_kvd(QString("RECONFILE"),active_reconstruction_files,kvd_for_export);
 
-		OgrUtils::add_standard_properties_to_kvd(
-					feature_ref,kvd_for_export);
-
-
-
-		// Iterate through the resolved geometries of the current feature and write to output.
-		// Note that this will export each geometry as a separate entry in the shapefile, even if they
-		// come from the same feature. 
-		resolved_topologies_seq_type::const_iterator rt_iter;
-		for (rt_iter = feature_geom_group.recon_geoms.begin();
-			rt_iter != feature_geom_group.recon_geoms.end();
-			++rt_iter)
-		{
-			const GPlatesAppLogic::ReconstructionGeometry *rt = *rt_iter;
-
-			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> resolved_topology_geometry =
-					GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_or_line_geometry(rt);
-			if (!resolved_topology_geometry)
-			{
-				continue;
-			}
-
-			// Orient polygon if forcing orientation and geometry is a polygon.
-			//
-			// NOTE: This only works for non-Shapefile OGR formats because the OGR Shapefile
-			// driver stores exterior rings as clockwise and interior as counter-clockwise -
-			// so whatever we do here could just get undone by the Shapefile driver.
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_geometry =
-					force_polygon_orientation
-					? GPlatesAppLogic::GeometryUtils::convert_geometry_to_oriented_geometry(
-							resolved_topology_geometry.get(),
-							force_polygon_orientation.get())
-					: resolved_topology_geometry.get();
-
-			// Write the resolved geometry.
-			geom_exporter.export_geometry(resolved_geometry, kvd_for_export); 
-		}
-	}
-
-}
-
-
-void
-GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries_per_collection(
-		const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
-		const QFileInfo& file_info,
-		const referenced_files_collection_type &referenced_files,
-		const referenced_files_collection_type &active_reconstruction_files,
-		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time,
-		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
-		bool wrap_to_dateline)
-{
-
-	// Iterate through the resolved geometries and check which geometry types we have.
-	GPlatesFeatureVisitors::GeometryTypeFinder finder;
-
-	std::list<feature_geometry_group_type>::const_iterator feature_iter;
-	for (feature_iter = feature_geometry_group_seq.begin();
-		feature_iter != feature_geometry_group_seq.end();
-		++feature_iter)
-	{
-		const feature_geometry_group_type &feature_geom_group = *feature_iter;
-
-		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
-			feature_geom_group.feature_ref;
-		if (!feature_ref.is_valid())
-		{
-			continue;
-		}
-
-		// Iterate through the resolved geometries of the current feature.
-		resolved_topologies_seq_type::const_iterator rt_iter;
-		for (rt_iter = feature_geom_group.recon_geoms.begin();
-			rt_iter != feature_geom_group.recon_geoms.end();
-			++rt_iter)
-		{
-			const GPlatesAppLogic::ReconstructionGeometry *rt = *rt_iter;
-
-			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> resolved_topology_geometry =
-					GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_or_line_geometry(rt);
-			if (!resolved_topology_geometry)
-			{
-				continue;
-			}
-
-			resolved_topology_geometry.get()->accept_visitor(finder);
-		}
-	}
-
-	// Set up the appropriate form of ShapefileGeometryExporter.
-	QString file_path = file_info.filePath();
-	GPlatesFileIO::OgrGeometryExporter geom_exporter(
-		file_path,
-		finder.has_found_multiple_geometry_types(),
-		wrap_to_dateline);
-
-
-
-	// Iterate through the resolved geometries and write to output.
-	for (feature_iter = feature_geometry_group_seq.begin();
-		feature_iter != feature_geometry_group_seq.end();
-		++feature_iter)
-	{
-
-		const feature_geometry_group_type &feature_geom_group = *feature_iter;
-
-		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref =
-				feature_geom_group.feature_ref;
-
-		if (!feature_ref.is_valid())
-		{
-			continue;
-		}
-
-
-		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd_for_export =
-			GPlatesPropertyValues::GpmlKeyValueDictionary::create();
-
-        OgrUtils::add_reconstruction_fields_to_kvd(kvd_for_export,
-                                        reconstruction_anchor_plate_id,
-                                        reconstruction_time);
-
-		OgrUtils::add_filename_sequence_to_kvd(QString("FILE"),referenced_files,kvd_for_export);
-		OgrUtils::add_filename_sequence_to_kvd(QString("RECONFILE"),active_reconstruction_files,kvd_for_export);
-
 		GPlatesFeatureVisitors::KeyValueDictionaryFinder kvd_finder;
-		kvd_finder.visit_feature(feature_ref);
+		if (export_per_collection)
+		{
+			kvd_finder.visit_feature(feature_ref);
+		}
+
+		// Only update the KVD if we are exporting-per-collection *and* we found a KVD on the feature.
 		if (kvd_finder.number_of_found_dictionaries() != 0)
 		{
 			// FIXME: Model values which have been updated (e.g. plate id) won't have been copied to the
@@ -300,8 +180,8 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries_per
 			// And if we *don't* find a kvd, we should generate a default one using the standard set of mapped
 			// attributes.
 			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type found_kvd =
-				*(kvd_finder.found_key_value_dictionaries_begin());
-			add_feature_fields_to_kvd(kvd_for_export,found_kvd);
+					*(kvd_finder.found_key_value_dictionaries_begin());
+			add_feature_fields_to_kvd(kvd_for_export, found_kvd);
 		}
         else
         {
@@ -311,9 +191,8 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries_per
             // field names.
             // To fix this we should define a standard kvd first, fill with default values,
             // then replace the values as we find them in each feature.
-            OgrUtils::add_standard_properties_to_kvd(feature_ref,kvd_for_export);
+            OgrUtils::add_standard_properties_to_kvd(feature_ref, kvd_for_export);
         }
-
 
 		// Iterate through the resolved geometries of the current feature and write to output.
 		// Note that this will export each geometry as a separate entry in the shapefile, even if they

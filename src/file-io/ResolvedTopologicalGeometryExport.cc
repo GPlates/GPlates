@@ -56,7 +56,8 @@ namespace GPlatesFileIO
 
 
 			void
-			export_as_single_file(
+			export_geometries(
+					bool export_per_collection,
 					const QString &filename,
 					Format export_format,
 					const feature_geometry_group_seq_type &grouped_recon_geoms_seq,
@@ -71,6 +72,7 @@ namespace GPlatesFileIO
 				{
 				case SHAPEFILE:
 					OgrFormatResolvedTopologicalGeometryExport::export_geometries(
+						export_per_collection,
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
@@ -83,6 +85,7 @@ namespace GPlatesFileIO
 
 				case OGRGMT:
 					OgrFormatResolvedTopologicalGeometryExport::export_geometries(
+						export_per_collection,
 						grouped_recon_geoms_seq,
 						filename,
 						referenced_files,
@@ -103,57 +106,6 @@ namespace GPlatesFileIO
 						force_polygon_orientation);
 					break;
 
-				default:
-					throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
-						"Chosen export format is not currently supported.");
-				}
-			}
-
-			void
-			export_per_collection(
-					const QString &filename,
-					Format export_format,
-					const feature_geometry_group_seq_type &grouped_recon_geoms_seq,
-					const std::vector<const File::Reference *> &referenced_files,
-					const std::vector<const File::Reference *> &active_reconstruction_files,
-					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-					const double &reconstruction_time,
-					boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
-					bool wrap_to_dateline)
-			{
-				switch(export_format)
-				{
-				case SHAPEFILE:
-					OgrFormatResolvedTopologicalGeometryExport::export_geometries_per_collection(
-						grouped_recon_geoms_seq,
-						filename,
-						referenced_files,
-						active_reconstruction_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						force_polygon_orientation,
-						wrap_to_dateline);
-					break;
-				case OGRGMT:
-					OgrFormatResolvedTopologicalGeometryExport::export_geometries_per_collection(
-						grouped_recon_geoms_seq,
-						filename,
-						referenced_files,
-						active_reconstruction_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						force_polygon_orientation);
-					break;
-				case GMT:
-					GMTFormatResolvedTopologicalGeometryExport::export_geometries(
-						grouped_recon_geoms_seq,
-						filename,
-						referenced_files,
-						active_reconstruction_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						force_polygon_orientation);
-					break;
 				default:
 					throw FileFormatNotSupportedException(GPLATES_EXCEPTION_SOURCE,
 						"Chosen export format is not currently supported.");
@@ -231,41 +183,29 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_ge
 			grouped_features_seq,
 			grouped_recon_geom_seq);
 
+	// For shapefiles exporting-per-collection retains the shapefile attributes from the original features.
+	//
+	// For shapefiles exporting-as-a-single-file ignores the shapefile attributes from the original features.
+	// This is necessary since the features came from multiple input files which might
+	// have different attribute field names making it difficult to merge into a single output.
+	//
+	// FIXME: An alternative is for Shapefile/OGR exporter to explicitly check field names for overlap.
+
 	if (export_single_output_file)
 	{
-		// If all features came from a single file then export per collection.
-		if (grouped_features_seq.size() == 1)
-		{
-			// For shapefiles this retains the shapefile attributes from the original features.
-			export_per_collection(
-					filename,
-					export_format,
-					grouped_recon_geom_seq,
-					referenced_files,
-					active_reconstruction_files,
-					reconstruction_anchor_plate_id,
-					reconstruction_time,
-					force_polygon_orientation,
-					wrap_to_dateline);
-		}
-		else
-		{
-			// For shapefiles this ignores the shapefile attributes from the original features.
-			// This is necessary since the features came from multiple input files which might
-			// have different attribute field names making it difficult to merge into a single output.
-			//
-			// FIXME: An alternative is for Shapefile/OGR exporter to explicitly check field names for overlap.
-			export_as_single_file(
-					filename,
-					export_format,
-					grouped_recon_geom_seq,
-					referenced_files,
-					active_reconstruction_files,
-					reconstruction_anchor_plate_id,
-					reconstruction_time,
-					force_polygon_orientation,
-					wrap_to_dateline);
-		}
+		// If all features came from a single file then export per collection...
+		const bool export_per_collection = (grouped_features_seq.size() == 1);
+		export_geometries(
+				export_per_collection,
+				filename,
+				export_format,
+				grouped_recon_geom_seq,
+				referenced_files,
+				active_reconstruction_files,
+				reconstruction_anchor_plate_id,
+				reconstruction_time,
+				force_polygon_orientation,
+				wrap_to_dateline);
 	}
 
 	if (export_per_input_file)
@@ -283,7 +223,8 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_ge
 			grouped_features_iter != grouped_features_end;
 			++grouped_features_iter, ++output_filename_iter)
 		{
-			export_per_collection(
+			export_geometries(
+					true/*export_per_collection*/,
 					*output_filename_iter,
 					export_format,
 					grouped_features_iter->feature_geometry_groups,
