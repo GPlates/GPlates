@@ -36,6 +36,7 @@
 #include "AppLogicFwd.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionTreeCreator.h"
+#include "ResolvedTopologicalSection.h"
 #include "ResolvedTopologicalSharedSubSegment.h"
 #include "TopologyGeometryType.h"
 
@@ -366,8 +367,8 @@ namespace GPlatesAppLogic
 		 * leading to duplication).
 		 */
 		void
-		find_shared_sub_segments(
-				std::vector<ResolvedTopologicalSharedSubSegment> &shared_sub_segments,
+		find_resolved_topological_sections(
+				std::vector<ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections,
 				const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 				const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks);
 	}
