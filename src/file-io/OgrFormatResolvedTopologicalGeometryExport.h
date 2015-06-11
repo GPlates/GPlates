@@ -40,6 +40,7 @@
 namespace GPlatesAppLogic
 {
 	class ReconstructionGeometry;
+	class ResolvedTopologicalSection;
 }
 
 namespace GPlatesFileIO
@@ -47,7 +48,7 @@ namespace GPlatesFileIO
 	namespace OgrFormatResolvedTopologicalGeometryExport
 	{
 		/**
-		 * Typedef for a feature geometry group of resolved topologies.
+		 * Typedef for a feature geometry group of reconstruction geometries.
 		 */
 		typedef ReconstructionGeometryExportImpl::FeatureGeometryGroup<GPlatesAppLogic::ReconstructionGeometry>
 				feature_geometry_group_type;
@@ -78,7 +79,7 @@ namespace GPlatesFileIO
 		 * If @a wrap_to_dateline is true then exported polyline/polygon geometries are wrapped/clipped to the dateline.
 		 */
 		void
-		export_geometries(
+		export_resolved_topological_geometries(
 				bool export_per_collection,
 				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 				const QFileInfo& file_info,
@@ -88,6 +89,30 @@ namespace GPlatesFileIO
 				const double &reconstruction_time,
 				boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
 						force_polygon_orientation = boost::none,
+				bool wrap_to_dateline = true);
+
+
+		/**
+		 * Exports resolved topological sections to OGR format.
+		 *
+		 * This includes @a ResolvedTopologicalSection and its @a ResolvedTopologicalSharedSubSegment instances.
+		 *
+		 * If @a export_per_collection is true then the shapefile attributes from the original features are retained.
+		 * Otherwise the shapefile attributes from the original features are ignored, which is necessary if the
+		 * features came from multiple input files (which might have different attribute field names making it
+		 * difficult to merge into a single output).
+		 *
+		 * If @a wrap_to_dateline is true then exported polyline geometries are wrapped/clipped to the dateline.
+		 */
+		void
+		export_resolved_topological_sections(
+				bool export_per_collection,
+				const std::vector<const GPlatesAppLogic::ResolvedTopologicalSection *> &resolved_topological_sections,
+				const QFileInfo& file_info,
+				const referenced_files_collection_type &referenced_files,
+				const referenced_files_collection_type &active_reconstruction_files,
+				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+				const double &reconstruction_time,
 				bool wrap_to_dateline = true);
 
 

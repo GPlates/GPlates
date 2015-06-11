@@ -39,6 +39,7 @@
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
+#include "app-logic/ResolvedTopologicalSection.h"
 
 #include "feature-visitors/GeometryTypeFinder.h"
 #include "feature-visitors/KeyValueDictionaryFinder.h"
@@ -76,11 +77,65 @@ namespace
 			output_elements.push_back(feature_kvd_it->get()->clone());
 		}
 	}
+
+
+	GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
+	get_kvd_for_export(
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
+			const referenced_files_collection_type &referenced_files,
+			const referenced_files_collection_type &active_reconstruction_files,
+			const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+			const double &reconstruction_time,
+			bool export_per_collection)
+	{
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd_for_export =
+				GPlatesPropertyValues::GpmlKeyValueDictionary::create();
+
+		GPlatesFileIO::OgrUtils::add_reconstruction_fields_to_kvd(
+				kvd_for_export,
+				reconstruction_anchor_plate_id,
+				reconstruction_time);
+
+		GPlatesFileIO::OgrUtils::add_filename_sequence_to_kvd(QString("FILE"), referenced_files, kvd_for_export);
+		GPlatesFileIO::OgrUtils::add_filename_sequence_to_kvd(QString("RECONFILE"), active_reconstruction_files, kvd_for_export);
+
+		GPlatesFeatureVisitors::KeyValueDictionaryFinder kvd_finder;
+		if (export_per_collection)
+		{
+			kvd_finder.visit_feature(feature_ref);
+		}
+
+		// Only update the KVD if we are exporting-per-collection *and* we found a KVD on the feature.
+		if (kvd_finder.number_of_found_dictionaries() != 0)
+		{
+			// FIXME: Model values which have been updated (e.g. plate id) won't have been copied to the
+			// kvd, so these exported values might be "old". We should approach this in a way similar to the 
+			// OgrFeatureCollectionWriter which updates the kvd (based on the attribute-to-model map) prior
+			// to export.
+			// And if we *don't* find a kvd, we should generate a default one using the standard set of mapped
+			// attributes.
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type found_kvd =
+					*kvd_finder.found_key_value_dictionaries_begin();
+			add_feature_fields_to_kvd(kvd_for_export, found_kvd);
+		}
+        else
+        {
+            //FIXME: if the features being exported don't all have the standard
+            // set of properties, then we could end up with some gaps in the
+            // kvds, and so the exported kvds could be out of sync with the
+            // field names.
+            // To fix this we should define a standard kvd first, fill with default values,
+            // then replace the values as we find them in each feature.
+            GPlatesFileIO::OgrUtils::add_standard_properties_to_kvd(feature_ref, kvd_for_export);
+        }
+
+		return kvd_for_export;
+	}
 }
 
 
 void
-GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries(
+GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topological_geometries(
 		bool export_per_collection,
 		const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 		const QFileInfo& file_info,
@@ -91,7 +146,6 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries(
 		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 		bool wrap_to_dateline)
 {
-
 	// Iterate through the reconstructed geometries and check which geometry types we have.
 	GPlatesFeatureVisitors::GeometryTypeFinder finder;
 
@@ -153,46 +207,14 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries(
 			continue;
 		}
 
-
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd_for_export =
-			GPlatesPropertyValues::GpmlKeyValueDictionary::create();
-
-		OgrUtils::add_reconstruction_fields_to_kvd(kvd_for_export,
-										reconstruction_anchor_plate_id,
-										reconstruction_time);
-
-		OgrUtils::add_filename_sequence_to_kvd(QString("FILE"),referenced_files,kvd_for_export);
-		OgrUtils::add_filename_sequence_to_kvd(QString("RECONFILE"),active_reconstruction_files,kvd_for_export);
-
-		GPlatesFeatureVisitors::KeyValueDictionaryFinder kvd_finder;
-		if (export_per_collection)
-		{
-			kvd_finder.visit_feature(feature_ref);
-		}
-
-		// Only update the KVD if we are exporting-per-collection *and* we found a KVD on the feature.
-		if (kvd_finder.number_of_found_dictionaries() != 0)
-		{
-			// FIXME: Model values which have been updated (e.g. plate id) won't have been copied to the
-			// kvd, so these exported values might be "old". We should approach this in a way similar to the 
-			// OgrFeatureCollectionWriter which updates the kvd (based on the attribute-to-model map) prior
-			// to export.
-			// And if we *don't* find a kvd, we should generate a default one using the standard set of mapped
-			// attributes.
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type found_kvd =
-					*(kvd_finder.found_key_value_dictionaries_begin());
-			add_feature_fields_to_kvd(kvd_for_export, found_kvd);
-		}
-        else
-        {
-            //FIXME: if the features being exported don't all have the standard
-            // set of properties, then we could end up with some gaps in the
-            // kvds, and so the exported kvds could be out of sync with the
-            // field names.
-            // To fix this we should define a standard kvd first, fill with default values,
-            // then replace the values as we find them in each feature.
-            OgrUtils::add_standard_properties_to_kvd(feature_ref, kvd_for_export);
-        }
+				get_kvd_for_export(
+						feature_ref,
+						referenced_files,
+						active_reconstruction_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time,
+						export_per_collection);
 
 		// Iterate through the resolved geometries of the current feature and write to output.
 		// Note that this will export each geometry as a separate entry in the shapefile, even if they
@@ -225,6 +247,89 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_geometries(
 
 			// Write the resolved geometry.
 			geom_exporter.export_geometry(resolved_geometry, kvd_for_export); 
+		}
+	}
+}
+
+
+void
+GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topological_sections(
+		bool export_per_collection,
+		const std::vector<const GPlatesAppLogic::ResolvedTopologicalSection *> &resolved_topological_sections,
+		const QFileInfo& file_info,
+		const referenced_files_collection_type &referenced_files,
+		const referenced_files_collection_type &active_reconstruction_files,
+		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+		const double &reconstruction_time,
+		bool wrap_to_dateline)
+{
+	// Iterate through the resolved topological section sub-segments and check which geometry types we have.
+	GPlatesFeatureVisitors::GeometryTypeFinder finder;
+
+	std::vector<const GPlatesAppLogic::ResolvedTopologicalSection *>::const_iterator sections_iter;
+	for (sections_iter = resolved_topological_sections.begin();
+		sections_iter != resolved_topological_sections.end();
+		++sections_iter)
+	{
+		const GPlatesAppLogic::ResolvedTopologicalSection *section = *sections_iter;
+
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref = section->get_feature_ref();
+		if (!feature_ref.is_valid())
+		{
+			continue;
+		}
+
+		// Iterate through the sub-segments of the current section.
+		const std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment> &sub_segments =
+				section->get_shared_sub_segments();
+		std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment>::const_iterator sub_segments_iter;
+		for (sub_segments_iter = sub_segments.begin(); sub_segments_iter != sub_segments.end(); ++sub_segments_iter)
+		{
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &sub_segment = *sub_segments_iter;
+			sub_segment.get_geometry()->accept_visitor(finder);
+		}
+	}
+
+	// Set up the appropriate form of OgrGeometryExporter.
+	QString file_path = file_info.filePath();
+	GPlatesFileIO::OgrGeometryExporter geom_exporter(
+		file_path,
+		finder.has_found_multiple_geometry_types(),
+		wrap_to_dateline);
+
+
+	// Iterate through the resolved topological section sub-segments and write to output.
+	for (sections_iter = resolved_topological_sections.begin();
+		sections_iter != resolved_topological_sections.end();
+		++sections_iter)
+	{
+		const GPlatesAppLogic::ResolvedTopologicalSection *section = *sections_iter;
+
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref = section->get_feature_ref();
+		if (!feature_ref.is_valid())
+		{
+			continue;
+		}
+
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd_for_export =
+				get_kvd_for_export(
+						feature_ref,
+						referenced_files,
+						active_reconstruction_files,
+						reconstruction_anchor_plate_id,
+						reconstruction_time,
+						export_per_collection);
+
+		// Iterate through the sub-segments of the current section.
+		const std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment> &sub_segments =
+				section->get_shared_sub_segments();
+		std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment>::const_iterator sub_segments_iter;
+		for (sub_segments_iter = sub_segments.begin(); sub_segments_iter != sub_segments.end(); ++sub_segments_iter)
+		{
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &sub_segment = *sub_segments_iter;
+
+			// Write the sub-segment geometry.
+			geom_exporter.export_geometry(sub_segment.get_geometry(), kvd_for_export); 
 		}
 	}
 }

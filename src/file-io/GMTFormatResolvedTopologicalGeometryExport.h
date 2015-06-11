@@ -39,6 +39,7 @@
 namespace GPlatesAppLogic
 {
 	class ReconstructionGeometry;
+	class ResolvedTopologicalSection;
 }
 
 namespace GPlatesFileIO
@@ -66,7 +67,7 @@ namespace GPlatesFileIO
 		 * @param force_polygon_orientation optionally force polygon orientation (clockwise or counter-clockwise).
 		 */
 		void
-		export_geometries(
+		export_resolved_topological_geometries(
 				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
@@ -75,6 +76,21 @@ namespace GPlatesFileIO
 				const double &reconstruction_time,
 				boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
 						force_polygon_orientation = boost::none);
+
+
+		/**
+		 * Exports resolved topological sections to GMT format.
+		 *
+		 * This includes @a ResolvedTopologicalSection and its @a ResolvedTopologicalSharedSubSegment instances.
+		 */
+		void
+		export_resolved_topological_sections(
+				const std::vector<const GPlatesAppLogic::ResolvedTopologicalSection *> &resolved_topological_sections,
+				const QFileInfo& file_info,
+				const referenced_files_collection_type &referenced_files,
+				const referenced_files_collection_type &active_reconstruction_files,
+				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+				const double &reconstruction_time);
 	}
 }
 
