@@ -49,7 +49,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Represents the number of data inputs allowed by a specific input channel of a layer.
 		 *
-		 * A layer can have one of more input channels representing different classifications
+		 * A layer can have one or more input channels representing different classifications
 		 * of input data and each channel can have one or more data objects.
 		 * The latter is what's determined here.
 		 *
