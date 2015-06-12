@@ -27,9 +27,18 @@
 #define GPLATES_API_PYRECONSTRUCTIONGEOMETRIES_H
 
 #include <boost/any.hpp>
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 #include "app-logic/ReconstructionGeometry.h"
+#include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/ResolvedTopologicalGeometrySubSegment.h"
+#include "app-logic/ResolvedTopologicalLine.h"
+#include "app-logic/ResolvedTopologicalNetwork.h"
+#include "app-logic/ResolvedTopologicalSection.h"
+#include "app-logic/ResolvedTopologicalSharedSubSegment.h"
+
+#include "global/python.h"
 
 #include "model/FeatureHandle.h"
 #include "model/TopLevelProperty.h"
@@ -39,6 +48,32 @@
 
 namespace GPlatesApi
 {
+	/**
+	 * Utility class used by the reconstruction geometry wrappers to keep their referenced feature/property alive.
+	 */
+	class KeepReconstructionGeometryFeatureAndPropertyAlive
+	{
+	public:
+		explicit
+		KeepReconstructionGeometryFeatureAndPropertyAlive(
+				const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry);
+
+	private:
+		/**
+		 * Keep the feature alive (by using intrusive pointer instead of weak ref)
+		 * since derived reconstruction geometry types usually only store a weak reference.
+		 */
+		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type> d_feature;
+
+		/**
+		 * Keep the geometry feature property alive (by using intrusive pointer instead of weak ref)
+		 * since derived reconstruction geometry types usually only store an iterator and
+		 * someone could remove the feature property in the meantime.
+		 */
+		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> d_property;
+	};
+
+
 	/**
 	 * A Python wrapper around a derived @a ReconstructionGeometry that keeps the referenced feature
 	 * (and referenced property) alive.
@@ -88,20 +123,23 @@ namespace GPlatesApi
 		//! The wrapped reconstruction geometry type itself.
 		typename ReconstructionGeometryType::non_null_ptr_type d_reconstruction_geometry_type;
 
-		/**
-		 * Keep the feature alive (by using intrusive pointer instead of weak ref)
-		 * since derived reconstruction geometry types usually only store a weak reference.
-		 */
-		boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type> d_feature;
-
-		/**
-		 * Keep the geometry feature property alive (by using intrusive pointer instead of weak ref)
-		 * since derived reconstruction geometry types usually only store an iterator and
-		 * someone could remove the feature property in the meantime.
-		 */
-		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> d_property;
-
+		//! Keep the feature/property alive.
+		KeepReconstructionGeometryFeatureAndPropertyAlive d_keep_feature_property_alive;
 	};
+
+
+	/**
+	 * Boost-python requires 'get_pointer(HeldType)' for wrapped types ('HeldType') that
+	 * are not already smart pointers.
+	 */
+	template <class ReconstructionGeometryType>
+	ReconstructionGeometryType *
+	get_pointer(
+			const ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> &wrapper)
+	{
+		return wrapper.get_reconstruction_geometry_type().get();
+	}
+
 
 	/**
 	 * Specialise class 'ReconstructionGeometryTypeWrapper' for the base ReconstructionGeometry class.
@@ -157,15 +195,370 @@ namespace GPlatesApi
 
 
 	/**
+	 * A Python wrapper around a derived @a ResolvedTopologicalGeometrySubSegment that contains
+	 * a reconstruction geometry (which must be wrapped in order to keep its feature/property alive).
+	 */
+	class ResolvedTopologicalGeometrySubSegmentWrapper
+	{
+	public:
+
+		/**
+		 * The default boost-python 'pointee<HeldType>::type' is defined as 'HeldType::element_type'.
+		 *
+		 * This is needed for wrapped types ('HeldType') that are not already smart pointers.
+		 */
+		typedef GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment element_type;
+
+		explicit
+		ResolvedTopologicalGeometrySubSegmentWrapper(
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &resolved_topological_geometry_sub_segment) :
+			d_resolved_topological_geometry_sub_segment(resolved_topological_geometry_sub_segment),
+			d_reconstruction_geometry(resolved_topological_geometry_sub_segment.get_reconstruction_geometry())
+		{  }
+
+		/**
+		 * Get the sub-segment.
+		 */
+		const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &
+		get_resolved_topological_geometry_sub_segment() const
+		{
+			return d_resolved_topological_geometry_sub_segment;
+		}
+
+		/**
+		 * Get the reconstruction geometry of the sub-segment (for passing to Python).
+		 */
+		const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &
+		get_reconstruction_geometry() const
+		{
+			return d_reconstruction_geometry;
+		}
+
+	private:
+
+		//! The wrapped sub-segment itself.
+		GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment d_resolved_topological_geometry_sub_segment;
+
+		/**
+		 * The reconstruction geometry that the sub-segment was obtained from.
+		 *
+		 * We need to store a Python-wrapped version of it to keep its feature/property alive.
+		 */
+		ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> d_reconstruction_geometry;
+	};
+
+
+	/**
 	 * Boost-python requires 'get_pointer(HeldType)' for wrapped types ('HeldType') that
 	 * are not already smart pointers.
 	 */
-	template <class ReconstructionGeometryType>
-	ReconstructionGeometryType *
+	GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *
 	get_pointer(
-			const ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> &wrapper)
+			const ResolvedTopologicalGeometrySubSegmentWrapper &wrapper)
 	{
-		return wrapper.get_reconstruction_geometry_type().get();
+		// Boost-python wants a non-const return pointer (but wants a const wrapper).
+		return const_cast<GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *>(
+				&wrapper.get_resolved_topological_geometry_sub_segment());
+	}
+
+
+	/**
+	 * Specialise class 'ReconstructionGeometryTypeWrapper' for the ResolvedTopologicalLine.
+	 *
+	 * We need to also keep the features/properties referenced by its sub-segments alive.
+	 */
+	template <>
+	class ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>
+	{
+	public:
+
+		/**
+		 * The default boost-python 'pointee<HeldType>::type' is defined as 'HeldType::element_type'.
+		 *
+		 * This is needed for wrapped types ('HeldType') that are not already smart pointers.
+		 */
+	    typedef GPlatesAppLogic::ResolvedTopologicalLine element_type;
+
+		explicit
+		ReconstructionGeometryTypeWrapper(
+				GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_to_const_type resolved_topological_line);
+
+		/**
+		 * Get the wrapped reconstruction geometry type.
+		 */
+		GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type
+		get_reconstruction_geometry_type() const
+		{
+			return d_resolved_topological_line;
+		}
+
+	private:
+
+		//! The wrapped reconstruction geometry type itself.
+		GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type d_resolved_topological_line;
+
+		//! Keep the feature/property alive.
+		KeepReconstructionGeometryFeatureAndPropertyAlive d_keep_feature_property_alive;
+
+		/**
+		 * The sub-segments.
+		 *
+		 * We need to store Python-wrapped versions to keep their feature/property alive.
+		 */
+		std::vector<ResolvedTopologicalGeometrySubSegmentWrapper> d_sub_segments;
+
+	};
+
+
+	/**
+	 * Specialise class 'ReconstructionGeometryTypeWrapper' for the ResolvedTopologicalBoundary.
+	 *
+	 * We need to also keep the features/properties referenced by its sub-segments alive.
+	 */
+	template <>
+	class ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>
+	{
+	public:
+
+		/**
+		 * The default boost-python 'pointee<HeldType>::type' is defined as 'HeldType::element_type'.
+		 *
+		 * This is needed for wrapped types ('HeldType') that are not already smart pointers.
+		 */
+	    typedef GPlatesAppLogic::ResolvedTopologicalBoundary element_type;
+
+		explicit
+		ReconstructionGeometryTypeWrapper(
+				GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_to_const_type resolved_topological_boundary);
+
+		/**
+		 * Get the wrapped reconstruction geometry type.
+		 */
+		GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type
+		get_reconstruction_geometry_type() const
+		{
+			return d_resolved_topological_boundary;
+		}
+
+	private:
+
+		//! The wrapped reconstruction geometry type itself.
+		GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type d_resolved_topological_boundary;
+
+		//! Keep the feature/property alive.
+		KeepReconstructionGeometryFeatureAndPropertyAlive d_keep_feature_property_alive;
+
+		/**
+		 * The sub-segments.
+		 *
+		 * We need to store Python-wrapped versions to keep their feature/property alive.
+		 */
+		std::vector<ResolvedTopologicalGeometrySubSegmentWrapper> d_sub_segments;
+
+	};
+
+
+	/**
+	 * Specialise class 'ReconstructionGeometryTypeWrapper' for the ResolvedTopologicalNetwork.
+	 *
+	 * We need to also keep the features/properties referenced by its sub-segments alive.
+	 */
+	template <>
+	class ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>
+	{
+	public:
+
+		/**
+		 * The default boost-python 'pointee<HeldType>::type' is defined as 'HeldType::element_type'.
+		 *
+		 * This is needed for wrapped types ('HeldType') that are not already smart pointers.
+		 */
+	    typedef GPlatesAppLogic::ResolvedTopologicalNetwork element_type;
+
+		explicit
+		ReconstructionGeometryTypeWrapper(
+				GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_topological_network);
+
+		/**
+		 * Get the wrapped reconstruction geometry type.
+		 */
+		GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type
+		get_reconstruction_geometry_type() const
+		{
+			return d_resolved_topological_network;
+		}
+
+	private:
+
+		//! The wrapped reconstruction geometry type itself.
+		GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type d_resolved_topological_network;
+
+		//! Keep the feature/property alive.
+		KeepReconstructionGeometryFeatureAndPropertyAlive d_keep_feature_property_alive;
+
+		/**
+		 * The boundary sub-segments.
+		 *
+		 * We need to store Python-wrapped versions to keep their feature/property alive.
+		 */
+		std::vector<ResolvedTopologicalGeometrySubSegmentWrapper> d_boundary_sub_segments;
+
+	};
+
+
+	/**
+	 * A Python wrapper around a derived @a ResolvedTopologicalSharedSubSegment that contains
+	 * a section reconstruction geometry and a sequence of resolved topologies (all which must be
+	 * wrapped in order to keep their feature/property alive).
+	 */
+	class ResolvedTopologicalSharedSubSegmentWrapper
+	{
+	public:
+
+		/**
+		 * The default boost-python 'pointee<HeldType>::type' is defined as 'HeldType::element_type'.
+		 *
+		 * This is needed for wrapped types ('HeldType') that are not already smart pointers.
+		 */
+		typedef GPlatesAppLogic::ResolvedTopologicalSharedSubSegment element_type;
+
+		explicit
+		ResolvedTopologicalSharedSubSegmentWrapper(
+				const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &resolved_topological_shared_sub_segment);
+
+		/**
+		 * Get the shared sub-segment.
+		 */
+		const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &
+		get_resolved_topological_shared_sub_segment() const
+		{
+			return d_resolved_topological_shared_sub_segment;
+		}
+
+		/**
+		 * Get the reconstruction geometry of the sub-segment (for passing to Python).
+		 */
+		const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &
+		get_reconstruction_geometry() const
+		{
+			return d_reconstruction_geometry;
+		}
+
+		/**
+		 * Get the resolved topologies sharing the sub-segment (for passing to Python).
+		 */
+		boost::python::list
+		get_sharing_resolved_topologies() const;
+
+	private:
+
+		//! The wrapped sub-segment itself.
+		GPlatesAppLogic::ResolvedTopologicalSharedSubSegment d_resolved_topological_shared_sub_segment;
+
+		/**
+		 * The reconstruction geometry that the sub-segment was obtained from.
+		 *
+		 * We need to store a Python-wrapped version of it to keep its feature/property alive.
+		 */
+		ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> d_reconstruction_geometry;
+
+		/**
+		 * The resolved topologies (reconstruction geometries) that share the sub-segment.
+		 *
+		 * We need to store Python-wrapped versions to keep their feature/property alive.
+		 */
+		std::vector< ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> >
+				d_sharing_resolved_topologies;
+	};
+
+
+	/**
+	 * Boost-python requires 'get_pointer(HeldType)' for wrapped types ('HeldType') that
+	 * are not already smart pointers.
+	 */
+	GPlatesAppLogic::ResolvedTopologicalSharedSubSegment *
+	get_pointer(
+			const ResolvedTopologicalSharedSubSegmentWrapper &wrapper)
+	{
+		// Boost-python wants a non-const return pointer (but wants a const wrapper).
+		return const_cast<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment *>(
+				&wrapper.get_resolved_topological_shared_sub_segment());
+	}
+
+
+	/**
+	 * A Python wrapper around a derived @a ResolvedTopologicalSection that contains a sequence of
+	 * sharing resolved topologies (all which must be wrapped in order to keep their feature/property alive).
+	 */
+	class ResolvedTopologicalSectionWrapper
+	{
+	public:
+
+		/**
+		 * The default boost-python 'pointee<HeldType>::type' is defined as 'HeldType::element_type'.
+		 *
+		 * This is needed for wrapped types ('HeldType') that are not already smart pointers.
+		 */
+		typedef GPlatesAppLogic::ResolvedTopologicalSection element_type;
+
+		explicit
+		ResolvedTopologicalSectionWrapper(
+				const GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_to_const_type &resolved_topological_section);
+
+		/**
+		 * Get the resolved topological section.
+		 */
+		GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type
+		get_resolved_topological_section() const
+		{
+			return d_resolved_topological_section;
+		}
+
+		/**
+		 * Get the reconstruction geometry of the sub-segment (for passing to Python).
+		 */
+		const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &
+		get_reconstruction_geometry() const
+		{
+			return d_reconstruction_geometry;
+		}
+
+		/**
+		 * Get the shared sub-segments (for passing to Python).
+		 */
+		boost::python::list
+		get_shared_sub_segments() const;
+
+	private:
+
+		//! The wrapped sub-segment itself.
+		GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type d_resolved_topological_section;
+
+		/**
+		 * The reconstruction geometry that the sub-segment was obtained from.
+		 *
+		 * We need to store a Python-wrapped version of it to keep its feature/property alive.
+		 */
+		ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> d_reconstruction_geometry;
+
+		/**
+		 * The shared sub-segments.
+		 *
+		 * We need to store Python-wrapped versions to keep their feature/property alive.
+		 */
+		std::vector<ResolvedTopologicalSharedSubSegmentWrapper> d_shared_sub_segments;
+	};
+
+
+	/**
+	 * Boost-python requires 'get_pointer(HeldType)' for wrapped types ('HeldType') that
+	 * are not already smart pointers.
+	 */
+	GPlatesAppLogic::ResolvedTopologicalSection *
+	get_pointer(
+			const ResolvedTopologicalSectionWrapper &wrapper)
+	{
+		return wrapper.get_resolved_topological_section().get();
 	}
 }
 
@@ -175,15 +568,6 @@ namespace GPlatesApi
 
 namespace GPlatesApi
 {
-	boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
-	reconstruction_geometry_get_feature(
-			const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry);
-
-	boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
-	reconstruction_geometry_get_property(
-			const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry);
-
-
 	template <class ReconstructionGeometryType>
 	ReconstructionGeometryTypeWrapper<ReconstructionGeometryType>::ReconstructionGeometryTypeWrapper(
 			typename ReconstructionGeometryType::non_null_ptr_to_const_type reconstruction_geometry_type) :
@@ -196,24 +580,7 @@ namespace GPlatesApi
 				// ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
 				// and cast away const (which is dangerous since Python user could modify)...
 				GPlatesUtils::const_pointer_cast<ReconstructionGeometryType>(reconstruction_geometry_type)),
-		d_feature(reconstruction_geometry_get_feature(*reconstruction_geometry_type)),
-		d_property(reconstruction_geometry_get_property(*reconstruction_geometry_type))
-	{  }
-
-
-	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>::ReconstructionGeometryTypeWrapper(
-			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry) :
-		d_reconstruction_geometry(
-				// Boost-python currently does not compile when wrapping *const* objects
-				// (eg, 'ReconstructionGeometry::non_null_ptr_to_const_type') - see:
-				//   https://svn.boost.org/trac/boost/ticket/857
-				//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
-				//
-				// ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
-				// and cast away const (which is dangerous since Python user could modify)...
-				GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ReconstructionGeometry>(reconstruction_geometry)),
-		d_reconstruction_geometry_type_wrapper(
-				create_reconstruction_geometry_type_wrapper(reconstruction_geometry))
+		d_keep_feature_property_alive(*reconstruction_geometry_type)
 	{  }
 }
 

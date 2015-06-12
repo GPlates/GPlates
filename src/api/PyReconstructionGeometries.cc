@@ -40,12 +40,6 @@
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionGeometryVisitor.h"
-#include "app-logic/ResolvedTopologicalBoundary.h"
-#include "app-logic/ResolvedTopologicalGeometrySubSegment.h"
-#include "app-logic/ResolvedTopologicalLine.h"
-#include "app-logic/ResolvedTopologicalNetwork.h"
-#include "app-logic/ResolvedTopologicalSection.h"
-#include "app-logic/ResolvedTopologicalSharedSubSegment.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -195,6 +189,29 @@ namespace GPlatesApi
 	};
 
 
+	KeepReconstructionGeometryFeatureAndPropertyAlive::KeepReconstructionGeometryFeatureAndPropertyAlive(
+			const GPlatesAppLogic::ReconstructionGeometry &reconstruction_geometry) :
+		d_feature(reconstruction_geometry_get_feature(reconstruction_geometry)),
+		d_property(reconstruction_geometry_get_property(reconstruction_geometry))
+	{  }
+
+
+	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>::ReconstructionGeometryTypeWrapper(
+			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry) :
+		d_reconstruction_geometry(
+				// Boost-python currently does not compile when wrapping *const* objects
+				// (eg, 'ReconstructionGeometry::non_null_ptr_to_const_type') - see:
+				//   https://svn.boost.org/trac/boost/ticket/857
+				//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
+				//
+				// ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
+				// and cast away const (which is dangerous since Python user could modify)...
+				GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ReconstructionGeometry>(reconstruction_geometry)),
+		d_reconstruction_geometry_type_wrapper(
+				create_reconstruction_geometry_type_wrapper(reconstruction_geometry))
+	{  }
+
+
 	boost::any
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>::create_reconstruction_geometry_type_wrapper(
 			const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry)
@@ -220,8 +237,6 @@ namespace GPlatesApi
 			convert(
 					const typename ReconstructionGeometryType::non_null_ptr_type &rtb)
 			{
-				namespace bp = boost::python;
-
 				// Convert to ReconstructionGeometryTypeWrapper<> first.
 				// Then it'll get converted to python.
 				return bp::incref(bp::object(
@@ -234,8 +249,6 @@ namespace GPlatesApi
 		convertible(
 				PyObject *obj)
 		{
-			namespace bp = boost::python;
-
 			// 'ReconstructionGeometryType' is obtained from a
 			// ReconstructionGeometryTypeWrapper<> (which in turn is already convertible).
 			return bp::extract< ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> >(obj).check()
@@ -247,10 +260,8 @@ namespace GPlatesApi
 		void
 		construct(
 				PyObject *obj,
-				boost::python::converter::rvalue_from_python_stage1_data *data)
+				bp::converter::rvalue_from_python_stage1_data *data)
 		{
-			namespace bp = boost::python;
-
 			void *const storage = reinterpret_cast<
 					bp::converter::rvalue_from_python_storage<
 							typename ReconstructionGeometryType::non_null_ptr_type> *>(
@@ -334,10 +345,10 @@ export_reconstruction_geometry()
 			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
+	bp::implicitly_convertible<
 			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type,
 			GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
+	bp::implicitly_convertible<
 			boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>,
 			boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> >();
 }
@@ -816,6 +827,32 @@ namespace GPlatesApi
 
 		return line_sub_segments_list;
 	}
+
+	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>::ReconstructionGeometryTypeWrapper(
+			GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_to_const_type resolved_topological_line) :
+		d_resolved_topological_line(
+				// Boost-python currently does not compile when wrapping *const* objects
+				// (eg, 'ReconstructionGeometry::non_null_ptr_to_const_type') - see:
+				//   https://svn.boost.org/trac/boost/ticket/857
+				//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
+				//
+				// ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
+				// and cast away const (which is dangerous since Python user could modify)...
+				GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ResolvedTopologicalLine>(resolved_topological_line)),
+		d_keep_feature_property_alive(*resolved_topological_line)
+	{
+		const GPlatesAppLogic::sub_segment_seq_type &sub_segments =
+				resolved_topological_line->get_sub_segment_sequence();
+
+		d_sub_segments.reserve(sub_segments.size());
+		BOOST_FOREACH(
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
+				sub_segments)
+		{
+			d_sub_segments.push_back(
+					ResolvedTopologicalGeometrySubSegmentWrapper(sub_segment));
+		}
+	}
 }
 
 
@@ -929,6 +966,32 @@ namespace GPlatesApi
 
 		return boundary_sub_segments_list;
 	}
+
+	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>::ReconstructionGeometryTypeWrapper(
+			GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_to_const_type resolved_topological_boundary) :
+		d_resolved_topological_boundary(
+				// Boost-python currently does not compile when wrapping *const* objects
+				// (eg, 'ReconstructionGeometry::non_null_ptr_to_const_type') - see:
+				//   https://svn.boost.org/trac/boost/ticket/857
+				//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
+				//
+				// ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
+				// and cast away const (which is dangerous since Python user could modify)...
+				GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ResolvedTopologicalBoundary>(resolved_topological_boundary)),
+		d_keep_feature_property_alive(*resolved_topological_boundary)
+	{
+		const GPlatesAppLogic::sub_segment_seq_type &sub_segments =
+				resolved_topological_boundary->get_sub_segment_sequence();
+
+		d_sub_segments.reserve(sub_segments.size());
+		BOOST_FOREACH(
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
+				sub_segments)
+		{
+			d_sub_segments.push_back(
+					ResolvedTopologicalGeometrySubSegmentWrapper(sub_segment));
+		}
+	}
 }
 
 
@@ -1041,6 +1104,32 @@ namespace GPlatesApi
 		}
 
 		return boundary_sub_segments_list;
+	}
+
+	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>::ReconstructionGeometryTypeWrapper(
+			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_topological_network) :
+		d_resolved_topological_network(
+				// Boost-python currently does not compile when wrapping *const* objects
+				// (eg, 'ReconstructionGeometry::non_null_ptr_to_const_type') - see:
+				//   https://svn.boost.org/trac/boost/ticket/857
+				//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
+				//
+				// ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
+				// and cast away const (which is dangerous since Python user could modify)...
+				GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ResolvedTopologicalNetwork>(resolved_topological_network)),
+		d_keep_feature_property_alive(*resolved_topological_network)
+	{
+		const GPlatesAppLogic::sub_segment_seq_type &boundary_sub_segments =
+				resolved_topological_network->get_boundary_sub_segment_sequence();
+
+		d_boundary_sub_segments.reserve(boundary_sub_segments.size());
+		BOOST_FOREACH(
+				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &boundary_sub_segment,
+				boundary_sub_segments)
+		{
+			d_boundary_sub_segments.push_back(
+					ResolvedTopologicalGeometrySubSegmentWrapper(boundary_sub_segment));
+		}
 	}
 }
 
@@ -1176,73 +1265,6 @@ namespace GPlatesApi
 				resolved_topological_geometry_sub_segment.get_geometry());
 	}
 
-	/**
-	 * A Python wrapper around a derived @a ResolvedTopologicalGeometrySubSegment that contains
-	 * a reconstruction geometry (which must be wrapped in order to keep its feature/property alive).
-	 */
-	class ResolvedTopologicalGeometrySubSegmentWrapper
-	{
-	public:
-
-		/**
-		 * The default boost-python 'pointee<HeldType>::type' is defined as 'HeldType::element_type'.
-		 *
-		 * This is needed for wrapped types ('HeldType') that are not already smart pointers.
-		 */
-		typedef GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment element_type;
-
-		explicit
-		ResolvedTopologicalGeometrySubSegmentWrapper(
-				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &resolved_topological_geometry_sub_segment) :
-			d_resolved_topological_geometry_sub_segment(resolved_topological_geometry_sub_segment),
-			d_reconstruction_geometry(resolved_topological_geometry_sub_segment.get_reconstruction_geometry())
-		{  }
-
-		/**
-		 * Get the sub-segment.
-		 */
-		const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &
-		get_resolved_topological_geometry_sub_segment() const
-		{
-			return d_resolved_topological_geometry_sub_segment;
-		}
-
-		/**
-		 * Get the reconstruction geometry of the sub-segment (for passing to Python).
-		 */
-		const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &
-		get_reconstruction_geometry() const
-		{
-			return d_reconstruction_geometry;
-		}
-
-	private:
-
-		//! The wrapped sub-segment itself.
-		GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment d_resolved_topological_geometry_sub_segment;
-
-		/**
-		 * The reconstruction geometry that the sub-segment was obtained from.
-		 *
-		 * We need to store a Python-wrapped version of it to keep its feature/property alive.
-		 */
-		ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> d_reconstruction_geometry;
-	};
-
-
-	/**
-	 * Boost-python requires 'get_pointer(HeldType)' for wrapped types ('HeldType') that
-	 * are not already smart pointers.
-	 */
-	GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *
-	get_pointer(
-			const ResolvedTopologicalGeometrySubSegmentWrapper &wrapper)
-	{
-		// Boost-python wants a non-const return pointer (but wants a const wrapper).
-		return const_cast<GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *>(
-				&wrapper.get_resolved_topological_geometry_sub_segment());
-	}
-
 
 	/**
 	 * Python converter from a 'ResolvedTopologicalGeometrySubSegment' to a
@@ -1258,8 +1280,6 @@ namespace GPlatesApi
 			convert(
 					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment)
 			{
-				namespace bp = boost::python;
-
 				// Convert to ResolvedTopologicalGeometrySubSegmentWrapper first.
 				// Then it'll get converted to python.
 				return bp::incref(bp::object(
@@ -1272,8 +1292,6 @@ namespace GPlatesApi
 		convertible(
 				PyObject *obj)
 		{
-			namespace bp = boost::python;
-
 			// 'ResolvedTopologicalGeometrySubSegment' is obtained from a
 			// ResolvedTopologicalGeometrySubSegmentWrapper (which in turn is already convertible).
 			return bp::extract<const ResolvedTopologicalGeometrySubSegmentWrapper &>(obj).check() ? obj : NULL;
@@ -1283,10 +1301,8 @@ namespace GPlatesApi
 		void
 		construct(
 				PyObject *obj,
-				boost::python::converter::rvalue_from_python_stage1_data *data)
+				bp::converter::rvalue_from_python_stage1_data *data)
 		{
-			namespace bp = boost::python;
-
 			void *const storage = reinterpret_cast<
 					bp::converter::rvalue_from_python_storage<
 							GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment> *>(
@@ -1464,113 +1480,41 @@ namespace GPlatesApi
 	}
 
 
-	/**
-	 * A Python wrapper around a derived @a ResolvedTopologicalSharedSubSegment that contains
-	 * a section reconstruction geometry and a sequence of resolved topologies (all which must be
-	 * wrapped in order to keep their feature/property alive).
-	 */
-	class ResolvedTopologicalSharedSubSegmentWrapper
+	ResolvedTopologicalSharedSubSegmentWrapper::ResolvedTopologicalSharedSubSegmentWrapper(
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &resolved_topological_shared_sub_segment) :
+		d_resolved_topological_shared_sub_segment(resolved_topological_shared_sub_segment),
+		d_reconstruction_geometry(resolved_topological_shared_sub_segment.get_reconstruction_geometry())
 	{
-	public:
+		const std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo> &
+				sharing_resolved_topologies =
+						resolved_topological_shared_sub_segment.get_sharing_resolved_topologies();
 
-		/**
-		 * The default boost-python 'pointee<HeldType>::type' is defined as 'HeldType::element_type'.
-		 *
-		 * This is needed for wrapped types ('HeldType') that are not already smart pointers.
-		 */
-		typedef GPlatesAppLogic::ResolvedTopologicalSharedSubSegment element_type;
-
-		explicit
-		ResolvedTopologicalSharedSubSegmentWrapper(
-				const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &resolved_topological_shared_sub_segment) :
-			d_resolved_topological_shared_sub_segment(resolved_topological_shared_sub_segment),
-			d_reconstruction_geometry(resolved_topological_shared_sub_segment.get_reconstruction_geometry())
+		// Wrap the resolved topologies to keep their feature/property alive.
+		d_sharing_resolved_topologies.reserve(sharing_resolved_topologies.size());
+		BOOST_FOREACH(
+				const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo &resolved_topology_info,
+				sharing_resolved_topologies)
 		{
-			const std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo> &
-					sharing_resolved_topologies =
-							resolved_topological_shared_sub_segment.get_sharing_resolved_topologies();
-
-			// Wrap the resolved topologies to keep their feature/property alive.
-			d_sharing_resolved_topologies.reserve(sharing_resolved_topologies.size());
-			BOOST_FOREACH(
-					const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo &resolved_topology_info,
-					sharing_resolved_topologies)
-			{
-				d_sharing_resolved_topologies.push_back(
-						ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>(
-								resolved_topology_info.resolved_topology));
-			}
+			d_sharing_resolved_topologies.push_back(
+					ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>(
+							resolved_topology_info.resolved_topology));
 		}
-
-		/**
-		 * Get the shared sub-segment.
-		 */
-		const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &
-		get_resolved_topological_shared_sub_segment() const
-		{
-			return d_resolved_topological_shared_sub_segment;
-		}
-
-		/**
-		 * Get the reconstruction geometry of the sub-segment (for passing to Python).
-		 */
-		const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &
-		get_reconstruction_geometry() const
-		{
-			return d_reconstruction_geometry;
-		}
-
-		/**
-		 * Get the resolved topologies sharing the sub-segment (for passing to Python).
-		 */
-		bp::list
-		get_sharing_resolved_topologies()
-		{
-			bp::list sharing_resolved_topologies_list;
-
-			BOOST_FOREACH(
-					const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &resolved_topology,
-					d_sharing_resolved_topologies)
-			{
-				sharing_resolved_topologies_list.append(resolved_topology);
-			}
-
-			return sharing_resolved_topologies_list;
-		}
-
-	private:
-
-		//! The wrapped sub-segment itself.
-		GPlatesAppLogic::ResolvedTopologicalSharedSubSegment d_resolved_topological_shared_sub_segment;
-
-		/**
-		 * The reconstruction geometry that the sub-segment was obtained from.
-		 *
-		 * We need to store a Python-wrapped version of it to keep its feature/property alive.
-		 */
-		ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> d_reconstruction_geometry;
-
-		/**
-		 * The resolved topologies (reconstruction geometries) that share the sub-segment.
-		 *
-		 * We need to store Python-wrapped versions to keep their feature/property alive.
-		 */
-		std::vector< ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> >
-				d_sharing_resolved_topologies;
-	};
+	}
 
 
-	/**
-	 * Boost-python requires 'get_pointer(HeldType)' for wrapped types ('HeldType') that
-	 * are not already smart pointers.
-	 */
-	GPlatesAppLogic::ResolvedTopologicalSharedSubSegment *
-	get_pointer(
-			const ResolvedTopologicalSharedSubSegmentWrapper &wrapper)
+	bp::list
+	ResolvedTopologicalSharedSubSegmentWrapper::get_sharing_resolved_topologies() const
 	{
-		// Boost-python wants a non-const return pointer (but wants a const wrapper).
-		return const_cast<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment *>(
-				&wrapper.get_resolved_topological_shared_sub_segment());
+		bp::list sharing_resolved_topologies_list;
+
+		BOOST_FOREACH(
+				const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &resolved_topology,
+				d_sharing_resolved_topologies)
+		{
+			sharing_resolved_topologies_list.append(resolved_topology);
+		}
+
+		return sharing_resolved_topologies_list;
 	}
 
 
@@ -1588,8 +1532,6 @@ namespace GPlatesApi
 			convert(
 					const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &sub_segment)
 			{
-				namespace bp = boost::python;
-
 				// Convert to ResolvedTopologicalSharedSubSegmentWrapper first.
 				// Then it'll get converted to python.
 				return bp::incref(bp::object(
@@ -1602,8 +1544,6 @@ namespace GPlatesApi
 		convertible(
 				PyObject *obj)
 		{
-			namespace bp = boost::python;
-
 			// 'ResolvedTopologicalSharedSubSegment' is obtained from a
 			// ResolvedTopologicalSharedSubSegmentWrapper (which in turn is already convertible).
 			return bp::extract<const ResolvedTopologicalSharedSubSegmentWrapper &>(obj).check() ? obj : NULL;
@@ -1613,10 +1553,8 @@ namespace GPlatesApi
 		void
 		construct(
 				PyObject *obj,
-				boost::python::converter::rvalue_from_python_stage1_data *data)
+				bp::converter::rvalue_from_python_stage1_data *data)
 		{
-			namespace bp = boost::python;
-
 			void *const storage = reinterpret_cast<
 					bp::converter::rvalue_from_python_storage<
 							GPlatesAppLogic::ResolvedTopologicalSharedSubSegment> *>(
@@ -1783,115 +1721,47 @@ namespace GPlatesApi
 	}
 
 
-	/**
-	 * A Python wrapper around a derived @a ResolvedTopologicalSection that contains a sequence of
-	 * sharing resolved topologies (all which must be wrapped in order to keep their feature/property alive).
-	 */
-	class ResolvedTopologicalSectionWrapper
+	ResolvedTopologicalSectionWrapper::ResolvedTopologicalSectionWrapper(
+			const GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_to_const_type &resolved_topological_section) :
+		d_resolved_topological_section(
+				// Boost-python currently does not compile when wrapping *const* objects
+				// (eg, 'ReconstructionGeometry::non_null_ptr_to_const_type') - see:
+				//   https://svn.boost.org/trac/boost/ticket/857
+				//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
+				//
+				// ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
+				// and cast away const (which is dangerous since Python user could modify)...
+				GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ResolvedTopologicalSection>(resolved_topological_section)),
+		d_reconstruction_geometry(resolved_topological_section->get_reconstruction_geometry())
 	{
-	public:
+		const std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment> &shared_sub_segments =
+				resolved_topological_section->get_shared_sub_segments();
 
-		/**
-		 * The default boost-python 'pointee<HeldType>::type' is defined as 'HeldType::element_type'.
-		 *
-		 * This is needed for wrapped types ('HeldType') that are not already smart pointers.
-		 */
-		typedef GPlatesAppLogic::ResolvedTopologicalSection element_type;
-
-		explicit
-		ResolvedTopologicalSectionWrapper(
-				const GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_to_const_type &resolved_topological_section) :
-			d_resolved_topological_section(
-					// Boost-python currently does not compile when wrapping *const* objects
-					// (eg, 'ReconstructionGeometry::non_null_ptr_to_const_type') - see:
-					//   https://svn.boost.org/trac/boost/ticket/857
-					//   https://mail.python.org/pipermail/cplusplus-sig/2006-November/011354.html
-					//
-					// ...so the current solution is to wrap *non-const* objects (to keep boost-python happy)
-					// and cast away const (which is dangerous since Python user could modify)...
-					GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ResolvedTopologicalSection>(resolved_topological_section)),
-			d_reconstruction_geometry(resolved_topological_section->get_reconstruction_geometry())
+		// Wrap the resolved topologies to keep their feature/property alive.
+		d_shared_sub_segments.reserve(shared_sub_segments.size());
+		BOOST_FOREACH(
+				const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &shared_sub_segment,
+				shared_sub_segments)
 		{
-			const std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment> &shared_sub_segments =
-					resolved_topological_section->get_shared_sub_segments();
-
-			// Wrap the resolved topologies to keep their feature/property alive.
-			d_shared_sub_segments.reserve(shared_sub_segments.size());
-			BOOST_FOREACH(
-					const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &shared_sub_segment,
-					shared_sub_segments)
-			{
-				d_shared_sub_segments.push_back(
-						ResolvedTopologicalSharedSubSegmentWrapper(shared_sub_segment));
-			}
+			d_shared_sub_segments.push_back(
+					ResolvedTopologicalSharedSubSegmentWrapper(shared_sub_segment));
 		}
+	}
 
-		/**
-		 * Get the resolved topological section.
-		 */
-		GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type
-		get_resolved_topological_section() const
-		{
-			return d_resolved_topological_section;
-		}
-
-		/**
-		 * Get the reconstruction geometry of the sub-segment (for passing to Python).
-		 */
-		const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &
-		get_reconstruction_geometry() const
-		{
-			return d_reconstruction_geometry;
-		}
-
-		/**
-		 * Get the shared sub-segments (for passing to Python).
-		 */
-		bp::list
-		get_shared_sub_segments()
-		{
-			bp::list shared_sub_segments_list;
-
-			BOOST_FOREACH(
-					const ResolvedTopologicalSharedSubSegmentWrapper &shared_sub_segment,
-					d_shared_sub_segments)
-			{
-				shared_sub_segments_list.append(shared_sub_segment);
-			}
-
-			return shared_sub_segments_list;
-		}
-
-	private:
-
-		//! The wrapped sub-segment itself.
-		GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type d_resolved_topological_section;
-
-		/**
-		 * The reconstruction geometry that the sub-segment was obtained from.
-		 *
-		 * We need to store a Python-wrapped version of it to keep its feature/property alive.
-		 */
-		ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> d_reconstruction_geometry;
-
-		/**
-		 * The shared sub-segments.
-		 *
-		 * We need to store Python-wrapped versions to keep their feature/property alive.
-		 */
-		std::vector<ResolvedTopologicalSharedSubSegmentWrapper> d_shared_sub_segments;
-	};
-
-
-	/**
-	 * Boost-python requires 'get_pointer(HeldType)' for wrapped types ('HeldType') that
-	 * are not already smart pointers.
-	 */
-	GPlatesAppLogic::ResolvedTopologicalSection *
-	get_pointer(
-			const ResolvedTopologicalSectionWrapper &wrapper)
+	
+	bp::list
+	ResolvedTopologicalSectionWrapper::get_shared_sub_segments() const
 	{
-		return wrapper.get_resolved_topological_section().get();
+		bp::list shared_sub_segments_list;
+
+		BOOST_FOREACH(
+				const ResolvedTopologicalSharedSubSegmentWrapper &shared_sub_segment,
+				d_shared_sub_segments)
+		{
+			shared_sub_segments_list.append(shared_sub_segment);
+		}
+
+		return shared_sub_segments_list;
 	}
 
 
@@ -1909,8 +1779,6 @@ namespace GPlatesApi
 			convert(
 					const GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type &section)
 			{
-				namespace bp = boost::python;
-
 				// Convert to ResolvedTopologicalSectionWrapper first.
 				// Then it'll get converted to python.
 				return bp::incref(bp::object(
@@ -1923,8 +1791,6 @@ namespace GPlatesApi
 		convertible(
 				PyObject *obj)
 		{
-			namespace bp = boost::python;
-
 			// 'ResolvedTopologicalSection' is obtained from a
 			// ResolvedTopologicalSectionWrapper (which in turn is already convertible).
 			return bp::extract<const ResolvedTopologicalSectionWrapper &>(obj).check() ? obj : NULL;
@@ -1934,10 +1800,8 @@ namespace GPlatesApi
 		void
 		construct(
 				PyObject *obj,
-				boost::python::converter::rvalue_from_python_stage1_data *data)
+				bp::converter::rvalue_from_python_stage1_data *data)
 		{
-			namespace bp = boost::python;
-
 			void *const storage = reinterpret_cast<
 					bp::converter::rvalue_from_python_storage<
 							GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> *>(
@@ -2036,7 +1900,7 @@ export_resolved_topological_section()
 				"  .. note:: | The returned objects are :class:`ResolvedTopologicalSharedSubSegment` instances, "
 				"**not** :class:`ResolvedTopologicalSubSegment` instances.\n"
 				"            | :class:`ResolvedTopologicalSubSegment` instances are *not* shared by  one or "
-				"more resolved topologies. Each instance is associated with a *single* resolved topology.\n")
+				"more resolved topologies - each instance is associated with a *single* resolved topology.\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
@@ -2055,10 +1919,10 @@ export_resolved_topological_section()
 			GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
+	bp::implicitly_convertible<
 			GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type,
 			GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
+	bp::implicitly_convertible<
 			boost::optional<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type>,
 			boost::optional<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_to_const_type> >();
 }
