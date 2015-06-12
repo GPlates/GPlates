@@ -1260,8 +1260,11 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 				++sub_segment_points_iter;
 				if (sub_segment_points_iter == sub_segment_points_end)
 				{
-					// Finished with the current sub-segment.
-					continue;
+					// There's only one point in the current sub-segment.
+					// We'll stay at that one point even though it doesn't match because
+					// it's possible it's the point past the end of the clipped boundary section
+					// and hence it will get ignored.
+					--sub_segment_points_iter;
 				}
 			}
 		}
