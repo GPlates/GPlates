@@ -132,8 +132,11 @@ class ReconstructTestCase(unittest.TestCase):
         pygplates.reconstruct(
             os.path.join(FIXTURES, 'volcanoes.gpml'),
             os.path.join(FIXTURES, 'rotations.rot'),
-            'test.xy',
+            os.path.join(FIXTURES, 'test.xy'),
             pygplates.GeoTimeInstant(10))
+        
+        self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'test.xy')))
+        os.remove(os.path.join(FIXTURES, 'test.xy'))
         
         feature_collection = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'volcanoes.gpml'))
@@ -259,9 +262,12 @@ class ReconstructTestCase(unittest.TestCase):
         pygplates.reconstruct(
             os.path.join(FIXTURES, 'flowline.gpml'),
             os.path.join(FIXTURES, 'rotations.rot'),
-            'test.xy',
+            os.path.join(FIXTURES, 'test.xy'),
             pygplates.GeoTimeInstant(10),
             reconstruct_type=pygplates.ReconstructType.flowline)
+        
+        self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'test.xy')))
+        os.remove(os.path.join(FIXTURES, 'test.xy'))
         
         rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
         reconstruction_time = 15
@@ -367,7 +373,10 @@ class ReconstructTestCase(unittest.TestCase):
             [os.path.join(FIXTURES, 'rotations.rot')],
             10,
             0,
-            'test.xy')
+            os.path.join(FIXTURES, 'test.xy'))
+        
+        self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'test.xy')))
+        os.remove(os.path.join(FIXTURES, 'test.xy'))
 
     def test_reverse_reconstruct(self):
         # Test modifying the feature collection file.
@@ -411,7 +420,107 @@ class ReconstructTestCase(unittest.TestCase):
             rotation_features,
             10,
             0)
+
+
+class ResolvedTopologiesTestCase(unittest.TestCase):
+    def test_resolve_topologies(self):
+        pygplates.resolve_topologies(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            os.path.join(FIXTURES, 'resolved_topologies.gmt'),
+            pygplates.GeoTimeInstant(10),
+            os.path.join(FIXTURES, 'resolved_topological_sections.gmt'))
         
+        self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topologies.gmt')))
+        os.remove(os.path.join(FIXTURES, 'resolved_topologies.gmt'))
+        self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topological_sections.gmt')))
+        os.remove(os.path.join(FIXTURES, 'resolved_topological_sections.gmt'))
+        
+        topological_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
+        rotation_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'rotations.rot'))
+        resolved_topologies = []
+        resolved_topological_sections = []
+        pygplates.resolve_topologies(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            resolved_topologies,
+            10,
+            resolved_topological_sections)
+        
+        self.assertTrue(len(resolved_topologies) == 3)
+        resolved_topologies_dict = dict(zip(
+                (rt.get_feature().get_name() for rt in resolved_topologies),
+                (rt for rt in resolved_topologies)))
+        for bss in resolved_topologies_dict['topology1'].get_boundary_sub_segments():
+            self.assertTrue(bss.get_feature().get_name() in ('section2', 'section3', 'section4', 'section7', 'section8'))
+        # Sections 9 and 10 are points that have been joined into a single sub-segment (a hack) but either could get selected as the representative section.
+        for bss in resolved_topologies_dict['topology2'].get_boundary_sub_segments():
+            self.assertTrue(bss.get_feature().get_name() in ('section4', 'section5', 'section7', 'section14', 'section9', 'section10'))
+        for bss in resolved_topologies_dict['topology3'].get_boundary_sub_segments():
+            self.assertTrue(bss.get_feature().get_name() in ('section1', 'section2', 'section6', 'section7', 'section8', 'section14', 'section9', 'section10'))
+        
+        self.assertTrue(len(resolved_topological_sections) == 9)
+        resolved_topological_sections_dict = dict(zip(
+                (rts.get_feature().get_name() for rts in resolved_topological_sections),
+                (rts for rts in resolved_topological_sections)))
+        for rts in resolved_topological_sections:
+            self.assertTrue(rts.get_feature().get_name() in ('section1', 'section2', 'section3', 'section4', 'section5', 'section6', 'section7', 'section8', 'section14'))
+        
+        section1_shared_sub_segments = resolved_topological_sections_dict['section1'].get_shared_sub_segments()
+        self.assertTrue(len(section1_shared_sub_segments) == 1)
+        for sss in section1_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology3']))
+        
+        section2_shared_sub_segments = resolved_topological_sections_dict['section2'].get_shared_sub_segments()
+        self.assertTrue(len(section2_shared_sub_segments) == 2)
+        for sss in section2_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology1']) or sharing_topologies == set(['topology3']))
+        
+        section3_shared_sub_segments = resolved_topological_sections_dict['section3'].get_shared_sub_segments()
+        self.assertTrue(len(section3_shared_sub_segments) == 1)
+        for sss in section3_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology1']))
+        
+        section4_shared_sub_segments = resolved_topological_sections_dict['section4'].get_shared_sub_segments()
+        self.assertTrue(len(section4_shared_sub_segments) == 2)
+        for sss in section4_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology1']) or sharing_topologies == set(['topology2']))
+        
+        section5_shared_sub_segments = resolved_topological_sections_dict['section5'].get_shared_sub_segments()
+        self.assertTrue(len(section5_shared_sub_segments) == 1)
+        for sss in section5_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology2']))
+        
+        section6_shared_sub_segments = resolved_topological_sections_dict['section6'].get_shared_sub_segments()
+        self.assertTrue(len(section6_shared_sub_segments) == 1)
+        for sss in section6_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology3']))
+        
+        section7_shared_sub_segments = resolved_topological_sections_dict['section7'].get_shared_sub_segments()
+        self.assertTrue(len(section7_shared_sub_segments) == 2)
+        for sss in section7_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology1', 'topology2']) or sharing_topologies == set(['topology2', 'topology3']))
+        
+        section8_shared_sub_segments = resolved_topological_sections_dict['section8'].get_shared_sub_segments()
+        self.assertTrue(len(section8_shared_sub_segments) == 1)
+        for sss in section8_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology1', 'topology3']))
+        
+        section14_shared_sub_segments = resolved_topological_sections_dict['section14'].get_shared_sub_segments()
+        self.assertTrue(len(section14_shared_sub_segments) == 2)
+        for sss in section14_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology3']) or sharing_topologies == set(['topology2', 'topology3']))
+
+
 class ReconstructionTreeCase(unittest.TestCase):
     def setUp(self):
         self.rotations = pygplates.FeatureCollectionFileFormatRegistry().read(
@@ -719,6 +828,7 @@ def suite():
             InterpolateTotalReconstructionSequenceTestCase,
             ReconstructTestCase,
             ReconstructionTreeCase,
+            ResolvedTopologiesTestCase,
             RotationModelCase
         ]
 
