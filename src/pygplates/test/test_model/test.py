@@ -483,6 +483,17 @@ class FeatureCollectionCase(unittest.TestCase):
         self.feature_count = 4
         self.feature_collection = pygplates.FeatureCollectionFileFormatRegistry().read(self.volcanoes_filename)
 
+    def test_read_write(self):
+        feature_collection = pygplates.FeatureCollection(self.volcanoes_filename) 
+        self.assertTrue(len(feature_collection) == 4)
+        
+        tmp_filename = os.path.join(FIXTURES, 'tmp.gpml')
+        feature_collection.write(tmp_filename)
+        self.assertTrue(os.path.isfile(tmp_filename))
+        feature_collection = pygplates.FeatureCollection.read(tmp_filename) 
+        self.assertTrue(len(feature_collection) == 4)
+        os.remove(tmp_filename)
+
     def test_construct(self):
         # Create new empty feature collection.
         new_feature_collection = pygplates.FeatureCollection()
@@ -704,16 +715,25 @@ class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):
         self.rotations_filename = os.path.join(FIXTURES, 'rotations.rot')
         self.file_format_registry = pygplates.FeatureCollectionFileFormatRegistry()
 
-    def test_load_feature_collection(self):
+    def test_read_feature_collection(self):
         volcanoes = self.file_format_registry.read(self.volcanoes_filename)
         self.assertTrue(volcanoes)
 
+    def test_write_feature_collection(self):
+        volcanoes = self.file_format_registry.read(self.volcanoes_filename)
+        self.assertTrue(len(volcanoes) == 4)
+        tmp_filename = os.path.join(FIXTURES, 'tmp.gpml')
+        volcanoes.write(tmp_filename)
+        self.assertTrue(os.path.isfile(tmp_filename))
+        volcanoes = pygplates.FeatureCollection.read(tmp_filename) 
+        self.assertTrue(len(volcanoes) == 4)
+        os.remove(tmp_filename)
 
-    def test_load_rotation_model(self):
+    def test_read_rotation_model(self):
         rotations = self.file_format_registry.read(self.rotations_filename)
         self.assertTrue(rotations)
 
-    def test_load_invalid_name(self):
+    def test_read_invalid_name(self):
         try:
             self.file_format_registry.read(None)
             self.assertTrue(False, "Loading invalid file name should fail")

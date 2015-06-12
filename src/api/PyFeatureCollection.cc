@@ -33,6 +33,7 @@
 
 #include "PyFeatureCollection.h"
 
+#include "PyFeatureCollectionFileFormatRegistry.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 
@@ -70,6 +71,25 @@ namespace GPlatesApi
 		};
 	};
 
+
+	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
+	feature_collection_handle_read(
+			const QString &filename)
+	{
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry registry;
+		// Use the function in "PyFeatureCollectionFileFormatRegistry.h"...
+		return read_feature_collection(registry, filename);
+	}
+
+	void
+	feature_collection_handle_write(
+			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
+			const QString &filename)
+	{
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry registry;
+		// Use the function in "PyFeatureCollectionFileFormatRegistry.h"...
+		write_feature_collection(registry, feature_collection, filename);
+	}
 
 	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 	feature_collection_handle_create(
@@ -1205,13 +1225,9 @@ export_feature_collection()
 					"  features_in_collection = [feature for feature in feature_collection]\n"
 					"  assert(num_features == len(features_in_collection))\n"
 					"\n"
-					"The following methods provide support for adding, removing and getting features:\n"
-					"\n"
-					"* :meth:`add`\n"
-					"* :meth:`remove`\n"
-					"* :meth:`get`\n"
-					"\n"
-					"A feature collection can be deep copied using :meth:`clone`.\n",
+					".. note:: A feature collection can be :meth:`read<read>` from a file and "
+					":meth:`written<write>` to a file.\n"
+					".. note:: A feature collection can be deep copied using :meth:`clone`.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1248,6 +1264,64 @@ export_feature_collection()
 				"    feature_collection = pygplates.FeatureCollection()\n"
 				"    feature_collection.add(feature1)\n"
 				"    feature_collection.add(feature2)\n")
+		.def("read",
+				&GPlatesApi::feature_collection_handle_read,
+				(bp::arg("filename")),
+				"read(filename)\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Reads a feature collection from the file with name *filename*.\n"
+				"\n"
+				"  :param filename: the name of the file to read\n"
+				"  :type filename: string\n"
+				"  :rtype: :class:`FeatureCollection`\n"
+				"  :raises: OpenFileForReadingError if the file is not readable\n"
+				"  :raises: FileFormatNotSupportedError if the file format (identified by the filename "
+				"extension) does not support reading\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    feature_collection = pygplates.FeatureCollection.read(filename)\n"
+				"\n"
+				"  ...although it's even easier to just write:\n"
+				"  ::\n"
+				"\n"
+				"    feature_collection = pygplates.FeatureCollection(filename)\n"
+				"\n"
+				"  .. note: This function is equivalent to:\n"
+				"     ::\n"
+				"\n"
+				"       FeatureCollectionFileFormatRegistry registry\n"
+				"       registry.read(filename)\n"
+				"\n"
+				"  .. seealso:: :meth:`FeatureCollectionFileFormatRegistry.read`\n"
+				"  .. seealso:: For the list of supported file formats see :class:`FeatureCollectionFileFormatRegistry`.\n")
+		.staticmethod("read")
+		.def("write",
+				&GPlatesApi::feature_collection_handle_write,
+				(bp::arg("filename")),
+				"write(filename)\n"
+				"  Writes this feature collection to the file with name *filename*.\n"
+				"\n"
+				"  :param filename: the name of the file to write\n"
+				"  :type filename: string\n"
+				"  :raises: OpenFileForWritingError if the file is not writable\n"
+				"  :raises: FileFormatNotSupportedError if the file format (identified by the filename "
+				"extension) does not support writing\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    feature_collection.write(filename)\n"
+				"\n"
+				"  .. note: This function is equivalent to:\n"
+				"     ::\n"
+				"\n"
+				"       FeatureCollectionFileFormatRegistry registry\n"
+				"       registry.write(feature_collection, filename)\n"
+				"\n"
+				"  .. seealso:: :meth:`FeatureCollectionFileFormatRegistry.write`\n"
+				"  .. seealso:: For the list of supported file formats see :class:`FeatureCollectionFileFormatRegistry`.\n")
 		.def("clone",
 				&GPlatesApi::feature_collection_handle_clone,
 				"clone()\n"

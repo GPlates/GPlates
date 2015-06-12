@@ -134,7 +134,7 @@ export_feature_collection_file_format_registry()
 		.def("read",
 				&GPlatesApi::read_feature_collection,
 				(bp::arg("filename")),
-				"read(filename) -> FeatureCollection\n"
+				"read(filename)\n"
 				"  Reads a feature collection from the file with name *filename*.\n"
 				"\n"
 				"  :param filename: the name of the file to read\n"
@@ -156,7 +156,7 @@ export_feature_collection_file_format_registry()
 				"        # Handle unsupported file format (for reading).\n"
 				"        ...\n"
 				"\n"
-				"  Note that the returned *feature collection* may contain fewer features than are "
+				"  .. note:: The returned *feature collection* may contain fewer features than are "
 				"stored in the file if there were read errors. *TODO:* return read errors.\n")
 		.def("write",
 				&GPlatesApi::write_feature_collection,
