@@ -1,7 +1,7 @@
 .. _pygplates_split_isochron_into_ridges_and_transforms:
 
-Split an isochron into ridges and transforms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Split an isochron into ridge and transform segments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This example splits the geometry of an isochron into ridge and transform segments based on each segment's
 alignment with the isochron's stage pole at its time of appearance.
@@ -80,4 +80,102 @@ Sample code
 Details
 """""""
 
-**TODO**
+The rotations are loaded from a rotation file into a :class:`pygplates.RotationModel`.
+::
+
+    rotation_model = pygplates.RotationModel('rotations.rot')
+
+The isochron features are loaded into a :class:`pygplates.FeatureCollection`.
+::
+
+    isochron_features = pygplates.FeatureCollection('isochrons.gpml')
+
+The time period and conjugate plate IDs are obtained using :meth:`pygplates.Feature.get_valid_time`,
+:meth:`pygplates.Feature.get_reconstruction_plate_id` and :meth:`pygplates.Feature.get_conjugate_plate_id`.
+::
+
+    begin_time, end_time = isochron_feature.get_valid_time()
+    plate_id = isochron_feature.get_reconstruction_plate_id()
+    conjugate_plate_id = isochron_feature.get_conjugate_plate_id()
+
+| We calculate the stage rotation at the isochron birth time ``begin_time`` of the isochron's plate
+  ``plate_id`` relative to its conjugate plate ``conjugate_plate_id``.
+| We set the anchor plate to the isochron's plate ``plate_id`` so that the stage rotation is relative
+  to the isochron's plate.
+| This is done using :meth:`pygplates.RotationModel.get_rotation`.
+
+::
+
+    stage_rotation = rotation_model.get_rotation(
+            begin_time + 1, plate_id, begin_time, conjugate_plate_id, plate_id)
+
+| From the stage rotation we can get the stage pole which is equivalent to the location on the globe
+  where the rotation axis is.
+| Since the isochron spreads about this rotation axis its ridge segments will generally be pointing
+  towards the rotation axis and its transform segments will generally be perpendicular (ie, aligned
+  with the direction of rotation).
+
+::
+
+    stage_pole, stage_angle_radians = stage_rotation.get_euler_pole_and_angle()
+
+We iterate over the geometries of the isochron feature using :meth:`pygplates.Feature.get_geometries`.
+::
+
+    for isochron_geometry in isochron_feature.get_geometries():
+
+We then iterate over the segments of the :class:`polyline<pygplates.PolylineOnSphere>` geometry
+of the isochron using :meth:`pygplates.PolylineOnSphere.get_segments`.
+::
+
+    for segment in isochron_geometry.get_segments():
+
+| ...this will actually raise an error if the isochron's geometry is a :class:`pygplates.PointOnSphere`
+  or a :class:`pygplates.MultiPointOnSphere` since those geometry types do not have segments.
+| We could protect against this by always converting to a polyline by writing
+  ``pygplates.PolylineOnSphere(isochron_geometry).get_segments()`` instead of ``isochron_geometry.get_segments()``.
+
+A zero-length :class:`segment<pygplates.GreatCircleArc>` has not direction so we ignore them.
+::
+
+    if segment.is_zero_length():
+        continue
+
+| We choose the middle of a segment to test direction with.
+| The segment mid-point is found using :meth:`pygplates.GreatCircleArc.get_arc_point` and
+  the segment direction (tangential to the globe) at the midpoint is found using
+  :meth:`pygplates.GreatCircleArc.get_arc_direction`
+
+::
+
+    segment_midpoint = segment.get_arc_point(0.5)
+    segment_direction_at_midpoint = segment.get_arc_direction(0.5)
+
+Next we calculate a :class:`3D vector<pygplates.Vector3D>` from the segment mid-point towards
+the stage pole by creating an :class:`arc<pygplates.GreatCircleArc>` from the mid-point to the
+stage pole and then getting the direction of the arc using :meth:`pygplates.GreatCircleArc.get_arc_direction`.
+::
+
+    segment_to_stage_pole_direction = pygplates.GreatCircleArc(
+            segment_midpoint, stage_pole).get_arc_direction(0)
+
+| Both vectors point *from* the segment's mid-point, but in different directions.
+| The angle (in *radians*) between them is found using :meth:`pygplates.Vector3D.angle_between`.
+
+::
+
+    deviation_of_segment_direction_from_stage_pole = pygplates.Vector3D.angle_between(
+            segment_direction_at_midpoint, segment_to_stage_pole_direction)
+
+| Our *isochron_segment_deviation_in_radians* parameter determines the maximum deviation angle at which
+  at which the isochron segment switches from a ridge segment to a transform segment.
+| ``math.pi - isochron_segment_deviation_in_radians`` is the threshold used when the isochron direction
+  is facing away from the stage pole (instead of towards it).
+
+::
+
+    if (deviation_of_segment_direction_from_stage_pole < isochron_segment_deviation_in_radians or
+        deviation_of_segment_direction_from_stage_pole > math.pi - isochron_segment_deviation_in_radians):
+        ridge_segments.append(segment)
+    else:
+        transform_segments.append(segment)
