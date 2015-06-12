@@ -2348,7 +2348,7 @@ export_polyline_on_sphere()
 		.def("get_segments",
 				&GPlatesApi::poly_geometry_on_sphere_get_arcs_view<GPlatesMaths::PolylineOnSphere>,
 				"get_segments()\n"
-				"  Returns a **read-only** sequence of :class:`segments<GreatCircleArc>` in this polyline.\n"
+				"  Returns a *read-only* sequence of :class:`segments<GreatCircleArc>` in this polyline.\n"
 				"\n"
 				"  :rtype: a read-only sequence of :class:`GreatCircleArc`\n"
 				"\n"
@@ -2383,7 +2383,7 @@ export_polyline_on_sphere()
 				"    first_segment = segments[0]\n"
 				"    last_segment = segments[-1]\n"
 				"\n"
-				"  .. note:: The returned sequence is **read-only** and cannot be modified.\n"
+				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n"
 				"\n"
 				"  .. note:: If you want a modifiable sequence consider wrapping the returned sequence in a ``list`` "
 				"using something like ``segments = list(polyline.get_segments())`` **but** note that modifying "
@@ -2767,7 +2767,7 @@ export_polygon_on_sphere()
 		.def("get_segments",
 				&GPlatesApi::poly_geometry_on_sphere_get_arcs_view<GPlatesMaths::PolygonOnSphere>,
 				"get_segments()\n"
-				"  Returns a **read-only** sequence of :class:`segments<GreatCircleArc>` in this polyline.\n"
+				"  Returns a *read-only* sequence of :class:`segments<GreatCircleArc>` in this polyline.\n"
 				"\n"
 				"  :rtype: a read-only sequence of :class:`GreatCircleArc`\n"
 				"\n"
@@ -2804,7 +2804,7 @@ export_polygon_on_sphere()
 				"  .. note:: The :meth:`end point<GreatCircleArc.get_end_point>` of the last segment is "
 				"equal to the :meth:`start point<GreatCircleArc.get_start_point>` of the first segment.\n"
 				"\n"
-				"  .. note:: The returned sequence is **read-only** and cannot be modified.\n"
+				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n"
 				"\n"
 				"  .. note:: If you want a modifiable sequence consider wrapping the returned sequence in a ``list`` "
 				"using something like ``segments = list(polygon.get_segments())`` **but** note that modifying "

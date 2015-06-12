@@ -26,7 +26,7 @@ except ImportError:
 
 def geometry_on_sphere_get_points(geometry):
     """get_points()
-    Returns a **read-only** sequence of :class:`points<PointOnSphere>` in this geometry.
+    Returns a *read-only* sequence of :class:`points<PointOnSphere>` in this geometry.
     
     :rtype: a read-only sequence of :class:`PointOnSphere`
     
@@ -44,7 +44,7 @@ def geometry_on_sphere_get_points(geometry):
     ``seq[i:j:k]``               slice of *seq* from *i* to *j* with step *k*
     ============================ ==========================================================
     
-    .. note:: The returned sequence is **read-only** and cannot be modified.
+    .. note:: The returned sequence is *read-only* and cannot be modified.
     
     .. note:: If you want a modifiable sequence consider wrapping the returned sequence in a ``list``
        using something like ``points = list(geometry.get_points())`` **but** note that modifying
