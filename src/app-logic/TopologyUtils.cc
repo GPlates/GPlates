@@ -130,6 +130,25 @@ namespace GPlatesAppLogic
 			{
 				const ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segments_iter;
 
+				// Skip sub-segments that are the result of joining adjacent deforming points.
+				//
+				// Joining adjacent deforming points was meant to be a temporary hack to be removed
+				// when resolved *line* topologies were implemented. However, unfortunately it seems
+				// we need to keep this hack in place for any old data files that use the old method.
+				//
+				// The hack involves joining adjacent deforming points that are spread along a deforming zone
+				// boundary such that exported sub-segments are lines instead of a sequence of points.
+				//
+				// Skipping these sub-segments will result in missing sub-segments but the data should
+				// be using topological lines anyway (which avoids the problem). We could hack around
+				// this situation (instead of just skipping sub-segments) but each joined sub-segment
+				// only references one of (joined) point features/recon-geoms, so the whole idea of
+				// sub-segments sharing topological section feature/recon-geom doesn't really work.
+				if (sub_segment.get_joined_adjacent_deforming_points())
+				{
+					continue;
+				}
+
 				// Add the current resolved topology to the list of those sharing the current section.
 				resolved_section_to_sharing_resolved_topologies_map[sub_segment.get_reconstruction_geometry().get()]
 						.push_back(ResolvedSubSegmentInfo(sub_segment, resolved_topology));

@@ -1855,6 +1855,9 @@ GPlatesAppLogic::TopologyInternalUtils::join_adjacent_deforming_points(
 						prev_sub_segment->get_reconstruction_geometry(),
 						prev_sub_segment->get_feature_ref(),
 						false/*use_reverse*/));
+		// Mark that we've joined adjacent deforming points - so others are aware of the hack.
+		merged_sub_segments.back().set_joined_adjacent_deforming_points();
+
 		return;
 	}
 
@@ -1932,6 +1935,8 @@ GPlatesAppLogic::TopologyInternalUtils::join_adjacent_deforming_points(
 								prev_sub_segment->get_reconstruction_geometry(),
 								prev_sub_segment->get_feature_ref(),
 								false/*use_reverse*/));
+				// Mark that we've joined adjacent deforming points - so others are aware of the hack.
+				merged_sub_segments.back().set_joined_adjacent_deforming_points();
 
 				// Clear for the next merged sequence of deforming points.
 				merged_deforming_polyline_points.clear();

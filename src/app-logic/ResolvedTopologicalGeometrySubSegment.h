@@ -56,7 +56,8 @@ namespace GPlatesAppLogic
 			d_sub_segment_geometry(sub_segment_geometry),
 			d_segment_reconstruction_geometry(segment_reconstruction_geometry),
 			d_segment_feature_ref(segment_feature_ref),
-			d_use_reverse(use_reverse)
+			d_use_reverse(use_reverse),
+			d_joined_adjacent_deforming_points(false)
 		{  }
 
 		/**
@@ -118,6 +119,30 @@ namespace GPlatesAppLogic
 
 		//! Indicates if geometry direction was reversed when assembling topology.
 		bool d_use_reverse;
+
+
+	// This was meant to be a temporary hack to be removed when resolved *line* topologies were
+	// implemented. However, unfortunately it seems we need to keep this hack in place for any
+	// old data files that use the old method.
+	//
+	// The hack involves joining adjacent deforming points that are spread along a deforming zone
+	// boundary such that exported sub-segments are lines instead of a sequence of points.
+	public:
+
+		void
+		set_joined_adjacent_deforming_points()
+		{
+			d_joined_adjacent_deforming_points = true;
+		}
+
+		bool
+		get_joined_adjacent_deforming_points() const
+		{
+			return d_joined_adjacent_deforming_points;
+		}
+
+	private:
+		bool d_joined_adjacent_deforming_points;
 	};
 
 
