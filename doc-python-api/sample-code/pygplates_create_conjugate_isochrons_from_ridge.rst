@@ -139,7 +139,7 @@ must store their geometry in present day coordinates which means *reverse* recon
 .. note:: The use of ``None`` in, for example, ``ridge_feature.get_name(None)`` results in a
    :meth:`name<pygplates.Feature.get_name>` property only getting created if the ridge feature has a name.
 
-And finally the isochrons are save to a new file using :meth:`pygplates.FeatureCollection.write`.
+And finally the isochrons are saved to a new file using :meth:`pygplates.FeatureCollection.write`.
 ::
 
     isochron_feature_collection.write('isochrons.gpml')
