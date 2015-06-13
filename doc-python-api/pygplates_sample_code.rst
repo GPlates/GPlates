@@ -25,6 +25,7 @@ Topologies
    :maxdepth: 2
 
    sample-code/pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies
+   sample-code/pygplates_find_total_ridge_and_subduction_zone_lengths
 
 Velocities
 ----------
