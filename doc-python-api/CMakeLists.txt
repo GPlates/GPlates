@@ -63,13 +63,21 @@ if (SPHINX_FOUND)
 		@ONLY)
 	
 	# Copy the ".rst" files from our source directory to our binary/output directory.
-	# This is because the sphinx 'autosummary' command (when used with ':toctree:') with generate a
+	# This is because the sphinx 'autosummary' command (when used with ':toctree:') will generate a
 	# bunch of stub ".rst" files and we don't want them in our source code.
 	FILE(GLOB RST_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/*.rst" "${CMAKE_CURRENT_SOURCE_DIR}/sample-code/*.rst")
 	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/sample-code") # Ensure 'sample-code' sub-directory exists in binary build directory.
 	FOREACH(RST_FILE ${RST_FILES})
 		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${RST_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${RST_FILE} @ONLY)
 	ENDFOREACH(RST_FILE ${RST_FILES})
+	
+	# Copy the image (".png") files from our source directory to our binary/output directory.
+	# This is because we're making that the Sphinx source directory (since ".rst" files are also copied there as mentioned above).
+	FILE(GLOB IMAGE_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/images/*.png")
+	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/images") # Ensure 'images' sub-directory exists in binary build directory.
+	FOREACH(IMAGE_FILE ${IMAGE_FILES})
+		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${IMAGE_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${IMAGE_FILE} COPYONLY)
+	ENDFOREACH(IMAGE_FILE ${IMAGE_FILES})
 	
 	# It seems that 'sphinx-build' generates the following warning unless we create the specific directory in question...
 	# "WARNING: html_static_path entry '...doc-python-api/_build/_static' does not exist".
