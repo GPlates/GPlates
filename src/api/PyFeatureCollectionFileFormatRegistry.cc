@@ -84,7 +84,7 @@ namespace GPlatesApi
 	}
 
 	bp::object
-	GPlatesApi::read_feature_collections(
+	read_feature_collections(
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
 			bp::object filename_object)
 	{
