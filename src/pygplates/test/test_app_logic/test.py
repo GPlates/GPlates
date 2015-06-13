@@ -441,8 +441,8 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
         resolved_topologies = []
         resolved_topological_sections = []
         pygplates.resolve_topologies(
-            os.path.join(FIXTURES, 'topologies.gpml'),
-            os.path.join(FIXTURES, 'rotations.rot'),
+            topological_features,
+            rotation_features,
             resolved_topologies,
             10,
             resolved_topological_sections)
@@ -519,6 +519,46 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
         for sss in section14_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology3']) or sharing_topologies == set(['topology2', 'topology3']))
+
+        # This time exclude networks from the topological sections (but not the topologies).
+        resolved_topologies = []
+        resolved_topological_sections = []
+        pygplates.resolve_topologies(
+            topological_features,
+            rotation_features,
+            resolved_topologies,
+            10,
+            resolved_topological_sections,
+            resolve_topological_section_types = pygplates.ResolveTopologyType.boundary)
+        self.assertTrue(len(resolved_topologies) == 3)
+        self.assertTrue(len(resolved_topological_sections) == 7)
+
+        # This time exclude networks from the topologies (but not the topological sections).
+        resolved_topologies = []
+        resolved_topological_sections = []
+        pygplates.resolve_topologies(
+            topological_features,
+            rotation_features,
+            resolved_topologies,
+            10,
+            resolved_topological_sections,
+            resolve_topology_types = pygplates.ResolveTopologyType.boundary,
+            resolve_topological_section_types = pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network)
+        self.assertTrue(len(resolved_topologies) == 2)
+        self.assertTrue(len(resolved_topological_sections) == 9)
+
+        # This time exclude networks from both the topologies and the topological sections.
+        resolved_topologies = []
+        resolved_topological_sections = []
+        pygplates.resolve_topologies(
+            topological_features,
+            rotation_features,
+            resolved_topologies,
+            10,
+            resolved_topological_sections,
+            resolve_topology_types = pygplates.ResolveTopologyType.boundary)
+        self.assertTrue(len(resolved_topologies) == 2)
+        self.assertTrue(len(resolved_topological_sections) == 7)
 
 
 class ReconstructionTreeCase(unittest.TestCase):

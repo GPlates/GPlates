@@ -105,7 +105,7 @@ by giving it a specific latitude and longitude:
    Python uses the special method name ``__init__()`` for this and you will see these special methods
    documented in the classes listed below.
 
-You can then call functions (methods) on the *point* object such as accessing its latitude and longitude:
+You can then call functions (methods) on the *point* object such as accessing its latitude and longitude (as a tuple):
 ::
 
   latitude, longitude = point.to_lat_lon()
@@ -116,16 +116,20 @@ You can then call functions (methods) on the *point* object such as accessing it
 Within each class is a list of methods.
 And each method documents how to use the method and lists its function arguments and return value.
 
-File loading/saving classes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File reading/writing classes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Classes that load/save data from/to files:
+Classes that read/write data from/to files:
 
 .. autosummary::
    :nosignatures:
    :toctree: generated
 
+   pygplates.FeatureCollection
    pygplates.FeatureCollectionFileFormatRegistry
+
+.. note:: :class:`pygplates.FeatureCollection` is easier to use for
+   :meth:`reading<pygplates.FeatureCollection.read>` and :meth:`writing<pygplates.FeatureCollection.write>`.
 
 Rotation classes
 ^^^^^^^^^^^^^^^^
@@ -299,8 +303,8 @@ The following classes represent sub-segments *shared* by one or more resolved to
    :nosignatures:
    :toctree: generated
 
-   pygplates.ResolvedTopologicalSharedSubSegment
    pygplates.ResolvedTopologicalSection
+   pygplates.ResolvedTopologicalSharedSubSegment
 
 Geometry classes
 ^^^^^^^^^^^^^^^^

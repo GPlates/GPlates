@@ -137,6 +137,7 @@ namespace GPlatesApi
 				boost::optional<resolved_topological_sections_argument_type> &resolved_topological_sections,
 				GPlatesModel::integer_plate_id_type &anchor_plate_id,
 				unsigned int &resolve_topology_types,
+				unsigned int &resolve_topological_section_types,
 				bool &export_wrap_to_dateline,
 				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> &export_force_boundary_orientation)
 		{
@@ -201,6 +202,13 @@ namespace GPlatesApi
 							unused_keyword_args,
 							"resolve_topology_types",
 							ResolveTopologyType::BOUNDARY | ResolveTopologyType::NETWORK);
+
+			resolve_topological_section_types =
+					VariableArguments::extract_and_remove_or_default<unsigned int>(
+							unused_keyword_args,
+							"resolve_topological_section_types",
+							// Defaults to the value of 'resolve_topology_types'...
+							resolve_topology_types);
 
 			export_wrap_to_dateline =
 					VariableArguments::extract_and_remove_or_default<bool>(
@@ -412,6 +420,7 @@ namespace GPlatesApi
 		boost::optional<resolved_topological_sections_argument_type> resolved_topological_sections_argument;
 		GPlatesModel::integer_plate_id_type anchor_plate_id;
 		unsigned int resolve_topology_types;
+		unsigned int resolve_topological_section_types;
 		bool export_wrap_to_dateline;
 		boost::optional<GPlatesMaths::PolygonOrientation::Orientation> export_force_boundary_orientation;
 
@@ -425,6 +434,7 @@ namespace GPlatesApi
 				resolved_topological_sections_argument,
 				anchor_plate_id,
 				resolve_topology_types,
+				resolve_topological_section_types,
 				export_wrap_to_dateline,
 				export_force_boundary_orientation);
 
@@ -440,6 +450,12 @@ namespace GPlatesApi
 		if ((resolve_topology_types & ~RESOLVE_TOPOLOGY_TYPE_MASK) != 0)
 		{
 			PyErr_SetString(PyExc_ValueError, "Unknown bit flag specified in resolve topology types.");
+			bp::throw_error_already_set();
+		}
+		// Resolved topological section type flags must correspond to existing flags.
+		if ((resolve_topological_section_types & ~RESOLVE_TOPOLOGY_TYPE_MASK) != 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "Unknown bit flag specified in resolve topological section types.");
 			bp::throw_error_already_set();
 		}
 
@@ -483,7 +499,7 @@ namespace GPlatesApi
 		// Resolving topological lines generates its own reconstruct handle that will be used by
 		// topological boundaries and networks to find this group of resolved lines.
 		//
-		// So we always resolved topological *lines* regardless of whether the user requested it or not.
+		// So we always resolve topological *lines* regardless of whether the user requested it or not.
 		const GPlatesAppLogic::ReconstructHandle::type resolved_topological_lines_handle =
 				GPlatesAppLogic::TopologyUtils::resolve_topological_lines(
 						resolved_topological_lines,
@@ -499,7 +515,8 @@ namespace GPlatesApi
 		std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> resolved_topological_boundaries;
 
 		// Only resolve topological *boundaries* if the user requested it.
-		if ((resolve_topology_types & ResolveTopologyType::BOUNDARY) != 0)
+		if ((resolve_topology_types & ResolveTopologyType::BOUNDARY) != 0 ||
+			(resolve_topological_section_types & ResolveTopologyType::BOUNDARY) != 0)
 		{
 			GPlatesAppLogic::TopologyUtils::resolve_topological_boundaries(
 					resolved_topological_boundaries,
@@ -514,7 +531,8 @@ namespace GPlatesApi
 		std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> resolved_topological_networks;
 
 		// Only resolve topological *networks* if the user requested it.
-		if ((resolve_topology_types & ResolveTopologyType::NETWORK) != 0)
+		if ((resolve_topology_types & ResolveTopologyType::NETWORK) != 0 ||
+			(resolve_topological_section_types & ResolveTopologyType::NETWORK) != 0)
 		{
 			GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 					resolved_topological_networks,
@@ -596,14 +614,19 @@ namespace GPlatesApi
 		{
 			// Find the shared resolved topological sections from the resolved topological boundaries and networks.
 			//
-			// If only resolved topological lines were requested (no boundaries or networks) then there
-			// will be no shared resolved topological sections and we'll get an empty list or an exported
-			// file with no features in it.
+			// If no boundaries or networks were requested for some reason then there will be no shared
+			// resolved topological sections and we'll get an empty list or an exported file with no features in it.
 			std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> resolved_topological_sections;
 			GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 					resolved_topological_sections,
-					resolved_topological_boundaries,
-					resolved_topological_networks);
+					// Include resolved topological *boundaries* if requested...
+					((resolve_topological_section_types & ResolveTopologyType::BOUNDARY) != 0)
+							? resolved_topological_boundaries
+							: std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>(),
+					// Include resolved topological *networks* if requested...
+					((resolve_topological_section_types & ResolveTopologyType::NETWORK) != 0)
+							? resolved_topological_networks
+							: std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>());
 
 			//
 			// Either export the resolved topological sections to a file or append them to a python list.
@@ -724,6 +747,16 @@ export_resolve_topologies()
 			"  |                                   |      |                                                                 | - ``ResolveTopologyType.network``:                                               |\n"
 			"  |                                   |      |                                                                 |   generate :class:`resolved topological networks<ResolvedTopologicalNetwork>`    |\n"
 			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
+			"  | resolve_topological_section_types | int  | Same value as *resolve_topology_types*                          | Supports the same options as *resolve_topology_types*.                           |\n"
+			"  |                                   |      |                                                                 |                                                                                  |\n"
+			"  |                                   |      |                                                                 | .. note:: Although ``ResolveTopologyType.line`` is ignored if specified since    |\n"
+			"  |                                   |      |                                                                 |    only *boundary* topologies are considered.                                    |\n"
+			"  |                                   |      |                                                                 |                                                                                  |\n"
+			"  |                                   |      |                                                                 | Determines whether :class:`ResolvedTopologicalBoundary` or                       |\n"
+			"  |                                   |      |                                                                 | :class:`ResolvedTopologicalNetwork` (or both types) are listed in the            |\n"
+			"  |                                   |      |                                                                 | :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>`     |\n"
+			"  |                                   |      |                                                                 | of *resolved_topological_sections*.                                              |\n"
+			"  +-----------------------------------+------+-----------------------------------------------------------------+----------------------------------------------------------------------------------+\n"
 			"  | export_wrap_to_dateline           | bool | True                                                            | | Wrap/clip resolved topologies to the dateline (currently                       |\n"
 			"  |                                   |      |                                                                 |   ignored unless exporting to an ESRI Shapefile format *file*).                  |\n"
 			"  |                                   |      |                                                                 | | Only applies when exporting to a file (ESRI Shapefile).                        |\n"
@@ -744,9 +777,24 @@ export_resolve_topologies()
 			"*topological* features.\n"
 			"  | They can all be mixed in a single :class:`feature collection<FeatureCollection>` or file, "
 			"or they can be distributed across multiple :class:`feature collections<FeatureCollection>` or files.\n"
+			"  | For example the dynamic polygons in the `GPlates sample data <http://www.gplates.org/download.html#download_data>`_ "
+			"have everything in a single file.\n"
 			"\n"
-			"  .. note: Topological *sections* can be regular features or topological *line* features. "
+			"  .. note:: Topological *sections* can be regular features or topological *line* features. "
 			"The latter are typically used for sections of a plate polygon (or network) boundary that are deforming.\n"
+			"\n"
+			"  | The argument *resolved_topologies* can be either an export filename or a python ``list``.\n"
+			"  | In the latter case the resolved topologies generated by the reconstruction are appended "
+			"to the python ``list`` (instead of exported to a file).\n"
+			"\n"
+			"  | A similar argument *resolved_topological_sections* can also be either an export filename or a python ``list``.\n"
+			"  | In the latter case the :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>` "
+			"generated by the reconstruction are appended to the python ``list`` (instead of exported to a file).\n"
+			"\n"
+			"  .. note:: | :class:`Resolved topological sections<pygplates.ResolvedTopologicalSection>` can be used "
+			"to find the unique (non-overlapping) set of boundary sub-segments that are shared by the resolved topologies.\n"
+			"            | Each resolved topology also has a list of its boundary sub-segments but they overlap with the "
+			"boundary sub-segments of neighbouring topologies.\n"
 			"\n"
 			"  | The optional keyword argument *resolve_topology_types* (see *output_parameters* table) determines "
 			"the type of resolved topologies output to *resolved_topologies*.\n"
@@ -760,9 +808,10 @@ export_resolve_topologies()
 			":class:`resolved topological lines<ResolvedTopologicalLine>` are typically only used as "
 			"topological sections for resolved topological boundaries and networks.\n"
 			"\n"
-			"  .. note:: *resolved_topologies* can be either an export filename or a python ``list``. "
-			"In the latter case the resolved topologies generated by the reconstruction are appended "
-			"to the python ``list`` (instead of exported to a file).\n"
+			"  | A similar optional keyword argument is *resolve_topological_section_types* (see *output_parameters* table).\n"
+			"  | This determines which resolved topology types are listed in the "
+			":meth:`shared sub-segments<ResolvedTopologicalSharedSubSegment.get_sharing_resolved_topologies>` "
+			"of the *resolved_topological_sections*.\n"
 			"\n"
 			"  The following *export* file formats are currently supported by GPlates:\n"
 			"\n"
@@ -799,45 +848,43 @@ export_resolve_topologies()
 			"  Resolving a file containing dynamic plate polygons to a shapefile at 10Ma:\n"
 			"  ::\n"
 			"\n"
-            "    pygplates.resolve_topologies('dynamic_plate_polygons.gpml', 'rotations.rot', 'resolved_plate_polygons_10Ma.shp', 10)\n"
+            "    pygplates.resolve_topologies(\n"
+			"        'dynamic_plate_polygons.gpml', 'rotations.rot', 'resolved_plate_polygons_10Ma.shp', 10)\n"
 			"\n"
-			"  Reconstructing a file containing regular reconstructable features to a list of reconstructed "
-			"feature geometries at 10Ma:\n"
+			"  | Resolving the same file but also exporting resolved topological sections.\n"
+			"  | These are the unique (non-duplicated) segments (shared by neighbouring topology boundaries).\n"
+			"\n"
 			"  ::\n"
 			"\n"
-			"    reconstructed_feature_geometries = []\n"
-            "    pygplates.reconstruct('volcanoes.gpml', rotation_model, reconstructed_feature_geometries, 10)\n"
+            "    pygplates.resolve_topologies(\n"
+			"       'dynamic_plate_polygons.gpml', 'rotations.rot', 'resolved_plate_polygons_10Ma.shp', 10,\n"
+			"       'resolved_plate_segments_10Ma.shp')\n"
 			"\n"
-			"  Reconstructing a file containing flowline features to a shapefile at 10Ma:\n"
+			"  Resolving only topological networks in a file containing both dynamic plate polygons and deforming networks:\n"
 			"  ::\n"
 			"\n"
-            "    pygplates.reconstruct('flowlines.gpml', rotation_model, 'reconstructed_flowlines_10Ma.shp', 10, "
-			"reconstruct_type=pygplates.ReconstructType.flowline)\n"
+            "    pygplates.resolve_topologies(\n"
+			"        'plate_polygons_and_networks.gpml', 'rotations.rot', 'resolved_networks_10Ma.shp', 10,\n"
+			"        resolve_topology_types=pygplates.ResolveTopologyType.network)\n"
 			"\n"
-			"  Reconstructing a file containing flowline features to a list of reconstructed flowlines at 10Ma:\n"
+			"  Writing only resolved networks to ``resolved_networks_10Ma.shp`` but writing shared boundary segments "
+			"between resolved plate polygons *and* networks to ``resolved_boundary_segments_10Ma.shp``:\n"
 			"  ::\n"
 			"\n"
-			"    reconstructed_flowlines = []\n"
-            "    pygplates.reconstruct('flowlines.gpml', rotation_model, reconstructed_flowlines, 10, "
-			"reconstruct_type=pygplates.ReconstructType.flowline)\n"
+            "    pygplates.resolve_topologies(\n"
+			"        'plate_polygons_and_networks.gpml', 'rotations.rot', 'resolved_networks_10Ma.shp', 10,\n"
+			"        'resolved_boundary_segments_10Ma.shp',\n"
+			"        resolve_topology_types=pygplates.ResolveTopologyType.network,\n"
+			"        resolve_topological_section_types=pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network)\n"
 			"\n"
-			"  Reconstructing regular reconstructable features to a shapefile at 10Ma:\n"
+			"  Resolving to a list of topologies and a list of topological sections:\n"
 			"  ::\n"
 			"\n"
-			"    pygplates.reconstruct(pygplates.FeatureCollection([feature1, feature2]), rotation_model, "
-			"'reconstructed_features_10Ma.shp', 10)\n"
-			"\n"
-			"  Reconstructing a list of regular reconstructable features to a shapefile at 10Ma:\n"
-			"  ::\n"
-			"\n"
-			"    pygplates.reconstruct([feature1, feature2], rotation_model, 'reconstructed_features_10Ma.shp', 10)\n"
-			"\n"
-			"  Reconstructing a single regular reconstructable feature to a list of reconstructed feature geometries at 10Ma:\n"
-			"  ::\n"
-			"\n"
-			"    reconstructed_feature_geometries = []\n"
-            "    pygplates.reconstruct(feature, rotation_model, reconstructed_feature_geometries, 10)\n"
-			"    assert(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())\n";
+			"    resolved_topologies = []\n"
+			"    resolved_topological_sections = []\n"
+            "    pygplates.resolve_topologies(\n"
+			"        'plate_polygons_and_networks.gpml', 'rotations.rot', resolved_topologies, 10,\n"
+			"         resolved_topological_sections)\n";
 
 	// Register 'resolved topologies' variant.
 	GPlatesApi::PythonConverterUtils::register_variant_conversion<
