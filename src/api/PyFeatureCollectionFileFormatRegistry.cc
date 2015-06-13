@@ -23,12 +23,20 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <iterator>
+#include <vector>
+#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+#include <QString>
 
 #include "PyFeatureCollectionFileFormatRegistry.h"
 
 #include "global/python.h"
+// This is not included by <boost/python.hpp>.
+// Also we must include this after <boost/python.hpp> which means after "global/python.h".
+#include <boost/python/stl_iterator.hpp>
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
@@ -43,13 +51,6 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
-	boost::shared_ptr<GPlatesFileIO::FeatureCollectionFileFormat::Registry>
-	feature_collection_file_format_registry_create()
-	{
-		return boost::shared_ptr<GPlatesFileIO::FeatureCollectionFileFormat::Registry>(
-				new GPlatesFileIO::FeatureCollectionFileFormat::Registry());
-	}
-
 	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
 	read_feature_collection(
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
@@ -70,6 +71,68 @@ namespace GPlatesApi
 	}
 
 	void
+	read_feature_collections(
+			std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
+			const std::vector<QString> &filenames)
+	{
+		BOOST_FOREACH(const QString &filename, filenames)
+		{
+			feature_collections.push_back(
+					read_feature_collection(registry, filename));
+		}
+	}
+
+	bp::object
+	GPlatesApi::read_feature_collections(
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
+			bp::object filename_object)
+	{
+		// See if a single filename.
+		bp::extract<QString> extract_filename(filename_object);
+		if (extract_filename.check())
+		{
+			const QString filename = extract_filename();
+
+			return bp::object(read_feature_collection(registry, filename));
+		}
+
+		// Try a sequence of filenames next.
+		std::vector<QString> filenames;
+		try
+		{
+			// Begin/end iterators over the python filename sequence.
+			bp::stl_input_iterator<QString>
+					filenames_begin(filename_object),
+					filenames_end;
+
+			// Copy into a vector of filenames.
+			std::copy(filenames_begin, filenames_end, std::back_inserter(filenames));
+		}
+		catch (const boost::python::error_already_set &)
+		{
+			PyErr_Clear();
+
+			PyErr_SetString(PyExc_TypeError, "Expected a filename or sequence of filenames");
+			bp::throw_error_already_set();
+		}
+
+		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collections;
+		read_feature_collections(feature_collections, registry, filenames);
+
+		bp::list feature_collections_list;
+
+		BOOST_FOREACH(
+				GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
+				feature_collections)
+		{
+			feature_collections_list.append(feature_collection);
+		}
+
+		return feature_collections_list;
+	}
+
+	void
 	write_feature_collection(
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
 			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
@@ -83,6 +146,21 @@ namespace GPlatesApi
 
 		// Write the features from the feature collection to the file.
 		registry.write_feature_collection(file->get_reference());
+	}
+
+	boost::shared_ptr<GPlatesFileIO::FeatureCollectionFileFormat::Registry>
+	feature_collection_file_format_registry_create()
+	{
+		return boost::shared_ptr<GPlatesFileIO::FeatureCollectionFileFormat::Registry>(
+				new GPlatesFileIO::FeatureCollectionFileFormat::Registry());
+	}
+
+	bp::object
+	feature_collection_file_format_registry_read(
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
+			bp::object filename_object)
+	{
+		return read_feature_collections(registry, filename_object);
 	}
 }
 
@@ -132,16 +210,16 @@ export_feature_collection_file_format_registry()
 				"    feature_collection_file_format_registry = "
 				"pygplates.FeatureCollectionFileFormatRegistry()\n")
 		.def("read",
-				&GPlatesApi::read_feature_collection,
+				&GPlatesApi::feature_collection_file_format_registry_read,
 				(bp::arg("filename")),
 				"read(filename)\n"
-				"  Reads a feature collection from the file with name *filename*.\n"
+				"  Reads one or more feature collections (from one or more files).\n"
 				"\n"
-				"  :param filename: the name of the file to read\n"
-				"  :type filename: string\n"
-				"  :rtype: :class:`FeatureCollection`\n"
-				"  :raises: OpenFileForReadingError if the file is not readable\n"
-				"  :raises: FileFormatNotSupportedError if the file format (identified by the filename "
+				"  :param filename: the name of the file (or files) to read\n"
+				"  :type filename: string, or sequence of strings\n"
+				"  :rtype: :class:`FeatureCollection`, list of :class:`FeatureCollection`\n"
+				"  :raises: OpenFileForReadingError if any file is not readable\n"
+				"  :raises: FileFormatNotSupportedError if any file format (identified by a filename "
 				"extension) does not support reading\n"
 				"\n"
 				"  For example:\n"

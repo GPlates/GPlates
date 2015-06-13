@@ -492,6 +492,9 @@ class FeatureCollectionCase(unittest.TestCase):
         self.assertTrue(os.path.isfile(tmp_filename))
         feature_collection = pygplates.FeatureCollection.read(tmp_filename) 
         self.assertTrue(len(feature_collection) == 4)
+        feature_collections = pygplates.FeatureCollection.read([tmp_filename, tmp_filename])
+        self.assertTrue(len(feature_collections) == 2)
+        self.assertTrue(len(feature_collections[0]) == 4 and len(feature_collections[1]) == 4)
         os.remove(tmp_filename)
 
     def test_construct(self):
@@ -717,7 +720,9 @@ class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):
 
     def test_read_feature_collection(self):
         volcanoes = self.file_format_registry.read(self.volcanoes_filename)
-        self.assertTrue(volcanoes)
+        self.assertTrue(len(volcanoes) == 4)
+        volcanoes_and_rotations = self.file_format_registry.read([self.volcanoes_filename, self.rotations_filename])
+        self.assertTrue(len(volcanoes_and_rotations) == 2)
 
     def test_write_feature_collection(self):
         volcanoes = self.file_format_registry.read(self.volcanoes_filename)
@@ -738,7 +743,7 @@ class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):
             self.file_format_registry.read(None)
             self.assertTrue(False, "Loading invalid file name should fail")
         except Exception, e:
-            self.assertEquals(e.__class__.__name__, 'ArgumentError')
+            self.assertEquals(e.__class__.__name__, 'TypeError')
 
     def test_unsupported_file_format(self):
         # Unsupported file format exception.

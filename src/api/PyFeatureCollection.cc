@@ -72,13 +72,14 @@ namespace GPlatesApi
 	};
 
 
-	GPlatesModel::FeatureCollectionHandle::non_null_ptr_type
+	bp::object
 	feature_collection_handle_read(
-			const QString &filename)
+			bp::object filename_object)
 	{
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry registry;
+
 		// Use the function in "PyFeatureCollectionFileFormatRegistry.h"...
-		return read_feature_collection(registry, filename);
+		return read_feature_collections(registry, filename_object);
 	}
 
 	void
@@ -87,6 +88,7 @@ namespace GPlatesApi
 			const QString &filename)
 	{
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry registry;
+
 		// Use the function in "PyFeatureCollectionFileFormatRegistry.h"...
 		write_feature_collection(registry, feature_collection, filename);
 	}
@@ -1271,29 +1273,35 @@ export_feature_collection()
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
-				"  [*staticmethod*] Reads a feature collection from the file with name *filename*.\n"
+				"  [*staticmethod*] Reads one or more feature collections (from one or more files).\n"
 				"\n"
-				"  :param filename: the name of the file to read\n"
-				"  :type filename: string\n"
-				"  :rtype: :class:`FeatureCollection`\n"
-				"  :raises: OpenFileForReadingError if the file is not readable\n"
-				"  :raises: FileFormatNotSupportedError if the file format (identified by the filename "
+				"  :param filename: the name of the file (or files) to read\n"
+				"  :type filename: string, or sequence of strings\n"
+				"  :rtype: :class:`FeatureCollection`, list of :class:`FeatureCollection`\n"
+				"  :raises: OpenFileForReadingError if any file is not readable\n"
+				"  :raises: FileFormatNotSupportedError if any file format (identified by a filename "
 				"extension) does not support reading\n"
 				"\n"
 				"  ::\n"
 				"\n"
 				"    feature_collection = pygplates.FeatureCollection.read(filename)\n"
 				"\n"
-				"  ...although it's even easier to just write:\n"
+				"  ...although for a single file the following is even easier:\n"
 				"  ::\n"
 				"\n"
 				"    feature_collection = pygplates.FeatureCollection(filename)\n"
+				"\n"
+				"  Multiple files can also be read:\n"
+				"  ::\n"
+				"\n"
+				"    for feature_collection in pygplates.FeatureCollection.read([filename1, filename2]):\n"
+				"        ...\n"
 				"\n"
 				"  .. note: This function is equivalent to:\n"
 				"     ::\n"
 				"\n"
 				"       FeatureCollectionFileFormatRegistry registry\n"
-				"       registry.read(filename)\n"
+				"       feature_collection = registry.read(filename)\n"
 				"\n"
 				"  .. seealso:: :meth:`FeatureCollectionFileFormatRegistry.read`\n"
 				"  .. seealso:: For the list of supported file formats see :class:`FeatureCollectionFileFormatRegistry`.\n")

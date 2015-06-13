@@ -26,9 +26,12 @@
 #ifndef GPLATES_API_PYFEATURECOLLECTIONFILEFORMATREGISTRY_H
 #define GPLATES_API_PYFEATURECOLLECTIONFILEFORMATREGISTRY_H
 
+#include <vector>
 #include <QString>
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
+
+#include "global/python.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -46,6 +49,26 @@ namespace GPlatesApi
 	read_feature_collection(
 			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
 			const QString &filename);
+
+	/**
+	 * Read a sequence of feature collections from the specified files.
+	 *
+	 * This interface is exposed so other API functions can use it in their implementation.
+	 */
+	void
+	read_feature_collections(
+			std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
+			const std::vector<QString> &filenames);
+
+	/**
+	 * Read a single filename (or a sequence of filenames) from @a filename_object and return a
+	 * wrapped 'GPlatesModel::FeatureCollectionHandle::non_null_ptr_type' (or Python list of them).
+	 */
+	boost::python::object
+	read_feature_collections(
+			const GPlatesFileIO::FeatureCollectionFileFormat::Registry &registry,
+			boost::python::object filename_object);
 
 	/**
 	 * Write a feature collection to the specified file.
