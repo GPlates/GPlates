@@ -84,7 +84,7 @@ The topological features are loaded into a :class:`pygplates.FeatureCollection`.
 
 | The topological features are resolved to the current ``time`` using :func:`pygplates.resolve_topologies`.
 | By default both :class:`pygplates.ResolvedTopologicalBoundary` (used for dynamic plate polygons) and
-  :class:`pygplates.ResolvedTopologicalNetwork` (used for deforming regions) and are appended to the
+  :class:`pygplates.ResolvedTopologicalNetwork` (used for deforming regions) are appended to the
   list ``resolved_topologies``.
 | Additionally the :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>` are
   appended to the list ``shared_boundary_sections``.
@@ -123,7 +123,7 @@ ignored if it's neither.
     for shared_sub_segment in shared_boundary_section.get_shared_sub_segments():
         shared_sub_segments_length += shared_sub_segment.get_geometry().get_arc_length()
 
-The lengths are for a unit-length sphere so we must multiple by the Earth's radius (see :class:`Earth`).
+The lengths are for a unit-length sphere so we must multiple by the Earth's radius (see :class:`pygplates.Earth`).
 ::
 
     total_ridge_length_in_kms = total_ridge_length * pygplates.Earth.mean_radius_in_kms

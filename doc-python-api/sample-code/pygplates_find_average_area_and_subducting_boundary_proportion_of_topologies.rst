@@ -129,7 +129,7 @@ The boundary polygon of a resolved topology also has a length (obtained using :m
 
     subduction_length_proportion = subduction_zone_length / resolved_topology.get_resolved_boundary().get_arc_length()
 
-The area is for a unit-length sphere so we must multiple by the Earth's radius squared (see :class:`Earth`).
+The area is for a unit-length sphere so we must multiple by the Earth's radius squared (see :class:`pygplates.Earth`).
 ::
 
     average_area_in_sq_kms = average_area * pygplates.Earth.mean_radius_in_kms * pygplates.Earth.mean_radius_in_kms
