@@ -1377,7 +1377,10 @@ GPlatesGui::MapRenderedGeometryLayerPainter::project_and_tessellate_wrapped_line
 
 		// Tessellate the current arc if its two endpoints are far enough apart.
 		if (dot(arc_start_point_on_sphere.position_vector(), arc_end_point_on_sphere.position_vector()).dval()
-			< COSINE_GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD)
+				< COSINE_GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD &&
+			// Watch out for arcs with antipodal points.
+			// Seems dateline wrapper can generate arc between North/South poles (needs fixing)...
+			arc_end_point_on_sphere != get_antipodal_point(arc_start_point_on_sphere))
 		{
 			const GPlatesMaths::GreatCircleArc gca =
 					GPlatesMaths::GreatCircleArc::create(arc_start_point_on_sphere, arc_end_point_on_sphere);
