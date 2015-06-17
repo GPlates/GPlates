@@ -563,6 +563,7 @@ GPlatesMaths::tessellate(
 	{
 		tessellation_points.push_back(start_point);
 		tessellation_points.push_back(end_point);
+		return;
 	}
 
 	// The angular extent of the great circle arc being subdivided.
