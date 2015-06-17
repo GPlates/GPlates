@@ -35,6 +35,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
 
+#include "maths/AngularExtent.h"
 #include "maths/DateLineWrapper.h"
 #include "maths/LatLonPoint.h"
 
@@ -49,8 +50,17 @@ namespace GPlatesApi
 	bp::object
 	date_line_wrapper_wrap(
 			const GPlatesMaths::DateLineWrapper &date_line_wrapper,
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry)
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
+			boost::optional<double> tessellate_degrees)
 	{
+		// Convert threshold from degrees to radians (if specified).
+		boost::optional<GPlatesMaths::AngularExtent> tessellate;
+		if (tessellate_degrees)
+		{
+			tessellate = GPlatesMaths::AngularExtent::create_from_angle(
+				GPlatesMaths::convert_deg_to_rad(tessellate_degrees.get()));
+		}
+
 		const GPlatesMaths::GeometryType::Value geometry_type =
 				GPlatesAppLogic::GeometryUtils::get_geometry_type(*geometry);
 		switch (geometry_type)
@@ -84,7 +94,7 @@ namespace GPlatesApi
 						GPlatesUtils::dynamic_pointer_cast<const GPlatesMaths::PolylineOnSphere>(geometry);
 
 				std::vector<GPlatesMaths::DateLineWrapper::LatLonPolyline> lat_lon_polylines;
-				date_line_wrapper.wrap_polyline(polyline, lat_lon_polylines);
+				date_line_wrapper.wrap_polyline(polyline, lat_lon_polylines, tessellate);
 
 				bp::list lat_lon_polyline_list;
 
@@ -94,7 +104,8 @@ namespace GPlatesApi
 						lat_lon_polylines.end();
 				for ( ; lat_lon_polylines_iter != lat_lon_polylines_end; ++lat_lon_polylines_iter)
 				{
-					lat_lon_polyline_list.append(*lat_lon_polylines_iter);
+					const GPlatesMaths::DateLineWrapper::LatLonPolyline &lat_lon_polyline = *lat_lon_polylines_iter;
+					lat_lon_polyline_list.append(lat_lon_polyline);
 				}
 
 				return lat_lon_polyline_list;
@@ -107,7 +118,7 @@ namespace GPlatesApi
 						GPlatesUtils::dynamic_pointer_cast<const GPlatesMaths::PolygonOnSphere>(geometry);
 
 				std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon> lat_lon_polygons;
-				date_line_wrapper.wrap_polygon(polygon, lat_lon_polygons);
+				date_line_wrapper.wrap_polygon(polygon, lat_lon_polygons, tessellate);
 
 				bp::list lat_lon_polygon_list;
 
@@ -117,7 +128,8 @@ namespace GPlatesApi
 						lat_lon_polygons.end();
 				for ( ; lat_lon_polygons_iter != lat_lon_polygons_end; ++lat_lon_polygons_iter)
 				{
-					lat_lon_polygon_list.append(*lat_lon_polygons_iter);
+					const GPlatesMaths::DateLineWrapper::LatLonPolygon &lat_lon_polygon = *lat_lon_polygons_iter;
+					lat_lon_polygon_list.append(lat_lon_polygon);
 				}
 
 				return lat_lon_polygon_list;
@@ -243,12 +255,15 @@ export_date_line_wrapper()
 				"within the range ``[-360, 360]`` which is the valid range for :class:`LatLonPoint`.\n")
 		.def("wrap",
 				&GPlatesApi::date_line_wrapper_wrap,
-				(bp::arg("geometry")),
-				"wrap(geometry)\n"
+				(bp::arg("geometry"),
+						bp::arg("tessellate_degrees") = boost::optional<double>()),
+				"wrap(geometry, [tessellate_degrees])\n"
 				"  Wrap a geometry to the range ``[central_meridian - 180, central_meridian + 180]``.\n"
 				"\n"
 				"  :param geometry: the geometry to wrap\n"
 				"  :type geometry: :class:`GeometryOnSphere`\n"
+				"  :param tessellate_degrees: optional tessellation threshold (in degrees)\n"
+				"  :type tessellate_degrees: float or None\n"
 				"\n"
 				"  The following table maps the input geometry type to the return type:\n"
 				"\n"
@@ -299,7 +314,34 @@ export_date_line_wrapper()
 				"    wrapped_polygons = date_line_wrapper.wrap(polygon)\n"
 				"    for wrapped_polygon in wrapped_polygons:\n"
 				"      for wrapped_point in wrapped_polygon.get_exterior_points():\n"
-				"        wrapped_point_lat_lon = wrapped_point.get_latitude(), wrapped_point.get_longitude()\n")
+				"        wrapped_point_lat_lon = wrapped_point.get_latitude(), wrapped_point.get_longitude()\n"
+				"\n"
+				"  | If *tessellate_degrees* is specified then tessellation (of polylines and polygons) is also performed.\n"
+				"  | Each :class:`segment<GreatCircleArc>` is then tessellated such that adjacent points are separated by "
+				"no more than *tessellate_degrees* on the globe.\n"
+				"  | This is useful both for geometries that cross the dateline and those that don't. "
+				"It helps ensure each polyline or polygon does not deviate too much from the true path where "
+				"each *great circle arc* segment can be curved in 2D map projection space (rather than a straight line segment).\n"
+				"  | But it is **especially** useful for wrapped *polygons* in 2D map projections where the boundary "
+				"of the projection is curved (such as *Mollweide*). Without tessellation the segment of the wrapped polygon "
+				"along the boundary will be a straight line instead of curved to follow the map boundary.\n"
+				"\n"
+				"  Wrapping and tessellating a polyline and a polygon to a central meridian of 90 degrees:\n"
+				"  ::\n"
+				"\n"
+				"    date_line_wrapper = pygplates.DateLineWrapper(90.0)\n"
+				"    \n"
+				"    # Wrap a polyline to the range [-90, 270] and tessellate to at least 2 degrees.\n"
+				"    polyline = pygplates.PolylineOnSphere(...)\n"
+				"    wrapped_and_tessellated_polylines = date_line_wrapper.wrap(polyline, 2.0)\n"
+				"    ...\n"
+				"    \n"
+				"    # Wrap a polygon to the range [-90, 270] and tessellate to at least 2 degrees.\n"
+				"    polygon = pygplates.PolygonOnSphere(...)\n"
+				"    wrapped_and_tessellated_polygons = date_line_wrapper.wrap(polygon, 2.0)\n"
+				"    ...\n"
+				"\n"
+				"  .. note:: *tessellate_degrees* is ignored for :class:`points<PointOnSphere>` and :class:`multi-points<MultiPointOnSphere>`.")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

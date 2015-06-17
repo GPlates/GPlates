@@ -1404,8 +1404,6 @@ GPlatesGui::MapRenderedGeometryLayerPainter::project_tessellated_wrapped_line_ge
 		return;
 	}
 
-	const double &central_longitude = d_map_projection->central_llp().longitude();
-
 	// Add the first vertex of the sequence of points.
 	dateline_wrapped_projected_line_geometry.add_vertex(
 			get_projected_wrapped_position(lat_lon_points.front()));

@@ -33,7 +33,7 @@ class DateLineWrapperCase(unittest.TestCase):
         wrapped_point = date_line_wrapper_90.wrap(point)
         self.assertAlmostEqual(wrapped_point.get_longitude(), -120 + 360)
         
-        # Wrap mult-point.
+        # Wrap multi-point.
         multi_point = pygplates.MultiPointOnSphere([(10, 170), (0, -170), (-10, 170)])
         wrapped_multi_point = date_line_wrapper.wrap(multi_point)
         self.assertEquals(len(wrapped_multi_point.get_points()), 3)
@@ -67,6 +67,40 @@ class DateLineWrapperCase(unittest.TestCase):
         wrapped_polyline = date_line_wrapper_90.wrap(polyline)
         self.assertEquals(len(wrapped_polyline), 1)
         self.assertTrue(isinstance(wrapped_polyline[0], pygplates.DateLineWrapper.LatLonPolyline))
+
+        # Test polyline tessellation.
+        polyline = pygplates.PolylineOnSphere([(0, 170), (0, -170)])
+        wrapped_polyline = date_line_wrapper.wrap(polyline)
+        self.assertEquals(len(wrapped_polyline), 2)
+        self.assertEquals(len(wrapped_polyline[0].get_points()), 2)
+        self.assertEquals(len(wrapped_polyline[1].get_points()), 2)
+        wrapped_polyline = date_line_wrapper.wrap(polyline, 4)
+        self.assertEquals(len(wrapped_polyline), 2)
+        self.assertEquals(len(wrapped_polyline[0].get_points()), 4)
+        self.assertEquals(len(wrapped_polyline[1].get_points()), 4)
+        wrapped_polyline = date_line_wrapper_90.wrap(polyline)
+        self.assertEquals(len(wrapped_polyline), 1)
+        self.assertEquals(len(wrapped_polyline[0].get_points()), 2)
+        wrapped_polyline = date_line_wrapper_90.wrap(polyline, 6)
+        self.assertEquals(len(wrapped_polyline), 1)
+        self.assertEquals(len(wrapped_polyline[0].get_points()), 5)
+
+        # Test polygon tessellation.
+        polygon = pygplates.PolygonOnSphere([(1, 170), (1, -170), (-1, -170), (-1, 170)])
+        wrapped_polygon = date_line_wrapper.wrap(polygon)
+        self.assertEquals(len(wrapped_polygon), 2)
+        self.assertEquals(len(wrapped_polygon[0].get_exterior_points()), 4)
+        self.assertEquals(len(wrapped_polygon[1].get_exterior_points()), 4)
+        wrapped_polygon = date_line_wrapper.wrap(polygon, 4)
+        self.assertEquals(len(wrapped_polygon), 2)
+        self.assertEquals(len(wrapped_polygon[0].get_exterior_points()), 8)
+        self.assertEquals(len(wrapped_polygon[1].get_exterior_points()), 8)
+        wrapped_polygon = date_line_wrapper_90.wrap(polygon)
+        self.assertEquals(len(wrapped_polygon), 1)
+        self.assertEquals(len(wrapped_polygon[0].get_exterior_points()), 4)
+        wrapped_polygon = date_line_wrapper_90.wrap(polygon, 6)
+        self.assertEquals(len(wrapped_polygon), 1)
+        self.assertEquals(len(wrapped_polygon[0].get_exterior_points()), 10)
 
 class FiniteRotationCase(unittest.TestCase):
     def setUp(self):
