@@ -40,7 +40,7 @@ namespace GPlatesMaths
 	 *
 	 * This class is very similar to @a AngularExtent, but is more lightweight and doesn't
 	 * support addition/subtraction of angular distances. This class, @a AngularDistance, is
-	 * used when only angular distance comparisons are require and it is also the same size as a
+	 * used when only angular distance comparisons are required and it is also the same size as a
 	 * 'double' so it's useful for returning from distance calculations. @a AngularExtent is more
 	 * useful as an angular threshold or angular bounds where the bounds can be extended/contracted
 	 * (using addition/subtraction).
@@ -76,18 +76,14 @@ namespace GPlatesMaths
 		/**
 		 * Create from the cosine of the angular distance.
 		 *
-		 * @a cosine_colatitude is the cosine of the "colatitude" of the small circle around the
-		 * "North Pole" of its axis (from the small circle centre to the
-		 * boundary of the small circle - the radius angle).
-		 *
 		 * Note that the cosine can be efficiently calculated as the dot product of two unit vectors.
 		 */
 		static
 		AngularDistance
 		create_from_cosine(
-				const real_t &cosine_colatitude)
+				const real_t &cosine)
 		{
-			return AngularDistance(cosine_colatitude);
+			return AngularDistance(cosine);
 		}
 
 		/**
@@ -100,13 +96,13 @@ namespace GPlatesMaths
 		static
 		AngularDistance
 		create_from_angle(
-				const real_t &colatitude)
+				const real_t &angle)
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					0 <= colatitude && colatitude <= GPlatesMaths::PI,
+					0 <= angle && angle <= GPlatesMaths::PI,
 					GPLATES_ASSERTION_SOURCE);
 
-			return create_from_cosine(cos(colatitude));
+			return create_from_cosine(cos(angle));
 		}
 
 

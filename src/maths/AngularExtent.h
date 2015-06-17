@@ -92,18 +92,14 @@ namespace GPlatesMaths
 		/**
 		 * Create from the cosine of the angular extent - the sine will be calculated when/if needed.
 		 *
-		 * @a cosine_colatitude is the cosine of the "colatitude" of the small circle around the
-		 * "North Pole" of its axis (from the small circle centre to the
-		 * boundary of the small circle - the radius angle).
-		 *
 		 * Note that the cosine can be efficiently calculated as the dot product of two unit vectors.
 		 */
 		static
 		AngularExtent
 		create_from_cosine(
-				const real_t &cosine_colatitude)
+				const real_t &cosine)
 		{
-			return AngularExtent(cosine_colatitude);
+			return AngularExtent(cosine);
 		}
 
 		/**
@@ -118,10 +114,10 @@ namespace GPlatesMaths
 		static
 		AngularExtent
 		create_from_cosine_and_sine(
-				const real_t &cosine_colatitude,
-				const real_t &sine_colatitude)
+				const real_t &cosine,
+				const real_t &sine)
 		{
-			return AngularExtent(cosine_colatitude, sine_colatitude);
+			return AngularExtent(cosine, sine);
 		}
 
 		/**
@@ -134,13 +130,13 @@ namespace GPlatesMaths
 		static
 		AngularExtent
 		create_from_angle(
-				const real_t &colatitude)
+				const real_t &angle)
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					0 <= colatitude && colatitude <= GPlatesMaths::PI,
+					0 <= angle && angle <= GPlatesMaths::PI,
 					GPLATES_ASSERTION_SOURCE);
 
-			return AngularExtent(cos(colatitude));
+			return AngularExtent(cos(angle), boost::none/*sine*/, angle);
 		}
 
 
@@ -181,16 +177,21 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Calculates the angular extent (angle in radians) from the cosine of the angular distance.
+		 * Returns the angle (in radians).
 		 *
-		 * Note: The angle is not cached internally and so must be calculated each time.
-		 * This calculation can be relatively expensive (~100 cycles on a circa 2011 CPU) 
-		 * which is the main reason for this class (to use cosine until/if angle is actually needed).
+		 * NOTE: Although the angle is cached internally (when/if first accessed) that calculation
+		 * can be relatively expensive (~100 cycles on a circa 2011 CPU).
+		 * So it's better to use cosine unless the angle is actually needed.
 		 */
-		real_t
-		calculate_angle() const
+		const real_t &
+		get_angle() const
 		{
-			return acos(d_cosine);
+			if (!d_angle)
+			{
+				d_angle = acos(d_cosine);
+			}
+
+			return d_angle.get();
 		}
 
 
@@ -432,13 +433,18 @@ namespace GPlatesMaths
 		//! Sine of angular extent - only calculated when needed.
 		mutable boost::optional<real_t> d_sine;
 
+		//! Angular extent - only calculated when needed.
+		mutable boost::optional<real_t> d_angle;
+
 
 		explicit
 		AngularExtent(
 				const real_t &cosine,
-				boost::optional<real_t> sine = boost::none) :
+				boost::optional<real_t> sine = boost::none,
+				boost::optional<real_t> angle = boost::none) :
 			d_cosine(cosine),
-			d_sine(sine)
+			d_sine(sine),
+			d_angle(angle)
 		{  }
 	};
 }
