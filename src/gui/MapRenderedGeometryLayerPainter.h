@@ -369,12 +369,12 @@ namespace GPlatesGui
 		/**
 		 * Project and tessellate *wrapped* line geometries (polylines and polygons).
 		 */
-		template <typename LatLonPointForwardIter>
 		void
-		project_and_tessellate_wrapped_line_geometry(
+		project_tessellated_wrapped_line_geometry(
 				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
-				const LatLonPointForwardIter &begin_lat_lon_points,
-				const LatLonPointForwardIter &end_lat_lon_points);
+				const GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type &lat_lon_points,
+				const std::vector<unsigned int> &untessellated_arc_end_point_indices,
+				bool is_polygon);
 
 		/**
 		 * Project and tessellate great circle arcs of *unwrapped* polylines and polygons.

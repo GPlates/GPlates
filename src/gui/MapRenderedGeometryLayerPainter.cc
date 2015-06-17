@@ -42,6 +42,7 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "maths/AngularExtent.h"
 #include "maths/EllipseGenerator.h"
 #include "maths/GreatCircle.h"
 #include "maths/MathsUtils.h"
@@ -83,6 +84,8 @@ namespace
 	 */
 	const double GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD = GPlatesMaths::convert_deg_to_rad(1);
 	const double COSINE_GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD = std::cos(GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD);
+	const GPlatesMaths::AngularExtent GREAT_CIRCLE_ARC_ANGULAR_EXTENT_THRESHOLD =
+			GPlatesMaths::AngularExtent::create_from_cosine(COSINE_GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD);
 
 	/**
 	 * We will tessellate a small circle (arc) to this angular resolution.
@@ -1321,18 +1324,24 @@ GPlatesGui::MapRenderedGeometryLayerPainter::dateline_wrap_and_project_line_geom
 
 	// Wrap the rotated geometry to the longitude range...
 	//   [-180 + central_meridian, central_meridian + 180]
+	//
+	// The dateline wrapper also tessellates the wrapped geometry.
 	std::vector<GPlatesMaths::DateLineWrapper::LatLonPolyline> wrapped_polylines;
-	d_dateline_wrapper->wrap_polyline(polyline_on_sphere, wrapped_polylines);
+	d_dateline_wrapper->wrap_polyline(
+			polyline_on_sphere,
+			wrapped_polylines,
+			GREAT_CIRCLE_ARC_ANGULAR_EXTENT_THRESHOLD);
 
 	// Paint each wrapped piece of the original geometry.
 	BOOST_FOREACH(
 			const GPlatesMaths::DateLineWrapper::LatLonPolyline &wrapped_polyline,
 			wrapped_polylines)
 	{
-		project_and_tessellate_wrapped_line_geometry(
+		project_tessellated_wrapped_line_geometry(
 				dateline_wrapped_projected_line_geometry,
-				wrapped_polyline.get_points().begin(),
-				wrapped_polyline.get_points().end());
+				wrapped_polyline.get_points(),
+				wrapped_polyline.get_untessellated_arc_end_point_indices(),
+				false/*is_polygon*/);
 	}
 }
 
@@ -1360,141 +1369,79 @@ GPlatesGui::MapRenderedGeometryLayerPainter::dateline_wrap_and_project_line_geom
 
 	// Wrap the rotated geometry to the longitude range...
 	//   [-180 + central_meridian, central_meridian + 180]
+	//
+	// The dateline wrapper also tessellates the wrapped geometry.
 	std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon> wrapped_polygons;
-	d_dateline_wrapper->wrap_polygon(polygon_on_sphere, wrapped_polygons);
+	d_dateline_wrapper->wrap_polygon(
+			polygon_on_sphere,
+			wrapped_polygons,
+			GREAT_CIRCLE_ARC_ANGULAR_EXTENT_THRESHOLD);
 
 	// Paint each wrapped piece of the original geometry.
 	BOOST_FOREACH(
 			GPlatesMaths::DateLineWrapper::LatLonPolygon &wrapped_polygon,
 			wrapped_polygons)
 	{
-		// It's a wrapped polygon (not a polyline) so add the start point to the end in order
-		// to close the loop - we need to do this because we're iterating over vertices not arcs.
-		wrapped_polygon.get_exterior_points().push_back(wrapped_polygon.get_exterior_points().front());
-
-		project_and_tessellate_wrapped_line_geometry(
+		project_tessellated_wrapped_line_geometry(
 				dateline_wrapped_projected_line_geometry,
-				wrapped_polygon.get_exterior_points().begin(),
-				wrapped_polygon.get_exterior_points().end());
+				wrapped_polygon.get_exterior_points(),
+				wrapped_polygon.get_untessellated_exterior_arc_end_point_indices(),
+				true/*is_polygon*/);
 	}
 }
 
 
-template <typename LatLonPointForwardIter>
 void
-GPlatesGui::MapRenderedGeometryLayerPainter::project_and_tessellate_wrapped_line_geometry(
+GPlatesGui::MapRenderedGeometryLayerPainter::project_tessellated_wrapped_line_geometry(
 		DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
-		const LatLonPointForwardIter &begin_lat_lon_points,
-		const LatLonPointForwardIter &end_lat_lon_points)
+		const GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type &lat_lon_points,
+		const std::vector<unsigned int> &untessellated_arc_end_point_indices,
+		bool is_polygon)
 {
-	if (begin_lat_lon_points == end_lat_lon_points)
+	if (lat_lon_points.empty() ||
+		untessellated_arc_end_point_indices.empty())
 	{
 		return;
 	}
 
 	const double &central_longitude = d_map_projection->central_llp().longitude();
 
-	// Initialise for arc iteration.
-	GPlatesMaths::LatLonPoint arc_start_lat_lon_point = *begin_lat_lon_points;
-	GPlatesMaths::PointOnSphere arc_start_point_on_sphere = make_point_on_sphere(arc_start_lat_lon_point);
-
 	// Add the first vertex of the sequence of points.
 	dateline_wrapped_projected_line_geometry.add_vertex(
-			get_projected_wrapped_position(arc_start_lat_lon_point));
+			get_projected_wrapped_position(lat_lon_points.front()));
 
 	// Iterate over the line geometry points.
-	for (LatLonPointForwardIter lat_lon_points_iter = begin_lat_lon_points;
-		lat_lon_points_iter != end_lat_lon_points;
-		++lat_lon_points_iter)
+	unsigned int current_arc_end_point_index = 0;
+	const unsigned int num_lat_lon_points = lat_lon_points.size();
+	for (unsigned int lat_lon_point_index = 0; lat_lon_point_index < num_lat_lon_points; ++lat_lon_point_index)
 	{
-		// The end point of the current arc.
-		const GPlatesMaths::LatLonPoint arc_end_lat_lon_point = *lat_lon_points_iter;
-		const GPlatesMaths::PointOnSphere arc_end_point_on_sphere = make_point_on_sphere(arc_end_lat_lon_point);
+		const GPlatesMaths::LatLonPoint &lat_lon_point = lat_lon_points[lat_lon_point_index];
 
-		// Tessellate the current arc if its two endpoints are far enough apart.
-		if (dot(arc_start_point_on_sphere.position_vector(), arc_end_point_on_sphere.position_vector()).dval()
-			< COSINE_GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD)
-		{
-			const GPlatesMaths::GreatCircleArc gca =
-					GPlatesMaths::GreatCircleArc::create(arc_start_point_on_sphere, arc_end_point_on_sphere);
-
-			// Tessellate the current great circle arc.
-			std::vector<GPlatesMaths::PointOnSphere> tess_points;
-			tessellate(tess_points, gca, GREAT_CIRCLE_ARC_ANGULAR_THRESHOLD);
-
-			const GPlatesMaths::real_t arc_start_point_longitude(arc_start_lat_lon_point.longitude());
-			const GPlatesMaths::real_t arc_end_point_longitude(arc_end_lat_lon_point.longitude());
-
-			// If the arc is entirely on the dateline (both end points on the dateline)...
-			// NOTE: This excludes arcs at the north or south pole singularities - the ones that form
-			// horizontal lines at the top and bottom of a rectangular projection but are degenerate.
-			// We don't need to worry about these because they are zero length and won't contribute
-			// any tessellated vertices.
-			if (arc_start_point_longitude == arc_end_point_longitude &&
-				abs(arc_start_point_longitude - central_longitude) == 180.0)
-			{
-				// Add the tessellated points skipping the *first* since it was added by the previous arc and
-				// skipping the *last* since it will be added by this arc.
-				for (unsigned int n = 1; n < tess_points.size() - 1; ++n)
-				{
-					// NOTE: These tessellated points have not been wrapped (dateline wrapped) and hence
-					// could end up with -180 or +180 for the longitude (due to numerical precision).
-					// So we must make sure their wrapping matches the arc end points (if both endpoints
-					// are *on* the dateline). If only one of the arc end points is on the dateline then
-					// the tessellated points *between* the arc end points (if any) are relatively safe
-					// from this wrapping problem (since they're *off* the dateline somewhat).
-					// Note that this is also why we exclude the start and end points in the tessellation
-					// (we want to respect their original wrapping since they can be *on* the dateline).
-					const GPlatesMaths::real_t tess_latitude = asin(tess_points[n].position_vector().z());
-					const GPlatesMaths::LatLonPoint tess_lat_lon(
-							convert_rad_to_deg(tess_latitude).dval(),
-							arc_start_point_longitude.dval());
-
-					dateline_wrapped_projected_line_geometry.add_vertex(
-							get_projected_wrapped_position(tess_lat_lon));
-				}
-			}
-			else // arc is *not* entirely on the dateline (although one of the end points could be) ...
-			{
-				// Add the tessellated points skipping the *first* since it was added by the previous arc and
-				// skipping the *last* since it will be added by this arc.
-				for (unsigned int n = 1; n < tess_points.size() - 1; ++n)
-				{
-					// These tessellated points have not been wrapped but they are also not *on* the
-					// dateline and hence are relatively safe from wrapping problems.
-					// Just make sure we keep the longitude in the range...
-					//   [-180 + central_meridian, central_meridian + 180]
-					// ...since we're converting from PointOnSphere to LatLonPoint (ie, [-180, 180] range).
-					// Note; 'central_longitude' should be in the range [-180, 180] itself.
-					GPlatesMaths::LatLonPoint tess_lat_lon = make_lat_lon_point(tess_points[n]);
-					if (tess_lat_lon.longitude() < -180 + central_longitude)
-					{
-						tess_lat_lon = GPlatesMaths::LatLonPoint(
-								tess_lat_lon.latitude(),
-								tess_lat_lon.longitude() + 360);
-					}
-					else if (tess_lat_lon.longitude() > central_longitude + 180)
-					{
-						tess_lat_lon = GPlatesMaths::LatLonPoint(
-								tess_lat_lon.latitude(),
-								tess_lat_lon.longitude() - 360);
-					}
-
-					dateline_wrapped_projected_line_geometry.add_vertex(
-							get_projected_wrapped_position(tess_lat_lon));
-				}
-			}
-		}
-
-		// Vertex representing the projected arc end point's position and colour.
-		// NOTE: We're adding the original wrapped lat/lon point (ie, correctly wrapped).
 		dateline_wrapped_projected_line_geometry.add_vertex(
-				get_projected_wrapped_position(arc_end_lat_lon_point));
+				get_projected_wrapped_position(lat_lon_point));
 
+		// We can reach the end of the untessellated arcs but still have tessellated points remaining.
+		// This can happen in the last arc of a polygon (arc from last point to first point).
+		if (current_arc_end_point_index < untessellated_arc_end_point_indices.size() &&
+			lat_lon_point_index == untessellated_arc_end_point_indices[current_arc_end_point_index])
+		{
+			// Vertex represents the end point of the current untessellated arc.
+			dateline_wrapped_projected_line_geometry.add_great_circle_arc();
+
+			// Advance to the next untessellated arc.
+			++current_arc_end_point_index;
+		}
+	}
+
+	if (is_polygon)
+	{
+		// It's a wrapped polygon (not a polyline) so add the start point to the end in order
+		// to close the loop - we need to do this because we're iterating over vertices not arcs.
+		dateline_wrapped_projected_line_geometry.add_vertex(
+				get_projected_wrapped_position(lat_lon_points.front()));
+
+		// Vertex represents the end point of the current untessellated arc.
 		dateline_wrapped_projected_line_geometry.add_great_circle_arc();
-
-		arc_start_lat_lon_point = arc_end_lat_lon_point;
-		arc_start_point_on_sphere = arc_end_point_on_sphere;
 	}
 
 	dateline_wrapped_projected_line_geometry.add_geometry();
