@@ -76,7 +76,7 @@ namespace GPlatesMaths
 			public GPlatesUtils::ReferenceCount<DateLineWrapper>
 	{
 	private:
-		struct LatLonLineGeometry;
+		class LatLonLineGeometry;
 
 	public:
 		typedef GPlatesUtils::non_null_intrusive_ptr<DateLineWrapper> non_null_ptr_type;
@@ -95,9 +95,10 @@ namespace GPlatesMaths
 		public:
 
 			 /**
-			  * The dateline wrapped points.
+			  * The dateline wrapped (and optionallly tessellated) points.
 			  *
-			  * This is the original (unwrapped) points plus new points added due to intersection with the dateline.
+			 * This is the original (unwrapped) points plus new points added due to intersection
+			 * with the dateline and any new points due to tessellation.
 			  *
 			  * NOTE: The start and end points are generally *not* the same.
 			  * So if you are rendering the polygon you may need to explicitly close the polygon by
@@ -109,10 +110,11 @@ namespace GPlatesMaths
 			get_exterior_points() const;
 
 			/**
-			 * Indices into @a get_exterior_points of the arc end points of untessellated arcs.
+			 * Boolean flags to indicate whether a point in @a get_exterior_points (at same index) is an
+			 * original (unwrapped and untessellated) exterior point.
 			 */
-			const std::vector<unsigned int> &
-			get_untessellated_exterior_arc_end_point_indices() const;
+			const std::vector<bool> &
+			get_is_original_exterior_point_flags() const;
 
 		private:
 
@@ -133,18 +135,20 @@ namespace GPlatesMaths
 		public:
 
 			/**
-			 * The dateline wrapped points.
+			 * The dateline wrapped (and optionallly tessellated) points.
 			 *
-			 * This is the original (unwrapped) points plus new points added due to intersection with the dateline.
+			 * This is the original (unwrapped) points plus new points added due to intersection
+			 * with the dateline and any new points due to tessellation.
 			 */
 			const lat_lon_points_seq_type &
 			get_points() const;
 
 			/**
-			 * Indices into @a get_points of the arc end points of untessellated arcs.
+			 * Boolean flags to indicate whether a point in @a get_points (at same index) is an
+			 * original (unwrapped and untessellated) point.
 			 */
-			const std::vector<unsigned int> &
-			get_untessellated_arc_end_point_indices() const;
+			const std::vector<bool> &
+			get_is_original_point_flags() const;
 
 		private:
 
@@ -339,33 +343,96 @@ namespace GPlatesMaths
 
 
 		/**
-		 * A possibly tessellated sequence of points (for a polyline/polygon) and the
-		 * indices into the arc end points of untessellated arcs.
+		 * A possibly tessellated sequence of points (for a polyline/polygon).
 		 */
-		struct LatLonLineGeometry
+		class LatLonLineGeometry
 		{
+		public:
+
 			/**
-			 * Add the end point of the next arc in a line geometry (polyline/polygon).
+			 * Add a point to this line geometry (polyline/polygon).
 			 *
-			 * It will also tessellate the arc if requested.
-			 *
-			 * @a add_arc_end_point can be set to false for the last arc of a *polygon* - if it's
-			 * being tessellated then only the tessellated vertices interior to the arc will be added.
-			 * This is because the last point of a polygon does not need to match its start point.
+			 * It will also tessellate arcs if requested.
 			 */
 			void
-			add_arc_end_point_to_line_geometry(
-					const LatLonPoint &arc_start_lat_lon_point,
-					const LatLonPoint &arc_end_lat_lon_point,
-					const PointOnSphere &arc_start_point,
-					const PointOnSphere &arc_end_point,
+			add_point(
+					const LatLonPoint &lat_lon_point,
+					const PointOnSphere &point,
 					const double &central_meridian_longitude,
 					const boost::optional<AngularExtent> &tessellate_threshold,
-					bool add_arc_end_point = true);
+					bool is_unwrapped_point)
+			{
+				if (tessellate_threshold)
+				{
+					add_tessellated_points(lat_lon_point, point, central_meridian_longitude, tessellate_threshold.get());
+				}
+
+				add_untessellated_point(lat_lon_point, point, is_unwrapped_point);
+			}
+
+			/**
+			 * Call once finished adding points, if this line geometry is a *polygon* and it's being tessellated.
+			 *
+			 * This is only necessary if tessellation is required.
+			 *
+			 * The last arc of a polygon is between it's last and first points.
+			 * If this last arc is tessellated then new tessellated points may get added after
+			 * the last point added via @a add_point.
+			 */
+			void
+			finish_tessellating_polygon(
+					const double &central_meridian_longitude,
+					const AngularExtent &tessellate_threshold);
+
+			/**
+			 * The dateline wrapped (and tessellated) points.
+			 */
+			const lat_lon_points_seq_type &
+			get_points() const
+			{
+				return d_lat_lon_points;
+			}
+
+			/**
+			 * Boolean flags to indicate whether a point in @a get_points (at same index) is an
+			 * original (unwrapped and untessellated) point.
+			 */
+			const std::vector<bool> &
+			get_is_unwrapped_untessellated_point_flags() const
+			{
+				return d_is_unwrapped_untessellated_point_flags;
+			}
 
 
-			lat_lon_points_seq_type points;
-			std::vector<unsigned int> untessellated_arc_end_point_indices;
+		private:
+
+			lat_lon_points_seq_type d_lat_lon_points;
+			std::vector<bool> d_is_unwrapped_untessellated_point_flags;
+
+			// Previous untessellated point (could be a wrapped or unwrapped point).
+			boost::optional<LatLonPoint> d_previous_untessellated_lat_lon_point;
+			boost::optional<PointOnSphere> d_previous_untessellated_point;
+
+			// Start (untessellated) point of line geometry (could be a wrapped or unwrapped point).
+			boost::optional<LatLonPoint> d_start_lat_lon_point;
+			boost::optional<PointOnSphere> d_start_point;
+
+			void
+			add_untessellated_point(
+					const LatLonPoint &lat_lon_point,
+					const PointOnSphere &point,
+					bool is_unwrapped_point);
+
+			void
+			add_tessellated_points(
+					const LatLonPoint &lat_lon_point,
+					const PointOnSphere &point,
+					const double &central_meridian_longitude,
+					const AngularExtent &tessellate_threshold);
+
+			void
+			add_tessellated_point(
+					const LatLonPoint &lat_lon_point);
 		};
 
 
@@ -385,7 +452,7 @@ namespace GPlatesMaths
 			CLASSIFY_OFF_DATELINE_ARC_ON_PLANE,
 
 			// On the 'thick' (epsilon) plane containing the dateline arc and on the dateline
-			// arc itself (ie, roughly longitude of -/+ 1800 degrees).
+			// arc itself (ie, roughly longitude of -/+ 180 degrees).
 			CLASSIFY_ON_DATELINE_ARC,
 
 			// Within the 'thick' point (epsilon circle) at the north pole.
@@ -416,13 +483,16 @@ namespace GPlatesMaths
 		{
 			explicit
 			Vertex(
+					bool is_unwrapped_point_,
 					const LatLonPoint &lat_lon_point_,
+					// Specifying 'none' just requests the point be created from 'lat_lon_point_'...
 					boost::optional<const PointOnSphere &> point_ = boost::none,
 					bool is_intersection_ = false,
 					bool exits_other_polygon_ = false) :
 				lat_lon_point(lat_lon_point_),
 				point(point_ ? point_.get() : make_point_on_sphere(lat_lon_point_)),
 				intersection_neighbour(NULL),
+				is_unwrapped_point(is_unwrapped_point_),
 				is_intersection(is_intersection_),
 				exits_other_polygon(exits_other_polygon_),
 				used_to_output_polygon(false)
@@ -442,6 +512,11 @@ namespace GPlatesMaths
 			 * NOTE: Due to cyclic dependencies this is a 'void *' instead of a 'vertex_list_type::Node *'.
 			 */
 			void/*vertex_list_type::Node*/ *intersection_neighbour;
+
+			/**
+			 * Is true if this vertex represents a point in the original geometry before it was wrapped.
+			 */
+			bool is_unwrapped_point;
 
 			/**
 			 * Is true if this vertex represents an intersection of geometry with the dateline.
@@ -526,12 +601,14 @@ namespace GPlatesMaths
 			void
 			add_intersection_vertex_on_front_dateline(
 					const PointOnSphere &point,
+					bool is_unwrapped_point,
 					bool exiting_dateline_polygon);
 
 			//! Adds an intersection of geometry with the dateline on the back side of dateline.
 			void
 			add_intersection_vertex_on_back_dateline(
 					const PointOnSphere &point,
+					bool is_unwrapped_point,
 					bool exiting_dateline_polygon);
 
 			/**
@@ -540,6 +617,7 @@ namespace GPlatesMaths
 			void
 			add_intersection_vertex_on_north_pole(
 					const PointOnSphere &point,
+					bool is_unwrapped_point,
 					bool exiting_dateline_polygon);
 
 			/**
@@ -548,6 +626,7 @@ namespace GPlatesMaths
 			void
 			add_intersection_vertex_on_south_pole(
 					const PointOnSphere &point,
+					bool is_unwrapped_point,
 					bool exiting_dateline_polygon);
 
 			/**
@@ -762,14 +841,14 @@ namespace GPlatesMaths
 	const DateLineWrapper::lat_lon_points_seq_type &
 	DateLineWrapper::LatLonPolygon::get_exterior_points() const
 	{
-		return d_exterior_line_geometry->points;
+		return d_exterior_line_geometry->get_points();
 	}
 
 	inline
-	const std::vector<unsigned int> &
-	DateLineWrapper::LatLonPolygon::get_untessellated_exterior_arc_end_point_indices() const
+	const std::vector<bool> &
+	DateLineWrapper::LatLonPolygon::get_is_original_exterior_point_flags() const
 	{
-		return d_exterior_line_geometry->untessellated_arc_end_point_indices;
+		return d_exterior_line_geometry->get_is_unwrapped_untessellated_point_flags();
 	}
 
 	inline
@@ -782,14 +861,14 @@ namespace GPlatesMaths
 	const DateLineWrapper::lat_lon_points_seq_type &
 	DateLineWrapper::LatLonPolyline::get_points() const
 	{
-		return d_line_geometry->points;
+		return d_line_geometry->get_points();
 	}
 
 	inline
-	const std::vector<unsigned int> &
-	DateLineWrapper::LatLonPolyline::get_untessellated_arc_end_point_indices() const
+	const std::vector<bool> &
+	DateLineWrapper::LatLonPolyline::get_is_original_point_flags() const
 	{
-		return d_line_geometry->untessellated_arc_end_point_indices;
+		return d_line_geometry->get_is_unwrapped_untessellated_point_flags();
 	}
 
 	inline

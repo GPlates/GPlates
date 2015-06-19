@@ -438,57 +438,25 @@ GPlatesMaths::DateLineWrapper::output_input_vertices(
 			? &make_lat_lon_point_on_back_dateline_of_central_meridian
 			: &make_lat_lon_point_in_central_meridian_range;
 
-	// The start point of the first arc.
-	PointOnSphere arc_start_point = *vertex_iter;
-	LatLonPoint arc_start_lat_lon_point =
-			make_lat_lon_point_function(
-					arc_start_point,
-					central_meridian_longitude);
-	// The start point of the entire line geometry.
-	const PointOnSphere line_geometry_start_point = arc_start_point;
-	const LatLonPoint line_geometry_start_lat_lon_point = arc_start_lat_lon_point;
-
-	// Add the first point.
-	output_line_geometry.points.push_back(arc_start_lat_lon_point);
-
-	// Iterate over the arc end points of the line geometry.
-	for (++vertex_iter ; vertex_iter != vertex_end; ++vertex_iter)
+	// Iterate over the points of the line geometry.
+	for ( ; vertex_iter != vertex_end; ++vertex_iter)
 	{
-		const PointOnSphere &arc_end_point = *vertex_iter;
-		const LatLonPoint arc_end_lat_lon_point =
-				make_lat_lon_point_function(
-						arc_end_point,
-						central_meridian_longitude);
+		const PointOnSphere &point = *vertex_iter;
+		const LatLonPoint lat_lon_point = make_lat_lon_point_function(point, central_meridian_longitude);
 
-		output_line_geometry.add_arc_end_point_to_line_geometry(
-				arc_start_lat_lon_point,
-				arc_end_lat_lon_point,
-				arc_start_point,
-				arc_end_point,
-				central_meridian_longitude,
-				tessellate_threshold);
-
-		arc_start_point = arc_end_point;
-		arc_start_lat_lon_point = arc_end_lat_lon_point;
-	}
-
-	if (is_polygon)
-	{
-		// It's a polygon (not a polyline) so add the last arc (from last point to start point)
-		// in order to close the loop - *but* we don't duplicate the last and first polygon points.
-		// We're doing all this because we're iterating over vertices not arcs.
-		const PointOnSphere &arc_end_point = line_geometry_start_point;
-		const LatLonPoint &arc_end_lat_lon_point = line_geometry_start_lat_lon_point;
-
-		output_line_geometry.add_arc_end_point_to_line_geometry(
-				arc_start_lat_lon_point,
-				arc_end_lat_lon_point,
-				arc_start_point,
-				arc_end_point,
+		output_line_geometry.add_point(
+				lat_lon_point,
+				point,
 				central_meridian_longitude,
 				tessellate_threshold,
-				// Only add the tessellated (interior) points for the last arc of polygon.d_exterior_points...
-				false/*add_arc_end_point*/);
+				// It's the original point - it hasn't been wrapped (clipped)...
+				true/*is_unwrapped_point*/);
+	}
+
+	if (is_polygon &&
+		tessellate_threshold)
+	{
+		output_line_geometry.finish_tessellating_polygon(central_meridian_longitude, tessellate_threshold.get());
 	}
 }
 
@@ -664,24 +632,24 @@ GPlatesMaths::DateLineWrapper::add_line_segment_to_intersection_graph(
 					{
 					case INTERSECTED_DATELINE:
 						// Line segment is front-to-back as it crosses the dateline.
-						graph.add_intersection_vertex_on_front_dateline(intersection_point.get(), true);
-						graph.add_intersection_vertex_on_back_dateline(intersection_point.get(), false);
+						graph.add_intersection_vertex_on_front_dateline(intersection_point.get(), false, true);
+						graph.add_intersection_vertex_on_back_dateline(intersection_point.get(), false, false);
 						break;
 					case INTERSECTED_NORTH_POLE:
 						// Use longitude of 'start' point as longitude of first intersection point.
 						// Use longitude of 'end' point as longitude of second intersection point.
 						// This results in meridian lines being vertical lines in rectangular coordinates.
 						// Here the two longitudes will be separated by 180 degrees (or very close to).
-						graph.add_intersection_vertex_on_north_pole(line_segment.start_point(), true);
-						graph.add_intersection_vertex_on_north_pole(line_segment.end_point(), false);
+						graph.add_intersection_vertex_on_north_pole(line_segment.start_point(), false, true);
+						graph.add_intersection_vertex_on_north_pole(line_segment.end_point(), false, false);
 						break;
 					case INTERSECTED_SOUTH_POLE:
 						// Use longitude of 'start' point as longitude of first intersection point.
 						// Use longitude of 'end' point as longitude of second intersection point.
 						// This results in meridian lines being vertical lines in rectangular coordinates.
 						// Here the two longitudes will be separated by 180 degrees (or very close to).
-						graph.add_intersection_vertex_on_south_pole(line_segment.start_point(), true);
-						graph.add_intersection_vertex_on_south_pole(line_segment.end_point(), false);
+						graph.add_intersection_vertex_on_south_pole(line_segment.start_point(), false, true);
+						graph.add_intersection_vertex_on_south_pole(line_segment.end_point(), false, false);
 						break;
 					default:
 						GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -696,17 +664,17 @@ GPlatesMaths::DateLineWrapper::add_line_segment_to_intersection_graph(
 			break;
 		case CLASSIFY_ON_DATELINE_ARC:
 			// Use latitude of 'end' point as latitude of intersection point.
-			graph.add_intersection_vertex_on_front_dateline(line_segment.end_point(), true);
+			graph.add_intersection_vertex_on_front_dateline(line_segment.end_point(), true, true);
 			break;
 		case CLASSIFY_ON_NORTH_POLE:
 			// Use longitude of 'start' point as longitude of intersection point.
 			// This results in meridian lines being vertical lines in rectangular coordinates.
-			graph.add_intersection_vertex_on_north_pole(line_segment.start_point(), true);
+			graph.add_intersection_vertex_on_north_pole(line_segment.start_point(), true, true);
 			break;
 		case CLASSIFY_ON_SOUTH_POLE:
 			// Use longitude of 'start' point as longitude of intersection point.
 			// This results in meridian lines being vertical lines in rectangular coordinates.
-			graph.add_intersection_vertex_on_south_pole(line_segment.start_point(), true);
+			graph.add_intersection_vertex_on_south_pole(line_segment.start_point(), true, true);
 			break;
 		}
 		break;
@@ -728,24 +696,24 @@ GPlatesMaths::DateLineWrapper::add_line_segment_to_intersection_graph(
 					{
 					case INTERSECTED_DATELINE:
 						// Line segment is back-to-front as it crosses the dateline.
-						graph.add_intersection_vertex_on_back_dateline(intersection_point.get(), true);
-						graph.add_intersection_vertex_on_front_dateline(intersection_point.get(), false);
+						graph.add_intersection_vertex_on_back_dateline(intersection_point.get(), false, true);
+						graph.add_intersection_vertex_on_front_dateline(intersection_point.get(), false, false);
 						break;
 					case INTERSECTED_NORTH_POLE:
 						// Use longitude of 'start' point as longitude of first intersection point.
 						// Use longitude of 'end' point as longitude of second intersection point.
 						// This results in meridian lines being vertical lines in rectangular coordinates.
 						// Here the two longitudes will be separated by 180 degrees (or very close to).
-						graph.add_intersection_vertex_on_north_pole(line_segment.start_point(), true);
-						graph.add_intersection_vertex_on_north_pole(line_segment.end_point(), false);
+						graph.add_intersection_vertex_on_north_pole(line_segment.start_point(), false, true);
+						graph.add_intersection_vertex_on_north_pole(line_segment.end_point(), false, false);
 						break;
 					case INTERSECTED_SOUTH_POLE:
 						// Use longitude of 'start' point as longitude of first intersection point.
 						// Use longitude of 'end' point as longitude of second intersection point.
 						// This results in meridian lines being vertical lines in rectangular coordinates.
 						// Here the two longitudes will be separated by 180 degrees (or very close to).
-						graph.add_intersection_vertex_on_south_pole(line_segment.start_point(), true);
-						graph.add_intersection_vertex_on_south_pole(line_segment.end_point(), false);
+						graph.add_intersection_vertex_on_south_pole(line_segment.start_point(), false, true);
+						graph.add_intersection_vertex_on_south_pole(line_segment.end_point(), false, false);
 						break;
 					default:
 						GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -763,17 +731,17 @@ GPlatesMaths::DateLineWrapper::add_line_segment_to_intersection_graph(
 			break;
 		case CLASSIFY_ON_DATELINE_ARC:
 			// Use latitude of 'end' point as latitude of intersection point.
-			graph.add_intersection_vertex_on_back_dateline(line_segment.end_point(), true);
+			graph.add_intersection_vertex_on_back_dateline(line_segment.end_point(), true, true);
 			break;
 		case CLASSIFY_ON_NORTH_POLE:
 			// Use longitude of 'start' point as longitude of intersection point.
 			// This results in meridian lines being vertical lines in rectangular coordinates.
-			graph.add_intersection_vertex_on_north_pole(line_segment.start_point(), true);
+			graph.add_intersection_vertex_on_north_pole(line_segment.start_point(), true, true);
 			break;
 		case CLASSIFY_ON_SOUTH_POLE:
 			// Use longitude of 'start' point as longitude of intersection point.
 			// This results in meridian lines being vertical lines in rectangular coordinates.
-			graph.add_intersection_vertex_on_south_pole(line_segment.start_point(), true);
+			graph.add_intersection_vertex_on_south_pole(line_segment.start_point(), true, true);
 			break;
 		}
 		break;
@@ -793,28 +761,28 @@ GPlatesMaths::DateLineWrapper::add_line_segment_to_intersection_graph(
 		case CLASSIFY_ON_DATELINE_ARC:
 			// First we have to decide if the current line segment passed through the north or south pole.
 			// Also note that we add the 'start' point, and not the end point, since it's off
-			// the dateline and hence it's longitude is used for intersection point.
+			// the dateline and hence its longitude is used for intersection point.
 			// The longitude will be very close to zero since both start and end are on the 'thick' plane.
 			if (does_line_segment_on_dateline_plane_cross_north_pole(
 					line_segment,
 					false/*is_line_segment_start_point_on_dateline*/))
 			{
-				graph.add_intersection_vertex_on_north_pole(line_segment.start_point(), true);
+				graph.add_intersection_vertex_on_north_pole(line_segment.start_point(), false, true);
 			}
 			else
 			{
-				graph.add_intersection_vertex_on_south_pole(line_segment.start_point(), true);
+				graph.add_intersection_vertex_on_south_pole(line_segment.start_point(), false, true);
 			}
 			break;
 		case CLASSIFY_ON_NORTH_POLE:
 			// Use longitude of 'start' point as longitude of intersection point.
 			// It'll be very close to zero.
-			graph.add_intersection_vertex_on_north_pole(line_segment.start_point(), true);
+			graph.add_intersection_vertex_on_north_pole(line_segment.start_point(), true, true);
 			break;
 		case CLASSIFY_ON_SOUTH_POLE:
 			// Use longitude of 'start' point as longitude of intersection point.
 			// It'll be very close to zero.
-			graph.add_intersection_vertex_on_south_pole(line_segment.start_point(), true);
+			graph.add_intersection_vertex_on_south_pole(line_segment.start_point(), true, true);
 			break;
 		}
 		break;
@@ -824,28 +792,28 @@ GPlatesMaths::DateLineWrapper::add_line_segment_to_intersection_graph(
 		{
 		case CLASSIFY_FRONT:
 			// Use latitude of 'start' point as latitude of intersection point.
-			graph.add_intersection_vertex_on_front_dateline(line_segment.start_point(), false);
+			graph.add_intersection_vertex_on_front_dateline(line_segment.start_point(), true, false);
 			graph.add_vertex(line_segment.end_point());
 			break;
 		case CLASSIFY_BACK:
 			// Use latitude of 'start' point as latitude of intersection point.
-			graph.add_intersection_vertex_on_back_dateline(line_segment.start_point(), false);
+			graph.add_intersection_vertex_on_back_dateline(line_segment.start_point(), true, false);
 			graph.add_vertex(line_segment.end_point());
 			break;
 		case CLASSIFY_OFF_DATELINE_ARC_ON_PLANE:
 			// First we have to decide if the current line segment passed through the north or south pole.
 			// Also note that we add the 'end' point, and not the start point, since it's off
-			// the dateline and hence it's longitude is used for intersection point.
+			// the dateline and hence its longitude is used for intersection point.
 			// The longitude will be very close to zero since both start and end are on the 'thick' plane.
 			if (does_line_segment_on_dateline_plane_cross_north_pole(
 					line_segment,
 					true/*is_line_segment_start_point_on_dateline*/))
 			{
-				graph.add_intersection_vertex_on_north_pole(line_segment.end_point(), false);
+				graph.add_intersection_vertex_on_north_pole(line_segment.end_point(), false, false);
 			}
 			else
 			{
-				graph.add_intersection_vertex_on_south_pole(line_segment.end_point(), false);
+				graph.add_intersection_vertex_on_south_pole(line_segment.end_point(), false, false);
 			}
 			graph.add_vertex(line_segment.end_point());
 			break;
@@ -867,19 +835,19 @@ GPlatesMaths::DateLineWrapper::add_line_segment_to_intersection_graph(
 		case CLASSIFY_FRONT:
 			// Use longitude of 'end' point as longitude of intersection point.
 			// This results in meridian lines being vertical lines in rectangular coordinates.
-			graph.add_intersection_vertex_on_north_pole(line_segment.end_point(), false);
+			graph.add_intersection_vertex_on_north_pole(line_segment.end_point(), true, false);
 			graph.add_vertex(line_segment.end_point());
 			break;
 		case CLASSIFY_BACK:
 			// Use longitude of 'end' point as longitude of intersection point.
 			// This results in meridian lines being vertical lines in rectangular coordinates.
-			graph.add_intersection_vertex_on_north_pole(line_segment.end_point(), false);
+			graph.add_intersection_vertex_on_north_pole(line_segment.end_point(), true, false);
 			graph.add_vertex(line_segment.end_point());
 			break;
 		case CLASSIFY_OFF_DATELINE_ARC_ON_PLANE:
 			// Use longitude of 'end' point as longitude of intersection point.
 			// It'll be very close to zero.
-			graph.add_intersection_vertex_on_north_pole(line_segment.end_point(), false);
+			graph.add_intersection_vertex_on_north_pole(line_segment.end_point(), true, false);
 			graph.add_vertex(line_segment.end_point());
 			break;
 		case CLASSIFY_ON_DATELINE_ARC:
@@ -900,19 +868,19 @@ GPlatesMaths::DateLineWrapper::add_line_segment_to_intersection_graph(
 		case CLASSIFY_FRONT:
 			// Use longitude of 'end' point as longitude of intersection point.
 			// This results in meridian lines being vertical lines in rectangular coordinates.
-			graph.add_intersection_vertex_on_south_pole(line_segment.end_point(), false);
+			graph.add_intersection_vertex_on_south_pole(line_segment.end_point(), true, false);
 			graph.add_vertex(line_segment.end_point());
 			break;
 		case CLASSIFY_BACK:
 			// Use longitude of 'end' point as longitude of intersection point.
 			// This results in meridian lines being vertical lines in rectangular coordinates.
-			graph.add_intersection_vertex_on_south_pole(line_segment.end_point(), false);
+			graph.add_intersection_vertex_on_south_pole(line_segment.end_point(), true, false);
 			graph.add_vertex(line_segment.end_point());
 			break;
 		case CLASSIFY_OFF_DATELINE_ARC_ON_PLANE:
 			// Use longitude of 'end' point as longitude of intersection point.
 			// It'll be very close to zero.
-			graph.add_intersection_vertex_on_south_pole(line_segment.end_point(), false);
+			graph.add_intersection_vertex_on_south_pole(line_segment.end_point(), true, false);
 			graph.add_vertex(line_segment.end_point());
 			break;
 		case CLASSIFY_ON_DATELINE_ARC:
@@ -1140,108 +1108,147 @@ GPlatesMaths::DateLineWrapper::classify_vertex(
 
 
 void
-GPlatesMaths::DateLineWrapper::LatLonLineGeometry::add_arc_end_point_to_line_geometry(
-		const LatLonPoint &arc_start_lat_lon_point,
-		const LatLonPoint &arc_end_lat_lon_point,
-		const PointOnSphere &arc_start_point,
-		const PointOnSphere &arc_end_point,
+GPlatesMaths::DateLineWrapper::LatLonLineGeometry::finish_tessellating_polygon(
 		const double &central_meridian_longitude,
-		const boost::optional<AngularExtent> &tessellate_threshold,
-		bool add_arc_end_point)
+		const AngularExtent &tessellate_threshold)
 {
-	if (tessellate_threshold)
+	// Add tessellated points on the arc between the last and first points of the polygon.
+	if (d_start_lat_lon_point)
 	{
-		// Tessellate the current arc if its two endpoints are far enough apart.
-		if (dot(arc_start_point.position_vector(), arc_end_point.position_vector()).dval()
-				< tessellate_threshold->get_cosine().dval() &&
-			// Watch out for arcs with antipodal points.
-			// Seems dateline wrapper can generate arc between North/South poles (needs fixing)...
-			arc_end_point != get_antipodal_point(arc_start_point))
+		add_tessellated_points(
+				d_start_lat_lon_point.get(),
+				d_start_point.get(),
+				central_meridian_longitude,
+				tessellate_threshold);
+	}
+}
+
+
+void
+GPlatesMaths::DateLineWrapper::LatLonLineGeometry::add_untessellated_point(
+		const LatLonPoint &lat_lon_point,
+		const PointOnSphere &point,
+		bool is_unwrapped_point)
+{
+	d_lat_lon_points.push_back(lat_lon_point);
+
+	// We know point is untessellated - is it also unwrapped ?
+	d_is_unwrapped_untessellated_point_flags.push_back(is_unwrapped_point);
+
+	// Keep track of the previous untessellated point.
+	d_previous_untessellated_lat_lon_point = lat_lon_point;
+	d_previous_untessellated_point = point;
+
+	// Keep track of the line geometry start point (if first untessellated point added in this call).
+	if (!d_start_lat_lon_point)
+	{
+		d_start_lat_lon_point = lat_lon_point;
+		d_start_point = point;
+	}
+}
+
+
+void
+GPlatesMaths::DateLineWrapper::LatLonLineGeometry::add_tessellated_points(
+		const LatLonPoint &lat_lon_point,
+		const PointOnSphere &point,
+		const double &central_meridian_longitude,
+		const AngularExtent &tessellate_threshold)
+{
+	// Tessellate the current arc if its two endpoints are far enough apart.
+	// We only have an arc if we've previously added a (untessellated) point
+	// (ie, the start point of this line geometry).
+	if (d_previous_untessellated_point &&
+		dot(point.position_vector(), d_previous_untessellated_point->position_vector()).dval()
+				< tessellate_threshold.get_cosine().dval() &&
+		// Watch out for arcs with antipodal points.
+		// Seems dateline wrapper can generate arc between North/South poles (needs fixing)...
+		point != get_antipodal_point(d_previous_untessellated_point.get()))
+	{
+		const GreatCircleArc gca = GreatCircleArc::create(d_previous_untessellated_point.get(), point);
+
+		// Tessellate the current great circle arc.
+		std::vector<PointOnSphere> tess_points;
+		tessellate(tess_points, gca, tessellate_threshold.get_angle().dval());
+
+		const real_t arc_start_point_longitude(d_previous_untessellated_lat_lon_point->longitude());
+		const real_t arc_end_point_longitude(lat_lon_point.longitude());
+
+		// If the arc is entirely on the dateline (both end points on the dateline)...
+		// NOTE: This excludes arcs at the north or south pole singularities - the ones that form
+		// horizontal lines at the top and bottom of a rectangular projection but are degenerate.
+		// We don't need to worry about these because they are zero length and won't contribute
+		// any tessellated vertices.
+		if (arc_start_point_longitude == arc_end_point_longitude &&
+			abs(arc_start_point_longitude - central_meridian_longitude) == 180.0)
 		{
-			const GreatCircleArc gca = GreatCircleArc::create(arc_start_point, arc_end_point);
-
-			// Tessellate the current great circle arc.
-			std::vector<PointOnSphere> tess_points;
-			tessellate(tess_points, gca, tessellate_threshold->get_angle().dval());
-
-			const real_t arc_start_point_longitude(arc_start_lat_lon_point.longitude());
-			const real_t arc_end_point_longitude(arc_end_lat_lon_point.longitude());
-
-			// If the arc is entirely on the dateline (both end points on the dateline)...
-			// NOTE: This excludes arcs at the north or south pole singularities - the ones that form
-			// horizontal lines at the top and bottom of a rectangular projection but are degenerate.
-			// We don't need to worry about these because they are zero length and won't contribute
-			// any tessellated vertices.
-			if (arc_start_point_longitude == arc_end_point_longitude &&
-				abs(arc_start_point_longitude - central_meridian_longitude) == 180.0)
+			// Add the tessellated points skipping the *first* since it was added by the previous arc and
+			// skipping the *last* since it will be added by this arc.
+			for (unsigned int n = 1; n < tess_points.size() - 1; ++n)
 			{
-				// Add the tessellated points skipping the *first* since it was added by the previous arc and
-				// skipping the *last* since it will be added by this arc.
-				for (unsigned int n = 1; n < tess_points.size() - 1; ++n)
-				{
-					// NOTE: These tessellated points have not been wrapped (dateline wrapped) and hence
-					// could end up with -180 or +180 for the longitude (due to numerical precision).
-					// So we must make sure their wrapping matches the arc end points (if both endpoints
-					// are *on* the dateline). If only one of the arc end points is on the dateline then
-					// the tessellated points *between* the arc end points (if any) are relatively safe
-					// from this wrapping problem (since they're *off* the dateline somewhat).
-					// Note that this is also why we exclude the start and end points in the tessellation
-					// (we want to respect their original wrapping since they can be *on* the dateline).
-					const real_t tess_latitude = asin(tess_points[n].position_vector().z());
-					const LatLonPoint tess_lat_lon(
-							convert_rad_to_deg(tess_latitude).dval(),
-							arc_start_point_longitude.dval());
+				// NOTE: These tessellated points have not been wrapped (dateline wrapped) and hence
+				// could end up with -180 or +180 for the longitude (due to numerical precision).
+				// So we must make sure their wrapping matches the arc end points (if both endpoints
+				// are *on* the dateline). If only one of the arc end points is on the dateline then
+				// the tessellated points *between* the arc end points (if any) are relatively safe
+				// from this wrapping problem (since they're *off* the dateline somewhat).
+				// Note that this is also why we exclude the start and end points in the tessellation
+				// (we want to respect their original wrapping since they can be *on* the dateline).
+				const real_t tess_latitude = asin(tess_points[n].position_vector().z());
+				const LatLonPoint tess_lat_lon(
+						convert_rad_to_deg(tess_latitude).dval(),
+						arc_start_point_longitude.dval());
 
-					points.push_back(tess_lat_lon);
-				}
+				add_tessellated_point(tess_lat_lon);
 			}
-			else // arc is *not* entirely on the dateline (although one of the end points could be) ...
+		}
+		else // arc is *not* entirely on the dateline (although one of the end points could be) ...
+		{
+			// Add the tessellated points skipping the *first* since it was added by the previous arc and
+			// skipping the *last* since it will be added by this arc.
+			for (unsigned int n = 1; n < tess_points.size() - 1; ++n)
 			{
-				// Add the tessellated points skipping the *first* since it was added by the previous arc and
-				// skipping the *last* since it will be added by this arc.
-				for (unsigned int n = 1; n < tess_points.size() - 1; ++n)
+				// These tessellated points have not been wrapped but they are also not *on* the
+				// dateline and hence are relatively safe from wrapping problems.
+				// Just make sure we keep the longitude in the range...
+				//   [-180 + central_meridian, central_meridian + 180]
+				// ...since we're converting from PointOnSphere to LatLonPoint (ie, [-180, 180] range).
+				// Note; 'central_meridian_longitude' should be in the range [-180, 180] itself.
+				LatLonPoint tess_lat_lon = make_lat_lon_point(tess_points[n]);
+				if (tess_lat_lon.longitude() < -180 + central_meridian_longitude)
 				{
-					// These tessellated points have not been wrapped but they are also not *on* the
-					// dateline and hence are relatively safe from wrapping problems.
-					// Just make sure we keep the longitude in the range...
-					//   [-180 + central_meridian, central_meridian + 180]
-					// ...since we're converting from PointOnSphere to LatLonPoint (ie, [-180, 180] range).
-					// Note; 'central_meridian_longitude' should be in the range [-180, 180] itself.
-					LatLonPoint tess_lat_lon = make_lat_lon_point(tess_points[n]);
-					if (tess_lat_lon.longitude() < -180 + central_meridian_longitude)
-					{
-						tess_lat_lon = LatLonPoint(
-								tess_lat_lon.latitude(),
-								tess_lat_lon.longitude() + 360);
-					}
-					else if (tess_lat_lon.longitude() > central_meridian_longitude + 180)
-					{
-						tess_lat_lon = LatLonPoint(
-								tess_lat_lon.latitude(),
-								tess_lat_lon.longitude() - 360);
-					}
-
-					points.push_back(tess_lat_lon);
+					tess_lat_lon = LatLonPoint(
+							tess_lat_lon.latitude(),
+							tess_lat_lon.longitude() + 360);
 				}
+				else if (tess_lat_lon.longitude() > central_meridian_longitude + 180)
+				{
+					tess_lat_lon = LatLonPoint(
+							tess_lat_lon.latitude(),
+							tess_lat_lon.longitude() - 360);
+				}
+
+				add_tessellated_point(tess_lat_lon);
 			}
 		}
 	}
+}
 
-	if (add_arc_end_point)
-	{
-		// Record the index of untessellated arc end point.
-		untessellated_arc_end_point_indices.push_back(points.size());
 
-		// Add the arc end point.
-		// NOTE: We're adding the original wrapped lat/lon point (ie, correctly wrapped).
-		points.push_back(arc_end_lat_lon_point);
-	}
+void
+GPlatesMaths::DateLineWrapper::LatLonLineGeometry::add_tessellated_point(
+		const LatLonPoint &lat_lon_point)
+{
+	d_lat_lon_points.push_back(lat_lon_point);
+
+	// We know point is tessellated - so it can't be untessellated (and unwrapped).
+	d_is_unwrapped_untessellated_point_flags.push_back(false);
 }
 
 
 // Note that the value doesn't matter - it's just used when constructing list sentinel nodes.
 const GPlatesMaths::DateLineWrapper::Vertex
-GPlatesMaths::DateLineWrapper::IntersectionGraph::LISTS_SENTINEL(LatLonPoint(0, 0));
+GPlatesMaths::DateLineWrapper::IntersectionGraph::LISTS_SENTINEL(false, LatLonPoint(0, 0));
 
 
 GPlatesMaths::DateLineWrapper::IntersectionGraph::IntersectionGraph(
@@ -1260,10 +1267,14 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::IntersectionGraph(
 	if (d_is_polygon_graph)
 	{
 		// Create the four corner vertices of the dateline.
-		d_dateline_corner_south_front = d_vertex_node_pool.construct(Vertex(LatLonPoint(-90, 180)));
-		d_dateline_corner_north_front = d_vertex_node_pool.construct(Vertex(LatLonPoint(90, 180)));
-		d_dateline_corner_north_back = d_vertex_node_pool.construct(Vertex(LatLonPoint(90, -180)));
-		d_dateline_corner_south_back = d_vertex_node_pool.construct(Vertex(LatLonPoint(-90, -180)));
+		d_dateline_corner_south_front = d_vertex_node_pool.construct(
+				Vertex(false/*is_unwrapped_point*/, LatLonPoint(-90, 180)));
+		d_dateline_corner_north_front = d_vertex_node_pool.construct(
+				Vertex(false/*is_unwrapped_point*/, LatLonPoint(90, 180)));
+		d_dateline_corner_north_back = d_vertex_node_pool.construct(
+				Vertex(false/*is_unwrapped_point*/, LatLonPoint(90, -180)));
+		d_dateline_corner_south_back = d_vertex_node_pool.construct(
+				Vertex(false/*is_unwrapped_point*/, LatLonPoint(-90, -180)));
 
 		// Add the four vertices to the list of dateline vertices.
 		d_dateline_vertices.append(*d_dateline_corner_south_front);
@@ -1312,13 +1323,18 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::generate_polylines(
 				GPLATES_ASSERTION_SOURCE);
 
 		// Shift from dateline frame back to central meridian frame.
-		PointOnSphere arc_start_point = rotate_from_dateline_frame * start_polyline_vertex.point;
-		LatLonPoint arc_start_lat_lon_point =
+		const PointOnSphere start_polyline_point = rotate_from_dateline_frame * start_polyline_vertex.point;
+		const LatLonPoint start_polyline_lat_lon_point =
 				shift_dateline_frame_lat_lon_point_to_central_meridian_range(
 						start_polyline_vertex.lat_lon_point,
 						central_meridian_longitude);
-		// Add the polyline start point (start point of the first arc).
-		current_polyline.d_line_geometry->points.push_back(arc_start_lat_lon_point);
+		// Add the polyline start point.
+		current_polyline.d_line_geometry->add_point(
+				start_polyline_lat_lon_point,
+				start_polyline_point,
+				central_meridian_longitude,
+				tessellate_threshold,
+				start_polyline_vertex.is_unwrapped_point);
 
 		// Add the remaining vertices of the current polyline.
 		// The current polyline stops when we hit another intersection point (or reach end of original polyline).
@@ -1329,22 +1345,18 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::generate_polylines(
 			const Vertex &geometry_vertex = *geometry_vertices_iter;
 
 			// Shift from dateline frame back to central meridian frame.
-			const PointOnSphere arc_end_point = rotate_from_dateline_frame * geometry_vertex.point;
-			const LatLonPoint arc_end_lat_lon_point =
+			const PointOnSphere geometry_point = rotate_from_dateline_frame * geometry_vertex.point;
+			const LatLonPoint geometry_lat_lon_point =
 					shift_dateline_frame_lat_lon_point_to_central_meridian_range(
 							geometry_vertex.lat_lon_point,
 							central_meridian_longitude);
 
-			current_polyline.d_line_geometry->add_arc_end_point_to_line_geometry(
-					arc_start_lat_lon_point,
-					arc_end_lat_lon_point,
-					arc_start_point,
-					arc_end_point,
+			current_polyline.d_line_geometry->add_point(
+					geometry_lat_lon_point,
+					geometry_point,
 					central_meridian_longitude,
-					tessellate_threshold);
-
-			arc_start_point = arc_end_point;
-			arc_start_lat_lon_point = arc_end_lat_lon_point;
+					tessellate_threshold,
+					geometry_vertex.is_unwrapped_point);
 
 			if (geometry_vertex.is_intersection)
 			{
@@ -1558,10 +1570,6 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::output_intersecting_polygons(
 		boost::optional<PointOnSphere> arc_start_point;
 		boost::optional<LatLonPoint> arc_start_lat_lon_point;
 
-		// The start point of the entire polygon.
-		boost::optional<PointOnSphere> polygon_start_point;
-		boost::optional<LatLonPoint> polygon_start_lat_lon_point;
-
 		// Used to keep track of which vertex list we are traversing as we alternate between
 		// geometry and dateline lists to map the path of the current output polygon.
 		vertex_list_type *vertex_lists[2] =
@@ -1581,42 +1589,20 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::output_intersecting_polygons(
 		{
 			Vertex &output_polygon_vertex = *output_polygon_vertices_iter;
 
+			// Shift from dateline frame back to central meridian frame.
+			const PointOnSphere output_polygon_point = rotate_from_dateline_frame * output_polygon_vertex.point;
+			const LatLonPoint output_polygon_lat_lon_point =
+					shift_dateline_frame_lat_lon_point_to_central_meridian_range(
+							output_polygon_vertex.lat_lon_point,
+							central_meridian_longitude);
+
 			// Add the current vertex to the current output polygon.
-			if (!arc_start_point) // first polygon point...
-			{
-				// Shift from dateline frame back to central meridian frame.
-				arc_start_point = rotate_from_dateline_frame * output_polygon_vertex.point;
-				arc_start_lat_lon_point =
-						shift_dateline_frame_lat_lon_point_to_central_meridian_range(
-								output_polygon_vertex.lat_lon_point,
-								central_meridian_longitude);
-				// Add the polyline start point (start point of the first arc).
-				current_output_polygon.d_exterior_line_geometry->points.push_back(arc_start_lat_lon_point.get());
-
-				polygon_start_point = arc_start_point.get();
-				polygon_start_lat_lon_point = arc_start_lat_lon_point.get();
-			}
-			else // not the first polygon point...
-			{
-				// Shift from dateline frame back to central meridian frame.
-				const PointOnSphere arc_end_point = rotate_from_dateline_frame * output_polygon_vertex.point;
-				const LatLonPoint arc_end_lat_lon_point =
-						shift_dateline_frame_lat_lon_point_to_central_meridian_range(
-								output_polygon_vertex.lat_lon_point,
-								central_meridian_longitude);
-
-				current_output_polygon.d_exterior_line_geometry->add_arc_end_point_to_line_geometry(
-						arc_start_lat_lon_point.get(),
-						arc_end_lat_lon_point,
-						arc_start_point.get(),
-						arc_end_point,
-						central_meridian_longitude,
-						tessellate_threshold);
-
-				arc_start_point = arc_end_point;
-				arc_start_lat_lon_point = arc_end_lat_lon_point;
-			}
-
+			current_output_polygon.d_exterior_line_geometry->add_point(
+					output_polygon_lat_lon_point,
+					output_polygon_point,
+					central_meridian_longitude,
+					tessellate_threshold,
+					output_polygon_vertex.is_unwrapped_point);
 			output_polygon_vertex.used_to_output_polygon = true;
 
 			// At intersection vertices we need to jump lists.
@@ -1666,23 +1652,12 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::output_intersecting_polygons(
 		}
 		while (output_polygon_vertices_iter != output_polygon_start_vertices_iter);
 
-		if (polygon_start_point)
+		if (tessellate_threshold)
 		{
-			// It's a polygon (not a polyline) so add the last arc (from last point to start point)
-			// in order to close the loop - *but* we don't duplicate the last and first polygon points.
-			// We're doing all this because we're iterating over vertices not arcs.
-			const PointOnSphere arc_end_point = polygon_start_point.get();
-			const LatLonPoint &arc_end_lat_lon_point = polygon_start_lat_lon_point.get();
-
-			current_output_polygon.d_exterior_line_geometry->add_arc_end_point_to_line_geometry(
-					arc_start_lat_lon_point.get(),
-					arc_end_lat_lon_point,
-					arc_start_point.get(),
-					arc_end_point,
+			// It's a polygon (not a polyline) so tessellate the last arc (from last point to start point).
+			current_output_polygon.d_exterior_line_geometry->finish_tessellating_polygon(
 					central_meridian_longitude,
-					tessellate_threshold,
-					// Only add the tessellated (interior) points for the last arc of polygon.d_exterior_points...
-					false/*add_arc_end_point*/);
+					tessellate_threshold.get());
 		}
 	}
 }
@@ -1696,7 +1671,8 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_vertex(
 	const LatLonPoint vertex = make_lat_lon_point(point);
 
 	// Create an intersection vertex wrapped in a list node.
-	vertex_list_type::Node *vertex_node = d_vertex_node_pool.construct(Vertex(vertex, point));
+	vertex_list_type::Node *vertex_node = d_vertex_node_pool.construct(
+			Vertex(true/*is_unwrapped_point*/, vertex, point));
 
 	// Add to the geometry sequence.
 	d_geometry_vertices.append(*vertex_node);
@@ -1706,6 +1682,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_vertex(
 void
 GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_front_dateline(
 		const PointOnSphere &point,
+		bool is_unwrapped_point,
 		bool exiting_dateline_polygon)
 {
 	// Override the point's longitude with that of the dateline (from the front which is 180 degrees).
@@ -1715,7 +1692,12 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_fro
 
 	// Create a copy of the intersection vertex for the geometry list.
 	vertex_list_type::Node *geometry_vertex_node = d_vertex_node_pool.construct(
-			Vertex(intersection_vertex, boost::none/*point*/, true/*is_intersection*/, exiting_dateline_polygon));
+			Vertex(
+					is_unwrapped_point,
+					intersection_vertex,
+					boost::none/*point*/,
+					true/*is_intersection*/,
+					exiting_dateline_polygon));
 
 	// Append to the end of to the geometry sequence.
 	d_geometry_vertices.append(*geometry_vertex_node);
@@ -1729,7 +1711,11 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_fro
 	// Create another copy of the intersection vertex for the dateline list.
 	// NOTE: We determine the 'exits_other_polygon' vertex flag later.
 	vertex_list_type::Node *dateline_vertex_node = d_vertex_node_pool.construct(
-			Vertex(intersection_vertex, boost::none/*point*/, true/*is_intersection*/));
+			Vertex(
+					is_unwrapped_point,
+					intersection_vertex,
+					boost::none/*point*/,
+					true/*is_intersection*/));
 
 	// Insert into the dateline vertices sequence.
 	// But we need to insert in the correct location so that the vertices on the dateline follow
@@ -1759,6 +1745,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_fro
 void
 GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_back_dateline(
 		const PointOnSphere &point,
+		bool is_unwrapped_point,
 		bool exiting_dateline_polygon)
 {
 	// Override the point's longitude with that of the dateline (from the back which is -180 degrees).
@@ -1768,7 +1755,12 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_bac
 
 	// Create a copy of the intersection vertex for the geometry list.
 	vertex_list_type::Node *geometry_vertex_node = d_vertex_node_pool.construct(
-			Vertex(intersection_vertex, boost::none/*point*/, true/*is_intersection*/, exiting_dateline_polygon));
+			Vertex(
+					is_unwrapped_point,
+					intersection_vertex,
+					boost::none/*point*/,
+					true/*is_intersection*/,
+					exiting_dateline_polygon));
 
 	// Append to the end of to the geometry sequence.
 	d_geometry_vertices.append(*geometry_vertex_node);
@@ -1782,7 +1774,11 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_bac
 	// Create another copy of the intersection vertex for the dateline list.
 	// NOTE: We determine the 'exits_other_polygon' vertex flag later.
 	vertex_list_type::Node *dateline_vertex_node = d_vertex_node_pool.construct(
-			Vertex(intersection_vertex, boost::none/*point*/, true/*is_intersection*/));
+			Vertex(
+					is_unwrapped_point,
+					intersection_vertex,
+					boost::none/*point*/,
+					true/*is_intersection*/));
 
 	// Insert into the dateline vertices sequence.
 	// But we need to insert in the correct location so that the vertices on the dateline follow
@@ -1812,6 +1808,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_bac
 void
 GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_north_pole(
 		const PointOnSphere &point,
+		bool is_unwrapped_point,
 		bool exiting_dateline_polygon)
 {
 	// Override the point's latitude with that of the north pole's.
@@ -1821,7 +1818,12 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_nor
 
 	// Create a copy of the intersection vertex for the geometry list.
 	vertex_list_type::Node *geometry_vertex_node = d_vertex_node_pool.construct(
-			Vertex(intersection_vertex, boost::none/*point*/, true/*is_intersection*/, exiting_dateline_polygon));
+			Vertex(
+					is_unwrapped_point,
+					intersection_vertex,
+					boost::none/*point*/,
+					true/*is_intersection*/,
+					exiting_dateline_polygon));
 
 	// Append to the end of to the geometry sequence.
 	d_geometry_vertices.append(*geometry_vertex_node);
@@ -1835,7 +1837,11 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_nor
 	// Create another copy of the intersection vertex for the dateline list.
 	// NOTE: We determine the 'exits_other_polygon' vertex flag later.
 	vertex_list_type::Node *dateline_vertex_node = d_vertex_node_pool.construct(
-			Vertex(intersection_vertex, boost::none/*point*/, true/*is_intersection*/));
+			Vertex(
+					is_unwrapped_point,
+					intersection_vertex,
+					boost::none/*point*/,
+					true/*is_intersection*/));
 
 	// Insert into the dateline vertices sequence.
 	// But we need to insert in the correct location so that the vertices on the dateline follow
@@ -1865,6 +1871,7 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_nor
 void
 GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_south_pole(
 		const PointOnSphere &point,
+		bool is_unwrapped_point,
 		bool exiting_dateline_polygon)
 {
 	// Override the point's latitude with that of the south pole's.
@@ -1874,7 +1881,12 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_sou
 
 	// Create a copy of the intersection vertex for the geometry list.
 	vertex_list_type::Node *geometry_vertex_node = d_vertex_node_pool.construct(
-			Vertex(intersection_vertex, boost::none/*point*/, true/*is_intersection*/, exiting_dateline_polygon));
+			Vertex(
+					is_unwrapped_point,
+					intersection_vertex,
+					boost::none/*point*/,
+					true/*is_intersection*/,
+					exiting_dateline_polygon));
 
 	// Append to the end of to the geometry sequence.
 	d_geometry_vertices.append(*geometry_vertex_node);
@@ -1888,7 +1900,11 @@ GPlatesMaths::DateLineWrapper::IntersectionGraph::add_intersection_vertex_on_sou
 	// Create another copy of the intersection vertex for the dateline list.
 	// NOTE: We determine the 'exits_other_polygon' vertex flag later.
 	vertex_list_type::Node *dateline_vertex_node = d_vertex_node_pool.construct(
-			Vertex(intersection_vertex, boost::none/*point*/, true/*is_intersection*/));
+			Vertex(
+					is_unwrapped_point,
+					intersection_vertex,
+					boost::none/*point*/,
+					true/*is_intersection*/));
 
 	// Insert into the dateline vertices sequence.
 	// But we need to insert in the correct location so that the vertices on the dateline follow
