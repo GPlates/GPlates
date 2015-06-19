@@ -1495,8 +1495,6 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_fill_geometry(
 	unsigned int vertex_index = 0;
 	const std::vector<QPointF> &vertices =
 			dateline_wrapped_projected_line_geometry.get_vertices();
-	const std::vector<bool> &is_original_point_flags =
-			dateline_wrapped_projected_line_geometry.get_is_original_point_flags();
 
 	// Iterate over the dateline wrapped geometries.
 	for (unsigned int geometry_index = 0; geometry_index < num_geometries; ++geometry_index)
