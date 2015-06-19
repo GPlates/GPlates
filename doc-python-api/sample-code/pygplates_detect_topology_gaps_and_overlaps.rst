@@ -29,7 +29,7 @@ Sample code
     rotation_model = pygplates.RotationModel('rotations.rot')
 
     # Load the topological plate polygon features (can also include deforming networks).
-    topology_features = pygplates.FeatureCollection('dynamic_plate_polygons.gpmlz')
+    topology_features = pygplates.FeatureCollection('topologies.gpml')
 
     # Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.
     num_time_steps = 140

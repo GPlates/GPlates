@@ -167,6 +167,26 @@ namespace GPlatesApi
 	}
 
 	bp::list
+	date_line_wrapper_polygon_get_is_original_exterior_point_flags(
+			const GPlatesMaths::DateLineWrapper::LatLonPolygon &lat_lon_polygon)
+	{
+		bp::list is_original_exterior_point_flags_list;
+
+		std::vector<bool>::const_iterator is_original_exterior_point_flags_iter =
+				lat_lon_polygon.get_is_original_exterior_point_flags().begin();
+		std::vector<bool>::const_iterator is_original_exterior_point_flags_end =
+				lat_lon_polygon.get_is_original_exterior_point_flags().end();
+		for ( ;
+			is_original_exterior_point_flags_iter != is_original_exterior_point_flags_end;
+			++is_original_exterior_point_flags_iter)
+		{
+			is_original_exterior_point_flags_list.append(*is_original_exterior_point_flags_iter);
+		}
+
+		return is_original_exterior_point_flags_list;
+	}
+
+	bp::list
 	date_line_wrapper_polyline_get_points(
 			const GPlatesMaths::DateLineWrapper::LatLonPolyline &lat_lon_polyline)
 	{
@@ -182,6 +202,24 @@ namespace GPlatesApi
 		}
 
 		return point_list;
+	}
+
+	bp::list
+	date_line_wrapper_polyline_get_is_original_point_flags(
+			const GPlatesMaths::DateLineWrapper::LatLonPolyline &lat_lon_polyline)
+	{
+		bp::list is_original_point_flags_list;
+
+		std::vector<bool>::const_iterator is_original_point_flags_iter =
+				lat_lon_polyline.get_is_original_point_flags().begin();
+		std::vector<bool>::const_iterator is_original_point_flags_end =
+				lat_lon_polyline.get_is_original_point_flags().end();
+		for ( ; is_original_point_flags_iter != is_original_point_flags_end; ++is_original_point_flags_iter)
+		{
+			is_original_point_flags_list.append(*is_original_point_flags_iter);
+		}
+
+		return is_original_point_flags_list;
 	}
 
 	bp::list
@@ -267,23 +305,41 @@ export_date_line_wrapper()
 				"\n"
 				"  The following table maps the input geometry type to the return type:\n"
 				"\n"
-				"  +-----------------------------+-------------------------------------------------+---------------------------------------------------------------------------+\n"
-				"  | Input Geometry              | Returns                                         | Description                                                               |\n"
-				"  +=============================+=================================================+===========================================================================+\n"
-				"  | :class:`PointOnSphere`      | :class:`LatLonPoint`                            | A single wrapped point.                                                   |\n"
-				"  +-----------------------------+-------------------------------------------------+---------------------------------------------------------------------------+\n"
-				"  | :class:`MultiPointOnSphere` | ``DateLineWrapper.LatLonMultiPoint``            | A single ``LatLonMultiPoint``. Call ``get_points()`` on it to get a       |\n"
-				"  |                             |                                                 | ``list`` of :class:`LatLonPoint` representing the wrapped points.         |\n"
-				"  +-----------------------------+-------------------------------------------------+---------------------------------------------------------------------------+\n"
-				"  | :class:`PolylineOnSphere`   | ``list`` of ``DateLineWrapper.LatLonPolyline``  | A ``list`` of wrapped polylines. Each ``LatLonPolyline`` has a            |\n"
-				"  |                             |                                                 | ``get_points()`` method returning a ``list`` of :class:`LatLonPoint`      |\n"
-				"  |                             |                                                 | representing the wrapped points of one wrapped polyline.                  |\n"
-				"  +-----------------------------+-------------------------------------------------+---------------------------------------------------------------------------+\n"
-				"  | :class:`PolygonOnSphere`    | ``list`` of ``DateLineWrapper.LatLonPolygon``   | A ``list`` of wrapped polygons. Each ``LatLonPolygon`` has a              |\n"
-				"  |                             |                                                 | ``get_exterior_points()`` method returning a ``list`` of                  |\n"
-				"  |                             |                                                 | :class:`LatLonPoint` representing the wrapped exterior points of one      |\n"
-				"  |                             |                                                 | wrapped polygon. In future, interior points (holes) will be supported.    |\n"
-				"  +-----------------------------+-------------------------------------------------+---------------------------------------------------------------------------+\n"
+				"  +-----------------------------+-------------------------------------------------+----------------------------------------------------------------------------+\n"
+				"  | Input Geometry              | Returns                                         | Description                                                                |\n"
+				"  +=============================+=================================================+============================================================================+\n"
+				"  | :class:`PointOnSphere`      | :class:`LatLonPoint`                            | A single wrapped point.                                                    |\n"
+				"  +-----------------------------+-------------------------------------------------+----------------------------------------------------------------------------+\n"
+				"  | :class:`MultiPointOnSphere` | ``DateLineWrapper.LatLonMultiPoint``            | A single ``LatLonMultiPoint`` with the following methods:                  |\n"
+				"  |                             |                                                 |                                                                            |\n"
+				"  |                             |                                                 | - ``get_points``: returns a ``list`` of :class:`LatLonPoint`               |\n"
+				"  |                             |                                                 |   representing the wrapped points.                                         |\n"
+				"  +-----------------------------+-------------------------------------------------+----------------------------------------------------------------------------+\n"
+				"  | :class:`PolylineOnSphere`   | ``list`` of ``DateLineWrapper.LatLonPolyline``  | | A list of wrapped polylines.                                             |\n"
+				"  |                             |                                                 | | Each ``LatLonPolyline`` has the following methods:                       |\n"
+				"  |                             |                                                 |                                                                            |\n"
+				"  |                             |                                                 | - ``get_points``: returns a ``list`` of :class:`LatLonPoint`               |\n"
+				"  |                             |                                                 |   representing the wrapped points (of one wrapped polyline).               |\n"
+				"  |                             |                                                 | - ``get_is_original_point_flags``: returns a ``list`` of ``bool``          |\n"
+				"  |                             |                                                 |   indicating whether each point in ``get_points`` is an original point in  |\n"
+				"  |                             |                                                 |   the polyline. Newly added points due to dateline wrapping and            |\n"
+				"  |                             |                                                 |   tessellation will be ``False``. Note that both lists are the same length.|\n"
+				"  +-----------------------------+-------------------------------------------------+----------------------------------------------------------------------------+\n"
+				"  | :class:`PolygonOnSphere`    | ``list`` of ``DateLineWrapper.LatLonPolygon``   | | A list of wrapped polygons.                                              |\n"
+				"  |                             |                                                 | | Each ``LatLonPolygon`` has the following methods:                        |\n"
+				"  |                             |                                                 |                                                                            |\n"
+				"  |                             |                                                 | - ``get_exterior_points``: returns a ``list`` of :class:`LatLonPoint`      |\n"
+				"  |                             |                                                 |   representing the wrapped exterior points (of one wrapped polygon).       |\n"
+				"  |                             |                                                 |   In future, interior points (holes) will also be supported.               |\n"
+				"  |                             |                                                 | - ``get_is_original_exterior_point_flags``: returns a ``list`` of ``bool`` |\n"
+				"  |                             |                                                 |   indicating whether each point in ``get_exterior_points`` is an original  |\n"
+				"  |                             |                                                 |   exterior point in the polygon. Newly added points due to dateline        |\n"
+				"  |                             |                                                 |   wrapping and tessellation will be ``False``. Note that both lists are    |\n"
+				"  |                             |                                                 |   the same length.                                                         |\n"
+				"  |                             |                                                 |                                                                            |\n"
+				"  |                             |                                                 | .. note:: The start and end points are generally *not* the same.           |\n"
+				"  |                             |                                                 |    This is similar to :class:`pygplates.PolygonOnSphere`.                  |\n"
+				"  +-----------------------------+-------------------------------------------------+----------------------------------------------------------------------------+\n"
 				"\n"
 				"  Note that, unlike points and multi-points, when wrapping an input polyline (or polygon) "
 				"you can get more than one wrapped output polyline (or polygon) if it crosses the dateline.\n"
@@ -341,7 +397,28 @@ export_date_line_wrapper()
 				"    wrapped_and_tessellated_polygons = date_line_wrapper.wrap(polygon, 2.0)\n"
 				"    ...\n"
 				"\n"
-				"  .. note:: *tessellate_degrees* is ignored for :class:`points<PointOnSphere>` and :class:`multi-points<MultiPointOnSphere>`.")
+				"  .. note:: *tessellate_degrees* is ignored for :class:`points<PointOnSphere>` and :class:`multi-points<MultiPointOnSphere>`.\n"
+				"\n"
+				"  | Wrapping (and tessellating) can introduce new points into the original polyline or polygon.\n"
+				"  | In some cases it is desirable to know which points are original points and which are not.\n"
+				"  | For example, if the original points in a polyline are decorated with point symbols in a 2D map rendering. "
+				"Any newly introduced points (from wrapping/tessellating) should not be decorated.\n"
+				"  | As such both ``LatLonPolyline`` and ``LatLonPolygon`` have methods to support this (see the above wrapped geometry table).\n"
+				"\n"
+				"  Determining whether points in a wrapped polyline are original polyline points:\n"
+				"  ::\n"
+				"\n"
+				"    date_line_wrapper = pygplates.DateLineWrapper()\n"
+				"    \n"
+				"    # Wrap a polyline (and tessellate to at least 2 degrees).\n"
+				"    polyline = pygplates.PolylineOnSphere(...)\n"
+				"    wrapped_polylines = date_line_wrapper.wrap(polyline, 2.0)\n"
+				"    for wrapped_polyline in wrapped_polylines:\n"
+				"      wrapped_points = wrapped_polyline.get_points()\n"
+				"      is_original_point_flags = wrapped_polyline.get_is_original_point_flags()\n"
+				"      for wrapped_point_index in range(len(wrapped_points)):\n"
+				"        if is_original_point_flags[wrapped_point_index]:\n"
+				"          wrapped_point_lat, wrapped_point_lon = wrapped_points[wrapped_point_index].to_lat_lon()\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
@@ -349,11 +426,13 @@ export_date_line_wrapper()
 	// A nested class within python class DateLineWrapper (due to above 'bp::scope').
 	bp::class_<GPlatesMaths::DateLineWrapper::LatLonPolygon>("LatLonPolygon", bp::no_init)
 		.def("get_exterior_points", &GPlatesApi::date_line_wrapper_polygon_get_exterior_points)
+		.def("get_is_original_exterior_point_flags", &GPlatesApi::date_line_wrapper_polygon_get_is_original_exterior_point_flags)
 	;
 
 	// A nested class within python class DateLineWrapper (due to above 'bp::scope').
 	bp::class_<GPlatesMaths::DateLineWrapper::LatLonPolyline>("LatLonPolyline", bp::no_init)
 		.def("get_points", &GPlatesApi::date_line_wrapper_polyline_get_points)
+		.def("get_is_original_point_flags", &GPlatesApi::date_line_wrapper_polyline_get_is_original_point_flags)
 	;
 
 	// A nested class within python class DateLineWrapper (due to above 'bp::scope').

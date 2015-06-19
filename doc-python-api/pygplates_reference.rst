@@ -328,8 +328,10 @@ All four above geometry types inherit from :class:`pygplates.GeometryOnSphere`:
    
    pygplates.GeometryOnSphere
 
-:class:`polylines<pygplates.PolylineOnSphere>` and :class:`polygons<pygplates.PolygonOnSphere>` are
-both a sequence of :class:`points<pygplates.PointOnSphere>` and a sequence of *great circle arcs*:
+A :class:`polyline<pygplates.PolylineOnSphere>` or a :class:`polygon<pygplates.PolygonOnSphere>` is
+both a sequence of :class:`points<pygplates.PointOnSphere>` and a sequence of
+:class:`segments<pygplates.GreatCircleArc>` (between adjacent points).
+Each *segment* is a great circle arc:
 
 .. autosummary::
    :nosignatures:

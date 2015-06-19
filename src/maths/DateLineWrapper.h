@@ -94,18 +94,18 @@ namespace GPlatesMaths
 		{
 		public:
 
-			 /**
-			  * The dateline wrapped (and optionallly tessellated) points.
-			  *
+			/**
+			 * The dateline wrapped (and optionally tessellated) points.
+			 *
 			 * This is the original (unwrapped) points plus new points added due to intersection
 			 * with the dateline and any new points due to tessellation.
-			  *
-			  * NOTE: The start and end points are generally *not* the same.
-			  * So if you are rendering the polygon you may need to explicitly close the polygon by
-			  * appending the start point.
-			  * For example, a triangle has three points but it can be rendered as a line string
-			  * consisting of four points (the last point being a duplicate of the first point).
-			  */
+			 *
+			 * NOTE: The start and end points are generally *not* the same.
+			 * So if you are rendering the polygon you may need to explicitly close the polygon by
+			 * appending the start point.
+			 * For example, a triangle has three points but it can be rendered as a line string
+			 * consisting of four points (the last point being a duplicate of the first point).
+			 */
 			const lat_lon_points_seq_type &
 			get_exterior_points() const;
 
@@ -135,7 +135,7 @@ namespace GPlatesMaths
 		public:
 
 			/**
-			 * The dateline wrapped (and optionallly tessellated) points.
+			 * The dateline wrapped (and optionally tessellated) points.
 			 *
 			 * This is the original (unwrapped) points plus new points added due to intersection
 			 * with the dateline and any new points due to tessellation.
