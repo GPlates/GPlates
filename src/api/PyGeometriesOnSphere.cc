@@ -55,6 +55,7 @@
 #include "maths/GeometryInterpolation.h"
 #include "maths/GeometryOnSphere.h"
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
 #include "maths/PolygonOnSphere.h"
@@ -909,9 +910,10 @@ export_point_on_sphere()
 				"  :type longitude: float\n"
 				"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
 				"\n"
-				"  **NOTE** that *latitude* must satisfy :meth:`LatLonPoint.is_valid_latitude` and "
+				"  .. note:: *latitude* must satisfy :meth:`LatLonPoint.is_valid_latitude` and "
 				"*longitude* must satisfy :meth:`LatLonPoint.is_valid_longitude`, otherwise "
 				"*InvalidLatLonError* will be raised.\n"
+				"\n"
 				"  ::\n"
 				"\n"
 				"    point = pygplates.PointOnSphere(latitude, longitude)\n")
@@ -1253,7 +1255,7 @@ export_multi_point_on_sphere()
 				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
 				"  :raises: InsufficientPointsForMultiPointConstructionError if point sequence is empty\n"
 				"\n"
-				"  **NOTE** that the sequence must contain at least one point, otherwise "
+				"  .. note:: The sequence must contain at least one point, otherwise "
 				"*InsufficientPointsForMultiPointConstructionError* will be raised.\n"
 				"\n"
 				"  The following example shows a few different ways to create a :class:`multi-point<MultiPointOnSphere>`:\n"
@@ -1374,7 +1376,7 @@ namespace GPlatesApi
 
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
-		// ...if we return 'GPlatesMaths::PolyGeometryOnSphereType::non_null_ptr_to_const_type' and rely on
+		// ...if we return 'PolyGeometryOnSphereType::non_null_ptr_to_const_type' and rely on
 		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
 		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
 		//
@@ -1722,6 +1724,24 @@ namespace GPlatesApi
 		return GPlatesMaths::PointOnSphere(polyline_on_sphere.get_centroid());
 	}
 
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>
+	polyline_on_sphere_to_tessellated(
+			const GPlatesMaths::PolylineOnSphere &polyline_on_sphere,
+			const double &tessellate_degrees)
+	{
+		// With boost 1.42 we get the following compile error...
+		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
+		// ...if we return 'GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type' and rely on
+		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
+		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
+		//
+		// So we avoid it by using returning a pointer to 'non-const' GPlatesMaths::PolylineOnSphere.
+		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolylineOnSphere>(
+				tessellate(
+						polyline_on_sphere,
+						GPlatesMaths::convert_deg_to_rad(tessellate_degrees)));
+	}
+
 	/**
 	 * Enumeration to determine conversion of geometries to PolylineOnSphere.
 	 */
@@ -1998,7 +2018,7 @@ export_polyline_on_sphere()
 				"or if any two points (adjacent in the *points* sequence) are antipodal to each other "
 				"(on opposite sides of the globe)\n"
 				"\n"
-				"  **NOTE** that the sequence must contain at least two points in order to be a valid "
+				"  .. note:: The sequence must contain at least two points in order to be a valid "
 				"polyline, otherwise *InvalidPointsForPolylineConstructionError* will be raised.\n"
 				"\n"
 				"  During creation, a :class:`GreatCircleArc` is created between each adjacent pair of "
@@ -2413,6 +2433,27 @@ export_polyline_on_sphere()
 				"  The centroid is calculated as a weighted average of the mid-points of the "
 				":class:`great circle arcs<GreatCircleArc>` of this polyline with weighting "
 				"proportional to the individual arc lengths.\n")
+		.def("to_tessellated",
+				&GPlatesApi::polyline_on_sphere_to_tessellated,
+				(bp::arg("tessellate_degrees")),
+				"to_tessellated(tessellate_degrees)\n"
+				"  Returns a new polyline that is tessellated version of this polyline.\n"
+				"\n"
+				"  :param tessellate_degrees: maximum tessellation angle (in degrees)\n"
+				"  :type tessellate_degrees: float\n"
+				"\n"
+				"  Adjacent points (in the returned tessellated polyline) are separated by no more than "
+				"*tessellate_degrees* on the globe.\n"
+				"\n"
+				"  Create a polyline tessellated to 2 degrees:\n"
+				"  ::\n"
+				"\n"
+				"    tessellated_polyline = polyline.to_tessellated(2)\n"
+				"\n"
+				"  .. note: The distance between adjacent points (in the tessellated polyline) will not be exactly "
+				"*uniform*. This is because each :class:`segment<GreatCircleArc>` in the original polyline is "
+				"tessellated to the nearest integer number of points (that keeps that segment under the threshold) "
+				"and hence each original *segment* will have a slightly different tessellation angle.\n")
 		.def("__iter__",
 				bp::range(
 						&GPlatesMaths::PolylineOnSphere::vertex_begin,
@@ -2512,6 +2553,24 @@ namespace GPlatesApi
 			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere)
 	{
 		return GPlatesMaths::PointOnSphere(polygon_on_sphere.get_interior_centroid());
+	}
+
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>
+	polygon_on_sphere_to_tessellated(
+			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
+			const double &tessellate_degrees)
+	{
+		// With boost 1.42 we get the following compile error...
+		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
+		// ...if we return 'GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type' and rely on
+		// 'python_ConstGeometryOnSphere' to convert for us - despite the fact that this conversion works
+		// successfully for python bindings in other source files. It's likely due to 'bp::make_constructor'.
+		//
+		// So we avoid it by using returning a pointer to 'non-const' GPlatesMaths::PolygonOnSphere.
+		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolygonOnSphere>(
+				tessellate(
+						polygon_on_sphere,
+						GPlatesMaths::convert_deg_to_rad(tessellate_degrees)));
 	}
 }
 
@@ -2652,7 +2711,7 @@ export_polygon_on_sphere()
 				"or if any two points (adjacent in the *points* sequence) are antipodal to each other "
 				"(on opposite sides of the globe)\n"
 				"\n"
-				"  **NOTE** that the sequence must contain at least three points in order to be a valid "
+				"  .. note:: The sequence must contain at least three points in order to be a valid "
 				"polygon, otherwise *InvalidPointsForPolygonConstructionError* will be raised.\n"
 				"\n"
 				"  During creation, a :class:`GreatCircleArc` is created between each adjacent pair of "
@@ -2913,6 +2972,27 @@ export_polygon_on_sphere()
 				"For example, the *interior* centroid of a bottom-heavy, pear-shaped polygon will be "
 				"closer to the bottom of the polygon. This centroid is not exactly at the centre-of-mass, "
 				"but it will be a lot closer to the real centre-of-mass than :meth:`get_boundary_centroid`.\n")
+		.def("to_tessellated",
+				&GPlatesApi::polygon_on_sphere_to_tessellated,
+				(bp::arg("tessellate_degrees")),
+				"to_tessellated(tessellate_degrees)\n"
+				"  Returns a new polygon that is tessellated version of this polygon.\n"
+				"\n"
+				"  :param tessellate_degrees: maximum tessellation angle (in degrees)\n"
+				"  :type tessellate_degrees: float\n"
+				"\n"
+				"  Adjacent points (in the returned tessellated polygon) are separated by no more than "
+				"*tessellate_degrees* on the globe.\n"
+				"\n"
+				"  Create a polygon tessellated to 2 degrees:\n"
+				"  ::\n"
+				"\n"
+				"    tessellated_polygon = polygon.to_tessellated(2)\n"
+				"\n"
+				"  .. note: The distance between adjacent points (in the tessellated polygon) will not be exactly "
+				"*uniform*. This is because each :class:`segment<GreatCircleArc>` in the original polygon is "
+				"tessellated to the nearest integer number of points (that keeps that segment under the threshold) "
+				"and hence each original *segment* will have a slightly different tessellation angle.\n")
 		.def("__iter__",
 				bp::range(
 						&GPlatesMaths::PolygonOnSphere::vertex_begin,

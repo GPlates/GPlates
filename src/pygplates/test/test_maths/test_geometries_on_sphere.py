@@ -613,6 +613,33 @@ class PolylineOnSphereCase(unittest.TestCase):
     
     def test_centroid(self):
         self.assertTrue(isinstance(self.polyline.get_centroid(), pygplates.PointOnSphere))
+    
+    def test_tessellate(self):
+        tessellated = self.polyline.to_tessellated(91)
+        self.assertTrue(tessellated == self.polyline)
+        
+        tessellated = self.polyline.to_tessellated(46)
+        self.assertTrue(len(tessellated) == 7)
+        self.assertTrue(tessellated[0] == self.points[0])
+        self.assertTrue(tessellated[2] == self.points[1])
+        self.assertTrue(tessellated[4] == self.points[2])
+        self.assertTrue(tessellated[6] == self.points[3])
+        self.assertTrue(tessellated[1] == pygplates.FiniteRotation((0,0,1), math.pi / 4) * self.points[0])
+        self.assertTrue(tessellated[3] == pygplates.FiniteRotation((1,0,0), math.pi / 4) * self.points[1])
+        self.assertTrue(tessellated[5] == pygplates.FiniteRotation((1,0,0), math.pi / 4) * self.points[2])
+        
+        tessellated = self.polyline.to_tessellated(44)
+        self.assertTrue(len(tessellated) == 10)
+        self.assertTrue(tessellated[0] == self.points[0])
+        self.assertTrue(tessellated[3] == self.points[1])
+        self.assertTrue(tessellated[6] == self.points[2])
+        self.assertTrue(tessellated[9] == self.points[3])
+        self.assertTrue(tessellated[1] == pygplates.FiniteRotation((0,0,1), math.pi / 6) * self.points[0])
+        self.assertTrue(tessellated[2] == pygplates.FiniteRotation((0,0,1), 2 * math.pi / 6) * self.points[0])
+        self.assertTrue(tessellated[4] == pygplates.FiniteRotation((1,0,0), math.pi / 6) * self.points[1])
+        self.assertTrue(tessellated[5] == pygplates.FiniteRotation((1,0,0), 2 * math.pi / 6) * self.points[1])
+        self.assertTrue(tessellated[7] == pygplates.FiniteRotation((1,0,0), math.pi / 6) * self.points[2])
+        self.assertTrue(tessellated[8] == pygplates.FiniteRotation((1,0,0), 2 * math.pi / 6) * self.points[2])
 
 
 class PolygonOnSphereCase(unittest.TestCase):
@@ -830,6 +857,40 @@ class PolygonOnSphereCase(unittest.TestCase):
     def test_centroid(self):
         self.assertTrue(isinstance(self.polygon.get_boundary_centroid(), pygplates.PointOnSphere))
         self.assertTrue(isinstance(self.polygon.get_interior_centroid(), pygplates.PointOnSphere))
+    
+    def test_tessellate(self):
+        #self.points.append(pygplates.PointOnSphere(1, 0, 0))
+        #self.points.append(pygplates.PointOnSphere(0, 1, 0))
+        #self.points.append(pygplates.PointOnSphere(0, 0, 1))
+        #self.points.append(pygplates.PointOnSphere(0, -1, 0))
+        tessellated = self.polygon.to_tessellated(91)
+        self.assertTrue(tessellated == self.polygon)
+        
+        tessellated = self.polygon.to_tessellated(46)
+        self.assertTrue(len(tessellated) == 8)
+        self.assertTrue(tessellated[0] == self.points[0])
+        self.assertTrue(tessellated[2] == self.points[1])
+        self.assertTrue(tessellated[4] == self.points[2])
+        self.assertTrue(tessellated[6] == self.points[3])
+        self.assertTrue(tessellated[1] == pygplates.FiniteRotation((0,0,1), math.pi / 4) * self.points[0])
+        self.assertTrue(tessellated[3] == pygplates.FiniteRotation((1,0,0), math.pi / 4) * self.points[1])
+        self.assertTrue(tessellated[5] == pygplates.FiniteRotation((1,0,0), math.pi / 4) * self.points[2])
+        self.assertTrue(tessellated[7] == pygplates.FiniteRotation((0,0,1), math.pi / 4) * self.points[3])
+        
+        tessellated = self.polygon.to_tessellated(44)
+        self.assertTrue(len(tessellated) == 12)
+        self.assertTrue(tessellated[0] == self.points[0])
+        self.assertTrue(tessellated[3] == self.points[1])
+        self.assertTrue(tessellated[6] == self.points[2])
+        self.assertTrue(tessellated[9] == self.points[3])
+        self.assertTrue(tessellated[1] == pygplates.FiniteRotation((0,0,1), math.pi / 6) * self.points[0])
+        self.assertTrue(tessellated[2] == pygplates.FiniteRotation((0,0,1), 2 * math.pi / 6) * self.points[0])
+        self.assertTrue(tessellated[4] == pygplates.FiniteRotation((1,0,0), math.pi / 6) * self.points[1])
+        self.assertTrue(tessellated[5] == pygplates.FiniteRotation((1,0,0), 2 * math.pi / 6) * self.points[1])
+        self.assertTrue(tessellated[7] == pygplates.FiniteRotation((1,0,0), math.pi / 6) * self.points[2])
+        self.assertTrue(tessellated[8] == pygplates.FiniteRotation((1,0,0), 2 * math.pi / 6) * self.points[2])
+        self.assertTrue(tessellated[10] == pygplates.FiniteRotation((0,0,1), math.pi / 6) * self.points[3])
+        self.assertTrue(tessellated[11] == pygplates.FiniteRotation((0,0,1), 2 * math.pi / 6) * self.points[3])
 
 
 def suite():

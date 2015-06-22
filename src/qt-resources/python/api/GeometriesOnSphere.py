@@ -282,7 +282,7 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians, polyline_con
     
     When determining if two geometries A and B can be joined the closest pair of end points
     (one from A and one from B) decides which end of each geometry can be joined, provided their
-    distance is less than *distance_threshold_radians* radians. If a third geometries C also has an
+    distance is less than *distance_threshold_radians* radians. If a third geometry C also has an
     end point close enough to A then the closest of B and C is joined to A.
     
     Two geometries A and B are joined by prepending or appending a (possibly reversed) copy of the
