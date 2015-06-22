@@ -238,22 +238,6 @@ GPlatesMaths::PolylineOnSphere::is_close_to(
 }
 
 
-void
-GPlatesMaths::PolylineOnSphere::create_segment_and_append_to_seq(
-		seq_type &seq, 
-		const PointOnSphere &p1,
-		const PointOnSphere &p2)
-{
-	// We'll assume that the validity of 'p1' and 'p2' to create a GreatCircleArc has been
-	// evaluated in the function 'PolylineOnSphere::evaluate_construction_parameter_validity',
-	// which was presumably invoked in 'PolylineOnSphere::generate_segments_and_swap' before
-	// this function was.
-
-	GreatCircleArc segment = GreatCircleArc::create(p1, p2);
-	seq.push_back(segment);
-}
-
-
 const GPlatesMaths::real_t &
 GPlatesMaths::PolylineOnSphere::get_arc_length() const
 {
@@ -497,6 +481,41 @@ GPlatesMaths::PolylineOnSphere::VertexConstIterator::distance_to(
 	}
 
 	return difference;
+}
+
+
+GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::tessellate(
+		const PolylineOnSphere &polyline,
+		const real_t &max_angular_extent)
+{
+	std::vector<PointOnSphere> tessellated_points;
+
+	PolylineOnSphere::const_iterator gca_iter = polyline.begin();
+	PolylineOnSphere::const_iterator gca_end = polyline.end();
+	while (true)
+	{
+		const GreatCircleArc &gca = *gca_iter;
+
+		// Tessellate the current great circle arc.
+		tessellate(tessellated_points, gca, max_angular_extent);
+
+		++gca_iter;
+		if (gca_iter == gca_end)
+		{
+			// Note: We don't remove the arc end point of the *last* arc.
+			break;
+		}
+
+		// Remove the tessellated arc's end point.
+		// Otherwise the next arc's start point will duplicate it.
+		//
+		// Tessellating a great circle arc should always add at least two points.
+		// So we should always be able to remove one point (the arc end point).
+		tessellated_points.pop_back();
+	}
+
+	return PolylineOnSphere::create_on_heap(tessellated_points);
 }
 
 

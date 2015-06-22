@@ -583,12 +583,10 @@ GPlatesMaths::tessellate(
 			Rotation::create(great_circle_arc.rotation_axis(), segment_angular_extent);
 
 	// Generate the segment points.
-	const int num_initial_tessellation_points = tessellation_points.size();
-	tessellation_points.reserve(num_initial_tessellation_points + num_segments + 1);
 	tessellation_points.push_back(start_point);
 	for (int n = 0; n < num_segments - 1; ++n)
 	{
-		const PointOnSphere &segment_start_point = tessellation_points[num_initial_tessellation_points + n];
+		const PointOnSphere &segment_start_point = tessellation_points.back();
 		const PointOnSphere segment_end_point(segment_rotation * segment_start_point.position_vector());
 
 		tessellation_points.push_back(segment_end_point);

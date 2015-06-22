@@ -932,19 +932,6 @@ namespace GPlatesMaths
 				PointForwardIter end,
 				bool check_distinct_points);
 
-		/**
-		 * Attempt to create a line-segment defined by the points @a p1 and @a p2; append
-		 * it to @a seq.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 */
-		static
-		void
-		create_segment_and_append_to_seq(
-				seq_type &seq,
-				const PointOnSphere &p1,
-				const PointOnSphere &p2);
-
 
 		/**
 		 * This is the minimum number of (distinct) collection points to be passed into the
@@ -970,6 +957,25 @@ namespace GPlatesMaths
 		 */
 		mutable boost::intrusive_ptr<PolylineOnSphereImpl::CachedCalculations> d_cached_calculations;
 	};
+
+
+	/**
+	 * Subdivides each segment (great circle arc) of a polyline and returns tessellated polyline.
+	 *
+	 * Each pair of adjacent points in the tessellated polyline will have a maximum angular extent of
+	 * @a max_angular_extent radians.
+	 *
+	 * Note that those arcs (of the original polyline) already subtending an angle less than
+	 * @a max_angular_extent radians will not be tessellated.
+	 *
+	 * Note that the distance between adjacent points in the tessellated polyline will not be *uniform*.
+	 * This is because each arc in the original polyline is tessellated to the nearest integer number
+	 * of points and hence each original arc will have a slightly different tessellation angle.
+	 */
+	PolylineOnSphere::non_null_ptr_to_const_type
+	tessellate(
+			const PolylineOnSphere &polyline,
+			const real_t &max_angular_extent);
 
 
 	/**
@@ -1161,10 +1167,11 @@ namespace GPlatesMaths
 
 		PointForwardIter prev;
 		PointForwardIter iter = begin;
-		for (prev = iter++ ; iter != end; prev = iter++) {
+		for (prev = iter++ ; iter != end; prev = iter++)
+		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
-			create_segment_and_append_to_seq(tmp_seq, p1, p2);
+			tmp_seq.push_back(GreatCircleArc::create(p1, p2));
 		}
 		poly.d_seq.swap(tmp_seq);
 	}

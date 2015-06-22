@@ -293,22 +293,6 @@ GPlatesMaths::PolygonOnSphere::is_close_to(
 }
 
 
-void
-GPlatesMaths::PolygonOnSphere::create_segment_and_append_to_seq(
-		seq_type &seq, 
-		const PointOnSphere &p1,
-		const PointOnSphere &p2)
-{
-	// We'll assume that the validity of 'p1' and 'p2' to create a GreatCircleArc has been
-	// evaluated in the function 'PolygonOnSphere::evaluate_construction_parameter_validity',
-	// which was presumably invoked in 'PolygonOnSphere::generate_segments_and_swap' before
-	// this function was.
-
-	GreatCircleArc segment = GreatCircleArc::create(p1, p2);
-	seq.push_back(segment);
-}
-
-
 const GPlatesMaths::real_t &
 GPlatesMaths::PolygonOnSphere::get_arc_length() const
 {
@@ -573,6 +557,37 @@ GPlatesMaths::PolygonOnSphere::get_bounding_tree() const
 }
 
 
+GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::tessellate(
+		const PolygonOnSphere &polygon,
+		const real_t &max_angular_extent)
+{
+	std::vector<PointOnSphere> tessellated_points;
+
+	PolygonOnSphere::const_iterator gca_iter = polygon.begin();
+	PolygonOnSphere::const_iterator gca_end = polygon.end();
+	for ( ; gca_iter != gca_end; ++gca_iter)
+	{
+		const GreatCircleArc &gca = *gca_iter;
+
+		// Tessellate the current great circle arc.
+		tessellate(tessellated_points, gca, max_angular_extent);
+
+		// Remove the tessellated arc's end point.
+		// Otherwise the next arc's start point will duplicate it.
+		//
+		// NOTE: We also remove the *last* arc's end point because otherwise the start point
+		// of the *first* arc will duplicate it.
+		//
+		// Tessellating a great circle arc should always add at least two points.
+		// So we should always be able to remove one point (the arc end point).
+		tessellated_points.pop_back();
+	}
+
+	return PolygonOnSphere::create_on_heap(tessellated_points);
+}
+
+
 void
 GPlatesMaths::InvalidPointsForPolygonConstructionError::write_message(
 		std::ostream &os) const
@@ -599,4 +614,3 @@ GPlatesMaths::InvalidPointsForPolygonConstructionError::write_message(
 		os << message;
 	}
 }
-
