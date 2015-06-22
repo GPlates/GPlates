@@ -287,7 +287,7 @@ export_date_line_wrapper()
 				"    date_line_wrapper = pygplates.DateLineWrapper()\n"
 				"    date_line_wrapper_90 = pygplates.DateLineWrapper(90)\n"
 				"\n"
-				"  *NOTE:* If *central_meridian* is outside the range ``[-180, 180]`` then it will be wrapped "
+				"  .. note:: If *central_meridian* is outside the range ``[-180, 180]`` then it will be wrapped "
 				" to be within that range (eg, -200 becomes 160). This ensures that the range of longitudes "
 				"of wrapped points, ``[central_meridian - 180, central_meridian + 180]``, will always be "
 				"within the range ``[-360, 360]`` which is the valid range for :class:`LatLonPoint`.\n")

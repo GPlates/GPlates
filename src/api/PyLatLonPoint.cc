@@ -137,12 +137,13 @@ export_lat_lon_point()
 							"  :type longitude: float\n"
 							"  :raises: InvalidLatLonError if *latitude* or *longitude* is invalid\n"
 							"\n"
-							"  **NOTE** that *latitude* must satisfy :meth:`is_valid_latitude` and "
-							"*longitude* must satisfy :meth:`is_valid_longitude`, otherwise "
-							"*InvalidLatLonError* will be raised.\n"
 							"  ::\n"
 							"\n"
-							"    point = pygplates.LatLonPoint(latitude, longitude)\n"))
+							"    point = pygplates.LatLonPoint(latitude, longitude)\n"
+							"\n"
+							"  .. note:: *latitude* must satisfy :meth:`is_valid_latitude` and "
+							"*longitude* must satisfy :meth:`is_valid_longitude`, otherwise "
+							"*InvalidLatLonError* will be raised.\n"))
 		.def("is_valid_latitude",
 				&GPlatesMaths::LatLonPoint::is_valid_latitude,
 				(bp::arg("latitude")),

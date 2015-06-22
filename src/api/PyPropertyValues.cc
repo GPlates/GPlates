@@ -586,15 +586,17 @@ export_gml_orientable_curve()
 				//"__init__(gml_line_string, [reverse_orientation=False])\n"
 				"__init__(gml_line_string)\n"
 				"  Create an orientable polyline property value that wraps a polyline geometry and "
-				"gives it an orientation - **NOTE** currently the orientation is always *positive* "
-				"so this is essentially no different than a :class:`GmlLineString`.\n"
+				"gives it an orientation.\n"
 				"\n"
 				"  :param gml_line_string: the line string (polyline) property value\n"
 				"  :type gml_line_string: :class:`GmlLineString`\n"
 				"\n"
 				"  ::\n"
 				"\n"
-				"    orientable_curve_property = pygplates.GmlOrientableCurve(gml_line_string)\n")
+				"    orientable_curve_property = pygplates.GmlOrientableCurve(gml_line_string)\n"
+				"\n"
+				"  .. note:: Currently the orientation is always *positive* "
+				"so this is essentially no different than a :class:`GmlLineString`.\n")
 		.def("get_base_curve",
 				base_curve,
 				"get_base_curve() -> GmlLineString\n"
@@ -1072,8 +1074,9 @@ export_gpml_array()
 			"\n"
 			"  Note that all elements should have the same type (such as :class:`GmlTimePeriod`).\n"
 			"\n"
-			"  **NOTE** that the sequence of elements must **not** be empty (for technical implementation reasons), "
+			"  .. note:: The sequence of elements must **not** be empty (for technical implementation reasons), "
 			"otherwise a *RuntimeError* exception will be thrown.\n"
+			"\n"
 			"  ::\n"
 			"\n"
 			"    array = pygplates.GpmlArray(elements)\n");
@@ -1603,8 +1606,9 @@ export_gpml_irregular_sampling()
 #endif
 				"  :raises: RuntimeError if time sample sequence is empty\n"
 				"\n"
-				"  **NOTE** that the sequence of time samples must **not** be empty (for technical implementation reasons), "
+				"  .. note:: The sequence of time samples must **not** be empty (for technical implementation reasons), "
 				"otherwise a *RuntimeError* exception will be thrown.\n"
+				"\n"
 				"  ::\n"
 				"\n"
 				"    irregular_sampling = pygplates.GpmlIrregularSampling(time_samples)\n")
@@ -2603,8 +2607,9 @@ export_gpml_piecewise_aggregation()
 				"  :type time_windows: Any sequence such as a ``list`` or a ``tuple``\n"
 				"  :raises: RuntimeError if time window sequence is empty\n"
 				"\n"
-				"  **NOTE** that the sequence of time windows must **not** be empty (for technical implementation reasons), "
+				"  .. note:: The sequence of time windows must **not** be empty (for technical implementation reasons), "
 				"otherwise a *RuntimeError* exception will be thrown.\n"
+				"\n"
 				"  ::\n"
 				"\n"
 				"    piecewise_aggregation = pygplates.GpmlPiecewiseAggregation(time_windows)\n")

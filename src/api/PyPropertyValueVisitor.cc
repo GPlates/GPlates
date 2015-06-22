@@ -670,7 +670,7 @@ export_property_value_visitor()
 			"    if plate_id is not None:\n"
 			"        print 'plate id: %d' % plate_id\n"
 			"\n"
-			"NOTE: You must call the base class *__init__* otherwise you will "
+			".. warning:: You must call the base class *__init__* otherwise you will "
 			"get a *Boost.Python.ArgumentError* exception.\n",
 			// NOTE: Must not define 'bp::no_init' because this base class is meant to be inherited
 			// by a python class (see http://www.boostpro.com/writing/bpl.html#inheritance).

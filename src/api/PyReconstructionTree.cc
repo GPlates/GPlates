@@ -827,7 +827,7 @@ export_reconstruction_tree()
 				"  If any rotation filenames are specified then this method uses "
 				":class:`FeatureCollectionFileFormatRegistry` internally to read the rotation files.\n"
 				"\n"
-				"  *NOTE:* the anchored plate id can be any plate id (does not have to be zero). "
+				"  .. note:: The anchored plate id can be any plate id (does not have to be zero). "
 				"All *equivalent* rotations are calculated relative to the *anchored* plate id.\n"
 				"\n"
 				"  This method essentially does the following:\n"

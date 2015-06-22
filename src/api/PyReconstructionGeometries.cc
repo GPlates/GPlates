@@ -903,10 +903,10 @@ export_resolved_topological_line()
 		.def("get_line_sub_segments",
 				&GPlatesApi::resolved_topological_line_get_line_sub_segments,
 				"get_line_sub_segments()\n"
-				"  Returns the :class:`sub-segments<ResolvedTopologicalSharedSubSegment>` that make up the "
+				"  Returns the :class:`sub-segments<ResolvedTopologicalSubSegment>` that make up the "
 				"line of this resolved topological line.\n"
 				"\n"
-				"  :rtype: list of :class:`ResolvedTopologicalSharedSubSegment`\n"
+				"  :rtype: list of :class:`ResolvedTopologicalSubSegment`\n"
 				"\n"
 				"  To get a list of the *unreversed* sub-segment geometries:\n"
 				"  ::\n"
