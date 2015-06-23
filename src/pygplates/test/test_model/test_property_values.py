@@ -181,6 +181,80 @@ class GeoTimeInstantCase(unittest.TestCase):
         self.assertTrue(self.real_time1.get_value() >= self.real_time1.get_value())
 
 
+class GmlDataBlockCase(unittest.TestCase):
+    def setUp(self):
+        self.velocity_colat_type = pygplates.ScalarType.create_gpml('VelocityColat')
+        self.velocity_lon_type = pygplates.ScalarType.create_gpml('VelocityLon')
+        self.velocity_colat_values = [1,2,3,4]
+        self.velocity_lon_values = [10,20,30,40]
+        self.gml_data_block = pygplates.GmlDataBlock([
+                (self.velocity_colat_type, self.velocity_colat_values),
+                (self.velocity_lon_type, self.velocity_lon_values)])
+
+    def test_construct_from_dict(self):
+        self.assertRaises(ValueError, pygplates.GmlDataBlock, [])
+        self.assertRaises(ValueError, pygplates.GmlDataBlock, {})
+        self.assertRaises(ValueError, pygplates.GmlDataBlock,
+                {self.velocity_colat_type : [1,2,3], self.velocity_lon_type : [1,2,3,4]})
+        gml_data_block = pygplates.GmlDataBlock(
+                {self.velocity_colat_type : self.velocity_colat_values, self.velocity_colat_type : self.velocity_colat_values})
+        self.assertTrue(len(gml_data_block) == 1)
+        gml_data_block = pygplates.GmlDataBlock(dict([
+                (self.velocity_colat_type, self.velocity_colat_values),
+                (self.velocity_lon_type, self.velocity_lon_values)]))
+        self.assertTrue(len(gml_data_block) == 2)
+        self.assertTrue(gml_data_block.get_scalar_values(self.velocity_colat_type) == self.velocity_colat_values)
+        self.assertTrue(gml_data_block.get_scalar_values(self.velocity_lon_type) == self.velocity_lon_values)
+
+    def test_len(self):
+        self.assertTrue(len(self.gml_data_block) == 2)
+
+    def test_contains(self):
+        self.assertTrue(self.velocity_colat_type in self.gml_data_block)
+        self.assertTrue(self.velocity_lon_type in self.gml_data_block)
+        self.assertTrue(pygplates.ScalarType.create_gpml('UnknownType') not in self.gml_data_block)
+
+    def test_iter(self):
+        self.assertTrue(len(self.gml_data_block) == 2)
+        count = 0
+        for scalar_type in self.gml_data_block:
+            count += 1
+            self.assertTrue(scalar_type in self.gml_data_block)
+            self.assertTrue(scalar_type in [self.velocity_colat_type, self.velocity_lon_type])
+        self.assertTrue(count == 2)
+
+    def test_get(self):
+        self.assertTrue(self.gml_data_block.get_scalar_values(self.velocity_colat_type) == self.velocity_colat_values)
+        self.assertTrue(self.gml_data_block.get_scalar_values(self.velocity_lon_type) == self.velocity_lon_values)
+
+    def test_set(self):
+        # Override existing value.
+        self.assertTrue(len(self.gml_data_block) == 2)
+        self.gml_data_block.set(self.velocity_colat_type, [-1,-2,-3,-4])
+        self.assertTrue(len(self.gml_data_block) == 2)
+        self.assertTrue(self.gml_data_block.get_scalar_values(self.velocity_colat_type) == [-1,-2,-3,-4])
+        self.assertTrue(len(self.gml_data_block) == 2)
+        self.assertRaises(ValueError, self.gml_data_block.set, self.velocity_colat_type, [-1,-2,-3])
+        self.assertTrue(len(self.gml_data_block) == 2)
+        self.gml_data_block.set(pygplates.ScalarType.create_gpml('TestType'), [100,200,300,400])
+        self.assertTrue(len(self.gml_data_block) == 3)
+        self.assertTrue(self.gml_data_block.get_scalar_values(pygplates.ScalarType.create_gpml('TestType')) == [100,200,300,400])
+
+    def test_remove(self):
+        self.assertTrue(len(self.gml_data_block) == 2)
+        self.assertTrue(self.velocity_colat_type in self.gml_data_block)
+        self.gml_data_block.remove(self.velocity_colat_type)
+        self.assertTrue(len(self.gml_data_block) == 1)
+        self.assertTrue(self.velocity_colat_type not in self.gml_data_block)
+        self.assertTrue(self.gml_data_block.get_scalar_values(self.velocity_colat_type) is None)
+        # Removing same attribute twice should be fine.
+        self.gml_data_block.remove(self.velocity_colat_type)
+        self.assertTrue(len(self.gml_data_block) == 1)
+        self.assertTrue(self.velocity_colat_type not in self.gml_data_block)
+        self.assertTrue(self.gml_data_block.get_scalar_values(self.velocity_colat_type) is None)
+        self.assertTrue(self.gml_data_block.get_scalar_values(self.velocity_lon_type) == self.velocity_lon_values)
+
+
 class GmlLineStringCase(unittest.TestCase):
     def setUp(self):
         self.polyline = pygplates.PolylineOnSphere(
@@ -885,6 +959,7 @@ def suite():
             PropertyValueCase,
             EnumerationCase,
             GeoTimeInstantCase,
+            GmlDataBlockCase,
             GmlLineStringCase,
             GmlMultiPointCase,
             GmlOrientableCurveCase,
