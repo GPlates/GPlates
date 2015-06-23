@@ -119,7 +119,7 @@ def find_crossovers(
         crossover_filter=None,
         crossover_type_function=CrossoverTypeFunction.type_from_xo_tags_in_comment):
     """find_crossovers(rotation_features, [crossover_filter], \
-    [crossover_type_function=CrossoverTypeFunction.type_from_xo_tags_in_comment]) -> list
+    [crossover_type_function=CrossoverTypeFunction.type_from_xo_tags_in_comment])
     Find crossovers in  rotation features.
     
     :param rotation_features: A rotation feature collection, or rotation filename, or \

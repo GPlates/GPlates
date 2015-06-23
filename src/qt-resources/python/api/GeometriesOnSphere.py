@@ -123,7 +123,7 @@ def geometry_on_sphere_to_lat_lon_array(geometry):
     :returns: an array of (latitude,longitude) pairs (in degrees)
     :rtype: 2D numpy array with number of points as outer dimension and an inner dimension of two
     
-    **NOTE** this method should only be called if the ``numpy`` module is available.
+    .. warning:: This method should only be called if the ``numpy`` module is available.
     
     If this geometry is a :class:`PointOnSphere` then the returned sequence has length one.
     For other geometry types (:class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and
@@ -198,7 +198,7 @@ def geometry_on_sphere_to_xyz_array(geometry):
     :returns: an array of (x,y,z) triplets
     :rtype: 2D numpy array with number of points as outer dimension and an inner dimension of three
     
-    **NOTE** this method should only be called if the ``numpy`` module is available.
+    .. warning:: This method should only be called if the ``numpy`` module is available.
     
     If you need a flat 1D numpy array then you can do something like:
     ::

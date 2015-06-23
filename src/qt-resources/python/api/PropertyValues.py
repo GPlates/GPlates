@@ -73,7 +73,7 @@ def _interpolate_property_value(property_value1, property_value2, time1, time2, 
 
 
 def property_value_get_value(property_value, time=0):
-    """get_value([time=0]) -> PropertyValue or None
+    """get_value([time=0])
     Extracts the value, of this possibly time-dependent property value, at the reconstruction *time*.
     
     :param time: the time to extract value (defaults to present day)
@@ -116,7 +116,7 @@ del property_value_get_value
 
 
 def gpml_constant_value_get_value(gpml_constant_value, time=0):
-    """get_value([time=0]) -> PropertyValue or None
+    """get_value([time=0])
     Extracts the constant value contained within.
     
     :param time: the time to extract value (defaults to present day)
@@ -142,7 +142,7 @@ del gpml_constant_value_get_value
 
 
 def gpml_piecewise_aggregation_get_value(gpml_piecewise_aggregation, time=0):
-    """get_value([time=0]) -> PropertyValue or None
+    """get_value([time=0])
     Extracts the value at the reconstruction *time*.
     
     :param time: the time to extract value (defaults to present day)
@@ -167,7 +167,7 @@ del gpml_piecewise_aggregation_get_value
 
 
 def gpml_piecewise_aggregation_set_value(gpml_piecewise_aggregation, property_value, begin_time, end_time):
-    """set_value(property_value, begin_time, end_time) -> GpmlTimeWindow
+    """set_value(property_value, begin_time, end_time)
     Sets the value in the specified time window.
     
     :param property_value: the property value to set
@@ -267,7 +267,7 @@ del gpml_piecewise_aggregation_set_value
 
 
 def gpml_piecewise_aggregation_get_time_window_containing_time(gpml_piecewise_aggregation, time):
-    """get_time_window_containing_time(time) -> GpmlTimeWindow or None
+    """get_time_window_containing_time(time)
     Return the :class:`time window<GpmlTimeWindow>` that contains *time*.
     
     :param time: the time
@@ -290,7 +290,7 @@ del gpml_piecewise_aggregation_get_time_window_containing_time
 
 
 def gpml_irregular_sampling_get_value(gpml_irregular_sampling, time=0):
-    """get_value([time=0]) -> PropertyValue or None
+    """get_value([time=0])
     Extracts the value at the reconstruction *time*.
     
     :param time: the time to extract value (defaults to present day)
@@ -340,7 +340,7 @@ del gpml_irregular_sampling_get_value
 
 
 def gpml_irregular_sampling_set_value(gpml_irregular_sampling, property_value, time, description=None, is_enabled=True):
-    """set_value(property_value, time, [description], [is_enabled=True]) -> GpmlTimeSample
+    """set_value(property_value, time, [description], [is_enabled=True])
     Sets the value at the reconstruction *time*.
     
     :param property_value: the property value to set
@@ -406,7 +406,7 @@ del gpml_irregular_sampling_set_value
 
 
 def gpml_irregular_sampling_get_time_samples_bounding_time(gpml_irregular_sampling, time, include_disabled_samples=False):
-    """get_time_samples_bounding_time(time[, include_disabled_samples=False]) -> tuple
+    """get_time_samples_bounding_time(time[, include_disabled_samples=False])
     Return the two adjacent :class:`time samples<GpmlTimeSample>` that surround *time*.
     
     :param time: the time

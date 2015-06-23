@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <iterator>
 #include <sstream>
+#include <vector>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
@@ -56,6 +57,8 @@
 #include "property-values/EnumerationContent.h"
 #include "property-values/EnumerationType.h"
 #include "property-values/GeoTimeInstant.h"
+#include "property-values/GmlDataBlock.h"
+#include "property-values/GmlDataBlockCoordinateList.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
@@ -138,6 +141,7 @@ export_property_value()
 					"The list of derived property value classes includes:\n"
 					"\n"
 					"* :class:`Enumeration`\n"
+					"* :class:`GmlDataBlock`\n"
 					"* :class:`GmlLineString`\n"
 					"* :class:`GmlMultiPoint`\n"
 					"* :class:`GmlOrientableCurve`\n"
@@ -174,7 +178,7 @@ export_property_value()
 					bp::no_init)
 		.def("clone",
 				&GPlatesModel::PropertyValue::clone,
-				"clone() -> PropertyValue\n"
+				"clone()\n"
 				"  Create a duplicate of this property value (derived) instance, including a recursive copy "
 				"of any nested property values that this instance might contain.\n"
 				"\n"
@@ -193,7 +197,7 @@ export_property_value()
 				"  :type visitor: :class:`PropertyValueVisitor`\n")
 		.def("get_geometry",
 				&GPlatesApi::property_value_get_geometry,
-				"get_geometry() -> GeometryOnSphere or None\n"
+				"get_geometry()\n"
 				"  Extracts the :class:`geometry<GeometryOnSphere>` if this property value contains a geometry.\n"
 				"\n"
 				"  :rtype: :class:`GeometryOnSphere` or None\n"
@@ -387,14 +391,14 @@ export_enumeration()
 		.def("get_type",
 				&GPlatesPropertyValues::Enumeration::get_type,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_type() -> EnumerationType\n"
+				"get_type()\n"
 				"  Returns the type of this enumeration.\n"
 				"\n"
 				"  :rtype: :class:`EnumerationType`\n")
 		.def("get_content",
 				&GPlatesPropertyValues::Enumeration::get_value,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_content() -> string\n"
+				"get_content()\n"
 				"  Returns the content (value) of this enumeration.\n"
 				"\n"
 				"  :rtype: string\n")
@@ -422,6 +426,512 @@ export_enumeration()
 	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
 	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
 			GPlatesPropertyValues::Enumeration,
+			GPlatesModel::PropertyValue>();
+}
+
+
+namespace GPlatesApi
+{
+	/**
+	 * An iterator that checks the index is dereferenceable - we don't use bp::iterator in order
+	 * to avoid issues with C++ iterators being invalidated from the C++ side and causing issues
+	 * on the python side (eg, removing container elements on the C++ side while iterating over
+	 * the container on the python side, for example, via a pygplates call back into the C++ code).
+	 */
+	class GmlDataBlockCoordinateListIterator
+	{
+	public:
+
+		explicit
+		GmlDataBlockCoordinateListIterator(
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &coordinate_lists) :
+			d_coordinate_lists(coordinate_lists),
+			d_index(0)
+		{  }
+
+		GmlDataBlockCoordinateListIterator &
+		self()
+		{
+			return *this;
+		}
+
+		const GPlatesPropertyValues::ValueObjectType &
+		next()
+		{
+			if (d_index >= d_coordinate_lists.size())
+			{
+				PyErr_SetString(PyExc_StopIteration, "No more data.");
+				boost::python::throw_error_already_set();
+			}
+			return d_coordinate_lists[d_index++].get()->get_value_object_type();
+		}
+
+	private:
+		//! Typedef for revisioned vector size type.
+		typedef GPlatesModel::RevisionedVector<
+				GPlatesPropertyValues::GmlDataBlockCoordinateList>::size_type size_type;
+
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &d_coordinate_lists;
+		size_type d_index;
+	};
+
+
+	const GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type
+	gml_data_block_create(
+			bp::object scalar_type_to_values_mapping_object)
+	{
+		// See if it's a Python 'dict'.
+		bp::extract<bp::dict> extract_scalar_type_to_values_dict(scalar_type_to_values_mapping_object);
+		if (extract_scalar_type_to_values_dict.check())
+		{
+			// Get the iterator over the list of items in the dictionary.
+			// This is an iterator over (key,value) tuples.
+			scalar_type_to_values_mapping_object = extract_scalar_type_to_values_dict().iteritems();
+		}
+
+		const char *type_error_string = "Expected a 'dict' or a sequence of (scalar type, sequence of scalar values) 2-tuples";
+
+		// Attempt to extract the python scalar-type-to-values sequence.
+		std::vector<bp::object> scalar_type_to_values_objects;
+		try
+		{
+			// Begin/end iterators over the sequence.
+			bp::stl_input_iterator<bp::object>
+					scalar_type_to_values_objects_begin(scalar_type_to_values_mapping_object),
+					scalar_type_to_values_objects_end;
+
+			std::copy(
+					scalar_type_to_values_objects_begin,
+					scalar_type_to_values_objects_end,
+					std::back_inserter(scalar_type_to_values_objects));
+		}
+		catch (const boost::python::error_already_set &)
+		{
+			PyErr_Clear();
+
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
+
+		std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> coordinate_lists;
+
+		std::vector<bp::object>::const_iterator scalar_type_to_values_objects_iter = scalar_type_to_values_objects.begin();
+		std::vector<bp::object>::const_iterator scalar_type_to_values_objects_end = scalar_type_to_values_objects.end();
+		for ( ; scalar_type_to_values_objects_iter != scalar_type_to_values_objects_end; ++scalar_type_to_values_objects_iter)
+		{
+			const bp::object &scalar_type_to_values_object = *scalar_type_to_values_objects_iter;
+
+			// Attempt to extract the (scalar_type, scalar_values) tuples/2-sequences.
+			std::vector<bp::object> scalar_type_scalar_values_pair;
+			try
+			{
+				std::copy(
+						bp::stl_input_iterator<bp::object>(scalar_type_to_values_object),
+						bp::stl_input_iterator<bp::object>(),
+						std::back_inserter(scalar_type_scalar_values_pair));
+			}
+			catch (const boost::python::error_already_set &)
+			{
+				PyErr_Clear();
+
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+
+			if (scalar_type_scalar_values_pair.size() != 2)
+			{
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+
+			bp::extract<GPlatesPropertyValues::ValueObjectType> extract_scalar_type(scalar_type_scalar_values_pair[0]);
+			if (!extract_scalar_type.check())
+			{
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+			const GPlatesPropertyValues::ValueObjectType scalar_type = extract_scalar_type();
+
+			// Make sure the each scalar type only occurs once - otherwise remove duplicate (similar behaviour to 'dict').
+			std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type>::iterator
+					coordinate_lists_iter = coordinate_lists.begin();
+			const std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type>::iterator
+					coordinate_lists_end = coordinate_lists.end();
+			for ( ; coordinate_lists_iter != coordinate_lists_end; ++coordinate_lists_iter)
+			{
+				const GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type &coordinate_list = *coordinate_lists_iter;
+				if (scalar_type == coordinate_list->get_value_object_type())
+				{
+					coordinate_lists.erase(coordinate_lists_iter);
+					break;
+				}
+			}
+
+			// Attempt to extract the scalar values for the current coordinate list.
+			GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type scalar_values;
+			try
+			{
+				// Begin/end iterators over the python scalar value sequence.
+				bp::stl_input_iterator<double>
+						scalar_values_begin(scalar_type_scalar_values_pair[1]),
+						scalar_values_end;
+
+				std::copy(scalar_values_begin, scalar_values_end, std::back_inserter(scalar_values));
+			}
+			catch (const boost::python::error_already_set &)
+			{
+				PyErr_Clear();
+
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+
+			// Make sure the each scalar type has the same number of scalar values.
+			BOOST_FOREACH(
+					const GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type &coordinate_list,
+					coordinate_lists)
+			{
+				if (scalar_values.size() != coordinate_list->get_coordinates().size())
+				{
+					PyErr_SetString(PyExc_ValueError, "Each scalar type must have the same number of scalar values");
+					bp::throw_error_already_set();
+				}
+			}
+
+			// Add a new list of scalar values (associated with scalar type) to the data block.
+			coordinate_lists.push_back(
+					GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+							scalar_type,
+							GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type(),
+							scalar_values));
+		}
+
+		// Need at least one scalar type (and associated scalar values).
+		if (coordinate_lists.empty())
+		{
+			PyErr_SetString(
+					PyExc_ValueError,
+					"At least one scalar type (and associated scalar values) is required");
+			bp::throw_error_already_set();
+		}
+
+		return GPlatesPropertyValues::GmlDataBlock::create(coordinate_lists);
+	}
+
+	GmlDataBlockCoordinateListIterator
+	gml_data_block_get_iter(
+			GPlatesPropertyValues::GmlDataBlock &gml_data_block)
+	{
+		return GmlDataBlockCoordinateListIterator(gml_data_block.tuple_list());
+	}
+
+	unsigned int
+	gml_data_block_len(
+			GPlatesPropertyValues::GmlDataBlock &gml_data_block)
+	{
+		return gml_data_block.tuple_list().size();
+	}
+
+	bool
+	gml_data_block_contains_scalar_type(
+			GPlatesPropertyValues::GmlDataBlock &gml_data_block,
+			const GPlatesPropertyValues::ValueObjectType &scalar_type)
+	{
+		const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &coordinate_lists =
+				gml_data_block.tuple_list();
+
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>::const_iterator
+				coordinate_lists_iter = coordinate_lists.begin(),
+				coordinate_lists_end = coordinate_lists.end();
+
+		// Search for the coordinate list associated with 'scalar_type'.
+		for ( ; coordinate_lists_iter != coordinate_lists_end ; ++coordinate_lists_iter)
+		{
+			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = *coordinate_lists_iter->get();
+
+			const GPlatesPropertyValues::ValueObjectType &coordinate_list_scalar_type = coordinate_list.get_value_object_type();
+			if (scalar_type == coordinate_list_scalar_type)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Return a list of scalar values for a scalar type, or None.
+	 */
+	bp::object
+	gml_data_block_get_scalar_values(
+			GPlatesPropertyValues::GmlDataBlock &gml_data_block,
+			const GPlatesPropertyValues::ValueObjectType &scalar_type)
+	{
+		const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &coordinate_lists =
+				gml_data_block.tuple_list();
+
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>::const_iterator
+				coordinate_lists_iter = coordinate_lists.begin(),
+				coordinate_lists_end = coordinate_lists.end();
+
+		// Search for the coordinate list associated with 'scalar_type'.
+		for ( ; coordinate_lists_iter != coordinate_lists_end ; ++coordinate_lists_iter)
+		{
+			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = *coordinate_lists_iter->get();
+
+			const GPlatesPropertyValues::ValueObjectType &coordinate_list_scalar_type = coordinate_list.get_value_object_type();
+			if (scalar_type == coordinate_list_scalar_type)
+			{
+				bp::list scalar_value_list;
+
+				// Add the coordinates to a Python list.
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type::const_iterator
+						coordinate_list_iter = coordinate_list.get_coordinates().begin();
+				const GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type::const_iterator
+						coordinate_list_end = coordinate_list.get_coordinates().end();
+				for ( ; coordinate_list_iter != coordinate_list_end; ++coordinate_list_iter)
+				{
+					scalar_value_list.append(*coordinate_list_iter);
+				}
+
+				return scalar_value_list;
+			}
+		}
+
+		return bp::object()/*Py_None*/;
+	}
+
+	void
+	gml_data_block_set(
+			GPlatesPropertyValues::GmlDataBlock &gml_data_block,
+			const GPlatesPropertyValues::ValueObjectType &scalar_type,
+			bp::object scalar_values_object)
+	{
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &coordinate_lists =
+				gml_data_block.tuple_list();
+
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>::iterator
+				coordinate_lists_iter = coordinate_lists.begin(),
+				coordinate_lists_end = coordinate_lists.end();
+
+		// Search for the coordinate list associated with 'scalar_type'.
+		for ( ; coordinate_lists_iter != coordinate_lists_end ; ++coordinate_lists_iter)
+		{
+			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = *coordinate_lists_iter->get();
+
+			const GPlatesPropertyValues::ValueObjectType &coordinate_list_scalar_type = coordinate_list.get_value_object_type();
+			if (scalar_type == coordinate_list_scalar_type)
+			{
+				// Later (after potential exceptions are thrown) we'll replace this coordinate list.
+				break;
+			}
+		}
+
+		// Attempt to extract the scalar values from Python.
+		GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type scalar_values;
+		try
+		{
+			// Begin/end iterators over the python scalar value sequence.
+			bp::stl_input_iterator<double>
+					scalar_values_begin(scalar_values_object),
+					scalar_values_end;
+
+			std::copy(scalar_values_begin, scalar_values_end, std::back_inserter(scalar_values));
+		}
+		catch (const boost::python::error_already_set &)
+		{
+			PyErr_Clear();
+
+			PyErr_SetString(PyExc_TypeError, "Expected a sequence of float");
+			bp::throw_error_already_set();
+		}
+
+		// Make sure has the same number of scalar values as existing scalar values.
+		if (!coordinate_lists.empty() &&
+			scalar_values.size() != coordinate_lists.front().get()->get_coordinates().size())
+		{
+			PyErr_SetString(PyExc_ValueError, "Each scalar type must have the same number of scalar values");
+			bp::throw_error_already_set();
+		}
+
+		// Now that all exceptions have been dealt with we can make modifications.
+		if (coordinate_lists_iter != coordinate_lists_end)
+		{
+			// Remove the existing list of scalar values (we'll add the new list of scalar values after the loop).
+			coordinate_lists.erase(coordinate_lists_iter);
+		}
+
+		// Add a new list of scalar values to the data block.
+		coordinate_lists.push_back(
+				GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
+						scalar_type,
+						GPlatesPropertyValues::GmlDataBlockCoordinateList::xml_attributes_type(),
+						scalar_values));
+	}
+
+	void
+	gml_data_block_remove(
+			GPlatesPropertyValues::GmlDataBlock &gml_data_block,
+			const GPlatesPropertyValues::ValueObjectType &scalar_type)
+	{
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &coordinate_lists =
+				gml_data_block.tuple_list();
+
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>::iterator
+				coordinate_lists_iter = coordinate_lists.begin(),
+				coordinate_lists_end = coordinate_lists.end();
+
+		// Search for the coordinate list associated with 'scalar_type'.
+		for ( ; coordinate_lists_iter != coordinate_lists_end ; ++coordinate_lists_iter)
+		{
+			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = *coordinate_lists_iter->get();
+
+			const GPlatesPropertyValues::ValueObjectType &coordinate_list_scalar_type = coordinate_list.get_value_object_type();
+			if (scalar_type == coordinate_list_scalar_type)
+			{
+				// Remove the coordinate list and return.
+				coordinate_lists.erase(coordinate_lists_iter);
+				return;
+			}
+		}
+	}
+}
+
+void
+export_gml_data_block()
+{
+	// Iterator over scalar coordinate lists.
+	// Note: We don't docstring this - it's not an interface the python user needs to know about.
+	bp::class_<GPlatesApi::GmlDataBlockCoordinateListIterator>("GmlDataBlockCoordinateListIterator", bp::no_init)
+		.def("__iter__", &GPlatesApi::GmlDataBlockCoordinateListIterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
+		.def("next", &GPlatesApi::GmlDataBlockCoordinateListIterator::next, bp::return_value_policy<bp::copy_const_reference>())
+	;
+
+
+	//
+	// GmlDataBlock - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GmlDataBlock,
+			GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GmlDataBlock",
+					"A data block that associates each scalar type with a sequence of floating-point scalar values.\n"
+					"\n"
+					"This is typically used to store one or more scalar values for each point in a "
+					":class:`geometry<GeometryOnSphere>` where each scalar value (stored at a point) "
+					"has a different :class:`scalar type<ScalarType>`.\n"
+					"\n"
+					"The following operations are supported:\n"
+					"\n"
+					"=========================== ==========================================================\n"
+					"Operation                   Result\n"
+					"=========================== ==========================================================\n"
+					"``len(d)``                  number of scalar types in the data block*d*\n"
+					"``for s in d``              iterates over the scalar type *s* in data block *d*\n"
+					"``s in d``                  ``True`` if *s* is a scalar type in data block *d*\n"
+					"``s not in d``              ``False`` if *s* is a scalar type in data block *d*\n"
+					"=========================== ==========================================================\n"
+					"\n"
+					"For example:\n"
+					"::\n"
+					"\n"
+					"  for scalar_type in data_block:\n"
+					"      scalar_values = data_block.get_scalar_values(scalar_type)\n"
+					"\n"
+					"The following methods support getting, setting and removing scalar values in a data block:\n"
+					"\n"
+					"* :meth:`get_scalar_values`\n"
+					"* :meth:`set`\n"
+					"* :meth:`remove`\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::gml_data_block_create),
+				"__init__(scalar_type_to_values_mapping)\n"
+				"  Create a data block containing one or more :class:`scalar types<ScalarType>` and their "
+				"associated scalar values.\n"
+				"\n"
+				"  :param scalar_type_to_values_mapping: maps each scalar type to a sequence of scalar values\n"
+				"  :type scalar_type_to_values_mapping: ``dict`` mapping each :class:`ScalarType` to a sequence "
+				"of float, or a sequence of (:class:`ScalarType`, sequence of float) tuples\n"
+				"  :raises: ValueError if *scalar_type_to_values_mapping* is empty, or if each "
+				":class:`scalar type<ScalarType>` is not mapped to the same number of scalar values.\n"
+				"\n"
+				"  To create ``gpml:VelocityColat`` and ``gpml:VelocityLon`` scalar values:\n"
+				"  ::\n"
+				"\n"
+				"    data_block = pygplates.GmlDataBlock(\n"
+				"        [\n"
+				"            (pygplates.ScalarType.create_gpml('VelocityColat'), [-1.5, -1.6, -1.55]),\n"
+				"            (pygplates.ScalarType.create_gpml('VelocityLon'), [0.36, 0.37, 0.376])])\n"
+				"\n"
+				"  To do the same thing using a ``dict``:\n"
+				"  ::\n"
+				"\n"
+				"    data_block = pygplates.GmlDataBlock(\n"
+				"        dict([\n"
+				"            (pygplates.ScalarType.create_gpml('VelocityColat'), [-1.5, -1.6, -1.55]),\n"
+				"            (pygplates.ScalarType.create_gpml('VelocityLon'), [0.36, 0.37, 0.376])]))\n")
+		.def("__iter__", &GPlatesApi::gml_data_block_get_iter)
+		.def("__len__", &GPlatesApi::gml_data_block_len)
+		.def("__contains__", &GPlatesApi::gml_data_block_contains_scalar_type)
+		.def("get_scalar_values",
+				&GPlatesApi::gml_data_block_get_scalar_values,
+				(bp::arg("scalar_type")),
+				"get_scalar_values(scalar_type)\n"
+				"  Returns the list of scalar values associated with a scalar type.\n"
+				"\n"
+				"  :param scalar_type: the type of the scalars\n"
+				"  :type scalar_type: :class:`ScalarType`\n"
+				"  :returns: the scalar values associated with *scalar_type*, otherwise ``None`` if *scalar_type* does not exist\n"
+				"  :rtype: list of float, or None\n"
+				"\n"
+				"  To test if a scalar type is present and retrieve its list of scalar values:\n"
+				"  ::\n"
+				"\n"
+				"    velocity_colat_scalar_type = pygplates.ScalarType.create_gpml('VelocityColat')\n"
+				"    velocity_colat_scalar_values = data_block.get_scalar_values(velocity_colat_scalar_type)\n"
+				"    if velocity_colat_scalar_values:\n"
+				"        ...\n"
+				"    # ...or a less efficient approach...\n"
+				"    if velocity_colat_scalar_type in data_block:\n"
+				"        velocity_colat_scalar_values = data_block.get_scalar_values(velocity_colat_scalar_type)\n")
+		.def("set",
+				&GPlatesApi::gml_data_block_set,
+				(bp::arg("scalar_type"),
+						bp::arg("scalar_values")),
+				"set(scalar_type, scalar_values)\n"
+				"  Sets the scalar values of the data block associated with a scalar type.\n"
+				"\n"
+				"  :param scalar_type: the type of the scalars\n"
+				"  :type scalar_type: :class:`ScalarType`\n"
+				"  :param scalar_values: the scalar values associated with *scalar_type*\n"
+				"  :type scalar_values: sequence (eg, ``list`` or ``tuple``) of float\n"
+				"  :raises: ValueError if the length of *scalar_values* does not match the length of "
+				"existing scalar values for other :class:`scalar types<ScalarType>`.\n"
+				"\n"
+				"  .. note:: If there is no list of scalar values associated with *scalar_type* then "
+				"a new list is added, otherwise the existing list is replaced.\n")
+		.def("remove",
+				&GPlatesApi::gml_data_block_remove,
+				(bp::arg("scalar_type")),
+				"remove(scalar_type)\n"
+				"  Removes the list of scalar values associated with a scalar type.\n"
+				"\n"
+				"  :param scalar_type: the type of the scalars\n"
+				"  :type scalar_type: :class:`ScalarType`\n"
+				"\n"
+				"  .. note:: If *scalar_type* does not exist in the data block then it is ignored and nothing is done.\n")
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GmlDataBlock,
 			GPlatesModel::PropertyValue>();
 }
 
@@ -458,7 +968,7 @@ export_gml_line_string()
 				"   line_string_property = pygplates.GmlLineString(polyline)\n")
 		.def("get_polyline",
 				&GPlatesPropertyValues::GmlLineString::get_polyline,
-				"get_polyline() -> PolylineOnSphere\n"
+				"get_polyline()\n"
 				"  Returns the polyline geometry of this property value.\n"
 				"\n"
 				"  :rtype: :class:`PolylineOnSphere`\n")
@@ -522,7 +1032,7 @@ export_gml_multi_point()
 				"    multi_point_property = pygplates.GmlMultiPoint(multi_point)\n")
 		.def("get_multi_point",
 				&GPlatesPropertyValues::GmlMultiPoint::get_multipoint,
-				"get_multi_point() -> MultiPointOnSphere\n"
+				"get_multi_point()\n"
 				"  Returns the multi-point geometry of this property value.\n"
 				"\n"
 				"  :rtype: :class:`MultiPointOnSphere`\n")
@@ -599,7 +1109,7 @@ export_gml_orientable_curve()
 				"so this is essentially no different than a :class:`GmlLineString`.\n")
 		.def("get_base_curve",
 				base_curve,
-				"get_base_curve() -> GmlLineString\n"
+				"get_base_curve()\n"
 				"  Returns the line string (polyline) property value of this wrapped property value.\n"
 				"\n"
 				"  :rtype: :class:`GmlLineString`\n")
@@ -667,7 +1177,7 @@ export_gml_point()
 				"    point_property = pygplates.GmlPoint(point)\n")
 		.def("get_point",
 				&GPlatesPropertyValues::GmlPoint::get_point,
-				"get_point() -> PointOnSphere\n"
+				"get_point()\n"
 				"  Returns the point geometry of this property value.\n"
 				"\n"
 				"  :rtype: :class:`PointOnSphere`\n")
@@ -734,7 +1244,7 @@ export_gml_polygon()
 		.def("get_polygon",
 				// We ignore interior polygons for now - later they will get stored in a single PolygonOnSphere...
 				&GPlatesPropertyValues::GmlPolygon::get_exterior,
-				"get_polygon() -> PolygonOnSphere\n"
+				"get_polygon()\n"
 				"  Returns the polygon geometry of this property value.\n"
 				"\n"
 				"  :rtype: :class:`PolygonOnSphere`\n")
@@ -791,7 +1301,7 @@ export_gml_time_instant()
 		.def("get_time",
 				&GPlatesPropertyValues::GmlTimeInstant::get_time_position,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_time() -> float\n"
+				"get_time()\n"
 				"  Returns the time position of this property value.\n"
 				"\n"
 				"  :rtype: float\n"
@@ -919,7 +1429,7 @@ export_gml_time_period()
 				"    time_period = pygplates.GmlTimePeriod(pygplates.GeoTimeInstant.create_distant_past(), 0)\n")
 		.def("get_begin_time",
 				&GPlatesApi::gml_time_period_get_begin_time,
-				"get_begin_time() -> float\n"
+				"get_begin_time()\n"
 				"  Returns the begin time position (time of appearance) of this property value.\n"
 				"\n"
 				"  :rtype: float\n"
@@ -938,7 +1448,7 @@ export_gml_time_period()
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 		.def("get_end_time",
 				&GPlatesApi::gml_time_period_get_end_time,
-				"get_end_time() -> float\n"
+				"get_end_time()\n"
 				"  Returns the end time position (time of disappearance) of this property value.\n"
 				"\n"
 				"  :rtype: float\n"
@@ -985,7 +1495,7 @@ namespace GPlatesApi
 			{
 				PyErr_SetString(
 						PyExc_RuntimeError,
-						"pygplates.GpmlArray::create() requires a non-empty sequence of PropertyValue elements");
+						"A non-empty sequence of PropertyValue elements is required");
 				bp::throw_error_already_set();
 			}
 
@@ -1199,7 +1709,7 @@ export_gpml_constant_value()
 				"using its property value methods.\n")
 		.def("get_description",
 				&GPlatesPropertyValues::GpmlConstantValue::get_description,
-				"get_description() -> string or None\n"
+				"get_description()\n"
 				"  Returns the *optional* description of this constant value wrapper, or ``None``.\n"
 				"\n"
 				"  :rtype: string or None\n")
@@ -1259,7 +1769,7 @@ export_gpml_finite_rotation()
 		.def("get_finite_rotation",
 				&GPlatesPropertyValues::GpmlFiniteRotation::get_finite_rotation,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_finite_rotation() -> FiniteRotation\n"
+				"get_finite_rotation()\n"
 				"  Returns the finite rotation.\n"
 				"\n"
 				"  :rtype: :class:`FiniteRotation`\n")
@@ -1432,8 +1942,7 @@ namespace GPlatesApi
 			{
 				PyErr_SetString(
 						PyExc_RuntimeError,
-						"pygplates.GpmlIrregularSampling::create() requires a non-empty "
-							"sequence of GpmlTimeSample elements");
+						"A non-empty sequence of GpmlTimeSample elements is required");
 				bp::throw_error_already_set();
 			}
 
@@ -1614,7 +2123,7 @@ export_gpml_irregular_sampling()
 				"    irregular_sampling = pygplates.GpmlIrregularSampling(time_samples)\n")
 		.def("get_time_samples",
 				&GPlatesApi::gpml_irregular_sampling_get_time_samples,
-				"get_time_samples() -> GpmlTimeSampleList\n"
+				"get_time_samples()\n"
 				"  Returns the :class:`time samples<GpmlTimeSampleList>` in a sequence that behaves as a python ``list``.\n"
 				"\n"
 				"  :rtype: :class:`GpmlTimeSampleList`\n"
@@ -1636,7 +2145,7 @@ export_gpml_irregular_sampling()
 				"    irregular_sampling.sort(key = lambda ts: ts.get_time())\n")
 		.def("get_enabled_time_samples",
 				&GPlatesApi::gpml_irregular_sampling_get_enabled_time_samples,
-				"get_enabled_time_samples() -> list\n"
+				"get_enabled_time_samples()\n"
 				"  Filter out the disabled :class:`time samples<GpmlTimeSample>` and return a list of enabled time samples.\n"
 				"\n"
 				"  :rtype: list\n"
@@ -1658,7 +2167,7 @@ export_gpml_irregular_sampling()
 #if 0
 		.def("get_interpolation_function",
 				get_interpolation_function,
-				"get_interpolation_function() -> GpmlInterpolationFunction\n"
+				"get_interpolation_function()\n"
 				"  Returns the function used to interpolate between time samples, or ``None``.\n"
 				"\n"
 				"  :rtype: an instance derived from :class:`GpmlInterpolationFunction`, or ``None``\n")
@@ -1956,7 +2465,7 @@ namespace GPlatesApi
 	}
 
 	/**
-	 * Return a dictionary element value as an integer, float or string or None.
+	 * Return a dictionary element value as an integer, float or string or a default value.
 	 */
 	bp::object
 	gpml_key_value_dictionary_get(
@@ -2143,14 +2652,14 @@ export_gpml_key_value_dictionary()
 				&GPlatesApi::gpml_key_value_dictionary_get,
 				(bp::arg("key"),
 						bp::arg("default_value") = bp::object()/*Py_None*/),
-				"get(key, [default_value]) -> int or float or str or None\n"
+				"get(key, [default_value])\n"
 				"  Returns the value of the dictionary element associated with a key.\n"
 				"\n"
 				"  :param key: the key of the dictionary element\n"
 				"  :type key: string\n"
 				"  :param default_value: the default value to return if the key does not exist in the "
 				"dictionary (if not specified then it defaults to None)\n"
-				"  :type default_value: int or float or str or None\n"
+				"  :type default_value: int or float or string or None\n"
 				"  :returns: the value associated with *key*, otherwise *default_value* if *key* does not exist\n"
 				"  :rtype: integer or float or string or type(*default_value*) or None\n"
 				"\n"
@@ -2284,7 +2793,7 @@ export_gpml_old_plates_header()
 				"  :type number_of_points: int\n")
 		.def("get_region_number",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_region_number,
-				"get_region_number() -> int\n"
+				"get_region_number()\n"
 				"  Returns the region number.\n"
 				"\n"
 				"  :rtype: int\n")
@@ -2298,7 +2807,7 @@ export_gpml_old_plates_header()
 				"  :type region_number: int\n")
 		.def("get_reference_number",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_reference_number,
-				"get_reference_number() -> int\n"
+				"get_reference_number()\n"
 				"  Returns the reference number.\n"
 				"\n"
 				"  :rtype: int\n")
@@ -2312,7 +2821,7 @@ export_gpml_old_plates_header()
 				"  :type reference_number: int\n")
 		.def("get_string_number",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_string_number,
-				"get_string_number() -> int\n"
+				"get_string_number()\n"
 				"  Returns the string number.\n"
 				"\n"
 				"  :rtype: int\n")
@@ -2327,7 +2836,7 @@ export_gpml_old_plates_header()
 		.def("get_geographic_description",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_geographic_description,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_geographic_description() -> string\n"
+				"get_geographic_description()\n"
 				"  Returns the geographic description.\n"
 				"\n"
 				"  :rtype: string\n")
@@ -2341,7 +2850,7 @@ export_gpml_old_plates_header()
 				"  :type geographic_description: string\n")
 		.def("get_plate_id_number",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_plate_id_number,
-				"get_plate_id_number() -> int\n"
+				"get_plate_id_number()\n"
 				"  Returns the plate id number.\n"
 				"\n"
 				"  :rtype: int\n")
@@ -2356,7 +2865,7 @@ export_gpml_old_plates_header()
 		.def("get_age_of_appearance",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_age_of_appearance,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_age_of_appearance() -> float\n"
+				"get_age_of_appearance()\n"
 				"  Returns the age of appearance.\n"
 				"\n"
 				"  :rtype: float\n")
@@ -2371,7 +2880,7 @@ export_gpml_old_plates_header()
 		.def("get_age_of_disappearance",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_age_of_disappearance,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_age_of_disappearance() -> float\n"
+				"get_age_of_disappearance()\n"
 				"  Returns the age of disappearance.\n"
 				"\n"
 				"  :rtype: float\n")
@@ -2386,7 +2895,7 @@ export_gpml_old_plates_header()
 		.def("get_data_type_code",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_data_type_code,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_data_type_code() -> string\n"
+				"get_data_type_code()\n"
 				"  Returns the data type code.\n"
 				"\n"
 				"  :rtype: string\n")
@@ -2400,7 +2909,7 @@ export_gpml_old_plates_header()
 				"  :type data_type_code: string\n")
 		.def("get_data_type_code_number",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_data_type_code_number,
-				"get_data_type_code_number() -> int\n"
+				"get_data_type_code_number()\n"
 				"  Returns the data type code number.\n"
 				"\n"
 				"  :rtype: int\n")
@@ -2415,7 +2924,7 @@ export_gpml_old_plates_header()
 		.def("get_data_type_code_number_additional",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_data_type_code_number_additional,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_data_type_code_number_additional() -> string\n"
+				"get_data_type_code_number_additional()\n"
 				"  Returns the data type code number additional.\n"
 				"\n"
 				"  :rtype: string\n")
@@ -2429,7 +2938,7 @@ export_gpml_old_plates_header()
 				"  :type data_type_code_number_additional: string\n")
 		.def("get_conjugate_plate_id_number",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_conjugate_plate_id_number,
-				"get_conjugate_plate_id_number() -> int\n"
+				"get_conjugate_plate_id_number()\n"
 				"  Returns the conjugate plate id number.\n"
 				"\n"
 				"  :rtype: int\n")
@@ -2443,7 +2952,7 @@ export_gpml_old_plates_header()
 				"  :type conjugate_plate_id_number: int\n")
 		.def("get_colour_code",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_colour_code,
-				"get_colour_code() -> int\n"
+				"get_colour_code()\n"
 				"  Returns the colour code.\n"
 				"\n"
 				"  :rtype: int\n")
@@ -2457,7 +2966,7 @@ export_gpml_old_plates_header()
 				"  :type colour_code: int\n")
 		.def("get_number_of_points",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_number_of_points,
-				"get_number_of_points() -> int\n"
+				"get_number_of_points()\n"
 				"  Returns the number of points.\n"
 				"\n"
 				"  :rtype: int\n")
@@ -2498,8 +3007,7 @@ namespace GPlatesApi
 			{
 				PyErr_SetString(
 						PyExc_RuntimeError,
-						"pygplates.GpmlPiecewiseAggregation::create() requires a non-empty "
-							"sequence of GpmlTimeWindow elements");
+						"A non-empty sequence of GpmlTimeWindow elements is required");
 				bp::throw_error_already_set();
 			}
 
@@ -2615,7 +3123,7 @@ export_gpml_piecewise_aggregation()
 				"    piecewise_aggregation = pygplates.GpmlPiecewiseAggregation(time_windows)\n")
 		.def("get_time_windows",
 				&GPlatesApi::gpml_piecewise_aggregation_get_time_windows,
-				"get_time_windows() -> GpmlTimeWindowList\n"
+				"get_time_windows()\n"
 				"  Returns the :class:`time windows<GpmlTimeWindowList>` in a sequence that behaves as a python ``list``.\n"
 				"\n"
 				"  :rtype: :class:`GpmlTimeWindowList`\n"
@@ -2691,7 +3199,7 @@ export_gpml_plate_id()
 				"    plate_id_property = pygplates.GpmlPlateId(plate_id)\n")
 		.def("get_plate_id",
 				&GPlatesPropertyValues::GpmlPlateId::get_value,
-				"get_plate_id() -> int\n"
+				"get_plate_id()\n"
 				"  Returns the integer plate id.\n"
 				"\n"
 				"  :rtype: int\n")
@@ -2814,7 +3322,7 @@ export_gpml_polarity_chron_id()
 		.def("get_era",
 				&GPlatesPropertyValues::GpmlPolarityChronId::get_era,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_era() -> string or None\n"
+				"get_era()\n"
 				"  Returns the era.\n"
 				"\n"
 				"  :returns: the era, or None if the era was not initialised\n"
@@ -2835,7 +3343,7 @@ export_gpml_polarity_chron_id()
 		.def("get_major_region",
 				&GPlatesPropertyValues::GpmlPolarityChronId::get_major_region,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_major_region() -> int or None\n"
+				"get_major_region()\n"
 				"  Returns the major region.\n"
 				"\n"
 				"  :returns: the major region, or None if the major region was not initialised\n"
@@ -2853,7 +3361,7 @@ export_gpml_polarity_chron_id()
 		.def("get_minor_region",
 				&GPlatesPropertyValues::GpmlPolarityChronId::get_minor_region,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_minor_region() -> string or None\n"
+				"get_minor_region()\n"
 				"  Returns the minor region.\n"
 				"\n"
 				"  :returns: the minor region, or None if the minor region was not initialised\n"
@@ -3018,7 +3526,7 @@ export_gpml_time_sample()
 				"    time_sample = pygplates.GpmlTimeSample(property_value, time)\n")
 		.def("get_value",
 				&GPlatesApi::gpml_time_sample_get_value,
-				"get_value() -> PropertyValue\n"
+				"get_value()\n"
 				"  Returns the property value of this time sample.\n"
 				"\n"
 				"  :rtype: :class:`PropertyValue`\n")
@@ -3036,7 +3544,7 @@ export_gpml_time_sample()
 				"using its property value methods.\n")
 		.def("get_time",
 				&GPlatesApi::gpml_time_sample_get_time,
-				"get_time() -> float\n"
+				"get_time()\n"
 				"  Returns the time position of this time sample.\n"
 				"\n"
 				"  :rtype: float\n"
@@ -3054,7 +3562,7 @@ export_gpml_time_sample()
 				"  :type time: float or :class:`GeoTimeInstant`\n")
 		.def("get_description",
 				&GPlatesApi::gpml_time_sample_get_description,
-				"get_description() -> string or None\n"
+				"get_description()\n"
 				"  Returns the description of this time sample, or ``None``.\n"
 				"\n"
 				"  :rtype: string or None\n")
@@ -3068,7 +3576,7 @@ export_gpml_time_sample()
 				"  :type description: string or None\n")
 		.def("is_enabled",
 				&GPlatesApi::gpml_time_sample_is_enabled,
-				"is_enabled() -> bool\n"
+				"is_enabled()\n"
 				"  Returns whether this time sample is enabled.\n"
 				"\n"
 				"  :rtype: bool\n"
@@ -3085,7 +3593,7 @@ export_gpml_time_sample()
 				"  :type is_enabled: bool\n")
 		.def("is_disabled",
 				&GPlatesPropertyValues::GpmlTimeSample::is_disabled,
-				"is_disabled() -> bool\n"
+				"is_disabled()\n"
 				"  Returns whether this time sample is disabled or not.\n"
 				"\n"
 				"  :rtype: bool\n"
@@ -3228,7 +3736,7 @@ export_gpml_time_window()
 				"``begin_time > end_time``.\n")
 		.def("get_value",
 				&GPlatesApi::gpml_time_window_get_value,
-				"get_value() -> PropertyValue\n"
+				"get_value()\n"
 				"  Returns the property value of this time window.\n"
 				"\n"
 				"  :rtype: :class:`PropertyValue`\n")
@@ -3246,7 +3754,7 @@ export_gpml_time_window()
 				"using its property value methods.\n")
 		.def("get_begin_time",
 				&GPlatesApi::gpml_time_window_get_begin_time,
-				"get_begin_time() -> float\n"
+				"get_begin_time()\n"
 				"  Returns the begin time of this time window.\n"
 				"\n"
 				"  :rtype: float\n"
@@ -3265,7 +3773,7 @@ export_gpml_time_window()
 				"  :raises: GmlTimePeriodBeginTimeLaterThanEndTimeError if begin time is later than end time\n")
 		.def("get_end_time",
 				&GPlatesApi::gpml_time_window_get_end_time,
-				"get_end_time() -> float\n"
+				"get_end_time()\n"
 				"  Returns the end time of this time window.\n"
 				"\n"
 				"  :rtype: float\n"
@@ -3336,7 +3844,7 @@ export_xs_boolean()
 				"    boolean_property = pygplates.XsBoolean(boolean_value)\n")
 		.def("get_boolean",
 				&GPlatesPropertyValues::XsBoolean::get_value,
-				"get_boolean() -> bool\n"
+				"get_boolean()\n"
 				"  Returns the boolean value.\n"
 				"\n"
 				"  :rtype: bool\n")
@@ -3393,7 +3901,7 @@ export_xs_double()
 				"    float_property = pygplates.XsDouble(float_value)\n")
 		.def("get_double",
 				&GPlatesPropertyValues::XsDouble::get_value,
-				"get_double() -> float\n"
+				"get_double()\n"
 				"  Returns the floating-point value.\n"
 				"\n"
 				"  :rtype: float\n")
@@ -3449,7 +3957,7 @@ export_xs_integer()
 				"    integer_property = pygplates.XsInteger(integer_value)\n")
 		.def("get_integer",
 				&GPlatesPropertyValues::XsInteger::get_value,
-				"get_integer() -> int\n"
+				"get_integer()\n"
 				"  Returns the integer value.\n"
 				"\n"
 				"  :rtype: int\n")
@@ -3506,7 +4014,7 @@ export_xs_string()
 		.def("get_string",
 				&GPlatesPropertyValues::XsString::get_value,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_string() -> string\n"
+				"get_string()\n"
 				"  Returns the string.\n"
 				"\n"
 				"  :rtype: string\n")
@@ -3540,6 +4048,7 @@ export_property_values()
 	//////////////////////////////////////////////////////////////////////////
 
 	export_enumeration();
+	export_gml_data_block();
 	export_gml_line_string();
 	export_gml_multi_point();
 	export_gml_orientable_curve();

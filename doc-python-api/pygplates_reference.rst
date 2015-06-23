@@ -198,6 +198,7 @@ Feature property value classes
    :toctree: generated
    
    pygplates.Enumeration
+   pygplates.GmlDataBlock
    pygplates.GmlLineString
    pygplates.GmlMultiPoint
    pygplates.GmlOrientableCurve
@@ -372,6 +373,7 @@ String-type classes used in various areas of *pygplates*:
    pygplates.FeatureId
    pygplates.FeatureType
    pygplates.PropertyName
+   pygplates.ScalarType
 
 Utility classes
 ^^^^^^^^^^^^^^^

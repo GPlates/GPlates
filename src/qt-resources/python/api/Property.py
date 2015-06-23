@@ -17,7 +17,7 @@
 
 
 def get_value(property, time=0):
-    """get_value([time=0]) -> PropertyValue or None
+    """get_value([time=0])
     Extracts the value, of our possibly time-dependent property, at the reconstruction *time*.
     
     :param time: the time to extract value (defaults to present day)
@@ -48,7 +48,7 @@ del get_value
 
 
 def get_time_dependent_container(property):
-    """get_time_dependent_container() -> PropertyValue or None
+    """get_time_dependent_container()
     Returns the time-dependent property value container.
     
     :rtype: :class:`PropertyValue` or None
