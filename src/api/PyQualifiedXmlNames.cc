@@ -36,6 +36,7 @@
 
 #include "property-values/EnumerationType.h"
 #include "property-values/StructuralType.h"
+#include "property-values/ValueObjectType.h"
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -416,6 +417,75 @@ export_property_name()
 
 
 void
+export_scalar_type()
+{
+	//
+	// ScalarType - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	// In the C++ code it's really a 'ValueObjectType' (the type that goes in the 'gml:valueComponent'
+	// slots of a 'gml:DataBlock' property type) but it only really gets used to differentiate the
+	// different scalar types (packed in the 'gml:DataBlock' and elsewhere in the code) so we'll call it
+	// 'ScalarType' in the Python code (also 'ValueObjectType' is a bit meaningless in a general context).
+	//
+	bp::class_<GPlatesPropertyValues::ValueObjectType> scalar_type_class(
+			"ScalarType",
+			"The namespace-qualified type of scalar values.\n"
+			"\n"
+			"All comparison operators (==, !=, <, <=, >, >=) are supported. ScalarType is "
+			"hashable (can be used as a key in a ``dict``).\n",
+			bp::no_init/*force usage of create functions*/);
+	// Select the create functions appropriate for this QualifiedXmlName type...
+	scalar_type_class.def("create_gpml",
+			&GPlatesApi::qualified_xml_name_create_gpml<GPlatesPropertyValues::ValueObjectType>,
+				"create_gpml(name)\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a scalar type qualified with the 'gpml:' prefix ('gpml:' + ``name``).\n"
+				"\n"
+				"  :param name: unqualified name\n"
+				"  :type name: string\n"
+				"  :rtype: :class:`ScalarType`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    gpml_velocity_colat_scalar_type = pygplates.ScalarType.create_gpml('VelocityColat')\n");
+	scalar_type_class.staticmethod("create_gpml");
+	scalar_type_class.def("create_gml",
+			&GPlatesApi::qualified_xml_name_create_gml<GPlatesPropertyValues::ValueObjectType>,
+				"create_gml(name)\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a scalar type qualified with the 'gml:' prefix ('gml:' + ``name``).\n"
+				"\n"
+				"  :param name: unqualified name\n"
+				"  :type name: string\n"
+				"  :rtype: :class:`ScalarType`\n");
+	scalar_type_class.staticmethod("create_gml");
+	scalar_type_class.def("create_xsi",
+			&GPlatesApi::qualified_xml_name_create_xsi<GPlatesPropertyValues::ValueObjectType>,
+				"create_xsi(name)\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Create a scalar type qualified with the 'xsi:' prefix ('xsi:' + ``name``).\n"
+				"\n"
+				"  :param name: unqualified name\n"
+				"  :type name: string\n"
+				"  :rtype: :class:`ScalarType`\n");
+	scalar_type_class.staticmethod("create_xsi");
+
+	// Add the parts common to each GPlatesModel::QualifiedXmlName template instantiation (code re-use).
+	export_qualified_xml_name(
+			scalar_type_class,
+			"ScalarType",
+			"gpml_velocity_colat_scalar_type",
+			"gpml:VelocityColat");
+}
+
+
+void
 export_structural_type()
 {
 	//
@@ -493,6 +563,7 @@ export_qualified_xml_names()
 	export_enumeration_type();
 	export_feature_type();
 	export_property_name();
+	export_scalar_type();
 #if 0 // There's no need to expose 'StructuralType' (yet)...
 	export_structural_type();
 #endif
