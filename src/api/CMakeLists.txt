@@ -78,6 +78,8 @@ set(srcs
     PythonExecutionMonitor.h
     PythonExecutionThread.cc
     PythonExecutionThread.h
+    PythonExtractUtils.cc
+    PythonExtractUtils.h
     PythonHashDefVisitor.h
     PythonInterpreterLocker.cc
     PythonInterpreterLocker.h
