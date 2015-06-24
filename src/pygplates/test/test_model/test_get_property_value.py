@@ -393,7 +393,8 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertFalse(self.feature.get_shapefile_attribute('non_existent_key'))
         self.assertTrue(self.feature.get_shapefile_attribute('non_existent_key', 'default_value') == 'default_value')
         # Set shapefile attribute on feature that has no 'gpml:shapefileAttributes' property.
-        self.feature.set_shapefile_attribute('test_key', 'test_value')
+        shapefile_attribute_property = self.feature.set_shapefile_attribute('test_key', 'test_value')
+        self.assertTrue(shapefile_attribute_property.get('test_key') == 'test_value')
         self.assertTrue(self.feature.get_shapefile_attribute('test_key') == 'test_value')
         self.assertTrue(self.feature.get(pygplates.PropertyName.create_gpml('shapefileAttributes'), pygplates.PropertyReturn.all))
         self.assertTrue(len(self.feature.get(pygplates.PropertyName.create_gpml('shapefileAttributes')).get_value()) == 1)
@@ -409,6 +410,26 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(len(self.feature.get(pygplates.PropertyName.create_gpml('shapefileAttributes')).get_value()) == 2)
         self.assertFalse(self.feature.get_shapefile_attribute('non_existent_key'))
         self.assertTrue(self.feature.get_shapefile_attribute('non_existent_key', 'default_value') == 'default_value')
+    
+    def test_get_and_set_shapefile_attributes(self):
+        # Start off with feature that has no 'gpml:shapefileAttributes' property.
+        self.assertFalse(self.feature.get(pygplates.PropertyName.create_gpml('shapefileAttributes'), pygplates.PropertyReturn.all))
+        self.assertTrue(self.feature.get_shapefile_attributes() is None)
+        self.assertTrue(self.feature.get_shapefile_attributes({'key' : 100})['key'] == 100)
+        self.assertTrue(self.feature.get_shapefile_attributes({}) == {})
+        # Set shapefile attributes on feature that has no 'gpml:shapefileAttributes' property.
+        self.feature.set_shapefile_attributes()
+        # Should still get an attribute dict but it will be empty.
+        self.assertTrue(len(self.feature.get_shapefile_attributes()) == 0)
+        self.assertTrue(self.feature.get(pygplates.PropertyName.create_gpml('shapefileAttributes'), pygplates.PropertyReturn.all))
+        self.assertTrue(len(self.feature.get(pygplates.PropertyName.create_gpml('shapefileAttributes')).get_value()) == 0)
+        shapefile_attribute_property = self.feature.set_shapefile_attributes({'test_key' : 100, 'test_key2' : -100})
+        self.assertTrue(len(shapefile_attribute_property.get_value()) == 2)
+        self.assertTrue(self.feature.get_shapefile_attributes() == {'test_key' : 100, 'test_key2' : -100})
+        self.feature.set_shapefile_attributes([('test_key', 200), ('test_key3', -200)])
+        self.assertTrue(self.feature.get_shapefile_attributes() == {'test_key' : 200, 'test_key3' : -200})
+        self.feature.set_shapefile_attributes()
+        self.assertTrue(self.feature.get_shapefile_attributes() == {})
     
     # NOTE: Testing of Feature.set_total_reconstruction_pole() and Feature.get_total_reconstruction_pole()
     # is done in 'test_app_logic/test.py".

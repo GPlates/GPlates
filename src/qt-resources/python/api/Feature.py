@@ -837,9 +837,9 @@ def get_times(feature):
         for time in times:
           ...
     
-    Note that the 'gpml:times' property actually contains a :class:`list<GpmlArray>` of :class:`time periods<GmlTimePeriod>`
-    (not time instants). So this method converts the time periods to a list of time instants (by assuming the time periods
-    do not overlap each other and do not have gaps between them).
+    .. note:: The 'gpml:times' property actually contains a :class:`list<GpmlArray>` of :class:`time periods<GmlTimePeriod>`
+       (not time instants). So this method converts the time periods to a list of time instants (by assuming the time periods
+       do not overlap each other and do not have gaps between them).
     """
     
     gpml_times = feature.get_value(_gpml_times_property_name)
@@ -891,8 +891,8 @@ def set_times(feature, times, verify_information_model=VerifyInformationModel.ye
     
       feature.set_times([0, 10, 20, 30, 40])
     
-    Note that the 'gpml:times' property actually contains a :class:`list<GpmlArray>` of :class:`time periods<GmlTimePeriod>`
-    (not time instants). So this method converts the time instants (in *times*) to adjoining time periods when creating the property.
+    .. note:: The 'gpml:times' property actually contains a :class:`list<GpmlArray>` of :class:`time periods<GmlTimePeriod>`
+       (not time instants). So this method converts the time instants (in *times*) to adjoining time periods when creating the property.
     """
     
     if len(times) < 2:
@@ -937,8 +937,8 @@ def get_shapefile_attribute(feature, key, default_value=None):
     This is a convenience method that wraps :meth:`get_value` for the common property 'gpml:shapefileAttributes' and
     accesses the attribute value associated with *key* within that property using :meth:`GpmlKeyValueDictionary.get`.
     
-    Note that *default_value* is returned if either a 'gpml:shapefileAttributes' property does not exist in this feature, or
-    one does exist but does not contain a shapefile attribute associated with *key*.
+    .. note:: *default_value* is returned if either a 'gpml:shapefileAttributes' property does not exist in this feature, or
+       one does exist but does not contain a shapefile attribute associated with *key*.
     
     To test if a key is present and retrieve its value:
     ::
@@ -946,12 +946,14 @@ def get_shapefile_attribute(feature, key, default_value=None):
       value = feature.get_shapefile_attribute('key')
       # Compare with None since an integer (or float) value of zero, or an empty string, evaluates to False.
       if value is not None:
-      ...
+        ...
     
     Return the integer value of the attribute associated with 'key' (default to zero if not present):
     ::
     
       integer_value = feature.get_shapefile_attribute('key', 0))
+    
+    .. seealso:: :meth:`get_shapefile_attributes`
     """
     
     gpml_shapefile_attributes = feature.get_value(_gpml_shapefile_attributes_property_name)
@@ -1001,6 +1003,8 @@ def set_shapefile_attribute(feature, key, value, verify_information_model=Verify
     ::
     
       feature.set_shapefile_attribute('key', 100)
+    
+    .. seealso:: :meth:`set_shapefile_attributes`
     """
     
     # Get the existing shapefile attributes dictionary (if exists), otherwise create a new dictionary.
@@ -1018,11 +1022,118 @@ def set_shapefile_attribute(feature, key, value, verify_information_model=Verify
         raise InformationModelError(
                 "Expected a GpmlKeyValueDictionary property value for property name '%s'" %
                     _gpml_shapefile_attributes_property_name.to_qualified_string())
+    
+    return gpml_shapefile_attributes
 
 # Add the module function as a class method.
 Feature.set_shapefile_attribute = set_shapefile_attribute
 # Delete the module reference to the function - we only keep the class method.
 del set_shapefile_attribute
+
+
+def get_shapefile_attributes(feature, default=None):
+    """get_shapefile_attributes([default])
+    Returns all shapefile attributes  as a ``dict`` of key/value pairs.
+    
+    :param default: the default to return if there are no shapefile attributes \
+    (if not specified then it *default* defaults to ``None``)
+    :type default: dict or None
+    :returns: all shapefile attributes, otherwise *default* if no shapefile attributes exist
+    :rtype: dict or type(*default*) or None
+    
+    Shapefile attributes are stored in a :class:`GpmlKeyValueDictionary` property named 'gpml:shapefileAttributes' and
+    contain attributes imported from a Shapefile.
+    
+    This is a convenience method that wraps :meth:`get_value` for the common property 'gpml:shapefileAttributes'.
+    
+    .. note:: *default* is returned if a 'gpml:shapefileAttributes' property does not exist in this feature.
+    
+    To get the shapefile attributes ``dict``, or ``None`` if a 'gpml:shapefileAttributes'
+    property is not present:
+    ::
+    
+      shapefile_attributes = feature.get_shapefile_attributes()
+      if shapefile_attributes:
+        attribute_value = shapefile_attributes.get(attribute_key, default_value)
+    
+    To get the shapefile attributes ``dict``, or an empty ``dict`` if a 'gpml:shapefileAttributes'
+    property is not present:
+    ::
+    
+      shapefile_attributes = feature.get_shapefile_attributes(dict())
+      attribute_value = shapefile_attributes.get(attribute_key, default_value)
+    
+    .. seealso:: :meth:`get_shapefile_attribute`
+    """
+    
+    gpml_shapefile_attributes = feature.get_value(_gpml_shapefile_attributes_property_name)
+    if gpml_shapefile_attributes is None:
+        return default
+    
+    try:
+        return dict((key, gpml_shapefile_attributes.get(key)) for key in gpml_shapefile_attributes)
+    except AttributeError:
+        # The property value type did not match the property name.
+        # This indicates the data does not conform to the GPlates Geological Information Model (GPGIM).
+        return default
+
+# Add the module function as a class method.
+Feature.get_shapefile_attributes = get_shapefile_attributes
+# Delete the module reference to the function - we only keep the class method.
+del get_shapefile_attributes
+
+
+def set_shapefile_attributes(feature, attribute_mapping=None, verify_information_model=VerifyInformationModel.yes):
+    """set_shapefile_attributes([attribute_mapping], [verify_information_model=VerifyInformationModel.yes])
+    Sets the shapefile attributes of this feature.
+    
+    :param attribute_mapping: optional mapping of keys to values
+    :type attribute_mapping: ``dict`` mapping each key (string) to a value (integer, float or string), \
+    or a sequence of (key, value) tuples, or None
+    :param verify_information_model: whether to check the information model before setting (default) or not
+    :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
+    :returns: the property containing all the shapefile attributes
+    :rtype: :class:`Property` containing a :class:`GpmlKeyValueDictionary` property value
+    :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* and the feature :class:`type<FeatureType>` \
+    does not support the 'gpml:shapefileAttributes' property (although all feature :class:`types<FeatureType>` do support it).
+    :raises: InformationModelError if a 'gpml:shapefileAttributes' property name is found in this feature but the property value is not a \
+    :class:`GpmlKeyValueDictionary` (this should not normally happen).
+    
+    Shapefile attributes are stored in a :class:`GpmlKeyValueDictionary` property named 'gpml:shapefileAttributes' and
+    contain attributes imported from a Shapefile.
+    
+    This is a convenience method that wraps :meth:`set` for the common property 'gpml:shapefileAttributes'.
+    
+    .. note:: This replaces any existing shapefile attributes.
+    
+    To set all shapefile attributes on a feature in one go:
+    ::
+    
+      feature.set_shapefile_attributes(
+          {'NAME' : 'South America Craton', 'PLATEID1' : 201})
+      
+      # ...or...
+      
+      feature.set_shapefile_attributes(
+          [('NAME', 'South America Craton'), ('PLATEID1', 201)])
+    
+    To clear all shapefile attributes on a feature in one go:
+    ::
+    
+      feature.set_shapefile_attributes()
+    
+    .. note:: Clearing all attributes, as in the above example, will result in the feature
+       containing a single property named 'gpml:shapefileAttributes' with an *empty* attribute dictionary.
+    
+    .. seealso:: :meth:`set_shapefile_attribute`
+    """
+    
+    return feature.set(_gpml_shapefile_attributes_property_name, GpmlKeyValueDictionary(attribute_mapping), verify_information_model)
+
+# Add the module function as a class method.
+Feature.set_shapefile_attributes = set_shapefile_attributes
+# Delete the module reference to the function - we only keep the class method.
+del set_shapefile_attributes
 
 
 def get_total_reconstruction_pole(feature):

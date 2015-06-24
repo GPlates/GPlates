@@ -2679,12 +2679,12 @@ export_gpml_key_value_dictionary()
 				bp::make_constructor(
 						&GPlatesApi::gpml_key_value_dictionary_create,
 						bp::default_call_policies(),
-						(bp::arg("key_value_mapping_object") = bp::object()/*Py_None*/)),
-				"__init__([key_value_mapping_object])\n"
+						(bp::arg("key_value_mapping") = bp::object()/*Py_None*/)),
+				"__init__([key_value_mapping])\n"
 				"  Create a dictionary containing zero or more key/value pairs.\n"
 				"\n"
-				"  :param key_value_mapping_object: optional mapping of keys to values\n"
-				"  :type key_value_mapping_object: ``dict`` mapping each key (string) to a value "
+				"  :param key_value_mapping: optional mapping of keys to values\n"
+				"  :type key_value_mapping: ``dict`` mapping each key (string) to a value "
 				"(integer, float or string), or a sequence of (key, value) tuples, or None\n"
 				"\n"
 				"  To create an empty dictionary:\n"

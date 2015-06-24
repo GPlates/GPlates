@@ -128,14 +128,14 @@ Classes that read/write data from/to files:
    pygplates.FeatureCollection
    pygplates.FeatureCollectionFileFormatRegistry
 
-.. note:: :class:`pygplates.FeatureCollection` is easier to use for
+.. note:: ``FeatureCollection`` is easier to use for
    :meth:`reading<pygplates.FeatureCollection.read>` and :meth:`writing<pygplates.FeatureCollection.write>`.
 
 Rotation classes
 ^^^^^^^^^^^^^^^^
 
-| :class:`pygplates.RotationModel` is the main class for getting finite and stage rotations from rotation models/files.
-| :class:`pygplates.FiniteRotation` is a useful maths class for rotating geometries (and vectors).
+| ``RotationModel`` is the main class for getting finite and stage rotations from rotation models/files.
+| ``FiniteRotation`` is a useful maths class for rotating geometries (and vectors).
 
 .. autosummary::
    :nosignatures:
@@ -144,7 +144,7 @@ Rotation classes
    pygplates.RotationModel
    pygplates.FiniteRotation
 
-.. note:: :class:`pygplates.ReconstructionTreeBuilder` and :class:`pygplates.ReconstructionTreeEdge`
+.. note:: ``ReconstructionTreeBuilder`` and ``ReconstructionTreeEdge``
    are only needed for very advanced scenarios.
 
 .. autosummary::
@@ -158,7 +158,7 @@ Rotation classes
 Feature classes
 ^^^^^^^^^^^^^^^
 
-:class:`pygplates.Feature` is the main class to go to for querying/setting geological feature properties.
+``Feature`` is the main class to go to for querying/setting geological feature properties.
 
 .. autosummary::
    :nosignatures:
@@ -173,7 +173,7 @@ Feature property classes
 A :class:`feature<pygplates.Feature>` is essentially a list of :class:`properties<pygplates.Property>`
 where each property has a :class:`name<pygplates.PropertyName>` and a :class:`value<pygplates.PropertyValue>`.
 
-.. note:: :class:`pygplates.PropertyValueVisitor` is only needed for very advanced scenarios.
+.. note:: ``PropertyValueVisitor`` is only needed for very advanced scenarios.
 
 .. autosummary::
    :nosignatures:
@@ -189,9 +189,9 @@ Feature property value classes
 
 | These classes represent the various types of property values that a :class:`feature<pygplates.Feature>` can contain.
 | Property values contain things such as plate IDs, geometries, finite rotations, strings, numbers, etc.
-  All these property values inherit :class:`pygplates.PropertyValue`.
+  All these property values inherit from :class:`PropertyValue<pygplates.PropertyValue>`.
 
-.. note:: Some of these property values can be obtained more easily using :class:`pygplates.Feature` directly.
+.. note:: Some of these property values can be obtained more easily using :class:`Feature<pygplates.Feature>` directly.
 
 .. autosummary::
    :nosignatures:
@@ -260,7 +260,7 @@ These classes result from :func:`reconstructing<pygplates.reconstruct>` regular
    pygplates.ReconstructedFlowline
    pygplates.ReconstructedMotionPath
 
-All three above reconstructed feature types inherit from :class:`pygplates.ReconstructionGeometry`:
+All three above reconstructed feature types inherit from:
 
 .. autosummary::
    :nosignatures:
@@ -282,7 +282,7 @@ These classes result from :func:`resolving<pygplates.resolve_topologies>` topolo
    pygplates.ResolvedTopologicalBoundary
    pygplates.ResolvedTopologicalNetwork
 
-All three above resolved topology types inherit from :class:`pygplates.ReconstructionGeometry`:
+All three above resolved topology types inherit from:
 
 .. autosummary::
    :nosignatures:
@@ -321,7 +321,7 @@ There are four types of geometry:
    pygplates.PolylineOnSphere
    pygplates.PolygonOnSphere
 
-All four above geometry types inherit from :class:`pygplates.GeometryOnSphere`:
+All four above geometry types inherit from:
 
 .. autosummary::
    :nosignatures:

@@ -510,7 +510,7 @@ namespace GPlatesApi
 			// Copy into a vector.
 			std::copy(property_value_seq_begin, property_value_seq_end, std::back_inserter(property_values));
 		}
-		catch (const boost::python::error_already_set &)
+		catch (const bp::error_already_set &)
 		{
 			PyErr_Clear();
 
@@ -619,7 +619,7 @@ namespace GPlatesApi
 				// Copy into a vector.
 				std::copy(name_value_seq_begin, name_value_seq_end, std::back_inserter(name_value_vector));
 			}
-			catch (const boost::python::error_already_set &)
+			catch (const bp::error_already_set &)
 			{
 				PyErr_Clear();
 
@@ -761,7 +761,7 @@ namespace GPlatesApi
 			// Copy into the vector.
 			std::copy(property_queries_begin, property_queries_end, std::back_inserter(property_queries_seq));
 		}
-		catch (const boost::python::error_already_set &)
+		catch (const bp::error_already_set &)
 		{
 			PyErr_Clear();
 
@@ -1007,7 +1007,7 @@ namespace GPlatesApi
 			// Copy into a sequence.
 			std::copy(property_value_seq_begin, property_value_seq_end, std::back_inserter(property_values));
 		}
-		catch (const boost::python::error_already_set &)
+		catch (const bp::error_already_set &)
 		{
 			PyErr_Clear();
 
@@ -1329,7 +1329,7 @@ namespace GPlatesApi
 			// Copy into a sequence.
 			std::copy(geometry_seq_begin, geometry_seq_end, std::back_inserter(geometries));
 		}
-		catch (const boost::python::error_already_set &)
+		catch (const bp::error_already_set &)
 		{
 			PyErr_Clear();
 
@@ -1951,7 +1951,9 @@ export_feature()
 					"The following methods provide a convenient way to set and get attributes imported from a Shapefile:\n"
 					"\n"
 					"* :meth:`set_shapefile_attribute`\n"
+					"* :meth:`set_shapefile_attributes`\n"
 					"* :meth:`get_shapefile_attribute`\n"
+					"* :meth:`get_shapefile_attributes`\n"
 					"\n"
 					"The following methods provide a convenient way to set and get some of the properties "
 					"that are common to many feature types:\n"
@@ -3132,10 +3134,10 @@ export_feature()
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesModel::FeatureHandle::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
+	bp::implicitly_convertible<
 			GPlatesModel::FeatureHandle::non_null_ptr_type,
 			GPlatesModel::FeatureHandle::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
+	bp::implicitly_convertible<
 			boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>,
 			boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_to_const_type> >();
 }
