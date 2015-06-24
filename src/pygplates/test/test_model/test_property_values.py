@@ -561,6 +561,27 @@ class GpmlKeyValueDictionaryCase(unittest.TestCase):
         for i in range(4):
             self.gpml_key_value_dictionary.set(str(i), i)
 
+    def test_construct(self):
+        gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary(
+                [('name', 'Test')])
+        self.assertTrue(len(gpml_key_value_dictionary) == 1)
+        
+        gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary(
+                {'name' : 'Test'})
+        self.assertTrue(len(gpml_key_value_dictionary) == 1)
+        
+        gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary(
+                [('name', 'Test'), ('id', 23)])
+        self.assertTrue(len(gpml_key_value_dictionary) == 2)
+        self.assertTrue(gpml_key_value_dictionary.get('name') == 'Test')
+        self.assertTrue(gpml_key_value_dictionary.get('id') == 23)
+        
+        gpml_key_value_dictionary = pygplates.GpmlKeyValueDictionary(
+                {'name' : 'Test', 'id' : 23})
+        self.assertTrue(len(gpml_key_value_dictionary) == 2)
+        self.assertTrue(gpml_key_value_dictionary.get('name') == 'Test')
+        self.assertTrue(gpml_key_value_dictionary.get('id') == 23)
+
     def test_len(self):
         self.assertTrue(len(self.gpml_key_value_dictionary) == 4)
         self.assertTrue(len(pygplates.GpmlKeyValueDictionary()) == 0)

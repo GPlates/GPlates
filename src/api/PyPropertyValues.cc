@@ -34,6 +34,7 @@
 
 #include "PyInformationModel.h"
 #include "PythonConverterUtils.h"
+#include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
 #include "PyRevisionedVector.h"
 
@@ -258,10 +259,10 @@ export_property_value()
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesModel::PropertyValue::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
+	bp::implicitly_convertible<
 			GPlatesModel::PropertyValue::non_null_ptr_type,
 			GPlatesModel::PropertyValue::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
+	bp::implicitly_convertible<
 			boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>,
 			boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type> >();
 }
@@ -461,7 +462,7 @@ namespace GPlatesApi
 			if (d_index >= d_coordinate_lists.size())
 			{
 				PyErr_SetString(PyExc_StopIteration, "No more data.");
-				boost::python::throw_error_already_set();
+				bp::throw_error_already_set();
 			}
 			return d_coordinate_lists[d_index++].get()->get_value_object_type();
 		}
@@ -480,71 +481,24 @@ namespace GPlatesApi
 	gml_data_block_create(
 			bp::object scalar_type_to_values_mapping_object)
 	{
-		// See if it's a Python 'dict'.
-		bp::extract<bp::dict> extract_scalar_type_to_values_dict(scalar_type_to_values_mapping_object);
-		if (extract_scalar_type_to_values_dict.check())
-		{
-			// Get the iterator over the list of items in the dictionary.
-			// This is an iterator over (key,value) tuples.
-			scalar_type_to_values_mapping_object = extract_scalar_type_to_values_dict().iteritems();
-		}
-
 		const char *type_error_string = "Expected a 'dict' or a sequence of (scalar type, sequence of scalar values) 2-tuples";
 
-		// Attempt to extract the python scalar-type-to-values sequence.
-		std::vector<bp::object> scalar_type_to_values_objects;
-		try
-		{
-			// Begin/end iterators over the sequence.
-			bp::stl_input_iterator<bp::object>
-					scalar_type_to_values_objects_begin(scalar_type_to_values_mapping_object),
-					scalar_type_to_values_objects_end;
-
-			std::copy(
-					scalar_type_to_values_objects_begin,
-					scalar_type_to_values_objects_end,
-					std::back_inserter(scalar_type_to_values_objects));
-		}
-		catch (const boost::python::error_already_set &)
-		{
-			PyErr_Clear();
-
-			PyErr_SetString(PyExc_TypeError, type_error_string);
-			bp::throw_error_already_set();
-		}
+		// Extract the key/value pairs from a Python 'dict' or from a sequence of (key, value) tuples.
+		PythonExtractUtils::key_value_map_type scalar_type_to_values_map;
+		PythonExtractUtils::extract_key_value_map(
+				scalar_type_to_values_map,
+				scalar_type_to_values_mapping_object,
+				type_error_string);
 
 		std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> coordinate_lists;
 
-		std::vector<bp::object>::const_iterator scalar_type_to_values_objects_iter = scalar_type_to_values_objects.begin();
-		std::vector<bp::object>::const_iterator scalar_type_to_values_objects_end = scalar_type_to_values_objects.end();
-		for ( ; scalar_type_to_values_objects_iter != scalar_type_to_values_objects_end; ++scalar_type_to_values_objects_iter)
+		PythonExtractUtils::key_value_map_type::const_iterator scalar_type_to_values_map_iter = scalar_type_to_values_map.begin();
+		PythonExtractUtils::key_value_map_type::const_iterator scalar_type_to_values_map_end = scalar_type_to_values_map.end();
+		for ( ; scalar_type_to_values_map_iter != scalar_type_to_values_map_end; ++scalar_type_to_values_map_iter)
 		{
-			const bp::object &scalar_type_to_values_object = *scalar_type_to_values_objects_iter;
+			const PythonExtractUtils::key_value_type &scalar_type_to_values = *scalar_type_to_values_map_iter;
 
-			// Attempt to extract the (scalar_type, scalar_values) tuples/2-sequences.
-			std::vector<bp::object> scalar_type_scalar_values_pair;
-			try
-			{
-				std::copy(
-						bp::stl_input_iterator<bp::object>(scalar_type_to_values_object),
-						bp::stl_input_iterator<bp::object>(),
-						std::back_inserter(scalar_type_scalar_values_pair));
-			}
-			catch (const boost::python::error_already_set &)
-			{
-				PyErr_Clear();
-
-				PyErr_SetString(PyExc_TypeError, type_error_string);
-				bp::throw_error_already_set();
-			}
-
-			if (scalar_type_scalar_values_pair.size() != 2)
-			{
-				PyErr_SetString(PyExc_TypeError, type_error_string);
-				bp::throw_error_already_set();
-			}
-
-			bp::extract<GPlatesPropertyValues::ValueObjectType> extract_scalar_type(scalar_type_scalar_values_pair[0]);
+			bp::extract<GPlatesPropertyValues::ValueObjectType> extract_scalar_type(scalar_type_to_values.first);
 			if (!extract_scalar_type.check())
 			{
 				PyErr_SetString(PyExc_TypeError, type_error_string);
@@ -573,12 +527,12 @@ namespace GPlatesApi
 			{
 				// Begin/end iterators over the python scalar value sequence.
 				bp::stl_input_iterator<double>
-						scalar_values_begin(scalar_type_scalar_values_pair[1]),
+						scalar_values_begin(scalar_type_to_values.second),
 						scalar_values_end;
 
 				std::copy(scalar_values_begin, scalar_values_end, std::back_inserter(scalar_values));
 			}
-			catch (const boost::python::error_already_set &)
+			catch (const bp::error_already_set &)
 			{
 				PyErr_Clear();
 
@@ -738,7 +692,7 @@ namespace GPlatesApi
 
 			std::copy(scalar_values_begin, scalar_values_end, std::back_inserter(scalar_values));
 		}
-		catch (const boost::python::error_already_set &)
+		catch (const bp::error_already_set &)
 		{
 			PyErr_Clear();
 
@@ -850,7 +804,9 @@ export_gml_data_block()
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::gml_data_block_create),
+						&GPlatesApi::gml_data_block_create,
+						bp::default_call_policies(),
+						(bp::arg("scalar_type_to_values_mapping"))),
 				"__init__(scalar_type_to_values_mapping)\n"
 				"  Create a data block containing one or more :class:`scalar types<ScalarType>` and their "
 				"associated scalar values.\n"
@@ -873,9 +829,9 @@ export_gml_data_block()
 				"  ::\n"
 				"\n"
 				"    data_block = pygplates.GmlDataBlock(\n"
-				"        dict([\n"
-				"            (pygplates.ScalarType.create_gpml('VelocityColat'), [-1.5, -1.6, -1.55]),\n"
-				"            (pygplates.ScalarType.create_gpml('VelocityLon'), [0.36, 0.37, 0.376])]))\n")
+				"        {\n"
+				"            pygplates.ScalarType.create_gpml('VelocityColat') : [-1.5, -1.6, -1.55],\n"
+				"            pygplates.ScalarType.create_gpml('VelocityLon') : [0.36, 0.37, 0.376]})\n")
 		.def("__iter__", &GPlatesApi::gml_data_block_get_iter)
 		.def("__len__", &GPlatesApi::gml_data_block_len)
 		.def("__contains__", &GPlatesApi::gml_data_block_contains_scalar_type)
@@ -896,7 +852,8 @@ export_gml_data_block()
 				"    velocity_colat_scalar_type = pygplates.ScalarType.create_gpml('VelocityColat')\n"
 				"    velocity_colat_scalar_values = data_block.get_scalar_values(velocity_colat_scalar_type)\n"
 				"    if velocity_colat_scalar_values:\n"
-				"        ...\n"
+				"        for scalar_value in velocity_colat_scalar_values:\n"
+				"            ...\n"
 				"    # ...or a less efficient approach...\n"
 				"    if velocity_colat_scalar_type in data_block:\n"
 				"        velocity_colat_scalar_values = data_block.get_scalar_values(velocity_colat_scalar_type)\n")
@@ -914,6 +871,13 @@ export_gml_data_block()
 				"  :raises: ValueError if the length of *scalar_values* does not match the length of "
 				"existing scalar values for other :class:`scalar types<ScalarType>`.\n"
 				"\n"
+				"  To set (or replace) the scalar values associated with ``gpml:VelocityColat``:\n"
+				"  ::\n"
+				"\n"
+				"    gml_data_block.set(\n"
+				"        pygplates.ScalarType.create_gpml('VelocityColat'),\n"
+				"        [-1.5, -1.6, -1.55])\n"
+				"\n"
 				"  .. note:: If there is no list of scalar values associated with *scalar_type* then "
 				"a new list is added, otherwise the existing list is replaced.\n")
 		.def("remove",
@@ -924,6 +888,11 @@ export_gml_data_block()
 				"\n"
 				"  :param scalar_type: the type of the scalars\n"
 				"  :type scalar_type: :class:`ScalarType`\n"
+				"\n"
+				"  To remove the scalar values associated with ``gpml:VelocityColat``:\n"
+				"  ::\n"
+				"\n"
+				"    gml_data_block.remove(pygplates.ScalarType.create_gpml('VelocityColat'))\n"
 				"\n"
 				"  .. note:: If *scalar_type* does not exist in the data block then it is ignored and nothing is done.\n")
 	;
@@ -2402,7 +2371,7 @@ namespace GPlatesApi
 			if (d_index >= d_elements.size())
 			{
 				PyErr_SetString(PyExc_StopIteration, "No more data.");
-				boost::python::throw_error_already_set();
+				bp::throw_error_already_set();
 			}
 			return d_elements[d_index++].get()->key()->get_value();
 		}
@@ -2418,9 +2387,79 @@ namespace GPlatesApi
 
 
 	const GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type
-	gpml_key_value_dictionary_create()
+	gpml_key_value_dictionary_create(
+			bp::object key_value_mapping_object)
 	{
-		return GPlatesPropertyValues::GpmlKeyValueDictionary::create();
+		if (key_value_mapping_object == bp::object()/*Py_None*/)
+		{
+			// Return empty dictionary.
+			return GPlatesPropertyValues::GpmlKeyValueDictionary::create();
+		}
+
+		const char *type_error_string = "Expected a 'dict' or a sequence of (string, int or float or string) 2-tuples";
+
+		// Extract the key/value pairs from a Python 'dict' or from a sequence of (key, value) tuples.
+		PythonExtractUtils::key_value_map_type key_value_map;
+		PythonExtractUtils::extract_key_value_map(key_value_map, key_value_mapping_object, type_error_string);
+
+		std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type> elements;
+
+		PythonExtractUtils::key_value_map_type::const_iterator key_value_map_iter = key_value_map.begin();
+		PythonExtractUtils::key_value_map_type::const_iterator key_value_map_end = key_value_map.end();
+		for ( ; key_value_map_iter != key_value_map_end; ++key_value_map_iter)
+		{
+			const PythonExtractUtils::key_value_type &key_value = *key_value_map_iter;
+
+			// Extract the key.
+			bp::extract<GPlatesPropertyValues::TextContent> extract_key(key_value.first);
+			if (!extract_key.check())
+			{
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+			const GPlatesPropertyValues::TextContent key = extract_key();
+
+			// Make sure the each element key only occurs once - otherwise remove duplicate (similar behaviour to 'dict').
+			std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type>::iterator
+					elements_iter = elements.begin();
+			const std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type>::iterator
+					elements_end = elements.end();
+			for ( ; elements_iter != elements_end; ++elements_iter)
+			{
+				const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = *elements_iter->get();
+
+				const GPlatesPropertyValues::TextContent &element_key = element.key()->get_value();
+				if (key == element_key)
+				{
+					elements.erase(elements_iter);
+					break;
+				}
+			}
+
+			// Extract the value.
+			bp::extract<dictionary_element_value_type> extract_value(key_value.second);
+			if (!extract_value.check())
+			{
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+			const dictionary_element_value_type value = extract_value();
+
+			// Convert value to a property value.
+			const GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+					boost::apply_visitor(
+							CreatePropertyValueFromDictionaryElementValueVisitor(),
+							value);
+
+			// Add a key/value element to the dictionary.
+			elements.push_back(
+					GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+							GPlatesPropertyValues::XsString::create(key.get()),
+							property_value,
+							property_value->get_structural_type()));
+		}
+
+		return GPlatesPropertyValues::GpmlKeyValueDictionary::create(elements);
 	}
 
 	GpmlKeyValueDictionaryIterator
@@ -2638,13 +2677,32 @@ export_gpml_key_value_dictionary()
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::gpml_key_value_dictionary_create),
-				"__init__()\n"
-				"  Create an empty dictionary.\n"
+						&GPlatesApi::gpml_key_value_dictionary_create,
+						bp::default_call_policies(),
+						(bp::arg("key_value_mapping_object") = bp::object()/*Py_None*/)),
+				"__init__([key_value_mapping_object])\n"
+				"  Create a dictionary containing zero or more key/value pairs.\n"
 				"\n"
+				"  :param key_value_mapping_object: optional mapping of keys to values\n"
+				"  :type key_value_mapping_object: ``dict`` mapping each key (string) to a value "
+				"(integer, float or string), or a sequence of (key, value) tuples, or None\n"
+				"\n"
+				"  To create an empty dictionary:\n"
 				"  ::\n"
 				"\n"
-				"    key_value_dictionary = pygplates.GpmlKeyValueDictionary()\n")
+				"    dictionary = pygplates.GpmlKeyValueDictionary()\n"
+				"\n"
+				"  To create a dictionary with two key/value pairs:\n"
+				"  ::\n"
+				"\n"
+				"    dictionary = pygplates.GpmlKeyValueDictionary(\n"
+				"        [('name', 'Test'), ('id', 23)])\n"
+				"\n"
+				"  To do the same thing using a ``dict``:\n"
+				"  ::\n"
+				"\n"
+				"    dictionary = pygplates.GpmlKeyValueDictionary(\n"
+				"        {'name' : 'Test', 'id' : 23})\n")
 		.def("__iter__", &GPlatesApi::gpml_key_value_dictionary_get_iter)
 		.def("__len__", &GPlatesApi::gpml_key_value_dictionary_len)
 		.def("__contains__", &GPlatesApi::gpml_key_value_dictionary_contains_key)
@@ -3619,10 +3677,10 @@ export_gpml_time_sample()
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
+	bp::implicitly_convertible<
 			GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type,
 			GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
+	bp::implicitly_convertible<
 			boost::optional<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>,
 			boost::optional<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_to_const_type> >();
 }
@@ -3801,10 +3859,10 @@ export_gpml_time_window()
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type>();
 
 	// Registers 'non-const' to 'const' conversions.
-	boost::python::implicitly_convertible<
+	bp::implicitly_convertible<
 			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type,
 			GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_to_const_type>();
-	boost::python::implicitly_convertible<
+	bp::implicitly_convertible<
 			boost::optional<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type>,
 			boost::optional<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_to_const_type> >();
 }

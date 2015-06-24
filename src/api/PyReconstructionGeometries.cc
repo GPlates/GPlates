@@ -309,7 +309,7 @@ export_reconstruction_geometry()
 			GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>,
 			boost::noncopyable>(
 					"ReconstructionGeometry",
-					"The base class inherited by all derived reconstruction geometry classes..\n"
+					"The base class inherited by all derived reconstruction geometry classes.\n"
 					"\n"
 					"The list of derived classes is:\n"
 					"\n"
