@@ -32,6 +32,8 @@
 #include <boost/variant.hpp>
 #include <QString>
 
+#include "PyPropertyValues.h"
+
 #include "PyInformationModel.h"
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
@@ -482,11 +484,10 @@ namespace GPlatesApi
 
 
 	const GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type
-	gml_data_block_create(
-			bp::object scalar_type_to_values_mapping_object)
+	create_gml_data_block(
+			bp::object scalar_type_to_values_mapping_object,
+			const char *type_error_string)
 	{
-		const char *type_error_string = "Expected a 'dict' or a sequence of (scalar type, sequence of scalar values) 2-tuples";
-
 		// Extract the key/value pairs from a Python 'dict' or from a sequence of (key, value) tuples.
 		PythonExtractUtils::key_value_map_type scalar_type_to_values_map;
 		PythonExtractUtils::extract_key_value_map(
@@ -574,6 +575,15 @@ namespace GPlatesApi
 		}
 
 		return GPlatesPropertyValues::GmlDataBlock::create(coordinate_lists);
+	}
+
+	const GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type
+	gml_data_block_create(
+			bp::object scalar_type_to_values_mapping_object)
+	{
+		return create_gml_data_block(
+				scalar_type_to_values_mapping_object,
+				"Expected a 'dict' or a sequence of (scalar type, sequence of scalar values) 2-tuples");
 	}
 
 	GmlDataBlockCoordinateListIterator
