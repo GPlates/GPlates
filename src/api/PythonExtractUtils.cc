@@ -58,20 +58,7 @@ GPlatesApi::PythonExtractUtils::extract_key_value_map(
 
 	// Attempt to extract the python key/value sequence.
 	std::vector<bp::object> key_value_objects;
-	try
-	{
-		std::copy(
-				bp::stl_input_iterator<bp::object>(key_value_mapping_object),
-				bp::stl_input_iterator<bp::object>(),
-				std::back_inserter(key_value_objects));
-	}
-	catch (const bp::error_already_set &)
-	{
-		PyErr_Clear();
-
-		PyErr_SetString(PyExc_TypeError, type_error_string);
-		bp::throw_error_already_set();
-	}
+	extract_sequence(key_value_objects, key_value_mapping_object, type_error_string);
 
 	// Extract the individual key/value object pairs.
 	std::vector<bp::object>::const_iterator key_value_objects_iter = key_value_objects.begin();
@@ -82,20 +69,7 @@ GPlatesApi::PythonExtractUtils::extract_key_value_map(
 
 		// Attempt to extract the (key, value) 2-tuples/2-sequences.
 		std::vector<bp::object> key_value_pair;
-		try
-		{
-			std::copy(
-					bp::stl_input_iterator<bp::object>(key_value_object),
-					bp::stl_input_iterator<bp::object>(),
-					std::back_inserter(key_value_pair));
-		}
-		catch (const bp::error_already_set &)
-		{
-			PyErr_Clear();
-
-			PyErr_SetString(PyExc_TypeError, type_error_string);
-			bp::throw_error_already_set();
-		}
+		extract_sequence(key_value_pair, key_value_object, type_error_string);
 
 		if (key_value_pair.size() != 2)
 		{

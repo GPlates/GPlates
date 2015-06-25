@@ -26,10 +26,15 @@
 #ifndef GPLATES_API_PYTHONEXTRACTUTILS_H
 #define GPLATES_API_PYTHONEXTRACTUTILS_H
 
+#include <algorithm>
+#include <iterator>
 #include <utility>
 #include <vector>
 
 #include "global/python.h"
+// This is not included by <boost/python.hpp>.
+// Also we must include this after <boost/python.hpp> which means after "global/python.h".
+#include <boost/python/stl_iterator.hpp>
 
 
 #if !defined(GPLATES_NO_PYTHON)
@@ -55,7 +60,9 @@ namespace GPlatesApi
 		 * The keys/values are extracted as generic boost::python::object (rather than extracting a specific
 		 * C++ type) since the caller might want to consider more than one type for each value (for example).
 		 *
-		 * The error message @a type_error_string should be something like:
+		 * Raises Python exception 'TypeError' with the error message @a type_error_string on failure.
+		 *
+		 * The error message @a type_error_string should contain something like:
 		 *
 		 *  "Expected a 'dict' or a sequence of (key, value) 2-tuples"
 		 *
@@ -66,6 +73,56 @@ namespace GPlatesApi
 					key_value_map_type &key_value_map,
 					boost::python::object key_value_mapping_object,
 					const char *type_error_string);
+
+
+		/**
+		 * Extracts objects of type 'ObjectType' from a Python sequence (ie, any iterable such as list or tuple).
+		 *
+		 * Raises Python exception 'TypeError' with the error message @a type_error_string on failure.
+		 *
+		 * The error message @a type_error_string should contain something like:
+		 *
+		 *  "Expected a sequence of 'ObjectType'"
+		 */
+		template <typename ObjectType>
+		void
+		extract_sequence(
+				std::vector<ObjectType> &sequence,
+				boost::python::object sequence_object,
+				const char *type_error_string);
+	}
+}
+
+//
+// Implementation
+//
+
+namespace GPlatesApi
+{
+	namespace PythonExtractUtils
+	{
+		template <typename ObjectType>
+		void
+		extract_sequence(
+				std::vector<ObjectType> &sequence,
+				boost::python::object sequence_object,
+				const char *type_error_string)
+		{
+			try
+			{
+				std::copy(
+						boost::python::stl_input_iterator<ObjectType>(sequence_object),
+						boost::python::stl_input_iterator<ObjectType>(),
+						std::back_inserter(sequence));
+			}
+			catch (const boost::python::error_already_set &)
+			{
+				PyErr_Clear();
+
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				boost::python::throw_error_already_set();
+			}
+		}
 	}
 }
 
