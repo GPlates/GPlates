@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <iterator>
 #include <ostream>
+#include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
@@ -36,12 +37,20 @@
 
 #include "PyGPlatesModule.h"
 #include "PyInformationModel.h"
+#include "PyPropertyValues.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
+#include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
 
 #include "app-logic/GeometryUtils.h"
+#include "app-logic/ReconstructionTreeCreator.h"
+#include "app-logic/ReconstructMethodRegistry.h"
+#include "app-logic/ReconstructParams.h"
+#include "app-logic/ReconstructUtils.h"
+#include "app-logic/ScalarCoverageFeatureProperties.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 #include "global/python.h"
@@ -77,6 +86,15 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+	// Forward declaration.
+	bp::object
+	feature_handle_set_property(
+			GPlatesModel::FeatureHandle &feature_handle,
+			const GPlatesModel::PropertyName &property_name,
+			bp::object property_value_object,
+			VerifyInformationModel::Value verify_information_model);
+
+
 	namespace
 	{
 		/**
@@ -210,6 +228,30 @@ namespace GPlatesApi
 		}
 
 		/**
+		 * Throws @a InformationModelException if specified property name does not support the type
+		 * of the specified geometry (and @a verify_information_model requested checking).
+		 */
+		void
+		verify_geometry_type_supported_by_property(
+				const GPlatesMaths::GeometryOnSphere &geometry,
+				const GPlatesModel::PropertyName &property_name,
+				VerifyInformationModel::Value verify_information_model)
+		{
+			// Make sure geometry type is supported by property (if requested to check).
+			if (verify_information_model == VerifyInformationModel::YES &&
+				!is_geometry_type_supported_by_property(geometry, property_name))
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("The geometry type '") +
+								get_geometry_type_as_string(geometry) +
+								"' is not supported by property name '" +
+								convert_qualified_xml_name_to_qstring(property_name) + "'");
+			}
+		}
+
+		/**
 		 * Throws InformationModelException if @a feature_type does not inherit directly or indirectly
 		 * from @a ancestor_feature_type.
 		 */
@@ -325,11 +367,12 @@ namespace GPlatesApi
 		}
 
 		/**
-		 * Reverse reconstruct the specified feature using the specified reverse reconstruct parameters.
+		 * Get the reverse-reconstruct rotation model (and reconstruction and anchor plate id).
 		 */
-		void
-		reverse_reconstruct(
-				GPlatesModel::FeatureHandle &feature_handle,
+		std::pair<
+				GPlatesAppLogic::ReconstructionTreeCreator,
+				double/*reconstruction_time*/>
+		extract_reverse_reconstruct_parameters(
 				bp::object reverse_reconstruct_object)
 		{
 			const char *type_error_string =
@@ -352,16 +395,25 @@ namespace GPlatesApi
 			}
 
 			bp::extract<GPlatesApi::RotationModel::non_null_ptr_type> extract_rotation_model(reverse_reconstruct_tuple[0]);
-			bp::extract<double> extract_reconstruction_time(reverse_reconstruct_tuple[1]);
+			bp::extract<GPlatesPropertyValues::GeoTimeInstant> extract_reconstruction_geo_time_instant(reverse_reconstruct_tuple[1]);
 			if (!extract_rotation_model.check() ||
-				!extract_reconstruction_time.check())
+				!extract_reconstruction_geo_time_instant.check())
 			{
 				PyErr_SetString(PyExc_TypeError, type_error_string);
 				bp::throw_error_already_set();
 			}
 
 			const GPlatesApi::RotationModel::non_null_ptr_type rotation_model = extract_rotation_model();
-			const double reconstruction_time = extract_reconstruction_time();
+
+			// Time must not be distant past/future.
+			const GPlatesPropertyValues::GeoTimeInstant reconstruction_geo_time_instant = extract_reconstruction_geo_time_instant();
+			if (!reconstruction_geo_time_instant.is_real())
+			{
+				PyErr_SetString(PyExc_ValueError,
+						"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+				bp::throw_error_already_set();
+			}
+			const double reconstruction_time = reconstruction_geo_time_instant.value();
 
 			GPlatesModel::integer_plate_id_type anchor_plate_id = 0;
 			if (tuple_len == 3)
@@ -376,14 +428,277 @@ namespace GPlatesApi
 				anchor_plate_id = extract_anchor_plate_id();
 			}
 
-			// Call 'reverse_reconstruct' via Python (and back into C++)...
-			// Note: We could call directly via C++ here if we expose the C++ 'reverse_reconstruct()'
-			// in a header file - probably a bit faster.
-			get_pygplates_module().attr("reverse_reconstruct")(
-					bp::object(GPlatesUtils::get_non_null_pointer(&feature_handle)),
-					rotation_model,
+			// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
+			// This ensures we will reverse reconstruct using the correct anchor plate.
+			GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
+					GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
+							rotation_model->get_reconstruction_tree_creator(),
+							anchor_plate_id);
+
+			return std::make_pair(reconstruction_tree_creator, reconstruction_time);
+		}
+
+		/**
+		 * Reverse reconstruct the specified geometry using the specified feature (properties) and reverse reconstruct parameters.
+		 */
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+		reverse_reconstruct_geometry(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+				GPlatesModel::FeatureHandle &feature_handle,
+				const GPlatesAppLogic::ReconstructMethodRegistry &reconstruction_method_registry,
+				const GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator,
+				const double &reconstruction_time)
+		{
+			return GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
+					geometry,
+					reconstruction_method_registry,
+					feature_handle.reference(),
+					reconstruction_tree_creator,
+					GPlatesAppLogic::ReconstructParams(),
 					reconstruction_time,
-					anchor_plate_id);
+					true/*reverse_reconstruct*/);
+		}
+
+		/**
+		 * Set the geometry as a property on the feature and check information model if requested
+		 * (and reverse reconstruct if requested).
+		 *
+		 * Also optionally set the range (GmlDataBlock) as a property on the feature.
+		 *
+		 * Returns the feature property containing the geometry, or a tuple of properties containing
+		 * the geometry (coverage domain) and the coverage range.
+		 *
+		 * Note: The range property name is obtained from the domain (geometry) property name (if needed).
+		 */
+		bp::object
+		set_geometry(
+				GPlatesModel::FeatureHandle &feature_handle,
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
+				const GPlatesModel::PropertyName &geometry_property_name,
+				bp::object reverse_reconstruct_object,
+				VerifyInformationModel::Value verify_information_model,
+				boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type> coverage_range_property_value = boost::none)
+		{
+			//
+			// Set the geometry property.
+			//
+
+			// Make sure geometry type is supported by property (if requested to check).
+			verify_geometry_type_supported_by_property(*geometry, geometry_property_name, verify_information_model);
+
+			// If we need to reverse reconstruct the geometry.
+			if (reverse_reconstruct_object != bp::object()/*Py_None*/)
+			{
+				std::pair<GPlatesAppLogic::ReconstructionTreeCreator, double/*reconstruction_time*/>
+						reverse_reconstruct_parameters = extract_reverse_reconstruct_parameters(
+								reverse_reconstruct_object);
+
+				geometry = reverse_reconstruct_geometry(
+						geometry,
+						feature_handle,
+						GPlatesAppLogic::ReconstructMethodRegistry(),
+						reverse_reconstruct_parameters.first,
+						reverse_reconstruct_parameters.second);
+			}
+
+			// Wrap the geometry in a property value.
+			GPlatesModel::PropertyValue::non_null_ptr_type geometry_property_value =
+					GPlatesAppLogic::GeometryUtils::create_geometry_property_value(geometry);
+
+			// Set the geometry property value in the feature.
+			const bp::object geometry_property_object = feature_handle_set_property(
+					feature_handle,
+					geometry_property_name,
+					bp::object(geometry_property_value),
+					verify_information_model);
+
+			// Get the coverage range property name associated with the domain property name (if any).
+			boost::optional<GPlatesModel::PropertyName> range_property_name =
+					GPlatesAppLogic::ScalarCoverageFeatureProperties::get_range_property_name_from_domain(
+							geometry_property_name);
+
+			// If we're just setting a geometry (and not a coverage).
+			if (!coverage_range_property_value)
+			{
+				// We still remove any coverages associated with the geometry so that the geometry
+				// is not interpreted as a coverage domain.
+				//
+				// It's not an error if a coverage is not supported for the geometry property name
+				// because the caller was not trying to set a coverage (only setting a geometry).
+				if (range_property_name)
+				{
+					feature_handle.remove_properties_by_name(range_property_name.get());
+				}
+
+				return geometry_property_object;
+			}
+
+			//
+			// We're also setting the coverage range (where coverage domain is the geometry).
+			//
+
+			// If the geometry property name does not support a coverage then this is an error
+			// because the caller is trying to set a coverage (and not just a geometry).
+			if (!range_property_name)
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("Geometry property name '" +
+								convert_qualified_xml_name_to_qstring(geometry_property_name) +
+								"' does not support coverages"));
+			}
+
+			// Set the coverage range property in the feature.
+			const bp::object coverage_range_property_object = feature_handle_set_property(
+					feature_handle,
+					range_property_name.get(),
+					bp::object(coverage_range_property_value.get()),
+					verify_information_model);
+
+			return bp::make_tuple(geometry_property_object, coverage_range_property_object);
+		}
+
+		/**
+		 * Set geometries as properties on the feature and check information model if requested
+		 * (and reverse reconstruct if requested).
+		 *
+		 * Also optionally set ranges (GmlDataBlock's) as properties on the feature.
+		 *
+		 * Returns a list of the feature properties containing the geometries, or a list of 2-tuples
+		 * with each 2-tuple containing a geometry (domain) property and a coverage range property.
+		 *
+		 * Note: The range property name is obtained from the domain (geometry) property name (if needed).
+		 */
+		bp::object
+		set_geometries(
+				GPlatesModel::FeatureHandle &feature_handle,
+				const std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> &geometries,
+				const GPlatesModel::PropertyName &geometry_property_name,
+				bp::object reverse_reconstruct_object,
+				VerifyInformationModel::Value verify_information_model,
+				boost::optional<const std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type> &>
+						coverage_range_property_values = boost::none)
+		{
+			//
+			// Set the geometry properties.
+			//
+
+			// Get reverse reconstruct parameters if we're going to reverse reconstruct geometries.
+			boost::optional< std::pair<GPlatesAppLogic::ReconstructionTreeCreator, double/*reconstruction_time*/> >
+					reverse_reconstruct_parameters;
+			GPlatesAppLogic::ReconstructMethodRegistry reconstruction_method_registry;
+			if (reverse_reconstruct_object != bp::object()/*Py_None*/)
+			{
+				reverse_reconstruct_parameters = extract_reverse_reconstruct_parameters(reverse_reconstruct_object);
+			}
+
+			// Wrap the geometries in property values.
+			bp::list geometry_property_values;
+
+			BOOST_FOREACH(GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry, geometries)
+			{
+				// Make sure geometry type is supported by property (if requested to check).
+				verify_geometry_type_supported_by_property(*geometry, geometry_property_name, verify_information_model);
+
+				// If we need to reverse reconstruct the geometry.
+				if (reverse_reconstruct_parameters)
+				{
+					geometry = reverse_reconstruct_geometry(
+							geometry,
+							feature_handle,
+							reconstruction_method_registry,
+							reverse_reconstruct_parameters->first,
+							reverse_reconstruct_parameters->second);
+				}
+
+				// Wrap the current geometry in a property value.
+				GPlatesModel::PropertyValue::non_null_ptr_type geometry_property_value =
+						GPlatesAppLogic::GeometryUtils::create_geometry_property_value(geometry);
+
+				geometry_property_values.append(geometry_property_value);
+			}
+
+			// Set the geometry property values in the feature.
+			const bp::object geometry_property_list_object = feature_handle_set_property(
+					feature_handle,
+					geometry_property_name,
+					geometry_property_values,
+					verify_information_model);
+
+			// Get the coverage range property name associated with the domain property name (if any).
+			boost::optional<GPlatesModel::PropertyName> range_property_name =
+					GPlatesAppLogic::ScalarCoverageFeatureProperties::get_range_property_name_from_domain(
+							geometry_property_name);
+
+			// If we're just setting geometries (and not coverages).
+			if (!coverage_range_property_values)
+			{
+				// We still remove any coverages associated with the geometries so that the geometries
+				// are not interpreted as coverage domains.
+				//
+				// It's not an error if coverages are not supported for the geometry property name
+				// because the caller was not trying to set coverages (only setting geometries).
+				if (range_property_name)
+				{
+					feature_handle.remove_properties_by_name(range_property_name.get());
+				}
+
+				return geometry_property_list_object;
+			}
+
+			//
+			// We're also setting coverage ranges (where coverage domains are the geometries).
+			//
+
+			// If the geometry property name does not support coverages then this is an error
+			// because the caller is trying to set coverages (and not just geometries).
+			if (!range_property_name)
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("Geometry property name '" +
+								convert_qualified_xml_name_to_qstring(geometry_property_name) +
+								"' does not support coverages"));
+			}
+
+			// Wrap the coverage ranges in Python property values.
+			bp::list coverage_range_property_values_list;
+
+			BOOST_FOREACH(
+					GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type coverage_range,
+					coverage_range_property_values.get())
+			{
+				coverage_range_property_values_list.append(coverage_range);
+			}
+
+			// Set the coverage range property values in the feature.
+			const bp::object coverage_range_property_list_object = feature_handle_set_property(
+					feature_handle,
+					range_property_name.get(),
+					coverage_range_property_values_list,
+					verify_information_model);
+			
+			bp::list coverage_domain_range_property_list_object;
+
+			// Both coverage domain and range property lists should be the same length.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					bp::len(coverage_range_property_list_object) == bp::len(geometry_property_list_object),
+					GPLATES_ASSERTION_SOURCE);
+
+			// Return a list of tuples (rather than a tuple of lists) since we want to mirror the
+			// input which was a sequence of (GeometryOnSphere, coverage-range) tuples.
+			const unsigned int num_coverages = bp::len(coverage_range_property_list_object);
+			for (unsigned int n = 0; n < num_coverages; ++n)
+			{
+				coverage_domain_range_property_list_object.append(
+						bp::make_tuple(
+								geometry_property_list_object[n],
+								coverage_range_property_list_object[n]));
+			}
+
+			return coverage_domain_range_property_list_object;
 		}
 	}
 
@@ -1012,23 +1327,7 @@ namespace GPlatesApi
 		// Attempt to extract a sequence of property values.
 		typedef std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> property_value_seq_type;
 		property_value_seq_type property_values;
-		try
-		{
-			// A sequence containing property values.
-			bp::stl_input_iterator<GPlatesModel::PropertyValue::non_null_ptr_type>
-					property_value_seq_begin(property_value_object),
-					property_value_seq_end;
-
-			// Copy into a sequence.
-			std::copy(property_value_seq_begin, property_value_seq_end, std::back_inserter(property_values));
-		}
-		catch (const bp::error_already_set &)
-		{
-			PyErr_Clear();
-
-			PyErr_SetString(PyExc_TypeError, type_error_string);
-			bp::throw_error_already_set();
-		}
+		PythonExtractUtils::extract_sequence(property_values, property_value_object, type_error_string);
 
 		if (verify_information_model == VerifyInformationModel::NO)
 		{
@@ -1293,6 +1592,7 @@ namespace GPlatesApi
 								convert_qualified_xml_name_to_qstring(feature_handle.feature_type()) + "'");
 			}
 		}
+		const GPlatesModel::PropertyName &geometry_property_name = property_name.get();
 
 		//
 		// 'geometry_object' is either:
@@ -1306,133 +1606,177 @@ namespace GPlatesApi
 		// of (scalar type, sequence of scalar values) 2-tuples.
 		//
 
-		const char *type_error_string = "Expected a GeometryOnSphere, or a sequence GeometryOnSphere, "
+		const char *type_error_string = "Expected a GeometryOnSphere, or a sequence of GeometryOnSphere, "
 				"or a coverage, or a sequence of coverages - where a coverage is a "
-				"(GeometryOnSphere, scalar values dictionary) tuple";
+				"(GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is "
+				"a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples";
 
 		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_geometry(geometry_object);
 		if (extract_geometry.check())
 		{
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = extract_geometry();
 
-			// Make sure geometry type is supported by property (if requested to check).
-			if (verify_information_model == VerifyInformationModel::YES &&
-				!is_geometry_type_supported_by_property(*geometry, property_name.get()))
-			{
-				// This exception will get converted to python 'InformationModelError'.
-				throw InformationModelException(
-						GPLATES_EXCEPTION_SOURCE,
-						QString("The geometry type '") +
-								get_geometry_type_as_string(*geometry) +
-								"' is not supported by property name '" +
-								convert_qualified_xml_name_to_qstring(property_name.get()) + "'");
-			}
-
-			// Wrap the geometry in a property value.
-			GPlatesModel::PropertyValue::non_null_ptr_type geometry_property_value =
-					GPlatesAppLogic::GeometryUtils::create_geometry_property_value(geometry);
-
-			// Set the geometry property value in the feature.
-			bp::object property_object = feature_handle_set_property(
+			return set_geometry(
 					feature_handle,
-					property_name.get(),
-					bp::object(geometry_property_value),
+					geometry,
+					geometry_property_name,
+					reverse_reconstruct_object,
 					verify_information_model);
-
-			// If we need to reverse reconstruct the geometry.
-			// Note that we do this after setting the geometry.
-			if (reverse_reconstruct_object != bp::object()/*Py_None*/)
-			{
-				reverse_reconstruct(feature_handle, reverse_reconstruct_object);
-			}
-
-			return property_object;
 		}
 
 		// Attempt to extract a sequence of objects.
 		// All the following are sequences - including the tuple in (3)...
 		//
 		//   2) a sequence of GeometryOnSphere's, or
-		//   3) a (GeometryOnSphere, coverage) tuple, or
-		//   4) a sequence of (GeometryOnSphere, coverage) tuples.
+		//   3) a (GeometryOnSphere, coverage-range) tuple, or
+		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
 		//
 		std::vector<bp::object> sequence_of_objects;
-		try
+		PythonExtractUtils::extract_sequence(sequence_of_objects, geometry_object, type_error_string);
+
+		// It's possible we were given an empty sequence - which means we should remove all
+		// matching geometries (domains) and coverage ranges.
+		if (sequence_of_objects.empty())
 		{
-			std::copy(
-					bp::stl_input_iterator<bp::object>(geometry_object),
-					bp::stl_input_iterator<bp::object>(),
-					std::back_inserter(sequence_of_objects));
-		}
-		catch (const bp::error_already_set &)
-		{
-			PyErr_Clear();
+			// Remove any geometry properties with the geometry property name.
+			feature_handle.remove_properties_by_name(geometry_property_name);
 
-			PyErr_SetString(PyExc_TypeError, type_error_string);
-			bp::throw_error_already_set();
-		}
-
-		// Attempt to extract a sequence of geometries.
-		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry_seq_type;
-		geometry_seq_type geometries;
-		try
-		{
-			// A sequence containing geometries.
-			bp::stl_input_iterator<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-					geometry_seq_begin(geometry_object),
-					geometry_seq_end;
-
-			// Copy into a sequence.
-			std::copy(geometry_seq_begin, geometry_seq_end, std::back_inserter(geometries));
-		}
-		catch (const bp::error_already_set &)
-		{
-			PyErr_Clear();
-
-			PyErr_SetString(PyExc_TypeError, "Expected a GeometryOnSphere, or sequence of GeometryOnSphere");
-			bp::throw_error_already_set();
-		}
-
-		// Wrap the geometries in property values.
-		bp::list geometry_property_values;
-
-		BOOST_FOREACH(GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry, geometries)
-		{
-			// Make sure geometry type is supported by property (if requested to check).
-			if (verify_information_model == VerifyInformationModel::YES &&
-				!is_geometry_type_supported_by_property(*geometry, property_name.get()))
+			boost::optional<GPlatesModel::PropertyName> coverage_range_property_name =
+					GPlatesAppLogic::ScalarCoverageFeatureProperties::get_range_property_name_from_domain(
+							geometry_property_name);
+			if (coverage_range_property_name)
 			{
-				// This exception will get converted to python 'InformationModelError'.
-				throw InformationModelException(
-						GPLATES_EXCEPTION_SOURCE,
-						QString("The geometry type '") +
-								get_geometry_type_as_string(*geometry) +
-								"' is not supported by property name '" +
-								convert_qualified_xml_name_to_qstring(property_name.get()) + "'");
+				// Remove any coverage range properties associated with the geometry property name (if any).
+				feature_handle.remove_properties_by_name(coverage_range_property_name.get());
 			}
 
-			// Wrap the current geometry in a property value.
-			GPlatesModel::PropertyValue::non_null_ptr_type geometry_property_value =
-					GPlatesAppLogic::GeometryUtils::create_geometry_property_value(geometry);
-
-			geometry_property_values.append(geometry_property_value);
+			// Return an empty list since we didn't set any properties - only (potentially) removed some.
+			return bp::list();
 		}
 
-		// Set the geometry property values in the feature.
-		bp::object property_list_object = feature_handle_set_property(
-				feature_handle,
-				property_name.get(),
-				geometry_property_values,
-				verify_information_model);
-
-		// If we need to reverse reconstruct the geometries.
-		// Note that we do this after setting the geometries.
-		if (reverse_reconstruct_object != bp::object()/*Py_None*/)
+		// If the first object in the sequence is a geometry then we've narrowed things down to:
+		//   2) a sequence of GeometryOnSphere's, or
+		//   3) a (GeometryOnSphere, coverage-range) tuple.
+		//
+		// Ie, we've ruled out:
+		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
+		//
+		// ...because it's first object is a tuple (not a geometry).
+		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+				extract_first_geometry(sequence_of_objects[0]);
+		if (extract_first_geometry.check())
 		{
-			reverse_reconstruct(feature_handle, reverse_reconstruct_object);
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type first_geometry = extract_first_geometry();
+
+			// If there's exactly two objects then we *could* be looking at a (GeometryOnSphere, coverage-range) tuple.
+			// Otherwise it has to be a sequence of GeometryOnSphere's.
+			if (sequence_of_objects.size() == 2)
+			{
+				// See if the second object is also a geometry.
+				bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+						extract_second_geometry(sequence_of_objects[1]);
+				if (!extract_second_geometry.check())
+				{
+					// If we get here then we've narrowed things down to:
+					//   3) a (GeometryOnSphere, coverage-range) tuple.
+					//
+
+					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type coverage_domain_geometry = first_geometry;
+
+					// Extract the coverage range.
+					GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block =
+							create_gml_data_block(sequence_of_objects[1], type_error_string);
+
+					return set_geometry(
+							feature_handle,
+							coverage_domain_geometry,
+							geometry_property_name,
+							reverse_reconstruct_object,
+							verify_information_model,
+							gml_data_block);
+				}
+				// else second object is a geometry so we must have a sequence of geometries.
+			}
+
+			// If we get here then we've narrowed things down to:
+			//   2) a sequence of GeometryOnSphere's.
+			//
+
+			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries;
+
+			// We've already extracted the first geometry.
+			geometries.push_back(first_geometry);
+
+			// Extract the remaining geometries.
+			for (unsigned int n = 1; n < sequence_of_objects.size(); ++n)
+			{
+				bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+						extract_geometry_n(sequence_of_objects[n]);
+				if (!extract_geometry_n.check())
+				{
+					PyErr_SetString(PyExc_TypeError, type_error_string);
+					bp::throw_error_already_set();
+				}
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_n = extract_geometry_n();
+
+				geometries.push_back(geometry_n);
+			}
+
+			return set_geometries(
+					feature_handle,
+					geometries,
+					geometry_property_name,
+					reverse_reconstruct_object,
+					verify_information_model);
 		}
 
-		return property_list_object;
+		// If we get here then we've narrowed things down to:
+		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
+		//
+
+		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> coverage_domains;
+		std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type> coverage_ranges;
+
+		// Extract the sequence of coverages (domains/ranges).
+		std::vector<bp::object>::const_iterator sequence_of_objects_iter = sequence_of_objects.begin();
+		std::vector<bp::object>::const_iterator sequence_of_objects_end = sequence_of_objects.end();
+		for ( ; sequence_of_objects_iter != sequence_of_objects_end; ++sequence_of_objects_iter)
+		{
+			const bp::object &coverage_object = *sequence_of_objects_iter;
+
+			// Extract the domain/range tuple.
+			std::vector<bp::object> coverage_domain_range;
+			PythonExtractUtils::extract_sequence(coverage_domain_range, coverage_object, type_error_string);
+
+			if (coverage_domain_range.size() != 2)
+			{
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+
+			// Extract the coverage domain.
+			bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+					extract_coverage_domain(coverage_domain_range[0]);
+			if (!extract_coverage_domain.check())
+			{
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+			coverage_domains.push_back(extract_coverage_domain());
+
+			// Extract the coverage range.
+			GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type coverage_range =
+					create_gml_data_block(coverage_domain_range[1], type_error_string);
+			coverage_ranges.push_back(coverage_range);
+		}
+
+		return set_geometries(
+				feature_handle,
+				coverage_domains,
+				geometry_property_name,
+				reverse_reconstruct_object,
+				verify_information_model,
+				coverage_ranges);
 	}
 
 	bp::object
