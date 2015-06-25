@@ -62,10 +62,27 @@ namespace GPlatesAppLogic
 					std::make_pair(
 							GPlatesModel::PropertyName::create_gpml("domainSet"),
 							GPlatesModel::PropertyName::create_gpml("rangeSet")));
+
+			coverage_domain_to_range_name_map.insert(
+					std::make_pair(
+							GPlatesModel::PropertyName::create_gpml("boundary"),
+							GPlatesModel::PropertyName::create_gpml("boundaryCoverage")));
 			coverage_domain_to_range_name_map.insert(
 					std::make_pair(
 							GPlatesModel::PropertyName::create_gpml("centerLineOf"),
 							GPlatesModel::PropertyName::create_gpml("centerLineOfCoverage")));
+			coverage_domain_to_range_name_map.insert(
+					std::make_pair(
+							GPlatesModel::PropertyName::create_gpml("multiPosition"),
+							GPlatesModel::PropertyName::create_gpml("multiPositionCoverage")));
+			coverage_domain_to_range_name_map.insert(
+					std::make_pair(
+							GPlatesModel::PropertyName::create_gpml("outlineOf"),
+							GPlatesModel::PropertyName::create_gpml("outlineOfCoverage")));
+			coverage_domain_to_range_name_map.insert(
+					std::make_pair(
+							GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"),
+							GPlatesModel::PropertyName::create_gpml("unclassifiedGeometryCoverage")));
 
 			return coverage_domain_to_range_name_map;
 		}
