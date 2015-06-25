@@ -285,13 +285,15 @@ namespace GPlatesApi
 			boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type> gpgim_enumeration_type =
 					GPlatesModel::Gpgim::instance().get_property_enumeration_type(
 							GPlatesPropertyValues::StructuralType(type));
-			// This exception will get converted to python 'InformationModelError'.
-			GPlatesGlobal::Assert<InformationModelException>(
-					gpgim_enumeration_type,
-					GPLATES_EXCEPTION_SOURCE,
-					QString("The enumeration type '") +
-							convert_qualified_xml_name_to_qstring(type) +
-							"' was not recognised as a valid type by the GPGIM");
+			if (!gpgim_enumeration_type)
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("The enumeration type '") +
+								convert_qualified_xml_name_to_qstring(type) +
+								"' was not recognised as a valid type by the GPGIM");
+			}
 
 			// Ensure the enumeration content is allowed, by the GPGIM, for the enumeration type.
 			bool is_content_valid = false;
@@ -306,14 +308,16 @@ namespace GPlatesApi
 				}
 			}
 
-			// This exception will get converted to python 'InformationModelError'.
-			GPlatesGlobal::Assert<InformationModelException>(
-					is_content_valid,
-					GPLATES_EXCEPTION_SOURCE,
-					QString("The enumeration content '") +
-							content +
-							"' is not supported by enumeration type '" +
-							convert_qualified_xml_name_to_qstring(type) + "'");
+			if (!is_content_valid)
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("The enumeration content '") +
+								content +
+								"' is not supported by enumeration type '" +
+								convert_qualified_xml_name_to_qstring(type) + "'");
+			}
 		}
 	}
 
@@ -782,7 +786,7 @@ export_gml_data_block()
 					"=========================== ==========================================================\n"
 					"Operation                   Result\n"
 					"=========================== ==========================================================\n"
-					"``len(d)``                  number of scalar types in the data block*d*\n"
+					"``len(d)``                  number of scalar types in the data block *d*\n"
 					"``for s in d``              iterates over the scalar type *s* in data block *d*\n"
 					"``s in d``                  ``True`` if *s* is a scalar type in data block *d*\n"
 					"``s not in d``              ``False`` if *s* is a scalar type in data block *d*\n"
@@ -3287,12 +3291,15 @@ namespace GPlatesApi
 		verify_era(
 				const QString &era)
 		{
-			// This exception will get converted to python 'InformationModelError'.
-			GPlatesGlobal::Assert<InformationModelException>(
-					era == "Cenozoic" || era == "Mesozoic",
-					GPLATES_EXCEPTION_SOURCE,
-					QString("The era '") + era +
-							"' was not recognised as a valid value by the GPGIM");
+			if (era != "Cenozoic" &&
+				era != "Mesozoic")
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("The era '") + era +
+								"' was not recognised as a valid value by the GPGIM");
+			}
 		}
 	}
 

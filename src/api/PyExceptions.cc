@@ -28,6 +28,7 @@
 
 #include "PyExceptions.h"
 
+#include "PyFeature.h"
 #include "PyGeometriesOnSphere.h"
 #include "PyGreatCircleArc.h"
 #include "PyInformationModel.h"
@@ -199,6 +200,7 @@ namespace GPlatesApi
 	// GPlates C++ exceptions translated to python errors.
 	//
 
+	bp::object AmbiguousGeometryCoverageError;
 	bp::object AssertionFailureError;
 	bp::object DifferentAnchoredPlatesInReconstructionTreesError;
 	bp::object FileFormatNotSupportedError;
@@ -268,6 +270,10 @@ export_exceptions()
 			export_exception<GPlatesGlobal::PreconditionViolationError>(
 					"PreconditionViolationError",
 					GPlatesApi::GPlatesError);
+	GPlatesApi::AmbiguousGeometryCoverageError =
+			export_exception<AmbiguousGeometryCoverageException>(
+					"AmbiguousGeometryCoverageError",
+					GPlatesApi::PreconditionViolationError);
 	GPlatesApi::DifferentAnchoredPlatesInReconstructionTreesError =
 			export_exception<DifferentAnchoredPlatesInReconstructionTreesException>(
 					"DifferentAnchoredPlatesInReconstructionTreesError",

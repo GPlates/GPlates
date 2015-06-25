@@ -25,11 +25,14 @@
 
 #include <algorithm>
 #include <iterator>
+#include <ostream>
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <QString>
+
+#include "PyFeature.h"
 
 #include "PyGPlatesModule.h"
 #include "PyInformationModel.h"
@@ -218,22 +221,26 @@ namespace GPlatesApi
 			boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
 					GPlatesModel::Gpgim::instance().get_feature_class(feature_type);
 
-			// This exception will get converted to python 'InformationModelError'.
-			GPlatesGlobal::Assert<InformationModelException>(
-					gpgim_feature_class,
-					GPLATES_EXCEPTION_SOURCE,
-					QString("The feature type '") +
-							convert_qualified_xml_name_to_qstring(feature_type) +
-							"' was not recognised as a valid type by the GPGIM");
+			if (!gpgim_feature_class)
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("The feature type '") +
+								convert_qualified_xml_name_to_qstring(feature_type) +
+								"' was not recognised as a valid type by the GPGIM");
+			}
 
-			GPlatesGlobal::Assert<InformationModelException>(
-					gpgim_feature_class.get()->does_inherit_from(ancestor_feature_type),
-					GPLATES_EXCEPTION_SOURCE,
-					QString("The feature type '") +
-							convert_qualified_xml_name_to_qstring(feature_type) +
-							"' is not a reconstructable feature (does not inherit '" +
-							convert_qualified_xml_name_to_qstring(ancestor_feature_type) +
-							"')");
+			if (!gpgim_feature_class.get()->does_inherit_from(ancestor_feature_type))
+			{
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("The feature type '") +
+								convert_qualified_xml_name_to_qstring(feature_type) +
+								"' is not a reconstructable feature (does not inherit '" +
+								convert_qualified_xml_name_to_qstring(ancestor_feature_type) +
+								"')");
+			}
 		}
 
 		// FIXME: Avoid duplicating same function from "PyPropertyValues.cc".
@@ -246,13 +253,15 @@ namespace GPlatesApi
 			boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type> gpgim_enumeration_type =
 					GPlatesModel::Gpgim::instance().get_property_enumeration_type(
 							GPlatesPropertyValues::StructuralType(type));
-			// This exception will get converted to python 'InformationModelError'.
-			GPlatesGlobal::Assert<InformationModelException>(
-					gpgim_enumeration_type,
-					GPLATES_EXCEPTION_SOURCE,
-					QString("The enumeration type '") +
-							convert_qualified_xml_name_to_qstring(type) +
-							"' was not recognised as a valid type by the GPGIM");
+			if (!gpgim_enumeration_type)
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("The enumeration type '") +
+								convert_qualified_xml_name_to_qstring(type) +
+								"' was not recognised as a valid type by the GPGIM");
+			}
 
 			// Ensure the enumeration content is allowed, by the GPGIM, for the enumeration type.
 			bool is_content_valid = false;
@@ -267,14 +276,16 @@ namespace GPlatesApi
 				}
 			}
 
-			// This exception will get converted to python 'InformationModelError'.
-			GPlatesGlobal::Assert<InformationModelException>(
-					is_content_valid,
-					GPLATES_EXCEPTION_SOURCE,
-					QString("The enumeration content '") +
-							content +
-							"' is not supported by enumeration type '" +
-							convert_qualified_xml_name_to_qstring(type) + "'");
+			if (!is_content_valid)
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("The enumeration content '") +
+								content +
+								"' is not supported by enumeration type '" +
+								convert_qualified_xml_name_to_qstring(type) + "'");
+			}
 		}
 
 		/**
@@ -365,7 +376,9 @@ namespace GPlatesApi
 				anchor_plate_id = extract_anchor_plate_id();
 			}
 
-			// Call python since Feature.set_valid_time is implemented in python code...
+			// Call 'reverse_reconstruct' via Python (and back into C++)...
+			// Note: We could call directly via C++ here if we expose the C++ 'reverse_reconstruct()'
+			// in a header file - probably a bit faster.
 			get_pygplates_module().attr("reverse_reconstruct")(
 					bp::object(GPlatesUtils::get_non_null_pointer(&feature_handle)),
 					rotation_model,
@@ -402,13 +415,15 @@ namespace GPlatesApi
 		}
 		else if (verify_information_model == VerifyInformationModel::YES)
 		{
-			// This exception will get converted to python 'InformationModelError'.
-			GPlatesGlobal::Assert<InformationModelException>(
-					GPlatesModel::Gpgim::instance().get_feature_class(feature_type.get()),
-					GPLATES_EXCEPTION_SOURCE,
-					QString("The feature type '") +
-							convert_qualified_xml_name_to_qstring(feature_type.get()) +
-							"' was not recognised as a valid type by the GPGIM");
+			if (!GPlatesModel::Gpgim::instance().get_feature_class(feature_type.get()))
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("The feature type '") +
+								convert_qualified_xml_name_to_qstring(feature_type.get()) +
+								"' was not recognised as a valid type by the GPGIM");
+			}
 		}
 
 		// Create a unique feature id if none specified.
@@ -1269,30 +1284,49 @@ namespace GPlatesApi
 		{
 			property_name = get_default_geometry_property_name(feature_handle.feature_type());
 
-			// This exception will get converted to python 'InformationModelError'.
-			GPlatesGlobal::Assert<InformationModelException>(
-					property_name,
-					GPLATES_EXCEPTION_SOURCE,
-					QString("Unable to determine the default geometry property name from the feature type '") +
-							convert_qualified_xml_name_to_qstring(feature_handle.feature_type()) + "'");
+			if (!property_name)
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("Unable to determine the default geometry property name from the feature type '") +
+								convert_qualified_xml_name_to_qstring(feature_handle.feature_type()) + "'");
+			}
 		}
 
-		// 'geometry_object' is either a geometry or a sequence of geometries.
+		//
+		// 'geometry_object' is either:
+		//   1) a GeometryOnSphere, or
+		//   2) a sequence of GeometryOnSphere's, or
+		//   3) a coverage, or
+		//   4) a sequence of coverages.
+		//
+		// ...where a 'coverage' is a (geometry-domain, geometry-range) sequence (eg, 2-tuple)
+		// and 'geometry-domain' is GeometryOnSphere and 'geometry-range' is a 'dict', or a sequence,
+		// of (scalar type, sequence of scalar values) 2-tuples.
+		//
+
+		const char *type_error_string = "Expected a GeometryOnSphere, or a sequence GeometryOnSphere, "
+				"or a coverage, or a sequence of coverages - where a coverage is a "
+				"(GeometryOnSphere, scalar values dictionary) tuple";
+
 		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_geometry(geometry_object);
 		if (extract_geometry.check())
 		{
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = extract_geometry();
 
 			// Make sure geometry type is supported by property (if requested to check).
-			// This exception will get converted to python 'InformationModelError'.
-			GPlatesGlobal::Assert<InformationModelException>(
-					verify_information_model == VerifyInformationModel::NO ||
-						is_geometry_type_supported_by_property(*geometry, property_name.get()),
-					GPLATES_EXCEPTION_SOURCE,
-					QString("The geometry type '") +
-							get_geometry_type_as_string(*geometry) +
-							"' is not supported by property name '" +
-							convert_qualified_xml_name_to_qstring(property_name.get()) + "'");
+			if (verify_information_model == VerifyInformationModel::YES &&
+				!is_geometry_type_supported_by_property(*geometry, property_name.get()))
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("The geometry type '") +
+								get_geometry_type_as_string(*geometry) +
+								"' is not supported by property name '" +
+								convert_qualified_xml_name_to_qstring(property_name.get()) + "'");
+			}
 
 			// Wrap the geometry in a property value.
 			GPlatesModel::PropertyValue::non_null_ptr_type geometry_property_value =
@@ -1314,7 +1348,29 @@ namespace GPlatesApi
 
 			return property_object;
 		}
-		// ...else a sequence of geometries.
+
+		// Attempt to extract a sequence of objects.
+		// All the following are sequences - including the tuple in (3)...
+		//
+		//   2) a sequence of GeometryOnSphere's, or
+		//   3) a (GeometryOnSphere, coverage) tuple, or
+		//   4) a sequence of (GeometryOnSphere, coverage) tuples.
+		//
+		std::vector<bp::object> sequence_of_objects;
+		try
+		{
+			std::copy(
+					bp::stl_input_iterator<bp::object>(geometry_object),
+					bp::stl_input_iterator<bp::object>(),
+					std::back_inserter(sequence_of_objects));
+		}
+		catch (const bp::error_already_set &)
+		{
+			PyErr_Clear();
+
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
 
 		// Attempt to extract a sequence of geometries.
 		typedef std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry_seq_type;
@@ -1343,15 +1399,17 @@ namespace GPlatesApi
 		BOOST_FOREACH(GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry, geometries)
 		{
 			// Make sure geometry type is supported by property (if requested to check).
-			// This exception will get converted to python 'InformationModelError'.
-			GPlatesGlobal::Assert<InformationModelException>(
-					verify_information_model == VerifyInformationModel::NO ||
-						is_geometry_type_supported_by_property(*geometry, property_name.get()),
-					GPLATES_EXCEPTION_SOURCE,
-					QString("The geometry type '") +
-							get_geometry_type_as_string(*geometry) +
-							"' is not supported by property name '" +
-							convert_qualified_xml_name_to_qstring(property_name.get()) + "'");
+			if (verify_information_model == VerifyInformationModel::YES &&
+				!is_geometry_type_supported_by_property(*geometry, property_name.get()))
+			{
+				// This exception will get converted to python 'InformationModelError'.
+				throw InformationModelException(
+						GPLATES_EXCEPTION_SOURCE,
+						QString("The geometry type '") +
+								get_geometry_type_as_string(*geometry) +
+								"' is not supported by property name '" +
+								convert_qualified_xml_name_to_qstring(property_name.get()) + "'");
+			}
 
 			// Wrap the current geometry in a property value.
 			GPlatesModel::PropertyValue::non_null_ptr_type geometry_property_value =
@@ -1879,6 +1937,30 @@ namespace GPlatesApi
 				*feature, seed_geometry, boost::none, reverse_reconstruct_object, verify_information_model);
 
 		return feature;
+	}
+}
+
+
+void
+GPlatesApi::AmbiguousGeometryCoverageException::write_message(
+		std::ostream &os) const
+{
+	/**
+	 * This exception can be thrown when either:
+	 *  (1) there is more than one matching coverage *domain* with same number of points, or
+	 *  (2) there is more than one matching coverage *range* with same number of scalars.
+	 */
+	if (d_ambiguity_type == AmbigiousDomain)
+	{
+		os << "more than one coverage *geometry* named '"
+			<< convert_qualified_xml_name_to_qstring(d_domain_property_name).toStdString()
+			<< "' with same number of points.";
+	}
+	else // AmbigiousRange ...
+	{
+		os << "more than one coverage, associated with *geometry* named '"
+			<< convert_qualified_xml_name_to_qstring(d_domain_property_name).toStdString()
+			<< "', with the same number of scalar values.";
 	}
 }
 

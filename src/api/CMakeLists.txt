@@ -32,6 +32,7 @@ set(srcs
     PyExceptions.cc
     PyExceptions.h
     PyFeature.cc
+    PyFeature.h
     PyFeatureCollection.cc
     PyFeatureCollection.h
     PyFeatureCollectionFileFormatRegistry.cc
