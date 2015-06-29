@@ -82,6 +82,20 @@ namespace GPlatesApi
 		AmbiguityType d_ambiguity_type;
 		GPlatesModel::PropertyName d_domain_property_name;
 	};
+
+
+	/**
+	 * Wrapping an enumeration instead of boolean since 'CoverageReturn.geometry_only' documents
+	 * Python code better than a boolean.
+	 */
+	namespace CoverageReturn
+	{
+		enum Value
+		{
+			GEOMETRY_ONLY,       // Return only geometry.
+			GEOMETRY_AND_SCALARS // Return geometry and scalars which is the coverage domain and range.
+		};
+	};
 }
 
 #endif   // GPLATES_NO_PYTHON

@@ -1783,7 +1783,8 @@ namespace GPlatesApi
 	feature_handle_get_geometry(
 			GPlatesModel::FeatureHandle &feature_handle,
 			bp::object property_query_object,
-			PropertyReturn::Value property_return)
+			PropertyReturn::Value property_return,
+			GPlatesApi::CoverageReturn::Value coverage_return)
 	{
 		// If a property name or predicate wasn't specified then determine the
 		// default geometry property name via the GPGIM.
@@ -1801,40 +1802,46 @@ namespace GPlatesApi
 			property_query_object = bp::object(default_geometry_property_name.get());
 		}
 
-		// Get the geometry property value(s).
+		// Get the geometry property(s).
 		//
-		// Note that we're querying all matching property values, not the number of (geometry)
+		// Note that we're querying all matching properties, not the number of (geometry)
 		// properties requested by our caller, because the property query might match non-geometry
 		// properties (which we'll later filter out the geometry properties and test the number of those).
-		bp::object property_value_object =
-				feature_handle_get_property_value(
+		bp::object property_list_object =
+				feature_handle_get_property(
 						feature_handle,
 						property_query_object,
-						GPlatesPropertyValues::GeoTimeInstant(0),
 						// Query all matching property values (ie, not what user requested)...
 						PropertyReturn::ALL);
-		if (property_value_object == bp::object()/*Py_None*/)
+
+		// If caller is only interested in geometries (not coverages).
+		if (coverage_return == CoverageReturn::GEOMETRY_ONLY)
 		{
-			return (property_return == PropertyReturn::ALL)
-					? bp::list() /*empty list*/
-					: bp::object()/*Py_None*/;
-		}
+			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries;
 
-		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries;
-
-		const unsigned int num_property_values = bp::len(property_value_object);
-		for (unsigned int n = 0; n < num_property_values; ++n)
-		{
-			// Get the current property value.
-			GPlatesModel::PropertyValue::non_null_ptr_type property_value =
-					bp::extract<GPlatesModel::PropertyValue::non_null_ptr_type>(
-							property_value_object[n]);
-
-			// Extract the geometry from the property value.
-			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry =
-					GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(*property_value);
-			if (geometry)
+			const unsigned int num_properties = bp::len(property_list_object);
+			for (unsigned int n = 0; n < num_properties; ++n)
 			{
+				// Call python since Property.get_value is implemented in python code...
+				bp::object property_value_object = property_list_object[n].attr("get_value")(0.0/*time*/);
+				// Ignore property values that are Py_None.
+				if (property_value_object == bp::object()/*Py_None*/)
+				{
+					continue;
+				}
+
+				// Get the current property value.
+				GPlatesModel::PropertyValue::non_null_ptr_type property_value =
+						bp::extract<GPlatesModel::PropertyValue::non_null_ptr_type>(property_value_object);
+
+				// Extract the geometry from the property value.
+				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry =
+						GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(*property_value);
+				if (!geometry)
+				{
+					continue;
+				}
+
 				// Optimisations - to return early.
 				if (property_return == PropertyReturn::FIRST)
 				{
@@ -1852,62 +1859,214 @@ namespace GPlatesApi
 
 				geometries.push_back(geometry.get());
 			}
+
+			if (property_return == PropertyReturn::ALL)
+			{
+				bp::list geometries_list;
+
+				BOOST_FOREACH(GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry, geometries)
+				{
+					geometries_list.append(geometry);
+				}
+
+				return geometries_list;
+			}
+
+			if (property_return == PropertyReturn::EXACTLY_ONE)
+			{
+				return (geometries.size() == 1) ? bp::object(geometries.front()) : bp::object()/*Py_None*/;
+			}
+
+			// ...else PropertyReturn::FIRST
+			return !geometries.empty() ? bp::object(geometries.front()) : bp::object()/*Py_None*/;
+		}
+
+		//
+		// Coverages (geometry domain + scalar values range).
+		//
+
+		// Get all coverages for the feature.
+		typedef std::vector<GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage> coverage_seq_type;
+		coverage_seq_type all_coverages;
+		GPlatesAppLogic::ScalarCoverageFeatureProperties::get_coverages(
+				all_coverages,
+				feature_handle.reference(),
+				0.0/*reconstruction_time*/);
+
+		// The coverages with domains that match 'property_query_object'.
+		coverage_seq_type coverages;
+
+		const unsigned int num_properties = bp::len(property_list_object);
+		for (unsigned int n = 0; n < num_properties; ++n)
+		{
+			GPlatesModel::TopLevelProperty::non_null_ptr_type property =
+					bp::extract<GPlatesModel::TopLevelProperty::non_null_ptr_type>(
+							property_list_object[n]);
+
+			// Iterate over all coverages to see if the current property is a coverage 'domain'.
+			coverage_seq_type::const_iterator coverage_iter = all_coverages.begin();
+			const coverage_seq_type::const_iterator coverage_end = all_coverages.end();
+			for ( ; coverage_iter != coverage_end; ++coverage_iter)
+			{
+				if (property == *coverage_iter->domain_property)
+				{
+					break;
+				}
+			}
+
+			// Skip current property if it's not the domain of a coverage.
+			if (coverage_iter == coverage_end)
+			{
+				continue;
+			}
+			const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage = *coverage_iter;
+
+			// Optimisations - to return early.
+			if (property_return == PropertyReturn::FIRST)
+			{
+				// Return first coverage (domain, range) object immediately.
+				return bp::make_tuple(
+						bp::object(coverage.domain),
+						create_dict_from_gml_data_block_coordinate_lists(
+								coverage.range.begin(),
+								coverage.range.end()));
+			}
+			else if (property_return == PropertyReturn::EXACTLY_ONE)
+			{
+				// If we've already found one coverage (and now we'll have two) then return Py_None.
+				if (coverages.size() == 1)
+				{
+					return bp::object()/*Py_None*/;
+				}
+			}
+
+			coverages.push_back(coverage);
 		}
 
 		if (property_return == PropertyReturn::ALL)
 		{
-			bp::list geometries_list;
+			bp::list coverages_list;
 
-			BOOST_FOREACH(GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry, geometries)
+			BOOST_FOREACH(
+					const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage,
+					coverages)
 			{
-				geometries_list.append(geometry);
+				const bp::object coverage_object =
+						bp::make_tuple(
+								bp::object(coverage.domain),
+								create_dict_from_gml_data_block_coordinate_lists(
+										coverage.range.begin(),
+										coverage.range.end()));
+
+				coverages_list.append(coverage_object);
 			}
 
-			return geometries_list;
+			return coverages_list;
 		}
 
 		if (property_return == PropertyReturn::EXACTLY_ONE)
 		{
-			return (geometries.size() == 1) ? bp::object(geometries.front()) : bp::object()/*Py_None*/;
+			if (coverages.size() != 1)
+			{
+				return bp::object()/*Py_None*/;
+			}
+
+			// Return coverage (domain, range) object.
+			const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage = coverages.front();
+			return bp::make_tuple(
+					bp::object(coverage.domain),
+					create_dict_from_gml_data_block_coordinate_lists(
+							coverage.range.begin(),
+							coverage.range.end()));
 		}
 
 		// ...else PropertyReturn::FIRST
-		return !geometries.empty() ? bp::object(geometries.front()) : bp::object()/*Py_None*/;
+
+		if (coverages.empty())
+		{
+			return bp::object()/*Py_None*/;
+		}
+
+		// Return coverage (domain, range) object.
+		const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage = coverages.front();
+		return bp::make_tuple(
+				bp::object(coverage.domain),
+				create_dict_from_gml_data_block_coordinate_lists(
+						coverage.range.begin(),
+						coverage.range.end()));
 	}
 
 	bp::object
 	feature_handle_get_geometries(
 			GPlatesModel::FeatureHandle &feature_handle,
-			bp::object property_query_object)
+			bp::object property_query_object,
+			GPlatesApi::CoverageReturn::Value coverage_return)
 	{
 		// The returned object will be a list.
-		return feature_handle_get_geometry(feature_handle, property_query_object, PropertyReturn::ALL);
+		return feature_handle_get_geometry(
+				feature_handle,
+				property_query_object,
+				PropertyReturn::ALL,
+				coverage_return);
 	}
 
 	bp::list
 	feature_handle_get_all_geometries(
-			GPlatesModel::FeatureHandle &feature_handle)
+			GPlatesModel::FeatureHandle &feature_handle,
+			GPlatesApi::CoverageReturn::Value coverage_return)
 	{
-		bp::list geometry_properties;
-
-		// Search for the geometry properties.
-		GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
-		GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
-		for ( ; properties_iter != properties_end; ++properties_iter)
+		if (coverage_return == CoverageReturn::GEOMETRY_ONLY)
 		{
-			GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+			bp::list geometry_properties;
 
-			// Extract the geometry from the property value.
-			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry =
-					GPlatesAppLogic::GeometryUtils::get_geometry_from_property(feature_property);
-			if (geometry)
+			// Search for the geometry properties.
+			GPlatesModel::FeatureHandle::iterator properties_iter = feature_handle.begin();
+			GPlatesModel::FeatureHandle::iterator properties_end = feature_handle.end();
+			for ( ; properties_iter != properties_end; ++properties_iter)
 			{
-				geometry_properties.append(geometry.get());
+				GPlatesModel::TopLevelProperty::non_null_ptr_type feature_property = *properties_iter;
+
+				// Extract the geometry from the property value.
+				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometry =
+						GPlatesAppLogic::GeometryUtils::get_geometry_from_property(feature_property);
+				if (geometry)
+				{
+					geometry_properties.append(geometry.get());
+				}
 			}
+
+			// Returned list could be empty if there were no geometry properties for some reason.
+			return geometry_properties;
 		}
 
-		// Returned list could be empty if there were no geometry properties for some reason.
-		return geometry_properties;
+		//
+		// Coverages (geometry domain + scalar values range).
+		//
+
+		// Get all coverages for the feature.
+		std::vector<GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage> all_coverages;
+		GPlatesAppLogic::ScalarCoverageFeatureProperties::get_coverages(
+				all_coverages,
+				feature_handle.reference(),
+				0.0/*reconstruction_time*/);
+
+		bp::list coverages_list;
+
+		BOOST_FOREACH(
+				const GPlatesAppLogic::ScalarCoverageFeatureProperties::Coverage &coverage,
+				all_coverages)
+		{
+			const bp::object coverage_object =
+					bp::make_tuple(
+							bp::object(coverage.domain),
+							create_dict_from_gml_data_block_coordinate_lists(
+									coverage.range.begin(),
+									coverage.range.end()));
+
+			coverages_list.append(coverage_object);
+		}
+
+		return coverages_list;
 	}
 
 	const GPlatesModel::FeatureHandle::non_null_ptr_type
@@ -2317,6 +2476,11 @@ export_feature()
 			.value("exactly_one", GPlatesApi::PropertyReturn::EXACTLY_ONE)
 			.value("first", GPlatesApi::PropertyReturn::FIRST)
 			.value("all", GPlatesApi::PropertyReturn::ALL);
+
+	// An enumeration nested within 'pygplates (ie, current) module.
+	bp::enum_<GPlatesApi::CoverageReturn::Value>("CoverageReturn")
+			.value("geometry_only", GPlatesApi::CoverageReturn::GEOMETRY_ONLY)
+			.value("geometry_and_scalars", GPlatesApi::CoverageReturn::GEOMETRY_AND_SCALARS);
 
 	//
 	// Feature - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
@@ -3415,8 +3579,10 @@ export_feature()
 		.def("get_geometry",
 				&GPlatesApi::feature_handle_get_geometry,
 				(bp::arg("property_query") = bp::object()/*Py_None*/,
-						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE),
-				"get_geometry([property_query], [property_return=PropertyReturn.exactly_one])\n"
+						bp::arg("property_return") = GPlatesApi::PropertyReturn::EXACTLY_ONE,
+						bp::arg("coverage_return") = GPlatesApi::CoverageReturn::GEOMETRY_ONLY),
+				"get_geometry([property_query], [property_return=PropertyReturn.exactly_one], "
+				"[coverage_return=CoverageReturn.geometry_only])\n"
 				"  Return the *present day* geometry (or geometries) of this feature.\n"
 				"\n"
 				"  :param property_query: the optional property name or predicate function used to find "
@@ -3502,8 +3668,9 @@ export_feature()
 				"        ...\n")
 		.def("get_geometries",
 				&GPlatesApi::feature_handle_get_geometries,
-				(bp::arg("property_query") = bp::object()/*Py_None*/),
-				"get_geometries([property_query])\n"
+				(bp::arg("property_query") = bp::object()/*Py_None*/,
+						bp::arg("coverage_return") = GPlatesApi::CoverageReturn::GEOMETRY_ONLY),
+				"get_geometries([property_query], [coverage_return=CoverageReturn.geometry_only])\n"
 				"  Return a list of the *present day* geometries of this feature.\n"
 				"\n"
 				"  :param property_query: the optional property name or predicate function used to find "
@@ -3524,7 +3691,8 @@ export_feature()
 				"  See :meth:`get_geometry` for more details.\n")
 		.def("get_all_geometries",
 				&GPlatesApi::feature_handle_get_all_geometries,
-				"get_all_geometries()\n"
+				(bp::arg("coverage_return") = GPlatesApi::CoverageReturn::GEOMETRY_ONLY),
+				"get_all_geometries([coverage_return=CoverageReturn.geometry_only])\n"
 				"  Return a list of all *present day* geometries of this feature (regardless of their property names).\n"
 				"\n"
 				"  :rtype: list of :class:`GeometryOnSphere`\n"
