@@ -1742,19 +1742,6 @@ namespace GPlatesApi
 						GPlatesMaths::convert_deg_to_rad(tessellate_degrees)));
 	}
 
-	/**
-	 * Enumeration to determine conversion of geometries to PolylineOnSphere.
-	 */
-	namespace PolylineConversion
-	{
-		enum Value
-		{
-			CONVERT_TO_POLYLINE,   // Arguments that are not a PolylineOnSphere are converted to one.
-			IGNORE_NON_POLYLINE,   // Ignore arguments that are not a PolylineOnSphere - may result in no-op.
-			RAISE_IF_NON_POLYLINE  // Raises GeometryTypeError if argument(s) is not a PolylineOnSphere.
-		};
-	};
-
 	bp::object
 	polyline_on_sphere_rotation_interpolate(
 			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &from_geometry_on_sphere,

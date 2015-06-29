@@ -483,6 +483,26 @@ namespace GPlatesApi
 	};
 
 
+	bp::dict
+	create_dict_from_gml_data_block(
+			const GPlatesPropertyValues::GmlDataBlock &gml_data_block)
+	{
+		std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type>
+				gml_data_block_coordinate_lists;
+
+		const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList> &
+				scalar_value_lists = gml_data_block.tuple_list();
+		const unsigned int num_scalar_types = scalar_value_lists.size();
+		for (unsigned int n = 0; n < num_scalar_types; ++n)
+		{
+			gml_data_block_coordinate_lists.push_back(scalar_value_lists[n].get());
+		}
+
+		return create_dict_from_gml_data_block_coordinate_lists(
+				gml_data_block_coordinate_lists.begin(),
+				gml_data_block_coordinate_lists.end());
+	}
+
 	const GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type
 	create_gml_data_block(
 			bp::object scalar_type_to_values_mapping_object,

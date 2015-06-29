@@ -165,6 +165,20 @@ namespace GPlatesApi
 
 		QString d_message;
 	};
+
+
+	/**
+	 * Enumeration to determine conversion of geometries to PolylineOnSphere.
+	 */
+	namespace PolylineConversion
+	{
+		enum Value
+		{
+			CONVERT_TO_POLYLINE,   // Arguments that are not a PolylineOnSphere are converted to one.
+			IGNORE_NON_POLYLINE,   // Ignore arguments that are not a PolylineOnSphere - may result in no-op.
+			RAISE_IF_NON_POLYLINE  // Raises GeometryTypeError if argument(s) is not a PolylineOnSphere.
+		};
+	};
 }
 
 #endif   // GPLATES_NO_PYTHON
