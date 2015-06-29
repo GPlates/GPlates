@@ -257,13 +257,14 @@ PolygonOnSphere._get_points = polygon_on_sphere_get_points
 del polygon_on_sphere_get_points
 
 
-def polyline_on_sphere_join(geometries, distance_threshold_radians, polyline_conversion=PolylineConversion.ignore_non_polyline):
-    """join(geometries, distance_threshold_radians, polyline_conversion=PolylineConversion.ignore_non_polyline)
+def polyline_on_sphere_join(geometries, distance_threshold_radians=None, polyline_conversion=PolylineConversion.ignore_non_polyline):
+    """join(geometries, [distance_threshold_radians], [polyline_conversion=PolylineConversion.ignore_non_polyline])
     Joins geometries that have end points closer than a distance threshold.
     
     :param geometries: the geometries to join
     :type geometries: sequence (eg, ``list`` or ``tuple``) of :class:`GeometryOnSphere`
-    :param distance_threshold_radians: closeness distance threshold in radians for joining to occur
+    :param distance_threshold_radians: optional closeness distance threshold in radians for joining to occur \
+    (if not specified then end point *equality* is used)
     :type distance_threshold_radians: float
     :param polyline_conversion: whether to raise error, convert to :class:`PolylineOnSphere` or ignore \
     those geometries in *geometries* that are not :class:`PolylineOnSphere` - defaults to \
@@ -275,10 +276,13 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians, polyline_con
     :raises: GeometryTypeError if *polyline_conversion* is *PolylineConversion.raise_if_non_polyline* and \
     any geometry in *geometries* is not a :class:`PolylineOnSphere`
     
-    All pairs of geometries are tested for joining and only those closer than *distance_threshold_radians*
+    All pairs of geometries are tested for joining and only those with end points closer than *distance_threshold_radians*
     radians are joined. Each joined polyline is further joined if possible until there are no more
     possibilities for joining (or there is a single joined polyline that is a concatenation of all
     geometries in *geometries* - depending on *polyline_conversion*).
+    
+    .. note:: If *distance_threshold_radians* is not specified then the end points must be equal
+       (rather than separated by less than a threshold distance).
     
     When determining if two geometries A and B can be joined the closest pair of end points
     (one from A and one from B) decides which end of each geometry can be joined, provided their
@@ -347,6 +351,38 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians, polyline_con
         # polyline (if any less than threshold).
         for polyline2_index in range(polyline1_index + 1, len(joined_polylines)):
             polyline2 = joined_polylines[polyline2_index]
+            
+            # If there is no distance threshold then test for end point equality rather than distance.
+            if min_dist is None:
+                if polyline1[0] == polyline2[0]:
+                    join_polylines = (
+                        itertools.chain(
+                            # Remove the last point of first joined polyline (since is duplicate)...
+                            itertools.islice(reversed(polyline2), len(polyline2)-1),
+                            polyline1),
+                        polyline2_index)
+                elif polyline1[0] == polyline2[-1]:
+                    join_polylines = (
+                        itertools.chain(
+                            # Remove the last point of first joined polyline (since is duplicate)...
+                            itertools.islice(polyline2, len(polyline2)-1),
+                            polyline1),
+                        polyline2_index)
+                elif polyline1[-1] == polyline2[0]:
+                    join_polylines = (
+                        itertools.chain(
+                            # Remove the last point of first joined polyline (since is duplicate)...
+                            itertools.islice(polyline1, len(polyline1)-1),
+                            polyline2),
+                        polyline2_index)
+                elif polyline1[-1] == polyline2[-1]:
+                    join_polylines = (
+                        itertools.chain(
+                            # Remove the last point of first joined polyline (since is duplicate)...
+                            itertools.islice(polyline1, len(polyline1)-1),
+                            reversed(polyline2)),
+                        polyline2_index)
+                continue
             
             # Calculate distance between four combinations of polyline1/polyline2 end points.
             dist00 = GeometryOnSphere.distance(polyline1[0], polyline2[0])

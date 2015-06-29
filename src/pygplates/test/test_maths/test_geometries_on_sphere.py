@@ -404,24 +404,46 @@ class PolylineOnSphereCase(unittest.TestCase):
         self.assertTrue(len(pygplates.PolylineOnSphere.join((polyline1, polyline2), math.radians(1))) == 2)
         # polyline1 + reversed(polyline2)
         self.assertTrue(
-                pygplates.PolylineOnSphere.join((polyline1, polyline2), math.radians(2.1))[0] ==
-                pygplates.PolylineOnSphere([(0,0), (0,10), (0,8), (20,8)]))
+                pygplates.PolylineOnSphere.join((polyline1, polyline2), math.radians(2.1)) ==
+                [pygplates.PolylineOnSphere([(0,0), (0,10), (0,8), (20,8)])])
+        self.assertTrue(
+                pygplates.PolylineOnSphere.join(
+                        (polyline1, pygplates.PolylineOnSphere([(0,1), (0,10)]))) ==
+                [pygplates.PolylineOnSphere([(0,0), (0,10), (0,1)])])
         # polyline1 + polyline2
         self.assertTrue(
                 pygplates.PolylineOnSphere.join(
-                        (polyline1, pygplates.PolylineOnSphere([(0,12), (0,15)])), math.radians(2.1))[0] ==
-                pygplates.PolylineOnSphere([(0,0), (0,10), (0,12), (0,15)]))
+                        (polyline1, pygplates.PolylineOnSphere([(0,12), (0,15)])), math.radians(2.1)) ==
+                [pygplates.PolylineOnSphere([(0,0), (0,10), (0,12), (0,15)])])
+        self.assertTrue(
+                pygplates.PolylineOnSphere.join(
+                        (polyline1, pygplates.PolylineOnSphere([(0,10), (0,1)]))) ==
+                [pygplates.PolylineOnSphere([(0,0), (0,10), (0,1)])])
         # polyline2 + polyline1
         self.assertTrue(
                 pygplates.PolylineOnSphere.join(
-                        (polyline1, pygplates.PolylineOnSphere([(10,1), (0,1)])), math.radians(2.1))[0] ==
-                pygplates.PolylineOnSphere([(10,1), (0,1), (0,0), (0,10)]))
+                        (polyline1, pygplates.PolylineOnSphere([(10,1), (0,1)])), math.radians(2.1)) ==
+                [pygplates.PolylineOnSphere([(10,1), (0,1), (0,0), (0,10)])])
+        self.assertTrue(
+                pygplates.PolylineOnSphere.join(
+                        (polyline1, pygplates.PolylineOnSphere([(0,1), (0,0)]))) ==
+                [pygplates.PolylineOnSphere([(0,1), (0,0), (0,10)])])
         # reversed(polyline2) + polyline1
         self.assertTrue(
                 pygplates.PolylineOnSphere.join(
-                        (polyline1, pygplates.PolylineOnSphere([(0,1), (10,1)])), math.radians(2.1))[0] ==
-                pygplates.PolylineOnSphere([(10,1), (0,1), (0,0), (0,10)]))
-    
+                        (polyline1, pygplates.PolylineOnSphere([(0,1), (10,1)])), math.radians(2.1)) ==
+                [pygplates.PolylineOnSphere([(10,1), (0,1), (0,0), (0,10)])])
+        self.assertTrue(
+                pygplates.PolylineOnSphere.join(
+                        (polyline1, pygplates.PolylineOnSphere([(0,0), (0,1)]))) ==
+                [pygplates.PolylineOnSphere([(0,1), (0,0), (0,10)])])
+        
+        self.assertTrue(len(pygplates.PolylineOnSphere.join((polyline1, polyline2))) == 2)
+        # End points still not close enough (since no threshold specified)...
+        self.assertTrue(len(pygplates.PolylineOnSphere.join((
+                pygplates.PolylineOnSphere([(0,0), (0,10)]),
+                pygplates.PolylineOnSphere([(0,0.001), (0,10.001)])))) == 2)
+   
     def test_rotation_interpolate(self):
         # Two polylines whose latitude ranges do not overlap.
         self.assertFalse(pygplates.PolylineOnSphere.rotation_interpolate(
