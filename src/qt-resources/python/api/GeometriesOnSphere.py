@@ -326,6 +326,9 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians=None, polylin
         for geometry in geometries:
             if isinstance(geometry, PolylineOnSphere):
                 joined_polylines.append(geometry)
+            # Should at least be a GeometryOnSphere (if not a PolylineOnSphere)...
+            elif not isinstance(geometry, GeometryOnSphere):
+                raise GeometryTypeError('Expected geometries (iterable of GeometryOnSphere)')
     else: # polyline_conversion == PolylineConversion.raise_if_non_polyline
         # Raise error if any geometry is not a PolylineOnSphere.
         for geometry in geometries:
@@ -398,13 +401,45 @@ def polyline_on_sphere_join(geometries, distance_threshold_radians=None, polylin
                 # Record the iterator that joins 'polyline1' and 'polyline2' and also record the
                 # index of 'polyline2' (so it can be removed later if it's the closest polyline).
                 if dist == dist00:
-                    join_polylines = (itertools.chain(reversed(polyline2), polyline1), polyline2_index)
+                    if polyline1[0] == polyline2[0]:
+                        join_polylines = (
+                            itertools.chain(
+                                # Remove the last point of first joined polyline (since is duplicate)...
+                                itertools.islice(reversed(polyline2), len(polyline2)-1),
+                                polyline1),
+                            polyline2_index)
+                    else:
+                        join_polylines = (itertools.chain(reversed(polyline2), polyline1), polyline2_index)
                 elif dist == dist01:
-                    join_polylines = (itertools.chain(polyline2, polyline1), polyline2_index)
+                    if polyline1[0] == polyline2[-1]:
+                        join_polylines = (
+                            itertools.chain(
+                                # Remove the last point of first joined polyline (since is duplicate)...
+                                itertools.islice(polyline2, len(polyline2)-1),
+                                polyline1),
+                            polyline2_index)
+                    else:
+                        join_polylines = (itertools.chain(polyline2, polyline1), polyline2_index)
                 elif dist == dist10:
-                    join_polylines = (itertools.chain(polyline1, polyline2), polyline2_index)
+                    if polyline1[-1] == polyline2[0]:
+                        join_polylines = (
+                            itertools.chain(
+                                # Remove the last point of first joined polyline (since is duplicate)...
+                                itertools.islice(polyline1, len(polyline1)-1),
+                                polyline2),
+                            polyline2_index)
+                    else:
+                        join_polylines = (itertools.chain(polyline1, polyline2), polyline2_index)
                 else:
-                    join_polylines = (itertools.chain(polyline1, reversed(polyline2)), polyline2_index)
+                    if polyline1[-1] == polyline2[-1]:
+                        join_polylines = (
+                            itertools.chain(
+                                # Remove the last point of first joined polyline (since is duplicate)...
+                                itertools.islice(polyline1, len(polyline1)-1),
+                                reversed(polyline2)),
+                            polyline2_index)
+                    else:
+                        join_polylines = (itertools.chain(polyline1, reversed(polyline2)), polyline2_index)
             
         if join_polylines:
             # Replace 'polyline1' with the joined polyline.

@@ -408,6 +408,10 @@ class PolylineOnSphereCase(unittest.TestCase):
                 [pygplates.PolylineOnSphere([(0,0), (0,10), (0,8), (20,8)])])
         self.assertTrue(
                 pygplates.PolylineOnSphere.join(
+                        (polyline1, pygplates.PolylineOnSphere([(0,1), (0,10)])), math.radians(2.1)) ==
+                [pygplates.PolylineOnSphere([(0,0), (0,10), (0,1)])])
+        self.assertTrue(
+                pygplates.PolylineOnSphere.join(
                         (polyline1, pygplates.PolylineOnSphere([(0,1), (0,10)]))) ==
                 [pygplates.PolylineOnSphere([(0,0), (0,10), (0,1)])])
         # polyline1 + polyline2
@@ -415,6 +419,10 @@ class PolylineOnSphereCase(unittest.TestCase):
                 pygplates.PolylineOnSphere.join(
                         (polyline1, pygplates.PolylineOnSphere([(0,12), (0,15)])), math.radians(2.1)) ==
                 [pygplates.PolylineOnSphere([(0,0), (0,10), (0,12), (0,15)])])
+        self.assertTrue(
+                pygplates.PolylineOnSphere.join(
+                        (polyline1, pygplates.PolylineOnSphere([(0,10), (0,1)])), math.radians(2.1)) ==
+                [pygplates.PolylineOnSphere([(0,0), (0,10), (0,1)])])
         self.assertTrue(
                 pygplates.PolylineOnSphere.join(
                         (polyline1, pygplates.PolylineOnSphere([(0,10), (0,1)]))) ==
@@ -426,6 +434,10 @@ class PolylineOnSphereCase(unittest.TestCase):
                 [pygplates.PolylineOnSphere([(10,1), (0,1), (0,0), (0,10)])])
         self.assertTrue(
                 pygplates.PolylineOnSphere.join(
+                        (polyline1, pygplates.PolylineOnSphere([(0,1), (0,0)])), math.radians(2.1)) ==
+                [pygplates.PolylineOnSphere([(0,1), (0,0), (0,10)])])
+        self.assertTrue(
+                pygplates.PolylineOnSphere.join(
                         (polyline1, pygplates.PolylineOnSphere([(0,1), (0,0)]))) ==
                 [pygplates.PolylineOnSphere([(0,1), (0,0), (0,10)])])
         # reversed(polyline2) + polyline1
@@ -433,6 +445,10 @@ class PolylineOnSphereCase(unittest.TestCase):
                 pygplates.PolylineOnSphere.join(
                         (polyline1, pygplates.PolylineOnSphere([(0,1), (10,1)])), math.radians(2.1)) ==
                 [pygplates.PolylineOnSphere([(10,1), (0,1), (0,0), (0,10)])])
+        self.assertTrue(
+                pygplates.PolylineOnSphere.join(
+                        (polyline1, pygplates.PolylineOnSphere([(0,0), (0,1)])), math.radians(2.1)) ==
+                [pygplates.PolylineOnSphere([(0,1), (0,0), (0,10)])])
         self.assertTrue(
                 pygplates.PolylineOnSphere.join(
                         (polyline1, pygplates.PolylineOnSphere([(0,0), (0,1)]))) ==
