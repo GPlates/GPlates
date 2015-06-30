@@ -548,22 +548,7 @@ namespace GPlatesApi
 
 			// Attempt to extract the scalar values for the current coordinate list.
 			GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type scalar_values;
-			try
-			{
-				// Begin/end iterators over the python scalar value sequence.
-				bp::stl_input_iterator<double>
-						scalar_values_begin(scalar_type_to_values.second),
-						scalar_values_end;
-
-				std::copy(scalar_values_begin, scalar_values_end, std::back_inserter(scalar_values));
-			}
-			catch (const bp::error_already_set &)
-			{
-				PyErr_Clear();
-
-				PyErr_SetString(PyExc_TypeError, type_error_string);
-				bp::throw_error_already_set();
-			}
+			PythonExtractUtils::extract_sequence(scalar_values, scalar_type_to_values.second, type_error_string);
 
 			// Make sure the each scalar type has the same number of scalar values.
 			BOOST_FOREACH(

@@ -36,27 +36,22 @@
 namespace GPlatesApi
 {
 	/**
-	 * This exception can be thrown when either:
-	 *  (1) there is more than one matching coverage *domain* with same number of points, or
-	 *  (2) there is more than one matching coverage *range* with same number of scalars.
+	 * This exception can be thrown when there is more than one matching coverage with the same
+	 * number of points (or same number of scalars).
+	 *
+	 * This means it's ambiguous which coverage range belongs to which coverage domain since they
+	 * use the same domain/range property name.
 	 */
 	class AmbiguousGeometryCoverageException :
 			public GPlatesGlobal::PreconditionViolationError
 	{
 	public:
-		enum AmbiguityType
-		{
-			AmbigiousDomain,
-			AmbigiousRange
-		};
 
 		explicit
 		AmbiguousGeometryCoverageException(
 				const GPlatesUtils::CallStack::Trace &exception_source,
-				AmbiguityType ambiguity_type,
 				const GPlatesModel::PropertyName &domain_property_name) :
 			GPlatesGlobal::PreconditionViolationError(exception_source),
-			d_ambiguity_type(ambiguity_type),
 			d_domain_property_name(domain_property_name)
 		{  }
 
@@ -79,7 +74,6 @@ namespace GPlatesApi
 
 	private:
 
-		AmbiguityType d_ambiguity_type;
 		GPlatesModel::PropertyName d_domain_property_name;
 	};
 

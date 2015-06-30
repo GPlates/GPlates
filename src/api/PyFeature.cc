@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <iterator>
 #include <ostream>
+#include <set>
 #include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
@@ -549,6 +550,19 @@ namespace GPlatesApi
 								"' does not support coverages"));
 			}
 
+			// Number of points in domain must match number of scalar values in range.
+			const unsigned int num_domain_geometry_points =
+					GPlatesAppLogic::GeometryUtils::get_num_geometry_points(*geometry);
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					!coverage_range_property_value.get()->tuple_list().empty(),
+					GPLATES_ASSERTION_SOURCE);
+			// Just test the scalar values length for the first scalar type (all types should already have the same length).
+			if (num_domain_geometry_points != coverage_range_property_value.get()->tuple_list().front().get()->get_coordinates().size())
+			{
+				PyErr_SetString(PyExc_ValueError, "Number of scalar values in coverage must match number of points in geometry");
+				bp::throw_error_already_set();
+			}
+
 			// Set the coverage range property in the feature.
 			const bp::object coverage_range_property_object = feature_handle_set_property(
 					feature_handle,
@@ -663,6 +677,40 @@ namespace GPlatesApi
 								"' does not support coverages"));
 			}
 
+			// Both coverage domains and ranges should be the same length.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					geometries.size() == coverage_range_property_values->size(),
+					GPLATES_ASSERTION_SOURCE);
+
+			const unsigned int num_coverages = geometries.size();
+
+			// Make sure the number of points in each domain matches number of scalar values in associated range.
+			// Also make sure no two domains have the same number of points (otherwise it's ambiguous
+			// which range belongs to which domain since they use the same domain/range property name).
+			std::set<unsigned int> num_domain_points_set;
+			for (unsigned int c = 0; c < num_coverages; ++c)
+			{
+				// Number of points in domain must match number of scalar values in range.
+				const unsigned int num_domain_geometry_points =
+						GPlatesAppLogic::GeometryUtils::get_num_geometry_points(*geometries[c]);
+
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						!coverage_range_property_values.get()[c]->tuple_list().empty(),
+						GPLATES_ASSERTION_SOURCE);
+				// Just test the scalar values length for the first scalar type (all types should already have the same length).
+				if (num_domain_geometry_points != coverage_range_property_values.get()[c]->tuple_list().front().get()->get_coordinates().size())
+				{
+					PyErr_SetString(PyExc_ValueError, "Number of scalar values in coverage must match number of points in geometry");
+					bp::throw_error_already_set();
+				}
+
+				// Each coverage should have a different number of points (ie, should get inserted into std::set).
+				GPlatesGlobal::Assert<AmbiguousGeometryCoverageException>(
+						num_domain_points_set.insert(num_domain_geometry_points).second,
+						GPLATES_ASSERTION_SOURCE,
+						geometry_property_name);
+			}
+
 			// Wrap the coverage ranges in Python property values.
 			bp::list coverage_range_property_values_list;
 
@@ -684,12 +732,12 @@ namespace GPlatesApi
 
 			// Both coverage domain and range property lists should be the same length.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					bp::len(coverage_range_property_list_object) == bp::len(geometry_property_list_object),
+					bp::len(coverage_range_property_list_object) == num_coverages &&
+						bp::len(geometry_property_list_object) == num_coverages,
 					GPLATES_ASSERTION_SOURCE);
 
 			// Return a list of tuples (rather than a tuple of lists) since we want to mirror the
 			// input which was a sequence of (GeometryOnSphere, coverage-range) tuples.
-			const unsigned int num_coverages = bp::len(coverage_range_property_list_object);
 			for (unsigned int n = 0; n < num_coverages; ++n)
 			{
 				coverage_domain_range_property_list_object.append(
@@ -2448,23 +2496,9 @@ void
 GPlatesApi::AmbiguousGeometryCoverageException::write_message(
 		std::ostream &os) const
 {
-	/**
-	 * This exception can be thrown when either:
-	 *  (1) there is more than one matching coverage *domain* with same number of points, or
-	 *  (2) there is more than one matching coverage *range* with same number of scalars.
-	 */
-	if (d_ambiguity_type == AmbigiousDomain)
-	{
-		os << "more than one coverage *geometry* named '"
-			<< convert_qualified_xml_name_to_qstring(d_domain_property_name).toStdString()
-			<< "' with same number of points.";
-	}
-	else // AmbigiousRange ...
-	{
-		os << "more than one coverage, associated with *geometry* named '"
-			<< convert_qualified_xml_name_to_qstring(d_domain_property_name).toStdString()
-			<< "', with the same number of scalar values.";
-	}
+	os << "more than one coverage *geometry* named '"
+		<< convert_qualified_xml_name_to_qstring(d_domain_property_name).toStdString()
+		<< "' with same number of points (or same number of scalar values).";
 }
 
 
@@ -3505,6 +3539,13 @@ export_feature()
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and any :class:`geometry type<GeometryOnSphere>` in *geometry* is not supported for "
 				"*property_name* (or the default geometry property name if *property_name* not specified)\n"
+				"  :raises: AmbiguousGeometryCoverageError if multiple coverages are specified and more than one "
+				"has the same number of points (or scalar values) - the ambiguity is due to not being able to "
+				"subsequently determine which coverage range property is associated with which coverage domain property\n"
+				"  :raises: ValueError if *geometry* is one or more coverages where the number of points in a coverage "
+				"geometry is not equal to the number of scalar values associated with it\n"
+				"  :raises: ValueError if *geometry* is one or more coverages where the scalar values are "
+				"incorrectly specified - see :meth:`GmlDataBlock.__init__` for details\n"
 				"\n"
 				"  This is a convenience method to make setting geometry easier.\n"
 				"\n"

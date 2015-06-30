@@ -171,12 +171,6 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(len(self.feature.get_geometries(pygplates.PropertyName.gpml_center_line_of)) == 1)
 
     def test_get_and_set_coverage(self):
-        # self.feature.add(
-                # pygplates.PropertyName.gpml_unclassified_geometry,
-                # pygplates.GpmlConstantValue(pygplates.GmlPoint(pygplates.PointOnSphere(0,1,0))))
-        # self.feature.add(
-                # pygplates.PropertyName.gpml_center_line_of,
-                # pygplates.GpmlConstantValue(pygplates.GmlPoint(pygplates.PointOnSphere(1,0,0))))
         # The default geometry property name for an unclassified feature type is 'gpml:unclassifiedGeometry'.
         # But there is no coverage range associated with it.
         coverages = self.feature.get_geometry(
@@ -241,6 +235,9 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         velocity_colat_values = [1, 2, 3]
         velocity_lon_values = [10, 20, 30]
         velocity_colat_lon_dict = {velocity_colat_type : velocity_colat_values, velocity_lon_type : velocity_lon_values}
+        # Mismatching number of points/scalars in domain/range.
+        self.assertRaises(ValueError, pygplates.Feature.set_geometry, self.feature,
+                (pygplates.PolylineOnSphere([(0,0), (10,0)]), velocity_colat_lon_dict))
         self.feature.set_geometry((velocity_domain, velocity_colat_lon_dict))
         self.assertTrue(self.feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars) ==
                 (velocity_domain, velocity_colat_lon_dict))
@@ -287,6 +284,15 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(len(coverages) == 2)
         self.assertTrue(coverages[0] in coverage_list)
         self.assertTrue(coverages[1] in coverage_list)
+        
+        # Mismatching number of points/scalars in domain/range.
+        self.assertRaises(ValueError, pygplates.Feature.set_geometry, self.feature,
+                [(pygplates.MultiPointOnSphere([(0,0), (10,0)]), {spreading_rate_type : [1,2]}),
+                (pygplates.MultiPointOnSphere([(0,0), (10,0), (0,10)]), {spreading_rate_type : [1,2,3,4]})])
+        # Can't have multiple domains with same number of geometry points.
+        self.assertRaises(pygplates.AmbiguousGeometryCoverageError, pygplates.Feature.set_geometry, self.feature,
+                [(pygplates.MultiPointOnSphere([(0,0), (10,0)]), {spreading_rate_type : [1,2]}),
+                (pygplates.MultiPointOnSphere([(0,0), (0,10)]), {spreading_rate_type : [3,4]})])
         
         hot_spot_feature = pygplates.Feature(pygplates.FeatureType.create_gpml('HotSpot'))
         hot_spot_coverage_property = hot_spot_feature.set_geometry(
