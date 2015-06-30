@@ -69,6 +69,9 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         # The default geometry property name for an unclassified feature type is 'gpml:unclassifiedGeometry'.
         geometry_properties = self.feature.get_geometry(property_return=pygplates.PropertyReturn.all)
         self.assertTrue(geometry_properties == self.feature.get_geometries())
+        self.assertTrue(geometry_properties == self.feature.get_geometries(coverage_return=pygplates.CoverageReturn.geometry_only))
+        self.assertTrue(geometry_properties ==
+                self.feature.get_geometry(property_return=pygplates.PropertyReturn.all, coverage_return=pygplates.CoverageReturn.geometry_only))
         self.assertTrue(len(geometry_properties) == 1)
         self.assertTrue(isinstance(geometry_properties[0], pygplates.PointOnSphere))
         self.assertTrue(isinstance(self.feature.get_geometry(), pygplates.PointOnSphere))
@@ -166,6 +169,158 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(self.feature.get_geometry(pygplates.PropertyName.gpml_position) == multi_point)
         # We don't equality test with the original 'gpml:centerLineOf' since it got reverse reconstructed.
         self.assertTrue(len(self.feature.get_geometries(pygplates.PropertyName.gpml_center_line_of)) == 1)
+
+    def test_get_and_set_coverage(self):
+        # self.feature.add(
+                # pygplates.PropertyName.gpml_unclassified_geometry,
+                # pygplates.GpmlConstantValue(pygplates.GmlPoint(pygplates.PointOnSphere(0,1,0))))
+        # self.feature.add(
+                # pygplates.PropertyName.gpml_center_line_of,
+                # pygplates.GpmlConstantValue(pygplates.GmlPoint(pygplates.PointOnSphere(1,0,0))))
+        # The default geometry property name for an unclassified feature type is 'gpml:unclassifiedGeometry'.
+        # But there is no coverage range associated with it.
+        coverages = self.feature.get_geometry(
+                property_return=pygplates.PropertyReturn.all, coverage_return=pygplates.CoverageReturn.geometry_and_scalars)
+        self.assertTrue(coverages == self.feature.get_geometries(coverage_return=pygplates.CoverageReturn.geometry_and_scalars))
+        self.assertTrue(not coverages)
+        
+        # Add a coverage range (scalar values) with number of scalars matching points in geometry (ie, one).
+        velocity_colat_type = pygplates.ScalarType.create_gpml('VelocityColat')
+        velocity_lon_type = pygplates.ScalarType.create_gpml('VelocityLon')
+        velocity_colat_values = [1]
+        velocity_lon_values = [10]
+        velocity_colat_lon_dict = {velocity_colat_type : velocity_colat_values, velocity_lon_type : velocity_lon_values}
+        gml_data_block = self.feature.add(
+                pygplates.PropertyName.create_gpml('centerLineOfCoverage'),
+                pygplates.GmlDataBlock(velocity_colat_lon_dict))
+        self.assertTrue(gml_data_block.get_value().get_scalar_values(velocity_lon_type) == velocity_lon_values)
+        self.assertTrue(self.feature.get_geometry(
+                pygplates.PropertyName.gpml_center_line_of,
+                coverage_return=pygplates.CoverageReturn.geometry_and_scalars) ==
+                        (pygplates.PointOnSphere(1,0,0), velocity_colat_lon_dict))
+        self.assertTrue(self.feature.get_geometry(
+                pygplates.PropertyName.gpml_center_line_of,
+                pygplates.PropertyReturn.first,
+                pygplates.CoverageReturn.geometry_and_scalars) ==
+                        (pygplates.PointOnSphere(1,0,0), velocity_colat_lon_dict))
+        self.assertTrue(self.feature.get_geometry(
+                pygplates.PropertyName.gpml_center_line_of,
+                pygplates.PropertyReturn.all,
+                pygplates.CoverageReturn.geometry_and_scalars) ==
+                        [(pygplates.PointOnSphere(1,0,0), velocity_colat_lon_dict)])
+        self.assertTrue(self.feature.get_geometries(
+                pygplates.PropertyName.gpml_center_line_of,
+                pygplates.CoverageReturn.geometry_and_scalars) ==
+                        [(pygplates.PointOnSphere(1,0,0), velocity_colat_lon_dict)])
+        self.assertTrue(self.feature.get_all_geometries(
+                pygplates.CoverageReturn.geometry_and_scalars) ==
+                        [(pygplates.PointOnSphere(1,0,0), velocity_colat_lon_dict)])
+        # Remove the domain of the coverage range.
+        self.feature.remove(pygplates.PropertyName.gpml_center_line_of)
+        # Should not have any coverages.
+        self.assertTrue(not self.feature.get_geometries(
+                pygplates.PropertyName.gpml_center_line_of,
+                pygplates.CoverageReturn.geometry_and_scalars))
+        self.assertTrue(not self.feature.get_geometries(
+                coverage_return=pygplates.CoverageReturn.geometry_and_scalars))
+        self.assertTrue(not self.feature.get_all_geometries(
+                pygplates.CoverageReturn.geometry_and_scalars))
+        # But still have the coverage range property.
+        self.assertTrue(self.feature.get(pygplates.PropertyName.create_gpml('centerLineOfCoverage')))
+        # There should now be one geometry property.
+        self.assertTrue(len(self.feature.get_all_geometries()) == 1)
+        # Setting only the geometry should remove coverage range.
+        self.feature.set_geometry(pygplates.PointOnSphere(1,0,0), pygplates.PropertyName.gpml_center_line_of)
+        self.assertTrue(len(self.feature.get_all_geometries()) == 2)
+        self.assertFalse(self.feature.get_geometry(
+                pygplates.PropertyName.gpml_center_line_of,
+                coverage_return=pygplates.CoverageReturn.geometry_and_scalars))
+        self.assertFalse(self.feature.get(pygplates.PropertyName.create_gpml('centerLineOfCoverage')))
+        
+        velocity_domain = pygplates.PolylineOnSphere([(0,0), (0,10), (10,0)])
+        velocity_colat_values = [1, 2, 3]
+        velocity_lon_values = [10, 20, 30]
+        velocity_colat_lon_dict = {velocity_colat_type : velocity_colat_values, velocity_lon_type : velocity_lon_values}
+        self.feature.set_geometry((velocity_domain, velocity_colat_lon_dict))
+        self.assertTrue(self.feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars) ==
+                (velocity_domain, velocity_colat_lon_dict))
+        
+        # Test reverse reconstruction of coverage domain.
+        rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
+        pygplates.reverse_reconstruct(self.feature, rotation_model, 10.0)
+        reversed_velocity_domain, scalars_dict = self.feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars)
+        self.feature.set_geometry((velocity_domain, scalars_dict), reverse_reconstruct=(rotation_model, 10.0))
+        self.assertTrue((reversed_velocity_domain, scalars_dict) ==
+                self.feature.get_geometry(coverage_return=pygplates.CoverageReturn.geometry_and_scalars))
+        # Raises error if reverse_reconstruct parameters in wrong order.
+        self.assertRaises(TypeError,
+                pygplates.Feature.set_geometry, self.feature, (velocity_domain, scalars_dict), reverse_reconstruct=(10.0, rotation_model))
+        
+        # Same number of domain points but on a different geometry (domain) property name is OK (but not on same property name).
+        spreading_rate_domain = pygplates.MultiPointOnSphere([(5,0), (5,10), (10,5), (10, 0)])
+        spreading_rate_type = pygplates.ScalarType.create_gpml('SpreadingRate')
+        spreading_rate_values = [1, 2, 3, 4]
+        spreading_rate_dict = {spreading_rate_type : spreading_rate_values}
+        spreading_rate_domain_property, spreading_rate_range_property = self.feature.set_geometry(
+                (spreading_rate_domain, spreading_rate_dict), pygplates.PropertyName.gpml_center_line_of)
+        self.assertTrue(spreading_rate_domain_property.get_value().get_geometry() == spreading_rate_domain)
+        self.assertTrue(spreading_rate_range_property.get_value().get_scalar_values(spreading_rate_type) == spreading_rate_values)
+        self.assertTrue(self.feature.get_geometry(
+                pygplates.PropertyName.gpml_center_line_of,
+                coverage_return=pygplates.CoverageReturn.geometry_and_scalars) ==
+                        (spreading_rate_domain, spreading_rate_dict))
+        self.assertTrue(len(self.feature.get_all_geometries(pygplates.CoverageReturn.geometry_and_scalars)) == 2)
+        self.feature.set_geometry([])
+        self.assertTrue(len(self.feature.get_all_geometries(pygplates.CoverageReturn.geometry_and_scalars)) == 1)
+        spreading_rate_property_list = self.feature.set_geometry([], pygplates.PropertyName.gpml_center_line_of)
+        self.assertTrue(len(spreading_rate_property_list) == 0)
+        self.assertTrue(len(self.feature.get_all_geometries(pygplates.CoverageReturn.geometry_and_scalars)) == 0)
+        
+        coverage_list = [(spreading_rate_domain, spreading_rate_dict), (velocity_domain, velocity_colat_lon_dict)]
+        spreading_rate_property_list = self.feature.set_geometry(coverage_list)
+        self.assertTrue(len(spreading_rate_property_list) == 2)
+        self.assertTrue(spreading_rate_property_list[0][0].get_value().get_geometry() == spreading_rate_domain)
+        self.assertTrue(spreading_rate_property_list[0][1].get_value().get_scalar_values(spreading_rate_type) == spreading_rate_values)
+        self.assertTrue(spreading_rate_property_list[1][0].get_value().get_geometry() == velocity_domain)
+        self.assertTrue(spreading_rate_property_list[1][1].get_value().get_scalar_values(velocity_colat_type) == velocity_colat_values)
+        coverages = self.feature.get_geometries(coverage_return=pygplates.CoverageReturn.geometry_and_scalars)
+        self.assertTrue(len(coverages) == 2)
+        self.assertTrue(coverages[0] in coverage_list)
+        self.assertTrue(coverages[1] in coverage_list)
+        
+        hot_spot_feature = pygplates.Feature(pygplates.FeatureType.create_gpml('HotSpot'))
+        hot_spot_coverage_property = hot_spot_feature.set_geometry(
+                (spreading_rate_domain, spreading_rate_dict),
+                pygplates.PropertyName.gpml_multi_position)
+        self.assertTrue(
+                (hot_spot_coverage_property[0].get_value(), hot_spot_coverage_property[1].get_value()) ==
+                    (pygplates.GmlMultiPoint(spreading_rate_domain), pygplates.GmlDataBlock(spreading_rate_dict)))
+        # Cannot set multiple geometries on 'gpml:multiPosition' property on a 'gpml:HotSpot' feature (or any feature but 'gpml:UnclassifiedFeature').
+        self.assertRaises(pygplates.InformationModelError,
+                hot_spot_feature.set_geometry,
+                ((spreading_rate_domain, spreading_rate_dict), (pygplates.MultiPointOnSphere([(0,0)]), {spreading_rate_type : [0]})),
+                pygplates.PropertyName.gpml_multi_position)
+        # ...unless we don't check the information model.
+        self.assertTrue(
+                len(hot_spot_feature.set_geometry(
+                    [(spreading_rate_domain, spreading_rate_dict), (pygplates.MultiPointOnSphere([(0,0)]), {spreading_rate_type : [0]})],
+                    pygplates.PropertyName.gpml_multi_position,
+                        verify_information_model=pygplates.VerifyInformationModel.no)) == 2)
+        # Setting multiple points on 'gpml:multiPosition' property on a 'gpml:UnclassifiedFeature' feature is fine though.
+        self.assertTrue(len(self.feature.set_geometry(
+                ((spreading_rate_domain, spreading_rate_dict), (pygplates.MultiPointOnSphere([(0,0)]), {spreading_rate_type : [0]})),
+                pygplates.PropertyName.gpml_multi_position)) == 2)
+        # Cannot set a multipoint coverage on 'gpml:position'.
+        self.assertRaises(pygplates.InformationModelError,
+                self.feature.set_geometry,
+                (spreading_rate_domain, spreading_rate_dict),
+                pygplates.PropertyName.gpml_position)
+        # ...even we don't check the information model (because 'gpml:position' does not support coverages).
+        self.assertRaises(pygplates.InformationModelError,
+                self.feature.set_geometry,
+                (spreading_rate_domain, spreading_rate_dict),
+                pygplates.PropertyName.gpml_position,
+                verify_information_model=pygplates.VerifyInformationModel.no)
     
     def test_get_and_set_description(self):
         description = self.feature.get_description()
