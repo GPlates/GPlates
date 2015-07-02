@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<GPGIM gpgim:version="1.6.0329" xmlns="http://www.gplates.org/gpgim" xmlns:gpgim="http://www.gplates.org/gpgim" xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance">
+<GPGIM gpgim:version="1.6.0330" xmlns="http://www.gplates.org/gpgim" xmlns:gpgim="http://www.gplates.org/gpgim" xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance">
 	<!--
 		==================================================
 		==================================================
@@ -1024,10 +1024,11 @@
 			<Multiplicity>0..*</Multiplicity>
 			<Comment>More than one gml:name can be assigned, the distinction between two names being handled by the 'codeSpace=' attribute of gml:name.</Comment>
 		</Property>
-		<Property>
+		<Property gpgim:defaultType="gml:Polygon">
 			<Name>gpml:network</Name>
 			<Description>A topological network used to define a deforming region.</Description>
 			<Type>gpml:TopologicalNetwork</Type>
+			<Type>gml:Polygon</Type> <!-- This enables export of topological network boundary polygon. -->
 			<Multiplicity>1</Multiplicity>
 			<TimeDependent>gpml:ConstantValue</TimeDependent>
 			<TimeDependent>gpml:PiecewiseAggregation</TimeDependent>
