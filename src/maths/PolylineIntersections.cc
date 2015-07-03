@@ -449,7 +449,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -524,7 +524,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -544,7 +544,7 @@ namespace {
 
 		/*
 		 * Remember the "one exception" described in the comment of
-		 * 'partition_intersecting_polylines':  If the polylines are
+		 * 'partition_intersecting_geometries':  If the polylines are
 		 * touching endpoint-to-endpoint, this will not be counted as
 		 * an intersection.
 		 */
@@ -607,7 +607,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -622,19 +622,12 @@ namespace {
 		const GreatCircleArc &arc1 = *iter1;
 		const GreatCircleArc &arc2 = *iter2;
 
-		if (arc1.is_zero_length() || arc2.is_zero_length())
-		{
-			return false;
-		}
-
 		const PointOnSphere &arc1_start_pt = arc1.start_point();
 		const PointOnSphere &arc1_end_pt = arc1.end_point();
 		const PointOnSphere &arc2_start_pt = arc2.start_point();
 		const PointOnSphere &arc2_end_pt = arc2.end_point();
 
-		if (!arc1.is_zero_length() &&
-			!arc2.is_zero_length() &&
-			unit_vectors_are_parallel(arc1.rotation_axis(), arc2.rotation_axis())) {
+		if (unit_vectors_are_parallel(arc1.rotation_axis(), arc2.rotation_axis())) {
 
 			/*
 			 * The axes of the arcs are parallel, which means the
@@ -677,8 +670,6 @@ namespace {
 			/*
 			 * The axes of the arcs are anti-parallel, which means
 			 * the arcs are "rotating" in the opposite direction.
-			 * Or one (or both) arcs are zero length (and hence it doesn't
-			 * matter whether they're parallel or anti-parallel).
 			 *
 			 * Hence, the arrangements which would cause the arcs
 			 * to be touching endpoint-to-endpoint-only are:
@@ -740,7 +731,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -812,7 +803,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -828,9 +819,7 @@ namespace {
 
 		ArcList::iterator iter_at_overlapping_arc_in_longer;
 
-		if (!defining_arc.is_zero_length() &&
-			!longer_arc.is_zero_length() &&
-			unit_vectors_are_parallel(defining_arc.rotation_axis(), longer_arc.rotation_axis())) {
+		if (unit_vectors_are_parallel(defining_arc.rotation_axis(), longer_arc.rotation_axis())) {
 
 			/*
 			 * The arcs will be:
@@ -888,7 +877,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -910,9 +899,7 @@ namespace {
 		 * We want to know whether the arcs are "rotating" in the same
 		 * direction or opposite directions.
 		 */
-		if (!arc1.is_zero_length() &&
-			!arc2.is_zero_length() &&
-			unit_vectors_are_parallel(arc1.rotation_axis(), arc2.rotation_axis())) {
+		if (unit_vectors_are_parallel(arc1.rotation_axis(), arc2.rotation_axis())) {
 
 			// The arcs are rotating in the same direction.  Thus,
 			// 'arc1.start_point()' will be the earlier point of
@@ -961,7 +948,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -1337,7 +1324,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -1351,12 +1338,6 @@ namespace {
 
 		const GreatCircleArc &arc1 = *iter1;
 		const GreatCircleArc &arc2 = *iter2;
-
-		// If either arc is zero length then return early.
-		if (arc1.is_zero_length() || arc2.is_zero_length())
-		{
-			return;
-		}
 
 		/*
 		 * Since (as we have already established) 'arc1' and 'arc2' do
@@ -1402,7 +1383,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -1609,7 +1590,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -1815,6 +1796,13 @@ namespace {
 		 * Firstly, let's filter out any zero-length arcs in each list, since
 		 * these contribute nothing useful, and with them out of the way, we
 		 * can assume that all arcs have determinate rotation axes.
+		 *
+		 * UPDATE: It's still possible that new zero-length arcs get generated during
+		 * intersection/overlap testing. Ideally we should never generate zero-length arcs
+		 * since they can result in subtle bugs such as a zero length arc1 overlapping the start
+		 * of a non-zero-length arc2 where the latter gets split into a zero-length and non-zero
+		 * length arc (that matches arc2) which just causes an infinite loop.
+		 * We currently get around this skipping zero-length arcs below.
 		 */
 		line_geometry1_arcs.remove_if(GPlatesMaths::ArcHasIndeterminateRotationAxis());
 		line_geometry2_arcs.remove_if(GPlatesMaths::ArcHasIndeterminateRotationAxis());
@@ -1892,12 +1880,24 @@ namespace {
 				const GreatCircleArc &arc1 = *iter_outer;
 				const GreatCircleArc &arc2 = *iter_inner;
 
+				// If either arc is zero length then return early.
+				// If the arcs do touch then we'll ignore it because the previous or next non-zero length
+				// arc (relative to the zero-length arc) will also touch and that will take care of the intersection.
+				// We generally want to ignore zero length arcs because they can cause subtle bugs and are
+				// essentially just duplicate, adjacent polyline points that can be ignored.
+				if (arc1.is_zero_length() ||
+					arc2.is_zero_length())
+				{
+					continue;
+				}
+
 				// Inexpensively eliminate the no-hopers.
 				if ( ! arcs_are_near_each_other(arc1, arc2)) {
 
 					// There's no chance the arcs could touch.
 					continue;
 				}
+
 				// Else, there's a chance the arcs might overlap or
 				// intersect.
 				handle_possible_overlap_or_intersection(line_geometry1_arcs,
