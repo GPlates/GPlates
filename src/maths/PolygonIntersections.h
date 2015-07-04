@@ -188,8 +188,8 @@ namespace GPlatesMaths
 
 		Result
 		partition_polyline_or_polygon_fully_inside_or_outside(
-				const GPlatesMaths::PointOnSphere &arbitrary_point_on_geometry1,
-				const GPlatesMaths::PointOnSphere &arbitrary_point_on_geometry2) const;
+				const PointOnSphere &arbitrary_point_on_geometry1,
+				const PointOnSphere &arbitrary_point_on_geometry2) const;
 
 		/**
 		 * Determines which partitioned polylines are inside/outside the
@@ -197,16 +197,17 @@ namespace GPlatesMaths
 		 */
 		void
 		partition_intersecting_geometry(
-				const GPlatesMaths::PolylineIntersections::Graph &partitioned_polylines_graph,
+				const PolylineIntersections::Graph &partitioned_polylines_graph,
 				partitioned_polyline_seq_type &partitioned_polylines_inside,
 				partitioned_polyline_seq_type &partitioned_polylines_outside) const;
 
 		bool
-		is_gca_inside_partitioning_polygon(
-				const GreatCircleArc &polyline_gca,
-				const GreatCircleArc &polygon_prev_gca,
-				const GreatCircleArc &polygon_next_gca,
-				bool reverse_inside_outside) const;
+		is_partitioned_polyline_inside_partitioning_polygon(
+				const PointOnSphere &intersection_point,
+				const PolylineOnSphere &prev_partitioning_polygon,
+				const PolylineOnSphere &next_partitioning_polygon,
+				const PolylineOnSphere &partitioned_polyline,
+				bool is_prev_partitioned_polyline) const;
 	};
 }
 
