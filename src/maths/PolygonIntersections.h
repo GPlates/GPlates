@@ -205,7 +205,8 @@ namespace GPlatesMaths
 		is_gca_inside_partitioning_polygon(
 				const GreatCircleArc &polyline_gca,
 				const GreatCircleArc &polygon_prev_gca,
-				const GreatCircleArc &polygon_next_gca) const;
+				const GreatCircleArc &polygon_next_gca,
+				bool reverse_inside_outside) const;
 	};
 }
 

@@ -641,9 +641,9 @@ GPlatesMaths::PolygonIntersections::partition_intersecting_geometry(
 
 		// Determine if the current partitioned polyline is inside or outside
 		// by seeing if its chosen GCA is inside or outside.
-		const bool is_partitioned_poly_inside = reverse_inside_outside ^
+		const bool is_partitioned_poly_inside =
 				is_gca_inside_partitioning_polygon(
-						*polyline_gca, polygon_prev_gca, polygon_next_gca);
+						*polyline_gca, polygon_prev_gca, polygon_next_gca, reverse_inside_outside);
 
 		if (is_partitioned_poly_inside)
 		{
@@ -673,7 +673,8 @@ bool
 GPlatesMaths::PolygonIntersections::is_gca_inside_partitioning_polygon(
 		const GreatCircleArc &polyline_gca,
 		const GreatCircleArc &polygon_prev_gca,
-		const GreatCircleArc &polygon_next_gca) const
+		const GreatCircleArc &polygon_next_gca,
+		bool reverse_inside_outside) const
 {
 	// It is assumed that 'polygon_prev_gca's end point equals
 	// 'polygon_next_gca's start point.
@@ -705,10 +706,8 @@ GPlatesMaths::PolygonIntersections::is_gca_inside_partitioning_polygon(
 		// are counter-clockwise and outside if they are clockwise.
 
 		// See if the polyline GCA is in the narrow region to the left.
-		if (do_adjacent_great_circle_arcs_bend_left(
-				polygon_prev_gca, polyline_gca) &&
-			do_adjacent_great_circle_arcs_bend_left(
-				polygon_next_gca, polyline_gca))
+		if ((reverse_inside_outside ^ do_adjacent_great_circle_arcs_bend_left(polygon_prev_gca, polyline_gca)) &&
+			(reverse_inside_outside ^ do_adjacent_great_circle_arcs_bend_left(polygon_next_gca, polyline_gca)))
 		{
 			// The polyline GCA is in the narrow region to the left.
 			return d_partitioning_polygon_orientation == PolygonOrientation::COUNTERCLOCKWISE;
@@ -727,10 +726,8 @@ GPlatesMaths::PolygonIntersections::is_gca_inside_partitioning_polygon(
 	// See if the polyline GCA is in the narrow region to the right.
 	// We do this by testing that the polyline GCA is not to the left
 	// of either GCA of the partitioning polygon.
-	if (!do_adjacent_great_circle_arcs_bend_left(
-			polygon_prev_gca, polyline_gca) &&
-		!do_adjacent_great_circle_arcs_bend_left(
-			polygon_next_gca, polyline_gca))
+	if ((reverse_inside_outside ^ !do_adjacent_great_circle_arcs_bend_left(polygon_prev_gca, polyline_gca)) &&
+		(reverse_inside_outside ^ !do_adjacent_great_circle_arcs_bend_left(polygon_next_gca, polyline_gca)))
 	{
 		// The polyline GCA is in the narrow region to the right.
 		return d_partitioning_polygon_orientation == PolygonOrientation::CLOCKWISE;
