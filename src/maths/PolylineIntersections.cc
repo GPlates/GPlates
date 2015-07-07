@@ -447,13 +447,16 @@ namespace {
 	 * at the point of intersection, ie, if the point of intersection is
 	 * coincident with an endpoint of the arc.
 	 *
+	 * Returns true if the arc was partitioned (if @a inter_point was not
+	 * coincident with arc start or end point).
+	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
 	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
-	void
+	bool
 	partition_arc_if_necessary(
 	 ArcList::iterator arc_iter,
 	 ArcList &arc_list,
@@ -473,12 +476,15 @@ namespace {
 			// The point of intersection is coincident with one of
 			// the arc endpoints, so there's no need to partition
 			// the arc.
+			return false;
 
 		} else {
 
 			// Note that 'splice_point_into_arc' guarantees that
 			// 'arc_iter' will remain valid.
 			splice_point_into_arc(inter_point, arc_iter, arc_list);
+
+			return true;
 		}
 	}
 
@@ -984,17 +990,35 @@ namespace {
 		const GreatCircleArc &arc1 = *iter1;
 		const GreatCircleArc &arc2 = *iter2;
 
-		bool arc2_start_point_lies_on_arc1 =
-		 arc2.start_point().lies_on_gca(arc1);
+		// Both arcs are on the same great circle but are they parallel or anti-parallel.
+		const bool arc_normals_are_parallel =
+				unit_vectors_are_parallel(arc1.rotation_axis(), arc2.rotation_axis());
 
-		bool arc2_end_point_lies_on_arc1 =
-		 arc2.end_point().lies_on_gca(arc1);
+		// The normal (or rotation axis) of each arc might be nearly parallel (or anti-parallel)
+		// due to the epsilon comparison. So we pick one of the normals to get consistent results
+		// when testing for overlap.
+		const GPlatesMaths::UnitVector3D &arc1_normal = arc1.rotation_axis();
+		const GPlatesMaths::UnitVector3D arc2_normal = arc_normals_are_parallel ? arc1_normal : -arc1_normal;
 
-		bool arc1_start_point_lies_on_arc2 =
-		 arc1.start_point().lies_on_gca(arc2);
-
-		bool arc1_end_point_lies_on_arc2 =
-		 arc1.end_point().lies_on_gca(arc2);
+		// To test if an end point of one arc is on the other arc we only need to test if the former
+		// point lies within the lune of the latter arc (since both arcs are on the same great circle).
+		//
+		// A spherical lune is the surface of the globe in the wedge region of space formed by two
+		// planes (great circles) that touch an arc's start and end points and are perpendicular to the arc.
+		//
+		// Note: We're using the epsilon test of 'Real' and using '>' and '<' both of which exclude
+		// points slightly inside the lune. This helps avoid generating zero-length arcs below
+		// which run the risk of infinite loops due to .
+		const GPlatesMaths::Vector3D arc2_start_cross_arc_normal =
+				cross(arc2.start_point().position_vector(), arc1_normal);
+		const bool arc2_start_point_lies_on_arc1 =
+				dot(arc2_start_cross_arc_normal, arc1.start_point().position_vector()) > 0 &&
+					dot(arc2_start_cross_arc_normal, arc1.end_point().position_vector()) < 0;
+		const GPlatesMaths::Vector3D arc2_end_cross_arc_normal =
+				cross(arc2.end_point().position_vector(), arc1_normal);
+		const bool arc2_end_point_lies_on_arc1 =
+				dot(arc2_end_cross_arc_normal, arc1.start_point().position_vector()) > 0 &&
+					dot(arc2_end_cross_arc_normal, arc1.end_point().position_vector()) < 0;
 
 		/*
 		 * Note that the order of these tests is important.  We have to
@@ -1024,7 +1048,8 @@ namespace {
 		 * the arcs together.
 		 */
 		if (arc2_start_point_lies_on_arc1 &&
-		    arc2_end_point_lies_on_arc1) {
+		    arc2_end_point_lies_on_arc1)
+		{
 
 			// 'arc2' defines the extent of the overlap.
 			ArcList::iterator &iter_at_defining_arc = iter2;
@@ -1056,40 +1081,60 @@ namespace {
 			overlap_arcs_in_2.push_back(
 			 iter_at_overlapping_arc_in_arcs2);
 
-		} else if (arc1_start_point_lies_on_arc2 &&
-			   arc1_end_point_lies_on_arc2) {
+		}
+		else if (!arc2_start_point_lies_on_arc1 &&
+		    !arc2_end_point_lies_on_arc1)
+		{
+			// The end points of 'arc2' do not lie on 'arc1'.
+			// But 'arc2' could still overlap 'arc1' such that it contains 'arc1'.
+			// If it does then both ends of 'arc1' should lie on 'arc2'.
+			// So we just need to test one end point of 'arc1' lies on 'arc2' (we choose the start point).
+			//
+			// Note: We're using the epsilon test of 'Real' and using '>=' and '<=' both of which include
+			// points slightly outside the lune of 'arc2'. This ensures we capture overlap when
+			// both arcs exactly overlap. This is needed because the previous test, for 'arc2' points
+			// lying on 'arc1', was the opposite - only included points slightly inside the lune of 'arc1'.
+			const GPlatesMaths::Vector3D arc1_start_cross_arc_normal =
+					cross(arc1.start_point().position_vector(), arc2_normal);
+			const bool arc1_start_point_lies_on_arc2 =
+					dot(arc1_start_cross_arc_normal, arc2.start_point().position_vector()) >= 0 &&
+						dot(arc1_start_cross_arc_normal, arc2.end_point().position_vector()) <= 0;
+			if (arc1_start_point_lies_on_arc2)
+			{
+				// 'arc1' defines the extent of the overlap.
+				ArcList::iterator &iter_at_defining_arc = iter1;
+				ArcList &arcs_containing_defining_arc = arcs1;
 
-			// 'arc1' defines the extent of the overlap.
-			ArcList::iterator &iter_at_defining_arc = iter1;
-			ArcList &arcs_containing_defining_arc = arcs1;
+				ArcList::iterator &iter_at_longer_arc = iter2;
+				ArcList &arcs_containing_longer_arc = arcs2;
 
-			ArcList::iterator &iter_at_longer_arc = iter2;
-			ArcList &arcs_containing_longer_arc = arcs2;
+				ArcList::iterator iter_at_overlapping_arc_in_longer =
+				 partition_overlap_of_one_defining_arc_if_necessary(
+				  iter_at_defining_arc, arcs_containing_defining_arc,
+				  iter_at_longer_arc, arcs_containing_longer_arc);
 
-			ArcList::iterator iter_at_overlapping_arc_in_longer =
-			 partition_overlap_of_one_defining_arc_if_necessary(
-			  iter_at_defining_arc, arcs_containing_defining_arc,
-			  iter_at_longer_arc, arcs_containing_longer_arc);
+				// Now, update the list of intersection-nodes.
+				ArcList::iterator &iter_at_overlapping_arc_in_arcs1 =
+				 iter_at_defining_arc;
+				ArcList::iterator &iter_at_overlapping_arc_in_arcs2 =
+				 iter_at_overlapping_arc_in_longer;
 
-			// Now, update the list of intersection-nodes.
-			ArcList::iterator &iter_at_overlapping_arc_in_arcs1 =
-			 iter_at_defining_arc;
-			ArcList::iterator &iter_at_overlapping_arc_in_arcs2 =
-			 iter_at_overlapping_arc_in_longer;
+				append_intersection_nodes_for_overlap(
+				 iter_at_overlapping_arc_in_arcs1,
+				 iter_at_overlapping_arc_in_arcs2,
+				 inter_nodes);
 
-			append_intersection_nodes_for_overlap(
-			 iter_at_overlapping_arc_in_arcs1,
-			 iter_at_overlapping_arc_in_arcs2,
-			 inter_nodes);
-
-			// And finally, the lists of overlaps.
-			overlap_arcs_in_1.push_back(
-			 iter_at_overlapping_arc_in_arcs1);
-			overlap_arcs_in_2.push_back(
-			 iter_at_overlapping_arc_in_arcs2);
-
-		} else if (arc1_start_point_lies_on_arc2 &&
-			   arc2_start_point_lies_on_arc1) {
+				// And finally, the lists of overlaps.
+				overlap_arcs_in_1.push_back(
+				 iter_at_overlapping_arc_in_arcs1);
+				overlap_arcs_in_2.push_back(
+				 iter_at_overlapping_arc_in_arcs2);
+			}
+			// ...else no overlap.
+		}
+		else if (arc2_start_point_lies_on_arc1 &&
+				!arc_normals_are_parallel)
+		{
 
 			/*
 			 * arc1:     ------->
@@ -1133,8 +1178,10 @@ namespace {
 			overlap_arcs_in_2.push_back(
 			 iter_at_overlapping_arc_in_arcs2);
 
-		} else if (arc1_start_point_lies_on_arc2 &&
-			   arc2_end_point_lies_on_arc1) {
+		}
+		else if (arc2_end_point_lies_on_arc1 &&
+			   arc_normals_are_parallel)
+		{
 
 			/*
 			 * arc1:     ------->
@@ -1178,8 +1225,10 @@ namespace {
 			overlap_arcs_in_2.push_back(
 			 iter_at_overlapping_arc_in_arcs2);
   
-		} else if (arc1_end_point_lies_on_arc2 &&
-			   arc2_start_point_lies_on_arc1) {
+		}
+		else if (arc2_start_point_lies_on_arc1 &&
+				arc_normals_are_parallel)
+		{
 
 			/*
 			 * arc1: ------->
@@ -1223,8 +1272,10 @@ namespace {
 			overlap_arcs_in_2.push_back(
 			 iter_at_overlapping_arc_in_arcs2);
 
-		} else if (arc1_end_point_lies_on_arc2 &&
-			   arc2_end_point_lies_on_arc1) {
+		}
+		else if (arc2_end_point_lies_on_arc1 &&
+				!arc_normals_are_parallel)
+		{
 
 			/*
 			 * arc1: ------->
