@@ -298,6 +298,31 @@ So, on Windows, it is usually best to run your python script as:
   python my_script.py
 
 
+.. _pygplates_miscellaneous_issues:
+
+Miscellaneous issues
+^^^^^^^^^^^^^^^^^^^^
+
+Windows runtime library error
+"""""""""""""""""""""""""""""
+
+On Windows operating systems it is possible to get the following error when importing *pygplates* or
+other Python C extension modules (that use native libraries):
+
+.. figure:: images/MSVC_runtime_error.png
+
+This can happen because a regular Python 2.7 installation contains these files in the main directory (the directory
+where the Python interpreter executable ``python.exe`` is located):
+
+* ``msvcr90.dll``
+* ``Microsoft.VC90.CRT.manifest``
+
+If this is the case then a potential solution is to:
+
+#. Create a sub-directory called ``Microsoft.VC90.CRT``, and
+#. Move the above files into that sub-directory.
+
+
 .. _pygplates_getting_started_tutorial:
 
 Tutorial
