@@ -51,8 +51,13 @@ if(MSVC)
 	# On a 32-bit Windows OS this won't help because only 2Gb (by default) is accessible
 	# (the 2-4Gb process address range is reserved for the system).
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
-    #set(CMAKE_SHARED_LINKER_FLAGS )
-    #set(CMAKE_MODULE_LINKER_FLAGS )
+	# The following are mainly for the pygplates DLL/pyd.
+	# But it doesn't seem to be needed since '/LARGEADDRESSAWARE' only needs to be built into the
+	# 'python.exe' (if building Python from source code) - which it isn't set anyway
+	# (in the Python 2.7 source code) - so it doesn't matter.
+	# We'll set it on the pygplates DLL anyway in case any of the above changes.
+	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /LARGEADDRESSAWARE")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /LARGEADDRESSAWARE")
 	
 	# Increase pre-compiled header memory allocation limit to avoid compile error.
 	# Error happens on 12-core Windows 8.1 machine (in Visual Studio 2005).
