@@ -1727,7 +1727,7 @@ namespace GPlatesApi
 	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>
 	polyline_on_sphere_to_tessellated(
 			const GPlatesMaths::PolylineOnSphere &polyline_on_sphere,
-			const double &tessellate_degrees)
+			const double &tessellate_radians)
 	{
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
@@ -1737,9 +1737,7 @@ namespace GPlatesApi
 		//
 		// So we avoid it by using returning a pointer to 'non-const' GPlatesMaths::PolylineOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolylineOnSphere>(
-				tessellate(
-						polyline_on_sphere,
-						GPlatesMaths::convert_deg_to_rad(tessellate_degrees)));
+				tessellate(polyline_on_sphere, tessellate_radians));
 	}
 
 	bp::object
@@ -2422,21 +2420,21 @@ export_polyline_on_sphere()
 				"proportional to the individual arc lengths.\n")
 		.def("to_tessellated",
 				&GPlatesApi::polyline_on_sphere_to_tessellated,
-				(bp::arg("tessellate_degrees")),
-				"to_tessellated(tessellate_degrees)\n"
+				(bp::arg("tessellate_radians")),
+				"to_tessellated(tessellate_radians)\n"
 				"  Returns a new polyline that is tessellated version of this polyline.\n"
 				"\n"
-				"  :param tessellate_degrees: maximum tessellation angle (in degrees)\n"
-				"  :type tessellate_degrees: float\n"
+				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
+				"  :type tessellate_radians: float\n"
 				"  :rtype: :class:`PolylineOnSphere`\n"
 				"\n"
 				"  Adjacent points (in the returned tessellated polyline) are separated by no more than "
-				"*tessellate_degrees* on the globe.\n"
+				"*tessellate_radians* on the globe.\n"
 				"\n"
 				"  Create a polyline tessellated to 2 degrees:\n"
 				"  ::\n"
 				"\n"
-				"    tessellated_polyline = polyline.to_tessellated(2)\n"
+				"    tessellated_polyline = polyline.to_tessellated(math.radians(2))\n"
 				"\n"
 				"  .. note:: Since a *PolylineOnSphere* is immutable it cannot be modified. Which is why a "
 				"new (tessellated) *PolylineOnSphere* is returned.\n"
@@ -2549,7 +2547,7 @@ namespace GPlatesApi
 	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>
 	polygon_on_sphere_to_tessellated(
 			const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
-			const double &tessellate_degrees)
+			const double &tessellate_radians)
 	{
 		// With boost 1.42 we get the following compile error...
 		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
@@ -2559,9 +2557,7 @@ namespace GPlatesApi
 		//
 		// So we avoid it by using returning a pointer to 'non-const' GPlatesMaths::PolygonOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolygonOnSphere>(
-				tessellate(
-						polygon_on_sphere,
-						GPlatesMaths::convert_deg_to_rad(tessellate_degrees)));
+				tessellate(polygon_on_sphere, tessellate_radians));
 	}
 }
 
@@ -2965,21 +2961,21 @@ export_polygon_on_sphere()
 				"but it will be a lot closer to the real centre-of-mass than :meth:`get_boundary_centroid`.\n")
 		.def("to_tessellated",
 				&GPlatesApi::polygon_on_sphere_to_tessellated,
-				(bp::arg("tessellate_degrees")),
-				"to_tessellated(tessellate_degrees)\n"
+				(bp::arg("tessellate_radians")),
+				"to_tessellated(tessellate_radians)\n"
 				"  Returns a new polygon that is tessellated version of this polygon.\n"
 				"\n"
-				"  :param tessellate_degrees: maximum tessellation angle (in degrees)\n"
-				"  :type tessellate_degrees: float\n"
+				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
+				"  :type tessellate_radians: float\n"
 				"  :rtype: :class:`PolygonOnSphere`\n"
 				"\n"
 				"  Adjacent points (in the returned tessellated polygon) are separated by no more than "
-				"*tessellate_degrees* on the globe.\n"
+				"*tessellate_radians* on the globe.\n"
 				"\n"
 				"  Create a polygon tessellated to 2 degrees:\n"
 				"  ::\n"
 				"\n"
-				"    tessellated_polygon = polygon.to_tessellated(2)\n"
+				"    tessellated_polygon = polygon.to_tessellated(math.radians(2))\n"
 				"\n"
 				"  .. note:: Since a *PolygonOnSphere* is immutable it cannot be modified. Which is why a "
 				"new (tessellated) *PolygonOnSphere* is returned.\n"

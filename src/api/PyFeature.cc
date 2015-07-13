@@ -732,8 +732,8 @@ namespace GPlatesApi
 
 			// Both coverage domain and range property lists should be the same length.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					bp::len(coverage_range_property_list_object) == num_coverages &&
-						bp::len(geometry_property_list_object) == num_coverages,
+					bp::len(coverage_range_property_list_object) == bp::ssize_t(num_coverages) &&
+						bp::len(geometry_property_list_object) == bp::ssize_t(num_coverages),
 					GPLATES_ASSERTION_SOURCE);
 
 			// Return a list of tuples (rather than a tuple of lists) since we want to mirror the
@@ -2751,11 +2751,11 @@ export_feature()
 				"  :param feature_type: the type of feature to create\n"
 				"  :type feature_type: :class:`FeatureType`\n"
 				"  :param geometry: the geometry (or geometries, or a coverage or a sequence of coverages) - "
-				"see :meth:`set_geometry` - if geometry is not present-day geometry then the created feature "
-				"will need to be reverse reconstructed to present day (using either the *reverse_reconstruct* "
-				"parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time\n"
+				"if geometry is not present-day geometry then the created feature will need to be reverse "
+				"reconstructed to present day (using either the *reverse_reconstruct* parameter or "
+				":func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary reconstruction time\n"
 				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
-				"of :class:`GeometryOnSphere`\n"
+				"of :class:`GeometryOnSphere` (or a coverage or a sequence of coverages - :meth:`set_geometry`)\n"
 				"  :param name: the name or names, if not specified then no 'gml:name' properties are added\n"
 				"  :type name: string, or sequence of string\n"
 				"  :param description: the description, if not specified then a 'gml:description' property is not added\n"
@@ -2898,12 +2898,12 @@ export_feature()
 				"  :param feature_type: the type of feature to create\n"
 				"  :type feature_type: :class:`FeatureType`\n"
 				"  :param geometry: the geometry (or geometries, or a coverage or a sequence of coverages) - "
-				"see :meth:`set_geometry` - if geometry is not present-day geometry then the created feature "
-				"will need to be reverse reconstructed to present day (using either the *reverse_reconstruct* "
-				"parameter or :func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary "
+				"if geometry is not present-day geometry then the created feature will need to be reverse "
+				"reconstructed to present day (using either the *reverse_reconstruct* parameter or "
+				":func:`reverse_reconstruct`) before the feature can be reconstructed to an arbitrary "
 				"reconstruction time\n"
 				"  :type geometry: :class:`GeometryOnSphere`, or sequence (eg, ``list`` or ``tuple``) "
-				"of :class:`GeometryOnSphere`\n"
+				"of :class:`GeometryOnSphere` (or a coverage or a sequence of coverages - :meth:`set_geometry`)\n"
 				"  :param name: the name or names, if not specified then no 'gml:name' properties are added\n"
 				"  :type name: string, or sequence of string\n"
 				"  :param description: the description, if not specified then a 'gml:description' property is not added\n"
