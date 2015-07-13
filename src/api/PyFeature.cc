@@ -2651,6 +2651,11 @@ export_feature()
 				"    # This does the same thing as the code above.\n"
 				"    unclassified_feature = pygplates.Feature(\n"
 				"        pygplates.FeatureType.create_gpml('UnclassifiedFeature'))\n")
+		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
+		.def("__len__", &GPlatesModel::FeatureHandle::size)
+		// Make hash and comparisons based on C++ object identity (not python object identity)...
+		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
+
 		.def("clone",
 				&GPlatesApi::feature_handle_clone,
 				"clone()\n"
@@ -2660,10 +2665,6 @@ export_feature()
 				"\n"
 				"  This creates a new :class:`Feature` instance with cloned versions of this feature's properties. "
 				"And the cloned feature is created with its own unique :class:`FeatureId`.\n")
-		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
-		.def("__len__", &GPlatesModel::FeatureHandle::size)
-		// Make hash and comparisons based on C++ object identity (not python object identity)...
-		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 		.def("create_total_reconstruction_sequence",
 				&GPlatesApi::feature_handle_create_total_reconstruction_sequence,
 				(bp::arg("fixed_plate_id"),

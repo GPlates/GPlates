@@ -241,6 +241,14 @@ class ReconstructTestCase(unittest.TestCase):
         self.assertEqual(len(reconstructed_feature_geometries), 1)
         self.assertTrue(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())
         self.assertTrue(geometry == reconstructed_feature_geometries[0].get_present_day_geometry())
+        # Test grouping with feature.
+        grouped_reconstructed_feature_geometries = []
+        pygplates.reconstruct(feature, rotation_model, grouped_reconstructed_feature_geometries, reconstruction_time, group_with_feature=True)
+        self.assertEqual(len(grouped_reconstructed_feature_geometries), 1)
+        grouped_feature, reconstructed_feature_geometries = grouped_reconstructed_feature_geometries[0]
+        self.assertTrue(grouped_feature.get_feature_id() == feature.get_feature_id())
+        self.assertEqual(len(reconstructed_feature_geometries), 1)
+        self.assertTrue(geometry == reconstructed_feature_geometries[0].get_present_day_geometry())
         
         # Test reverse reconstruction.
         geometry_at_reconstruction_time = geometry
