@@ -9,6 +9,7 @@ This document contains sample code that shows *pygplates* solving common plate t
    :ref:`Getting Started tutorial<pygplates_getting_started_tutorial>` as well as an
    :ref:`installation guide<pygplates_getting_started_installation>` to help get started.
 
+
 Isochrons
 ---------
 
@@ -35,3 +36,11 @@ Velocities
    :maxdepth: 2
 
    sample-code/pygplates_calculate_velocities_by_plate_id
+
+Spatial proximity
+-----------------
+
+.. toctree::
+   :maxdepth: 2
+
+   sample-code/pygplates_find_nearest_feature_to_a_point
