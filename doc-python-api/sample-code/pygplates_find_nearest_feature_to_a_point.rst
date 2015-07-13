@@ -78,7 +78,7 @@ The features are reconstructed to their 10Ma positions.
     reconstruction_time = 10
 
 | The test point has zero latitude and zero longitude.
-| All features are tested to see which one is closest to this point.
+| All features are tested to see which one is closest to this :class:`point<pygplates.PointOnSphere>`.
 
 ::
 
@@ -86,11 +86,11 @@ The features are reconstructed to their 10Ma positions.
     point_longitude = 0
     point = pygplates.PointOnSphere(point_latitude, point_longitude)
 
-| All features are reconstructed to 10Ma.
+| All features are reconstructed to 10Ma using :func:`pygplates.reconstruct`.
 | We specify a ``list`` for *reconstructed_features* instead of a filename.
 | We also set the output parameter *group_with_feature* to ``True`` (it defaults to ``False``)
   so that our :class:`reconstructed feature geometries<pygplates.ReconstructedFeatureGeometry>`
-  are grouped with their :class::`feature<pygplates.Feature>`. This isn't strictly necessary
+  are grouped with their :class:`feature<pygplates.Feature>`. This isn't strictly necessary
   in this particular example though.
 
 ::
@@ -118,7 +118,7 @@ A feature can have more than one geometry and hence will have more than one *rec
 
     for feature_reconstructed_geometry in feature_reconstructed_geometries:
 
-| Calculate the minimum distance from the point to a reconstructed feature geometry.
+| Calculate the minimum distance from the point to a reconstructed feature geometry using :meth:`pygplates.GeometryOnSphere.distance`.
 | *min_distance_to_all_features* is specified as the distance threshold since we're only interested
   in geometries that are nearer than the closest geometry encountered so far.
 

@@ -44,3 +44,4 @@ Spatial proximity
    :maxdepth: 2
 
    sample-code/pygplates_find_nearest_feature_to_a_point
+   sample-code/pygplates_find_features_overlapping_a_polygon
