@@ -31,8 +31,12 @@ Sample code
         plate_id = isochron_feature.get_reconstruction_plate_id()
         conjugate_plate_id = isochron_feature.get_conjugate_plate_id()
         
+        # Calculate the stage rotation at the isochron birth time of the isochron's conjugate plate
+        # relative to its actual plate. Note that the fixed plate of the stage rotation is the
+        # actual plate (not the conjugate plate) because we want the stage pole location to be in the
+        # same frame of reference as the isochron's geometry.
         stage_rotation = rotation_model.get_rotation(
-                begin_time + 1, plate_id, begin_time, conjugate_plate_id, plate_id)
+                begin_time + 1, conjugate_plate_id, begin_time, plate_id, plate_id)
         stage_pole, stage_angle_radians = stage_rotation.get_euler_pole_and_angle()
         
         # A feature usually has a single geometry but it could have more - iterate over them all.
@@ -98,19 +102,23 @@ The time period and conjugate plate IDs are obtained using :meth:`pygplates.Feat
     plate_id = isochron_feature.get_reconstruction_plate_id()
     conjugate_plate_id = isochron_feature.get_conjugate_plate_id()
 
-| We calculate the stage rotation at the isochron birth time ``begin_time`` of the isochron's plate
-  ``plate_id`` relative to its conjugate plate ``conjugate_plate_id``.
-| We set the anchor plate to the isochron's plate ``plate_id`` so that the stage rotation is relative
-  to the isochron's plate.
-| This is done using :meth:`pygplates.RotationModel.get_rotation`.
+| We calculate the stage rotation at the isochron birth time ``begin_time`` of the isochron's
+  conjugate plate ``conjugate_plate_id`` relative to its plate ``plate_id`` using
+  :meth:`pygplates.RotationModel.get_rotation`.
+| Note that the plate ID ordering might seem like the reverse of what it should be.
+| This is because we want the stage pole location to be in the same frame of reference as the
+  isochron's geometry since subsequent direction calculations are relative to the isochron's geometry.
+| We also set the anchor plate to the isochron's plate ``plate_id``. We could have set it to zero and
+  it shouldn't change the result. We set it to the isochron's plate just in case there is no
+  plate circuit path from plate zero to plate ``plate_id``.
 
 ::
 
     stage_rotation = rotation_model.get_rotation(
-            begin_time + 1, plate_id, begin_time, conjugate_plate_id, plate_id)
+            begin_time + 1, conjugate_plate_id, begin_time, plate_id, plate_id)
 
 | From the stage rotation we can get the stage pole which is equivalent to the location on the globe
-  where the rotation axis is.
+  where the rotation axis is (in the frame of reference of the isochron's plate/geometry).
 | Since the isochron spreads about this rotation axis its ridge segments will generally be pointing
   towards the rotation axis and its transform segments will generally be perpendicular (ie, aligned
   with the direction of rotation).
