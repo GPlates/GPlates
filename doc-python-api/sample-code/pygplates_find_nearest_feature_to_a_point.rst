@@ -148,3 +148,35 @@ Once we've tested all features (if any were in the file) we print out the neares
                 point.to_lat_lon(),
                 nearest_feature.get_feature_id(),
                 min_distance_to_all_features * pygplates.Earth.mean_radius_in_kms)
+
+Advanced
+""""""""
+
+If we also want to find the nearest position on the nearest feature then we can specify
+``return_closest_positions`` as ``True`` when calculating the geometry distance:
+::
+
+    nearest_point_on_nearest_feature = None
+    
+    ...
+    
+    min_distance_to_feature_and_closest_positions = pygplates.GeometryOnSphere.distance(
+            point,
+            feature_reconstructed_geometry.get_reconstructed_geometry(),
+            min_distance_to_all_features,
+            return_closest_positions=True)
+
+| When ``return_closest_positions`` is ``True`` the :meth:`distance<pygplates.GeometryOnSphere.distance>`
+  function returns a 3-tuple of (distance, closest point on geometry1, closest point on geometry2).
+| If the geometry distance is below the threshold then we can extract that tuple into its individual elements.
+
+::
+
+    if min_distance_to_feature_and_closest_positions is not None:
+        min_distance_to_all_features, _, nearest_point_on_nearest_feature = min_distance_to_feature_and_closest_positions
+        nearest_feature = feature
+
+| ...where the ``_`` is just a placeholder to ignore the second element of the tuple returned
+  by the :meth:`distance<pygplates.GeometryOnSphere.distance>` function.
+| We ignore it because it's the closest distance to the test point which is just the test point itself.
+  And we are only interested in the closest point on the feature's geometry.
