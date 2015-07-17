@@ -89,13 +89,13 @@ namespace GPlatesApi
 
 		bp::list velocities;
 
+		// The axis hint doesn't affect the result (reversed axis and angle give same result).
+		const GPlatesMaths::UnitQuaternion3D::RotationParams rotation_params =
+				finite_rotation.unit_quat().get_rotation_params(boost::none);
+
 		for (unsigned int n = 0; n < domain_points.size(); ++n)
 		{
 			const GPlatesMaths::PointOnSphere &domain_point =  domain_points[n];
-
-			// The axis hint doesn't affect the result (reversed axis and angle give same result).
-			const GPlatesMaths::UnitQuaternion3D::RotationParams rotation_params =
-					finite_rotation.unit_quat().get_rotation_params(boost::none);
 
 			GPlatesMaths::Vector3D velocity =
 					earth_radius_in_kms *

@@ -494,10 +494,11 @@ namespace GPlatesApi
 						reverse_reconstruct_parameters = extract_reverse_reconstruct_parameters(
 								reverse_reconstruct_object);
 
+				GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
 				geometry = reverse_reconstruct_geometry(
 						geometry,
 						feature_handle,
-						GPlatesAppLogic::ReconstructMethodRegistry(),
+						reconstruct_method_registry,
 						reverse_reconstruct_parameters.first,
 						reverse_reconstruct_parameters.second);
 			}

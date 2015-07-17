@@ -526,15 +526,18 @@ export_geometry_on_sphere()
 				"\n"
 				"    closest_point_on_multipoint = multipoint[closest_point_index_on_multipoint]\n"
 				"    closest_segment_on_polyline = polyline.get_segments()[closest_segment_index_on_polyline]\n"
-				"    closest_segment_normal_vector = closest_segment_on_polyline.get_rotation_axis()\n"
+				"    closest_segment_normal_vector = closest_segment_on_polyline.get_great_circle_normal()\n"
 				"\n"
 				"  If both *return_closest_positions* and *return_closest_indices* are ``True``:\n"
 				"  ::\n"
 				"\n"
 				"    # Distance between a polyline and a solid polygon.\n"
 				"    distance_radians, polyline_point, polygon_point, polyline_segment_index, polygon_segment_index = \\\n"
-				"        pygplates.GeometryOnSphere.distance(polyline, polygon,\n"
-				"            return_closest_positions=True, return_closest_indices=True,\n"
+				"        pygplates.GeometryOnSphere.distance(\n"
+				"            polyline,\n"
+				"            polygon,\n"
+				"            return_closest_positions=True,\n"
+				"            return_closest_indices=True,\n"
 				"            geometry2_is_solid=True)\n")
 		.staticmethod("distance")
 	;
@@ -2442,7 +2445,9 @@ export_polyline_on_sphere()
 				"  .. note:: The distance between adjacent points (in the tessellated polyline) will not be exactly "
 				"*uniform*. This is because each :class:`segment<GreatCircleArc>` in the original polyline is "
 				"tessellated to the nearest integer number of points (that keeps that segment under the threshold) "
-				"and hence each original *segment* will have a slightly different tessellation angle.\n")
+				"and hence each original *segment* will have a slightly different tessellation angle.\n"
+				"\n"
+				"  .. seealso:: :meth:`GreatCircleArc.to_tessellated`\n")
 		.def("__iter__",
 				bp::range(
 						&GPlatesMaths::PolylineOnSphere::vertex_begin,
@@ -2983,7 +2988,9 @@ export_polygon_on_sphere()
 				"  .. note:: The distance between adjacent points (in the tessellated polygon) will not be exactly "
 				"*uniform*. This is because each :class:`segment<GreatCircleArc>` in the original polygon is "
 				"tessellated to the nearest integer number of points (that keeps that segment under the threshold) "
-				"and hence each original *segment* will have a slightly different tessellation angle.\n")
+				"and hence each original *segment* will have a slightly different tessellation angle.\n"
+				"\n"
+				"  .. seealso:: :meth:`GreatCircleArc.to_tessellated`\n")
 		.def("__iter__",
 				bp::range(
 						&GPlatesMaths::PolygonOnSphere::vertex_begin,

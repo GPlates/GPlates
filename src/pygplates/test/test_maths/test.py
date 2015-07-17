@@ -356,6 +356,25 @@ class GreatCircleArcCase(unittest.TestCase):
         self.assertRaises(pygplates.IndeterminateArcRotationAxisError, zero_length_gca.get_rotation_axis_lat_lon)
         self.assertRaises(pygplates.IndeterminateGreatCircleArcNormalError, zero_length_gca.get_great_circle_normal)
         self.assertRaises(pygplates.IndeterminateGreatCircleArcDirectionError, zero_length_gca.get_arc_direction, 0.5)
+    
+    def test_tessellate(self):
+        tessellation_points = self.gca.to_tessellated(math.radians(91))
+        self.assertTrue(len(tessellation_points) == 2)
+        self.assertTrue(tessellation_points[0] == self.gca.get_start_point())
+        self.assertTrue(tessellation_points[1] == self.gca.get_end_point())
+        
+        tessellation_points = self.gca.to_tessellated(math.radians(46))
+        self.assertTrue(len(tessellation_points) == 3)
+        self.assertTrue(tessellation_points[0] == self.gca.get_start_point())
+        self.assertTrue(tessellation_points[1] == pygplates.FiniteRotation((1,0,0), math.pi / 4) * self.gca.get_start_point())
+        self.assertTrue(tessellation_points[2] == self.gca.get_end_point())
+        
+        tessellation_points = self.gca.to_tessellated(math.radians(44))
+        self.assertTrue(len(tessellation_points) == 4)
+        self.assertTrue(tessellation_points[0] == self.gca.get_start_point())
+        self.assertTrue(tessellation_points[1] == pygplates.FiniteRotation((1,0,0), math.pi / 6) * self.gca.get_start_point())
+        self.assertTrue(tessellation_points[2] == pygplates.FiniteRotation((1,0,0), 2 * math.pi / 6) * self.gca.get_start_point())
+        self.assertTrue(tessellation_points[3] == self.gca.get_end_point())
 
 
 class LatLonPointCase(unittest.TestCase):

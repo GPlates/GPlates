@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -157,6 +158,24 @@ namespace GPlatesApi
 				cross(arc_point.position_vector(), great_circle_arc.rotation_axis())
 						.get_normalisation());
 	}
+
+	bp::list
+	great_circle_arc_to_tessellated(
+			const GPlatesMaths::GreatCircleArc &great_circle_arc,
+			const double &tessellate_radians)
+	{
+		std::vector<GPlatesMaths::PointOnSphere> tessellation_points;
+		tessellate(tessellation_points, great_circle_arc, tessellate_radians);
+
+		bp::list tessellation_points_list;
+
+		BOOST_FOREACH(const GPlatesMaths::PointOnSphere &tessellation_point, tessellation_points)
+		{
+			tessellation_points_list.append(tessellation_point);
+		}
+
+		return tessellation_points_list;
+	}
 }
 
 void
@@ -204,10 +223,12 @@ export_great_circle_arc()
 				", in degrees, or tuple (x,y,z)\n"
 				"  :raises: IndeterminateResultError if points are antipodal (opposite each other)\n"
 				"\n"
-				"  An arc is specified by a start-point and an end-point:  If these two points are not "
-				"antipodal, a unique great-circle arc (with angle-span less than PI radians) will be "
-				"determined between them. If they are antipodal then *IndeterminateResultException* will be raised. "
-				"Note that an error is *not* raised if the two points are coincident.\n"
+				"  | An arc is specified by a start-point and an end-point:\n"
+				"  | If these two points are not antipodal, a unique great-circle arc (with angle-span "
+				"less than PI radians) will be determined between them. If they are antipodal then "
+				"*IndeterminateResultException* will be raised. Note that an error is *not* raised if "
+				"the two points are coincident.\n"
+				"\n"
 				"  ::\n"
 				"\n"
 				"    great_circle_arc = pygplates.GreatCircleArc(start_point, end_point)\n")
@@ -256,10 +277,10 @@ export_great_circle_arc()
 				"    if not arc.is_zero_length():\n"
 				"        normal = arc.get_great_circle_normal()\n"
 				"\n"
-				"  Note that this returns the same (x, y, z) result as :meth:`get_rotation_axis`, "
+				"  .. note:: This returns the same (x, y, z) result as :meth:`get_rotation_axis`, "
 				"but in the form of a :class:`Vector3D` instead of an (x, y, z) tuple.\n"
 				"\n"
-				"  Note that the normal to the great circle can be considered to be the tangential "
+				"  .. note:: The normal to the great circle can be considered to be the tangential "
 				"direction (to the Earth's surface) at any point along the great circle arc that is most "
 				"pointing away from (perpendicular to) the direction of the arc (from start point "
 				"to end point - see :meth:`get_arc_direction`).\n"
@@ -269,7 +290,9 @@ export_great_circle_arc()
 				"``pygplates.Vector3D.cross(arc.start_point().to_xyz(), arc.end_point().to_xyz()).to_normalised()``.\n"
 				"\n"
 				"  If the arc start and end points are the same (if :meth:`is_zero_length` is ``True``) "
-				"then *IndeterminateGreatCircleArcNormalError* is raised.\n")
+				"then *IndeterminateGreatCircleArcNormalError* is raised.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_rotation_axis`\n")
 		.def("get_rotation_axis",
 				&GPlatesApi::great_circle_arc_get_rotation_axis,
 				"get_rotation_axis()\n"
@@ -284,13 +307,18 @@ export_great_circle_arc()
 				"    if not arc.is_zero_length():\n"
 				"        axis_x, axis_y, axis_z = arc.get_rotation_axis()\n"
 				"\n"
+				"  .. note:: This returns the same (x, y, z) result as :meth:`get_great_circle_normal`, "
+				"but in the form of an (x, y, z) tuple instead of a :class:`Vector3D`.\n"
+				"\n"
 				"  The rotation axis is the unit-length 3D vector (x,y,z) returned in the tuple.\n"
 				"\n"
 				"  The rotation axis direction is such that it rotates the start point towards the "
 				"end point along the arc (assuming a right-handed coordinate system).\n"
 				"\n"
 				"  If the arc start and end points are the same (if :meth:`is_zero_length` is ``True``) "
-				"then *IndeterminateArcRotationAxisError* is raised.\n")
+				"then *IndeterminateArcRotationAxisError* is raised.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_great_circle_normal`\n")
 		.def("get_rotation_axis_lat_lon",
 				&GPlatesApi::great_circle_arc_get_rotation_axis_lat_lon,
 				"get_rotation_axis_lat_lon()\n"
@@ -365,6 +393,28 @@ export_great_circle_arc()
 				"Values of *normalised_distance_from_start_point* between zero and one return directions at points on the arc. "
 				"If *normalised_distance_from_start_point* is outside the range from zero to one then "
 				"then *ValueError* is raised.\n")
+		.def("to_tessellated",
+				&GPlatesApi::great_circle_arc_to_tessellated,
+				(bp::arg("tessellate_radians")),
+				"to_tessellated(tessellate_radians)\n"
+				"  Returns a list of :class:`points<PointOnSphere>` new polyline that is tessellated version of this polyline.\n"
+				"\n"
+				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
+				"  :type tessellate_radians: float\n"
+				"  :rtype: list :class:`points<PointOnSphere>`\n"
+				"\n"
+				"  Adjacent points (in the returned list of points) are separated by no more than "
+				"*tessellate_radians* on the globe.\n"
+				"\n"
+				"  Tessellate a great circle arc to 2 degrees:\n"
+				"  ::\n"
+				"\n"
+				"    tessellation_points = great_circle_arc.to_tessellated(math.radians(2))\n"
+				"\n"
+				"  .. note:: Since a *GreatCircleArc* is immutable it cannot be modified. Which is why a "
+				"tessellated list of *PointOnSphere* is returned.\n"
+				"\n"
+				"  .. seealso:: :meth:`PolylineOnSphere.to_tessellated` and :meth:`PolygonOnSphere.to_tessellated`\n")
 		// Due to the numerical tolerance in comparisons we cannot make hashable.
 		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
