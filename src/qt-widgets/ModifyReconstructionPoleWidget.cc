@@ -26,6 +26,7 @@
  */
 
 #include <iostream>
+#include <vector>
 #include <QDebug>
 
 #include "ActionButtonBox.h"
@@ -51,9 +52,11 @@
 
 #include "presentation/ReconstructionGeometryRenderer.h"
 #include "presentation/ViewState.h"
+#include "presentation/VisualLayers.h"
 
 #include "view-operations/RenderedGeometryFactory.h"
 #include "view-operations/RenderedGeometryParameters.h"
+#include "view-operations/RenderedGeometryUtils.h"
 
 
 namespace
@@ -731,6 +734,15 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::handle_reconstruction()
 }
 
 
+void
+GPlatesQtWidgets::ModifyReconstructionPoleWidget::handle_layer_modified()
+{
+	// Re-populate the visible RFGs when a layer is made visible/invisible.
+	draw_initial_geometries();
+	draw_dragged_geometries();
+}
+
+
 boost::optional<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_to_const_type>
 GPlatesQtWidgets::ModifyReconstructionPoleWidget::get_focused_feature_geometry() const
 {
@@ -781,56 +793,48 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 #endif
 
 	//
-	// Iterate over all the reconstruction geometries that were reconstructed using the same
-	// reconstruction tree as the focused feature geometry.
+	// Iterate over all the *visible* reconstruction geometries that were reconstructed using the
+	// same reconstruction tree as the focused feature geometry.
 	//
 
-	// Get the layer outputs.
-	const GPlatesAppLogic::Reconstruction::layer_output_seq_type &layer_outputs =
-			d_application_state_ptr->get_current_reconstruction().get_active_layer_outputs();
+	// Get any ReconstructionGeometry objects that are visible in the main reconstruction rendered layer.
+	GPlatesViewOperations::RenderedGeometryUtils::reconstruction_geom_seq_type visible_reconstruction_geometries;
+	GPlatesViewOperations::RenderedGeometryUtils::get_unique_reconstruction_geometries(
+			visible_reconstruction_geometries,
+			*d_rendered_geom_collection,
+			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
-	// Find those layer outputs that come from a reconstruct layer.
-	std::vector<GPlatesAppLogic::ReconstructLayerProxy *> reconstruct_outputs;
-	if (GPlatesAppLogic::LayerProxyUtils::get_layer_proxy_derived_type_sequence(
-			layer_outputs.begin(), layer_outputs.end(), reconstruct_outputs))
+	// Narrow the visible ReconstructionGeometry objects down to visible ReconstructFeatureGeometry objects.
+	std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *> visible_reconstructed_feature_geometries;
+	if (GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
+			visible_reconstruction_geometries.begin(),
+			visible_reconstruction_geometries.end(),
+			visible_reconstructed_feature_geometries))
 	{
-		// Iterate over the *reconstruct* layers because...
-		// ...we're only interested in ReconstructedFeatureGeometry's (resolved topologies are excluded
-		// since they, in turn, reference reconstructed static geometries).
-		// NOTE: ReconstructedVirtualGeomagneticPole's will also be included since they derive
-		// from ReconstructedFeatureGeometry.
-		BOOST_FOREACH(
-				GPlatesAppLogic::ReconstructLayerProxy *reconstruct_layer_proxy,
-				reconstruct_outputs)
+		// Iterate over the RFGs.
+		std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>::const_iterator rfg_iter =
+				visible_reconstructed_feature_geometries.begin();
+		std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *>::const_iterator rfg_end =
+				visible_reconstructed_feature_geometries.end();
+		for ( ; rfg_iter != rfg_end; ++rfg_iter)
 		{
-			// Get the reconstructed feature geometries from the current layer.
-			typedef std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> rfg_seq_type;
-			rfg_seq_type reconstructed_feature_geometries;
-			reconstruct_layer_proxy->get_reconstructed_feature_geometries(reconstructed_feature_geometries);
+			const GPlatesAppLogic::ReconstructedFeatureGeometry *rfg = *rfg_iter;
 
-			// Iterate over the RFGs.
-			for (rfg_seq_type::const_iterator rfg_iter = reconstructed_feature_geometries.begin();
-				rfg_iter != reconstructed_feature_geometries.end();
-				++rfg_iter)
+			// Make sure the current RFG was created from the same reconstruction tree as the focused geometry.
+			if (rfg->get_reconstruction_tree() != *d_reconstruction_tree)
 			{
-				const GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type &rfg = *rfg_iter;
+				continue;
+			}
 
-				// Make sure the current RFG was created from the same reconstruction tree as the focused geometry.
-				if (rfg->get_reconstruction_tree() != *d_reconstruction_tree)
+			// It's an RFG, so let's look at its reconstruction plate ID property (if there is one).
+			if (rfg->reconstruction_plate_id())
+			{
+				// OK, so the RFG *does* have a reconstruction plate ID.
+				GPlatesModel::integer_plate_id_type rfg_plate_id = rfg->reconstruction_plate_id().get();
+				if (std::find(plate_id_collection.begin(), plate_id_collection.end(), rfg_plate_id) !=
+					plate_id_collection.end())
 				{
-					continue;
-				}
-
-				// It's an RFG, so let's look at its reconstruction plate ID property (if there is one).
-				if (rfg->reconstruction_plate_id())
-				{
-					// OK, so the RFG *does* have a reconstruction plate ID.
-					GPlatesModel::integer_plate_id_type rfg_plate_id = rfg->reconstruction_plate_id().get();
-					if (std::find(plate_id_collection.begin(), plate_id_collection.end(), rfg_plate_id) !=
-						plate_id_collection.end())
-					{
-						d_reconstructed_feature_geometries.push_back(rfg->get_non_null_pointer_to_const());
-					}
+					d_reconstructed_feature_geometries.push_back(rfg->get_non_null_pointer_to_const());
 				}
 			}
 		}
@@ -1070,6 +1074,11 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::make_signal_slot_connections(
 	QObject::connect(
 			&d_move_pole_widget, SIGNAL(pole_changed(boost::optional<GPlatesMaths::PointOnSphere>)),
 			this, SLOT(react_adjustment_pole_changed()));
+
+	// Re-populate the visible RFGs when a layer is made visible/invisible.
+	QObject::connect(
+			&view_state.get_visual_layers(), SIGNAL(layer_modified(size_t)),
+			this, SLOT(handle_layer_modified()));
 }
 
 
