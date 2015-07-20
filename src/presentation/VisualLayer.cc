@@ -202,10 +202,13 @@ GPlatesPresentation::VisualLayer::set_visible(
 	if (visible != d_visible)
 	{
 		d_visible = visible;
-		emit_layer_modified();
-		
+
 		// Clear the rendered geometries, or re-create rendered geometries, as needed.
 		create_rendered_geometries();
+
+		// We do this after creating the rendered geometries in case clients search
+		// through the rendered geometries to find visible reconstruction geometries.
+		emit_layer_modified();
 	}
 }
 
@@ -214,10 +217,13 @@ void
 GPlatesPresentation::VisualLayer::toggle_visible()
 {
 	d_visible = !d_visible;
-	emit_layer_modified();
 
 	// Clear the rendered geometries, or re-create rendered geometries, as needed.
 	create_rendered_geometries();
+
+	// We do this after creating the rendered geometries in case clients search
+	// through the rendered geometries to find visible reconstruction geometries.
+	emit_layer_modified();
 }
 
 
@@ -300,8 +306,12 @@ GPlatesPresentation::VisualLayer::get_visual_layer_params() const
 void
 GPlatesPresentation::VisualLayer::handle_params_modified()
 {
-	emit_layer_modified();
+	// Clear the rendered geometries, or re-create rendered geometries, as needed.
 	create_rendered_geometries();
+
+	// We do this after creating the rendered geometries in case clients search
+	// through the rendered geometries to find visible reconstruction geometries.
+	emit_layer_modified();
 }
 
 
