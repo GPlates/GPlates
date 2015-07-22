@@ -88,6 +88,10 @@ namespace GPlatesMaths
 	 *     radians (where North pole is @a rotation_axis), or
 	 *  2) any corresponding pair of points (same latitude) of the polylines are separated by a
 	 *     distance of more than @a max_distance_threshold_radians (if specified).
+	 *
+	 * Note that all returned polylines have the same number of points, and corresponding points
+	 * have the same latitude (in North pole reference frame of @a rotation_axis) except those points
+	 * in the non-overlapping latitude ranges (if @a maximum_latitude_non_overlap_radians is non-zero).
 	 */
 	bool
 	interpolate(
