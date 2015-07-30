@@ -1374,53 +1374,30 @@ namespace {
 
 		// Both arcs are not zero length and hence have rotation axes...
 
-		// Two arcs intersect if the end points of one arc are in opposite half-spaces of the plane of
-		// the other arc (and vice versa) and the start (or end) point of one arc is in the positive
-		// half-space of the other arc (and the opposite true for the other arc).
-
-		const bool arc1_start_point_on_positive_side_of_arc2 = dot(
-				arc1.start_point().position_vector(),
-				arc2.rotation_axis()).dval() >= 0;
-		const bool arc1_end_point_on_positive_side_of_arc2 = dot(
-				arc1.end_point().position_vector(),
-				arc2.rotation_axis()).dval() >= 0;
-		if (arc1_start_point_on_positive_side_of_arc2 == arc1_end_point_on_positive_side_of_arc2)
-		{
-			// No intersection found.
-			return;
-		}
-
-		const bool arc2_start_point_on_positive_side_of_arc1 = dot(
-				arc2.start_point().position_vector(),
-				arc1.rotation_axis()).dval() >= 0;
-		const bool arc2_end_point_on_positive_side_of_arc1 = dot(
-				arc2.end_point().position_vector(),
-				arc1.rotation_axis()).dval() >= 0;
-		if (arc2_start_point_on_positive_side_of_arc1 == arc2_end_point_on_positive_side_of_arc1)
-		{
-			// No intersection found.
-			return;
-		}
-
-		if (arc1_start_point_on_positive_side_of_arc2 == arc2_start_point_on_positive_side_of_arc1)
-		{
-			// No intersection found.
-			return;
-		}
-
 		// Since 'arc1' and 'arc2' do not lie on the same great circle we can normalise the
 		// cross product of their rotation axes (ie, cross-product won't be zero vector).
 		const GPlatesMaths::Vector3D cross_arc_rotation_axes = cross(arc1.rotation_axis(), arc2.rotation_axis());
 		const GPlatesMaths::UnitVector3D normalised_cross_arc_rotation_axes = cross_arc_rotation_axes.get_normalisation();
 
-		// We must choose between the two possible antipodal cross product directions based
-		// on the orientation of the arcs relative to each other.
-		const GPlatesMaths::PointOnSphere point_of_intersection(
-				arc1_start_point_on_positive_side_of_arc2
-						? normalised_cross_arc_rotation_axes
-						: -normalised_cross_arc_rotation_axes);
-
-		handle_intersection(arcs1, arcs2, iter1, iter2, inter_nodes, point_of_intersection);
+		// Calculate the two unique (antipodal) points at which these two great-circle arcs would
+		// intersect if they were "extended" to whole great-circles.
+		//
+		// NOTE: We're using PointOnSphere::lies_on_gca() since it uses an epislon threshold and hence
+		// catches the case where both arcs share and end point (prevents two polylines intersecting
+		// at a common vertex from tunnelling through each other without being noticed).
+		const GPlatesMaths::PointOnSphere intersection_point1(normalised_cross_arc_rotation_axes);
+		const GPlatesMaths::PointOnSphere intersection_point2(-normalised_cross_arc_rotation_axes);
+		if (intersection_point1.lies_on_gca(arc1) &&
+			intersection_point1.lies_on_gca(arc2))
+		{
+			handle_intersection(arcs1, arcs2, iter1, iter2, inter_nodes, intersection_point1);
+		}
+		else if (intersection_point2.lies_on_gca(arc1) &&
+				intersection_point2.lies_on_gca(arc2))
+		{
+			handle_intersection(arcs1, arcs2, iter1, iter2, inter_nodes, intersection_point2);
+		}
+		// Else, no intersection.
 	}
 
 
