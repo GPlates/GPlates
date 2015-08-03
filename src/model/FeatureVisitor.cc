@@ -27,6 +27,9 @@
 
 #include "FeatureVisitor.h"
 
+#include "property-values/GpmlTotalReconstructionPole.h"
+
+
 namespace GPlatesModel
 {
 
@@ -53,6 +56,27 @@ namespace GPlatesModel
 		(*feature_iterator)->accept_visitor(*this);
 	}
 
+
+	// Note: Only reason for specialising is to avoid needing to include "GpmlTotalReconstructionPole.h" in header.
+	template<>
+	void
+	FeatureVisitorBase<FeatureHandle>::visit_gpml_total_reconstruction_pole(
+			gpml_total_reconstruction_pole_type &trs)
+	{
+		// Default implementation delegates to base class 'gpml_finite_rotation_type'.
+		visit_gpml_finite_rotation(trs);
+	}
+
+
+	// Note: Only reason for specialising is to avoid needing to include "GpmlTotalReconstructionPole.h" in header.
+	template<>
+	void
+	FeatureVisitorBase<const FeatureHandle>::visit_gpml_total_reconstruction_pole(
+			gpml_total_reconstruction_pole_type &trs)
+	{
+		// Default implementation delegates to base class 'gpml_finite_rotation_type'.
+		visit_gpml_finite_rotation(trs);
+	}
 }
 
 

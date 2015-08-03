@@ -620,6 +620,11 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gpml_total_reconstruction_pole(
+				gpml_total_reconstruction_pole_type &trs);
+
+		virtual
+		void
 		visit_old_version_property_value(
 				old_version_property_value_type &old_version_prop_val) 
 		{  }
@@ -652,12 +657,6 @@ namespace GPlatesModel
 		void
 		visit_xs_string(
 				xs_string_type &xs_string)
-		{  }
-
-		virtual
-		void
-		visit_gpml_total_reconstruction_pole(
-				gpml_total_reconstruction_pole_type &trs)
 		{  }
 
 	private:
@@ -864,6 +863,24 @@ namespace GPlatesModel
 			(*iter)->accept_visitor(*this);
 		}
 	}
+
+
+	// Template specialisations are in .cc file.
+	//
+	// Note: Only reason for specialising is to avoid needing to include "GpmlTotalReconstructionPole.h"
+	template<>
+	void
+	FeatureVisitorBase<FeatureHandle>::visit_gpml_total_reconstruction_pole(
+			gpml_total_reconstruction_pole_type &trs);
+
+
+	// Template specialisations are in .cc file.
+	//
+	// Note: Only reason for specialising is to avoid needing to include "GpmlTotalReconstructionPole.h"
+	template<>
+	void
+	FeatureVisitorBase<const FeatureHandle>::visit_gpml_total_reconstruction_pole(
+			gpml_total_reconstruction_pole_type &trs);
 
 
 	// Private methods ///////////////////////////////////////////////////////////

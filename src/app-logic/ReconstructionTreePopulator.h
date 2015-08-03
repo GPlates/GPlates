@@ -124,13 +124,6 @@ namespace GPlatesAppLogic
 		visit_gpml_plate_id(
 				GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
 
-		void
-		visit_gpml_total_reconstruction_pole(
-				GPlatesPropertyValues::GpmlTotalReconstructionPole &pole)
-		{
-			visit_gpml_finite_rotation(pole);
-		}
-
 	private:
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;

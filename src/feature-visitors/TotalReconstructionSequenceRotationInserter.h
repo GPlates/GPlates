@@ -89,13 +89,6 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_irregular_sampling(
 				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
-		void
-		visit_gpml_total_reconstruction_pole(
-				GPlatesPropertyValues::GpmlTotalReconstructionPole &pole)
-		{
-			visit_gpml_finite_rotation(pole);
-		}
-
 	private:
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
