@@ -256,8 +256,13 @@ namespace
 		}
 
 		std::pair<double, double> lon_lat_euler_pole(pole_longitude, pole_latitude);
-		PropertyValue::non_null_ptr_type value =
-				GpmlFiniteRotation::create(lon_lat_euler_pole, rotation_angle);
+
+		// Always create a GpmlTotalReconstructionPole (instead of GpmlFiniteRotation) since
+		// the former also supports pole metadata (which can remain empty if not needed/used).
+		PropertyValue::non_null_ptr_type value(
+				new GPlatesPropertyValues::GpmlTotalReconstructionPole(
+						GpmlFiniteRotation::create(lon_lat_euler_pole, rotation_angle)
+								->finite_rotation()));
 
 		GeoTimeInstant geo_time_instant(geo_time);
 		GmlTimeInstant::non_null_ptr_type valid_time =

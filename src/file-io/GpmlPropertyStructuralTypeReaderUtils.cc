@@ -709,8 +709,11 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_finite_rotatio
 		structural_elem = xml_elem->get_child_by_name(AXIS_ANGLE_FINITE_ROTATION);
 		if (structural_elem)
 		{
-			finate_rotation = GPlatesPropertyValues::GpmlFiniteRotation::create(
-					create_finite_rotation(*structural_elem,gpml_version,read_errors));
+			// Always create a GpmlTotalReconstructionPole (instead of GpmlFiniteRotation) since
+			// the former also supports pole metadata (which can remain empty if not needed/used).
+			finate_rotation = GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type(
+					new GPlatesPropertyValues::GpmlTotalReconstructionPole(
+							create_finite_rotation(*structural_elem, gpml_version, read_errors)));
 		}
 	}
 

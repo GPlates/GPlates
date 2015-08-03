@@ -778,12 +778,12 @@ GPlatesModel::ModelUtils::create_gml_time_instant(
 const GPlatesModel::TopLevelProperty::non_null_ptr_type
 GPlatesModel::ModelUtils::create_total_reconstruction_pole(
 		const std::vector<TotalReconstructionPole> &five_tuples,
-		bool is_grot)
+		bool enable_metadata)
 {
 	using namespace GPlatesPropertyValues;
 	std::vector<GPlatesPropertyValues::GpmlTimeSample> time_samples;
 	boost::optional<StructuralType> value_type;
-	if(is_grot)
+	if (enable_metadata)
 	{
 		value_type = StructuralType::create_gpml("TotalReconstructionPole");
 	}
@@ -795,7 +795,7 @@ GPlatesModel::ModelUtils::create_total_reconstruction_pole(
 	for (std::vector<TotalReconstructionPole>::const_iterator iter = five_tuples.begin(); 
 		iter != five_tuples.end(); ++iter) 
 	{
-		time_samples.push_back(create_gml_time_sample(*iter, is_grot));
+		time_samples.push_back(create_gml_time_sample(*iter, enable_metadata));
 	}
 
 	PropertyValue::non_null_ptr_type gpml_irregular_sampling =
@@ -891,7 +891,7 @@ GPlatesModel::ModelUtils::get_mprs_attributes(
 GPlatesPropertyValues::GpmlTimeSample
 GPlatesModel::ModelUtils::create_gml_time_sample(
 		const TotalReconstructionPole &trp,
-		bool is_grot)
+		bool enable_metadata)
 {
 	using namespace GPlatesModel;
 	using namespace GPlatesPropertyValues;
@@ -912,7 +912,7 @@ GPlatesModel::ModelUtils::create_gml_time_sample(
 	XsString::non_null_ptr_type gml_description = 
 		XsString::create(GPlatesUtils::make_icu_string_from_qstring(trp.comment));
 
-	if(is_grot)
+	if (enable_metadata)
 	{
 		return GpmlTimeSample(
 				GpmlTotalReconstructionPole::non_null_ptr_type(

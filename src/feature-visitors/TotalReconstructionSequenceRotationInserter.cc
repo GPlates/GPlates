@@ -370,19 +370,9 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 					GPlatesMaths::compose(d_rotation_to_apply, interpolated_finite_rotation);
 
 			// Create the new time-sample.
-			boost::optional<PropertyValue::non_null_ptr_type> value_opt;
-			if(dynamic_cast<GpmlTotalReconstructionPole*>(iter->value().get()))
-			{
-				//if the rotation feature is from a .grot file, 
-				//we need to create GpmlTotalReconstructionPole instead of GpmlFiniteRotation.
-				value_opt = GpmlTotalReconstructionPole::non_null_ptr_type(
-					new GpmlTotalReconstructionPole(updated_finite_rotation));
-			}
-			else
-			{
-				value_opt = GpmlFiniteRotation::create(updated_finite_rotation);
-			}
-			PropertyValue::non_null_ptr_type value = *value_opt;
+			// Always create a GpmlTotalReconstructionPole (instead of GpmlFiniteRotation) since
+			// the former also supports pole metadata (which can remain empty if not needed/used).
+			PropertyValue::non_null_ptr_type value(new GpmlTotalReconstructionPole(updated_finite_rotation));
 			GmlTimeInstant::non_null_ptr_type valid_time =
 					ModelUtils::create_gml_time_instant(d_recon_time);
 			boost::intrusive_ptr<XsString> description =

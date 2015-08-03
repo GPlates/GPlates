@@ -707,7 +707,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::handle_insert_new_pole(
 	trs_pole.rotation_angle =spinbox_angle->value();
 	trs_pole.comment = lineedit_comment->text();
 	
-	GpmlTimeSample time_sample = ModelUtils::create_gml_time_sample(trs_pole, d_is_grot); 
+	GpmlTimeSample time_sample = ModelUtils::create_gml_time_sample(trs_pole);
 
 	insert_table_row(table_sequences,table_sequences->rowCount(),time_sample,locale_);
 	if (table_sequences->rowCount() > 0)
@@ -808,7 +808,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::insert_blank_row(
 	trs_pole.rotation_angle = 0;
 	qv.setValue( 
 			boost::optional<GPlatesPropertyValues::GpmlTimeSample>(
-					GPlatesModel::ModelUtils::create_gml_time_sample(trs_pole, d_is_grot)));
+					GPlatesModel::ModelUtils::create_gml_time_sample(trs_pole)));
 	time_item->setData(Qt::UserRole, qv);
 	if (time_item != NULL) {
 		table_sequences->setCurrentItem(time_item);
@@ -1036,7 +1036,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::make_irregular_sampling
         ModelUtils::TotalReconstructionPole pole_data = {time,lat,lon,angle,comment};
 		QVariant qv = table_sequences->item(i, ColumnNames::TIME)->data(Qt::UserRole);
 		boost::optional<GpmlTimeSample> original_sample = qv.value<boost::optional<GpmlTimeSample> >();
-		GpmlTimeSample new_time_sample = ModelUtils::create_gml_time_sample(pole_data, d_is_grot);
+		GpmlTimeSample new_time_sample = ModelUtils::create_gml_time_sample(pole_data);
 		if(original_sample)
 		{
 			if(original_sample->is_disabled())
