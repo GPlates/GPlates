@@ -29,8 +29,8 @@
 
 #include <ostream>
 #include <vector>
-#include <boost/none.hpp>
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 
 #include "global/unicode.h"
 
@@ -57,84 +57,78 @@
 
 namespace
 {
-	using namespace GPlatesModel;
+	/**
+	 * Print out a line that does not contain a rotation pole.
+	 *
+	 * If using the old-style PLATES4 format then also comment out the line using a commented rotation pole.
+	 *
+	 * Note: Lines containing a rotation pole should be commented out by changing the moving plate ID to 999.
+	 */
 	void
-	print_rotation_line_details(
-			std::ostream *os,
-			int moving_plate_id,
-			const double &time,
-			const double &latitude,
-			const double &longitude,
-			const double &angle,
-			int fixed_plate_id,
-			const GPlatesUtils::UnicodeString &comment,
-			const std::vector<Metadata::shared_const_ptr_type> &metadata)
+	print_non_rotation_pole_line(
+			std::ostream &os,
+			const QString &line,
+			bool grot_format)
 	{
-		using namespace GPlatesUtils;
-		std::vector<Metadata::shared_const_ptr_type> multi_line_attr, single_line_attr;
-		BOOST_FOREACH(const Metadata::shared_const_ptr_type& data, metadata)
+		if (!grot_format)
 		{
-			if(data->get_content().contains("\n"))
-			{
-				multi_line_attr.push_back(data);
-			}
-			else
-			{
-				single_line_attr.push_back(data);
-			}
+			os << "999 0.0 0.0 0.0 0.0 999 !";
 		}
 
-		BOOST_FOREACH(const Metadata::shared_const_ptr_type& data, multi_line_attr)
+		os << line.toUtf8().data() << std::endl;
+	}
+
+
+	/**
+	 * Print the rotation pole data (with no newline).
+	 */
+	void
+	print_rotation_pole(
+			std::ostream &os,
+			const GPlatesMaths::FiniteRotation &finite_rotation,
+			int moving_plate_id,
+			int fixed_plate_id,
+			const double &time)
+	{
+		double latitude = 0;
+		double longitude = 0;
+		double angle = 0;
+
+		const GPlatesMaths::UnitQuaternion3D &quat = finite_rotation.unit_quat();
+		if (!GPlatesMaths::represents_identity_rotation(quat)) 
 		{
-			QString content = data->get_content(), sep ="\"";
-			QStringList l = content.split("\n");
-			for(int i =0; i<(l.size()-1); i++)
-			{
-				if(!l[i].simplified().endsWith("\\"))
-				{
-					sep ="\"\"\"";
-					break;
-				}
-			}
-			(*os)<< " @" << data->get_name().toUtf8().data() << sep.toUtf8().data() 
-				<< data->get_content().toUtf8().data()<< sep.toUtf8().data() <<"\n";
+			const GPlatesMaths::UnitQuaternion3D::RotationParams rot_params =
+					quat.get_rotation_params(finite_rotation.axis_hint());
+
+			const GPlatesMaths::LatLonPoint pole =
+					GPlatesMaths::make_lat_lon_point(
+							GPlatesMaths::PointOnSphere(rot_params.axis));
+
+			latitude = pole.latitude();
+			longitude = pole.longitude();
+			angle = GPlatesMaths::convert_rad_to_deg(rot_params.angle.dval());
 		}
 
-		(*os) << formatted_int_to_string(moving_plate_id, 3, '0')
+		os << GPlatesUtils::formatted_int_to_string(moving_plate_id, 3, '0')
 			<< " "
-			<< formatted_double_to_string(time, 5, 2, true)
+			<< GPlatesUtils::formatted_double_to_string(time, 5, 2, true)
 			<< " "
-			<< formatted_double_to_string(latitude, 6, 2, true)
+			<< GPlatesUtils::formatted_double_to_string(latitude, 6, 2, true)
 			<< " "
-			<< formatted_double_to_string(longitude, 7, 2, true)
+			<< GPlatesUtils::formatted_double_to_string(longitude, 7, 2, true)
 			<< " "
-			<< formatted_double_to_string(angle, 7, 2, true)
+			<< GPlatesUtils::formatted_double_to_string(angle, 7, 2, true)
 			<< "  "
-			<< formatted_int_to_string(fixed_plate_id, 3, '0');
-			if(metadata.empty())	
-			{
-				if(!comment.isEmpty())
-				{
-					(*os)<< " !"<< comment;
-				}
-			}
-			else
-			{
-				BOOST_FOREACH(const Metadata::shared_const_ptr_type& data, single_line_attr)
-				{
-					(*os)<< " @" << data->get_name().toUtf8().data() << "\"" 
-						<< data->get_content().toUtf8().data()<< "\"";
-				}
-			}
-
-			(*os) << std::endl;
+			<< GPlatesUtils::formatted_int_to_string(fixed_plate_id, 3, '0');
 	}
 }
 
 
 GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatWriter(
 		const FileInfo &file_info,
-		const GPlatesModel::Gpgim &gpgim)
+		const GPlatesModel::Gpgim &gpgim,
+		bool grot_format) :
+	d_grot_format(grot_format)
 {
 	d_output.reset(new std::ofstream(file_info.get_qfileinfo().filePath().toStdString().c_str()));
 
@@ -148,50 +142,143 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatWriter(
 
 
 void
-GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::print_rotation_lines(
-		std::ostream *os)
+GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::print_rotations(
+		std::ostream &os,
+		bool grot_format)
 {
-	std::list< ReconstructionPoleData >::const_iterator
-		iter = reconstruction_poles.begin(),
-		end = reconstruction_poles.end();
-	for ( ; iter != end; ++iter) 
+	std::list<ReconstructionPoleData>::const_iterator reconstruction_pole_data_iter = reconstruction_poles.begin();
+	std::list<ReconstructionPoleData>::const_iterator reconstruction_pole_data_end = reconstruction_poles.end();
+	for ( ; reconstruction_pole_data_iter != reconstruction_pole_data_end; ++reconstruction_pole_data_iter) 
 	{
-		if (! iter->have_sufficient_info_for_output()) {
-			continue;
-		}
+		const ReconstructionPoleData &reconstruction_pole_data = *reconstruction_pole_data_iter;
 
-		GPlatesUtils::UnicodeString str_comment("");
-		if (iter->comment) {
-			str_comment = *(iter->comment);
-		}
-		
-		int moving_plate_id_or_comment = *moving_plate_id;
-
-		// If the 'is_disabled' flag is set, this rotation is considered "commented out". 
-		// This is represented by giving the rotation a moving plate id of 999.
-		if (iter->is_disabled && *(iter->is_disabled)) {
-			moving_plate_id_or_comment = 999;
-		}
-
-		const GPlatesMaths::UnitQuaternion3D &quat = iter->finite_rotation->unit_quat();
-		if (GPlatesMaths::represents_identity_rotation(quat)) 
+		if (reconstruction_pole_data.have_sufficient_info_for_output())
 		{
-			print_rotation_line_details(os, moving_plate_id_or_comment, *(iter->time), 0.0, 0.0, 0.0, 
-					*fixed_plate_id, str_comment, iter->metadata);
-		} 
-		else 
-		{
-			GPlatesMaths::UnitQuaternion3D::RotationParams rot_params =
-				quat.get_rotation_params(iter->finite_rotation->axis_hint());
-
-			GPlatesMaths::LatLonPoint pole = 
-				GPlatesMaths::make_lat_lon_point(GPlatesMaths::PointOnSphere(rot_params.axis));
-
-			print_rotation_line_details(os, moving_plate_id_or_comment, *(iter->time),
-					pole.latitude(), pole.longitude(), GPlatesMaths::convert_rad_to_deg(rot_params.angle.dval()),
-					*fixed_plate_id, str_comment, iter->metadata);
+			print_rotation(os, reconstruction_pole_data, grot_format);
 		}
 	}
+}
+
+
+void
+GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::print_rotation(
+		std::ostream &os,
+		const ReconstructionPoleData &reconstruction_pole_data,
+		bool grot_format)
+{
+	// Separate metadata attributes into single and multi-line.
+	std::vector<GPlatesModel::Metadata::shared_const_ptr_type> multi_line_attributes;
+	std::vector<GPlatesModel::Metadata::shared_const_ptr_type> single_line_attributes;
+	if (reconstruction_pole_data.metadata)
+	{
+		BOOST_FOREACH(
+				const GPlatesModel::Metadata::shared_const_ptr_type &attribute,
+				reconstruction_pole_data.metadata.get())
+		{
+			if (attribute->get_content().contains("\n"))
+			{
+				multi_line_attributes.push_back(attribute);
+			}
+			else
+			{
+				single_line_attributes.push_back(attribute);
+			}
+		}
+	}
+
+	// Output multi-line metadata attributes first.
+	BOOST_FOREACH(const GPlatesModel::Metadata::shared_const_ptr_type &attribute, multi_line_attributes)
+	{
+		const QStringList attribute_content_lines = attribute->get_content().split("\n");
+
+		// If any newline ending is not escaped then use multi-line attribute content quotes (triple '"').
+		QString attribute_content_quote = "\"";
+		for (int i = 0; i < attribute_content_lines.size() - 1; ++i)
+		{
+			if (!attribute_content_lines[i].simplified().endsWith("\\"))
+			{
+				attribute_content_quote = "\"\"\"";
+				break;
+			}
+		}
+
+		// Print the '@NAME"""' part.
+		print_non_rotation_pole_line(
+				os,
+				QString("@") + attribute->get_name() + attribute_content_quote,
+				grot_format);
+
+		// Print the individual content lines.
+		for (int n = 0; n < attribute_content_lines.size(); ++n)
+		{
+			print_non_rotation_pole_line(
+					os,
+					attribute_content_lines[n],
+					grot_format);
+		}
+
+		// Print the closing quote '"""' part.
+		print_non_rotation_pole_line(
+				os,
+				attribute_content_quote,
+				grot_format);
+	}
+
+	int moving_plate_id_or_comment = moving_plate_id.get();
+
+	// If the 'is_disabled' flag is set, this rotation is considered "commented out". 
+	if (reconstruction_pole_data.is_disabled &&
+		reconstruction_pole_data.is_disabled.get())
+	{
+		if (grot_format)
+		{
+			// For new-style GROT format this is represented by a line beginning with the
+			// '#' character (and *not* changing the moving plate ID to 999).
+			os << '#';
+		}
+		else
+		{
+			// For old-style PLATES4 format this is represented by giving the rotation a
+			// moving plate id of 999.
+			//
+			// Note: We don't print a line comment ('999 0.0 0.0 0.0 0.0 999') because that's only
+			// for lines not containing a rotation pole.
+			moving_plate_id_or_comment = 999;
+		}
+	}
+
+	print_rotation_pole(
+			os,
+			reconstruction_pole_data.finite_rotation.get(),
+			moving_plate_id_or_comment,
+			fixed_plate_id.get(),
+			reconstruction_pole_data.time.get());
+
+	// Always print a comment marker for old-style PLATES4 format (even if no comment).
+	if (!grot_format)
+	{
+		os << " !";
+	}
+
+	if (reconstruction_pole_data.metadata &&
+		!reconstruction_pole_data.metadata->empty())
+	{
+		BOOST_FOREACH(const GPlatesModel::Metadata::shared_const_ptr_type& data, single_line_attributes)
+		{
+			os << " @"
+				<< data->get_name().toUtf8().data()
+				<< "\""
+				<< data->get_content().toUtf8().data()
+				<< "\"";
+		}
+	}
+	else if (reconstruction_pole_data.comment)
+	{
+		os << reconstruction_pole_data.comment.get();
+	}
+
+
+	os << std::endl;
 }
 
 
@@ -207,14 +294,14 @@ bool
 GPlatesFileIO::PlatesRotationFormatWriter::initialise_pre_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
-	static const GPlatesModel::FeatureType
-		gpmlTotalReconstructionSequence = 
-			GPlatesModel::FeatureType::create_gpml("TotalReconstructionSequence"),
-		gpmlAbsoluteReferenceFrame =
+	static const GPlatesModel::FeatureType TOTAL_RECONSTRUCTION_SEQUENCE = 
+			GPlatesModel::FeatureType::create_gpml("TotalReconstructionSequence");
+	static const GPlatesModel::FeatureType ABSOLUTE_REFERENCE_FRAME =
 			GPlatesModel::FeatureType::create_gpml("AbsoluteReferenceFrame");
 
-	if ((feature_handle.feature_type() != gpmlTotalReconstructionSequence)
-			&& (feature_handle.feature_type() != gpmlAbsoluteReferenceFrame)) {
+	if (feature_handle.feature_type() != TOTAL_RECONSTRUCTION_SEQUENCE &&
+		feature_handle.feature_type() != ABSOLUTE_REFERENCE_FRAME)
+	{
 		// These are not the features you're looking for.
 		return false;
 	}
@@ -231,40 +318,11 @@ GPlatesFileIO::PlatesRotationFormatWriter::finalise_post_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	// Print reconstruction poles when we can.
-	if (d_accum.have_sufficient_info_for_output()) {
-		d_accum.print_rotation_lines(d_output.get());
+	if (d_accum.have_sufficient_info_for_output())
+	{
+		d_accum.print_rotations(*d_output, d_grot_format);
 	}
 }
-
-
-void
-GPlatesFileIO::PlatesRotationFormatWriter::visit_gml_line_string(
-		const GPlatesPropertyValues::GmlLineString &gml_line_string)
-{ }
-
-
-void
-GPlatesFileIO::PlatesRotationFormatWriter::visit_gml_orientable_curve(
-		const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve)
-{ }
-
-
-void
-GPlatesFileIO::PlatesRotationFormatWriter::visit_gml_point(
-		const GPlatesPropertyValues::GmlPoint &gml_point)
-{ }
-
-
-void
-GPlatesFileIO::PlatesRotationFormatWriter::visit_gml_time_instant(
-		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant) 
-{ }
-
-
-void
-GPlatesFileIO::PlatesRotationFormatWriter::visit_gml_time_period(
-		const GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
-{ }
 
 
 void
@@ -285,16 +343,18 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_finite_rotation(
 
 void
 GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_total_reconstruction_pole(
-		const GPlatesPropertyValues::GpmlTotalReconstructionPole &trp)
+		const GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole)
 {
-	visit_gpml_finite_rotation(trp);
+	d_accum.current_pole().metadata = std::vector<GPlatesModel::Metadata::shared_const_ptr_type>();
+	const std::vector< boost::shared_ptr<GPlatesModel::Metadata> > &metadata =
+			gpml_total_reconstruction_pole.metadata();
+	for(std::size_t i = 0; i < metadata.size(); ++i)
+	{
+		d_accum.current_pole().metadata->push_back(metadata[i]);
+	}
+
+	visit_gpml_finite_rotation(gpml_total_reconstruction_pole);
 }
-
-
-void
-GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_finite_rotation_slerp(
-		const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
-{ }
 
 
 void
@@ -306,7 +366,8 @@ GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_irregular_sampling(
 	std::vector< GPlatesPropertyValues::GpmlTimeSample >::const_iterator 
 		iter = gpml_irregular_sampling.time_samples().begin(),
 		end = gpml_irregular_sampling.time_samples().end();
-	for ( ; iter != end; ++iter) {
+	for ( ; iter != end; ++iter)
+	{
 		write_gpml_time_sample(*iter);
 	}
 }
@@ -316,23 +377,20 @@ void
 GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_plate_id(
 		const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 {
-	static const GPlatesModel::PropertyName
-		fixedReferenceFrame(
-				GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING,
-				GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS_QSTRING,
-				QString("fixedReferenceFrame")),
-		movingReferenceFrame(
-				GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING,
-				GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS_QSTRING,
-				QString("movingReferenceFrame"));
+	static const GPlatesModel::PropertyName FIXED_REFERENCE_FRAME =
+			GPlatesModel::PropertyName::create_gpml("fixedReferenceFrame");
+	static const GPlatesModel::PropertyName MOVING_REFERENCE_FRAME =
+				GPlatesModel::PropertyName::create_gpml("movingReferenceFrame");
 
-	if (*current_top_level_propname() == fixedReferenceFrame) {
+	if (*current_top_level_propname() == FIXED_REFERENCE_FRAME)
+	{
 		d_accum.fixed_plate_id = gpml_plate_id.value();
-	} else if (*current_top_level_propname() == movingReferenceFrame) {
-		d_accum.moving_plate_id = gpml_plate_id.value();
-	} else {
-		// Do nothing: the plate id must not be associated to a finite rotation.
 	}
+	else if (*current_top_level_propname() == MOVING_REFERENCE_FRAME)
+	{
+		d_accum.moving_plate_id = gpml_plate_id.value();
+	}
+	// else do nothing: the plate id must not be associated to a finite rotation.
 }
 
 
@@ -350,16 +408,11 @@ GPlatesFileIO::PlatesRotationFormatWriter::write_gpml_time_sample(
 	gpml_time_sample.value()->accept_visitor(*this);
 
 	// Visit the comment.
-	if (gpml_time_sample.description()) {
+	if (gpml_time_sample.description())
+	{
 		gpml_time_sample.description()->accept_visitor(*this);
 	}
 }
-
-
-void
-GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_old_plates_header(
-		const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header)
-{  }
 
 
 void

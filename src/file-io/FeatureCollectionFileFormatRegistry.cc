@@ -318,7 +318,7 @@ namespace GPlatesFileIO
 					const GPlatesModel::Gpgim &gpgim)
 			{
 				return boost::shared_ptr<GPlatesModel::ConstFeatureVisitor>(
-						new PlatesRotationFormatWriter(file_ref.get_file_info(), gpgim));
+						new PlatesRotationFormatWriter(file_ref.get_file_info(), gpgim, false/*grot_format*/));
 			}
 
 
@@ -794,7 +794,7 @@ GPlatesFileIO::FeatureCollectionFileFormat::register_default_file_formats(
 					boost::bind(&gplates_rotation_read_feature_collection,
 							_1, boost::cref(registry), boost::ref(model), _2, _3)),
 			Registry::create_feature_collection_writer_function_type(
-					boost::bind(&create_grot_feature_collection_writer, _1, boost::cref(gpgim))), //TODO: the writer
+					boost::bind(&create_grot_feature_collection_writer, _1, boost::cref(gpgim))),
 			grot_default_configuration);
 
 	classifications_type plate4_rotation_classification;

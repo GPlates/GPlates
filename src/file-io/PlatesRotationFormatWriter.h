@@ -60,10 +60,17 @@ namespace GPlatesFileIO
 	{
 	public:
 
+		/**
+		 * If @a grot_format is false then the GROT-style metadata (http://www.gplates.org/grot/index.html)
+		 * is prefixed by "999 0.0 0.0 0.0 0.0 999 !" on lines that don't already contain a rotation pole.
+		 * This is because the old-style PLATES4 rotation file format requires every line to contain
+		 * a rotation pole (the '999' indicating a commented out pole).
+		 */
 		explicit
 		PlatesRotationFormatWriter(
 				const FileInfo &file_info,
-				const GPlatesModel::Gpgim &gpgim);
+				const GPlatesModel::Gpgim &gpgim,
+				bool grot_format = false);
 
 	protected:
 
@@ -76,31 +83,6 @@ namespace GPlatesFileIO
 		void
 		finalise_post_feature_properties(
 				const GPlatesModel::FeatureHandle &feature_handle);
-
-		virtual
-		void
-		visit_gml_line_string(
-				const GPlatesPropertyValues::GmlLineString &gml_line_string);
-
-		virtual
-		void
-		visit_gml_orientable_curve(
-				const GPlatesPropertyValues::GmlOrientableCurve &gml_orientable_curve);
-
-		virtual
-		void
-		visit_gml_point(
-				const GPlatesPropertyValues::GmlPoint &gml_point);
-
-		virtual
-		void
-		visit_gml_time_instant(
-				const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
-
-		virtual
-		void
-		visit_gml_time_period(
-				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
 
 		virtual
 		void
@@ -119,28 +101,13 @@ namespace GPlatesFileIO
 
 		virtual
 		void
-		visit_gpml_finite_rotation_slerp(
-				const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
-
-		virtual
-		void
 		visit_gpml_irregular_sampling(
 				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
 		virtual
 		void
-		visit_gpml_old_plates_header(
-				const GPlatesPropertyValues::GpmlOldPlatesHeader &gpml_old_plates_header);
-
-		virtual
-		void
 		visit_gpml_plate_id(
 				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id);
-
-		virtual
-		void
-		visit_gpml_metadata(
-				const GPlatesPropertyValues::GpmlMetadata &gpml_metadata){}		
 
 		virtual
 		void
@@ -161,7 +128,7 @@ namespace GPlatesFileIO
 				boost::optional<GPlatesUtils::UnicodeString> comment;
 				boost::optional<double> time;
 				boost::optional<bool> is_disabled;
-				std::vector<GPlatesModel::Metadata::shared_const_ptr_type > metadata;
+				boost::optional< std::vector<GPlatesModel::Metadata::shared_const_ptr_type> > metadata;
 
 				/**
 				 * Test whether the rotation pole data has acquired enough information to
@@ -199,12 +166,34 @@ namespace GPlatesFileIO
 
 			/**
 			 * Print lines to the rotation file using the accumulated data.
+			 *
 			 * Should only be called if have_sufficient_info_for_output() returned true.
 			 */
 			void
-			print_rotation_lines(std::ostream *os);
+			print_rotations(
+					std::ostream &os,
+					bool grot_format);
+
+
+			/**
+			 * Print a rotation.
+			 *
+			 * Should only be called if...
+			 *   PlatesRotationFormatAccumulator::ReconstructionPoleData::have_sufficient_info_for_output()
+			 * ...returned true.
+			 */
+			void
+			print_rotation(
+					std::ostream &os,
+					const ReconstructionPoleData &reconstruction_pole_data,
+					bool grot_format);
 		};
 	   	
+		/**
+		 * Whether the output file is GROT ('.grot') format, or PLATES4('.rot') format.
+		 */
+		bool d_grot_format;
+
 		PlatesRotationFormatAccumulator d_accum;
 		boost::scoped_ptr<std::ostream> d_output;
 	};
