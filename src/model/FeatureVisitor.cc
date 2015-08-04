@@ -61,10 +61,10 @@ namespace GPlatesModel
 	template<>
 	void
 	FeatureVisitorBase<FeatureHandle>::visit_gpml_total_reconstruction_pole(
-			gpml_total_reconstruction_pole_type &trs)
+			gpml_total_reconstruction_pole_type &gpml_total_reconstruction_pole)
 	{
 		// Default implementation delegates to base class 'gpml_finite_rotation_type'.
-		visit_gpml_finite_rotation(trs);
+		visit_gpml_finite_rotation(gpml_total_reconstruction_pole);
 	}
 
 
@@ -72,10 +72,10 @@ namespace GPlatesModel
 	template<>
 	void
 	FeatureVisitorBase<const FeatureHandle>::visit_gpml_total_reconstruction_pole(
-			gpml_total_reconstruction_pole_type &trs)
+			gpml_total_reconstruction_pole_type &gpml_total_reconstruction_pole)
 	{
 		// Default implementation delegates to base class 'gpml_finite_rotation_type'.
-		visit_gpml_finite_rotation(trs);
+		visit_gpml_finite_rotation(gpml_total_reconstruction_pole);
 	}
 }
 

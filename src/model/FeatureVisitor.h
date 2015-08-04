@@ -621,7 +621,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_gpml_total_reconstruction_pole(
-				gpml_total_reconstruction_pole_type &trs);
+				gpml_total_reconstruction_pole_type &gpml_total_reconstruction_pole);
 
 		virtual
 		void
@@ -871,7 +871,7 @@ namespace GPlatesModel
 	template<>
 	void
 	FeatureVisitorBase<FeatureHandle>::visit_gpml_total_reconstruction_pole(
-			gpml_total_reconstruction_pole_type &trs);
+			gpml_total_reconstruction_pole_type &gpml_total_reconstruction_pole);
 
 
 	// Template specialisations are in .cc file.
@@ -880,7 +880,7 @@ namespace GPlatesModel
 	template<>
 	void
 	FeatureVisitorBase<const FeatureHandle>::visit_gpml_total_reconstruction_pole(
-			gpml_total_reconstruction_pole_type &trs);
+			gpml_total_reconstruction_pole_type &gpml_total_reconstruction_pole);
 
 
 	// Private methods ///////////////////////////////////////////////////////////

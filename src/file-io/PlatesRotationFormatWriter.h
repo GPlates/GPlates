@@ -97,7 +97,7 @@ namespace GPlatesFileIO
 		virtual
 		void
 		visit_gpml_total_reconstruction_pole(
-				const GPlatesPropertyValues::GpmlTotalReconstructionPole &trp);
+				const GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole);
 
 		virtual
 		void

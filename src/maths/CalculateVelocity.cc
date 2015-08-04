@@ -68,8 +68,8 @@ GPlatesMaths::calculate_velocity_vector(
 	// ...where 'A' is the anchor plate and 'P' is the plate the point is in.
 	//
 	//
-	// NOTE: Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible
-	// that q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
+	// NOTE: Since q and -q both rotate a point to the same final position (where 'q' is any quaternion)
+	// it's possible that q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
 	// So check if we're using the longer path and negate either quaternion in order to
 	// take the shorter path. It actually doesn't matter which one we negate.
 	// We don't normally make this correction because it limits the user's (who creates total poles

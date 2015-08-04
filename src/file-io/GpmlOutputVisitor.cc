@@ -1239,10 +1239,10 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_finite_rotation(
 
 void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_total_reconstruction_pole(
-		const GPlatesPropertyValues::GpmlTotalReconstructionPole &pole)
+		const GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole)
 {
 	d_output.writeStartGpmlElement("TotalReconstructionPole");
-	const std::vector<boost::shared_ptr<GPlatesModel::Metadata> >& meta_data= pole.metadata();
+	const std::vector<boost::shared_ptr<GPlatesModel::Metadata> >& meta_data= gpml_total_reconstruction_pole.metadata();
 	BOOST_FOREACH(boost::shared_ptr<GPlatesModel::Metadata> data, meta_data)
 	{
 		d_output.writeStartGpmlElement("meta");
@@ -1250,7 +1250,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_total_reconstruction_pole(
 		d_output.writeText(data->get_content());
 		d_output.writeEndElement();
 	}
-	visit_gpml_finite_rotation(pole);
+	visit_gpml_finite_rotation(gpml_total_reconstruction_pole);
 	d_output.writeEndElement();
 }
 

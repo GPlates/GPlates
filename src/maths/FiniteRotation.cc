@@ -244,8 +244,8 @@ namespace {
 
 		real_t cos_theta = dot(q1, q2);
 
-		// Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible that
-		// q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
+		// Since q and -q both rotate a point to the same final position (where 'q' is any quaternion)
+		// it's possible that q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
 		// So check if we're using the longer path and negate either quaternion in order to
 		// take the shorter path.
 		//

@@ -198,8 +198,8 @@ GPlatesAppLogic::RotationUtils::get_stage_pole(
 	//
 	// ...where 'A' is the anchor plate, 'F' is the fixed plate and 'M' is the moving plate.
 
-	// NOTE: Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible
-	// that left_q and right_q could be separated by a longer path than are left_q and -right_q
+	// NOTE: Since q and -q both rotate a point to the same final position (where 'q' is any quaternion)
+	// it's possible that left_q and right_q could be separated by a longer path than are left_q and -right_q
 	// (or -left_q and right_q).
 	// However we do *not* restrict ourselves to the shortest path (like 'FiniteRotation::interpolate()'
 	// does in its SLERP routine). This is because the user (who created the total poles in the
@@ -244,8 +244,8 @@ GPlatesAppLogic::RotationUtils::calculate_short_path_final_rotation(
 		const GPlatesMaths::FiniteRotation &final_rotation,
 		const GPlatesMaths::FiniteRotation &initial_rotation)
 {
-	// Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible
-	// that q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
+	// Since q and -q both rotate a point to the same final position (where 'q' is any quaternion) it's
+	// possible that q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
 	// So check if we're using the longer path and negate the quaternion (of the
 	// to-rotation) in order to take the shorter path.
 	if (dot(initial_rotation.unit_quat(), final_rotation.unit_quat()).is_precisely_less_than(0))

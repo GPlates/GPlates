@@ -89,6 +89,11 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_irregular_sampling(
 				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
+		virtual
+		void
+		visit_gpml_total_reconstruction_pole(
+				GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole);
+
 	private:
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
@@ -110,6 +115,29 @@ namespace GPlatesFeatureVisitors
 		TotalReconstructionSequenceRotationInserter &
 		operator=(
 				const TotalReconstructionSequenceRotationInserter &);
+
+		/**
+		 * Update the finite rotation in an existing GpmlFiniteRotation time sample
+		 * (time coincides with existing time sample).
+		 */
+		void
+		update_finite_rotation(
+				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
+
+		/**
+		 * Update the pole metadata in an existing GpmlTotalReconstructionPole time sample
+		 * (time coincides with existing time sample).
+		 */
+		void
+		update_pole_metadata(
+				GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole);
+
+		/**
+		 * Set/modify the pole metadata in a GpmlTotalReconstructionPole.
+		 */
+		void
+		set_pole_metadata(
+				GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole);
 	};
 }
 
