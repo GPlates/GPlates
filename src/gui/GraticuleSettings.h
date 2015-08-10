@@ -54,7 +54,8 @@ namespace GPlatesGui
 				const GPlatesGui::Colour &colour) :
 			d_delta_lat(delta_lat),
 			d_delta_lon(delta_lon),
-			d_colour(colour)
+			d_colour(colour),
+			d_line_width_hint(1.0f)
 		{  }
 
 		double
@@ -96,11 +97,25 @@ namespace GPlatesGui
 			d_colour = colour;
 		}
 
+		float
+		get_line_width_hint() const
+		{
+			return d_line_width_hint;
+		}
+
+		void
+		set_line_width_hint(
+				float line_width_hint)
+		{
+			d_line_width_hint = line_width_hint;
+		}
+
 	private:
 
 		double d_delta_lat;
 		double d_delta_lon;
 		GPlatesGui::Colour d_colour;
+		float d_line_width_hint;
 
 		friend
 		bool
@@ -110,7 +125,8 @@ namespace GPlatesGui
 		{
 			return GPlatesMaths::are_almost_exactly_equal(lhs.d_delta_lat, rhs.d_delta_lat) &&
 				GPlatesMaths::are_almost_exactly_equal(lhs.d_delta_lon, rhs.d_delta_lon) &&
-				lhs.d_colour == rhs.d_colour;
+				lhs.d_colour == rhs.d_colour &&
+				GPlatesMaths::are_almost_exactly_equal(lhs.d_line_width_hint, rhs.d_line_width_hint);
 		}
 	};
 

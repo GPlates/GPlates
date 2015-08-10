@@ -106,7 +106,8 @@ namespace
 	 */
 	void
 	set_line_draw_state(
-			GPlatesOpenGL::GLRenderer &renderer)
+			GPlatesOpenGL::GLRenderer &renderer,
+			float line_width_hint)
 	{
 		// Set the alpha-blend state.
 		// Set up alpha blending for pre-multiplied alpha.
@@ -134,7 +135,7 @@ namespace
 		// Set the anti-aliased line state.
 		renderer.gl_enable(GL_LINE_SMOOTH);
 		renderer.gl_hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-		renderer.gl_line_width(1.0f);
+		renderer.gl_line_width(line_width_hint);
 	}
 
 
@@ -295,7 +296,8 @@ namespace
 			const GPlatesGui::MapProjection &map_projection,
 			const GPlatesMaths::Real &delta_lat,
 			const GPlatesMaths::Real &delta_lon,
-			const GPlatesGui::rgba8_t &colour)
+			const GPlatesGui::rgba8_t &colour,
+			float line_width_hint)
 	{
 		const double lat_0 = 90;
 		const double lon_0 = map_projection.central_llp().longitude() - 180;
@@ -337,7 +339,7 @@ namespace
 		// Start compiling draw state that includes line drawing state and the vertex array draw command.
 		GPlatesOpenGL::GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer);
 
-		set_line_draw_state(renderer);
+		set_line_draw_state(renderer, line_width_hint);
 		renderer.apply_compiled_draw_state(*draw_vertex_array);
 
 		return compile_draw_state_scope.get_compiled_draw_state();
@@ -377,7 +379,8 @@ GPlatesGui::MapGrid::paint(
 				d_map_projection,
 				GPlatesMaths::convert_rad_to_deg(d_graticule_settings.get_delta_lat()),
 				GPlatesMaths::convert_rad_to_deg(d_graticule_settings.get_delta_lon()),
-				Colour::to_rgba8(d_graticule_settings.get_colour()));
+				Colour::to_rgba8(d_graticule_settings.get_colour()),
+				d_graticule_settings.get_line_width_hint());
 
 		d_last_seen_graticule_settings = d_graticule_settings;
 		d_last_seen_map_projection_settings = map_projection_settings;
