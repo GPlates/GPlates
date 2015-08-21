@@ -62,60 +62,58 @@ namespace GPlatesApi
 	namespace
 	{
 		/**
-		 * Convert a reverse-reconstruct Python tuple from:
-		 *   (rotation model[, anchor plate id]
-		 * to:
-		 *   (rotation model, reconstruction time [, anchor plate id]
-		 * by inserting the reconstruction time so that it's suitable for Feature.set_geometry().
+		 * Convert a GeometryOnSphere to a PolylineOnSphere (even if they are just single points - just duplicate).
+		 *
+		 * This will make it easier for the user who will expect sub-segments to be polylines, or
+		 * RFG topological sections to be polylines (instead, eg, polygons).
 		 */
-		bp::tuple
-		add_reconstruction_time_to_reverse_reconstruct_parameters(
-				bp::object reverse_reconstruct_object,
-				const double &reconstruction_time)
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+		convert_geometry_to_polyline(
+				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &sub_segment_geometry)
 		{
-			const char *type_error_string =
-					"Expecting a (rotation model[, anchor plate id]) tuple for 'reverse_reconstruct'";
-
-			bp::extract<bp::tuple> extract_tuple(reverse_reconstruct_object);
-			if (!extract_tuple.check())
+			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> sub_segment_polyline =
+					GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(*sub_segment_geometry);
+			if (!sub_segment_polyline)
 			{
-				PyErr_SetString(PyExc_TypeError, type_error_string);
-				bp::throw_error_already_set();
+				// There were less than two points.
+				// 
+				// Retrieve the point.
+				std::vector<GPlatesMaths::PointOnSphere> geometry_points;
+				GPlatesAppLogic::GeometryUtils::get_geometry_points(*sub_segment_geometry, geometry_points);
+
+				// There should be a single point.
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						!geometry_points.empty(),
+						GPLATES_ASSERTION_SOURCE);
+
+				// Duplicate the point.
+				geometry_points.push_back(geometry_points.back());
+
+				sub_segment_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(geometry_points);
 			}
 
-			bp::tuple reverse_reconstruct_tuple = extract_tuple();
-			const unsigned int tuple_len = bp::len(reverse_reconstruct_tuple);
-			if (tuple_len != 2 && tuple_len != 1)
+			return sub_segment_polyline.get();
+		}
+
+		/**
+		 * Get the polyline from the reconstruction geometry of a topological section feature.
+		 *
+		 * This can be either a reconstructed feature geometry or a resolved topological *line*,
+		 * otherwise returns none.
+		 */
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
+		get_topological_section_geometry(
+				const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &topological_section)
+		{
+			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> topological_section_geometry =
+					GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_section_geometry(
+							topological_section);
+			if (!topological_section_geometry)
 			{
-				PyErr_SetString(PyExc_TypeError, type_error_string);
-				bp::throw_error_already_set();
+				return boost::none;
 			}
 
-			bp::extract<GPlatesApi::RotationModel::non_null_ptr_type> extract_rotation_model(reverse_reconstruct_tuple[0]);
-			if (!extract_rotation_model.check())
-			{
-				PyErr_SetString(PyExc_TypeError, type_error_string);
-				bp::throw_error_already_set();
-			}
-
-			if (tuple_len == 1)
-			{
-				return bp::make_tuple(
-						reverse_reconstruct_tuple[0],
-						reconstruction_time);
-			}
-
-			bp::extract<GPlatesModel::integer_plate_id_type> extract_anchor_plate_id(reverse_reconstruct_tuple[1]);
-			if (!extract_anchor_plate_id.check())
-			{
-				PyErr_SetString(PyExc_TypeError, type_error_string);
-				bp::throw_error_already_set();
-			}
-
-			return bp::make_tuple(
-					reverse_reconstruct_tuple[0],
-					reconstruction_time,
-					reverse_reconstruct_tuple[1]);
+			return convert_geometry_to_polyline(topological_section_geometry.get());
 		}
 	}
 
@@ -890,6 +888,23 @@ namespace GPlatesApi
 		return line_sub_segments_list;
 	}
 
+	// The derived reconstruction geometry type wrapper might be the wrong type.
+	// It normally should be the right type though so we don't document that Py_None could be returned to the caller.
+	bp::object
+	resolved_topological_line_get_resolved_feature(
+			const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &reconstruction_geometry)
+	{
+		// Extract the 'GPlatesAppLogic::ResolvedTopologicalLine' wrapper.
+		boost::optional<const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine> &> wrapper =
+				reconstruction_geometry.get_reconstruction_geometry_type_wrapper<GPlatesAppLogic::ResolvedTopologicalLine>();
+		if (!wrapper)
+		{
+			return bp::object()/*Py_None*/;
+		}
+
+		return wrapper->get_resolved_feature();
+	}
+
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>::ReconstructionGeometryTypeWrapper(
 			GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_to_const_type resolved_topological_line) :
 		d_resolved_topological_line(
@@ -914,6 +929,34 @@ namespace GPlatesApi
 			d_sub_segments.push_back(
 					ResolvedTopologicalGeometrySubSegmentWrapper(sub_segment));
 		}
+	}
+
+	bp::object
+	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>::get_resolved_feature() const
+	{
+		if (!d_resolved_feature_object)
+		{
+			boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type> feature =
+					reconstruction_geometry_get_feature(*d_resolved_topological_line);
+			if (!feature)
+			{
+				return bp::object()/*Py_None*/;
+			}
+
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type resolved_geometry =
+					d_resolved_topological_line->resolved_topology_line();
+
+			// Clone the feature.
+			bp::object resolved_feature_object = bp::object(feature.get()).attr("clone")();
+
+			// Set the resolved line geometry.
+			resolved_feature_object.attr("set_geometry")(resolved_geometry);
+
+			// No exceptions have been thrown so record our new resolved feature.
+			d_resolved_feature_object = resolved_feature_object;
+		}
+
+		return d_resolved_feature_object;
 	}
 }
 
@@ -941,7 +984,12 @@ export_resolved_topological_line()
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ResolvedTopologicalLine`.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n")
+				"  :rtype: :class:`Feature`\n"
+				"\n"
+				"  .. note:: The returned feature is what was used to generate this :class:`ResolvedTopologicalLine` "
+				"via :func:`resolve_topologies`.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_resolved_feature`\n")
 		.def("get_property",
 				&GPlatesApi::reconstruction_geometry_get_property,
 				"get_property()\n"
@@ -962,6 +1010,37 @@ export_resolved_topological_line()
 				&GPlatesApi::resolved_topological_line_get_resolved_line,
 				"get_resolved_geometry()\n"
 				"  Same as :meth:`get_resolved_line`.\n")
+		.def("get_resolved_feature",
+				&GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>::get_resolved_feature,
+				"get_resolved_feature()\n"
+				"  Returns a feature containing the resolved line geometry.\n"
+				"\n"
+				"  :rtype: :class:`Feature`\n"
+				"\n"
+				"  The returned feature contains the static :meth:`resolved geometry<get_resolved_geometry>`. "
+				"Unlike :meth:`get_feature` it cannot be used to generate a :class:`ResolvedTopologicalLine` "
+				"via :func:`resolve_topologies`.\n"
+				"\n"
+				"  .. note:: | The returned feature does **not** contain present-day geometry as is typical "
+				"of most GPlates features.\n"
+				"            | In this way the returned feature is similar to a GPlates reconstruction export.\n"
+				"\n"
+				"  .. note:: The returned feature should not be :func:`reverse reconstructed<reverse_reconstruct>` "
+				"to present day because topologies are resolved (not reconstructed).\n"
+				"\n"
+				"  .. seealso:: :meth:`get_feature`\n")
+		// This overload of 'get_resolved_feature' works with
+		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>.
+		// This happens when a GPlatesAppLogic::ResolvedTopologicalLine is passed to Python as a
+		// GPlatesAppLogic::ReconstructionGeometry. Coming from Python, boost-python knows the
+		// GPlatesAppLogic::ReconstructionGeometry is a GPlatesAppLogic::ResolvedTopologicalLine
+		// (which is how it gets here) but cannot convert from a
+		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> to a
+		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalLine>
+		// so we have to do that ourselves...
+		.def("get_resolved_feature",
+				&GPlatesApi::resolved_topological_line_get_resolved_feature,
+				"\n") // A non-empty string otherwise boost-python will double docstring of other overload.
 		.def("get_line_sub_segments",
 				&GPlatesApi::resolved_topological_line_get_line_sub_segments,
 				"get_line_sub_segments()\n"
@@ -1029,6 +1108,23 @@ namespace GPlatesApi
 		return boundary_sub_segments_list;
 	}
 
+	// The derived reconstruction geometry type wrapper might be the wrong type.
+	// It normally should be the right type though so we don't document that Py_None could be returned to the caller.
+	bp::object
+	resolved_topological_boundary_get_resolved_feature(
+			const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &reconstruction_geometry)
+	{
+		// Extract the 'GPlatesAppLogic::ResolvedTopologicalBoundary' wrapper.
+		boost::optional<const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary> &> wrapper =
+				reconstruction_geometry.get_reconstruction_geometry_type_wrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>();
+		if (!wrapper)
+		{
+			return bp::object()/*Py_None*/;
+		}
+
+		return wrapper->get_resolved_feature();
+	}
+
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>::ReconstructionGeometryTypeWrapper(
 			GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_to_const_type resolved_topological_boundary) :
 		d_resolved_topological_boundary(
@@ -1053,6 +1149,34 @@ namespace GPlatesApi
 			d_sub_segments.push_back(
 					ResolvedTopologicalGeometrySubSegmentWrapper(sub_segment));
 		}
+	}
+
+	bp::object
+	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>::get_resolved_feature() const
+	{
+		if (!d_resolved_feature_object)
+		{
+			boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type> feature =
+					reconstruction_geometry_get_feature(*d_resolved_topological_boundary);
+			if (!feature)
+			{
+				return bp::object()/*Py_None*/;
+			}
+
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_geometry =
+					d_resolved_topological_boundary->resolved_topology_boundary();
+
+			// Clone the feature.
+			bp::object resolved_feature_object = bp::object(feature.get()).attr("clone")();
+
+			// Set the resolved boundary geometry.
+			resolved_feature_object.attr("set_geometry")(resolved_geometry);
+
+			// No exceptions have been thrown so record our new resolved feature.
+			d_resolved_feature_object = resolved_feature_object;
+		}
+
+		return d_resolved_feature_object;
 	}
 }
 
@@ -1080,7 +1204,12 @@ export_resolved_topological_boundary()
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ResolvedTopologicalBoundary`.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n")
+				"  :rtype: :class:`Feature`\n"
+				"\n"
+				"  .. note:: The returned feature is what was used to generate this :class:`ResolvedTopologicalBoundary` "
+				"via :func:`resolve_topologies`.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_resolved_feature`\n")
 		.def("get_property",
 				&GPlatesApi::reconstruction_geometry_get_property,
 				"get_property()\n"
@@ -1101,6 +1230,37 @@ export_resolved_topological_boundary()
 				&GPlatesApi::resolved_topological_boundary_get_resolved_boundary,
 				"get_resolved_geometry()\n"
 				"  Same as :meth:`get_resolved_boundary`.\n")
+		.def("get_resolved_feature",
+				&GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>::get_resolved_feature,
+				"get_resolved_feature()\n"
+				"  Returns a feature containing the resolved boundary geometry.\n"
+				"\n"
+				"  :rtype: :class:`Feature`\n"
+				"\n"
+				"  The returned feature contains the static :meth:`resolved geometry<get_resolved_geometry>`. "
+				"Unlike :meth:`get_feature` it cannot be used to generate a :class:`ResolvedTopologicalBoundary` "
+				"via :func:`resolve_topologies`.\n"
+				"\n"
+				"  .. note:: | The returned feature does **not** contain present-day geometry as is typical "
+				"of most GPlates features.\n"
+				"            | In this way the returned feature is similar to a GPlates reconstruction export.\n"
+				"\n"
+				"  .. note:: The returned feature should not be :func:`reverse reconstructed<reverse_reconstruct>` "
+				"to present day because topologies are resolved (not reconstructed).\n"
+				"\n"
+				"  .. seealso:: :meth:`get_feature`\n")
+		// This overload of 'get_resolved_feature' works with
+		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>.
+		// This happens when a GPlatesAppLogic::ResolvedTopologicalBoundary is passed to Python as a
+		// GPlatesAppLogic::ReconstructionGeometry. Coming from Python, boost-python knows the
+		// GPlatesAppLogic::ReconstructionGeometry is a GPlatesAppLogic::ResolvedTopologicalBoundary
+		// (which is how it gets here) but cannot convert from a
+		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> to a
+		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>
+		// so we have to do that ourselves...
+		.def("get_resolved_feature",
+				&GPlatesApi::resolved_topological_boundary_get_resolved_feature,
+				"\n") // A non-empty string otherwise boost-python will double docstring of other overload.
 		.def("get_boundary_sub_segments",
 				&GPlatesApi::resolved_topological_boundary_get_boundary_sub_segments,
 				"get_boundary_sub_segments()\n"
@@ -1168,6 +1328,23 @@ namespace GPlatesApi
 		return boundary_sub_segments_list;
 	}
 
+	// The derived reconstruction geometry type wrapper might be the wrong type.
+	// It normally should be the right type though so we don't document that Py_None could be returned to the caller.
+	bp::object
+	resolved_topological_network_get_resolved_feature(
+			const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> &reconstruction_geometry)
+	{
+		// Extract the 'GPlatesAppLogic::ResolvedTopologicalNetwork' wrapper.
+		boost::optional<const ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork> &> wrapper =
+				reconstruction_geometry.get_reconstruction_geometry_type_wrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>();
+		if (!wrapper)
+		{
+			return bp::object()/*Py_None*/;
+		}
+
+		return wrapper->get_resolved_feature();
+	}
+
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>::ReconstructionGeometryTypeWrapper(
 			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_topological_network) :
 		d_resolved_topological_network(
@@ -1192,6 +1369,34 @@ namespace GPlatesApi
 			d_boundary_sub_segments.push_back(
 					ResolvedTopologicalGeometrySubSegmentWrapper(boundary_sub_segment));
 		}
+	}
+
+	bp::object
+	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>::get_resolved_feature() const
+	{
+		if (!d_resolved_feature_object)
+		{
+			boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type> feature =
+					reconstruction_geometry_get_feature(*d_resolved_topological_network);
+			if (!feature)
+			{
+				return bp::object()/*Py_None*/;
+			}
+
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_geometry =
+					d_resolved_topological_network->boundary_polygon();
+
+			// Clone the feature.
+			bp::object resolved_feature_object = bp::object(feature.get()).attr("clone")();
+
+			// Set the resolved boundary geometry.
+			resolved_feature_object.attr("set_geometry")(resolved_geometry);
+
+			// No exceptions have been thrown so record our new resolved feature.
+			d_resolved_feature_object = resolved_feature_object;
+		}
+
+		return d_resolved_feature_object;
 	}
 }
 
@@ -1219,7 +1424,12 @@ export_resolved_topological_network()
 				"get_feature()\n"
 				"  Returns the feature associated with this :class:`ResolvedTopologicalNetwork`.\n"
 				"\n"
-				"  :rtype: :class:`Feature`\n")
+				"  :rtype: :class:`Feature`\n"
+				"\n"
+				"  .. note:: The returned feature is what was used to generate this :class:`ResolvedTopologicalNetwork` "
+				"via :func:`resolve_topologies`.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_resolved_feature`\n")
 		.def("get_property",
 				&GPlatesApi::reconstruction_geometry_get_property,
 				"get_property()\n"
@@ -1235,6 +1445,41 @@ export_resolved_topological_network()
 				"  Returns the resolved boundary of this network.\n"
 				"\n"
 				"  :rtype: :class:`PolygonOnSphere`\n")
+		.def("get_resolved_geometry",
+				&GPlatesApi::resolved_topological_network_get_resolved_boundary,
+				"get_resolved_geometry()\n"
+				"  Same as :meth:`get_resolved_boundary`.\n")
+		.def("get_resolved_feature",
+				&GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>::get_resolved_feature,
+				"get_resolved_feature()\n"
+				"  Returns a feature containing the resolved boundary geometry.\n"
+				"\n"
+				"  :rtype: :class:`Feature`\n"
+				"\n"
+				"  The returned feature contains the static :meth:`resolved geometry<get_resolved_geometry>`. "
+				"Unlike :meth:`get_feature` it cannot be used to generate a :class:`ResolvedTopologicalNetwork` "
+				"via :func:`resolve_topologies`.\n"
+				"\n"
+				"  .. note:: | The returned feature does **not** contain present-day geometry as is typical "
+				"of most GPlates features.\n"
+				"            | In this way the returned feature is similar to a GPlates reconstruction export.\n"
+				"\n"
+				"  .. note:: The returned feature should not be :func:`reverse reconstructed<reverse_reconstruct>` "
+				"to present day because topologies are resolved (not reconstructed).\n"
+				"\n"
+				"  .. seealso:: :meth:`get_feature`\n")
+		// This overload of 'get_resolved_feature' works with
+		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry>.
+		// This happens when a GPlatesAppLogic::ResolvedTopologicalNetwork is passed to Python as a
+		// GPlatesAppLogic::ReconstructionGeometry. Coming from Python, boost-python knows the
+		// GPlatesAppLogic::ReconstructionGeometry is a GPlatesAppLogic::ResolvedTopologicalNetwork
+		// (which is how it gets here) but cannot convert from a
+		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> to a
+		// GPlatesApi::ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>
+		// so we have to do that ourselves...
+		.def("get_resolved_feature",
+				&GPlatesApi::resolved_topological_network_get_resolved_feature,
+				"\n") // A non-empty string otherwise boost-python will double docstring of other overload.
 		.def("get_boundary_sub_segments",
 				&GPlatesApi::resolved_topological_network_get_boundary_sub_segments,
 				"get_boundary_sub_segments()\n"
@@ -1290,43 +1535,22 @@ namespace GPlatesApi
 	// Convert sub-segment geometries to polylines (even if they are just single points - just duplicate).
 	// This will make it easier for the user who will expect sub-segments to be polylines.
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
-	convert_resolved_topological_sub_segment_geometry_to_polyline(
-			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &sub_segment_geometry)
-	{
-		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> sub_segment_polyline =
-				GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(*sub_segment_geometry);
-		if (!sub_segment_polyline)
-		{
-			// There were less than two points.
-			// 
-			// Retrieve the point.
-			std::vector<GPlatesMaths::PointOnSphere> geometry_points;
-			GPlatesAppLogic::GeometryUtils::get_geometry_points(*sub_segment_geometry, geometry_points);
-
-			// There should be a single point.
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					!geometry_points.empty(),
-					GPLATES_ASSERTION_SOURCE);
-
-			// Duplicate the point.
-			geometry_points.push_back(geometry_points.back());
-
-			sub_segment_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(geometry_points);
-		}
-
-		return sub_segment_polyline.get();
-	}
-
-	// Convert sub-segment geometries to polylines (even if they are just single points - just duplicate).
-	// This will make it easier for the user who will expect sub-segments to be polylines.
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 	resolved_topological_geometry_sub_segment_get_resolved_geometry(
 			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &resolved_topological_geometry_sub_segment)
 	{
-		return convert_resolved_topological_sub_segment_geometry_to_polyline(
+		return convert_geometry_to_polyline(
 				resolved_topological_geometry_sub_segment.get_geometry());
 	}
 
+	// The topological section might not be a reconstructed feature geometry or a resolved topological *line*.
+	// It should normally be one though so we don't document that Py_None could be returned to the caller.
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
+	resolved_topological_geometry_sub_segment_get_topological_section_geometry(
+			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &resolved_topological_geometry_sub_segment)
+	{
+		return get_topological_section_geometry(
+				resolved_topological_geometry_sub_segment.get_reconstruction_geometry());
+	}
 
 	bp::object
 	ResolvedTopologicalGeometrySubSegmentWrapper::get_resolved_feature() const
@@ -1487,7 +1711,7 @@ export_resolved_topological_sub_segment()
 				"  :rtype: :class:`PolylineOnSphere`\n"
 				"\n"
 				"  .. note:: These are the *unreversed* vertices. They are in the same order as the "
-				"geometry of :meth:`get_topological_section`.\n"
+				"geometry of :meth:`get_topological_section_geometry`.\n"
 				"\n"
 				"  .. seealso:: :meth:`was_geometry_reversed_in_topology`\n")
 		// To be deprecated in favour of 'get_resolved_geometry()'...
@@ -1512,7 +1736,20 @@ export_resolved_topological_sub_segment()
 				"            | If the resolved topology (that this sub-segment is a part of) is a "
 				":class:`ResolvedTopologicalBoundary` or a :class:`ResolvedTopologicalNetwork` then "
 				"the topological section can be either a :class:`ReconstructedFeatureGeometry` or "
-				"a :class:`ResolvedTopologicalLine`.\n")
+				"a :class:`ResolvedTopologicalLine`.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_topological_section_feature`\n")
+		.def("get_topological_section_geometry",
+				&GPlatesApi::resolved_topological_geometry_sub_segment_get_topological_section_geometry,
+				"get_topological_section_geometry()\n"
+				"  Returns the topological section *geometry* that the sub-segment was obtained from.\n"
+				"\n"
+				"  :rtype: :class:`PolylineOnSphere`\n"
+				"\n"
+				"  .. note:: This is the **entire** geometry of the topological section, not just "
+				"the part that contributes to the sub-segment.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_topological_section`\n")
 		.def("get_topological_section_feature",
 				&GPlatesApi::resolved_topological_geometry_sub_segment_get_topological_section_feature,
 				"get_topological_section_feature()\n"
@@ -1578,8 +1815,18 @@ namespace GPlatesApi
 	resolved_topological_shared_sub_segment_get_resolved_geometry(
 			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &resolved_topological_shared_sub_segment)
 	{
-		return convert_resolved_topological_sub_segment_geometry_to_polyline(
+		return convert_geometry_to_polyline(
 				resolved_topological_shared_sub_segment.get_geometry());
+	}
+
+	// The topological section might not be a reconstructed feature geometry or a resolved topological *line*.
+	// It should normally be one though so we don't document that Py_None could be returned to the caller.
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
+	resolved_topological_shared_sub_segment_get_topological_section_geometry(
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &resolved_topological_shared_sub_segment)
+	{
+		return get_topological_section_geometry(
+				resolved_topological_shared_sub_segment.get_reconstruction_geometry());
 	}
 
 	/**
@@ -1803,7 +2050,7 @@ export_resolved_topological_shared_sub_segment()
 				"  :rtype: :class:`PolylineOnSphere`\n"
 				"\n"
 				"  .. note:: These are the *unreversed* vertices. They are in the same order as the "
-				"geometry of :meth:`get_topological_section`.\n")
+				"geometry of :meth:`get_topological_section_geometry`.\n")
 		// To be deprecated in favour of 'get_resolved_geometry()'...
 		.def("get_geometry",
 				&GPlatesApi::resolved_topological_shared_sub_segment_get_resolved_geometry,
@@ -1825,7 +2072,18 @@ export_resolved_topological_shared_sub_segment()
 				"            | The resolved topologies that share the topological section can be "
 				":class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`.\n"
 				"\n"
-				"  .. seealso:: :class:`get_sharing_resolved_topologies`\n")
+				"  .. seealso:: :class:`get_topological_section_feature`\n")
+		.def("get_topological_section_geometry",
+				&GPlatesApi::resolved_topological_shared_sub_segment_get_topological_section_geometry,
+				"get_topological_section_geometry()\n"
+				"  Returns the topological section *geometry* that the shared sub-segment was obtained from.\n"
+				"\n"
+				"  :rtype: :class:`PolylineOnSphere`\n"
+				"\n"
+				"  .. note:: This is the **entire** geometry of the topological section, not just "
+				"the part that contributes to the shared sub-segment.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_topological_section`\n")
 		.def("get_topological_section_feature",
 				&GPlatesApi::resolved_topological_shared_sub_segment_get_topological_section_feature,
 				"get_topological_section_feature()\n"
@@ -1906,11 +2164,21 @@ namespace GPlatesApi
 	 * to the caller.
 	 */
 	boost::optional<GPlatesModel::FeatureHandle::non_null_ptr_type>
-	resolved_topological_section_get_feature(
+	resolved_topological_section_get_topological_section_feature(
 			const GPlatesAppLogic::ResolvedTopologicalSection &resolved_topological_section)
 	{
 		return reconstruction_geometry_get_feature(
 				*resolved_topological_section.get_reconstruction_geometry());
+	}
+
+	// The topological section might not be a reconstructed feature geometry or a resolved topological *line*.
+	// It should normally be one though so we don't document that Py_None could be returned to the caller.
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
+	resolved_topological_section_get_topological_section_geometry(
+			const GPlatesAppLogic::ResolvedTopologicalSection &resolved_topological_section)
+	{
+		return get_topological_section_geometry(
+				resolved_topological_section.get_reconstruction_geometry());
 	}
 
 
@@ -2053,15 +2321,20 @@ export_resolved_topological_section()
 					"*ResolvedTopologicalSection* instances.\n",
 					// Don't allow creation from python side...
 					bp::no_init)
-		.def("get_feature",
-				&GPlatesApi::resolved_topological_section_get_feature,
-				"get_feature()\n"
+		.def("get_topological_section_feature",
+				&GPlatesApi::resolved_topological_section_get_topological_section_feature,
+				"get_topological_section_feature()\n"
 				"  Returns the feature referenced by the topological section.\n"
 				"\n"
 				"  :rtype: :class:`Feature`\n"
 				"\n"
 				"  .. note:: The geometry in the returned feature represents the **entire** geometry of the "
 				"topological section, not just the parts that contribute to resolved topological boundaries.\n")
+		// To be deprecated in favour of 'get_topological_section_feature()'...
+		.def("get_feature",
+				&GPlatesApi::resolved_topological_section_get_topological_section_feature,
+				"get_feature()\n"
+				"  To be **deprecated** - use :meth:`get_topological_section_feature` instead.\n")
 		.def("get_topological_section",
 				&GPlatesApi::ResolvedTopologicalSectionWrapper::get_reconstruction_geometry,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -2078,7 +2351,18 @@ export_resolved_topological_section()
 				"            | The resolved topologies that share the topological section can be "
 				":class:`ResolvedTopologicalBoundary` and :class:`ResolvedTopologicalNetwork`.\n"
 				"\n"
-				"  .. seealso:: :class:`get_shared_sub_segments`\n")
+				"  .. seealso:: :class:`get_topological_section_feature`\n")
+		.def("get_topological_section_geometry",
+				&GPlatesApi::resolved_topological_section_get_topological_section_geometry,
+				"get_topological_section_geometry()\n"
+				"  Returns the topological section *geometry*.\n"
+				"\n"
+				"  :rtype: :class:`PolylineOnSphere`\n"
+				"\n"
+				"  .. note:: This is the **entire** geometry of the topological section, not just "
+				"the parts that contribute to resolved topological boundaries.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_topological_section`\n")
 		.def("get_shared_sub_segments",
 				&GPlatesApi::ResolvedTopologicalSectionWrapper::get_shared_sub_segments,
 				"get_shared_sub_segments()\n"

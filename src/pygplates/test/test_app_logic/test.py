@@ -465,24 +465,32 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             resolved_topological_sections)
         
         self.assertTrue(len(resolved_topologies) == 3)
+        for resolved_topology in resolved_topologies:
+            self.assertTrue(resolved_topology.get_resolved_feature().get_geometry() == resolved_topology.get_resolved_geometry())
         resolved_topologies_dict = dict(zip(
                 (rt.get_feature().get_name() for rt in resolved_topologies),
                 (rt for rt in resolved_topologies)))
         for bss in resolved_topologies_dict['topology1'].get_boundary_sub_segments():
-            self.assertTrue(bss.get_feature().get_name() in ('section2', 'section3', 'section4', 'section7', 'section8'))
+            self.assertTrue(bss.get_topological_section_feature().get_name() in ('section2', 'section3', 'section4', 'section7', 'section8'))
         # Sections 9 and 10 are points that have been joined into a single sub-segment (a hack) but either could get selected as the representative section.
         for bss in resolved_topologies_dict['topology2'].get_boundary_sub_segments():
-            self.assertTrue(bss.get_feature().get_name() in ('section4', 'section5', 'section7', 'section14', 'section9', 'section10'))
+            self.assertTrue(bss.get_topological_section_feature().get_name() in ('section4', 'section5', 'section7', 'section14', 'section9', 'section10'))
         for bss in resolved_topologies_dict['topology3'].get_boundary_sub_segments():
-            self.assertTrue(bss.get_feature().get_name() in ('section1', 'section2', 'section6', 'section7', 'section8', 'section14', 'section9', 'section10'))
+            self.assertTrue(bss.get_topological_section_feature().get_name() in ('section1', 'section2', 'section6', 'section7', 'section8', 'section14', 'section9', 'section10'))
             self.assertTrue(bss.get_resolved_feature().get_geometry() == bss.get_resolved_geometry())
+            if bss.get_topological_section_feature().get_name() == 'section14':
+                # We know 'section14' is a ResolvedTopologicalLine...
+                self.assertTrue(bss.get_topological_section().get_resolved_line() == bss.get_topological_section_geometry())
+            else:
+                # We know all sections except 'section14' are ReconstructedFeatureGeometry's (not ResolvedTopologicalLine's)...
+                self.assertTrue(pygplates.PolylineOnSphere(bss.get_topological_section().get_reconstructed_geometry()) == bss.get_topological_section_geometry())
         
         self.assertTrue(len(resolved_topological_sections) == 9)
         resolved_topological_sections_dict = dict(zip(
-                (rts.get_feature().get_name() for rts in resolved_topological_sections),
+                (rts.get_topological_section_feature().get_name() for rts in resolved_topological_sections),
                 (rts for rts in resolved_topological_sections)))
         for rts in resolved_topological_sections:
-            self.assertTrue(rts.get_feature().get_name() in ('section1', 'section2', 'section3', 'section4', 'section5', 'section6', 'section7', 'section8', 'section14'))
+            self.assertTrue(rts.get_topological_section_feature().get_name() in ('section1', 'section2', 'section3', 'section4', 'section5', 'section6', 'section7', 'section8', 'section14'))
         
         section1_shared_sub_segments = resolved_topological_sections_dict['section1'].get_shared_sub_segments()
         self.assertTrue(len(section1_shared_sub_segments) == 1)

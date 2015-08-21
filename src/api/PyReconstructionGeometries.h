@@ -177,6 +177,27 @@ namespace GPlatesApi
 			return d_reconstruction_geometry;
 		}
 
+		/**
+		 * Get the wrapped reconstruction geometry type.
+		 *
+		 * Returns none if the wrapper reconstruction geometry type is not 'ReconstructionGeometryType'.
+		 */
+		template <class ReconstructionGeometryType>
+		boost::optional<const ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> &>
+		get_reconstruction_geometry_type_wrapper() const
+		{
+			// See if requested wrapper type.
+			const ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> *wrapper =
+					boost::any_cast< ReconstructionGeometryTypeWrapper<ReconstructionGeometryType> >(
+							&d_reconstruction_geometry_type_wrapper);
+			if (!wrapper)
+			{
+				return boost::none;
+			}
+
+			return *wrapper;
+		}
+
 	private:
 
 		static
@@ -309,6 +330,15 @@ namespace GPlatesApi
 			return d_resolved_topological_line;
 		}
 
+		/**
+		 * Clones the feature returned by 'get_feature()' and sets the geometry to the resolved line geometry.
+		 *
+		 * The feature reference could be invalid, in which case we cannot clone it.
+		 * It should normally be valid though so we don't document that Py_None could be returned to the caller.
+		 */
+		boost::python::object
+		get_resolved_feature() const;
+
 	private:
 
 		//! The wrapped reconstruction geometry type itself.
@@ -324,6 +354,12 @@ namespace GPlatesApi
 		 */
 		std::vector<ResolvedTopologicalGeometrySubSegmentWrapper> d_sub_segments;
 
+		/**
+		 * A feature containing the resolved (not present day) line geometry.
+		 *
+		 * NOTE: It is only created when first requested by @a get_resolved_feature.
+		 */
+		mutable boost::python::object d_resolved_feature_object;
 	};
 
 
@@ -357,6 +393,15 @@ namespace GPlatesApi
 			return d_resolved_topological_boundary;
 		}
 
+		/**
+		 * Clones the feature returned by 'get_feature()' and sets the geometry to the resolved boundary geometry.
+		 *
+		 * The feature reference could be invalid, in which case we cannot clone it.
+		 * It should normally be valid though so we don't document that Py_None could be returned to the caller.
+		 */
+		boost::python::object
+		get_resolved_feature() const;
+
 	private:
 
 		//! The wrapped reconstruction geometry type itself.
@@ -372,6 +417,12 @@ namespace GPlatesApi
 		 */
 		std::vector<ResolvedTopologicalGeometrySubSegmentWrapper> d_sub_segments;
 
+		/**
+		 * A feature containing the resolved (not present day) line geometry.
+		 *
+		 * NOTE: It is only created when first requested by @a get_resolved_feature.
+		 */
+		mutable boost::python::object d_resolved_feature_object;
 	};
 
 
@@ -405,6 +456,15 @@ namespace GPlatesApi
 			return d_resolved_topological_network;
 		}
 
+		/**
+		 * Clones the feature returned by 'get_feature()' and sets the geometry to the resolved boundary geometry.
+		 *
+		 * The feature reference could be invalid, in which case we cannot clone it.
+		 * It should normally be valid though so we don't document that Py_None could be returned to the caller.
+		 */
+		boost::python::object
+		get_resolved_feature() const;
+
 	private:
 
 		//! The wrapped reconstruction geometry type itself.
@@ -420,6 +480,12 @@ namespace GPlatesApi
 		 */
 		std::vector<ResolvedTopologicalGeometrySubSegmentWrapper> d_boundary_sub_segments;
 
+		/**
+		 * A feature containing the resolved (not present day) line geometry.
+		 *
+		 * NOTE: It is only created when first requested by @a get_resolved_feature.
+		 */
+		mutable boost::python::object d_resolved_feature_object;
 	};
 
 
