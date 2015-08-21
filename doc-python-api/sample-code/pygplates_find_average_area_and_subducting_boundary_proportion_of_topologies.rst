@@ -49,10 +49,10 @@ Sample code
             for boundary_sub_segment in resolved_topology.get_boundary_sub_segments():
                 
                 # See if the current boundary sub-segment is a subduction zone.
-                if boundary_sub_segment.get_feature().get_feature_type() == pygplates.FeatureType.create_gpml('SubductionZone'):
+                if boundary_sub_segment.get_resolved_feature().get_feature_type() == pygplates.FeatureType.create_gpml('SubductionZone'):
                     
                     # Each sub-segment has a polyline with a length.
-                    subduction_zone_length += boundary_sub_segment.get_geometry().get_arc_length()
+                    subduction_zone_length += boundary_sub_segment.get_resolved_geometry().get_arc_length()
             
             # Calculate the proportion of the current topology's boundary length that is subducting.
             # It is the subduction zone length divided by the boundary polygon length.
@@ -116,13 +116,13 @@ The :meth:`feature type<pygplates.Feature.get_feature_type>` of the boundary sub
 to see if it's a subduction zone using :meth:`pygplates.FeatureType.create_gpml`.
 ::
 
-    if boundary_sub_segment.get_feature().get_feature_type() == pygplates.FeatureType.create_gpml('SubductionZone'):
+    if boundary_sub_segment.get_resolved_feature().get_feature_type() == pygplates.FeatureType.create_gpml('SubductionZone'):
 
-The boundary sub-segment :meth:`polyline<pygplates.ResolvedTopologicalSubSegment.get_geometry>`
+The boundary sub-segment :meth:`polyline<pygplates.ResolvedTopologicalSubSegment.get_resolved_geometry>`
 length is obtained using :meth:`pygplates.PolylineOnSphere.get_arc_length`.
 ::
 
-    subduction_zone_length += boundary_sub_segment.get_geometry().get_arc_length()
+    subduction_zone_length += boundary_sub_segment.get_resolved_geometry().get_arc_length()
 
 The boundary polygon of a resolved topology also has a length (obtained using :meth:`pygplates.PolygonOnSphere.get_arc_length`).
 ::

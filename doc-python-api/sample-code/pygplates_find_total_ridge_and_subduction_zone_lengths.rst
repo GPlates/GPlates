@@ -53,7 +53,7 @@ Sample code
             for shared_sub_segment in shared_boundary_section.get_shared_sub_segments():
                 
                 # Each sub-segment has a polyline with a length.
-                shared_sub_segments_length += shared_sub_segment.get_geometry().get_arc_length()
+                shared_sub_segments_length += shared_sub_segment.get_resolved_geometry().get_arc_length()
             
             # The shared sub-segments contribute either to the ridges or to the subduction zones.
             if shared_boundary_section.get_feature().get_feature_type() == pygplates.FeatureType.create_gpml('MidOceanRidge'):
@@ -121,7 +121,7 @@ ignored if it's neither.
 
     shared_sub_segments_length = 0
     for shared_sub_segment in shared_boundary_section.get_shared_sub_segments():
-        shared_sub_segments_length += shared_sub_segment.get_geometry().get_arc_length()
+        shared_sub_segments_length += shared_sub_segment.get_resolved_geometry().get_arc_length()
 
 The lengths are for a unit-length sphere so we must multiple by the Earth's radius (see :class:`pygplates.Earth`).
 ::

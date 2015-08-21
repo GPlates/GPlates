@@ -4,6 +4,7 @@ Unit tests for the pygplates application logic API.
 
 import math
 import os
+import shutil
 import unittest
 import pygplates
 
@@ -388,10 +389,14 @@ class ReconstructTestCase(unittest.TestCase):
 
     def test_reverse_reconstruct(self):
         # Test modifying the feature collection file.
+        # Modify a copy of the file.
+        shutil.copyfile(os.path.join(FIXTURES, 'volcanoes.gpml'), os.path.join(FIXTURES, 'volcanoes_tmp.gpml'))
         pygplates.reverse_reconstruct(
-            os.path.join(FIXTURES, 'volcanoes.gpml'),
+            os.path.join(FIXTURES, 'volcanoes_tmp.gpml'),
             [os.path.join(FIXTURES, 'rotations.rot')],
             pygplates.GeoTimeInstant(10))
+        # Remove modify copy of the file.
+        os.remove(os.path.join(FIXTURES, 'volcanoes_tmp.gpml'))
         
         rotation_features = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'rotations.rot'))
@@ -420,14 +425,18 @@ class ReconstructTestCase(unittest.TestCase):
             0)
             
         # Test modifying a mixture of the above.
+        # Modify a copy of the file.
+        shutil.copyfile(os.path.join(FIXTURES, 'volcanoes.gpml'), os.path.join(FIXTURES, 'volcanoes_tmp.gpml'))
         pygplates.reverse_reconstruct([
-                os.path.join(FIXTURES, 'volcanoes.gpml'),
+                os.path.join(FIXTURES, 'volcanoes_tmp.gpml'),
                 reconstructable_feature_collection,
                 [feature for feature in reconstructable_feature_collection],
                 next(iter(reconstructable_feature_collection))],
             rotation_features,
             10,
             0)
+        # Remove modify copy of the file.
+        os.remove(os.path.join(FIXTURES, 'volcanoes_tmp.gpml'))
 
 
 class ResolvedTopologiesTestCase(unittest.TestCase):
@@ -466,6 +475,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertTrue(bss.get_feature().get_name() in ('section4', 'section5', 'section7', 'section14', 'section9', 'section10'))
         for bss in resolved_topologies_dict['topology3'].get_boundary_sub_segments():
             self.assertTrue(bss.get_feature().get_name() in ('section1', 'section2', 'section6', 'section7', 'section8', 'section14', 'section9', 'section10'))
+            self.assertTrue(bss.get_resolved_feature().get_geometry() == bss.get_resolved_geometry())
         
         self.assertTrue(len(resolved_topological_sections) == 9)
         resolved_topological_sections_dict = dict(zip(
@@ -479,6 +489,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
         for sss in section1_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology3']))
+            self.assertTrue(sss.get_resolved_feature().get_geometry() == sss.get_resolved_geometry())
         
         section2_shared_sub_segments = resolved_topological_sections_dict['section2'].get_shared_sub_segments()
         self.assertTrue(len(section2_shared_sub_segments) == 2)

@@ -49,9 +49,6 @@ Sample code
         # Iterate over the shared boundary sections.
         for shared_boundary_section in shared_boundary_sections:
             
-            # We'll place the geometries of any anomalous sub-segments we find here.
-            anomalous_sub_segment_geometries = []
-            
             # Iterate over the sub-segments that actually contribute to a topology boundary.
             for shared_sub_segment in shared_boundary_section.get_shared_sub_segments():
                 
@@ -59,20 +56,8 @@ Sample code
                 # each sub-segment should be shared by exactly two resolved boundaries.
                 if len(shared_sub_segment.get_sharing_resolved_topologies()) != 2:
                     
-                    # We keep track of any anomalous sub-segment geometries.
-                    anomalous_sub_segment_geometries.append(shared_sub_segment.get_geometry())
-            
-            # If we found any anomalous sub-segments then gather them into an anomalous feature.
-            if anomalous_sub_segment_geometries:
-                
-                # Clone the existing feature to retain its properties (like name, plate IDs, etc).
-                anomalous_feature = shared_boundary_section.get_feature().clone()
-                
-                # Replace the cloned feature's geometry with the anomalous sub-segment geometries.
-                anomalous_feature.set_geometry(anomalous_sub_segment_geometries)
-                
-                # Add the anomalous feature to our list.
-                anomalous_features.append(anomalous_feature)
+                    # We keep track of any anomalous sub-segment features.
+                    anomalous_features.append(shared_sub_segment.get_resolved_feature())
         
         # If there are any anomalous features for the current 'time' then write them to a file
         # so we can load them into GPlates and see where the errors are located.
@@ -80,11 +65,6 @@ Sample code
             
             # Put the anomalous features in a feature collection so we can write them to a file.
             anomalous_feature_collection = pygplates.FeatureCollection(anomalous_features)
-            
-            # The anomalous sub-segment geometries were reconstructed to the current 'time'.
-            # So we need to reverse reconstruct them back to present day since all feature geometries
-            # should be stored in present day coordinates.
-            pygplates.reverse_reconstruct(anomalous_feature_collection, rotation_model, time)
             
             # Create a filename (for anomalous features) with the current 'time' in it.
             anomalous_features_filename = 'anomalous_sub_segments_at_{0}Ma.gpml'.format(time)
@@ -139,32 +119,10 @@ we're interested in because they their sub-segments have a list of topologies th
 
     if len(shared_sub_segment.get_sharing_resolved_topologies()) != 2:
 
-If a sub-segment is not shared by exactly two resolved boundaries then we record its geometry.
+If a sub-segment is not shared by exactly two resolved boundaries then we record its feature.
 ::
 
-    anomalous_sub_segment_geometries.append(shared_sub_segment.get_geometry())
-
-| Any anomalous sub-segment geometries are stored in a new anomalous :class:`pygplates.Feature` so
-  we can later write them to a file.
-| First we :meth:`clone<pygplates.Feature.clone>` the topological section feature since it contains
-  the feature properties (like reconstruction plate ID) used to reconstruct it - we'll need that
-  if we load the anomalous features back into `GPlates <http://www.gplates.org>`_.
-| Lastly we replace the original topological section geometry with the anomalous sub-segments to
-  record the parts that have gaps or overlaps.
-
-::
-
-    if anomalous_sub_segment_geometries:
-        anomalous_feature = shared_boundary_section.get_feature().clone()
-        anomalous_feature.set_geometry(anomalous_sub_segment_geometries)
-        anomalous_features.append(anomalous_feature)
-
-The anomalous features contain geometry at the reconstruction 'time' so we reverse reconstruct
-back to the present day using :func:`pygplates.reverse_reconstruct` since all
-:class:`features<pygplates.Feature>` must store present day coordinates.
-::
-
-    pygplates.reverse_reconstruct(anomalous_feature_collection, rotation_model, time)
+    anomalous_sub_segment_features.append(shared_sub_segment.get_resolved_feature())
 
 Finally we write the anomalous features to a file.
 ::

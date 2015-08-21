@@ -234,6 +234,16 @@ namespace GPlatesApi
 			return d_reconstruction_geometry;
 		}
 
+		/**
+		 * Clones the feature returned by 'get_topological_section_feature()' and sets the geometry to
+		 * the resolved sub-segment.
+		 *
+		 * The feature reference could be invalid, in which case we cannot clone it.
+		 * It should normally be valid though so we don't document that Py_None could be returned to the caller.
+		 */
+		boost::python::object
+		get_resolved_feature() const;
+
 	private:
 
 		//! The wrapped sub-segment itself.
@@ -245,6 +255,13 @@ namespace GPlatesApi
 		 * We need to store a Python-wrapped version of it to keep its feature/property alive.
 		 */
 		ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> d_reconstruction_geometry;
+
+		/**
+		 * A feature containing the resolved (not present day) sub-segment geometry.
+		 *
+		 * NOTE: It is only created when first requested by @a get_resolved_feature.
+		 */
+		mutable boost::python::object d_resolved_feature_object;
 	};
 
 
@@ -445,6 +462,16 @@ namespace GPlatesApi
 		}
 
 		/**
+		 * Clones the feature returned by 'get_topological_section_feature()' and sets the geometry to
+		 * the resolved sub-segment.
+		 *
+		 * The feature reference could be invalid, in which case we cannot clone it.
+		 * It should normally be valid though so we don't document that Py_None could be returned to the caller.
+		 */
+		boost::python::object
+		get_resolved_feature() const;
+
+		/**
 		 * Get the resolved topologies sharing the sub-segment (for passing to Python).
 		 */
 		boost::python::list
@@ -469,6 +496,13 @@ namespace GPlatesApi
 		 */
 		std::vector< ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ReconstructionGeometry> >
 				d_sharing_resolved_topologies;
+
+		/**
+		 * A feature containing the resolved (not present day) sub-segment geometry.
+		 *
+		 * NOTE: It is only created when first requested by @a get_resolved_feature.
+		 */
+		mutable boost::python::object d_resolved_feature_object;
 	};
 
 

@@ -871,7 +871,7 @@ def set_times(feature, times, verify_information_model=VerifyInformationModel.ye
     """set_times(times, [verify_information_model=VerifyInformationModel.yes])
     Sets the list of times of this flowline or motion path feature.
     
-    :param times: the list of times (if exactly one 'gpml:times' property found), otherwise None is returned
+    :param times: the list of times
     :type times: sequence (eg, ``list`` or ``tuple``) of float or :class:`GeoTimeInstant`
     :param verify_information_model: whether to check the information model before setting (default) or not
     :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*
