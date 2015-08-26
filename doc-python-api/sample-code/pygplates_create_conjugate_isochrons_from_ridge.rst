@@ -190,5 +190,5 @@ By specifying ``None`` in:
 | ...we will get ``None`` returned to us if the feature property (eg, left plate ID) is missing
   in the ridge feature.
 | If we didn't specify ``None`` then a default value would be returned if a property
-  was missing. For ``get_left_plate(None)`` and ``get_right_plate(None)`` this is plate ID 0 and for
-  ``get_valid_time(None)`` this is a time period from *distant past* to *distant future*.
+  was missing. For ``get_left_plate()`` and ``get_right_plate()`` this is plate ID 0 and for
+  ``get_valid_time()`` this is a time period from *distant past* to *distant future*.

@@ -719,79 +719,17 @@ export_reconstruction_tree()
 					"Represents the plate-reconstruction hierarchy of total reconstruction poles at "
 					"an instant in geological time.\n"
 					"\n"
-					"Plate motions are described in terms of relative rotations between pairs of plates. "
-					"Every plate in the model moves relative to some other plate where, within each "
-					"of these plate pairs, one plate is considered the *moving* plate relative to the "
-					"other *fixed* plate. That *fixed* plate, in turn, moves relative to another plate "
-					"thus forming a tree-like structure known as the *reconstruction tree*. "
-					"Each of these *relative* rotations is an *edge* in the tree.\n"
+					"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy`.\n"
 					"\n"
-					"The following diagram shows a subset of the hierarchy of relative rotations used in GPlates:\n"
-					"::\n"
-					"\n"
-					"                  000\n"
-					"                   |\n"
-					"                   |  finite rotation (001 rel. 000)\n"
-					"                   |\n"
-					"                  001\n"
-					"                   |\n"
-					"                   |  finite rotation (701 rel. 001)\n"
-					"                   |\n"
-					"                  701(AFR)\n"
-					"                  /|\\\n"
-					"                 / | \\  finite rotation (802 rel. 701)\n"
-					"                /  |  \\\n"
-					"             201  702  802(ANT)\n"
-					"              /   / \\   \\\n"
-					"             /   /   \\   \\  finite rotation (801 rel. 802)\n"
-					"            /   /     \\   \\\n"
-					"         202  704     705  801(AUS)\n"
-					"         / \\\n"
-					"        /   \\\n"
-					"       /     \\\n"
-					"     290     291\n"
-					"\n"
-					"...where *000* is the anchored plate (the top of the reconstruction tree). "
-					"The :class:`edge<ReconstructionTreeEdge>` *802 rel. 701* contains the rotation "
-					"of *802* (the moving plate in the pair) relative to *701* (the fixed plate in the pair).\n"
-					"\n"
-					"An *equivalent* rotation is the rotation of a plate relative to the *anchored* "
-					"plate. So the equivalent rotation of plate *802* is the "
-					":meth:`composition<FiniteRotation.compose>` of relative rotations along the "
-					"plate circuit *edge* path from anchored plate *000* to plate *802*.\n"
-					"\n"
-					"A *relative* rotation is the rotation of one plate relative to *another* plate "
-					"(as opposed to the *anchored* plate). Note that, like *equivalent* rotations, "
-					"the plate circuit *edge* path can consist of one or more edges. "
-					"For example, the rotation of plate *801* relative to plate *291* follows an *edge* "
-					"path that goes via plates *202*, *201*, *701* and *802*. However it should be noted "
-					"that if the edge between *001* and *701* did not exist then, even though a path "
-					"would still exist between *291* and *801*, the *relative* rotation (and *equivalent* "
-					"rotations of *291* and *801* for that matter) would be an :meth:`identity rotation"
-					"<FiniteRotation.represents_identity_rotation>`. This is because the sub-tree "
-					"below *001* would not get built into the reconstruction tree and hence all plates "
-					"in the sub-tree would be missing (this is what the *use_identity_for_missing_plate_ids* "
-					"parameter in various functions refers to). This can happen when the rotation sequence "
-					"for a moving/fixed plate pair (eg, *701*/*101*) does not span a large enough time "
-					"period. You can work around this situation by setting the anchor plate (in "
-					":meth:`__init__`) to the relative plate (eg, *291* in the above example).\n"
-					"\n"
-					"A *total* rotation is a rotation at a time in the past relative to *present day* (0Ma) - "
-					"in other words *from* present day *to* a past time. *Total* rotations are "
-					"handled by the methods :meth:`get_equivalent_total_rotation` and "
+					"Total rotations are handled by the methods :meth:`get_equivalent_total_rotation` and "
 					":meth:`get_relative_total_rotation`.\n"
 					"\n"
-					"A *stage* rotation is a rotation at a time in the past relative to *another* time "
-					"in the past. *Stage* rotations are handled by the functions "
-					":meth:`get_equivalent_stage_rotation` and :meth:`get_relative_stage_rotation`.\n"
+					"Stage rotations are handled by the functions :meth:`get_equivalent_stage_rotation` and "
+					":meth:`get_relative_stage_rotation`.\n"
 					"\n"
-					"Alternatively all four combinations of total/stage and equivalent/relative rotations "
+					".. note:: All four combinations of total/stage and equivalent/relative rotations "
 					"can be obtained more easily from class :class:`RotationModel` using its method "
-					":meth:`RotationModel.get_rotation`.\n"
-					"\n"
-					"For more information on the rotation hierarchy please see "
-					"`Next-generation plate-tectonic reconstructions using GPlates "
-					"<http://www.gplates.org/publications.html>`_\n",
+					":meth:`RotationModel.get_rotation`.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -854,7 +792,7 @@ export_reconstruction_tree()
 					bp::arg("plate_id"),
 					bp::arg("use_identity_for_missing_plate_ids")=true),
 				"get_equivalent_stage_rotation(from_reconstruction_tree, to_reconstruction_tree, plate_id"
-				", [use_identity_for_missing_plate_ids=True]) -> FiniteRotation or None\n"
+				", [use_identity_for_missing_plate_ids=True])\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -898,7 +836,8 @@ export_reconstruction_tree()
 				"  If there is no plate circuit path from *plate_id* to the anchor plate (in either "
 				"reconstruction tree) then an :meth:`identity rotation<FiniteRotation.create_identity_rotation>` "
 				"is returned if *use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
-				"See :class:`ReconstructionTree` for details on how a plate id can go missing and how to work around it.\n"
+				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for details on how a plate id can "
+				"go missing and how to work around it.\n"
 				"\n"
 				"  The only real advantage of this function over :meth:`get_relative_stage_rotation` is "
 				"it is a bit faster when the *fixed* plate is the *anchored* plate.\n"
@@ -914,26 +853,7 @@ export_reconstruction_tree()
 				"        if from_plate_rotation and to_plate_rotation:\n"
 				"            return to_plate_rotation * from_plate_rotation.get_inverse()\n"
 				"\n"
-				"  The derivation of the stage rotation is (see :class:`FiniteRotation` for a "
-				"more in-depth coverage of the maths):\n"
-				"\n"
-				"  The rotation from present day (0Ma) to time ``To`` (via time ``From``) is...\n"
-				"  ::\n"
-				"\n"
-				"    R(0->To, A->P) = R(From->To, A->P) * R(0->From, A->P)\n"
-				"\n"
-				"  ...or by post-multiplying both sides by ``R(From->0, A->P)`` this becomes...\n"
-				"  ::\n"
-				"\n"
-				"    R(From->To, A->P) = R(0->To, A->P) * R(From->0, A->P)\n"
-				"\n"
-				"  ...which is the rotation *from* time ``From`` *to* time ``To``...\n"
-				"  ::\n"
-				"\n"
-				"    R(From->To, A->P) = R(0->To, A->P) * inverse[R(0->From, A->P)]\n"
-				"\n"
-				"  ...where ``A`` is the anchored plate of both *from_reconstruction_tree* and "
-				"*to_reconstruction_tree*, and ``P`` is the plate.\n")
+				"  .. note:: See :ref:`pygplates_foundations_equivalent_stage_rotation` for the derivation of the stage rotation.\n")
 		.staticmethod("get_equivalent_stage_rotation")
 		.def("get_relative_stage_rotation",
 				&GPlatesApi::get_relative_stage_rotation,
@@ -943,7 +863,7 @@ export_reconstruction_tree()
 					bp::arg("fixed_plate_id"),
 					bp::arg("use_identity_for_missing_plate_ids")=true),
 				"get_relative_stage_rotation(from_reconstruction_tree, to_reconstruction_tree, "
-				"moving_plate_id, fixed_plate_id, [use_identity_for_missing_plate_ids]) -> FiniteRotation or None\n"
+				"moving_plate_id, fixed_plate_id, [use_identity_for_missing_plate_ids])\n"
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
@@ -980,13 +900,15 @@ export_reconstruction_tree()
 				"    rotation_model = pygplates.RotationModel(rotation_features)\n"
 				"    stage_rotation = rotation_model.get_rotation(15, 802, 20, 291)\n"
 				"\n"
-				"  Note that this function will still work correctly if the *anchored* plate of both "
-				"reconstruction trees differ.\n"
+				"  .. note:: This function, unlike :meth:`get_equivalent_stage_rotation`, will still work "
+				"correctly if the *anchored* plate of both reconstruction trees differ (not that this is "
+				"usually the case - just that it's allowed).\n"
 				"\n"
 				"  If there is no plate circuit path from *fixed_plate_id* or *moving_plate_id* to the anchor "
 				"plate (in either reconstruction tree) then an :meth:`identity rotation<FiniteRotation.create_identity_rotation>` "
 				"is returned if *use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
-				"See :class:`ReconstructionTree` for details on how a plate id can go missing and how to work around it.\n"
+				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for details on how a plate id can "
+				"go missing and how to work around it.\n"
 				"\n"
 				"  This function essentially does the following:\n"
 				"  ::\n"
@@ -1002,36 +924,18 @@ export_reconstruction_tree()
 				"            return fixed_plate_to_rotation.get_inverse() * moving_plate_to_rotation * "
 				"moving_plate_from_rotation.get_inverse() * fixed_plate_from_rotation\n"
 				"\n"
-				"  The derivation of the relative stage rotation is (see :class:`FiniteRotation` for a "
-				"more in-depth coverage of the maths):\n"
-				"  ::\n"
-				"\n"
-				"    R(t_from->t_to, F->M)\n"
-				"       = R(0->t_to, F->M) * R(t_from->0, F->M)\n"
-				"       = R(0->t_to, F->M) * inverse[R(0->t_from, F->M)]\n"
-				"       = R(0->t_to, F->A_to) * R(0->t_to, A_to->M) * "
-				"inverse[R(0->t_from, F->A_from) * R(0->t_from, A_from->M)]\n"
-				"       = inverse[R(0->t_to, A_to->F)] * R(0->t_to, A_to->M) * "
-				"inverse[inverse[R(0->t_from, A_from->F)] * R(0->t_from, A_from->M)]\n"
-				"       = inverse[R(0->t_to, A_to->F)] * R(0->t_to, A_to->M) * "
-				"inverse[R(0->t_from, A_from->M)] * R(0->t_from, A_from->F)\n"
-				"\n"
-				"  ...where ``t_from`` and ``A_from`` are the time and anchor plate of *from_reconstruction_tree*, "
-				"``t_to`` and ``A_to`` are the time and anchor plate of *to_reconstruction_tree*, "
-				"``F`` is the fixed plate and ``M`` is the moving plate. Note that, unlike "
-				":meth:`get_equivalent_stage_rotation`, both reconstruction trees can have different *anchored* "
-				"plates (not that this is usually the case - just that it's allowed).\n")
+				"  .. note:: See :ref:`pygplates_foundations_relative_stage_rotation` for the derivation of the stage rotation.\n")
 		.staticmethod("get_relative_stage_rotation")
 		.def("get_reconstruction_time",
 				&GPlatesAppLogic::ReconstructionTree::get_reconstruction_time,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_reconstruction_time() -> float\n"
+				"get_reconstruction_time()\n"
 				"  Return the reconstruction time for which this *ReconstructionTree* was generated.\n"
 				"\n"
 				"  :rtype: float\n")
 		.def("get_anchor_plate_id",
 				&GPlatesAppLogic::ReconstructionTree::get_anchor_plate_id,
-				"get_anchor_plate_id() -> int\n"
+				"get_anchor_plate_id()\n"
 				"  Return the anchor plate id for which this *ReconstructionTree* was generated.\n"
 				"\n"
 				"  :rtype: int\n")
@@ -1039,8 +943,7 @@ export_reconstruction_tree()
 				&GPlatesApi::get_equivalent_total_rotation,
 				(bp::arg("plate_id"),
 					bp::arg("use_identity_for_missing_plate_ids")=true),
-				"get_equivalent_total_rotation(plate_id, [bool use_identity_for_missing_plate_ids=True]) "
-				"-> FiniteRotation or None\n"
+				"get_equivalent_total_rotation(plate_id, [bool use_identity_for_missing_plate_ids=True])\n"
 				"  Return the *equivalent* finite rotation of the *plate_id* plate relative to the "
 				"*anchored* plate.\n"
 				"\n"
@@ -1068,9 +971,9 @@ export_reconstruction_tree()
 				"  If there is no plate circuit path from *plate_id* to the anchor plate then an "
 				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` is returned "
 				"if *use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
-				"See :class:`ReconstructionTree` for details on how a plate id can go missing and how "
-				"to work around it. If *plate_id* matches more than one plate id in this *ReconstructionTree* "
-				"then the first match is returned.\n"
+				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for details on how a plate id can "
+				"go missing and how to work around it. If *plate_id* matches more than one plate id in this "
+				"*ReconstructionTree* then the first match is returned.\n"
 				"\n"
 				"  This method essentially does the following:\n"
 				"  ::\n"
@@ -1083,14 +986,16 @@ export_reconstruction_tree()
 				"            return pygplates.FiniteRotation.create_identity_rotation()\n"
 				"        elif use_identity_for_missing_plate_ids:\n"
 				"            return pygplates.FiniteRotation.create_identity_rotation()\n"
-				"        # else returns None\n")
+				"        # else returns None\n"
+				"\n"
+				"  .. note:: See :ref:`pygplates_foundations_equivalent_total_rotation` for the derivation of the rotation.\n")
 		.def("get_relative_total_rotation",
 				&GPlatesApi::get_relative_total_rotation,
 				(bp::arg("moving_plate_id"),
 					bp::arg("fixed_plate_id"),
 					bp::arg("use_identity_for_missing_plate_ids")=true),
 				"get_relative_total_rotation(moving_plate_id, fixed_plate_id"
-				", [use_identity_for_missing_plate_ids=True]) -> FiniteRotation or None\n"
+				", [use_identity_for_missing_plate_ids=True])\n"
 				"  Return the finite rotation of the *moving_plate_id* plate relative to the "
 				"*fixed_plate_id* plate.\n"
 				"\n"
@@ -1121,13 +1026,14 @@ export_reconstruction_tree()
 				"edge between them. If *fixed_plate_id* is the *anchored* plate then this method gives the same "
 				"result as :meth:`get_equivalent_total_rotation`. Another way to calculate this result "
 				"is to create a new *ReconstructionTree* using *fixed_plate_id* as the *anchored* plate. "
-				"See :class:`ReconstructionTree` for a description of some subtle differences between "
-				"these two approaches.\n"
+				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for a description of some "
+				"subtle differences between these two approaches.\n"
 				"\n"
 				"  If there is no plate circuit path from *fixed_plate_id* or *moving_plate_id* to the "
 				"anchor plate then an :meth:`identity rotation<FiniteRotation.create_identity_rotation>` "
 				"is returned if *use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
-				"See :class:`ReconstructionTree` for details on how a plate id can go missing and how to work around it.\n"
+				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for details on how a plate id can "
+				"go missing and how to work around it.\n"
 				"\n"
 				"  This method essentially does the following:\n"
 				"  ::\n"
@@ -1138,27 +1044,11 @@ export_reconstruction_tree()
 				"        if fixed_plate_rotation and moving_plate_rotation:\n"
 				"            return fixed_plate_rotation.get_inverse() * moving_plate_rotation\n"
 				"\n"
-				"  The derivation of the relative rotation is (see :class:`FiniteRotation` for a "
-				"more in-depth coverage of the maths):\n"
-				"\n"
-				"  The rotation from anchor plate ``Anchor`` to plate ``To`` (via plate ``From``) is...\n"
-				"  ::\n"
-				"\n"
-				"    R(Anchor->To) = R(Anchor->From) * R(From->To)\n"
-				"\n"
-				"  ...or by pre-multiplying both sides by ``R(From->Anchor)`` this becomes...\n"
-				"  ::\n"
-				"\n"
-				"    R(From->To) = R(From->Anchor) * R(Anchor->To)\n"
-				"\n"
-				"  ...which is the rotation *from* plate ``From`` *to* plate ``To``...\n"
-				"  ::\n"
-				"\n"
-				"    R(From->To) = inverse[R(Anchor->From)] * R(Anchor->To)\n")
+				"  .. note:: See :ref:`pygplates_foundations_relative_total_rotation` for the derivation of the rotation.\n")
 		.def("get_edge",
 				&GPlatesApi::reconstruction_tree_get_edge,
 				(bp::arg("moving_plate_id")),
-				"get_edge(moving_plate_id) -> ReconstructionTreeEdge or None\n"
+				"get_edge(moving_plate_id)\n"
 				"  Return the edge in the hierarchy (graph) of the reconstruction tree associated with "
 				"the specified moving plate id, or ``None`` if *moving_plate_id* is not in the reconstruction tree.\n"
 				"\n"
@@ -1172,7 +1062,7 @@ export_reconstruction_tree()
 				"If *moving_plate_id* matches more than one edge then the first match is returned.\n")
 		.def("get_edges",
 				&GPlatesApi::reconstruction_tree_get_edges,
-				"get_edges() -> AllReconstructionTreeEdgesView\n"
+				"get_edges()\n"
 				"  Returns a *view*, of *all* :class:`edges<ReconstructionTreeEdge>` of this "
 				"reconstruction tree, that supports iteration over the edges as well as indexing into the edges.\n"
 				"\n"
@@ -1212,7 +1102,7 @@ export_reconstruction_tree()
 				"                edge.get_fixed_plate_id()))\n")
 		.def("get_anchor_plate_edges",
 				&GPlatesApi::reconstruction_tree_get_anchor_plate_edges,
-				"get_anchor_plate_edges() -> ReconstructionTreeEdgesView\n"
+				"get_anchor_plate_edges()\n"
 				"  Returns a *view*, of the :class:`edges<ReconstructionTreeEdge>` at the top (or root) "
 				"of this reconstruction tree, that supports iteration over the edges as well as "
 				"indexing into the edges.\n"
@@ -1245,7 +1135,7 @@ export_reconstruction_tree()
 				"        for child_edge in edge.get_child_edges():\n"
 				"            traverse_sub_tree(child_edge)\n"
 				"\n"
-				"    for anchor_plate_edge in reconstruction_tree.get_anchor plate_edges():\n"
+				"    for anchor_plate_edge in reconstruction_tree.get_anchor_plate_edges():\n"
 				"        traverse_sub_tree(anchor_plate_edge)\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
@@ -1297,24 +1187,24 @@ export_reconstruction_tree()
 			GPlatesApi::ReconstructionTreeEdge>(
 					"ReconstructionTreeEdge",
 					"A reconstruction tree edge represents a moving/fixed plate pair in the graph of "
-					"the plate-reconstruction hierarchy.\n",
+					"the plate-reconstruction hierarchy. See :ref:`pygplates_foundations_plate_reconstruction_hierarchy`.\n",
 					bp::no_init)
 		.def("get_fixed_plate_id",
 				&GPlatesApi::ReconstructionTreeEdge::get_fixed_plate_id,
-				"get_fixed_plate_id() -> int\n"
+				"get_fixed_plate_id()\n"
 				"  Return the *fixed* plate id of this edge.\n"
 				"\n"
 				"  :rtype: int\n")
 		.def("get_moving_plate_id",
 				&GPlatesApi::ReconstructionTreeEdge::get_moving_plate_id,
-				"get_moving_plate_id() -> int\n"
+				"get_moving_plate_id()\n"
 				"  Return the *moving* plate id of this edge.\n"
 				"\n"
 				"  :rtype: int\n")
 		.def("get_relative_total_rotation",
 				&GPlatesApi::ReconstructionTreeEdge::get_relative_total_rotation,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_relative_total_rotation() -> FiniteRotation\n"
+				"get_relative_total_rotation()\n"
 				"  Return finite rotation of the *moving* plate of this edge relative to the *fixed* "
 				"plated id of this edge.\n"
 				"\n"
@@ -1324,7 +1214,7 @@ export_reconstruction_tree()
 		.def("get_equivalent_total_rotation",
 				&GPlatesApi::ReconstructionTreeEdge::get_equivalent_total_rotation,
 				bp::return_value_policy<bp::copy_const_reference>(),
-				"get_equivalent_total_rotation() -> FiniteRotation\n"
+				"get_equivalent_total_rotation()\n"
 				"  Return *equivalent* (relative to the anchor plate) finite rotation of the *moving* plate of this edge.\n"
 				"\n"
 				"  :rtype: :class:`FiniteRotation`\n"
@@ -1343,7 +1233,7 @@ export_reconstruction_tree()
 				"        return finite_rotation\n")
 		.def("get_parent_edge",
 				&GPlatesApi::reconstruction_tree_edge_get_parent_edge,
-				"get_parent_edge() -> ReconstructionTreeEdge or None\n"
+				"get_parent_edge()\n"
 				"  Return the parent edge of this edge, or ``None`` if this edge has no parent.\n"
 				"\n"
 				"  This method can be used to traverse the plate circuit from an arbitrary plate "
@@ -1371,7 +1261,7 @@ export_reconstruction_tree()
 				"        edge = edge.get_parent_edge()\n")
 		.def("get_child_edges",
 				&GPlatesApi::reconstruction_tree_edge_get_child_edges,
-				"get_child_edges() -> ReconstructionTreeEdgesView\n"
+				"get_child_edges()\n"
 				"  Returns a *view*, of the child :class:`edges<ReconstructionTreeEdge>` of this edge, "
 				"that supports iteration over the child edges as well as indexing into the child edges.\n"
 				"\n"
@@ -1404,7 +1294,7 @@ export_reconstruction_tree()
 				"        for child_edge in edge.get_child_edges():\n"
 				"            traverse_sub_tree(child_edge)\n"
 				"\n"
-				"    for anchor_plate_edge in reconstruction_tree.get_anchor plate_edges():\n"
+				"    for anchor_plate_edge in reconstruction_tree.get_anchor_plate_edges():\n"
 				"        traverse_sub_tree(anchor_plate_edge)\n")
 	;
 
@@ -1469,7 +1359,7 @@ export_reconstruction_tree()
 		.def("build_reconstruction_tree",
 				&GPlatesApi::reconstruction_tree_builder_build_reconstruction_tree,
 				(bp::arg("anchor_plate_id"), bp::arg("reconstruction_time")),
-				"build_reconstruction_tree(anchor_plate_id, reconstruction_time) -> ReconstructionTree\n"
+				"build_reconstruction_tree(anchor_plate_id, reconstruction_time)\n"
 				"  Builds a :class:`ReconstructionTree` from the *total reconstruction poles* inserted "
 				"via :meth:`insert_total_reconstruction_pole`.\n"
 				"\n"

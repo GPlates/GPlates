@@ -899,7 +899,8 @@ namespace GPlatesApi
 				reconstruction_geometry.get_reconstruction_geometry_type_wrapper<GPlatesAppLogic::ResolvedTopologicalLine>();
 		if (!wrapper)
 		{
-			return bp::object()/*Py_None*/;
+			PyErr_SetString(PyExc_TypeError, "Expected a ResolvedTopologicalLine");
+			bp::throw_error_already_set();
 		}
 
 		return wrapper->get_resolved_feature();
@@ -1119,7 +1120,8 @@ namespace GPlatesApi
 				reconstruction_geometry.get_reconstruction_geometry_type_wrapper<GPlatesAppLogic::ResolvedTopologicalBoundary>();
 		if (!wrapper)
 		{
-			return bp::object()/*Py_None*/;
+			PyErr_SetString(PyExc_TypeError, "Expected a ResolvedTopologicalBoundary");
+			bp::throw_error_already_set();
 		}
 
 		return wrapper->get_resolved_feature();
@@ -1339,7 +1341,8 @@ namespace GPlatesApi
 				reconstruction_geometry.get_reconstruction_geometry_type_wrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>();
 		if (!wrapper)
 		{
-			return bp::object()/*Py_None*/;
+			PyErr_SetString(PyExc_TypeError, "Expected a ResolvedTopologicalNetwork");
+			bp::throw_error_already_set();
 		}
 
 		return wrapper->get_resolved_feature();

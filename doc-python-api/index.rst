@@ -11,6 +11,16 @@ Welcome to the GPlates Python documentation!
 *pygplates* enables access to `GPlates <http://www.gplates.org>`_
 functionality via the `Python <http://www.python.org>`_ programming language.
 
+
+This documentation includes:
+
+* :ref:`pygplates_introduction` - introduces *pygplates* and covers some advantages over GPlates,
+* :ref:`pygplates_getting_started` - installation of *pygplates* and a tutorial to get you started using *pygplates*,
+* :ref:`pygplates_sample_code` - documented sample code solving common plate tectonic problems using *pygplates*,
+* :ref:`pygplates_foundations` - plate tectonic foundations of *pygplates*,
+* :ref:`pygplates_reference` - a detailed reference of *pygplates* functions and classes.
+
+
 Contents
 ========
 
@@ -20,6 +30,7 @@ Contents
    pygplates_introduction
    pygplates_getting_started
    pygplates_sample_code
+   pygplates_foundations
    pygplates_reference
 
 Indices and tables
