@@ -33,6 +33,7 @@ class CrossoverType(object):
     synch_old_crossover_only = 2
     synch_young_crossover_and_stages = 3
     synch_young_crossover_only = 4
+    ignore = 5
     
     # Private static method.
     @staticmethod
@@ -40,7 +41,7 @@ class CrossoverType(object):
         """Returns True if 'type' is a valid enumeration."""
         return (isinstance(type, int) and
             type >= CrossoverType.unknown and
-            type <= CrossoverType.synch_young_crossover_only)
+            type <= CrossoverType.ignore)
     
     # Private static method.
     @staticmethod
@@ -85,7 +86,9 @@ class CrossoverTypeFunction(object):
             annotate_index = annotated_time_sample_description.find('@xo_')
             if annotate_index >= 0:
                 type_field = annotated_time_sample_description[annotate_index+4 : annotate_index+6]
-                if type_field == 'ys':
+                if type_field == 'ig':
+                    return CrossoverType.ignore
+                elif type_field == 'ys':
                     return CrossoverType.synch_old_crossover_and_stages
                 elif type_field == 'yf':
                     return CrossoverType.synch_old_crossover_only
@@ -102,6 +105,7 @@ class CrossoverResult(object):
     error = 0             # Crossover was not processed due to an error (eg, crossover type was unknown).
     synchronised = 1      # Crossover was synchronised.
     not_synchronised = 2  # Crossover did not need synchronisation (was already in-synch).
+    ignored = 3           # Crossover was ignored (since crossover type was 'ignore').
 
 
 Crossover = namedtuple("Crossover",
@@ -120,7 +124,7 @@ def find_crossovers(
         crossover_type_function=CrossoverTypeFunction.type_from_xo_tags_in_comment):
     """find_crossovers(rotation_features, [crossover_filter], \
     [crossover_type_function=CrossoverTypeFunction.type_from_xo_tags_in_comment])
-    Find crossovers in  rotation features.
+    Find crossovers in rotation features.
     
     :param rotation_features: A rotation feature collection, or rotation filename, or \
     rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) \
@@ -174,6 +178,7 @@ def find_crossovers(
     |                                                    | pole to determine the crossover type according to the         |
     |                                                    | presence of the following strings/tags:                       |
     |                                                    |                                                               |
+    |                                                    | - \@xo_ig : *CrossoverType.ignore*                            |
     |                                                    | - \@xo_ys : *CrossoverType.synch_old_crossover_and_stages*    |
     |                                                    | - \@xo_yf : *CrossoverType.synch_old_crossover_only*          |
     |                                                    | - \@xo_os : *CrossoverType.synch_young_crossover_and_stages*  |
@@ -185,6 +190,9 @@ def find_crossovers(
     |                                                    | This is the default for *crossover_type_function*.            |
     +----------------------------------------------------+---------------------------------------------------------------+
     | *CrossoverType.unknown*                            | All crossovers will be of unknown type                        |
+    |                                                    | (no crossovers will be synchronised).                         |
+    +----------------------------------------------------+---------------------------------------------------------------+
+    | *CrossoverType.ignore*                             | All crossovers will be of ignore type.                        |
     |                                                    | (no crossovers will be synchronised).                         |
     +----------------------------------------------------+---------------------------------------------------------------+
     | *CrossoverType.synch_old_crossover_and_stages*     | All finite rotations in all *old* crossover                   |
@@ -385,6 +393,7 @@ def synchronise_crossovers(
     :param crossover_results: if specified then a tuple of (Crossover, int) is appended for each filtered \
     crossover where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or \
     *CrossoverResult.not_synchronised* if the crossover did not require synchronising, or \
+    *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or \
     *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of \
     *CrossoverType.unknown*) - the list is sorted by crossover time - default is None
     :type crossover_results: list or None
@@ -448,6 +457,7 @@ def synchronise_crossovers(
     |                                                    | pole to determine the crossover type according to the         |
     |                                                    | presence of the following strings/tags:                       |
     |                                                    |                                                               |
+    |                                                    | - \@xo_ig : *CrossoverType.ignore*                            |
     |                                                    | - \@xo_ys : *CrossoverType.synch_old_crossover_and_stages*    |
     |                                                    | - \@xo_yf : *CrossoverType.synch_old_crossover_only*          |
     |                                                    | - \@xo_os : *CrossoverType.synch_young_crossover_and_stages*  |
@@ -458,8 +468,13 @@ def synchronise_crossovers(
     |                                                    |                                                               |
     |                                                    | This is the default for *crossover_type_function*.            |
     +----------------------------------------------------+---------------------------------------------------------------+
-    | *CrossoverType.unknown*                            | All crossovers will be of unknown type                        |
-    |                                                    | (no crossovers will be synchronised).                         |
+    | *CrossoverType.unknown*                            | All crossovers will be of unknown type.                       |
+    |                                                    | No crossovers will be synchronised.                           |
+    |                                                    | Crossover results will be *CrossoverResult.error*.            |
+    +----------------------------------------------------+---------------------------------------------------------------+
+    | *CrossoverType.ignore*                             | All crossovers will be of ignore type.                        |
+    |                                                    | No crossovers will be synchronised.                           |
+    |                                                    | Crossover results will be *CrossoverResult.ignored*.          |
     +----------------------------------------------------+---------------------------------------------------------------+
     | *CrossoverType.synch_old_crossover_and_stages*     | All finite rotations in all *old* crossover                   |
     |                                                    | sequences will be synchronised (such that old *stage*         |
@@ -489,6 +504,7 @@ def synchronise_crossovers(
     filtered crossovers (see *crossover_filter*). Each list element is a tuple of (Crossover, int)
     where the integer value is *CrossoverResult.synchronised* if the crossover was synchronised, or
     *CrossoverResult.not_synchronised* if the crossover did not require synchronising, or
+    *CrossoverResult.ignored* if the crossover was ignored (due to a crossover type of *CrossoverType.ignore*), or
     *CrossoverResult.error* if the crossover was unable to be processed (due to a crossover type of
     *CrossoverType.unknown*). The list is sorted by crossover time.
     
@@ -563,11 +579,16 @@ def synchronise_crossovers(
             #
             # Get the synchronised-crossover rotation time samples - ignore disabled samples.
             # Note: there must be at least one enabled time sample otherwise we wouldn't have found this crossover.
-            if (crossover.type == CrossoverType.unknown):
+            if crossover.type == CrossoverType.unknown:
                 # Record that we were unable to process the crossover - this will be the same at each iteration.
                 success = False
                 if crossover_results is not None:
                     crossover_results[crossover_index] = (crossover, CrossoverResult.error)
+                continue
+            elif crossover.type == CrossoverType.ignore:
+                # Record the crossover result state (if any) as 'ignored'.
+                if crossover_results is not None:
+                    crossover_results[crossover_index] = (crossover, CrossoverResult.ignored)
                 continue
             elif CrossoverType._synch_old_crossover(crossover.type):
                 synchronised_crossover_time_samples = crossover.old_crossover_rotation_sequence.get_enabled_time_samples()
