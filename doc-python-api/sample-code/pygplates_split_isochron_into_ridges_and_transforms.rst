@@ -31,15 +31,22 @@ Sample code
         plate_id = isochron_feature.get_reconstruction_plate_id()
         conjugate_plate_id = isochron_feature.get_conjugate_plate_id()
         
-        # Calculate the stage rotation at the isochron birth time of the isochron's conjugate plate
-        # relative to its actual plate. Note that the fixed plate of the stage rotation is the
-        # actual plate (not the conjugate plate) because we want the stage pole location to be in the
-        # same frame of reference as the isochron's geometry.
+        # Calculate the stage rotation at the isochron birth time of the isochron's plate relative
+        # to its conjugate plate.
         stage_rotation = rotation_model.get_rotation(
-                begin_time + 1, conjugate_plate_id, begin_time, plate_id, plate_id)
+                begin_time + 1, plate_id, begin_time, conjugate_plate_id, conjugate_plate_id)
         stage_pole, stage_angle_radians = stage_rotation.get_euler_pole_and_angle()
         
+        # Present day geometries need to be rotated, relative to the conjugate plate, to the 'from' time
+        # of the above stage rotation (which is 'begin_time') so that they can then be rotated by
+        # the stage rotation. To avoid having to rotate the present day geometries into this stage pole
+        # reference frame we can instead apply the inverse rotation to the stage pole itself.
+        stage_pole_reference_frame = rotation_model.get_rotation(
+                begin_time, plate_id, 0, conjugate_plate_id, conjugate_plate_id)
+        stage_pole = stage_pole_reference_frame.get_inverse() * stage_pole
+        
         # A feature usually has a single geometry but it could have more - iterate over them all.
+        # Note that we are iterating over the un-rotated (or present day) geometries as noted above.
         for isochron_geometry in isochron_feature.get_geometries():
             
             # Group the current isochron geometry into ridge and transform segments.
@@ -103,22 +110,19 @@ The time period and conjugate plate IDs are obtained using :meth:`pygplates.Feat
     conjugate_plate_id = isochron_feature.get_conjugate_plate_id()
 
 | We calculate the stage rotation at the isochron birth time ``begin_time`` of the isochron's
-  conjugate plate ``conjugate_plate_id`` relative to its plate ``plate_id`` using
+  plate ``plate_id`` relative to its conjugate plate ``conjugate_plate_id`` using
   :meth:`pygplates.RotationModel.get_rotation`.
-| Note that the plate ID ordering might seem like the reverse of what it should be.
-| This is because we want the stage pole location to be in the same frame of reference as the
-  isochron's geometry since subsequent direction calculations are relative to the isochron's geometry.
-| We also set the anchor plate to the isochron's plate ``plate_id``. We could have set it to zero and
-  it shouldn't change the result. We set it to the isochron's plate just in case there is no
-  plate circuit path from plate zero to plate ``plate_id``.
+| We also set the anchor plate to the isochron's conjugate plate ``conjugate_plate_id``. We could have
+  set it to zero and it shouldn't change the result. We set it to the isochron's conjugate plate just
+  in case there is no plate circuit path from plate zero to plate ``conjugate_plate_id``.
 
 ::
 
     stage_rotation = rotation_model.get_rotation(
-            begin_time + 1, conjugate_plate_id, begin_time, plate_id, plate_id)
+            begin_time + 1, plate_id, begin_time, conjugate_plate_id, conjugate_plate_id)
 
 | From the stage rotation we can get the stage pole which is equivalent to the location on the globe
-  where the rotation axis is (in the frame of reference of the isochron's plate/geometry).
+  where the rotation axis is.
 | Since the isochron spreads about this rotation axis its ridge segments will generally be pointing
   towards the rotation axis and its transform segments will generally be perpendicular (ie, aligned
   with the direction of rotation).
@@ -127,7 +131,52 @@ The time period and conjugate plate IDs are obtained using :meth:`pygplates.Feat
 
     stage_pole, stage_angle_radians = stage_rotation.get_euler_pole_and_angle()
 
-We iterate over the geometries of the isochron feature using :meth:`pygplates.Feature.get_geometries`.
+| Now that we have the stage pole location we need to move it into the same frame of reference as
+  the geometry. Since we will be extracting the geometry directly from the :class:`pygplates.Feature`
+  the geometry will be in present day coordinates.
+| To find out which reference frame the stage pole is in we start with the equation for
+  :ref:`pygplates_foundations_relative_stage_rotation` which shows the relative stage rotation of
+  moving plate :math:`P_{M}` relative to fixed plate :math:`P_{F}`, and from time :math:`t_{from}`
+  to time :math:`t_{to}` is:
+
+.. math::
+
+   R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) = R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F})^{-1} \times R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \times R(0 \rightarrow t_{from},P_{A} \rightarrow P_{M})^{-1} \times R(0 \rightarrow t_{from},P_{A} \rightarrow P_{F})
+
+...where :math:`P_{A}` is the anchor plate.
+
+Rearranging this gives us the rotation of moving plate :math:`P_{M}` from present day to time :math:`t_{to}`:
+
+.. math::
+
+   R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) = R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M})
+
+Using the approach in :ref:`pygplates_foundations_composing_finite_rotations` we can write the transformation of a
+present day geometry on moving plate :math:`P_{M}` to time :math:`t_{to}` via the stage pole reference frame:
+
+.. math::
+
+   \text{geometry_moving_plate} &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) \times \text{geometry_present_day} \\
+                         &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M}) \times \text{geometry_present_day} \\
+                         &= R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times \text{geometry_stage_pole_frame} \\
+   \text{geometry_stage_pole_frame} &= R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M}) \times \text{geometry_present_day} \\
+   \text{geometry_present_day} &= R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M})^{-1} \times \text{geometry_stage_pole_frame}
+
+| The geometry :math:`\text{geometry_stage_pole_frame}` is in the stage pole frame because it gets rotated by the stage pole rotation :math:`R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M})`.
+| As can be seen from the last equation above, the geometry in the stage pole frame can be reverse-rotated back to present day using :math:`R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M})^{-1}`.
+| And this is the same rotation we use to reverse-rotate the stage pole location to the present-day frame of the geometry of moving plate :math:`P_{M}`:
+
+::
+
+    stage_pole_reference_frame = rotation_model.get_rotation(
+            begin_time, plate_id, 0, conjugate_plate_id, conjugate_plate_id)
+    stage_pole = stage_pole_reference_frame.get_inverse() * stage_pole
+
+
+Next we iterate over the geometries of the isochron feature using :meth:`pygplates.Feature.get_geometries`.
+
+.. note:: We are iterating over the un-rotated (or present day) geometries as noted above.
+
 ::
 
     for isochron_geometry in isochron_feature.get_geometries():
