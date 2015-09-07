@@ -348,7 +348,8 @@ namespace GPlatesQtWidgets
 
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
-		std::multimap< QString, GPlatesDataMining::AttributeTypeEnum >  d_attr_name_type_map;
+		typedef std::multimap< QString, GPlatesDataMining::AttributeTypeEnum > AttrTypeNameMap;
+		AttrTypeNameMap d_attr_name_type_map;
 
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_visual_layer;
 
