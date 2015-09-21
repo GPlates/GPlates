@@ -840,12 +840,15 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::populate_initial_geometries()
 		}
 	}
 
+	// NOTE: No longer emit warning since we could get here when the layer visibility is turned off.
+#if 0
 	if (d_reconstructed_feature_geometries.empty())
 	{
 		// That's pretty strange.  We expected at least one geometry here, or else, what's
 		// the user dragging?
 		qWarning() << "No initial geometries found ModifyReconstructionPoleWidget::populate_initial_geometries!";
 	}
+#endif
 }
 
 
