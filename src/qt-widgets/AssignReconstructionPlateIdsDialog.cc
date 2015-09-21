@@ -150,6 +150,13 @@ namespace
 			"</ul>"
 			"<p>These options are not mutually exclusive.</p>"
 			"<p>These properties are copied from the polygon feature to the feature being partitioned.</p>"
+			"<p><em><b>Note:</b> If <b>Only copy properties suitable for partitioned feature types</b> is "
+			"checked then only those feature properties that are allowed, by the GPlates Geological "
+			"Information Model (GPGIM), for the partitioned feature type are copied. For example, "
+			"<b>Conjugate plate ID</b> is only applicable for some feature types such as Isochrons. "
+			"If unchecked then all requested feature properties are copied across - however some properties, "
+			"such as conjugate plate IDs, might not get loaded when the feature collection is saved to file "
+			"and reloaded if the feature's type does not support, for example, conjugate plate IDs.</em></p>\n"
 			"</body></html>\n");
 	const QString HELP_RESPECT_FEATURE_TIME_PERIOD_TITLE = QObject::tr("Reconstruction options");
 	const QString HELP_RESPECT_FEATURE_TIME_PERIOD_TEXT = QObject::tr(
@@ -235,10 +242,11 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::AssignReconstructionPlateI
 	d_respect_feature_time_period(false),
 	d_assign_plate_id_method(
 			GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE),
-	d_assign_reconstruction_plate_ids(true),
+	d_assign_reconstruction_plate_ids(false),
 	d_assign_conjugate_plate_ids(false),
 	d_assign_time_of_appearance(false),
-	d_assign_time_of_disappearance(false)
+	d_assign_time_of_disappearance(false),
+	d_verify_information_model(false)
 {
 	setupUi(this);
 
@@ -401,10 +409,12 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 	}
 
 	return GPlatesAppLogic::AssignPlateIds::create(
+			d_application_state.get_gpgim(),
 			d_assign_plate_id_method,
 			partitioning_layer_proxies,
 			default_reconstruction_tree,
 			feature_property_types_to_assign,
+			d_verify_information_model,
 			d_respect_feature_time_period);
 }
 
@@ -778,6 +788,9 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_pag
 	QObject::connect(check_box_assign_time_of_disappearance, SIGNAL(toggled(bool)),
 			this, SLOT(react_feature_properties_options_radio_button(bool)));
 
+	QObject::connect(only_copy_suitable_properties_check_box, SIGNAL(toggled(bool)),
+			this, SLOT(react_feature_properties_options_radio_button(bool)));
+
 	// Set the initial reconstruction time for the double spin box.
 	double_spin_box_reconstruction_time->setValue(d_spin_box_reconstruction_time);
 
@@ -793,13 +806,16 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_pag
 	radio_button_partition_features->setChecked(true);
 
 	// Copy reconstruction plate ids from partitioning polygon?
-	check_box_assign_reconstruction_plate_id->setChecked(d_assign_reconstruction_plate_ids);
+	check_box_assign_reconstruction_plate_id->setChecked(true);
 	// Copy conjugate plate ids from partitioning polygon?
-	check_box_assign_conjugate_plate_id->setChecked(d_assign_conjugate_plate_ids);
+	check_box_assign_conjugate_plate_id->setChecked(false);
 	// Copy times of appearance from partitioning polygon?
-	check_box_assign_time_of_appearance->setChecked(d_assign_time_of_appearance);
+	check_box_assign_time_of_appearance->setChecked(false);
 	// Copy times of disappearance from partitioning polygon?
-	check_box_assign_time_of_disappearance->setChecked(d_assign_time_of_disappearance);
+	check_box_assign_time_of_disappearance->setChecked(false);
+
+	// Set verify information model check box.
+	only_copy_suitable_properties_check_box->setChecked(true);
 }
 
 
@@ -1191,6 +1207,10 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_feature_properties_o
 	d_assign_conjugate_plate_ids = check_box_assign_conjugate_plate_id->isChecked();
 	d_assign_time_of_appearance = check_box_assign_time_of_appearance->isChecked();
 	d_assign_time_of_disappearance = check_box_assign_time_of_disappearance->isChecked();
+
+	d_verify_information_model = only_copy_suitable_properties_check_box->isChecked();
+	// Show warning if not verifying information model.
+	gpgim_warning_widget->setVisible(!d_verify_information_model);
 }
 
 

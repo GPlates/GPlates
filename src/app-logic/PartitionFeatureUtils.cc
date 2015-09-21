@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <vector>
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <QDebug>
 #include <QString>
 
@@ -44,6 +45,7 @@
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/FiniteRotation.h"
 
+#include "model/Gpgim.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
 #include "model/PropertyName.h"
@@ -424,8 +426,12 @@ GPlatesAppLogic::PartitionFeatureUtils::partition_feature(
 
 
 GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::GenericFeaturePropertyAssigner(
+		const GPlatesModel::Gpgim &gpgim,
 		const GPlatesModel::FeatureHandle::const_weak_ref &original_feature,
-		const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign) :
+		const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
+		bool verify_information_model) :
+	d_gpgim(gpgim),
+	d_verify_information_model(verify_information_model),
 	d_default_reconstruction_plate_id(
 			get_reconstruction_plate_id_from_feature(original_feature)),
 	d_default_conjugate_plate_id(
@@ -461,8 +467,10 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 		reconstruction_plate_id = d_default_reconstruction_plate_id;
 	}
 	assign_reconstruction_plate_id_to_feature(
+			d_gpgim,
 			reconstruction_plate_id,
-			partitioned_feature);
+			partitioned_feature,
+			d_verify_information_model);
 
 	// Get the conjugate plate id.
 	// Either from the partitioning feature or the default conjugate plate id.
@@ -480,8 +488,10 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 		conjugate_plate_id = d_default_conjugate_plate_id;
 	}
 	assign_conjugate_plate_id_to_feature(
+			d_gpgim,
 			conjugate_plate_id,
-			partitioned_feature);
+			partitioned_feature,
+			d_verify_information_model);
 
 	// Get the time period.
 	// Either from the partitioning feature or the default time period or a mixture of both.
@@ -524,8 +534,10 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 		valid_time = d_default_valid_time;
 	}
 	assign_valid_time_to_feature(
+			d_gpgim,
 			valid_time,
-			partitioned_feature);
+			partitioned_feature,
+			d_verify_information_model);
 }
 
 
@@ -816,8 +828,10 @@ GPlatesAppLogic::PartitionFeatureUtils::get_reconstruction_plate_id_from_feature
 
 void
 GPlatesAppLogic::PartitionFeatureUtils::assign_reconstruction_plate_id_to_feature(
+		const GPlatesModel::Gpgim &gpgim,
 		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
-		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		bool verify_information_model)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
 	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
@@ -834,10 +848,13 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_reconstruction_plate_id_to_featur
 	// Append a new property to the feature.
 	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type gpml_reconstruction_plate_id = 
 			GPlatesPropertyValues::GpmlPlateId::create(reconstruction_plate_id.get());
-	feature_ref->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				get_reconstruction_plate_id_property_name(),
-				GPlatesModel::ModelUtils::create_gpml_constant_value(gpml_reconstruction_plate_id)));
+	// If 'verify_information_model' is true then property is only added if it doesn't not violate the GPGIM.
+	GPlatesModel::ModelUtils::add_property(
+			feature_ref,
+			get_reconstruction_plate_id_property_name(),
+			gpml_reconstruction_plate_id,
+			gpgim,
+			verify_information_model/*check_property_name_allowed_for_feature_type*/);
 }
 
 
@@ -860,8 +877,10 @@ GPlatesAppLogic::PartitionFeatureUtils::get_conjugate_plate_id_from_feature(
 
 void
 GPlatesAppLogic::PartitionFeatureUtils::assign_conjugate_plate_id_to_feature(
+		const GPlatesModel::Gpgim &gpgim,
 		boost::optional<GPlatesModel::integer_plate_id_type> conjugate_plate_id,
-		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		bool verify_information_model)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
 	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
@@ -878,10 +897,13 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_conjugate_plate_id_to_feature(
 	// Append a new property to the feature.
 	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type gpml_conjugate_plate_id = 
 			GPlatesPropertyValues::GpmlPlateId::create(conjugate_plate_id.get());
-	feature_ref->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				get_conjugate_plate_id_property_name(),
-				GPlatesModel::ModelUtils::create_gpml_constant_value(gpml_conjugate_plate_id)));
+	// If 'verify_information_model' is true then property is only added if it doesn't not violate the GPGIM.
+	GPlatesModel::ModelUtils::add_property(
+			feature_ref,
+			get_conjugate_plate_id_property_name(),
+			gpml_conjugate_plate_id,
+			gpgim,
+			verify_information_model/*check_property_name_allowed_for_feature_type*/);
 }
 
 
@@ -907,8 +929,10 @@ GPlatesAppLogic::PartitionFeatureUtils::get_valid_time_from_feature(
 
 void
 GPlatesAppLogic::PartitionFeatureUtils::assign_valid_time_to_feature(
+		const GPlatesModel::Gpgim &gpgim,
 		boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> valid_time,
-		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		bool verify_information_model)
 {
 	// First remove any that might already exist.
 	feature_ref->remove_properties_by_name(get_valid_time_property_name());
@@ -920,10 +944,13 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_valid_time_to_feature(
 	}
 
 	// Append a new property to the feature.
-	feature_ref->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				get_valid_time_property_name(),
-				valid_time.get()->deep_clone()));
+	// If 'verify_information_model' is true then property is only added if it doesn't not violate the GPGIM.
+	GPlatesModel::ModelUtils::add_property(
+			feature_ref,
+			get_valid_time_property_name(),
+			valid_time.get()->deep_clone(),
+			gpgim,
+			verify_information_model/*check_property_name_allowed_for_feature_type*/);
 }
 
 

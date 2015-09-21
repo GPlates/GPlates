@@ -44,6 +44,7 @@
 #include "file-io/FileInfo.h"
 #include "file-io/ReadErrorAccumulation.h"
 
+#include "model/Gpgim.h"
 #include "model/Model.h"
 
 
@@ -354,15 +355,19 @@ GPlatesCli::AssignPlateIdsCommand::run(
 	// The save filename information used to save the feature collections.
 	const std::string save_file_type = get_save_file_type(vm);
 
+	GPlatesModel::Gpgim::non_null_ptr_type gpgim = GPlatesModel::Gpgim::create();
+
 	// Create the object used to assign plate ids.
 	const GPlatesAppLogic::AssignPlateIds::non_null_ptr_type plate_id_assigner =
 			GPlatesAppLogic::AssignPlateIds::create(
+					*gpgim,
 					assign_plate_ids_method,
 					partitioning_feature_collections,
 					reconstruction_feature_collections,
 					d_recon_time,
 					d_anchor_plate_id,
 					assign_feature_property_flags,
+					true/*verify_information_model*/,
 					true/*allow_partitioning_using_topological_plate_polygons*/,
 					true/*allow_partitioning_using_topological_networks*/,
 					true/*allow_partitioning_using_static_polygons*/,

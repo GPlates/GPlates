@@ -53,6 +53,7 @@ const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type
 
 
 GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
+		const GPlatesModel::Gpgim &gpgim,
 		AssignPlateIdMethodType assign_plate_id_method,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 				partitioning_feature_collections,
@@ -61,6 +62,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		const feature_property_flags_type &feature_property_types_to_assign,
+		bool verify_information_model,
 		bool allow_partitioning_using_topological_plate_polygons,
 		bool allow_partitioning_using_topological_networks,
 		bool allow_partitioning_using_static_polygons,
@@ -155,17 +157,21 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	d_partition_feature_tasks =
 			// Get all tasks that assign properties from polygon features to partitioned features.
 			get_partition_feature_tasks(
+					gpgim,
 					*reconstruction_tree_cache.get_reconstruction_tree(reconstruction_time),
 					assign_plate_id_method,
-					feature_property_types_to_assign);
+					feature_property_types_to_assign,
+					verify_information_model);
 }
 
 
 GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
+		const GPlatesModel::Gpgim &gpgim,
 		AssignPlateIdMethodType assign_plate_id_method,
 		const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
 		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 		const feature_property_flags_type &feature_property_types_to_assign,
+		bool verify_information_model,
 		bool respect_feature_time_period) :
 	d_assign_plate_id_method(assign_plate_id_method),
 	d_feature_property_types_to_assign(feature_property_types_to_assign),
@@ -236,9 +242,11 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	d_partition_feature_tasks =
 			// Get all tasks that assign properties from polygon features to partitioned features.
 			get_partition_feature_tasks(
+					gpgim,
 					*reconstruction_tree,
 					assign_plate_id_method,
-					feature_property_types_to_assign);
+					feature_property_types_to_assign,
+					verify_information_model);
 }
 
 

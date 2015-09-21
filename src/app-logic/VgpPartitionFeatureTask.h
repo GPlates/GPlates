@@ -30,6 +30,11 @@
 #include "PartitionFeatureTask.h"
 
 
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesAppLogic
 {
 	/**
@@ -39,6 +44,14 @@ namespace GPlatesAppLogic
 			public PartitionFeatureTask
 	{
 	public:
+
+		/**
+		 * If 'verify_information_model' is true then feature property types are only added if they don't not violate the GPGIM.
+		 */
+		VgpPartitionFeatureTask(
+				const GPlatesModel::Gpgim &gpgim,
+				bool verify_information_model);
+
 		virtual
 		bool
 		can_partition_feature(
@@ -52,6 +65,10 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 				const GeometryCookieCutter &geometry_cookie_cutter,
 				bool respect_feature_time_period);
+
+	private:
+		const GPlatesModel::Gpgim &d_gpgim;
+		bool d_verify_information_model;
 	};
 }
 

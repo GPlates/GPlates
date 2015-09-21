@@ -321,6 +321,13 @@ namespace GPlatesQtWidgets
 		//! Whether to copy times of disappearance from the partitioning polygons or not.
 		bool d_assign_time_of_disappearance;
 
+		/**
+		 * Whether to verify information model before assigning feature properties.
+		 *
+		 * If verifying and a property fails to verify for a feature type then that property is not assigned.
+		 */
+		bool d_verify_information_model;
+
 
 		void
 		set_up_button_box();

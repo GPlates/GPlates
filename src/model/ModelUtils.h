@@ -319,7 +319,7 @@ namespace GPlatesModel
 		 * wrapper (or none) as dictated by the GPGIM for the specified property name
 		 * (this is done via @a add_remove_or_convert_time_dependent_wrapper).
 		 *
-		 * NOTE: If @a check_property_name_with_feature_type is true then the property name is also
+		 * NOTE: If @a check_property_name_allowed_for_feature_type is true then the property name is also
 		 * checked to see if it's valid for the specified feature's type (and only added if it is).
 		 * This ensures a stricter level of conformance to the GPGIM.
 		 *

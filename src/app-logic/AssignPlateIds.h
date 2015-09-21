@@ -45,6 +45,11 @@
 #include "model/types.h"
 
 
+namespace GPlatesModel
+{
+	class Gpgim;
+}
+
 namespace GPlatesAppLogic
 {
 	class PartitionFeatureTask;
@@ -189,6 +194,9 @@ namespace GPlatesAppLogic
 		 * The default value of @a feature_properties_to_assign only assigns
 		 * the reconstruction plate id.
 		 *
+		 * If @a verify_information_model is true then feature property types are only assigned if
+		 * they don't not violate the GPGIM.
+		 *
 		 * If @a respect_feature_time_period is true (the default) then the feature is only
 		 * partitioned if the reconstruction time (stored in derived class instance) is within
 		 * the time period over which the feature is defined.
@@ -197,6 +205,7 @@ namespace GPlatesAppLogic
 		static
 		non_null_ptr_type
 		create(
+				const GPlatesModel::Gpgim &gpgim,
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						partitioning_feature_collections,
@@ -206,18 +215,21 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const feature_property_flags_type &feature_property_types_to_assign =
 						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
+				bool verify_information_model = true,
 				bool allow_partitioning_using_topological_plate_polygons = true,
 				bool allow_partitioning_using_topological_networks = true,
 				bool allow_partitioning_using_static_polygons = true,
 				bool respect_feature_time_period = true)
 		{
 			return non_null_ptr_type(new AssignPlateIds(
+					gpgim,
 					assign_plate_id_method,
 					partitioning_feature_collections,
 					reconstruction_feature_collections,
 					reconstruction_time,
 					anchor_plate_id,
 					feature_property_types_to_assign,
+					verify_information_model,
 					allow_partitioning_using_topological_plate_polygons,
 					allow_partitioning_using_topological_networks,
 					allow_partitioning_using_static_polygons,
@@ -246,6 +258,9 @@ namespace GPlatesAppLogic
 		 * The default value of @a feature_properties_to_assign only assigns
 		 * the reconstruction plate id.
 		 *
+		 * If @a verify_information_model is true then feature property types are only assigned if
+		 * they don't not violate the GPGIM.
+		 *
 		 * If @a respect_feature_time_period is true (the default) then the feature is only
 		 * partitioned if the reconstruction time (stored in derived class instance) is within
 		 * the time period over which the feature is defined.
@@ -254,18 +269,22 @@ namespace GPlatesAppLogic
 		static
 		non_null_ptr_type
 		create(
+				const GPlatesModel::Gpgim &gpgim,
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				const feature_property_flags_type &feature_property_types_to_assign =
 						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
+				bool verify_information_model = true,
 				bool respect_feature_time_period = true)
 		{
 			return non_null_ptr_type(new AssignPlateIds(
+					gpgim,
 					assign_plate_id_method,
 					partitioning_layer_proxies,
 					reconstruction_tree,
 					feature_property_types_to_assign,
+					verify_information_model,
 					respect_feature_time_period));
 		}
 
@@ -347,6 +366,7 @@ namespace GPlatesAppLogic
 		 * to create a new set of partitioning polygons to be used for cookie-cutting.
 		 */
 		AssignPlateIds(
+				const GPlatesModel::Gpgim &gpgim,
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						partitioning_feature_collections,
@@ -355,6 +375,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const feature_property_flags_type &feature_property_types_to_assign,
+				bool verify_information_model,
 				bool allow_partitioning_using_topological_plate_polygons,
 				bool allow_partitioning_using_topological_networks,
 				bool allow_partitioning_using_static_polygons,
@@ -373,10 +394,12 @@ namespace GPlatesAppLogic
 		 * @throws PreconditionViolationError exception if @a partitioning_layer_proxies is empty.
 		 */
 		AssignPlateIds(
+				const GPlatesModel::Gpgim &gpgim,
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				const feature_property_flags_type &feature_property_types_to_assign,
+				bool verify_information_model,
 				bool respect_feature_time_period);
 	};
 }
