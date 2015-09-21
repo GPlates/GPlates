@@ -311,8 +311,10 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType d_assign_plate_id_method;
 
-		//! Whether to copy plate ids from the partitioning polygons or not.
-		bool d_assign_plate_ids;
+		//! Whether to copy reconstruction plate ids from the partitioning polygons or not.
+		bool d_assign_reconstruction_plate_ids;
+		//! Whether to copy conjugate plate ids from the partitioning polygons or not.
+		bool d_assign_conjugate_plate_ids;
 
 		//! Whether to copy times of appearance from the partitioning polygons or not.
 		bool d_assign_time_of_appearance;

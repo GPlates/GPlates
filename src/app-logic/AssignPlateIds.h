@@ -139,6 +139,8 @@ namespace GPlatesAppLogic
 		{
 			//! Reconstruction plate id
 			RECONSTRUCTION_PLATE_ID,
+			//! Conjugate plate id
+			CONJUGATE_PLATE_ID,
 			//! Time of appearance
 			TIME_OF_APPEARANCE,
 			//! Time of disappearance

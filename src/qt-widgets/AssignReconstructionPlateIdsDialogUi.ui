@@ -620,11 +620,22 @@
            </layout>
           </item>
           <item>
-           <widget class="QCheckBox" name="check_box_assign_plate_id">
-            <property name="text">
-             <string>Reconstruction plate ID</string>
-            </property>
-           </widget>
+           <layout class="QHBoxLayout" name="horizontalLayout_7">
+            <item>
+             <widget class="QCheckBox" name="check_box_assign_reconstruction_plate_id">
+              <property name="text">
+               <string>Reconstruction plate ID</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="check_box_assign_conjugate_plate_id">
+              <property name="text">
+               <string>Conjugate plate ID</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_8">

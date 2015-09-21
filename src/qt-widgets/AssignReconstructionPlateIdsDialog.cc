@@ -142,9 +142,10 @@ namespace
 	const QString HELP_PROPERTIES_TO_ASSIGN_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
 			"<h3>Specify which feature properties to copy from a polygon</h3>"
-			"<p>The two feature property options:</p>"
+			"<p>The three feature property options:</p>"
 			"<ul>"
 			"<li><b>Reconstruction plate id:</b> reconstruction time is 0Ma.</li>\n"
+			"<li><b>Conjugate plate id:</b> reconstruction time is 0Ma.</li>\n"
 			"<li><b>Time of appearance and disappearance:</b> the time interval a feature exists.</li>\n"
 			"</ul>"
 			"<p>These options are not mutually exclusive.</p>"
@@ -234,7 +235,8 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::AssignReconstructionPlateI
 	d_respect_feature_time_period(false),
 	d_assign_plate_id_method(
 			GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE),
-	d_assign_plate_ids(true),
+	d_assign_reconstruction_plate_ids(true),
+	d_assign_conjugate_plate_ids(false),
 	d_assign_time_of_appearance(false),
 	d_assign_time_of_disappearance(false)
 {
@@ -381,9 +383,13 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 
 	// Determine which feature property types to copy from partitioning polygon.
 	GPlatesAppLogic::AssignPlateIds::feature_property_flags_type feature_property_types_to_assign;
-	if (d_assign_plate_ids)
+	if (d_assign_reconstruction_plate_ids)
 	{
 		feature_property_types_to_assign.set(GPlatesAppLogic::AssignPlateIds::RECONSTRUCTION_PLATE_ID);
+	}
+	if (d_assign_conjugate_plate_ids)
+	{
+		feature_property_types_to_assign.set(GPlatesAppLogic::AssignPlateIds::CONJUGATE_PLATE_ID);
 	}
 	if (d_assign_time_of_appearance)
 	{
@@ -763,7 +769,9 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_pag
 			this, SLOT(react_partition_options_radio_button(bool)));
 
 	// Listen for feature properties radio button selections.
-	QObject::connect(check_box_assign_plate_id, SIGNAL(toggled(bool)),
+	QObject::connect(check_box_assign_reconstruction_plate_id, SIGNAL(toggled(bool)),
+			this, SLOT(react_feature_properties_options_radio_button(bool)));
+	QObject::connect(check_box_assign_conjugate_plate_id, SIGNAL(toggled(bool)),
 			this, SLOT(react_feature_properties_options_radio_button(bool)));
 	QObject::connect(check_box_assign_time_of_appearance, SIGNAL(toggled(bool)),
 			this, SLOT(react_feature_properties_options_radio_button(bool)));
@@ -784,8 +792,10 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_pag
 	// Set the default radio button to partition each feature into the partitioning polygons.
 	radio_button_partition_features->setChecked(true);
 
-	// Copy plate ids from partitioning polygon?
-	check_box_assign_plate_id->setChecked(d_assign_plate_ids);
+	// Copy reconstruction plate ids from partitioning polygon?
+	check_box_assign_reconstruction_plate_id->setChecked(d_assign_reconstruction_plate_ids);
+	// Copy conjugate plate ids from partitioning polygon?
+	check_box_assign_conjugate_plate_id->setChecked(d_assign_conjugate_plate_ids);
 	// Copy times of appearance from partitioning polygon?
 	check_box_assign_time_of_appearance->setChecked(d_assign_time_of_appearance);
 	// Copy times of disappearance from partitioning polygon?
@@ -1177,7 +1187,8 @@ void
 GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_feature_properties_options_radio_button(
 		bool checked)
 {
-	d_assign_plate_ids = check_box_assign_plate_id->isChecked();
+	d_assign_reconstruction_plate_ids = check_box_assign_reconstruction_plate_id->isChecked();
+	d_assign_conjugate_plate_ids = check_box_assign_conjugate_plate_id->isChecked();
 	d_assign_time_of_appearance = check_box_assign_time_of_appearance->isChecked();
 	d_assign_time_of_disappearance = check_box_assign_time_of_disappearance->isChecked();
 }

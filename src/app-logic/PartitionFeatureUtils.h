@@ -174,6 +174,7 @@ namespace GPlatesAppLogic
 
 		private:
 			boost::optional<GPlatesModel::integer_plate_id_type> d_default_reconstruction_plate_id;
+			boost::optional<GPlatesModel::integer_plate_id_type> d_default_conjugate_plate_id;
 			boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> d_default_valid_time;
 
 			GPlatesAppLogic::AssignPlateIds::feature_property_flags_type d_feature_property_types_to_assign;
@@ -378,6 +379,27 @@ namespace GPlatesAppLogic
 		void
 		assign_reconstruction_plate_id_to_feature(
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
+
+
+		/**
+		 * Returns the 'gpml:conjugatePlateId' plate id if one exists.
+		 */
+		boost::optional<GPlatesModel::integer_plate_id_type>
+		get_conjugate_plate_id_from_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref);
+
+
+		/**
+		 * Assigns a 'gpml:conjugatePlateId' property value to @a feature_ref.
+		 * Removes any properties with this name that might already exist in @a feature_ref.
+		 *
+		 * If @a conjugate_plate_id is false then only conjugate plate id properties
+		 * are removed and none added.
+		 */
+		void
+		assign_conjugate_plate_id_to_feature(
+				boost::optional<GPlatesModel::integer_plate_id_type> conjugate_plate_id,
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
 
 
