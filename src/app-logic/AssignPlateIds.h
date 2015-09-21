@@ -139,8 +139,10 @@ namespace GPlatesAppLogic
 		{
 			//! Reconstruction plate id
 			RECONSTRUCTION_PLATE_ID,
-			//! Time of appearance and disappearance
-			VALID_TIME,
+			//! Time of appearance
+			TIME_OF_APPEARANCE,
+			//! Time of disappearance
+			TIME_OF_DISAPPEARANCE,
 
 			NUM_FEATURE_PROPERTY_TYPES // Must be the last enum.
 		};

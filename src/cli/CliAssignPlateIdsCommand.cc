@@ -347,7 +347,8 @@ GPlatesCli::AssignPlateIdsCommand::run(
 	}
 	if (d_assign_time_period)
 	{
-		assign_feature_property_flags.set(GPlatesAppLogic::AssignPlateIds::VALID_TIME);
+		assign_feature_property_flags.set(GPlatesAppLogic::AssignPlateIds::TIME_OF_APPEARANCE);
+		assign_feature_property_flags.set(GPlatesAppLogic::AssignPlateIds::TIME_OF_DISAPPEARANCE);
 	}
 
 	// The save filename information used to save the feature collections.

@@ -450,14 +450,40 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 			partitioned_feature);
 
 	// Get the time period.
-	// Either from the partitioning feature or the default time period.
-	// If we are not supposed to assign plate ids then use the default plate id as
-	// that has the effect of keeping the original plate id.
+	// Either from the partitioning feature or the default time period or a mixture of both.
+	// If we are not supposed to assign time periods then use the default time period as
+	// that has the effect of keeping the original time period.
 	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> valid_time;
-	if (partitioning_feature &&
-		d_feature_property_types_to_assign.test(AssignPlateIds::VALID_TIME))
+	if (partitioning_feature && (
+		d_feature_property_types_to_assign.test(AssignPlateIds::TIME_OF_APPEARANCE) ||
+		d_feature_property_types_to_assign.test(AssignPlateIds::TIME_OF_DISAPPEARANCE)))
 	{
 		valid_time = get_valid_time_from_feature(partitioning_feature.get());
+
+		if (valid_time)
+		{
+			// If only copying time of disappearance (not appearance) then replace the appearance time
+			// with the default appearance time (or distant past if none).
+			if (!d_feature_property_types_to_assign.test(AssignPlateIds::TIME_OF_APPEARANCE))
+			{
+				valid_time = GPlatesModel::ModelUtils::create_gml_time_period(
+						d_default_valid_time
+								? d_default_valid_time.get()->begin()->time_position()
+								: GPlatesPropertyValues::GeoTimeInstant::create_distant_past(),
+						valid_time.get()->end()->time_position());
+			}
+
+			// If only copying time of appearance (not disappearance) then replace the disappearance time
+			// with the default disappearance time (or distant future if none).
+			if (!d_feature_property_types_to_assign.test(AssignPlateIds::TIME_OF_DISAPPEARANCE))
+			{
+				valid_time = GPlatesModel::ModelUtils::create_gml_time_period(
+						valid_time.get()->begin()->time_position(),
+						d_default_valid_time
+								? d_default_valid_time.get()->end()->time_position()
+								: GPlatesPropertyValues::GeoTimeInstant::create_distant_future());
+			}
+		}
 	}
 	else
 	{

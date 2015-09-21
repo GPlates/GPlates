@@ -314,8 +314,10 @@ namespace GPlatesQtWidgets
 		//! Whether to copy plate ids from the partitioning polygons or not.
 		bool d_assign_plate_ids;
 
-		//! Whether to copy time periods from the partitioning polygons or not.
-		bool d_assign_time_periods;
+		//! Whether to copy times of appearance from the partitioning polygons or not.
+		bool d_assign_time_of_appearance;
+		//! Whether to copy times of disappearance from the partitioning polygons or not.
+		bool d_assign_time_of_disappearance;
 
 
 		void

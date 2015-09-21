@@ -89,7 +89,7 @@ namespace GPlatesAppLogic
 		 * If @a respect_feature_time_period is true (the default) then the feature is only
 		 * partitioned if the reconstruction time (stored in derived class instance) is within
 		 * the time period over which the feature is defined.
-		 * Note that some this can be ignored by some derived classes (eg, @a VgpPartitionFeatureTask).
+		 * Note that this can be ignored by some derived classes (eg, @a VgpPartitionFeatureTask).
 		 *
 		 * NOTE: Currently @a feature_ref can be modified to hold one of geometries
 		 * resulting from partitioning while clones of it can hold the other

@@ -235,7 +235,8 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::AssignReconstructionPlateI
 	d_assign_plate_id_method(
 			GPlatesAppLogic::AssignPlateIds::ASSIGN_FEATURE_TO_MOST_OVERLAPPING_PLATE),
 	d_assign_plate_ids(true),
-	d_assign_time_periods(false)
+	d_assign_time_of_appearance(false),
+	d_assign_time_of_disappearance(false)
 {
 	setupUi(this);
 
@@ -384,9 +385,13 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 	{
 		feature_property_types_to_assign.set(GPlatesAppLogic::AssignPlateIds::RECONSTRUCTION_PLATE_ID);
 	}
-	if (d_assign_time_periods)
+	if (d_assign_time_of_appearance)
 	{
-		feature_property_types_to_assign.set(GPlatesAppLogic::AssignPlateIds::VALID_TIME);
+		feature_property_types_to_assign.set(GPlatesAppLogic::AssignPlateIds::TIME_OF_APPEARANCE);
+	}
+	if (d_assign_time_of_disappearance)
+	{
+		feature_property_types_to_assign.set(GPlatesAppLogic::AssignPlateIds::TIME_OF_DISAPPEARANCE);
 	}
 
 	return GPlatesAppLogic::AssignPlateIds::create(
@@ -760,7 +765,9 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_pag
 	// Listen for feature properties radio button selections.
 	QObject::connect(check_box_assign_plate_id, SIGNAL(toggled(bool)),
 			this, SLOT(react_feature_properties_options_radio_button(bool)));
-	QObject::connect(check_box_assign_time_period, SIGNAL(toggled(bool)),
+	QObject::connect(check_box_assign_time_of_appearance, SIGNAL(toggled(bool)),
+			this, SLOT(react_feature_properties_options_radio_button(bool)));
+	QObject::connect(check_box_assign_time_of_disappearance, SIGNAL(toggled(bool)),
 			this, SLOT(react_feature_properties_options_radio_button(bool)));
 
 	// Set the initial reconstruction time for the double spin box.
@@ -779,8 +786,10 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::set_up_general_options_pag
 
 	// Copy plate ids from partitioning polygon?
 	check_box_assign_plate_id->setChecked(d_assign_plate_ids);
-	// Copy time periods from partitioning polygon?
-	check_box_assign_time_period->setChecked(d_assign_time_periods);
+	// Copy times of appearance from partitioning polygon?
+	check_box_assign_time_of_appearance->setChecked(d_assign_time_of_appearance);
+	// Copy times of disappearance from partitioning polygon?
+	check_box_assign_time_of_disappearance->setChecked(d_assign_time_of_disappearance);
 }
 
 
@@ -1169,7 +1178,8 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::react_feature_properties_o
 		bool checked)
 {
 	d_assign_plate_ids = check_box_assign_plate_id->isChecked();
-	d_assign_time_periods = check_box_assign_time_period->isChecked();
+	d_assign_time_of_appearance = check_box_assign_time_of_appearance->isChecked();
+	d_assign_time_of_disappearance = check_box_assign_time_of_disappearance->isChecked();
 }
 
 

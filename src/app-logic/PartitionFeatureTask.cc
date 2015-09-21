@@ -33,7 +33,7 @@ GPlatesAppLogic::partition_feature_task_ptr_seq_type
 GPlatesAppLogic::get_partition_feature_tasks(
 		const ReconstructionTree &reconstruction_tree,
 		GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType assign_plate_id_method,
-			const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign)
+		const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign)
 {
 	// Order the tasks from most specific to least specific
 	// since they'll get processed from front to back of the list.
