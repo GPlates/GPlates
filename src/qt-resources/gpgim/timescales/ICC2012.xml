@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GPlatesTimescale
+   id="ICC2012"
+   type="Stratigraphic"
+   name="International Chronostratigraphic Chart, August 2012"
+   reference="http://www.stratigraphy.org"
+   version="1.0"
+   >
+   <!-- ===============================================================
+
+                         GPlates Timescale Definition
+
+        In order for GPlates to provide appropriate UI elements when
+        dealing with ages specified as stratigraphic names, it needs
+        to have a list of those names. Rather than building a big
+        C++ structure of cstrings, it's far better to supply this
+        information as an external (but for the moment, compiled-in)
+        XML file.
+
+        The ultimate intention is for it to one day be useful in
+        suplpying GPlates with not only the names, but the associated
+        absolute ages (and uncertainties), and perhaps even allow for
+        some conversion between timescales.
+
+        This file could _almost_ be a simple table in CSV format, but
+        CSV sucks and wouldn't be easily extensible. Certainly you'd
+        have to duplicate the names or age boundaries and it'd be
+        prone to errors. And you're dealing with a structure that is
+        naturally tree-like, and some timescales don't include certain
+        names, and it's a big mess. Having empty cells in a table
+        mean something special is not the way to go about it.
+
+        The format of this XML is designed to be as general as possible
+        and does not refer to eons, eras, periods, epochs or 'ages'
+        directly. There seems to be some contention on what to call
+        those groupings anyway, and then there's the Carboniferous
+        to deal with; GPlates just needs to know which groups are
+        contained within which other groups. We could also use the
+        same structure to handle geomagnetic timescale data if that's
+        something we're interested in.
+
+        XML Author: James Clark, 2014-11-26
+        Based heavily on work done by Christian Heine modelling
+        stratigraphic timescales for GMT plotting.
+
+        =============================================================== -->
+
+   <Group type="eon" name="Phanerozoic" begin_time="541" uncertainty="1.0" colour="#9AD9DD">
+
+      <!-- ============================================================================== -->
+      <Group type="era" name="Cenozoic" begin_time="66.0" uncertainty="0.0" colour="#F2F91D">
+      <!-- ============================================================================== -->
+
+         <Group type="period" name="Quaternary" begin_time="2.588" uncertainty="0.0" colour="#F9F97F">
+            <Group type="epoch" name="Holocene" begin_time="0.0117" uncertainty="0.0" colour="#FEF2E0" />
+            <Group type="epoch" name="Pleistocene" begin_time="2.588" uncertainty="0.0" colour="#FFF2AE">
+               <Group type="age" name="Late Pleistocene" begin_time="0.126" uncertainty="0.0" colour="#FFF2D3" />
+               <Group type="age" name="Middle Pleistocene" begin_time="0.781" uncertainty="0.0" colour="#FFF2C7" />
+               <Group type="age" name="Calabrian" begin_time="1.806" uncertainty="0.0" colour="#FFF2BA" />
+               <Group type="age" name="Gelasian" begin_time="2.588" uncertainty="0.0" colour="#FFF2B3" />
+            </Group>	<!-- end of epoch 'Pleistocene' -->
+         </Group>	<!-- end of period 'Quaternary' -->
+
+         <Group type="period" name="Neogene" begin_time="23.03" uncertainty="0.0" colour="#FFE619">
+            <Group type="epoch" name="Pliocene" begin_time="5.333" uncertainty="0.0" colour="#FFFF99">
+               <Group type="age" name="Piacenzian" begin_time="3.600" uncertainty="0.0" colour="#FFFFBF" />
+               <Group type="age" name="Zanclean" begin_time="5.333" uncertainty="0.0" colour="#FFFFB3" />
+            </Group>	<!-- end of epoch 'Pliocene' -->
+            <Group type="epoch" name="Miocene" begin_time="23.03" uncertainty="0.0" colour="#FFFF00">
+               <Group type="age" name="Messinian" begin_time="7.246" uncertainty="0.0" colour="#FFFF73" />
+               <Group type="age" name="Tortonian" begin_time="11.62" uncertainty="0.0" colour="#FFFF66" />
+               <Group type="age" name="Serravilian" begin_time="13.82" uncertainty="0.0" colour="#FFFF59" />
+               <Group type="age" name="Langhian" begin_time="15.97" uncertainty="0.0" colour="#FFFF4D" />
+               <Group type="age" name="Burdigalian" begin_time="20.44" uncertainty="0.0" colour="#FFFF41" />
+               <Group type="age" name="Aquitanian" begin_time="23.03" uncertainty="0.0" colour="#FFFF33" />
+            </Group>	<!-- end of epoch 'Miocene' -->
+         </Group>	<!-- end of period 'Neogene' -->
+
+         <Group type="period" name="Paleogene" begin_time="66" colour="#FD9A52">
+            <Group type="epoch" name="Oligocene" begin_time="33.9" uncertainty="0.0" colour="#FDC07A">
+               <Group type="age" name="Chattian" begin_time="28.1" uncertainty="0.0" colour="#FEE6AA" />
+               <Group type="age" name="Rupelian" begin_time="33.9" uncertainty="0.0" colour="#FED99A" />
+            </Group>	<!-- end of epoch 'Oligocene' -->
+            <Group type="epoch" name="Eocene" begin_time="56.0" uncertainty="0.0" colour="#FDB46C">
+               <Group type="age" name="Priabonian" begin_time="38.0" uncertainty="0.0" colour="#FDCDA1" />
+               <Group type="age" name="Bartonian" begin_time="41.3" uncertainty="0.0" colour="#FDC091" />
+               <Group type="age" name="Lutetian" begin_time="47.8" uncertainty="0.0" colour="#FCB482" />
+               <Group type="age" name="Ypresian" begin_time="56.0" uncertainty="0.0" colour="#FCA773" />
+            </Group>	<!-- end of epoch 'Eocene' -->
+            <Group type="epoch" name="Paleocene" begin_time="66.0" uncertainty="0.0" colour="#FDA75F">
+               <Group type="age" name="Thanetian" begin_time="59.2" uncertainty="0.0" colour="#FDBF6F" />
+               <Group type="age" name="Selandian" begin_time="61.6" uncertainty="0.0" colour="#FEBF65" />
+               <Group type="age" name="Danian" begin_time="66.0" uncertainty="0.0" colour="#FDB462" />
+            </Group>	<!-- end of epoch 'Paleocene' -->
+         </Group>	<!-- end of period 'Paleogene' -->
+
+      </Group>	<!-- end of era 'Cenozoic' -->
+
+      <!-- =============================================================================== -->
+      <Group type="era" name="Mesozoic" begin_time="252.2" uncertainty="0.5" colour="#F2F91D">
+      <!-- =============================================================================== -->
+
+         <Group type="period" name="Cretaceous" begin_time="145.0" uncertainty="0.8" colour="#7FC64E">
+            <Group type="epoch" name="Late Cretaceous" begin_time="100.5" uncertainty="0.0" colour="#A6D84A">
+               <Group type="age" name="Maastrichtian" begin_time="72.1" uncertainty="0.2" colour="#F2FA8C" />
+               <Group type="age" name="Campanian" begin_time="83.6" uncertainty="0.2" colour="#E6F47F" />
+               <Group type="age" name="Santonian" begin_time="86.3" uncertainty="0.5" colour="#D9EF74" />
+               <Group type="age" name="Coniacian" begin_time="89.8" uncertainty="0.3" colour="#CCE968" />
+               <Group type="age" name="Turonian" begin_time="93.9" uncertainty="0.0" colour="#BFE35D" />
+               <Group type="age" name="Cenomanian" begin_time="100.5" uncertainty="0.0" colour="#B3DE53" />
+            </Group>	<!-- end of epoch 'Late Cretaceous' -->
+            <Group type="epoch" name="Early Cretaceous" begin_time="145.0" uncertainty="0.8" colour="#8CCD57">
+               <Group type="age" name="Albian" begin_time="113.0" uncertainty="0.2" colour="#CCEA97" />
+               <Group type="age" name="Aptian" begin_time="125.0" uncertainty="0.2" colour="#BFE48A" />
+               <Group type="age" name="Barremian" begin_time="129.4" uncertainty="0.5" colour="#B3DF7F" />
+               <Group type="age" name="Hauterivian" begin_time="132.9" uncertainty="0.3" colour="#A6D975" />
+               <Group type="age" name="Valanginian" begin_time="139.8" uncertainty="0.0" colour="#99D36A" />
+               <Group type="age" name="Berriasian" begin_time="145.0" uncertainty="0.8" colour="#8CCD60" />
+            </Group>	<!-- end of epoch 'Early Cretaceous' -->
+         </Group>	<!-- end of period 'Cretaceous' -->
+
+         <Group type="period" name="Jurassic" begin_time="201.3" uncertainty="0.2" colour="#19c4eb">
+            <Group type="epoch" name="Late Jurassic" begin_time="163.5" uncertainty="1.0" colour="#B3E3EE">
+               <Group type="age" name="Tithonian" begin_time="152.1" uncertainty="0.9" colour="#D9F1F7" />
+               <Group type="age" name="Kimmeridgian" begin_time="157.3" uncertainty="1.0" colour="#CCECF4" />
+               <Group type="age" name="Oxfordian" begin_time="163.5" uncertainty="1.0" colour="#BFE7F1" />
+            </Group>	<!-- end of epoch 'Late Jurassic' -->
+            <Group type="epoch" name="Middle Jurassic" begin_time="174.1" uncertainty="1.0" colour="#80CFD8">
+               <Group type="age" name="Callovian" begin_time="166.1" uncertainty="1.2" colour="#BFE7E5" />
+               <Group type="age" name="Bathonian" begin_time="168.3" uncertainty="1.3" colour="#B3E2E3" />
+               <Group type="age" name="Bajocian" begin_time="170.3" uncertainty="1.4" colour="#A6DDE0" />
+               <Group type="age" name="Aalenian" begin_time="174.1" uncertainty="1.0" colour="#9AD9DD" />
+            </Group>	<!-- end of epoch 'Middle Jurassic' -->
+            <Group type="epoch" name="Early Jurassic" begin_time="201.3" uncertainty="0.2" colour="#42AED0">
+               <Group type="age" name="Toarcian" begin_time="182.7" uncertainty="0.7" colour="#99CEE3" />
+               <Group type="age" name="Pliensbachian" begin_time="190.8" uncertainty="1.0" colour="#80C5DD" />
+               <Group type="age" name="Sinemurian" begin_time="199.3" uncertainty="0.3" colour="#67BCD8" />
+               <Group type="age" name="Hettangian" begin_time="201.3" uncertainty="0.2" colour="#4EB3D3" />
+            </Group>	<!-- end of epoch 'Early Jurassic' -->
+         </Group>	<!-- end of period 'Jurassic' -->
+
+         <Group type="period" name="Triassic" begin_time="252.2" uncertainty="0.5" colour="#812B92">
+            <Group type="epoch" name="Late Triassic" begin_time="235" uncertainty="0.0" colour="#BD8CC3">
+               <Group type="age" name="Rhaetian" begin_time="208.5" uncertainty="0.0" colour="#E3B9DB" />
+               <Group type="age" name="Norian" begin_time="228" uncertainty="0.0" colour="#D6AAD3" />
+               <Group type="age" name="Carnian" begin_time="235" uncertainty="0.0" colour="#C99BCB" />
+            </Group>	<!-- end of epoch 'Late Triassic' -->
+            <Group type="epoch" name="Middle Triassic" begin_time="247.2" uncertainty="1.0" colour="#B168B1">
+               <Group type="age" name="Landinian" begin_time="242" uncertainty="0.0" colour="#C983BF" />
+               <Group type="age" name="Anisian" begin_time="247.2" uncertainty="0.0" colour="#BC75B7" />
+            </Group>	<!-- end of epoch 'Middle Triassic' -->
+            <Group type="epoch" name="Early Triassic" begin_time="252.2" uncertainty="0.5" colour="#983999">
+               <Group type="age" name="Olenekian" begin_time="251.2" uncertainty="0.0" colour="#B251A5" />
+               <Group type="age" name="Induan" begin_time="252.2" uncertainty="0.5" colour="#A4469F" />
+            </Group>	<!-- end of epoch 'Early Triassic' -->
+         </Group>	<!-- end of period 'Triassic' -->
+
+      </Group>	<!-- end of era 'Mesozoic' -->
+
+      <!-- ================================================================================ -->
+      <Group type="era" name="Paleozoic" begin_time="541.0" uncertainty="1.0" colour="#F2F91D">
+      <!-- ================================================================================ -->
+
+         <Group type="period" name="Permian" begin_time="298.9" uncertainty="0.2" colour="#F04028">
+            <Group type="epoch" name="Lopingian" begin_time="259.9" uncertainty="0.4" colour="#FBA794">
+               <Group type="age" name="Changhsingian" begin_time="254.2" uncertainty="0.1" colour="#FCC0B2" />
+               <Group type="age" name="Wuchiapingian" begin_time="259.9" uncertainty="0.4" colour="#FCB4A2" />
+            </Group>	<!-- end of epoch 'Lopingian' -->
+            <Group type="epoch" name="Guadalupian" begin_time="272.3" uncertainty="0.5" colour="#FB745C">
+               <Group type="age" name="Capitanian" begin_time="265.1" uncertainty="0.4" colour="#ffaa98" />
+               <Group type="age" name="Wordian" begin_time="268.8" uncertainty="0.5" colour="#FB8D76" />
+               <Group type="age" name="Roadian" begin_time="272.3" uncertainty="0.5" colour="#FB8069" />
+            </Group>	<!-- end of epoch 'Guadalupian' -->
+            <Group type="epoch" name="Cisuralian" begin_time="298.9" uncertainty="0.2" colour="#EF5845">
+               <Group type="age" name="Kungurian" begin_time="279.3" uncertainty="0.6" colour="#E38776" />
+               <Group type="age" name="Artinskian" begin_time="290.1" uncertainty="0.1" colour="#E37B68" />
+               <Group type="age" name="Sakmarian" begin_time="295.5" uncertainty="0.4" colour="#E36F5C" />
+               <Group type="age" name="Asselian" begin_time="298.9" uncertainty="0.2" colour="#E36350" />
+            </Group>	<!-- end of epoch 'Cisuralian' -->
+         </Group>	<!-- end of period 'Permian' -->
+
+         <Group type="period" name="Carboniferous" begin_time="358.9" uncertainty="0.4" colour="#5eb6b5">
+            <Group type="epoch" name="Pennsylvanian" begin_time="323.2" uncertainty="0.4" colour="#99C2B5">
+               <Group type="age" name="Gzhelian" begin_time="303.7" uncertainty="0.1" colour="#CCD4C7" />
+               <Group type="age" name="Kasimovian" begin_time="307.0" uncertainty="0.1" colour="#BFD0C5" />
+               <Group type="age" name="Moscovian" begin_time="315.2" uncertainty="0.2" colour="#B3CBB9" />
+               <Group type="age" name="Bashkirian" begin_time="323.2" uncertainty="0.4" colour="#99C2B5" />
+            </Group>	<!-- end of epoch 'Pennsylvanian' -->
+            <Group type="epoch" name="Mississippian" begin_time="358.9" uncertainty="0.4" colour="#678F66">
+               <Group type="age" name="Serpukhovian" begin_time="330.9" uncertainty="0.2" colour="#BFC26B" />
+               <Group type="age" name="Visean" begin_time="346.7" uncertainty="0.4" colour="#A6B96C" />
+               <Group type="age" name="Tournaisian" begin_time="358.9" uncertainty="0.4" colour="#8CB06C" />
+            </Group>	<!-- end of epoch 'Mississippian' -->
+         </Group>	<!-- end of period 'Carboniferous' -->
+
+         <Group type="period" name="Devonian" begin_time="419.2" uncertainty="3.2" colour="#d59b58">
+            <Group type="epoch" name="Late Devonian" begin_time="382.7" uncertainty="1.6" colour="#F1E19D">
+               <Group type="age" name="Famennian" begin_time="372.2" uncertainty="1.6" colour="#F2EDC5" />
+               <Group type="age" name="Frasnian" begin_time="307.0" uncertainty="0.1" colour="#F2EDAD" />
+            </Group>	<!-- end of epoch 'Late Devonian' -->
+            <Group type="epoch" name="Middle Devonian" begin_time="393.3" uncertainty="1.2" colour="#F1C868">
+               <Group type="age" name="Givetian" begin_time="387.7" uncertainty="0.8" colour="#F1E185" />
+               <Group type="age" name="Eifelian" begin_time="393.3" uncertainty="1.2" colour="#F1D576" />
+            </Group>	<!-- end of epoch 'Middle Devonian' -->
+            <Group type="epoch" name="Early Devonian" begin_time="419.2" uncertainty="3.2" colour="#E5AC4D">
+               <Group type="age" name="Emsian" begin_time="407.6" uncertainty="2.6" colour="#E5D075" />
+               <Group type="age" name="Pragian" begin_time="410.8" uncertainty="2.8" colour="#E5C468" />
+               <Group type="age" name="Lochkovian" begin_time="419.2" uncertainty="3.2" colour="#E5B709" />
+            </Group>	<!-- end of epoch 'Early Devonian' -->
+         </Group>	<!-- end of period 'Devonian' -->
+
+         <Group type="period" name="Silurian" begin_time="443.4" uncertainty="1.5" colour="#B3E1B6">
+            <Group type="epoch" name="Pridoli" begin_time="423.0" uncertainty="2.3" colour="#E6F5E1" />
+            <Group type="epoch" name="Ludlow" begin_time="427.4" uncertainty="0.5" colour="#BFE6CF">
+               <Group type="age" name="Ludfordian" begin_time="425.6" uncertainty="0.9" colour="#D9F0DF" />
+               <Group type="age" name="Gorstian" begin_time="427.4" uncertainty="0.5" colour="#CCECDD" />
+            </Group>	<!-- end of epoch 'Ludlow' -->
+            <Group type="epoch" name="Wenlock" begin_time="433.4" uncertainty="0.8" colour="#B3E1C2">
+               <Group type="age" name="Homerian" begin_time="430.5" uncertainty="0.7" colour="#CCEBD1" />
+               <Group type="age" name="Sheiwoodian" begin_time="433.4" uncertainty="0.8" colour="#BFE6C3" />
+            </Group>	<!-- end of epoch 'Wenlock' -->
+            <Group type="epoch" name="Llandovery" begin_time="443.4" uncertainty="1.5" colour="#99D7B3">
+               <Group type="age" name="Telychian" begin_time="438.5" uncertainty="1.1" colour="#BFE6CF" />
+               <Group type="age" name="Aeronian" begin_time="440.8" uncertainty="1.2" colour="#B3E1C2" />
+               <Group type="age" name="Rhuddanian" begin_time="443.4" uncertainty="1.5" colour="#A6DCB5" />
+            </Group>	<!-- end of epoch 'Llandovery' -->
+         </Group>	<!-- end of period 'Silurian' -->
+
+         <Group type="period" name="Ordovician" begin_time="485.4" uncertainty="1.9" colour="#009270">
+            <Group type="epoch" name="Late Ordovician" begin_time="458.4" uncertainty="0.9" colour="#7FCA93">
+               <Group type="age" name="Hirnantian" begin_time="445.2" uncertainty="1.4" colour="#A6DBAB" />
+               <Group type="age" name="Katian" begin_time="453.0" uncertainty="0.7" colour="#99D69F" />
+               <Group type="age" name="Sandbian" begin_time="458.4" uncertainty="0.9" colour="#8CD094" />
+            </Group>	<!-- end of epoch 'Late Ordovician' -->
+            <Group type="epoch" name="Middle Ordovician" begin_time="470.0" uncertainty="1.4" colour="#4DB47E">
+               <Group type="age" name="Darriwilian" begin_time="445.2" uncertainty="1.4" colour="#74C39C" />
+               <Group type="age" name="Dapingian" begin_time="453.0" uncertainty="0.7" colour="#66C092" />
+            </Group>	<!-- end of epoch 'Middle Ordovician' -->
+            <Group type="epoch" name="Early Ordovician" begin_time="485.4" uncertainty="1.9" colour="#1A9D6F">
+               <Group type="age" name="Floian" begin_time="477.7" uncertainty="1.4" colour="#41B087" />
+               <Group type="age" name="Tremadocian" begin_time="485.4" uncertainty="1.9" colour="#33A97E" />
+            </Group>	<!-- end of epoch 'Early Ordovician' -->
+         </Group>	<!-- end of period 'Ordovician' -->
+
+         <Group type="period" name="Cambrian" begin_time="541.0" uncertainty="1.0" colour="#7FA056">
+            <Group type="epoch" name="Furongian" begin_time="~497" uncertainty="0.0" colour="#B3E095">
+               <Group type="age" name="Stage 10" begin_time="~489.5" uncertainty="0.0" colour="#E6F5C9" />
+               <Group type="age" name="Jiangshanian" begin_time="~494" uncertainty="0.0" colour="#D9F0BB" />
+               <Group type="age" name="Paibian" begin_time="~497" uncertainty="0.0" colour="#CCEBAE" />
+            </Group>	<!-- end of epoch 'Furongian' -->
+            <Group type="epoch" name="Series 3" begin_time="~509" uncertainty="0.0" colour="#A6CF86">
+               <Group type="age" name="Guzhangian" begin_time="~500.5" uncertainty="0.0" colour="#CCDFAA" />
+               <Group type="age" name="Drumian" begin_time="~504.5" uncertainty="0.0" colour="#BFD99D" />
+               <Group type="age" name="Stage 5" begin_time="~509" uncertainty="0.0" colour="#B3D492" />
+            </Group>	<!-- end of epoch 'Series 3' -->
+            <Group type="epoch" name="Series 2" begin_time="~521" uncertainty="0.0" colour="#99C078">
+               <Group type="age" name="Stage 4" begin_time="~514" uncertainty="0.0" colour="#B3CA8E" />
+               <Group type="age" name="Stage 3" begin_time="~521" uncertainty="0.0" colour="#A6C583" />
+            </Group>	<!-- end of epoch 'Series 2' -->
+            <Group type="epoch" name="Terreneuvian" begin_time="541.0" uncertainty="1.0" colour="#8CB06C">
+               <Group type="age" name="Stage 2" begin_time="~529" uncertainty="0.0" colour="#A6BA80" />
+               <Group type="age" name="Fortunian" begin_time="541.0" uncertainty="1.0" colour="#99B575" />
+            </Group>	<!-- end of epoch 'Terreneuvian' -->
+         </Group>	<!-- end of period 'Cambrian' -->
+
+      </Group>	<!-- end of era 'Paleozoic' -->
+   </Group>	<!-- end of eon 'Phanerozoic' -->
+
+   <Group type="eon" name="Proterozoic" begin_time="2500" uncertainty="0.0" colour="#F73563">
+
+      <!-- ===================================================================================== -->
+      <Group type="era" name="Neo-proterozoic" begin_time="1000" uncertainty="0.0" colour="#FEB342">
+      <!-- ===================================================================================== -->
+         <Group type="period" name="Ediacaran" begin_time="~635" uncertainty="0.0" colour="#FED96A" />
+         <Group type="period" name="Cryogenian" begin_time="850" uncertainty="0.0" colour="#FECC5C" />
+         <Group type="period" name="Tonian" begin_time="1000" uncertainty="0.0" colour="#FEBF4E" />
+      </Group>	<!-- end of era 'Neo-proterozoic' -->
+
+      <!-- ====================================================================================== -->
+      <Group type="era" name="Meso-proterozoic" begin_time="1600" uncertainty="0.0" colour="#FDB462">
+      <!-- ====================================================================================== -->
+         <Group type="period" name="Stenian" begin_time="1200" uncertainty="0.0" colour="#FED99A" />
+         <Group type="period" name="Ectasian" begin_time="1400" uncertainty="0.0" colour="#FDCC8A" />
+         <Group type="period" name="Calymmian" begin_time="1600" uncertainty="0.0" colour="#FDC07A" />
+      </Group>	<!-- end of era 'Meso-proterozoic' -->
+
+      <!-- ======================================================================================= -->
+      <Group type="era" name="Paleo-proterozoic" begin_time="2500" uncertainty="0.0" colour="#F74370">
+      <!-- ======================================================================================= -->
+         <Group type="period" name="Statherian" begin_time="1800" uncertainty="0.0" colour="#F875A7" />
+         <Group type="period" name="Orosirian" begin_time="2050" uncertainty="0.0" colour="#F76898" />
+         <Group type="period" name="Rhyacian" begin_time="2300" uncertainty="0.0" colour="#F75B89" />
+         <Group type="period" name="Siderian" begin_time="2500" uncertainty="0.0" colour="#F74F7C" />
+      </Group>	<!-- end of era 'Paleo-proterozoic' -->
+   </Group>	<!-- end of eon 'Proterozoic' -->
+
+   <Group type="eon" name="Archean" begin_time="4000" uncertainty="0.0" colour="#F0047F">
+      <Group type="era" name="Neo-archean" begin_time="2800" uncertainty="0.0" colour="#F99BC4" />
+      <Group type="era" name="Meso-archean" begin_time="3200" uncertainty="0.0" colour="#D668A9" />
+      <Group type="era" name="Paleo-archean" begin_time="3600" uncertainty="0.0" colour="#F4449F" />
+      <Group type="era" name="Eo-archean" begin_time="4000" uncertainty="0.0" colour="#DA037F" />
+   </Group>	<!-- end of eon 'Archean' -->
+
+   <Group type="eon" name="Hadean" begin_time="~4600" uncertainty="0.0" colour="#AE027E" />
+
+</GPlatesTimescale>

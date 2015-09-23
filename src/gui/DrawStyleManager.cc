@@ -407,6 +407,12 @@ GPlatesGui::DrawStyleManager::get_built_in_styles(
 	{
 		ret.push_back(create_built_in_palette_adapter("Default", "FeatureType", &adapter));
 	}
+	// Note: Rather than hack in some hard-coded variants for the ArbitraryColours python style adapter here,
+	// I've implemented a GPlatesGui::PythonStyleAdapter::register_alternative_draw_styles() which gets invoked
+	// by PyApplication during the python style loading process; this queries the python objects for a
+	// function called get_config_variants() which is assumed to return a dict of (str -> dict of (str->str))
+	// representing an assortment of variant styles' configs, to be presented in the large preview pane to
+	// the right of the category list.
 // 	else
 // 	{
 // 		StyleAdapter* new_adapter = adapter.deep_clone();

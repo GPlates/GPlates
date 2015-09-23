@@ -37,6 +37,7 @@
 
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlAge.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlKeyValueDictionary.h"
@@ -152,6 +153,13 @@ GPlatesQtWidgets::EditWidgetChooser::visit_gml_time_period(
 		GPlatesPropertyValues::GmlTimePeriod &gml_time_period)
 {
 	d_edit_widget_group_box_ptr->activate_edit_time_period_widget(gml_time_period);
+}
+
+void
+GPlatesQtWidgets::EditWidgetChooser::visit_gpml_age(
+		GPlatesPropertyValues::GpmlAge &gpml_age)
+{
+	d_edit_widget_group_box_ptr->activate_edit_age_widget(gpml_age);
 }
 
 void

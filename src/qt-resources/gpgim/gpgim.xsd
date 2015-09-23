@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema attributeFormDefault="qualified" elementFormDefault="qualified"
+  targetNamespace="http://www.gplates.org/gpgim"
+  xmlns="http://www.gplates.org/gpgim"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <!--
+    * Copyright (C) 2014 The University of Sydney, Australia
+    *
+    * This file is part of GPlates.
+    *
+    * GPlates is free software; you can redistribute it and/or modify it under
+    * the terms of the GNU General Public License, version 2, as published by
+    * the Free Software Foundation.
+    *
+    * GPlates is distributed in the hope that it will be useful, but WITHOUT
+    * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    * for more details.
+    *
+    * You should have received a copy of the GNU General Public License along
+    * with this program; if not, write to Free Software Foundation, Inc.,
+    * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+    -->
+  <xs:element name="GPGIM">
+    <xs:annotation>
+      <xs:documentation>
+        This document defines an XML Schema for gpgim.xml.
+        It can be used to validate the correctness of that file.
+        For instance, if you have libxml2 installed, you can run:-
+        
+          xmllint --noout --schema gpgim.xsd gpgim.xml
+        
+        Note that many validators don't implement the entire
+        W3C XML Schema standards because, like everything W3C,
+        the standards are very complex.
+
+        (I would have gone with an embedded DTD, but since there
+        is theoretical support for XSD in Qt 4.6+ via QXmlPatterns,
+        it might one day be possible for GPlates to validate the
+        GPGIM file automatically --jclark 2014)
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+      
+        <xs:element name="PropertyTypeList">
+          <xs:annotation>
+            <xs:documentation>The list of property types the GPGIM supports. This includes Enumerations and NativeProperties.</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+
+              <xs:element name="Enumeration" maxOccurs="unbounded" minOccurs="0">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Type" type="xs:QName" />
+                    <xs:element name="Description" type="xs:string" />
+                    <xs:element name="Content" maxOccurs="unbounded" minOccurs="1">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="Value" type="xs:string" />
+                          <xs:element name="Description" type="xs:string" />
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Comment" type="xs:string" maxOccurs="unbounded" minOccurs="0"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+
+              <xs:element name="NativeProperty" maxOccurs="unbounded" minOccurs="0">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Type" type="xs:QName" />
+                    <xs:element name="Description" type="xs:string" />
+                    <xs:element name="Comment" type="xs:string" maxOccurs="unbounded" minOccurs="0"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element> <!-- /PropertyTypeList -->
+
+        <xs:element name="PropertyList">
+          <xs:annotation>
+            <xs:documentation>The complete list of all properties defined by the GPGIM and what their value types are.</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+
+              <xs:element name="Property" maxOccurs="unbounded" minOccurs="0">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Name" type="xs:QName" />
+                    <xs:element name="UserFriendlyName" type="xs:string" minOccurs="0" />
+                    <xs:element name="Description" type="xs:string" />
+						  <xs:element name="Comment" type="xs:string" maxOccurs="unbounded" minOccurs="0" />
+                    <xs:element name="Type" type="xs:QName" maxOccurs="unbounded" minOccurs="0" />
+                    <xs:element name="Multiplicity" type="xs:string" />
+                    <xs:element name="TimeDependent" type="xs:QName" maxOccurs="unbounded" minOccurs="0" />
+                    <xs:element name="SeeAlso" type="xs:QName" maxOccurs="unbounded" minOccurs="0" />
+                    <xs:element name="Comment" type="xs:string" maxOccurs="unbounded" minOccurs="0" />
+                  </xs:sequence>
+                  <xs:attribute name="defaultType" type="xs:QName" use="optional"/>
+                </xs:complexType>
+              </xs:element>
+
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element> <!-- /PropertyList -->
+
+        <xs:element name="FeatureClassList">
+          <xs:annotation>
+            <xs:documentation>The complete list of all Feature Types defined by the GPGIM and what properties they have.</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+
+              <xs:element name="FeatureClass" maxOccurs="unbounded" minOccurs="0">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Name" type="xs:QName" />
+                    <xs:element name="Description" type="xs:string" />
+                    <xs:element name="ClassType" type="xs:string" />
+                    <xs:element name="Inherits" type="xs:QName" minOccurs="0" />
+                    <xs:element name="SeeAlso" type="xs:QName" maxOccurs="unbounded" minOccurs="0" />
+                    <xs:element name="Property" type="xs:QName" maxOccurs="unbounded" minOccurs="0" />
+                    <xs:element name="Comment" type="xs:string" maxOccurs="unbounded" minOccurs="0" />
+                  </xs:sequence>
+                  <xs:attribute name="defaultGeometryProperty" type="xs:QName" use="optional"/>
+                </xs:complexType>
+              </xs:element>
+
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element> <!-- /FeatureClassList -->
+
+      </xs:sequence>
+      <xs:attribute name="version" type="xs:string" use="required" />
+    </xs:complexType>
+  </xs:element> <!-- /GPGIM -->
+  
+</xs:schema>
+

@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date: 2010-12-13 16:57:08 +1100 (Mon, 13 Dec 2010) $
  *
- * Copyright (C) 2011 The University of Sydney, Australia
+ * Copyright (C) 2011, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -242,12 +242,10 @@ boost::optional<GPlatesModel::PropertyName>
 GPlatesUtils::convert_property_name(
 		const QString& name)
 {
-	QRegExp rx("^\\s*\\b(gpml|gml)\\b\\s*:\\s*\\b(\\w+)\\b\\s*"); // (gpml|gml):(name)
+	QRegExp rx("^\\s*(gpml|gml)\\s*:\\s*(\\w+)\\s*"); // (gpml|gml):(name)
 	rx.indexIn(name);
 	QString prefix = rx.cap(1);
 	QString short_name = rx.cap(2);
-	qDebug() << "prefix: " << prefix; 
-	qDebug() << "name: " << short_name; 
 	
 	boost::optional<GPlatesModel::PropertyName> ret = boost::none;
 	if(prefix.length() == 0 || short_name.length() == 0)

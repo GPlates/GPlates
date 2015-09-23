@@ -383,7 +383,7 @@ GPlatesQtWidgets::AddPropertyDialog::populate_property_name_combobox()
 		{
 			// Only add property types supported by edit widgets, otherwise the user will be
 			// left with the inability to actually add their selected property.
-			if (!d_edit_widget_group_box_ptr->get_handled_property_types(*gpgim_feature_property))
+			if ( ! d_edit_widget_group_box_ptr->get_handled_property_types(*gpgim_feature_property))
 			{
 				continue;
 			}

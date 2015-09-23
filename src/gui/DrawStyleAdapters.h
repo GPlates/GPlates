@@ -169,6 +169,16 @@ namespace GPlatesGui
 		deep_clone() const;
 
 
+		/**
+		  * Query the Python class for a dict-of-dicts representing a set of alternative
+		  * configuration values, then instantiate additional StyleAdapters and register
+		  * them with the DrawStyleManager as variants within the same category as this
+		  * PythonStyleAdapter.
+		  */
+		void
+		register_alternative_draw_styles(
+			DrawStyleManager& dsm);
+
 		~PythonStyleAdapter();
 
 

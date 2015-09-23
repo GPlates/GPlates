@@ -132,6 +132,9 @@ set(srcs
     EditAffineTransformGeoreferencingWidget.cc
     EditAffineTransformGeoreferencingWidget.h
     EditAffineTransformGeoreferencingWidgetUi.ui
+    EditAgeWidget.cc
+    EditAgeWidget.h
+    EditAgeWidgetUi.ui
     EditAngleWidget.cc
     EditAngleWidget.h
     EditAngleWidgetUi.ui

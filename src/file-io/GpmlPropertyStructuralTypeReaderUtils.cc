@@ -10,7 +10,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2010 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -96,6 +96,47 @@ namespace
 		{
 			return boost::none;
 		}
+	}
+	
+
+	/**
+	 * Given an XML element and attribute name, look for that attribute and attempt to convert it to a double.
+	 * Returns boost::none if no attribute exists or the double conversion does not work.
+	 */	
+	boost::optional<double>
+	get_attribute_as_double(
+			GPlatesModel::XmlElementNode::non_null_ptr_to_const_type elem,
+			const GPlatesModel::XmlAttributeName &attr_name)
+	{
+		GPlatesModel::XmlElementNode::attribute_const_iterator end = elem->attributes_end();
+		GPlatesModel::XmlElementNode::attribute_const_iterator it = elem->get_attribute_by_name(attr_name);
+		if (it != end) {
+			bool conv_ok = false;
+			GPlatesModel::XmlAttributeValue value = it->second;
+			double converted = value.get().qstring().toDouble(&conv_ok);
+			if (conv_ok) {
+				return converted;
+			}
+		}
+		return boost::none;
+	}
+
+	/**
+	 * Given an XML element and attribute name, look for that attribute and return it as a QString.
+	 * Returns boost::none if no attribute exists.
+	 */	
+	boost::optional<QString>
+	get_attribute_as_qstring(
+			GPlatesModel::XmlElementNode::non_null_ptr_to_const_type elem,
+			const GPlatesModel::XmlAttributeName &attr_name)
+	{
+		GPlatesModel::XmlElementNode::attribute_const_iterator end = elem->attributes_end();
+		GPlatesModel::XmlElementNode::attribute_const_iterator it = elem->get_attribute_by_name(attr_name);
+		if (it != end) {
+			GPlatesModel::XmlAttributeValue value = it->second;
+			return value.get().qstring();
+		}
+		return boost::none;
 	}
 }
 
@@ -469,6 +510,63 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_time_period(
 				END_TIME, gpml_version, read_errors);
 
 	return GPlatesPropertyValues::GmlTimePeriod::create(begin_time, end_time);
+}
+
+
+GPlatesPropertyValues::GpmlAge::non_null_ptr_type
+GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_age(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		const GPlatesModel::GpgimVersion &gpml_version,
+		ReadErrorAccumulation &read_errors)
+{
+	static const GPlatesModel::XmlElementName 
+			STRUCTURAL_TYPE = GPlatesModel::XmlElementName::create_gpml("Age"),
+			TIMESCALE = GPlatesModel::XmlElementName::create_gpml("timescale"),
+			ABSOLUTE_AGE = GPlatesModel::XmlElementName::create_gpml("absoluteAge"),
+			NAMED_AGE = GPlatesModel::XmlElementName::create_gpml("namedAge"),
+			UNCERTAINTY = GPlatesModel::XmlElementName::create_gpml("uncertainty");
+	static const GPlatesModel::XmlAttributeName
+			PLUSMINUS_VALUE = GPlatesModel::XmlAttributeName::create_gpml("value"),
+			RANGE_OLDEST = GPlatesModel::XmlAttributeName::create_gpml("oldest"),
+			RANGE_YOUNGEST = GPlatesModel::XmlAttributeName::create_gpml("youngest");
+	
+	// Find the root gpml:Age element.
+	GPlatesModel::XmlElementNode::non_null_ptr_type
+			elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	// The principal components of the age are easy. Note that both an absolute age and named age
+	// can coexist in a gpml:Age according to the spec.
+	boost::optional<QString>
+			timescale = find_and_create_optional(elem, &create_string, TIMESCALE, gpml_version, read_errors);
+	boost::optional<double>
+			absolute_age = find_and_create_optional(elem, &create_double, ABSOLUTE_AGE, gpml_version, read_errors);
+	boost::optional<QString>
+			named_age = find_and_create_optional(elem, &create_string, NAMED_AGE, gpml_version, read_errors);
+	
+	// The uncertainty component has several attributes, some of which may conflict with each other.
+	// And there may not be an <uncertainty> element at all.
+	boost::optional<double> unc_plusminus, unc_y_abs, unc_o_abs;
+	boost::optional<QString> unc_y_named, unc_o_named;
+	boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type> uncertainty_maybe = 
+			elem->get_child_by_name(UNCERTAINTY);
+	if (uncertainty_maybe) {
+		unc_plusminus = get_attribute_as_double(*uncertainty_maybe, PLUSMINUS_VALUE);
+		unc_y_abs = get_attribute_as_double(*uncertainty_maybe, RANGE_YOUNGEST);
+		if ( ! unc_y_abs) {
+			// If we cannot interpret the gpml:youngest attribute as a double, consider it to be a named age.
+			// (of course, the attribute might just not exist at all)
+			unc_y_named = get_attribute_as_qstring(*uncertainty_maybe, RANGE_YOUNGEST);
+		}
+		unc_o_abs = get_attribute_as_double(*uncertainty_maybe, RANGE_OLDEST);
+		if ( ! unc_o_abs) {
+			// If we cannot interpret the gpml:oldest attribute as a double, consider it to be a named age.
+			// (of course, the attribute might just not exist at all)
+			unc_o_named = get_attribute_as_qstring(*uncertainty_maybe, RANGE_OLDEST);
+		}
+	}
+
+	return GPlatesPropertyValues::GpmlAge::create(absolute_age, named_age, timescale,
+			unc_plusminus, unc_y_abs, unc_y_named, unc_o_abs, unc_o_named);
 }
 
 

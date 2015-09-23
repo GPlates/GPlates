@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -154,6 +154,11 @@ namespace GPlatesFeatureVisitors
 		visit_gml_time_period(
 				const GPlatesPropertyValues::GmlTimePeriod &gml_time_period);
 
+		virtual
+		void
+		visit_gpml_age(
+				const GPlatesPropertyValues::GpmlAge &gpml_age);
+		
 		virtual
 		void
 		visit_gpml_constant_value(

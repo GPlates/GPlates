@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2010 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -44,6 +44,7 @@
 #include "property-values/GmlRectifiedGrid.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlAge.h"
 #include "property-values/GpmlArray.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFiniteRotation.h"
@@ -221,6 +222,13 @@ namespace GPlatesFileIO
 		// Please keep these ordered alphabetically...
 
 
+		GPlatesPropertyValues::GpmlAge::non_null_ptr_type
+		create_gpml_age(
+		        const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+				const GPlatesModel::GpgimVersion &gpml_version,
+				ReadErrorAccumulation &read_errors);
+
+		
 		GPlatesPropertyValues::GpmlArray::non_null_ptr_type
 		create_gpml_array(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,

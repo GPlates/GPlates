@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2010 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -61,6 +61,7 @@ namespace GPlatesPropertyValues
 	class GmlPolygon;
 	class GmlTimeInstant;
 	class GmlTimePeriod;
+	class GpmlAge;
 	class GpmlArray; 
 	class GpmlKeyValueDictionary;
 	class GpmlMeasure;
@@ -76,6 +77,7 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesQtWidgets
 {
+	class EditAgeWidget;
 	class EditAngleWidget;
 	class EditBooleanWidget;
 	class EditDoubleWidget;
@@ -261,6 +263,17 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Called by EditWidgetChooser to select the appropriate editing widget.
+		 * #### FIXME: Do we still need these? It's quite a bit of copypasta and we already have
+		 *      e.g. activate_widget_by_property_value_type() doing some nice polymorphism.
+		 *      What uses these, and is there some nice way to configure it to use d_widget_map?
+		 *      -- jclark 20150224
+		 */
+		void
+		activate_edit_age_widget(
+				GPlatesPropertyValues::GpmlAge &gpml_age);
+
+		/**
+		 * Called by EditWidgetChooser to select the appropriate editing widget.
 		 */
 		void
 		activate_edit_time_instant_widget(
@@ -438,7 +451,7 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Builds a map of QString to AbstractEditWidget *, to activate edit widgets
-		 * based on their property values' names.
+		 * based on their property values' types.
 		 */
 		void
 		build_widget_map();
@@ -462,20 +475,22 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesQtWidgets::AbstractEditWidget *d_active_widget_ptr;
 		
-		GPlatesQtWidgets::EditTimeInstantWidget *d_edit_time_instant_widget_ptr;
-		GPlatesQtWidgets::EditTimePeriodWidget *d_edit_time_period_widget_ptr;
-		GPlatesQtWidgets::EditOldPlatesHeaderWidget *d_edit_old_plates_header_widget_ptr;
+		// Please keep these members and their initialisers sorted in alphabetical order.
+		GPlatesQtWidgets::EditAgeWidget *d_edit_age_widget_ptr;
+		GPlatesQtWidgets::EditAngleWidget *d_edit_angle_widget_ptr;
+		GPlatesQtWidgets::EditBooleanWidget *d_edit_boolean_widget_ptr;
 		GPlatesQtWidgets::EditDoubleWidget *d_edit_double_widget_ptr;
 		GPlatesQtWidgets::EditEnumerationWidget *d_edit_enumeration_widget_ptr;
 		GPlatesQtWidgets::EditGeometryWidget *d_edit_geometry_widget_ptr;
 		GPlatesQtWidgets::EditIntegerWidget *d_edit_integer_widget_ptr;
+		GPlatesQtWidgets::EditOldPlatesHeaderWidget *d_edit_old_plates_header_widget_ptr;
 		GPlatesQtWidgets::EditPlateIdWidget *d_edit_plate_id_widget_ptr;
 		GPlatesQtWidgets::EditPolarityChronIdWidget *d_edit_polarity_chron_id_widget_ptr;
-		GPlatesQtWidgets::EditAngleWidget *d_edit_angle_widget_ptr;
+		GPlatesQtWidgets::EditShapefileAttributesWidget *d_edit_shapefile_attributes_widget_ptr;
 		GPlatesQtWidgets::EditStringListWidget *d_edit_string_list_widget_ptr;
 		GPlatesQtWidgets::EditStringWidget *d_edit_string_widget_ptr;
-		GPlatesQtWidgets::EditBooleanWidget *d_edit_boolean_widget_ptr;
-		GPlatesQtWidgets::EditShapefileAttributesWidget *d_edit_shapefile_attributes_widget_ptr;
+		GPlatesQtWidgets::EditTimeInstantWidget *d_edit_time_instant_widget_ptr;
+		GPlatesQtWidgets::EditTimePeriodWidget *d_edit_time_period_widget_ptr;
 		GPlatesQtWidgets::EditTimeSequenceWidget *d_edit_time_sequence_widget_ptr;
 
 		/**

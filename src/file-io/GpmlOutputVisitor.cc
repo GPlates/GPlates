@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date $
  * 
- * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2010, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,6 +37,7 @@
 #include <QProcess>
 #include <QtCore/QUuid>
 #include <QtGlobal> 
+#include <QLocale>
 
 #include "ErrorOpeningFileForWritingException.h"
 #include "ErrorOpeningPipeToGzipException.h"
@@ -62,6 +63,7 @@
 #include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlAge.h"
 #include "property-values/GpmlArray.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFeatureReference.h"
@@ -1086,6 +1088,49 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_time_period(
 			gml_time_period.end()->accept_visitor(*this);
 		d_output.writeEndElement();
 	d_output.writeEndElement(); // </gml:TimePeriod>
+}
+
+
+void
+GPlatesFileIO::GpmlOutputVisitor::visit_gpml_age(
+		const GPlatesPropertyValues::GpmlAge &gpml_age) 
+{
+	d_output.writeStartGpmlElement("Age");
+	if (gpml_age.get_timescale()) {
+		d_output.writeStartGpmlElement("timescale");
+		d_output.writeText(*gpml_age.get_timescale());
+		d_output.writeEndElement();
+	}
+	if (gpml_age.get_age_absolute()) {
+		d_output.writeStartGpmlElement("absoluteAge");
+		d_output.writeDecimal(*gpml_age.get_age_absolute());
+		d_output.writeEndElement();
+	}
+	if (gpml_age.get_age_named()) {
+		d_output.writeStartGpmlElement("namedAge");
+		d_output.writeText(*gpml_age.get_age_named());
+		d_output.writeEndElement();
+	}
+	if (gpml_age.uncertainty_type() == GPlatesPropertyValues::GpmlAge::UncertaintyDefinition::UNC_PLUS_OR_MINUS) {
+		d_output.writeStartGpmlElement("uncertainty");
+		d_output.writeGpmlAttribute("value", QLocale::c().toString(*gpml_age.get_uncertainty_plusminus()));
+		d_output.writeEndElement();
+	}
+	if (gpml_age.uncertainty_type() == GPlatesPropertyValues::GpmlAge::UncertaintyDefinition::UNC_RANGE) {
+		d_output.writeStartGpmlElement("uncertainty");
+		if (gpml_age.get_uncertainty_oldest_absolute()) {
+			d_output.writeGpmlAttribute("oldest", QLocale::c().toString(*gpml_age.get_uncertainty_oldest_absolute()));
+		} else if (gpml_age.get_uncertainty_oldest_named()) {
+			d_output.writeGpmlAttribute("oldest", gpml_age.get_uncertainty_oldest_named()->get().qstring());
+		}
+		if (gpml_age.get_uncertainty_youngest_absolute()) {
+			d_output.writeGpmlAttribute("youngest", QLocale::c().toString(*gpml_age.get_uncertainty_youngest_absolute()));
+		} else if (gpml_age.get_uncertainty_youngest_named()) {
+			d_output.writeGpmlAttribute("youngest", gpml_age.get_uncertainty_youngest_named()->get().qstring());
+		}
+		d_output.writeEndElement();
+	}
+	d_output.writeEndElement();
 }
 
 

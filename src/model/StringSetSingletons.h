@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -52,6 +52,12 @@ namespace GPlatesModel
 		text_content_instance();
 
 		GPlatesUtils::StringSet &
+		timescale_band_instance();
+
+		GPlatesUtils::StringSet &
+		timescale_name_instance();
+		
+		GPlatesUtils::StringSet &
 		xml_attribute_name_instance();
 
 		GPlatesUtils::StringSet &
@@ -78,6 +84,8 @@ namespace GPlatesModel
 		struct PropertyNameInstance { };
 		struct StructuralTypeInstance { };
 		struct TextContentInstance { };
+		struct TimescaleBandInstance { };
+		struct TimescaleNameInstance { };
 		struct XMLAttributeNameInstance { };
 		struct XMLAttributeValueInstance { };
 		struct XMLNamespaceInstance { };

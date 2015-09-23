@@ -100,6 +100,7 @@ namespace GPlatesQtWidgets
 			FEATURE_TYPE_PAGE,
 			COMMON_PROPERTIES_PAGE,
 			ALL_PROPERTIES_PAGE,
+			CONJUGATE_PROPERTIES_PAGE,
 			FEATURE_COLLECTION_PAGE
 		};
 
@@ -149,9 +150,30 @@ namespace GPlatesQtWidgets
 		void
 		handle_next();
 		
+		/**
+		 * @brief Called when we are switching between pages.
+		 * Delegates to handle_enter_page and handle_leave_page appropriately.
+		 * @param page the new page we are transitioning to
+		 */
 		void
 		handle_page_change(
 				int page);
+		
+		void
+		handle_leave_page(
+		        int page);
+
+		void
+		handle_enter_page(
+		        int page,
+		        int last_page);
+		
+		/**
+		 * The 'create' button on the last page has been pushed; assemble our lists of properties
+		 * into actual features (using create_feature()), add geometry properties and reverse-reconstruct
+		 * them so the geometry is properly expressed in present-day coordinates, then add them to
+		 * the selected feature collection.
+		 */		
 		void
 		handle_create();
 
@@ -191,6 +213,9 @@ namespace GPlatesQtWidgets
 		set_up_feature_properties_page();
 
 		void
+		set_up_conjugate_properties_page();
+
+		void
 		set_up_feature_collection_page();
 
 		void
@@ -209,14 +234,17 @@ namespace GPlatesQtWidgets
 		set_up_common_properties();
 
 		void
-		set_up_all_properties_list();
+		set_up_all_properties_gui();
 
+		void
+		set_up_conjugate_properties_gui();
+		
 		void
 		clear_properties_not_allowed_for_current_feature_type();
 
 		void
 		copy_common_properties_into_all_properties();
-
+		
 		void
 		copy_common_property_into_all_properties(
 				const GPlatesModel::PropertyName &property_name,
@@ -226,9 +254,39 @@ namespace GPlatesQtWidgets
 		remove_common_property_from_all_properties(
 				const GPlatesModel::PropertyName &property_name);
 
+		/**
+		 * Takes the "all properties" list d_feature_properties and populates the "conjugate properties"
+		 * list d_conjugate_properties based on that.
+		 */
+		void
+		generate_conjugate_properties_from_all_properties();
+
+		/**
+		 * Helper for generate_conjugate_properties_from_all_properties(), in cases where we need
+		 * to tweak a property's value.
+		 */
+		boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type>
+		generate_conjugate_property(
+				const GPlatesModel::PropertyName &property_name,
+				const GPlatesModel::PropertyValue::non_null_ptr_type &property_value);
+
 		bool
 		display();
 
+		/**
+		 * Handles the main effort of constructing a new feature based on the list of properties
+		 * we have assembled during this dialog's invocation. Can be used for both primary and
+		 * conjugate feature creation. Does not add the returned Feature to a FeatureCollection.
+		 *
+		 * Called by handle_create(); can throw InvalidPropertyValueException.
+		 */
+		GPlatesModel::FeatureHandle::non_null_ptr_type
+		create_feature(
+		        const GPlatesModel::FeatureType feature_type,
+		        const CreateFeaturePropertiesPage::property_seq_type feature_properties,
+		        const GPlatesModel::PropertyName geometry_property_name);
+
+		
 		boost::optional<GPlatesModel::FeatureHandle::iterator>
 		add_geometry_property(
 				const GPlatesModel::FeatureHandle::weak_ref &feature,
@@ -240,18 +298,14 @@ namespace GPlatesQtWidgets
 				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator);
 
 		/**
-		 * Creates a conjugate feature using the provided geometry and properties,
-		 * but reversing the plate-id and conjugate-plate-id properties. 
-		 *
-		 * The geometry will be reconstructed to present day given its new plate-id,
-		 * i.e. the conjugate-plate-id passed to this function.
+		 * Given two features and a property name (e.g. gpml:conjugate), create a FeatureReference
+		 * in @a feature linking to @a target_feature.
 		 */
 		void
-		create_conjugate_feature(
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
-				const GPlatesModel::FeatureHandle::weak_ref &feature,
-				const GPlatesModel::FeatureHandle::iterator &geometry_property_iterator);
-
+		create_feature_link(
+		        GPlatesModel::FeatureHandle::non_null_ptr_type feature,
+		        const GPlatesModel::PropertyName &property_name,
+		        GPlatesModel::FeatureHandle::non_null_ptr_to_const_type target_feature);
 
 		/**
 		 * The GPGIM contains information about the feature types and their properties.
@@ -308,6 +362,15 @@ namespace GPlatesQtWidgets
 		 */
 		boost::optional<GPlatesModel::FeatureType> d_feature_type;
 
+		/**
+		 * The feature type that was previously selected when we last left the Choose Feature Type page.
+		 *
+		 * Since we want to enable a workflow where repeatedly digitising the same feature type keeps
+		 * properties around from the last feature that was created, we want to be able to test whether
+		 * the user has selected a different feature type recently.
+		 */
+		boost::optional<GPlatesModel::FeatureType> d_previously_selected_feature_type;
+		
 		/**
 		 * The custom edit widget for reconstruction. Memory managed by Qt.
 		 */
@@ -394,6 +457,12 @@ namespace GPlatesQtWidgets
 		CreateFeaturePropertiesPage *d_create_feature_properties_page;
 
 		/**
+		 * The stacked widget page where properties (allowed by the GPGIM for the feature type)
+		 * can be modified and added for the conjugate feature, if one is to be created.
+		 */
+		CreateFeaturePropertiesPage *d_create_conjugate_properties_page;
+		
+		/**
 		 * Allows the user to pick the property that will store the geometry.
 		 */
 		ChoosePropertyWidget *d_listwidget_geometry_destinations;
@@ -413,13 +482,32 @@ namespace GPlatesQtWidgets
 		StackedWidgetPage d_current_page;
 
 		/**
-		 * The feature properties (excluding geometry property) to create feature with.
+		 * The properties (excluding the selected geometry property) to create the feature with.
 		 *
 		 * These are also kept around from the previous dialog invocation if the geometry
 		 * and feature types are the same (then user has option to re-use same properties).
+		 * The list is partially cleared via clear_properties_not_allowed_for_current_feature_type()
+		 * during handle_page_change() from the feature type selection to the common properties page
+		 * if we are dealing with a new feature type.
 		 */
 		CreateFeaturePropertiesPage::property_seq_type d_feature_properties;
 
+		/**
+		 * The properties (excluding the selected geometry property) to create the conjugate feature with.
+		 *
+		 * This is only used if the "Create Conjugate" checkbox was shown and is checked. Properties
+		 * in this list are first populated based on d_feature_properties (while swapping things like
+		 * gpml:conjugatePlateId etc.), and then loaded into the CreateFeaturePropertiesPage responsible
+		 * for the "Add / Tweak Conjugate Properties" page of the dialog when transitioning to it
+		 * from the "All Properties (for the primary feature)" page. When transitioning away from the
+		 * conjugate properties page, any potential edits are sucked out of the widget and back into
+		 * this list.
+		 *
+		 * When we get to the final feature creation stage, the conjugate feature is constructed using
+		 * this list in the same manner.
+		 */
+		CreateFeaturePropertiesPage::property_seq_type d_conjugate_properties;
+		
 		/**
 		 * The last canvas tool explicitly chosen by the user (i.e. not the
 		 * result of an automatic switch of canvas tool by GPlates code).

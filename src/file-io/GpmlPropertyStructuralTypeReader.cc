@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -223,6 +223,10 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReader::add_native_structural_types()
 	// GPML namespace (non-enumeration types).
 	//
 	// Please keep these ordered alphabetically (by structural type name)...
+
+	d_structural_type_reader_map[StructuralType::create_gpml("Age")] =
+			boost::bind<GPlatesModel::PropertyValue::non_null_ptr_type>(
+					&GpmlPropertyStructuralTypeReaderUtils::create_gpml_age, _1, _2, _3);
 
 	d_structural_type_reader_map[StructuralType::create_gpml("Array")] =
 			boost::bind<GPlatesModel::PropertyValue::non_null_ptr_type>(

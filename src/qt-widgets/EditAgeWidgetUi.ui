@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>EditAgeWidget</class>
+ <widget class="QWidget" name="EditAgeWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>658</width>
+    <height>66</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>2</number>
+   </property>
+   <property name="margin">
+    <number>2</number>
+   </property>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <property name="spacing">
+      <number>2</number>
+     </property>
+     <item>
+      <widget class="QComboBox" name="combobox_name_or_abs">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="toolTip">
+        <string>Click here to choose between an absolute age in Ma or a named age from a timescale.</string>
+       </property>
+       <property name="frame">
+        <bool>true</bool>
+       </property>
+       <item>
+        <property name="text">
+         <string>Absolute Age:</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Named Age:</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Both:</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_name">
+       <property name="text">
+        <string>&amp;Name:</string>
+       </property>
+       <property name="buddy">
+        <cstring>lineedit_named_age</cstring>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineedit_named_age">
+       <property name="toolTip">
+        <string>The name of a stratigraphic (or geomagnetic) age band from a timescale.</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_abs">
+       <property name="text">
+        <string>A&amp;bsolute:</string>
+       </property>
+       <property name="buddy">
+        <cstring>lineedit_abs_age</cstring>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineedit_abs_age">
+       <property name="toolTip">
+        <string>The absolute age in My</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="combobox_timescale">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>32</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="toolTip">
+        <string>Click here to associate a timescale with the age.</string>
+       </property>
+       <property name="frame">
+        <bool>true</bool>
+       </property>
+       <item>
+        <property name="text">
+         <string/>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string extracomment="Gradstein, F.M., Ogg, J.G., Schmitz, M. &amp; Ogg, G. (Eds). The geological time scale 2012.">ICC2012</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string extracomment="Gradstein, F. M., Ogg, J. G., &amp; Smith, A. G. (Eds.). (2005). A geologic time scale 2004 (Vol. 86). Cambridge University Press.">GTS2004</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string extracomment="Gradstein, F.M., Agterberg, F.P., Ogg, J.G., Hardenbol, J., van Veen, P., Thierry, J. &amp; Huang, Z. 1994. A Mesozoic Time Scale. Journal of Geophysical Research. Vol. 99 No. B12. p. 24,051-24,074.">SEPM95</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>OdinOdin93</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>GTS89</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>EX88</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>DNAG83</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Other:</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineedit_timescale_other">
+       <property name="toolTip">
+        <string>Other timescale name</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QComboBox" name="combobox_uncertainty">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="toolTip">
+        <string>Click here to select what kind of uncertainty values are associated with the chosen age.</string>
+       </property>
+       <property name="frame">
+        <bool>true</bool>
+       </property>
+       <item>
+        <property name="text">
+         <string>Uncertainty:</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Uncertainty: ±</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Uncertainty: range</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <widget class="QStackedWidget" name="stack_uncertainty">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="currentIndex">
+        <number>1</number>
+       </property>
+       <widget class="QWidget" name="uncertainty_page_none"/>
+       <widget class="QWidget" name="uncertainty_page_plusminus">
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <property name="spacing">
+          <number>2</number>
+         </property>
+         <property name="margin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLineEdit" name="lineedit_uncertainty_plusminus">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>The uncertainty of the age as a plus-or-minus value in My</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_plusminus_units">
+           <property name="text">
+            <string>My</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="uncertainty_page_range">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <property name="spacing">
+          <number>2</number>
+         </property>
+         <property name="margin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label_youngest">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>&amp;Youngest:</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+           <property name="buddy">
+            <cstring>lineedit_uncertainty_youngest</cstring>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineedit_uncertainty_youngest">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>The youngest (smallest) estimate of the age, in Ma.</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="label_oldest">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>&amp;Oldest:</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+           <property name="buddy">
+            <cstring>lineedit_uncertainty_oldest</cstring>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineedit_uncertainty_oldest">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>The oldest (largest) estimate of the age, in Ma.</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>combobox_uncertainty</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>stack_uncertainty</receiver>
+   <slot>setCurrentIndex(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>146</x>
+     <y>68</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>251</x>
+     <y>75</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
