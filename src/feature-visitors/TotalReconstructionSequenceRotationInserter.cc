@@ -70,13 +70,11 @@ namespace
 
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::TotalReconstructionSequenceRotationInserter(
 		const double &recon_time,
-		const GPlatesMaths::Rotation &rotation_to_apply,
-		const QString &comment):
+		const GPlatesMaths::Rotation &rotation_to_apply) :
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_rotation_to_apply(rotation_to_apply),
 	d_is_expecting_a_finite_rotation(false),
 	d_trp_time_matches_exactly(false),
-	d_comment(comment),
 	d_grot_proxy(NULL),
 	d_moving_plate_id(0),
 	d_fixed_plate_id(0)
@@ -274,10 +272,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 		d_trp_time_matches_exactly = true;
 		iter->value()->accept_visitor(*this);
 
-                // And update the comment field.
-                boost::intrusive_ptr<XsString> description =
-                        XsString::create(GPlatesUtils::make_icu_string_from_qstring(d_comment)).get();
-                iter->set_description(description);
+        // Note that we leave the comment unmodified.
 
 		// Did the visitor successfully collect the FiniteRotation?
 		if ( ! d_finite_rotation) {
@@ -389,7 +384,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			GmlTimeInstant::non_null_ptr_type valid_time =
 					ModelUtils::create_gml_time_instant(d_recon_time);
 			boost::intrusive_ptr<XsString> description =
-					XsString::create(GPlatesUtils::make_icu_string_from_qstring(d_comment)).get();
+					XsString::create(GPlatesUtils::UnicodeString()).get();
 			StructuralType value_type =
 					StructuralType::create_gpml("FiniteRotation");
 			GpmlTimeSample new_time_sample(value, valid_time, description, value_type);
@@ -421,10 +416,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			d_trp_time_matches_exactly = true;
 			iter->value()->accept_visitor(*this);
 
-                        // Update the comment field too.
-                        boost::intrusive_ptr<XsString> description =
-                                        XsString::create(GPlatesUtils::make_icu_string_from_qstring(d_comment)).get();
-                        iter->set_description(description);
+            // Note that we leave the comment unmodified.
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_finite_rotation) {

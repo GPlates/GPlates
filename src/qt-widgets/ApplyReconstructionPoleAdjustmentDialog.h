@@ -130,12 +130,6 @@ namespace GPlatesQtWidgets
 		set_adjustment(
 				const GPlatesMaths::Rotation &adjustment_);
 
-		QString
-		get_comment_line()
-		{
-			return line_comment->text();
-		}
-
 #if 0
 	public slots:
 		void

@@ -60,8 +60,7 @@ namespace GPlatesFeatureVisitors
 	public:
 		TotalReconstructionSequenceRotationInserter(
 				const double &recon_time,
-				const GPlatesMaths::Rotation &rotation_to_apply,
-				const QString &comment);
+				const GPlatesMaths::Rotation &rotation_to_apply);
 
 		virtual
 		~TotalReconstructionSequenceRotationInserter()
@@ -101,7 +100,6 @@ namespace GPlatesFeatureVisitors
 		bool d_is_expecting_a_finite_rotation;
 		bool d_trp_time_matches_exactly;
 		boost::optional<GPlatesMaths::FiniteRotation> d_finite_rotation;
-		QString d_comment;
 		GPlatesFileIO::PlatesRotationFileProxy* d_grot_proxy;
 		int d_moving_plate_id, d_fixed_plate_id;
 
