@@ -40,6 +40,8 @@
 #include "MapRenderedGeometryLayerPainter.h"
 #include "MapProjection.h"
 
+#include "app-logic/GeometryUtils.h"
+
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
@@ -1525,10 +1527,12 @@ GPlatesGui::MapRenderedGeometryLayerPainter::paint_fill_geometry(
 		const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry,
 		const Colour &colour)
 {
+	// Note: We always dateline-wrap a polygon even if the line geometry is a polyline.
+	// This is because the geometry is filled and only a polygon is wrapped correctly for filling.
 	DatelineWrappedProjectedLineGeometry dateline_wrapped_projected_line_geometry;
-	dateline_wrap_and_project_line_geometry<LineGeometryType>(
+	dateline_wrap_and_project_line_geometry<GPlatesMaths::PolygonOnSphere>(
 			dateline_wrapped_projected_line_geometry,
-			line_geometry);
+			GPlatesAppLogic::GeometryUtils::force_convert_geometry_to_polygon(*line_geometry));
 
 	const std::vector<unsigned int> &geometries = dateline_wrapped_projected_line_geometry.get_geometries();
 	const unsigned int num_geometries = geometries.size();
