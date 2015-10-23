@@ -45,6 +45,8 @@ set(srcs
     ColourSpectrum.h
     CommandServer.cc
     CommandServer.h
+    Completionist.cc
+    Completionist.h
     ConfigGuiUtils.cc
     ConfigGuiUtils.h
     ConfigModel.cc
@@ -55,6 +57,8 @@ set(srcs
     CptColourPalette.h
     CsvExport.cc
     CsvExport.h
+    CustomCompleter.cc
+    CustomCompleter.h
     Dialogs.cc
     Dialogs.h
     DigitisationCanvasToolWorkflow.cc

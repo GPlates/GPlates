@@ -111,10 +111,16 @@ namespace GPlatesModel
 			QString comment;
 		};
 
+		/**
+		 * Create a total reconstruction pole property.
+		 *
+		 * If @a enable_metadata is true then a @a GpmlTotalReconstructionPole is is used (in time samples)
+		 * (since supports metadata), otherwise its base class @a GpmlFiniteRotation is used.
+		 */
 		const TopLevelProperty::non_null_ptr_type
 		create_total_reconstruction_pole(
 				const std::vector<TotalReconstructionPole> &five_tuples,
-				bool is_grot = false);
+				bool enable_metadata = true);
 
 
 		const FeatureHandle::weak_ref
@@ -126,10 +132,18 @@ namespace GPlatesModel
 				const std::vector<TotalReconstructionPole> &five_tuples);
 
 
+		/**
+		 * Create a total reconstruction pole time sample.
+		 *
+		 * If @a enable_metadata is true then a @a GpmlTotalReconstructionPole is is used
+		 * (since supports metadata), otherwise its base class @a GpmlFiniteRotation is used.
+		 */
 		GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type
 		create_gml_time_sample(
 				const ModelUtils::TotalReconstructionPole &trp,
-				bool is_grot = false);
+				bool enable_metadata = true);
+
+
 
 
 		//
@@ -376,7 +390,7 @@ namespace GPlatesModel
 		 * wrapper (or none) as dictated by the GPGIM for the specified property name
 		 * (this is done via @a add_remove_or_convert_time_dependent_wrapper).
 		 *
-		 * NOTE: If @a check_property_name_with_feature_type is true then the property name is also
+		 * NOTE: If @a check_property_name_allowed_for_feature_type is true then the property name is also
 		 * checked to see if it's valid for the specified feature's type (and only added if it is).
 		 * This ensures a stricter level of conformance to the GPGIM.
 		 *

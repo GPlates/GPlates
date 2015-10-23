@@ -858,31 +858,20 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::setup_reducer_combobox
 	}
 
 	// The attribute name map is only available if the co-registration radio button is checked.
-	GPlatesDataMining::AttributeTypeEnum a_type = GPlatesDataMining::Unknown_Type;
-	if(d_attr_name_type_map.find(attribute_name) != d_attr_name_type_map.end())
-	{
-		a_type = d_attr_name_type_map.find(attribute_name)->second;
-	}
+	AttrTypeNameMap::const_iterator it = d_attr_name_type_map.find(attribute_name);
+	GPlatesDataMining::AttributeTypeEnum a_type = (it == d_attr_name_type_map.end())
+				? GPlatesDataMining::Unknown_Type
+				: it->second;
 
-	if(GPlatesDataMining::String_Attribute == a_type )
-	{
-		combo->addItem(
-				QApplication::tr("Lookup"), 
-				GPlatesDataMining::REDUCER_LOOKUP);
-		combo->addItem(
-				QApplication::tr("Vote"),
-				GPlatesDataMining::REDUCER_VOTE);
-		return;
-	}
+	combo->addItem(
+			QApplication::tr("Lookup"),
+			GPlatesDataMining::REDUCER_LOOKUP);
+	combo->addItem(
+			QApplication::tr("Vote"),
+			GPlatesDataMining::REDUCER_VOTE);
 
 	if(GPlatesDataMining::Number_Attribute == a_type || GPlatesDataMining::Unknown_Type == a_type)
 	{
-		combo->addItem(
-				QApplication::tr("Lookup"), 
-				GPlatesDataMining::REDUCER_LOOKUP);
-		combo->addItem(
-				QApplication::tr("Vote"),
-				GPlatesDataMining::REDUCER_VOTE);
 		combo->addItem(
 				QApplication::tr("Min"),
 				GPlatesDataMining::REDUCER_MIN);

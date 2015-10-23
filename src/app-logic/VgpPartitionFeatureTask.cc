@@ -41,6 +41,13 @@
 #include "utils/UnicodeStringUtils.h"
 
 
+GPlatesAppLogic::VgpPartitionFeatureTask::VgpPartitionFeatureTask(
+		bool verify_information_model) :
+	d_verify_information_model(verify_information_model)
+{
+}
+
+
 bool
 GPlatesAppLogic::VgpPartitionFeatureTask::can_partition_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref) const
@@ -111,7 +118,7 @@ GPlatesAppLogic::VgpPartitionFeatureTask::partition_feature(
 
 	// Now assign the reconstruction plate id to the feature.
 	PartitionFeatureUtils::assign_reconstruction_plate_id_to_feature(
-			reconstruction_plate_id, feature_ref);
+			reconstruction_plate_id, feature_ref, d_verify_information_model);
 
 	// NOTE: This paleomag data is present day data - even though the VGP
 	// has an age (corresponding to the rock sample age) the location of the sample

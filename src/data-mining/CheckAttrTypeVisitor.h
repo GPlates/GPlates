@@ -194,7 +194,6 @@ namespace GPlatesDataMining
 			gpml_piecewise_aggregation_type &gpml_piecewise_aggregation)
 		{  }
 
-		inline
 		void
 		visit_gpml_plate_id(
 				gpml_plate_id_type &gpml_plate_id)
@@ -244,7 +243,6 @@ namespace GPlatesDataMining
 				uninterpreted_property_value_type &uninterpreted_prop_val) 
 		{  }
 
-		inline
 		void
 		visit_xs_boolean(
 				xs_boolean_type &xs_boolean)
@@ -252,7 +250,6 @@ namespace GPlatesDataMining
 			d_type = String_Attribute;
 		}
 
-		inline
 		void
 		visit_xs_double(
 				xs_double_type &xs_double)
@@ -260,7 +257,6 @@ namespace GPlatesDataMining
 			d_type = Number_Attribute;
 		}
 
-		inline
 		void
 		visit_xs_integer(
 				xs_integer_type &xs_integer)
@@ -268,7 +264,6 @@ namespace GPlatesDataMining
 			d_type = Number_Attribute;
 		}
 
-		inline
 		void
 		visit_xs_string(
 				xs_string_type &xs_string)
@@ -276,14 +271,12 @@ namespace GPlatesDataMining
 			d_type = String_Attribute;
 		}
 
-		inline
 		AttributeTypeEnum
 		type()
 		{
 			return d_type;
 		}
 
-		inline
 		const std::multimap< QString, GPlatesDataMining::AttributeTypeEnum >&
 		shape_map()
 		{

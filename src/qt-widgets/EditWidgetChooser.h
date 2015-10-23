@@ -127,6 +127,11 @@ namespace GPlatesQtWidgets
 
 		virtual
 		void
+		visit_gpml_age(
+				GPlatesPropertyValues::GpmlAge &gpml_age);
+
+		virtual
+		void
 		visit_gpml_array(
 				GPlatesPropertyValues::GpmlArray &gpml_array);
 

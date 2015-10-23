@@ -823,9 +823,6 @@ namespace GPlatesFileIO
 		visit_gpml_key_value_dictionary(
 				const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
 
-		void
-		visit_gpml_total_reconstruction_pole(
-				const GPlatesPropertyValues::GpmlTotalReconstructionPole &trs);
 	private:
 		File::Reference& d_file_ref;
 		unsigned d_mprs_id;

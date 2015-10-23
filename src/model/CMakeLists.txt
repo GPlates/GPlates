@@ -33,6 +33,7 @@ set(srcs
     FeatureStoreRootRevision.cc
     FeatureStoreRootRevision.h
     FeatureType.h
+    FeatureVisitor.cc
     FeatureVisitor.h
     Gpgim.cc
     Gpgim.h

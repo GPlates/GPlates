@@ -48,10 +48,15 @@ namespace GPlatesAppLogic
 			public PartitionFeatureTask
 	{
 	public:
+
+		/**
+		 * If 'verify_information_model' is true then feature property types are only added if they don't not violate the GPGIM.
+		 */
 		GenericPartitionFeatureTask(
 				const ReconstructionTree &reconstruction_tree,
 				GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType assign_plate_id_method,
-				const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign);
+				const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
+				bool verify_information_model);
 
 
 		virtual
@@ -72,6 +77,8 @@ namespace GPlatesAppLogic
 				bool respect_feature_time_period);
 
 	private:
+		bool d_verify_information_model;
+
 		const ReconstructionTree &d_reconstruction_tree;
 		GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType d_assign_plate_id_method;
 		GPlatesAppLogic::AssignPlateIds::feature_property_flags_type d_feature_property_types_to_assign;

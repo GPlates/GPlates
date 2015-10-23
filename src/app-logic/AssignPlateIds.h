@@ -139,8 +139,12 @@ namespace GPlatesAppLogic
 		{
 			//! Reconstruction plate id
 			RECONSTRUCTION_PLATE_ID,
-			//! Time of appearance and disappearance
-			VALID_TIME,
+			//! Conjugate plate id
+			CONJUGATE_PLATE_ID,
+			//! Time of appearance
+			TIME_OF_APPEARANCE,
+			//! Time of disappearance
+			TIME_OF_DISAPPEARANCE,
 
 			NUM_FEATURE_PROPERTY_TYPES // Must be the last enum.
 		};
@@ -185,6 +189,9 @@ namespace GPlatesAppLogic
 		 * The default value of @a feature_properties_to_assign only assigns
 		 * the reconstruction plate id.
 		 *
+		 * If @a verify_information_model is true then feature property types are only assigned if
+		 * they don't not violate the GPGIM.
+		 *
 		 * If @a respect_feature_time_period is true (the default) then the feature is only
 		 * partitioned if the reconstruction time (stored in derived class instance) is within
 		 * the time period over which the feature is defined.
@@ -202,6 +209,7 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const feature_property_flags_type &feature_property_types_to_assign =
 						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
+				bool verify_information_model = true,
 				bool allow_partitioning_using_topological_plate_polygons = true,
 				bool allow_partitioning_using_topological_networks = true,
 				bool allow_partitioning_using_static_polygons = true,
@@ -214,6 +222,7 @@ namespace GPlatesAppLogic
 					reconstruction_time,
 					anchor_plate_id,
 					feature_property_types_to_assign,
+					verify_information_model,
 					allow_partitioning_using_topological_plate_polygons,
 					allow_partitioning_using_topological_networks,
 					allow_partitioning_using_static_polygons,
@@ -242,6 +251,9 @@ namespace GPlatesAppLogic
 		 * The default value of @a feature_properties_to_assign only assigns
 		 * the reconstruction plate id.
 		 *
+		 * If @a verify_information_model is true then feature property types are only assigned if
+		 * they don't not violate the GPGIM.
+		 *
 		 * If @a respect_feature_time_period is true (the default) then the feature is only
 		 * partitioned if the reconstruction time (stored in derived class instance) is within
 		 * the time period over which the feature is defined.
@@ -255,6 +267,7 @@ namespace GPlatesAppLogic
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				const feature_property_flags_type &feature_property_types_to_assign =
 						RECONSTRUCTION_PLATE_ID_PROPERTY_FLAG,
+				bool verify_information_model = true,
 				bool respect_feature_time_period = true)
 		{
 			return non_null_ptr_type(new AssignPlateIds(
@@ -262,6 +275,7 @@ namespace GPlatesAppLogic
 					partitioning_layer_proxies,
 					reconstruction_tree,
 					feature_property_types_to_assign,
+					verify_information_model,
 					respect_feature_time_period));
 		}
 
@@ -351,6 +365,7 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				GPlatesModel::integer_plate_id_type anchor_plate_id,
 				const feature_property_flags_type &feature_property_types_to_assign,
+				bool verify_information_model,
 				bool allow_partitioning_using_topological_plate_polygons,
 				bool allow_partitioning_using_topological_networks,
 				bool allow_partitioning_using_static_polygons,
@@ -373,6 +388,7 @@ namespace GPlatesAppLogic
 				const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				const feature_property_flags_type &feature_property_types_to_assign,
+				bool verify_information_model,
 				bool respect_feature_time_period);
 	};
 }

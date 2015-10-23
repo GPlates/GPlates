@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <vector>
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
 #include <QDebug>
 #include <QString>
 
@@ -44,6 +45,7 @@
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/FiniteRotation.h"
 
+#include "model/Gpgim.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
 #include "model/PropertyName.h"
@@ -349,6 +351,19 @@ namespace
 
 
 	/**
+	 * Returns "gpml:conjugatePlateId".
+	 */
+	const GPlatesModel::PropertyName &
+	get_conjugate_plate_id_property_name()
+	{
+		static const GPlatesModel::PropertyName conjugate_plate_id_property_name =
+				GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
+
+		return conjugate_plate_id_property_name;
+	}
+
+
+	/**
 	 * Returns true if @a top_level_prop_ptr is a 'gpml:reconstructionPlateId' property.
 	 */
 	bool
@@ -411,9 +426,13 @@ GPlatesAppLogic::PartitionFeatureUtils::partition_feature(
 
 GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::GenericFeaturePropertyAssigner(
 		const GPlatesModel::FeatureHandle::const_weak_ref &original_feature,
-		const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign) :
+		const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
+		bool verify_information_model) :
+	d_verify_information_model(verify_information_model),
 	d_default_reconstruction_plate_id(
 			get_reconstruction_plate_id_from_feature(original_feature)),
+	d_default_conjugate_plate_id(
+			get_conjugate_plate_id_from_feature(original_feature)),
 	d_default_valid_time(
 			get_valid_time_from_feature(original_feature)),
 	d_feature_property_types_to_assign(feature_property_types_to_assign)
@@ -430,9 +449,9 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 	GPlatesModel::NotificationGuard model_notification_guard(*partitioned_feature->model_ptr());
 
 	// Get the reconstruction plate id.
-	// Either from the partitioning feature or the default plate id.
-	// If we are not supposed to assign plate ids then use the default plate id as
-	// that has the effect of keeping the original plate id.
+	// Either from the partitioning feature or the default reconstruction plate id.
+	// If we are not supposed to assign plate ids then use the default reconstruction plate id as
+	// that has the effect of keeping the original reconstruction plate id.
 	boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id;
 	if (partitioning_feature &&
 		d_feature_property_types_to_assign.test(AssignPlateIds::RECONSTRUCTION_PLATE_ID))
@@ -446,17 +465,64 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 	}
 	assign_reconstruction_plate_id_to_feature(
 			reconstruction_plate_id,
-			partitioned_feature);
+			partitioned_feature,
+			d_verify_information_model);
+
+	// Get the conjugate plate id.
+	// Either from the partitioning feature or the default conjugate plate id.
+	// If we are not supposed to assign plate ids then use the default conjugate plate id as
+	// that has the effect of keeping the original conjugate plate id.
+	boost::optional<GPlatesModel::integer_plate_id_type> conjugate_plate_id;
+	if (partitioning_feature &&
+		d_feature_property_types_to_assign.test(AssignPlateIds::CONJUGATE_PLATE_ID))
+	{
+		conjugate_plate_id = get_conjugate_plate_id_from_feature(
+				partitioning_feature.get());
+	}
+	else
+	{
+		conjugate_plate_id = d_default_conjugate_plate_id;
+	}
+	assign_conjugate_plate_id_to_feature(
+			conjugate_plate_id,
+			partitioned_feature,
+			d_verify_information_model);
 
 	// Get the time period.
-	// Either from the partitioning feature or the default time period.
-	// If we are not supposed to assign plate ids then use the default plate id as
-	// that has the effect of keeping the original plate id.
+	// Either from the partitioning feature or the default time period or a mixture of both.
+	// If we are not supposed to assign time periods then use the default time period as
+	// that has the effect of keeping the original time period.
 	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> valid_time;
-	if (partitioning_feature &&
-		d_feature_property_types_to_assign.test(AssignPlateIds::VALID_TIME))
+	if (partitioning_feature && (
+		d_feature_property_types_to_assign.test(AssignPlateIds::TIME_OF_APPEARANCE) ||
+		d_feature_property_types_to_assign.test(AssignPlateIds::TIME_OF_DISAPPEARANCE)))
 	{
 		valid_time = get_valid_time_from_feature(partitioning_feature.get());
+
+		if (valid_time)
+		{
+			// If only copying time of disappearance (not appearance) then replace the appearance time
+			// with the default appearance time (or distant past if none).
+			if (!d_feature_property_types_to_assign.test(AssignPlateIds::TIME_OF_APPEARANCE))
+			{
+				valid_time = GPlatesModel::ModelUtils::create_gml_time_period(
+						d_default_valid_time
+								? d_default_valid_time.get()->begin()->get_time_position()
+								: GPlatesPropertyValues::GeoTimeInstant::create_distant_past(),
+						valid_time.get()->end()->get_time_position());
+			}
+
+			// If only copying time of appearance (not disappearance) then replace the disappearance time
+			// with the default disappearance time (or distant future if none).
+			if (!d_feature_property_types_to_assign.test(AssignPlateIds::TIME_OF_DISAPPEARANCE))
+			{
+				valid_time = GPlatesModel::ModelUtils::create_gml_time_period(
+						valid_time.get()->begin()->get_time_position(),
+						d_default_valid_time
+								? d_default_valid_time.get()->end()->get_time_position()
+								: GPlatesPropertyValues::GeoTimeInstant::create_distant_future());
+			}
+		}
 	}
 	else
 	{
@@ -464,7 +530,8 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 	}
 	assign_valid_time_to_feature(
 			valid_time,
-			partitioned_feature);
+			partitioned_feature,
+			d_verify_information_model);
 }
 
 
@@ -756,7 +823,8 @@ GPlatesAppLogic::PartitionFeatureUtils::get_reconstruction_plate_id_from_feature
 void
 GPlatesAppLogic::PartitionFeatureUtils::assign_reconstruction_plate_id_to_feature(
 		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
-		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		bool verify_information_model)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
 	GPlatesModel::NotificationGuard model_notification_guard(*feature_ref->model_ptr());
@@ -764,19 +832,68 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_reconstruction_plate_id_to_featur
 	// First remove any that might already exist.
 	feature_ref->remove_properties_by_name(get_reconstruction_plate_id_property_name());
 
-	// Only assign a new plate id if we've been given one.
+	// Only assign a new reconstruction plate id if we've been given one.
 	if (!reconstruction_plate_id)
 	{
 		return;
 	}
 
 	// Append a new property to the feature.
-	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type gpml_plate_id = 
+	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type gpml_reconstruction_plate_id = 
 			GPlatesPropertyValues::GpmlPlateId::create(reconstruction_plate_id.get());
-	feature_ref->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				get_reconstruction_plate_id_property_name(),
-				GPlatesModel::ModelUtils::create_gpml_constant_value(gpml_plate_id)));
+	// If 'verify_information_model' is true then property is only added if it doesn't not violate the GPGIM.
+	GPlatesModel::ModelUtils::add_property(
+			feature_ref,
+			get_reconstruction_plate_id_property_name(),
+			gpml_reconstruction_plate_id,
+			verify_information_model/*check_property_name_allowed_for_feature_type*/);
+}
+
+
+boost::optional<GPlatesModel::integer_plate_id_type>
+GPlatesAppLogic::PartitionFeatureUtils::get_conjugate_plate_id_from_feature(
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
+{
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> conjugate_plate_id =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					feature_ref,
+					get_conjugate_plate_id_property_name());
+	if (!conjugate_plate_id)
+	{
+		return boost::none;
+	}
+
+	return conjugate_plate_id.get()->get_value();
+}
+
+
+void
+GPlatesAppLogic::PartitionFeatureUtils::assign_conjugate_plate_id_to_feature(
+		boost::optional<GPlatesModel::integer_plate_id_type> conjugate_plate_id,
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		bool verify_information_model)
+{
+	// Merge model events across this scope to avoid excessive number of model callbacks.
+	GPlatesModel::NotificationGuard model_notification_guard(*feature_ref->model_ptr());
+
+	// First remove any that might already exist.
+	feature_ref->remove_properties_by_name(get_conjugate_plate_id_property_name());
+
+	// Only assign a new conjugate plate id if we've been given one.
+	if (!conjugate_plate_id)
+	{
+		return;
+	}
+
+	// Append a new property to the feature.
+	GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type gpml_conjugate_plate_id = 
+			GPlatesPropertyValues::GpmlPlateId::create(conjugate_plate_id.get());
+	// If 'verify_information_model' is true then property is only added if it doesn't not violate the GPGIM.
+	GPlatesModel::ModelUtils::add_property(
+			feature_ref,
+			get_conjugate_plate_id_property_name(),
+			gpml_conjugate_plate_id,
+			verify_information_model/*check_property_name_allowed_for_feature_type*/);
 }
 
 
@@ -800,7 +917,8 @@ GPlatesAppLogic::PartitionFeatureUtils::get_valid_time_from_feature(
 void
 GPlatesAppLogic::PartitionFeatureUtils::assign_valid_time_to_feature(
 		boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> valid_time,
-		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+		bool verify_information_model)
 {
 	// First remove any that might already exist.
 	feature_ref->remove_properties_by_name(get_valid_time_property_name());
@@ -812,10 +930,12 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_valid_time_to_feature(
 	}
 
 	// Append a new property to the feature.
-	feature_ref->add(
-			GPlatesModel::TopLevelPropertyInline::create(
-				get_valid_time_property_name(),
-				valid_time.get()->clone()));
+	// If 'verify_information_model' is true then property is only added if it doesn't not violate the GPGIM.
+	GPlatesModel::ModelUtils::add_property(
+			feature_ref,
+			get_valid_time_property_name(),
+			valid_time.get()->clone(),
+			verify_information_model/*check_property_name_allowed_for_feature_type*/);
 }
 
 

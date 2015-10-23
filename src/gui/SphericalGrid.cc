@@ -72,12 +72,13 @@ namespace
 	 */
 	void
 	set_line_draw_state(
-			GPlatesOpenGL::GLRenderer &renderer)
+			GPlatesOpenGL::GLRenderer &renderer,
+			float line_width_hint)
 	{
 		// Set the anti-aliased line state.
 		renderer.gl_enable(GL_LINE_SMOOTH);
 		renderer.gl_hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-		renderer.gl_line_width(1.0f);
+		renderer.gl_line_width(line_width_hint);
 
 		// Set up alpha blending for pre-multiplied alpha.
 		// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
@@ -216,7 +217,8 @@ namespace
 			unsigned int &num_line_segments,
 			const GPlatesMaths::Real &delta_lat,
 			const GPlatesMaths::Real &delta_lon,
-			const GPlatesGui::rgba8_t &colour)
+			const GPlatesGui::rgba8_t &colour,
+			float line_width_hint)
 	{
 		stream_primitives_type stream;
 
@@ -270,7 +272,7 @@ namespace
 		// Start compiling draw state that includes line drawing state and the vertex array draw command.
 		GPlatesOpenGL::GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer);
 
-		set_line_draw_state(renderer);
+		set_line_draw_state(renderer, line_width_hint);
 		renderer.apply_compiled_draw_state(*draw_vertex_array);
 
 		return compile_draw_state_scope.get_compiled_draw_state();
@@ -282,7 +284,8 @@ namespace
 			GPlatesOpenGL::GLRenderer &renderer,
 			GPlatesOpenGL::GLVertexArray &vertex_array,
 			unsigned int &num_line_segments,
-			const GPlatesGui::rgba8_t &colour)
+			const GPlatesGui::rgba8_t &colour,
+			float line_width_hint)
 	{
 		stream_primitives_type stream;
 
@@ -317,7 +320,7 @@ namespace
 		// Start compiling draw state that includes line drawing state and the vertex array draw command.
 		GPlatesOpenGL::GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer);
 
-		set_line_draw_state(renderer);
+		set_line_draw_state(renderer, line_width_hint);
 		renderer.apply_compiled_draw_state(*draw_vertex_array);
 
 		return compile_draw_state_scope.get_compiled_draw_state();
@@ -354,7 +357,8 @@ GPlatesGui::SphericalGrid::paint(
 				d_grid_num_line_segments,
 				d_graticule_settings.get_delta_lat(),
 				d_graticule_settings.get_delta_lon(),
-				Colour::to_rgba8(d_graticule_settings.get_colour()));
+				Colour::to_rgba8(d_graticule_settings.get_colour()),
+				d_graticule_settings.get_line_width_hint());
 		d_last_seen_graticule_settings = d_graticule_settings;
 	}
 
@@ -395,7 +399,8 @@ GPlatesGui::SphericalGrid::paint_circumference(
 				renderer,
 				*d_circumference_vertex_array,
 				d_circumference_num_line_segments,
-				Colour::to_rgba8(d_graticule_settings.get_colour()));
+				Colour::to_rgba8(d_graticule_settings.get_colour()),
+				d_graticule_settings.get_line_width_hint());
 		d_last_seen_graticule_settings = d_graticule_settings;
 	}
 

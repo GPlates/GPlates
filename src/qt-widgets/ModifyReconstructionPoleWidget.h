@@ -228,6 +228,12 @@ namespace GPlatesQtWidgets
 		void
 		react_adjustment_pole_changed();
 
+		/**
+		 * Re-populate the visible RFGs when a layer is made visible/invisible.
+		 */
+		void
+		handle_layer_modified();
+
 	private:
 
 		//! Manages reconstructions.

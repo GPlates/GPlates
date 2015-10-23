@@ -161,10 +161,13 @@ namespace GPlatesAppLogic
 			 * Defaults property values to use when there is no partitioning feature.
 			 * These are obtained from the feature before it is partitioned or modified
 			 * in any way.
+			 *
+			 * If 'verify_information_model' is true then feature property types are only added if they don't not violate the GPGIM.
 			 */
 			GenericFeaturePropertyAssigner(
 					const GPlatesModel::FeatureHandle::const_weak_ref &original_feature,
-					const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign);
+					const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
+					bool verify_information_model);
 
 			virtual
 			void
@@ -173,7 +176,10 @@ namespace GPlatesAppLogic
 					boost::optional<GPlatesModel::FeatureHandle::const_weak_ref> partitioning_feature);
 
 		private:
+			bool d_verify_information_model;
+
 			boost::optional<GPlatesModel::integer_plate_id_type> d_default_reconstruction_plate_id;
+			boost::optional<GPlatesModel::integer_plate_id_type> d_default_conjugate_plate_id;
 			boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> d_default_valid_time;
 
 			GPlatesAppLogic::AssignPlateIds::feature_property_flags_type d_feature_property_types_to_assign;
@@ -374,11 +380,36 @@ namespace GPlatesAppLogic
 		 *
 		 * If @a reconstruction_plate_id is false then only reconstruction plate id properties
 		 * are removed and none added.
+		 *
+		 * If 'verify_information_model' is true then property is only added if it doesn't not violate the GPGIM.
 		 */
 		void
 		assign_reconstruction_plate_id_to_feature(
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
-				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				bool verify_information_model);
+
+
+		/**
+		 * Returns the 'gpml:conjugatePlateId' plate id if one exists.
+		 */
+		boost::optional<GPlatesModel::integer_plate_id_type>
+		get_conjugate_plate_id_from_feature(
+				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref);
+
+
+		/**
+		 * Assigns a 'gpml:conjugatePlateId' property value to @a feature_ref.
+		 * Removes any properties with this name that might already exist in @a feature_ref.
+		 *
+		 * If @a conjugate_plate_id is false then only conjugate plate id properties
+		 * are removed and none added.
+		 */
+		void
+		assign_conjugate_plate_id_to_feature(
+				boost::optional<GPlatesModel::integer_plate_id_type> conjugate_plate_id,
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				bool verify_information_model);
 
 
 		/**
@@ -398,7 +429,8 @@ namespace GPlatesAppLogic
 		void
 		assign_valid_time_to_feature(
 				boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> valid_time,
-				const GPlatesModel::FeatureHandle::weak_ref &feature_ref);
+				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
+				bool verify_information_model);
 
 
 		/**

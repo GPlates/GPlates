@@ -447,13 +447,16 @@ namespace {
 	 * at the point of intersection, ie, if the point of intersection is
 	 * coincident with an endpoint of the arc.
 	 *
+	 * Returns true if the arc was partitioned (if @a inter_point was not
+	 * coincident with arc start or end point).
+	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
-	void
+	bool
 	partition_arc_if_necessary(
 	 ArcList::iterator arc_iter,
 	 ArcList &arc_list,
@@ -473,12 +476,15 @@ namespace {
 			// The point of intersection is coincident with one of
 			// the arc endpoints, so there's no need to partition
 			// the arc.
+			return false;
 
 		} else {
 
 			// Note that 'splice_point_into_arc' guarantees that
 			// 'arc_iter' will remain valid.
 			splice_point_into_arc(inter_point, arc_iter, arc_list);
+
+			return true;
 		}
 	}
 
@@ -524,7 +530,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -544,7 +550,7 @@ namespace {
 
 		/*
 		 * Remember the "one exception" described in the comment of
-		 * 'partition_intersecting_polylines':  If the polylines are
+		 * 'partition_intersecting_geometries':  If the polylines are
 		 * touching endpoint-to-endpoint, this will not be counted as
 		 * an intersection.
 		 */
@@ -607,7 +613,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -622,19 +628,12 @@ namespace {
 		const GreatCircleArc &arc1 = *iter1;
 		const GreatCircleArc &arc2 = *iter2;
 
-		if (arc1.is_zero_length() || arc2.is_zero_length())
-		{
-			return false;
-		}
-
 		const PointOnSphere &arc1_start_pt = arc1.start_point();
 		const PointOnSphere &arc1_end_pt = arc1.end_point();
 		const PointOnSphere &arc2_start_pt = arc2.start_point();
 		const PointOnSphere &arc2_end_pt = arc2.end_point();
 
-		if (!arc1.is_zero_length() &&
-			!arc2.is_zero_length() &&
-			unit_vectors_are_parallel(arc1.rotation_axis(), arc2.rotation_axis())) {
+		if (unit_vectors_are_parallel(arc1.rotation_axis(), arc2.rotation_axis())) {
 
 			/*
 			 * The axes of the arcs are parallel, which means the
@@ -677,8 +676,6 @@ namespace {
 			/*
 			 * The axes of the arcs are anti-parallel, which means
 			 * the arcs are "rotating" in the opposite direction.
-			 * Or one (or both) arcs are zero length (and hence it doesn't
-			 * matter whether they're parallel or anti-parallel).
 			 *
 			 * Hence, the arrangements which would cause the arcs
 			 * to be touching endpoint-to-endpoint-only are:
@@ -740,7 +737,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -812,7 +809,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -828,9 +825,7 @@ namespace {
 
 		ArcList::iterator iter_at_overlapping_arc_in_longer;
 
-		if (!defining_arc.is_zero_length() &&
-			!longer_arc.is_zero_length() &&
-			unit_vectors_are_parallel(defining_arc.rotation_axis(), longer_arc.rotation_axis())) {
+		if (unit_vectors_are_parallel(defining_arc.rotation_axis(), longer_arc.rotation_axis())) {
 
 			/*
 			 * The arcs will be:
@@ -888,7 +883,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -910,9 +905,7 @@ namespace {
 		 * We want to know whether the arcs are "rotating" in the same
 		 * direction or opposite directions.
 		 */
-		if (!arc1.is_zero_length() &&
-			!arc2.is_zero_length() &&
-			unit_vectors_are_parallel(arc1.rotation_axis(), arc2.rotation_axis())) {
+		if (unit_vectors_are_parallel(arc1.rotation_axis(), arc2.rotation_axis())) {
 
 			// The arcs are rotating in the same direction.  Thus,
 			// 'arc1.start_point()' will be the earlier point of
@@ -961,7 +954,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -997,17 +990,35 @@ namespace {
 		const GreatCircleArc &arc1 = *iter1;
 		const GreatCircleArc &arc2 = *iter2;
 
-		bool arc2_start_point_lies_on_arc1 =
-		 arc2.start_point().lies_on_gca(arc1);
+		// Both arcs are on the same great circle but are they parallel or anti-parallel.
+		const bool arc_normals_are_parallel =
+				unit_vectors_are_parallel(arc1.rotation_axis(), arc2.rotation_axis());
 
-		bool arc2_end_point_lies_on_arc1 =
-		 arc2.end_point().lies_on_gca(arc1);
+		// The normal (or rotation axis) of each arc might be nearly parallel (or anti-parallel)
+		// due to the epsilon comparison. So we pick one of the normals to get consistent results
+		// when testing for overlap.
+		const GPlatesMaths::UnitVector3D &arc1_normal = arc1.rotation_axis();
+		const GPlatesMaths::UnitVector3D arc2_normal = arc_normals_are_parallel ? arc1_normal : -arc1_normal;
 
-		bool arc1_start_point_lies_on_arc2 =
-		 arc1.start_point().lies_on_gca(arc2);
-
-		bool arc1_end_point_lies_on_arc2 =
-		 arc1.end_point().lies_on_gca(arc2);
+		// To test if an end point of one arc is on the other arc we only need to test if the former
+		// point lies within the lune of the latter arc (since both arcs are on the same great circle).
+		//
+		// A spherical lune is the surface of the globe in the wedge region of space formed by two
+		// planes (great circles) that touch an arc's start and end points and are perpendicular to the arc.
+		//
+		// Note: We're using the epsilon test of 'Real' and using '>' and '<' both of which exclude
+		// points slightly inside the lune. This helps avoid generating zero-length arcs below
+		// which run the risk of infinite loops due to .
+		const GPlatesMaths::Vector3D arc2_start_cross_arc_normal =
+				cross(arc2.start_point().position_vector(), arc1_normal);
+		const bool arc2_start_point_lies_on_arc1 =
+				dot(arc2_start_cross_arc_normal, arc1.start_point().position_vector()) > 0 &&
+					dot(arc2_start_cross_arc_normal, arc1.end_point().position_vector()) < 0;
+		const GPlatesMaths::Vector3D arc2_end_cross_arc_normal =
+				cross(arc2.end_point().position_vector(), arc1_normal);
+		const bool arc2_end_point_lies_on_arc1 =
+				dot(arc2_end_cross_arc_normal, arc1.start_point().position_vector()) > 0 &&
+					dot(arc2_end_cross_arc_normal, arc1.end_point().position_vector()) < 0;
 
 		/*
 		 * Note that the order of these tests is important.  We have to
@@ -1037,7 +1048,8 @@ namespace {
 		 * the arcs together.
 		 */
 		if (arc2_start_point_lies_on_arc1 &&
-		    arc2_end_point_lies_on_arc1) {
+		    arc2_end_point_lies_on_arc1)
+		{
 
 			// 'arc2' defines the extent of the overlap.
 			ArcList::iterator &iter_at_defining_arc = iter2;
@@ -1069,40 +1081,60 @@ namespace {
 			overlap_arcs_in_2.push_back(
 			 iter_at_overlapping_arc_in_arcs2);
 
-		} else if (arc1_start_point_lies_on_arc2 &&
-			   arc1_end_point_lies_on_arc2) {
+		}
+		else if (!arc2_start_point_lies_on_arc1 &&
+		    !arc2_end_point_lies_on_arc1)
+		{
+			// The end points of 'arc2' do not lie on 'arc1'.
+			// But 'arc2' could still overlap 'arc1' such that it contains 'arc1'.
+			// If it does then both ends of 'arc1' should lie on 'arc2'.
+			// So we just need to test one end point of 'arc1' lies on 'arc2' (we choose the start point).
+			//
+			// Note: We're using the epsilon test of 'Real' and using '>=' and '<=' both of which include
+			// points slightly outside the lune of 'arc2'. This ensures we capture overlap when
+			// both arcs exactly overlap. This is needed because the previous test, for 'arc2' points
+			// lying on 'arc1', was the opposite - only included points slightly inside the lune of 'arc1'.
+			const GPlatesMaths::Vector3D arc1_start_cross_arc_normal =
+					cross(arc1.start_point().position_vector(), arc2_normal);
+			const bool arc1_start_point_lies_on_arc2 =
+					dot(arc1_start_cross_arc_normal, arc2.start_point().position_vector()) >= 0 &&
+						dot(arc1_start_cross_arc_normal, arc2.end_point().position_vector()) <= 0;
+			if (arc1_start_point_lies_on_arc2)
+			{
+				// 'arc1' defines the extent of the overlap.
+				ArcList::iterator &iter_at_defining_arc = iter1;
+				ArcList &arcs_containing_defining_arc = arcs1;
 
-			// 'arc1' defines the extent of the overlap.
-			ArcList::iterator &iter_at_defining_arc = iter1;
-			ArcList &arcs_containing_defining_arc = arcs1;
+				ArcList::iterator &iter_at_longer_arc = iter2;
+				ArcList &arcs_containing_longer_arc = arcs2;
 
-			ArcList::iterator &iter_at_longer_arc = iter2;
-			ArcList &arcs_containing_longer_arc = arcs2;
+				ArcList::iterator iter_at_overlapping_arc_in_longer =
+				 partition_overlap_of_one_defining_arc_if_necessary(
+				  iter_at_defining_arc, arcs_containing_defining_arc,
+				  iter_at_longer_arc, arcs_containing_longer_arc);
 
-			ArcList::iterator iter_at_overlapping_arc_in_longer =
-			 partition_overlap_of_one_defining_arc_if_necessary(
-			  iter_at_defining_arc, arcs_containing_defining_arc,
-			  iter_at_longer_arc, arcs_containing_longer_arc);
+				// Now, update the list of intersection-nodes.
+				ArcList::iterator &iter_at_overlapping_arc_in_arcs1 =
+				 iter_at_defining_arc;
+				ArcList::iterator &iter_at_overlapping_arc_in_arcs2 =
+				 iter_at_overlapping_arc_in_longer;
 
-			// Now, update the list of intersection-nodes.
-			ArcList::iterator &iter_at_overlapping_arc_in_arcs1 =
-			 iter_at_defining_arc;
-			ArcList::iterator &iter_at_overlapping_arc_in_arcs2 =
-			 iter_at_overlapping_arc_in_longer;
+				append_intersection_nodes_for_overlap(
+				 iter_at_overlapping_arc_in_arcs1,
+				 iter_at_overlapping_arc_in_arcs2,
+				 inter_nodes);
 
-			append_intersection_nodes_for_overlap(
-			 iter_at_overlapping_arc_in_arcs1,
-			 iter_at_overlapping_arc_in_arcs2,
-			 inter_nodes);
-
-			// And finally, the lists of overlaps.
-			overlap_arcs_in_1.push_back(
-			 iter_at_overlapping_arc_in_arcs1);
-			overlap_arcs_in_2.push_back(
-			 iter_at_overlapping_arc_in_arcs2);
-
-		} else if (arc1_start_point_lies_on_arc2 &&
-			   arc2_start_point_lies_on_arc1) {
+				// And finally, the lists of overlaps.
+				overlap_arcs_in_1.push_back(
+				 iter_at_overlapping_arc_in_arcs1);
+				overlap_arcs_in_2.push_back(
+				 iter_at_overlapping_arc_in_arcs2);
+			}
+			// ...else no overlap.
+		}
+		else if (arc2_start_point_lies_on_arc1 &&
+				!arc_normals_are_parallel)
+		{
 
 			/*
 			 * arc1:     ------->
@@ -1146,8 +1178,10 @@ namespace {
 			overlap_arcs_in_2.push_back(
 			 iter_at_overlapping_arc_in_arcs2);
 
-		} else if (arc1_start_point_lies_on_arc2 &&
-			   arc2_end_point_lies_on_arc1) {
+		}
+		else if (arc2_end_point_lies_on_arc1 &&
+			   arc_normals_are_parallel)
+		{
 
 			/*
 			 * arc1:     ------->
@@ -1191,8 +1225,10 @@ namespace {
 			overlap_arcs_in_2.push_back(
 			 iter_at_overlapping_arc_in_arcs2);
   
-		} else if (arc1_end_point_lies_on_arc2 &&
-			   arc2_start_point_lies_on_arc1) {
+		}
+		else if (arc2_start_point_lies_on_arc1 &&
+				arc_normals_are_parallel)
+		{
 
 			/*
 			 * arc1: ------->
@@ -1236,8 +1272,10 @@ namespace {
 			overlap_arcs_in_2.push_back(
 			 iter_at_overlapping_arc_in_arcs2);
 
-		} else if (arc1_end_point_lies_on_arc2 &&
-			   arc2_end_point_lies_on_arc1) {
+		}
+		else if (arc2_end_point_lies_on_arc1 &&
+				!arc_normals_are_parallel)
+		{
 
 			/*
 			 * arc1: ------->
@@ -1286,45 +1324,6 @@ namespace {
 
 
 	/**
-	 * Calculate the two unique (antipodal) points at which these two great-circle arcs would
-	 * intersect if they were "extended" to whole great-circles.
-	 *
-	 * It is assumed that these arcs lie on distinct great-circles; if they do indeed lie on
-	 * equivalent great-circles, an UnableToIntersectEquivalentGreatCirclesException will be
-	 * thrown.
-	 *
-	 * It is also assumed that neither of the arcs are pointlike; if either arc @em is
-	 * pointlike, an UnableToExtendPointlikeArcException will be thrown.
-	 */
-	const std::pair<PointOnSphere, PointOnSphere>
-	calculate_intersections_of_extended_arcs(
-			const GreatCircleArc &arc1,
-			const GreatCircleArc &arc2)
-	{
-		if (arcs_lie_on_same_great_circle(arc1, arc2)) {
-			throw GPlatesMaths::UnableToIntersectEquivalentGreatCirclesException(
-					GPLATES_EXCEPTION_SOURCE, arc1, arc2);
-		}
-		if (arc1.is_zero_length()) {
-			throw GPlatesMaths::UnableToExtendPointlikeArcException(GPLATES_EXCEPTION_SOURCE,
-					arc1);
-		}
-		if (arc2.is_zero_length()) {
-			throw GPlatesMaths::UnableToExtendPointlikeArcException(GPLATES_EXCEPTION_SOURCE,
-					arc2);
-		}
-
-		GPlatesMaths::Vector3D v = cross(arc1.rotation_axis(), arc2.rotation_axis());
-		GPlatesMaths::UnitVector3D normalised_v = v.get_normalisation();
-
-		PointOnSphere inter_point1(normalised_v);
-		PointOnSphere inter_point2( -normalised_v);
-
-		return std::make_pair(inter_point1, inter_point2);
-	}
-
-
-	/**
 	 * Handle the possible intersection of the arc pointed-at by @a iter1
 	 * (an iterator pointing to a non-"end" location in @a arcs1) and the
 	 * arc pointed-at by @a iter2 (an iterator pointing to a non-"end"
@@ -1337,7 +1336,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -1352,39 +1351,51 @@ namespace {
 		const GreatCircleArc &arc1 = *iter1;
 		const GreatCircleArc &arc2 = *iter2;
 
-		// If either arc is zero length then return early.
-		if (arc1.is_zero_length() || arc2.is_zero_length())
+		// Note: We have already established that 'arc1' and 'arc2' do not lie on the same great circle.
+#if 0
+		if (arcs_lie_on_same_great_circle(arc1, arc2))
 		{
-			return;
+			throw GPlatesMaths::UnableToIntersectEquivalentGreatCirclesException(
+					GPLATES_EXCEPTION_SOURCE, arc1, arc2);
 		}
+#endif
 
-		/*
-		 * Since (as we have already established) 'arc1' and 'arc2' do
-		 * not lie on the same great-circle, the distinct great-circles
-		 * on which they lie must have two unique (antipodal) points of
-		 * intersection.  So we now want to determine whether either of
-		 * these points of intersection lies on both arcs, in which
-		 * case, the arcs intersect.
-		 */
-		std::pair< PointOnSphere, PointOnSphere >
-		 possible_inter_points =
-		  calculate_intersections_of_extended_arcs(arc1, arc2);
+		// Note: We have already established that both 'arc1' and 'arc2' are non-zero length.
+#if 0
+		if (arc1.is_zero_length())
+		{
+			throw GPlatesMaths::UnableToExtendPointlikeArcException(GPLATES_EXCEPTION_SOURCE, arc1);
+		}
+		if (arc2.is_zero_length())
+		{
+			throw GPlatesMaths::UnableToExtendPointlikeArcException(GPLATES_EXCEPTION_SOURCE, arc2);
+		}
+#endif
 
-		if (possible_inter_points.first.lies_on_gca(arc1) &&
-		    possible_inter_points.first.lies_on_gca(arc2)) {
+		// Both arcs are not zero length and hence have rotation axes...
 
-			const PointOnSphere &point_of_intersection =
-			 possible_inter_points.first;
-			handle_intersection(arcs1, arcs2, iter1, iter2,
-			 inter_nodes, point_of_intersection);
+		// Since 'arc1' and 'arc2' do not lie on the same great circle we can normalise the
+		// cross product of their rotation axes (ie, cross-product won't be zero vector).
+		const GPlatesMaths::Vector3D cross_arc_rotation_axes = cross(arc1.rotation_axis(), arc2.rotation_axis());
+		const GPlatesMaths::UnitVector3D normalised_cross_arc_rotation_axes = cross_arc_rotation_axes.get_normalisation();
 
-		} else if (possible_inter_points.second.lies_on_gca(arc1) &&
-			   possible_inter_points.second.lies_on_gca(arc2)) {
-
-			const PointOnSphere &point_of_intersection =
-			 possible_inter_points.second;
-			handle_intersection(arcs1, arcs2, iter1, iter2,
-			 inter_nodes, point_of_intersection);
+		// Calculate the two unique (antipodal) points at which these two great-circle arcs would
+		// intersect if they were "extended" to whole great-circles.
+		//
+		// NOTE: We're using PointOnSphere::lies_on_gca() since it uses an epislon threshold and hence
+		// catches the case where both arcs share and end point (prevents two polylines intersecting
+		// at a common vertex from tunnelling through each other without being noticed).
+		const GPlatesMaths::PointOnSphere intersection_point1(normalised_cross_arc_rotation_axes);
+		const GPlatesMaths::PointOnSphere intersection_point2(-normalised_cross_arc_rotation_axes);
+		if (intersection_point1.lies_on_gca(arc1) &&
+			intersection_point1.lies_on_gca(arc2))
+		{
+			handle_intersection(arcs1, arcs2, iter1, iter2, inter_nodes, intersection_point1);
+		}
+		else if (intersection_point2.lies_on_gca(arc1) &&
+				intersection_point2.lies_on_gca(arc2))
+		{
+			handle_intersection(arcs1, arcs2, iter1, iter2, inter_nodes, intersection_point2);
 		}
 		// Else, no intersection.
 	}
@@ -1402,7 +1413,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -1609,7 +1620,7 @@ namespace {
 	 *
 	 * This function does not attempt to be strongly exception-safe (since
 	 * any parameters it might happen to alter are assumed to be local to
-	 * the enclosing function 'partition_intersecting_polylines', and hence
+	 * the enclosing function 'partition_intersecting_geometries', and hence
 	 * will be destroyed anyway if an exception is thrown), but it *is*
 	 * exception-neutral.
 	 */
@@ -1815,6 +1826,13 @@ namespace {
 		 * Firstly, let's filter out any zero-length arcs in each list, since
 		 * these contribute nothing useful, and with them out of the way, we
 		 * can assume that all arcs have determinate rotation axes.
+		 *
+		 * UPDATE: It's still possible that new zero-length arcs get generated during
+		 * intersection/overlap testing. Ideally we should never generate zero-length arcs
+		 * since they can result in subtle bugs such as a zero length arc1 overlapping the start
+		 * of a non-zero-length arc2 where the latter gets split into a zero-length and non-zero
+		 * length arc (that matches arc2) which just causes an infinite loop.
+		 * We currently get around this skipping zero-length arcs below.
 		 */
 		line_geometry1_arcs.remove_if(GPlatesMaths::ArcHasIndeterminateRotationAxis());
 		line_geometry2_arcs.remove_if(GPlatesMaths::ArcHasIndeterminateRotationAxis());
@@ -1892,12 +1910,24 @@ namespace {
 				const GreatCircleArc &arc1 = *iter_outer;
 				const GreatCircleArc &arc2 = *iter_inner;
 
+				// If either arc is zero length then return early.
+				// If the arcs do touch then we'll ignore it because the previous or next non-zero length
+				// arc (relative to the zero-length arc) will also touch and that will take care of the intersection.
+				// We generally want to ignore zero length arcs because they can cause subtle bugs and are
+				// essentially just duplicate, adjacent polyline points that can be ignored.
+				if (arc1.is_zero_length() ||
+					arc2.is_zero_length())
+				{
+					continue;
+				}
+
 				// Inexpensively eliminate the no-hopers.
 				if ( ! arcs_are_near_each_other(arc1, arc2)) {
 
 					// There's no chance the arcs could touch.
 					continue;
 				}
+
 				// Else, there's a chance the arcs might overlap or
 				// intersect.
 				handle_possible_overlap_or_intersection(line_geometry1_arcs,

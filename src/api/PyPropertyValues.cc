@@ -84,6 +84,7 @@
 #include "property-values/GpmlPolarityChronId.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"
+#include "property-values/GpmlTotalReconstructionPole.h"
 #include "property-values/TextContent.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
@@ -3891,6 +3892,51 @@ export_gpml_time_window()
 
 
 void
+export_gpml_total_reconstruction_pole()
+{
+	// Select the desired overload of GpmlTotalReconstructionPole::create...
+	const GPlatesPropertyValues::GpmlTotalReconstructionPole::non_null_ptr_type
+			(*create)(const GPlatesMaths::FiniteRotation &) =
+					&GPlatesPropertyValues::GpmlTotalReconstructionPole::create;
+
+	//
+	// GpmlTotalReconstructionPole - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GpmlTotalReconstructionPole,
+			GPlatesPropertyValues::GpmlTotalReconstructionPole::non_null_ptr_type,
+			bp::bases<GPlatesPropertyValues::GpmlFiniteRotation>,
+			boost::noncopyable>(
+					"GpmlTotalReconstructionPole",
+					"A property value that represents a finite rotation with metadata.",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						create,
+						bp::default_call_policies(),
+						(bp::arg("finite_rotation"))),
+				"__init__(finite_rotation)\n"
+				"  Create a total reconstruction pole property value from a finite rotation.\n"
+				"\n"
+				"  :param finite_rotation: the finite rotation\n"
+				"  :type finite_rotation: :class:`FiniteRotation`\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    total_reconstruction_pole_property = pygplates.GpmlTotalReconstructionPole(finite_rotation)\n")
+	;
+
+	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
+	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
+	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
+			GPlatesPropertyValues::GpmlTotalReconstructionPole,
+			GPlatesPropertyValues::GpmlFiniteRotation>();
+}
+
+
+void
 export_xs_boolean()
 {
 	//
@@ -4155,6 +4201,7 @@ export_property_values()
 	export_gpml_plate_id();
 	export_gpml_time_sample(); // Not actually a property value.
 	export_gpml_time_window(); // Not actually a property value.
+	export_gpml_total_reconstruction_pole();
 
 	export_xs_boolean();
 	export_xs_double();

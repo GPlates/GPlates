@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -58,6 +58,7 @@ namespace GPlatesPropertyValues
 	class GmlRectifiedGrid;
 	class GmlTimeInstant;
 	class GmlTimePeriod;
+	class GpmlAge;
 	class GpmlArray;
 	class GpmlConstantValue;
 	class GpmlFeatureReference;
@@ -197,6 +198,7 @@ namespace GPlatesModel
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlRectifiedGrid>::type gml_rectified_grid_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlTimeInstant>::type gml_time_instant_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlTimePeriod>::type gml_time_period_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlAge>::type gpml_age_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlArray>::type gpml_array_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlConstantValue>::type gpml_constant_value_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFeatureReference>::type gpml_feature_reference_type;
@@ -469,6 +471,13 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gpml_age(
+				gpml_age_type &gpml_age)
+		{  }
+
+
+		virtual
+		void
 		visit_gpml_array(
 				gpml_array_type &gpml_array)
 		{  }
@@ -621,8 +630,7 @@ namespace GPlatesModel
 		virtual
 		void
 		visit_gpml_total_reconstruction_pole(
-				gpml_total_reconstruction_pole_type &trs)
-		{  }
+				gpml_total_reconstruction_pole_type &gpml_total_reconstruction_pole);
 
 		virtual
 		void
@@ -859,6 +867,24 @@ namespace GPlatesModel
 			(*iter)->accept_visitor(*this);
 		}
 	}
+
+
+	// Template specialisations are in .cc file.
+	//
+	// Note: Only reason for specialising is to avoid needing to include "GpmlTotalReconstructionPole.h"
+	template<>
+	void
+	FeatureVisitorBase<FeatureHandle>::visit_gpml_total_reconstruction_pole(
+			gpml_total_reconstruction_pole_type &gpml_total_reconstruction_pole);
+
+
+	// Template specialisations are in .cc file.
+	//
+	// Note: Only reason for specialising is to avoid needing to include "GpmlTotalReconstructionPole.h"
+	template<>
+	void
+	FeatureVisitorBase<const FeatureHandle>::visit_gpml_total_reconstruction_pole(
+			gpml_total_reconstruction_pole_type &gpml_total_reconstruction_pole);
 
 
 	// Private methods ///////////////////////////////////////////////////////////

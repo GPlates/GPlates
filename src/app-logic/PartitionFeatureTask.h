@@ -53,12 +53,15 @@ namespace GPlatesAppLogic
 	/**
 	 * Creates and returns all @a PartitionFeatureTask tasks
 	 * in the order in which they should be processed.
+	 *
+	 * If 'verify_information_model' is true then feature property types are only added if they don't not violate the GPGIM.
 	 */
 	partition_feature_task_ptr_seq_type
 	get_partition_feature_tasks(
 			const ReconstructionTree &reconstruction_tree,
 			GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType assign_plate_id_method,
-			const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign);
+			const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
+			bool verify_information_model);
 
 
 	/**
@@ -89,7 +92,7 @@ namespace GPlatesAppLogic
 		 * If @a respect_feature_time_period is true (the default) then the feature is only
 		 * partitioned if the reconstruction time (stored in derived class instance) is within
 		 * the time period over which the feature is defined.
-		 * Note that some this can be ignored by some derived classes (eg, @a VgpPartitionFeatureTask).
+		 * Note that this can be ignored by some derived classes (eg, @a VgpPartitionFeatureTask).
 		 *
 		 * NOTE: Currently @a feature_ref can be modified to hold one of geometries
 		 * resulting from partitioning while clones of it can hold the other

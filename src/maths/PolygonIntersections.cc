@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <iterator>
 #include <vector>
+#include <boost/optional.hpp>
 #include <QDebug>
 
 #include "PolygonIntersections.h"
@@ -264,39 +265,61 @@ namespace
 	};
 
 
+	/**
+	 * Get first (or last) non-zero length GCA of polyline.
+	 *
+	 * Returns none if polyline has only zero length GCA's (ie, if polyline is coincident with a point).
+	 */
+	boost::optional<const GPlatesMaths::GreatCircleArc &>
+	get_first_or_last_non_zero_great_circle_arc(
+			const GPlatesMaths::PolylineOnSphere &polyline,
+			bool get_first)
+	{
+		if (get_first)
+		{
+			// Get the first (non-zero length) GCA of the polyline.
+			GPlatesMaths::PolylineOnSphere::const_iterator gca_iter = polyline.begin();
+			do
+			{
+				if (!gca_iter->is_zero_length())
+				{
+					return *gca_iter;
+				}
+
+				++gca_iter;
+			}
+			while (gca_iter != polyline.end());
+		}
+		else
+		{
+			// Get the last (non-zero length) GCA of the polyline.
+			GPlatesMaths::PolylineOnSphere::const_iterator gca_iter = polyline.end();
+			do
+			{
+				--gca_iter;
+
+				if (!gca_iter->is_zero_length())
+				{
+					return *gca_iter;
+				}
+			}
+			while (gca_iter != polyline.begin());
+		}
+
+		// All GCA's of the polyline are zero-length.
+		return boost::none;
+	}
+
+
+	/**
+	 * Precondition: the GCA's are not zero length.
+	 */
 	bool
 	do_adjacent_great_circle_arcs_bend_left(
-			const GPlatesMaths::GreatCircleArc &polygon_prev_gca,
-			const GPlatesMaths::GreatCircleArc &polygon_next_gca)
+			const GPlatesMaths::GreatCircleArc &prev_gca,
+			const GPlatesMaths::GreatCircleArc &next_gca,
+			const GPlatesMaths::PointOnSphere &intersection_point)
 	{
-		// We must handle degenerate such as one or both arcs having no rotation axis.
-		if (polygon_prev_gca.is_zero_length())
-		{
-			if (polygon_next_gca.is_zero_length())
-			{
-				qWarning() << "PolygonIntersections: Encountered two zero length segments - result may be incorrect.";
-
-				// Returning a random result.
-				// FIXME: The whole way intersections are calculated needs to be overhauled to
-				// deal with numerical robustness issues better.
-				return true;
-			}
-
-			// Test if the start point of the previous GCA is in front of the plane containing the next GCA.
-			return dot(
-					polygon_prev_gca.start_point().position_vector(),
-					polygon_next_gca.rotation_axis())
-							> 0;
-		}
-		else if (polygon_next_gca.is_zero_length())
-		{
-			// Test if the end point of the next GCA is in front of the plane containing the previous GCA.
-			return dot(
-					polygon_next_gca.end_point().position_vector(),
-					polygon_prev_gca.rotation_axis())
-							> 0;
-		}
-
 		// Unless the two GCAs are parallel there they will form a smaller acute angle
 		// on one side and a larger obtuse angle on the other side.
 		// If the acute angle is to the left (meaning the next GCA bends to the left
@@ -304,14 +327,9 @@ namespace
 		// cross product vector of the GCAs will be in the same hemisphere as the
 		// intersection point (where the two GCAs meet) otherwise it will be in the
 		// opposite hemisphere.
-		// If the GCAs are parallel or nearly parallel then the cross product will be
-		// zero or close to it and the comparison with zero will be error-prone but this
-		// is ok since parallel GCAs mean we don't really care whether the acute angle
-		// is to the left or right since both angles are close to 180 degrees and
-		// it won't really affect calculations down the line.
 		return dot(
-				polygon_next_gca.start_point().position_vector(),
-				cross(polygon_prev_gca.rotation_axis(), polygon_next_gca.rotation_axis()))
+				intersection_point.position_vector(),
+				cross(prev_gca.rotation_axis(), next_gca.rotation_axis())).dval()
 						> 0;
 	}
 }
@@ -454,8 +472,8 @@ GPlatesMaths::PolygonIntersections::partition_multipoint(
 {
 	bool any_intersecting_points = false;
 
-	std::vector<GPlatesMaths::PointOnSphere> partitioned_points_inside;
-	std::vector<GPlatesMaths::PointOnSphere> partitioned_points_outside;
+	std::vector<PointOnSphere> partitioned_points_inside;
+	std::vector<PointOnSphere> partitioned_points_outside;
 
 	// Iterate over the points in the multipoint and test each one.
 	MultiPointOnSphere::const_iterator multipoint_iter = multipoint_to_be_partitioned->begin();
@@ -486,12 +504,12 @@ GPlatesMaths::PolygonIntersections::partition_multipoint(
 
 	if (!partitioned_points_inside.empty())
 	{
-		partitioned_multipoint_inside = GPlatesMaths::MultiPointOnSphere::create_on_heap(
+		partitioned_multipoint_inside = MultiPointOnSphere::create_on_heap(
 				partitioned_points_inside.begin(), partitioned_points_inside.end());
 	}
 	if (!partitioned_points_outside.empty())
 	{
-		partitioned_multipoint_outside = GPlatesMaths::MultiPointOnSphere::create_on_heap(
+		partitioned_multipoint_outside = MultiPointOnSphere::create_on_heap(
 				partitioned_points_outside.begin(), partitioned_points_outside.end());
 	}
 
@@ -519,8 +537,8 @@ GPlatesMaths::PolygonIntersections::partition_multipoint(
 
 GPlatesMaths::PolygonIntersections::Result
 GPlatesMaths::PolygonIntersections::partition_polyline_or_polygon_fully_inside_or_outside(
-		const GPlatesMaths::PointOnSphere &arbitrary_point_on_geometry1,
-		const GPlatesMaths::PointOnSphere &arbitrary_point_on_geometry2) const
+		const PointOnSphere &arbitrary_point_on_geometry1,
+		const PointOnSphere &arbitrary_point_on_geometry2) const
 {
 	// Choose any point in the polygon and see if it's inside the
 	// partitioning polygon. Any point will do - we choose the start point.
@@ -545,7 +563,7 @@ GPlatesMaths::PolygonIntersections::partition_polyline_or_polygon_fully_inside_o
 
 void
 GPlatesMaths::PolygonIntersections::partition_intersecting_geometry(
-		const GPlatesMaths::PolylineIntersections::Graph &partitioned_polylines_graph,
+		const PolylineIntersections::Graph &partitioned_polylines_graph,
 		partitioned_polyline_seq_type &partitioned_polylines_inside,
 		partitioned_polyline_seq_type &partitioned_polylines_outside) const
 {
@@ -567,71 +585,62 @@ GPlatesMaths::PolygonIntersections::partition_intersecting_geometry(
 		{
 			// If the partitioned polyline overlaps with the partitioning polygon
 			// then we classify that as inside the polygon.
-			inside_partitioned_polyline_merger.add_inside_polyline(
-					partitioned_poly->polyline);
+			inside_partitioned_polyline_merger.add_inside_polyline(partitioned_poly->polyline);
 			continue;
 		}
 
-		const GreatCircleArc *polyline_gca = NULL;
-		bool reverse_inside_outside = false;
+		// Whether the partitioned polyline if previous to the intersection point.
+		//
+		// By default (when has a previous intersection) the partitioned polyline is
+		// the next polyline after the intersection (which means it's not the previous).
+		bool is_prev_partitioned_polyline = false;
 
-		const PolylineIntersections::Graph::Intersection *intersection =
-				partitioned_poly->prev_intersection;
-		if (intersection)
+		const PolylineIntersections::Graph::Intersection *intersection = partitioned_poly->prev_intersection;
+		// If no previous intersection...
+		if (intersection == NULL)
 		{
-			// Get the first GCA of the current partitioned polyline - the GCA
-			// that touches the intersection point.
-			polyline_gca = &*partitioned_poly->polyline->begin();
-		}
-		else // no previous intersection...
-		{
-			// We must be the first polyline of the sequence and
-			// it doesn't start at a T-junction.
+			// We must be the first polyline of the sequence and it doesn't start at a T-junction.
 			// Use the intersection at the end of the partitioned polyline instead.
 			intersection = partitioned_poly->next_intersection;
 
-			// It's not possible for a partitioned polyline to
-			// have no intersections at either end.
+			// It's not possible for a partitioned polyline to have no intersections at either end.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					intersection != NULL, GPLATES_ASSERTION_SOURCE);
+					intersection != NULL,
+					GPLATES_ASSERTION_SOURCE);
 
-			// Get the last GCA of the current partitioned polyline - the GCA
-			// that touches the intersection point.
-			polyline_gca = &*--partitioned_poly->polyline->end();
-
-			// The end of 'polyline_gca' is now touching the intersection point
-			// instead of the beginning touching it - so we have to reverse the
-			// interpretation of the inside/outside test.
-			reverse_inside_outside = true;
+			// The end of the partitioned polyline is now touching the intersection point
+			// instead of the start touching it.
+			is_prev_partitioned_polyline = true;
 		}
 
 		// Get the partitioning polyline just prior to the intersection point.
 		// NOTE: The partitioning polygon is the first sequence in the graph.
-		const GreatCircleArc &polygon_prev_gca = intersection->prev_partitioned_polyline1
-				// Get the last GCA of the polyline (of the partitioning polygon) just
-				// prior to the intersection point - this GCA touches the intersection point.
-				? *--intersection->prev_partitioned_polyline1->polyline->end()
-				// There's no previous polyline in the partitioning polygon so the
-				// intersection point must coincide with the polygon's start point.
-				// Use the last GCA of the last polyline in the partitioning polygon instead.
-				: *--partitioned_polylines_graph.partitioned_polylines1.back()->polyline->end();
+		const PolylineIntersections::Graph::PartitionedPolyline &prev_partitioning_polygon =
+				intersection->prev_partitioned_polyline1
+						? *intersection->prev_partitioned_polyline1
+						// There's no previous polyline in the partitioning polygon so the
+						// intersection point must coincide with the polygon's start point.
+						// Use the last polyline in the partitioning polygon instead.
+						: *partitioned_polylines_graph.partitioned_polylines1.back();
 
 		// Get the partitioning polyline just after the intersection point.
 		// NOTE: The partitioning polygon is the first sequence in the graph.
-		const GreatCircleArc &polygon_next_gca = intersection->next_partitioned_polyline1
-				// Get the first GCA of the polyline (of the partitioning polygon) just
-				// after the intersection point - this GCA touches the intersection point.
-				? *intersection->next_partitioned_polyline1->polyline->begin()
-				// There's no next polyline in the partitioning polygon so the
-				// intersection point must coincide with the polygon's end point.
-				// Use the first GCA of the first polyline in the partitioning polygon instead.
-				: *partitioned_polylines_graph.partitioned_polylines1.front()->polyline->begin();
+		const PolylineIntersections::Graph::PartitionedPolyline &next_partitioning_polygon =
+				intersection->next_partitioned_polyline1
+						? *intersection->next_partitioned_polyline1
+						// There's no next polyline in the partitioning polygon so the
+						// intersection point must coincide with the polygon's end point.
+						// Use the first polyline in the partitioning polygon instead.
+						: *partitioned_polylines_graph.partitioned_polylines1.front();
 
-		// Determine if the current partitioned polyline is inside or outside
-		// by seeing if its chosen GCA is inside or outside.
-		const bool is_partitioned_poly_inside = reverse_inside_outside ^
-				is_gca_inside_partitioning_polygon(
-						*polyline_gca, polygon_prev_gca, polygon_next_gca);
+		// Determine if the current partitioned polyline is inside or outside the partitioning polygon.
+		const bool is_partitioned_poly_inside =
+				is_partitioned_polyline_inside_partitioning_polygon(
+						intersection->intersection_point,
+						*prev_partitioning_polygon.polyline,
+						*next_partitioning_polygon.polyline,
+						*partitioned_poly->polyline,
+						is_prev_partitioned_polyline);
 
 		if (is_partitioned_poly_inside)
 		{
@@ -658,18 +667,46 @@ GPlatesMaths::PolygonIntersections::partition_intersecting_geometry(
 
 
 bool
-GPlatesMaths::PolygonIntersections::is_gca_inside_partitioning_polygon(
-		const GreatCircleArc &polyline_gca,
-		const GreatCircleArc &polygon_prev_gca,
-		const GreatCircleArc &polygon_next_gca) const
+GPlatesMaths::PolygonIntersections::is_partitioned_polyline_inside_partitioning_polygon(
+		const PointOnSphere &intersection_point,
+		const PolylineOnSphere &prev_partitioning_polygon,
+		const PolylineOnSphere &next_partitioning_polygon,
+		const PolylineOnSphere &partitioned_polyline,
+		bool is_prev_partitioned_polyline) const
 {
-	// It is assumed that 'polygon_prev_gca's end point equals
-	// 'polygon_next_gca's start point.
+	// Get first (or last) non-zero length GCA of the partitioning and partitioned polylines.
+
+	boost::optional<const GPlatesMaths::GreatCircleArc &> prev_partitioning_polygon_gca =
+			get_first_or_last_non_zero_great_circle_arc(
+					prev_partitioning_polygon,
+					false/*get_first*/);
+
+	boost::optional<const GPlatesMaths::GreatCircleArc &> next_partitioning_polygon_gca =
+			get_first_or_last_non_zero_great_circle_arc(
+					next_partitioning_polygon,
+					true/*get_first*/);
+
+	boost::optional<const GPlatesMaths::GreatCircleArc &> partitioned_polyline_gca =
+			get_first_or_last_non_zero_great_circle_arc(
+					partitioned_polyline,
+					!is_prev_partitioned_polyline/*get_first*/);
+
+	// If any polyline is coincident with a point then consider the partitioned polyline inside.
+	// It shouldn't really happen anyway.
+	if (!prev_partitioning_polygon_gca ||
+		!next_partitioning_polygon_gca ||
+		!partitioned_polyline_gca)
+	{
+		return true;
+	}
+
+	// It is assumed that 'prev_partitioning_polygon's end point equals
+	// 'next_partitioning_polygon's start point.
 
 	/*
-	 * When testing to see if 'polyline_gca' is to the left or right of the
+	 * When testing to see if 'partitioned_polyline' is to the left or right of the
 	 * two GCAs from the partitioning polygon the test needs to be done
-	 * to see if 'polyline_gca' falls in the acute angle region.
+	 * to see if 'partitioned_polyline' falls in the acute angle region.
 	 * For example,
 	 *
 	 *    ^               ^
@@ -685,7 +722,9 @@ GPlatesMaths::PolygonIntersections::is_gca_inside_partitioning_polygon(
 	 * which are supposed to be part of the right region.
 	 */
 	if (do_adjacent_great_circle_arcs_bend_left(
-			polygon_prev_gca, polygon_next_gca))
+			prev_partitioning_polygon_gca.get(),
+			next_partitioning_polygon_gca.get(),
+			intersection_point))
 	{
 		// If the adjacent arcs on the partitioning polygon bend to the left then
 		// left is the narrowest region.
@@ -693,10 +732,19 @@ GPlatesMaths::PolygonIntersections::is_gca_inside_partitioning_polygon(
 		// are counter-clockwise and outside if they are clockwise.
 
 		// See if the polyline GCA is in the narrow region to the left.
-		if (do_adjacent_great_circle_arcs_bend_left(
-				polygon_prev_gca, polyline_gca) &&
-			do_adjacent_great_circle_arcs_bend_left(
-				polygon_next_gca, polyline_gca))
+		//
+		// If the partitioned polyline is prior to (previous) the intersection point so
+		// we have to reverse the interpretation of the left/right test.
+		if ((is_prev_partitioned_polyline ^
+				do_adjacent_great_circle_arcs_bend_left(
+						prev_partitioning_polygon_gca.get(),
+						partitioned_polyline_gca.get(),
+						intersection_point)) &&
+			(is_prev_partitioned_polyline ^
+				do_adjacent_great_circle_arcs_bend_left(
+						next_partitioning_polygon_gca.get(),
+						partitioned_polyline_gca.get(),
+						intersection_point)))
 		{
 			// The polyline GCA is in the narrow region to the left.
 			return d_partitioning_polygon_orientation == PolygonOrientation::COUNTERCLOCKWISE;
@@ -715,10 +763,19 @@ GPlatesMaths::PolygonIntersections::is_gca_inside_partitioning_polygon(
 	// See if the polyline GCA is in the narrow region to the right.
 	// We do this by testing that the polyline GCA is not to the left
 	// of either GCA of the partitioning polygon.
-	if (!do_adjacent_great_circle_arcs_bend_left(
-			polygon_prev_gca, polyline_gca) &&
-		!do_adjacent_great_circle_arcs_bend_left(
-			polygon_next_gca, polyline_gca))
+	//
+	// If the partitioned polyline is prior to (previous) the intersection point so
+	// we have to reverse the interpretation of the left/right test.
+	if ((is_prev_partitioned_polyline ^
+			!do_adjacent_great_circle_arcs_bend_left(
+					prev_partitioning_polygon_gca.get(),
+					partitioned_polyline_gca.get(),
+					intersection_point)) &&
+		(is_prev_partitioned_polyline ^
+			!do_adjacent_great_circle_arcs_bend_left(
+					next_partitioning_polygon_gca.get(),
+					partitioned_polyline_gca.get(),
+					intersection_point)))
 	{
 		// The polyline GCA is in the narrow region to the right.
 		return d_partitioning_polygon_orientation == PolygonOrientation::CLOCKWISE;

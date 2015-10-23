@@ -45,6 +45,8 @@ set(srcs
     GmlTimeInstant.h
     GmlTimePeriod.cc
     GmlTimePeriod.h
+    GpmlAge.cc
+    GpmlAge.h
     GpmlArray.cc
     GpmlArray.h
     GpmlConstantValue.cc
@@ -124,6 +126,8 @@ set(srcs
     SpatialReferenceSystem.h
     StructuralType.h
     TextContent.h
+    TimescaleBand.h
+    TimescaleName.h
     UninterpretedPropertyValue.cc
     UninterpretedPropertyValue.h
     ValueObjectType.h

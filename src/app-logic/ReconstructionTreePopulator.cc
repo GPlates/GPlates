@@ -129,14 +129,6 @@ namespace
 
 		virtual
 		void
-		visit_gpml_total_reconstruction_pole(
-				gpml_total_reconstruction_pole_type &trs)
-		{
-			d_has_finite_rotation = true;
-		}
-
-		virtual
-		void
 		visit_gpml_plate_id(
 				const GPlatesPropertyValues::GpmlPlateId &gpml_plate_id)
 		{

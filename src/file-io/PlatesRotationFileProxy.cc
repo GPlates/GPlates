@@ -840,7 +840,7 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_time_sample(
 // 	TemplateTypeParameterType value_type = 
 // 		TemplateTypeParameterType::create_gpml("FiniteRotation");
 	StructuralType value_type = 
-		StructuralType::create_gpml("FiniteRotation");
+			StructuralType::create_gpml("TotalReconstructionPole");
 
 	if (data.disabled) {
 		return GpmlTimeSample::create(trp, valid_time, description, value_type, true);
@@ -1040,19 +1040,6 @@ GPlatesFileIO::GrotWriterWithoutCfg::visit_gpml_key_value_dictionary(
 	const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary)
 {
 
-}
-
-
-void
-GPlatesFileIO::GrotWriterWithoutCfg::visit_gpml_total_reconstruction_pole(
-	const GPlatesPropertyValues::GpmlTotalReconstructionPole &trs)
-{
-	const std::vector<boost::shared_ptr<GPlatesModel::Metadata> >& metadata = trs.get_metadata();
-	for(std::size_t i=0; i<metadata.size(); i++)
-	{
-		d_accum.current_pole().metadata.push_back(metadata[i]);
-	}
-	visit_gpml_finite_rotation(trs);
 }
 
 

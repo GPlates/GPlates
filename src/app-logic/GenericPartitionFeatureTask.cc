@@ -39,7 +39,9 @@
 GPlatesAppLogic::GenericPartitionFeatureTask::GenericPartitionFeatureTask(
 		const ReconstructionTree &reconstruction_tree,
 		GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType assign_plate_id_method,
-		const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign) :
+		const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
+		bool verify_information_model) :
+	d_verify_information_model(verify_information_model),
 	d_reconstruction_tree(reconstruction_tree),
 	d_assign_plate_id_method(assign_plate_id_method),
 	d_feature_property_types_to_assign(feature_property_types_to_assign)
@@ -94,7 +96,8 @@ GPlatesAppLogic::GenericPartitionFeatureTask::partition_feature(
 	boost::shared_ptr<PartitionFeatureUtils::PropertyValueAssigner> property_value_assigner(
 			new PartitionFeatureUtils::GenericFeaturePropertyAssigner(
 					feature_ref,
-					d_feature_property_types_to_assign));
+					d_feature_property_types_to_assign,
+					d_verify_information_model));
 
 	// Used to create/clone features for extra partitioned geometries that require
 	// different plate ids.

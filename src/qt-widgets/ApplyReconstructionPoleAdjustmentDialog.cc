@@ -401,8 +401,7 @@ GPlatesQtWidgets::AdjustmentApplicator::apply_adjustment()
 
 	GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter inserter(
 			d_pole_time,
-			*d_adjustment_rel_fixed,
-			d_dialog_ptr->get_comment_line());
+			*d_adjustment_rel_fixed);
 	inserter.visit_feature(chosen_pole_seq);
 
 	// We release the model notification guard which will cause a reconstruction to occur

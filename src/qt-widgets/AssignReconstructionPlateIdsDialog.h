@@ -311,11 +311,22 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType d_assign_plate_id_method;
 
-		//! Whether to copy plate ids from the partitioning polygons or not.
-		bool d_assign_plate_ids;
+		//! Whether to copy reconstruction plate ids from the partitioning polygons or not.
+		bool d_assign_reconstruction_plate_ids;
+		//! Whether to copy conjugate plate ids from the partitioning polygons or not.
+		bool d_assign_conjugate_plate_ids;
 
-		//! Whether to copy time periods from the partitioning polygons or not.
-		bool d_assign_time_periods;
+		//! Whether to copy times of appearance from the partitioning polygons or not.
+		bool d_assign_time_of_appearance;
+		//! Whether to copy times of disappearance from the partitioning polygons or not.
+		bool d_assign_time_of_disappearance;
+
+		/**
+		 * Whether to verify information model before assigning feature properties.
+		 *
+		 * If verifying and a property fails to verify for a feature type then that property is not assigned.
+		 */
+		bool d_verify_information_model;
 
 
 		void

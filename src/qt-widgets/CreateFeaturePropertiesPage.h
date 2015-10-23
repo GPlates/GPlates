@@ -85,7 +85,8 @@ namespace GPlatesQtWidgets
 		initialise(
 				const GPlatesModel::FeatureType &feature_type,
 				const property_seq_type &feature_properties,
-				const property_name_seq_type &reserved_feature_properties = property_name_seq_type());
+				const property_name_seq_type &reserved_feature_properties = property_name_seq_type(),
+		        const QString &adjective = "");
 
 
 		/**

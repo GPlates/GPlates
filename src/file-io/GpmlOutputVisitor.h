@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2010, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -185,6 +185,11 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gpml_age(
+				const GPlatesPropertyValues::GpmlAge &gpml_age);
+
+		virtual
+		void
 		visit_gpml_array(
 				const GPlatesPropertyValues::GpmlArray &gpml_array);
 
@@ -211,7 +216,7 @@ namespace GPlatesFileIO
 		virtual
 		void
 		visit_gpml_total_reconstruction_pole(
-				const GPlatesPropertyValues::GpmlTotalReconstructionPole &pole);
+				const GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole);
 
 		virtual
 		void

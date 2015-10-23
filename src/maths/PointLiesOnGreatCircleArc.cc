@@ -26,6 +26,9 @@
  */
 
 #include "PointLiesOnGreatCircleArc.h"
+
+#include "Real.h"
+#include "UnitVector3D.h"
 #include "Vector3D.h"
 
 
@@ -35,52 +38,35 @@ GPlatesMaths::PointLiesOnGreatCircleArc::operator()(
 {
 	// How we determine whether the point lies on the arc, will depend upon whether the arc has
 	// zero length (ie, is pointlike) or not.
-	if (d_arc_normal) {
-		// The arc has non-zero length.
-
-		const UnitVector3D &start_uv = d_arc_start.position_vector();
-		const UnitVector3D &test_uv = test_point.position_vector();
-
-		/*
-		 * The normal to the plane which contains the start-point of the arc
-		 * and the test-point.
-		 */
-		Vector3D test_normal = cross(start_uv, test_uv);
-
-		/*
-		 * The dot-product of the unit-vectors of the start-point of the arc
-		 * and the test-point.  If this value is greater than that of
-		 * 'd_arc_dot', the test-point is closer to the start-point than the
-		 * end-point is.
-		 */
-		real_t test_dot = dot(start_uv, test_uv);
-
-		/*
-		 * If the function 'parallel' evaluates to true, the test-point must
-		 * lie on the same great-circle as the arc; in fact, it must lie on the
-		 * closed half-circle which begins at the start-point of the arc and
-		 * passes through the end-point of the arc (or else the normals would
-		 * be antiparallel rather than parallel).
-		 *
-		 * This is a *closed* half-circle (ie, one which includes both of its
-		 * endpoints) because 'parallel' defines zero vectors as parallel to
-		 * everything.  Obviously the unit-vector 'd_arc_normal' cannot be a
-		 * zero-vector, but the vector 'test_normal' may be; if it is, then the
-		 * test-point must be either coincident-with or antipodal-to the
-		 * start-point.  Coincident with the start-point is OK, as this means
-		 * that the test-point lies on the arc; antipodal to the start-point is
-		 * not OK, as no arc may span an angle of PI radians (and more than PI
-		 * radians is impossible).
-		 *
-		 * If, in addition to 'parallel' evaluating to true, 'test_dot' is
-		 * greater-than or equal-to 'd_arc_dot', the test-point *must* lie on
-		 * the arc, as it is both on the same closed half-circle (beginning at
-		 * the start-point) as the arc, and at least as close to the
-		 * start-point as the end-point is.
-		 */
-		return (parallel(*d_arc_normal, test_normal) && (test_dot >= d_arc_dot));
-	} else {
+	if (!d_arc_normal)
+	{
 		// The arc has zero length, and hence, is pointlike.
 		return (points_are_coincident(d_arc_start, test_point));
 	}
+
+	// The arc has non-zero length.
+
+	const UnitVector3D &test_point_vector = test_point.position_vector();
+	const UnitVector3D &arc_start_uv = d_arc_start.position_vector();
+	const UnitVector3D &arc_end_uv = d_arc_end.position_vector();
+
+	// See if the point lies within the lune of the great circle arc - the lune is the surface
+	// of the globe in the wedge region of space formed by two planes (great circles) that
+	// touch the arc's start and end points and are perpendicular to the arc.
+	//
+	// This happens if its endpoints are on opposite sides of the dividing plane *and*
+	// the edge start point is on the positive side of the dividing plane.
+	const Vector3D test_point_cross_arc_normal = cross(test_point_vector, d_arc_normal.get());
+	if (dot(test_point_cross_arc_normal, arc_start_uv).dval() > 0 &&
+		dot(test_point_cross_arc_normal, arc_end_uv).dval() < 0)
+	{
+		// The test point lies inside the arc's lune so it also lies on the arc if it's perpendicular
+		// to the arc's normal.
+		return perpendicular(test_point_vector, d_arc_normal.get());
+	}
+
+	// The test point lies outside the arc's lune so it cannot lie between the arc's end points.
+	// So we just need to test closeness to the arc's end points.
+	return points_are_coincident(d_arc_start, test_point) ||
+			points_are_coincident(d_arc_end, test_point);
 }

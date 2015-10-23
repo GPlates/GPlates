@@ -33,6 +33,7 @@
 #include <utility>
 #include <QtXml/QXmlStreamWriter>
 #include <QTextStream>
+#include "model/StringContentTypeGenerator.h"
 #include "model/QualifiedXmlName.h"
 #include "utils/XmlNamespaces.h"
 #include "utils/UnicodeStringUtils.h"
@@ -186,6 +187,14 @@ namespace GPlatesFileIO
 			writeText(GPlatesUtils::make_qstring_from_icu_string(text));
 		}
 
+		
+		template <typename T>
+		void
+		writeText(
+				const GPlatesModel::StringContentTypeGenerator<T> &text) {
+			writeText(GPlatesUtils::make_qstring_from_icu_string(text.get()));
+		}
+		
 
 		void
 		writeDecimal(

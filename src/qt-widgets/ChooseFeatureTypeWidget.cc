@@ -109,9 +109,12 @@ GPlatesQtWidgets::ChooseFeatureTypeWidget::populate(
 			continue;
 		}
 
+		// We do not need to build a fully-qualified XML name for displaying the feature types.
+		// All of them are going to be gpml:SomethingSomething anyway; displaying them without
+		// the namespace prefix allows QListWidget's built-in basic find-as-you-type to work
+		// decently as it only searches based on the start of the string.
 		d_selection_widget->add_item<DefaultConstructibleFeatureType>(
-				convert_qualified_xml_name_to_qstring(feature_type),
-				feature_type);
+				feature_type.get_name().qstring(), feature_type);
 
 		// Set the newly selected feature type if it matches previous selection (if there was any) and
 		// the previous selection exists in the new list (ie, if we get here).

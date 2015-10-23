@@ -238,7 +238,8 @@ void
 GPlatesQtWidgets::CreateFeaturePropertiesPage::initialise(
 		const GPlatesModel::FeatureType &feature_type,
 		const property_seq_type &feature_properties,
-		const property_name_seq_type &reserved_feature_properties)
+		const property_name_seq_type &reserved_feature_properties,
+        const QString &adjective)
 {
 	d_feature_type = feature_type;
 	d_reserved_feature_properties = reserved_feature_properties;
@@ -248,11 +249,13 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::initialise(
 	//
 
 	available_properties_label->setText(
-			tr("Properties available to add to the '%1' feature:").arg(
-					convert_qualified_xml_name_to_qstring(feature_type)));
+			tr("Properties available to add to the %1'%2' feature:")
+					.arg(adjective)
+					.arg(convert_qualified_xml_name_to_qstring(feature_type)) );
 	existing_properties_label->setText(
-			tr("Properties added to the '%1' feature:").arg(
-					convert_qualified_xml_name_to_qstring(feature_type)));
+			tr("Properties added to the %1'%2' feature:")
+					.arg(adjective)
+					.arg(convert_qualified_xml_name_to_qstring(feature_type)) );
 
 	// First initialise the existing properties table using the feature properties.
 	initialise_existing_properties_table(feature_properties);
