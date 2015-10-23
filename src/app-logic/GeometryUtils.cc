@@ -544,6 +544,65 @@ namespace
 
 
 	/**
+	 * Uses the points in a derived @a GeometryOnSphere object to create a polyline.
+	 */
+	class ConvertGeometryToPolyline :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+		const boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &
+		get_polyline() const
+		{
+			return d_polyline;
+		}
+
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			// Cannot form a polyline from a point.
+		}
+
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			if (multi_point_on_sphere->number_of_points() >= 2)
+			{
+				d_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(
+						multi_point_on_sphere->begin(),
+						multi_point_on_sphere->end());
+			}
+		}
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			// A polygon has at least three points - enough for a polyline.
+			d_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(
+					polygon_on_sphere->vertex_begin(),
+					polygon_on_sphere->vertex_end());
+		}
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			d_polyline = polyline_on_sphere;
+		}
+
+	private:
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> d_polyline;
+	};
+
+
+	/**
 	 * Uses the points in a derived @a GeometryOnSphere object to create a polygon.
 	 */
 	class ConvertGeometryToPolygon :
@@ -921,6 +980,47 @@ GPlatesAppLogic::GeometryUtils::convert_geometry_to_multi_point(
 }
 
 
+boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
+GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	ConvertGeometryToPolyline visitor;
+
+	geometry_on_sphere.accept_visitor(visitor);
+
+	return visitor.get_polyline();
+}
+
+
+GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::GeometryUtils::force_convert_geometry_to_polyline(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline_on_sphere =
+			convert_geometry_to_polyline(geometry_on_sphere);
+	if (polyline_on_sphere)
+	{
+		return polyline_on_sphere.get();
+	}
+
+	// There were less than two points.
+	// 
+	// Retrieve the point.
+	std::vector<GPlatesMaths::PointOnSphere> geometry_points;
+	get_geometry_points(geometry_on_sphere, geometry_points);
+
+	// There should be a single point.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!geometry_points.empty(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Duplicate the last point so that we have two points.
+	geometry_points.push_back(geometry_points.back());
+
+	return GPlatesMaths::PolylineOnSphere::create_on_heap(geometry_points);
+}
+
+
 boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
 GPlatesAppLogic::GeometryUtils::convert_geometry_to_polygon(
 		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
@@ -930,6 +1030,38 @@ GPlatesAppLogic::GeometryUtils::convert_geometry_to_polygon(
 	geometry_on_sphere.accept_visitor(visitor);
 
 	return visitor.get_polygon();
+}
+
+
+GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::GeometryUtils::force_convert_geometry_to_polygon(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon_on_sphere =
+			convert_geometry_to_polygon(geometry_on_sphere);
+	if (polygon_on_sphere)
+	{
+		return polygon_on_sphere.get();
+	}
+
+	// There were less than three points.
+	// 
+	// Retrieve the points.
+	std::vector<GPlatesMaths::PointOnSphere> geometry_points;
+	get_geometry_points(geometry_on_sphere, geometry_points);
+
+	// There should be one or two points.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!geometry_points.empty(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Duplicate the last point until we have three points.
+	while (geometry_points.size() < 3)
+	{
+		geometry_points.push_back(geometry_points.back());
+	}
+
+	return GPlatesMaths::PolygonOnSphere::create_on_heap(geometry_points);
 }
 
 

@@ -147,6 +147,30 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Converts the specified geometry to a @a PolylineOnSphere if it is a polygon or multipoint
+		 * (or already a polyline) by treating the geometry points as a linear list of polyline points.
+		 *
+		 * Returns boost::none if the specified geometry has less than two points
+		 * (ie, not enough to form a polyline) or the specified geometry is a point geometry.
+		 */
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
+		convert_geometry_to_polyline(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
+
+		/**
+		 * Same as @a convert_geometry_to_polyline except, if geometry has less than two points then,
+		 * duplicates last point.
+		 *
+		 * This turns a point (or multi-point containing a single point) into a polyline with
+		 * two identical vertices.
+		 */
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+		force_convert_geometry_to_polyline(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
+
+		/**
 		 * Converts the specified geometry to a @a PolygonOnSphere if it is a polyline or multipoint
 		 * (or already a polygon) by treating the geometry points as a linear list of polygon points.
 		 *
@@ -155,6 +179,19 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
 		convert_geometry_to_polygon(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
+
+		/**
+		 * Same as @a convert_geometry_to_polygon except, if geometry has less than three points then,
+		 * duplicates last point until has three points.
+		 *
+		 * This turns a point (or multi-point containing a single point) into a polygon with three
+		 * identical vertices. And turns a polyline (or multi-point) with two points into a polygon
+		 * that has no internal area (looks like a single line segment).
+		 */
+		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+		force_convert_geometry_to_polygon(
 				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
 
 
