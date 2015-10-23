@@ -925,6 +925,7 @@ export_point_on_sphere()
 						&GPlatesApi::point_on_sphere_create_xyz,
 						bp::default_call_policies(),
 						(bp::arg("x"), bp::arg("y"), bp::arg("z"), bp::arg("normalise") = false)),
+				// Specific overload signature...
 				"__init__(x, y, z, [normalise=False])\n"
 				"  Create a *PointOnSphere* instance from a 3D cartesian coordinate consisting of "
 				"floating-point coordinates *x*, *y* and *z*.\n"
@@ -1418,6 +1419,8 @@ namespace GPlatesApi
 				geometry_points.push_back(geometry_points.back());
 			}
 
+			// Note that this raises an exception (converted to Python) if 'allow_one_point'
+			// is false - because there is only one point.
 			polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(geometry_points);
 		}
 
@@ -2518,6 +2521,8 @@ namespace GPlatesApi
 				}
 			}
 
+			// Note that this raises an exception (converted to Python) if 'allow_one_or_two_points'
+			// is false - because there is only one or two points.
 			polygon = GPlatesMaths::PolygonOnSphere::create_on_heap(geometry_points);
 		}
 
@@ -2906,7 +2911,9 @@ export_polygon_on_sphere()
 				":meth:`get_orientation` is more efficient than comparing the sign of the area.\n"
 				"\n"
 				"  To convert to *signed* area on the Earth's surface, multiply the result by the "
-				"Earth radius squared (see :class:`Earth`).\n")
+				"Earth radius squared (see :class:`Earth`).\n"
+				"\n"
+				"  .. seealso:: :meth:`get_area`\n")
 		.def("get_orientation",
 				&GPlatesMaths::PolygonOnSphere::get_orientation,
 				"get_orientation()\n"
@@ -2926,6 +2933,7 @@ export_polygon_on_sphere()
 				"      print 'Orientation is counter-clockwise'\n")
 		.def("is_point_in_polygon",
 				&GPlatesApi::polygon_on_sphere_is_point_in_polygon,
+				(bp::arg("point")),
 				"is_point_in_polygon(point)\n"
 				"  Determines whether the specified point lies within the interior of this polygon.\n"
 				"\n"
