@@ -40,6 +40,7 @@
 
 #include "model/FeatureHandle.h"
 #include "model/PropertyValue.h"
+#include "model/TopLevelProperty.h"
 
 
 namespace GPlatesAppLogic
@@ -234,6 +235,21 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns the geometry contained within the specified property.
+		 *
+		 * Returns boost::none if the property value is not geometric.
+		 *
+		 * @a reconstruction_time only applies to time-dependent properties in which case the
+		 * value of the property at the specified time is returned.
+		 * It is effectively ignored for constant-valued properties.
+		 */
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		get_geometry_from_property(
+				const GPlatesModel::TopLevelProperty::non_null_ptr_type &property,
+				const double &reconstruction_time = 0);
+
+
+		/**
 		 * Returns the geometry contained within the specified property value.
 		 *
 		 * Returns boost::none if the property value is not geometric.
@@ -251,7 +267,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Visits a @a geometry and attempts to create a suitable geometric @a PropertyValue using it.
 		 */
-		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_geometry_property_value(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry);
 		

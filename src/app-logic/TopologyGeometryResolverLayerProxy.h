@@ -35,7 +35,8 @@
 #include "ReconstructHandle.h"
 #include "ReconstructionLayerProxy.h"
 #include "ReconstructLayerProxy.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalLine.h"
 
 #include "global/PointerTraits.h"
 
@@ -46,7 +47,7 @@ namespace GPlatesAppLogic
 {
 	/**
 	 * A layer proxy that resolves topological geometries (boundaries and lines) from feature collection(s)
-	 * containing topological bounary and line features.
+	 * containing topological boundary and line features.
 	 */
 	class TopologyGeometryResolverLayerProxy :
 			public LayerProxy
@@ -120,7 +121,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_boundaries(
-				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries)
+				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries)
 		{
 			return get_resolved_topological_boundaries(
 					resolved_topological_boundaries, 
@@ -133,13 +134,13 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_boundaries(
-				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries,
+				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 				const double &reconstruction_time);
 
 
 		/**
 		 * Returns the resolved topological lines (polylines), for the current reconstruction time,
-		 * by appending them to them to @a resolved_topological_geometries.
+		 * by appending them to them to @a resolved_topological_lines.
 		 *
 		 * NOTE: These are resolved topological geometries that are *polylines*.
 		 *
@@ -149,7 +150,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_lines(
-				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_lines)
+				std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines)
 		{
 			return get_resolved_topological_lines(
 					resolved_topological_lines, 
@@ -158,11 +159,11 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Returns the resolved topological lines (polylines), at the specified time, by appending
-		 * them to them to @a resolved_topological_geometries.
+		 * them to them to @a resolved_topological_lines.
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_lines(
-				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_lines,
+				std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines,
 				const double &reconstruction_time);
 
 
@@ -295,7 +296,7 @@ namespace GPlatesAppLogic
 			/**
 			 * The cached resolved topological boundaries.
 			 */
-			boost::optional< std::vector<resolved_topological_geometry_non_null_ptr_type> >
+			boost::optional< std::vector<resolved_topological_boundary_non_null_ptr_type> >
 					cached_resolved_topological_boundaries;
 
 			/**
@@ -326,7 +327,7 @@ namespace GPlatesAppLogic
 			/**
 			 * The cached resolved topological lines.
 			 */
-			boost::optional< std::vector<resolved_topological_geometry_non_null_ptr_type> >
+			boost::optional< std::vector<resolved_topological_line_non_null_ptr_type> >
 					cached_resolved_topological_lines;
 
 			/**

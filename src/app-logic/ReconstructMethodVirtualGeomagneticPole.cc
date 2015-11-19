@@ -101,9 +101,7 @@ namespace GPlatesAppLogic
 				ReconstructMethodFiniteRotation(
 						ReconstructMethod::VIRTUAL_GEOMAGNETIC_POLE,
 						// Create the identify rotation...
-						GPlatesMaths::FiniteRotation::create(
-								GPlatesMaths::UnitQuaternion3D::create_identity_rotation(),
-								boost::none))
+						GPlatesMaths::FiniteRotation::create_identity_rotation())
 			{  }
 
 			virtual

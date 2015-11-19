@@ -520,6 +520,7 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			publisher_deactivated(
+					const weak_reference_type &,
 					const deactivated_event_type &)
 			{
 				d_file_state.deactivated_feature_collection(d_file_handle);
@@ -528,6 +529,7 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			publisher_reactivated(
+					const weak_reference_type &,
 					const reactivated_event_type &)
 			{
 				d_file_state.reactivated_feature_collection(d_file_handle);
@@ -536,6 +538,7 @@ namespace GPlatesAppLogic
 			virtual
 			void
 			publisher_about_to_be_destroyed(
+					const weak_reference_type &,
 					const about_to_be_destroyed_event_type &)
 			{
 				d_file_state.destroying_feature_collection(d_file_handle);

@@ -35,7 +35,6 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "Reconstruction.h"
 #include "ReconstructionGeometryUtils.h"
-#include "ResolvedTopologicalGeometry.h"
 #include "TopologyInternalUtils.h"
 #include "TopologyUtils.h"
 
@@ -58,18 +57,49 @@
 #include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
 
+
 GPlatesAppLogic::TopologyGeometryResolver::TopologyGeometryResolver(
-		std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &resolved_topological_geometries,
-		const resolve_geometry_flags_type &resolve_geometry_flags,
+		std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 		ReconstructHandle::type reconstruct_handle,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+		const double &reconstruction_time,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles) :
-	d_resolved_topological_geometries(resolved_topological_geometries),
-	d_resolve_geometry_flags(resolve_geometry_flags),
+	d_resolved_topological_lines(resolved_topological_lines),
 	d_reconstruct_handle(reconstruct_handle),
 	d_reconstruction_tree_creator(reconstruction_tree_creator),
-	d_reconstruction_tree(reconstruction_tree),
+	d_reconstruction_tree(reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)),
+	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles)
+{  
+}
+
+
+GPlatesAppLogic::TopologyGeometryResolver::TopologyGeometryResolver(
+		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
+		ReconstructHandle::type reconstruct_handle,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &reconstruction_time,
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles) :
+	d_resolved_topological_boundaries(resolved_topological_boundaries),
+	d_reconstruct_handle(reconstruct_handle),
+	d_reconstruction_tree_creator(reconstruction_tree_creator),
+	d_reconstruction_tree(reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)),
+	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles)
+{  
+}
+
+
+GPlatesAppLogic::TopologyGeometryResolver::TopologyGeometryResolver(
+		std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
+		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
+		ReconstructHandle::type reconstruct_handle,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &reconstruction_time,
+		boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles) :
+	d_resolved_topological_lines(resolved_topological_lines),
+	d_resolved_topological_boundaries(resolved_topological_boundaries),
+	d_reconstruct_handle(reconstruct_handle),
+	d_reconstruction_tree_creator(reconstruction_tree_creator),
+	d_reconstruction_tree(reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time)),
 	d_topological_sections_reconstruct_handles(topological_sections_reconstruct_handles)
 {  
 }
@@ -154,7 +184,7 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_polygon(
 		GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon)
 {
 	// Only resolve topological boundaries (polygons) if we've been requested to.
-	if (!d_resolve_geometry_flags.test(RESOLVE_BOUNDARY))
+	if (!d_resolved_topological_boundaries)
 	{
 		return;
 	}
@@ -203,7 +233,7 @@ GPlatesAppLogic::TopologyGeometryResolver::visit_gpml_topological_line(
 		GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line)
 {
 	// Only resolve topological lines if we've been requested to.
-	if (!d_resolve_geometry_flags.test(RESOLVE_LINE))
+	if (!d_resolved_topological_lines)
 	{
 		return;
 	}
@@ -369,23 +399,17 @@ GPlatesAppLogic::TopologyGeometryResolver::record_topological_section_reconstruc
 
 	if (d_current_resolved_geometry_type == RESOLVE_BOUNDARY)
 	{
-		// See if topological section is a resolved topological geometry.
-		boost::optional<ResolvedTopologicalGeometry *> source_rtg =
+		// See if topological section is a resolved topological line.
+		boost::optional<ResolvedTopologicalLine *> source_rtl =
 				ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-						ResolvedTopologicalGeometry>(source_rg.get());
-		if (source_rtg)
+						ResolvedTopologicalLine>(source_rg.get());
+		if (source_rtl)
 		{
-			// See if resolved topological geometry is a line (not a boundary).
-			boost::optional<ResolvedTopologicalGeometry::resolved_topology_line_ptr_type> resolved_line_geometry =
-					source_rtg.get()->resolved_topology_line();
-			if (resolved_line_geometry)
-			{
-				// Store the feature id and reconstruction geometry.
-				return ResolvedGeometry::Section(
-						source_feature_id,
-						source_rtg.get(),
-						resolved_line_geometry.get());
-			}
+			// Store the feature id and reconstruction geometry.
+			return ResolvedGeometry::Section(
+					source_feature_id,
+					source_rtl.get(),
+					source_rtl.get()->resolved_topology_line());
 		}
 	}
 
@@ -626,7 +650,7 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 	// The points to create the plate polygon with.
 	std::vector<GPlatesMaths::PointOnSphere> polygon_points;
 
-	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalGeometry.
+	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalBoundary.
 	std::vector<ResolvedTopologicalGeometrySubSegment> output_subsegments;
 
 	// Iterate over the sections of the resolved boundary and construct
@@ -685,7 +709,7 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 	// just return without creating a resolved topological geometry.
 	if (polygon_validity != GPlatesUtils::GeometryConstruction::VALID)
 	{
-		qDebug() << "ERROR: Failed to create a ResolvedTopologicalGeometry - probably has "
+		qDebug() << "ERROR: Failed to create a ResolvedTopologicalBoundary - probably has "
 				"insufficient points for a polygon.";
 		qDebug() << "Skipping creation for topological polygon feature_id=";
 		qDebug() << GPlatesUtils::make_qstring_from_icu_string(
@@ -693,23 +717,40 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_boundary(
 		return;
 	}
 
+	// Join adjacent deforming points that are spread along a deforming zone boundary.
+	// Note that even though we are creating a resolved topological *boundary*, and not a
+	// resolved topological deforming *network*, the boundary can still be deforming
+	// (via independentally moving points).
 	//
-	// Create the RTG for the plate polygon.
+	// This was meant to be a temporary hack to be removed when resolved *line* topologies were
+	// implemented. However, unfortunately it seems we need to keep this hack in place for any
+	// old data files that use the old method.
+	std::vector<ResolvedTopologicalGeometrySubSegment> joined_output_subsegments;
+	TopologyInternalUtils::join_adjacent_deforming_points(
+			joined_output_subsegments,
+			output_subsegments,
+			d_reconstruction_tree->get_reconstruction_time());
+
 	//
-	ResolvedTopologicalGeometry::non_null_ptr_type rtb_ptr =
-		ResolvedTopologicalGeometry::create(
+	// Create the RTB for the plate polygon.
+	//
+	ResolvedTopologicalBoundary::non_null_ptr_type rtb_ptr =
+		ResolvedTopologicalBoundary::create(
 			d_reconstruction_tree,
 			d_reconstruction_tree_creator,
 			*plate_polygon,
 			*(current_top_level_propiter()->handle_weak_ref()),
 			*(current_top_level_propiter()),
-			output_subsegments.begin(),
-			output_subsegments.end(),
+			joined_output_subsegments.begin(),
+			joined_output_subsegments.end(),
 			d_reconstruction_params.get_recon_plate_id(),
 			d_reconstruction_params.get_time_of_appearance(),
 			d_reconstruct_handle/*identify where/when this RTG was resolved*/);
 
-	d_resolved_topological_geometries.push_back(rtb_ptr);
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_resolved_topological_boundaries,
+			GPLATES_ASSERTION_SOURCE);
+	d_resolved_topological_boundaries->push_back(rtb_ptr);
 }
 
 
@@ -721,7 +762,7 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_line()
 	// The points to create the resolved line with.
 	std::vector<GPlatesMaths::PointOnSphere> resolved_line_points;
 
-	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalGeometry.
+	// Sequence of subsegments of resolved topology used when creating ResolvedTopologicalLine.
 	std::vector<ResolvedTopologicalGeometrySubSegment> output_subsegments;
 
 	// Iterate over the sections of the resolved line and construct
@@ -779,7 +820,7 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_line()
 	// just return without creating a resolved topological geometry.
 	if (polyline_validity != GPlatesUtils::GeometryConstruction::VALID)
 	{
-		qDebug() << "ERROR: Failed to create a ResolvedTopologicalGeometry - probably has "
+		qDebug() << "ERROR: Failed to create a ResolvedTopologicalLine - probably has "
 				"insufficient points for a polyline.";
 		qDebug() << "Skipping creation for topological line feature_id=";
 		qDebug() << GPlatesUtils::make_qstring_from_icu_string(
@@ -788,10 +829,10 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_line()
 	}
 
 	//
-	// Create the RTG for the resolved line.
+	// Create the RTL for the resolved line.
 	//
-	ResolvedTopologicalGeometry::non_null_ptr_type rtl_ptr =
-		ResolvedTopologicalGeometry::create(
+	ResolvedTopologicalLine::non_null_ptr_type rtl_ptr =
+		ResolvedTopologicalLine::create(
 			d_reconstruction_tree,
 			d_reconstruction_tree_creator,
 			*resolved_line_geometry,
@@ -803,7 +844,10 @@ GPlatesAppLogic::TopologyGeometryResolver::create_resolved_topological_line()
 			d_reconstruction_params.get_time_of_appearance(),
 			d_reconstruct_handle/*identify where/when this RTG was resolved*/);
 
-	d_resolved_topological_geometries.push_back(rtl_ptr);
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_resolved_topological_lines,
+			GPLATES_ASSERTION_SOURCE);
+	d_resolved_topological_lines->push_back(rtl_ptr);
 }
 
 

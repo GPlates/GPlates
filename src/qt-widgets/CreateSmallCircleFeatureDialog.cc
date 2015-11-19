@@ -170,7 +170,7 @@ GPlatesQtWidgets::CreateSmallCircleFeatureDialog::handle_create()
 		// We want to merge model events across this scope so that only one model event
 		// is generated instead of many as we incrementally modify the feature below.
 		GPlatesModel::NotificationGuard model_notification_guard(
-				d_application_state_ptr->get_model_interface().access_model());
+				*d_application_state_ptr->get_model_interface().access_model());
 
 		// Get the FeatureCollection the user has selected.
 		std::pair<GPlatesAppLogic::FeatureCollectionFileState::file_reference, bool> collection_file_iter =

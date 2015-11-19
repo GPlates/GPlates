@@ -33,7 +33,7 @@
 const GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type
 GPlatesPropertyValues::GmlDataBlock::deep_clone() const
 {
-	GmlDataBlock::non_null_ptr_type dup = clone();
+	non_null_ptr_type dup = clone();
 
 	// Now we need to clear the tuple-list in the duplicate, before we push-back the cloned
 	// coordinate lists.
@@ -57,4 +57,3 @@ GPlatesPropertyValues::GmlDataBlock::print_to(
 	// FIXME: Implement properly when actually needed for debugging.
 	return os << "{ GmlDataBlock }";
 }
-

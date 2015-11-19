@@ -28,7 +28,7 @@
 #ifndef GPLATES_MATHS_UNABLETONORMALILEZEROVECTOREXCEPTION_H
 #define GPLATES_MATHS_UNABLETONORMALILEZEROVECTOREXCEPTION_H
 
-#include "global/PreconditionViolationError.h"
+#include "MathematicalException.h"
 #include "Vector3D.h"
 
 
@@ -37,37 +37,28 @@ namespace GPlatesMaths
 	/**
 	 * This is the exception thrown when an attempt is made to normalise a zero vector.
 	 */
-	class UnableToNormaliseZeroVectorException:
-			public GPlatesGlobal::PreconditionViolationError
+	class UnableToNormaliseZeroVectorException :
+			public MathematicalException
 	{
 	public:
+
+		explicit
 		UnableToNormaliseZeroVectorException(
-				const GPlatesUtils::CallStack::Trace &exception_source,
-				const Vector3D &v) :
-			GPlatesGlobal::PreconditionViolationError(exception_source),
-			d_vector(v)
+				const GPlatesUtils::CallStack::Trace &exception_source) :
+			MathematicalException(exception_source)
 		{  }
 
 		~UnableToNormaliseZeroVectorException() throw() { }
+
 	protected:
+
 		virtual
 		const char *
 		exception_name() const
 		{
-			// FIXME:  This function should really be defined in a .cc file.
 			return "UnableToNormaliseZeroVectorException";
 		}
 
-		virtual
-		void
-		write_message(
-				std::ostream &os) const
-		{
-			// FIXME:  This function should really be defined in a .cc file.
-		}
-
-	private:
-		Vector3D d_vector;
 	};
 }
 

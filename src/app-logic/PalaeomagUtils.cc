@@ -1,4 +1,4 @@
-/* $Id: ReconstructedVirtualGeomagneticPole.h 9024 2010-07-30 10:47:35Z elau $ */
+/* $Id: PalaeomagUtils.cc 9024 2010-07-30 10:47:35Z elau $ */
 
 
 /**

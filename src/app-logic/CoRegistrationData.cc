@@ -44,10 +44,3 @@ GPlatesAppLogic::CoRegistrationData::accept_visitor(
 {
 	visitor.visit(this->get_non_null_pointer());
 }
-
-
-
-
-
-
-

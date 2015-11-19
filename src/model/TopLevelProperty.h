@@ -169,22 +169,26 @@ namespace GPlatesModel
 			return d_property_name;
 		}
 
-		// @b FIXME:  Should this function be replaced with per-index const-access to
-		// elements of the XML attribute map?  (For consistency with the non-const
-		// overload...)
+		/**
+		 * Return the XML attributes.
+		 *
+		 * @b FIXME:  Should this function be replaced with per-index const-access to
+		 * elements of the XML attribute map?
+		 */
 		const xml_attributes_type &
 		xml_attributes() const
 		{
 			return d_xml_attributes;
 		}
 
-		// @b FIXME:  Should this function be replaced with per-index const-access to
-		// elements of the XML attribute map, as well as per-index assignment (setter) and
-		// removal operations?  This would ensure that revisioning is correctly handled...
-		xml_attributes_type &
-		xml_attributes()
+		/**
+		 * Set the XML attributes.
+		 */
+		void
+		set_xml_attributes(
+				const xml_attributes_type &xml_attributes)
 		{
-			return d_xml_attributes;
+			d_xml_attributes = xml_attributes;
 		}
 
 		/**

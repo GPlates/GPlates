@@ -32,8 +32,11 @@
 
 #include "GmlPoint.h"
 #include "GpmlMeasure.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "maths/FiniteRotation.h"
+
 #include "model/PropertyValue.h"
 
 
@@ -54,16 +57,15 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotation> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotation> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlFiniteRotation()
@@ -133,14 +135,13 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create_zero_rotation();
 
-		const GpmlFiniteRotation::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlFiniteRotation::non_null_ptr_type dup(new GpmlFiniteRotation(*this));
-			return dup;
+			return non_null_ptr_type(new GpmlFiniteRotation(*this));
 		}
 
-		const GpmlFiniteRotation::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const
 		{
 			// This class doesn't reference any mutable objects by pointer, so there's

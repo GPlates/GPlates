@@ -685,6 +685,19 @@ namespace
 		}
 
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		get_geometry_from_property(
+				const GPlatesModel::TopLevelProperty::non_null_ptr_type &property,
+				const double &reconstruction_time)
+		{
+			d_reconstruction_time = GPlatesPropertyValues::GeoTimeInstant(reconstruction_time);
+			d_geometry = boost::none;
+
+			property->accept_visitor(*this);
+
+			return d_geometry;
+		}
+
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 		get_geometry_from_property_value(
 				const GPlatesModel::PropertyValue &property_value,
 				const double &reconstruction_time)
@@ -782,7 +795,7 @@ namespace
 			public GPlatesMaths::ConstGeometryOnSphereVisitor
 	{
 	public:
-		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_geometry_property(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry)
 		{
@@ -790,7 +803,12 @@ namespace
 
 			geometry->accept_visitor(*this);
 
-			return d_geometry_property;
+			// We visit all the GeometryOnSphere derived types so we should have a geometry property.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					d_geometry_property,
+					GPLATES_ASSERTION_SOURCE);
+
+			return d_geometry_property.get();
 		}
 
 	protected:
@@ -1113,6 +1131,16 @@ GPlatesAppLogic::GeometryUtils::get_geometry_from_property(
 
 
 boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+GPlatesAppLogic::GeometryUtils::get_geometry_from_property(
+		const GPlatesModel::TopLevelProperty::non_null_ptr_type &property,
+		const double &reconstruction_time)
+{
+	GetGeometryFromPropertyVisitor visitor;
+	return visitor.get_geometry_from_property(property, reconstruction_time);
+}
+
+
+boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(
 		const GPlatesModel::PropertyValue &property_value,
 		const double &reconstruction_time)
@@ -1122,7 +1150,7 @@ GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(
 }
 
 
-boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry)
 {
@@ -1174,7 +1202,7 @@ GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
-	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(*feature_ref->model_ptr());
 
 	// Iterate over the feature properties of the feature.
 	GPlatesModel::FeatureHandle::iterator feature_properties_iter =

@@ -39,7 +39,6 @@
 #include "ReadErrorAccumulation.h"
 #include "RotationAttributesRegistry.h"
 #include "maths/FiniteRotation.h"
-#include "model/ModelInterface.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/Metadata.h"
 #include "property-values/GpmlIrregularSampling.h"
@@ -66,7 +65,7 @@ namespace GPlatesFileIO
 		{ }
 
 		RotationPoleData(
-				GPlatesMaths::FiniteRotation fr,
+				const GPlatesMaths::FiniteRotation &fr,
 				int m_plate_id,
 				int f_plate_id,
 				double time_,
@@ -626,7 +625,6 @@ namespace GPlatesFileIO
 		void
 		read_file(
 				File::Reference &file,
-				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors,
 				bool &contains_unsaved_changes);
 		
@@ -764,11 +762,9 @@ namespace GPlatesFileIO
 	public:
 		explicit
 		GrotWriterWithCfg(
-				File::Reference &file_ref,
-				const GPlatesModel::Gpgim& gpgim) : 
-			PlatesRotationFormatWriter(file_ref.get_file_info(), gpgim),
+				File::Reference &file_ref) : 
+			PlatesRotationFormatWriter(file_ref.get_file_info()),
 			d_file_ref(file_ref)
-			
 		{ }
 			
 		bool
@@ -810,9 +806,8 @@ namespace GPlatesFileIO
 	public:
 		explicit
 		GrotWriterWithoutCfg(
-				File::Reference &file_ref,
-				const GPlatesModel::Gpgim& gpgim) : 
-			PlatesRotationFormatWriter(file_ref.get_file_info(), gpgim),
+				File::Reference &file_ref) : 
+			PlatesRotationFormatWriter(file_ref.get_file_info()),
 			d_file_ref(file_ref),
 			d_mprs_id(0)
 		{ }
@@ -885,11 +880,10 @@ namespace GPlatesFileIO
 
 		boost::shared_ptr<GrotWriterWithCfg>
 		create_file_writer(
-				File::Reference &file_ref,
-				const GPlatesModel::Gpgim& gpgim)
+				File::Reference &file_ref)
 		{
 			//qWarning() << "TODO: create writer according to the file version.";
-			return boost::shared_ptr<GrotWriterWithCfg>(new GrotWriterWithCfg(file_ref, gpgim));
+			return boost::shared_ptr<GrotWriterWithCfg>(new GrotWriterWithCfg(file_ref));
 		}
 
 		void
@@ -982,6 +976,7 @@ namespace GPlatesFileIO
 
 			void
 			publisher_modified(
+					const weak_reference_type &reference,
 					const modified_event_type &event)
 			{
 				qDebug() << "TODO: feature collection modified."; 
@@ -989,6 +984,7 @@ namespace GPlatesFileIO
 
 			void
 			publisher_added(
+					const weak_reference_type &reference,
 					const added_event_type &event)
 			{
 				qDebug() << "TODO: new feature is added into this feature collection."; 
@@ -997,6 +993,7 @@ namespace GPlatesFileIO
 		
 			void
 			publisher_deactivated(
+					const weak_reference_type &reference,
 					const deactivated_event_type &event)
 			{
 				//qDebug() << "TODO: feature is deleted from this feature collection."; 

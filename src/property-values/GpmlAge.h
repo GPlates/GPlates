@@ -163,12 +163,10 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create();
 		
-
-		const GpmlAge::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlAge::non_null_ptr_type dup(new GpmlAge(*this));
-			return dup;
+			return non_null_ptr_type(new GpmlAge(*this));
 		}
 
 		const GpmlAge::non_null_ptr_type

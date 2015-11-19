@@ -31,6 +31,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/GeometryUtils.h"
+#include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometry.h"
@@ -38,6 +39,8 @@
 #include "app-logic/ReconstructionGeometryFinder.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionGeometryVisitor.h"
+#include "app-logic/ResolvedTopologicalGeometry.h"
+#include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/GeometryUtils.h"
 
 #include "feature-visitors/GeometryFinder.h"
@@ -77,6 +80,7 @@ namespace
 
 		void
 		publisher_deactivated(
+				const weak_reference_type &,
 				const deactivated_event_type &)
 		{
 			d_feature_focus.unset_focus();
@@ -106,7 +110,6 @@ namespace
 
 
 		// Derivations of ReconstructedFeatureGeometry default to its implementation...
-
 		virtual
 		void
 		visit(
@@ -120,6 +123,7 @@ namespace
 			}
 		}
 
+		// Derivations of ResolvedTopologicalGeometry default to its implementation...
 		virtual
 		void
 		visit(

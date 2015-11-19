@@ -37,7 +37,6 @@
 #include "ReconstructHandle.h"
 #include "ReconstructionLayerProxy.h"
 #include "ReconstructLayerProxy.h"
-#include "ResolvedTopologicalNetwork.h"
 #include "TopologyGeometryResolverLayerProxy.h"
 
 #include "global/PointerTraits.h"

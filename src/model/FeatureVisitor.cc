@@ -78,29 +78,3 @@ namespace GPlatesModel
 		visit_gpml_finite_rotation(gpml_total_reconstruction_pole);
 	}
 }
-
-
-void
-GPlatesModel::FeatureVisitorThatGuaranteesNotToModify::visit_feature_property(
-		const feature_iterator_type &feature_iterator)
-{
-	TopLevelProperty::non_null_ptr_to_const_type const_prop = *feature_iterator;
-
-	// HACK: This is the hack that this whole class is built upon (to avoid cloning properties).
-	// Cast away the const from the TopLevelProperty.
-	// The class derived from this class guarantees that they won't modify the property values.
-	// The derived class just wants non-const references.
-	// Note that for FeatureVisitor (which is non-const) the property value references are
-	// not valid after visitation because the cloned property is set in the model (which does
-	// another clone) and so the first clone (that the references reference) is destroyed
-	// making the references invalid.
-	// So why would the derived class want non-const reference if they're not going
-	// to modify the property values ?
-	// This is probably because they want a non-const reference to the feature being
-	// visited - presumably to pass to other objects that will later modify the feature
-	// (after this visitor has finished visiting all property values and returned).
-	TopLevelProperty *prop = const_cast<TopLevelProperty *>(const_prop.get());
-
-	prop->accept_visitor(*this);
-}
-

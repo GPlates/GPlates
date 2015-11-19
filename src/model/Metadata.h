@@ -563,7 +563,8 @@ namespace GPlatesModel
 			if(qualified_name(reader) == name)
 			{
 				(this->*func)(reader.readElementText());
-			}else
+			}
+			else
 			{
 				qWarning() << QString("Expecting xml element %2, but got %1.").arg(
 					qualified_name(reader)).arg(name);
@@ -575,13 +576,31 @@ namespace GPlatesModel
 	{
 	public:
 		typedef boost::shared_ptr<GPlatesModel::Metadata> shared_ptr_type;
-		typedef boost::shared_ptr<const GPlatesModel::Metadata> shared_const_ptr_type;
+		typedef boost::shared_ptr<const GPlatesModel::Metadata> shared_ptr_to_const_type;
+
 		Metadata(
-				const QString& name,
-				const QString& content):
+				const QString &name,
+				const QString &content) :
 			d_name(name),
 			d_content(content)
-			{ }
+		{ }
+
+		Metadata(
+				const Metadata &other) :
+			d_name(other.d_name),
+			d_content(other.d_content)
+		{ }
+
+		virtual
+		~Metadata()
+		{ }
+
+		virtual
+		const shared_ptr_type
+		clone() const
+		{
+			return shared_ptr_type(new Metadata(*this));
+		}
 
 		virtual
 		QString
@@ -611,9 +630,6 @@ namespace GPlatesModel
 			return d_content;
 		}
 
-		virtual
-		~Metadata(){ }
-
 		static const QString DISABLED_SEQUENCE_FLAG;
 		static const QString DELETE_MARK;
 
@@ -624,14 +640,27 @@ namespace GPlatesModel
 	typedef std::vector<Metadata::shared_ptr_type> MetadataContainer;
 
 	class PoleMetadata:
-		public Metadata
+			public Metadata
 	{
 	public:
+
 		PoleMetadata(
 				const QString& name,
-				const QString& content):
+				const QString& content) :
 			Metadata(name, content)
-			{ }
+		{ }
+
+		PoleMetadata(
+				const PoleMetadata &other) :
+			Metadata(other)
+		{ }
+
+		virtual
+		const Metadata::shared_ptr_type
+		clone() const
+		{
+			return shared_ptr_type(new PoleMetadata(*this));
+		}
 	};
 
 

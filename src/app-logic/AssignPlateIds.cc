@@ -32,7 +32,8 @@
 #include "ReconstructLayerProxy.h"
 #include "ReconstructParams.h"
 #include "ReconstructUtils.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalLine.h"
 #include "ResolvedTopologicalNetwork.h"
 #include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyNetworkResolverLayerProxy.h"
@@ -53,7 +54,6 @@ const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type
 
 
 GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
-		const GPlatesModel::Gpgim &gpgim,
 		AssignPlateIdMethodType assign_plate_id_method,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 				partitioning_feature_collections,
@@ -75,10 +75,11 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 			create_cached_reconstruction_tree_creator(
 					reconstruction_feature_collections,
 					anchor_plate_id,
-					10/*max_num_reconstruction_trees_in_cache*/);
+					10/*max_num_reconstruction_trees_in_cache*/,
+					// We're not going to modify the reconstruction features so no need to clone...
+					false/*clone_reconstruction_features*/);
 
 	ReconstructMethodRegistry reconstruct_method_registry;
-	register_default_reconstruct_method_types(reconstruct_method_registry);
 
 	// Contains the reconstructed static polygons used for cookie-cutting.
 	// Can also contain the topological section geometries referenced by topologies.
@@ -94,7 +95,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	std::vector<ReconstructHandle::type> reconstruct_handles(1, reconstruct_handle);
 
 	// Contains the resolved topological line sections referenced by topological polygons and networks.
-	std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_topological_lines;
+	std::vector<resolved_topological_line_non_null_ptr_type> resolved_topological_lines;
 	if (allow_partitioning_using_topological_plate_polygons ||
 		allow_partitioning_using_topological_networks)
 	{
@@ -105,7 +106,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 						resolved_topological_lines,
 						partitioning_feature_collections,
 						reconstruction_tree_cache, 
-						reconstruction_tree_cache.get_reconstruction_tree(reconstruction_time),
+						reconstruction_time,
 						// Resolved topo lines use the reconstructed non-topo geometries...
 						reconstruct_handles);
 
@@ -113,7 +114,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	}
 
 	// Contains the resolved topological polygons used for cookie-cutting.
-	std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_topological_boundaries;
+	std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
 
 	// Contains the resolved topological networks used for cookie-cutting.
 	// See comment in header for why a deforming region is currently used to assign plate ids.
@@ -125,7 +126,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 				resolved_topological_boundaries,
 				partitioning_feature_collections,
 				reconstruction_tree_cache, 
-				reconstruction_tree_cache.get_reconstruction_tree(reconstruction_time),
+				reconstruction_time,
 				// Resolved topo boundaries use the resolved topo lines *and* the reconstructed non-topo geometries...
 				reconstruct_handles);
 	}
@@ -157,7 +158,6 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	d_partition_feature_tasks =
 			// Get all tasks that assign properties from polygon features to partitioned features.
 			get_partition_feature_tasks(
-					gpgim,
 					*reconstruction_tree_cache.get_reconstruction_tree(reconstruction_time),
 					assign_plate_id_method,
 					feature_property_types_to_assign,
@@ -166,7 +166,6 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 
 
 GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
-		const GPlatesModel::Gpgim &gpgim,
 		AssignPlateIdMethodType assign_plate_id_method,
 		const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
 		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
@@ -185,7 +184,7 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	std::vector<reconstructed_feature_geometry_non_null_ptr_type> reconstructed_static_polygons;
 
 	// Contains the resolved topological polygons used for cookie-cutting.
-	std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_topological_boundaries;
+	std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
 
 	// Contains the resolved topological networks used for cookie-cutting.
 	// See comment in header for why a deforming region is currently used to assign plate ids.
@@ -242,7 +241,6 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 	d_partition_feature_tasks =
 			// Get all tasks that assign properties from polygon features to partitioned features.
 			get_partition_feature_tasks(
-					gpgim,
 					*reconstruction_tree,
 					assign_plate_id_method,
 					feature_property_types_to_assign,
@@ -320,7 +318,7 @@ GPlatesAppLogic::AssignPlateIds::assign_reconstruction_plate_id(
 
 	// Merge model events across this scope to avoid excessive number of model callbacks
 	// due to modifying features by partitioning them.
-	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(*feature_ref->model_ptr());
 
 	// Iterate through the tasks until we find one that can partition the feature.
 	partition_feature_task_ptr_seq_type::const_iterator assign_task_iter =

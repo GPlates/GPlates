@@ -27,29 +27,28 @@
 #ifndef GPLATES_FILEIO_PLATESROTATIONFORMATWRITER_H
 #define GPLATES_FILEIO_PLATESROTATIONFORMATWRITER_H
 
-#include <iosfwd>
-#include <boost/scoped_ptr.hpp>
-#include <boost/optional.hpp>
-#include <list>
 #include <fstream>
+#include <iosfwd>
+#include <list>
+#include <boost/optional.hpp>
+#include <boost/scoped_ptr.hpp>
+
 #include "ErrorOpeningFileForWritingException.h"
 #include "FileInfo.h"
-#include "model/FeatureVisitor.h"
-#include "model/PropertyName.h"
-#include "property-values/GmlTimeInstant.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
-#include "property-values/GpmlOldPlatesHeader.h"
+
 #include "maths/FiniteRotation.h"
 
+#include "model/FeatureVisitor.h"
+#include "model/PropertyName.h"
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
+#include "property-values/GmlTimeInstant.h"
+#include "property-values/GpmlOldPlatesHeader.h"
+#include "property-values/GpmlTimeSample.h"
+#include "property-values/GpmlTotalReconstructionPole.h"
+
 
 namespace GPlatesPropertyValues
 {
-	class GpmlTimeSample;
 	class GpmlTimeWindow;
 }
 
@@ -69,7 +68,6 @@ namespace GPlatesFileIO
 		explicit
 		PlatesRotationFormatWriter(
 				const FileInfo &file_info,
-				const GPlatesModel::Gpgim &gpgim,
 				bool grot_format = false);
 
 	protected:
@@ -128,7 +126,7 @@ namespace GPlatesFileIO
 				boost::optional<GPlatesUtils::UnicodeString> comment;
 				boost::optional<double> time;
 				boost::optional<bool> is_disabled;
-				boost::optional< std::vector<GPlatesModel::Metadata::shared_const_ptr_type> > metadata;
+				boost::optional< std::vector<GPlatesModel::Metadata::shared_ptr_to_const_type> > metadata;
 
 				/**
 				 * Test whether the rotation pole data has acquired enough information to

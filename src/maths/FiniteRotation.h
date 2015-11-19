@@ -44,6 +44,7 @@ namespace GPlatesMaths
 {
 	// Forward declaration for the member function 'FiniteRotation::operator*'.
 	class UnitVector3D;
+	class Vector3D;
 
 	// Forward declarations for the non-member function 'operator*'.
 	class MultiPointOnSphere;
@@ -90,6 +91,19 @@ namespace GPlatesMaths
 				const real_t &angle);
 
 		/**
+		 * Create a finite rotation that rotates from @a from_point to @a to_point along the
+		 * great circle arc connecting them.
+		 *
+		 * If the two points are the same or antipodal then an arbitrary rotation axis
+		 * (among the infinite possible choices) is selected.
+		 */
+		static
+		const FiniteRotation
+		create(
+				const PointOnSphere &from_point,
+				const PointOnSphere &to_point);
+
+		/**
 		 * Create a finite rotation corresponding to the rotation effected by the
 		 * unit quaternion @a uq.
 		 */
@@ -98,6 +112,13 @@ namespace GPlatesMaths
 		create(
 				const UnitQuaternion3D &uq,
 				const boost::optional<UnitVector3D> &axis_hint_);
+
+		/**
+		 * Create an identity rotation.
+		 */
+		static
+		const FiniteRotation
+		create_identity_rotation();
 
 		/**
 		 * Return a unit quaternion which would effect the rotation of this finite
@@ -127,9 +148,25 @@ namespace GPlatesMaths
 		operator*(
 				const UnitVector3D &unit_vect) const;
 
+		/**
+		 * Apply this rotation to a vector @a vect.
+		 *
+		 * This operation is not supposed to be symmetrical.
+		 */
+		const Vector3D
+		operator*(
+				const Vector3D &vect) const;
+
 		bool
 		operator==(
 				const FiniteRotation &other) const;
+
+		bool
+		operator!=(
+				const FiniteRotation &other) const
+		{
+			return !(*this == other);
+		}
 
 	protected:
 

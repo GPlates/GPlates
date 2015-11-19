@@ -51,7 +51,6 @@ namespace GPlatesGui
 
 namespace GPlatesModel
 {
-	class Gpgim;
 	class ModelInterface;
 }
 
@@ -205,7 +204,6 @@ namespace GPlatesQtWidgets
 
 		GPlatesPresentation::ViewState &d_view_state;
 		ViewportWindow &d_viewport_window;
-		const GPlatesModel::Gpgim &d_gpgim;
 
 
 		/**

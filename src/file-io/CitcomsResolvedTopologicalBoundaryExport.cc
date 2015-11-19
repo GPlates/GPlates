@@ -57,16 +57,6 @@ POP_MSVC_WARNINGS
 using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 using namespace GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl;
 
-//
-// This was meant to be a temporary hack to be removed when resolved *line* topologies were implemented.
-// Prior to the ability to have resolved *line* topologies a deforming zone was deformed by individually
-// moving point geometries spread out along the deforming zone (each moving according to a separate Plate ID).
-// Exporting these required joining adjacent deforming point geometries into one deforming polyline subsegment.
-// That's no longer needed now that resolved *line* topologies can be used.
-// However, unfortunately it seems we need to keep this hack in place for any old data files that
-// use the old method.
-//
-#define HACK_FOR_EXPORTING_DEFORMING_POINTS
 
 namespace GPlatesFileIO
 {
@@ -126,14 +116,7 @@ namespace GPlatesFileIO
 				sub_segment_group_seq_type lines;
 
 				// plate polygons
-				resolved_geom_seq_type platepolygons;
-
-#if defined(HACK_FOR_EXPORTING_DEFORMING_POINTS)
-				// We create new lists of sub segments (containing potentially merged deforming zone points
-				// and we need to keep the new sub segments structures alive until the export is finished.
-				typedef std::list<GPlatesAppLogic::sub_segment_seq_type> merged_sub_segment_seq_type;
-				merged_sub_segment_seq_type merged_boundary_sub_segments;
-#endif
+				resolved_topologies_seq_type platepolygons;
 
 				// plate polygon sub_segment types
 				sub_segment_group_seq_type ridge_transforms;
@@ -142,7 +125,7 @@ namespace GPlatesFileIO
 				sub_segment_group_seq_type right_subductions;
 
 				// network polygons
-				resolved_geom_seq_type network_polygons;
+				resolved_topologies_seq_type network_polygons;
 
 				// network polygon sub_segment types
 				sub_segment_group_seq_type network_ridge_transforms;
@@ -151,7 +134,7 @@ namespace GPlatesFileIO
 				sub_segment_group_seq_type network_right_subductions;
 
 				// slab polygons
-				resolved_geom_seq_type slab_polygons;
+				resolved_topologies_seq_type slab_polygons;
 
 				// slab polygon sub_segment types
 				sub_segment_group_seq_type slab_edge_leading;
@@ -160,223 +143,6 @@ namespace GPlatesFileIO
 				sub_segment_group_seq_type slab_edge_trench;
 				sub_segment_group_seq_type slab_edge_side;
 			};
-
-
-#if defined(HACK_FOR_EXPORTING_DEFORMING_POINTS)
-			void
-			merge_adjacent_deforming_points(
-					GPlatesAppLogic::sub_segment_seq_type &merged_sub_segments,
-					const GPlatesAppLogic::sub_segment_seq_type &sub_segment_seq,
-					const double &reconstruction_time)
-			{
-				// A flag for each subsegment that's true if it's a deforming point.
-				std::vector<bool> deforming_point_flags;
-
-				// Iterate over the subsegments in the merged sub-segments list.
-				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_segment_iter = sub_segment_seq.begin();
-				const GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_segment_end = sub_segment_seq.end();
-				bool found_deforming_points = false;
-				for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
-				{
-					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
-
-					bool is_deforming_point = false;
-					// This is commented out so that this procedure works for any feature type
-					// and not just subduction zones. All the feature types are expected to be
-					// the same along a sequence of deforming point features but we don't check for
-					// that since it shouldn't be the case and we expect a sequence of deforming
-					// points to be delineated by a polyline feature on either side.
-#if 0
-					const SubSegmentType sub_segment_type = get_sub_segment_type(sub_segment, reconstruction_time);
-					if (sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT ||
-						sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT ||
-						sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN)
-					{
-#endif
-						// Look for a geometry property with property name "gpml:unclassifiedGeometry"
-						// and if it's a point then we've found a deforming point that can be merged. 
-						static const GPlatesModel::PropertyName unclassified_geometry_property_name =
-								GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry");
-						const GPlatesPropertyValues::GmlPoint *deforming_point_geom = NULL;
-						if (GPlatesFeatureVisitors::get_property_value(
-								sub_segment.get_feature_ref(),
-								unclassified_geometry_property_name,
-								deforming_point_geom,
-								reconstruction_time))
-						{
-							found_deforming_points = true;
-							is_deforming_point = true;
-						}
-#if 0
-					}
-#endif
-
-					deforming_point_flags.push_back(is_deforming_point);
-				}
-
-				if (!found_deforming_points)
-				{
-					// No deforming points so just copy the input subsegment sequence to the output sequence.
-					merged_sub_segments.insert(
-							merged_sub_segments.end(),
-							sub_segment_seq.begin(),
-							sub_segment_seq.end());
-					return;
-				}
-
-				// The first previous subsegment is the last entry (its previous to the first entry).
-				bool prev_is_deforming_point = deforming_point_flags.back();
-				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *prev_sub_segment =
-						&*--sub_segment_seq.end();
-
-				// Find the start of a sequence of deforming points.
-				unsigned int sub_segment_index = 0;
-				for (sub_segment_iter = sub_segment_seq.begin();
-					sub_segment_index < deforming_point_flags.size();
-					++sub_segment_iter, ++sub_segment_index)
-				{
-					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
-					const bool is_deforming_point = deforming_point_flags[sub_segment_index];
-
-					if (is_deforming_point)
-					{
-						if (!prev_is_deforming_point)
-						{
-							// We've found the start of a sequence of deforming points.
-							break;
-						}
-					}
-
-					prev_is_deforming_point = is_deforming_point;
-					prev_sub_segment = &sub_segment;
-				}
-
-				if (sub_segment_index == deforming_point_flags.size())
-				{
-					// All subsegments are deforming points so just create a single deforming polyline
-					// and return it as a single subsegment in the output sequence.
-
-					std::vector<GPlatesMaths::PointOnSphere> merged_deforming_polyline_points;
-
-					for (sub_segment_iter = sub_segment_seq.begin();
-						sub_segment_iter != sub_segment_end;
-						++sub_segment_iter)
-					{
-						// Add the current deforming point to the merged deforming polyline.
-						GPlatesAppLogic::GeometryUtils::get_geometry_points(
-								*sub_segment_iter->get_geometry(),
-								merged_deforming_polyline_points,
-								false/*reverse_points*/);
-					}
-
-					// Create the merged deforming polyline.
-					const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type merged_deforming_polyline =
-							GPlatesMaths::PolylineOnSphere::create_on_heap(
-									merged_deforming_polyline_points);
-
-					// Add to the final list of subsegments.
-					merged_sub_segments.push_back(
-							GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment(
-									merged_deforming_polyline,
-									// Note: We'll use the previous subsegment deforming point,
-									// out of all the merged deforming points, as the feature
-									// for the merged deforming polyline. This is quite dodgy
-									// which is why this whole thing is a big hack.
-									prev_sub_segment->get_reconstruction_geometry(),
-									prev_sub_segment->get_feature_ref(),
-									false/*use_reverse*/));
-					return;
-				}
-
-				std::vector<GPlatesMaths::PointOnSphere> merged_deforming_polyline_points;
-
-				// Iterate over the sub-segments at our new start point and merge contiguous sequences
-				// of deforming points into deforming polylines.
-				unsigned int sub_segment_count = 0;
-				for ( ;
-					sub_segment_count < deforming_point_flags.size();
-					++sub_segment_iter, ++sub_segment_index, ++sub_segment_count)
-				{
-					// Handle wraparound...
-					if (sub_segment_index == deforming_point_flags.size())
-					{
-						sub_segment_index = 0;
-						sub_segment_iter = sub_segment_seq.begin();
-					}
-
-					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
-					const bool is_deforming_point = deforming_point_flags[sub_segment_index];
-
-					if (is_deforming_point)
-					{
-						if (!prev_is_deforming_point)
-						{
-							// Start of a merged deforming line.
-							// Grab the end point of the last subsegment as the first point.
-							std::pair<
-								GPlatesMaths::PointOnSphere/*start point*/,
-								GPlatesMaths::PointOnSphere/*end point*/>
-									prev_sub_segment_geometry_end_points =
-										GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
-												*prev_sub_segment->get_geometry(),
-												prev_sub_segment->get_use_reverse());
-							merged_deforming_polyline_points.push_back(
-									prev_sub_segment_geometry_end_points.second/*end point*/);
-						}
-
-						// Add the current deforming point to the merged deforming polyline.
-						GPlatesAppLogic::GeometryUtils::get_geometry_points(
-								*sub_segment.get_geometry(),
-								merged_deforming_polyline_points,
-								false/*reverse_points*/);
-					}
-					else // current subsegment is *not* a deforming point...
-					{
-						if (prev_is_deforming_point)
-						{
-							// End of current merged deforming line.
-							// Grab the start point of the current subsegment as the end point.
-							std::pair<
-								GPlatesMaths::PointOnSphere/*start point*/,
-								GPlatesMaths::PointOnSphere/*end point*/>
-									sub_segment_geometry_end_points =
-										GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
-												*sub_segment.get_geometry(),
-												sub_segment.get_use_reverse());
-							merged_deforming_polyline_points.push_back(
-									sub_segment_geometry_end_points.first/*start point*/);
-
-							// Create the merged deforming polyline.
-							const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type merged_subduction_polyline =
-									GPlatesMaths::PolylineOnSphere::create_on_heap(
-											merged_deforming_polyline_points);
-
-							// Add to the final list of subsegments.
-							merged_sub_segments.push_back(
-									GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment(
-											merged_subduction_polyline,
-											// Note: We'll use the previous subsegment deforming point,
-											// out of all the merged deforming points, as the feature
-											// for the merged deforming polyline. This is quite dodgy
-											// which is why this whole thing is a big hack.
-											prev_sub_segment->get_reconstruction_geometry(),
-											prev_sub_segment->get_feature_ref(),
-											false/*use_reverse*/));
-
-							// Clear for the next merged sequence of deforming points.
-							merged_deforming_polyline_points.clear();
-						}
-
-						// The current subsegment is not a deforming point so just output it
-						// to the final list of subsegments.
-						merged_sub_segments.push_back(sub_segment);
-					}
-
-					prev_is_deforming_point = is_deforming_point;
-					prev_sub_segment = &sub_segment;
-				}
-			}
-#endif
 
 
 			/**
@@ -415,7 +181,7 @@ namespace GPlatesFileIO
 							continue;
 						}
 
-						const GPlatesFileIO::File::Reference *file = map_iter->second;
+						const GPlatesFileIO::File::Reference *file = map_iter->second.first;
 						referenced_files.push_back(file);
 					}
 				}
@@ -442,33 +208,15 @@ namespace GPlatesFileIO
 				boost::optional<const GPlatesAppLogic::sub_segment_seq_type &> boundary_sub_segments =
 						GPlatesAppLogic::ReconstructionGeometryUtils
 								::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
-				// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
+				// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
 				if (!boundary_sub_segments)
 				{
 					return;
 				}
 
-#if defined(HACK_FOR_EXPORTING_DEFORMING_POINTS)
-				// Add an empty sequence of sub-segments simply to keep the merged subsegments
-				// alive until we've finished exporting.
-				output.merged_boundary_sub_segments.push_back(GPlatesAppLogic::sub_segment_seq_type());
-				GPlatesAppLogic::sub_segment_seq_type &merged_sub_segments = output.merged_boundary_sub_segments.back();
-				// Merge adjacent deforming points that are spread along a deforming zone.
-				// We should end up with each sequence of merged points becoming a single
-				// deforming polyline subsegment of the topology's boundary.
-				merge_adjacent_deforming_points(
-						merged_sub_segments,
-						boundary_sub_segments.get(),
-						reconstruction_time);
-
-				// Iterate over the subsegments in the merged sub-segments list.
-				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_segment_iter = merged_sub_segments.begin();
-				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_segment_end = merged_sub_segments.end();
-#else
 				// Iterate over the subsegments contained in the current resolved topological geometry.
 				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_segment_iter = boundary_sub_segments->begin();
 				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_segment_end = boundary_sub_segments->end();
-#endif
 				for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
 				{
 					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
@@ -542,33 +290,15 @@ namespace GPlatesFileIO
 				boost::optional<const GPlatesAppLogic::sub_segment_seq_type &> boundary_sub_segments =
 						GPlatesAppLogic::ReconstructionGeometryUtils
 								::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
-				// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
+				// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
 				if (!boundary_sub_segments)
 				{
 					return;
 				}
 
-#if defined(HACK_FOR_EXPORTING_DEFORMING_POINTS)
-				// Add an empty sequence of sub-segments simply to keep the merged subsegments
-				// alive until we've finished exporting.
-				output.merged_boundary_sub_segments.push_back(GPlatesAppLogic::sub_segment_seq_type());
-				GPlatesAppLogic::sub_segment_seq_type &merged_sub_segments = output.merged_boundary_sub_segments.back();
-				// Merge adjacent deforming points that are spread along a deforming zone.
-				// We should end up with each sequence of merged points becoming a single
-				// deforming polyline subsegment of the topology's boundary.
-				merge_adjacent_deforming_points(
-						merged_sub_segments,
-						boundary_sub_segments.get(),
-						reconstruction_time);
-
-				// Iterate over the subsegments in the merged sub-segments list.
-				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_segment_iter = merged_sub_segments.begin();
-				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_segment_end = merged_sub_segments.end();
-#else
 				// Iterate over the subsegments contained in the current resolved topological geometry.
 				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_segment_iter = boundary_sub_segments->begin();
 				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_segment_end = boundary_sub_segments->end();
-#endif
 				for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
 				{
 					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
@@ -738,33 +468,15 @@ namespace GPlatesFileIO
 				boost::optional<const GPlatesAppLogic::sub_segment_seq_type &> boundary_sub_segments =
 						GPlatesAppLogic::ReconstructionGeometryUtils
 								::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
-				// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
+				// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
 				if (!boundary_sub_segments)
 				{
 					return;
 				}
 
-#if defined(HACK_FOR_EXPORTING_DEFORMING_POINTS)
-				// Add an empty sequence of sub-segments simply to keep the merged subsegments
-				// alive until we've finished exporting.
-				output.merged_boundary_sub_segments.push_back(GPlatesAppLogic::sub_segment_seq_type());
-				GPlatesAppLogic::sub_segment_seq_type &merged_sub_segments = output.merged_boundary_sub_segments.back();
-				// Merge adjacent deforming points that are spread along a deforming zone.
-				// We should end up with each sequence of merged points becoming a single
-				// deforming polyline subsegment of the topology's boundary.
-				merge_adjacent_deforming_points(
-						merged_sub_segments,
-						boundary_sub_segments.get(),
-						reconstruction_time);
-
-				// Iterate over the subsegments in the merged sub-segments list.
-				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_segment_iter = merged_sub_segments.begin();
-				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_segment_end = merged_sub_segments.end();
-#else
 				// Iterate over the subsegments contained in the current resolved topological geometry.
 				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_segment_iter = boundary_sub_segments->begin();
 				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_segment_end = boundary_sub_segments->end();
-#endif
 				for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
 				{
 					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
@@ -880,15 +592,15 @@ namespace GPlatesFileIO
 
 			void
 			collect_exports(
-					const resolved_geom_seq_type &resolved_geom_seq,
+					const resolved_topologies_seq_type &resolved_topologies,
 					const double &reconstruction_time,
 					const OutputOptions &output_options,
 					Output &output)
 			{
 				// Iterate over the resolved topological geometries and
 				// collect information for the file format exporter.
-				resolved_geom_seq_type::const_iterator resolved_seq_iter = resolved_geom_seq.begin();
-				resolved_geom_seq_type::const_iterator resolved_seq_end = resolved_geom_seq.end();
+				resolved_topologies_seq_type::const_iterator resolved_seq_iter = resolved_topologies.begin();
+				resolved_topologies_seq_type::const_iterator resolved_seq_end = resolved_topologies.end();
 				for ( ; resolved_seq_iter != resolved_seq_end; ++resolved_seq_iter)
 				{
 					const GPlatesAppLogic::ReconstructionGeometry *resolved_geom = *resolved_seq_iter;
@@ -964,14 +676,14 @@ namespace GPlatesFileIO
 					const QString &filename,
 					Format export_format,
 					ResolvedTopologicalBoundaryExportType export_type,
-					const resolved_geom_seq_type &resolved_geoms,
+					const resolved_topologies_seq_type &resolved_topologies,
 					const std::vector<const File::Reference *> &referenced_files,
 					const std::vector<const File::Reference *> &active_reconstruction_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
 					bool wrap_to_dateline)
 			{
-				if (resolved_geoms.empty())
+				if (resolved_topologies.empty())
 				{
 					return;
 				}
@@ -980,7 +692,7 @@ namespace GPlatesFileIO
 				{
 				case GMT:
 					CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
-						resolved_geoms,
+						resolved_topologies,
 						export_type,
 						filename,
 						referenced_files,
@@ -994,7 +706,7 @@ namespace GPlatesFileIO
 				case SHAPEFILE:
                 case OGRGMT:
 					OgrFormatResolvedTopologicalGeometryExport::export_citcoms_resolved_topological_boundaries(
-						resolved_geoms,
+						resolved_topologies,
 						filename,
 						referenced_files,
 						active_reconstruction_files,
@@ -1081,7 +793,7 @@ namespace GPlatesFileIO
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
 					const QString &placeholder,
-					const resolved_geom_seq_type &resolved_geoms,
+					const resolved_topologies_seq_type &resolved_topologies,
 					const feature_handle_to_collection_map_type &feature_to_collection_map,
 					const std::vector<const File::Reference *> &active_reconstruction_files,
 					bool wrap_to_dateline)
@@ -1097,14 +809,14 @@ namespace GPlatesFileIO
 				std::vector<const File::Reference *> referenced_files;
 				ReconstructionGeometryExportImpl::get_unique_list_of_referenced_files(
 						referenced_files,
-						resolved_geoms,
+						resolved_topologies,
 						feature_to_collection_map);
 
 				export_resolved_topological_boundaries_file(
 						filename,
 						export_format,
 						export_type,
-						resolved_geoms,
+						resolved_topologies,
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
@@ -1724,7 +1436,7 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::export_resolved_topolog
 		const QString &placeholder_format_string,
 		const OutputOptions &output_options,
 		Format export_format,
-		const resolved_geom_seq_type &resolved_geom_seq,
+		const resolved_topologies_seq_type &resolved_topologies,
 		const std::vector<const File::Reference *> &loaded_files,
 		const std::vector<const File::Reference *> &active_reconstruction_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -1734,7 +1446,7 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExport::export_resolved_topolog
 	Output output;
 
 	collect_exports(
-			resolved_geom_seq,
+			resolved_topologies,
 			reconstruction_time,
 			output_options,
 			output);

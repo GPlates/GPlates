@@ -32,6 +32,7 @@
 #include <QString>
 
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
 
 
@@ -52,26 +53,20 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPolarityChronId>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlPolarityChronId>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPolarityChronId> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPolarityChronId>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlPolarityChronId>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPolarityChronId> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlPolarityChronId()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		/**
 		 * Create a GpmlPolarityChronId instance.  Note that all of the parameters 
 		 * are boost::optional.
@@ -83,19 +78,16 @@ namespace GPlatesPropertyValues
 				boost::optional<unsigned int> major_region,
 				boost::optional<QString> minor_region)
 		{
-			GpmlPolarityChronId::non_null_ptr_type ptr(
-					new GpmlPolarityChronId(era, major_region, minor_region));
-			return ptr;
+			return non_null_ptr_type(new GpmlPolarityChronId(era, major_region, minor_region));
 		}
 
-		const GpmlPolarityChronId::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlPolarityChronId::non_null_ptr_type dup(new GpmlPolarityChronId(*this));
-			return dup;
+			return non_null_ptr_type(new GpmlPolarityChronId(*this));
 		}
 
-		const GpmlPolarityChronId::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const
 		{
 			// This class doesn't reference any mutable objects by pointer, so there's
@@ -116,10 +108,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the "era" attribute of this GpmlPolarityChronId instance.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_era(
@@ -140,10 +128,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the "major region" attribute of this GpmlPolarityChronId instance.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_major_region(
@@ -164,10 +148,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the "minor region" attribute of this GpmlPolarityChronId instance.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_minor_region(

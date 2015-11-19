@@ -53,37 +53,30 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPlateId> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPlateId>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlPlateId>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPlateId> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlPlateId()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
 				const GPlatesModel::integer_plate_id_type &value_)
 		{
-			non_null_ptr_type ptr(new GpmlPlateId(value_));
-			return ptr;
+			return non_null_ptr_type(new GpmlPlateId(value_));
 		}
 
-		const GpmlPlateId::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlPlateId::non_null_ptr_type dup(new GpmlPlateId(*this));
-			return dup;
+			return non_null_ptr_type(new GpmlPlateId(*this));
 		}
 
-		const GpmlPlateId::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const
 		{
 			// This class doesn't reference any mutable objects by pointer, so there's
@@ -104,13 +97,9 @@ namespace GPlatesPropertyValues
 		{
 			return d_value;
 		}
-		
+
 		/**
 		 * Set the plate id contained within this GpmlPlateId to @a p.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_value(

@@ -127,16 +127,17 @@ namespace
 		static const GPlatesModel::PropertyName plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
-		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
-		if (GPlatesFeatureVisitors::get_property_value(
-				feature, plate_id_property_name, recon_plate_id))
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						feature, plate_id_property_name);
+		if (recon_plate_id)
 		{
 			// The feature has a reconstruction plate ID.
 			if (should_print_debugging_message) {
 				std::cerr << "Debug log: No cached reconstruction plate ID in RFG,\n"
 						<< "but reconstruction plate ID found in feature." << std::endl;
 			}
-			return QVariant(static_cast<quint32>(recon_plate_id->value()));
+			return QVariant(static_cast<quint32>(recon_plate_id.get()->value()));
 		} else {
 			// The feature doesn't have a reconstruction plate ID.
 			return QVariant();
@@ -206,16 +207,18 @@ namespace
 
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
 				get_feature_weak_ref_if_valid(geometry);
-		if (weak_ref) {
-			const GPlatesPropertyValues::GmlTimePeriod *time_period;
-			if (GPlatesFeatureVisitors::get_property_value(
-					*weak_ref, valid_time_property_name, time_period))
+		if (weak_ref)
+		{
+			boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
+					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+							*weak_ref, valid_time_property_name);
+			if (time_period)
 			{
 				// The feature has a gml:validTime property.
 				// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
 				// in the latter case it has a slightly different meaning and we should be displaying the
 				// gpml:reconstructedTime property instead.
-				return format_time_instant(*(time_period->begin()));
+				return format_time_instant(*(time_period.get()->begin()));
 			}
 		}
 		return QVariant();
@@ -231,16 +234,18 @@ namespace
 
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
 				get_feature_weak_ref_if_valid(geometry);
-		if (weak_ref) {
-			const GPlatesPropertyValues::GmlTimePeriod *time_period;
-			if (GPlatesFeatureVisitors::get_property_value(
-					*weak_ref, valid_time_property_name, time_period))
+		if (weak_ref)
+		{
+			boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
+					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+							*weak_ref, valid_time_property_name);
+			if (time_period)
 			{
 				// The feature has a gml:validTime property.
 				// FIXME: This could be from a gpml:TimeVariantFeature, OR a gpml:InstantaneousFeature,
 				// in the latter case it has a slightly different meaning and we should be displaying the
 				// gpml:reconstructedTime property instead.
-				return format_time_instant(*(time_period->end()));
+				return format_time_instant(*(time_period.get()->end()));
 			}
 		}
 		return QVariant();
@@ -257,14 +262,16 @@ namespace
 
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
 				get_feature_weak_ref_if_valid(geometry);
-		if (weak_ref) {
-			const GPlatesPropertyValues::XsString *name;
-			if (GPlatesFeatureVisitors::get_property_value(
-					*weak_ref, name_property_name, name))
+		if (weak_ref)
+		{
+			boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+							*weak_ref, name_property_name);
+			if (name)
 			{
 				// The feature has one or more name properties.  Use the first one
 				// for now.
-				return GPlatesUtils::make_qstring(name->value());
+				return GPlatesUtils::make_qstring(name.get()->value());
 			}
 		}
 		return QVariant();
@@ -280,14 +287,16 @@ namespace
 
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> weak_ref =
 				get_feature_weak_ref_if_valid(geometry);
-		if (weak_ref) {
-			const GPlatesPropertyValues::XsString *description;
-			if (GPlatesFeatureVisitors::get_property_value(
-					*weak_ref, description_property_name, description))
+		if (weak_ref)
+		{
+			boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> description =
+					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+							*weak_ref, description_property_name);
+			if (description)
 			{
 				// The feature has one or more description properties.  Use the
 				// first one for now.
-				return GPlatesUtils::make_qstring(description->value());
+				return GPlatesUtils::make_qstring(description.get()->value());
 			}
 		}
 		return QVariant();

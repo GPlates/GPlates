@@ -33,7 +33,6 @@
 #include "file-io/File.h"
 
 #include "model/FeatureCollectionHandle.h"
-#include "model/Gpgim.h"
 #include "model/ModelInterface.h"
 
 
@@ -67,7 +66,6 @@ namespace GPlatesUnitTest
 
 	private:
 		GPlatesModel::ModelInterface  d_model;
-		GPlatesModel::Gpgim::non_null_ptr_to_const_type d_gpgim;
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry d_file_format_registry;
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_files;
 		

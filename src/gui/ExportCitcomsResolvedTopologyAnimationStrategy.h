@@ -43,11 +43,6 @@
 #include "utils/NullIntrusivePointerHandler.h"
 
 
-namespace GPlatesAppLogic
-{
-	class ResolvedTopologicalGeometry;
-}
-
 namespace GPlatesGui
 {
 	// Forward declaration to avoid spaghetti

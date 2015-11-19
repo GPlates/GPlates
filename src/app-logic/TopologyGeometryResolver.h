@@ -28,7 +28,6 @@
 #ifndef GPLATES_APP_LOGIC_TOPOLOGY_GEOMETRY_RESOLVER_H
 #define GPLATES_APP_LOGIC_TOPOLOGY_GEOMETRY_RESOLVER_H
 
-#include <bitset>
 #include <cstddef> // For std::size_t
 #include <vector>
 #include <boost/noncopyable.hpp>
@@ -38,7 +37,8 @@
 #include "ReconstructHandle.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructionTree.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalLine.h"
 #include "TopologyIntersections.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -64,45 +64,62 @@ namespace GPlatesAppLogic
 	/**
 	 * Finds all topological geometry features such as topological closed plate boundaries or
 	 * topological lines, in the features visited, that exist at a particular reconstruction time
-	 * and creates a @a ResolvedTopologicalGeometry object for each one.
+	 * and creates @a ResolvedTopologicalBoundary and/or @a ResolvedTopologicalLine objects.
 	 */
-	class TopologyGeometryResolver: 
+	class TopologyGeometryResolver : 
 			public GPlatesModel::FeatureVisitor,
 			private boost::noncopyable
 	{
 	public:
 
-		//! The type of topological geometry to resolve.
-		enum ResolveGeometryType
-		{
-			RESOLVE_BOUNDARY,
-			RESOLVE_LINE,
-
-			NUM_RESOLVE_GEOMETRY_TYPES // This must be last.
-		};
-
 		/**
-		 * A std::bitset for specifying which topological geometry types to resolve.
-		 */
-		typedef std::bitset<NUM_RESOLVE_GEOMETRY_TYPES> resolve_geometry_flags_type;
-
-		/**
-		 * The resolved dynamic geometries are appended to @a resolved_topological_geometries.
+		 * The resolved topological *lines* are appended to @a resolved_topological_lines.
 		 *
-		 * @a resolve_geometry_flags specifies which topological geometry types to resolve.
 		 * @param reconstruct_handle is placed in all resolved topological geometries as a reconstruction identifier.
-		 * @param reconstruction_tree is associated with the output resolved topological geometries.
 		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that identifies
 		 *        the subset, of all reconstruction geometries observing the topological section features,
 		 *        that should be searched when resolving the topological geometries.
 		 *        This is useful to avoid outdated reconstruction geometries still in existence (and other scenarios).
 		 */
 		TopologyGeometryResolver(
-				std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &resolved_topological_geometries,
-				const resolve_geometry_flags_type &resolve_geometry_flags,
+				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 				ReconstructHandle::type reconstruct_handle,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
+				const double &reconstruction_time,
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles);
+
+		/**
+		 * The resolved topological *boundaries* are appended to @a resolved_topological_boundaries.
+		 *
+		 * @param reconstruct_handle is placed in all resolved topological geometries as a reconstruction identifier.
+		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that identifies
+		 *        the subset, of all reconstruction geometries observing the topological section features,
+		 *        that should be searched when resolving the topological geometries.
+		 *        This is useful to avoid outdated reconstruction geometries still in existence (and other scenarios).
+		 */
+		TopologyGeometryResolver(
+				std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
+				ReconstructHandle::type reconstruct_handle,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
+				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles);
+
+		/**
+		 * The resolved topological *lines* are appended to @a resolved_topological_lines and
+		 * the resolved topological *boundaries* are appended to @a resolved_topological_boundaries.
+		 *
+		 * @param reconstruct_handle is placed in all resolved topological geometries as a reconstruction identifier.
+		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that identifies
+		 *        the subset, of all reconstruction geometries observing the topological section features,
+		 *        that should be searched when resolving the topological geometries.
+		 *        This is useful to avoid outdated reconstruction geometries still in existence (and other scenarios).
+		 */
+		TopologyGeometryResolver(
+				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
+				std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
+				ReconstructHandle::type reconstruct_handle,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles);
 
 		virtual
@@ -211,15 +228,26 @@ namespace GPlatesAppLogic
 			section_seq_type d_sections;
 		};
 
-		/**
-		 * The resolved topological geometries we're generating.
-		 */
-		std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &d_resolved_topological_geometries;
+
+		//! The type of topological geometry to resolve.
+		enum ResolveGeometryType
+		{
+			RESOLVE_BOUNDARY,
+			RESOLVE_LINE,
+
+			NUM_RESOLVE_GEOMETRY_TYPES // This must be last.
+		};
+
 
 		/**
-		 * Which topological geometry types to resolve (boundaries and/or lines).
+		 * The resolved topological *lines* we're generating (if requested).
 		 */
-		resolve_geometry_flags_type d_resolve_geometry_flags;
+		boost::optional<std::vector<ResolvedTopologicalLine::non_null_ptr_type> &> d_resolved_topological_lines;
+
+		/**
+		 * The resolved topological *boundaries* we're generating (if requested).
+		 */
+		boost::optional<std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &> d_resolved_topological_boundaries;
 
 		/**
 		 * The reconstruction identifier placed in all resolved topological geometries.
@@ -258,14 +286,14 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Create a *polygon* @a ResolvedTopologicalGeometry from information gathered from the most
+		 * Create a *polygon* @a ResolvedTopologicalBoundary from information gathered from the most
 		 * recently visited topological polygon (stored in @a d_resolved_geometry).
 		 */
 		void
 		create_resolved_topological_boundary();
 
 		/**
-		 * Create a *polyline* @a ResolvedTopologicalGeometry from information gathered from the most
+		 * Create a *polyline* @a ResolvedTopologicalLine from information gathered from the most
 		 * recently visited topological line (stored in @a d_resolved_geometry).
 		 */
 		void

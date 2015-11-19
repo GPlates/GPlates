@@ -82,4 +82,3 @@ GPlatesPropertyValues::GpmlTimeSample::operator==(
 		d_value_type == other.d_value_type &&
 		d_is_disabled == other.d_is_disabled;
 }
-

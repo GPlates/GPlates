@@ -53,7 +53,7 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "Reconstruction.h"
 #include "ReconstructionGeometryUtils.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalLine.h"
 #include "ResolvedTopologicalNetwork.h"
 #include "TopologyInternalUtils.h"
 #include "TopologyUtils.h"
@@ -127,32 +127,34 @@ GPlatesAppLogic::TopologyNetworkResolver::initialise_pre_feature_properties(
 	{
 		static const GPlatesModel::PropertyName property_name =
 			GPlatesModel::PropertyName::create_gpml("networkShapeFactor");
-		const GPlatesPropertyValues::XsDouble *property_value = NULL;
-
-		if (!GPlatesFeatureVisitors::get_property_value( 
-			feature_handle.reference(), property_name, property_value))
+		boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+						feature_handle.reference(),
+						property_name);
+		if (!property_value)
 		{
 			d_shape_factor = 0.125;
 		}
 		else
 		{
-			d_shape_factor = property_value->value();
+			d_shape_factor = property_value.get()->value();
 		}
 	}
 	// 
 	{
 		static const GPlatesModel::PropertyName property_name =
 			GPlatesModel::PropertyName::create_gpml("networkMaxEdge");
-		const GPlatesPropertyValues::XsDouble *property_value = NULL;
-
-		if (!GPlatesFeatureVisitors::get_property_value( 
-			feature_handle.reference(), property_name, property_value))
+		boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+						feature_handle.reference(),
+						property_name);
+		if (!property_value)
 		{
 			d_max_edge = 300000000.0;
 		}
 		else
 		{
-			d_max_edge = property_value->value();
+			d_max_edge = property_value.get()->value();
 // FIXME: this is to account for older files with values like 3.0 
 			if (d_max_edge < 10000)
 			{
@@ -513,24 +515,17 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_boundary_section_re
 				boundary_section_source_rfg.get()->reconstructed_geometry());
 	}
 
-	// See if topological section is a resolved topological geometry.
-	boost::optional<ResolvedTopologicalGeometry *> boundary_section_source_rtg =
+	// See if topological section is a resolved topological line.
+	boost::optional<ResolvedTopologicalLine *> boundary_section_source_rtl =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					ResolvedTopologicalGeometry>(boundary_section_source_rg);
-	if (boundary_section_source_rtg)
+					ResolvedTopologicalLine>(boundary_section_source_rg);
+	if (boundary_section_source_rtl)
 	{
-		// See if resolved topological geometry is a line (not a boundary).
-		boost::optional<ResolvedTopologicalGeometry::resolved_topology_line_ptr_type>
-				boundary_section_resolved_line_geometry =
-						boundary_section_source_rtg.get()->resolved_topology_line();
-		if (boundary_section_resolved_line_geometry)
-		{
-			// Store the feature id and reconstruction geometry.
-			return ResolvedNetwork::BoundarySection(
-					boundary_section_source_feature_id,
-					boundary_section_source_rtg.get(),
-					boundary_section_resolved_line_geometry.get());
-		}
+		// Store the feature id and reconstruction geometry.
+		return ResolvedNetwork::BoundarySection(
+				boundary_section_source_feature_id,
+				boundary_section_source_rtl.get(),
+				boundary_section_source_rtl.get()->resolved_topology_line());
 	}
 
 	// If we got here then either (1) the user created a malformed GPML file somehow (eg, with a script)
@@ -568,24 +563,17 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_interior_reconstruc
 				interior_source_rfg.get()->reconstructed_geometry());
 	}
 
-	// See if topological interior is a resolved topological geometry.
-	boost::optional<ResolvedTopologicalGeometry *> interior_source_rtg =
+	// See if topological interior is a resolved topological line.
+	boost::optional<ResolvedTopologicalLine *> interior_source_rtl =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					ResolvedTopologicalGeometry>(interior_source_rg);
-	if (interior_source_rtg)
+					ResolvedTopologicalLine>(interior_source_rg);
+	if (interior_source_rtl)
 	{
-		// See if resolved topological geometry is a line (not a boundary).
-		boost::optional<ResolvedTopologicalGeometry::resolved_topology_line_ptr_type>
-				interior_resolved_line_geometry =
-						interior_source_rtg.get()->resolved_topology_line();
-		if (interior_resolved_line_geometry)
-		{
-			// Store the feature id and reconstruction geometry.
-			return ResolvedNetwork::InteriorGeometry(
-					interior_source_feature_id,
-					interior_source_rtg.get(),
-					interior_resolved_line_geometry.get());
-		}
+		// Store the feature id and reconstruction geometry.
+		return ResolvedNetwork::InteriorGeometry(
+				interior_source_feature_id,
+				interior_source_rtl.get(),
+				interior_source_rtl.get()->resolved_topology_line());
 	}
 
 	// If we got here then either (1) the user created a malformed GPML file somehow (eg, with a script)
@@ -824,20 +812,19 @@ debug_output_topological_source_feature(boundary_section.d_source_feature_id);
 		}
 		else // resolved topological *line* ...
 		{
-			boost::optional<ResolvedTopologicalGeometry *> boundary_section_rtg =
+			boost::optional<ResolvedTopologicalLine *> boundary_section_rtl =
 					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-							ResolvedTopologicalGeometry>(boundary_section.d_source_rg);
+							ResolvedTopologicalLine>(boundary_section.d_source_rg);
 
 			// Skip the current boundary section if it's not a resolved topological *line*.
-			if (!boundary_section_rtg ||
-				!boundary_section_rtg.get()->resolved_topology_line())
+			if (!boundary_section_rtl)
 			{
 				continue;
 			}
 
 			// Add the boundary delaunay points from the resolved topological *line*.
 			add_boundary_delaunay_points_from_resolved_topological_line(
-					boundary_section_rtg.get(),
+					boundary_section_rtl.get(),
 					*boundary_section.d_final_boundary_segment_unreversed_geom.get(),
 					all_delaunay_points);
 		}
@@ -930,20 +917,19 @@ debug_output_topological_source_feature(interior_geometry.d_source_feature_id);
 		}
 		else // resolved topological *line* ...
 		{
-			boost::optional<ResolvedTopologicalGeometry *> interior_rtg =
+			boost::optional<ResolvedTopologicalLine *> interior_rtl =
 					ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-							ResolvedTopologicalGeometry>(interior_geometry.d_source_rg);
+							ResolvedTopologicalLine>(interior_geometry.d_source_rg);
 
 			// Skip the current interior geometry if it's not a resolved topological *line*.
-			if (!interior_rtg ||
-				!interior_rtg.get()->resolved_topology_line())
+			if (!interior_rtl)
 			{
 				continue;
 			}
 
 			// Add the interior delaunay points from the resolved topological *line*.
 			add_interior_delaunay_points_from_resolved_topological_line(
-					interior_rtg.get(),
+					interior_rtl.get(),
 					all_delaunay_points);
 		}
 
@@ -1006,8 +992,7 @@ qDebug() << "create_resolved_topology_network: boundary_points.size(): " << boun
 				if (interior_polygon.get()->is_point_in_polygon(
 						*seed_points_iter,
 						// Specify same usage that's used for this polygon inside ResolvedTriangulation::Network...
-						GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE) ==
-					GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+						GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE))
 				{
 					all_rigid_blocks.push_back(
 							ResolvedTriangulation::Network::RigidBlock(interior_rfg_polygon));
@@ -1036,6 +1021,17 @@ qDebug() << "create_resolved_topology_network: boundary_points.size(): " << boun
 					d_shape_factor,
 					d_max_edge);
 
+	// Join adjacent deforming points that are spread along a deforming zone boundary.
+	//
+	// This was meant to be a temporary hack to be removed when resolved *line* topologies were
+	// implemented. However, unfortunately it seems we need to keep this hack in place for any
+	// old data files that use the old method.
+	std::vector<ResolvedTopologicalGeometrySubSegment> joined_boundary_subsegments;
+	TopologyInternalUtils::join_adjacent_deforming_points(
+			joined_boundary_subsegments,
+			boundary_subsegments,
+			d_reconstruction_time);
+
 	// Create the network RTN 
 	const ResolvedTopologicalNetwork::non_null_ptr_type network =
 			ResolvedTopologicalNetwork::create(
@@ -1043,8 +1039,8 @@ qDebug() << "create_resolved_topology_network: boundary_points.size(): " << boun
 					triangulation_network,
 					*(current_top_level_propiter()->handle_weak_ref()),
 					*(current_top_level_propiter()),
-					boundary_subsegments.begin(),
-					boundary_subsegments.end(),
+					joined_boundary_subsegments.begin(),
+					joined_boundary_subsegments.end(),
 					d_reconstruction_params.get_recon_plate_id(),
 					d_reconstruction_params.get_time_of_appearance(),
 					d_reconstruct_handle/*identify where/when this RTN was resolved*/);
@@ -1111,7 +1107,7 @@ qDebug() << "boundary section's pid 				= " << boundary_section_plate_id;
 
 void
 GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_resolved_topological_line(
-		const ResolvedTopologicalGeometry::non_null_ptr_type &boundary_section_rtg,
+		const ResolvedTopologicalLine::non_null_ptr_type &boundary_section_rtl,
 		const GPlatesMaths::GeometryOnSphere &boundary_section_geometry,
 		std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points)
 {
@@ -1123,7 +1119,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 	//
 
 	// Get the sub-segments of the boundary section so we can access their plate ids and reconstruction trees.
-	const sub_segment_seq_type &sub_segments = boundary_section_rtg->get_sub_segment_sequence();
+	const sub_segment_seq_type &sub_segments = boundary_section_rtl->get_sub_segment_sequence();
 
 	// Get the points for the (potentially clipped) boundary section geometry.
 	// Note that we do *not* take into account its reversal because we want to proceed in the same
@@ -1229,7 +1225,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 
 			// If we didn't find a matching point on the current sub-segment then keep looking
 			// at the next sub-segment - it could be that the clipping of the boundary section
-			// has essentially removed one of more of its sub-segments completely.
+			// has essentially removed one or more of its sub-segments completely.
 			if (sub_segment_points_iter == sub_segment_points_end)
 			{
 				continue;
@@ -1360,9 +1356,9 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 
 	// Get the boundary section plate id.
 	GPlatesModel::integer_plate_id_type boundary_section_plate_id = 0;
-	if (boundary_section_rtg->plate_id())
+	if (boundary_section_rtl->plate_id())
 	{
-		boundary_section_plate_id = boundary_section_rtg->plate_id().get();
+		boundary_section_plate_id = boundary_section_rtl->plate_id().get();
 	}
 
 	// It's possible we didn't even find a point matching the first boundary section point.
@@ -1371,7 +1367,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 		const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
 				boundary_section_points.front()/*first point*/,
 				boundary_section_plate_id,
-				boundary_section_rtg->get_reconstruction_tree_creator());
+				boundary_section_rtl->get_reconstruction_tree_creator());
 		all_delaunay_points.push_back(delaunay_point);
 
 		initialised_start_of_boundary_section = true;
@@ -1385,7 +1381,7 @@ GPlatesAppLogic::TopologyNetworkResolver::add_boundary_delaunay_points_from_reso
 		const ResolvedTriangulation::Network::DelaunayPoint delaunay_point(
 				*boundary_section_points_iter,
 				boundary_section_plate_id,
-				boundary_section_rtg->get_reconstruction_tree_creator());
+				boundary_section_rtl->get_reconstruction_tree_creator());
 		all_delaunay_points.push_back(delaunay_point);
 	}
 }
@@ -1526,11 +1522,11 @@ qDebug() << "interior's pid 				= " << interior_geometry_plate_id;
 
 void
 GPlatesAppLogic::TopologyNetworkResolver::add_interior_delaunay_points_from_resolved_topological_line(
-		const ResolvedTopologicalGeometry::non_null_ptr_type &interior_rtg,
+		const ResolvedTopologicalLine::non_null_ptr_type &interior_rtl,
 		std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points)
 {
 	// Get the sub-segments of the resolved line so we can access their plate ids and reconstruction trees.
-	const sub_segment_seq_type &resolved_line_sub_segments = interior_rtg->get_sub_segment_sequence();
+	const sub_segment_seq_type &resolved_line_sub_segments = interior_rtl->get_sub_segment_sequence();
 
 	// Iterate over the sub-segments.
 	sub_segment_seq_type::const_iterator sub_segments_iter = resolved_line_sub_segments.begin();
@@ -1702,9 +1698,10 @@ GPlatesAppLogic::TopologyNetworkResolver::debug_output_topological_source_featur
 	// get the name
 	s.append ( "SOURCE name = '" );
 	static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
- 	const GPlatesPropertyValues::XsString *name;
- 	if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) ) {
-		s.append(GPlatesUtils::make_qstring( name->value() ));
+	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(feature_ref, prop);
+ 	if (name) {
+		s.append(GPlatesUtils::make_qstring( name.get()->value() ));
  	} else {
  		s.append("UNKNOWN");
  	}

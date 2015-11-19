@@ -31,14 +31,18 @@
 #ifndef GPLATES_MATHS_POLYLINEONSPHERE_H
 #define GPLATES_MATHS_POLYLINEONSPHERE_H
 
-#include <vector>
-#include <iterator>  // std::iterator, std::bidirectional_iterator_tag, std::distance
 #include <algorithm>  // std::swap
+#include <iterator>  // std::iterator, std::bidirectional_iterator_tag, std::distance
 #include <utility>  // std::pair
+#include <vector>
 #include <boost/intrusive_ptr.hpp>
+#include <boost/iterator/iterator_facade.hpp>
 
+#include "AngularExtent.h"
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
+
+#include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
 
@@ -50,6 +54,9 @@ namespace GPlatesMaths
 		struct CachedCalculations;
 	}
 	class BoundingSmallCircle;
+
+	template <typename GreatCircleArcConstIteratorType, bool RequireRandomAccessIterator>
+	class PolyGreatCircleArcBoundingTree;
 
 
 	/** 
@@ -147,6 +154,13 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Typedef for the bounding tree of great circle arcs in a polyline.
+		 */
+		typedef PolyGreatCircleArcBoundingTree<const_iterator, true/*RequireRandomAccessIterator*/>
+				bounding_tree_type;
+
+
+		/**
 		 * This class enables const_iteration over the vertices of a
 		 * PolylineOnSphere.
 		 *
@@ -163,8 +177,12 @@ namespace GPlatesMaths
 		 * assumption should be fulfilled by the PolylineOnSphere
 		 * invariant.
 		 */
-		class VertexConstIterator:
-				public std::iterator<std::bidirectional_iterator_tag, PointOnSphere>
+		class VertexConstIterator :
+				public boost::iterator_facade<
+						VertexConstIterator,
+						const PointOnSphere,
+						// Keep the iterator as "random access" so that std::advance can do fast indexing...
+						std::random_access_iterator_tag>
 		{
 
 			enum StartOrEnd {
@@ -187,7 +205,10 @@ namespace GPlatesMaths
 			static
 			VertexConstIterator
 			create_begin(
-					const PolylineOnSphere &poly);
+					const PolylineOnSphere &poly)
+			{
+				return VertexConstIterator(poly, poly.begin(), START);
+			}
 
 
 			/**
@@ -201,7 +222,10 @@ namespace GPlatesMaths
 			static
 			VertexConstIterator
 			create_end(
-					const PolylineOnSphere &poly);
+					const PolylineOnSphere &poly)
+			{
+				return VertexConstIterator(poly, poly.end(), END);
+			}
 
 
 			/**
@@ -211,8 +235,7 @@ namespace GPlatesMaths
 			 * uninitialised.  (I don't @em like providing a
 			 * constructor which leaves an object in an
 			 * uninitialised state, but the presence of a default
-			 * constructor is mandated by the
-			 * bidirectional_iterator interface.)
+			 * constructor is mandated by the iterator interface.)
 			 *
 			 * If you attempt to dereference an uninitialised
 			 * iterator or access the members of a PointOnSphere
@@ -236,123 +259,6 @@ namespace GPlatesMaths
 				d_curr_gca(), 
 				d_gca_start_or_end(END)
 			{  }
-
-
-			/**
-			 * Copy-construct a vertex iterator.
-			 */
-			VertexConstIterator(
-					const VertexConstIterator &other):
-				d_poly_ptr(other.d_poly_ptr),
-				d_curr_gca(other.d_curr_gca),
-				d_gca_start_or_end(other.d_gca_start_or_end)
-			{  }
-
-
-			/**
-			 * Return the gca_const_iterator which points to the
-			 * current GreatCircleArc.
-			 */
-			gca_const_iterator
-			curr_gca() const
-			{
-				return d_curr_gca;
-			}
-
-
-			/**
-			 * Return whether this iterator is pointing at the
-			 * "start-point" or "end-point" of the current
-			 * GreatCircleArc.
-			 */
-			StartOrEnd
-			gca_start_or_end() const
-			{
-				return d_gca_start_or_end;
-			}
-
-
-			/**
-			 * Assign @a other to this.
-			 */
-			VertexConstIterator &
-			operator=(
-					const VertexConstIterator &other)
-			{
-				d_poly_ptr = other.d_poly_ptr;
-				d_curr_gca = other.d_curr_gca;
-				d_gca_start_or_end = other.d_gca_start_or_end;
-
-				return *this;
-			}
-
-
-			/**
-			 * Dereference this iterator to obtain the
-			 * currently-pointed-at PointOnSphere.
-			 */
-			const PointOnSphere &
-			operator*() const
-			{
-				return current_point();
-			}
-
-
-			/**
-			 * Access a member of the PointOnSphere which is
-			 * currently being pointed-at by this iterator.
-			 */
-			const PointOnSphere *
-			operator->() const
-			{
-				return &(current_point());
-			}
-
-
-			/**
-			 * Pre-increment this iterator.
-			 */
-			VertexConstIterator &
-			operator++()
-			{
-				increment();
-				return *this;
-			}
-
-
-			/**
-			 * Post-increment this iterator.
-			 */
-			const VertexConstIterator
-			operator++(int)
-			{
-				VertexConstIterator old = *this;
-				increment();
-				return old;
-			}
-
-
-			/**
-			 * Pre-decrement this iterator.
-			 */
-			VertexConstIterator &
-			operator--()
-			{
-				decrement();
-				return *this;
-			}
-
-
-			/**
-			 * Post-decrement this iterator.
-			 */
-			const VertexConstIterator
-			operator--(int)
-			{
-				VertexConstIterator old = *this;
-				decrement();
-				return old;
-			}
 
 		private:
 
@@ -378,14 +284,18 @@ namespace GPlatesMaths
 
 
 			/**
+			 * Iterator dereference - for boost::iterator_facade.
+			 *
 			 * This function performs the magic which is used to
 			 * obtain the currently-pointed-at PointOnSphere.
 			 */
 			const PointOnSphere &
-			current_point() const;
+			dereference() const;
 
 
 			/**
+			 * Iterator increment - for boost::iterator_facade.
+			 *
 			 * This function performs the magic which is used to
 			 * increment this iterator.
 			 *
@@ -399,6 +309,8 @@ namespace GPlatesMaths
 
 
 			/**
+			 * Iterator decrement - for boost::iterator_facade.
+			 *
 			 * This function performs the magic which is used to
 			 * decrement this iterator.
 			 *
@@ -409,6 +321,30 @@ namespace GPlatesMaths
 			 */
 			void
 			decrement();
+
+			/**
+			 * Iterator equality comparison - for boost::iterator_facade.
+			 */
+			bool
+			equal(
+					const VertexConstIterator &other) const;
+
+			/**
+			 * Iterator advancement - for boost::iterator_facade.
+			 */
+			void
+			advance(
+					VertexConstIterator::difference_type n);
+
+			/**
+			 * Distance between two iterators - for boost::iterator_facade.
+			 */
+			VertexConstIterator::difference_type
+			distance_to(
+					const VertexConstIterator &other) const;
+
+			// Give access to boost::iterator_facade.
+			friend class boost::iterator_core_access;
 
 
 			/**
@@ -755,6 +691,21 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Return the segment in this polyline at the specified index.
+		 */
+		const GreatCircleArc &
+		get_segment(
+				size_type segment_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					segment_index < number_of_segments(),
+					GPLATES_ASSERTION_SOURCE);
+
+			return d_seq[segment_index];
+		}
+
+
+		/**
 		 * Return the "begin" const_iterator to iterate over the vertices of this polyline.
 		 *
 		 * Note that it's intentional that the instance returned is non-const: If the
@@ -789,6 +740,25 @@ namespace GPlatesMaths
 		number_of_vertices() const
 		{
 			return d_seq.size() + 1;
+		}
+
+
+		/**
+		 * Return the vertex in this polyline at the specified index.
+		 */
+		const PointOnSphere &
+		get_vertex(
+				size_type vertex_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					vertex_index < number_of_vertices(),
+					GPLATES_ASSERTION_SOURCE);
+
+			vertex_const_iterator vertex_iter = vertex_begin();
+			// This should be fast since iterator type is random access...
+			std::advance(vertex_iter, vertex_index);
+
+			return *vertex_iter;
 		}
 
 
@@ -832,42 +802,58 @@ namespace GPlatesMaths
 		/**
 		 * Evaluate whether @a test_point is "close" to this polyline.
 		 *
-		 * The measure of what is "close" is provided by
-		 * @a closeness_inclusion_threshold.
+		 * The measure of what is "close" is provided by @a closeness_angular_extent_threshold.
 		 *
 		 * If @a test_point is "close", the function will calculate
 		 * exactly @em how close, and store that value in @a closeness and
 		 * return the closest point on the PolylineOnSphere.
-		 *
-		 * The value of @a latitude_exclusion_threshold should be equal
-		 * to \f$\sqrt{1 - {t_c}^2}\f$ (where \f$t_c\f$ is the
-		 * closeness inclusion threshold).  This parameter is designed
-		 * to enable a quick elimination of "no-hopers" (test-points
-		 * which can easily be determined to have no chance of being
-		 * "close"), leaving only plausible test-points to proceed to
-		 * the more expensive proximity tests.  If you imagine a
-		 * line-segment of this polyline as an arc along the equator,
-		 * then there will be a threshold latitude above and below the
-		 * equator, beyond which there is no chance of a test-point
-		 * being "close" to that segment.
-		 *
-		 * For more information, read the comment before
-		 * @a GPlatesGui::ProximityTests::find_close_rfgs.
 		 */
 		boost::optional<PointOnSphere>
 		is_close_to(
 				const PointOnSphere &test_point,
-				const real_t &closeness_inclusion_threshold,
-				const real_t &latitude_exclusion_threshold,
+				const AngularExtent &closeness_angular_extent_threshold,
 				real_t &closeness) const;
+
+
+		/**
+		 * Equality operator compares great circle arc subsegments.
+		 */
+		bool
+		operator==(
+				const PolylineOnSphere &other) const
+		{
+			return d_seq == other.d_seq;
+		}
+
+		/**
+		 * Inequality operator.
+		 */
+		bool
+		operator!=(
+				const PolylineOnSphere &other) const
+		{
+			return !operator==(other);
+		}
 
 
 		//
 		// The following are cached calculations on the geometry data.
 		//
 
+
 		/**
-		 * Returns the sum of the points in this polyline (normalised).
+		 * Returns the total arc-length of the sequence of @a GreatCirclArc which defines this polyline.
+		 *
+		 * The result is in radians and represents the distance on the unit radius sphere.
+		 *
+		 * The result is cached on first call.
+		 */
+		const real_t &
+		get_arc_length() const;
+
+
+		/**
+		 * Returns the centroid of the edges of this polyline (see @a Centroid::calculate_outline_centroid).
 		 *
 		 * The result is cached on first call.
 		 */
@@ -883,6 +869,15 @@ namespace GPlatesMaths
 		 */
 		const BoundingSmallCircle &
 		get_bounding_small_circle() const;
+
+
+		/**
+		 * Returns the small circle bounding tree over of great circle arc segments of this polyline.
+		 *
+		 * The result is cached on first call.
+		 */
+		const bounding_tree_type &
+		get_bounding_tree() const;
 
 	private:
 
@@ -937,19 +932,6 @@ namespace GPlatesMaths
 				PointForwardIter end,
 				bool check_distinct_points);
 
-		/**
-		 * Attempt to create a line-segment defined by the points @a p1 and @a p2; append
-		 * it to @a seq.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 */
-		static
-		void
-		create_segment_and_append_to_seq(
-				seq_type &seq,
-				const PointOnSphere &p1,
-				const PointOnSphere &p2);
-
 
 		/**
 		 * This is the minimum number of (distinct) collection points to be passed into the
@@ -977,50 +959,23 @@ namespace GPlatesMaths
 	};
 
 
-	inline
-	PolylineOnSphere::VertexConstIterator
-	PolylineOnSphere::VertexConstIterator::create_begin(
-			const PolylineOnSphere &poly)
-	{
-		return VertexConstIterator(poly, poly.begin(), START);
-	}
-	
-
-	inline
-	PolylineOnSphere::VertexConstIterator
-	PolylineOnSphere::VertexConstIterator::create_end(
-			const PolylineOnSphere &poly)
-	{
-		return VertexConstIterator(poly, poly.end(), END);
-	}
-
-
 	/**
-	 * Compare @a i1 and @a i2 for equality.
+	 * Subdivides each segment (great circle arc) of a polyline and returns tessellated polyline.
+	 *
+	 * Each pair of adjacent points in the tessellated polyline will have a maximum angular extent of
+	 * @a max_angular_extent radians.
+	 *
+	 * Note that those arcs (of the original polyline) already subtending an angle less than
+	 * @a max_angular_extent radians will not be tessellated.
+	 *
+	 * Note that the distance between adjacent points in the tessellated polyline will not be *uniform*.
+	 * This is because each arc in the original polyline is tessellated to the nearest integer number
+	 * of points and hence each original arc will have a slightly different tessellation angle.
 	 */
-	inline
-	bool
-	operator==(
-			const PolylineOnSphere::VertexConstIterator &i1,
-			const PolylineOnSphere::VertexConstIterator &i2)
-	{
-		return (i1.curr_gca() == i2.curr_gca() &&
-				i1.gca_start_or_end() == i2.gca_start_or_end());
-	}
-
-
-	/**
-	 * Compare @a i1 and @a i2 for inequality.
-	 */
-	inline
-	bool
-	operator!=(
-			const PolylineOnSphere::VertexConstIterator &i1,
-			const PolylineOnSphere::VertexConstIterator &i2)
-	{
-		return (i1.curr_gca() != i2.curr_gca() ||
-				i1.gca_start_or_end() != i2.gca_start_or_end());
-	}
+	PolylineOnSphere::non_null_ptr_to_const_type
+	tessellate(
+			const PolylineOnSphere &polyline,
+			const real_t &max_angular_extent);
 
 
 	/**
@@ -1212,10 +1167,11 @@ namespace GPlatesMaths
 
 		PointForwardIter prev;
 		PointForwardIter iter = begin;
-		for (prev = iter++ ; iter != end; prev = iter++) {
+		for (prev = iter++ ; iter != end; prev = iter++)
+		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
-			create_segment_and_append_to_seq(tmp_seq, p1, p2);
+			tmp_seq.push_back(GreatCircleArc::create(p1, p2));
 		}
 		poly.d_seq.swap(tmp_seq);
 	}

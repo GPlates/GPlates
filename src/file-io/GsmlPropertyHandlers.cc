@@ -338,7 +338,6 @@ GPlatesFileIO::GsmlPropertyHandlers::GsmlPropertyHandlers(
 		GPlatesModel::FeatureHandle::weak_ref fh):
 	d_feature(fh)
 {
-	d_gpgim = ArbitraryXmlReader::instance()->get_gpgim();
 	d_read_errors = ArbitraryXmlReader::instance()->get_read_error_accumulation();
 }
 
@@ -385,13 +384,13 @@ qDebug() << "===================================================================
 				GpmlPropertyStructuralTypeReaderUtils::create_gml_point(
 					xml_node,
 					// Read using current GPGIM version (it's not GPML so it won't change format anyway)...
-					d_gpgim->get_version(),
+					GPlatesModel::Gpgim::instance().get_version(),
 					*d_read_errors);
 
-			ModelUtils::add_property(
-				d_feature,
-				PropertyName::create_gpml("position"),
-				*geometry_property);
+			d_feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+							PropertyName::create_gpml("position"),
+							*geometry_property));
 		}
 		else if(query_str.indexOf("LineString") != -1)
 		{
@@ -407,7 +406,7 @@ qDebug() << "===================================================================
 				GpmlPropertyStructuralTypeReaderUtils::create_gml_line_string(
 					xml_node,
 					// Read using current GPGIM version (it's not GPML so it won't change format anyway)...
-					d_gpgim->get_version(),
+					GPlatesModel::Gpgim::instance().get_version(),
 					*d_read_errors);
 
             GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type gml_orientable_curve =
@@ -439,7 +438,7 @@ qDebug() << "===================================================================
 				GpmlPropertyStructuralTypeReaderUtils::create_gml_polygon(
 					xml_node,
 					// Read using current GPGIM version (it's not GPML so it won't change format anyway)...
-					d_gpgim->get_version(),
+					GPlatesModel::Gpgim::instance().get_version(),
 					*d_read_errors);
 
             GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type property_value =
@@ -468,10 +467,10 @@ qDebug() << "===================================================================
 		}
 		else
 		{
-			ModelUtils::add_property(
-					d_feature,
-					PropertyName::create_gpml("GsmlGeometry"),
-					*geometry_property);
+			d_feature->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+							PropertyName::create_gpml("GsmlGeometry"),
+							*geometry_property));
 		}
 #endif
 
@@ -495,10 +494,10 @@ void
 GPlatesFileIO::GsmlPropertyHandlers::handle_observation_method(
 		QBuffer& xml_data)
 {
-	ModelUtils::add_property(
-			d_feature,
-			PropertyName::create_gpml("ObservationMethod"),
-			UninterpretedPropertyValue::create(create_xml_node(xml_data)));
+	d_feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+					PropertyName::create_gpml("ObservationMethod"),
+					UninterpretedPropertyValue::create(create_xml_node(xml_data))));
 }
 
 
@@ -506,10 +505,10 @@ void
 GPlatesFileIO::GsmlPropertyHandlers::handle_gml_name(
 		QBuffer& xml_data)
 {
-	ModelUtils::add_property(
-			d_feature,
-			PropertyName::create_gml("name"),
-			XsString::create(UnicodeString(get_element_text(xml_data))));
+	d_feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+					PropertyName::create_gml("name"),
+					XsString::create(UnicodeString(get_element_text(xml_data)))));
 }
 
 
@@ -517,10 +516,10 @@ void
 GPlatesFileIO::GsmlPropertyHandlers::handle_gml_desc(
 		QBuffer& xml_data)
 {
-	ModelUtils::add_property(
-			d_feature,
-			PropertyName::create_gml("description"),
-			XsString::create(UnicodeString(get_element_text(xml_data))));
+	d_feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+					PropertyName::create_gml("description"),
+					XsString::create(UnicodeString(get_element_text(xml_data)))));
 }
 
 
@@ -620,10 +619,10 @@ GPlatesFileIO::GsmlPropertyHandlers::handle_gml_valid_time(
 			GPlatesPropertyValues::GeoTimeInstant( end )
 		);
 
-	ModelUtils::add_property(
-		d_feature,
-		PropertyName::create_gml("validTime"),
-		gml_valid_time);
+	d_feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+					PropertyName::create_gml("validTime"),
+					gml_valid_time));
 }
 
 
@@ -653,20 +652,20 @@ GPlatesFileIO::GsmlPropertyHandlers::handle_gpml_valid_time_range(
 			gml_valid_time) );
 
 	// above call is equivalent to: as used elsewhere
-	//ModelUtils::add_property(
-	//	d_feature,
-	//	PropertyName::create_gml("validTime"),
-	//	gml_valid_time);
+// 	d_feature->add(
+// 			GPlatesModel::TopLevelPropertyInline::create(
+// 					PropertyName::create_gml("validTime"),
+// 					gml_valid_time));
 }
 
 void
 GPlatesFileIO::GsmlPropertyHandlers::handle_gpml_rock_type(
 		QBuffer& xml_data)
 {
-	ModelUtils::add_property(
-			d_feature,
-			PropertyName::create_gpml("rock_type"),
-			XsString::create(UnicodeString(get_element_text(xml_data))));
+	d_feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+					PropertyName::create_gpml("rock_type"),
+					XsString::create(UnicodeString(get_element_text(xml_data)))));
 }
 
 
@@ -674,34 +673,29 @@ void
 GPlatesFileIO::GsmlPropertyHandlers::handle_gpml_rock_max_thick(
 		QBuffer& xml_data)
 {
-	ModelUtils::add_property(
-			d_feature,
-			PropertyName::create_gpml("rock_min_thick"),
-			XsDouble::create(get_element_text(xml_data).toDouble()) 
-	);
-
-
+	d_feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+					PropertyName::create_gpml("rock_min_thick"),
+					XsDouble::create(get_element_text(xml_data).toDouble())));
 }
 
 void
 GPlatesFileIO::GsmlPropertyHandlers::handle_gpml_rock_min_thick(
 		QBuffer& xml_data)
 {
-	ModelUtils::add_property(
-			d_feature,
-			PropertyName::create_gpml("rock_min_thick"),
-			XsDouble::create(get_element_text(xml_data).toDouble()) 
-	);
+	d_feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+					PropertyName::create_gpml("rock_min_thick"),
+					XsDouble::create(get_element_text(xml_data).toDouble())));
 }
 
 void
 GPlatesFileIO::GsmlPropertyHandlers::handle_gpml_fossil_diversity(
 		QBuffer& xml_data)
 {
-	ModelUtils::add_property(
-			d_feature,
-			PropertyName::create_gpml("fossil_diversity"),
-			XsDouble::create(get_element_text(xml_data).toDouble()) 
-	);
+	d_feature->add(
+			GPlatesModel::TopLevelPropertyInline::create(
+					PropertyName::create_gpml("fossil_diversity"),
+					XsDouble::create(get_element_text(xml_data).toDouble())));
 }
 

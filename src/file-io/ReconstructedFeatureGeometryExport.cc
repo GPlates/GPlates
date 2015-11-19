@@ -26,12 +26,14 @@
 
 #include "ReconstructedFeatureGeometryExport.h"
 
+#include "app-logic/ReconstructedFeatureGeometry.h"
+
 #include "GMTFormatReconstructedFeatureGeometryExport.h"
 #include "FeatureCollectionFileFormat.h"
 #include "FeatureCollectionFileFormatRegistry.h"
 #include "FileFormatNotSupportedException.h"
-#include "ReconstructionGeometryExportImpl.h"
 #include "OgrFormatReconstructedFeatureGeometryExport.h"
+#include "ReconstructionGeometryExportImpl.h"
 
 using namespace GPlatesFileIO::ReconstructionGeometryExportImpl;
 
@@ -215,30 +217,53 @@ GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_
 	feature_geometry_group_seq_type grouped_recon_geom_seq;
 	group_reconstruction_geometries_with_their_feature(
 			grouped_recon_geom_seq,
-			reconstructed_feature_geom_seq);
+			reconstructed_feature_geom_seq,
+			feature_to_collection_map);
+
+	// Group the feature-groups with their collections. 
+	grouped_features_seq_type grouped_features_seq;
+	group_feature_geom_groups_with_their_collection(
+			feature_to_collection_map,
+			grouped_features_seq,
+			grouped_recon_geom_seq);
 
 	if (export_single_output_file)
 	{
-		export_as_single_file(
-				filename,
-				export_format,
-				grouped_recon_geom_seq,
-				referenced_files,
-				active_reconstruction_files,
-				reconstruction_anchor_plate_id,
-				reconstruction_time,
-				wrap_to_dateline);
+		// If all features came from a single file then export per collection.
+		if (grouped_features_seq.size() == 1)
+		{
+			// For shapefiles this retains the shapefile attributes from the original features.
+			export_per_collection(
+					filename,
+					export_format,
+					grouped_recon_geom_seq,
+					referenced_files,
+					active_reconstruction_files,
+					reconstruction_anchor_plate_id,
+					reconstruction_time,
+					wrap_to_dateline);
+		}
+		else
+		{
+			// For shapefiles this ignores the shapefile attributes from the original features.
+			// This is necessary since the features came from multiple input files which might
+			// have different attribute field names making it difficult to merge into a single output.
+			//
+			// FIXME: An alternative is for Shapefile/OGR exporter to explicitly check field names for overlap.
+			export_as_single_file(
+					filename,
+					export_format,
+					grouped_recon_geom_seq,
+					referenced_files,
+					active_reconstruction_files,
+					reconstruction_anchor_plate_id,
+					reconstruction_time,
+					wrap_to_dateline);
+		}
 	}
 
 	if (export_per_input_file)
 	{
-		// Group the feature-groups with their collections. 
-		grouped_features_seq_type grouped_features_seq;
-		group_feature_geom_groups_with_their_collection(
-				feature_to_collection_map,
-				grouped_features_seq,
-				grouped_recon_geom_seq);
-
 		std::vector<QString> output_filenames;
 		get_output_filenames(
 				output_filenames,

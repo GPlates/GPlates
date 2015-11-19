@@ -190,11 +190,6 @@ namespace GPlatesDataMining
 			std::vector<QString> cfgs = load_cfg(cfg_file,section_name);
 			return cfgs.size() ? cfgs[0] : QString();
 		}
-
-		static std::vector<
-				boost::tuple<
-						std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry*>,
-						const GPlatesAppLogic::ReconstructedFeatureGeometry* > > RFG_INDEX_VECTOR;
 	}
 }
 #endif

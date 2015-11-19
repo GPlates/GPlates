@@ -37,11 +37,6 @@
 #include "model/FeatureCollectionHandle.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesAppLogic
 {
 	/**
@@ -58,7 +53,6 @@ namespace GPlatesAppLogic
 		 * If 'verify_information_model' is true then feature property types are only added if they don't not violate the GPGIM.
 		 */
 		GenericPartitionFeatureTask(
-				const GPlatesModel::Gpgim &gpgim,
 				const ReconstructionTree &reconstruction_tree,
 				GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType assign_plate_id_method,
 				const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
@@ -83,7 +77,6 @@ namespace GPlatesAppLogic
 				bool respect_feature_time_period);
 
 	private:
-		const GPlatesModel::Gpgim &d_gpgim;
 		bool d_verify_information_model;
 
 		const ReconstructionTree &d_reconstruction_tree;

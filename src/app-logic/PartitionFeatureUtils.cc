@@ -426,11 +426,9 @@ GPlatesAppLogic::PartitionFeatureUtils::partition_feature(
 
 
 GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::GenericFeaturePropertyAssigner(
-		const GPlatesModel::Gpgim &gpgim,
 		const GPlatesModel::FeatureHandle::const_weak_ref &original_feature,
 		const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
 		bool verify_information_model) :
-	d_gpgim(gpgim),
 	d_verify_information_model(verify_information_model),
 	d_default_reconstruction_plate_id(
 			get_reconstruction_plate_id_from_feature(original_feature)),
@@ -449,7 +447,7 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 		boost::optional<GPlatesModel::FeatureHandle::const_weak_ref> partitioning_feature)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
-	GPlatesModel::NotificationGuard model_notification_guard(partitioned_feature->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(*partitioned_feature->model_ptr());
 
 	// Get the reconstruction plate id.
 	// Either from the partitioning feature or the default reconstruction plate id.
@@ -467,7 +465,6 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 		reconstruction_plate_id = d_default_reconstruction_plate_id;
 	}
 	assign_reconstruction_plate_id_to_feature(
-			d_gpgim,
 			reconstruction_plate_id,
 			partitioned_feature,
 			d_verify_information_model);
@@ -488,7 +485,6 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 		conjugate_plate_id = d_default_conjugate_plate_id;
 	}
 	assign_conjugate_plate_id_to_feature(
-			d_gpgim,
 			conjugate_plate_id,
 			partitioned_feature,
 			d_verify_information_model);
@@ -534,7 +530,6 @@ GPlatesAppLogic::PartitionFeatureUtils::GenericFeaturePropertyAssigner::assign_p
 		valid_time = d_default_valid_time;
 	}
 	assign_valid_time_to_feature(
-			d_gpgim,
 			valid_time,
 			partitioned_feature,
 			d_verify_information_model);
@@ -813,28 +808,27 @@ boost::optional<GPlatesModel::integer_plate_id_type>
 GPlatesAppLogic::PartitionFeatureUtils::get_reconstruction_plate_id_from_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 {
-	const GPlatesPropertyValues::GpmlPlateId *recon_plate_id = NULL;
-	if (!GPlatesFeatureVisitors::get_property_value(
-			feature_ref,
-			get_reconstruction_plate_id_property_name(),
-			recon_plate_id))
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					feature_ref,
+					get_reconstruction_plate_id_property_name());
+	if (!recon_plate_id)
 	{
 		return boost::none;
 	}
 
-	return recon_plate_id->value();
+	return recon_plate_id.get()->value();
 }
 
 
 void
 GPlatesAppLogic::PartitionFeatureUtils::assign_reconstruction_plate_id_to_feature(
-		const GPlatesModel::Gpgim &gpgim,
 		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 		bool verify_information_model)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
-	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(*feature_ref->model_ptr());
 
 	// First remove any that might already exist.
 	feature_ref->remove_properties_by_name(get_reconstruction_plate_id_property_name());
@@ -853,7 +847,6 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_reconstruction_plate_id_to_featur
 			feature_ref,
 			get_reconstruction_plate_id_property_name(),
 			gpml_reconstruction_plate_id,
-			gpgim,
 			verify_information_model/*check_property_name_allowed_for_feature_type*/);
 }
 
@@ -862,28 +855,27 @@ boost::optional<GPlatesModel::integer_plate_id_type>
 GPlatesAppLogic::PartitionFeatureUtils::get_conjugate_plate_id_from_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 {
-	const GPlatesPropertyValues::GpmlPlateId *conjugate_plate_id = NULL;
-	if (!GPlatesFeatureVisitors::get_property_value(
-			feature_ref,
-			get_conjugate_plate_id_property_name(),
-			conjugate_plate_id))
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> conjugate_plate_id =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					feature_ref,
+					get_conjugate_plate_id_property_name());
+	if (!conjugate_plate_id)
 	{
 		return boost::none;
 	}
 
-	return conjugate_plate_id->value();
+	return conjugate_plate_id.get()->value();
 }
 
 
 void
 GPlatesAppLogic::PartitionFeatureUtils::assign_conjugate_plate_id_to_feature(
-		const GPlatesModel::Gpgim &gpgim,
 		boost::optional<GPlatesModel::integer_plate_id_type> conjugate_plate_id,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 		bool verify_information_model)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
-	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(*feature_ref->model_ptr());
 
 	// First remove any that might already exist.
 	feature_ref->remove_properties_by_name(get_conjugate_plate_id_property_name());
@@ -902,7 +894,6 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_conjugate_plate_id_to_feature(
 			feature_ref,
 			get_conjugate_plate_id_property_name(),
 			gpml_conjugate_plate_id,
-			gpgim,
 			verify_information_model/*check_property_name_allowed_for_feature_type*/);
 }
 
@@ -911,25 +902,21 @@ boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type
 GPlatesAppLogic::PartitionFeatureUtils::get_valid_time_from_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 {
-	const GPlatesPropertyValues::GmlTimePeriod *time_period = NULL;
-	if (!GPlatesFeatureVisitors::get_property_value(
-			feature_ref,
-			get_valid_time_property_name(),
-			time_period))
+	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					feature_ref,
+					get_valid_time_property_name());
+	if (!time_period)
 	{
 		return boost::none;
 	}
 
-	// FIXME: Probably should be a deep clone in case someone else modifies the time period.
-	return GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type(
-			time_period,
-			GPlatesUtils::NullIntrusivePointerHandler());
+	return time_period.get();
 }
 
 
 void
 GPlatesAppLogic::PartitionFeatureUtils::assign_valid_time_to_feature(
-		const GPlatesModel::Gpgim &gpgim,
 		boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> valid_time,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 		bool verify_information_model)
@@ -949,7 +936,6 @@ GPlatesAppLogic::PartitionFeatureUtils::assign_valid_time_to_feature(
 			feature_ref,
 			get_valid_time_property_name(),
 			valid_time.get()->deep_clone(),
-			gpgim,
 			verify_information_model/*check_property_name_allowed_for_feature_type*/);
 }
 
@@ -960,16 +946,13 @@ GPlatesAppLogic::PartitionFeatureUtils::append_geometry_to_feature(
 		const GPlatesModel::PropertyName &geometry_property_name,
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
-	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> geometry_property =
+	GPlatesModel::PropertyValue::non_null_ptr_type geometry_property =
 			GeometryUtils::create_geometry_property_value(geometry);
 
-	if (geometry_property)
-	{
-		feature_ref->add(
-				GPlatesModel::TopLevelPropertyInline::create(
+	feature_ref->add(
+			GPlatesModel::TopLevelPropertyInline::create(
 					geometry_property_name,
-					*geometry_property));
-	}
+					geometry_property));
 }
 
 

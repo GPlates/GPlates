@@ -80,6 +80,7 @@
 #include "property-values/GpmlTimeWindow.h"
 #include "property-values/XsString.h"
 
+#include "utils/Earth.h"
 #include "utils/Parse.h"
 #include "utils/UnicodeStringUtils.h"
 
@@ -89,7 +90,8 @@ GPlatesQtWidgets::ImportScalarField3DDialog::GPML_EXT = ".gpml";
 const QString
 GPlatesQtWidgets::ImportScalarField3DDialog::GPSF_EXT = ".gpsf";
 
-const double GPlatesQtWidgets::ScalarField3DDepthLayersSequence::DEFAULT_RADIUS_OF_EARTH = 6378.1;
+const double GPlatesQtWidgets::ScalarField3DDepthLayersSequence::DEFAULT_RADIUS_OF_EARTH =
+		GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS;
 
 
 bool
@@ -262,7 +264,7 @@ GPlatesQtWidgets::ImportScalarField3DDialog::display(
 		// We want to merge model events across this scope so that only one model event
 		// is generated instead of many as we incrementally modify the feature below.
 		GPlatesModel::NotificationGuard model_notification_guard(
-				d_application_state.get_model_interface().access_model());
+				*d_application_state.get_model_interface().access_model());
 
 		// Ensure sorted by depth before we iterate over the sequence.
 		d_depth_layers_sequence.sort_by_depth();

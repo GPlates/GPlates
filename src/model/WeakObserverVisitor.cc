@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2015 The University of Sydney, Australia
+ * Copyright (C) 2014 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -25,64 +25,73 @@
 
 #include "WeakObserverVisitor.h"
 
-// Class definitions of ReconstructedFeatureGeometry derivations are needed below for static casts.
 #include "app-logic/DeformedFeatureGeometry.h"
 #include "app-logic/ReconstructedFlowline.h"
 #include "app-logic/ReconstructedMotionPath.h"
-#include "app-logic/ReconstructedScalarCoverage.h"
 #include "app-logic/ReconstructedSmallCircle.h"
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
+#include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/ResolvedTopologicalLine.h"
 
 
-namespace GPlatesModel
+void
+GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle>::visit_deformed_feature_geometry(
+		GPlatesAppLogic::DeformedFeatureGeometry &dfg)
 {
-	void
-	WeakObserverVisitor<FeatureHandle>::visit_deformed_feature_geometry(
-			GPlatesAppLogic::DeformedFeatureGeometry &dfg)
-	{
-		// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
-		visit_reconstructed_feature_geometry(
-				static_cast<GPlatesAppLogic::ReconstructedFeatureGeometry &>(dfg));
-	}
+	// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
+	visit_reconstructed_feature_geometry(dfg);
+}
 
 
-	void
-	WeakObserverVisitor<FeatureHandle>::visit_reconstructed_flowline(
-			GPlatesAppLogic::ReconstructedFlowline &rf)
-	{
-		// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
-		visit_reconstructed_feature_geometry(
-				static_cast<GPlatesAppLogic::ReconstructedFeatureGeometry &>(rf));
-	}
+void
+GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle>::visit_reconstructed_flowline(
+		GPlatesAppLogic::ReconstructedFlowline &rf)
+{
+	// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
+	visit_reconstructed_feature_geometry(rf);
+}
 
 
-	void
-	WeakObserverVisitor<FeatureHandle>::visit_reconstructed_motion_path(
-			GPlatesAppLogic::ReconstructedMotionPath &rmp)
-	{
-		// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
-		visit_reconstructed_feature_geometry(
-				static_cast<GPlatesAppLogic::ReconstructedFeatureGeometry &>(rmp));
-	}
+void
+GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle>::visit_reconstructed_motion_path(
+		GPlatesAppLogic::ReconstructedMotionPath &rmp)
+{
+	// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
+	visit_reconstructed_feature_geometry(rmp);
+}
 
 
-	void
-	WeakObserverVisitor<FeatureHandle>::visit_reconstructed_small_circle(
-			GPlatesAppLogic::ReconstructedSmallCircle &rsc)
-	{
-		// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
-		visit_reconstructed_feature_geometry(
-				static_cast<GPlatesAppLogic::ReconstructedFeatureGeometry &>(rsc));
-	}
+void
+GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle>::visit_reconstructed_small_circle(
+		GPlatesAppLogic::ReconstructedSmallCircle &rsc)
+{
+	// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
+	visit_reconstructed_feature_geometry(rsc);
+}
 
 
+void
+GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle>::visit_reconstructed_virtual_geomagnetic_pole(
+		GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp)
+{
+	// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
+	visit_reconstructed_feature_geometry(rvgp);
+}
 
-	void
-	WeakObserverVisitor<FeatureHandle>::visit_reconstructed_virtual_geomagnetic_pole(
-			GPlatesAppLogic::ReconstructedVirtualGeomagneticPole &rvgp)
-	{
-		// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
-		visit_reconstructed_feature_geometry(
-				static_cast<GPlatesAppLogic::ReconstructedFeatureGeometry &>(rvgp));
-	}
+
+void
+GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle>::visit_resolved_topological_boundary(
+		GPlatesAppLogic::ResolvedTopologicalBoundary &rtb)
+{
+	// Default implementation delegates to base class 'ResolvedTopologicalGeometry'.
+	visit_resolved_topological_geometry(rtb);
+}
+
+
+void
+GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle>::visit_resolved_topological_line(
+		GPlatesAppLogic::ResolvedTopologicalLine &rtl)
+{
+	// Default implementation delegates to base class 'ResolvedTopologicalGeometry'.
+	visit_resolved_topological_geometry(rtl);
 }

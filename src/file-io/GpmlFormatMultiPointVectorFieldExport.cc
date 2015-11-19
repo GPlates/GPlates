@@ -39,6 +39,8 @@
 
 #include "feature-visitors/PropertyValueFinder.h"
 
+#include "maths/CalculateVelocity.h"
+
 #include "model/FeatureCollectionHandle.h"
 #include "model/ModelUtils.h"
 #include "model/NotificationGuard.h"
@@ -160,11 +162,12 @@ namespace
 					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
 			// Get the property value from the domain feature.
-			const GPlatesPropertyValues::GpmlPlateId *domain_reconstruction_plate_id_property_value = NULL;
-			if (GPlatesFeatureVisitors::get_property_value(
-				domain_feature_ref,
-				RECONSTRUCTION_PLATE_ID_PROPERTY_NAME,
-				domain_reconstruction_plate_id_property_value))
+			boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type>
+					domain_reconstruction_plate_id_property_value =
+							GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+									domain_feature_ref,
+									RECONSTRUCTION_PLATE_ID_PROPERTY_NAME);
+			if (domain_reconstruction_plate_id_property_value)
 			{
 				static const GPlatesModel::PropertyName DOMAIN_RECONSTRUCTION_PLATE_ID_PROPERTY_NAME =
 						GPlatesModel::PropertyName::create_gpml("domainReconstructionPlateId");
@@ -172,7 +175,7 @@ namespace
 				feature->add(
 						GPlatesModel::TopLevelPropertyInline::create(
 								DOMAIN_RECONSTRUCTION_PLATE_ID_PROPERTY_NAME,
-								domain_reconstruction_plate_id_property_value->deep_clone_as_prop_val()));
+								domain_reconstruction_plate_id_property_value.get()->deep_clone_as_prop_val()));
 			}
 		}
 
@@ -189,11 +192,11 @@ namespace
 					GPlatesModel::PropertyName::create_gml("name");
 
 			// Get the property value from the domain feature.
-			const GPlatesPropertyValues::XsString *name_property_value = NULL;
-			if (GPlatesFeatureVisitors::get_property_value(
-				domain_feature_ref,
-				NAME_PROPERTY_NAME,
-				name_property_value))
+			boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name_property_value =
+					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+							domain_feature_ref,
+							NAME_PROPERTY_NAME);
+			if (name_property_value)
 			{
 				static const GPlatesModel::PropertyName DOMAIN_NAME_PROPERTY_NAME =
 						GPlatesModel::PropertyName::create_gpml("domainName");
@@ -201,7 +204,7 @@ namespace
 				feature->add(
 						GPlatesModel::TopLevelPropertyInline::create(
 								DOMAIN_NAME_PROPERTY_NAME,
-								name_property_value->deep_clone_as_prop_val()));
+								name_property_value.get()->deep_clone_as_prop_val()));
 			}
 		}
 
@@ -303,7 +306,6 @@ void
 GPlatesFileIO::GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fields(
 		const std::list<multi_point_vector_field_group_type> &velocity_vector_field_group_seq,
 		const QFileInfo& file_info,
-		const GPlatesModel::Gpgim &gpgim,
 		GPlatesModel::ModelInterface &model,
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -311,7 +313,7 @@ GPlatesFileIO::GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fie
 {
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
-	GPlatesModel::NotificationGuard model_notification_guard(model.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*model.access_model());
 
 	// NOTE: We don't add to the feature store otherwise it'll remain there but
 	// we want to release it (and its memory) after export.
@@ -354,6 +356,6 @@ GPlatesFileIO::GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fie
 	FileInfo output_file(file_info.filePath());
 
 	// Write the output file by visiting the feature collection with the new velocity fields.
-	GpmlOutputVisitor gpml_writer(output_file, feature_collection_ref, gpgim, false);
+	GpmlOutputVisitor gpml_writer(output_file, feature_collection_ref, false);
 	GPlatesAppLogic::AppLogicUtils::visit_feature_collection(feature_collection_ref, gpml_writer);
 }

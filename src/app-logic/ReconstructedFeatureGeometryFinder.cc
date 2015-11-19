@@ -28,9 +28,6 @@
 #include "ReconstructedFeatureGeometryFinder.h"
 
 #include "ReconstructedFeatureGeometry.h"
-#include "ReconstructedFlowline.h"
-#include "ReconstructedMotionPath.h"
-#include "ReconstructedVirtualGeomagneticPole.h"
 
 
 namespace

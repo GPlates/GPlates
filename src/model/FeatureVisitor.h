@@ -914,24 +914,6 @@ namespace GPlatesModel
 
 	typedef FeatureVisitorBase<FeatureHandle> FeatureVisitor;
 	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
-
-	/**
-	 * FIXME: This is temporary until we resolve the overhead of cloning properties
-	 * in non-const visitors or come to accept the overhead or some middle solution.
-	 *
-	 * A hacked non-const feature visitor that avoids the property cloning
-	 * that occurs with @a FeatureVisitor but relies on classes deriving from it
-	 * keeping their promise not to modify the property values that are visited.
-	 */
-	class FeatureVisitorThatGuaranteesNotToModify :
-			public FeatureVisitor
-	{
-	public:
-		virtual
-		void
-		visit_feature_property(
-				const feature_iterator_type &feature_iterator);
-	};
 }
 
 #endif  // GPLATES_MODEL_FEATUREVISITOR_H

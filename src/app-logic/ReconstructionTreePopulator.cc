@@ -27,7 +27,8 @@
 
 #include <boost/foreach.hpp>
 #include <boost/none.hpp>  // boost::none
-
+#include <boost/ref.hpp>
+	
 #include "ReconstructionTreePopulator.h"
 #include "ReconstructionGraph.h"
 
@@ -211,7 +212,6 @@ GPlatesAppLogic::ReconstructionTreePopulator::finalise_post_feature_properties(
 			*(d_accumulator->d_fixed_ref_frame),
 			*(d_accumulator->d_moving_ref_frame),
 			*(d_accumulator->d_finite_rotation),
-			feature_handle.reference(),
 			d_accumulator->d_finite_rotation_was_interpolated);
 
 	d_accumulator = boost::none;
@@ -246,6 +246,7 @@ void
 GPlatesAppLogic::ReconstructionTreePopulator::visit_gpml_irregular_sampling(
 		GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
 {
+	using namespace GPlatesModel;
 	using namespace GPlatesPropertyValues;
 
 	// It is assumed that an IrregularSampling instance which has been reached by the visit

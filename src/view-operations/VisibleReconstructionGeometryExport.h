@@ -151,9 +151,10 @@ namespace GPlatesViewOperations
 
 
 		/**
-		 * Collects visible resolved topologies including @a ResolvedTopologicalGeometry objects and
-		 * @a ResolvedTopologicalNetwork objects that are displayed using @a rendered_geom_collection
-		 * and exports to a file depending on the file extension of @a filename.
+		 * Collects visible resolved topologies including @a ResolvedTopologicalLine,
+		 * @a ResolvedTopologicalBoundary and @a ResolvedTopologicalNetwork objects that are
+		 * displayed using @a rendered_geom_collection and exports to a file depending on the
+		 * file extension of @a filename.
 		 *
 		 * @param active_files used to determine which files the resolved topologies came from.
 		 * @param reconstruction_anchor_plate_id the anchor plate id used in the reconstruction.
@@ -163,6 +164,7 @@ namespace GPlatesViewOperations
 		 * @param export_separate_output_directory_per_input_file save each file to a different directory.
 		 * @param export_topological_lines export resolved topological lines.
 		 * @param export_topological_polygons export resolved topological polygons.
+		 * @param export_topological_networks export resolved topological networks.
 		 * @param force_polygon_orientation optionally force polygon orientation (clockwise or counter-clockwise).
 		 * @param wrap_to_dateline if true then exported geometries are wrapped/clipped to the dateline.
 		 *
@@ -183,6 +185,7 @@ namespace GPlatesViewOperations
 				bool export_separate_output_directory_per_input_file,
 				bool export_topological_lines,
 				bool export_topological_polygons,
+				bool export_topological_networks,
 				boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
 						force_polygon_orientation = boost::none,
 				bool wrap_to_dateline = true);

@@ -32,6 +32,7 @@
 #include <QString>
 
 #include "ReconstructedFeatureGeometry.h"
+#include "ResolvedTopologicalGeometrySubSegment.h"
 #include "TopologyGeometryType.h"
 
 #include "maths/GeometryOnSphere.h"
@@ -163,7 +164,7 @@ namespace GPlatesAppLogic
 		 * - there are multiple RGs satisfying the specified constraints (reconstruct handles)
 		 *   and they came from *different* features (it's ok to have more than one feature with
 		 *   same feature id but the constraints, reconstruct handles, must reduce the set of RGs
-		 *   such that they come from only *one* feature (in this case an warning message is
+		 *   such that they come from only *one* feature (in this case a warning message is
 		 *   output to the console).
 		 *
 		 * If there is no RG that is reconstructed from @a geometry_delegate, and satisfying the
@@ -233,20 +234,6 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the @a FiniteRotation obtained by looking up @a reconstruction_tree
-		 * using the plate id from the "gpml:reconstructionPlateId" property of
-		 * @a reconstruction_plateid_feature.
-		 *
-		 * If @a reconstruction_plateid_feature is not valid or
-		 * no "gpml:reconstructionPlateId" property is found then false is returned.
-		 */
-		boost::optional<GPlatesMaths::FiniteRotation>
-		get_finite_rotation(
-				const GPlatesModel::FeatureHandle::weak_ref &reconstruction_plateid_feature,
-				const ReconstructionTree &reconstruction_tree);
-
-
-		/**
 		 * Intersects geometries @a first_section_reconstructed_geometry and
 		 * @a second_section_reconstructed_geometry if they are intersectable
 		 * (see @a get_polylines_for_intersection) and for each intersected section
@@ -305,7 +292,7 @@ namespace GPlatesAppLogic
 		 * (see @a get_polylines_for_intersection) and returns the two intersected
 		 * head and tail segments for each section.
 		 *
-		 * If the geometries are not intersectable (eg, point/polygon) then false is returned.
+		 * If the geometries are not intersectable (eg, point/multi-point) then false is returned.
 		 * If the geometries are intersectable but do not intersect then false is returned.
 		 *
 		 * The returned @a PointOnSphere is the intersection point if the sections
@@ -385,7 +372,7 @@ namespace GPlatesAppLogic
 		 * (see @a get_polylines_for_intersection) allowing up to two intersections
 		 * and returns optional head, tail and middle segments for each section.
 		 *
-		 * If the geometries are not intersectable (eg, point/polygon) then false is returned.
+		 * If the geometries are not intersectable (eg, point/multi-point) then false is returned.
 		 * If the geometries are intersectable but do not intersect then false is returned.
 		 *
 		 * The first @a PointOnSphere returned is if there's one intersection.
@@ -502,6 +489,34 @@ namespace GPlatesAppLogic
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_intersected_segment);
 
 
+		/**
+		 * Join adjacent deforming points that are spread along a deforming zone.
+		 *
+		 * Contiguous sub-segments, each whose feature contains a 'gpml:unclassifiedGeometry' point
+		 * geometry, are combined into a single sub-segment. If none are found then the original
+		 * sub-segment sequence is returned. The combined sub-segment is joined with the end point
+		 * of the previous (non-joined) sub-segment and with the start point of the next (non-joined)
+		 * sub-segment - unless *all* sub-segments are joined.
+		 * The feature reference and reconstruction geometry associated with each joined sub-segment
+		 * is that of the *first* sub-segment in the sequence that were joined - this is a bit
+		 * arbitrary but highlights that this joining is a hack (see below).
+		 *
+		 * This was meant to be a temporary hack to be removed now that resolved *line* topologies
+		 * have been implemented. However, unfortunately it seems we need to keep this hack in place
+		 * for any old data files that use the old method.
+		 *
+		 * Prior to the ability to have resolved *line* topologies, a deforming zone was deformed by
+		 * individually moving point geometries spread out along the deforming zone (each moving
+		 * according to a separate Plate ID). Exporting these required joining adjacent deforming
+		 * point geometries into one deforming polyline subsegment. That's no longer needed now that
+		 * resolved *line* topologies can be used.
+		 */
+		void
+		join_adjacent_deforming_points(
+				sub_segment_seq_type &merged_sub_segments,
+				const sub_segment_seq_type &sub_segments,
+				const double &reconstruction_time);
+
 		
 		/**
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved line.
@@ -517,7 +532,7 @@ namespace GPlatesAppLogic
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved boundary.
 		 *
 		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry or a
-		 * resolved topological line (@a ResolvedTopologicalGeometry with a *polyline* geometry).
+		 * resolved topological line (@a ResolvedTopologicalLine).
 		 */
 		bool
 		can_use_as_resolved_boundary_topological_section(
@@ -528,7 +543,7 @@ namespace GPlatesAppLogic
 		 * Returns true if @a recon_geom can be used as a topological section for a resolved network.
 		 *
 		 * Essentially @a recon_geom must be a @a ReconstructedFeatureGeometry or a
-		 * resolved topological line (@a ResolvedTopologicalGeometry with a *polyline* geometry).
+		 * resolved topological line (@a ResolvedTopologicalLine).
 		 */
 		bool
 		can_use_as_resolved_network_topological_section(

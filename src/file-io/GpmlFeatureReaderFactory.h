@@ -42,11 +42,6 @@
 #include "model/GpgimVersion.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesFileIO
 {
 	/**
@@ -68,12 +63,9 @@ namespace GPlatesFileIO
 		/**
 		 * Constructs a @a GpmlFeatureReaderFactory from a GPGIM.
 		 *
-		 * The version of @a gpgim should match the version in the GPML file being read from.
-		 *
 		 * @a gpml_version is the GPGIM version stored in the GPML file.
 		 */
 		GpmlFeatureReaderFactory(
-				const GPlatesModel::Gpgim &gpgim,
 				const GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type &property_structural_type_reader,
 				const GPlatesModel::GpgimVersion &gpml_version);
 
@@ -85,8 +77,7 @@ namespace GPlatesFileIO
 		 * This creates each feature reader on demand to avoid creating readers for feature types
 		 * that are never encountered in loaded GPML files.
 		 *
-		 * Returns boost::none if the specified feature type is not recognised
-		 * in the loaded GPGIM (the @a Gpgim passed into constructor).
+		 * Returns boost::none if the specified feature type is not recognised by the GPGIM.
 		 */
 		boost::optional<GpmlFeatureReaderInterface>
 		get_feature_reader(
@@ -109,11 +100,6 @@ namespace GPlatesFileIO
 		typedef std::map<GPlatesModel::FeatureType, GpmlFeatureReaderImpl::non_null_ptr_type>
 				feature_reader_map_impl_type;
 
-
-		/**
-		 * Used to generate the feature reader structures that match the GPGIM version in the GPML file.
-		 */
-		GPlatesGlobal::PointerTraits<const GPlatesModel::Gpgim>::non_null_ptr_type d_gpgim;
 
 		/**
 		 * Used to read structural types from a GPML file.

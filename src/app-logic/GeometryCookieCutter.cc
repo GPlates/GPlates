@@ -32,7 +32,8 @@
 #include "GeometryUtils.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalNetwork.h"
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 
@@ -40,7 +41,7 @@
 GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 		const double &reconstruction_time,
 		boost::optional<const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &> reconstructed_static_polygons,
-		boost::optional<const std::vector<resolved_topological_geometry_non_null_ptr_type> &> resolved_topological_boundaries,
+		boost::optional<const std::vector<resolved_topological_boundary_non_null_ptr_type> &> resolved_topological_boundaries,
 		boost::optional<const std::vector<resolved_topological_network_non_null_ptr_type> &> resolved_topological_networks) :
 	d_reconstruction_time(reconstruction_time)
 {
@@ -235,18 +236,13 @@ GPlatesAppLogic::GeometryCookieCutter::partition_point(
 
 void
 GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_boundaries(
-		const std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries)
+		const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries)
 {
 	// Create the partitioned geometries.
-	BOOST_FOREACH(const ResolvedTopologicalGeometry::non_null_ptr_type &rtb, resolved_topological_boundaries)
+	BOOST_FOREACH(const ResolvedTopologicalBoundary::non_null_ptr_type &rtb, resolved_topological_boundaries)
 	{
-		boost::optional<ResolvedTopologicalGeometry::resolved_topology_boundary_ptr_type>
-				resolved_topology_boundary_polygon = rtb->resolved_topology_boundary();
-		if (resolved_topology_boundary_polygon)
-		{
-			d_partitioning_geometries.push_back(
-					PartitioningGeometry(rtb, resolved_topology_boundary_polygon.get()));
-		}
+		d_partitioning_geometries.push_back(
+				PartitioningGeometry(rtb, rtb->resolved_topology_boundary()));
 	}
 }
 

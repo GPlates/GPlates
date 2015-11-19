@@ -43,7 +43,7 @@ namespace GPlatesFileIO
 		typedef std::vector<const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *> sub_segment_ptr_seq_type;
 
 		/**
-		 * Groups a resolved topological geometry with a subset of its boundary subsegments.
+		 * Groups a resolved topology with a subset of its boundary subsegments.
 		 *
 		 * The reason for the subset, and not the full set, is only a specific subset
 		 * (eg, trench) of subsegments is being exported to a particular export file.
@@ -52,17 +52,17 @@ namespace GPlatesFileIO
 		{
 			explicit
 			SubSegmentGroup(
-					const GPlatesAppLogic::ReconstructionGeometry *resolved_topological_geometry_) :
-				resolved_topological_geometry(resolved_topological_geometry_)
+					const GPlatesAppLogic::ReconstructionGeometry *resolved_topology_) :
+				resolved_topology(resolved_topology_)
 			{  }
 
 
-			const GPlatesAppLogic::ReconstructionGeometry *resolved_topological_geometry;
+			const GPlatesAppLogic::ReconstructionGeometry *resolved_topology;
 			sub_segment_ptr_seq_type sub_segments;
 		};
 
-		//! Typedef for a sequence of resolved topological geometries.
-		typedef std::vector<const GPlatesAppLogic::ReconstructionGeometry *> resolved_geom_seq_type;
+		//! Typedef for a sequence of resolved topologies.
+		typedef std::vector<const GPlatesAppLogic::ReconstructionGeometry *> resolved_topologies_seq_type;
 
 		//! Typedef for a sequence of @a SubSegmentGroup objects.
 		typedef std::vector<SubSegmentGroup> sub_segment_group_seq_type;

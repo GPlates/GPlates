@@ -70,25 +70,23 @@ namespace GPlatesPropertyValues
 	{
 	public:
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GmlDataBlockCoordinateList>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GmlDataBlockCoordinateList>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlDataBlockCoordinateList> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlockCoordinateList>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlockCoordinateList>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlockCoordinateList> non_null_ptr_to_const_type;
+
 
 		/**
 		 * The type which contains XML attribute names and values.
 		 */
-		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
-				xml_attributes_type;
+		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes_type;
 
 		/**
-		 * The type of the sequence of coordinates.
+		 * The type containing the coordinates.
 		 */
 		typedef std::vector<double> coordinate_list_type;
 
@@ -165,24 +163,25 @@ namespace GPlatesPropertyValues
 			return dup;
 		}
 
+		// Note that no "setter" is provided:  The value object type is not changeable.
 		const ValueObjectType &
 		value_object_type() const
 		{
 			return d_value_object_type;
 		}
 
-		// @b FIXME:  Should this function be replaced with per-index const-access to
-		// elements of the XML attribute map?  (For consistency with the non-const
-		// overload...)
+		/**
+		 * Return the map of XML attributes contained by this instance.
+		 */
 		const xml_attributes_type &
 		value_object_xml_attributes() const
 		{
 			return d_value_object_xml_attributes;
 		}
 
-		// @b FIXME:  Should this function be replaced with per-index const-access to
-		// elements of the XML attribute map, as well as per-index assignment (setter) and
-		// removal operations?  This would ensure that revisioning is correctly handled...
+		/**
+		 * Return the map of XML attributes contained by this instance.
+		 */
 		xml_attributes_type &
 		value_object_xml_attributes()
 		{

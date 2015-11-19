@@ -127,3 +127,25 @@ GPlatesModel::GpgimFeatureClass::get_default_geometry_feature_property() const
 	// Not found.
 	return boost::none;
 }
+
+
+bool
+GPlatesModel::GpgimFeatureClass::does_inherit_from(
+		const GPlatesModel::FeatureType &feature_type) const
+{
+	boost::optional<GpgimFeatureClass::non_null_ptr_to_const_type> feature_class(
+			get_non_null_pointer(this));
+
+	// Iterate over the ancestor feature classes.
+	while (feature_class)
+	{
+		if (feature_class.get()->get_feature_type() == feature_type)
+		{
+			return true;
+		}
+
+		feature_class = feature_class.get()->get_parent_feature_class();
+	}
+
+	return false;
+}

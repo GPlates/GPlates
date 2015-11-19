@@ -35,8 +35,6 @@
 
 #include "AppLogicFwd.h"
 #include "ReconstructionTreeCreator.h"
-#include "ResolvedTopologicalNetwork.h"
-#include "ResolvedTriangulationNetwork.h"
 
 #include "file-io/FileInfo.h"
 
@@ -165,7 +163,7 @@ namespace GPlatesAppLogic
 				// (due to destructor of std::vector requiring non_null_ptr_type destructor requiring recon geom definition)
 				// and we are avoiding that due to a cyclic header dependency with "ResolvedTopologicalNetwork.h"...
 				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
-				const std::vector<resolved_topological_geometry_non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
+				const std::vector<resolved_topological_boundary_non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
 				const std::vector<resolved_topological_network_non_null_ptr_type> &velocity_surface_resolved_topological_networks,
 				const boost::optional<VelocitySmoothingOptions> &velocity_smoothing_options = boost::none);
 

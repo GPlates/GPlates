@@ -36,6 +36,7 @@
 #include "GeometryOnSphere.h"
 #include "PointOnSphere.h"
 
+#include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
 
@@ -351,6 +352,21 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Return the point in this multi-point at the specified index.
+		 */
+		const PointOnSphere &
+		get_point(
+				size_type point_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					point_index < number_of_points(),
+					GPLATES_ASSERTION_SOURCE);
+
+			return d_points[point_index];
+		}
+
+
+		/**
 		 * Return the start-point of this multi-point.
 		 */
 		const PointOnSphere &
@@ -406,12 +422,27 @@ namespace GPlatesMaths
 				const real_t &closeness_inclusion_threshold,
 				real_t &closeness) const;
 
+
+		/**
+		 * Equality operator compares points in order.
+		 */
 		bool
 		operator==(
 				const MultiPointOnSphere &other) const
 		{
 			return d_points == other.d_points;
 		}
+
+		/**
+		 * Inequality operator.
+		 */
+		bool
+		operator!=(
+				const MultiPointOnSphere &other) const
+		{
+			return !operator==(other);
+		}
+
 
 		//
 		// The following are cached calculations on the geometry data.

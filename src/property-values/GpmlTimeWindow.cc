@@ -63,4 +63,3 @@ GPlatesPropertyValues::GpmlTimeWindow::operator==(
 		*d_valid_time == *other.d_valid_time &&
 		d_value_type == other.d_value_type;
 }
-

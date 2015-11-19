@@ -32,8 +32,10 @@
 #endif 
 
 #include <algorithm>
+#include <functional>
 #include <list>
 #include <map>
+#include <utility>
 #include <vector>
 #include "global/CompilerWarnings.h"
 PUSH_MSVC_WARNINGS
@@ -89,7 +91,7 @@ namespace GPlatesFileIO
 		struct FeatureCollectionFeatureGroup
 		{
 			FeatureCollectionFeatureGroup(
-				const GPlatesFileIO::File::Reference *file_ptr_):
+					const GPlatesFileIO::File::Reference *file_ptr_) :
 				file_ptr(file_ptr_)
 			{}
 
@@ -100,14 +102,20 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Typedef for mapping from @a FeatureHandle to the feature collection file it came from.
+		 * Typedef for mapping from @a FeatureHandle to the feature collection file it came from and
+		 * the order in which is occurs relative to other features in the feature collections.
 		 */
-		typedef std::map<const GPlatesModel::FeatureHandle *, const GPlatesFileIO::File::Reference *>
-			feature_handle_to_collection_map_type;
+		typedef std::map<
+				const GPlatesModel::FeatureHandle *,
+				std::pair<const GPlatesFileIO::File::Reference *, unsigned int/*feature order*/> >
+						feature_handle_to_collection_map_type;
 
 
 		/**
 		 * Populates mapping of feature handle to feature collection file.
+		 *
+		 * Also stores the ordering (as an integer) of each feature as the are ordered within
+		 * and across the feature collections (according to @a reconstructable_files).
 		 */
 		void
 		populate_feature_handle_to_collection_map(
@@ -141,7 +149,6 @@ namespace GPlatesFileIO
 				const std::vector<const File::Reference *> &reconstructable_files,
 				feature_handle_to_collection_map_type &feature_handle_to_collection_map)
 		{
-
 			populate_feature_handle_to_collection_map(
 					feature_handle_to_collection_map,
 					reconstructable_files);
@@ -154,14 +161,21 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Returns a sequence of groups of ReconstructionGeometry objects (grouped by their feature).
-		 * Result is stored in @a grouped_recon_geoms_seq.
+		 * Returns a sequence of groups of ReconstructionGeometry objects (grouped by their feature)
+		 * with result is stored in @a grouped_recon_geoms_seq.
+		 *
+		 * Sorts feature groups according to the order their features appear in their feature collection
+		 * and across feature collections (ie, first feature collection features then second, etc)
+		 * as determined by @a feature_to_collection_map.
+		 * This ensures that the ReconstructionGeometry's are exported in the same order as the
+		 * features they were reconstructed from.
 		 */
 		template <class ReconstructionGeometryType>
 		void
 		group_reconstruction_geometries_with_their_feature(
 				std::list< FeatureGeometryGroup<ReconstructionGeometryType> > &grouped_recon_geoms_seq,
-				const std::vector<const ReconstructionGeometryType *> &reconstruction_geometry_seq);
+				const std::vector<const ReconstructionGeometryType *> &reconstruction_geometry_seq,
+				const feature_handle_to_collection_map_type &feature_to_collection_map);
 
 
 		/**
@@ -252,18 +266,64 @@ namespace GPlatesFileIO
 
 		/**
 		 * Compares feature handle pointers of two @a ReconstructionGeometry derived objects.
+		 *
+		 * Sorting features according to the order they appear in their feature collection and
+		 * across feature collections (ie, first feature collection features then second, etc).
+		 * This ensures that the ReconstructionGeometry's are exported in the same order as the
+		 * features they were reconstructed from.
 		 */
 		template <class ReconstructionGeometryType>
-		bool
-		compare_feature_handle_ptrs(
-				const ReconstructionGeometryType *lhs_recon_geom,
-				const ReconstructionGeometryType *rhs_recon_geom)
+		class SortByFeatureOrderInCollections :
+				public std::binary_function<const ReconstructionGeometryType *, const ReconstructionGeometryType *, bool>
 		{
-			return
-					GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_handle_ptr(lhs_recon_geom)
-					<
-					GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_handle_ptr(rhs_recon_geom);
-		}
+		public:
+
+			//! Pointer-to-data-member determines which file offset (main or coverage) to use in comparison.
+			explicit
+			SortByFeatureOrderInCollections(
+					const feature_handle_to_collection_map_type &feature_handle_to_collection_map) :
+				d_feature_handle_to_collection_map(feature_handle_to_collection_map)
+			{  }
+
+			bool
+			operator()(
+					const ReconstructionGeometryType *lhs_recon_geom,
+					const ReconstructionGeometryType *rhs_recon_geom) const
+			{
+				boost::optional<GPlatesModel::FeatureHandle *> lhs_feature = 
+						GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_handle_ptr(lhs_recon_geom);
+				boost::optional<GPlatesModel::FeatureHandle *> rhs_feature = 
+						GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_handle_ptr(rhs_recon_geom);
+
+				// If not both valid features then just rely on boost::optional comparison.
+				if (!(lhs_feature && rhs_feature))
+				{
+					return lhs_feature < rhs_feature;
+				}
+
+				const feature_handle_to_collection_map_type::const_iterator lhs_map_iter =
+						d_feature_handle_to_collection_map.find(lhs_feature.get());
+				const feature_handle_to_collection_map_type::const_iterator rhs_map_iter =
+						d_feature_handle_to_collection_map.find(rhs_feature.get());
+				if (lhs_map_iter == d_feature_handle_to_collection_map.end())
+				{
+					return rhs_map_iter != d_feature_handle_to_collection_map.end();
+				}
+
+				if (rhs_map_iter == d_feature_handle_to_collection_map.end())
+				{
+					return false;
+				}
+
+				const unsigned int lhs_feature_order = lhs_map_iter->second.second;
+				const unsigned int rhs_feature_order = rhs_map_iter->second.second;
+
+				return lhs_feature_order < rhs_feature_order;
+			}
+
+		private:
+			const feature_handle_to_collection_map_type &d_feature_handle_to_collection_map;
+		};
 
 
 		/**
@@ -300,7 +360,7 @@ namespace GPlatesFileIO
 					continue;
 				}
 
-				const GPlatesFileIO::File::Reference *file = map_iter->second;
+				const GPlatesFileIO::File::Reference *file = map_iter->second.first;
 				referenced_files.push_back(file);
 			}
 
@@ -319,14 +379,22 @@ namespace GPlatesFileIO
 		void
 		group_reconstruction_geometries_with_their_feature(
 				std::list< FeatureGeometryGroup<ReconstructionGeometryType> > &grouped_recon_geoms_seq,
-				const std::vector<const ReconstructionGeometryType *> &reconstruction_geometry_seq)
+				const std::vector<const ReconstructionGeometryType *> &reconstruction_geometry_seq,
+				const feature_handle_to_collection_map_type &feature_to_collection_map)
 		{
 			// Copy sequence so we can sort the ReconstructionGeometry objects by feature.
 			std::vector<const ReconstructionGeometryType *> recon_geoms_sorted_by_feature(reconstruction_geometry_seq);
 
 			// Sort in preparation for grouping ReconstructionGeometry objects by feature.
-			std::sort(recon_geoms_sorted_by_feature.begin(), recon_geoms_sorted_by_feature.end(),
-					&compare_feature_handle_ptrs<ReconstructionGeometryType>);
+			// Also sorting features according to the order they appear in their feature collection and
+			// across feature collections (ie, first feature collection features then second, etc).
+			// This ensures that the ReconstructionGeometry's are exported in the same order as the
+			// features they were reconstructed from.
+			// Using 'stable_sort()' to keep the order of ReconstructionGeometry objects *within* a feature.
+			std::stable_sort(
+					recon_geoms_sorted_by_feature.begin(),
+					recon_geoms_sorted_by_feature.end(),
+					SortByFeatureOrderInCollections<ReconstructionGeometryType>(feature_to_collection_map));
 
 			GPlatesModel::FeatureHandle::weak_ref current_feature_ref;
 
@@ -380,7 +448,7 @@ namespace GPlatesFileIO
 					feature_handle_to_collection_map.find(handle_ptr);
 				if (map_iter != feature_handle_to_collection_map.end())
 				{
-					const GPlatesFileIO::File::Reference *file_ptr = map_iter->second;
+					const GPlatesFileIO::File::Reference *file_ptr = map_iter->second.first;
 					
 					ContainsSameFilePointerPredicate<ReconstructionGeometryType> predicate(file_ptr);
 					typename std::list< FeatureCollectionFeatureGroup<ReconstructionGeometryType> >::iterator it =

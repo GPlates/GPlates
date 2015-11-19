@@ -374,7 +374,8 @@ namespace
 		coordinates_iterator_ranges.reserve(std::distance(tuple_list_begin, tuple_list_end));
 
 		TupleListIter tuple_list_iter = tuple_list_begin;
-		for ( ; tuple_list_iter != tuple_list_end; ++tuple_list_iter) {
+		for ( ; tuple_list_iter != tuple_list_end; ++tuple_list_iter)
+		{
 			coordinates_iterator_ranges.push_back(std::make_pair(
 						(*tuple_list_iter)->coordinates_begin(),
 						(*tuple_list_iter)->coordinates_end()));
@@ -467,7 +468,8 @@ namespace
 		typedef std::pair<coordinates_iterator, coordinates_iterator> coordinates_iterator_range;
 
 		// Handle the situation when the tuple-list is empty.
-		if (tuple_list_begin == tuple_list_end) {
+		if (tuple_list_begin == tuple_list_end)
+		{
 			// Nothing to output.
 			return;
 		}
@@ -513,8 +515,7 @@ GPlatesFileIO::GpmlOutputVisitor::gzip_program()
 GPlatesFileIO::GpmlOutputVisitor::GpmlOutputVisitor(
 		const FileInfo &file_info,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-		const GPlatesModel::Gpgim &gpgim,
-		bool use_gzip):
+		bool use_gzip) :
 	d_qfile_ptr(new QFile(file_info.get_qfileinfo().filePath())),
 	d_qprocess_ptr(new QProcess),
 	d_gzip_afterwards(false),
@@ -579,49 +580,47 @@ GPlatesFileIO::GpmlOutputVisitor::GpmlOutputVisitor(
 		
 	}
 	
-	start_writing_document(d_output, feature_collection_ref, gpgim);
+	start_writing_document(d_output, feature_collection_ref);
 }
 
 
 GPlatesFileIO::GpmlOutputVisitor::GpmlOutputVisitor(
 		QIODevice *target,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-		const GPlatesModel::Gpgim &gpgim):
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref) :
 	d_qfile_ptr(),
 	d_qprocess_ptr(),
 	d_output(target),
 	d_gzip_afterwards(false)
 {
-	start_writing_document(d_output, feature_collection_ref, gpgim);
+	start_writing_document(d_output, feature_collection_ref);
 }
 
 
 void
 GPlatesFileIO::GpmlOutputVisitor::start_writing_document(
 		XmlWriter &writer,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-		const GPlatesModel::Gpgim &gpgim)
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref)
 {
 	writer.writeStartDocument();
 
 	writer.writeNamespace(
-			GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING,
-			GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS_QSTRING);
+			GPlatesUtils::XmlNamespaces::get_gpml_namespace_qstring(),
+			GPlatesUtils::XmlNamespaces::get_gpml_standard_alias_qstring());
 	writer.writeNamespace(
-			GPlatesUtils::XmlNamespaces::GML_NAMESPACE_QSTRING,
-			GPlatesUtils::XmlNamespaces::GML_STANDARD_ALIAS_QSTRING);
+			GPlatesUtils::XmlNamespaces::get_gml_namespace_qstring(),
+			GPlatesUtils::XmlNamespaces::get_gml_standard_alias_qstring());
 	writer.writeNamespace(
-			GPlatesUtils::XmlNamespaces::XSI_NAMESPACE_QSTRING,
-			GPlatesUtils::XmlNamespaces::XSI_STANDARD_ALIAS_QSTRING);
+			GPlatesUtils::XmlNamespaces::get_xsi_namespace_qstring(),
+			GPlatesUtils::XmlNamespaces::get_xsi_standard_alias_qstring());
 
 	writer.writeStartGpmlElement("FeatureCollection");
 
 	// The version of the GPGIM built into the current GPlates.
-	const GPlatesModel::GpgimVersion &gpgim_version = gpgim.get_version();
+	const GPlatesModel::GpgimVersion &gpgim_version = GPlatesModel::Gpgim::instance().get_version();
 
 	writer.writeGpmlAttribute("version", gpgim_version.version_string());
 	writer.writeAttribute(
-			GPlatesUtils::XmlNamespaces::XSI_NAMESPACE_QSTRING,
+			GPlatesUtils::XmlNamespaces::get_xsi_namespace_qstring(),
 			"schemaLocation",
 			"http://www.gplates.org/gplates ../xsd/gpml.xsd "\
 			"http://www.opengis.net/gml ../../../gml/current/base");
@@ -1191,6 +1190,9 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_constant_value(
 			gpml_constant_value.value()->accept_visitor(*this);
 		d_output.writeEndElement();
 
+		d_output.writeStartGmlElement("description");
+			d_output.writeText(gpml_constant_value.description());
+		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("valueType");
 			writeTemplateTypeParameterType(d_output, gpml_constant_value.value_type());
@@ -1423,9 +1425,9 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_line(
 {
 	d_output.writeStartGpmlElement("TopologicalLine");
 
-	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator iter =
+	GPlatesPropertyValues::GpmlTopologicalLine::sections_const_iterator iter =
 			gpml_toplogical_line.sections_begin();
-	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator end =
+	GPlatesPropertyValues::GpmlTopologicalLine::sections_const_iterator end =
 			gpml_toplogical_line.sections_end();
 	for ( ; iter != end; ++iter) 
 	{
@@ -1619,32 +1621,32 @@ GPlatesFileIO::GpmlOutputVisitor::write_gpml_time_sample(
 		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) 
 {
 	d_output.writeStartGpmlElement("TimeSample");
-	d_output.writeStartGpmlElement("value");
-	gpml_time_sample.value()->accept_visitor(*this);
-	d_output.writeEndElement();
-
-	d_output.writeStartGpmlElement("validTime");
-	gpml_time_sample.valid_time()->accept_visitor(*this);
-	d_output.writeEndElement();
-
-	// The description is optional.
-	if (gpml_time_sample.description() != NULL) 
-	{
-		d_output.writeStartGmlElement("description");
-		gpml_time_sample.description()->accept_visitor(*this);
+		d_output.writeStartGpmlElement("value");
+			gpml_time_sample.value()->accept_visitor(*this);
 		d_output.writeEndElement();
-	}
 
-	if(gpml_time_sample.is_disabled())
-	{
-		d_output.writeStartGpmlElement("isDisabled");
-		d_output.writeBoolean(true);
+		d_output.writeStartGpmlElement("validTime");
+			gpml_time_sample.valid_time()->accept_visitor(*this);
 		d_output.writeEndElement();
-	}
 
-	d_output.writeStartGpmlElement("valueType");
-	writeTemplateTypeParameterType(d_output, gpml_time_sample.value_type());
-	d_output.writeEndElement();
+		// The description is optional.
+		if (gpml_time_sample.description())
+		{
+			d_output.writeStartGmlElement("description");
+				gpml_time_sample.description().get()->accept_visitor(*this);
+			d_output.writeEndElement();
+		}
+
+		if (gpml_time_sample.is_disabled())
+		{
+			d_output.writeStartGpmlElement("isDisabled");
+			d_output.writeBoolean(true);
+			d_output.writeEndElement();
+		}
+
+		d_output.writeStartGpmlElement("valueType");
+			writeTemplateTypeParameterType(d_output, gpml_time_sample.value_type());
+		d_output.writeEndElement();
 
 	d_output.writeEndElement();  // </gpml:TimeSample>
 }

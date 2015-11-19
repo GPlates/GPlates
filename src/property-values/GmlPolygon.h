@@ -31,8 +31,8 @@
 #include <vector>
 
 #include "feature-visitors/PropertyValueFinder.h"
-#include "model/PropertyValue.h"
 #include "maths/PolygonOnSphere.h"
+#include "model/PropertyValue.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -55,10 +55,10 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlPolygon> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlPolygon> non_null_ptr_to_const_type;
+
 
 		/**
 		 * A convenience typedef for the ring representation used internally.
@@ -94,9 +94,8 @@ namespace GPlatesPropertyValues
 			// non_null_ptr_to_const_type, there is no way a PolylineOnSphere instance
 			// can be changed.  Hence, it is safe to store a pointer to the instance
 			// which was passed into this 'create' function.
-			GmlPolygon::non_null_ptr_type polygon_ptr(
+			return non_null_ptr_type(
 					new GmlPolygon(exterior_ring));
-			return polygon_ptr;
 		}
 
 		/**
@@ -126,19 +125,17 @@ namespace GPlatesPropertyValues
 			// non_null_ptr_to_const_type, there is no way a PolylineOnSphere instance
 			// can be changed.  Hence, it is safe to store a pointer to the instance
 			// which was passed into this 'create' function.
-			GmlPolygon::non_null_ptr_type polygon_ptr(
+			return non_null_ptr_type(
 					new GmlPolygon(exterior_ring, interior_ring_collection));
-			return polygon_ptr;
 		}
 
-		const GmlPolygon::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GmlPolygon::non_null_ptr_type dup(new GmlPolygon(*this));
-			return dup;
+			return non_null_ptr_type(new GmlPolygon(*this));
 		}
 
-		const GmlPolygon::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const
 		{
 			// This class doesn't reference any mutable objects by pointer, so there's
@@ -149,14 +146,7 @@ namespace GPlatesPropertyValues
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
-		 * Access the GPlatesMaths::PolygonOnSphere which encodes the exterior geometry of
-		 * this instance.
-		 *
-		 * Note that there is no accessor provided which returns a boost::intrusive_ptr to
-		 * a non-const GPlatesMaths::PolygonOnSphere.  The GPlatesMaths::PolygonOnSphere
-		 * within this instance should not be modified directly; to alter the
-		 * GPlatesMaths::PolygonOnSphere within this instance, set a new value using the
-		 * function @a set_exterior below.
+		 * Access the GPlatesMaths::PolygonOnSphere which encodes the exterior geometry of this instance.
 		 */
 		const ring_type
 		exterior() const
@@ -165,11 +155,7 @@ namespace GPlatesPropertyValues
 		}
 
 		/**
-		 * Set the exterior polygon within this instance to @a r.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
+		 * Set the exterior polygon within this instance to @a exterior.
 		 */
 		void
 		set_exterior(
@@ -201,10 +187,6 @@ namespace GPlatesPropertyValues
 		
 		/**
 		 * Add an interior polygon @a r to the list of interiors of this instance.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		add_interior(
@@ -217,10 +199,6 @@ namespace GPlatesPropertyValues
 		
 		/**
 		 * Removes all interior rings from this GmlPolygon.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		clear_interiors()

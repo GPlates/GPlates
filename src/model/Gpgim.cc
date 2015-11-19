@@ -44,6 +44,7 @@
 
 #include "property-values/StructuralType.h"
 
+#include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
 #include "utils/XmlNamespaces.h"
 
@@ -253,12 +254,21 @@ namespace GPlatesModel
 }
 
 
-const QString GPlatesModel::Gpgim::DEFAULT_GPGIM_RESOURCE_FILENAME = ":/gpgim/gpgim.xml";
+const QString GPlatesModel::Gpgim::CORE_GPGIM_RESOURCE_FILENAME = ":/gpgim/gpgim.xml";
 
 
-GPlatesModel::Gpgim::Gpgim(
+GPlatesModel::Gpgim::Gpgim()
+{
+	load_gpgim_resource(CORE_GPGIM_RESOURCE_FILENAME);
+}
+
+
+void
+GPlatesModel::Gpgim::load_gpgim_resource(
 		const QString &gpgim_resource_filename)
 {
+	PROFILE_FUNC();
+
 	QXmlStreamReader xml_reader;
 
 	QFile input_file(gpgim_resource_filename);
@@ -417,6 +427,23 @@ GPlatesModel::Gpgim::get_property_structural_type(
 }
 
 
+boost::optional<GPlatesModel::GpgimTemplateStructuralType::non_null_ptr_to_const_type>
+GPlatesModel::Gpgim::get_property_template_structural_type(
+		const GPlatesPropertyValues::StructuralType &structural_type,
+		const GPlatesPropertyValues::StructuralType &value_type) const
+{
+	property_template_structural_type_map_type::const_iterator iter =
+			d_property_template_structural_type_map.find(
+					boost::make_tuple(structural_type, value_type));
+	if (iter == d_property_template_structural_type_map.end())
+	{
+		return boost::none;
+	}
+
+	return iter->second;
+}
+
+
 boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type>
 GPlatesModel::Gpgim::get_property_enumeration_type(
 		const GPlatesPropertyValues::StructuralType &structural_type) const
@@ -503,7 +530,7 @@ GPlatesModel::Gpgim::read_gpgim_element(
 	//
 
 	const QStringRef gpgim_version_string = xml_reader.attributes().value(
-			GPlatesUtils::XmlNamespaces::GPGIM_NAMESPACE_QSTRING, "version");
+			GPlatesUtils::XmlNamespaces::get_gpgim_namespace_qstring(), "version");
 
 	boost::optional<GpgimVersion> gpgim_version = GpgimVersion::create(gpgim_version_string.toString());
 	if (!gpgim_version)
@@ -546,7 +573,7 @@ GPlatesModel::Gpgim::read_gpgim_element(
 
 	if (!qualified_names_are_equal(
 		xml_reader,
-		GPlatesUtils::XmlNamespaces::GPGIM_NAMESPACE_QSTRING,
+		GPlatesUtils::XmlNamespaces::get_gpgim_namespace_qstring(),
 		GPlatesUtils::make_qstring_from_icu_string(PROPERTY_TYPE_LIST_ELEMENT_NAME.get_name())))
 	{
 		throw GpgimInitialisationException(
@@ -593,7 +620,7 @@ GPlatesModel::Gpgim::read_gpgim_element(
 
 	if (!qualified_names_are_equal(
 		xml_reader,
-		GPlatesUtils::XmlNamespaces::GPGIM_NAMESPACE_QSTRING,
+		GPlatesUtils::XmlNamespaces::get_gpgim_namespace_qstring(),
 		GPlatesUtils::make_qstring_from_icu_string(PROPERTY_LIST_ELEMENT_NAME.get_name())))
 	{
 		throw GpgimInitialisationException(
@@ -640,7 +667,7 @@ GPlatesModel::Gpgim::read_gpgim_element(
 
 	if (!qualified_names_are_equal(
 		xml_reader,
-		GPlatesUtils::XmlNamespaces::GPGIM_NAMESPACE_QSTRING,
+		GPlatesUtils::XmlNamespaces::get_gpgim_namespace_qstring(),
 		GPlatesUtils::make_qstring_from_icu_string(FEATURE_CLASS_LIST_ELEMENT_NAME.get_name())))
 	{
 		throw GpgimInitialisationException(
@@ -1118,19 +1145,47 @@ GPlatesModel::Gpgim::read_feature_property_structural_types(
 {
 	// The XML element name for property type in the GPGIM XML file.
 	static const XmlElementName PROPERTY_TYPE_ELEMENT_NAME = XmlElementName::create_gpgim("Type");
+	// The XML element name for property template type in the GPGIM XML file.
+	static const XmlElementName PROPERTY_TEMPLATE_TYPE_ELEMENT_NAME = XmlElementName::create_gpgim("TemplateType");
 
-	// Look for property time-dependent elements.
-	// There must be one or more of these elements.
-	std::vector<XmlElementNode::non_null_ptr_type> property_type_elements;
-	find_one_or_more_child_xml_elements(
-			property_type_elements,
+	// Look for property non-template type elements.
+	// These are optional and there can be multiple elements.
+	std::vector<XmlElementNode::non_null_ptr_type> property_non_template_type_elements;
+	find_zero_or_more_child_xml_elements(
+			property_non_template_type_elements,
 			property_xml_element,
 			PROPERTY_TYPE_ELEMENT_NAME,
 			gpgim_resource_filename);
 
+	// Look for property template type elements.
+	// These are optional and there can be multiple elements.
+	std::vector<XmlElementNode::non_null_ptr_type> property_template_type_elements;
+	find_zero_or_more_child_xml_elements(
+			property_template_type_elements,
+			property_xml_element,
+			PROPERTY_TEMPLATE_TYPE_ELEMENT_NAME,
+			gpgim_resource_filename);
+
+	const unsigned int num_non_template_and_template_type_elements =
+			property_non_template_type_elements.size() + property_template_type_elements.size();
+
+	// If no property non-template or template type elements were found then throw an exception.
+	// We need some kind of type specifier.
+	if (num_non_template_and_template_type_elements == 0)
+	{
+		throw GpgimInitialisationException(
+				GPLATES_EXCEPTION_SOURCE,
+				gpgim_resource_filename,
+				property_xml_element->line_number(),
+				QString("There were no '%1' or '%2' elements found in element '%3'")
+						.arg(convert_qualified_xml_name_to_qstring(PROPERTY_TYPE_ELEMENT_NAME))
+						.arg(convert_qualified_xml_name_to_qstring(PROPERTY_TEMPLATE_TYPE_ELEMENT_NAME))
+						.arg(convert_qualified_xml_name_to_qstring(property_xml_element->get_name())));
+	}
+
 	// The 'gpgim:defaultType' attribute is expected if more than one structural type is listed.
 	boost::optional<GPlatesPropertyValues::StructuralType> default_property_structural_type;
-	if (property_type_elements.size() > 1)
+	if (num_non_template_and_template_type_elements > 1)
 	{
 		default_property_structural_type =
 				read_default_feature_property_structural_type(property_xml_element, gpgim_resource_filename);
@@ -1139,45 +1194,60 @@ GPlatesModel::Gpgim::read_feature_property_structural_types(
 	// Index of the default property structural type.
 	boost::optional<unsigned int> default_property_structural_type_index;
 
-	// Iterate over the property structural type elements.
-	for (unsigned int property_type_index = 0;
-		property_type_index < property_type_elements.size();
-		++property_type_index)
+	// Iterate over the property structural non-template type elements.
+	for (unsigned int property_non_template_type_index = 0;
+		property_non_template_type_index < property_non_template_type_elements.size();
+		++property_non_template_type_index)
 	{
-		const XmlElementNode::non_null_ptr_type &property_type_element =
-				property_type_elements[property_type_index];
+		const XmlElementNode::non_null_ptr_type &property_non_template_type_element =
+				property_non_template_type_elements[property_non_template_type_index];
 
-		// Get the property structural type.
-		const GPlatesPropertyValues::StructuralType property_structural_type =
-				get_qualified_xml_name<GPlatesPropertyValues::StructuralType>(
-						property_type_element,
+		// Get the property structural non-template type.
+		const GpgimStructuralType::non_null_ptr_to_const_type gpgim_structural_type =
+				read_feature_property_non_template_structural_type(
+						gpgim_property_structural_types,
+						property_non_template_type_element,
 						gpgim_resource_filename);
 
-		// Make sure it's a recognised property structural type.
-		// Note: We've already read in the list of supported property structural types from the GPGIM XML file.
-		property_structural_type_map_type::const_iterator gpgim_property_structural_type_iter =
-				d_property_structural_type_map.find(property_structural_type);
-		if (gpgim_property_structural_type_iter == d_property_structural_type_map.end())
-		{
-			throw GpgimInitialisationException(
-					GPLATES_EXCEPTION_SOURCE,
-					gpgim_resource_filename,
-					property_type_element->line_number(),
-					QString("'%1' is not a recognised property structural type")
-							.arg(convert_qualified_xml_name_to_qstring(property_structural_type)));
-		}
-
-		// Add the property structural type to the list.
-		const GpgimStructuralType::non_null_ptr_to_const_type &gpgim_property_structural_type =
-				gpgim_property_structural_type_iter->second;
-		gpgim_property_structural_types.push_back(gpgim_property_structural_type);
+		const GPlatesPropertyValues::StructuralType property_structural_type =
+				gpgim_structural_type->get_structural_type();
 
 		// See if the current structural type is the default type.
 		if (default_property_structural_type &&
 			default_property_structural_type.get() == property_structural_type)
 		{
 			// Record the default type index.
-			default_property_structural_type_index = property_type_index;
+			default_property_structural_type_index = property_non_template_type_index;
+		}
+	}
+
+	// Iterate over the property structural template type elements.
+	for (unsigned int property_template_type_index = 0;
+		property_template_type_index < property_template_type_elements.size();
+		++property_template_type_index)
+	{
+		const XmlElementNode::non_null_ptr_type &property_template_type_element =
+				property_template_type_elements[property_template_type_index];
+
+		// Get the property structural template type.
+		const GpgimStructuralType::non_null_ptr_to_const_type gpgim_structural_type =
+				read_feature_property_template_structural_type(
+						gpgim_property_structural_types,
+						property_template_type_element,
+						gpgim_resource_filename);
+
+		const GPlatesPropertyValues::StructuralType property_structural_type =
+				gpgim_structural_type->get_structural_type();
+
+		// See if the current structural type is the default type.
+		if (default_property_structural_type &&
+			default_property_structural_type.get() == property_structural_type)
+		{
+			// Record the default type index.
+			// Note that this indexes into the array of structural types containing both
+			// non-template and template types.
+			default_property_structural_type_index =
+					property_non_template_type_elements.size() + property_template_type_index;
 		}
 	}
 
@@ -1196,6 +1266,133 @@ GPlatesModel::Gpgim::read_feature_property_structural_types(
 	// structural types.
 	// Otherwise there's only one structural type and we return index zero.
 	return default_property_structural_type_index ? default_property_structural_type_index.get() : 0;
+}
+
+
+GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type
+GPlatesModel::Gpgim::read_feature_property_non_template_structural_type(
+		GpgimProperty::structural_type_seq_type &gpgim_property_structural_types,
+		const XmlElementNode::non_null_ptr_type &property_non_template_type_element,
+		const QString &gpgim_resource_filename)
+{
+	// Get the property structural type.
+	const GPlatesPropertyValues::StructuralType property_structural_type =
+			get_qualified_xml_name<GPlatesPropertyValues::StructuralType>(
+					property_non_template_type_element,
+					gpgim_resource_filename);
+
+	// Make sure it's a recognised property structural type.
+	// Note: We've already read in the list of supported property structural types from the GPGIM XML file.
+	property_structural_type_map_type::const_iterator gpgim_property_structural_type_iter =
+			d_property_structural_type_map.find(property_structural_type);
+	if (gpgim_property_structural_type_iter == d_property_structural_type_map.end())
+	{
+		throw GpgimInitialisationException(
+				GPLATES_EXCEPTION_SOURCE,
+				gpgim_resource_filename,
+				property_non_template_type_element->line_number(),
+				QString("'%1' is not a recognised property structural type")
+						.arg(convert_qualified_xml_name_to_qstring(property_structural_type)));
+	}
+
+	// Add the property structural type to the list.
+	const GpgimStructuralType::non_null_ptr_to_const_type &gpgim_property_structural_type =
+			gpgim_property_structural_type_iter->second;
+	gpgim_property_structural_types.push_back(gpgim_property_structural_type);
+
+	return gpgim_property_structural_type;
+}
+
+
+GPlatesModel::GpgimTemplateStructuralType::non_null_ptr_to_const_type
+GPlatesModel::Gpgim::read_feature_property_template_structural_type(
+		GpgimProperty::structural_type_seq_type &gpgim_property_structural_types,
+		const XmlElementNode::non_null_ptr_type &property_template_type_element,
+		const QString &gpgim_resource_filename)
+{
+	// The XML element name for property type in the GPGIM XML file.
+	static const XmlElementName PROPERTY_TYPE_ELEMENT_NAME = XmlElementName::create_gpgim("Type");
+
+	// Look for the property type element.
+	// There should be exactly one of this element.
+	const XmlElementNode::non_null_ptr_type property_type_element =
+			find_one_child_xml_element(
+					property_template_type_element,
+					PROPERTY_TYPE_ELEMENT_NAME,
+					gpgim_resource_filename);
+
+	// Get the property structural type.
+	const GPlatesPropertyValues::StructuralType property_structural_type =
+			get_qualified_xml_name<GPlatesPropertyValues::StructuralType>(
+					property_type_element,
+					gpgim_resource_filename);
+
+	// The XML element name for property value type in the GPGIM XML file.
+	static const XmlElementName PROPERTY_VALUE_TYPE_ELEMENT_NAME = XmlElementName::create_gpgim("ValueType");
+
+	// Look for the property value type element.
+	// There should be exactly one of this element.
+	const XmlElementNode::non_null_ptr_type property_value_type_element =
+			find_one_child_xml_element(
+					property_template_type_element,
+					PROPERTY_VALUE_TYPE_ELEMENT_NAME,
+					gpgim_resource_filename);
+
+	// Get the property value type.
+	const GPlatesPropertyValues::StructuralType property_value_type =
+			get_qualified_xml_name<GPlatesPropertyValues::StructuralType>(
+					property_value_type_element,
+					gpgim_resource_filename);
+
+	// See if we've already instantiated the structural type / value type combination.
+	//
+	// Note: We don't read in a list of supported property *template* structural types from the
+	// GPGIM XML file - these are template instantiations (ie, require a value type) and are only
+	// instantiated when the property list is read (ie, after the structural types have been read)
+	// - and we only instantiate for those properties that use the template structural type.
+	const boost::tuple<GPlatesPropertyValues::StructuralType, GPlatesPropertyValues::StructuralType>
+			template_instantiation_type = boost::make_tuple(property_structural_type, property_value_type);
+	property_template_structural_type_map_type::const_iterator gpgim_property_template_structural_type_iter =
+			d_property_template_structural_type_map.find(template_instantiation_type);
+	if (gpgim_property_template_structural_type_iter == d_property_template_structural_type_map.end())
+	{
+		// Get the *non-template* version of the property structural type - we need its fields.
+		// Note: We've already read in the list of supported property *non-template* structural types
+		// from the GPGIM XML file.
+		property_structural_type_map_type::const_iterator gpgim_property_structural_type_iter =
+				d_property_structural_type_map.find(property_structural_type);
+		if (gpgim_property_structural_type_iter == d_property_structural_type_map.end())
+		{
+			throw GpgimInitialisationException(
+					GPLATES_EXCEPTION_SOURCE,
+					gpgim_resource_filename,
+					property_type_element->line_number(),
+					QString("'%1' is not a recognised property structural type")
+							.arg(convert_qualified_xml_name_to_qstring(property_structural_type)));
+		}
+
+		// Create the GPGIM property template structural type.
+		const GpgimTemplateStructuralType::non_null_ptr_to_const_type template_instantiation =
+				GpgimTemplateStructuralType::create(
+						*gpgim_property_structural_type_iter->second/*const GpgimStructuralType &*/,
+						property_value_type);
+
+		gpgim_property_template_structural_type_iter =
+				d_property_template_structural_type_map.insert(
+						property_template_structural_type_map_type::value_type(
+								template_instantiation_type,
+								template_instantiation)).first;
+
+		// Add to the list of GPGIM property template structural types.
+		d_property_template_structural_types.push_back(template_instantiation);
+	}
+
+	// Add the property template structural type to the list.
+	const GpgimTemplateStructuralType::non_null_ptr_to_const_type &gpgim_property_template_structural_type =
+			gpgim_property_template_structural_type_iter->second;
+	gpgim_property_structural_types.push_back(gpgim_property_template_structural_type);
+
+	return gpgim_property_template_structural_type;
 }
 
 

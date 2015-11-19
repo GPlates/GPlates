@@ -52,6 +52,7 @@
 #include "maths/CalculateVelocity.h"
 #include "maths/FiniteRotation.h"
 
+#include "utils/Earth.h"
 #include "utils/Profile.h"
 
 // NOTE: use with caution: this can cause the Log window to lag during resize events.
@@ -167,8 +168,8 @@ namespace GPlatesAppLogic
 }
 
 
-// TODO: Re-use one earth radius constant across of all GPlates.
-const double GPlatesAppLogic::ResolvedTriangulation::Network::EARTH_RADIUS_METRES = 6371000.0;
+const double GPlatesAppLogic::ResolvedTriangulation::Network::EARTH_RADIUS_METRES =
+		1e3 * GPlatesUtils::Earth::MEAN_RADIUS_KMS/*in metres*/;
 
 
 bool
@@ -178,15 +179,12 @@ GPlatesAppLogic::ResolvedTriangulation::Network::is_point_in_network(
 	// Note that the medium and high speed point-in-polygon tests include a quick small circle
 	// bounds test so we don't need to perform that test before the point-in-polygon test.
 
-	const GPlatesMaths::PointInPolygon::Result point_in_network_boundary_result =
-			d_network_boundary_polygon->is_point_in_polygon(
-					point,
-					// Use high speed point-in-poly testing since we're being used for
-					// we could be asked to test lots of points.
-					// For example, very dense velocity meshes go through this path.
-					GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
-
-	return point_in_network_boundary_result == GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON;
+	return d_network_boundary_polygon->is_point_in_polygon(
+			point,
+			// Use high speed point-in-poly testing since we're being used for
+			// we could be asked to test lots of points.
+			// For example, very dense velocity meshes go through this path.
+			GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
 }
 
 
@@ -217,15 +215,12 @@ GPlatesAppLogic::ResolvedTriangulation::Network::is_point_in_a_rigid_block(
 			// Note that the medium and high speed point-in-polygon tests include a quick small circle
 			// bounds test so we don't need to perform that test before the point-in-polygon test.
 
-			const GPlatesMaths::PointInPolygon::Result point_in_rigid_block_result =
-					interior_polygon.get()->is_point_in_polygon(
-							point,
-							// Use high speed point-in-poly testing since we're being used for
-							// we could be asked to test lots of points.
-							// For example, very dense velocity meshes go through this path.
-							GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
-
-			if (point_in_rigid_block_result == GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+			if (interior_polygon.get()->is_point_in_polygon(
+					point,
+					// Use high speed point-in-poly testing since we're being used for
+					// we could be asked to test lots of points.
+					// For example, very dense velocity meshes go through this path.
+					GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE))
 			{
 				return rigid_block;
 			}
@@ -508,9 +503,8 @@ GPlatesAppLogic::ResolvedTriangulation::Network::compute_spherical_delaunay_2() 
 qDebug() << "compute_spherical_delaunay_2(): START";
 #endif
 
-	// FIXME : is this set globally someplace?
 	// Spherical coords constants
-	const double radius_of_earth = 6.371e6;  // in meters.
+	const double radius_of_earth = EARTH_RADIUS_METRES;
 
 	// Iterate over Faces and set new values;
 	int face_index = 0;

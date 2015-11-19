@@ -53,8 +53,8 @@ namespace GPlatesPropertyValues
 	public:
 
 		typedef GPlatesUtils::non_null_intrusive_ptr<Enumeration> non_null_ptr_type;
-
 		typedef GPlatesUtils::non_null_intrusive_ptr<const Enumeration> non_null_ptr_to_const_type;
+
 
 		virtual
 		~Enumeration()
@@ -66,11 +66,10 @@ namespace GPlatesPropertyValues
 				const EnumerationType &enum_type,
 				const GPlatesUtils::UnicodeString &enum_content)
 		{
-			Enumeration::non_null_ptr_type ptr(new Enumeration(enum_type, enum_content));
-			return ptr;
+			return non_null_ptr_type(new Enumeration(enum_type, enum_content));
 		}
 
-		const Enumeration::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
 			Enumeration::non_null_ptr_type dup(new Enumeration(*this));
@@ -110,6 +109,8 @@ namespace GPlatesPropertyValues
 			update_instance_id();
 		}
 
+		// Note that no "setter" is provided:  The type of an Enumeration
+		// instance should never be changed.
 		const EnumerationType &
 		type() const
 		{

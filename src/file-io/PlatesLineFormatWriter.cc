@@ -132,8 +132,7 @@ namespace
 
 
 GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatWriter(
-		const FileInfo &file_info,
-		const GPlatesModel::Gpgim &gpgim)
+		const FileInfo &file_info)
 {
 	// Open the file.
 	d_output_file.reset( new QFile(file_info.get_qfileinfo().filePath()) );

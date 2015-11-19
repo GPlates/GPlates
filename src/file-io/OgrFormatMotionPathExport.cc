@@ -97,8 +97,7 @@ namespace
 		finder.visit_feature(feature_ref);
 
 
-		GpmlKeyValueDictionary::non_null_ptr_type dictionary = 
-			GpmlKeyValueDictionary::create();
+		GpmlKeyValueDictionary::non_null_ptr_type dictionary = GpmlKeyValueDictionary::create();
 
 		// (Shapefile attribute fields are limited to 10 characters in length).
 
@@ -160,6 +159,7 @@ namespace
 						dictionary);
 		}
 
+
 		return dictionary;
 
 	}
@@ -213,7 +213,7 @@ GPlatesFileIO::OgrFormatMotionPathExport::export_motion_paths(
 					active_reconstruction_files,
 					reconstruction_time,
 					reconstruction_anchor_plate_id,
-					rmt->seed_point(),
+					rmt->present_day_seed_point(),
 					should_export_referenced_files);
 
 			exporter.export_geometry(rmt->motion_path_points(),kvd);

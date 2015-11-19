@@ -29,11 +29,9 @@
 
 
 GPlatesQtWidgets::GpgimVersionWarningDialog::GpgimVersionWarningDialog(
-		const GPlatesModel::Gpgim &gpgim,
 		bool show_dialog_on_loading_files,
 		QWidget *parent_) :
-	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-	d_gpgim(gpgim)
+	QDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
 {
 	setupUi(this);
 	set_action_requested(LOAD_FILES, QStringList(), QStringList());
@@ -157,6 +155,8 @@ void
 GPlatesQtWidgets::GpgimVersionWarningDialog::tweak_label(
 		ActionRequested act)
 {
+	const GPlatesModel::Gpgim &gpgim = GPlatesModel::Gpgim::instance();
+
 	switch (act)
 	{
 	default:
@@ -164,13 +164,13 @@ GPlatesQtWidgets::GpgimVersionWarningDialog::tweak_label(
 		label_context->setText(tr(
 				"The current GPlates Geological Information Model (GPGIM) version is %1.\n"
 				"GPlates will save files using the current GPGIM version.")
-						.arg(d_gpgim.get_version().version_string()));
+						.arg(gpgim.get_version().version_string()));
 		break;
 
 	case LOAD_FILES:
 		label_context->setText(tr(
 				"The current GPlates Geological Information Model (GPGIM) version is %1.")
-						.arg(d_gpgim.get_version().version_string()));
+						.arg(gpgim.get_version().version_string()));
 		break;
 	}
 }

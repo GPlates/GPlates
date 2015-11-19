@@ -60,16 +60,15 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlOldPlatesHeader> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlOldPlatesHeader> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlOldPlatesHeader() 
@@ -92,24 +91,22 @@ namespace GPlatesPropertyValues
 				unsigned int colour_code,
 				unsigned int number_of_points)
 		{
-			non_null_ptr_type ptr(
-					new GpmlOldPlatesHeader(region_number, reference_number, 
-					string_number, geographic_description, plate_id_number, 
-					age_of_appearance, age_of_disappearance, data_type_code,
-					data_type_code_number, data_type_code_number_additional,
-					conjugate_plate_id_number, colour_code, number_of_points));
-					
-			return ptr;
+			return non_null_ptr_type(
+					new GpmlOldPlatesHeader(
+							region_number, reference_number, 
+							string_number, geographic_description, plate_id_number, 
+							age_of_appearance, age_of_disappearance, data_type_code,
+							data_type_code_number, data_type_code_number_additional,
+							conjugate_plate_id_number, colour_code, number_of_points));
 		}
 
-		const GpmlOldPlatesHeader::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const 
 		{
-			GpmlOldPlatesHeader::non_null_ptr_type dup(new GpmlOldPlatesHeader(*this));
-			return dup;
+			return non_null_ptr_type(new GpmlOldPlatesHeader(*this));
 		}
 
-		const GpmlOldPlatesHeader::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const 
 		{
 			// This class doesn't reference any mutable objects by pointer, so there's
@@ -145,10 +142,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the reference number to @a i.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_reference_number(
@@ -167,10 +160,6 @@ namespace GPlatesPropertyValues
 		
 		/**
 		 * Set the string number to @a i.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_string_number(
@@ -189,10 +178,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the geographic description to @a us.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_geographic_description(
@@ -211,10 +196,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the plate id number to @a i.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_plate_id_number(
@@ -233,10 +214,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the age of appearance to @a d.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_age_of_appearance(
@@ -255,10 +232,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the age of disappearance to @a d.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_age_of_disappearance(
@@ -277,10 +250,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the data type code to @a us.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_data_type_code(
@@ -299,10 +268,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the data type code number to @a i.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_data_type_code_number(
@@ -321,10 +286,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the data type code number (additional) string to @a us.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_data_type_code_number_additional(
@@ -343,10 +304,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the conjugate plate id number to @a i.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_conjugate_plate_id_number(
@@ -365,10 +322,6 @@ namespace GPlatesPropertyValues
 		
 		/**
 		 * Set the colour code to @a i.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_colour_code(
@@ -387,10 +340,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the number of points to @a i.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_number_of_points(
@@ -455,6 +404,7 @@ namespace GPlatesPropertyValues
 				std::ostream &os) const;
 
 	protected:
+
 		// This constructor should not be public, because we don't want to allow
 		// instantiation of this type on the stack.
 		GpmlOldPlatesHeader(

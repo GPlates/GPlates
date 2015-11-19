@@ -452,27 +452,15 @@ GPlatesMaths::PolygonIntersections::Result
 GPlatesMaths::PolygonIntersections::partition_point(
 		const PointOnSphere &point_to_be_partitioned) const
 {
-	const PointInPolygon::Result point_in_polygon_result =
+	return
 			d_partitioning_polygon->is_point_in_polygon(
 					point_to_be_partitioned,
 					// Use high speed point-in-poly testing since we're being used for
 					// generalised cookie-cutting and we could be asked to test lots of points.
 					// For example, very dense velocity meshes go through this path.
-					PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
-
-	switch (point_in_polygon_result)
-	{
-	case PointInPolygon::POINT_OUTSIDE_POLYGON:
-	default:
-		return GEOMETRY_OUTSIDE;
-	case PointInPolygon::POINT_INSIDE_POLYGON:
-		return GEOMETRY_INSIDE;
-// 	case PointInPolygon::POINT_ON_POLYGON:
-// 		return GEOMETRY_INTERSECTING;
-	}
-
-	// Shouldn't get here.
-	return GEOMETRY_OUTSIDE;
+					PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE)
+			? GEOMETRY_INSIDE
+			: GEOMETRY_OUTSIDE;
 }
 
 

@@ -54,14 +54,12 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureReference>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureReference>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureReference> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureReference>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureReference>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureReference> non_null_ptr_to_const_type;
 
@@ -70,29 +68,22 @@ namespace GPlatesPropertyValues
 		~GpmlFeatureReference()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
 				const GPlatesModel::FeatureId &feature_,
 				const GPlatesModel::FeatureType &value_type_)
 		{
-			non_null_ptr_type ptr(new GpmlFeatureReference(feature_, value_type_));
-			return ptr;
+			return non_null_ptr_type(new GpmlFeatureReference(feature_, value_type_));
 		}
 
-		const GpmlFeatureReference::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlFeatureReference::non_null_ptr_type dup(new GpmlFeatureReference(*this));
-			return dup;
+			return non_null_ptr_type(new GpmlFeatureReference(*this));
 		}
 
-		const GpmlFeatureReference::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const
 		{
 			// This class doesn't reference any mutable objects by pointer, so there's

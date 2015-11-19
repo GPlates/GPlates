@@ -105,6 +105,7 @@ set(srcs
     GpmlTopologicalPolygon.h
     GpmlTopologicalSection.cc
     GpmlTopologicalSection.h
+    GpmlTotalReconstructionPole.cc
     GpmlTotalReconstructionPole.h
     OldVersionPropertyValue.cc
     OldVersionPropertyValue.h

@@ -74,8 +74,7 @@ GPlatesAppLogic::RotationUtils::get_half_stage_rotation(
 	using namespace GPlatesMaths;
 
 	// Start with the identity rotation and accumulate half-stage rotations over intervals.
-	FiniteRotation spreading_rotation =
-			FiniteRotation::create(UnitQuaternion3D::create_identity_rotation(), boost::none);
+	FiniteRotation spreading_rotation = FiniteRotation::create_identity_rotation();
 	double prev_time = 0.0;
 	bool last_iteration = false;
 

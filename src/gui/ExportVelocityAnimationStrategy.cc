@@ -231,7 +231,6 @@ GPlatesGui::ExportVelocityAnimationStrategy::do_export_iteration(
 				GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gpml_format(
 					full_filename,
 					velocity_vector_field_seq,
-					d_export_animation_context_ptr->view_state().get_application_state().get_gpgim(),
 					d_export_animation_context_ptr->view_state().get_application_state().get_model_interface(),
 					d_loaded_files,
 					d_export_animation_context_ptr->view_state().get_application_state().get_current_anchored_plate_id(),

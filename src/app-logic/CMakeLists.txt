@@ -120,6 +120,7 @@ set(srcs
     ReconstructionGeometryFinder.h
     ReconstructionGeometryUtils.cc
     ReconstructionGeometryUtils.h
+    ReconstructionGeometryVisitor.cc
     ReconstructionGeometryVisitor.h
     ReconstructionGraph.cc
     ReconstructionGraph.h
@@ -171,11 +172,14 @@ set(srcs
     ResolvedRaster.h
     ResolvedScalarField3D.cc
     ResolvedScalarField3D.h
-    ResolvedTopologicalGeometry.cc
+    ResolvedTopologicalBoundary.h
     ResolvedTopologicalGeometry.h
     ResolvedTopologicalGeometrySubSegment.h
+    ResolvedTopologicalLine.h
     ResolvedTopologicalNetwork.cc
     ResolvedTopologicalNetwork.h
+    ResolvedTopologicalSection.h
+    ResolvedTopologicalSharedSubSegment.h
     ResolvedTriangulationConstrainedDelaunay2.cc
     ResolvedTriangulationConstrainedDelaunay2.h
     ResolvedTriangulationDelaunay2.cc

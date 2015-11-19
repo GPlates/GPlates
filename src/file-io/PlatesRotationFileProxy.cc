@@ -282,7 +282,6 @@ GPlatesFileIO::RotationFileReaderV2::RotationFileReaderV2() :
 void
 GPlatesFileIO::RotationFileReader::read_file(
 		File::Reference &file,
-		GPlatesModel::ModelInterface &model,
 		ReadErrorAccumulation &read_errors,
 		bool &contains_unsaved_changes)
 {
@@ -821,10 +820,10 @@ GPlatesFileIO::PopulateReconstructionFeatureCollection::create_time_sample(
 
 	std::pair<double, double> lon_lat_euler_pole(data.lon, data.lat);
 
-	GpmlTotalReconstructionPole::non_null_ptr_type trp(
-		new GpmlTotalReconstructionPole(GpmlFiniteRotation::create(
+	GpmlTotalReconstructionPole::non_null_ptr_type trp =
+		GpmlTotalReconstructionPole::create(GpmlFiniteRotation::create(
 				lon_lat_euler_pole, 
-				data.angle)->finite_rotation()));
+				data.angle)->finite_rotation());
 
 	GeoTimeInstant geo_time_instant(data.time);
 	GmlTimeInstant::non_null_ptr_type valid_time =

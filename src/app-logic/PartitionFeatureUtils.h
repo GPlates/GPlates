@@ -50,11 +50,6 @@
 #include "property-values/GmlTimePeriod.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesAppLogic
 {
 	namespace PartitionFeatureUtils
@@ -170,7 +165,6 @@ namespace GPlatesAppLogic
 			 * If 'verify_information_model' is true then feature property types are only added if they don't not violate the GPGIM.
 			 */
 			GenericFeaturePropertyAssigner(
-					const GPlatesModel::Gpgim &gpgim,
 					const GPlatesModel::FeatureHandle::const_weak_ref &original_feature,
 					const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
 					bool verify_information_model);
@@ -182,7 +176,6 @@ namespace GPlatesAppLogic
 					boost::optional<GPlatesModel::FeatureHandle::const_weak_ref> partitioning_feature);
 
 		private:
-			const GPlatesModel::Gpgim &d_gpgim;
 			bool d_verify_information_model;
 
 			boost::optional<GPlatesModel::integer_plate_id_type> d_default_reconstruction_plate_id;
@@ -392,7 +385,6 @@ namespace GPlatesAppLogic
 		 */
 		void
 		assign_reconstruction_plate_id_to_feature(
-				const GPlatesModel::Gpgim &gpgim,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				bool verify_information_model);
@@ -415,7 +407,6 @@ namespace GPlatesAppLogic
 		 */
 		void
 		assign_conjugate_plate_id_to_feature(
-				const GPlatesModel::Gpgim &gpgim,
 				boost::optional<GPlatesModel::integer_plate_id_type> conjugate_plate_id,
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				bool verify_information_model);
@@ -437,7 +428,6 @@ namespace GPlatesAppLogic
 		 */
 		void
 		assign_valid_time_to_feature(
-				const GPlatesModel::Gpgim &gpgim,
 				boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> valid_time,
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				bool verify_information_model);

@@ -256,6 +256,7 @@ namespace GPlatesAppLogic
 
 				void
 				publisher_modified(
+						const weak_reference_type &reference,
 						const modified_event_type &event)
 				{
 					d_layer_input_connection->modified_input_feature_collection();

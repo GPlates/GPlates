@@ -85,30 +85,158 @@ GPlatesUtils::XmlNamespaces::Internals::xsi_standard_alias()
 }
 
 
+const GPlatesUtils::UnicodeString &
+GPlatesUtils::XmlNamespaces::get_gpgim_namespace()
+{
+	static const GPlatesUtils::UnicodeString GPGIM_NAMESPACE = Internals::gpgim_namespace();
+	return GPGIM_NAMESPACE;
+}
+
+
+const GPlatesUtils::UnicodeString &
+GPlatesUtils::XmlNamespaces::get_gpml_namespace()
+{
+	static const GPlatesUtils::UnicodeString GPML_NAMESPACE = Internals::gpml_namespace();
+	return GPML_NAMESPACE;
+}
+
+
+const GPlatesUtils::UnicodeString &
+GPlatesUtils::XmlNamespaces::get_gml_namespace()
+{
+	static const GPlatesUtils::UnicodeString GML_NAMESPACE = Internals::gml_namespace();
+	return GML_NAMESPACE;
+}
+
+
+const GPlatesUtils::UnicodeString &
+GPlatesUtils::XmlNamespaces::get_xsi_namespace()
+{
+	static const GPlatesUtils::UnicodeString XSI_NAMESPACE = Internals::xsi_namespace();
+	return XSI_NAMESPACE;
+}
+
+
+const QString &
+GPlatesUtils::XmlNamespaces::get_gpgim_namespace_qstring()
+{
+	static const QString GPGIM_NAMESPACE = Internals::gpgim_namespace();
+	return GPGIM_NAMESPACE;
+}
+
+
+const QString &
+GPlatesUtils::XmlNamespaces::get_gpml_namespace_qstring()
+{
+	static const QString GPML_NAMESPACE = Internals::gpml_namespace();
+	return GPML_NAMESPACE;
+}
+
+
+const QString &
+GPlatesUtils::XmlNamespaces::get_gml_namespace_qstring()
+{
+	static const QString GML_NAMESPACE = Internals::gml_namespace();
+	return GML_NAMESPACE;
+}
+
+
+const QString &
+GPlatesUtils::XmlNamespaces::get_xsi_namespace_qstring()
+{
+	static const QString XSI_NAMESPACE = Internals::xsi_namespace();
+	return XSI_NAMESPACE;
+}
+
+
+const GPlatesUtils::UnicodeString &
+GPlatesUtils::XmlNamespaces::get_gpgim_standard_alias()
+{
+	static const GPlatesUtils::UnicodeString GPGIM_STANDARD_ALIAS = Internals::gpgim_standard_alias();
+	return GPGIM_STANDARD_ALIAS;
+}
+
+
+const GPlatesUtils::UnicodeString &
+GPlatesUtils::XmlNamespaces::get_gpml_standard_alias()
+{
+	static const GPlatesUtils::UnicodeString GPML_STANDARD_ALIAS = Internals::gpml_standard_alias();
+	return GPML_STANDARD_ALIAS;
+}
+
+
+const GPlatesUtils::UnicodeString &
+GPlatesUtils::XmlNamespaces::get_gml_standard_alias()
+{
+	static const GPlatesUtils::UnicodeString GML_STANDARD_ALIAS = Internals::gml_standard_alias();
+	return GML_STANDARD_ALIAS;
+}
+
+
+const GPlatesUtils::UnicodeString &
+GPlatesUtils::XmlNamespaces::get_xsi_standard_alias()
+{
+	static const GPlatesUtils::UnicodeString XSI_STANDARD_ALIAS = Internals::xsi_standard_alias();
+	return XSI_STANDARD_ALIAS;
+}
+
+
+const QString &
+GPlatesUtils::XmlNamespaces::get_gpgim_standard_alias_qstring()
+{
+	static const QString GPGIM_STANDARD_ALIAS = Internals::gpgim_standard_alias();
+	return GPGIM_STANDARD_ALIAS;
+}
+
+
+const QString &
+GPlatesUtils::XmlNamespaces::get_gpml_standard_alias_qstring()
+{
+	static const QString GPML_STANDARD_ALIAS = Internals::gpml_standard_alias();
+	return GPML_STANDARD_ALIAS;
+}
+
+
+const QString &
+GPlatesUtils::XmlNamespaces::get_gml_standard_alias_qstring()
+{
+	static const QString GML_STANDARD_ALIAS = Internals::gml_standard_alias();
+	return GML_STANDARD_ALIAS;
+}
+
+
+const QString &
+GPlatesUtils::XmlNamespaces::get_xsi_standard_alias_qstring()
+{
+	static const QString XSI_STANDARD_ALIAS = Internals::xsi_standard_alias();
+	return XSI_STANDARD_ALIAS;
+}
+
+
 GPlatesUtils::StringSet::SharedIterator
 GPlatesUtils::XmlNamespaces::get_standard_alias_for_namespace(
 		const GPlatesUtils::UnicodeString &namespace_uri)
 {
 	GPlatesUtils::StringSet& aliases = 
 		GPlatesModel::StringSetSingletons::xml_namespace_alias_instance();
-	if (namespace_uri == GML_NAMESPACE)
+	if (namespace_uri == get_gml_namespace())
 	{
-		return aliases.insert(GML_STANDARD_ALIAS);
+		return aliases.insert(get_gml_standard_alias());
 	}
-	else if (namespace_uri == XSI_NAMESPACE)
+	else if (namespace_uri == get_xsi_namespace())
 	{
-		return aliases.insert(XSI_STANDARD_ALIAS);
+		return aliases.insert(get_xsi_standard_alias());
 	}
 	// NOTE: The GPGIM namespace is not part of the feature readers but is placed here
 	// in order to re-use a lot of the XML parsing machinery when reading the GPGIM XML file.
-	else if (namespace_uri == GPGIM_NAMESPACE)
+	else if (namespace_uri == get_gpgim_namespace())
 	{
-		return aliases.insert(GPGIM_STANDARD_ALIAS);
+		return aliases.insert(get_gpgim_standard_alias());
 	}
 	else
 	{
 		// Return gpml as default if URI not recognised.
-		return aliases.insert(GPML_STANDARD_ALIAS);
+		return aliases.insert(get_gpml_standard_alias());
 	}
 }
 
@@ -119,28 +247,28 @@ GPlatesUtils::XmlNamespaces::get_namespace_for_standard_alias(
 {
 	GPlatesUtils::StringSet& aliases = 
 		GPlatesModel::StringSetSingletons::xml_namespace_instance();
-	if (namespace_alias == GPML_STANDARD_ALIAS)
+	if (namespace_alias == get_gpml_standard_alias())
 	{
-		return aliases.insert(GPML_NAMESPACE);
+		return aliases.insert(get_gpml_namespace());
 	}
-	else if (namespace_alias == GML_STANDARD_ALIAS)
+	else if (namespace_alias == get_gml_standard_alias())
 	{
-		return aliases.insert(GML_NAMESPACE);
+		return aliases.insert(get_gml_namespace());
 	}
-	else if (namespace_alias == XSI_STANDARD_ALIAS)
+	else if (namespace_alias == get_xsi_standard_alias())
 	{
-		return aliases.insert(XSI_NAMESPACE);
+		return aliases.insert(get_xsi_namespace());
 	}
 	// NOTE: The GPGIM namespace is not part of the feature readers but is placed here
 	// in order to re-use a lot of the XML parsing machinery when reading the GPGIM XML file.
-	else if (namespace_alias == GPGIM_STANDARD_ALIAS)
+	else if (namespace_alias == get_gpgim_standard_alias())
 	{
-		return aliases.insert(GPGIM_NAMESPACE);
+		return aliases.insert(get_gpgim_namespace());
 	}
 	else
 	{
 		// Return gpml namespace URI as default if alias not recognised.
-		return aliases.insert(GPML_NAMESPACE);
+		return aliases.insert(get_gpml_namespace());
 	}
 }
 

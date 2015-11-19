@@ -5,7 +5,7 @@
  * File specific comments.
  *
  * Most recent change:
- *   $Date: 2010-08-11 05:48:32 +0200 (on, 11 aug 2010) $
+ *   $Date$
  * 
  * Copyright (C) 2010, 2011 Geological Survey of Norway
  *
@@ -33,7 +33,6 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
-//#include "MotionPathUtils.h"
 #include "ReconstructedMotionPath.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionFeatureProperties.h"
@@ -102,7 +101,7 @@ namespace GPlatesAppLogic
 		void
 		create_motion_path_geometry(
 			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point,
-			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &present_day_seed_geometry);
+			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_geometry);
 
 
 		/**

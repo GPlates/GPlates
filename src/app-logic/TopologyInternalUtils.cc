@@ -27,6 +27,7 @@
 #include <iostream>
 #include <cmath>
 #include <deque>
+#include <utility>
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/none.hpp>
@@ -35,12 +36,14 @@
 
 #include "TopologyInternalUtils.h"
 
+#include "GeometryUtils.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructionGeometryFinder.h"
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionTree.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalLine.h"
 
 #include "feature-visitors/PropertyValueFinder.h"
 
@@ -510,9 +513,8 @@ namespace
 
 		if (found_rgs.empty())
 		{
-			// If we found no RFG that is reconstructed from 'geometry_property' then it probably means
-			// the reconstruction time is outside the age range of the feature containing 'geometry_property'.
-			// This is ok - it's not necessarily an error.
+			// If we found no RFG then it probably means the reconstruction time is outside the age range
+			// of the referenced features. This is ok - it's not necessarily an error.
 			// In fact we only report an error if any of the referenced features exist at the current
 			// reconstruction time because, with the addition of resolved *line* topologies, one use
 			// case is emulating a time-dependent section list by using a single list where a subset
@@ -531,10 +533,12 @@ namespace
 					qWarning() << "  feature id =" 
 						<< GPlatesUtils::make_qstring_from_icu_string( feature_ref->feature_id().get() );
 					static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
-					const GPlatesPropertyValues::XsString *name;
-					if ( GPlatesFeatureVisitors::get_property_value(feature_ref, prop, name) )
+					boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+							GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+									feature_ref, prop);
+					if (name)
 					{
-						qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name->value() );
+						qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name.get()->value() );
 					}
 					else
 					{
@@ -596,10 +600,15 @@ namespace
 				qWarning() << "  feature id =" 
 					<< GPlatesUtils::make_qstring_from_icu_string( found_feature_ref.get()->feature_id().get() );
 				static const GPlatesModel::PropertyName prop = GPlatesModel::PropertyName::create_gml("name");
-				const GPlatesPropertyValues::XsString *name;
-				if ( GPlatesFeatureVisitors::get_property_value(found_feature_ref.get(), prop, name) ) {
-					qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name->value() );
-				} else {
+				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+								found_feature_ref.get(), prop);
+				if (name)
+				{
+					qWarning() << "  feature name =" << GPlatesUtils::make_qstring( name.get()->value() );
+				}
+				else
+				{
 					qWarning() << "  feature name = UNKNOWN";
 				}
 				qWarning() << "  property name =" << property_name.get_name().qstring();
@@ -939,7 +948,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 	// load multiple features with the same feature id into GPlates because both features
 	// will get found and it'll be ambiguous as to which one to use.
 	//
-	// However there are situations where this is can happen such as loading two different
+	// However there are situations where this can happen such as loading two different
 	// topology datasets that happen to have the same feature ids (presumably because one GPML
 	// file was copied to another and the second one modified to be different than the first).
 	// In this case the user might load both files (creating two separate layers) and compare them.
@@ -951,9 +960,7 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 	geometry_delegate.feature_id().find_back_ref_targets(
 			GPlatesModel::append_as_weak_refs(resolved_features));
 
-	// We didn't get exactly one feature with the feature id so something is
-	// not right (user loaded same file twice or didn't load at all)
-	// so print debug message and return null feature reference.
+	// If there are no features with the delegate feature id...
 	if (resolved_features.empty())
 	{
 		qWarning() 
@@ -1019,36 +1026,6 @@ GPlatesAppLogic::TopologyInternalUtils::find_topological_reconstruction_geometry
 			std::vector<GPlatesModel::FeatureHandle::weak_ref>(1, feature_ref),
 			(*geometry_property)->property_name(),
 			reconstruction_time);
-}
-
-
-boost::optional<GPlatesMaths::FiniteRotation>
-GPlatesAppLogic::TopologyInternalUtils::get_finite_rotation(
-		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_plateid_feature,
-		const ReconstructionTree &reconstruction_tree)
-{
-	if (!reconstruction_plateid_feature.is_valid())
-	{
-		return boost::none;
-	}
-
-	// Get the plate id from the reference point feature.
-	static const GPlatesModel::PropertyName plate_id_property_name =
-			GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
-
-	// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
-	// which can still give a non-identity rotation if the anchor plate id is non-zero.
-	GPlatesModel::integer_plate_id_type reconstruction_plate_id = 0;
-	const GPlatesPropertyValues::GpmlPlateId *recon_plate_id = NULL;
-	if ( GPlatesFeatureVisitors::get_property_value(
-		reconstruction_plateid_feature, plate_id_property_name, recon_plate_id ) )
-	{
-		reconstruction_plate_id = recon_plate_id->value();
-	}
-
-	// The feature has a reconstruction plate ID.
-	// Return the rotation.
-	return reconstruction_tree.get_composed_absolute_rotation(reconstruction_plate_id).first;
 }
 
 
@@ -1731,25 +1708,21 @@ GPlatesAppLogic::TopologyInternalUtils::find_closest_intersected_segment_to_refe
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_intersected_segment)
 {
 	// Setup up proximity test parameters.
-	static GPlatesMaths::real_t closeness_inclusion_threshold = 0.9;
-	static const GPlatesMaths::real_t cit_sqrd =
-		closeness_inclusion_threshold * closeness_inclusion_threshold;
-	static const GPlatesMaths::real_t latitude_exclusion_threshold = sqrt(1.0 - cit_sqrd);
+	static GPlatesMaths::AngularExtent closeness_angular_extent_threshold =
+			GPlatesMaths::AngularExtent::create_from_cosine(0.9);
 
 	// Determine closeness to first intersected segment.
 	GPlatesMaths::real_t closeness_first_segment = -1/*least close*/;
 	const bool is_reference_point_close_to_first_segment = first_intersected_segment->is_close_to(
 		section_reference_point,
-		closeness_inclusion_threshold,
-		latitude_exclusion_threshold,
+		closeness_angular_extent_threshold,
 		closeness_first_segment);
 
 	// Determine closeness to second intersected segment.
 	GPlatesMaths::real_t closeness_second_segment = -1/*least close*/;
 	const bool is_reference_point_close_to_second_segment = second_intersected_segment->is_close_to(
 		section_reference_point,
-		closeness_inclusion_threshold,
-		latitude_exclusion_threshold,
+		closeness_angular_extent_threshold,
 		closeness_second_segment);
 
 	// Make sure that the reference point is close to one of the segments.
@@ -1768,6 +1741,215 @@ GPlatesAppLogic::TopologyInternalUtils::find_closest_intersected_segment_to_refe
 	return (closeness_first_segment > closeness_second_segment)
 			? first_intersected_segment
 			: second_intersected_segment;
+}
+
+
+void
+GPlatesAppLogic::TopologyInternalUtils::join_adjacent_deforming_points(
+		sub_segment_seq_type &merged_sub_segments,
+		const sub_segment_seq_type &sub_segment_seq,
+		const double &reconstruction_time)
+{
+	// A flag for each subsegment that's true if it's a deforming point.
+	std::vector<bool> deforming_point_flags;
+
+	// Iterate over the subsegments in the merged sub-segments list.
+	sub_segment_seq_type::const_iterator sub_segment_iter = sub_segment_seq.begin();
+	const sub_segment_seq_type::const_iterator sub_segment_end = sub_segment_seq.end();
+	bool found_deforming_points = false;
+	for ( ; sub_segment_iter != sub_segment_end; ++sub_segment_iter)
+	{
+		const ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
+
+		bool is_deforming_point = false;
+
+		// This procedure works for any feature type and not just subduction zones.
+		// All the feature types are expected to be the same along a sequence of deforming point
+		// features but we don't check for that since it should already be the case and we expect
+		// a sequence of deforming points to be delineated by a polyline feature on either side.
+		// 
+		// Look for a geometry property with property name "gpml:unclassifiedGeometry"
+		// and if it's a point then we've found a deforming point that can be merged. 
+		static const GPlatesModel::PropertyName unclassified_geometry_property_name =
+				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry");
+		if (GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlPoint>(
+				sub_segment.get_feature_ref(),
+				unclassified_geometry_property_name,
+				reconstruction_time))
+		{
+			found_deforming_points = true;
+			is_deforming_point = true;
+		}
+
+		deforming_point_flags.push_back(is_deforming_point);
+	}
+
+	if (!found_deforming_points)
+	{
+		// No deforming points so just copy the input subsegment sequence to the output sequence.
+		merged_sub_segments.insert(
+				merged_sub_segments.end(),
+				sub_segment_seq.begin(),
+				sub_segment_seq.end());
+		return;
+	}
+
+	// The first previous subsegment is the last entry (its previous to the first entry).
+	bool prev_is_deforming_point = deforming_point_flags.back();
+	const ResolvedTopologicalGeometrySubSegment *prev_sub_segment =
+			&*--sub_segment_seq.end();
+
+	// Find the start of a sequence of deforming points.
+	unsigned int sub_segment_index = 0;
+	for (sub_segment_iter = sub_segment_seq.begin();
+		sub_segment_index < deforming_point_flags.size();
+		++sub_segment_iter, ++sub_segment_index)
+	{
+		const ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
+		const bool is_deforming_point = deforming_point_flags[sub_segment_index];
+
+		if (is_deforming_point)
+		{
+			if (!prev_is_deforming_point)
+			{
+				// We've found the start of a sequence of deforming points.
+				break;
+			}
+		}
+
+		prev_is_deforming_point = is_deforming_point;
+		prev_sub_segment = &sub_segment;
+	}
+
+	if (sub_segment_index == deforming_point_flags.size())
+	{
+		// All subsegments are deforming points so just create a single deforming polyline
+		// and return it as a single subsegment in the output sequence.
+
+		std::vector<GPlatesMaths::PointOnSphere> merged_deforming_polyline_points;
+
+		for (sub_segment_iter = sub_segment_seq.begin();
+			sub_segment_iter != sub_segment_end;
+			++sub_segment_iter)
+		{
+			// Add the current deforming point to the merged deforming polyline.
+			GeometryUtils::get_geometry_points(
+					*sub_segment_iter->get_geometry(),
+					merged_deforming_polyline_points,
+					false/*reverse_points*/);
+		}
+
+		// Create the merged deforming polyline.
+		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type merged_deforming_polyline =
+				GPlatesMaths::PolylineOnSphere::create_on_heap(
+						merged_deforming_polyline_points);
+
+		// Add to the final list of subsegments.
+		merged_sub_segments.push_back(
+				ResolvedTopologicalGeometrySubSegment(
+						merged_deforming_polyline,
+						// Note: We'll use the previous subsegment deforming point,
+						// out of all the merged deforming points, as the feature
+						// for the merged deforming polyline. This is quite dodgy
+						// which is why this whole thing is a big hack.
+						prev_sub_segment->get_reconstruction_geometry(),
+						prev_sub_segment->get_feature_ref(),
+						false/*use_reverse*/));
+		// Mark that we've joined adjacent deforming points - so others are aware of the hack.
+		merged_sub_segments.back().set_joined_adjacent_deforming_points();
+
+		return;
+	}
+
+	std::vector<GPlatesMaths::PointOnSphere> merged_deforming_polyline_points;
+
+	// Iterate over the sub-segments at our new start point and join contiguous sequences
+	// of deforming points into deforming polylines.
+	unsigned int sub_segment_count = 0;
+	for ( ;
+		sub_segment_count < deforming_point_flags.size();
+		++sub_segment_iter, ++sub_segment_index, ++sub_segment_count)
+	{
+		// Handle wraparound...
+		if (sub_segment_index == deforming_point_flags.size())
+		{
+			sub_segment_index = 0;
+			sub_segment_iter = sub_segment_seq.begin();
+		}
+
+		const ResolvedTopologicalGeometrySubSegment &sub_segment = *sub_segment_iter;
+		const bool is_deforming_point = deforming_point_flags[sub_segment_index];
+
+		if (is_deforming_point)
+		{
+			if (!prev_is_deforming_point)
+			{
+				// Start of a merged deforming line.
+				// Grab the end point of the last subsegment as the first point.
+				std::pair<
+					GPlatesMaths::PointOnSphere/*start point*/,
+					GPlatesMaths::PointOnSphere/*end point*/>
+						prev_sub_segment_geometry_end_points =
+							GeometryUtils::get_geometry_end_points(
+									*prev_sub_segment->get_geometry(),
+									prev_sub_segment->get_use_reverse());
+				merged_deforming_polyline_points.push_back(
+						prev_sub_segment_geometry_end_points.second/*end point*/);
+			}
+
+			// Add the current deforming point to the merged deforming polyline.
+			GeometryUtils::get_geometry_points(
+					*sub_segment.get_geometry(),
+					merged_deforming_polyline_points,
+					false/*reverse_points*/);
+		}
+		else // current subsegment is *not* a deforming point...
+		{
+			if (prev_is_deforming_point)
+			{
+				// End of current merged deforming line.
+				// Grab the start point of the current subsegment as the end point.
+				std::pair<
+					GPlatesMaths::PointOnSphere/*start point*/,
+					GPlatesMaths::PointOnSphere/*end point*/>
+						sub_segment_geometry_end_points =
+							GeometryUtils::get_geometry_end_points(
+									*sub_segment.get_geometry(),
+									sub_segment.get_use_reverse());
+				merged_deforming_polyline_points.push_back(
+						sub_segment_geometry_end_points.first/*start point*/);
+
+				// Create the merged deforming polyline.
+				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type merged_subduction_polyline =
+						GPlatesMaths::PolylineOnSphere::create_on_heap(
+								merged_deforming_polyline_points);
+
+				// Add to the final list of subsegments.
+				merged_sub_segments.push_back(
+						ResolvedTopologicalGeometrySubSegment(
+								merged_subduction_polyline,
+								// Note: We'll use the previous subsegment deforming point,
+								// out of all the merged deforming points, as the feature
+								// for the merged deforming polyline. This is quite dodgy
+								// which is why this whole thing is a big hack.
+								prev_sub_segment->get_reconstruction_geometry(),
+								prev_sub_segment->get_feature_ref(),
+								false/*use_reverse*/));
+				// Mark that we've joined adjacent deforming points - so others are aware of the hack.
+				merged_sub_segments.back().set_joined_adjacent_deforming_points();
+
+				// Clear for the next merged sequence of deforming points.
+				merged_deforming_polyline_points.clear();
+			}
+
+			// The current subsegment is not a deforming point so just output it
+			// to the final list of subsegments.
+			merged_sub_segments.push_back(sub_segment);
+		}
+
+		prev_is_deforming_point = is_deforming_point;
+		prev_sub_segment = &sub_segment;
+	}
 }
 
 
@@ -1804,7 +1986,7 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_line_topological_sec
 	// to a topology layer (to deform it). In this situation the RFG would disappear from the
 	// topology's boundary (or interior) as soon as its layer was connected a topology layer.
 	//
-	// In any case it'll be up to the topology builder user to not used deformed geometries as
+	// In any case it'll be up to the topology builder user to not use deformed geometries as
 	// topological sections.
 
 	return true;
@@ -1821,21 +2003,17 @@ GPlatesAppLogic::TopologyInternalUtils::can_use_as_resolved_boundary_topological
 		return true;
 	}
 
-	// See if RTG.
-	boost::optional<const ResolvedTopologicalGeometry *> resolved_topological_geometry =
+	// See if RTL.
+	boost::optional<const ResolvedTopologicalLine *> resolved_topological_line =
 			ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const ResolvedTopologicalGeometry>(recon_geom);
-	if (resolved_topological_geometry)
+					const ResolvedTopologicalLine>(recon_geom);
+	if (resolved_topological_line)
 	{
-		// Return true if an RTG with a polyline geometry (a resolved topological line).
-		if (resolved_topological_geometry.get()->resolved_topology_line())
-		{
-			// NOTE: We don't need to check that the resolved line was not formed from
-			// RFGs that were deformed - see 'can_use_as_resolved_line_topological_section()' -
-			// because the layer system prevents layers containing deformed RFGs from being searched
-			// for topological sections (hence the resolved lines won't find them).
-			return true;
-		}
+		// NOTE: We don't need to check that the resolved line was not formed from
+		// RFGs that were deformed - see 'can_use_as_resolved_line_topological_section()' -
+		// because the layer system prevents layers containing deformed RFGs from being searched
+		// for topological sections (hence the resolved lines won't find them).
+		return true;
 	}
 
 	return false;

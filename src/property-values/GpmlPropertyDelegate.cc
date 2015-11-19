@@ -34,6 +34,5 @@ std::ostream &
 GPlatesPropertyValues::GpmlPropertyDelegate::print_to(
 		std::ostream &os) const
 {
-	return os << d_feature.get() << ":" << d_property.build_aliased_name();
+	return os << d_feature.get() << ":" << d_property_name.build_aliased_name();
 }
-

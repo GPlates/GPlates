@@ -11,11 +11,14 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    AngularDistance.cc
+    AngularDistance.h
+    AngularExtent.cc
+    AngularExtent.h
     CalculateVelocity.cc
     CalculateVelocity.h
     CartesianConvMatrix3D.cc
     CartesianConvMatrix3D.h
-    Centroid.cc
     Centroid.h
     ConstGeometryOnSphereVisitor.h
     CubeCoordinateFrame.cc
@@ -34,7 +37,11 @@ set(srcs
     FiniteRotationSnapshotTable.h
     FunctionDomainException.h
     GenericVectorOps3D.h
+    GeometryDistance.cc
+    GeometryDistance.h
     GeometryForwardDeclarations.h
+    GeometryInterpolation.cc
+    GeometryInterpolation.h
     GeometryOnSphere.h
     GeometryType.h
     GreatCircle.cc
@@ -81,6 +88,7 @@ set(srcs
     PolygonOrientation.cc
     PolygonOrientation.h
     PolygonProximityHitDetail.h
+    PolyGreatCircleArcBoundingTree.h
     PolylineEquivalencePredicates.h
     PolylineIntersections.cc
     PolylineIntersections.h
@@ -111,9 +119,6 @@ set(srcs
     SphereSettings.h
     SphericalArea.cc
     SphericalArea.h
-    SphericalCollection.h
-    SphericalDistance.cc
-    SphericalDistance.h
     TrailingLatLonCoordinateException.cc
     TrailingLatLonCoordinateException.h
     types.h

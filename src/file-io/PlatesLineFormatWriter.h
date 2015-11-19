@@ -45,11 +45,6 @@
 #include "maths/PointOnSphere.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesFileIO
 {
 	struct OldPlatesHeader;
@@ -64,8 +59,7 @@ namespace GPlatesFileIO
 		 */
 		explicit
 		PlatesLineFormatWriter(
-				const FileInfo &file_info,
-				const GPlatesModel::Gpgim &gpgim);
+				const FileInfo &file_info);
 
 		virtual
 		~PlatesLineFormatWriter()

@@ -277,6 +277,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::PropertyNameNotRecognisedInFeatureType,
 				QT_TR_NOOP("Property name does not belong to the feature type"),
 				QT_TR_NOOP("A property name was found, but was not in the list of names associated with the feature's type.") },
+		{ GPlatesFileIO::ReadErrors::PropertyNameNotRecognisedInFeatureType,
+				QT_TR_NOOP("Property name does not belong to the feature type"),
+				QT_TR_NOOP("A property name was found, but was not in the list of names associated with the feature's type.") },
 		{ GPlatesFileIO::ReadErrors::TimeDependentPropertyStructuralElementNotFound,
 				QT_TR_NOOP("Time-dependent property structural element not found"),
 				QT_TR_NOOP("The property value is missing a time-dependent wrapper.") },
@@ -652,7 +655,7 @@ namespace
 }
 
 
-const QString &
+QString
 GPlatesFileIO::ReadErrorMessages::get_short_description_as_string(
 		GPlatesFileIO::ReadErrors::Description code)
 {
@@ -668,7 +671,7 @@ GPlatesFileIO::ReadErrorMessages::get_short_description_as_string(
 }
 
 
-const QString &
+QString
 GPlatesFileIO::ReadErrorMessages::get_full_description_as_string(
 		GPlatesFileIO::ReadErrors::Description code)
 {
@@ -684,7 +687,7 @@ GPlatesFileIO::ReadErrorMessages::get_full_description_as_string(
 }
 
 
-const QString &
+QString
 GPlatesFileIO::ReadErrorMessages::get_result_as_string(
 		GPlatesFileIO::ReadErrors::Result code)
 {

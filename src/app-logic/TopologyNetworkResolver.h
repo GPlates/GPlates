@@ -81,9 +81,9 @@ namespace GPlatesAppLogic
 		 * @param reconstruction_tree is associated with the output resolved topological networks.
 		 * @param topological_geometry_reconstruct_handles is a list of reconstruct handles that
 		 *        identifies the subset, of all RFGs observing the topological boundary section and/or
-		 *        interior features, and all resolved topological lines (@a ResolvedTopologicalGeometry
-		 *        containing polylines) observing the topological boundary section features,
-		 *        that should be searched when resolving the topological networks.
+		 *        interior features, and all resolved topological lines (@a ResolvedTopologicalLine)
+		 *        observing the topological boundary section features, that should be searched when
+		 *        resolving the topological networks.
 		 *        This is useful to avoid outdated RFGs and RTGS still in existence (among other scenarios).
 		 */
 		TopologyNetworkResolver(
@@ -358,7 +358,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_boundary_delaunay_points_from_resolved_topological_line(
-				const resolved_topological_geometry_non_null_ptr_type &boundary_section_rtg,
+				const resolved_topological_line_non_null_ptr_type &boundary_section_rtl,
 				const GPlatesMaths::GeometryOnSphere &boundary_section_geometry,
 				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points);
 
@@ -385,7 +385,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_interior_delaunay_points_from_resolved_topological_line(
-				const resolved_topological_geometry_non_null_ptr_type &interior_rtg,
+				const resolved_topological_line_non_null_ptr_type &interior_rtl,
 				std::vector<ResolvedTriangulation::Network::DelaunayPoint> &all_delaunay_points);
 
 		/**

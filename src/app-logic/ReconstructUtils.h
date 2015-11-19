@@ -105,9 +105,8 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref)
 		{
 			ReconstructMethodRegistry reconstruct_method_registry;
-			register_default_reconstruct_method_types(reconstruct_method_registry);
 
-			return is_reconstructable_feature(feature_ref);
+			return is_reconstructable_feature(feature_ref, reconstruct_method_registry);
 		}
 
 
@@ -133,9 +132,8 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection)
 		{
 			ReconstructMethodRegistry reconstruct_method_registry;
-			register_default_reconstruct_method_types(reconstruct_method_registry);
 
-			return has_reconstructable_features(feature_collection);
+			return has_reconstructable_features(feature_collection, reconstruct_method_registry);
 		}
 
 

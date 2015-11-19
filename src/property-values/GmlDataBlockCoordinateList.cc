@@ -26,6 +26,7 @@
 #include <algorithm>
 
 #include "GmlDataBlockCoordinateList.h"
+
 #include "maths/Real.h"
 
 
@@ -66,4 +67,3 @@ GPlatesPropertyValues::GmlDataBlockCoordinateList::operator==(
 		return false;
 	}
 }
-

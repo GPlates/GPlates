@@ -34,13 +34,7 @@
 #include "ReadErrorAccumulation.h"
 
 #include "model/FeatureCollectionHandle.h"
-#include "model/ModelInterface.h"
 
-
-namespace GPlatesModel
-{
-	class Gpgim;
-}
 
 namespace GPlatesFileIO
 {
@@ -54,8 +48,6 @@ namespace GPlatesFileIO
 		void
 		read_file(
 				File::Reference &file,
-				GPlatesModel::ModelInterface &model,
-				const GPlatesModel::Gpgim &gpgim,
 				const GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type &property_structural_type_reader,
 				ReadErrorAccumulation &read_errors,
 				bool &contains_unsaved_changes,

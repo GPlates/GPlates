@@ -37,4 +37,3 @@ GPlatesPropertyValues::GmlPolygon::print_to(
 	// FIXME: Implement properly when actually needed for debugging.
 	return os << "{ GmlPolygon }";
 }
-

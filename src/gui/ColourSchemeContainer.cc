@@ -221,7 +221,7 @@ GPlatesGui::ColourSchemeContainer::create_built_in_colour_schemes(
 			ColourSchemeCategory::FEATURE_TYPE,
 			ColourSchemeInfo(
 				make_colour_scheme(
-					FeatureTypeColourPalette::create(application_state.get_gpgim()),
+					FeatureTypeColourPalette::create(),
 					GPlatesAppLogic::FeatureTypePropertyExtractor()),
 				"Default",
 				"Colour geometries by feature type",

@@ -237,16 +237,6 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors);
 
 
-#if 0
-		GPlatesPropertyValues::GpmlArray::non_null_ptr_type
-        create_gpml_array_member(
-				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
-				const GpmlPropertyStructuralTypeReader &structural_type_reader,
-				const GPlatesModel::GpgimVersion &gpml_version,
-				ReadErrorAccumulation &read_errors);
-#endif
-
-
 		GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 		create_gpml_constant_value(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
@@ -314,6 +304,13 @@ namespace GPlatesFileIO
 
 		GPlatesPropertyValues::GpmlMeasure::non_null_ptr_type
 		create_gpml_measure(
+				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+				const GPlatesModel::GpgimVersion &gpml_version,
+				ReadErrorAccumulation &read_errors);
+
+
+		GPlatesPropertyValues::GpmlMetadata::non_null_ptr_type
+		create_gpml_metadata(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 				const GPlatesModel::GpgimVersion &gpml_version,
 				ReadErrorAccumulation &read_errors);
@@ -395,18 +392,6 @@ namespace GPlatesFileIO
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 				const GPlatesModel::GpgimVersion &gpml_version,
 				ReadErrorAccumulation &read_errors);
-
-		GPlatesPropertyValues::GpmlMetadata::non_null_ptr_type
-		create_gpml_metadata(
-				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
-				const GPlatesModel::GpgimVersion &gpml_version,
-				ReadErrorAccumulation &read_errors);
-
-		const GPlatesMaths::FiniteRotation
-		create_finite_rotation(
-				const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
-				const GPlatesModel::GpgimVersion &gpml_version,
-				GPlatesFileIO::ReadErrorAccumulation &read_errors);
 	}
 }
 

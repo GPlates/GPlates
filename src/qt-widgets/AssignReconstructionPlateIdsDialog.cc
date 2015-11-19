@@ -409,7 +409,6 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::create_plate_id_assigner()
 	}
 
 	return GPlatesAppLogic::AssignPlateIds::create(
-			d_application_state.get_gpgim(),
 			d_assign_plate_id_method,
 			partitioning_layer_proxies,
 			default_reconstruction_tree,
@@ -457,7 +456,7 @@ GPlatesQtWidgets::AssignReconstructionPlateIdsDialog::partition_features(
 	// this is currently quite expensive (last measured at 0.25 seconds) - so tens of thousands of
 	// features to be partitioned can result in quite a lengthy wait.
 	GPlatesModel::NotificationGuard model_notification_guard(
-			d_application_state.get_model_interface().access_model());
+			*d_application_state.get_model_interface().access_model());
 
 	// Iterate through the partitioned feature collections accepted by the user.
 	feature_collection_seq_type::const_iterator feature_collection_iter =

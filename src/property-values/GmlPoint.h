@@ -60,10 +60,10 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlPoint> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlPoint>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlPoint>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlPoint> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GmlPoint()
@@ -160,11 +160,10 @@ namespace GPlatesPropertyValues
 			return non_null_ptr_type(new GmlPoint(p, gml_property_));
 		}
 
-		const GmlPoint::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GmlPoint::non_null_ptr_type dup(new GmlPoint(*this));
-			return dup;
+			return non_null_ptr_type(new GmlPoint(*this));
 		}
 
 		const GmlPoint::non_null_ptr_type
@@ -217,10 +216,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the point within this instance to @a p.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_point(

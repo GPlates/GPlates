@@ -63,11 +63,6 @@ namespace GPlatesAppLogic
 	class FeatureCollectionFileIO;
 }
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesPresentation
 {
 	class ViewState;
@@ -306,11 +301,6 @@ namespace GPlatesQtWidgets
 		        GPlatesModel::FeatureHandle::non_null_ptr_type feature,
 		        const GPlatesModel::PropertyName &property_name,
 		        GPlatesModel::FeatureHandle::non_null_ptr_to_const_type target_feature);
-
-		/**
-		 * The GPGIM contains information about the feature types and their properties.
-		 */
-		const GPlatesModel::Gpgim &d_gpgim;
 
 		/**
 		 * The Model interface, used to create new features.

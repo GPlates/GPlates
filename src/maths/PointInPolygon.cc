@@ -55,13 +55,7 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Finds the point antipodal to the centroid (average vertex) of the polygon.
-		 *
-		 * If the centroid is (near) the origin then attempts to recalculate centroid by summing
-		 * the edge midpoints.
-		 *
-		 * FIXME: Use a more accurate heuristic to determine the antipodal point such as
-		 * using area of spherical polygon.
+		 * Finds the point antipodal to the centroid of the polygon boundary.
 		 *
 		 * FIXME: It is still possible for the antipodal point of the polygon centroid
 		 * to be inside the polygon for some polygon arrangements. Simply assuming it's
@@ -85,30 +79,7 @@ namespace GPlatesMaths
 		get_polygon_centroid(
 				const PolygonOnSphere &polygon)
 		{
-			// Iterate through the polygon vertices and calculate the sum of vertex positions.
-			Vector3D summed_position(0,0,0);
-			PolygonOnSphere::vertex_const_iterator vertex_iter = polygon.vertex_begin();
-			const PolygonOnSphere::vertex_const_iterator vertex_end = polygon.vertex_end();
-			for ( ; vertex_iter != vertex_end; ++vertex_iter)
-			{
-				const boost::optional<GPlatesMaths::UnitVector3D> centroid =
-						Centroid::calculate_centroid(
-								polygon,
-								0.3/*polygon forms cone of roughly 145 degrees*/);
-
-				if (!centroid)
-				{
-					// FIXME: Either all point-in-polygon tests will be wrong or they
-					// will all be right and either way is equally likely at this point.
-					return UnitVector3D(0, 0, 1);
-				}
-
-				// Return the centroid.
-				return centroid.get();
-			}
-
-			// Return the centroid.
-			return summed_position.get_normalisation();
+			return polygon.get_boundary_centroid();
 		}
 
 
@@ -1574,7 +1545,7 @@ namespace GPlatesMaths
 }
 
 
-GPlatesMaths::PointInPolygon::Result
+bool
 GPlatesMaths::PointInPolygon::is_point_in_polygon(
 		const PointOnSphere &point,
 		const PolygonOnSphere &polygon)
@@ -1597,7 +1568,7 @@ GPlatesMaths::PointInPolygon::is_point_in_polygon(
 			crossings_arc_plane_normal, dot_crossings_arc_end_points);
 
 	// If number of edges crossed is even then point is outside the polygon.
-	return ((num_polygon_edges_crossed & 1) == 0) ? POINT_OUTSIDE_POLYGON : POINT_INSIDE_POLYGON;
+	return (num_polygon_edges_crossed & 1) == 1;
 }
 
 
@@ -1612,7 +1583,7 @@ GPlatesMaths::PointInPolygon::Polygon::Polygon(
 }
 
 
-GPlatesMaths::PointInPolygon::Result
+bool
 GPlatesMaths::PointInPolygon::Polygon::is_point_in_polygon(
 		const PointOnSphere &test_point) const
 {
@@ -1621,5 +1592,5 @@ GPlatesMaths::PointInPolygon::Polygon::is_point_in_polygon(
 		d_spherical_lune_tree->get_num_polygon_edges_crossed(test_point.position_vector());
 
 	// If number of edges crossed is even then point is outside the polygon.
-	return ((num_polygon_edges_crossed & 1) == 0) ? POINT_OUTSIDE_POLYGON : POINT_INSIDE_POLYGON;
+	return (num_polygon_edges_crossed & 1) == 1;
 }

@@ -31,9 +31,11 @@
 
 #include <vector>
 
+#include "GpmlKeyValueDictionaryElement.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
-#include "property-values/GpmlKeyValueDictionaryElement.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -52,14 +54,12 @@ namespace GPlatesPropertyValues
 
 	public:
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlKeyValueDictionary>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlKeyValueDictionary>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlKeyValueDictionary> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlKeyValueDictionary>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlKeyValueDictionary>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlKeyValueDictionary> non_null_ptr_to_const_type;
 
@@ -68,39 +68,25 @@ namespace GPlatesPropertyValues
 		~GpmlKeyValueDictionary()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
-		const non_null_ptr_type
+		non_null_ptr_type
 		create()
 		{
-			non_null_ptr_type ptr(new GpmlKeyValueDictionary());
-			return ptr;
+			return create(std::vector<GpmlKeyValueDictionaryElement>());
 		}
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
-		const non_null_ptr_type
+		non_null_ptr_type
 		create(
 			const std::vector<GpmlKeyValueDictionaryElement> &elements)
 		{
-			non_null_ptr_type ptr(new GpmlKeyValueDictionary(
-					elements));
-			return ptr;
+			return non_null_ptr_type(new GpmlKeyValueDictionary(elements));
 		}
 
-		const GpmlKeyValueDictionary::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlKeyValueDictionary::non_null_ptr_type dup(new GpmlKeyValueDictionary(*this));
-			return dup;
+			return non_null_ptr_type(new GpmlKeyValueDictionary(*this));
 		}
 
 		const GpmlKeyValueDictionary::non_null_ptr_type

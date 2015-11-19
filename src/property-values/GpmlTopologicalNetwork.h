@@ -147,13 +147,13 @@ namespace GPlatesPropertyValues
 							interior_geometries_begin_, interior_geometries_end_));
 		}
 
-		const GpmlTopologicalNetwork::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
 			return non_null_ptr_type(new GpmlTopologicalNetwork(*this));
 		}
 
-		const GpmlTopologicalNetwork::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const;
 
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()

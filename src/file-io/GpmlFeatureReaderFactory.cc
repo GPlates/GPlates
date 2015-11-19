@@ -35,10 +35,8 @@
 
 
 GPlatesFileIO::GpmlFeatureReaderFactory::GpmlFeatureReaderFactory(
-		const GPlatesModel::Gpgim &gpgim,
 		const GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type &property_structural_type_reader,
 		const GPlatesModel::GpgimVersion &gpml_version) :
-	d_gpgim(&gpgim),
 	d_property_structural_type_reader(property_structural_type_reader),
 	d_gpml_version(gpml_version)
 {
@@ -96,7 +94,7 @@ GPlatesFileIO::GpmlFeatureReaderFactory::get_feature_reader_impl(
 
 	// First see if the GPML file was created using an older version GPGIM.
 	// If so then it may need to be upgraded to the current GPGIM as it is being read.
-	if (d_gpml_version < d_gpgim->get_version())
+	if (d_gpml_version < GPlatesModel::Gpgim::instance().get_version())
 	{
 		feature_reader_impl = create_upgrade_feature_reader_impl(feature_type);
 	}
@@ -135,7 +133,7 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_feature_reader_impl(
 {
 	// Query the GPGIM for the GPGIM feature class associated with the specified feature type.
 	boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type>
-			gpgim_feature_class = d_gpgim->get_feature_class(feature_type);
+			gpgim_feature_class = GPlatesModel::Gpgim::instance().get_feature_class(feature_type);
 	if (!gpgim_feature_class)
 	{
 		// The specified feature type is not recognised by the GPGIM.
@@ -143,14 +141,14 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_feature_reader_impl(
 		// If we're reading from a GPML file created from an earlier GPGIM version then it's possible
 		// the feature type has since been renamed - so we'll log a warning to indicate that a
 		// developer might need to implement an update handler to change the feature type.
-		if (d_gpml_version < d_gpgim->get_version())
+		if (d_gpml_version < GPlatesModel::Gpgim::instance().get_version())
 		{
 			qWarning() << "GpmlFeatureReaderFactory: feature type '"
 				<< convert_qualified_xml_name_to_qstring(feature_type)
 				<< "' read from GPML file version '"
 				<< d_gpml_version.version_string()
 				<< "' is not recognised by the current GPGIM '"
-				<< d_gpgim->get_version().version_string()
+				<< GPlatesModel::Gpgim::instance().get_version().version_string()
 				<< "':";
 			qWarning() << "...might need to implement an upgrade handler to change feature type.";
 		}
@@ -378,7 +376,8 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_319_feature_reader_i
 
 		// Query the GPGIM for the GPGIM feature class associated with the feature type.
 		boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type>
-				original_gpgim_feature_class = d_gpgim->get_feature_class(feature_type);
+				original_gpgim_feature_class =
+						GPlatesModel::Gpgim::instance().get_feature_class(feature_type);
 		if (!original_gpgim_feature_class)
 		{
 			return boost::none;
@@ -407,7 +406,6 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_319_feature_reader_i
 								gpgim_feature_class,
 								parent_feature_reader_impl.get(),
 								d_property_structural_type_reader,
-								*d_gpgim,
 								d_gpml_version);
 		if (!feature_reader_impl)
 		{
@@ -419,8 +417,7 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_319_feature_reader_i
 		// onto the list of readers.
 		return GpmlUpgradeReaderUtils::create_property_rename_feature_reader_impl(
 				feature_reader_impl.get(),
-				property_rename_pairs,
-				*d_gpgim);
+				property_rename_pairs);
 	}
 
 	return boost::none;
@@ -458,8 +455,7 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_1_6_320_feature_reader_i
 		return GpmlFeatureReaderImpl::non_null_ptr_type(
 				GpmlUpgradeReaderUtils::ChangeFeatureTypeFeatureReaderImpl::create(
 						UNCLASSIFIED_FEATURE_TYPE,
-						unclassified_feature_reader_impl.get(),
-						*d_gpgim));
+						unclassified_feature_reader_impl.get()));
 	}
 
 	return boost::none;
@@ -489,7 +485,7 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_property_name_feature_re
 {
 	// Query the GPGIM for the GPGIM feature class associated with the specified feature type.
 	boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> original_gpgim_feature_class =
-			d_gpgim->get_feature_class(feature_type);
+			GPlatesModel::Gpgim::instance().get_feature_class(feature_type);
 	if (!original_gpgim_feature_class)
 	{
 		return boost::none;
@@ -515,6 +511,5 @@ GPlatesFileIO::GpmlFeatureReaderFactory::create_upgrade_property_name_feature_re
 	// onto the list of readers.
 	return GpmlUpgradeReaderUtils::create_property_rename_feature_reader_impl(
 			feature_reader_impl.get(),
-			property_rename_pairs,
-			*d_gpgim);
+			property_rename_pairs);
 }

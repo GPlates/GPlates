@@ -40,6 +40,7 @@
 #include "ReconstructionGeometryUtils.h"
 #include "ReconstructionFeatureProperties.h"
 #include "ReconstructionTree.h"
+#include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
 #include "ResolvedTriangulationNetwork.h"
 #include "ResolvedTriangulationUtils.h"
@@ -51,6 +52,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "maths/AngularExtent.h"
 #include "maths/CalculateVelocity.h"
 #include "maths/FiniteRotation.h"
 #include "maths/Rotation.h"
@@ -306,7 +308,7 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 
 			boost::optional< std::pair<
 					GPlatesModel::integer_plate_id_type,
-					const ResolvedTopologicalGeometry * > > recon_plate_id_opt =
+					const ResolvedTopologicalBoundary * > > recon_plate_id_opt =
 							TopologyUtils::find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
 									resolved_topological_boundaries_containing_point);
 			if (!recon_plate_id_opt)
@@ -320,7 +322,7 @@ qDebug() << "solve_velocities_on_rigid_plates: " << llp;
 			}
 
 			const GPlatesModel::integer_plate_id_type recon_plate_id = recon_plate_id_opt->first;
-			const ResolvedTopologicalGeometry *resolved_topo_boundary = recon_plate_id_opt->second;
+			const ResolvedTopologicalBoundary *resolved_topo_boundary = recon_plate_id_opt->second;
 
 			// Compute the velocity for this domain point.
 			const GPlatesMaths::Vector3D vector_xyz =
@@ -756,9 +758,8 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 				const GeometryCookieCutter &reconstructed_static_polygons_query,
 				const TopologyUtils::ResolvedBoundariesForGeometryPartitioning::non_null_ptr_type &resolved_rigid_plates_query,
 				const PlateVelocityUtils::TopologicalNetworksVelocities &resolved_networks_query,
-				const double &boundary_smoothing_angular_half_extent,
-				const double &cosine_boundary_smoothing_angular_half_extent,
-				const double &sine_boundary_smoothing_angular_half_extent,
+				const double &boundary_smoothing_half_angle_radians,
+				const GPlatesMaths::AngularExtent &boundary_smoothing_angular_half_extent,
 				bool exclude_deforming_regions_from_smoothing)
 		{
 			// First solve the velocity at the domain point.
@@ -822,8 +823,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 			// the smoothing distance. 
 			const GPlatesMaths::BoundingSmallCircle outside_smoothing_region_small_circle =
 					polygon_boundary_inner_bounding_small_circle.contract(
-							cosine_boundary_smoothing_angular_half_extent,
-							sine_boundary_smoothing_angular_half_extent);
+							boundary_smoothing_angular_half_extent);
 
 			// Here OUTSIDE_BOUNDS means outside the small circle.
 			if (outside_smoothing_region_small_circle.test(domain_point) !=
@@ -840,8 +840,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 			boost::optional<GPlatesMaths::PointOnSphere> closest_point_on_polygon_boundary =
 					polygon_boundary->is_close_to(
 							domain_point,
-							cosine_boundary_smoothing_angular_half_extent,
-							sine_boundary_smoothing_angular_half_extent,
+							boundary_smoothing_angular_half_extent,
 							closeness_to_polygon_boundary);
 			if (!closest_point_on_polygon_boundary)
 			{
@@ -868,7 +867,7 @@ qDebug() << "solve_velocities_on_static_polygon: " << llp;
 
 			// The smoothing (interpolation) factor.
 			const GPlatesMaths::real_t smoothing_factor =
-					acos(closeness_to_polygon_boundary) / boundary_smoothing_angular_half_extent;
+					acos(closeness_to_polygon_boundary) / boundary_smoothing_half_angle_radians;
 
 			// Smooth the already calculated velocity vector.
 			range_element->d_vector =
@@ -950,7 +949,7 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 		const double &reconstruction_time,
 		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &velocity_domains,
 		const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &velocity_surface_reconstructed_static_polygons,
-		const std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
+		const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &velocity_surface_resolved_topological_boundaries,
 		const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &velocity_surface_resolved_topological_networks,
 		const boost::optional<VelocitySmoothingOptions> &velocity_smoothing_options)
 {
@@ -982,25 +981,15 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 	const TopologicalNetworksVelocities resolved_networks_query(
 			velocity_surface_resolved_topological_networks);
 
-	// Calculate cosine and sine of the angular half extent.
-	// Note: This is only used if an angular half extent was specified.
-	boost::optional<double> boundary_smoothing_angular_half_extent;
+	GPlatesMaths::AngularExtent boundary_smoothing_angular_half_extent = GPlatesMaths::AngularExtent::ZERO;
 	bool exclude_deforming_regions_from_smoothing = true;
 	if (velocity_smoothing_options)
 	{
-		boundary_smoothing_angular_half_extent = velocity_smoothing_options->angular_half_extent_radians;
+		boundary_smoothing_angular_half_extent =
+				GPlatesMaths::AngularExtent::create_from_angle(
+						velocity_smoothing_options->angular_half_extent_radians);
 		exclude_deforming_regions_from_smoothing = velocity_smoothing_options->exclude_deforming_regions;
 	}
-	const double cosine_boundary_smoothing_angular_half_extent =
-			boundary_smoothing_angular_half_extent
-			? std::cos(boundary_smoothing_angular_half_extent.get())
-			: 1.0;
-	const double cosine_boundary_smoothing_angular_half_extent_squared =
-			cosine_boundary_smoothing_angular_half_extent * cosine_boundary_smoothing_angular_half_extent;
-	const double sine_boundary_smoothing_angular_half_extent =
-			(cosine_boundary_smoothing_angular_half_extent_squared < 1)
-			? std::sqrt(1 - cosine_boundary_smoothing_angular_half_extent_squared)
-			: 0;
 
 	// Iterate over the velocity domain RFGs.
 	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type>::const_iterator velocity_domains_iter =
@@ -1059,9 +1048,8 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 						reconstructed_static_polygons_query,
 						resolved_rigid_plates_query,
 						resolved_networks_query,
-						boundary_smoothing_angular_half_extent.get(),
-						cosine_boundary_smoothing_angular_half_extent,
-						sine_boundary_smoothing_angular_half_extent,
+						velocity_smoothing_options->angular_half_extent_radians,
+						boundary_smoothing_angular_half_extent,
 						exclude_deforming_regions_from_smoothing);
 			}
 			else

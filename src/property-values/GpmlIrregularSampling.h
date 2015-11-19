@@ -31,11 +31,13 @@
 #include <vector>
 #include <boost/intrusive_ptr.hpp>
 
+#include "GpmlInterpolationFunction.h"
 #include "GpmlTimeSample.h"
 #include "GpmlTotalReconstructionPole.h"
-#include "GpmlInterpolationFunction.h"
 #include "StructuralType.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
 #include "model/Metadata.h"
 
@@ -51,63 +53,53 @@ namespace GPlatesPropertyValues
 	class GpmlIrregularSampling:
 			public GPlatesModel::PropertyValue
 	{
-
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlIrregularSampling>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlIrregularSampling>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlIrregularSampling> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlIrregularSampling>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlIrregularSampling>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlIrregularSampling> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlIrregularSampling()
 		{  }
 
 		static
-		const non_null_ptr_type
+		non_null_ptr_type
 		create(
 				const GpmlTimeSample &first_time_sample,
 				GpmlInterpolationFunction::maybe_null_ptr_type interp_func,
 				const StructuralType &value_type_)
 		{
-			non_null_ptr_type ptr(
+			return non_null_ptr_type(
 					new GpmlIrregularSampling(first_time_sample, interp_func,
 							value_type_));
-			return ptr;
 		}
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
-		const non_null_ptr_type
+		non_null_ptr_type
 		create(
 				const std::vector<GpmlTimeSample> &time_samples_,
 				GpmlInterpolationFunction::maybe_null_ptr_type interp_func,
 				const StructuralType &value_type_)
 		{
-			non_null_ptr_type ptr(
+			return non_null_ptr_type(
 					new GpmlIrregularSampling(time_samples_, interp_func, value_type_));
-			return ptr;
 		}
 
-		const GpmlIrregularSampling::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlIrregularSampling::non_null_ptr_type dup(new GpmlIrregularSampling(*this));
-			return dup;
+			return non_null_ptr_type(new GpmlIrregularSampling(*this));
 		}
 
-		const GpmlIrregularSampling::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const;
 
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
@@ -121,38 +113,38 @@ namespace GPlatesPropertyValues
 			return d_time_samples;
 		}
 
-		// @b FIXME:  Should this function be replaced with per-index const-access to
-		// elements of the time sample vector, well as per-index assignment (setter) and
-		// removal operations?  This would ensure that revisioning is correctly handled...
+		/**
+		 * Returns the 'non-const' vector of time samples.
+		 */
 		std::vector<GpmlTimeSample> &
 		time_samples()
 		{
 			return d_time_samples;
 		}
 
+
+		/**
+		 * Returns the 'const' interpolation function.
+		 */
 		const GpmlInterpolationFunction::maybe_null_ptr_to_const_type
 		interpolation_function() const
 		{
 			return d_interpolation_function;
 		}
 
-		// Note that, because the copy-assignment operator of GpmlInterpolationFunction is
-		// private, the GpmlInterpolationFunction referenced by the return-value of this
-		// function cannot be assigned-to, which means that this function does not provide
-		// a means to directly switch the GpmlInterpolationFunction within this
-		// GpmlIrregularSampling instance.  (This restriction is intentional.)
-		//
-		// To switch the GpmlInterpolationFunction within this GpmlIrregularSampling
-		// instance, use the function @a set_interpolation_function below.
-		//
-		// (This overload is provided to allow the referenced GpmlInterpolationFunction
-		// instance to accept a FeatureVisitor instance.)
+		/**
+		 * Returns the 'non-const' interpolation function.
+		 */
 		const GpmlInterpolationFunction::maybe_null_ptr_type
+
 		interpolation_function()
 		{
 			return d_interpolation_function;
 		}
 
+		/**
+		 * Sets the internal interpolation function.
+		 */
 		void
 		set_interpolation_function(
 				GpmlInterpolationFunction::maybe_null_ptr_type i)
@@ -160,6 +152,7 @@ namespace GPlatesPropertyValues
 			d_interpolation_function = i;
 			update_instance_id();
 		}
+
 
 		// Note that no "setter" is provided:  The value type of a GpmlIrregularSampling
 		// instance should never be changed.

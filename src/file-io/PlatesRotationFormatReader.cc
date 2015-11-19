@@ -31,6 +31,10 @@
 
 #include <sstream>
 #include <string>
+#include <boost/ref.hpp>
+#include <boost/foreach.hpp>
+#include <boost/shared_ptr.hpp>
+#include <loki/ScopeGuard.h>
 #include <QFile>
 
 #include <boost/foreach.hpp>
@@ -259,10 +263,10 @@ namespace
 
 		// Always create a GpmlTotalReconstructionPole (instead of GpmlFiniteRotation) since
 		// the former also supports pole metadata (which can remain empty if not needed/used).
-		PropertyValue::non_null_ptr_type value(
-				new GPlatesPropertyValues::GpmlTotalReconstructionPole(
+		PropertyValue::non_null_ptr_type value =
+				GpmlTotalReconstructionPole::create(
 						GpmlFiniteRotation::create(lon_lat_euler_pole, rotation_angle)
-								->finite_rotation()));
+								->finite_rotation());
 
 		GeoTimeInstant geo_time_instant(geo_time);
 		GmlTimeInstant::non_null_ptr_type valid_time =
@@ -326,7 +330,6 @@ namespace
 
 	void
 	create_total_recon_seq(
-			GPlatesModel::ModelInterface &model,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
 			GPlatesModel::FeatureHandle::weak_ref &current_total_recon_seq,
 			TotalReconSeqProperties &props_in_current_trs,
@@ -461,7 +464,6 @@ namespace
 
 	void
 	append_pole_to_data_set(
-			GPlatesModel::ModelInterface &model,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
 			GPlatesModel::FeatureHandle::weak_ref &current_total_recon_seq,
 			TotalReconSeqProperties &props_in_current_trs,
@@ -474,6 +476,7 @@ namespace
 			bool &contains_unsaved_changes)
 	{
 		using namespace GPlatesFileIO;
+		using namespace GPlatesModel;
 		using namespace GPlatesPropertyValues;
 
 		// We're going to use some messy code logic to handle the rather arbitrary
@@ -516,7 +519,7 @@ namespace
 			// There are not yet any total reconstruction sequences in the feature
 			// collection, which means that we need to create the first one.
 
-			create_total_recon_seq(model, rotations, current_total_recon_seq,
+			create_total_recon_seq(rotations, current_total_recon_seq,
 					props_in_current_trs, time_sample, fixed_plate_id, moving_plate_id);
 
 			// Since this was the very first pole in the very first sequence, we don't
@@ -609,7 +612,7 @@ namespace
 								data_source, line_num, read_errors);
 					}
 				}
-				create_total_recon_seq(model, rotations, current_total_recon_seq,
+				create_total_recon_seq(rotations, current_total_recon_seq,
 						props_in_current_trs, time_sample, fixed_plate_id,
 						moving_plate_id);
 			}
@@ -638,7 +641,7 @@ namespace
 							read_errors);
 				}
 			}
-			create_total_recon_seq(model, rotations, current_total_recon_seq,
+			create_total_recon_seq(rotations, current_total_recon_seq,
 					props_in_current_trs, time_sample, fixed_plate_id,
 					moving_plate_id);
 		}
@@ -679,7 +682,7 @@ namespace
 			{
 				// The sequence has a different fixed ref frame or moving ref frame
 				// to those of the pole, so we need to commence a *new* sequence.
-				create_total_recon_seq(model, rotations, current_total_recon_seq,
+				create_total_recon_seq(rotations, current_total_recon_seq,
 						props_in_current_trs, time_sample, fixed_plate_id,
 						moving_plate_id);
 			}
@@ -700,7 +703,6 @@ namespace
 
 	void
 	handle_parsed_pole(
-			GPlatesModel::ModelInterface &model,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
 			GPlatesModel::FeatureHandle::weak_ref &current_total_recon_seq,
 			TotalReconSeqProperties &props_in_current_trs,
@@ -724,7 +726,7 @@ namespace
 			return;
 		}
 
-		append_pole_to_data_set(model, rotations, current_total_recon_seq,
+		append_pole_to_data_set(rotations, current_total_recon_seq,
 				props_in_current_trs, time_sample, fixed_plate_id,
 				moving_plate_id, data_source, line_num, read_errors, contains_unsaved_changes);
 	}
@@ -736,7 +738,6 @@ namespace
 	 */
 	void
 	populate_rotations(
-			GPlatesModel::ModelInterface &model,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &rotations,
 			GPlatesFileIO::LineReader &line_buffer,
 			boost::shared_ptr<GPlatesFileIO::DataSource> data_source,
@@ -760,7 +761,7 @@ namespace
 								data_source, line_buffer.line_number(),
 								read_errors);
 
-				handle_parsed_pole(model, rotations, current_total_recon_seq,
+				handle_parsed_pole(rotations, current_total_recon_seq,
 						props_in_current_trs, time_sample,
 						fixed_plate_id, moving_plate_id, data_source,
 						line_buffer.line_number(), read_errors, contains_unsaved_changes);
@@ -780,8 +781,6 @@ namespace
 void
 GPlatesFileIO::PlatesRotationFormatReader::read_file(
 		File::Reference &file,
-		GPlatesModel::ModelInterface &model,
-		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors,
 		bool &contains_unsaved_changes)
 {
@@ -790,13 +789,6 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 	contains_unsaved_changes = false;
 
 	const FileInfo &fileinfo = file.get_file_info();
-
-	// By placing all changes to the model under the one changeset, we ensure that
-	// feature revision ids don't get changed from what was loaded from file no
-	// matter what we do to the features.
-	GPlatesModel::ChangesetHandle changeset(
-			model.access_model(),
-			"open " + fileinfo.get_qfileinfo().fileName().toStdString());
 
 	QString filename = fileinfo.get_qfileinfo().absoluteFilePath();
 	// Open the file for reading.
@@ -813,7 +805,7 @@ GPlatesFileIO::PlatesRotationFormatReader::read_file(
 
 	try
 	{
-		populate_rotations(model, rotations, line_buffer, data_source, read_errors, contains_unsaved_changes);
+		populate_rotations(rotations, line_buffer, data_source, read_errors, contains_unsaved_changes);
 	} catch (UnexpectedlyNullIrregularSampling &) {
 		// The argument name in the above expression was removed to
 		// prevent "unreferenced local variable" compiler warnings under MSVC

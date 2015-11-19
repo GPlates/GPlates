@@ -33,11 +33,6 @@
 #include "GpgimVersionWarningDialogUi.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesQtWidgets
 {
 	/**
@@ -66,7 +61,6 @@ namespace GPlatesQtWidgets
 		 */
 		explicit
 		GpgimVersionWarningDialog(
-				const GPlatesModel::Gpgim &gpgim,
 				bool show_dialog_on_loading_files = true,
 				QWidget *parent_ = NULL);
 
@@ -111,11 +105,6 @@ namespace GPlatesQtWidgets
 		close();
 
 	private:
-
-		/**
-		 * Used to query the current GPGIM version.
-		 */
-		const GPlatesModel::Gpgim &d_gpgim;
 
 
 		/**

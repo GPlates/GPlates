@@ -29,6 +29,7 @@
 #define GPLATES_MODEL_IDTYPEGENERATOR_H
 
 #include <vector>
+#include <boost/operators.hpp>
 #include <boost/scoped_ptr.hpp>
 
 #include "StringSetSingletons.h"
@@ -64,7 +65,8 @@ namespace GPlatesModel
 	 * use StringContentTypeGenerator.
 	 */
 	template<typename SingletonType, typename BackRefTargetType>
-	class IdTypeGenerator
+	class IdTypeGenerator :
+			public boost::equality_comparable<IdTypeGenerator<SingletonType, BackRefTargetType> >
 	{
 	public:
 		typedef BackRefTargetType back_ref_target_type;
@@ -301,6 +303,15 @@ namespace GPlatesModel
 		is_equal_to(
 				const IdTypeGenerator &other) const {
 			return d_sh_iter == other.d_sh_iter;
+		}
+
+		/**
+		 * Equality comparison operator - inequality operator provided by 'boost::equality_comparable'.
+		 */
+		bool
+		operator==(
+				const IdTypeGenerator &other) const {
+			return is_equal_to(other);
 		}
 
 	private:

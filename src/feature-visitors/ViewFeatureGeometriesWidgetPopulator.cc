@@ -527,7 +527,6 @@ GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator::visit_gml_orientab
 	// geometry-valued property so we can remember to add it to the QTreeWidget later.
 	d_property_info_vector.back().is_geometric_property = true;
 
-	// FIXME:  Ensure that 'gml_orientable_curve.base_curve()' is not NULL.
 	add_child_then_visit_value(QObject::tr("gml:OrientableCurve"), QString(),
 			*gml_orientable_curve.base_curve());
 }

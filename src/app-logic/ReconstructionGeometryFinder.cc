@@ -27,10 +27,6 @@
 #include "ReconstructionGeometryFinder.h"
 
 #include "ReconstructedFeatureGeometry.h"
-#include "ReconstructedFlowline.h"
-#include "ReconstructedMotionPath.h"
-#include "ReconstructedSmallCircle.h"
-#include "ReconstructedVirtualGeomagneticPole.h"
 #include "Reconstruction.h"
 #include "ResolvedTopologicalGeometry.h"
 #include "ResolvedTopologicalNetwork.h"
@@ -109,12 +105,11 @@ GPlatesAppLogic::ReconstructionGeometryFinder::visit_reconstructed_feature_geome
 	visit_reconstruction_geometry_derived_type(rfg);
 }
 
-
 void
 GPlatesAppLogic::ReconstructionGeometryFinder::visit_resolved_topological_geometry(
-		ResolvedTopologicalGeometry &rtb)
+		ResolvedTopologicalGeometry &rtg)
 {
-	visit_reconstruction_geometry_derived_type(rtb);
+	visit_reconstruction_geometry_derived_type(rtg);
 }
 
 

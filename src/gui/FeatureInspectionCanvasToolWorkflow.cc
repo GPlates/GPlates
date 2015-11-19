@@ -282,7 +282,6 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 			GPlatesCanvasTools::SplitFeature::create(
 					status_bar_callback,
 					view_state.get_feature_focus(),
-					view_state.get_application_state().get_gpgim(),
 					view_state.get_application_state().get_model_interface(),
 					view_state.get_focused_feature_geometry_builder(),
 					geometry_operation_state,

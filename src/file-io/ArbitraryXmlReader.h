@@ -35,12 +35,6 @@
 #include "FileInfo.h"
 #include "ReadErrorAccumulation.h"
 
-#include "model/ModelInterface.h"
-
-namespace GPlatesModel
-{
-	class Gpgim;
-}
 
 namespace GPlatesFileIO
 {
@@ -93,8 +87,6 @@ namespace GPlatesFileIO
 		read_file(
 				File::Reference &file,
 				boost::shared_ptr<ArbitraryXmlProfile> profile,
-				GPlatesModel::ModelInterface &model,
-				const GPlatesModel::Gpgim &gpgim,
 				ReadErrorAccumulation &read_errors,
 				bool &contains_unsaved_changes);
 
@@ -102,16 +94,13 @@ namespace GPlatesFileIO
 		read_xml_data(
 				File::Reference &file,
 				boost::shared_ptr<ArbitraryXmlProfile> profile,
-				GPlatesModel::ModelInterface &model,
 				QByteArray& data,
-				const GPlatesModel::Gpgim &gpgim,
 				ReadErrorAccumulation &read_errors);
 		
 		int
 		count_features(
 				boost::shared_ptr<ArbitraryXmlProfile> profile,
 				QByteArray& data,
-				const GPlatesModel::Gpgim &gpgim,
 				ReadErrorAccumulation &read_errors);
 		
 		/**
@@ -126,24 +115,10 @@ namespace GPlatesFileIO
 			}
 			return d_read_errors;
 		}
-		
-		/**
-		 * Throws exception if called while not inside @a read_file, @a read_xml_data or @a count_features.
-		 */
-		const GPlatesModel::Gpgim *
-		get_gpgim() const
-		{
-			if (!d_gpgim)
-			{
-				throw AccessedOutsideXmlProfileMethodException();
-			}
-			return d_gpgim;
-		}
 
 	private:
 
 		ArbitraryXmlReader() :
-			d_gpgim(NULL),
 			d_read_errors(NULL)
 		{  }
 
@@ -155,17 +130,14 @@ namespace GPlatesFileIO
 		{
 		public:
 			SetXmlProfileAccess(
-					const GPlatesModel::Gpgim *gpgim,
 					ReadErrorAccumulation* error_accumulation,
 					ArbitraryXmlReader* parent):
 				d_parent(parent)
 			{
-				d_parent->d_gpgim = gpgim;
 				d_parent->d_read_errors = error_accumulation;
 			}
 			~SetXmlProfileAccess()
 			{
-				d_parent->d_gpgim = NULL;
 				d_parent->d_read_errors = NULL;
 			}
 		private:
@@ -173,7 +145,6 @@ namespace GPlatesFileIO
 		};
 
 
-		const GPlatesModel::Gpgim *d_gpgim;
 		ReadErrorAccumulation* d_read_errors;
 	};
 }

@@ -55,14 +55,12 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for 
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureSnapshotReference>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureSnapshotReference>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFeatureSnapshotReference> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureSnapshotReference>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureSnapshotReference>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFeatureSnapshotReference> non_null_ptr_to_const_type;
 
@@ -71,11 +69,6 @@ namespace GPlatesPropertyValues
 		~GpmlFeatureSnapshotReference()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
@@ -83,20 +76,17 @@ namespace GPlatesPropertyValues
 				const GPlatesModel::RevisionId &revision_,
 				const GPlatesModel::FeatureType &value_type_)
 		{
-			non_null_ptr_type ptr(
-					new GpmlFeatureSnapshotReference(feature_, revision_, value_type_));
-			return ptr;
+			return non_null_ptr_type(new GpmlFeatureSnapshotReference(feature_, revision_, value_type_));
 		}
 
-		const GpmlFeatureSnapshotReference::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlFeatureSnapshotReference::non_null_ptr_type dup(
+			return non_null_ptr_type(
 					new GpmlFeatureSnapshotReference(*this));
-			return dup;
 		}
 
-		const GpmlFeatureSnapshotReference::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const
 		{
 			// This class doesn't reference any mutable objects by pointer, so there's

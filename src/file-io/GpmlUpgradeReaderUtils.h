@@ -43,11 +43,6 @@
 #include "model/PropertyName.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesFileIO
 {
 	namespace GpmlUpgradeReaderUtils
@@ -85,8 +80,7 @@ namespace GPlatesFileIO
 		GpmlFeatureReaderImpl::non_null_ptr_type
 		create_property_rename_feature_reader_impl(
 				const GpmlFeatureReaderImpl::non_null_ptr_type &feature_reader_impl,
-				const std::vector<PropertyRename> &property_renames,
-				const GPlatesModel::Gpgim &gpgim);
+				const std::vector<PropertyRename> &property_renames);
 
 
 		/**
@@ -129,15 +123,13 @@ namespace GPlatesFileIO
 			create(
 					const GPlatesModel::PropertyName &from_property_name,
 					const GPlatesModel::PropertyName &to_property_name,
-					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader,
-					const GPlatesModel::Gpgim &gpgim)
+					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader)
 			{
 				return non_null_ptr_type(
 						new RenamePropertyFeatureReaderImpl(
 								from_property_name,
 								to_property_name,
-								feature_reader,
-								gpgim));
+								feature_reader));
 			}
 
 
@@ -149,8 +141,6 @@ namespace GPlatesFileIO
 					GpmlReaderUtils::ReaderParams &reader_params) const;
 
 		private:
-
-			const GPlatesModel::Gpgim &d_gpgim;
 
 			/**
 			 * The feature reader that we delegate all property reading to.
@@ -164,8 +154,7 @@ namespace GPlatesFileIO
 			RenamePropertyFeatureReaderImpl(
 					const GPlatesModel::PropertyName &from_property_name,
 					const GPlatesModel::PropertyName &to_property_name,
-					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader,
-					const GPlatesModel::Gpgim &gpgim);
+					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader);
 
 		};
 
@@ -195,14 +184,12 @@ namespace GPlatesFileIO
 			non_null_ptr_type
 			create(
 					const GPlatesModel::FeatureType &new_feature_type,
-					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader,
-					const GPlatesModel::Gpgim &gpgim)
+					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader)
 			{
 				return non_null_ptr_type(
 						new ChangeFeatureTypeFeatureReaderImpl(
 								new_feature_type,
-								feature_reader,
-								gpgim));
+								feature_reader));
 			}
 
 
@@ -215,8 +202,6 @@ namespace GPlatesFileIO
 
 		private:
 
-			const GPlatesModel::Gpgim &d_gpgim;
-
 			/**
 			 * The feature reader that we delegate all property reading to.
 			 */
@@ -227,8 +212,7 @@ namespace GPlatesFileIO
 
 			ChangeFeatureTypeFeatureReaderImpl(
 					const GPlatesModel::FeatureType &new_feature_type,
-					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader,
-					const GPlatesModel::Gpgim &gpgim);
+					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &feature_reader);
 
 		};
 
@@ -256,7 +240,6 @@ namespace GPlatesFileIO
 					const GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type &gpgim_feature_class,
 					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &parent_feature_reader,
 					const GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type &property_structural_type_reader,
-					const GPlatesModel::Gpgim &gpgim,
 					const GPlatesModel::GpgimVersion &gpml_version);
 
 
@@ -268,8 +251,6 @@ namespace GPlatesFileIO
 					GpmlReaderUtils::ReaderParams &reader_params) const;
 
 		private:
-
-			const GPlatesModel::Gpgim &d_gpgim;
 
 			//! The feature reader associated with the parent GPGIM feature class.
 			GpmlFeatureReaderImpl::non_null_ptr_to_const_type d_parent_feature_reader;
@@ -288,9 +269,7 @@ namespace GPlatesFileIO
 					const GpmlFeatureReaderImpl::non_null_ptr_to_const_type &parent_feature_reader,
 					const GpmlPropertyReader::non_null_ptr_to_const_type &boundary_property_reader,
 					const GpmlPropertyReader::non_null_ptr_to_const_type &interior_property_reader,
-					const GPlatesModel::PropertyName &network_property_name,
-					const GPlatesModel::Gpgim &gpgim) :
-				d_gpgim(gpgim),
+					const GPlatesModel::PropertyName &network_property_name) :
 				d_parent_feature_reader(parent_feature_reader),
 				d_boundary_property_reader(boundary_property_reader),
 				d_interior_property_reader(interior_property_reader),

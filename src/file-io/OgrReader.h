@@ -52,16 +52,11 @@
 #include "PropertyMapper.h"
 #include "ReadErrorAccumulation.h"
 
+#include "model/FeatureCollectionHandle.h"
 #include "model/GpgimProperty.h"
 #include "model/ModelInterface.h"
-#include "model/FeatureCollectionHandle.h"
 #include "model/ModelUtils.h"
 
-
-namespace GPlatesModel
-{
-	class Gpgim;
-}
 
 namespace GPlatesFileIO
 {
@@ -91,8 +86,6 @@ namespace GPlatesFileIO
 		read_file(
 				GPlatesFileIO::File::Reference &file_ref,
 				const boost::shared_ptr<const FeatureCollectionFileFormat::OGRConfiguration> &default_file_configuration,
-				GPlatesModel::ModelInterface &model,
-				const GPlatesModel::Gpgim &gpgim,
 				ReadErrorAccumulation &read_errors,
 				bool &contains_unsaved_changes);
 
@@ -114,12 +107,10 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors);
 
 		/**
-		 * Remaps the attributes stored in the file configuration of @a file to the
+		 * Remaps the attributes stored in the feature collection of @a file to the
 		 * mapped feature properties of the features in the feature collection in @a file.
 		 *
 		 * NOTE: This does not pop-up a remapper dialog anymore. That must already have been done.
-		 * Instead, @a file *must* have a valid file configuration - this is now the source of the
-		 * model-to-attribute mapping.
 		 */
 		static
 		void
@@ -172,7 +163,6 @@ namespace GPlatesFileIO
 				const GPlatesModel::FeatureType &feature_type,
 				const OGRwkbGeometryType &type,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -182,7 +172,6 @@ namespace GPlatesFileIO
 		handle_point(
 				const GPlatesModel::FeatureType &feature_type,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -192,7 +181,6 @@ namespace GPlatesFileIO
 		handle_multi_point(
 				const GPlatesModel::FeatureType &feature_type,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -203,18 +191,15 @@ namespace GPlatesFileIO
 		handle_linestring(
 				const GPlatesModel::FeatureType &feature_type,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
-				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location
-				);
+				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);
 
 		void
 		handle_multi_linestring(
 				const GPlatesModel::FeatureType &feature_type,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -224,7 +209,6 @@ namespace GPlatesFileIO
 		handle_polygon(
 				const GPlatesModel::FeatureType &feature_type,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -234,7 +218,6 @@ namespace GPlatesFileIO
 		handle_multi_polygon(
 				const GPlatesModel::FeatureType &feature_type,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -243,15 +226,12 @@ namespace GPlatesFileIO
 
 		void
 		read_features(
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-				const GPlatesModel::Gpgim &gpgim,
 				ReadErrorAccumulation &read_errors);
 
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_polygon_feature_from_list(
 				const GPlatesModel::FeatureType &feature_type,
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				const std::list<GPlatesMaths::PointOnSphere> &list,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property);
@@ -259,7 +239,6 @@ namespace GPlatesFileIO
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_line_feature_from_list(
 				const GPlatesModel::FeatureType &feature_type,
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				const std::list<GPlatesMaths::PointOnSphere> &list,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property);
@@ -267,7 +246,6 @@ namespace GPlatesFileIO
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_point_feature_from_point_on_sphere(
 				const GPlatesModel::FeatureType &feature_type,
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				const GPlatesMaths::PointOnSphere &point,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property);
@@ -275,7 +253,6 @@ namespace GPlatesFileIO
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_multi_point_feature_from_list(
 				const GPlatesModel::FeatureType &feature_type,
-				GPlatesModel::ModelInterface &model,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 				const std::list<GPlatesMaths::PointOnSphere> &list,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property);

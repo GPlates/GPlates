@@ -38,9 +38,14 @@
 #include "ReconstructionTree.h"
 #include "ReconstructUtils.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "model/FeatureHandle.h"
 #include "model/TopLevelPropertyInline.h"
 
+#include "maths/MultiPointOnSphere.h"
+#include "maths/PointOnSphere.h"
 
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"
@@ -51,9 +56,6 @@
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
-
-#include "maths/MultiPointOnSphere.h"
-#include "maths/PointOnSphere.h"
 
 
 GPlatesAppLogic::MotionPathGeometryPopulator::MotionPathGeometryPopulator(
@@ -146,7 +148,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_multi_point(
 	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			d_reconstruction_tree_creator.get_reconstruction_tree(d_recon_time.value());
 
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
+	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type reconstructed_seed_multipoint_geometry =
 				reconstruction_tree->get_composed_absolute_rotation(
 					d_motion_track_property_finder->get_reconstruction_plate_id().get()).first *
 					gml_multi_point.multipoint();
@@ -159,7 +161,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_multi_point(
 				d_reconstruction_tree_creator,
 				*(current_top_level_propiter()->handle_weak_ref()),
 				*(current_top_level_propiter()),
-				reconstructed_seed_geometry,
+				reconstructed_seed_multipoint_geometry,
 				ReconstructMethod::MOTION_PATH,
 				d_motion_track_property_finder->get_reconstruction_plate_id());
 
@@ -179,13 +181,25 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_multi_point(
 
 	if (d_motion_track_property_finder->can_process_motion_path())
 	{
-		GPlatesMaths::MultiPointOnSphere::const_iterator 
-			iter = gml_multi_point.multipoint()->begin(),
-			end = gml_multi_point.multipoint()->end();
+		// Present day and reconstructed seed multipoints should have the same number of points.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				reconstructed_seed_multipoint_geometry->number_of_points() ==
+					gml_multi_point.multipoint()->number_of_points(),
+				GPLATES_ASSERTION_SOURCE);
 
-		for (; iter != end ; ++iter)
+		GPlatesMaths::MultiPointOnSphere::const_iterator 
+			seed_multipoint_iter = gml_multi_point.multipoint()->begin(),
+			seed_multipoint_end = gml_multi_point.multipoint()->end();
+		GPlatesMaths::MultiPointOnSphere::const_iterator 
+			reconstructed_seed_multipoint_iter = reconstructed_seed_multipoint_geometry->begin();
+
+		for ( ;
+			seed_multipoint_iter != seed_multipoint_end;
+			++seed_multipoint_iter, ++reconstructed_seed_multipoint_iter)
 		{
-			create_motion_path_geometry(iter->get_non_null_pointer(),reconstructed_seed_geometry);
+			create_motion_path_geometry(
+					seed_multipoint_iter->get_non_null_pointer(),
+					reconstructed_seed_multipoint_iter->get_non_null_pointer());
 		}
 	}
 }
@@ -213,7 +227,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_point(
 	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			d_reconstruction_tree_creator.get_reconstruction_tree(d_recon_time.value());
 
-	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type reconstructed_seed_geometry =
+	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_seed_point_geometry =
 		reconstruction_tree->get_composed_absolute_rotation(
 			d_motion_track_property_finder->get_reconstruction_plate_id().get()).first *
 			gml_point.point();
@@ -227,7 +241,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_point(
 				d_reconstruction_tree_creator,
 				*(current_top_level_propiter()->handle_weak_ref()),
 				*(current_top_level_propiter()),
-				reconstructed_seed_geometry,
+				reconstructed_seed_point_geometry,
 				ReconstructMethod::MOTION_PATH,
 				d_motion_track_property_finder->get_reconstruction_plate_id());
 
@@ -246,7 +260,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_point(
 
 	if (d_motion_track_property_finder->can_process_motion_path())
 	{
-		create_motion_path_geometry(gml_point.point(),reconstructed_seed_geometry);
+		create_motion_path_geometry(gml_point.point(), reconstructed_seed_point_geometry);
 	}
 
 }
@@ -264,7 +278,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gpml_constant_value(
 void
 GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry(
 	const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point_geometry,
-	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstructed_seed_geometry)
+	const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &reconstructed_seed_point_geometry)
 {
 
 	std::vector<GPlatesMaths::PointOnSphere> motion_track;
@@ -307,7 +321,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry(
 			reconstruction_tree,
 			d_reconstruction_tree_creator,
 			present_day_seed_point_geometry,
-			reconstructed_seed_geometry,
+			reconstructed_seed_point_geometry,
 			motion_track_points,
 			*d_motion_track_property_finder->get_reconstruction_plate_id(),
 			*(current_top_level_propiter()->handle_weak_ref()),

@@ -39,11 +39,6 @@
 #include "model/TopLevelProperty.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesPresentation
 {
 	class ViewState;
@@ -72,7 +67,6 @@ namespace GPlatesQtWidgets
 
 		explicit
 		CreateFeaturePropertiesPage(
-				const GPlatesModel::Gpgim &gpgim,
 				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = NULL);
 
@@ -171,11 +165,6 @@ namespace GPlatesQtWidgets
 		//! Typedef for a sequence of GPGIM feature properties.
 		typedef std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> gpgim_property_seq_type;
 
-
-		/**
-		 * The GPGIM contains information about the feature types and their properties.
-		 */
-		const GPlatesModel::Gpgim &d_gpgim;
 
 		//! The type of feature that the properties will be added to.
 		GPlatesModel::FeatureType d_feature_type;

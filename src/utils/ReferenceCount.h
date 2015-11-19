@@ -28,6 +28,9 @@
 
 #include <boost/bind.hpp>
 #include <boost/checked_delete.hpp>
+// Using boost::detail::atomic since boost::atomic not available until boost version 1.53.
+// This is what boost::shared_ptr uses.
+#include <boost/detail/atomic_count.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -113,10 +116,6 @@ namespace GPlatesUtils
 			private boost::noncopyable
 	{
 	public:
-		/**
-		 * The type used to store the reference-count of an instance of this class.
-		 */
-		typedef int ref_count_type;
 
 		/**
 		 * Constructor.
@@ -144,7 +143,7 @@ namespace GPlatesUtils
 		 * Client code should not use this function when used with boost::intrusive_ptr or
 		 * GPlatesUtils::non_null_intrusive_ptr!
 		 */
-		ref_count_type
+		long
 		decrement_ref_count() const
 		{
 			return --d_ref_count;
@@ -153,13 +152,26 @@ namespace GPlatesUtils
 		/**
 		 * Returns the current reference count.
 		 */
-		ref_count_type
+		long
 		get_reference_count() const
 		{
 			return d_ref_count;
 		}
 
 	private:
+
+		/**
+		 * The type used to store the reference-count of an instance of this class.
+		 *
+		 * Using an atomic counter makes incrementing and decrementing reference counts thread safe.
+		 *
+		 * Profiling on Intel circa 2013 CPU on Windows 8.1 shows 'boost::detail::atomic_count' is
+		 * about 6 times slower than a regular 'long' (when incrementing) - we're talking about
+		 * 32 CPU instructions versus about 5 CPU instructions - so it's not going to make a
+		 * noticeable difference compared to the client code.
+		 */
+		typedef boost::detail::atomic_count ref_count_type;
+
 		/**
 		 * The reference-count of this instance by intrusive-pointers.
 		 */

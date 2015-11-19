@@ -52,10 +52,10 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<XsInteger> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const XsInteger>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const XsInteger>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const XsInteger> non_null_ptr_to_const_type;
+
 
 		virtual
 		~XsInteger()
@@ -66,18 +66,16 @@ namespace GPlatesPropertyValues
 		create(
 				int value)
 		{
-			XsInteger::non_null_ptr_type ptr(new XsInteger(value));
-			return ptr;
+			return non_null_ptr_type(new XsInteger(value));
 		}
 
-		const XsInteger::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			XsInteger::non_null_ptr_type dup(new XsInteger(*this));
-			return dup;
+			return non_null_ptr_type(new XsInteger(*this));
 		}
 
-		const XsInteger::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const
 		{
 			// This class doesn't reference any mutable objects by pointer, so there's
@@ -98,10 +96,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the int value contained within this XsInteger to @a i.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_value(

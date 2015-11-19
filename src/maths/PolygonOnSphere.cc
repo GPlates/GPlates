@@ -27,12 +27,15 @@
 
 #include <ostream>
 #include <sstream>
+#include <boost/utility/in_place_factory.hpp>
 
 #include "Centroid.h"
 #include "ConstGeometryOnSphereVisitor.h"
 #include "HighPrecision.h"
+#include "PointInPolygon.h"
 #include "PolygonOnSphere.h"
 #include "PolygonProximityHitDetail.h"
+#include "PolyGreatCircleArcBoundingTree.h"
 #include "ProximityCriteria.h"
 #include "SmallCircleBounds.h"
 #include "SphericalArea.h"
@@ -58,25 +61,59 @@ namespace GPlatesMaths
 		{
 			explicit
 			CachedCalculations() :
-				// Start off with low speed for point-in-polygon tests - user can increase as needed.
-				point_in_polygon_speed_and_memory(PolygonOnSphere::LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE)
+				// Start off in low-speed mode for point-in-polygon tests.
+				// The user can specify faster speeds if they want (or used adaptive mode).
+				point_in_polygon_speed_and_memory(PolygonOnSphere::LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE),
+				num_point_in_polygon_calls(0)
 			{
-				// Currently the speed has to be the lowest speed because otherwise the
+				// Currently the speed has to be less than medium speed because otherwise the
 				// point-in-polygon test will dereference the point-in-polygon tester which won't
 				// be initialised - the lowest speed test requires no point-in-polygon tester.
 				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-						point_in_polygon_speed_and_memory == PolygonOnSphere::LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE,
+						point_in_polygon_speed_and_memory < PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE,
 						GPLATES_ASSERTION_SOURCE);
 			}
 
-			boost::optional<UnitVector3D> centroid;
+			boost::optional<real_t> arc_length;
+			boost::optional<UnitVector3D> boundary_centroid;
+			boost::optional<UnitVector3D> interior_centroid;
 			boost::optional<InnerOuterBoundingSmallCircle> inner_outer_bounding_small_circle;
-			boost::optional<real_t> area;
+			boost::optional<real_t> signed_area;
 			boost::optional<PolygonOrientation::Orientation> orientation;
 
 			PolygonOnSphere::PointInPolygonSpeedAndMemory point_in_polygon_speed_and_memory;
+			unsigned int num_point_in_polygon_calls;
 			boost::optional<PointInPolygon::Polygon> point_in_polygon_tester;
+			boost::optional<PolygonOnSphere::bounding_tree_type> polygon_bounding_tree;
 		};
+
+
+		/**
+		 * Build a point-in-polygon tester of medium or high (if @a high_speed is true) speed
+		 * and cache the result in @a cached_calculations.
+		 */
+		void
+		build_and_cache_point_in_polygon_tester(
+				const PolygonOnSphere &polygon,
+				CachedCalculations &cached_calculations,
+				bool high_speed)
+		{
+			// Build an O(log N) point-in-polygon structure for the fastest point-in-polygon test.
+			const bool build_ologn_hint = high_speed;
+
+			// Note that we ask the point-in-polygon structure *not* to keep a shared reference
+			// to us otherwise we get circular shared pointer references and a memory leak.
+			cached_calculations.point_in_polygon_tester =
+					PointInPolygon::Polygon(
+							GPlatesUtils::get_non_null_pointer(&polygon),
+							build_ologn_hint,
+							false/*keep_shared_reference_to_polygon*/);
+
+			cached_calculations.point_in_polygon_speed_and_memory =
+					high_speed
+					? PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE
+					: PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE;
+		}
 	}
 }
 
@@ -149,8 +186,7 @@ GPlatesMaths::PolygonOnSphere::test_proximity(
 	// a segment was hit).
 
 	real_t closeness;  // Don't bother initialising this.
-	if (this->is_close_to(criteria.test_point(), criteria.closeness_inclusion_threshold(),
-			criteria.latitude_exclusion_threshold(), closeness)) {
+	if (this->is_close_to(criteria.test_point(), criteria.closeness_angular_extent_threshold(), closeness)) {
 		// OK, this polygon is close to the test point.
 		return make_maybe_null_ptr(PolygonProximityHitDetail::create(
 				this->get_non_null_pointer(),
@@ -215,38 +251,9 @@ GPlatesMaths::PolygonOnSphere::accept_visitor(
 boost::optional<GPlatesMaths::PointOnSphere>
 GPlatesMaths::PolygonOnSphere::is_close_to(
 		const PointOnSphere &test_point,
-		const real_t &closeness_inclusion_threshold,
-		const real_t &latitude_exclusion_threshold,
+		const AngularExtent &closeness_angular_extent_threshold,
 		real_t &closeness) const
 {
-	// First, ensure the parameters are valid.
-	if (((closeness_inclusion_threshold * closeness_inclusion_threshold) +
-	     (latitude_exclusion_threshold * latitude_exclusion_threshold)) != 1.0)
-	{
-
-		/*
-		 * Well, *duh*, they *should* equal 1.0: those two thresholds
-		 * are supposed to form the non-hypotenuse legs (the "catheti")
-		 * of a right-angled triangle inscribed in a unit circle.
-		 */
-		real_t calculated_hypotenuse =
-				closeness_inclusion_threshold * closeness_inclusion_threshold +
-				latitude_exclusion_threshold * latitude_exclusion_threshold;
-
-		std::ostringstream oss;
-		oss
-		 << "The squares of the closeness inclusion threshold ("
-		 << HighPrecision< real_t >(closeness_inclusion_threshold)
-		 << ")\nand the latitude exclusion threshold ("
-		 << HighPrecision< real_t >(latitude_exclusion_threshold)
-		 << ") sum to ("
-		 << HighPrecision< real_t >(calculated_hypotenuse)
-		 << ")\nrather than the expected value of 1.";
-
-		throw GPlatesGlobal::InvalidParametersException(GPLATES_EXCEPTION_SOURCE,
-				oss.str().c_str());
-	}
-
 	real_t &closest_closeness_so_far = closeness;  // A descriptive alias.
 	boost::optional<PointOnSphere> closest_point;
 
@@ -261,8 +268,7 @@ GPlatesMaths::PolygonOnSphere::is_close_to(
 		boost::optional<PointOnSphere> gca_closest_point =
 				the_gca.is_close_to(
 						test_point,
-						closeness_inclusion_threshold,
-						latitude_exclusion_threshold,
+						closeness_angular_extent_threshold,
 						gca_closeness);
 		if (gca_closest_point)
 		{
@@ -287,24 +293,179 @@ GPlatesMaths::PolygonOnSphere::is_close_to(
 }
 
 
-void
-GPlatesMaths::PolygonOnSphere::create_segment_and_append_to_seq(
-		seq_type &seq, 
-		const PointOnSphere &p1,
-		const PointOnSphere &p2)
+const GPlatesMaths::real_t &
+GPlatesMaths::PolygonOnSphere::get_arc_length() const
 {
-	// We'll assume that the validity of 'p1' and 'p2' to create a GreatCircleArc has been
-	// evaluated in the function 'PolygonOnSphere::evaluate_construction_parameter_validity',
-	// which was presumably invoked in 'PolygonOnSphere::generate_segments_and_swap' before
-	// this function was.
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
 
-	GreatCircleArc segment = GreatCircleArc::create(p1, p2);
-	seq.push_back(segment);
+	// Calculate the total arc length if it's not cached.
+	if (!d_cached_calculations->arc_length)
+	{
+		real_t arc_length(0);
+
+		const_iterator gca_iter = begin();
+		const_iterator gca_end = end();
+		for ( ; gca_iter != gca_end; ++gca_iter)
+		{
+			const GreatCircleArc &gca = *gca_iter;
+
+			arc_length += acos(gca.dot_of_endpoints());
+		}
+
+		d_cached_calculations->arc_length = arc_length;
+	}
+
+	return d_cached_calculations->arc_length.get();
+}
+
+
+GPlatesMaths::real_t
+GPlatesMaths::PolygonOnSphere::get_area() const
+{
+	return abs(get_signed_area());
+}
+
+
+const GPlatesMaths::real_t &
+GPlatesMaths::PolygonOnSphere::get_signed_area() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the area of this polygon if it's not cached.
+	if (!d_cached_calculations->signed_area)
+	{
+		d_cached_calculations->signed_area = SphericalArea::calculate_polygon_signed_area(*this);
+	}
+
+	return d_cached_calculations->signed_area.get();
+}
+
+
+GPlatesMaths::PolygonOrientation::Orientation
+GPlatesMaths::PolygonOnSphere::get_orientation() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the orientation of this polygon if it's not cached.
+	if (!d_cached_calculations->orientation)
+	{
+		// If we already have the signed area then just use that.
+		if (d_cached_calculations->signed_area)
+		{
+			d_cached_calculations->orientation =
+					d_cached_calculations->signed_area->is_precisely_less_than(0)
+					? PolygonOrientation::CLOCKWISE
+					: PolygonOrientation::COUNTERCLOCKWISE;
+		}
+		else
+		{
+			d_cached_calculations->orientation =
+					PolygonOrientation::calculate_polygon_orientation(*this);
+		}
+	}
+
+	return d_cached_calculations->orientation.get();
+}
+
+
+bool
+GPlatesMaths::PolygonOnSphere::is_point_in_polygon(
+		const PointOnSphere &point,
+		PointInPolygonSpeedAndMemory speed_and_memory) const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	// Keep track of the total number of calls for the adaptive speed mode.
+	++d_cached_calculations->num_point_in_polygon_calls;
+
+	switch (speed_and_memory)
+	{
+	case MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE:
+	case HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE:
+		// Set up the point-in-polygon structure if the caller has requested medium or high speed testing.
+		// We only need to build a point-in-polygon structure if the caller has requested a speed
+		// above the current speed setting.
+		if (speed_and_memory > d_cached_calculations->point_in_polygon_speed_and_memory)
+		{
+			build_and_cache_point_in_polygon_tester(
+					*this,
+					*d_cached_calculations,
+					speed_and_memory == HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
+		}
+		break;
+
+	case ADAPTIVE:
+		// Adapt the speed according to the number of point-in-polygon calls made so far.
+		//
+		// This is based on:
+		//
+		// LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE              0 < N < 4     points tested per polygon,
+		// MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE   4 < N < 200   points tested per polygon,
+		// HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE         N > 200       points tested per polygon.
+		if (d_cached_calculations->num_point_in_polygon_calls >= 200)
+		{
+			if (d_cached_calculations->point_in_polygon_speed_and_memory < HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE)
+			{
+				// High speed...
+				build_and_cache_point_in_polygon_tester(*this, *d_cached_calculations, true/*high_speed*/);
+			}
+		}
+		else if (d_cached_calculations->num_point_in_polygon_calls >= 4)
+		{
+			if (d_cached_calculations->point_in_polygon_speed_and_memory < MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE)
+			{
+				// Medium speed...
+				build_and_cache_point_in_polygon_tester(*this, *d_cached_calculations, false/*high_speed*/);
+			}
+		}
+		break;
+
+	case LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE:
+	default:
+		// Do nothing.
+		//
+		// Note that if the caller requests a low speed test but we have cached a medium or high
+		// speed test then we'll use that since it's already there and it's faster.
+		break;
+	}
+
+	// If we have an optimised point-in-polygon tester then use it.
+	if (d_cached_calculations->point_in_polygon_tester)
+	{
+		return d_cached_calculations->point_in_polygon_tester->is_point_in_polygon(point);
+	}
+
+	// Since the low-speed test does not include a bounds test we will perform one here
+	// (provided we have a bounding small circle) for quick rejection of points outside polygon.
+	if (d_cached_calculations->inner_outer_bounding_small_circle)
+	{
+		if (d_cached_calculations->inner_outer_bounding_small_circle
+			->get_outer_bounding_small_circle().test(point) == BoundingSmallCircle::OUTSIDE_BOUNDS)
+		{
+			// Point is outside polygon.
+			return false;
+		}
+	}
+
+	// The low speed test doesn't have any cached structures - it's just a function call.
+	return PointInPolygon::is_point_in_polygon(point, *this);
 }
 
 
 const GPlatesMaths::UnitVector3D &
-GPlatesMaths::PolygonOnSphere::get_centroid() const
+GPlatesMaths::PolygonOnSphere::get_boundary_centroid() const
 {
 	if (!d_cached_calculations)
 	{
@@ -312,21 +473,30 @@ GPlatesMaths::PolygonOnSphere::get_centroid() const
 	}
 
 	// Calculate the centroid if it's not cached.
-	if (!d_cached_calculations->centroid)
+	if (!d_cached_calculations->boundary_centroid)
 	{
-		// The centroid is also the bounding small circle centre so see if that's been generated.
-		if (d_cached_calculations->inner_outer_bounding_small_circle)
-		{
-			d_cached_calculations->centroid =
-					d_cached_calculations->inner_outer_bounding_small_circle->get_centre();
-		}
-		else
-		{
-			d_cached_calculations->centroid = Centroid::calculate_points_centroid(*this);
-		}
+		d_cached_calculations->boundary_centroid = Centroid::calculate_outline_centroid(*this);
 	}
 
-	return d_cached_calculations->centroid.get();
+	return d_cached_calculations->boundary_centroid.get();
+}
+
+
+const GPlatesMaths::UnitVector3D &
+GPlatesMaths::PolygonOnSphere::get_interior_centroid() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the centroid if it's not cached.
+	if (!d_cached_calculations->interior_centroid)
+	{
+		d_cached_calculations->interior_centroid = Centroid::calculate_interior_centroid(*this);
+	}
+
+	return d_cached_calculations->interior_centroid.get();
 }
 
 
@@ -348,8 +518,9 @@ GPlatesMaths::PolygonOnSphere::get_inner_outer_bounding_small_circle() const
 	// Calculate the inner/outer bounding small circle if it's not cached.
 	if (!d_cached_calculations->inner_outer_bounding_small_circle)
 	{
-		// The centroid will be the bounding small circle centre.
-		InnerOuterBoundingSmallCircleBuilder inner_outer_bounding_small_circle_builder(get_centroid());
+		// The boundary centroid will be the bounding small circle centre.
+		InnerOuterBoundingSmallCircleBuilder inner_outer_bounding_small_circle_builder(
+				get_boundary_centroid());
 		// Add the polygon great-circle-arc sections to define the inner/outer bounds.
 		inner_outer_bounding_small_circle_builder.add(*this);
 
@@ -361,87 +532,59 @@ GPlatesMaths::PolygonOnSphere::get_inner_outer_bounding_small_circle() const
 }
 
 
-GPlatesMaths::real_t
-GPlatesMaths::PolygonOnSphere::get_area() const
-{
-	return abs(get_signed_area());
-}
-
-
-GPlatesMaths::real_t
-GPlatesMaths::PolygonOnSphere::get_signed_area() const
+const GPlatesMaths::PolygonOnSphere::bounding_tree_type &
+GPlatesMaths::PolygonOnSphere::get_bounding_tree() const
 {
 	if (!d_cached_calculations)
 	{
 		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
 	}
 
-	// Calculate the area of this polygon if it's not cached.
-	if (!d_cached_calculations->area)
+	// Calculate the small circle bounding tree if it's not cached.
+	if (!d_cached_calculations->polygon_bounding_tree)
 	{
-		d_cached_calculations->area = SphericalArea::calculate_polygon_signed_area(*this);
-	}
-
-	return d_cached_calculations->area.get();
-}
-
-
-GPlatesMaths::PolygonOrientation::Orientation
-GPlatesMaths::PolygonOnSphere::get_orientation() const
-{
-	if (!d_cached_calculations)
-	{
-		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
-	}
-
-	// Calculate the orientation of this polygon if it's not cached.
-	if (!d_cached_calculations->orientation)
-	{
-		d_cached_calculations->orientation = PolygonOrientation::calculate_polygon_orientation(*this);
-	}
-
-	return d_cached_calculations->orientation.get();
-}
-
-
-GPlatesMaths::PointInPolygon::Result
-GPlatesMaths::PolygonOnSphere::is_point_in_polygon(
-		const PointOnSphere &point,
-		PointInPolygonSpeedAndMemory speed_and_memory) const
-{
-	if (!d_cached_calculations)
-	{
-		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
-	}
-
-	// Set up the point-in-polygon structure if the caller has requested medium or high speed testing.
-	// We only need to build a point-in-polygon structure if the caller has requested a speed
-	// above the default low-speed test (which doesn't require a cached structure).
-	if (speed_and_memory > d_cached_calculations->point_in_polygon_speed_and_memory)
-	{
-		// Build an O(log N) point-in-polygon structure for the fastest point-in-polygon test.
-		const bool build_ologn_hint = (speed_and_memory == HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE);
-
-		// Note that we ask the point-in-polygon structure *not* to keep a shared reference
-		// to us otherwise we get circular shared pointer references and a memory leak.
-		d_cached_calculations->point_in_polygon_tester =
-				PointInPolygon::Polygon(
+		// Pass the PolyGreatCircleArcBoundingTree constructor parameters to construct a new object
+		// directly in-place inside the boost::optional since PolyGreatCircleArcBoundingTree is non-copyable.
+		d_cached_calculations->polygon_bounding_tree =
+				boost::in_place(
 						GPlatesUtils::get_non_null_pointer(this),
-						build_ologn_hint,
+						// Note that we ask the bounding tree *not* to keep a shared reference to us
+						// otherwise we get circular shared pointer references and a memory leak...
 						false/*keep_shared_reference_to_polygon*/);
-
-		d_cached_calculations->point_in_polygon_speed_and_memory = speed_and_memory;
 	}
 
-	// The low speed test doesn't require any cached structures - it's just a function call.
-	// Note that if the caller requests a low speed test but we have cache a medium or high
-	// speed test then we'll use the latter since it's already there and it's faster.
-	if (d_cached_calculations->point_in_polygon_speed_and_memory == LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE)
+	return d_cached_calculations->polygon_bounding_tree.get();
+}
+
+
+GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::tessellate(
+		const PolygonOnSphere &polygon,
+		const real_t &max_angular_extent)
+{
+	std::vector<PointOnSphere> tessellated_points;
+
+	PolygonOnSphere::const_iterator gca_iter = polygon.begin();
+	PolygonOnSphere::const_iterator gca_end = polygon.end();
+	for ( ; gca_iter != gca_end; ++gca_iter)
 	{
-		return PointInPolygon::is_point_in_polygon(point, *this);
+		const GreatCircleArc &gca = *gca_iter;
+
+		// Tessellate the current great circle arc.
+		tessellate(tessellated_points, gca, max_angular_extent);
+
+		// Remove the tessellated arc's end point.
+		// Otherwise the next arc's start point will duplicate it.
+		//
+		// NOTE: We also remove the *last* arc's end point because otherwise the start point
+		// of the *first* arc will duplicate it.
+		//
+		// Tessellating a great circle arc should always add at least two points.
+		// So we should always be able to remove one point (the arc end point).
+		tessellated_points.pop_back();
 	}
 
-	return d_cached_calculations->point_in_polygon_tester->is_point_in_polygon(point);
+	return PolygonOnSphere::create_on_heap(tessellated_points);
 }
 
 
@@ -471,4 +614,3 @@ GPlatesMaths::InvalidPointsForPolygonConstructionError::write_message(
 		os << message;
 	}
 }
-

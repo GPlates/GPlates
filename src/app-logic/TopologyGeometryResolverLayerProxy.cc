@@ -28,7 +28,10 @@
 
 #include "TopologyGeometryResolverLayerProxy.h"
 
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalLine.h"
 #include "TopologyUtils.h"
+
 
 GPlatesAppLogic::TopologyGeometryResolverLayerProxy::TopologyGeometryResolverLayerProxy() :
 	// Start off with a reconstruction layer proxy that does identity rotations.
@@ -54,11 +57,25 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_ge
 		const double &reconstruction_time,
 		boost::optional<std::vector<ReconstructHandle::type> &> reconstruct_handles)
 {
+	std::vector<resolved_topological_line_non_null_ptr_type> resolved_topological_lines;
 	const ReconstructHandle::type resolved_lines_reconstruct_handle =
-			get_resolved_topological_lines(resolved_topological_geometries, reconstruction_time);
+			get_resolved_topological_lines(resolved_topological_lines, reconstruction_time);
+	BOOST_FOREACH(
+			const resolved_topological_line_non_null_ptr_type &resolved_topological_line,
+			resolved_topological_lines)
+	{
+		resolved_topological_geometries.push_back(resolved_topological_line);
+	}
 
+	std::vector<resolved_topological_boundary_non_null_ptr_type> resolved_topological_boundaries;
 	const ReconstructHandle::type resolved_boundaries_reconstruct_handle =
-			get_resolved_topological_boundaries(resolved_topological_geometries, reconstruction_time);
+			get_resolved_topological_boundaries(resolved_topological_boundaries, reconstruction_time);
+	BOOST_FOREACH(
+			const resolved_topological_boundary_non_null_ptr_type &resolved_topological_boundary,
+			resolved_topological_boundaries)
+	{
+		resolved_topological_geometries.push_back(resolved_topological_boundary);
+	}
 
 	if (reconstruct_handles)
 	{
@@ -70,7 +87,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_ge
 
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_boundaries(
-		std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries,
+		std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 		const double &reconstruction_time)
 {
 	// If we have no topological features or there are no topological section layers then we
@@ -102,7 +119,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_bo
 	{
 		// Create empty vector of resolved topological boundaries.
 		d_cached_resolved_boundaries.cached_resolved_topological_boundaries =
-				std::vector<resolved_topological_geometry_non_null_ptr_type>();
+				std::vector<resolved_topological_boundary_non_null_ptr_type>();
 
 		std::vector<ReconstructHandle::type> topological_sections_reconstruct_handles;
 
@@ -128,7 +145,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_bo
 		// Topological sections that are resolved topological lines...
 		// We're ensuring that all potential (resolved line) topological sections are resolved before
 		// we resolve topological boundaries (which reference them indirectly via feature-id).
-		std::vector<resolved_topological_geometry_non_null_ptr_type> resolved_line_topological_sections;
+		std::vector<resolved_topological_line_non_null_ptr_type> resolved_line_topological_sections;
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &resolved_line_topological_sections_layer_proxy,
 				d_current_resolved_line_topological_sections_layer_proxies.get_input_layer_proxies())
@@ -150,8 +167,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_bo
 						d_cached_resolved_boundaries.cached_resolved_topological_boundaries.get(),
 						d_current_topological_geometry_feature_collections,
 						d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
-						d_current_reconstruction_layer_proxy.get_input_layer_proxy()
-								->get_reconstruction_tree(reconstruction_time),
+						reconstruction_time,
 						topological_sections_reconstruct_handles);
 	}
 
@@ -167,7 +183,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_bo
 
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_lines(
-		std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_lines,
+		std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines,
 		const double &reconstruction_time)
 {
 	// If we have no topological features or there are no *reconstructed geometry* topological section
@@ -204,7 +220,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_li
 	{
 		// Create empty vector of resolved topological lines.
 		d_cached_resolved_lines.cached_resolved_topological_lines =
-				std::vector<resolved_topological_geometry_non_null_ptr_type>();
+				std::vector<resolved_topological_line_non_null_ptr_type>();
 
 		std::vector<ReconstructHandle::type> topological_sections_reconstruct_handles;
 
@@ -238,8 +254,7 @@ GPlatesAppLogic::TopologyGeometryResolverLayerProxy::get_resolved_topological_li
 						d_cached_resolved_lines.cached_resolved_topological_lines.get(),
 						d_current_topological_geometry_feature_collections,
 						d_current_reconstruction_layer_proxy.get_input_layer_proxy()->get_reconstruction_tree_creator(),
-						d_current_reconstruction_layer_proxy.get_input_layer_proxy()
-								->get_reconstruction_tree(reconstruction_time),
+						reconstruction_time,
 						topological_sections_reconstruct_handles);
 	}
 

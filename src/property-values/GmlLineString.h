@@ -57,10 +57,10 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlLineString> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlLineString>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlLineString>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlLineString> non_null_ptr_to_const_type;
+
 
 		/**
 		 * A convenience typedef for the internal polyline representation.
@@ -114,10 +114,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the polyline within this instance to @a p.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_polyline(

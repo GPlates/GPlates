@@ -28,6 +28,7 @@
 #ifndef GPLATES_PROPERTYVALUES_GMLFILE_H
 #define GPLATES_PROPERTYVALUES_GMLFILE_H
 
+#include <map>
 #include <utility>
 #include <vector>
 #include <boost/optional.hpp>
@@ -73,18 +74,16 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlFile> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlFile>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlFile>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlFile> non_null_ptr_to_const_type;
 
 		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
 			xml_attributes_type;
 
-	public:
-
 		typedef std::pair<ValueObjectType, xml_attributes_type> value_component_type;
 		typedef std::vector<value_component_type> composite_value_type;
+
 
 		virtual
 		~GmlFile()

@@ -30,9 +30,11 @@
 #include <iostream>
 #include <QDebug>
 
-#include "UnitVector3D.h"
 #include "HighPrecision.h"
+#include "UnitVector3D.h"
 #include "ViolatedUnitVectorInvariantException.h"
+
+#include "global/GPlatesAssert.h"
 
 
 GPlatesMaths::UnitVector3D::UnitVector3D(
@@ -49,7 +51,7 @@ GPlatesMaths::UnitVector3D::UnitVector3D(
 		return;
 	}
 
-	AssertInvariant(__LINE__);
+	AssertInvariant(GPLATES_ASSERTION_SOURCE);
 
 	if (d_x.dval() > 1.0) {
 		d_x = 1.0;
@@ -97,13 +99,13 @@ GPlatesMaths::UnitVector3D::UnitVector3D(
 	d_y(v.y()),
 	d_z(v.z())
 {
-	AssertInvariant(__LINE__);
+	AssertInvariant(GPLATES_ASSERTION_SOURCE);
 }
 
 
 void
 GPlatesMaths::UnitVector3D::AssertInvariant(
-		int line) const
+		const GPlatesUtils::CallStack::Trace &exception_source) const
 {
 	/*
 	 * Calculate magnitude of vector to ensure that it actually _is_ 1.
@@ -113,12 +115,9 @@ GPlatesMaths::UnitVector3D::AssertInvariant(
 	if (mag_sqrd != 1.0) {
 		// invariant has been violated
 		std::ostringstream oss;
-		oss << "UnitVector3D has magnitude-squared of "
-				<< HighPrecision<real_t>(mag_sqrd)
-				<< "\n(this assertion was invoked on line "
-				<< line
-				<< "of the header file).";
-		throw ViolatedUnitVectorInvariantException(GPLATES_EXCEPTION_SOURCE,
+		oss << "UnitVector3D has magnitude-squared of " << HighPrecision<real_t>(mag_sqrd);
+		throw ViolatedUnitVectorInvariantException(
+				exception_source,
 				oss.str().c_str());
 	}
 }

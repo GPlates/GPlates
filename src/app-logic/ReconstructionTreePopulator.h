@@ -55,7 +55,7 @@ namespace GPlatesAppLogic
 	 * implementation.
 	 */
 	class ReconstructionTreePopulator:
-			public GPlatesModel::FeatureVisitorThatGuaranteesNotToModify
+			public GPlatesModel::FeatureVisitor
 	{
 	public:
 		/**

@@ -24,6 +24,7 @@
  */	
 #ifndef GPLATESDATAMINING_DATAMININGCACHE_H
 #define GPLATESDATAMINING_DATAMININGCACHE_H
+
 #include <map>
 
 namespace GPlatesDataMining

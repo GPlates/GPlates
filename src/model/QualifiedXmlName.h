@@ -28,6 +28,7 @@
 #ifndef GPLATES_MODEL_QUALIFIEDXMLNAME_H
 #define GPLATES_MODEL_QUALIFIEDXMLNAME_H
 
+#include <boost/operators.hpp>
 #include <boost/optional.hpp>
 #include <QString>
 #include <QStringList>
@@ -64,7 +65,11 @@ namespace GPlatesModel
 	 * for the name of this QualifiedXmlName.  See "PropertyName.h" for an example.
 	 */
 	template<typename SingletonType>
-	class QualifiedXmlName
+	class QualifiedXmlName :
+			// NOTE: Base class chaining is used to avoid increasing sizeof(QualifiedXmlName) due to multiple
+			// inheritance from several empty base classes...
+			public boost::less_than_comparable<QualifiedXmlName<SingletonType>,
+					boost::equality_comparable<QualifiedXmlName<SingletonType> > >
 	{
 	public:
 
@@ -75,7 +80,7 @@ namespace GPlatesModel
 		create_gpgim(
 				const QString &name) {
 			return QualifiedXmlName(
-					GPlatesUtils::XmlNamespaces::GPGIM_NAMESPACE,
+					GPlatesUtils::XmlNamespaces::get_gpgim_namespace(),
 					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
 
@@ -88,7 +93,7 @@ namespace GPlatesModel
 				const QString &namespace_alias,
 				const QString &name) {
 			return QualifiedXmlName(
-					GPlatesUtils::XmlNamespaces::GPGIM_NAMESPACE, 
+					GPlatesUtils::XmlNamespaces::get_gpgim_namespace(), 
 					GPlatesUtils::make_icu_string_from_qstring(namespace_alias),
 					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
@@ -99,7 +104,7 @@ namespace GPlatesModel
 		create_gpml(
 				const QString &name) {
 			return QualifiedXmlName(
-					GPlatesUtils::XmlNamespaces::GPML_NAMESPACE,
+					GPlatesUtils::XmlNamespaces::get_gpml_namespace(),
 					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
 
@@ -110,7 +115,7 @@ namespace GPlatesModel
 				const QString &namespace_alias,
 				const QString &name) {
 			return QualifiedXmlName(
-					GPlatesUtils::XmlNamespaces::GPML_NAMESPACE, 
+					GPlatesUtils::XmlNamespaces::get_gpml_namespace(), 
 					GPlatesUtils::make_icu_string_from_qstring(namespace_alias),
 					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
@@ -121,7 +126,7 @@ namespace GPlatesModel
 		create_gml(
 				const QString &name) {
 			return QualifiedXmlName(
-					GPlatesUtils::XmlNamespaces::GML_NAMESPACE,
+					GPlatesUtils::XmlNamespaces::get_gml_namespace(),
 					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
 
@@ -132,7 +137,7 @@ namespace GPlatesModel
 				const QString &namespace_alias,
 				const QString &name) {
 			return QualifiedXmlName(
-					GPlatesUtils::XmlNamespaces::GML_NAMESPACE, 
+					GPlatesUtils::XmlNamespaces::get_gml_namespace(), 
 					GPlatesUtils::make_icu_string_from_qstring(namespace_alias),
 					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
@@ -143,7 +148,7 @@ namespace GPlatesModel
 		create_xsi(
 				const QString &name) {
 			return QualifiedXmlName(
-					GPlatesUtils::XmlNamespaces::XSI_NAMESPACE,
+					GPlatesUtils::XmlNamespaces::get_xsi_namespace(),
 					GPlatesUtils::make_icu_string_from_qstring(name));
 		}
 
@@ -306,7 +311,7 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Equality comparison operator.
+		 * Equality comparison operator - inequality operator provided by 'boost::equality_comparable'.
 		 */
 		bool
 		operator==(
@@ -315,16 +320,9 @@ namespace GPlatesModel
 		}
 
 		/**
-		 * Inequality comparison operator.
-		 */
-		bool
-		operator!=(
-				const QualifiedXmlName &other) const {
-			return !is_equal_to(other);
-		}
-
-		/**
 		 * Less-than operator - provided so @a QualifiedXmlName can be used as a key in std::map.
+		 *
+		 * The other comparison operators are provided by boost::less_than_comparable.
 		 */
 		bool
 		operator<(
@@ -365,10 +363,10 @@ namespace GPlatesModel
 	 * Convenience function to convert a @a QualifiedXmlName to a QString as:
 	 *    "<namespace_alias>:<name>".
 	 */
-	template <class SingletonType>
+	template <class QualifiedXmlNameType>
 	QString
 	convert_qualified_xml_name_to_qstring(
-			const QualifiedXmlName<SingletonType> &qualified_xml_name)
+			const QualifiedXmlNameType &qualified_xml_name)
 	{
 		return GPlatesUtils::make_qstring_from_icu_string(
 				qualified_xml_name.build_aliased_name());
@@ -405,7 +403,7 @@ namespace GPlatesModel
 		if (tokens.count() == 1)
 		{
 			return QualifiedXmlNameType(
-					GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING,
+					GPlatesUtils::XmlNamespaces::get_gpml_namespace_qstring(),
 					tokens.at(0));
 		}
 

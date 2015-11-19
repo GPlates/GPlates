@@ -231,7 +231,6 @@ namespace
 	const GPlatesModel::FeatureHandle::weak_ref
 	create_feature(
 		const GPlatesModel::FeatureType &feature_type,
-		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 		const QString &feature_type_qstring,
 		boost::optional<GPlatesUtils::UnicodeString> &feature_id)
@@ -817,56 +816,34 @@ namespace
 			QMap<QString, QString> &model_to_attribute_map,
 			GPlatesFileIO::File::Reference &file_ref)
 	{
-		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type>
-				ogr_file_configuration =
-						GPlatesFileIO::FeatureCollectionFileFormat::dynamic_cast_configuration<
-								const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration>(
-										file_ref.get_file_configuration());
-		// If we don't have a file configuration then return early and emit a warning message.
-		if (!ogr_file_configuration)
+		if (!file_ref.get_feature_collection().is_valid())
 		{
-			qWarning() << "ERROR: Unable to load a model-to-attribute mapping from file.";
+			qWarning() << "ERROR: Unable to load a model-to-attribute mapping from file: invalid feature collection.";
 			return;
 		}
 
-		// Load the map from the file configuration.
-		model_to_attribute_map = ogr_file_configuration.get()->get_model_to_attribute_map();
+		model_to_attribute_map =
+				GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::get_model_to_attribute_map(
+						*file_ref.get_feature_collection());
 	}
 
 
 	/**
-	 * Stores the specified model-to-attribute map in the specified file reference object.
+	 * Stores the specified model-to-attribute map in the feature collection of the
+	 * specified file reference object.
 	 */
 	void
 	store_model_to_attribute_map_in_file_reference(
 			const QMap<QString, QString> &model_to_attribute_map,
-			GPlatesFileIO::File::Reference &file_ref,
-			const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &
-					default_ogr_file_configuration)
+			GPlatesFileIO::File::Reference &file_ref)
 	{
-		// Create a new file configuration that is a copy of the current one, if there is one.
-		boost::optional<GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type>
-				ogr_file_configuration =
-						GPlatesFileIO::FeatureCollectionFileFormat::copy_cast_configuration<
-								GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration>(
-										file_ref.get_file_configuration());
-		// Otherwise use the default ogr configuration.
-		if (!ogr_file_configuration)
-		{
-			// We have to copy the default configuration since we're going to modify it.
-			ogr_file_configuration =
-					GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type(
-							new GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration(
-									*default_ogr_file_configuration));
-		}
+		// Get a reference to the existing model-to-attribute map in the feature collection of the file.
+		QMap<QString, QString> &existing_model_to_attribute_map =
+				GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::get_model_to_attribute_map(
+						*file_ref.get_feature_collection());
 
-		// Store the map in the new file configuration.
-		ogr_file_configuration.get()->get_model_to_attribute_map() = model_to_attribute_map;
-
-		// Store the new file configuration in the file object.
-		GPlatesFileIO::FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
-				file_configuration = ogr_file_configuration.get();
-		file_ref.set_file_info(file_ref.get_file_info(), file_configuration);
+		// Overwrite the existing map.
+		existing_model_to_attribute_map = model_to_attribute_map;
 	}
 }
 
@@ -980,9 +957,7 @@ GPlatesFileIO::OgrReader::open_file(
 
 void
 GPlatesFileIO::OgrReader::read_features(
-	GPlatesModel::ModelInterface &model,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-	const GPlatesModel::Gpgim &gpgim,
 	ReadErrorAccumulation &read_errors)
 {
 
@@ -1101,7 +1076,8 @@ GPlatesFileIO::OgrReader::read_features(
 		// Get the default geometry property for that feature type, and the possible structural types (e.g. point/multipint etc)
 		// for that default geometry property.
 
-		boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> feature_class = gpgim.get_feature_class(*feature_type);
+		boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> feature_class =
+				GPlatesModel::Gpgim::instance().get_feature_class(*feature_type);
 		boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> default_geometry_feature_property;
 		GPlatesModel::GpgimProperty::structural_type_seq_type default_structural_types;
 
@@ -1148,7 +1124,7 @@ GPlatesFileIO::OgrReader::read_features(
 		if (OgrUtils::wkb_type_belongs_to_structural_types(flattened_type,default_structural_types))
 		{
 			// We need to send the raw ogr type here so that we can determine if we need to handle multipolyines, multipolygons and the like.
-			handle_geometry(*feature_type,flattened_type,default_geometry_feature_property,model,collection,read_errors,e_source,e_location);
+			handle_geometry(*feature_type,flattened_type,default_geometry_feature_property,collection,read_errors,e_source,e_location);
 		}
 		else
 		{
@@ -1175,7 +1151,7 @@ GPlatesFileIO::OgrReader::read_features(
 						found_matching_property = true;
 						boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> optional_property;
 						optional_property.reset(property);
-						handle_geometry(*feature_type,flattened_type,optional_property,model,collection,read_errors,e_source,e_location);
+						handle_geometry(*feature_type,flattened_type,optional_property,collection,read_errors,e_source,e_location);
 						break;
 					}
 				}
@@ -1201,14 +1177,13 @@ GPlatesFileIO::OgrReader::read_features(
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesFileIO::OgrReader::create_polygon_feature_from_list(
 	const GPlatesModel::FeatureType &feature_type,
-	GPlatesModel::ModelInterface &model,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 	const std::list<GPlatesMaths::PointOnSphere> &list_of_points,
 	const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property)
 {
 
 			
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,model,collection,d_feature_type_string,d_feature_id);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,collection,d_feature_type_string,d_feature_id);
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
 		GPlatesMaths::PolygonOnSphere::create_on_heap(list_of_points);
@@ -1241,12 +1216,11 @@ GPlatesFileIO::OgrReader::create_polygon_feature_from_list(
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesFileIO::OgrReader::create_line_feature_from_list(
 	const GPlatesModel::FeatureType &feature_type,
-	GPlatesModel::ModelInterface &model,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 	const std::list<GPlatesMaths::PointOnSphere> &list_of_points,
 	const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property)
 {
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,model,collection,d_feature_type_string,d_feature_id);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,collection,d_feature_type_string,d_feature_id);
 
 	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
 		GPlatesMaths::PolylineOnSphere::create_on_heap(list_of_points);
@@ -1282,13 +1256,12 @@ GPlatesFileIO::OgrReader::create_line_feature_from_list(
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesFileIO::OgrReader::create_point_feature_from_point_on_sphere(
 	const GPlatesModel::FeatureType &feature_type,
-	GPlatesModel::ModelInterface &model, 
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection, 
 	const GPlatesMaths::PointOnSphere &point,
 	const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property)
 {
 
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,model,collection,d_feature_type_string,d_feature_id);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,collection,d_feature_type_string,d_feature_id);
 
 	const GPlatesModel::PropertyValue::non_null_ptr_type gml_point =
 		GPlatesPropertyValues::GmlPoint::create(point);
@@ -1317,13 +1290,12 @@ GPlatesFileIO::OgrReader::create_point_feature_from_point_on_sphere(
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesFileIO::OgrReader::create_multi_point_feature_from_list(
 	const GPlatesModel::FeatureType &feature_type,
-	GPlatesModel::ModelInterface &model,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 	const std::list<GPlatesMaths::PointOnSphere> &list_of_points,
 	const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property)
 {
 
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,model,collection,d_feature_type_string,d_feature_id);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,collection,d_feature_type_string,d_feature_id);
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere =
 		GPlatesMaths::MultiPointOnSphere::create_on_heap(list_of_points);
@@ -1586,8 +1558,6 @@ void
 GPlatesFileIO::OgrReader::read_file(
 		GPlatesFileIO::File::Reference &file_ref,
 		const FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_file_configuration,
-		GPlatesModel::ModelInterface &model,
-		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors,
 		bool &contains_unsaved_changes)
 {
@@ -1596,13 +1566,6 @@ GPlatesFileIO::OgrReader::read_file(
 	contains_unsaved_changes = false;
 
 	const FileInfo &fileinfo = file_ref.get_file_info();
-
-	// By placing all changes to the model under the one changeset, we ensure that
-	// feature revision ids don't get changed from what was loaded from file no
-	// matter what we do to the features.
-	GPlatesModel::ChangesetHandle changeset(
-			model.access_model(),
-			"open " + fileinfo.get_qfileinfo().fileName().toStdString());
 
 	QString absolute_path_filename = fileinfo.get_qfileinfo().absoluteFilePath();
 	QString filename = fileinfo.get_qfileinfo().fileName();
@@ -1637,14 +1600,12 @@ GPlatesFileIO::OgrReader::read_file(
 		OgrUtils::save_attribute_map_as_xml_file(shapefile_xml_filename,reader.d_model_to_attribute_map);
 	}
 
-	// Store the model-to-attribute map in the file reference object so we can access it if the
-	// file gets written back out.
-	store_model_to_attribute_map_in_file_reference(
-			reader.d_model_to_attribute_map, file_ref, default_file_configuration);
+	// Store the model-to-attribute map so we can access it if the feature collection gets written back out.
+	store_model_to_attribute_map_in_file_reference(reader.d_model_to_attribute_map, file_ref);
 
 	GPlatesModel::FeatureCollectionHandle::weak_ref collection = file_ref.get_feature_collection();
 
-	reader.read_features(model,collection,gpgim,read_errors);
+	reader.read_features(collection,read_errors);
 
 
 	//reader.display_feature_counts();
@@ -1663,7 +1624,6 @@ GPlatesFileIO::OgrReader::handle_geometry(
 		const GPlatesModel::FeatureType &feature_type,
 		const OGRwkbGeometryType &type,
 		const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
-		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 		ReadErrorAccumulation &read_errors,
 		const boost::shared_ptr<GPlatesFileIO::DataSource> &e_source,
@@ -1671,22 +1631,22 @@ GPlatesFileIO::OgrReader::handle_geometry(
 {
 	switch (type){
 	case wkbPoint:
-		handle_point(feature_type,property,model,collection,read_errors,e_source,e_location);
+		handle_point(feature_type,property,collection,read_errors,e_source,e_location);
 		break;
 	case wkbMultiPoint:
-		handle_multi_point(feature_type,property,model,collection,read_errors,e_source,e_location);
+		handle_multi_point(feature_type,property,collection,read_errors,e_source,e_location);
 		break;
 	case wkbLineString:
-		handle_linestring(feature_type,property,model,collection,read_errors,e_source,e_location);
+		handle_linestring(feature_type,property,collection,read_errors,e_source,e_location);
 		break;
 	case wkbMultiLineString:
-		handle_multi_linestring(feature_type,property,model,collection,read_errors,e_source,e_location);
+		handle_multi_linestring(feature_type,property,collection,read_errors,e_source,e_location);
 		break;
 	case wkbPolygon:
-		handle_polygon(feature_type,property,model,collection,read_errors,e_source,e_location);
+		handle_polygon(feature_type,property,collection,read_errors,e_source,e_location);
 		break;
 	case wkbMultiPolygon:
-		handle_multi_polygon(feature_type,property,model,collection,read_errors,e_source,e_location);
+		handle_multi_polygon(feature_type,property,collection,read_errors,e_source,e_location);
 		break;
 	default:
 		read_errors.d_recoverable_errors.push_back(
@@ -1702,7 +1662,6 @@ void
 GPlatesFileIO::OgrReader::handle_point(
 		const GPlatesModel::FeatureType &feature_type,
 		const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
-		GPlatesModel::ModelInterface &model,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 		ReadErrorAccumulation &read_errors,
 		const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -1719,7 +1678,7 @@ GPlatesFileIO::OgrReader::handle_point(
 				GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(llp);
 				try {
 					GPlatesModel::FeatureHandle::weak_ref feature =
-							create_point_feature_from_point_on_sphere(feature_type,model,collection,point,property);
+							create_point_feature_from_point_on_sphere(feature_type,collection,point,property);
 					add_attributes_to_feature(feature,read_errors,source,location);
 					d_loaded_geometries++;
 				}
@@ -1753,7 +1712,6 @@ void
 GPlatesFileIO::OgrReader::handle_multi_point(
 			const GPlatesModel::FeatureType &feature_type,
 			const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
-			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -1795,7 +1753,7 @@ GPlatesFileIO::OgrReader::handle_multi_point(
 		if (!list_of_points.empty())
 		{
 			try {
-				GPlatesModel::FeatureHandle::weak_ref feature = create_multi_point_feature_from_list(feature_type,model,collection,list_of_points,property);
+				GPlatesModel::FeatureHandle::weak_ref feature = create_multi_point_feature_from_list(feature_type,collection,list_of_points,property);
 				add_attributes_to_feature(feature,read_errors,source,location);
 				d_loaded_geometries++;
 			}
@@ -1826,7 +1784,6 @@ void
 GPlatesFileIO::OgrReader::handle_linestring(
 			const GPlatesModel::FeatureType &feature_type,
 			const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
-			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -1862,7 +1819,7 @@ GPlatesFileIO::OgrReader::handle_linestring(
 	}
 
 	try {
-		GPlatesModel::FeatureHandle::weak_ref feature = create_line_feature_from_list(feature_type,model,collection,feature_points,property);
+		GPlatesModel::FeatureHandle::weak_ref feature = create_line_feature_from_list(feature_type,collection,feature_points,property);
 		add_attributes_to_feature(feature,read_errors,source,location);
 		d_loaded_geometries++;
 	}
@@ -1895,7 +1852,6 @@ void
 GPlatesFileIO::OgrReader::handle_multi_linestring(
 			const GPlatesModel::FeatureType &feature_type,
 			const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
-			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -1921,7 +1877,7 @@ GPlatesFileIO::OgrReader::handle_multi_linestring(
 	qDebug() << "num geometries: " << num_geometries;
 #endif
 		
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,model,collection,d_feature_type_string,d_feature_id);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,collection,d_feature_type_string,d_feature_id);
 	add_attributes_to_feature(feature,read_errors,source,location);	
 
 	for (int multiCount = 0; multiCount < num_geometries ; multiCount++){
@@ -1993,7 +1949,6 @@ void
 GPlatesFileIO::OgrReader::handle_polygon(
 			const GPlatesModel::FeatureType &feature_type,
 			const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
-			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -2006,7 +1961,7 @@ GPlatesFileIO::OgrReader::handle_polygon(
 	OGRLinearRing *ring = polygon->getExteriorRing();
 	add_ring_to_points_list(ring,feature_points,read_errors,source,location);
 
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,model,collection,d_feature_type_string,d_feature_id);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,collection,d_feature_type_string,d_feature_id);
 	add_attributes_to_feature(feature,read_errors,source,location);	
 
 	if (!feature_points.empty()){
@@ -2092,7 +2047,6 @@ void
 GPlatesFileIO::OgrReader::handle_multi_polygon(
 			const GPlatesModel::FeatureType &feature_type,
 			const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property,
-			GPlatesModel::ModelInterface &model,
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			ReadErrorAccumulation &read_errors,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -2112,7 +2066,7 @@ GPlatesFileIO::OgrReader::handle_multi_polygon(
 		return;
 	}
 
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,model,collection,d_feature_type_string,d_feature_id);
+	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,collection,d_feature_type_string,d_feature_id);
 	add_attributes_to_feature(feature,read_errors,source,location);	
 
 	d_total_geometries += num_geometries;
@@ -2312,7 +2266,7 @@ GPlatesFileIO::OgrReader::remap_shapefile_attributes(
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
 	// Probably won't be modifying the model so much when loading but we should keep this anyway.
-	GPlatesModel::NotificationGuard model_notification_guard(model.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*model.access_model());
 
 	const FileInfo &file_info = file.get_file_info();
 

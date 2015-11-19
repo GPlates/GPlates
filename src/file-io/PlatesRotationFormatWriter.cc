@@ -109,15 +109,23 @@ namespace
 			angle = GPlatesMaths::convert_rad_to_deg(rot_params.angle.dval());
 		}
 
+		/*
+		 * A coordinate in the PLATES4 format is written as decimal number with
+		 * 4 digits precision after the decimal point, and it must take up 9
+		 * characters altogether (i.e. including the decimal point and maybe a sign).
+		 */
+		static const unsigned PLATES_COORDINATE_FIELDWIDTH = 9;
+		static const unsigned PLATES_COORDINATE_PRECISION = 4;
+
 		os << GPlatesUtils::formatted_int_to_string(moving_plate_id, 3, '0')
 			<< " "
 			<< GPlatesUtils::formatted_double_to_string(time, 5, 2, true)
 			<< " "
-			<< GPlatesUtils::formatted_double_to_string(latitude, 6, 2, true)
+			<< GPlatesUtils::formatted_double_to_string(latitude, PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION, true)
 			<< " "
-			<< GPlatesUtils::formatted_double_to_string(longitude, 7, 2, true)
+			<< GPlatesUtils::formatted_double_to_string(longitude, PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION, true)
 			<< " "
-			<< GPlatesUtils::formatted_double_to_string(angle, 7, 2, true)
+			<< GPlatesUtils::formatted_double_to_string(angle, PLATES_COORDINATE_FIELDWIDTH, PLATES_COORDINATE_PRECISION, true)
 			<< "  "
 			<< GPlatesUtils::formatted_int_to_string(fixed_plate_id, 3, '0');
 	}
@@ -126,7 +134,6 @@ namespace
 
 GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatWriter(
 		const FileInfo &file_info,
-		const GPlatesModel::Gpgim &gpgim,
 		bool grot_format) :
 	d_grot_format(grot_format)
 {
@@ -167,12 +174,12 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 		bool grot_format)
 {
 	// Separate metadata attributes into single and multi-line.
-	std::vector<GPlatesModel::Metadata::shared_const_ptr_type> multi_line_attributes;
-	std::vector<GPlatesModel::Metadata::shared_const_ptr_type> single_line_attributes;
+	std::vector<GPlatesModel::Metadata::shared_ptr_to_const_type> multi_line_attributes;
+	std::vector<GPlatesModel::Metadata::shared_ptr_to_const_type> single_line_attributes;
 	if (reconstruction_pole_data.metadata)
 	{
 		BOOST_FOREACH(
-				const GPlatesModel::Metadata::shared_const_ptr_type &attribute,
+				const GPlatesModel::Metadata::shared_ptr_to_const_type &attribute,
 				reconstruction_pole_data.metadata.get())
 		{
 			if (attribute->get_content().contains("\n"))
@@ -187,7 +194,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 	}
 
 	// Output multi-line metadata attributes first.
-	BOOST_FOREACH(const GPlatesModel::Metadata::shared_const_ptr_type &attribute, multi_line_attributes)
+	BOOST_FOREACH(const GPlatesModel::Metadata::shared_ptr_to_const_type &attribute, multi_line_attributes)
 	{
 		const QStringList attribute_content_lines = attribute->get_content().split("\n");
 
@@ -263,7 +270,7 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 	if (reconstruction_pole_data.metadata &&
 		!reconstruction_pole_data.metadata->empty())
 	{
-		BOOST_FOREACH(const GPlatesModel::Metadata::shared_const_ptr_type& data, single_line_attributes)
+		BOOST_FOREACH(const GPlatesModel::Metadata::shared_ptr_to_const_type& data, single_line_attributes)
 		{
 			os << " @"
 				<< data->get_name().toUtf8().data()
@@ -345,7 +352,7 @@ void
 GPlatesFileIO::PlatesRotationFormatWriter::visit_gpml_total_reconstruction_pole(
 		const GPlatesPropertyValues::GpmlTotalReconstructionPole &gpml_total_reconstruction_pole)
 {
-	d_accum.current_pole().metadata = std::vector<GPlatesModel::Metadata::shared_const_ptr_type>();
+	d_accum.current_pole().metadata = std::vector<GPlatesModel::Metadata::shared_ptr_to_const_type>();
 	const std::vector< boost::shared_ptr<GPlatesModel::Metadata> > &metadata =
 			gpml_total_reconstruction_pole.metadata();
 	for(std::size_t i = 0; i < metadata.size(); ++i)

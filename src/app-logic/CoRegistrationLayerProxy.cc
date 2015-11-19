@@ -173,7 +173,6 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_birth_attribute_data(
 	//a bit to support co-registration better.
 	//That's going to require some thinking though so we'll have to delay that for a later re-factor/re-design.
 	ReconstructMethodRegistry reconstruct_method_registry;
-	register_default_reconstruct_method_types(reconstruct_method_registry);
 	if (d_current_seed_layer_proxies.get_input_layer_proxies().empty())
 	{
 		qWarning() << "No input seed layer found.";

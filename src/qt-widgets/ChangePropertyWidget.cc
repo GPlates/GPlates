@@ -43,15 +43,12 @@
 
 
 GPlatesQtWidgets::ChangePropertyWidget::ChangePropertyWidget(
-		const GPlatesModel::Gpgim &gpgim,
 		const GPlatesGui::FeatureFocus &feature_focus,
 		QWidget *parent_) :
 	QWidget(parent_),
-	d_gpgim(gpgim),
 	d_feature_focus(feature_focus),
 	d_property_destinations_widget(
 			new ChoosePropertyWidget(
-				gpgim,
 				SelectionWidget::Q_COMBO_BOX,
 				this))
 {
@@ -101,7 +98,7 @@ GPlatesQtWidgets::ChangePropertyWidget::populate(
 
 		// Get the user-friendly property name from the GPGIM.
 		boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> curr_gpgim_property =
-				d_gpgim.get_property(curr_property_name);
+				GPlatesModel::Gpgim::instance().get_property(curr_property_name);
 		const QString curr_property_user_friendly_name = curr_gpgim_property
 				? curr_gpgim_property.get()->get_user_friendly_name()
 				: GPlatesUtils::make_qstring_from_icu_string(curr_property_name.get_name());
@@ -168,7 +165,6 @@ GPlatesQtWidgets::ChangePropertyWidget::process(
 			GPlatesModel::ModelUtils::rename_property(
 					**d_property,
 					new_property_name,
-					d_gpgim,
 					&error_code);
 		if (new_property)
 		{

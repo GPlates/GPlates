@@ -34,6 +34,7 @@
 #include "Vector3D.h"
 #include "GenericVectorOps3D.h"
 
+#include "utils/CallStackTracker.h"
 #include "utils/QtStreamable.h"
 
 
@@ -154,7 +155,8 @@ namespace GPlatesMaths
 		 * @throw ViolatedUnitVectorInvariantException
 		 *   if the invariant has been violated.
 		 */
-		void AssertInvariant(int line) const;
+		void AssertInvariant(
+				const GPlatesUtils::CallStack::Trace &exception_source) const;
 
 		real_t d_x, d_y, d_z;
 
@@ -326,12 +328,6 @@ namespace GPlatesMaths
 	cross(
 			const Vector3D &v,
 			const UnitVector3D &u);
-
-
-	/**
-	 * This routine exports the Python wrapper class and associated functionality
-	 */
-	void export_UnitVector3D();
 }
 
 #endif  // _GPLATES_MATHS_UNITVECTOR3D_H_

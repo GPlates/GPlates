@@ -90,4 +90,3 @@ GPlatesPropertyValues::GpmlArray::directly_modifiable_fields_equal(
 	}
 
 }
-

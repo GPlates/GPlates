@@ -173,9 +173,9 @@ GPlatesFeatureVisitors::TopologySectionsFinder::visit_gpml_topological_line(
 	d_seq_num = 0;
 
 	// loop over all the sections
-	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator iter =
+	GPlatesPropertyValues::GpmlTopologicalLine::sections_const_iterator iter =
 			gpml_toplogical_line.sections_begin();
-	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator end =
+	GPlatesPropertyValues::GpmlTopologicalLine::sections_const_iterator end =
 			gpml_toplogical_line.sections_end();
 	for ( ; iter != end; ++iter) 
 	{

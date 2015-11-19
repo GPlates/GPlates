@@ -67,13 +67,12 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_) :
 	QGroupBox(parent_),
-	d_gpgim(view_state_.get_application_state().get_gpgim()),
 	d_active_widget_ptr(NULL),
 	d_edit_age_widget_ptr(new EditAgeWidget(this)),
 	d_edit_angle_widget_ptr(new EditAngleWidget(this)),
 	d_edit_boolean_widget_ptr(new EditBooleanWidget(this)),
 	d_edit_double_widget_ptr(new EditDoubleWidget(this)),
-	d_edit_enumeration_widget_ptr(new EditEnumerationWidget(d_gpgim, this)),
+	d_edit_enumeration_widget_ptr(new EditEnumerationWidget(this)),
 	d_edit_geometry_widget_ptr(new EditGeometryWidget(this)),
 	d_edit_integer_widget_ptr(new EditIntegerWidget(this)),
 	d_edit_old_plates_header_widget_ptr(new EditOldPlatesHeaderWidget(this)),
@@ -87,7 +86,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	d_edit_time_sequence_widget_ptr(new EditTimeSequenceWidget(view_state_.get_application_state(), this)),
 	d_edit_verb(tr("Edit"))
 {
-	// Build the mapping of property structural types to edit widgets.
+	// Build the mapping of property value types to edit widgets.
 	build_widget_map();
 
 	// We stay invisible unless we are called on for a specific widget.
@@ -160,16 +159,15 @@ GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map()
 	// and if it should be included in this map.
 	//
 	// UPDATE:
-	// 'gpml:Array' is currently the only *template* type (besides the time-dependent wrappers).
-	// Currently GPlates assumes the template type is 'gml:TimePeriod' in the following ways:
-	// (1) Edit Feature Properties widget selects Edit Time Sequence widget when it visits a 'gpml:Array' property.
-	// (2) Add Property dialog selects Edit Time Sequence widget when it finds the 'gpml:Array' string (eg, specified here).
-	// Later, when other template types are supported for 'gpml:Array', we'll need to be able to
-	// select the appropriate edit widget based not only on'gpml:Array' but also on its template type
-	// (essentially both determine the actual type of the property).
+	// 'gpml:Array' is currently the only *value* type (besides the time-dependent wrappers).
 	//
-	// For now just hardwiring any template of 'gpml:Array' to the Edit Time Sequence widget.
-	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("Array")] = d_edit_time_sequence_widget_ptr;
+	// Also currently GPlates only supports a 'gpml:Array' value type of 'gml:TimePeriod' which
+	// selects the Edit Time Sequence widget.
+	d_widget_map[
+			property_value_type(
+						GPlatesPropertyValues::StructuralType::create_gpml("Array"),
+						GPlatesPropertyValues::StructuralType::create_gml("TimePeriod"))]
+			= d_edit_time_sequence_widget_ptr;
 #if 0
 	// Keep the KeyValueDictionary out of the map until we have the
 	// ability to create one. 
@@ -183,7 +181,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map()
 	//
 
 	const GPlatesModel::Gpgim::property_enumeration_type_seq_type &gpgim_property_enumeration_types =
-			d_gpgim.get_property_enumeration_types();
+			GPlatesModel::Gpgim::instance().get_property_enumeration_types();
 	BOOST_FOREACH(
 			const GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type &gpgim_property_enumeration_type,
 			gpgim_property_enumeration_types)
@@ -221,21 +219,20 @@ GPlatesQtWidgets::EditWidgetGroupBox::get_handled_property_types(
 			const GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type &gpgim_structural_type,
 			gpgim_structural_types)
 	{
-		const GPlatesPropertyValues::StructuralType structural_type =
-				gpgim_structural_type->get_structural_type();
-
 		static const GPlatesPropertyValues::StructuralType OLD_PLATES_HEADER_STRUCTURAL_TYPE =
 				GPlatesPropertyValues::StructuralType::create_gpml("OldPlatesHeader");
 
 		// Hack: Since OldPlatesHeaderWidget is no longer editable, we need to exclude this from the list
 		// of addable value types (despite it being a valid option for the EditWidgetGroupBox).
-		if (structural_type == OLD_PLATES_HEADER_STRUCTURAL_TYPE)
+		if (gpgim_structural_type->get_structural_type() == OLD_PLATES_HEADER_STRUCTURAL_TYPE)
 		{
 			continue;
 		}
 
-		// If the current structural type is implemented as an edit widget then add it to the list.
-		if (d_widget_map.find(structural_type) != d_widget_map.end())
+		const property_value_type instantiation_type = gpgim_structural_type->get_instantiation_type();
+
+		// If the current property type is implemented as an edit widget then add it to the list.
+		if (d_widget_map.find(instantiation_type) != d_widget_map.end())
 		{
 			// If the caller only needs to know that at least one property type is
 			// supported then return early.
@@ -244,7 +241,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::get_handled_property_types(
 				return true;
 			}
 
-			property_types->push_back(structural_type);
+			property_types->push_back(instantiation_type);
 		}
 	}
 
@@ -313,22 +310,32 @@ GPlatesQtWidgets::EditWidgetGroupBox::refresh_edit_widget(
 
 
 void
-GPlatesQtWidgets::EditWidgetGroupBox::activate_widget_by_property_value_type(
-		const GPlatesPropertyValues::StructuralType &property_value_type)
+GPlatesQtWidgets::EditWidgetGroupBox::activate_widget_by_property_type(
+		const property_value_type &type_of_property)
 {
 	deactivate_edit_widgets();
-	AbstractEditWidget *widget_ptr = get_widget_by_property_value_type(property_value_type);
+	AbstractEditWidget *widget_ptr = get_widget_by_property_type(type_of_property);
 	
 	if (widget_ptr != NULL)
 	{
 		// FIXME: Human readable property value name?
-		setTitle(tr("%1 %2")
-				.arg(d_edit_verb)
-				.arg(convert_qualified_xml_name_to_qstring(property_value_type)));
+		if (type_of_property.is_template())
+		{
+			setTitle(tr("%1 %2<%3>")
+					.arg(d_edit_verb)
+					.arg(convert_qualified_xml_name_to_qstring(type_of_property.get_structural_type()))
+					.arg(convert_qualified_xml_name_to_qstring(type_of_property.get_value_type().get())));
+		}
+		else
+		{
+			setTitle(tr("%1 %2")
+					.arg(d_edit_verb)
+					.arg(convert_qualified_xml_name_to_qstring(type_of_property.get_structural_type())));
+		}
 		show();
 		d_active_widget_ptr = widget_ptr;
 		widget_ptr->reset_widget_to_default_values();
-		widget_ptr->configure_for_property_value_type(property_value_type);
+		widget_ptr->configure_for_property_value_type(type_of_property.get_structural_type());
 		widget_ptr->show();
 	}
 }
@@ -691,10 +698,10 @@ GPlatesQtWidgets::EditWidgetGroupBox::edit_widget_wants_committing()
 
 
 GPlatesQtWidgets::AbstractEditWidget *
-GPlatesQtWidgets::EditWidgetGroupBox::get_widget_by_property_value_type(
-		const GPlatesPropertyValues::StructuralType &property_value_type)
+GPlatesQtWidgets::EditWidgetGroupBox::get_widget_by_property_type(
+		const property_value_type &type_of_property)
 {
-	widget_map_const_iterator result = d_widget_map.find(property_value_type);
+	widget_map_const_iterator result = d_widget_map.find(type_of_property);
 
 	if (result != d_widget_map.end())
 	{

@@ -28,11 +28,12 @@
 #include <iostream>
 #include <boost/none.hpp>
 
-#include "GpmlFiniteRotation.h"
 #include "GmlPoint.h"
+#include "GpmlFiniteRotation.h"
+
+#include "maths/FiniteRotation.h"
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
-#include "maths/FiniteRotation.h"
 #include "maths/PointOnSphere.h"
 
 
@@ -40,10 +41,8 @@ const GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesPropertyValues::GpmlFiniteRotation::create(
 		const GPlatesMaths::FiniteRotation &finite_rotation)
 {
-	non_null_ptr_type gpml_finite_rotation(
+	return non_null_ptr_type(
 			new GpmlFiniteRotation(finite_rotation));
-
-	return gpml_finite_rotation;
 }
 
 
@@ -86,20 +85,18 @@ GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation()
 {
 	using namespace ::GPlatesMaths;
 
-	FiniteRotation fr = FiniteRotation::create(
-			UnitQuaternion3D::create_identity_rotation(),
-			boost::none);
+	FiniteRotation fr = FiniteRotation::create_identity_rotation();
 
-	non_null_ptr_type finite_rotation_ptr(new GpmlFiniteRotation(fr));
-	return finite_rotation_ptr;
+	return create(fr);
 }
 
 
 bool
 GPlatesPropertyValues::GpmlFiniteRotation::is_zero_rotation() const
 {
-	return ::GPlatesMaths::represents_identity_rotation(d_finite_rotation.unit_quat());
+	return GPlatesMaths::represents_identity_rotation(d_finite_rotation.unit_quat());
 }
+
 
 
 const GPlatesPropertyValues::GmlPoint::non_null_ptr_type

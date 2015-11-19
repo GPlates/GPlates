@@ -33,7 +33,9 @@
 
 #include "GpmlTimeWindow.h"
 #include "StructuralType.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
 
 
@@ -52,43 +54,35 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlPiecewiseAggregation>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlPiecewiseAggregation>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlPiecewiseAggregation> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlPiecewiseAggregation>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlPiecewiseAggregation>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlPiecewiseAggregation> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlPiecewiseAggregation()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
-		const non_null_ptr_type
+		non_null_ptr_type
 		create(
 				const std::vector<GpmlTimeWindow> &time_windows_,
 				const StructuralType &value_type_)
 		{
-			non_null_ptr_type ptr(
+			return non_null_ptr_type(
 					new GpmlPiecewiseAggregation(time_windows_, value_type_));
-			return ptr;
 		}
 
-		const GpmlPiecewiseAggregation::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlPiecewiseAggregation::non_null_ptr_type dup(
+			return non_null_ptr_type(
 					new GpmlPiecewiseAggregation(*this));
-			return dup;
 		}
 
 		const GpmlPiecewiseAggregation::non_null_ptr_type
@@ -96,18 +90,15 @@ namespace GPlatesPropertyValues
 
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
-		// @b FIXME:  Should this function be replaced with per-index const-access to
-		// elements of the time sample vector?  (For consistency with the non-const
-		// overload...)
 		const std::vector<GpmlTimeWindow> &
 		time_windows() const
 		{
 			return d_time_windows;
 		}
 
-		// @b FIXME:  Should this function be replaced with per-index const-access to
-		// elements of the time sample vector, well as per-index assignment (setter) and
-		// removal operations?  This would ensure that revisioning is correctly handled...
+		/**
+		 * Returns the 'non-const' vector of time windows.
+		 */
 		std::vector<GpmlTimeWindow> &
 		time_windows()
 		{

@@ -89,11 +89,10 @@ GPlatesPropertyValues::GpmlAge::create(
 		boost::optional<double> uncertainty_oldest_absolute,
 		boost::optional<TimescaleBand> uncertainty_oldest_named)
 {
-	GpmlAge::non_null_ptr_type ptr(
+	return non_null_ptr_type(
 			new GpmlAge(age_absolute, age_named, timescale, uncertainty_plusminus, 
 					uncertainty_youngest_absolute, uncertainty_youngest_named,
 					uncertainty_oldest_absolute, uncertainty_oldest_named));
-	return ptr;
 }
 
 
@@ -108,20 +107,18 @@ GPlatesPropertyValues::GpmlAge::create(
 		boost::optional<double> uncertainty_oldest_absolute,
 		boost::optional<QString> uncertainty_oldest_named)
 {
-	GpmlAge::non_null_ptr_type ptr(
+	return non_null_ptr_type(
 			new GpmlAge(age_absolute, convert_to_band_maybe(age_named), convert_to_name_maybe(timescale), uncertainty_plusminus, 
 					uncertainty_youngest_absolute, convert_to_band_maybe(uncertainty_youngest_named),
 					uncertainty_oldest_absolute, convert_to_band_maybe(uncertainty_oldest_named)));
-	return ptr;
 }
 
 
 const GPlatesPropertyValues::GpmlAge::non_null_ptr_type
 GPlatesPropertyValues::GpmlAge::create()
 {
-	GpmlAge::non_null_ptr_type ptr(
+	return non_null_ptr_type(
 			new GpmlAge(boost::none, boost::none, boost::none, boost::none, boost::none, boost::none, boost::none, boost::none));
-	return ptr;
 }
 
 
@@ -297,9 +294,6 @@ GPlatesPropertyValues::GpmlAge::set_uncertainty_oldest_named(
 }
 
 
-/**
- * Convenience method to quickly determine how this Age's uncertainty data has been defined.
- */
 GPlatesPropertyValues::GpmlAge::UncertaintyDefinition::UncertaintyDefinitionType
 GPlatesPropertyValues::GpmlAge::uncertainty_type() const
 {
@@ -314,9 +308,6 @@ GPlatesPropertyValues::GpmlAge::uncertainty_type() const
 }
 
 
-
-// FIXME: What is this used for? It's not Unicode-safe, it'll mash everything down to ascii.
-// If it's just for debugging I suppose that's okay but why not use e.g. a visitor?
 std::ostream &
 GPlatesPropertyValues::GpmlAge::print_to(
 		std::ostream &os) const
@@ -344,4 +335,3 @@ GPlatesPropertyValues::GpmlAge::print_to(
 	}
 	return os;
 }
-

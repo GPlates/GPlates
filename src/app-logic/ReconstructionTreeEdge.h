@@ -88,15 +88,13 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type fixed_plate_,
 				GPlatesModel::integer_plate_id_type moving_plate_,
 				const GPlatesMaths::FiniteRotation &relative_rotation_,
-				const GPlatesModel::FeatureHandle::weak_ref &originating_feature_,
 				bool finite_rotation_was_interpolated_,
 				PoleTypes::PoleType pole_type_)
 		{
 			non_null_ptr_type ptr(
-					new ReconstructionTreeEdge(fixed_plate_, moving_plate_,
-							relative_rotation_, originating_feature_,
-							finite_rotation_was_interpolated_, pole_type_),
-					GPlatesUtils::NullIntrusivePointerHandler());
+					new ReconstructionTreeEdge(
+							fixed_plate_, moving_plate_, relative_rotation_,
+							finite_rotation_was_interpolated_, pole_type_));
 			return ptr;
 		}
 
@@ -224,12 +222,6 @@ namespace GPlatesAppLogic
 		GPlatesMaths::FiniteRotation d_composed_absolute_rotation;
 
 		/**
-		 * The feature (maybe a TotalReconstructionSequence, maybe an
-		 * AbsoluteReferenceFrame) from which this edge originates.
-		 */
-		GPlatesModel::FeatureHandle::weak_ref d_originating_feature;
-
-		/**
 		 * Whether the finite rotation was interpolated between times, or corresponds to a
 		 * time already in the originating feature.
 		 */
@@ -267,14 +259,12 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type fixed_plate_,
 				GPlatesModel::integer_plate_id_type moving_plate_,
 				const GPlatesMaths::FiniteRotation &relative_rotation_,
-				const GPlatesModel::FeatureHandle::weak_ref &originating_feature_,
 				bool finite_rotation_was_interpolated_,
 				PoleTypes::PoleType pole_type_):
 			d_fixed_plate(fixed_plate_),
 			d_moving_plate(moving_plate_),
 			d_relative_rotation(relative_rotation_),
 			d_composed_absolute_rotation(relative_rotation_),
-			d_originating_feature(originating_feature_),
 			d_finite_rotation_was_interpolated(finite_rotation_was_interpolated_),
 			d_pole_type(pole_type_),
 			d_parent_edge(NULL)
@@ -301,7 +291,6 @@ namespace GPlatesAppLogic
 			d_moving_plate(other.d_moving_plate),
 			d_relative_rotation(other.d_relative_rotation),
 			d_composed_absolute_rotation(other.d_composed_absolute_rotation),
-			d_originating_feature(other.d_originating_feature),
 			d_finite_rotation_was_interpolated(other.d_finite_rotation_was_interpolated),
 			d_pole_type(other.d_pole_type),
 			d_parent_edge(other.d_parent_edge)

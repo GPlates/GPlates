@@ -38,6 +38,7 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlAge.h"
+#include "property-values/GpmlArray.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlKeyValueDictionary.h"
@@ -166,7 +167,16 @@ void
 GPlatesQtWidgets::EditWidgetChooser::visit_gpml_array(
 		GPlatesPropertyValues::GpmlArray &gpml_array)
 {
-	d_edit_widget_group_box_ptr->activate_edit_time_sequence_widget(gpml_array);
+    static const GPlatesPropertyValues::StructuralType GML_TIME_PERIOD_TYPE =
+            GPlatesPropertyValues::StructuralType::create_gml("TimePeriod");
+
+	// 'gpml:Array' is a *template* type and we currently only support the value type
+	// 'gml:TimePeriod' for it in the form of the Edit Time Sequence widget
+	// (adding and editing 'gpml:Array<gml:TimePeriod>').
+    if (gpml_array.type() == GML_TIME_PERIOD_TYPE)
+    {
+		d_edit_widget_group_box_ptr->activate_edit_time_sequence_widget(gpml_array);
+	}
 }
 
 void

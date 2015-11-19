@@ -56,12 +56,12 @@ namespace{
 		static const GPlatesModel::PropertyName property_name =
 			GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
 
-		const GPlatesPropertyValues::GpmlPlateId *plate_id = NULL;
-
-		if (GPlatesFeatureVisitors::get_property_value(
-				feature_handle, property_name, plate_id))
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> plate_id =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						feature_handle, property_name);
+		if (plate_id)
 		{
-			return boost::optional<GPlatesModel::integer_plate_id_type>(plate_id->value());
+			return boost::optional<GPlatesModel::integer_plate_id_type>(plate_id.get()->value());
 		}
 
 		return boost::none;

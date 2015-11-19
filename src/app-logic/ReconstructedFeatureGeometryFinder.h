@@ -180,6 +180,7 @@ namespace GPlatesAppLogic
 
 	protected:
 
+		// Handles @a ReconstructedFeatureGeometry and its derived classes.
 		virtual
 		void
 		visit_reconstructed_feature_geometry(

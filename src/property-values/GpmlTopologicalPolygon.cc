@@ -25,9 +25,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <iostream>
 #include <typeinfo>
-#include <algorithm>
 
 #include "GpmlTopologicalPolygon.h"
 
@@ -107,4 +107,3 @@ GPlatesPropertyValues::GpmlTopologicalPolygon::directly_modifiable_fields_equal(
 		return false;
 	}
 }
-

@@ -98,8 +98,6 @@ namespace
 		boost::scoped_ptr<FeatureCollectionFileFormat::Registry> registry(new FeatureCollectionFileFormat::Registry());
 		
 		GPlatesModel::ModelInterface  model;
-		GPlatesModel::Gpgim::non_null_ptr_to_const_type gpgim = GPlatesModel::Gpgim::create();
-		register_default_file_formats(*registry, model, *gpgim);
 		
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> recon_fc = 
 			utils::load_files(s_recon_files, p_recon_files,*registry);
@@ -198,8 +196,6 @@ namespace
 
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry feature_collection_file_format_registry;
 		GPlatesModel::ModelInterface model;
-		GPlatesModel::Gpgim::non_null_ptr_to_const_type gpgim = GPlatesModel::Gpgim::create();
-		register_default_file_formats(feature_collection_file_format_registry, model, *gpgim);
 
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstruction_files;
 		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> reconstruction_feature_collections = 
@@ -210,7 +206,6 @@ namespace
 				utils::load_files(reconstructable_filenames, reconstructable_files, feature_collection_file_format_registry);
 
 		GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
-		register_default_reconstruct_method_types(reconstruct_method_registry);
 
 		const GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 				GPlatesAppLogic::create_cached_reconstruction_tree_creator(

@@ -124,10 +124,7 @@ GPlatesQtWidgets::EditShapefileAttributesWidget::update_property_value_from_widg
 
 			bool field_is_valid = true;
 
-			// Check what type we have, and create the appropriate element. 
-			//
-			// FIXME: There are possibly better ways to do this, by adding suitable functionality
-			// to the KeyValueDictionaryElement class to allow setting members for example...?
+			// Check what type we have, and change the value. 
 			if (type == string_type)
 			{
 				GPlatesPropertyValues::XsString::non_null_ptr_type value = 
@@ -166,8 +163,7 @@ GPlatesQtWidgets::EditShapefileAttributesWidget::update_property_value_from_widg
 					dictionary_element = new_element;
 				}
 			}
-
-			
+		
 			if (!field_is_valid){
 				// An invalid field was entered, so reset the cell to the value in the dictionary element.
 				QString value_string = GPlatesFileIO::OgrUtils::get_qvariant_from_kvd_element(dictionary_element).toString();

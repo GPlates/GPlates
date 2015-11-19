@@ -25,9 +25,9 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <QDebug>
 
 #include <boost/none.hpp>  // boost::none
+#include <QDebug>
 
 #include "TotalReconstructionSequencePlateIdFinder.h"
 
@@ -376,8 +376,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			// Create the new time-sample.
 			// Always create a GpmlTotalReconstructionPole (instead of GpmlFiniteRotation) since
 			// the former also supports pole metadata (which can remain empty if not needed/used).
-			GpmlTotalReconstructionPole::non_null_ptr_type value(
-					new GpmlTotalReconstructionPole(updated_finite_rotation));
+			GpmlTotalReconstructionPole::non_null_ptr_type value = GpmlTotalReconstructionPole::create(updated_finite_rotation);
 			// Set/modify the pole metadata (if needed) in the GpmlTotalReconstructionPole.
 			set_pole_metadata(*value);
 

@@ -47,7 +47,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::redo()
 
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many as we incrementally modify the feature below.
-	GPlatesModel::NotificationGuard model_notification_guard(d_model_interface.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*d_model_interface.access_model());
 
 	d_old_feature =  d_feature_focus->focused_feature();
 	if (!(*d_old_feature).is_valid())
@@ -106,8 +106,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	d_old_geometry_property = 
 		GPlatesModel::ModelUtils::create_top_level_property(
 				property_name,
-				old_geometry_property_value,
-				d_gpgim);
+				old_geometry_property_value);
 	// If that fails (eg, because property name not recognised) then just add an unwrapped property value.
 	if (!d_old_geometry_property)
 	{
@@ -222,8 +221,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> before_split_point_geometry_property = 
 		GPlatesModel::ModelUtils::create_top_level_property(
 				property_name,
-				before_split_point_geometry_property_value,
-				d_gpgim);
+				before_split_point_geometry_property_value);
 	// If that fails (eg, because property name not recognised) then just add an unwrapped property value.
 	if (!before_split_point_geometry_property)
 	{
@@ -248,8 +246,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	boost::optional<GPlatesModel::TopLevelProperty::non_null_ptr_type> after_split_point_geometry_property = 
 		GPlatesModel::ModelUtils::create_top_level_property(
 				property_name,
-				after_split_point_geometry_property_value,
-				d_gpgim);
+				after_split_point_geometry_property_value);
 	// If that fails (eg, because property name not recognised) then just add an unwrapped property value.
 	if (!after_split_point_geometry_property)
 	{
@@ -296,7 +293,7 @@ GPlatesViewOperations::SplitFeatureUndoCommand::undo()
 	
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many as we incrementally modify the feature below.
-	GPlatesModel::NotificationGuard model_notification_guard(d_model_interface.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*d_model_interface.access_model());
 
 	//restore the old geometry
 	GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(*d_old_feature);

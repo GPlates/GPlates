@@ -40,45 +40,41 @@ DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GpmlFiniteRotationSlerp, vi
 namespace GPlatesPropertyValues {
 
 	class GpmlFiniteRotationSlerp:
-			public GpmlInterpolationFunction {
+			public GpmlInterpolationFunction
+	{
 
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotationSlerp>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotationSlerp>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlFiniteRotationSlerp> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlFiniteRotationSlerp> non_null_ptr_to_const_type;
 
-		virtual
-		~GpmlFiniteRotationSlerp() {  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
+		virtual
+		~GpmlFiniteRotationSlerp()
+		{  }
+
 		static
 		const non_null_ptr_type
 		create(
-				const StructuralType &value_type_) {
-			non_null_ptr_type ptr(new GpmlFiniteRotationSlerp(value_type_));
-			return ptr;
+				const StructuralType &value_type_)
+		{
+			return non_null_ptr_type(new GpmlFiniteRotationSlerp(value_type_));
 		}
 
-		const GpmlFiniteRotationSlerp::non_null_ptr_type
-		clone() const {
-			GpmlFiniteRotationSlerp::non_null_ptr_type dup(new GpmlFiniteRotationSlerp(*this));
-			return dup;
+		const non_null_ptr_type
+		clone() const
+		{
+			return non_null_ptr_type(new GpmlFiniteRotationSlerp(*this));
 		}
 
-		const GpmlFiniteRotationSlerp::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const
 		{
 			// This class doesn't reference any mutable objects by pointer, so there's
@@ -99,7 +95,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::ConstFeatureVisitor &visitor) const {
+				GPlatesModel::ConstFeatureVisitor &visitor) const
+		{
 			visitor.visit_gpml_finite_rotation_slerp(*this);
 		}
 
@@ -112,7 +109,8 @@ namespace GPlatesPropertyValues {
 		virtual
 		void
 		accept_visitor(
-				GPlatesModel::FeatureVisitor &visitor) {
+				GPlatesModel::FeatureVisitor &visitor)
+		{
 			visitor.visit_gpml_finite_rotation_slerp(*this);
 		}
 

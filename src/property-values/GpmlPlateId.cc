@@ -36,4 +36,3 @@ GPlatesPropertyValues::GpmlPlateId::print_to(
 {
 	return os << d_value;
 }
-

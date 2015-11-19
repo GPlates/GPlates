@@ -101,7 +101,7 @@ namespace GPlatesAppLogic
 		 *
 		 * NOTE: The coverages are extracted at the specified reconstruction time.
 		 *
-		 * Returns false if no coverags were extracted.
+		 * Returns false if no coverages were extracted.
 		 */
 		bool
 		get_coverages(

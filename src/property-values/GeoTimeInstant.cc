@@ -31,6 +31,7 @@
 #include "GeoTimeInstant.h"
 
 #include "maths/MathsUtils.h"
+#include "maths/Real.h"
 
 
 const GPlatesPropertyValues::GeoTimeInstant
@@ -44,6 +45,23 @@ const GPlatesPropertyValues::GeoTimeInstant
 GPlatesPropertyValues::GeoTimeInstant::create_distant_future()
 {
 	return GeoTimeInstant(TimePositionTypes::DistantFuture);
+}
+
+
+double
+GPlatesPropertyValues::GeoTimeInstant::value() const
+{
+	if (is_real())
+	{
+		return d_value;
+	}
+
+	// Return +/- infinity.
+	// The client shouldn't get here since they should only
+	// call 'value()' if 'is_real()' returns true.
+	return is_distant_past()
+			? GPlatesMaths::positive_infinity<double>()
+			: GPlatesMaths::negative_infinity<double>();
 }
 
 
@@ -134,6 +152,9 @@ GPlatesPropertyValues::GeoTimeInstant::is_coincident_with(
 	// in the "distant past" were, I think that it will be appropriate for the program to treat
 	// the two time-instants in the same way, so we'll call them equal.)  Similarly for two
 	// time-instants which are both in the "distant future".
+	// Note: Comparing two "distant past" time instants (or two "distant future") as equal also
+	// matches up with our current use of boost::equivalent to create "operator==" from
+	// "operator<" and "operator>".
 	//
 	// Note that all geo-times in the distant past and the distant future have their "value"s
 	// initialised to 0.0, so all geo-times in the distant past will compare equal by

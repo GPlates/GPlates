@@ -37,12 +37,10 @@
 
 
 GPlatesAppLogic::GenericPartitionFeatureTask::GenericPartitionFeatureTask(
-		const GPlatesModel::Gpgim &gpgim,
 		const ReconstructionTree &reconstruction_tree,
 		GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType assign_plate_id_method,
 		const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
 		bool verify_information_model) :
-	d_gpgim(gpgim),
 	d_verify_information_model(verify_information_model),
 	d_reconstruction_tree(reconstruction_tree),
 	d_assign_plate_id_method(assign_plate_id_method),
@@ -61,7 +59,7 @@ GPlatesAppLogic::GenericPartitionFeatureTask::partition_feature(
 	//PROFILE_FUNC();
 
 	// Merge model events across this scope to avoid excessive number of model callbacks.
-	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(*feature_ref->model_ptr());
 
 	// Partition the feature and get the partitioned results in return.
 	// NOTE: This does not modify the feature referenced by 'feature_ref'.
@@ -97,7 +95,6 @@ GPlatesAppLogic::GenericPartitionFeatureTask::partition_feature(
 	// partitioning polygons) are obtained from the feature here.
 	boost::shared_ptr<PartitionFeatureUtils::PropertyValueAssigner> property_value_assigner(
 			new PartitionFeatureUtils::GenericFeaturePropertyAssigner(
-					d_gpgim,
 					feature_ref,
 					d_feature_property_types_to_assign,
 					d_verify_information_model));

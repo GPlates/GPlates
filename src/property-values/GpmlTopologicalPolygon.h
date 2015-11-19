@@ -90,13 +90,13 @@ namespace GPlatesPropertyValues
 					new GpmlTopologicalPolygon(exterior_sections_begin_, exterior_sections_end_));
 		}
 
-		const GpmlTopologicalPolygon::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
 			return non_null_ptr_type(new GpmlTopologicalPolygon(*this));
 		}
 
-		const GpmlTopologicalPolygon::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const;
 
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()

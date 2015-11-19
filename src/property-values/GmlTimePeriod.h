@@ -29,7 +29,11 @@
 #define GPLATES_PROPERTYVALUES_GMLTIMEPERIOD_H
 
 #include "GmlTimeInstant.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
+#include "global/PreconditionViolationError.h"
+
 #include "model/PropertyValue.h"
 
 
@@ -59,43 +63,62 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimePeriod> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimePeriod> non_null_ptr_to_const_type;
+
+
+		/**
+		 * A time period's begin time should be earlier than its end time.
+		 */
+		class BeginTimeLaterThanEndTimeException :
+				public GPlatesGlobal::PreconditionViolationError
+		{
+		public:
+			explicit
+			BeginTimeLaterThanEndTimeException(
+					const GPlatesUtils::CallStack::Trace &exception_source) :
+				GPlatesGlobal::PreconditionViolationError(exception_source)
+			{  }
+
+			~BeginTimeLaterThanEndTimeException() throw()
+			{  }
+
+		protected:
+			virtual
+			const char *
+			exception_name() const
+			{
+				return "BeginTimeLaterThanEndTimeException";
+			}
+		};
+
 
 		virtual
 		~GmlTimePeriod()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		/**
 		 * Create a GmlTimePeriod instance which begins at @a begin_ and ends at @a end_.
 		 *
 		 * Note that the time instant represented by @a begin_ must not be later than (ie,
 		 * more recent than) the time instant represented by @a end_.
 		 *
-		 * FIXME:  Check this as a precondition, and throw an exception if it's violated.
+		 * @throws BeginTimeLaterThanEndTimeException if @a check_begin_end_times is true and
+		 * begin time is later than end time. By default @a check_begin_end_times is false since
+		 * there exists a lot of data from files that violates this condition.
 		 */
 		static
 		const non_null_ptr_type
 		create(
 				GmlTimeInstant::non_null_ptr_type begin_,
-				GmlTimeInstant::non_null_ptr_type end_)
-		{
-			GmlTimePeriod::non_null_ptr_type ptr(new GmlTimePeriod(begin_, end_));
-			return ptr;
-		}
+				GmlTimeInstant::non_null_ptr_type end_,
+				bool check_begin_end_times = false);
 
-		const GmlTimePeriod::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GmlTimePeriod::non_null_ptr_type dup(new GmlTimePeriod(*this));
-			return dup;
+			return non_null_ptr_type(new GmlTimePeriod(*this));
 		}
 
 		const GmlTimePeriod::non_null_ptr_type
@@ -104,10 +127,7 @@ namespace GPlatesPropertyValues
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
-		 * Return the "begin" attribute of this GmlTimePeriod instance.
-		 *
-		 * Note that it is an invariant of this class that the "begin" attribute must not
-		 * be later than the "end" attribute.
+		 * Return the 'const' "begin" attribute of this GmlTimePeriod instance.
 		 */
 		const GmlTimeInstant::non_null_ptr_to_const_type
 		begin() const
@@ -115,19 +135,8 @@ namespace GPlatesPropertyValues
 			return d_begin;
 		}
 
-		// Note that, because the copy-assignment operator of GmlTimeInstant is private,
-		// the GmlTimeInstant referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the GmlTimeInstant within this GmlTimePeriod instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the GmlTimeInstant within this GmlTimePeriod instance, use the
-		// function @a set_begin below.
-		//
-		// (This overload is provided to allow the referenced GmlTimeInstant instance to
-		// accept a FeatureVisitor instance.)
 		/**
-		 * Return the "begin" attribute of this GmlTimePeriod instance.
+		 * Return the 'non-const' "begin" attribute of this GmlTimePeriod instance.
 		 *
 		 * Note that it is an invariant of this class that the "begin" attribute must not
 		 * be later than the "end" attribute.
@@ -144,23 +153,17 @@ namespace GPlatesPropertyValues
 		 * Note that it is an invariant of this class that the "begin" attribute must not
 		 * be later than the "end" attribute.
 		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
+		 * @throws BeginTimeLaterThanEndTimeException if @a check_begin_end_times is true and
+		 * begin time is later than end time. By default @a check_begin_end_times is false since
+		 * there exists a lot of data from files that violates this condition.
 		 */
 		void
 		set_begin(
-				GmlTimeInstant::non_null_ptr_type b)
-		{
-			d_begin = b;
-			update_instance_id();
-		}
+				GmlTimeInstant::non_null_ptr_type begin_,
+				bool check_begin_end_times = false);
 
 		/**
 		 * Return the "end" attribute of this GmlTimePeriod instance.
-		 *
-		 * Note that it is an invariant of this class that the "end" attribute must not
-		 * be earlier than the "begin" attribute.
 		 */
 		const GmlTimeInstant::non_null_ptr_to_const_type
 		end() const
@@ -168,17 +171,6 @@ namespace GPlatesPropertyValues
 			return d_end;
 		}
 
-		// Note that, because the copy-assignment operator of GmlTimeInstant is private,
-		// the GmlTimeInstant referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the GmlTimeInstant within this GmlTimePeriod instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the GmlTimeInstant within this GmlTimePeriod instance, use the
-		// function @a set_end below.
-		//
-		// (This overload is provided to allow the referenced GmlTimeInstant instance to
-		// accept a FeatureVisitor instance.)
 		/**
 		 * Return the "end" attribute of this GmlTimePeriod instance.
 		 *
@@ -197,17 +189,14 @@ namespace GPlatesPropertyValues
 		 * Note that it is an invariant of this class that the "end" attribute must not
 		 * be earlier than the "begin" attribute.
 		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
+		 * @throws BeginTimeLaterThanEndTimeException if @a check_begin_end_times is true and
+		 * begin time is later than end time. By default @a check_begin_end_times is false since
+		 * there exists a lot of data from files that violates this condition.
 		 */
 		void
 		set_end(
-				GmlTimeInstant::non_null_ptr_type e)
-		{
-			d_end = e;
-			update_instance_id();
-		}
+				GmlTimeInstant::non_null_ptr_type end_,
+				bool check_begin_end_times = false);
 
 		/**
 		 * Determine whether @a geo_time lies within the temporal span of this
@@ -221,8 +210,8 @@ namespace GPlatesPropertyValues
 		contains(
 				const GeoTimeInstant &geo_time) const
 		{
-			return (begin()->time_position().is_earlier_than_or_coincident_with(geo_time) &&
-					geo_time.is_earlier_than_or_coincident_with(end()->time_position()));
+			return begin()->time_position().is_earlier_than_or_coincident_with(geo_time) &&
+					geo_time.is_earlier_than_or_coincident_with(end()->time_position());
 		}
 
 		/**

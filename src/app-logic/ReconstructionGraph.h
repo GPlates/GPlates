@@ -110,37 +110,6 @@ namespace GPlatesAppLogic
 				edge_refs_by_plate_id_map_const_range_type;
 
 		/**
-		 * Create a reconstruction graph for the specified @a reconstruction_time_.
-		 *
-		 * This reconstruction graph will be empty -- that is, will not contain any total
-		 * reconstruction poles.
-		 *
-		 * @a reconstruction_features are the features that will be used to fill this graph.
-		 * This can be used to find which ReconstructionTrees were generated using the same
-		 * set of reconstruction features and can also be used to find the set of reconstruction
-		 * features used to reconstruct specific geometries so that those reconstruction features
-		 * can be modified (such as inserting new rotation poles).
-		 */
-		explicit
-		ReconstructionGraph(
-				const double &reconstruction_time_,
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_):
-			d_reconstruction_time(reconstruction_time_),
-			d_reconstruction_features(reconstruction_features_)
-		{  }
-
-		/**
-		 * Return the reconstruction time of this graph.
-		 *
-		 * This function does not throw.
-		 */
-		const double &
-		reconstruction_time() const
-		{
-			return d_reconstruction_time;
-		}
-
-		/**
 		 * Return the number of edges contained in this graph.
 		 *
 		 * This function does not throw.
@@ -149,17 +118,6 @@ namespace GPlatesAppLogic
 		num_edges_contained() const
 		{
 			return d_edges_by_fixed_plate_id.size();
-		}
-
-		/**
-		 * Access the features containing the reconstruction features used to
-		 * create the total reconstruction pole inserted into this graph via
-		 * @a insert_total_reconstruction_pole.
-		 */
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
-		get_reconstruction_features() const
-		{
-			return d_reconstruction_features;
 		}
 
 		/**
@@ -178,12 +136,17 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type fixed_plate_id_,
 				GPlatesModel::integer_plate_id_type moving_plate_id_,
 				const GPlatesMaths::FiniteRotation &pole,
-				const GPlatesModel::FeatureHandle::weak_ref &originating_feature,
 				bool finite_rotation_was_interpolated);
 
 		/**
 		 * Build the graph into a ReconstructionTree, specifying the @a root_plate_id of
 		 * the tree.
+		 *
+		 * @a reconstruction_features are the features that were used to fill this graph.
+		 * This can be used to find which ReconstructionTrees were generated using the same
+		 * set of reconstruction features and can also be used to find the set of reconstruction
+		 * features used to reconstruct specific geometries so that those reconstruction features
+		 * can be modified (such as inserting new rotation poles).
 		 *
 		 * Note that invoking this function will cause all total reconstruction poles in
 		 * this graph to be transferred to the new ReconstructionTree instance, leaving
@@ -193,7 +156,9 @@ namespace GPlatesAppLogic
 		 */
 		GPlatesUtils::non_null_intrusive_ptr<ReconstructionTree>
 		build_tree(
-				GPlatesModel::integer_plate_id_type root_plate_id);
+				GPlatesModel::integer_plate_id_type root_plate_id,
+				const double &reconstruction_time,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features);
 
 		/**
 		 * Find all edges in this graph whose fixed plate ID matches @a plate_id.
@@ -231,8 +196,6 @@ namespace GPlatesAppLogic
 				ReconstructionGraph &other)
 		{
 			d_edges_by_fixed_plate_id.swap(other.d_edges_by_fixed_plate_id);
-			std::swap(d_reconstruction_time, other.d_reconstruction_time);
-			std::swap(d_reconstruction_features, other.d_reconstruction_features);
 		}
 
 		/**
@@ -267,16 +230,6 @@ namespace GPlatesAppLogic
 		 * the current (moving) plate ID.
 		 */
 		edge_refs_by_plate_id_map_type d_edges_by_fixed_plate_id;
-
-		/**
-		 * This is the reconstruction time of the total reconstruction poles in this graph.
-		 */
-		double d_reconstruction_time;
-
-		/**
-		 * The features used to generate the total reconstruction poles inserted into this graph.
-		 */
-		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_reconstruction_features;
 	};
 }
 

@@ -30,6 +30,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "maths/GreatCircleArc.h"
 #include "maths/SmallCircleBounds.h"
 
 
@@ -158,7 +159,7 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::OrientedBoundingBoxBuild
 	d_z_axis(bounding_small_circle.get_centre())
 {
 	// The z-axis bounds are determined by directly the small circle.
-	d_min_dot_z_axis = bounding_small_circle.get_small_circle_boundary_cosine();
+	d_min_dot_z_axis = bounding_small_circle.get_angular_extent().get_cosine().dval();
 	d_max_dot_z_axis = 1.0;
 
 	// If the small circle extends past the hemisphere (centred on the small circle centre)
@@ -235,14 +236,44 @@ void
 GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add(
 		const GPlatesMaths::GreatCircleArc &gca)
 {
-	GPlatesMaths::update_min_max_dot_product(
-			d_x_axis, gca, d_min_dot_x_axis, d_max_dot_x_axis);
+	// If max dot product (minimum distance) of GCA greater than current max dot product.
+	const GPlatesMaths::AngularDistance min_x_distance_to_gca = minimum_distance(d_x_axis, gca);
+	if (min_x_distance_to_gca.get_cosine().dval() > d_max_dot_x_axis)
+	{
+		d_max_dot_x_axis = min_x_distance_to_gca.get_cosine().dval();
+	}
+	// If min dot product (maxnimum distance) of GCA less than current min dot product.
+	const GPlatesMaths::AngularDistance max_x_distance_to_gca = maximum_distance(d_x_axis, gca);
+	if (max_x_distance_to_gca.get_cosine().dval() < d_min_dot_x_axis)
+	{
+		d_min_dot_x_axis = max_x_distance_to_gca.get_cosine().dval();
+	}
 
-	GPlatesMaths::update_min_max_dot_product(
-			d_y_axis, gca, d_min_dot_y_axis, d_max_dot_y_axis);
+	// If max dot product (minimum distance) of GCA greater than current max dot product.
+	const GPlatesMaths::AngularDistance min_y_distance_to_gca = minimum_distance(d_y_axis, gca);
+	if (min_y_distance_to_gca.get_cosine().dval() > d_max_dot_y_axis)
+	{
+		d_max_dot_y_axis = min_y_distance_to_gca.get_cosine().dval();
+	}
+	// If min dot product (maxnimum distance) of GCA less than current min dot product.
+	const GPlatesMaths::AngularDistance max_y_distance_to_gca = maximum_distance(d_y_axis, gca);
+	if (max_y_distance_to_gca.get_cosine().dval() < d_min_dot_y_axis)
+	{
+		d_min_dot_y_axis = max_y_distance_to_gca.get_cosine().dval();
+	}
 
-	GPlatesMaths::update_min_max_dot_product(
-			d_z_axis, gca, d_min_dot_z_axis, d_max_dot_z_axis);
+	// If max dot product (minimum distance) of GCA greater than current max dot product.
+	const GPlatesMaths::AngularDistance min_z_distance_to_gca = minimum_distance(d_z_axis, gca);
+	if (min_z_distance_to_gca.get_cosine().dval() > d_max_dot_z_axis)
+	{
+		d_max_dot_z_axis = min_z_distance_to_gca.get_cosine().dval();
+	}
+	// If min dot product (maxnimum distance) of GCA less than current min dot product.
+	const GPlatesMaths::AngularDistance max_z_distance_to_gca = maximum_distance(d_z_axis, gca);
+	if (max_z_distance_to_gca.get_cosine().dval() < d_min_dot_z_axis)
+	{
+		d_min_dot_z_axis = max_z_distance_to_gca.get_cosine().dval();
+	}
 }
 
 
@@ -271,45 +302,39 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add_filled_polygon(
 
 	if (polygon->is_point_in_polygon(
 			GPlatesMaths::PointOnSphere(d_x_axis),
-			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
-		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE))
 	{
 		d_max_dot_x_axis = 1.0;
 	}
 	if (polygon->is_point_in_polygon(
 			GPlatesMaths::PointOnSphere(-d_x_axis),
-			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
-		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE))
 	{
 		d_min_dot_x_axis = -1.0;
 	}
 
 	if (polygon->is_point_in_polygon(
 			GPlatesMaths::PointOnSphere(d_y_axis),
-			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
-		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE))
 	{
 		d_max_dot_y_axis = 1.0;
 	}
 	if (polygon->is_point_in_polygon(
 			GPlatesMaths::PointOnSphere(-d_y_axis),
-			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
-		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE))
 	{
 		d_min_dot_y_axis = -1.0;
 	}
 
 	if (polygon->is_point_in_polygon(
 			GPlatesMaths::PointOnSphere(d_z_axis),
-			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
-		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE))
 	{
 		d_max_dot_z_axis = 1.0;
 	}
 	if (polygon->is_point_in_polygon(
 			GPlatesMaths::PointOnSphere(-d_z_axis),
-			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) ==
-		GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+			GPlatesMaths::PolygonOnSphere::MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE))
 	{
 		d_min_dot_z_axis = -1.0;
 	}

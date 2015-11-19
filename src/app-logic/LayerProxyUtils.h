@@ -140,7 +140,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_resolved_topological_lines(
-				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_lines,
+				std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines,
 				std::vector<ReconstructHandle::type> &reconstruct_handles,
 				const Reconstruction &reconstruction);
 
@@ -588,7 +588,7 @@ namespace GPlatesAppLogic
 			layer_proxy_ptr->accept_visitor(layer_proxy_derived_type_finder);
 
 			// Get the sequence of any found LayerProxy derived types.
-			// Can only be one as most though.
+			// Can only be one at most though.
 			const typename layer_proxy_derived_type_finder_type::container_type &
 					derived_type_seq = layer_proxy_derived_type_finder.get_layer_proxy_type_sequence();
 

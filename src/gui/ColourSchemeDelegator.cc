@@ -57,6 +57,7 @@ namespace
 
 		void
 		publisher_deactivated(
+				const weak_reference_type &reference,
 				const deactivated_event_type &event)
 		{
 			d_map.erase(d_element);

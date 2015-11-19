@@ -47,14 +47,12 @@ namespace GPlatesPropertyValues
 
 	public:
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlArray>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlArray>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlArray> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlArray>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlArray>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlArray> non_null_ptr_to_const_type;
 
@@ -64,31 +62,24 @@ namespace GPlatesPropertyValues
 		{  }
 
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
 			const StructuralType &value_type_,		
                         const std::vector<GPlatesModel::PropertyValue::non_null_ptr_type> &members)
 		{
-			non_null_ptr_type ptr(new GpmlArray(
+			return non_null_ptr_type(new GpmlArray(
 					value_type_,
 					members));
-			return ptr;
 		}
 
-		const GpmlArray::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlArray::non_null_ptr_type dup(new GpmlArray(*this));
-			return dup;
+			return non_null_ptr_type(new GpmlArray(*this));
 		}
 
-		const GpmlArray::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const;
 
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()

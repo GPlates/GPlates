@@ -30,11 +30,6 @@
 #include "PartitionFeatureTask.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesAppLogic
 {
 	/**
@@ -48,8 +43,8 @@ namespace GPlatesAppLogic
 		/**
 		 * If 'verify_information_model' is true then feature property types are only added if they don't not violate the GPGIM.
 		 */
+		explicit
 		VgpPartitionFeatureTask(
-				const GPlatesModel::Gpgim &gpgim,
 				bool verify_information_model);
 
 		virtual
@@ -67,7 +62,6 @@ namespace GPlatesAppLogic
 				bool respect_feature_time_period);
 
 	private:
-		const GPlatesModel::Gpgim &d_gpgim;
 		bool d_verify_information_model;
 	};
 }

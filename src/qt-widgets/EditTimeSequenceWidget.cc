@@ -428,10 +428,7 @@ GPlatesQtWidgets::EditTimeSequenceWidget::create_property_value_from_widget() co
 				tr("The time sequence should contain at least two time samples."));
 	}
 
-	return GPlatesPropertyValues::GpmlArray::create(
-		gml_time_period_type,
-		time_periods);		
-
+	return GPlatesPropertyValues::GpmlArray::create(gml_time_period_type, time_periods);
 }
 
 bool

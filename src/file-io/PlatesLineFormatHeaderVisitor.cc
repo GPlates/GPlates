@@ -55,7 +55,7 @@ namespace
 	* "distant future" to the magic numbers 999.0 and -999.0 which are used in the PLATES4
 	* line-format.
 	*/
-	const double &
+	double
 		convert_geotimeinstant_to_double(
 		const GPlatesPropertyValues::GeoTimeInstant &geo_time)
 	{

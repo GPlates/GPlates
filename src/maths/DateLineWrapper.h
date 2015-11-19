@@ -32,7 +32,10 @@
 #include <boost/pool/object_pool.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "AngularExtent.h"
 #include "LatLonPoint.h"
+#include "MultiPointOnSphere.h"
+#include "PointOnSphere.h"
 #include "PolygonOnSphere.h"
 #include "PolylineOnSphere.h"
 #include "Rotation.h"
@@ -72,6 +75,9 @@ namespace GPlatesMaths
 	class DateLineWrapper :
 			public GPlatesUtils::ReferenceCount<DateLineWrapper>
 	{
+	private:
+		class LatLonLineGeometry;
+
 	public:
 		typedef GPlatesUtils::non_null_intrusive_ptr<DateLineWrapper> non_null_ptr_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<const DateLineWrapper> non_null_ptr_to_const_type;
@@ -80,16 +86,106 @@ namespace GPlatesMaths
 		//! Typedef for a sequence of lat/lon points.
 		typedef std::vector<LatLonPoint> lat_lon_points_seq_type;
 
-		//! Typedef for a polyline containing lat/lon points.
-		typedef boost::shared_ptr<lat_lon_points_seq_type> lat_lon_polyline_type;
 
 		/**
-		 * Typedef for a polygon containing lat/lon points.
-		 *
-		 * NOTE: This mirrors @a PolygonOnSphere in that the start and end points are *not* the same.
-		 * So you may need to explicitly close the polygon by appending the start point (eg, OGR library).
+		 * A wrapped lat/lon polygon.
 		 */
-		typedef boost::shared_ptr<lat_lon_points_seq_type> lat_lon_polygon_type;
+		class LatLonPolygon
+		{
+		public:
+
+			/**
+			 * The dateline wrapped (and optionally tessellated) points.
+			 *
+			 * This is the original (unwrapped) points plus new points added due to intersection
+			 * with the dateline and any new points due to tessellation.
+			 *
+			 * NOTE: The start and end points are generally *not* the same.
+			 * So if you are rendering the polygon you may need to explicitly close the polygon by
+			 * appending the start point.
+			 * For example, a triangle has three points but it can be rendered as a line string
+			 * consisting of four points (the last point being a duplicate of the first point).
+			 */
+			const lat_lon_points_seq_type &
+			get_exterior_points() const;
+
+			/**
+			 * Boolean flags to indicate whether a point in @a get_exterior_points (at same index) is an
+			 * original (unwrapped and untessellated) exterior point.
+			 */
+			const std::vector<bool> &
+			get_is_original_exterior_point_flags() const;
+
+		private:
+
+			LatLonPolygon();
+
+			// TODO: Add zero or more interior points when interior holes are supported.
+			boost::shared_ptr<LatLonLineGeometry> d_exterior_line_geometry;
+
+			friend class DateLineWrapper;
+		};
+
+
+		/**
+		 * A wrapped lat/lon polyline.
+		 */
+		class LatLonPolyline
+		{
+		public:
+
+			/**
+			 * The dateline wrapped (and optionally tessellated) points.
+			 *
+			 * This is the original (unwrapped) points plus new points added due to intersection
+			 * with the dateline and any new points due to tessellation.
+			 */
+			const lat_lon_points_seq_type &
+			get_points() const;
+
+			/**
+			 * Boolean flags to indicate whether a point in @a get_points (at same index) is an
+			 * original (unwrapped and untessellated) point.
+			 */
+			const std::vector<bool> &
+			get_is_original_point_flags() const;
+
+		private:
+
+			LatLonPolyline();
+
+			boost::shared_ptr<LatLonLineGeometry> d_line_geometry;
+
+			friend class DateLineWrapper;
+		};
+
+
+		/**
+		 * A wrapped lat/lon multi-point.
+		 */
+		class LatLonMultiPoint
+		{
+		public:
+
+			/**
+			 * Wraps points in the range [-180 + central_meridian, central_meridian + 180].
+			 */
+			const lat_lon_points_seq_type &
+			get_points() const
+			{
+				return *d_points;
+			}
+
+		private:
+
+			LatLonMultiPoint() :
+				d_points(new lat_lon_points_seq_type())
+			{  }
+
+			boost::shared_ptr<lat_lon_points_seq_type> d_points;
+
+			friend class DateLineWrapper;
+		};
 
 
 		/**
@@ -113,68 +209,74 @@ namespace GPlatesMaths
 		}
 
 
-		/**
-		 * Clips the specified polyline-on-sphere to the dateline while converting from cartesian (xyz)
-		 * coordinates to latitude/longitude coordinates.
-		 *
-		 * The clipped polylines are appended to @a output_polylines.
-		 *
-		 * The dateline is the great circle arc from north pole to south pole at longitude -180 degrees.
-		 * The dateline splits the entire globe into the longitude range (-180,180).
-		 * So longitudes greater than 180 wrap to -180 and longitudes less than -180 wrap to 180.
-		 *
-		 * However, if the 'central_meridian' passed into @a create is non-zero then the dateline is shifted
-		 * such that the range of output longitudes is [-180 + central_meridian, central_meridian + 180].
-		 *
-		 * NOTE: If @a input_polyline does *not* intersect the dateline then it is not clipped and
-		 * hence only one polyline is output to @a output_polylines (it is just the unclipped polyline
-		 * converted to lat/lon coordinates).
-		 *
-		 * NOTE: In some rare cases it's possible that the entire input polyline got swallowed by the dateline.
-		 * This can happen if the original polyline is entirely *on* the dateline which is considered
-		 * to be *outside* the dateline polygon (which covers the entire globe and 'effectively' excludes
-		 * a very thin area of size epsilon around the dateline arc).
-		 * In this situation the input polyline is added to @a output_polylines.
-		 *
-		 * Returns true if @a input_polyline intersected the dateline.
-		 * @a output_polylines is still appended to in either case.
-		 */
-		bool
-		wrap(
-				const PolylineOnSphere::non_null_ptr_to_const_type &input_polyline,
-				std::vector<lat_lon_polyline_type> &output_polylines);
+		//
+		// The following methods wrap a geometry-on-sphere to the dateline while converting from
+		// cartesian (xyz) coordinates to latitude/longitude coordinates.
+		//
+		// The dateline is the great circle arc from north pole to south pole at longitude -180 degrees.
+		// The dateline splits the entire globe into the longitude range (-180,180).
+		// So longitudes greater than 180 wrap to -180 and longitudes less than -180 wrap to 180.
+		//
+		// However, if the 'central_meridian' passed into @a create is non-zero then the dateline is shifted
+		// such that the range of output longitudes is [-180 + central_meridian, central_meridian + 180].
+		//
+		// Only polylines and polygons are clipped/intersected to the dateline.
+		// The only effect only multi-points and points is to wrap the longitudes into the range
+		// [-180 + central_meridian, central_meridian + 180].
+		//
+		// NOTE: If a polyline/polygon does *not* intersect the dateline then it is not clipped and
+		// hence only one wrapped geometry is output (it is just the unclipped geometry converted
+		// to lat/lon coordinates).
+		//
+		// NOTE: In some rare cases it's possible that the entire input polyline/polygon got swallowed
+		// by the dateline. This can happen if it is entirely *on* the dateline which is considered
+		// to be *outside* the dateline polygon (which covers the entire globe and 'effectively'
+		// excludes a very thin area of size epsilon around the dateline arc).
+		// In this situation the input polyline/polygon passed directly to the output.
+		//
 
 
 		/**
-		 * Clips the specified polygon-on-sphere to the dateline while converting from cartesian (xyz)
-		 * coordinates to latitude/longitude coordinates.
+		 * Clips the specified *polygon* to the dateline.
 		 *
-		 * The clipped polygons are appended to @a output_polygons.
+		 * This also wraps to the range [-180 + central_meridian, central_meridian + 180].
 		 *
-		 * The dateline is the great circle arc from north pole to south pole at longitude -180 degrees.
-		 * The dateline splits the entire globe into the longitude range (-180,180).
-		 * So longitudes greater than 180 wrap to -180 and longitudes less than -180 wrap to 180.
-		 *
-		 * However, if the 'central_meridian' passed into @a create is non-zero then the dateline is shifted
-		 * such that the range of output longitudes is [-180 + central_meridian, central_meridian + 180].
-		 *
-		 * NOTE: If @a input_polygon does *not* intersect the dateline then it is not clipped and
-		 * hence only one polygon is output to @a output_polygons (it is just the unclipped polygon
-		 * converted to lat/lon coordinates).
-		 *
-		 * NOTE: In some rare cases it's possible that the entire input polygon got swallowed by the dateline.
-		 * This can happen if the original polygon is entirely *on* the dateline which is considered
-		 * to be *outside* the dateline polygon (which covers the entire globe and 'effectively' excludes
-		 * a very thin area of size epsilon around the dateline arc).
-		 * In this situation the input polygon is added to @a output_polygons.
-		 *
-		 * Returns true if @a input_polygon intersected the dateline.
-		 * @a output_polygons is still appended to in either case.
+		 * If @a tessellate_threshold is specified then the arcs of the wrapped polygon are tessellated
+		 * such that they do not exceed the threshold in arc length.
 		 */
-		bool
-		wrap(
+		void
+		wrap_polygon(
 				const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon,
-				std::vector<lat_lon_polygon_type> &output_polygons);
+				std::vector<LatLonPolygon> &wrapped_polygons,
+				boost::optional<AngularExtent> tessellate_threshold = boost::none) const;
+
+		/**
+		 * Clips the specified *polyline* to the dateline.
+		 *
+		 * This also wraps to the range [-180 + central_meridian, central_meridian + 180].
+		 *
+		 * If @a tessellate_threshold is specified then the arcs of the wrapped polygon are tessellated
+		 * such that they do not exceed the threshold in arc length.
+		 */
+		void
+		wrap_polyline(
+				const PolylineOnSphere::non_null_ptr_to_const_type &input_polyline,
+				std::vector<LatLonPolyline> &wrapped_polylines,
+				boost::optional<AngularExtent> tessellate_threshold = boost::none) const;
+
+		/**
+		 * Wraps points in the specified *multi-point* to the range [-180 + central_meridian, central_meridian + 180].
+		 */
+		LatLonMultiPoint
+		wrap_multi_point(
+				const MultiPointOnSphere::non_null_ptr_to_const_type &input_multipoint) const;
+
+		/**
+		 * Wraps the specified *point* to the range [-180 + central_meridian, central_meridian + 180].
+		 */
+		LatLonPoint
+		wrap_point(
+				const PointOnSphere &input_point) const;
 
 
 		//
@@ -210,8 +312,129 @@ namespace GPlatesMaths
 
 	private:
 
-		//! Typedef for a polyline or polygon containing lat/lon points.
-		typedef boost::shared_ptr<lat_lon_points_seq_type> lat_lon_line_geometry_type;
+		/**
+		 * For non-zero central meridians we need to rotate geometries into a dateline reference
+		 * frame for clipping/wrapping and then reverse the rotation when outputting wrapped geometries.
+		 */
+		struct CentralMeridian
+		{
+			explicit
+			CentralMeridian(
+					const double &longitude_);
+
+			/**
+			 * The central meridian longitude.
+			 */
+			double longitude;
+
+			/**
+			 * Rotation *to* central meridian (of map projection) with non-zero longitude to place geometries
+			 * in a reference frame centred at longitude zero (where the dateline wrapper can be used).
+			 */
+			Rotation rotate_to_dateline_frame;
+
+			/**
+			 * Rotation *from* central meridian (of map projection) with non-zero longitude.
+			 *
+			 * This is the reverse of @a rotate_to_dateline_frame.
+			 */
+			Rotation rotate_from_dateline_frame;
+		};
+
+
+		/**
+		 * A possibly tessellated sequence of points (for a polyline/polygon).
+		 */
+		class LatLonLineGeometry
+		{
+		public:
+
+			/**
+			 * Add a point to this line geometry (polyline/polygon).
+			 *
+			 * It will also tessellate arcs if requested.
+			 */
+			void
+			add_point(
+					const LatLonPoint &lat_lon_point,
+					const PointOnSphere &point,
+					const double &central_meridian_longitude,
+					const boost::optional<AngularExtent> &tessellate_threshold,
+					bool is_unwrapped_point)
+			{
+				if (tessellate_threshold)
+				{
+					add_tessellated_points(lat_lon_point, point, central_meridian_longitude, tessellate_threshold.get());
+				}
+
+				add_untessellated_point(lat_lon_point, point, is_unwrapped_point);
+			}
+
+			/**
+			 * Call once finished adding points, if this line geometry is a *polygon* and it's being tessellated.
+			 *
+			 * This is only necessary if tessellation is required.
+			 *
+			 * The last arc of a polygon is between it's last and first points.
+			 * If this last arc is tessellated then new tessellated points may get added after
+			 * the last point added via @a add_point.
+			 */
+			void
+			finish_tessellating_polygon(
+					const double &central_meridian_longitude,
+					const AngularExtent &tessellate_threshold);
+
+			/**
+			 * The dateline wrapped (and tessellated) points.
+			 */
+			const lat_lon_points_seq_type &
+			get_points() const
+			{
+				return d_lat_lon_points;
+			}
+
+			/**
+			 * Boolean flags to indicate whether a point in @a get_points (at same index) is an
+			 * original (unwrapped and untessellated) point.
+			 */
+			const std::vector<bool> &
+			get_is_unwrapped_untessellated_point_flags() const
+			{
+				return d_is_unwrapped_untessellated_point_flags;
+			}
+
+
+		private:
+
+			lat_lon_points_seq_type d_lat_lon_points;
+			std::vector<bool> d_is_unwrapped_untessellated_point_flags;
+
+			// Previous untessellated point (could be a wrapped or unwrapped point).
+			boost::optional<LatLonPoint> d_previous_untessellated_lat_lon_point;
+			boost::optional<PointOnSphere> d_previous_untessellated_point;
+
+			// Start (untessellated) point of line geometry (could be a wrapped or unwrapped point).
+			boost::optional<LatLonPoint> d_start_lat_lon_point;
+			boost::optional<PointOnSphere> d_start_point;
+
+			void
+			add_untessellated_point(
+					const LatLonPoint &lat_lon_point,
+					const PointOnSphere &point,
+					bool is_unwrapped_point);
+
+			void
+			add_tessellated_points(
+					const LatLonPoint &lat_lon_point,
+					const PointOnSphere &point,
+					const double &central_meridian_longitude,
+					const AngularExtent &tessellate_threshold);
+
+			void
+			add_tessellated_point(
+					const LatLonPoint &lat_lon_point);
+		};
+
 
 		/**
 		 * Classification of a vertex based on its position relative to the dateline.
@@ -229,7 +452,7 @@ namespace GPlatesMaths
 			CLASSIFY_OFF_DATELINE_ARC_ON_PLANE,
 
 			// On the 'thick' (epsilon) plane containing the dateline arc and on the dateline
-			// arc itself (ie, roughly longitude of -/+ 1800 degrees).
+			// arc itself (ie, roughly longitude of -/+ 180 degrees).
 			CLASSIFY_ON_DATELINE_ARC,
 
 			// Within the 'thick' point (epsilon circle) at the north pole.
@@ -260,18 +483,24 @@ namespace GPlatesMaths
 		{
 			explicit
 			Vertex(
-					const LatLonPoint &point_,
+					bool is_unwrapped_point_,
+					const LatLonPoint &lat_lon_point_,
+					// Specifying 'none' just requests the point be created from 'lat_lon_point_'...
+					boost::optional<const PointOnSphere &> point_ = boost::none,
 					bool is_intersection_ = false,
 					bool exits_other_polygon_ = false) :
-				point(point_),
+				lat_lon_point(lat_lon_point_),
+				point(point_ ? point_.get() : make_point_on_sphere(lat_lon_point_)),
 				intersection_neighbour(NULL),
+				is_unwrapped_point(is_unwrapped_point_),
 				is_intersection(is_intersection_),
 				exits_other_polygon(exits_other_polygon_),
 				used_to_output_polygon(false)
 			{  }
 
 
-			LatLonPoint point;
+			LatLonPoint lat_lon_point;
+			PointOnSphere point;
 
 			/**
 			 * References the other polygon if this is an intersection vertex, otherwise NULL.
@@ -283,6 +512,11 @@ namespace GPlatesMaths
 			 * NOTE: Due to cyclic dependencies this is a 'void *' instead of a 'vertex_list_type::Node *'.
 			 */
 			void/*vertex_list_type::Node*/ *intersection_neighbour;
+
+			/**
+			 * Is true if this vertex represents a point in the original geometry before it was wrapped.
+			 */
+			bool is_unwrapped_point;
 
 			/**
 			 * Is true if this vertex represents an intersection of geometry with the dateline.
@@ -344,17 +578,19 @@ namespace GPlatesMaths
 			 */
 			IntersectionResult
 			generate_polylines(
-					std::vector<lat_lon_polyline_type> &lat_lon_polylines,
-					const double &central_meridian);
+					std::vector<LatLonPolyline> &lat_lon_polylines,
+					const boost::optional<CentralMeridian> &central_meridian,
+					const boost::optional<AngularExtent> &tessellate_threshold);
 
 			/**
 			 * Traverses geometry/dateline vertices (and intersection vertices) in graph and generates polygons.
 			 */
 			IntersectionResult
 			generate_polygons(
-					std::vector<lat_lon_polygon_type> &lat_lon_polygons,
+					std::vector<LatLonPolygon> &lat_lon_polygons,
 					const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon,
-					const double &central_meridian);
+					const boost::optional<CentralMeridian> &central_meridian,
+					const boost::optional<AngularExtent> &tessellate_threshold);
 
 			//! Adds a regular vertex that is *not* the result of intersecting or touching the dateline.
 			void
@@ -365,12 +601,14 @@ namespace GPlatesMaths
 			void
 			add_intersection_vertex_on_front_dateline(
 					const PointOnSphere &point,
+					bool is_unwrapped_point,
 					bool exiting_dateline_polygon);
 
 			//! Adds an intersection of geometry with the dateline on the back side of dateline.
 			void
 			add_intersection_vertex_on_back_dateline(
 					const PointOnSphere &point,
+					bool is_unwrapped_point,
 					bool exiting_dateline_polygon);
 
 			/**
@@ -379,6 +617,7 @@ namespace GPlatesMaths
 			void
 			add_intersection_vertex_on_north_pole(
 					const PointOnSphere &point,
+					bool is_unwrapped_point,
 					bool exiting_dateline_polygon);
 
 			/**
@@ -387,6 +626,7 @@ namespace GPlatesMaths
 			void
 			add_intersection_vertex_on_south_pole(
 					const PointOnSphere &point,
+					bool is_unwrapped_point,
 					bool exiting_dateline_polygon);
 
 			/**
@@ -479,31 +719,9 @@ namespace GPlatesMaths
 
 			void
 			output_intersecting_polygons(
-					std::vector<lat_lon_polygon_type> &lat_lon_polygons,
-					const double &central_meridian);
-		};
-
-
-		/**
-		 * For non-zero central meridians we need to rotate geometries into a dateline reference
-		 * frame for clipping/wrapping and then reverse the rotation when outputting wrapped geometries.
-		 */
-		struct CentralMeridian
-		{
-			explicit
-			CentralMeridian(
-					const double &longitude_);
-
-			/**
-			 * The central meridian longitude.
-			 */
-			double longitude;
-
-			/**
-			 * Rotation for central meridian (of map projection) with non-zero longitude to place geometries
-			 * in a reference frame centred at longitude zero (where the dateline wrapper can be used).
-			 */
-			Rotation rotate_to_dateline_frame;
+					std::vector<LatLonPolygon> &lat_lon_polygons,
+					const boost::optional<CentralMeridian> &central_meridian,
+					const boost::optional<AngularExtent> &tessellate_threshold);
 		};
 
 
@@ -520,6 +738,32 @@ namespace GPlatesMaths
 		DateLineWrapper(
 				double central_meridian);
 
+
+		//! Output the un-intersected input vertices of a polygon.
+		void
+		output_input_polygon(
+				const PolygonOnSphere::non_null_ptr_to_const_type &input_polygon,
+				std::vector<LatLonPolygon> &wrapped_polygons,
+				bool on_dateline_arc,
+				const boost::optional<AngularExtent> &tessellate_threshold_degrees) const;
+
+		//! Output the un-intersected input vertices of a polyline.
+		void
+		output_input_polyline(
+				const PolylineOnSphere::non_null_ptr_to_const_type &input_polyline,
+				std::vector<LatLonPolyline> &wrapped_polylines,
+				bool on_dateline_arc,
+				const boost::optional<AngularExtent> &tessellate_threshold_degrees) const;
+
+		//! Output the un-intersected input vertices.
+		template <class LineGeometryType>
+		void
+		output_input_vertices(
+				const typename LineGeometryType::non_null_ptr_to_const_type &input_line_geometry,
+				LatLonLineGeometry &output_line_geometry,
+				bool is_polygon,
+				bool on_dateline_arc,
+				const boost::optional<AngularExtent> &tessellate_threshold_degrees) const;
 
 		/**
 		 * Returns true if the specified bounding small circle intersects the dateline arc.
@@ -549,7 +793,7 @@ namespace GPlatesMaths
 				IntersectionGraph &graph,
 				LineSegmentForwardIter const dateline_frame_line_segments_begin,
 				LineSegmentForwardIter const dateline_frame_line_segments_end,
-				bool is_polygon);
+				bool is_polygon) const;
 
 		//! Adds a line segment to the intersection graph based on its vertex classifications.
 		void
@@ -557,7 +801,7 @@ namespace GPlatesMaths
 				IntersectionGraph &graph,
 				const GreatCircleArc &line_segment,
 				VertexClassification line_segment_start_vertex_classification,
-				VertexClassification line_segment_end_vertex_classification);
+				VertexClassification line_segment_end_vertex_classification) const;
 
 		/**
 		 * Returns intersection of line segment (line_segment_start_point, line_segment_end_point) with dateline, if any.
@@ -584,15 +828,53 @@ namespace GPlatesMaths
 		classify_vertex(
 				const UnitVector3D &vertex,
 				IntersectionGraph &graph) const;
-
-		//! Output the un-intersected input vertices.
-		template <class LineGeometryType>
-		void
-		output_input_vertices(
-				const typename LineGeometryType::non_null_ptr_to_const_type &input_line_geometry,
-				std::vector<lat_lon_line_geometry_type> &output_line_geometries,
-				bool on_dateline_arc);
 	};
+}
+
+//
+// Implementation.
+//
+
+namespace GPlatesMaths
+{
+	inline
+	const DateLineWrapper::lat_lon_points_seq_type &
+	DateLineWrapper::LatLonPolygon::get_exterior_points() const
+	{
+		return d_exterior_line_geometry->get_points();
+	}
+
+	inline
+	const std::vector<bool> &
+	DateLineWrapper::LatLonPolygon::get_is_original_exterior_point_flags() const
+	{
+		return d_exterior_line_geometry->get_is_unwrapped_untessellated_point_flags();
+	}
+
+	inline
+	DateLineWrapper::LatLonPolygon::LatLonPolygon() :
+		d_exterior_line_geometry(new LatLonLineGeometry())
+	{  }
+
+
+	inline
+	const DateLineWrapper::lat_lon_points_seq_type &
+	DateLineWrapper::LatLonPolyline::get_points() const
+	{
+		return d_line_geometry->get_points();
+	}
+
+	inline
+	const std::vector<bool> &
+	DateLineWrapper::LatLonPolyline::get_is_original_point_flags() const
+	{
+		return d_line_geometry->get_is_unwrapped_untessellated_point_flags();
+	}
+
+	inline
+	DateLineWrapper::LatLonPolyline::LatLonPolyline() :
+		d_line_geometry(new LatLonLineGeometry())
+	{  }
 }
 
 #endif // GPLATES_MATHS_DATELINEWRAPPER_H

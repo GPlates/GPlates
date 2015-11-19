@@ -31,9 +31,17 @@
 #include <vector>
 
 #include "GmlDataBlockCoordinateList.h"
+
+#include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
 
+
+// Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
+// First parameter is the namespace qualified property value class.
+// Second parameter is the name of the feature visitor method that visits the property value.
+DECLARE_PROPERTY_VALUE_FINDER(GPlatesPropertyValues::GmlDataBlock, visit_gml_data_block)
 
 namespace GPlatesPropertyValues
 {
@@ -51,8 +59,7 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlDataBlock> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlock>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlock>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlDataBlock> non_null_ptr_to_const_type;
 
@@ -66,22 +73,21 @@ namespace GPlatesPropertyValues
 		~GmlDataBlock()
 		{  }
 
+
 		static
 		const non_null_ptr_type
 		create()
 		{
-			non_null_ptr_type ptr(new GmlDataBlock);
-			return ptr;
+			return non_null_ptr_type(new GmlDataBlock);
 		}
 
-		const GmlDataBlock::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GmlDataBlock::non_null_ptr_type dup(new GmlDataBlock(*this));
-			return dup;
+			return non_null_ptr_type(new GmlDataBlock(*this));
 		}
 
-		const GmlDataBlock::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const;
 
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()

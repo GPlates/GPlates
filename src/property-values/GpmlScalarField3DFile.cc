@@ -32,7 +32,7 @@ const GPlatesPropertyValues::GpmlScalarField3DFile::non_null_ptr_type
 GPlatesPropertyValues::GpmlScalarField3DFile::create(
 		const file_name_type &filename_)
 {
-	return new GpmlScalarField3DFile(filename_);
+	return non_null_ptr_type(new GpmlScalarField3DFile(filename_));
 }
 
 

@@ -30,12 +30,14 @@
 
 #include <list>
 #include <sstream>
+#include <boost/utility/in_place_factory.hpp>
 
 #include "Centroid.h"
 #include "ConstGeometryOnSphereVisitor.h"
 #include "HighPrecision.h"
 #include "PolylineOnSphere.h"
 #include "PolylineProximityHitDetail.h"
+#include "PolyGreatCircleArcBoundingTree.h"
 #include "ProximityCriteria.h"
 #include "SmallCircleBounds.h"
 
@@ -56,8 +58,10 @@ namespace GPlatesMaths
 		struct CachedCalculations :
 				public GPlatesUtils::ReferenceCount<CachedCalculations>
 		{
+			boost::optional<real_t> arc_length;
 			boost::optional<UnitVector3D> centroid;
 			boost::optional<BoundingSmallCircle> bounding_small_circle;
+			boost::optional<PolylineOnSphere::bounding_tree_type> polyline_bounding_tree;
 		};
 	}
 }
@@ -129,8 +133,7 @@ GPlatesMaths::PolylineOnSphere::test_proximity(
 	// a segment was hit).
 
 	real_t closeness;  // Don't bother initialising this.
-	if (this->is_close_to(criteria.test_point(), criteria.closeness_inclusion_threshold(),
-			criteria.latitude_exclusion_threshold(), closeness)) {
+	if (this->is_close_to(criteria.test_point(), criteria.closeness_angular_extent_threshold(), closeness)) {
 		// OK, this polyline is close to the test point.
 		return make_maybe_null_ptr(PolylineProximityHitDetail::create(
 				this->get_non_null_pointer(),
@@ -193,37 +196,9 @@ GPlatesMaths::PolylineOnSphere::accept_visitor(
 boost::optional<GPlatesMaths::PointOnSphere>
 GPlatesMaths::PolylineOnSphere::is_close_to(
 		const PointOnSphere &test_point,
-		const real_t &closeness_inclusion_threshold,
-		const real_t &latitude_exclusion_threshold,
+		const AngularExtent &closeness_angular_extent_threshold,
 		real_t &closeness) const
 {
-	// First, ensure the parameters are valid.
-	if (((closeness_inclusion_threshold * closeness_inclusion_threshold) +
-			(latitude_exclusion_threshold * latitude_exclusion_threshold))
-			!= 1.0)
-	{
-		/*
-		 * Well, *duh*, they *should* equal 1.0: those two thresholds
-		 * are supposed to form the non-hypotenuse legs (the "catheti")
-		 * of a right-angled triangle inscribed in a unit circle.
-		 */
-		real_t calculated_hypotenuse =
-				closeness_inclusion_threshold * closeness_inclusion_threshold +
-				latitude_exclusion_threshold * latitude_exclusion_threshold;
-
-		std::ostringstream oss;
-		oss << "The squares of the closeness inclusion threshold ("
-				<< HighPrecision< real_t >(closeness_inclusion_threshold)
-				<< ")\nand the latitude exclusion threshold ("
-				<< HighPrecision< real_t >(latitude_exclusion_threshold)
-				<< ") sum to ("
-				<< HighPrecision< real_t >(calculated_hypotenuse)
-				<< ")\nrather than the expected value of 1.";
-
-		throw GPlatesGlobal::InvalidParametersException(GPLATES_EXCEPTION_SOURCE,
-				oss.str().c_str());
-	}
-
 	real_t &closest_closeness_so_far = closeness;  // A descriptive alias.
 	boost::optional<PointOnSphere> closest_point;
 
@@ -238,8 +213,7 @@ GPlatesMaths::PolylineOnSphere::is_close_to(
 		boost::optional<PointOnSphere> gca_closest_point =
 				the_gca.is_close_to(
 						test_point,
-						closeness_inclusion_threshold,
-						latitude_exclusion_threshold,
+						closeness_angular_extent_threshold,
 						gca_closeness);
 		if (gca_closest_point)
 		{
@@ -264,19 +238,32 @@ GPlatesMaths::PolylineOnSphere::is_close_to(
 }
 
 
-void
-GPlatesMaths::PolylineOnSphere::create_segment_and_append_to_seq(
-		seq_type &seq, 
-		const PointOnSphere &p1,
-		const PointOnSphere &p2)
+const GPlatesMaths::real_t &
+GPlatesMaths::PolylineOnSphere::get_arc_length() const
 {
-	// We'll assume that the validity of 'p1' and 'p2' to create a GreatCircleArc has been
-	// evaluated in the function 'PolylineOnSphere::evaluate_construction_parameter_validity',
-	// which was presumably invoked in 'PolylineOnSphere::generate_segments_and_swap' before
-	// this function was.
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolylineOnSphereImpl::CachedCalculations();
+	}
 
-	GreatCircleArc segment = GreatCircleArc::create(p1, p2);
-	seq.push_back(segment);
+	// Calculate the total arc length if it's not cached.
+	if (!d_cached_calculations->arc_length)
+	{
+		real_t arc_length(0);
+
+		const_iterator gca_iter = begin();
+		const_iterator gca_end = end();
+		for ( ; gca_iter != gca_end; ++gca_iter)
+		{
+			const GreatCircleArc &gca = *gca_iter;
+
+			arc_length += acos(gca.dot_of_endpoints());
+		}
+
+		d_cached_calculations->arc_length = arc_length;
+	}
+
+	return d_cached_calculations->arc_length.get();
 }
 
 
@@ -291,16 +278,7 @@ GPlatesMaths::PolylineOnSphere::get_centroid() const
 	// Calculate the centroid if it's not cached.
 	if (!d_cached_calculations->centroid)
 	{
-		// The centroid is also the bounding small circle centre so see if that's been generated.
-		if (d_cached_calculations->bounding_small_circle)
-		{
-			d_cached_calculations->centroid =
-					d_cached_calculations->bounding_small_circle->get_centre();
-		}
-		else
-		{
-			d_cached_calculations->centroid = Centroid::calculate_points_centroid(*this);
-		}
+		d_cached_calculations->centroid = Centroid::calculate_outline_centroid(*this);
 	}
 
 	return d_cached_calculations->centroid.get();
@@ -331,8 +309,33 @@ GPlatesMaths::PolylineOnSphere::get_bounding_small_circle() const
 }
 
 
+const GPlatesMaths::PolylineOnSphere::bounding_tree_type &
+GPlatesMaths::PolylineOnSphere::get_bounding_tree() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolylineOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the small circle bounding tree if it's not cached.
+	if (!d_cached_calculations->polyline_bounding_tree)
+	{
+		// Pass the PolyGreatCircleArcBoundingTree constructor parameters to construct a new object
+		// directly in-place inside the boost::optional since PolyGreatCircleArcBoundingTree is non-copyable.
+		d_cached_calculations->polyline_bounding_tree =
+				boost::in_place(
+						GPlatesUtils::get_non_null_pointer(this),
+						// Note that we ask the bounding tree *not* to keep a shared reference to us
+						// otherwise we get circular shared pointer references and a memory leak...
+						false/*keep_shared_reference_to_polyline*/);
+	}
+
+	return d_cached_calculations->polyline_bounding_tree.get();
+}
+
+
 const GPlatesMaths::PointOnSphere &
-GPlatesMaths::PolylineOnSphere::VertexConstIterator::current_point() const
+GPlatesMaths::PolylineOnSphere::VertexConstIterator::dereference() const
 {
 	if (d_poly_ptr == NULL) {
 		// I think the exception message sums it up pretty nicely...
@@ -376,6 +379,143 @@ GPlatesMaths::PolylineOnSphere::VertexConstIterator::decrement()
 	} else {
 		--d_curr_gca;
 	}
+}
+
+
+bool
+GPlatesMaths::PolylineOnSphere::VertexConstIterator::equal(
+		const VertexConstIterator &other) const
+{
+	if (d_poly_ptr == NULL || other.d_poly_ptr == NULL)
+	{
+		// We can't really return a valid comparison result.
+		throw GPlatesGlobal::UninitialisedIteratorException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Attempted to compare an uninitialised iterator.");
+	}
+
+	return d_curr_gca == other.d_curr_gca &&
+			d_gca_start_or_end == other.d_gca_start_or_end;
+}
+
+
+void
+GPlatesMaths::PolylineOnSphere::VertexConstIterator::advance(
+		VertexConstIterator::difference_type n)
+{
+	if (d_poly_ptr == NULL)
+	{
+		// This iterator is uninitialised, so this function will be a no-op.
+		return;
+	}
+
+	if (n > 0)
+	{
+		if (d_curr_gca == d_poly_ptr->begin() && d_gca_start_or_end == START)
+		{
+			// Advance by one.
+ 			d_gca_start_or_end = END;
+ 			--n;
+
+			// Advance any remaining amount.
+			if (n > 0)
+			{
+				std::advance(d_curr_gca, n);
+			}
+		}
+		else
+		{
+			std::advance(d_curr_gca, n);
+		}
+	}
+	else if (n < 0)
+	{
+		if (d_curr_gca == d_poly_ptr->begin() && d_gca_start_or_end == END)
+		{
+			// Advance by minus one.
+			d_gca_start_or_end = START;
+			++n;
+
+			// Advance any remaining amount.
+			//
+			// Actually this shouldn't be able to happen since we're already at the beginning
+			// of the sequence, but we'll advance as requested.
+			//
+			// TODO: Should we check and throw exception or assert ?
+			// The MSVC 'std' library only checks iterators in debug builds.
+			if (n < 0)
+			{
+				std::advance(d_curr_gca, n);
+			}
+		}
+		else
+		{
+			std::advance(d_curr_gca, n);
+		}
+	}
+}
+
+
+GPlatesMaths::PolylineOnSphere::VertexConstIterator::difference_type
+GPlatesMaths::PolylineOnSphere::VertexConstIterator::distance_to(
+		const VertexConstIterator &other) const
+{
+	if (d_poly_ptr == NULL || other.d_poly_ptr == NULL)
+	{
+		// We can't really return a valid distance result.
+		throw GPlatesGlobal::UninitialisedIteratorException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Attempted to compare an uninitialised iterator.");
+	}
+
+	difference_type difference = std::distance(d_curr_gca, other.d_curr_gca);
+
+	// Make adjustments if either, or both, iterators reference the first point in the sequence.
+	if (d_curr_gca == d_poly_ptr->begin() && d_gca_start_or_end == START)
+	{
+		++difference;
+	}
+	if (other.d_curr_gca == other.d_poly_ptr->begin() && other.d_gca_start_or_end == START)
+	{
+		--difference;
+	}
+
+	return difference;
+}
+
+
+GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::tessellate(
+		const PolylineOnSphere &polyline,
+		const real_t &max_angular_extent)
+{
+	std::vector<PointOnSphere> tessellated_points;
+
+	PolylineOnSphere::const_iterator gca_iter = polyline.begin();
+	PolylineOnSphere::const_iterator gca_end = polyline.end();
+	while (true)
+	{
+		const GreatCircleArc &gca = *gca_iter;
+
+		// Tessellate the current great circle arc.
+		tessellate(tessellated_points, gca, max_angular_extent);
+
+		++gca_iter;
+		if (gca_iter == gca_end)
+		{
+			// Note: We don't remove the arc end point of the *last* arc.
+			break;
+		}
+
+		// Remove the tessellated arc's end point.
+		// Otherwise the next arc's start point will duplicate it.
+		//
+		// Tessellating a great circle arc should always add at least two points.
+		// So we should always be able to remove one point (the arc end point).
+		tessellated_points.pop_back();
+	}
+
+	return PolylineOnSphere::create_on_heap(tessellated_points);
 }
 
 

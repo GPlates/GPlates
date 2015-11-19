@@ -812,7 +812,7 @@ namespace
 
 	std::vector<boost::shared_ptr<Metadata> >
 	convert_mprs_metadata_to_vector(
-			GpmlKeyValueDictionary::non_null_ptr_type dict)
+			GpmlKeyValueDictionary::non_null_ptr_to_const_type dict)
 	{
 		std::vector<boost::shared_ptr<Metadata> > ret;
 		BOOST_FOREACH(const GpmlKeyValueDictionaryElement& ele, dict->elements())
@@ -873,11 +873,8 @@ GPlatesQtWidgets::MetadataDialog::set_data(
 			dynamic_cast<const GpmlKeyValueDictionary*>((*p_inline->begin()).get());
 		if(const_dictionary)
 		{
-			GpmlKeyValueDictionary* dictionary = 
-				const_cast<GpmlKeyValueDictionary*>(const_dictionary);
 			std::vector<boost::shared_ptr<Metadata> > data_ =
-				convert_mprs_metadata_to_vector(
-						GpmlKeyValueDictionary::non_null_ptr_type(dictionary));
+				convert_mprs_metadata_to_vector(const_dictionary);
 			d_mprs_data = data_;
 			refresh();
 		}
@@ -915,17 +912,14 @@ GPlatesQtWidgets::MetadataDialog::set_data(
 					dynamic_cast<const GpmlKeyValueDictionary*>((*p_inline->begin()).get());
 				if(const_dictionary)
 				{
-					GpmlKeyValueDictionary* dictionary = 
-						const_cast<GpmlKeyValueDictionary*>(const_dictionary);
-					d_mprs_data = convert_mprs_metadata_to_vector(
-							GpmlKeyValueDictionary::non_null_ptr_type(dictionary));
+					d_mprs_data = convert_mprs_metadata_to_vector(const_dictionary);
 					break;
 				}
 			}
 		}
 	}
 
-	std::vector<FeatureHandle::iterator> iters = ModelUtils::get_top_level_property_ref(
+	std::vector<FeatureHandle::iterator> iters = ModelUtils::get_top_level_properties(
 			PropertyName::create_gpml(QString("totalReconstructionPole")),
 			d_feature_ref);
 	if(iters.size()!=1)
@@ -1052,7 +1046,7 @@ void
 GPlatesQtWidgets::MetadataDialog::save_pole_meta()
 {
 	using namespace GPlatesModel;
-	std::vector<FeatureHandle::iterator> iters = ModelUtils::get_top_level_property_ref(
+	std::vector<FeatureHandle::iterator> iters = ModelUtils::get_top_level_properties(
 			PropertyName::create_gpml(QString("totalReconstructionPole")),
 			d_feature_ref);
 	if(iters.size()!=1)
@@ -1098,7 +1092,7 @@ GPlatesQtWidgets::MetadataDialog::save_pole_meta()
 }
 
 
-GPlatesPropertyValues::GpmlTotalReconstructionPole*
+GPlatesPropertyValues::GpmlTotalReconstructionPole *
 GPlatesQtWidgets::MetadataDialog::get_gpml_total_reconstruction_pole(
 		GPlatesModel::PropertyValue::non_null_ptr_to_const_type val)
 {

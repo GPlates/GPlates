@@ -397,7 +397,7 @@ GPlatesQtWidgets::AdjustmentApplicator::apply_adjustment()
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many as we incrementally modify the feature below.
 	GPlatesModel::NotificationGuard model_notification_guard(
-			d_application_state_ptr->get_model_interface().access_model());
+			*d_application_state_ptr->get_model_interface().access_model());
 
 	GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter inserter(
 			d_pole_time,

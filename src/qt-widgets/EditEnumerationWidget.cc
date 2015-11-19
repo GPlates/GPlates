@@ -48,11 +48,10 @@ namespace
 	 */
 	bool
 	is_property_value_type_handled(
-			const GPlatesPropertyValues::StructuralType &property_value_type,
-			const GPlatesModel::Gpgim &gpgim)
+			const GPlatesPropertyValues::StructuralType &property_value_type)
 	{
 		const GPlatesModel::Gpgim::property_enumeration_type_seq_type &gpgim_property_enumeration_types =
-				gpgim.get_property_enumeration_types();
+				GPlatesModel::Gpgim::instance().get_property_enumeration_types();
 
 		// Compare the property value type (enumeration type) with those listed in the GPGIM.
 		BOOST_FOREACH(
@@ -73,15 +72,14 @@ namespace
 	 */
 	const QStringList
 	get_enumeration_string_list(
-			const GPlatesPropertyValues::StructuralType &property_value_type,
-			const GPlatesModel::Gpgim &gpgim)
+			const GPlatesPropertyValues::StructuralType &property_value_type)
 	{
 		QStringList enum_value_list;
 
 		// Get the GPGIM enumeration type.
 		boost::optional<GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type>
 				gpgim_property_enumeration_type =
-						gpgim.get_property_enumeration_type(property_value_type);
+						GPlatesModel::Gpgim::instance().get_property_enumeration_type(property_value_type);
 		if (gpgim_property_enumeration_type)
 		{
 			const GPlatesModel::GpgimEnumerationType::content_seq_type &enum_contents =
@@ -100,10 +98,8 @@ namespace
 
 
 GPlatesQtWidgets::EditEnumerationWidget::EditEnumerationWidget(
-		const GPlatesModel::Gpgim &gpgim,
 		QWidget *parent_):
-	AbstractEditWidget(parent_),
-	d_gpgim(gpgim)
+	AbstractEditWidget(parent_)
 {
 	setupUi(this);
 	reset_widget_to_default_values();
@@ -121,14 +117,14 @@ void
 GPlatesQtWidgets::EditEnumerationWidget::configure_for_property_value_type(
 		const GPlatesPropertyValues::StructuralType &property_value_type)
 {
-	if (!is_property_value_type_handled(property_value_type, d_gpgim))
+	if (!is_property_value_type_handled(property_value_type))
 	{
 		throw PropertyValueNotSupportedException(GPLATES_EXCEPTION_SOURCE);
 	}
 
 	d_property_value_type = property_value_type;
 	combobox_enumeration->clear();
-	combobox_enumeration->addItems(get_enumeration_string_list(d_property_value_type.get(), d_gpgim));
+	combobox_enumeration->addItems(get_enumeration_string_list(d_property_value_type.get()));
 }
 
 
@@ -140,7 +136,7 @@ GPlatesQtWidgets::EditEnumerationWidget::reset_widget_to_default_values()
 	if (d_property_value_type)
 	{
 		combobox_enumeration->addItems(
-				get_enumeration_string_list(d_property_value_type.get(), d_gpgim));
+				get_enumeration_string_list(d_property_value_type.get()));
 	}
 	set_clean();
 }
@@ -175,7 +171,7 @@ GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesQtWidgets::EditEnumerationWidget::create_property_value_from_widget() const
 {
 	if (!d_property_value_type ||
-		!is_property_value_type_handled(d_property_value_type.get(), d_gpgim))
+		!is_property_value_type_handled(d_property_value_type.get()))
 	{
 		throw PropertyValueNotSupportedException(GPLATES_EXCEPTION_SOURCE);
 	}

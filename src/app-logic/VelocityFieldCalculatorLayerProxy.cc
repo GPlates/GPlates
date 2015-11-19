@@ -32,7 +32,7 @@
 #include "PlateVelocityUtils.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionTreeCreator.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
 
 #include "global/GPlatesAssert.h"
@@ -148,7 +148,7 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 			}
 
 			// Topological closed plate polygons...
-			std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> resolved_topological_boundaries;
+			std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> resolved_topological_boundaries;
 
 			BOOST_FOREACH(
 					LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,

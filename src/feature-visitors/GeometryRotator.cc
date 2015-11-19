@@ -32,6 +32,7 @@
 #include "maths/PolylineOnSphere.h"
 
 #include "model/FeatureHandle.h"
+#include "model/NotificationGuard.h"
 
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"

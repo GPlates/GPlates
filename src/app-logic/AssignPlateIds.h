@@ -45,11 +45,6 @@
 #include "model/types.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesAppLogic
 {
 	class PartitionFeatureTask;
@@ -205,7 +200,6 @@ namespace GPlatesAppLogic
 		static
 		non_null_ptr_type
 		create(
-				const GPlatesModel::Gpgim &gpgim,
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						partitioning_feature_collections,
@@ -222,7 +216,6 @@ namespace GPlatesAppLogic
 				bool respect_feature_time_period = true)
 		{
 			return non_null_ptr_type(new AssignPlateIds(
-					gpgim,
 					assign_plate_id_method,
 					partitioning_feature_collections,
 					reconstruction_feature_collections,
@@ -269,7 +262,6 @@ namespace GPlatesAppLogic
 		static
 		non_null_ptr_type
 		create(
-				const GPlatesModel::Gpgim &gpgim,
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
@@ -279,7 +271,6 @@ namespace GPlatesAppLogic
 				bool respect_feature_time_period = true)
 		{
 			return non_null_ptr_type(new AssignPlateIds(
-					gpgim,
 					assign_plate_id_method,
 					partitioning_layer_proxies,
 					reconstruction_tree,
@@ -366,7 +357,6 @@ namespace GPlatesAppLogic
 		 * to create a new set of partitioning polygons to be used for cookie-cutting.
 		 */
 		AssignPlateIds(
-				const GPlatesModel::Gpgim &gpgim,
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
 						partitioning_feature_collections,
@@ -394,7 +384,6 @@ namespace GPlatesAppLogic
 		 * @throws PreconditionViolationError exception if @a partitioning_layer_proxies is empty.
 		 */
 		AssignPlateIds(
-				const GPlatesModel::Gpgim &gpgim,
 				AssignPlateIdMethodType assign_plate_id_method,
 				const std::vector<LayerProxy::non_null_ptr_type> &partitioning_layer_proxies,
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,

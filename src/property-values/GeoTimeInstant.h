@@ -48,6 +48,7 @@ namespace GPlatesPropertyValues
 	class GeoTimeInstant :
 			public boost::less_than_comparable<GeoTimeInstant>,
 			public boost::equality_comparable<GeoTimeInstant>,
+			public boost::equivalent<GeoTimeInstant>,
 			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
 			public GPlatesUtils::QtStreamable<GeoTimeInstant>
 	{
@@ -140,10 +141,13 @@ namespace GPlatesPropertyValues
 		 *
 		 * Note that positive values represent times in the past; negative values represent
 		 * times in the future.
+		 *
+		 * Note that the specified value should not be positive or negative infinity
+		 * (use @a create_distant_past and @a create_distant_future instead).
 		 */
 		explicit
 		GeoTimeInstant(
-				const double &value_):
+				const double &value_) :
 			d_type(TimePositionTypes::Real),
 			d_value(value_)
 		{  }
@@ -154,13 +158,11 @@ namespace GPlatesPropertyValues
 		 * Note that positive values represent times in the past; negative values represent
 		 * times in the future.
 		 *
-		 * Note that this value may not be meaningful if @a is_real returns false.
+		 * If @a is_real is false then the value returned is positive infinity if
+		 * @a is_distant_past is true or negative infinity if @a is_distant_future is true.
 		 */
-		const double &
-		value() const
-		{
-			return d_value;
-		}
+		double
+		value() const;
 
 		/**
 		 * Return true if this instance is a time-instant in the distant past; false
@@ -239,6 +241,8 @@ namespace GPlatesPropertyValues
 		/**
 		 * Return true if this instance is temporally-coincident with @a other; false
 		 * otherwise.
+		 *
+		 * This is essentially the same as 'operator==' (provided by Boost).
 		 */
 		bool
 		is_coincident_with(
@@ -246,22 +250,12 @@ namespace GPlatesPropertyValues
 
 
 		/**
-		 * Equality comparison operator.
-		 */
-		bool
-		operator==(
-				const GeoTimeInstant &rhs) const
-		{
-			return is_coincident_with(rhs);
-		}
-
-
-		/**
-		 * Less than comparison operator.
+		 * Less than comparison operator - all other operators supplied by Boost.
 		 *
-		 * NOTE: This is *not* implemented by delegating to @a is_earlier_than_or_coincident_with
-		 * because it is not a strict weak ordering "if x < y then !(y < x)" and so cannot be
-		 * used in std::map for example.
+		 * Note: This is used (by boost::equivalent) to implement the equivalence relation:
+		 *   !(x < y) && !(y < x)
+		 * ...which holds for two values that are within epsilon of each other.
+		 * This is also used, for example, by std::map to find elements (using above equivalence relation).
 		 */
 		bool
 		operator<(

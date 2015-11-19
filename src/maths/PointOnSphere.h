@@ -109,10 +109,7 @@ namespace GPlatesMaths
 		const GeometryOnSphere::non_null_ptr_to_const_type
 		clone_as_geometry() const
 		{
-			GeometryOnSphere::non_null_ptr_to_const_type dup(
-					new PointOnSphere(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
+			return GeometryOnSphere::non_null_ptr_to_const_type(new PointOnSphere(*this));
 		}
 
 
@@ -125,10 +122,7 @@ namespace GPlatesMaths
 		const non_null_ptr_to_const_type
 		clone_as_point() const
 		{
-			non_null_ptr_to_const_type dup(
-					new PointOnSphere(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
+			return non_null_ptr_to_const_type(new PointOnSphere(*this));
 		}
 
 
@@ -183,16 +177,6 @@ namespace GPlatesMaths
 				const PointOnSphere &other):
 			GeometryOnSphere(),
 			d_position_vector(other.d_position_vector)
-		{  }
-
-
-		/*
-		* Create a default point on sphere.
-		*/
-		explicit 
-		PointOnSphere():
-			GeometryOnSphere(),
-			d_position_vector(UnitVector3D(1,0,0))
 		{  }
 
 
@@ -524,12 +508,6 @@ namespace GPlatesMaths
 	operator <<(
 			QTextStream &stream,
 			const PointOnSphere &p);
-
-
-	/**
-	 * This routine exports the Python wrapper class and associated functionality
-	 */
-	void export_PointOnSphere();
 }
 
 

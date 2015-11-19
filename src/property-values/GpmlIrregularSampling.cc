@@ -180,6 +180,3 @@ GPlatesPropertyValues::GpmlIrregularSampling::contain_disabled_sequence_flag() c
 	}
 	return false;
 }
-
-
-

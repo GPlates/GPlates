@@ -73,32 +73,66 @@ namespace GPlatesUtils
 		}
 
 
-		/**
-		 * Standard namespaces.
-		 */
-		const GPlatesUtils::UnicodeString GPGIM_NAMESPACE = Internals::gpgim_namespace();
-		const GPlatesUtils::UnicodeString GPML_NAMESPACE = Internals::gpml_namespace();
-		const GPlatesUtils::UnicodeString GML_NAMESPACE = Internals::gml_namespace();
-		const GPlatesUtils::UnicodeString XSI_NAMESPACE = Internals::xsi_namespace();
-
-		const QString GPGIM_NAMESPACE_QSTRING = Internals::gpgim_namespace();
-		const QString GPML_NAMESPACE_QSTRING = Internals::gpml_namespace();
-		const QString GML_NAMESPACE_QSTRING = Internals::gml_namespace();
-		const QString XSI_NAMESPACE_QSTRING = Internals::xsi_namespace();
+		//
+		// Standard namespaces.
+		//
 
 
-		/**
-		 * Standard namespace aliases.
-		 */
-		const GPlatesUtils::UnicodeString GPGIM_STANDARD_ALIAS = Internals::gpgim_standard_alias();
-		const GPlatesUtils::UnicodeString GPML_STANDARD_ALIAS = Internals::gpml_standard_alias();
-		const GPlatesUtils::UnicodeString GML_STANDARD_ALIAS = Internals::gml_standard_alias();
-		const GPlatesUtils::UnicodeString XSI_STANDARD_ALIAS = Internals::xsi_standard_alias();
+		const GPlatesUtils::UnicodeString &
+		get_gpgim_namespace();
 
-		const QString GPGIM_STANDARD_ALIAS_QSTRING = Internals::gpgim_standard_alias();
-		const QString GPML_STANDARD_ALIAS_QSTRING = Internals::gpml_standard_alias();
-		const QString GML_STANDARD_ALIAS_QSTRING = Internals::gml_standard_alias();
-		const QString XSI_STANDARD_ALIAS_QSTRING = Internals::xsi_standard_alias();
+		const GPlatesUtils::UnicodeString &
+		get_gpml_namespace();
+
+		const GPlatesUtils::UnicodeString &
+		get_gml_namespace();
+
+		const GPlatesUtils::UnicodeString &
+		get_xsi_namespace();
+
+
+		const QString &
+		get_gpgim_namespace_qstring();
+
+		const QString &
+		get_gpml_namespace_qstring();
+
+		const QString &
+		get_gml_namespace_qstring();
+
+		const QString &
+		get_xsi_namespace_qstring();
+
+
+		//
+		// Standard namespace aliases.
+		//
+
+
+		const GPlatesUtils::UnicodeString &
+		get_gpgim_standard_alias();
+
+		const GPlatesUtils::UnicodeString &
+		get_gpml_standard_alias();
+
+		const GPlatesUtils::UnicodeString &
+		get_gml_standard_alias();
+
+		const GPlatesUtils::UnicodeString &
+		get_xsi_standard_alias();
+
+
+		const QString &
+		get_gpgim_standard_alias_qstring();
+
+		const QString &
+		get_gpml_standard_alias_qstring();
+
+		const QString &
+		get_gml_standard_alias_qstring();
+
+		const QString &
+		get_xsi_standard_alias_qstring();
 
 
 		/**

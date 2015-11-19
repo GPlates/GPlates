@@ -50,7 +50,6 @@ namespace GPlatesPropertyValues
 	class GpmlTopologicalLine:
 			public GPlatesModel::PropertyValue
 	{
-
 	public:
 
 		//! A convenience typedef for a shared pointer to a non-const @a GpmlTopologicalLine.
@@ -85,13 +84,13 @@ namespace GPlatesPropertyValues
 					new GpmlTopologicalLine(sections_begin_, sections_end_));
 		}
 
-		const GpmlTopologicalLine::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
 			return non_null_ptr_type(new GpmlTopologicalLine(*this));
 		}
 
-		const GpmlTopologicalLine::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const;
 
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()

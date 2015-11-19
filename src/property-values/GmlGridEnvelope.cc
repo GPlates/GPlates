@@ -30,8 +30,8 @@
 
 #include "GmlGridEnvelope.h"
 
-#include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 
 const GPlatesPropertyValues::GmlGridEnvelope::non_null_ptr_type
 GPlatesPropertyValues::GmlGridEnvelope::create(
@@ -41,7 +41,7 @@ GPlatesPropertyValues::GmlGridEnvelope::create(
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			low_.size() == high_.size(), GPLATES_ASSERTION_SOURCE);
 
-	return new GmlGridEnvelope(low_, high_);
+	return non_null_ptr_type(new GmlGridEnvelope(low_, high_));
 }
 
 

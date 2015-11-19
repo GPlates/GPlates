@@ -29,7 +29,7 @@
 #include "ReconstructedFeatureGeometryFinder.h"
 #include "Reconstruction.h"
 #include "ReconstructLayerProxy.h"
-#include "ResolvedTopologicalGeometry.h"
+#include "ResolvedTopologicalLine.h"
 #include "TopologyGeometryResolverLayerProxy.h"
 
 
@@ -60,7 +60,7 @@ GPlatesAppLogic::LayerProxyUtils::get_reconstructed_feature_geometries(
 
 void
 GPlatesAppLogic::LayerProxyUtils::get_resolved_topological_lines(
-		std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_lines,
+		std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines,
 		std::vector<ReconstructHandle::type> &reconstruct_handles,
 		const Reconstruction &reconstruction)
 {

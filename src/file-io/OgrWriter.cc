@@ -26,6 +26,8 @@
  */
 
 
+#include <vector>
+#include <boost/foreach.hpp>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
@@ -34,12 +36,16 @@
 
 
 #include "OgrException.h"
-#include "OgrWriter.h"
 #include "OgrUtils.h"
+#include "OgrWriter.h"
+
 #include "feature-visitors/ToQvariantConverter.h"
+
 #include "maths/LatLonPoint.h"
+
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
+
 
 const QString POINT_SUFFIX("_point");
 const QString POLYLINE_SUFFIX("_polyline");
@@ -311,7 +317,7 @@ namespace{
 			}
 			if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
 			{
-				set_layer_field_names(*ogr_layer,*key_value_dictionary);
+				set_layer_field_names(*ogr_layer, key_value_dictionary.get());
 			}
 		}
 	}
@@ -428,19 +434,14 @@ namespace{
 	}
 
 
-	//! Typedef for a sequence of lat/lon points.
-	typedef std::vector<GPlatesMaths::LatLonPoint> lat_lon_points_seq_type;
-
-	//! Typedef for a polyline containing lat/lon points.
-	typedef boost::shared_ptr<lat_lon_points_seq_type> lat_lon_polyline_type;
-
 	/**
-	 * Typedef for a polygon containing lat/lon points.
+	 * Typedef for a sequence of lat/lon points.
 	 *
-	 * NOTE: This mirrors @a PolygonOnSphere in that the start and end points are *not* the same.
+	 * NOTE: For polygons this mirrors @a PolygonOnSphere in that the start and end points are *not* the same.
 	 * So you may need to explicitly close the polygon by appending the start point (eg, OGR library).
 	 */
-	typedef boost::shared_ptr<lat_lon_points_seq_type> lat_lon_polygon_type;
+	typedef std::vector<GPlatesMaths::LatLonPoint> lat_lon_points_seq_type;
+
 
 	/**
 	 * Converts the specified polyline-on-sphere to a lat/lon geometry.
@@ -471,38 +472,56 @@ namespace{
 	 */
 	void
 	convert_polylines_to_lat_lon(
-			std::vector<lat_lon_polyline_type> &lat_lon_polylines,
+			std::vector<lat_lon_points_seq_type> &lat_lon_polylines,
 			const std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &polylines,
 			boost::optional<GPlatesMaths::DateLineWrapper &> dateline_wrapper = boost::none)
 	{
 		typedef std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline_seq_type;
 
-		lat_lon_polylines.reserve(polylines.size()); // Though might end up with more if clipped to dateline.
-
-		// Iterate over the polyline-on-sphere's.
-		polyline_seq_type::const_iterator polylines_iter = polylines.begin();
-		polyline_seq_type::const_iterator polylines_end = polylines.end();
-		for ( ; polylines_iter != polylines_end; ++polylines_iter)
+		if (dateline_wrapper)
 		{
-			const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline = *polylines_iter;
+			std::vector<GPlatesMaths::DateLineWrapper::LatLonPolyline> wrapped_lat_lon_polylines;
 
-			if (dateline_wrapper)
+			// Iterate over the polyline-on-sphere's.
+			polyline_seq_type::const_iterator polylines_iter = polylines.begin();
+			polyline_seq_type::const_iterator polylines_end = polylines.end();
+			for ( ; polylines_iter != polylines_end; ++polylines_iter)
 			{
+				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline = *polylines_iter;
+
 				// Wrap (clip) the current polyline to the dateline.
 				// This could turn one polyline into multiple polylines.
-				// Note that lat/lon polylines just get appended to 'lat_lon_polylines'.
-				dateline_wrapper->wrap(polyline, lat_lon_polylines);
+				dateline_wrapper->wrap_polyline(polyline, wrapped_lat_lon_polylines);
 			}
-			else
+
+			// Copy the wrapped polylines to the caller's array.
+			lat_lon_polylines.reserve(wrapped_lat_lon_polylines.size());
+			BOOST_FOREACH(
+					const GPlatesMaths::DateLineWrapper::LatLonPolyline &wrapped_lat_lon_polyline,
+					wrapped_lat_lon_polylines)
 			{
+				lat_lon_polylines.push_back(lat_lon_points_seq_type());
+				lat_lon_polylines.back() = wrapped_lat_lon_polyline.get_points();
+			}
+		}
+		else // no dateline wrapping...
+		{
+			lat_lon_polylines.reserve(polylines.size());
+
+			// Iterate over the polyline-on-sphere's.
+			polyline_seq_type::const_iterator polylines_iter = polylines.begin();
+			polyline_seq_type::const_iterator polylines_end = polylines.end();
+			for ( ; polylines_iter != polylines_end; ++polylines_iter)
+			{
+				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline = *polylines_iter;
+
 				// No dateline wrapping so just straight conversion to lat/lon.
-				const lat_lon_polyline_type lat_lon_polyline(new lat_lon_points_seq_type());
+				lat_lon_polylines.push_back(lat_lon_points_seq_type());
 				convert_points_to_lat_lon(
-						*lat_lon_polyline,
+						lat_lon_polylines.back(),
 						polyline->vertex_begin(),
 						polyline->vertex_end(),
 						polyline->number_of_vertices());
-				lat_lon_polylines.push_back(lat_lon_polyline);
 			}
 		}
 	}
@@ -512,38 +531,56 @@ namespace{
 	 */
 	void
 	convert_polygons_to_lat_lon(
-			std::vector<lat_lon_polygon_type> &lat_lon_polygons,
+			std::vector<lat_lon_points_seq_type> &lat_lon_polygons,
 			const std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &polygons,
 			boost::optional<GPlatesMaths::DateLineWrapper &> dateline_wrapper = boost::none)
 	{
 		typedef std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon_seq_type;
 
-		lat_lon_polygons.reserve(polygons.size()); // Though might end up with more if clipped to dateline.
-
-		// Iterate over the polygon-on-sphere's.
-		polygon_seq_type::const_iterator polygons_iter = polygons.begin();
-		polygon_seq_type::const_iterator polygons_end = polygons.end();
-		for ( ; polygons_iter != polygons_end; ++polygons_iter)
+		if (dateline_wrapper)
 		{
-			const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon = *polygons_iter;
+			std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon> wrapped_lat_lon_polygons;
 
-			if (dateline_wrapper)
+			// Iterate over the polygon-on-sphere's.
+			polygon_seq_type::const_iterator polygons_iter = polygons.begin();
+			polygon_seq_type::const_iterator polygons_end = polygons.end();
+			for ( ; polygons_iter != polygons_end; ++polygons_iter)
 			{
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon = *polygons_iter;
+
 				// Wrap (clip) the current polygon to the dateline.
 				// This could turn one polygon into multiple polygons.
-				// Note that lat/lon polygons just get appended to 'lat_lon_polygons'.
-				dateline_wrapper->wrap(polygon, lat_lon_polygons);
+				dateline_wrapper->wrap_polygon(polygon, wrapped_lat_lon_polygons);
 			}
-			else
+
+			// Copy the wrapped polygons to the caller's array.
+			lat_lon_polygons.reserve(wrapped_lat_lon_polygons.size());
+			BOOST_FOREACH(
+					const GPlatesMaths::DateLineWrapper::LatLonPolygon &wrapped_lat_lon_polygon,
+					wrapped_lat_lon_polygons)
 			{
+				lat_lon_polygons.push_back(lat_lon_points_seq_type());
+				lat_lon_polygons.back() = wrapped_lat_lon_polygon.get_exterior_points();
+			}
+		}
+		else // no dateline wrapping...
+		{
+			lat_lon_polygons.reserve(polygons.size());
+
+			// Iterate over the polygon-on-sphere's.
+			polygon_seq_type::const_iterator polygons_iter = polygons.begin();
+			polygon_seq_type::const_iterator polygons_end = polygons.end();
+			for ( ; polygons_iter != polygons_end; ++polygons_iter)
+			{
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon = *polygons_iter;
+
 				// No dateline wrapping so just straight conversion to lat/lon.
-				const lat_lon_polygon_type lat_lon_polygon(new lat_lon_points_seq_type());
+				lat_lon_polygons.push_back(lat_lon_points_seq_type());
 				convert_points_to_lat_lon(
-						*lat_lon_polygon,
+						lat_lon_polygons.back(),
 						polygon->vertex_begin(),
 						polygon->vertex_end(),
 						polygon->number_of_vertices());
-				lat_lon_polygons.push_back(lat_lon_polygon);
 			}
 		}
 	}
@@ -551,11 +588,11 @@ namespace{
 	void
 	add_polyline_to_ogr_line_string(
 			OGRLineString &ogr_line_string,
-			const lat_lon_polyline_type &lat_lon_polyline)
+			const lat_lon_points_seq_type &lat_lon_polyline)
 	{
 		lat_lon_points_seq_type::const_iterator 
-			line_iter = lat_lon_polyline->begin(),
-			line_end = lat_lon_polyline->end();
+			line_iter = lat_lon_polyline.begin(),
+			line_end = lat_lon_polyline.end();
 
 		for (; line_iter != line_end ; ++line_iter)
 		{
@@ -572,17 +609,17 @@ namespace{
 	void
 	add_multi_polyline_to_ogr_feature(
 			OGRFeature &ogr_feature,
-			const std::vector<lat_lon_polyline_type> &lat_lon_polylines)
+			const std::vector<lat_lon_points_seq_type> &lat_lon_polylines)
 	{
 		OGRMultiLineString ogr_multi_line_string;
 
-		std::vector<lat_lon_polyline_type>::const_iterator 
+		std::vector<lat_lon_points_seq_type>::const_iterator 
 			it = lat_lon_polylines.begin(),
 			end = lat_lon_polylines.end();
 			
 		for (; it != end ; ++it)
 		{
-			const lat_lon_polyline_type &lat_lon_polyline = *it;
+			const lat_lon_points_seq_type &lat_lon_polyline = *it;
 
 			OGRLineString ogr_line_string;
 			add_polyline_to_ogr_line_string(ogr_line_string, lat_lon_polyline);
@@ -596,7 +633,7 @@ namespace{
 	void
 	add_polyline_to_ogr_feature(
 			OGRFeature &ogr_feature,
-			const lat_lon_polyline_type &lat_lon_polyline)
+			const lat_lon_points_seq_type &lat_lon_polyline)
 	{
 		OGRLineString ogr_line_string;
 		add_polyline_to_ogr_line_string(ogr_line_string, lat_lon_polyline);
@@ -607,13 +644,13 @@ namespace{
 	void
 	add_polygon_to_ogr_polygon(
 			OGRPolygon &ogr_polygon,
-			const lat_lon_polygon_type &lat_lon_polygon)
+			const lat_lon_points_seq_type &lat_lon_polygon)
 	{
 		OGRLinearRing ogr_linear_ring;
 
 		lat_lon_points_seq_type::const_iterator 
-			line_iter = lat_lon_polygon->begin(),
-			line_end = lat_lon_polygon->end();
+			line_iter = lat_lon_polygon.begin(),
+			line_end = lat_lon_polygon.end();
 
 		for (; line_iter != line_end ; ++line_iter)
 		{
@@ -637,17 +674,17 @@ namespace{
 	void
 	add_multi_polygon_to_ogr_feature(
 			OGRFeature &ogr_feature,
-			const std::vector<lat_lon_polygon_type> &lat_lon_polygons)
+			const std::vector<lat_lon_points_seq_type> &lat_lon_polygons)
 	{
 		OGRMultiPolygon ogr_multi_polygon;
 
-		std::vector<lat_lon_polygon_type>::const_iterator 
+		std::vector<lat_lon_points_seq_type>::const_iterator 
 			it = lat_lon_polygons.begin(),
 			end = lat_lon_polygons.end();
 			
 		for (; it != end ; ++it)
 		{
-			const lat_lon_polygon_type &lat_lon_polygon = *it;
+			const lat_lon_points_seq_type &lat_lon_polygon = *it;
 
 			OGRPolygon ogr_polygon;
 			add_polygon_to_ogr_polygon(ogr_polygon, lat_lon_polygon);
@@ -661,7 +698,7 @@ namespace{
 	void
 	add_polygon_to_ogr_feature(
 			OGRFeature &ogr_feature,
-			const lat_lon_polygon_type &lat_lon_polygon)
+			const lat_lon_points_seq_type &lat_lon_polygon)
 	{
 		OGRPolygon ogr_polygon;
 		add_polygon_to_ogr_polygon(ogr_polygon, lat_lon_polygon);
@@ -807,7 +844,7 @@ GPlatesFileIO::OgrWriter::write_point_feature(
 
 	if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
 	{
-		set_feature_field_values(*d_ogr_point_layer,ogr_feature,*key_value_dictionary);
+		set_feature_field_values(*d_ogr_point_layer, ogr_feature, key_value_dictionary.get());
 	}
 
 	// Create the point feature from the point_on_sphere
@@ -867,7 +904,7 @@ GPlatesFileIO::OgrWriter::write_multi_point_feature(
 
 	if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
 	{
-		set_feature_field_values(*d_ogr_multi_point_layer,ogr_feature,*key_value_dictionary);
+		set_feature_field_values(*d_ogr_multi_point_layer, ogr_feature, key_value_dictionary.get());
 	}
 
 	OGRMultiPoint ogr_multi_point;
@@ -936,7 +973,7 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polyline_feature(
 	}
 
 	// Convert the polylines to lat/lon coordinates (with optional dateline wrapping/clipping).
-	std::vector<lat_lon_polyline_type> lat_lon_polylines;
+	std::vector<lat_lon_points_seq_type> lat_lon_polylines;
 	boost::optional<GPlatesMaths::DateLineWrapper &> dateline_wrapper;
 	if (d_wrap_to_dateline)
 	{
@@ -987,7 +1024,7 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polyline_feature(
 
 	if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
 	{
-		set_feature_field_values(*d_ogr_polyline_layer,ogr_feature,*key_value_dictionary);
+		set_feature_field_values(*d_ogr_polyline_layer, ogr_feature, key_value_dictionary.get());
 	}
 
 	if (is_multi_line_string)
@@ -1040,7 +1077,7 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polygon_feature(
 	}
 
 	// Convert the polygons to lat/lon coordinates (with optional dateline wrapping/clipping).
-	std::vector<lat_lon_polygon_type> lat_lon_polygons;
+	std::vector<lat_lon_points_seq_type> lat_lon_polygons;
 	boost::optional<GPlatesMaths::DateLineWrapper &> dateline_wrapper;
 	if (d_wrap_to_dateline)
 	{
@@ -1091,7 +1128,7 @@ GPlatesFileIO::OgrWriter::write_single_or_multi_polygon_feature(
 
 	if (key_value_dictionary && !((*key_value_dictionary)->is_empty()))
 	{
-		set_feature_field_values(*d_ogr_polygon_layer,ogr_feature,*key_value_dictionary);
+		set_feature_field_values(*d_ogr_polygon_layer, ogr_feature, key_value_dictionary.get());
 	}
 
 	if (is_multi_polygon)

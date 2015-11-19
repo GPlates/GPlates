@@ -29,8 +29,10 @@
 #define GPLATES_PROPERTYVALUES_GPMLREVISIONID_H
 
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/PropertyValue.h"
 #include "model/RevisionId.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -54,38 +56,31 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlRevisionId> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlRevisionId>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlRevisionId>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlRevisionId> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlRevisionId()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
 				const GPlatesModel::RevisionId &value_)
 		{
-			non_null_ptr_type ptr(
-					new GpmlRevisionId(value_));
-			return ptr;
+			return non_null_ptr_type(new GpmlRevisionId(value_));
 		}
 
-		const GpmlRevisionId::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
 			GpmlRevisionId::non_null_ptr_type dup(new GpmlRevisionId(*this));
 			return dup;
 		}
 
-		const GpmlRevisionId::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const
 		{
 			// This class doesn't reference any mutable objects by pointer, so there's

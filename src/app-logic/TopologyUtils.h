@@ -36,6 +36,8 @@
 #include "AppLogicFwd.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionTreeCreator.h"
+#include "ResolvedTopologicalSection.h"
+#include "ResolvedTopologicalSharedSubSegment.h"
 #include "TopologyGeometryType.h"
 
 #include "maths/LatLonPoint.h"
@@ -52,7 +54,8 @@
 
 namespace GPlatesAppLogic
 {
-	class ResolvedTopologicalGeometry;
+	class ResolvedTopologicalBoundary;
+	class ResolvedTopologicalLine;
 
 	/**
 	 * This namespace contains utilities that clients of topology-related functionality use.
@@ -99,13 +102,12 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Create and return a sequence of @a ResolvedTopologicalGeometry objects by resolving
+		 * Create and return a sequence of @a ResolvedTopologicalLine objects by resolving
 		 * topological lines in @a topological_line_features_collection.
 		 *
 		 * NOTE: The sections are resolved by referencing already reconstructed topological section
 		 * features which in turn must have already have been reconstructed.
 		 *
-		 * @param reconstruction_tree is associated with the output resolved topological boundaries.
 		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that
 		 *        identifies the subset, of all RFGs observing the topological section features,
 		 *        that should be searched when resolving the topological lines.
@@ -116,10 +118,10 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		resolve_topological_lines(
-				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_lines,
+				std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_line_features_collection,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
+				const double &reconstruction_time,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
 
 
@@ -139,17 +141,16 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Create and return a sequence of @a ResolvedTopologicalGeometry objects by resolving
+		 * Create and return a sequence of @a ResolvedTopologicalBoundary objects by resolving
 		 * topological closed plate boundaries in @a topological_closed_plate_polygon_features_collection.
 		 *
 		 * NOTE: The sections are resolved by referencing already reconstructed topological section
 		 * features which in turn must have already have been reconstructed.
 		 * This includes any resolved topological lines that form sections.
 		 *
-		 * @param reconstruction_tree is associated with the output resolved topological boundaries.
 		 * @param topological_sections_reconstruct_handles is a list of reconstruct handles that
 		 *        identifies the subset, of all RFGs observing the topological section features,
-		 *        and all resolved topological lines (@a ResolvedTopologicalGeometry containing polylines)
+		 *        and all resolved topological lines (@a ResolvedTopologicalLine)
 		 *        observing the topological section features,
 		 *        that should be searched when resolving the topological boundaries.
 		 *        This is useful to avoid outdated RFGs and RTGS still in existence (among other scenarios).
@@ -159,19 +160,19 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		resolve_topological_boundaries(
-				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries,
+				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_closed_plate_polygon_features_collection,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const reconstruction_tree_non_null_ptr_to_const_type &reconstruction_tree,
+				const double &reconstruction_time,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_sections_reconstruct_handles = boost::none);
 
 
 		//! Typedef for a sequence of resolved topological boundaries.
-		typedef std::vector<const ResolvedTopologicalGeometry *> resolved_topological_boundary_seq_type;
+		typedef std::vector<const ResolvedTopologicalBoundary *> resolved_topological_boundary_seq_type;
 
 
 		/**
-		 * A structure for partitioning geometry using the polygon of each @a ResolvedTopologicalGeometry
+		 * A structure for partitioning geometry using the polygon of each @a ResolvedTopologicalBoundary
 		 * in a sequence of resolved topological boundaries.
 		 */
 		class ResolvedBoundariesForGeometryPartitioning :
@@ -189,14 +190,14 @@ namespace GPlatesAppLogic
 			static
 			non_null_ptr_type
 			create(
-					const std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries)
+					const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries)
 			{
 				return non_null_ptr_type(new ResolvedBoundariesForGeometryPartitioning(resolved_topological_boundaries));
 			}
 
 
 			/**
-			 * Searches all @a ResolvedTopologicalGeometry objects to see which ones contain
+			 * Searches all @a ResolvedTopologicalBoundary objects to see which ones contain
 			 * @a point and returns any found in @a resolved_topological_boundary_seq.
 			 *
 			 * Returns true if any are found.
@@ -214,12 +215,12 @@ namespace GPlatesAppLogic
 			{
 			public:
 				ResolvedBoundaryPartitionedGeometries(
-						const ResolvedTopologicalGeometry *resolved_topological_boundary_) :
+						const ResolvedTopologicalBoundary *resolved_topological_boundary_) :
 					resolved_topological_boundary(resolved_topological_boundary_)
 				{  }
 
 				//! The resolved topological boundary that partitioned the polylines.
-				const ResolvedTopologicalGeometry *resolved_topological_boundary;
+				const ResolvedTopologicalBoundary *resolved_topological_boundary;
 
 				//! The partitioned geometries.
 				partitioned_geometry_seq_type partitioned_inside_geometries;
@@ -227,7 +228,7 @@ namespace GPlatesAppLogic
 
 			/**
 			 * Typedef for a sequence of associations of partitioned geometries and
-			 * the @a ResolvedTopologicalGeometry that they were partitioned into.
+			 * the @a ResolvedTopologicalBoundary that they were partitioned into.
 			 */
 			typedef std::list<ResolvedBoundaryPartitionedGeometries> resolved_boundary_partitioned_geometries_seq_type;
 
@@ -262,13 +263,13 @@ namespace GPlatesAppLogic
 			{
 
 				GeometryPartitioning(
-						const ResolvedTopologicalGeometry *resolved_topological_boundary_,
+						const ResolvedTopologicalBoundary *resolved_topological_boundary_,
 						const GPlatesMaths::PolygonIntersections::non_null_ptr_type &polygon_intersections_) :
 					resolved_topological_boundary(resolved_topological_boundary_),
 					polygon_intersections(polygon_intersections_)
 				{  }
 
-				const ResolvedTopologicalGeometry *resolved_topological_boundary;
+				const ResolvedTopologicalBoundary *resolved_topological_boundary;
 				GPlatesMaths::PolygonIntersections::non_null_ptr_type polygon_intersections;
 			};
 
@@ -278,7 +279,7 @@ namespace GPlatesAppLogic
 
 
 			ResolvedBoundariesForGeometryPartitioning(
-					const std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_boundaries);
+					const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries);
 		};
 
 
@@ -305,7 +306,7 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional< std::pair<
 				GPlatesModel::integer_plate_id_type,
-				const ResolvedTopologicalGeometry * > >
+				const ResolvedTopologicalBoundary * > >
 		find_reconstruction_plate_id_furthest_from_anchor_in_plate_circuit(
 				const resolved_topological_boundary_seq_type &resolved_boundaries);
 
@@ -341,8 +342,8 @@ namespace GPlatesAppLogic
 		 *
 		 * @param topological_geometry_reconstruct_handles is a list of reconstruct handles that
 		 *        identifies the subset, of all RFGs observing the topological boundary section and/or
-		 *        interior features, and all resolved topological lines (@a ResolvedTopologicalGeometry
-		 *        containing polylines) observing the topological boundary section features,
+		 *        interior features, and all resolved topological lines (@a ResolvedTopologicalLine)
+		 *        observing the topological boundary section features,
 		 *        that should be searched when resolving the topological networks.
 		 *        This is useful to avoid outdated RFGs and RTGS still in existence (among other scenarios).
 		 *
@@ -355,6 +356,21 @@ namespace GPlatesAppLogic
 				const double &reconstruction_time,
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_network_features_collection,
 				boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles);
+
+
+		/**
+		 * Finds all sub-segments shared by resolved topology boundaries and network boundaries.
+		 *
+		 * These sub-segments are separated into non-overlapping sections.
+		 * This is in contrast to simply gathering all sub-segments of these resolved boundaries/networks
+		 * which will overlap each other (eg, two plate polygons share parts of their boundary
+		 * leading to duplication).
+		 */
+		void
+		find_resolved_topological_sections(
+				std::vector<ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections,
+				const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
+				const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks);
 	}
 }
 

@@ -37,11 +37,6 @@
 #include "model/FeatureHandle.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesAppLogic
 {
 	class GeometryCookieCutter;
@@ -63,7 +58,6 @@ namespace GPlatesAppLogic
 	 */
 	partition_feature_task_ptr_seq_type
 	get_partition_feature_tasks(
-			const GPlatesModel::Gpgim &gpgim,
 			const ReconstructionTree &reconstruction_tree,
 			GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType assign_plate_id_method,
 			const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,

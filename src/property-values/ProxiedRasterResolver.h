@@ -63,7 +63,7 @@ namespace GPlatesPropertyValues
 {
 	/**
 	 * ProxiedRasterResolver takes a proxied raw raster and allows you to retrieve
-	 * actual raster data from risk.
+	 * actual raster data from disk.
 	 *
 	 * All ProxiedRasterResolver derivations can retrieve an RGBA region from an
 	 * arbitrary level, given a colour palette. This is exposed as pure virtual

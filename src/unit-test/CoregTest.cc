@@ -66,17 +66,21 @@ GPlatesUnitTest::CoregTestSuite::CoregTestSuite(
 	init(level);
 } 
 
-GPlatesUnitTest::CoregTest::CoregTest() :
-	d_gpgim(GPlatesModel::Gpgim::create())
+GPlatesUnitTest::CoregTest::CoregTest()
 {
-	register_default_file_formats(d_file_format_registry, d_model, *d_gpgim);
-
 	load_test_data();
 }
 
 void
 GPlatesUnitTest::CoregTest::load_test_data()
 {
+#if 1
+	// TODO: Re-implement this test when the lower-level python API is implemented.
+	// This will use the same functionality to access co-registration without reference to layers.
+	qWarning() << "GPlatesUnitTest::CoregTest::test: not implemented.";
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+
+#else
 	d_rotation_fc = 
 		DataMiningUtils::load_files(
 				load_cfg(
@@ -113,6 +117,7 @@ GPlatesUnitTest::CoregTest::load_test_data()
 				unit_test_data_path + cfg_file,
 				"output path");
 	d_output_path = tmp.size() ? tmp : "./";
+#endif
 }
 
 void
@@ -126,7 +131,6 @@ GPlatesUnitTest::CoregTest::test(double time)
 
 #else
 	ReconstructMethodRegistry reconstruct_method_registry;
-	register_default_reconstruct_method_types(reconstruct_method_registry);
 
 	ReconstructionTreeCreator reconstruction_tree_creator =
 			create_cached_reconstruction_tree_creator(

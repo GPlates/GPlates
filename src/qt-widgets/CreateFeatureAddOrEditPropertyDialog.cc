@@ -38,6 +38,7 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "model/Gpgim.h"
 #include "model/GpgimProperty.h"
 #include "model/GpgimStructuralType.h"
 #include "model/ModelUtils.h"
@@ -183,17 +184,45 @@ GPlatesQtWidgets::CreateFeatureAddOrEditPropertyDialog::connect_to_combobox_prop
 void
 GPlatesQtWidgets::CreateFeatureAddOrEditPropertyDialog::set_appropriate_edit_widget_by_property_value_type()
 {
-	// Get the property value type from the property_name_combobox text.
-	boost::optional<GPlatesPropertyValues::StructuralType> property_value_type =
-			GPlatesModel::convert_qstring_to_qualified_xml_name<
-					GPlatesPropertyValues::StructuralType>(
-							combobox_property_type->currentText());
-	// Should always be able to convert to a qualified XML name.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			property_value_type,
-			GPLATES_ASSERTION_SOURCE);
+	boost::optional<EditWidgetGroupBox::property_value_type> type_of_property;
 
-	d_edit_widget_group_box->activate_widget_by_property_value_type(property_value_type.get());
+	// Get the property value type from the combobox_property_type text.
+	const QString combobox_property_type_string = combobox_property_type->currentText();
+
+	// See if property type string is a template type (has a value type between '<' and '>').
+	const int template_left_angle_bracket_index = combobox_property_type_string.indexOf('<');
+	if (template_left_angle_bracket_index >= 0 &&
+		combobox_property_type_string.endsWith('>'))
+	{
+		const boost::optional<GPlatesPropertyValues::StructuralType> structural_type =
+				GPlatesModel::convert_qstring_to_qualified_xml_name<GPlatesPropertyValues::StructuralType>(
+						combobox_property_type_string.left(template_left_angle_bracket_index));
+		const boost::optional<GPlatesPropertyValues::StructuralType> value_type =
+				GPlatesModel::convert_qstring_to_qualified_xml_name<GPlatesPropertyValues::StructuralType>(
+						combobox_property_type_string.mid(
+								template_left_angle_bracket_index + 1,
+								combobox_property_type_string.size() - template_left_angle_bracket_index - 2));
+		// Should always be able to convert to a qualified XML name.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				structural_type && value_type,
+				GPLATES_ASSERTION_SOURCE);
+
+		type_of_property = EditWidgetGroupBox::property_value_type(structural_type.get(), value_type.get());
+	}
+	else
+	{
+		const boost::optional<GPlatesPropertyValues::StructuralType> structural_type =
+				GPlatesModel::convert_qstring_to_qualified_xml_name<GPlatesPropertyValues::StructuralType>(
+						combobox_property_type_string);
+		// Should always be able to convert to a qualified XML name.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				structural_type,
+				GPLATES_ASSERTION_SOURCE);
+
+		type_of_property = structural_type.get();
+	}
+
+	d_edit_widget_group_box->activate_widget_by_property_type(type_of_property.get());
 }
 
 
@@ -221,8 +250,8 @@ GPlatesQtWidgets::CreateFeatureAddOrEditPropertyDialog::populate_add_property_ty
 	// Get the sequence of structural types allowed (by GPGIM) for the GPGIM property.
 	// Only add property types supported by edit widgets, there's no point listing structural types
 	// that do not have an edit widget.
-	EditWidgetGroupBox::property_types_list_type structural_types;
-	if (!d_edit_widget_group_box->get_handled_property_types(gpgim_property, structural_types))
+	EditWidgetGroupBox::property_types_list_type property_types;
+	if (!d_edit_widget_group_box->get_handled_property_types(gpgim_property, property_types))
 	{
 		// None of the current property's structural types are supported by edit widgets.
 		return;
@@ -232,14 +261,22 @@ GPlatesQtWidgets::CreateFeatureAddOrEditPropertyDialog::populate_add_property_ty
 	const GPlatesPropertyValues::StructuralType &default_structural_type =
 			gpgim_property.get_default_structural_type()->get_structural_type();
 
-	BOOST_FOREACH(
-			const GPlatesPropertyValues::StructuralType &structural_type,
-			structural_types)
+	BOOST_FOREACH(const EditWidgetGroupBox::property_value_type &type_of_property, property_types)
 	{
-		combobox_property_type->addItem(convert_qualified_xml_name_to_qstring(structural_type));
+		if (type_of_property.is_template())
+		{
+			combobox_property_type->addItem(QString("%1<%2>")
+					.arg(convert_qualified_xml_name_to_qstring(type_of_property.get_structural_type()))
+					.arg(convert_qualified_xml_name_to_qstring(type_of_property.get_value_type().get())));
+		}
+		else
+		{
+			combobox_property_type->addItem(
+					convert_qualified_xml_name_to_qstring(type_of_property.get_structural_type()));
+		}
 
 		// Get the combobox index of the 'default' structural type.
-		if (structural_type == default_structural_type)
+		if (type_of_property.get_structural_type() == default_structural_type)
 		{
 			structural_type_index = combobox_property_type->count() - 1;
 		}
@@ -270,20 +307,42 @@ GPlatesQtWidgets::CreateFeatureAddOrEditPropertyDialog::populate_edit_property_t
 	// For example, the user cannot change the type from 'gml:Point' to 'gml:LineString'.
 	//
 
-	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_to_const_type> property_value =
+	boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type> property_value =
 			GPlatesModel::ModelUtils::get_property_value(*feature_property);
 	// Should always have a valid *inline* top-level property.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			property_value,
 			GPLATES_ASSERTION_SOURCE);
 
-	const GPlatesPropertyValues::StructuralType property_type =
-			GPlatesModel::ModelUtils::get_non_time_dependent_property_structural_type(
-					*property_value.get());
+	boost::optional<GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type>
+			property_gpgim_structural_type =
+					GPlatesModel::ModelUtils::get_non_time_dependent_gpgim_structural_type(
+							*property_value.get());
+	if (!property_gpgim_structural_type)
+	{
+		// Something is wrong - we have no edit widget available.
+		QMessageBox::warning(this, tr("Unable to edit property"),
+				tr("Sorry! Since there is no editing control available for this property "
+				"value yet, it cannot be added to the feature."),
+				QMessageBox::Ok);
+		return;
+	}
 
+	const GPlatesModel::GpgimStructuralType::instantiation_type type_of_property =
+			property_gpgim_structural_type.get()->get_instantiation_type();
 
 	// Set the property value type in the combobox.
-	combobox_property_type->addItem(convert_qualified_xml_name_to_qstring(property_type));
+	if (type_of_property.is_template())
+	{
+		combobox_property_type->addItem(QString("%1<%2>")
+				.arg(convert_qualified_xml_name_to_qstring(type_of_property.get_structural_type()))
+				.arg(convert_qualified_xml_name_to_qstring(type_of_property.get_value_type().get())));
+	}
+	else
+	{
+		combobox_property_type->addItem(
+				convert_qualified_xml_name_to_qstring(type_of_property.get_structural_type()));
+	}
 
 	// Set the index to the only property type in the combobox.
 	combobox_property_type->setCurrentIndex(0);
@@ -320,6 +379,7 @@ GPlatesQtWidgets::CreateFeatureAddOrEditPropertyDialog::create_property_from_edi
 				GPlatesModel::ModelUtils::create_top_level_property(
 						*d_add_property->gpgim_property,
 						property_value,
+						true/*check_property_value_type*/,
 						&error_code);
 		if (!d_add_property->feature_property)
 		{

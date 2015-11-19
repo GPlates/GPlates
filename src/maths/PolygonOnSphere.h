@@ -39,7 +39,6 @@
 
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
-#include "PointInPolygon.h"
 #include "PolygonOrientation.h"
 
 #include "global/PreconditionViolationError.h"
@@ -54,6 +53,9 @@ namespace GPlatesMaths
 	}
 	class BoundingSmallCircle;
 	class InnerOuterBoundingSmallCircle;
+
+	template <typename GreatCircleArcConstIteratorType, bool RequireRandomAccessIterator>
+	class PolyGreatCircleArcBoundingTree;
 
 
 	/** 
@@ -148,6 +150,13 @@ namespace GPlatesMaths
 		 * The type used to describe collection sizes.
 		 */
 		typedef seq_type::size_type size_type;
+
+
+		/**
+		 * Typedef for the bounding tree of great circle arcs in a polyline.
+		 */
+		typedef PolyGreatCircleArcBoundingTree<const_iterator, true/*RequireRandomAccessIterator*/>
+				bounding_tree_type;
 
 	private:
 
@@ -468,27 +477,27 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Return the const_iterator that is equivalent to @a begin + @a index
-		 * to iterate over GreatCircleArc's of this polygon.
-		 * @a index must be less than or equal to @a number_of_segments.
-		 */
-		const_iterator
-		indexed_iterator(
-				std::size_t index) const
-		{
-			const_iterator iter = begin();
-			std::advance(iter, index);
-			return iter;
-		}
-
-
-		/**
 		 * Return the number of segments in this polygon.
 		 */
 		size_type
 		number_of_segments() const
 		{
 			return d_seq.size();
+		}
+
+
+		/**
+		 * Return the segment in this polygon at the specified index.
+		 */
+		const GreatCircleArc &
+		get_segment(
+				size_type segment_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					segment_index < number_of_segments(),
+					GPLATES_ASSERTION_SOURCE);
+
+			return d_seq[segment_index];
 		}
 
 
@@ -527,6 +536,25 @@ namespace GPlatesMaths
 		number_of_vertices() const
 		{
 			return d_seq.size();
+		}
+
+
+		/**
+		 * Return the vertex in this polygon at the specified index.
+		 */
+		const PointOnSphere &
+		get_vertex(
+				size_type vertex_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					vertex_index < number_of_vertices(),
+					GPLATES_ASSERTION_SOURCE);
+
+			vertex_const_iterator vertex_iter = vertex_begin();
+			// This should be fast since iterator type is random access...
+			std::advance(vertex_iter, vertex_index);
+
+			return *vertex_iter;
 		}
 
 
@@ -578,35 +606,22 @@ namespace GPlatesMaths
 		 * Note: This function currently only tests whether
 		 * @a test_point is "close" to the polygon @em boundary.
 		 *
-		 * The measure of what is "close" is provided by
-		 * @a closeness_inclusion_threshold.
+		 * The measure of what is "close" is provided by @a closeness_angular_extent_threshold.
 		 *
 		 * If @a test_point is "close", the function will calculate
 		 * exactly @em how close, and store that value in @a closeness and
 		 * return the closest point on the PolygonOnSphere.
-		 *
-		 * The value of @a latitude_exclusion_threshold should be equal
-		 * to \f$\sqrt{1 - {t_c}^2}\f$ (where \f$t_c\f$ is the
-		 * closeness inclusion threshold).  This parameter is designed
-		 * to enable a quick elimination of "no-hopers" (test-points
-		 * which can easily be determined to have no chance of being
-		 * "close"), leaving only plausible test-points to proceed to
-		 * the more expensive proximity tests.  If you imagine a
-		 * line-segment of this polygon as an arc along the equator,
-		 * then there will be a threshold latitude above and below the
-		 * equator, beyond which there is no chance of a test-point
-		 * being "close" to that segment.
-		 *
-		 * For more information, read the comment before
-		 * @a GPlatesGui::ProximityTests::find_close_rfgs.
 		 */
 		boost::optional<PointOnSphere>
 		is_close_to(
 				const PointOnSphere &test_point,
-				const real_t &closeness_inclusion_threshold,
-				const real_t &latitude_exclusion_threshold,
+				const AngularExtent &closeness_angular_extent_threshold,
 				real_t &closeness) const;
 
+
+		/**
+		 * Equality operator compares great circle arc subsegments.
+		 */
 		bool
 		operator==(
 				const PolygonOnSphere &other) const
@@ -614,38 +629,31 @@ namespace GPlatesMaths
 			return d_seq == other.d_seq;
 		}
 
+		/**
+		 * Inequality operator.
+		 */
+		bool
+		operator!=(
+				const PolygonOnSphere &other) const
+		{
+			return !operator==(other);
+		}
+
 
 		//
 		// The following are cached calculations on the geometry data.
 		//
 
+
 		/**
-		 * Returns the sum of the points in this polygon (normalised).
+		 * Returns the total arc-length of the sequence of @a GreatCirclArc which defines this polygon.
+		 *
+		 * The result is in radians and represents the distance on the unit radius sphere.
 		 *
 		 * The result is cached on first call.
 		 */
-		const UnitVector3D &
-		get_centroid() const;
-
-
-		/**
-		 * Returns the small circle that bounds this polygon - the small circle centre
-		 * is the same as calculated by @a get_centroid.
-		 *
-		 * The result is cached on first call.
-		 */
-		const BoundingSmallCircle &
-		get_bounding_small_circle() const;
-
-
-		/**
-		 * Returns the inner and outer small circle bounds of this polygon - the small circle centre
-		 * is the same as calculated by @a get_centroid.
-		 *
-		 * The result is cached on first call.
-		 */
-		const InnerOuterBoundingSmallCircle &
-		get_inner_outer_bounding_small_circle() const;
+		const real_t &
+		get_arc_length() const;
 
 
 		/**
@@ -665,7 +673,7 @@ namespace GPlatesMaths
 		 *
 		 * The result is cached on first call.
 		 */
-		real_t
+		const real_t &
 		get_signed_area() const;
 
 
@@ -683,7 +691,7 @@ namespace GPlatesMaths
 		/**
 		 * Determines the speed versus memory trade-off of point-in-polygon tests.
 		 *
-		 * NOTE: This set up cost is a once-off cost that happens in the first call to
+		 * NOTE: The set up cost is a once-off cost that happens in the first call to
 		 * @a is_point_in_polygon or if you increase the speed.
 		 *
 		 * See PointInPolygon for more details. But in summary...
@@ -692,32 +700,90 @@ namespace GPlatesMaths
 		 * LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE              0 < N < 4     points tested per polygon,
 		 * MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE   4 < N < 200   points tested per polygon,
 		 * HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE         N > 200       points tested per polygon.
+		 *
+		 * Or just use ADAPTIVE to progressively switch through the above stages as the number
+		 * of calls to @a is_point_in_polygon increases, eventually ending up at
+		 * HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE if enough calls are made.
 		 */
 		enum PointInPolygonSpeedAndMemory
 		{
-			LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE = 0,
-			MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE = 1,
-			HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE = 2
+			ADAPTIVE = 0,
+			LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE = 1,
+			MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE = 2,
+			HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE = 3
 		};
 
 		/**
 		 * Tests whether the specified point is inside this polygon.
 		 *
+		 * The default @a speed_and_memory is adaptive.
+		 *
 		 * @a speed_and_memory determines how fast the point-in-polygon test should be
 		 * and how much memory it uses.
 		 *
-		 * NOTE: This set up cost is a once-off cost that happens in the first call to
-		 * @a is_point_in_polygon or if you increase the speed.
+		 * NOTE: The set up cost is a once-off cost that happens in the first call to
+		 * @a is_point_in_polygon, or if you increase the speed.
 		 *
 		 * You can increase the speed but you cannot reduce it - this is because it takes
-		 * longer to set up for the higher speed tests and reduces back to lower speeds
-		 * effectively removes the advantages gained.
+		 * longer to set up for the higher speed tests and reducing back to lower speeds
+		 * would effectively remove any advantages gained.
 		 */
-		PointInPolygon::Result
+		bool
 		is_point_in_polygon(
 				const PointOnSphere &point,
-				PointInPolygonSpeedAndMemory speed_and_memory =
-						MEDIUM_SPEED_MEDIUM_SETUP_MEDIUM_MEMORY_USAGE) const;
+				PointInPolygonSpeedAndMemory speed_and_memory = ADAPTIVE) const;
+
+
+		/**
+		 * Returns the centroid of the *edges* of this polygon (see @a Centroid::calculate_outline_centroid).
+		 *
+		 * This centroid is useful for the centre of a small circle that bounds this polygon.
+		 *
+		 * The result is cached on first call.
+		 */
+		const UnitVector3D &
+		get_boundary_centroid() const;
+
+
+		/**
+		 * Returns the centroid of the *interior* of this polygon (see @a Centroid::calculate_outline_centroid).
+		 *
+		 * This centroid is useful when the centroid should be closer to the centre-of-mass of
+		 * the polygon interior.
+		 *
+		 * The result is cached on first call.
+		 */
+		const UnitVector3D &
+		get_interior_centroid() const;
+
+
+		/**
+		 * Returns the small circle that bounds this polygon - the small circle centre
+		 * is the same as calculated by @a get_boundary_centroid.
+		 *
+		 * The result is cached on first call.
+		 */
+		const BoundingSmallCircle &
+		get_bounding_small_circle() const;
+
+
+		/**
+		 * Returns the inner and outer small circle bounds of this polygon - the small circle centre
+		 * is the same as calculated by @a get_boundary_centroid.
+		 *
+		 * The result is cached on first call.
+		 */
+		const InnerOuterBoundingSmallCircle &
+		get_inner_outer_bounding_small_circle() const;
+
+
+		/**
+		 * Returns the small circle bounding tree over of great circle arc segments of this polygon.
+		 *
+		 * The result is cached on first call.
+		 */
+		const bounding_tree_type &
+		get_bounding_tree() const;
 
 	private:
 
@@ -774,21 +840,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Attempt to create a line-segment defined by the points @a p1
-		 * and @a p2; append it to @a seq.
-		 *
-		 * This function is strongly exception-safe and
-		 * exception-neutral.
-		 */
-		static
-		void
-		create_segment_and_append_to_seq(
-				seq_type &seq,
-				const PointOnSphere &p1,
-				const PointOnSphere &p2);
-
-
-		/**
 		 * This is the minimum number of (distinct) collection points to be passed into the
 		 * 'create_on_heap' function to enable creation of a closed, well-defined polygon.
 		 */
@@ -814,6 +865,31 @@ namespace GPlatesMaths
 	};
 
 
+	/**
+	 * Subdivides each segment (great circle arc) of a polygon and returns tessellated polygon.
+	 *
+	 * Each pair of adjacent points in the tessellated polygon will have a maximum angular extent of
+	 * @a max_angular_extent radians.
+	 *
+	 * Note that those arcs (of the original polygon) already subtending an angle less than
+	 * @a max_angular_extent radians will not be tessellated.
+	 *
+	 * Note that the distance between adjacent points in the tessellated polygon will not be *uniform*.
+	 * This is because each arc in the original polygon is tessellated to the nearest integer number
+	 * of points and hence each original arc will have a slightly different tessellation angle.
+	 */
+	PolygonOnSphere::non_null_ptr_to_const_type
+	tessellate(
+			const PolygonOnSphere &polygon,
+			const real_t &max_angular_extent);
+}
+
+//
+// Implementation
+//
+
+namespace GPlatesMaths
+{
 	template<typename ForwardIter>
 	PolygonOnSphere::ConstructionParameterValidity
 	PolygonOnSphere::evaluate_construction_parameter_validity(
@@ -1022,17 +1098,18 @@ namespace GPlatesMaths
 		// This for-loop is identical to the corresponding code in PolylineOnSphere.
 		ForwardIter prev;
 		ForwardIter iter = begin;
-		for (prev = iter++ ; iter != end; prev = iter++) {
+		for (prev = iter++ ; iter != end; prev = iter++)
+		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
-			create_segment_and_append_to_seq(tmp_seq, p1, p2);
+			tmp_seq.push_back(GreatCircleArc::create(p1, p2));
 		}
 		// Now, an additional step, for the last->first point wrap-around.
 		iter = begin;
 		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
-			create_segment_and_append_to_seq(tmp_seq, p1, p2);
+			tmp_seq.push_back(GreatCircleArc::create(p1, p2));
 		}
 		poly.d_seq.swap(tmp_seq);
 	}

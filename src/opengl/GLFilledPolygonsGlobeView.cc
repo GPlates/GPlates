@@ -1244,7 +1244,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_polygon(
 	add_polygon_mesh_to_current_filled_drawable(
 			polygon.vertex_begin(),
 			polygon.number_of_vertices(),
-			polygon.get_centroid(),
+			polygon.get_boundary_centroid(),
 			GPlatesGui::Colour::to_rgba8(pre_multiplied_alpha_colour));
 
 	end_filled_drawable(cube_quad_tree_location);

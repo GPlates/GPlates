@@ -43,6 +43,7 @@ set(srcs
     GpgimProperty.cc
     GpgimProperty.h
     GpgimStructuralType.h
+    GpgimTemplateStructuralType.h
     GpgimVersion.cc
     GpgimVersion.h
     HandleTraits.h
