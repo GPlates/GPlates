@@ -40,9 +40,9 @@ GPlatesPropertyValues::GpmlTotalReconstructionPole::print_to(
 
 
 GPlatesPropertyValues::GpmlTotalReconstructionPole::GpmlTotalReconstructionPole(
-		const GPlatesMaths::FiniteRotation &finite_rotation, 
+		const GPlatesMaths::FiniteRotation &finite_rotation_, 
 		GPlatesModel::XmlElementNode::non_null_ptr_type xml_element) :
-	GpmlFiniteRotation(finite_rotation)
+	GpmlFiniteRotation(finite_rotation_)
 {
 	static const GPlatesModel::XmlElementName META = 
 			GPlatesModel::XmlElementName::create_gpml("meta");

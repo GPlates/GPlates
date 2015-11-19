@@ -55,18 +55,18 @@ namespace GPlatesPropertyValues
 		static
 		const non_null_ptr_type
 		create(
-				const GPlatesMaths::FiniteRotation &finite_rotation)
+				const GPlatesMaths::FiniteRotation &finite_rotation_)
 		{
-			return non_null_ptr_type(new GpmlTotalReconstructionPole(finite_rotation));
+			return non_null_ptr_type(new GpmlTotalReconstructionPole(finite_rotation_));
 		}
 
 		static
 		const non_null_ptr_type
 		create(
-				const GPlatesMaths::FiniteRotation &finite_rotation,
+				const GPlatesMaths::FiniteRotation &finite_rotation_,
 				GPlatesModel::XmlElementNode::non_null_ptr_type xml_element)
 		{
-			return non_null_ptr_type(new GpmlTotalReconstructionPole(finite_rotation, xml_element));
+			return non_null_ptr_type(new GpmlTotalReconstructionPole(finite_rotation_, xml_element));
 		}
 
 			
@@ -133,8 +133,8 @@ namespace GPlatesPropertyValues
 
 		explicit
 		GpmlTotalReconstructionPole(
-				const GPlatesMaths::FiniteRotation &finite_rotation) :
-			GpmlFiniteRotation(finite_rotation)
+				const GPlatesMaths::FiniteRotation &finite_rotation_) :
+			GpmlFiniteRotation(finite_rotation_)
 		{ }
 
 		GpmlTotalReconstructionPole(
