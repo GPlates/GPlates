@@ -112,12 +112,16 @@ namespace GPlatesAppLogic
 		 * Note that if the topological network contains interior static polygons (microblocks)
 		 * then they do *not* need to be included in @a reconstructed_static_polygons - they are
 		 * found directly through the networks in @a resolved_topological_networks.
+		 *
+		 * @a partition_point_speed_and_memory determines the speed versus memory trade-off of the
+		 * point-in-polygon tests for partitioned *point* geometries.
 		 */
 		GeometryCookieCutter(
 				const double &reconstruction_time,
 				boost::optional<const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &> reconstructed_static_polygons,
 				boost::optional<const std::vector<resolved_topological_boundary_non_null_ptr_type> &> resolved_topological_boundaries,
-				boost::optional<const std::vector<resolved_topological_network_non_null_ptr_type> &> resolved_topological_networks);
+				boost::optional<const std::vector<resolved_topological_network_non_null_ptr_type> &> resolved_topological_networks,
+				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = GPlatesMaths::PolygonOnSphere::ADAPTIVE);
 
 
 		/**
@@ -182,7 +186,8 @@ namespace GPlatesAppLogic
 		public:
 			PartitioningGeometry(
 					const reconstruction_geometry_non_null_ptr_type &reconstruction_geometry,
-					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon);
+					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
+					GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory);
 
 
 			reconstruction_geometry_non_null_ptr_to_const_type d_reconstruction_geometry;
@@ -206,6 +211,8 @@ namespace GPlatesAppLogic
 		partitioning_geometry_seq_type d_partitioning_geometries;
 
 		double d_reconstruction_time;
+
+		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory d_partition_point_speed_and_memory;
 
 
 		/**

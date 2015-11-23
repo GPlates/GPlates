@@ -153,7 +153,11 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 					reconstruction_time,
 					reconstructed_static_polygons,
 					resolved_topological_boundaries,
-					resolved_topological_networks));
+					resolved_topological_networks,
+					// Use high speed point-in-poly testing since we're being used for
+					// generalised cookie-cutting and we could be asked to test lots of points.
+					// For example, very dense velocity meshes go through this path.
+					GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE));
 
 	d_partition_feature_tasks =
 			// Get all tasks that assign properties from polygon features to partitioned features.
@@ -236,7 +240,11 @@ GPlatesAppLogic::AssignPlateIds::AssignPlateIds(
 					reconstruction_time,
 					reconstructed_static_polygons,
 					resolved_topological_boundaries,
-					resolved_topological_networks));
+					resolved_topological_networks,
+					// Use high speed point-in-poly testing since we're being used for
+					// generalised cookie-cutting and we could be asked to test lots of points.
+					// For example, very dense velocity meshes go through this path.
+					GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE));
 
 	d_partition_feature_tasks =
 			// Get all tasks that assign properties from polygon features to partitioned features.

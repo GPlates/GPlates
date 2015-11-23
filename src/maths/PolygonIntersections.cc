@@ -388,10 +388,11 @@ namespace
 
 
 GPlatesMaths::PolygonIntersections::PolygonIntersections(
-		const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon) :
+		const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
+		PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
 	d_partitioning_polygon(partitioning_polygon),
-	d_partitioning_polygon_orientation(
-			partitioning_polygon->get_orientation())
+	d_partitioning_polygon_orientation(partitioning_polygon->get_orientation()),
+	d_partition_point_speed_and_memory(partition_point_speed_and_memory)
 {
 }
 
@@ -510,13 +511,9 @@ GPlatesMaths::PolygonIntersections::Result
 GPlatesMaths::PolygonIntersections::partition_point(
 		const PointOnSphere &point_to_be_partitioned) const
 {
-	return
-			d_partitioning_polygon->is_point_in_polygon(
+	return d_partitioning_polygon->is_point_in_polygon(
 					point_to_be_partitioned,
-					// Use high speed point-in-poly testing since we're being used for
-					// generalised cookie-cutting and we could be asked to test lots of points.
-					// For example, very dense velocity meshes go through this path.
-					PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE)
+					d_partition_point_speed_and_memory)
 			? GEOMETRY_INSIDE
 			: GEOMETRY_OUTSIDE;
 }

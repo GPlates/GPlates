@@ -42,8 +42,10 @@ GPlatesAppLogic::GeometryCookieCutter::GeometryCookieCutter(
 		const double &reconstruction_time,
 		boost::optional<const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &> reconstructed_static_polygons,
 		boost::optional<const std::vector<resolved_topological_boundary_non_null_ptr_type> &> resolved_topological_boundaries,
-		boost::optional<const std::vector<resolved_topological_network_non_null_ptr_type> &> resolved_topological_networks) :
-	d_reconstruction_time(reconstruction_time)
+		boost::optional<const std::vector<resolved_topological_network_non_null_ptr_type> &> resolved_topological_networks,
+		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
+	d_reconstruction_time(reconstruction_time),
+	d_partition_point_speed_and_memory(partition_point_speed_and_memory)
 {
 	// Resolved networks are added first and hence are used first (along with their interior polygons, if any)
 	// during partitioning.
@@ -209,12 +211,7 @@ GPlatesAppLogic::GeometryCookieCutter::partition_point(
 		return boost::none;
 	}
 
-	// Iterate through the partitioning polygons and
-	// return the first one that contains the point.
-	// FIXME: Need to take care of overlapping plates by testing
-	// polygons sorted by plate id because largest plate id is
-	// usually furthest from anchor plate id - but even this is a bit
-	// dodgy and needs a better solution.
+	// Iterate through the partitioning polygons and return the first one that contains the point.
 	partitioning_geometry_seq_type::const_iterator partition_iter =
 			d_partitioning_geometries.begin();
 	partitioning_geometry_seq_type::const_iterator partition_end =
@@ -242,7 +239,7 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_bou
 	BOOST_FOREACH(const ResolvedTopologicalBoundary::non_null_ptr_type &rtb, resolved_topological_boundaries)
 	{
 		d_partitioning_geometries.push_back(
-				PartitioningGeometry(rtb, rtb->resolved_topology_boundary()));
+				PartitioningGeometry(rtb, rtb->resolved_topology_boundary(), d_partition_point_speed_and_memory));
 	}
 }
 
@@ -255,7 +252,10 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_net
 	BOOST_FOREACH(const ResolvedTopologicalNetwork::non_null_ptr_type &rtn, resolved_topological_networks)
 	{
 		d_partitioning_geometries.push_back(
-				PartitioningGeometry(rtn, rtn->get_triangulation_network().get_boundary_polygon()));
+				PartitioningGeometry(
+						rtn,
+						rtn->get_triangulation_network().get_boundary_polygon(),
+						d_partition_point_speed_and_memory));
 	}
 }
 
@@ -287,7 +287,7 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_resolved_topological_net
 			if (polygon)
 			{
 				d_partitioning_geometries.push_back(
-						PartitioningGeometry(rigid_block_rfg, polygon.get()));
+						PartitioningGeometry(rigid_block_rfg, polygon.get(), d_partition_point_speed_and_memory));
 			}
 		}
 	}
@@ -315,7 +315,7 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_reconstructed_feature_po
 		if (polygon)
 		{
 			d_partitioning_geometries.push_back(
-					PartitioningGeometry(rfg, polygon.get()));
+					PartitioningGeometry(rfg, polygon.get(), d_partition_point_speed_and_memory));
 		}
 	}
 }
@@ -323,10 +323,11 @@ GPlatesAppLogic::GeometryCookieCutter::add_partitioning_reconstructed_feature_po
 
 GPlatesAppLogic::GeometryCookieCutter::PartitioningGeometry::PartitioningGeometry(
 		const reconstruction_geometry_non_null_ptr_type &reconstruction_geometry,
-		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon) :
+		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
+		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
 	d_reconstruction_geometry(reconstruction_geometry),
 	d_polygon_intersections(
-			GPlatesMaths::PolygonIntersections::create(partitioning_polygon))
+			GPlatesMaths::PolygonIntersections::create(partitioning_polygon, partition_point_speed_and_memory))
 {
 }
 

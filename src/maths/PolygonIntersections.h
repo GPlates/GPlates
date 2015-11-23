@@ -64,13 +64,17 @@ namespace GPlatesMaths
 
 		/**
 		 * Create with the polygon that will do the partitioning.
+		 *
+		 * @a partition_point_speed_and_memory determines the speed versus memory trade-off of the
+		 * point-in-polygon tests in @a partition_point.
 		 */
 		static
 		non_null_ptr_type
 		create(
-				 const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon)
+				 const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
+				 PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = PolygonOnSphere::ADAPTIVE)
 		{
-			return non_null_ptr_type(new PolygonIntersections(partitioning_polygon));
+			return non_null_ptr_type(new PolygonIntersections(partitioning_polygon, partition_point_speed_and_memory));
 		}
 
 
@@ -197,13 +201,15 @@ namespace GPlatesMaths
 	private:
 		PolygonOnSphere::non_null_ptr_to_const_type d_partitioning_polygon;
 		PolygonOrientation::Orientation d_partitioning_polygon_orientation;
+		PolygonOnSphere::PointInPolygonSpeedAndMemory d_partition_point_speed_and_memory;
 
 
 		/**
 		 * Construct with the polygon that will do the partitioning.
 		 */
 		PolygonIntersections(
-				 const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon);
+				 const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
+				 PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory);
 
 		Result
 		partition_polyline_or_polygon_fully_inside_or_outside(
