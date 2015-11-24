@@ -143,7 +143,8 @@ GPlatesQtWidgets::MovePoleWidget::set_focus()
 	update_stage_pole_moving_fixed_plate_ids();
 
 	// Update the pole location according to the current stage pole of the focused feature (if focused).
-	if (keep_stage_pole_constrained_checkbox->isChecked())
+	if (enable_pole_checkbox->isChecked() &&
+		keep_stage_pole_constrained_checkbox->isChecked())
 	{
 		set_stage_pole_location();
 	}
@@ -156,7 +157,8 @@ GPlatesQtWidgets::MovePoleWidget::handle_reconstruction()
 	update_stage_pole_moving_fixed_plate_ids();
 
 	// Update the pole location according to the current stage pole of the focused feature (if focused).
-	if (keep_stage_pole_constrained_checkbox->isChecked())
+	if (enable_pole_checkbox->isChecked() &&
+		keep_stage_pole_constrained_checkbox->isChecked())
 	{
 		set_stage_pole_location();
 	}
@@ -184,6 +186,13 @@ GPlatesQtWidgets::MovePoleWidget::react_enable_pole_check_box_changed()
 
 	// Enable/disable ability to modify the pole.
 	pole_widget->setEnabled(d_pole);
+
+	// Update the pole location according to the current stage pole of the focused feature (if focused).
+	if (enable_pole_checkbox->isChecked() &&
+		keep_stage_pole_constrained_checkbox->isChecked())
+	{
+		set_stage_pole_location();
+	}
 
 	Q_EMIT pole_changed(d_pole);
 }
